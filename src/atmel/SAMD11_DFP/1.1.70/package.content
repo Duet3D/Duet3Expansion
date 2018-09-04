@@ -1,0 +1,239 @@
+<?xml version='1.0' encoding='ASCII'?>
+<package schemaVersion="1.0">
+  <content>
+    <fileset id="moduleheaders">
+      <includes pattern="component/*"/>
+      <includes pattern="instance/*"/>
+    </fileset>
+    <resources target="ATSAMD11D14AS">
+      <resource type="atdf" subdir="atdf">
+        <includes pattern="ATSAMD11D14AS.atdf"/>
+      </resource>
+      <resource type="svd" subdir="svd">
+        <includes pattern="ATSAMD11D14AS.svd"/>
+      </resource>
+      <resource type="c.header" subdir="include">
+        <includes pattern="sam.h"/>
+        <includes pattern="samd11.h"/>
+        <includes pattern="samd11d14as.h"/>
+        <includes pattern="system_samd11.h"/>
+        <includes pattern="pio/samd11d14as.h"/>
+        <includes pattern="component-version.h"/>
+        <includes fileset="moduleheaders"/>
+        <meta key="define" value="__SAMD11D14AS__"/>
+      </resource>
+      <resource type="c.source.exe.template" subdir="templates">
+        <includes pattern="main.c"/>
+      </resource>
+      <resource type="c.source.lib.template" subdir="templates">
+        <includes pattern="library.c"/>
+      </resource>
+      <resource type="cpp.source.exe.template" subdir="templates">
+        <includes pattern="main.cpp"/>
+      </resource>
+      <resource type="cpp.source.lib.template" subdir="templates">
+        <includes pattern="library.cpp"/>
+      </resource>
+      <resource type="gcc.source.startup" subdir="gcc">
+        <includes pattern="system_samd11.c"/>
+        <includes pattern="gcc/startup_samd11.c"/>
+      </resource>
+      <resource type="gcc.linker" subdir="gcc">
+        <includes pattern="gcc/samd11d14as_flash.ld"/>
+        <includes pattern="gcc/samd11d14as_sram.ld"/>
+      </resource>
+      <resource type="iar.source.startup" subdir="iar">
+        <includes pattern="system_samd11.c"/>
+        <includes pattern="iar/startup_samd11.c"/>
+      </resource>
+      <resource type="iar.linker" subdir="iar">
+        <includes pattern="iar/samd11d14as_flash.icf"/>
+        <includes pattern="iar/samd11d14as_sram.icf"/>
+      </resource>
+      <resource type="iar.config" subdir="iar">
+        <includes pattern="config/debugger/Atmel/Trace_SAMD11.dmac"/>
+        <includes pattern="config/debugger/Atmel/ATSAMD11D14AS.ddf"/>
+        <includes pattern="config/devices/Atmel/**/ATSAMD11D14AS.i79"/>
+        <includes pattern="config/devices/Atmel/**/ATSAMD11D14AS.menu"/>
+        <includes pattern="config/flashloader/Atmel/samd11d14as/samd11d14as-flash.board"/>
+        <includes pattern="config/flashloader/Atmel/samd11d14as/samd11d14as-flash.flash"/>
+        <includes pattern="config/flashloader/Atmel/samd11d14as/samd11d14as-flash.out"/>
+      </resource>
+    </resources>
+    <resources target="ATSAMD11D14AU">
+      <resource type="atdf" subdir="atdf">
+        <includes pattern="ATSAMD11D14AU.atdf"/>
+      </resource>
+      <resource type="svd" subdir="svd">
+        <includes pattern="ATSAMD11D14AU.svd"/>
+      </resource>
+      <resource type="c.header" subdir="include">
+        <includes pattern="sam.h"/>
+        <includes pattern="samd11.h"/>
+        <includes pattern="samd11d14au.h"/>
+        <includes pattern="system_samd11.h"/>
+        <includes pattern="pio/samd11d14au.h"/>
+        <includes pattern="component-version.h"/>
+        <includes fileset="moduleheaders"/>
+        <meta key="define" value="__SAMD11D14AU__"/>
+      </resource>
+      <resource type="c.source.exe.template" subdir="templates">
+        <includes pattern="main.c"/>
+      </resource>
+      <resource type="c.source.lib.template" subdir="templates">
+        <includes pattern="library.c"/>
+      </resource>
+      <resource type="cpp.source.exe.template" subdir="templates">
+        <includes pattern="main.cpp"/>
+      </resource>
+      <resource type="cpp.source.lib.template" subdir="templates">
+        <includes pattern="library.cpp"/>
+      </resource>
+      <resource type="gcc.source.startup" subdir="gcc">
+        <includes pattern="system_samd11.c"/>
+        <includes pattern="gcc/startup_samd11.c"/>
+      </resource>
+      <resource type="gcc.linker" subdir="gcc">
+        <includes pattern="gcc/samd11d14au_flash.ld"/>
+        <includes pattern="gcc/samd11d14au_sram.ld"/>
+      </resource>
+      <resource type="iar.source.startup" subdir="iar">
+        <includes pattern="system_samd11.c"/>
+        <includes pattern="iar/startup_samd11.c"/>
+      </resource>
+      <resource type="iar.linker" subdir="iar">
+        <includes pattern="iar/samd11d14au_flash.icf"/>
+        <includes pattern="iar/samd11d14au_sram.icf"/>
+      </resource>
+      <resource type="iar.config" subdir="iar">
+        <includes pattern="config/debugger/Atmel/Trace_SAMD11.dmac"/>
+        <includes pattern="config/debugger/Atmel/ATSAMD11D14AU.ddf"/>
+        <includes pattern="config/devices/Atmel/**/ATSAMD11D14AU.i79"/>
+        <includes pattern="config/devices/Atmel/**/ATSAMD11D14AU.menu"/>
+        <includes pattern="config/flashloader/Atmel/samd11d14au/samd11d14au-flash.board"/>
+        <includes pattern="config/flashloader/Atmel/samd11d14au/samd11d14au-flash.flash"/>
+        <includes pattern="config/flashloader/Atmel/samd11d14au/samd11d14au-flash.out"/>
+      </resource>
+    </resources>
+    <resources target="ATSAMD11D14AM">
+      <resource type="atdf" subdir="atdf">
+        <includes pattern="ATSAMD11D14AM.atdf"/>
+      </resource>
+      <resource type="svd" subdir="svd">
+        <includes pattern="ATSAMD11D14AM.svd"/>
+      </resource>
+      <resource type="c.header" subdir="include">
+        <includes pattern="sam.h"/>
+        <includes pattern="samd11.h"/>
+        <includes pattern="samd11d14am.h"/>
+        <includes pattern="system_samd11.h"/>
+        <includes pattern="pio/samd11d14am.h"/>
+        <includes pattern="component-version.h"/>
+        <includes fileset="moduleheaders"/>
+        <meta key="define" value="__SAMD11D14AM__"/>
+      </resource>
+      <resource type="c.source.exe.template" subdir="templates">
+        <includes pattern="main.c"/>
+      </resource>
+      <resource type="c.source.lib.template" subdir="templates">
+        <includes pattern="library.c"/>
+      </resource>
+      <resource type="cpp.source.exe.template" subdir="templates">
+        <includes pattern="main.cpp"/>
+      </resource>
+      <resource type="cpp.source.lib.template" subdir="templates">
+        <includes pattern="library.cpp"/>
+      </resource>
+      <resource type="gcc.source.startup" subdir="gcc">
+        <includes pattern="system_samd11.c"/>
+        <includes pattern="gcc/startup_samd11.c"/>
+      </resource>
+      <resource type="gcc.linker" subdir="gcc">
+        <includes pattern="gcc/samd11d14am_flash.ld"/>
+        <includes pattern="gcc/samd11d14am_sram.ld"/>
+      </resource>
+      <resource type="iar.source.startup" subdir="iar">
+        <includes pattern="system_samd11.c"/>
+        <includes pattern="iar/startup_samd11.c"/>
+      </resource>
+      <resource type="iar.linker" subdir="iar">
+        <includes pattern="iar/samd11d14am_flash.icf"/>
+        <includes pattern="iar/samd11d14am_sram.icf"/>
+      </resource>
+      <resource type="iar.config" subdir="iar">
+        <includes pattern="config/debugger/Atmel/Trace_SAMD11.dmac"/>
+        <includes pattern="config/debugger/Atmel/ATSAMD11D14AM.ddf"/>
+        <includes pattern="config/devices/Atmel/**/ATSAMD11D14AM.i79"/>
+        <includes pattern="config/devices/Atmel/**/ATSAMD11D14AM.menu"/>
+        <includes pattern="config/flashloader/Atmel/samd11d14am/samd11d14am-flash.board"/>
+        <includes pattern="config/flashloader/Atmel/samd11d14am/samd11d14am-flash.flash"/>
+        <includes pattern="config/flashloader/Atmel/samd11d14am/samd11d14am-flash.out"/>
+      </resource>
+    </resources>
+    <resources target="ATSAMD11C14A">
+      <resource type="atdf" subdir="atdf">
+        <includes pattern="ATSAMD11C14A.atdf"/>
+      </resource>
+      <resource type="svd" subdir="svd">
+        <includes pattern="ATSAMD11C14A.svd"/>
+      </resource>
+      <resource type="c.header" subdir="include">
+        <includes pattern="sam.h"/>
+        <includes pattern="samd11.h"/>
+        <includes pattern="samd11c14a.h"/>
+        <includes pattern="system_samd11.h"/>
+        <includes pattern="pio/samd11c14a.h"/>
+        <includes pattern="component-version.h"/>
+        <includes fileset="moduleheaders"/>
+        <meta key="define" value="__SAMD11C14A__"/>
+      </resource>
+      <resource type="c.source.exe.template" subdir="templates">
+        <includes pattern="main.c"/>
+      </resource>
+      <resource type="c.source.lib.template" subdir="templates">
+        <includes pattern="library.c"/>
+      </resource>
+      <resource type="cpp.source.exe.template" subdir="templates">
+        <includes pattern="main.cpp"/>
+      </resource>
+      <resource type="cpp.source.lib.template" subdir="templates">
+        <includes pattern="library.cpp"/>
+      </resource>
+      <resource type="gcc.source.startup" subdir="gcc">
+        <includes pattern="system_samd11.c"/>
+        <includes pattern="gcc/startup_samd11.c"/>
+      </resource>
+      <resource type="gcc.linker" subdir="gcc">
+        <includes pattern="gcc/samd11c14a_flash.ld"/>
+        <includes pattern="gcc/samd11c14a_sram.ld"/>
+      </resource>
+      <resource type="iar.source.startup" subdir="iar">
+        <includes pattern="system_samd11.c"/>
+        <includes pattern="iar/startup_samd11.c"/>
+      </resource>
+      <resource type="iar.linker" subdir="iar">
+        <includes pattern="iar/samd11c14a_flash.icf"/>
+        <includes pattern="iar/samd11c14a_sram.icf"/>
+      </resource>
+      <resource type="iar.config" subdir="iar">
+        <includes pattern="config/debugger/Atmel/Trace_SAMD11.dmac"/>
+        <includes pattern="config/debugger/Atmel/ATSAMD11C14A.ddf"/>
+        <includes pattern="config/devices/Atmel/**/ATSAMD11C14A.i79"/>
+        <includes pattern="config/devices/Atmel/**/ATSAMD11C14A.menu"/>
+        <includes pattern="config/flashloader/Atmel/samd11c14a/samd11c14a-flash.board"/>
+        <includes pattern="config/flashloader/Atmel/samd11c14a/samd11c14a-flash.flash"/>
+        <includes pattern="config/flashloader/Atmel/samd11c14a/samd11c14a-flash.out"/>
+      </resource>
+    </resources>
+  </content>
+  <pdsc xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+		<releases>
+			<release version="1.1.BUILDNUMBER">Removed warnings for some component headers.</release>
+			<release version="1.1.63">Fixed GNU/IAR assembler issues. Files now under Apache license.</release>
+			<release version="1.0.30">Updated documentation links.</release>
+			<release version="1.0.24">Added ATSAMD11D14AU.</release>
+			<release version="1.0.23">Initial release.</release>
+			
+		</releases>
+	</pdsc>
+</package>

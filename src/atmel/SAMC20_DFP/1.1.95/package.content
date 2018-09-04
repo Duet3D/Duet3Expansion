@@ -1,0 +1,1007 @@
+<?xml version='1.0' encoding='ASCII'?>
+<package schemaVersion="1.0">
+  <content>
+    <fileset id="moduleheaders">
+      <includes pattern="component/*"/>
+      <includes pattern="instance/*"/>
+    </fileset>
+    <resources target="ATSAMC20G17A">
+      <resource type="atdf" subdir="samc20/atdf">
+        <includes pattern="ATSAMC20G17A.atdf"/>
+      </resource>
+      <resource type="svd" subdir="samc20/svd">
+        <includes pattern="ATSAMC20G17A.svd"/>
+      </resource>
+      <resource type="c.header" subdir="samc20/include">
+        <includes pattern="sam.h"/>
+        <includes pattern="samc20.h"/>
+        <includes pattern="samc20g17a.h"/>
+        <includes pattern="system_samc20.h"/>
+        <includes pattern="pio/*samc20g17a.h"/>
+        <includes pattern="component-version.h"/>
+        <includes fileset="moduleheaders"/>
+        <meta key="define" value="__SAMC20G17A__"/>
+      </resource>
+      <resource type="c.source.exe.template" subdir="samc20/templates">
+        <includes pattern="main.c"/>
+      </resource>
+      <resource type="c.source.lib.template" subdir="samc20/templates">
+        <includes pattern="library.c"/>
+      </resource>
+      <resource type="cpp.source.exe.template" subdir="samc20/templates">
+        <includes pattern="main.cpp"/>
+      </resource>
+      <resource type="cpp.source.lib.template" subdir="samc20/templates">
+        <includes pattern="library.cpp"/>
+      </resource>
+      <resource type="armcc.source.startup" subdir="samc20/armcc">
+        <includes pattern="Device/SAMC20/Source/ARM/startup_SAMC20.s"/>
+        <includes pattern="Device/SAMC20/Source/system_samc20.c"/>
+      </resource>
+      <resource type="keil.flashloader" subdir="samc20/keil">
+        <includes pattern="Flash/ATSAMC_128.FLM"/>
+        <includes pattern="Flash/ATSAMC_128_EEPROM.FLM"/>
+        <meta key="Flash/ATSAMC_128.FLM" value="start=0x00000000|size=0x20000|default=1"/>
+        <meta key="Flash/ATSAMC_128_EEPROM.FLM" value="start=0x00400000|size=0x01000|default=1"/>
+      </resource>
+      <resource type="gcc.source.startup" subdir="samc20/gcc">
+        <includes pattern="system_samc20.c"/>
+        <includes pattern="gcc/startup_samc20.c"/>
+      </resource>
+      <resource type="gcc.linker" subdir="samc20/gcc">
+        <includes pattern="gcc/samc20g17a_flash.ld"/>
+        <includes pattern="gcc/samc20g17a_sram.ld"/>
+      </resource>
+      <resource type="iar.source.startup" subdir="samc20/iar">
+        <includes pattern="system_samc20.c"/>
+        <includes pattern="iar/startup_samc20.c"/>
+      </resource>
+      <resource type="iar.linker" subdir="samc20/iar">
+        <includes pattern="iar/samc20g17a_flash.icf"/>
+        <includes pattern="iar/samc20g17a_sram.icf"/>
+      </resource>
+      <resource type="iar.config" subdir="samc20/iar">
+        <includes pattern="config/devices/Atmel/**/ATSAMC20G17A.i79"/>
+        <includes pattern="config/devices/Atmel/**/ATSAMC20G17A.menu"/>
+        <includes pattern="config/flashloader/Atmel/samc20g17a/samc20g17a-flash.board"/>
+        <includes pattern="config/flashloader/Atmel/samc20g17a/samc20g17a-flash.flash"/>
+        <includes pattern="config/flashloader/Atmel/samc20g17a/samc20g17a-flash.out"/>
+        <includes optional="true" pattern="config/debugger/Atmel/Trace_SAMC20.dmac"/>
+        <includes optional="true" pattern="config/debugger/Atmel/ATSAMC20G17A.ddf"/>
+      </resource>
+    </resources>
+    <resources target="ATSAMC20G16A">
+      <resource type="atdf" subdir="samc20/atdf">
+        <includes pattern="ATSAMC20G16A.atdf"/>
+      </resource>
+      <resource type="svd" subdir="samc20/svd">
+        <includes pattern="ATSAMC20G16A.svd"/>
+      </resource>
+      <resource type="c.header" subdir="samc20/include">
+        <includes pattern="sam.h"/>
+        <includes pattern="samc20.h"/>
+        <includes pattern="samc20g16a.h"/>
+        <includes pattern="system_samc20.h"/>
+        <includes pattern="pio/*samc20g16a.h"/>
+        <includes pattern="component-version.h"/>
+        <includes fileset="moduleheaders"/>
+        <meta key="define" value="__SAMC20G16A__"/>
+      </resource>
+      <resource type="c.source.exe.template" subdir="samc20/templates">
+        <includes pattern="main.c"/>
+      </resource>
+      <resource type="c.source.lib.template" subdir="samc20/templates">
+        <includes pattern="library.c"/>
+      </resource>
+      <resource type="cpp.source.exe.template" subdir="samc20/templates">
+        <includes pattern="main.cpp"/>
+      </resource>
+      <resource type="cpp.source.lib.template" subdir="samc20/templates">
+        <includes pattern="library.cpp"/>
+      </resource>
+      <resource type="armcc.source.startup" subdir="samc20/armcc">
+        <includes pattern="Device/SAMC20/Source/ARM/startup_SAMC20.s"/>
+        <includes pattern="Device/SAMC20/Source/system_samc20.c"/>
+      </resource>
+      <resource type="keil.flashloader" subdir="samc20/keil">
+        <includes pattern="Flash/ATSAMC_64.FLM"/>
+        <includes pattern="Flash/ATSAMC_64_EEPROM.FLM"/>
+        <meta key="Flash/ATSAMC_64.FLM" value="start=0x00000000|size=0x10000|default=1"/>
+        <meta key="Flash/ATSAMC_64_EEPROM.FLM" value="start=0x00400000|size=0x00800|default=1"/>
+      </resource>
+      <resource type="gcc.source.startup" subdir="samc20/gcc">
+        <includes pattern="system_samc20.c"/>
+        <includes pattern="gcc/startup_samc20.c"/>
+      </resource>
+      <resource type="gcc.linker" subdir="samc20/gcc">
+        <includes pattern="gcc/samc20g16a_flash.ld"/>
+        <includes pattern="gcc/samc20g16a_sram.ld"/>
+      </resource>
+      <resource type="iar.source.startup" subdir="samc20/iar">
+        <includes pattern="system_samc20.c"/>
+        <includes pattern="iar/startup_samc20.c"/>
+      </resource>
+      <resource type="iar.linker" subdir="samc20/iar">
+        <includes pattern="iar/samc20g16a_flash.icf"/>
+        <includes pattern="iar/samc20g16a_sram.icf"/>
+      </resource>
+      <resource type="iar.config" subdir="samc20/iar">
+        <includes pattern="config/devices/Atmel/**/ATSAMC20G16A.i79"/>
+        <includes pattern="config/devices/Atmel/**/ATSAMC20G16A.menu"/>
+        <includes pattern="config/flashloader/Atmel/samc20g16a/samc20g16a-flash.board"/>
+        <includes pattern="config/flashloader/Atmel/samc20g16a/samc20g16a-flash.flash"/>
+        <includes pattern="config/flashloader/Atmel/samc20g16a/samc20g16a-flash.out"/>
+        <includes optional="true" pattern="config/debugger/Atmel/Trace_SAMC20.dmac"/>
+        <includes optional="true" pattern="config/debugger/Atmel/ATSAMC20G16A.ddf"/>
+      </resource>
+    </resources>
+    <resources target="ATSAMC20J18A">
+      <resource type="atdf" subdir="samc20/atdf">
+        <includes pattern="ATSAMC20J18A.atdf"/>
+      </resource>
+      <resource type="svd" subdir="samc20/svd">
+        <includes pattern="ATSAMC20J18A.svd"/>
+      </resource>
+      <resource type="c.header" subdir="samc20/include">
+        <includes pattern="sam.h"/>
+        <includes pattern="samc20.h"/>
+        <includes pattern="samc20j18a.h"/>
+        <includes pattern="system_samc20.h"/>
+        <includes pattern="pio/*samc20j18a.h"/>
+        <includes pattern="component-version.h"/>
+        <includes fileset="moduleheaders"/>
+        <meta key="define" value="__SAMC20J18A__"/>
+      </resource>
+      <resource type="c.source.exe.template" subdir="samc20/templates">
+        <includes pattern="main.c"/>
+      </resource>
+      <resource type="c.source.lib.template" subdir="samc20/templates">
+        <includes pattern="library.c"/>
+      </resource>
+      <resource type="cpp.source.exe.template" subdir="samc20/templates">
+        <includes pattern="main.cpp"/>
+      </resource>
+      <resource type="cpp.source.lib.template" subdir="samc20/templates">
+        <includes pattern="library.cpp"/>
+      </resource>
+      <resource type="armcc.source.startup" subdir="samc20/armcc">
+        <includes pattern="Device/SAMC20/Source/ARM/startup_SAMC20.s"/>
+        <includes pattern="Device/SAMC20/Source/system_samc20.c"/>
+      </resource>
+      <resource type="keil.flashloader" subdir="samc20/keil">
+        <includes pattern="Flash/ATSAMC_256.FLM"/>
+        <includes pattern="Flash/ATSAMC_256_EEPROM.FLM"/>
+        <meta key="Flash/ATSAMC_256.FLM" value="start=0x00000000|size=0x40000|default=1"/>
+        <meta key="Flash/ATSAMC_256_EEPROM.FLM" value="start=0x00400000|size=0x02000|default=1"/>
+      </resource>
+      <resource type="gcc.source.startup" subdir="samc20/gcc">
+        <includes pattern="system_samc20.c"/>
+        <includes pattern="gcc/startup_samc20.c"/>
+      </resource>
+      <resource type="gcc.linker" subdir="samc20/gcc">
+        <includes pattern="gcc/samc20j18a_flash.ld"/>
+        <includes pattern="gcc/samc20j18a_sram.ld"/>
+      </resource>
+      <resource type="iar.source.startup" subdir="samc20/iar">
+        <includes pattern="system_samc20.c"/>
+        <includes pattern="iar/startup_samc20.c"/>
+      </resource>
+      <resource type="iar.linker" subdir="samc20/iar">
+        <includes pattern="iar/samc20j18a_flash.icf"/>
+        <includes pattern="iar/samc20j18a_sram.icf"/>
+      </resource>
+      <resource type="iar.config" subdir="samc20/iar">
+        <includes pattern="config/devices/Atmel/**/ATSAMC20J18A.i79"/>
+        <includes pattern="config/devices/Atmel/**/ATSAMC20J18A.menu"/>
+        <includes pattern="config/flashloader/Atmel/samc20j18a/samc20j18a-flash.board"/>
+        <includes pattern="config/flashloader/Atmel/samc20j18a/samc20j18a-flash.flash"/>
+        <includes pattern="config/flashloader/Atmel/samc20j18a/samc20j18a-flash.out"/>
+        <includes optional="true" pattern="config/debugger/Atmel/Trace_SAMC20.dmac"/>
+        <includes optional="true" pattern="config/debugger/Atmel/ATSAMC20J18A.ddf"/>
+      </resource>
+    </resources>
+    <resources target="ATSAMC20N18A">
+      <resource type="atdf" subdir="samc20n/atdf">
+        <includes pattern="ATSAMC20N18A.atdf"/>
+      </resource>
+      <resource type="svd" subdir="samc20n/svd">
+        <includes pattern="ATSAMC20N18A.svd"/>
+      </resource>
+      <resource type="c.header" subdir="samc20n/include">
+        <includes pattern="sam.h"/>
+        <includes pattern="samc20.h"/>
+        <includes pattern="samc20n18a.h"/>
+        <includes pattern="system_samc20.h"/>
+        <includes pattern="pio/*samc20n18a.h"/>
+        <includes pattern="component-version.h"/>
+        <includes fileset="moduleheaders"/>
+        <meta key="define" value="__SAMC20N18A__"/>
+      </resource>
+      <resource type="c.source.exe.template" subdir="samc20n/templates">
+        <includes pattern="main.c"/>
+      </resource>
+      <resource type="c.source.lib.template" subdir="samc20n/templates">
+        <includes pattern="library.c"/>
+      </resource>
+      <resource type="cpp.source.exe.template" subdir="samc20n/templates">
+        <includes pattern="main.cpp"/>
+      </resource>
+      <resource type="cpp.source.lib.template" subdir="samc20n/templates">
+        <includes pattern="library.cpp"/>
+      </resource>
+      <resource type="gcc.source.startup" subdir="samc20n/gcc">
+        <includes pattern="system_samc20.c"/>
+        <includes pattern="gcc/startup_samc20.c"/>
+      </resource>
+      <resource type="gcc.linker" subdir="samc20n/gcc">
+        <includes pattern="gcc/samc20n18a_flash.ld"/>
+        <includes pattern="gcc/samc20n18a_sram.ld"/>
+      </resource>
+      <resource type="iar.source.startup" subdir="samc20n/iar">
+        <includes pattern="system_samc20.c"/>
+        <includes pattern="iar/startup_samc20.c"/>
+      </resource>
+      <resource type="iar.linker" subdir="samc20n/iar">
+        <includes pattern="iar/samc20n18a_flash.icf"/>
+        <includes pattern="iar/samc20n18a_sram.icf"/>
+      </resource>
+      <resource type="iar.config" subdir="samc20n/iar">
+        <includes pattern="config/devices/Atmel/**/ATSAMC20N18A.i79"/>
+        <includes pattern="config/devices/Atmel/**/ATSAMC20N18A.menu"/>
+        <includes pattern="config/flashloader/Atmel/samc20n18a/samc20n18a-flash.board"/>
+        <includes pattern="config/flashloader/Atmel/samc20n18a/samc20n18a-flash.flash"/>
+        <includes pattern="config/flashloader/Atmel/samc20n18a/samc20n18a-flash.out"/>
+        <includes optional="true" pattern="config/debugger/Atmel/ATSAMC20N18A.ddf"/>
+      </resource>
+    </resources>
+    <resources target="ATSAMC20J15A">
+      <resource type="atdf" subdir="samc20/atdf">
+        <includes pattern="ATSAMC20J15A.atdf"/>
+      </resource>
+      <resource type="svd" subdir="samc20/svd">
+        <includes pattern="ATSAMC20J15A.svd"/>
+      </resource>
+      <resource type="c.header" subdir="samc20/include">
+        <includes pattern="sam.h"/>
+        <includes pattern="samc20.h"/>
+        <includes pattern="samc20j15a.h"/>
+        <includes pattern="system_samc20.h"/>
+        <includes pattern="pio/*samc20j15a.h"/>
+        <includes pattern="component-version.h"/>
+        <includes fileset="moduleheaders"/>
+        <meta key="define" value="__SAMC20J15A__"/>
+      </resource>
+      <resource type="c.source.exe.template" subdir="samc20/templates">
+        <includes pattern="main.c"/>
+      </resource>
+      <resource type="c.source.lib.template" subdir="samc20/templates">
+        <includes pattern="library.c"/>
+      </resource>
+      <resource type="cpp.source.exe.template" subdir="samc20/templates">
+        <includes pattern="main.cpp"/>
+      </resource>
+      <resource type="cpp.source.lib.template" subdir="samc20/templates">
+        <includes pattern="library.cpp"/>
+      </resource>
+      <resource type="gcc.source.startup" subdir="samc20/gcc">
+        <includes pattern="system_samc20.c"/>
+        <includes pattern="gcc/startup_samc20.c"/>
+      </resource>
+      <resource type="gcc.linker" subdir="samc20/gcc">
+        <includes pattern="gcc/samc20j15a_flash.ld"/>
+        <includes pattern="gcc/samc20j15a_sram.ld"/>
+      </resource>
+      <resource type="iar.source.startup" subdir="samc20/iar">
+        <includes pattern="system_samc20.c"/>
+        <includes pattern="iar/startup_samc20.c"/>
+      </resource>
+      <resource type="iar.linker" subdir="samc20/iar">
+        <includes pattern="iar/samc20j15a_flash.icf"/>
+        <includes pattern="iar/samc20j15a_sram.icf"/>
+      </resource>
+      <resource type="iar.config" subdir="samc20/iar">
+        <includes pattern="config/devices/Atmel/**/ATSAMC20J15A.i79"/>
+        <includes pattern="config/devices/Atmel/**/ATSAMC20J15A.menu"/>
+        <includes pattern="config/flashloader/Atmel/samc20j15a/samc20j15a-flash.board"/>
+        <includes pattern="config/flashloader/Atmel/samc20j15a/samc20j15a-flash.flash"/>
+        <includes pattern="config/flashloader/Atmel/samc20j15a/samc20j15a-flash.out"/>
+        <includes optional="true" pattern="config/debugger/Atmel/Trace_SAMC20.dmac"/>
+        <includes optional="true" pattern="config/debugger/Atmel/ATSAMC20J15A.ddf"/>
+      </resource>
+    </resources>
+    <resources target="ATSAMC20G18A">
+      <resource type="atdf" subdir="samc20/atdf">
+        <includes pattern="ATSAMC20G18A.atdf"/>
+      </resource>
+      <resource type="svd" subdir="samc20/svd">
+        <includes pattern="ATSAMC20G18A.svd"/>
+      </resource>
+      <resource type="c.header" subdir="samc20/include">
+        <includes pattern="sam.h"/>
+        <includes pattern="samc20.h"/>
+        <includes pattern="samc20g18a.h"/>
+        <includes pattern="system_samc20.h"/>
+        <includes pattern="pio/*samc20g18a.h"/>
+        <includes pattern="component-version.h"/>
+        <includes fileset="moduleheaders"/>
+        <meta key="define" value="__SAMC20G18A__"/>
+      </resource>
+      <resource type="c.source.exe.template" subdir="samc20/templates">
+        <includes pattern="main.c"/>
+      </resource>
+      <resource type="c.source.lib.template" subdir="samc20/templates">
+        <includes pattern="library.c"/>
+      </resource>
+      <resource type="cpp.source.exe.template" subdir="samc20/templates">
+        <includes pattern="main.cpp"/>
+      </resource>
+      <resource type="cpp.source.lib.template" subdir="samc20/templates">
+        <includes pattern="library.cpp"/>
+      </resource>
+      <resource type="armcc.source.startup" subdir="samc20/armcc">
+        <includes pattern="Device/SAMC20/Source/ARM/startup_SAMC20.s"/>
+        <includes pattern="Device/SAMC20/Source/system_samc20.c"/>
+      </resource>
+      <resource type="keil.flashloader" subdir="samc20/keil">
+        <includes pattern="Flash/ATSAMC_256.FLM"/>
+        <includes pattern="Flash/ATSAMC_256_EEPROM.FLM"/>
+        <meta key="Flash/ATSAMC_256.FLM" value="start=0x00000000|size=0x40000|default=1"/>
+        <meta key="Flash/ATSAMC_256_EEPROM.FLM" value="start=0x00400000|size=0x02000|default=1"/>
+      </resource>
+      <resource type="gcc.source.startup" subdir="samc20/gcc">
+        <includes pattern="system_samc20.c"/>
+        <includes pattern="gcc/startup_samc20.c"/>
+      </resource>
+      <resource type="gcc.linker" subdir="samc20/gcc">
+        <includes pattern="gcc/samc20g18a_flash.ld"/>
+        <includes pattern="gcc/samc20g18a_sram.ld"/>
+      </resource>
+      <resource type="iar.source.startup" subdir="samc20/iar">
+        <includes pattern="system_samc20.c"/>
+        <includes pattern="iar/startup_samc20.c"/>
+      </resource>
+      <resource type="iar.linker" subdir="samc20/iar">
+        <includes pattern="iar/samc20g18a_flash.icf"/>
+        <includes pattern="iar/samc20g18a_sram.icf"/>
+      </resource>
+      <resource type="iar.config" subdir="samc20/iar">
+        <includes pattern="config/devices/Atmel/**/ATSAMC20G18A.i79"/>
+        <includes pattern="config/devices/Atmel/**/ATSAMC20G18A.menu"/>
+        <includes pattern="config/flashloader/Atmel/samc20g18a/samc20g18a-flash.board"/>
+        <includes pattern="config/flashloader/Atmel/samc20g18a/samc20g18a-flash.flash"/>
+        <includes pattern="config/flashloader/Atmel/samc20g18a/samc20g18a-flash.out"/>
+        <includes optional="true" pattern="config/debugger/Atmel/Trace_SAMC20.dmac"/>
+        <includes optional="true" pattern="config/debugger/Atmel/ATSAMC20G18A.ddf"/>
+      </resource>
+    </resources>
+    <resources target="ATSAMC20J17AU">
+      <resource type="atdf" subdir="samc20/atdf">
+        <includes pattern="ATSAMC20J17AU.atdf"/>
+      </resource>
+      <resource type="svd" subdir="samc20/svd">
+        <includes pattern="ATSAMC20J17AU.svd"/>
+      </resource>
+      <resource type="c.header" subdir="samc20/include">
+        <includes pattern="sam.h"/>
+        <includes pattern="samc20.h"/>
+        <includes pattern="samc20j17au.h"/>
+        <includes pattern="system_samc20.h"/>
+        <includes pattern="pio/*samc20j17au.h"/>
+        <includes pattern="component-version.h"/>
+        <includes fileset="moduleheaders"/>
+        <meta key="define" value="__SAMC20J17AU__"/>
+      </resource>
+      <resource type="c.source.exe.template" subdir="samc20/templates">
+        <includes pattern="main.c"/>
+      </resource>
+      <resource type="c.source.lib.template" subdir="samc20/templates">
+        <includes pattern="library.c"/>
+      </resource>
+      <resource type="cpp.source.exe.template" subdir="samc20/templates">
+        <includes pattern="main.cpp"/>
+      </resource>
+      <resource type="cpp.source.lib.template" subdir="samc20/templates">
+        <includes pattern="library.cpp"/>
+      </resource>
+      <resource type="gcc.source.startup" subdir="samc20/gcc">
+        <includes pattern="system_samc20.c"/>
+        <includes pattern="gcc/startup_samc20.c"/>
+      </resource>
+      <resource type="gcc.linker" subdir="samc20/gcc">
+        <includes pattern="gcc/samc20j17au_flash.ld"/>
+        <includes pattern="gcc/samc20j17au_sram.ld"/>
+      </resource>
+      <resource type="iar.source.startup" subdir="samc20/iar">
+        <includes pattern="system_samc20.c"/>
+        <includes pattern="iar/startup_samc20.c"/>
+      </resource>
+      <resource type="iar.linker" subdir="samc20/iar">
+        <includes pattern="iar/samc20j17au_flash.icf"/>
+        <includes pattern="iar/samc20j17au_sram.icf"/>
+      </resource>
+      <resource type="iar.config" subdir="samc20/iar">
+        <includes pattern="config/devices/Atmel/**/ATSAMC20J17AU.i79"/>
+        <includes pattern="config/devices/Atmel/**/ATSAMC20J17AU.menu"/>
+        <includes pattern="config/flashloader/Atmel/samc20j17au/samc20j17au-flash.board"/>
+        <includes pattern="config/flashloader/Atmel/samc20j17au/samc20j17au-flash.flash"/>
+        <includes pattern="config/flashloader/Atmel/samc20j17au/samc20j17au-flash.out"/>
+        <includes optional="true" pattern="config/debugger/Atmel/Trace_SAMC20.dmac"/>
+        <includes optional="true" pattern="config/debugger/Atmel/ATSAMC20J17AU.ddf"/>
+      </resource>
+    </resources>
+    <resources target="ATSAMC20J16A">
+      <resource type="atdf" subdir="samc20/atdf">
+        <includes pattern="ATSAMC20J16A.atdf"/>
+      </resource>
+      <resource type="svd" subdir="samc20/svd">
+        <includes pattern="ATSAMC20J16A.svd"/>
+      </resource>
+      <resource type="c.header" subdir="samc20/include">
+        <includes pattern="sam.h"/>
+        <includes pattern="samc20.h"/>
+        <includes pattern="samc20j16a.h"/>
+        <includes pattern="system_samc20.h"/>
+        <includes pattern="pio/*samc20j16a.h"/>
+        <includes pattern="component-version.h"/>
+        <includes fileset="moduleheaders"/>
+        <meta key="define" value="__SAMC20J16A__"/>
+      </resource>
+      <resource type="c.source.exe.template" subdir="samc20/templates">
+        <includes pattern="main.c"/>
+      </resource>
+      <resource type="c.source.lib.template" subdir="samc20/templates">
+        <includes pattern="library.c"/>
+      </resource>
+      <resource type="cpp.source.exe.template" subdir="samc20/templates">
+        <includes pattern="main.cpp"/>
+      </resource>
+      <resource type="cpp.source.lib.template" subdir="samc20/templates">
+        <includes pattern="library.cpp"/>
+      </resource>
+      <resource type="armcc.source.startup" subdir="samc20/armcc">
+        <includes pattern="Device/SAMC20/Source/ARM/startup_SAMC20.s"/>
+        <includes pattern="Device/SAMC20/Source/system_samc20.c"/>
+      </resource>
+      <resource type="keil.flashloader" subdir="samc20/keil">
+        <includes pattern="Flash/ATSAMC_64.FLM"/>
+        <includes pattern="Flash/ATSAMC_64_EEPROM.FLM"/>
+        <meta key="Flash/ATSAMC_64.FLM" value="start=0x00000000|size=0x10000|default=1"/>
+        <meta key="Flash/ATSAMC_64_EEPROM.FLM" value="start=0x00400000|size=0x00800|default=1"/>
+      </resource>
+      <resource type="gcc.source.startup" subdir="samc20/gcc">
+        <includes pattern="system_samc20.c"/>
+        <includes pattern="gcc/startup_samc20.c"/>
+      </resource>
+      <resource type="gcc.linker" subdir="samc20/gcc">
+        <includes pattern="gcc/samc20j16a_flash.ld"/>
+        <includes pattern="gcc/samc20j16a_sram.ld"/>
+      </resource>
+      <resource type="iar.source.startup" subdir="samc20/iar">
+        <includes pattern="system_samc20.c"/>
+        <includes pattern="iar/startup_samc20.c"/>
+      </resource>
+      <resource type="iar.linker" subdir="samc20/iar">
+        <includes pattern="iar/samc20j16a_flash.icf"/>
+        <includes pattern="iar/samc20j16a_sram.icf"/>
+      </resource>
+      <resource type="iar.config" subdir="samc20/iar">
+        <includes pattern="config/devices/Atmel/**/ATSAMC20J16A.i79"/>
+        <includes pattern="config/devices/Atmel/**/ATSAMC20J16A.menu"/>
+        <includes pattern="config/flashloader/Atmel/samc20j16a/samc20j16a-flash.board"/>
+        <includes pattern="config/flashloader/Atmel/samc20j16a/samc20j16a-flash.flash"/>
+        <includes pattern="config/flashloader/Atmel/samc20j16a/samc20j16a-flash.out"/>
+        <includes optional="true" pattern="config/debugger/Atmel/Trace_SAMC20.dmac"/>
+        <includes optional="true" pattern="config/debugger/Atmel/ATSAMC20J16A.ddf"/>
+      </resource>
+    </resources>
+    <resources target="ATSAMC20J17A">
+      <resource type="atdf" subdir="samc20/atdf">
+        <includes pattern="ATSAMC20J17A.atdf"/>
+      </resource>
+      <resource type="svd" subdir="samc20/svd">
+        <includes pattern="ATSAMC20J17A.svd"/>
+      </resource>
+      <resource type="c.header" subdir="samc20/include">
+        <includes pattern="sam.h"/>
+        <includes pattern="samc20.h"/>
+        <includes pattern="samc20j17a.h"/>
+        <includes pattern="system_samc20.h"/>
+        <includes pattern="pio/*samc20j17a.h"/>
+        <includes pattern="component-version.h"/>
+        <includes fileset="moduleheaders"/>
+        <meta key="define" value="__SAMC20J17A__"/>
+      </resource>
+      <resource type="c.source.exe.template" subdir="samc20/templates">
+        <includes pattern="main.c"/>
+      </resource>
+      <resource type="c.source.lib.template" subdir="samc20/templates">
+        <includes pattern="library.c"/>
+      </resource>
+      <resource type="cpp.source.exe.template" subdir="samc20/templates">
+        <includes pattern="main.cpp"/>
+      </resource>
+      <resource type="cpp.source.lib.template" subdir="samc20/templates">
+        <includes pattern="library.cpp"/>
+      </resource>
+      <resource type="armcc.source.startup" subdir="samc20/armcc">
+        <includes pattern="Device/SAMC20/Source/ARM/startup_SAMC20.s"/>
+        <includes pattern="Device/SAMC20/Source/system_samc20.c"/>
+      </resource>
+      <resource type="keil.flashloader" subdir="samc20/keil">
+        <includes pattern="Flash/ATSAMC_128.FLM"/>
+        <includes pattern="Flash/ATSAMC_128_EEPROM.FLM"/>
+        <meta key="Flash/ATSAMC_128.FLM" value="start=0x00000000|size=0x20000|default=1"/>
+        <meta key="Flash/ATSAMC_128_EEPROM.FLM" value="start=0x00400000|size=0x01000|default=1"/>
+      </resource>
+      <resource type="gcc.source.startup" subdir="samc20/gcc">
+        <includes pattern="system_samc20.c"/>
+        <includes pattern="gcc/startup_samc20.c"/>
+      </resource>
+      <resource type="gcc.linker" subdir="samc20/gcc">
+        <includes pattern="gcc/samc20j17a_flash.ld"/>
+        <includes pattern="gcc/samc20j17a_sram.ld"/>
+      </resource>
+      <resource type="iar.source.startup" subdir="samc20/iar">
+        <includes pattern="system_samc20.c"/>
+        <includes pattern="iar/startup_samc20.c"/>
+      </resource>
+      <resource type="iar.linker" subdir="samc20/iar">
+        <includes pattern="iar/samc20j17a_flash.icf"/>
+        <includes pattern="iar/samc20j17a_sram.icf"/>
+      </resource>
+      <resource type="iar.config" subdir="samc20/iar">
+        <includes pattern="config/devices/Atmel/**/ATSAMC20J17A.i79"/>
+        <includes pattern="config/devices/Atmel/**/ATSAMC20J17A.menu"/>
+        <includes pattern="config/flashloader/Atmel/samc20j17a/samc20j17a-flash.board"/>
+        <includes pattern="config/flashloader/Atmel/samc20j17a/samc20j17a-flash.flash"/>
+        <includes pattern="config/flashloader/Atmel/samc20j17a/samc20j17a-flash.out"/>
+        <includes optional="true" pattern="config/debugger/Atmel/Trace_SAMC20.dmac"/>
+        <includes optional="true" pattern="config/debugger/Atmel/ATSAMC20J17A.ddf"/>
+      </resource>
+    </resources>
+    <resources target="ATSAMC20E16A">
+      <resource type="atdf" subdir="samc20/atdf">
+        <includes pattern="ATSAMC20E16A.atdf"/>
+      </resource>
+      <resource type="svd" subdir="samc20/svd">
+        <includes pattern="ATSAMC20E16A.svd"/>
+      </resource>
+      <resource type="c.header" subdir="samc20/include">
+        <includes pattern="sam.h"/>
+        <includes pattern="samc20.h"/>
+        <includes pattern="samc20e16a.h"/>
+        <includes pattern="system_samc20.h"/>
+        <includes pattern="pio/*samc20e16a.h"/>
+        <includes pattern="component-version.h"/>
+        <includes fileset="moduleheaders"/>
+        <meta key="define" value="__SAMC20E16A__"/>
+      </resource>
+      <resource type="c.source.exe.template" subdir="samc20/templates">
+        <includes pattern="main.c"/>
+      </resource>
+      <resource type="c.source.lib.template" subdir="samc20/templates">
+        <includes pattern="library.c"/>
+      </resource>
+      <resource type="cpp.source.exe.template" subdir="samc20/templates">
+        <includes pattern="main.cpp"/>
+      </resource>
+      <resource type="cpp.source.lib.template" subdir="samc20/templates">
+        <includes pattern="library.cpp"/>
+      </resource>
+      <resource type="armcc.source.startup" subdir="samc20/armcc">
+        <includes pattern="Device/SAMC20/Source/ARM/startup_SAMC20.s"/>
+        <includes pattern="Device/SAMC20/Source/system_samc20.c"/>
+      </resource>
+      <resource type="keil.flashloader" subdir="samc20/keil">
+        <includes pattern="Flash/ATSAMC_64.FLM"/>
+        <includes pattern="Flash/ATSAMC_64_EEPROM.FLM"/>
+        <meta key="Flash/ATSAMC_64.FLM" value="start=0x00000000|size=0x10000|default=1"/>
+        <meta key="Flash/ATSAMC_64_EEPROM.FLM" value="start=0x00400000|size=0x00800|default=1"/>
+      </resource>
+      <resource type="gcc.source.startup" subdir="samc20/gcc">
+        <includes pattern="system_samc20.c"/>
+        <includes pattern="gcc/startup_samc20.c"/>
+      </resource>
+      <resource type="gcc.linker" subdir="samc20/gcc">
+        <includes pattern="gcc/samc20e16a_flash.ld"/>
+        <includes pattern="gcc/samc20e16a_sram.ld"/>
+      </resource>
+      <resource type="iar.source.startup" subdir="samc20/iar">
+        <includes pattern="system_samc20.c"/>
+        <includes pattern="iar/startup_samc20.c"/>
+      </resource>
+      <resource type="iar.linker" subdir="samc20/iar">
+        <includes pattern="iar/samc20e16a_flash.icf"/>
+        <includes pattern="iar/samc20e16a_sram.icf"/>
+      </resource>
+      <resource type="iar.config" subdir="samc20/iar">
+        <includes pattern="config/devices/Atmel/**/ATSAMC20E16A.i79"/>
+        <includes pattern="config/devices/Atmel/**/ATSAMC20E16A.menu"/>
+        <includes pattern="config/flashloader/Atmel/samc20e16a/samc20e16a-flash.board"/>
+        <includes pattern="config/flashloader/Atmel/samc20e16a/samc20e16a-flash.flash"/>
+        <includes pattern="config/flashloader/Atmel/samc20e16a/samc20e16a-flash.out"/>
+        <includes optional="true" pattern="config/debugger/Atmel/Trace_SAMC20.dmac"/>
+        <includes optional="true" pattern="config/debugger/Atmel/ATSAMC20E16A.ddf"/>
+      </resource>
+    </resources>
+    <resources target="ATSAMC20J18AU">
+      <resource type="atdf" subdir="samc20/atdf">
+        <includes pattern="ATSAMC20J18AU.atdf"/>
+      </resource>
+      <resource type="svd" subdir="samc20/svd">
+        <includes pattern="ATSAMC20J18AU.svd"/>
+      </resource>
+      <resource type="c.header" subdir="samc20/include">
+        <includes pattern="sam.h"/>
+        <includes pattern="samc20.h"/>
+        <includes pattern="samc20j18au.h"/>
+        <includes pattern="system_samc20.h"/>
+        <includes pattern="pio/*samc20j18au.h"/>
+        <includes pattern="component-version.h"/>
+        <includes fileset="moduleheaders"/>
+        <meta key="define" value="__SAMC20J18AU__"/>
+      </resource>
+      <resource type="c.source.exe.template" subdir="samc20/templates">
+        <includes pattern="main.c"/>
+      </resource>
+      <resource type="c.source.lib.template" subdir="samc20/templates">
+        <includes pattern="library.c"/>
+      </resource>
+      <resource type="cpp.source.exe.template" subdir="samc20/templates">
+        <includes pattern="main.cpp"/>
+      </resource>
+      <resource type="cpp.source.lib.template" subdir="samc20/templates">
+        <includes pattern="library.cpp"/>
+      </resource>
+      <resource type="gcc.source.startup" subdir="samc20/gcc">
+        <includes pattern="system_samc20.c"/>
+        <includes pattern="gcc/startup_samc20.c"/>
+      </resource>
+      <resource type="gcc.linker" subdir="samc20/gcc">
+        <includes pattern="gcc/samc20j18au_flash.ld"/>
+        <includes pattern="gcc/samc20j18au_sram.ld"/>
+      </resource>
+      <resource type="iar.source.startup" subdir="samc20/iar">
+        <includes pattern="system_samc20.c"/>
+        <includes pattern="iar/startup_samc20.c"/>
+      </resource>
+      <resource type="iar.linker" subdir="samc20/iar">
+        <includes pattern="iar/samc20j18au_flash.icf"/>
+        <includes pattern="iar/samc20j18au_sram.icf"/>
+      </resource>
+      <resource type="iar.config" subdir="samc20/iar">
+        <includes pattern="config/devices/Atmel/**/ATSAMC20J18AU.i79"/>
+        <includes pattern="config/devices/Atmel/**/ATSAMC20J18AU.menu"/>
+        <includes pattern="config/flashloader/Atmel/samc20j18au/samc20j18au-flash.board"/>
+        <includes pattern="config/flashloader/Atmel/samc20j18au/samc20j18au-flash.flash"/>
+        <includes pattern="config/flashloader/Atmel/samc20j18au/samc20j18au-flash.out"/>
+        <includes optional="true" pattern="config/debugger/Atmel/Trace_SAMC20.dmac"/>
+        <includes optional="true" pattern="config/debugger/Atmel/ATSAMC20J18AU.ddf"/>
+      </resource>
+    </resources>
+    <resources target="ATSAMC20N17A">
+      <resource type="atdf" subdir="samc20n/atdf">
+        <includes pattern="ATSAMC20N17A.atdf"/>
+      </resource>
+      <resource type="svd" subdir="samc20n/svd">
+        <includes pattern="ATSAMC20N17A.svd"/>
+      </resource>
+      <resource type="c.header" subdir="samc20n/include">
+        <includes pattern="sam.h"/>
+        <includes pattern="samc20.h"/>
+        <includes pattern="samc20n17a.h"/>
+        <includes pattern="system_samc20.h"/>
+        <includes pattern="pio/*samc20n17a.h"/>
+        <includes pattern="component-version.h"/>
+        <includes fileset="moduleheaders"/>
+        <meta key="define" value="__SAMC20N17A__"/>
+      </resource>
+      <resource type="c.source.exe.template" subdir="samc20n/templates">
+        <includes pattern="main.c"/>
+      </resource>
+      <resource type="c.source.lib.template" subdir="samc20n/templates">
+        <includes pattern="library.c"/>
+      </resource>
+      <resource type="cpp.source.exe.template" subdir="samc20n/templates">
+        <includes pattern="main.cpp"/>
+      </resource>
+      <resource type="cpp.source.lib.template" subdir="samc20n/templates">
+        <includes pattern="library.cpp"/>
+      </resource>
+      <resource type="gcc.source.startup" subdir="samc20n/gcc">
+        <includes pattern="system_samc20.c"/>
+        <includes pattern="gcc/startup_samc20.c"/>
+      </resource>
+      <resource type="gcc.linker" subdir="samc20n/gcc">
+        <includes pattern="gcc/samc20n17a_flash.ld"/>
+        <includes pattern="gcc/samc20n17a_sram.ld"/>
+      </resource>
+      <resource type="iar.source.startup" subdir="samc20n/iar">
+        <includes pattern="system_samc20.c"/>
+        <includes pattern="iar/startup_samc20.c"/>
+      </resource>
+      <resource type="iar.linker" subdir="samc20n/iar">
+        <includes pattern="iar/samc20n17a_flash.icf"/>
+        <includes pattern="iar/samc20n17a_sram.icf"/>
+      </resource>
+      <resource type="iar.config" subdir="samc20n/iar">
+        <includes pattern="config/devices/Atmel/**/ATSAMC20N17A.i79"/>
+        <includes pattern="config/devices/Atmel/**/ATSAMC20N17A.menu"/>
+        <includes pattern="config/flashloader/Atmel/samc20n17a/samc20n17a-flash.board"/>
+        <includes pattern="config/flashloader/Atmel/samc20n17a/samc20n17a-flash.flash"/>
+        <includes pattern="config/flashloader/Atmel/samc20n17a/samc20n17a-flash.out"/>
+        <includes optional="true" pattern="config/debugger/Atmel/ATSAMC20N17A.ddf"/>
+      </resource>
+    </resources>
+    <resources target="ATSAMC20E18A">
+      <resource type="atdf" subdir="samc20/atdf">
+        <includes pattern="ATSAMC20E18A.atdf"/>
+      </resource>
+      <resource type="svd" subdir="samc20/svd">
+        <includes pattern="ATSAMC20E18A.svd"/>
+      </resource>
+      <resource type="c.header" subdir="samc20/include">
+        <includes pattern="sam.h"/>
+        <includes pattern="samc20.h"/>
+        <includes pattern="samc20e18a.h"/>
+        <includes pattern="system_samc20.h"/>
+        <includes pattern="pio/*samc20e18a.h"/>
+        <includes pattern="component-version.h"/>
+        <includes fileset="moduleheaders"/>
+        <meta key="define" value="__SAMC20E18A__"/>
+      </resource>
+      <resource type="c.source.exe.template" subdir="samc20/templates">
+        <includes pattern="main.c"/>
+      </resource>
+      <resource type="c.source.lib.template" subdir="samc20/templates">
+        <includes pattern="library.c"/>
+      </resource>
+      <resource type="cpp.source.exe.template" subdir="samc20/templates">
+        <includes pattern="main.cpp"/>
+      </resource>
+      <resource type="cpp.source.lib.template" subdir="samc20/templates">
+        <includes pattern="library.cpp"/>
+      </resource>
+      <resource type="armcc.source.startup" subdir="samc20/armcc">
+        <includes pattern="Device/SAMC20/Source/ARM/startup_SAMC20.s"/>
+        <includes pattern="Device/SAMC20/Source/system_samc20.c"/>
+      </resource>
+      <resource type="keil.flashloader" subdir="samc20/keil">
+        <includes pattern="Flash/ATSAMC_256.FLM"/>
+        <includes pattern="Flash/ATSAMC_256_EEPROM.FLM"/>
+        <meta key="Flash/ATSAMC_256.FLM" value="start=0x00000000|size=0x40000|default=1"/>
+        <meta key="Flash/ATSAMC_256_EEPROM.FLM" value="start=0x00400000|size=0x02000|default=1"/>
+      </resource>
+      <resource type="gcc.source.startup" subdir="samc20/gcc">
+        <includes pattern="system_samc20.c"/>
+        <includes pattern="gcc/startup_samc20.c"/>
+      </resource>
+      <resource type="gcc.linker" subdir="samc20/gcc">
+        <includes pattern="gcc/samc20e18a_flash.ld"/>
+        <includes pattern="gcc/samc20e18a_sram.ld"/>
+      </resource>
+      <resource type="iar.source.startup" subdir="samc20/iar">
+        <includes pattern="system_samc20.c"/>
+        <includes pattern="iar/startup_samc20.c"/>
+      </resource>
+      <resource type="iar.linker" subdir="samc20/iar">
+        <includes pattern="iar/samc20e18a_flash.icf"/>
+        <includes pattern="iar/samc20e18a_sram.icf"/>
+      </resource>
+      <resource type="iar.config" subdir="samc20/iar">
+        <includes pattern="config/devices/Atmel/**/ATSAMC20E18A.i79"/>
+        <includes pattern="config/devices/Atmel/**/ATSAMC20E18A.menu"/>
+        <includes pattern="config/flashloader/Atmel/samc20e18a/samc20e18a-flash.board"/>
+        <includes pattern="config/flashloader/Atmel/samc20e18a/samc20e18a-flash.flash"/>
+        <includes pattern="config/flashloader/Atmel/samc20e18a/samc20e18a-flash.out"/>
+        <includes optional="true" pattern="config/debugger/Atmel/Trace_SAMC20.dmac"/>
+        <includes optional="true" pattern="config/debugger/Atmel/ATSAMC20E18A.ddf"/>
+      </resource>
+    </resources>
+    <resources target="ATSAMC20E17A">
+      <resource type="atdf" subdir="samc20/atdf">
+        <includes pattern="ATSAMC20E17A.atdf"/>
+      </resource>
+      <resource type="svd" subdir="samc20/svd">
+        <includes pattern="ATSAMC20E17A.svd"/>
+      </resource>
+      <resource type="c.header" subdir="samc20/include">
+        <includes pattern="sam.h"/>
+        <includes pattern="samc20.h"/>
+        <includes pattern="samc20e17a.h"/>
+        <includes pattern="system_samc20.h"/>
+        <includes pattern="pio/*samc20e17a.h"/>
+        <includes pattern="component-version.h"/>
+        <includes fileset="moduleheaders"/>
+        <meta key="define" value="__SAMC20E17A__"/>
+      </resource>
+      <resource type="c.source.exe.template" subdir="samc20/templates">
+        <includes pattern="main.c"/>
+      </resource>
+      <resource type="c.source.lib.template" subdir="samc20/templates">
+        <includes pattern="library.c"/>
+      </resource>
+      <resource type="cpp.source.exe.template" subdir="samc20/templates">
+        <includes pattern="main.cpp"/>
+      </resource>
+      <resource type="cpp.source.lib.template" subdir="samc20/templates">
+        <includes pattern="library.cpp"/>
+      </resource>
+      <resource type="armcc.source.startup" subdir="samc20/armcc">
+        <includes pattern="Device/SAMC20/Source/ARM/startup_SAMC20.s"/>
+        <includes pattern="Device/SAMC20/Source/system_samc20.c"/>
+      </resource>
+      <resource type="keil.flashloader" subdir="samc20/keil">
+        <includes pattern="Flash/ATSAMC_128.FLM"/>
+        <includes pattern="Flash/ATSAMC_128_EEPROM.FLM"/>
+        <meta key="Flash/ATSAMC_128.FLM" value="start=0x00000000|size=0x20000|default=1"/>
+        <meta key="Flash/ATSAMC_128_EEPROM.FLM" value="start=0x00400000|size=0x01000|default=1"/>
+      </resource>
+      <resource type="gcc.source.startup" subdir="samc20/gcc">
+        <includes pattern="system_samc20.c"/>
+        <includes pattern="gcc/startup_samc20.c"/>
+      </resource>
+      <resource type="gcc.linker" subdir="samc20/gcc">
+        <includes pattern="gcc/samc20e17a_flash.ld"/>
+        <includes pattern="gcc/samc20e17a_sram.ld"/>
+      </resource>
+      <resource type="iar.source.startup" subdir="samc20/iar">
+        <includes pattern="system_samc20.c"/>
+        <includes pattern="iar/startup_samc20.c"/>
+      </resource>
+      <resource type="iar.linker" subdir="samc20/iar">
+        <includes pattern="iar/samc20e17a_flash.icf"/>
+        <includes pattern="iar/samc20e17a_sram.icf"/>
+      </resource>
+      <resource type="iar.config" subdir="samc20/iar">
+        <includes pattern="config/devices/Atmel/**/ATSAMC20E17A.i79"/>
+        <includes pattern="config/devices/Atmel/**/ATSAMC20E17A.menu"/>
+        <includes pattern="config/flashloader/Atmel/samc20e17a/samc20e17a-flash.board"/>
+        <includes pattern="config/flashloader/Atmel/samc20e17a/samc20e17a-flash.flash"/>
+        <includes pattern="config/flashloader/Atmel/samc20e17a/samc20e17a-flash.out"/>
+        <includes optional="true" pattern="config/debugger/Atmel/Trace_SAMC20.dmac"/>
+        <includes optional="true" pattern="config/debugger/Atmel/ATSAMC20E17A.ddf"/>
+      </resource>
+    </resources>
+    <resources target="ATSAMC20E15A">
+      <resource type="atdf" subdir="samc20/atdf">
+        <includes pattern="ATSAMC20E15A.atdf"/>
+      </resource>
+      <resource type="svd" subdir="samc20/svd">
+        <includes pattern="ATSAMC20E15A.svd"/>
+      </resource>
+      <resource type="c.header" subdir="samc20/include">
+        <includes pattern="sam.h"/>
+        <includes pattern="samc20.h"/>
+        <includes pattern="samc20e15a.h"/>
+        <includes pattern="system_samc20.h"/>
+        <includes pattern="pio/*samc20e15a.h"/>
+        <includes pattern="component-version.h"/>
+        <includes fileset="moduleheaders"/>
+        <meta key="define" value="__SAMC20E15A__"/>
+      </resource>
+      <resource type="c.source.exe.template" subdir="samc20/templates">
+        <includes pattern="main.c"/>
+      </resource>
+      <resource type="c.source.lib.template" subdir="samc20/templates">
+        <includes pattern="library.c"/>
+      </resource>
+      <resource type="cpp.source.exe.template" subdir="samc20/templates">
+        <includes pattern="main.cpp"/>
+      </resource>
+      <resource type="cpp.source.lib.template" subdir="samc20/templates">
+        <includes pattern="library.cpp"/>
+      </resource>
+      <resource type="armcc.source.startup" subdir="samc20/armcc">
+        <includes pattern="Device/SAMC20/Source/ARM/startup_SAMC20.s"/>
+        <includes pattern="Device/SAMC20/Source/system_samc20.c"/>
+      </resource>
+      <resource type="keil.flashloader" subdir="samc20/keil">
+        <includes pattern="Flash/ATSAMC_32.FLM"/>
+        <includes pattern="Flash/ATSAMC_32_EEPROM.FLM"/>
+        <meta key="Flash/ATSAMC_32.FLM" value="start=0x00000000|size=0x08000|default=1"/>
+        <meta key="Flash/ATSAMC_32_EEPROM.FLM" value="start=0x00400000|size=0x00400|default=1"/>
+      </resource>
+      <resource type="gcc.source.startup" subdir="samc20/gcc">
+        <includes pattern="system_samc20.c"/>
+        <includes pattern="gcc/startup_samc20.c"/>
+      </resource>
+      <resource type="gcc.linker" subdir="samc20/gcc">
+        <includes pattern="gcc/samc20e15a_flash.ld"/>
+        <includes pattern="gcc/samc20e15a_sram.ld"/>
+      </resource>
+      <resource type="iar.source.startup" subdir="samc20/iar">
+        <includes pattern="system_samc20.c"/>
+        <includes pattern="iar/startup_samc20.c"/>
+      </resource>
+      <resource type="iar.linker" subdir="samc20/iar">
+        <includes pattern="iar/samc20e15a_flash.icf"/>
+        <includes pattern="iar/samc20e15a_sram.icf"/>
+      </resource>
+      <resource type="iar.config" subdir="samc20/iar">
+        <includes pattern="config/devices/Atmel/**/ATSAMC20E15A.i79"/>
+        <includes pattern="config/devices/Atmel/**/ATSAMC20E15A.menu"/>
+        <includes pattern="config/flashloader/Atmel/samc20e15a/samc20e15a-flash.board"/>
+        <includes pattern="config/flashloader/Atmel/samc20e15a/samc20e15a-flash.flash"/>
+        <includes pattern="config/flashloader/Atmel/samc20e15a/samc20e15a-flash.out"/>
+        <includes optional="true" pattern="config/debugger/Atmel/Trace_SAMC20.dmac"/>
+        <includes optional="true" pattern="config/debugger/Atmel/ATSAMC20E15A.ddf"/>
+      </resource>
+    </resources>
+    <resources target="ATSAMC20G15A">
+      <resource type="atdf" subdir="samc20/atdf">
+        <includes pattern="ATSAMC20G15A.atdf"/>
+      </resource>
+      <resource type="svd" subdir="samc20/svd">
+        <includes pattern="ATSAMC20G15A.svd"/>
+      </resource>
+      <resource type="c.header" subdir="samc20/include">
+        <includes pattern="sam.h"/>
+        <includes pattern="samc20.h"/>
+        <includes pattern="samc20g15a.h"/>
+        <includes pattern="system_samc20.h"/>
+        <includes pattern="pio/*samc20g15a.h"/>
+        <includes pattern="component-version.h"/>
+        <includes fileset="moduleheaders"/>
+        <meta key="define" value="__SAMC20G15A__"/>
+      </resource>
+      <resource type="c.source.exe.template" subdir="samc20/templates">
+        <includes pattern="main.c"/>
+      </resource>
+      <resource type="c.source.lib.template" subdir="samc20/templates">
+        <includes pattern="library.c"/>
+      </resource>
+      <resource type="cpp.source.exe.template" subdir="samc20/templates">
+        <includes pattern="main.cpp"/>
+      </resource>
+      <resource type="cpp.source.lib.template" subdir="samc20/templates">
+        <includes pattern="library.cpp"/>
+      </resource>
+      <resource type="armcc.source.startup" subdir="samc20/armcc">
+        <includes pattern="Device/SAMC20/Source/ARM/startup_SAMC20.s"/>
+        <includes pattern="Device/SAMC20/Source/system_samc20.c"/>
+      </resource>
+      <resource type="keil.flashloader" subdir="samc20/keil">
+        <includes pattern="Flash/ATSAMC_32.FLM"/>
+        <includes pattern="Flash/ATSAMC_32_EEPROM.FLM"/>
+        <meta key="Flash/ATSAMC_32.FLM" value="start=0x00000000|size=0x08000|default=1"/>
+        <meta key="Flash/ATSAMC_32_EEPROM.FLM" value="start=0x00400000|size=0x00400|default=1"/>
+      </resource>
+      <resource type="gcc.source.startup" subdir="samc20/gcc">
+        <includes pattern="system_samc20.c"/>
+        <includes pattern="gcc/startup_samc20.c"/>
+      </resource>
+      <resource type="gcc.linker" subdir="samc20/gcc">
+        <includes pattern="gcc/samc20g15a_flash.ld"/>
+        <includes pattern="gcc/samc20g15a_sram.ld"/>
+      </resource>
+      <resource type="iar.source.startup" subdir="samc20/iar">
+        <includes pattern="system_samc20.c"/>
+        <includes pattern="iar/startup_samc20.c"/>
+      </resource>
+      <resource type="iar.linker" subdir="samc20/iar">
+        <includes pattern="iar/samc20g15a_flash.icf"/>
+        <includes pattern="iar/samc20g15a_sram.icf"/>
+      </resource>
+      <resource type="iar.config" subdir="samc20/iar">
+        <includes pattern="config/devices/Atmel/**/ATSAMC20G15A.i79"/>
+        <includes pattern="config/devices/Atmel/**/ATSAMC20G15A.menu"/>
+        <includes pattern="config/flashloader/Atmel/samc20g15a/samc20g15a-flash.board"/>
+        <includes pattern="config/flashloader/Atmel/samc20g15a/samc20g15a-flash.flash"/>
+        <includes pattern="config/flashloader/Atmel/samc20g15a/samc20g15a-flash.out"/>
+        <includes optional="true" pattern="config/debugger/Atmel/Trace_SAMC20.dmac"/>
+        <includes optional="true" pattern="config/debugger/Atmel/ATSAMC20G15A.ddf"/>
+      </resource>
+    </resources>
+  </content>
+  <pdsc xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+		<releases>
+			<release version="1.1.BUILDNUMBER">Added ATSAMC20J15A.</release>
+			<release version="1.1.94">Added ATSAMC20N17A and ATSAMC20N18A.</release>
+			<release version="1.1.93">Removed warnings for some component and PIO headers. OSCCTRL fixes.</release>
+			<release version="1.1.85">Added SAMC20JnAU. Fixed GNU/IAR assembler issues. Files now under Apache license.</release>
+			<release version="1.0.46">Updated SAMC20 with TCC1 and TCC2 timers. Updated documentation links.</release>
+			<release version="1.0.39">Initial release.</release>
+		</releases>
+	</pdsc>
+</package>

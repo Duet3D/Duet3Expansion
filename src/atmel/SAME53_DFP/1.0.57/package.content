@@ -1,0 +1,330 @@
+<?xml version='1.0' encoding='ASCII'?>
+<package schemaVersion="1.0">
+  <content>
+    <fileset id="moduleheaders">
+      <includes pattern="component/*"/>
+      <includes pattern="instance/*"/>
+    </fileset>
+    <resources target="ATSAME53J19A">
+      <resource type="atdf" subdir="atdf">
+        <includes pattern="ATSAME53J19A.atdf"/>
+      </resource>
+      <resource type="svd" subdir="svd">
+        <includes pattern="ATSAME53J19A.svd"/>
+      </resource>
+      <resource type="c.header" subdir="include">
+        <includes pattern="sam.h"/>
+        <includes pattern="same53.h"/>
+        <includes pattern="same53j19a.h"/>
+        <includes pattern="system_same53.h"/>
+        <includes pattern="pio/*same53j19a.h"/>
+        <includes pattern="component-version.h"/>
+        <includes fileset="moduleheaders"/>
+        <meta key="define" value="__SAME53J19A__"/>
+      </resource>
+      <resource type="c.source.exe.template" subdir="templates">
+        <includes pattern="main.c"/>
+      </resource>
+      <resource type="c.source.lib.template" subdir="templates">
+        <includes pattern="library.c"/>
+      </resource>
+      <resource type="cpp.source.exe.template" subdir="templates">
+        <includes pattern="main.cpp"/>
+      </resource>
+      <resource type="cpp.source.lib.template" subdir="templates">
+        <includes pattern="library.cpp"/>
+      </resource>
+      <resource type="armcc.source.startup" subdir="armcc">
+        <includes pattern="arm_addon/armcc/system_same53.c"/>
+        <includes pattern="arm_addon/armcc/arm/startup_same53.s"/>
+      </resource>
+      <resource type="keil.flashloader" subdir="keil">
+        <includes pattern="arm_addon/flash/ATSAME53_512.FLM"/>
+        <meta key="arm_addon/flash/ATSAME53_512.FLM" value="start=0x00000000|size=0x80000|default=1"/>
+      </resource>
+      <resource type="gcc.source.startup" subdir="gcc">
+        <includes pattern="system_same53.c"/>
+        <includes pattern="gcc/startup_same53.c"/>
+      </resource>
+      <resource type="gcc.linker" subdir="gcc">
+        <includes pattern="gcc/same53j19a_flash.ld"/>
+        <includes pattern="gcc/same53j19a_sram.ld"/>
+      </resource>
+      <resource type="iar.source.startup" subdir="iar">
+        <includes pattern="system_same53.c"/>
+        <includes pattern="iar/startup_same53.c"/>
+      </resource>
+      <resource type="iar.linker" subdir="iar">
+        <includes pattern="iar/same53j19a_flash.icf"/>
+        <includes pattern="iar/same53j19a_sram.icf"/>
+      </resource>
+      <resource type="iar.config" subdir="iar">
+        <includes pattern="config/devices/Atmel/**/ATSAME53J19A.i79"/>
+        <includes pattern="config/devices/Atmel/**/ATSAME53J19A.menu"/>
+        <includes pattern="config/flashloader/Atmel/same53j19a/same53j19a-flash.board"/>
+        <includes pattern="config/flashloader/Atmel/same53j19a/same53j19a-flash.flash"/>
+        <includes pattern="config/flashloader/Atmel/same53j19a/same53j19a-flash.out"/>
+        <includes optional="true" pattern="config/debugger/Atmel/Trace_SAME53.dmac"/>
+        <includes optional="true" pattern="config/debugger/Atmel/ATSAME53J19A.ddf"/>
+      </resource>
+    </resources>
+    <resources target="ATSAME53N19A">
+      <resource type="atdf" subdir="atdf">
+        <includes pattern="ATSAME53N19A.atdf"/>
+      </resource>
+      <resource type="svd" subdir="svd">
+        <includes pattern="ATSAME53N19A.svd"/>
+      </resource>
+      <resource type="c.header" subdir="include">
+        <includes pattern="sam.h"/>
+        <includes pattern="same53.h"/>
+        <includes pattern="same53n19a.h"/>
+        <includes pattern="system_same53.h"/>
+        <includes pattern="pio/*same53n19a.h"/>
+        <includes pattern="component-version.h"/>
+        <includes fileset="moduleheaders"/>
+        <meta key="define" value="__SAME53N19A__"/>
+      </resource>
+      <resource type="c.source.exe.template" subdir="templates">
+        <includes pattern="main.c"/>
+      </resource>
+      <resource type="c.source.lib.template" subdir="templates">
+        <includes pattern="library.c"/>
+      </resource>
+      <resource type="cpp.source.exe.template" subdir="templates">
+        <includes pattern="main.cpp"/>
+      </resource>
+      <resource type="cpp.source.lib.template" subdir="templates">
+        <includes pattern="library.cpp"/>
+      </resource>
+      <resource type="armcc.source.startup" subdir="armcc">
+        <includes pattern="arm_addon/armcc/system_same53.c"/>
+        <includes pattern="arm_addon/armcc/arm/startup_same53.s"/>
+      </resource>
+      <resource type="keil.flashloader" subdir="keil">
+        <includes pattern="arm_addon/flash/ATSAME53_512.FLM"/>
+        <meta key="arm_addon/flash/ATSAME53_512.FLM" value="start=0x00000000|size=0x80000|default=1"/>
+      </resource>
+      <resource type="gcc.source.startup" subdir="gcc">
+        <includes pattern="system_same53.c"/>
+        <includes pattern="gcc/startup_same53.c"/>
+      </resource>
+      <resource type="gcc.linker" subdir="gcc">
+        <includes pattern="gcc/same53n19a_flash.ld"/>
+        <includes pattern="gcc/same53n19a_sram.ld"/>
+      </resource>
+      <resource type="iar.source.startup" subdir="iar">
+        <includes pattern="system_same53.c"/>
+        <includes pattern="iar/startup_same53.c"/>
+      </resource>
+      <resource type="iar.linker" subdir="iar">
+        <includes pattern="iar/same53n19a_flash.icf"/>
+        <includes pattern="iar/same53n19a_sram.icf"/>
+      </resource>
+      <resource type="iar.config" subdir="iar">
+        <includes pattern="config/devices/Atmel/**/ATSAME53N19A.i79"/>
+        <includes pattern="config/devices/Atmel/**/ATSAME53N19A.menu"/>
+        <includes pattern="config/flashloader/Atmel/same53n19a/same53n19a-flash.board"/>
+        <includes pattern="config/flashloader/Atmel/same53n19a/same53n19a-flash.flash"/>
+        <includes pattern="config/flashloader/Atmel/same53n19a/same53n19a-flash.out"/>
+        <includes optional="true" pattern="config/debugger/Atmel/Trace_SAME53.dmac"/>
+        <includes optional="true" pattern="config/debugger/Atmel/ATSAME53N19A.ddf"/>
+      </resource>
+    </resources>
+    <resources target="ATSAME53J20A">
+      <resource type="atdf" subdir="atdf">
+        <includes pattern="ATSAME53J20A.atdf"/>
+      </resource>
+      <resource type="svd" subdir="svd">
+        <includes pattern="ATSAME53J20A.svd"/>
+      </resource>
+      <resource type="c.header" subdir="include">
+        <includes pattern="sam.h"/>
+        <includes pattern="same53.h"/>
+        <includes pattern="same53j20a.h"/>
+        <includes pattern="system_same53.h"/>
+        <includes pattern="pio/*same53j20a.h"/>
+        <includes pattern="component-version.h"/>
+        <includes fileset="moduleheaders"/>
+        <meta key="define" value="__SAME53J20A__"/>
+      </resource>
+      <resource type="c.source.exe.template" subdir="templates">
+        <includes pattern="main.c"/>
+      </resource>
+      <resource type="c.source.lib.template" subdir="templates">
+        <includes pattern="library.c"/>
+      </resource>
+      <resource type="cpp.source.exe.template" subdir="templates">
+        <includes pattern="main.cpp"/>
+      </resource>
+      <resource type="cpp.source.lib.template" subdir="templates">
+        <includes pattern="library.cpp"/>
+      </resource>
+      <resource type="armcc.source.startup" subdir="armcc">
+        <includes pattern="arm_addon/armcc/system_same53.c"/>
+        <includes pattern="arm_addon/armcc/arm/startup_same53.s"/>
+      </resource>
+      <resource type="keil.flashloader" subdir="keil">
+        <includes pattern="arm_addon/flash/ATSAME53_1024.FLM"/>
+        <meta key="arm_addon/flash/ATSAME53_1024.FLM" value="start=0x00000000|size=0x100000|default=1"/>
+      </resource>
+      <resource type="gcc.source.startup" subdir="gcc">
+        <includes pattern="system_same53.c"/>
+        <includes pattern="gcc/startup_same53.c"/>
+      </resource>
+      <resource type="gcc.linker" subdir="gcc">
+        <includes pattern="gcc/same53j20a_flash.ld"/>
+        <includes pattern="gcc/same53j20a_sram.ld"/>
+      </resource>
+      <resource type="iar.source.startup" subdir="iar">
+        <includes pattern="system_same53.c"/>
+        <includes pattern="iar/startup_same53.c"/>
+      </resource>
+      <resource type="iar.linker" subdir="iar">
+        <includes pattern="iar/same53j20a_flash.icf"/>
+        <includes pattern="iar/same53j20a_sram.icf"/>
+      </resource>
+      <resource type="iar.config" subdir="iar">
+        <includes pattern="config/devices/Atmel/**/ATSAME53J20A.i79"/>
+        <includes pattern="config/devices/Atmel/**/ATSAME53J20A.menu"/>
+        <includes pattern="config/flashloader/Atmel/same53j20a/same53j20a-flash.board"/>
+        <includes pattern="config/flashloader/Atmel/same53j20a/same53j20a-flash.flash"/>
+        <includes pattern="config/flashloader/Atmel/same53j20a/same53j20a-flash.out"/>
+        <includes optional="true" pattern="config/debugger/Atmel/Trace_SAME53.dmac"/>
+        <includes optional="true" pattern="config/debugger/Atmel/ATSAME53J20A.ddf"/>
+      </resource>
+    </resources>
+    <resources target="ATSAME53N20A">
+      <resource type="atdf" subdir="atdf">
+        <includes pattern="ATSAME53N20A.atdf"/>
+      </resource>
+      <resource type="svd" subdir="svd">
+        <includes pattern="ATSAME53N20A.svd"/>
+      </resource>
+      <resource type="c.header" subdir="include">
+        <includes pattern="sam.h"/>
+        <includes pattern="same53.h"/>
+        <includes pattern="same53n20a.h"/>
+        <includes pattern="system_same53.h"/>
+        <includes pattern="pio/*same53n20a.h"/>
+        <includes pattern="component-version.h"/>
+        <includes fileset="moduleheaders"/>
+        <meta key="define" value="__SAME53N20A__"/>
+      </resource>
+      <resource type="c.source.exe.template" subdir="templates">
+        <includes pattern="main.c"/>
+      </resource>
+      <resource type="c.source.lib.template" subdir="templates">
+        <includes pattern="library.c"/>
+      </resource>
+      <resource type="cpp.source.exe.template" subdir="templates">
+        <includes pattern="main.cpp"/>
+      </resource>
+      <resource type="cpp.source.lib.template" subdir="templates">
+        <includes pattern="library.cpp"/>
+      </resource>
+      <resource type="armcc.source.startup" subdir="armcc">
+        <includes pattern="arm_addon/armcc/system_same53.c"/>
+        <includes pattern="arm_addon/armcc/arm/startup_same53.s"/>
+      </resource>
+      <resource type="keil.flashloader" subdir="keil">
+        <includes pattern="arm_addon/flash/ATSAME53_1024.FLM"/>
+        <meta key="arm_addon/flash/ATSAME53_1024.FLM" value="start=0x00000000|size=0x100000|default=1"/>
+      </resource>
+      <resource type="gcc.source.startup" subdir="gcc">
+        <includes pattern="system_same53.c"/>
+        <includes pattern="gcc/startup_same53.c"/>
+      </resource>
+      <resource type="gcc.linker" subdir="gcc">
+        <includes pattern="gcc/same53n20a_flash.ld"/>
+        <includes pattern="gcc/same53n20a_sram.ld"/>
+      </resource>
+      <resource type="iar.source.startup" subdir="iar">
+        <includes pattern="system_same53.c"/>
+        <includes pattern="iar/startup_same53.c"/>
+      </resource>
+      <resource type="iar.linker" subdir="iar">
+        <includes pattern="iar/same53n20a_flash.icf"/>
+        <includes pattern="iar/same53n20a_sram.icf"/>
+      </resource>
+      <resource type="iar.config" subdir="iar">
+        <includes pattern="config/devices/Atmel/**/ATSAME53N20A.i79"/>
+        <includes pattern="config/devices/Atmel/**/ATSAME53N20A.menu"/>
+        <includes pattern="config/flashloader/Atmel/same53n20a/same53n20a-flash.board"/>
+        <includes pattern="config/flashloader/Atmel/same53n20a/same53n20a-flash.flash"/>
+        <includes pattern="config/flashloader/Atmel/same53n20a/same53n20a-flash.out"/>
+        <includes optional="true" pattern="config/debugger/Atmel/Trace_SAME53.dmac"/>
+        <includes optional="true" pattern="config/debugger/Atmel/ATSAME53N20A.ddf"/>
+      </resource>
+    </resources>
+    <resources target="ATSAME53J18A">
+      <resource type="atdf" subdir="atdf">
+        <includes pattern="ATSAME53J18A.atdf"/>
+      </resource>
+      <resource type="svd" subdir="svd">
+        <includes pattern="ATSAME53J18A.svd"/>
+      </resource>
+      <resource type="c.header" subdir="include">
+        <includes pattern="sam.h"/>
+        <includes pattern="same53.h"/>
+        <includes pattern="same53j18a.h"/>
+        <includes pattern="system_same53.h"/>
+        <includes pattern="pio/*same53j18a.h"/>
+        <includes pattern="component-version.h"/>
+        <includes fileset="moduleheaders"/>
+        <meta key="define" value="__SAME53J18A__"/>
+      </resource>
+      <resource type="c.source.exe.template" subdir="templates">
+        <includes pattern="main.c"/>
+      </resource>
+      <resource type="c.source.lib.template" subdir="templates">
+        <includes pattern="library.c"/>
+      </resource>
+      <resource type="cpp.source.exe.template" subdir="templates">
+        <includes pattern="main.cpp"/>
+      </resource>
+      <resource type="cpp.source.lib.template" subdir="templates">
+        <includes pattern="library.cpp"/>
+      </resource>
+      <resource type="armcc.source.startup" subdir="armcc">
+        <includes pattern="arm_addon/armcc/system_same53.c"/>
+        <includes pattern="arm_addon/armcc/arm/startup_same53.s"/>
+      </resource>
+      <resource type="keil.flashloader" subdir="keil">
+        <includes pattern="arm_addon/flash/ATSAME53_256.FLM"/>
+        <meta key="arm_addon/flash/ATSAME53_256.FLM" value="start=0x00000000|size=0x40000|default=1"/>
+      </resource>
+      <resource type="gcc.source.startup" subdir="gcc">
+        <includes pattern="system_same53.c"/>
+        <includes pattern="gcc/startup_same53.c"/>
+      </resource>
+      <resource type="gcc.linker" subdir="gcc">
+        <includes pattern="gcc/same53j18a_flash.ld"/>
+        <includes pattern="gcc/same53j18a_sram.ld"/>
+      </resource>
+      <resource type="iar.source.startup" subdir="iar">
+        <includes pattern="system_same53.c"/>
+        <includes pattern="iar/startup_same53.c"/>
+      </resource>
+      <resource type="iar.linker" subdir="iar">
+        <includes pattern="iar/same53j18a_flash.icf"/>
+        <includes pattern="iar/same53j18a_sram.icf"/>
+      </resource>
+      <resource type="iar.config" subdir="iar">
+        <includes pattern="config/devices/Atmel/**/ATSAME53J18A.i79"/>
+        <includes pattern="config/devices/Atmel/**/ATSAME53J18A.menu"/>
+        <includes pattern="config/flashloader/Atmel/same53j18a/same53j18a-flash.board"/>
+        <includes pattern="config/flashloader/Atmel/same53j18a/same53j18a-flash.flash"/>
+        <includes pattern="config/flashloader/Atmel/same53j18a/same53j18a-flash.out"/>
+        <includes optional="true" pattern="config/debugger/Atmel/Trace_SAME53.dmac"/>
+        <includes optional="true" pattern="config/debugger/Atmel/ATSAME53J18A.ddf"/>
+      </resource>
+    </resources>
+  </content>
+  <pdsc xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+		<releases>
+			<release version="1.0.BUILDNUMBER">Aligned PTC signal description with other SAM DFPs.</release>
+			<release version="1.0.51">Initial version.</release>
+		</releases>
+	</pdsc>
+</package>

@@ -1,0 +1,3204 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<package xmlns:xs="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns:saxon="http://saxon.sf.net//"
+         schemaVersion="1.3"
+         xs:schemaLocation="http://www.atmel.com/schemas/pack-device-atmel-extension PACK.DEVICE.ATMEL.EXTENSION.xsd"
+         xs:noNamespaceSchemaLocation="PACK.xsd">
+   <vendor>Atmel</vendor>
+   <url>http://packs.download.atmel.com/</url>
+   <name>SAM4S_DFP</name>
+   <description>Atmel SAM4S Series Device Support</description>
+   <releases>
+      <release version="1.0.56" date="2016-09-15">Add MPU peripheral in device file.</release>
+      <release version="1.0.45">Updated documentation links.</release>
+      <release version="1.0.37">Updated documentation links.</release>
+      <release version="1.0.35">Initial release.</release>
+   </releases>
+   <keywords>
+      <keyword>Atmel</keyword>
+      <keyword>Device Support</keyword>
+      <keyword>Device Family Package Atmel</keyword>
+      <keyword>SAM4S</keyword>
+   </keywords>
+   <devices>
+      <family Dfamily="SAM4S" Dvendor="Atmel:3">
+         <device Dname="ATSAM4S2A">
+            <processor Dcore="Cortex-M4"
+                       Dendian="Little-endian"
+                       Dmpu="MPU"
+                       Dfpu="NO_FPU"/>
+            <compile header="sam4s/include/sam.h" define="__SAM4S2A__"/>
+            <debug svd="sam4s/svd/ATSAM4S2A.svd"/>
+            <memory id="IROM1"
+                    start="0x00400000"
+                    size="0x00020000"
+                    default="1"
+                    startup="1"/>
+            <memory id="IROM2" start="0x00800000" size="0x00400000"/>
+            <memory id="IRAM1" start="0x20000000" size="0x00010000" default="1"/>
+            <algorithm name="sam4s/keil/Flash/ATSAM4S_128.FLM"
+                       start="0x00400000"
+                       size="0x20000"
+                       default="1"/>
+            <algorithm name="sam4s/keil/Flash/ATSAM4S_GPNVM.FLM"
+                       start="0x1FFFFFF0"
+                       size="0x0010"
+                       default="0"/>
+            <environment name="atmel">
+               <at:extension xmlns:at="http://www.atmel.com/schemas/pack-device-atmel-extension"
+                             schemaVersion="1.0">
+                  <at:atdf name="sam4s/atdf/ATSAM4S2A.atdf"/>
+                  <at:variant ordercode="ATSAM4S2A-AU"
+                              vccmin="1.62"
+                              vccmax="3.6"
+                              tempmin="-40"
+                              tempmax="+105"/>
+                  <at:variant ordercode="ATSAM4S2A-MU"
+                              vccmin="1.62"
+                              vccmax="3.6"
+                              tempmin="-40"
+                              tempmax="+105"/>
+                  <at:memory name="PERIPHERALS"
+                             start="0x40000000"
+                             size="0x20000000"
+                             type="io"
+                             address-space="base"/>
+                  <at:memory name="SYSTEM"
+                             start="0xE0000000"
+                             size="0x10000000"
+                             type="io"
+                             address-space="base"/>
+                  <at:memory name="IFLASH0"
+                             start="0x00400000"
+                             size="0x00020000"
+                             type="flash"
+                             pagesize="512"
+                             address-space="base"/>
+                  <at:memory name="IROM"
+                             start="0x00800000"
+                             size="0x00400000"
+                             type="rom"
+                             address-space="base"/>
+                  <at:memory name="IRAM"
+                             start="0x20000000"
+                             size="0x00010000"
+                             type="ram"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS0"
+                             start="0x60000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS1"
+                             start="0x61000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS2"
+                             start="0x62000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS3"
+                             start="0x63000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:interface type="samjtag" name="JTAG"/>
+                  <at:interface type="swd" name="SWD"/>
+                  <at:tool id="com.atmel.avrdbg.tool.atmelice"/>
+                  <at:tool id="com.atmel.avrdbg.tool.edbg"/>
+                  <at:tool id="com.atmel.avrdbg.tool.edbgc"/>
+                  <at:tool id="com.atmel.avrdbg.tool.edbg"/>
+                  <at:tool id="com.atmel.avrdbg.tool.jtagicemk3"/>
+                  <at:tool id="com.atmel.avrdbg.tool.jtagice3plus"/>
+                  <at:tool id="com.atmel.avrdbg.tool.medbg"/>
+                  <at:tool id="com.atmel.avrdbg.tool.powerdebugger"/>
+                  <at:tool id="com.atmel.avrdbg.tool.samice"/>
+                  <at:project name="Barebone C Project">
+                     <at:component Cvendor="ARM" Cclass="CMSIS" Cgroup="CORE"/>
+                     <at:component Cvendor="Atmel" Cclass="Device" Cgroup="Startup">
+                        <at:template select="Main file (.c)"/>
+                     </at:component>
+                  </at:project>
+                  <at:project name="Barebone Cpp Project">
+                     <at:component Cvendor="ARM" Cclass="CMSIS" Cgroup="CORE"/>
+                     <at:component Cvendor="Atmel" Cclass="Device" Cgroup="Startup">
+                        <at:template select="Main file (.cpp)"/>
+                     </at:component>
+                  </at:project>
+                  <at:prerequisite context="compiling" Tcompiler="GCC" component="ARM-GCC"/>
+                  <at:prerequisite context="compiling" Tcompiler="ARMCC" component="ARMCC"/>
+               </at:extension>
+            </environment>
+            <description>ARM®-based Cortex®-M4 core with 128KB Flash, 64KB SRAM, USB, 48 Pins</description>
+            <book name="http://www.atmel.com/images/Atmel-11100-32-bit Cortex-M4-Microcontroller-SAM4S_Datasheet.pdf"
+                  title="Datasheet"/>
+            <book name="http://www.atmel.com/devices/ATSAM4S2A.aspx" title="Device Page"/>
+         </device>
+         <device Dname="ATSAM4S2B">
+            <processor Dcore="Cortex-M4"
+                       Dendian="Little-endian"
+                       Dmpu="MPU"
+                       Dfpu="NO_FPU"/>
+            <compile header="sam4s/include/sam.h" define="__SAM4S2B__"/>
+            <debug svd="sam4s/svd/ATSAM4S2B.svd"/>
+            <memory id="IROM1"
+                    start="0x00400000"
+                    size="0x00020000"
+                    default="1"
+                    startup="1"/>
+            <memory id="IROM2" start="0x00800000" size="0x00400000"/>
+            <memory id="IRAM1" start="0x20000000" size="0x00010000" default="1"/>
+            <algorithm name="sam4s/keil/Flash/ATSAM4S_128.FLM"
+                       start="0x00400000"
+                       size="0x20000"
+                       default="1"/>
+            <algorithm name="sam4s/keil/Flash/ATSAM4S_GPNVM.FLM"
+                       start="0x1FFFFFF0"
+                       size="0x0010"
+                       default="0"/>
+            <environment name="atmel">
+               <at:extension xmlns:at="http://www.atmel.com/schemas/pack-device-atmel-extension"
+                             schemaVersion="1.0">
+                  <at:atdf name="sam4s/atdf/ATSAM4S2B.atdf"/>
+                  <at:variant ordercode="ATSAM4S2B-CU"
+                              vccmin="1.62"
+                              vccmax="3.6"
+                              tempmin="-40"
+                              tempmax="+105"/>
+                  <at:variant ordercode="ATSAM4S2B-AU"
+                              vccmin="1.62"
+                              vccmax="3.6"
+                              tempmin="-40"
+                              tempmax="+105"/>
+                  <at:variant ordercode="ATSAM4S2B-XX"
+                              vccmin="1.62"
+                              vccmax="3.6"
+                              tempmin="-40"
+                              tempmax="+105"/>
+                  <at:memory name="PERIPHERALS"
+                             start="0x40000000"
+                             size="0x20000000"
+                             type="io"
+                             address-space="base"/>
+                  <at:memory name="SYSTEM"
+                             start="0xE0000000"
+                             size="0x10000000"
+                             type="io"
+                             address-space="base"/>
+                  <at:memory name="IFLASH0"
+                             start="0x00400000"
+                             size="0x00020000"
+                             type="flash"
+                             pagesize="512"
+                             address-space="base"/>
+                  <at:memory name="IROM"
+                             start="0x00800000"
+                             size="0x00400000"
+                             type="rom"
+                             address-space="base"/>
+                  <at:memory name="IRAM"
+                             start="0x20000000"
+                             size="0x00010000"
+                             type="ram"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS0"
+                             start="0x60000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS1"
+                             start="0x61000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS2"
+                             start="0x62000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS3"
+                             start="0x63000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:interface type="samjtag" name="JTAG"/>
+                  <at:interface type="swd" name="SWD"/>
+                  <at:tool id="com.atmel.avrdbg.tool.atmelice"/>
+                  <at:tool id="com.atmel.avrdbg.tool.edbg"/>
+                  <at:tool id="com.atmel.avrdbg.tool.edbgc"/>
+                  <at:tool id="com.atmel.avrdbg.tool.edbg"/>
+                  <at:tool id="com.atmel.avrdbg.tool.jtagicemk3"/>
+                  <at:tool id="com.atmel.avrdbg.tool.jtagice3plus"/>
+                  <at:tool id="com.atmel.avrdbg.tool.medbg"/>
+                  <at:tool id="com.atmel.avrdbg.tool.powerdebugger"/>
+                  <at:tool id="com.atmel.avrdbg.tool.samice"/>
+                  <at:project name="Barebone C Project">
+                     <at:component Cvendor="ARM" Cclass="CMSIS" Cgroup="CORE"/>
+                     <at:component Cvendor="Atmel" Cclass="Device" Cgroup="Startup">
+                        <at:template select="Main file (.c)"/>
+                     </at:component>
+                  </at:project>
+                  <at:project name="Barebone Cpp Project">
+                     <at:component Cvendor="ARM" Cclass="CMSIS" Cgroup="CORE"/>
+                     <at:component Cvendor="Atmel" Cclass="Device" Cgroup="Startup">
+                        <at:template select="Main file (.cpp)"/>
+                     </at:component>
+                  </at:project>
+                  <at:prerequisite context="compiling" Tcompiler="GCC" component="ARM-GCC"/>
+                  <at:prerequisite context="compiling" Tcompiler="ARMCC" component="ARMCC"/>
+               </at:extension>
+            </environment>
+            <description>ARM®-based Cortex®-M4 core with 128KB Flash, 64KB SRAM, USB, 64 Pins</description>
+            <book name="http://www.atmel.com/images/Atmel-11100-32-bit Cortex-M4-Microcontroller-SAM4S_Datasheet.pdf"
+                  title="Datasheet"/>
+            <book name="http://www.atmel.com/devices/ATSAM4S2B.aspx" title="Device Page"/>
+         </device>
+         <device Dname="ATSAM4S2C">
+            <processor Dcore="Cortex-M4"
+                       Dendian="Little-endian"
+                       Dmpu="MPU"
+                       Dfpu="NO_FPU"/>
+            <compile header="sam4s/include/sam.h" define="__SAM4S2C__"/>
+            <debug svd="sam4s/svd/ATSAM4S2C.svd"/>
+            <memory id="IROM1"
+                    start="0x00400000"
+                    size="0x00020000"
+                    default="1"
+                    startup="1"/>
+            <memory id="IROM2" start="0x00800000" size="0x00400000"/>
+            <memory id="IRAM1" start="0x20000000" size="0x00010000" default="1"/>
+            <algorithm name="sam4s/keil/Flash/ATSAM4S_128.FLM"
+                       start="0x00400000"
+                       size="0x20000"
+                       default="1"/>
+            <algorithm name="sam4s/keil/Flash/ATSAM4S_GPNVM.FLM"
+                       start="0x1FFFFFF0"
+                       size="0x0010"
+                       default="0"/>
+            <environment name="atmel">
+               <at:extension xmlns:at="http://www.atmel.com/schemas/pack-device-atmel-extension"
+                             schemaVersion="1.0">
+                  <at:atdf name="sam4s/atdf/ATSAM4S2C.atdf"/>
+                  <at:variant ordercode="ATSAM4S2C-AU"
+                              vccmin="1.62"
+                              vccmax="3.6"
+                              tempmin="-40"
+                              tempmax="+105"/>
+                  <at:variant ordercode="ATSAM4S2C-CU"
+                              vccmin="1.62"
+                              vccmax="3.6"
+                              tempmin="-40"
+                              tempmax="+105"/>
+                  <at:variant ordercode="ATSAM4S2C-CFU"
+                              vccmin="1.62"
+                              vccmax="3.6"
+                              tempmin="-40"
+                              tempmax="+105"/>
+                  <at:memory name="PERIPHERALS"
+                             start="0x40000000"
+                             size="0x20000000"
+                             type="io"
+                             address-space="base"/>
+                  <at:memory name="SYSTEM"
+                             start="0xE0000000"
+                             size="0x10000000"
+                             type="io"
+                             address-space="base"/>
+                  <at:memory name="IFLASH0"
+                             start="0x00400000"
+                             size="0x00020000"
+                             type="flash"
+                             pagesize="512"
+                             address-space="base"/>
+                  <at:memory name="IROM"
+                             start="0x00800000"
+                             size="0x00400000"
+                             type="rom"
+                             address-space="base"/>
+                  <at:memory name="IRAM"
+                             start="0x20000000"
+                             size="0x00010000"
+                             type="ram"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS0"
+                             start="0x60000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS1"
+                             start="0x61000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS2"
+                             start="0x62000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS3"
+                             start="0x63000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:interface type="samjtag" name="JTAG"/>
+                  <at:interface type="swd" name="SWD"/>
+                  <at:tool id="com.atmel.avrdbg.tool.atmelice"/>
+                  <at:tool id="com.atmel.avrdbg.tool.edbg"/>
+                  <at:tool id="com.atmel.avrdbg.tool.edbgc"/>
+                  <at:tool id="com.atmel.avrdbg.tool.edbg"/>
+                  <at:tool id="com.atmel.avrdbg.tool.jtagicemk3"/>
+                  <at:tool id="com.atmel.avrdbg.tool.jtagice3plus"/>
+                  <at:tool id="com.atmel.avrdbg.tool.medbg"/>
+                  <at:tool id="com.atmel.avrdbg.tool.powerdebugger"/>
+                  <at:tool id="com.atmel.avrdbg.tool.samice"/>
+                  <at:project name="Barebone C Project">
+                     <at:component Cvendor="ARM" Cclass="CMSIS" Cgroup="CORE"/>
+                     <at:component Cvendor="Atmel" Cclass="Device" Cgroup="Startup">
+                        <at:template select="Main file (.c)"/>
+                     </at:component>
+                  </at:project>
+                  <at:project name="Barebone Cpp Project">
+                     <at:component Cvendor="ARM" Cclass="CMSIS" Cgroup="CORE"/>
+                     <at:component Cvendor="Atmel" Cclass="Device" Cgroup="Startup">
+                        <at:template select="Main file (.cpp)"/>
+                     </at:component>
+                  </at:project>
+                  <at:prerequisite context="compiling" Tcompiler="GCC" component="ARM-GCC"/>
+                  <at:prerequisite context="compiling" Tcompiler="ARMCC" component="ARMCC"/>
+               </at:extension>
+            </environment>
+            <description>ARM®-based Cortex®-M4 core with 128KB Flash, 64KB SRAM, USB, 100 Pins</description>
+            <book name="http://www.atmel.com/images/Atmel-11100-32-bit Cortex-M4-Microcontroller-SAM4S_Datasheet.pdf"
+                  title="Datasheet"/>
+            <book name="http://www.atmel.com/devices/ATSAM4S2C.aspx" title="Device Page"/>
+         </device>
+         <device Dname="ATSAM4S4B">
+            <processor Dcore="Cortex-M4"
+                       Dendian="Little-endian"
+                       Dmpu="MPU"
+                       Dfpu="NO_FPU"/>
+            <compile header="sam4s/include/sam.h" define="__SAM4S4B__"/>
+            <debug svd="sam4s/svd/ATSAM4S4B.svd"/>
+            <memory id="IROM1"
+                    start="0x00400000"
+                    size="0x00040000"
+                    default="1"
+                    startup="1"/>
+            <memory id="IROM2" start="0x00800000" size="0x00400000"/>
+            <memory id="IRAM1" start="0x20000000" size="0x00010000" default="1"/>
+            <algorithm name="sam4s/keil/Flash/ATSAM4S_256.FLM"
+                       start="0x00400000"
+                       size="0x40000"
+                       default="1"/>
+            <algorithm name="sam4s/keil/Flash/ATSAM4S_GPNVM.FLM"
+                       start="0x1FFFFFF0"
+                       size="0x0010"
+                       default="0"/>
+            <environment name="atmel">
+               <at:extension xmlns:at="http://www.atmel.com/schemas/pack-device-atmel-extension"
+                             schemaVersion="1.0">
+                  <at:atdf name="sam4s/atdf/ATSAM4S4B.atdf"/>
+                  <at:variant ordercode="ATSAM4S4B-CU"
+                              vccmin="1.62"
+                              vccmax="3.6"
+                              tempmin="-40"
+                              tempmax="+105"/>
+                  <at:variant ordercode="ATSAM4S4B-AU"
+                              vccmin="1.62"
+                              vccmax="3.6"
+                              tempmin="-40"
+                              tempmax="+105"/>
+                  <at:variant ordercode="ATSAM4S4B-XX"
+                              vccmin="1.62"
+                              vccmax="3.6"
+                              tempmin="-40"
+                              tempmax="+105"/>
+                  <at:memory name="PERIPHERALS"
+                             start="0x40000000"
+                             size="0x20000000"
+                             type="io"
+                             address-space="base"/>
+                  <at:memory name="SYSTEM"
+                             start="0xE0000000"
+                             size="0x10000000"
+                             type="io"
+                             address-space="base"/>
+                  <at:memory name="IFLASH0"
+                             start="0x00400000"
+                             size="0x00040000"
+                             type="flash"
+                             pagesize="512"
+                             address-space="base"/>
+                  <at:memory name="IROM"
+                             start="0x00800000"
+                             size="0x00400000"
+                             type="rom"
+                             address-space="base"/>
+                  <at:memory name="IRAM"
+                             start="0x20000000"
+                             size="0x00010000"
+                             type="ram"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS0"
+                             start="0x60000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS1"
+                             start="0x61000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS2"
+                             start="0x62000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS3"
+                             start="0x63000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:interface type="samjtag" name="JTAG"/>
+                  <at:interface type="swd" name="SWD"/>
+                  <at:tool id="com.atmel.avrdbg.tool.atmelice"/>
+                  <at:tool id="com.atmel.avrdbg.tool.edbg"/>
+                  <at:tool id="com.atmel.avrdbg.tool.edbgc"/>
+                  <at:tool id="com.atmel.avrdbg.tool.edbg"/>
+                  <at:tool id="com.atmel.avrdbg.tool.jtagicemk3"/>
+                  <at:tool id="com.atmel.avrdbg.tool.jtagice3plus"/>
+                  <at:tool id="com.atmel.avrdbg.tool.medbg"/>
+                  <at:tool id="com.atmel.avrdbg.tool.powerdebugger"/>
+                  <at:tool id="com.atmel.avrdbg.tool.samice"/>
+                  <at:project name="Barebone C Project">
+                     <at:component Cvendor="ARM" Cclass="CMSIS" Cgroup="CORE"/>
+                     <at:component Cvendor="Atmel" Cclass="Device" Cgroup="Startup">
+                        <at:template select="Main file (.c)"/>
+                     </at:component>
+                  </at:project>
+                  <at:project name="Barebone Cpp Project">
+                     <at:component Cvendor="ARM" Cclass="CMSIS" Cgroup="CORE"/>
+                     <at:component Cvendor="Atmel" Cclass="Device" Cgroup="Startup">
+                        <at:template select="Main file (.cpp)"/>
+                     </at:component>
+                  </at:project>
+                  <at:prerequisite context="compiling" Tcompiler="GCC" component="ARM-GCC"/>
+                  <at:prerequisite context="compiling" Tcompiler="ARMCC" component="ARMCC"/>
+               </at:extension>
+            </environment>
+            <description>ARM®-based Cortex®-M4 core with 256KB Flash, 64KB SRAM, USB, 64 Pins</description>
+            <book name="http://www.atmel.com/images/Atmel-11100-32-bit Cortex-M4-Microcontroller-SAM4S_Datasheet.pdf"
+                  title="Datasheet"/>
+            <book name="http://www.atmel.com/devices/ATSAM4S4B.aspx" title="Device Page"/>
+         </device>
+         <device Dname="ATSAM4S4C">
+            <processor Dcore="Cortex-M4"
+                       Dendian="Little-endian"
+                       Dmpu="MPU"
+                       Dfpu="NO_FPU"/>
+            <compile header="sam4s/include/sam.h" define="__SAM4S4C__"/>
+            <debug svd="sam4s/svd/ATSAM4S4C.svd"/>
+            <memory id="IROM1"
+                    start="0x00400000"
+                    size="0x00040000"
+                    default="1"
+                    startup="1"/>
+            <memory id="IROM2" start="0x00800000" size="0x00400000"/>
+            <memory id="IRAM1" start="0x20000000" size="0x00010000" default="1"/>
+            <algorithm name="sam4s/keil/Flash/ATSAM4S_256.FLM"
+                       start="0x00400000"
+                       size="0x40000"
+                       default="1"/>
+            <algorithm name="sam4s/keil/Flash/ATSAM4S_GPNVM.FLM"
+                       start="0x1FFFFFF0"
+                       size="0x0010"
+                       default="0"/>
+            <environment name="atmel">
+               <at:extension xmlns:at="http://www.atmel.com/schemas/pack-device-atmel-extension"
+                             schemaVersion="1.0">
+                  <at:atdf name="sam4s/atdf/ATSAM4S4C.atdf"/>
+                  <at:variant ordercode="ATSAM4S4C-AU"
+                              vccmin="1.62"
+                              vccmax="3.6"
+                              tempmin="-40"
+                              tempmax="+105"/>
+                  <at:variant ordercode="ATSAM4S4C-CU"
+                              vccmin="1.62"
+                              vccmax="3.6"
+                              tempmin="-40"
+                              tempmax="+105"/>
+                  <at:variant ordercode="ATSAM4S4C-CFU"
+                              vccmin="1.62"
+                              vccmax="3.6"
+                              tempmin="-40"
+                              tempmax="+105"/>
+                  <at:memory name="PERIPHERALS"
+                             start="0x40000000"
+                             size="0x20000000"
+                             type="io"
+                             address-space="base"/>
+                  <at:memory name="SYSTEM"
+                             start="0xE0000000"
+                             size="0x10000000"
+                             type="io"
+                             address-space="base"/>
+                  <at:memory name="IFLASH0"
+                             start="0x00400000"
+                             size="0x00040000"
+                             type="flash"
+                             pagesize="512"
+                             address-space="base"/>
+                  <at:memory name="IROM"
+                             start="0x00800000"
+                             size="0x00400000"
+                             type="rom"
+                             address-space="base"/>
+                  <at:memory name="IRAM"
+                             start="0x20000000"
+                             size="0x00010000"
+                             type="ram"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS0"
+                             start="0x60000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS1"
+                             start="0x61000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS2"
+                             start="0x62000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS3"
+                             start="0x63000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:interface type="samjtag" name="JTAG"/>
+                  <at:interface type="swd" name="SWD"/>
+                  <at:tool id="com.atmel.avrdbg.tool.atmelice"/>
+                  <at:tool id="com.atmel.avrdbg.tool.edbg"/>
+                  <at:tool id="com.atmel.avrdbg.tool.edbgc"/>
+                  <at:tool id="com.atmel.avrdbg.tool.edbg"/>
+                  <at:tool id="com.atmel.avrdbg.tool.jtagicemk3"/>
+                  <at:tool id="com.atmel.avrdbg.tool.jtagice3plus"/>
+                  <at:tool id="com.atmel.avrdbg.tool.medbg"/>
+                  <at:tool id="com.atmel.avrdbg.tool.powerdebugger"/>
+                  <at:tool id="com.atmel.avrdbg.tool.samice"/>
+                  <at:project name="Barebone C Project">
+                     <at:component Cvendor="ARM" Cclass="CMSIS" Cgroup="CORE"/>
+                     <at:component Cvendor="Atmel" Cclass="Device" Cgroup="Startup">
+                        <at:template select="Main file (.c)"/>
+                     </at:component>
+                  </at:project>
+                  <at:project name="Barebone Cpp Project">
+                     <at:component Cvendor="ARM" Cclass="CMSIS" Cgroup="CORE"/>
+                     <at:component Cvendor="Atmel" Cclass="Device" Cgroup="Startup">
+                        <at:template select="Main file (.cpp)"/>
+                     </at:component>
+                  </at:project>
+                  <at:prerequisite context="compiling" Tcompiler="GCC" component="ARM-GCC"/>
+                  <at:prerequisite context="compiling" Tcompiler="ARMCC" component="ARMCC"/>
+               </at:extension>
+            </environment>
+            <description>ARM®-based Cortex®-M4 core with 256KB Flash, 64KB SRAM, USB, 100 Pins</description>
+            <book name="http://www.atmel.com/images/Atmel-11100-32-bit Cortex-M4-Microcontroller-SAM4S_Datasheet.pdf"
+                  title="Datasheet"/>
+            <book name="http://www.atmel.com/devices/ATSAM4S4C.aspx" title="Device Page"/>
+         </device>
+         <device Dname="ATSAM4SP32A">
+            <processor Dcore="Cortex-M4"
+                       Dendian="Little-endian"
+                       Dmpu="MPU"
+                       Dfpu="NO_FPU"/>
+            <compile header="sam4sp/include/sam.h" define="__SAM4SP32A__"/>
+            <debug svd="sam4sp/svd/ATSAM4SP32A.svd"/>
+            <memory id="IROM1"
+                    start="0x00400000"
+                    size="0x00100000"
+                    default="1"
+                    startup="1"/>
+            <memory id="IROM2" start="0x00500000" size="0x00100000"/>
+            <memory id="IROM3" start="0x00800000" size="0x00400000"/>
+            <memory id="IRAM1" start="0x20000000" size="0x00028000" default="1"/>
+            <algorithm name="sam4sp/keil/Flash/ATSAM4SP_2048.FLM"
+                       start="0x00400000"
+                       size="0x200000"
+                       default="1"/>
+            <environment name="atmel">
+               <at:extension xmlns:at="http://www.atmel.com/schemas/pack-device-atmel-extension"
+                             schemaVersion="1.0">
+                  <at:atdf name="sam4sp/atdf/ATSAM4SP32A.atdf"/>
+                  <at:variant ordercode="ATSAM4SP32A-AU"
+                              vccmin="3.0"
+                              vccmax="3.6"
+                              tempmin="-40"
+                              tempmax="+85"/>
+                  <at:memory name="PERIPHERALS"
+                             start="0x40000000"
+                             size="0x20000000"
+                             type="io"
+                             address-space="base"/>
+                  <at:memory name="SYSTEM"
+                             start="0xE0000000"
+                             size="0x10000000"
+                             type="io"
+                             address-space="base"/>
+                  <at:memory name="IFLASH0"
+                             start="0x00400000"
+                             size="0x00100000"
+                             type="flash"
+                             pagesize="512"
+                             address-space="base"/>
+                  <at:memory name="IFLASH1"
+                             start="0x00500000"
+                             size="0x00100000"
+                             type="flash"
+                             pagesize="512"
+                             address-space="base"/>
+                  <at:memory name="IROM"
+                             start="0x00800000"
+                             size="0x00400000"
+                             type="rom"
+                             address-space="base"/>
+                  <at:memory name="IRAM"
+                             start="0x20000000"
+                             size="0x00028000"
+                             type="ram"
+                             address-space="base"/>
+                  <at:interface type="samjtag" name="JTAG"/>
+                  <at:interface type="swd" name="SWD"/>
+                  <at:tool id="com.atmel.avrdbg.tool.atmelice"/>
+                  <at:tool id="com.atmel.avrdbg.tool.edbg"/>
+                  <at:tool id="com.atmel.avrdbg.tool.edbgc"/>
+                  <at:tool id="com.atmel.avrdbg.tool.edbg"/>
+                  <at:tool id="com.atmel.avrdbg.tool.jtagicemk3"/>
+                  <at:tool id="com.atmel.avrdbg.tool.jtagice3plus"/>
+                  <at:tool id="com.atmel.avrdbg.tool.medbg"/>
+                  <at:tool id="com.atmel.avrdbg.tool.powerdebugger"/>
+                  <at:tool id="com.atmel.avrdbg.tool.samice"/>
+                  <at:project name="Barebone C Project">
+                     <at:component Cvendor="ARM" Cclass="CMSIS" Cgroup="CORE"/>
+                     <at:component Cvendor="Atmel" Cclass="Device" Cgroup="Startup">
+                        <at:template select="Main file (.c)"/>
+                     </at:component>
+                  </at:project>
+                  <at:project name="Barebone Cpp Project">
+                     <at:component Cvendor="ARM" Cclass="CMSIS" Cgroup="CORE"/>
+                     <at:component Cvendor="Atmel" Cclass="Device" Cgroup="Startup">
+                        <at:template select="Main file (.cpp)"/>
+                     </at:component>
+                  </at:project>
+                  <at:prerequisite context="compiling" Tcompiler="GCC" component="ARM-GCC"/>
+                  <at:prerequisite context="compiling" Tcompiler="ARMCC" component="ARMCC"/>
+               </at:extension>
+            </environment>
+         </device>
+         <device Dname="ATSAM4S4A">
+            <processor Dcore="Cortex-M4"
+                       Dendian="Little-endian"
+                       Dmpu="MPU"
+                       Dfpu="NO_FPU"/>
+            <compile header="sam4s/include/sam.h" define="__SAM4S4A__"/>
+            <debug svd="sam4s/svd/ATSAM4S4A.svd"/>
+            <memory id="IROM1"
+                    start="0x00400000"
+                    size="0x00040000"
+                    default="1"
+                    startup="1"/>
+            <memory id="IROM2" start="0x00800000" size="0x00400000"/>
+            <memory id="IRAM1" start="0x20000000" size="0x00010000" default="1"/>
+            <algorithm name="sam4s/keil/Flash/ATSAM4S_256.FLM"
+                       start="0x00400000"
+                       size="0x40000"
+                       default="1"/>
+            <algorithm name="sam4s/keil/Flash/ATSAM4S_GPNVM.FLM"
+                       start="0x1FFFFFF0"
+                       size="0x0010"
+                       default="0"/>
+            <environment name="atmel">
+               <at:extension xmlns:at="http://www.atmel.com/schemas/pack-device-atmel-extension"
+                             schemaVersion="1.0">
+                  <at:atdf name="sam4s/atdf/ATSAM4S4A.atdf"/>
+                  <at:variant ordercode="ATSAM4S4A-AU"
+                              vccmin="1.62"
+                              vccmax="3.6"
+                              tempmin="-40"
+                              tempmax="+105"/>
+                  <at:variant ordercode="ATSAM4S4A-MU"
+                              vccmin="1.62"
+                              vccmax="3.6"
+                              tempmin="-40"
+                              tempmax="+105"/>
+                  <at:memory name="PERIPHERALS"
+                             start="0x40000000"
+                             size="0x20000000"
+                             type="io"
+                             address-space="base"/>
+                  <at:memory name="SYSTEM"
+                             start="0xE0000000"
+                             size="0x10000000"
+                             type="io"
+                             address-space="base"/>
+                  <at:memory name="IFLASH0"
+                             start="0x00400000"
+                             size="0x00040000"
+                             type="flash"
+                             pagesize="512"
+                             address-space="base"/>
+                  <at:memory name="IROM"
+                             start="0x00800000"
+                             size="0x00400000"
+                             type="rom"
+                             address-space="base"/>
+                  <at:memory name="IRAM"
+                             start="0x20000000"
+                             size="0x00010000"
+                             type="ram"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS0"
+                             start="0x60000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS1"
+                             start="0x61000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS2"
+                             start="0x62000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS3"
+                             start="0x63000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:interface type="samjtag" name="JTAG"/>
+                  <at:interface type="swd" name="SWD"/>
+                  <at:tool id="com.atmel.avrdbg.tool.atmelice"/>
+                  <at:tool id="com.atmel.avrdbg.tool.edbg"/>
+                  <at:tool id="com.atmel.avrdbg.tool.edbgc"/>
+                  <at:tool id="com.atmel.avrdbg.tool.edbg"/>
+                  <at:tool id="com.atmel.avrdbg.tool.jtagicemk3"/>
+                  <at:tool id="com.atmel.avrdbg.tool.jtagice3plus"/>
+                  <at:tool id="com.atmel.avrdbg.tool.medbg"/>
+                  <at:tool id="com.atmel.avrdbg.tool.powerdebugger"/>
+                  <at:tool id="com.atmel.avrdbg.tool.samice"/>
+                  <at:project name="Barebone C Project">
+                     <at:component Cvendor="ARM" Cclass="CMSIS" Cgroup="CORE"/>
+                     <at:component Cvendor="Atmel" Cclass="Device" Cgroup="Startup">
+                        <at:template select="Main file (.c)"/>
+                     </at:component>
+                  </at:project>
+                  <at:project name="Barebone Cpp Project">
+                     <at:component Cvendor="ARM" Cclass="CMSIS" Cgroup="CORE"/>
+                     <at:component Cvendor="Atmel" Cclass="Device" Cgroup="Startup">
+                        <at:template select="Main file (.cpp)"/>
+                     </at:component>
+                  </at:project>
+                  <at:prerequisite context="compiling" Tcompiler="GCC" component="ARM-GCC"/>
+                  <at:prerequisite context="compiling" Tcompiler="ARMCC" component="ARMCC"/>
+               </at:extension>
+            </environment>
+            <description>ARM®-based Cortex®-M4 core with 256KB Flash, 64KB SRAM, USB, 48 Pins</description>
+            <book name="http://www.atmel.com/images/Atmel-11100-32-bit Cortex-M4-Microcontroller-SAM4S_Datasheet.pdf"
+                  title="Datasheet"/>
+            <book name="http://www.atmel.com/devices/ATSAM4S4A.aspx" title="Device Page"/>
+         </device>
+         <device Dname="ATSAM4SD32C">
+            <processor Dcore="Cortex-M4"
+                       Dendian="Little-endian"
+                       Dmpu="MPU"
+                       Dfpu="NO_FPU"/>
+            <compile header="sam4s/include/sam.h" define="__SAM4SD32C__"/>
+            <debug svd="sam4s/svd/ATSAM4SD32C.svd"/>
+            <memory id="IROM1"
+                    start="0x00400000"
+                    size="0x00100000"
+                    default="1"
+                    startup="1"/>
+            <memory id="IROM2" start="0x00500000" size="0x00100000"/>
+            <memory id="IROM3" start="0x00800000" size="0x00400000"/>
+            <memory id="IRAM1" start="0x20000000" size="0x00028000" default="1"/>
+            <algorithm name="sam4s/keil/Flash/ATSAM4SD_2048.FLM"
+                       start="0x00400000"
+                       size="0x200000"
+                       default="1"/>
+            <algorithm name="sam4s/keil/Flash/ATSAM4S_GPNVM.FLM"
+                       start="0x1FFFFFF0"
+                       size="0x0010"
+                       default="0"/>
+            <environment name="atmel">
+               <at:extension xmlns:at="http://www.atmel.com/schemas/pack-device-atmel-extension"
+                             schemaVersion="1.0">
+                  <at:atdf name="sam4s/atdf/ATSAM4SD32C.atdf"/>
+                  <at:variant ordercode="ATSAM4SD32C-CU"
+                              vccmin="1.62"
+                              vccmax="3.6"
+                              tempmin="-40"
+                              tempmax="+105"/>
+                  <at:variant ordercode="ATSAM4SD32C-AU"
+                              vccmin="1.62"
+                              vccmax="3.6"
+                              tempmin="-40"
+                              tempmax="+105"/>
+                  <at:variant ordercode="ATSAM4SD32C-CFU"
+                              vccmin="1.62"
+                              vccmax="3.6"
+                              tempmin="-40"
+                              tempmax="+105"/>
+                  <at:memory name="PERIPHERALS"
+                             start="0x40000000"
+                             size="0x20000000"
+                             type="io"
+                             address-space="base"/>
+                  <at:memory name="SYSTEM"
+                             start="0xE0000000"
+                             size="0x10000000"
+                             type="io"
+                             address-space="base"/>
+                  <at:memory name="IFLASH0"
+                             start="0x00400000"
+                             size="0x00100000"
+                             type="flash"
+                             pagesize="512"
+                             address-space="base"/>
+                  <at:memory name="IFLASH1"
+                             start="0x00500000"
+                             size="0x00100000"
+                             type="flash"
+                             pagesize="512"
+                             address-space="base"/>
+                  <at:memory name="IROM"
+                             start="0x00800000"
+                             size="0x00400000"
+                             type="rom"
+                             address-space="base"/>
+                  <at:memory name="IRAM"
+                             start="0x20000000"
+                             size="0x00028000"
+                             type="ram"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS0"
+                             start="0x60000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS1"
+                             start="0x61000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS2"
+                             start="0x62000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS3"
+                             start="0x63000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:interface type="samjtag" name="JTAG"/>
+                  <at:interface type="swd" name="SWD"/>
+                  <at:tool id="com.atmel.avrdbg.tool.atmelice"/>
+                  <at:tool id="com.atmel.avrdbg.tool.edbg"/>
+                  <at:tool id="com.atmel.avrdbg.tool.edbgc"/>
+                  <at:tool id="com.atmel.avrdbg.tool.edbg"/>
+                  <at:tool id="com.atmel.avrdbg.tool.jtagicemk3"/>
+                  <at:tool id="com.atmel.avrdbg.tool.jtagice3plus"/>
+                  <at:tool id="com.atmel.avrdbg.tool.medbg"/>
+                  <at:tool id="com.atmel.avrdbg.tool.powerdebugger"/>
+                  <at:tool id="com.atmel.avrdbg.tool.samice"/>
+                  <at:project name="Barebone C Project">
+                     <at:component Cvendor="ARM" Cclass="CMSIS" Cgroup="CORE"/>
+                     <at:component Cvendor="Atmel" Cclass="Device" Cgroup="Startup">
+                        <at:template select="Main file (.c)"/>
+                     </at:component>
+                  </at:project>
+                  <at:project name="Barebone Cpp Project">
+                     <at:component Cvendor="ARM" Cclass="CMSIS" Cgroup="CORE"/>
+                     <at:component Cvendor="Atmel" Cclass="Device" Cgroup="Startup">
+                        <at:template select="Main file (.cpp)"/>
+                     </at:component>
+                  </at:project>
+                  <at:prerequisite context="compiling" Tcompiler="GCC" component="ARM-GCC"/>
+                  <at:prerequisite context="compiling" Tcompiler="ARMCC" component="ARMCC"/>
+               </at:extension>
+            </environment>
+            <description>ARM®-based Cortex®-M4 core with 2MB dual-bank Flash, 160KB SRAM, USB, 100 Pins</description>
+            <book name="http://www.atmel.com/images/Atmel-11100-32-bit Cortex-M4-Microcontroller-SAM4S_Datasheet.pdf"
+                  title="Datasheet"/>
+            <book name="http://www.atmel.com/devices/ATSAM4SD32C.aspx"
+                  title="Device Page"/>
+         </device>
+         <device Dname="ATSAM4S16B">
+            <processor Dcore="Cortex-M4"
+                       Dendian="Little-endian"
+                       Dmpu="MPU"
+                       Dfpu="NO_FPU"/>
+            <compile header="sam4s/include/sam.h" define="__SAM4S16B__"/>
+            <debug svd="sam4s/svd/ATSAM4S16B.svd"/>
+            <memory id="IROM1"
+                    start="0x00400000"
+                    size="0x00100000"
+                    default="1"
+                    startup="1"/>
+            <memory id="IROM2" start="0x00800000" size="0x00400000"/>
+            <memory id="IRAM1" start="0x20000000" size="0x00020000" default="1"/>
+            <algorithm name="sam4s/keil/Flash/ATSAM4S_1024.FLM"
+                       start="0x00400000"
+                       size="0x100000"
+                       default="1"/>
+            <algorithm name="sam4s/keil/Flash/ATSAM4S_GPNVM.FLM"
+                       start="0x1FFFFFF0"
+                       size="0x0010"
+                       default="0"/>
+            <environment name="atmel">
+               <at:extension xmlns:at="http://www.atmel.com/schemas/pack-device-atmel-extension"
+                             schemaVersion="1.0">
+                  <at:atdf name="sam4s/atdf/ATSAM4S16B.atdf"/>
+                  <at:variant ordercode="ATSAM4S16B-CU"
+                              vccmin="1.62"
+                              vccmax="3.6"
+                              tempmin="-40"
+                              tempmax="+105"/>
+                  <at:variant ordercode="ATSAM4S16B-AU"
+                              vccmin="1.62"
+                              vccmax="3.6"
+                              tempmin="-40"
+                              tempmax="+105"/>
+                  <at:variant ordercode="ATSAM4S16B-XX"
+                              vccmin="1.62"
+                              vccmax="3.6"
+                              tempmin="-40"
+                              tempmax="+105"/>
+                  <at:memory name="PERIPHERALS"
+                             start="0x40000000"
+                             size="0x20000000"
+                             type="io"
+                             address-space="base"/>
+                  <at:memory name="SYSTEM"
+                             start="0xE0000000"
+                             size="0x10000000"
+                             type="io"
+                             address-space="base"/>
+                  <at:memory name="IFLASH0"
+                             start="0x00400000"
+                             size="0x00100000"
+                             type="flash"
+                             pagesize="512"
+                             address-space="base"/>
+                  <at:memory name="IROM"
+                             start="0x00800000"
+                             size="0x00400000"
+                             type="rom"
+                             address-space="base"/>
+                  <at:memory name="IRAM"
+                             start="0x20000000"
+                             size="0x00020000"
+                             type="ram"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS0"
+                             start="0x60000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS1"
+                             start="0x61000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS2"
+                             start="0x62000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS3"
+                             start="0x63000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:interface type="samjtag" name="JTAG"/>
+                  <at:interface type="swd" name="SWD"/>
+                  <at:tool id="com.atmel.avrdbg.tool.atmelice"/>
+                  <at:tool id="com.atmel.avrdbg.tool.edbg"/>
+                  <at:tool id="com.atmel.avrdbg.tool.edbgc"/>
+                  <at:tool id="com.atmel.avrdbg.tool.edbg"/>
+                  <at:tool id="com.atmel.avrdbg.tool.jtagicemk3"/>
+                  <at:tool id="com.atmel.avrdbg.tool.jtagice3plus"/>
+                  <at:tool id="com.atmel.avrdbg.tool.medbg"/>
+                  <at:tool id="com.atmel.avrdbg.tool.powerdebugger"/>
+                  <at:tool id="com.atmel.avrdbg.tool.samice"/>
+                  <at:project name="Barebone C Project">
+                     <at:component Cvendor="ARM" Cclass="CMSIS" Cgroup="CORE"/>
+                     <at:component Cvendor="Atmel" Cclass="Device" Cgroup="Startup">
+                        <at:template select="Main file (.c)"/>
+                     </at:component>
+                  </at:project>
+                  <at:project name="Barebone Cpp Project">
+                     <at:component Cvendor="ARM" Cclass="CMSIS" Cgroup="CORE"/>
+                     <at:component Cvendor="Atmel" Cclass="Device" Cgroup="Startup">
+                        <at:template select="Main file (.cpp)"/>
+                     </at:component>
+                  </at:project>
+                  <at:prerequisite context="compiling" Tcompiler="GCC" component="ARM-GCC"/>
+                  <at:prerequisite context="compiling" Tcompiler="ARMCC" component="ARMCC"/>
+               </at:extension>
+            </environment>
+            <description>ARM®-based Cortex®-M4 core with 1MB Flash, 128KB SRAM, USB, 64 Pins</description>
+            <book name="http://www.atmel.com/images/Atmel-11100-32-bit Cortex-M4-Microcontroller-SAM4S_Datasheet.pdf"
+                  title="Datasheet"/>
+            <book name="http://www.atmel.com/devices/ATSAM4S16B.aspx" title="Device Page"/>
+         </device>
+         <device Dname="ATSAM4S16C">
+            <processor Dcore="Cortex-M4"
+                       Dendian="Little-endian"
+                       Dmpu="MPU"
+                       Dfpu="NO_FPU"/>
+            <compile header="sam4s/include/sam.h" define="__SAM4S16C__"/>
+            <debug svd="sam4s/svd/ATSAM4S16C.svd"/>
+            <memory id="IROM1"
+                    start="0x00400000"
+                    size="0x00100000"
+                    default="1"
+                    startup="1"/>
+            <memory id="IROM2" start="0x00800000" size="0x00400000"/>
+            <memory id="IRAM1" start="0x20000000" size="0x00020000" default="1"/>
+            <algorithm name="sam4s/keil/Flash/ATSAM4S_1024.FLM"
+                       start="0x00400000"
+                       size="0x100000"
+                       default="1"/>
+            <algorithm name="sam4s/keil/Flash/ATSAM4S_GPNVM.FLM"
+                       start="0x1FFFFFF0"
+                       size="0x0010"
+                       default="0"/>
+            <environment name="atmel">
+               <at:extension xmlns:at="http://www.atmel.com/schemas/pack-device-atmel-extension"
+                             schemaVersion="1.0">
+                  <at:atdf name="sam4s/atdf/ATSAM4S16C.atdf"/>
+                  <at:variant ordercode="ATSAM4S16C-CU"
+                              vccmin="1.62"
+                              vccmax="3.6"
+                              tempmin="-40"
+                              tempmax="+105"/>
+                  <at:variant ordercode="ATSAM4S16C-AU"
+                              vccmin="1.62"
+                              vccmax="3.6"
+                              tempmin="-40"
+                              tempmax="+105"/>
+                  <at:variant ordercode="ATSAM4S16C-CFU"
+                              vccmin="1.62"
+                              vccmax="3.6"
+                              tempmin="-40"
+                              tempmax="+105"/>
+                  <at:memory name="PERIPHERALS"
+                             start="0x40000000"
+                             size="0x20000000"
+                             type="io"
+                             address-space="base"/>
+                  <at:memory name="SYSTEM"
+                             start="0xE0000000"
+                             size="0x10000000"
+                             type="io"
+                             address-space="base"/>
+                  <at:memory name="IFLASH0"
+                             start="0x00400000"
+                             size="0x00100000"
+                             type="flash"
+                             pagesize="512"
+                             address-space="base"/>
+                  <at:memory name="IROM"
+                             start="0x00800000"
+                             size="0x00400000"
+                             type="rom"
+                             address-space="base"/>
+                  <at:memory name="IRAM"
+                             start="0x20000000"
+                             size="0x00020000"
+                             type="ram"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS0"
+                             start="0x60000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS1"
+                             start="0x61000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS2"
+                             start="0x62000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS3"
+                             start="0x63000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:interface type="samjtag" name="JTAG"/>
+                  <at:interface type="swd" name="SWD"/>
+                  <at:tool id="com.atmel.avrdbg.tool.atmelice"/>
+                  <at:tool id="com.atmel.avrdbg.tool.edbg"/>
+                  <at:tool id="com.atmel.avrdbg.tool.edbgc"/>
+                  <at:tool id="com.atmel.avrdbg.tool.edbg"/>
+                  <at:tool id="com.atmel.avrdbg.tool.jtagicemk3"/>
+                  <at:tool id="com.atmel.avrdbg.tool.jtagice3plus"/>
+                  <at:tool id="com.atmel.avrdbg.tool.medbg"/>
+                  <at:tool id="com.atmel.avrdbg.tool.powerdebugger"/>
+                  <at:tool id="com.atmel.avrdbg.tool.samice"/>
+                  <at:project name="Barebone C Project">
+                     <at:component Cvendor="ARM" Cclass="CMSIS" Cgroup="CORE"/>
+                     <at:component Cvendor="Atmel" Cclass="Device" Cgroup="Startup">
+                        <at:template select="Main file (.c)"/>
+                     </at:component>
+                  </at:project>
+                  <at:project name="Barebone Cpp Project">
+                     <at:component Cvendor="ARM" Cclass="CMSIS" Cgroup="CORE"/>
+                     <at:component Cvendor="Atmel" Cclass="Device" Cgroup="Startup">
+                        <at:template select="Main file (.cpp)"/>
+                     </at:component>
+                  </at:project>
+                  <at:prerequisite context="compiling" Tcompiler="GCC" component="ARM-GCC"/>
+                  <at:prerequisite context="compiling" Tcompiler="ARMCC" component="ARMCC"/>
+               </at:extension>
+            </environment>
+            <description>ARM®-based Cortex®-M4 core with 1MB Flash, 128KB SRAM, USB, 100 Pins</description>
+            <book name="http://www.atmel.com/images/Atmel-11100-32-bit Cortex-M4-Microcontroller-SAM4S_Datasheet.pdf"
+                  title="Datasheet"/>
+            <book name="http://www.atmel.com/devices/ATSAM4S16C.aspx" title="Device Page"/>
+         </device>
+         <device Dname="ATSAM4SD32B">
+            <processor Dcore="Cortex-M4"
+                       Dendian="Little-endian"
+                       Dmpu="MPU"
+                       Dfpu="NO_FPU"/>
+            <compile header="sam4s/include/sam.h" define="__SAM4SD32B__"/>
+            <debug svd="sam4s/svd/ATSAM4SD32B.svd"/>
+            <memory id="IROM1"
+                    start="0x00400000"
+                    size="0x00100000"
+                    default="1"
+                    startup="1"/>
+            <memory id="IROM2" start="0x00500000" size="0x00100000"/>
+            <memory id="IROM3" start="0x00800000" size="0x00400000"/>
+            <memory id="IRAM1" start="0x20000000" size="0x00028000" default="1"/>
+            <algorithm name="sam4s/keil/Flash/ATSAM4SD_2048.FLM"
+                       start="0x00400000"
+                       size="0x200000"
+                       default="1"/>
+            <algorithm name="sam4s/keil/Flash/ATSAM4S_GPNVM.FLM"
+                       start="0x1FFFFFF0"
+                       size="0x0010"
+                       default="0"/>
+            <environment name="atmel">
+               <at:extension xmlns:at="http://www.atmel.com/schemas/pack-device-atmel-extension"
+                             schemaVersion="1.0">
+                  <at:atdf name="sam4s/atdf/ATSAM4SD32B.atdf"/>
+                  <at:variant ordercode="ATSAM4SD32B-CU"
+                              vccmin="1.62"
+                              vccmax="3.6"
+                              tempmin="-40"
+                              tempmax="+105"/>
+                  <at:variant ordercode="ATSAM4SD32B-AU"
+                              vccmin="1.62"
+                              vccmax="3.6"
+                              tempmin="-40"
+                              tempmax="+105"/>
+                  <at:memory name="PERIPHERALS"
+                             start="0x40000000"
+                             size="0x20000000"
+                             type="io"
+                             address-space="base"/>
+                  <at:memory name="SYSTEM"
+                             start="0xE0000000"
+                             size="0x10000000"
+                             type="io"
+                             address-space="base"/>
+                  <at:memory name="IFLASH0"
+                             start="0x00400000"
+                             size="0x00100000"
+                             type="flash"
+                             pagesize="512"
+                             address-space="base"/>
+                  <at:memory name="IFLASH1"
+                             start="0x00500000"
+                             size="0x00100000"
+                             type="flash"
+                             pagesize="512"
+                             address-space="base"/>
+                  <at:memory name="IROM"
+                             start="0x00800000"
+                             size="0x00400000"
+                             type="rom"
+                             address-space="base"/>
+                  <at:memory name="IRAM"
+                             start="0x20000000"
+                             size="0x00028000"
+                             type="ram"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS0"
+                             start="0x60000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS1"
+                             start="0x61000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS2"
+                             start="0x62000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS3"
+                             start="0x63000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:interface type="samjtag" name="JTAG"/>
+                  <at:interface type="swd" name="SWD"/>
+                  <at:tool id="com.atmel.avrdbg.tool.atmelice"/>
+                  <at:tool id="com.atmel.avrdbg.tool.edbg"/>
+                  <at:tool id="com.atmel.avrdbg.tool.edbgc"/>
+                  <at:tool id="com.atmel.avrdbg.tool.edbg"/>
+                  <at:tool id="com.atmel.avrdbg.tool.jtagicemk3"/>
+                  <at:tool id="com.atmel.avrdbg.tool.jtagice3plus"/>
+                  <at:tool id="com.atmel.avrdbg.tool.medbg"/>
+                  <at:tool id="com.atmel.avrdbg.tool.powerdebugger"/>
+                  <at:tool id="com.atmel.avrdbg.tool.samice"/>
+                  <at:project name="Barebone C Project">
+                     <at:component Cvendor="ARM" Cclass="CMSIS" Cgroup="CORE"/>
+                     <at:component Cvendor="Atmel" Cclass="Device" Cgroup="Startup">
+                        <at:template select="Main file (.c)"/>
+                     </at:component>
+                  </at:project>
+                  <at:project name="Barebone Cpp Project">
+                     <at:component Cvendor="ARM" Cclass="CMSIS" Cgroup="CORE"/>
+                     <at:component Cvendor="Atmel" Cclass="Device" Cgroup="Startup">
+                        <at:template select="Main file (.cpp)"/>
+                     </at:component>
+                  </at:project>
+                  <at:prerequisite context="compiling" Tcompiler="GCC" component="ARM-GCC"/>
+                  <at:prerequisite context="compiling" Tcompiler="ARMCC" component="ARMCC"/>
+               </at:extension>
+            </environment>
+            <description>ARM®-based Cortex®-M4 core with 2MB dual-bank Flash, 160KB SRAM, USB, 64 Pins</description>
+            <book name="http://www.atmel.com/images/Atmel-11100-32-bit Cortex-M4-Microcontroller-SAM4S_Datasheet.pdf"
+                  title="Datasheet"/>
+            <book name="http://www.atmel.com/devices/ATSAM4SD32B.aspx"
+                  title="Device Page"/>
+         </device>
+         <device Dname="ATSAM4S8B">
+            <processor Dcore="Cortex-M4"
+                       Dendian="Little-endian"
+                       Dmpu="MPU"
+                       Dfpu="NO_FPU"/>
+            <compile header="sam4s/include/sam.h" define="__SAM4S8B__"/>
+            <debug svd="sam4s/svd/ATSAM4S8B.svd"/>
+            <memory id="IROM1"
+                    start="0x00400000"
+                    size="0x00080000"
+                    default="1"
+                    startup="1"/>
+            <memory id="IROM2" start="0x00800000" size="0x00400000"/>
+            <memory id="IRAM1" start="0x20000000" size="0x00020000" default="1"/>
+            <algorithm name="sam4s/keil/Flash/ATSAM4S_512.FLM"
+                       start="0x00400000"
+                       size="0x80000"
+                       default="1"/>
+            <algorithm name="sam4s/keil/Flash/ATSAM4S_GPNVM.FLM"
+                       start="0x1FFFFFF0"
+                       size="0x0010"
+                       default="0"/>
+            <environment name="atmel">
+               <at:extension xmlns:at="http://www.atmel.com/schemas/pack-device-atmel-extension"
+                             schemaVersion="1.0">
+                  <at:atdf name="sam4s/atdf/ATSAM4S8B.atdf"/>
+                  <at:variant ordercode="ATSAM4S8B-CU"
+                              vccmin="1.62"
+                              vccmax="3.6"
+                              tempmin="-40"
+                              tempmax="+105"/>
+                  <at:variant ordercode="ATSAM4S8B-AU"
+                              vccmin="1.62"
+                              vccmax="3.6"
+                              tempmin="-40"
+                              tempmax="+105"/>
+                  <at:variant ordercode="ATSAM4S8B-XX"
+                              vccmin="1.62"
+                              vccmax="3.6"
+                              tempmin="-40"
+                              tempmax="+105"/>
+                  <at:memory name="PERIPHERALS"
+                             start="0x40000000"
+                             size="0x20000000"
+                             type="io"
+                             address-space="base"/>
+                  <at:memory name="SYSTEM"
+                             start="0xE0000000"
+                             size="0x10000000"
+                             type="io"
+                             address-space="base"/>
+                  <at:memory name="IFLASH0"
+                             start="0x00400000"
+                             size="0x00080000"
+                             type="flash"
+                             pagesize="512"
+                             address-space="base"/>
+                  <at:memory name="IROM"
+                             start="0x00800000"
+                             size="0x00400000"
+                             type="rom"
+                             address-space="base"/>
+                  <at:memory name="IRAM"
+                             start="0x20000000"
+                             size="0x00020000"
+                             type="ram"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS0"
+                             start="0x60000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS1"
+                             start="0x61000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS2"
+                             start="0x62000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS3"
+                             start="0x63000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:interface type="samjtag" name="JTAG"/>
+                  <at:interface type="swd" name="SWD"/>
+                  <at:tool id="com.atmel.avrdbg.tool.atmelice"/>
+                  <at:tool id="com.atmel.avrdbg.tool.edbg"/>
+                  <at:tool id="com.atmel.avrdbg.tool.edbgc"/>
+                  <at:tool id="com.atmel.avrdbg.tool.edbg"/>
+                  <at:tool id="com.atmel.avrdbg.tool.jtagicemk3"/>
+                  <at:tool id="com.atmel.avrdbg.tool.jtagice3plus"/>
+                  <at:tool id="com.atmel.avrdbg.tool.medbg"/>
+                  <at:tool id="com.atmel.avrdbg.tool.powerdebugger"/>
+                  <at:tool id="com.atmel.avrdbg.tool.samice"/>
+                  <at:project name="Barebone C Project">
+                     <at:component Cvendor="ARM" Cclass="CMSIS" Cgroup="CORE"/>
+                     <at:component Cvendor="Atmel" Cclass="Device" Cgroup="Startup">
+                        <at:template select="Main file (.c)"/>
+                     </at:component>
+                  </at:project>
+                  <at:project name="Barebone Cpp Project">
+                     <at:component Cvendor="ARM" Cclass="CMSIS" Cgroup="CORE"/>
+                     <at:component Cvendor="Atmel" Cclass="Device" Cgroup="Startup">
+                        <at:template select="Main file (.cpp)"/>
+                     </at:component>
+                  </at:project>
+                  <at:prerequisite context="compiling" Tcompiler="GCC" component="ARM-GCC"/>
+                  <at:prerequisite context="compiling" Tcompiler="ARMCC" component="ARMCC"/>
+               </at:extension>
+            </environment>
+            <description>ARM®-based Cortex®-M4 core with 512KB Flash, 128KB SRAM, USB, 64 Pins</description>
+            <book name="http://www.atmel.com/images/Atmel-11100-32-bit Cortex-M4-Microcontroller-SAM4S_Datasheet.pdf"
+                  title="Datasheet"/>
+            <book name="http://www.atmel.com/devices/ATSAM4S8B.aspx" title="Device Page"/>
+         </device>
+         <device Dname="ATSAM4S8C">
+            <processor Dcore="Cortex-M4"
+                       Dendian="Little-endian"
+                       Dmpu="MPU"
+                       Dfpu="NO_FPU"/>
+            <compile header="sam4s/include/sam.h" define="__SAM4S8C__"/>
+            <debug svd="sam4s/svd/ATSAM4S8C.svd"/>
+            <memory id="IROM1"
+                    start="0x00400000"
+                    size="0x00080000"
+                    default="1"
+                    startup="1"/>
+            <memory id="IROM2" start="0x00800000" size="0x00400000"/>
+            <memory id="IRAM1" start="0x20000000" size="0x00020000" default="1"/>
+            <algorithm name="sam4s/keil/Flash/ATSAM4S_512.FLM"
+                       start="0x00400000"
+                       size="0x80000"
+                       default="1"/>
+            <algorithm name="sam4s/keil/Flash/ATSAM4S_GPNVM.FLM"
+                       start="0x1FFFFFF0"
+                       size="0x0010"
+                       default="0"/>
+            <environment name="atmel">
+               <at:extension xmlns:at="http://www.atmel.com/schemas/pack-device-atmel-extension"
+                             schemaVersion="1.0">
+                  <at:atdf name="sam4s/atdf/ATSAM4S8C.atdf"/>
+                  <at:variant ordercode="ATSAM4S8C-CU"
+                              vccmin="1.62"
+                              vccmax="3.6"
+                              tempmin="-40"
+                              tempmax="+105"/>
+                  <at:variant ordercode="ATSAM4S8C-AU"
+                              vccmin="1.62"
+                              vccmax="3.6"
+                              tempmin="-40"
+                              tempmax="+105"/>
+                  <at:variant ordercode="ATSAM4S8C-CFU"
+                              vccmin="1.62"
+                              vccmax="3.6"
+                              tempmin="-40"
+                              tempmax="+105"/>
+                  <at:memory name="PERIPHERALS"
+                             start="0x40000000"
+                             size="0x20000000"
+                             type="io"
+                             address-space="base"/>
+                  <at:memory name="SYSTEM"
+                             start="0xE0000000"
+                             size="0x10000000"
+                             type="io"
+                             address-space="base"/>
+                  <at:memory name="IFLASH0"
+                             start="0x00400000"
+                             size="0x00080000"
+                             type="flash"
+                             pagesize="512"
+                             address-space="base"/>
+                  <at:memory name="IROM"
+                             start="0x00800000"
+                             size="0x00400000"
+                             type="rom"
+                             address-space="base"/>
+                  <at:memory name="IRAM"
+                             start="0x20000000"
+                             size="0x00020000"
+                             type="ram"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS0"
+                             start="0x60000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS1"
+                             start="0x61000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS2"
+                             start="0x62000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS3"
+                             start="0x63000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:interface type="samjtag" name="JTAG"/>
+                  <at:interface type="swd" name="SWD"/>
+                  <at:tool id="com.atmel.avrdbg.tool.atmelice"/>
+                  <at:tool id="com.atmel.avrdbg.tool.edbg"/>
+                  <at:tool id="com.atmel.avrdbg.tool.edbgc"/>
+                  <at:tool id="com.atmel.avrdbg.tool.edbg"/>
+                  <at:tool id="com.atmel.avrdbg.tool.jtagicemk3"/>
+                  <at:tool id="com.atmel.avrdbg.tool.jtagice3plus"/>
+                  <at:tool id="com.atmel.avrdbg.tool.medbg"/>
+                  <at:tool id="com.atmel.avrdbg.tool.powerdebugger"/>
+                  <at:tool id="com.atmel.avrdbg.tool.samice"/>
+                  <at:project name="Barebone C Project">
+                     <at:component Cvendor="ARM" Cclass="CMSIS" Cgroup="CORE"/>
+                     <at:component Cvendor="Atmel" Cclass="Device" Cgroup="Startup">
+                        <at:template select="Main file (.c)"/>
+                     </at:component>
+                  </at:project>
+                  <at:project name="Barebone Cpp Project">
+                     <at:component Cvendor="ARM" Cclass="CMSIS" Cgroup="CORE"/>
+                     <at:component Cvendor="Atmel" Cclass="Device" Cgroup="Startup">
+                        <at:template select="Main file (.cpp)"/>
+                     </at:component>
+                  </at:project>
+                  <at:prerequisite context="compiling" Tcompiler="GCC" component="ARM-GCC"/>
+                  <at:prerequisite context="compiling" Tcompiler="ARMCC" component="ARMCC"/>
+               </at:extension>
+            </environment>
+            <description>ARM®-based Cortex®-M4 core with 512KB Flash, 128KB SRAM, USB, 100 Pins</description>
+            <book name="http://www.atmel.com/images/Atmel-11100-32-bit Cortex-M4-Microcontroller-SAM4S_Datasheet.pdf"
+                  title="Datasheet"/>
+            <book name="http://www.atmel.com/devices/ATSAM4S8C.aspx" title="Device Page"/>
+         </device>
+         <device Dname="ATSAM4SA16B">
+            <processor Dcore="Cortex-M4"
+                       Dendian="Little-endian"
+                       Dmpu="MPU"
+                       Dfpu="NO_FPU"/>
+            <compile header="sam4s/include/sam.h" define="__SAM4SA16B__"/>
+            <debug svd="sam4s/svd/ATSAM4SA16B.svd"/>
+            <memory id="IROM1"
+                    start="0x00400000"
+                    size="0x00100000"
+                    default="1"
+                    startup="1"/>
+            <memory id="IROM2" start="0x00800000" size="0x00400000"/>
+            <memory id="IRAM1" start="0x20000000" size="0x00028000" default="1"/>
+            <algorithm name="sam4s/keil/Flash/ATSAM4S_1024.FLM"
+                       start="0x00400000"
+                       size="0x100000"
+                       default="1"/>
+            <algorithm name="sam4s/keil/Flash/ATSAM4S_GPNVM.FLM"
+                       start="0x1FFFFFF0"
+                       size="0x0010"
+                       default="0"/>
+            <environment name="atmel">
+               <at:extension xmlns:at="http://www.atmel.com/schemas/pack-device-atmel-extension"
+                             schemaVersion="1.0">
+                  <at:atdf name="sam4s/atdf/ATSAM4SA16B.atdf"/>
+                  <at:variant ordercode="ATSAM4SA16B-CU"
+                              vccmin="1.62"
+                              vccmax="3.6"
+                              tempmin="-40"
+                              tempmax="+105"/>
+                  <at:variant ordercode="ATSAM4SA16B-AU"
+                              vccmin="1.62"
+                              vccmax="3.6"
+                              tempmin="-40"
+                              tempmax="+105"/>
+                  <at:memory name="PERIPHERALS"
+                             start="0x40000000"
+                             size="0x20000000"
+                             type="io"
+                             address-space="base"/>
+                  <at:memory name="SYSTEM"
+                             start="0xE0000000"
+                             size="0x10000000"
+                             type="io"
+                             address-space="base"/>
+                  <at:memory name="IFLASH0"
+                             start="0x00400000"
+                             size="0x00100000"
+                             type="flash"
+                             pagesize="512"
+                             address-space="base"/>
+                  <at:memory name="IROM"
+                             start="0x00800000"
+                             size="0x00400000"
+                             type="rom"
+                             address-space="base"/>
+                  <at:memory name="IRAM"
+                             start="0x20000000"
+                             size="0x00028000"
+                             type="ram"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS0"
+                             start="0x60000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS1"
+                             start="0x61000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS2"
+                             start="0x62000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS3"
+                             start="0x63000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:interface type="samjtag" name="JTAG"/>
+                  <at:interface type="swd" name="SWD"/>
+                  <at:tool id="com.atmel.avrdbg.tool.atmelice"/>
+                  <at:tool id="com.atmel.avrdbg.tool.edbg"/>
+                  <at:tool id="com.atmel.avrdbg.tool.edbgc"/>
+                  <at:tool id="com.atmel.avrdbg.tool.edbg"/>
+                  <at:tool id="com.atmel.avrdbg.tool.jtagicemk3"/>
+                  <at:tool id="com.atmel.avrdbg.tool.jtagice3plus"/>
+                  <at:tool id="com.atmel.avrdbg.tool.medbg"/>
+                  <at:tool id="com.atmel.avrdbg.tool.powerdebugger"/>
+                  <at:tool id="com.atmel.avrdbg.tool.samice"/>
+                  <at:project name="Barebone C Project">
+                     <at:component Cvendor="ARM" Cclass="CMSIS" Cgroup="CORE"/>
+                     <at:component Cvendor="Atmel" Cclass="Device" Cgroup="Startup">
+                        <at:template select="Main file (.c)"/>
+                     </at:component>
+                  </at:project>
+                  <at:project name="Barebone Cpp Project">
+                     <at:component Cvendor="ARM" Cclass="CMSIS" Cgroup="CORE"/>
+                     <at:component Cvendor="Atmel" Cclass="Device" Cgroup="Startup">
+                        <at:template select="Main file (.cpp)"/>
+                     </at:component>
+                  </at:project>
+                  <at:prerequisite context="compiling" Tcompiler="GCC" component="ARM-GCC"/>
+                  <at:prerequisite context="compiling" Tcompiler="ARMCC" component="ARMCC"/>
+               </at:extension>
+            </environment>
+            <description>ARM®-based Cortex®-M4 core with 1MB Flash, 160KB SRAM, USB, 64 Pins</description>
+            <book name="http://www.atmel.com/images/Atmel-11100-32-bit Cortex-M4-Microcontroller-SAM4S_Datasheet.pdf"
+                  title="Datasheet"/>
+            <book name="http://www.atmel.com/devices/ATSAM4SA16B.aspx"
+                  title="Device Page"/>
+         </device>
+         <device Dname="ATSAM4SA16C">
+            <processor Dcore="Cortex-M4"
+                       Dendian="Little-endian"
+                       Dmpu="MPU"
+                       Dfpu="NO_FPU"/>
+            <compile header="sam4s/include/sam.h" define="__SAM4SA16C__"/>
+            <debug svd="sam4s/svd/ATSAM4SA16C.svd"/>
+            <memory id="IROM1"
+                    start="0x00400000"
+                    size="0x00100000"
+                    default="1"
+                    startup="1"/>
+            <memory id="IROM2" start="0x00800000" size="0x00400000"/>
+            <memory id="IRAM1" start="0x20000000" size="0x00028000" default="1"/>
+            <algorithm name="sam4s/keil/Flash/ATSAM4S_1024.FLM"
+                       start="0x00400000"
+                       size="0x100000"
+                       default="1"/>
+            <algorithm name="sam4s/keil/Flash/ATSAM4S_GPNVM.FLM"
+                       start="0x1FFFFFF0"
+                       size="0x0010"
+                       default="0"/>
+            <environment name="atmel">
+               <at:extension xmlns:at="http://www.atmel.com/schemas/pack-device-atmel-extension"
+                             schemaVersion="1.0">
+                  <at:atdf name="sam4s/atdf/ATSAM4SA16C.atdf"/>
+                  <at:variant ordercode="ATSAM4SA16C-CU"
+                              vccmin="1.62"
+                              vccmax="3.6"
+                              tempmin="-40"
+                              tempmax="+105"/>
+                  <at:variant ordercode="ATSAM4SA16C-AU"
+                              vccmin="1.62"
+                              vccmax="3.6"
+                              tempmin="-40"
+                              tempmax="+105"/>
+                  <at:variant ordercode="ATSAM4SA16C-CFU"
+                              vccmin="1.62"
+                              vccmax="3.6"
+                              tempmin="-40"
+                              tempmax="+105"/>
+                  <at:memory name="PERIPHERALS"
+                             start="0x40000000"
+                             size="0x20000000"
+                             type="io"
+                             address-space="base"/>
+                  <at:memory name="SYSTEM"
+                             start="0xE0000000"
+                             size="0x10000000"
+                             type="io"
+                             address-space="base"/>
+                  <at:memory name="IFLASH0"
+                             start="0x00400000"
+                             size="0x00100000"
+                             type="flash"
+                             pagesize="512"
+                             address-space="base"/>
+                  <at:memory name="IROM"
+                             start="0x00800000"
+                             size="0x00400000"
+                             type="rom"
+                             address-space="base"/>
+                  <at:memory name="IRAM"
+                             start="0x20000000"
+                             size="0x00028000"
+                             type="ram"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS0"
+                             start="0x60000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS1"
+                             start="0x61000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS2"
+                             start="0x62000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS3"
+                             start="0x63000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:interface type="samjtag" name="JTAG"/>
+                  <at:interface type="swd" name="SWD"/>
+                  <at:tool id="com.atmel.avrdbg.tool.atmelice"/>
+                  <at:tool id="com.atmel.avrdbg.tool.edbg"/>
+                  <at:tool id="com.atmel.avrdbg.tool.edbgc"/>
+                  <at:tool id="com.atmel.avrdbg.tool.edbg"/>
+                  <at:tool id="com.atmel.avrdbg.tool.jtagicemk3"/>
+                  <at:tool id="com.atmel.avrdbg.tool.jtagice3plus"/>
+                  <at:tool id="com.atmel.avrdbg.tool.medbg"/>
+                  <at:tool id="com.atmel.avrdbg.tool.powerdebugger"/>
+                  <at:tool id="com.atmel.avrdbg.tool.samice"/>
+                  <at:project name="Barebone C Project">
+                     <at:component Cvendor="ARM" Cclass="CMSIS" Cgroup="CORE"/>
+                     <at:component Cvendor="Atmel" Cclass="Device" Cgroup="Startup">
+                        <at:template select="Main file (.c)"/>
+                     </at:component>
+                  </at:project>
+                  <at:project name="Barebone Cpp Project">
+                     <at:component Cvendor="ARM" Cclass="CMSIS" Cgroup="CORE"/>
+                     <at:component Cvendor="Atmel" Cclass="Device" Cgroup="Startup">
+                        <at:template select="Main file (.cpp)"/>
+                     </at:component>
+                  </at:project>
+                  <at:prerequisite context="compiling" Tcompiler="GCC" component="ARM-GCC"/>
+                  <at:prerequisite context="compiling" Tcompiler="ARMCC" component="ARMCC"/>
+               </at:extension>
+            </environment>
+            <description>ARM®-based Cortex®-M4 core with 1MB Flash, 160KB SRAM, USB, 100 Pins</description>
+            <book name="http://www.atmel.com/images/Atmel-11100-32-bit Cortex-M4-Microcontroller-SAM4S_Datasheet.pdf"
+                  title="Datasheet"/>
+            <book name="http://www.atmel.com/devices/ATSAM4SA16C.aspx"
+                  title="Device Page"/>
+         </device>
+         <device Dname="ATSAM4SD16C">
+            <processor Dcore="Cortex-M4"
+                       Dendian="Little-endian"
+                       Dmpu="MPU"
+                       Dfpu="NO_FPU"/>
+            <compile header="sam4s/include/sam.h" define="__SAM4SD16C__"/>
+            <debug svd="sam4s/svd/ATSAM4SD16C.svd"/>
+            <memory id="IROM1"
+                    start="0x00400000"
+                    size="0x00080000"
+                    default="1"
+                    startup="1"/>
+            <memory id="IROM2" start="0x00480000" size="0x00080000"/>
+            <memory id="IROM3" start="0x00800000" size="0x00400000"/>
+            <memory id="IRAM1" start="0x20000000" size="0x00028000" default="1"/>
+            <algorithm name="sam4s/keil/Flash/ATSAM4SD_1024.FLM"
+                       start="0x00400000"
+                       size="0x100000"
+                       default="1"/>
+            <algorithm name="sam4s/keil/Flash/ATSAM4S_GPNVM.FLM"
+                       start="0x1FFFFFF0"
+                       size="0x0010"
+                       default="0"/>
+            <environment name="atmel">
+               <at:extension xmlns:at="http://www.atmel.com/schemas/pack-device-atmel-extension"
+                             schemaVersion="1.0">
+                  <at:atdf name="sam4s/atdf/ATSAM4SD16C.atdf"/>
+                  <at:variant ordercode="ATSAM4SD16C-CU"
+                              vccmin="1.62"
+                              vccmax="3.6"
+                              tempmin="-40"
+                              tempmax="+105"/>
+                  <at:variant ordercode="ATSAM4SD16C-AU"
+                              vccmin="1.62"
+                              vccmax="3.6"
+                              tempmin="-40"
+                              tempmax="+105"/>
+                  <at:variant ordercode="ATSAM4SD16C-CFU"
+                              vccmin="1.62"
+                              vccmax="3.6"
+                              tempmin="-40"
+                              tempmax="+105"/>
+                  <at:memory name="PERIPHERALS"
+                             start="0x40000000"
+                             size="0x20000000"
+                             type="io"
+                             address-space="base"/>
+                  <at:memory name="SYSTEM"
+                             start="0xE0000000"
+                             size="0x10000000"
+                             type="io"
+                             address-space="base"/>
+                  <at:memory name="IFLASH0"
+                             start="0x00400000"
+                             size="0x00080000"
+                             type="flash"
+                             pagesize="512"
+                             address-space="base"/>
+                  <at:memory name="IFLASH1"
+                             start="0x00480000"
+                             size="0x00080000"
+                             type="flash"
+                             pagesize="512"
+                             address-space="base"/>
+                  <at:memory name="IROM"
+                             start="0x00800000"
+                             size="0x00400000"
+                             type="rom"
+                             address-space="base"/>
+                  <at:memory name="IRAM"
+                             start="0x20000000"
+                             size="0x00028000"
+                             type="ram"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS0"
+                             start="0x60000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS1"
+                             start="0x61000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS2"
+                             start="0x62000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS3"
+                             start="0x63000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:interface type="samjtag" name="JTAG"/>
+                  <at:interface type="swd" name="SWD"/>
+                  <at:tool id="com.atmel.avrdbg.tool.atmelice"/>
+                  <at:tool id="com.atmel.avrdbg.tool.edbg"/>
+                  <at:tool id="com.atmel.avrdbg.tool.edbgc"/>
+                  <at:tool id="com.atmel.avrdbg.tool.edbg"/>
+                  <at:tool id="com.atmel.avrdbg.tool.jtagicemk3"/>
+                  <at:tool id="com.atmel.avrdbg.tool.jtagice3plus"/>
+                  <at:tool id="com.atmel.avrdbg.tool.medbg"/>
+                  <at:tool id="com.atmel.avrdbg.tool.powerdebugger"/>
+                  <at:tool id="com.atmel.avrdbg.tool.samice"/>
+                  <at:project name="Barebone C Project">
+                     <at:component Cvendor="ARM" Cclass="CMSIS" Cgroup="CORE"/>
+                     <at:component Cvendor="Atmel" Cclass="Device" Cgroup="Startup">
+                        <at:template select="Main file (.c)"/>
+                     </at:component>
+                  </at:project>
+                  <at:project name="Barebone Cpp Project">
+                     <at:component Cvendor="ARM" Cclass="CMSIS" Cgroup="CORE"/>
+                     <at:component Cvendor="Atmel" Cclass="Device" Cgroup="Startup">
+                        <at:template select="Main file (.cpp)"/>
+                     </at:component>
+                  </at:project>
+                  <at:prerequisite context="compiling" Tcompiler="GCC" component="ARM-GCC"/>
+                  <at:prerequisite context="compiling" Tcompiler="ARMCC" component="ARMCC"/>
+               </at:extension>
+            </environment>
+            <description>ARM®-based Cortex®-M4 core with 1MB dual-bank Flash, 160KB SRAM, USB, 100 Pins</description>
+            <book name="http://www.atmel.com/images/Atmel-11100-32-bit Cortex-M4-Microcontroller-SAM4S_Datasheet.pdf"
+                  title="Datasheet"/>
+            <book name="http://www.atmel.com/devices/ATSAM4SD16C.aspx"
+                  title="Device Page"/>
+         </device>
+         <device Dname="ATSAM4SD16B">
+            <processor Dcore="Cortex-M4"
+                       Dendian="Little-endian"
+                       Dmpu="MPU"
+                       Dfpu="NO_FPU"/>
+            <compile header="sam4s/include/sam.h" define="__SAM4SD16B__"/>
+            <debug svd="sam4s/svd/ATSAM4SD16B.svd"/>
+            <memory id="IROM1"
+                    start="0x00400000"
+                    size="0x00080000"
+                    default="1"
+                    startup="1"/>
+            <memory id="IROM2" start="0x00480000" size="0x00080000"/>
+            <memory id="IROM3" start="0x00800000" size="0x00400000"/>
+            <memory id="IRAM1" start="0x20000000" size="0x00028000" default="1"/>
+            <algorithm name="sam4s/keil/Flash/ATSAM4SD_1024.FLM"
+                       start="0x00400000"
+                       size="0x100000"
+                       default="1"/>
+            <algorithm name="sam4s/keil/Flash/ATSAM4S_GPNVM.FLM"
+                       start="0x1FFFFFF0"
+                       size="0x0010"
+                       default="0"/>
+            <environment name="atmel">
+               <at:extension xmlns:at="http://www.atmel.com/schemas/pack-device-atmel-extension"
+                             schemaVersion="1.0">
+                  <at:atdf name="sam4s/atdf/ATSAM4SD16B.atdf"/>
+                  <at:variant ordercode="ATSAM4SD16B-CU"
+                              vccmin="1.62"
+                              vccmax="3.6"
+                              tempmin="-40"
+                              tempmax="+105"/>
+                  <at:variant ordercode="ATSAM4SD16B-AU"
+                              vccmin="1.62"
+                              vccmax="3.6"
+                              tempmin="-40"
+                              tempmax="+105"/>
+                  <at:memory name="PERIPHERALS"
+                             start="0x40000000"
+                             size="0x20000000"
+                             type="io"
+                             address-space="base"/>
+                  <at:memory name="SYSTEM"
+                             start="0xE0000000"
+                             size="0x10000000"
+                             type="io"
+                             address-space="base"/>
+                  <at:memory name="IFLASH0"
+                             start="0x00400000"
+                             size="0x00080000"
+                             type="flash"
+                             pagesize="512"
+                             address-space="base"/>
+                  <at:memory name="IFLASH1"
+                             start="0x00480000"
+                             size="0x00080000"
+                             type="flash"
+                             pagesize="512"
+                             address-space="base"/>
+                  <at:memory name="IROM"
+                             start="0x00800000"
+                             size="0x00400000"
+                             type="rom"
+                             address-space="base"/>
+                  <at:memory name="IRAM"
+                             start="0x20000000"
+                             size="0x00028000"
+                             type="ram"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS0"
+                             start="0x60000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS1"
+                             start="0x61000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS2"
+                             start="0x62000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:memory name="EBI_CS3"
+                             start="0x63000000"
+                             size="0x01000000"
+                             type="other"
+                             address-space="base"/>
+                  <at:interface type="samjtag" name="JTAG"/>
+                  <at:interface type="swd" name="SWD"/>
+                  <at:tool id="com.atmel.avrdbg.tool.atmelice"/>
+                  <at:tool id="com.atmel.avrdbg.tool.edbg"/>
+                  <at:tool id="com.atmel.avrdbg.tool.edbgc"/>
+                  <at:tool id="com.atmel.avrdbg.tool.edbg"/>
+                  <at:tool id="com.atmel.avrdbg.tool.jtagicemk3"/>
+                  <at:tool id="com.atmel.avrdbg.tool.jtagice3plus"/>
+                  <at:tool id="com.atmel.avrdbg.tool.medbg"/>
+                  <at:tool id="com.atmel.avrdbg.tool.powerdebugger"/>
+                  <at:tool id="com.atmel.avrdbg.tool.samice"/>
+                  <at:project name="Barebone C Project">
+                     <at:component Cvendor="ARM" Cclass="CMSIS" Cgroup="CORE"/>
+                     <at:component Cvendor="Atmel" Cclass="Device" Cgroup="Startup">
+                        <at:template select="Main file (.c)"/>
+                     </at:component>
+                  </at:project>
+                  <at:project name="Barebone Cpp Project">
+                     <at:component Cvendor="ARM" Cclass="CMSIS" Cgroup="CORE"/>
+                     <at:component Cvendor="Atmel" Cclass="Device" Cgroup="Startup">
+                        <at:template select="Main file (.cpp)"/>
+                     </at:component>
+                  </at:project>
+                  <at:prerequisite context="compiling" Tcompiler="GCC" component="ARM-GCC"/>
+                  <at:prerequisite context="compiling" Tcompiler="ARMCC" component="ARMCC"/>
+               </at:extension>
+            </environment>
+            <description>ARM®-based Cortex®-M4 core with 1MB dual-bank Flash, 160KB SRAM, USB, 64 Pins</description>
+            <book name="http://www.atmel.com/images/Atmel-11100-32-bit Cortex-M4-Microcontroller-SAM4S_Datasheet.pdf"
+                  title="Datasheet"/>
+            <book name="http://www.atmel.com/devices/ATSAM4SD16B.aspx"
+                  title="Device Page"/>
+         </device>
+      </family>
+   </devices>
+   <conditions>
+      <condition id="ARMCC">
+         <accept Tcompiler="ARMCC"/>
+      </condition>
+      <condition id="ARMCC Exe">
+         <accept Tcompiler="ARMCC" Toutput="exe"/>
+      </condition>
+      <condition id="GCC">
+         <accept Tcompiler="GCC"/>
+      </condition>
+      <condition id="GCC Exe">
+         <accept Tcompiler="GCC" Toutput="exe"/>
+      </condition>
+      <condition id="IAR">
+         <accept Tcompiler="IAR"/>
+      </condition>
+      <condition id="IAR Exe">
+         <accept Tcompiler="IAR" Toutput="exe"/>
+      </condition>
+      <condition id="C">
+         <accept Tcompiler="ARMCC"/>
+         <accept Tcompiler="GCC"/>
+         <accept Tcompiler="IAR"/>
+      </condition>
+      <condition id="C Exe">
+         <accept Tcompiler="ARMCC" Toutput="exe"/>
+         <accept Tcompiler="GCC" Toutput="exe"/>
+         <accept Tcompiler="IAR" Toutput="exe"/>
+      </condition>
+      <condition id="C Lib">
+         <accept Tcompiler="ARMCC" Toutput="lib"/>
+         <accept Tcompiler="GCC" Toutput="lib"/>
+         <accept Tcompiler="IAR" Toutput="lib"/>
+      </condition>
+      <condition id="ATSAM4S2A">
+         <require Dvendor="Atmel:3" Dname="ATSAM4S2A"/>
+         <require Cclass="CMSIS" Cgroup="CORE"/>
+      </condition>
+      <condition id="ATSAM4S2B">
+         <require Dvendor="Atmel:3" Dname="ATSAM4S2B"/>
+         <require Cclass="CMSIS" Cgroup="CORE"/>
+      </condition>
+      <condition id="ATSAM4S2C">
+         <require Dvendor="Atmel:3" Dname="ATSAM4S2C"/>
+         <require Cclass="CMSIS" Cgroup="CORE"/>
+      </condition>
+      <condition id="ATSAM4S4B">
+         <require Dvendor="Atmel:3" Dname="ATSAM4S4B"/>
+         <require Cclass="CMSIS" Cgroup="CORE"/>
+      </condition>
+      <condition id="ATSAM4S4C">
+         <require Dvendor="Atmel:3" Dname="ATSAM4S4C"/>
+         <require Cclass="CMSIS" Cgroup="CORE"/>
+      </condition>
+      <condition id="ATSAM4SP32A">
+         <require Dvendor="Atmel:3" Dname="ATSAM4SP32A"/>
+         <require Cclass="CMSIS" Cgroup="CORE"/>
+      </condition>
+      <condition id="ATSAM4S4A">
+         <require Dvendor="Atmel:3" Dname="ATSAM4S4A"/>
+         <require Cclass="CMSIS" Cgroup="CORE"/>
+      </condition>
+      <condition id="ATSAM4SD32C">
+         <require Dvendor="Atmel:3" Dname="ATSAM4SD32C"/>
+         <require Cclass="CMSIS" Cgroup="CORE"/>
+      </condition>
+      <condition id="ATSAM4S16B">
+         <require Dvendor="Atmel:3" Dname="ATSAM4S16B"/>
+         <require Cclass="CMSIS" Cgroup="CORE"/>
+      </condition>
+      <condition id="ATSAM4S16C">
+         <require Dvendor="Atmel:3" Dname="ATSAM4S16C"/>
+         <require Cclass="CMSIS" Cgroup="CORE"/>
+      </condition>
+      <condition id="ATSAM4SD32B">
+         <require Dvendor="Atmel:3" Dname="ATSAM4SD32B"/>
+         <require Cclass="CMSIS" Cgroup="CORE"/>
+      </condition>
+      <condition id="ATSAM4S8B">
+         <require Dvendor="Atmel:3" Dname="ATSAM4S8B"/>
+         <require Cclass="CMSIS" Cgroup="CORE"/>
+      </condition>
+      <condition id="ATSAM4S8C">
+         <require Dvendor="Atmel:3" Dname="ATSAM4S8C"/>
+         <require Cclass="CMSIS" Cgroup="CORE"/>
+      </condition>
+      <condition id="ATSAM4SA16B">
+         <require Dvendor="Atmel:3" Dname="ATSAM4SA16B"/>
+         <require Cclass="CMSIS" Cgroup="CORE"/>
+      </condition>
+      <condition id="ATSAM4SA16C">
+         <require Dvendor="Atmel:3" Dname="ATSAM4SA16C"/>
+         <require Cclass="CMSIS" Cgroup="CORE"/>
+      </condition>
+      <condition id="ATSAM4SD16C">
+         <require Dvendor="Atmel:3" Dname="ATSAM4SD16C"/>
+         <require Cclass="CMSIS" Cgroup="CORE"/>
+      </condition>
+      <condition id="ATSAM4SD16B">
+         <require Dvendor="Atmel:3" Dname="ATSAM4SD16B"/>
+         <require Cclass="CMSIS" Cgroup="CORE"/>
+      </condition>
+   </conditions>
+   <components>
+      <component Cvendor="Atmel"
+                 Cclass="Device"
+                 Cgroup="Startup"
+                 Cversion="1.0.0"
+                 condition="ATSAM4S2A">
+         <description>Headers and startup code for Atmel ATSAM4S2A</description>
+         <files>
+            <file condition="C" category="include" name="sam4s/include"/>
+            <file condition="C" category="header" name="sam4s/include/sam.h"/>
+            <file condition="C Exe"
+                  category="source"
+                  name="sam4s/templates/main.c"
+                  attr="template"
+                  select="Main file (.c)"/>
+            <file condition="C Exe"
+                  category="source"
+                  name="sam4s/templates/main.cpp"
+                  attr="template"
+                  select="Main file (.cpp)"/>
+            <file condition="C Lib"
+                  category="source"
+                  name="sam4s/templates/library.c"
+                  attr="template"
+                  select="Main file (.c)"/>
+            <file condition="C Lib"
+                  category="source"
+                  name="sam4s/templates/library.cpp"
+                  attr="template"
+                  select="Main file (.cpp)"/>
+            <file condition="GCC Exe"
+                  category="source"
+                  name="sam4s/gcc/system_sam4s.c"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="source"
+                  name="sam4s/gcc/gcc/startup_sam4s.c"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="linkerScript"
+                  name="sam4s/gcc/gcc/sam4s2a_flash.ld"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="other"
+                  name="sam4s/gcc/gcc/sam4s2a_sram.ld"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="other"
+                  name="sam4s/gcc/gcc/sam4s_flash.ld"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="other"
+                  name="sam4s/gcc/gcc/sam4s_sram.ld"
+                  attr="config"/>
+            <file condition="ARMCC Exe"
+                  category="source"
+                  name="sam4s/armcc/Device/Source/ARM/startup_SAM4S.s"
+                  attr="config"/>
+            <file condition="ARMCC Exe"
+                  category="source"
+                  name="sam4s/armcc/Device/Source/system_SAM4S.c"
+                  attr="config"/>
+         </files>
+      </component>
+      <component Cvendor="Atmel"
+                 Cclass="Device"
+                 Cgroup="Startup"
+                 Cversion="1.0.0"
+                 condition="ATSAM4S2B">
+         <description>Headers and startup code for Atmel ATSAM4S2B</description>
+         <files>
+            <file condition="C" category="include" name="sam4s/include"/>
+            <file condition="C" category="header" name="sam4s/include/sam.h"/>
+            <file condition="C Exe"
+                  category="source"
+                  name="sam4s/templates/main.c"
+                  attr="template"
+                  select="Main file (.c)"/>
+            <file condition="C Exe"
+                  category="source"
+                  name="sam4s/templates/main.cpp"
+                  attr="template"
+                  select="Main file (.cpp)"/>
+            <file condition="C Lib"
+                  category="source"
+                  name="sam4s/templates/library.c"
+                  attr="template"
+                  select="Main file (.c)"/>
+            <file condition="C Lib"
+                  category="source"
+                  name="sam4s/templates/library.cpp"
+                  attr="template"
+                  select="Main file (.cpp)"/>
+            <file condition="GCC Exe"
+                  category="source"
+                  name="sam4s/gcc/system_sam4s.c"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="source"
+                  name="sam4s/gcc/gcc/startup_sam4s.c"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="linkerScript"
+                  name="sam4s/gcc/gcc/sam4s2b_flash.ld"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="other"
+                  name="sam4s/gcc/gcc/sam4s2b_sram.ld"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="other"
+                  name="sam4s/gcc/gcc/sam4s_flash.ld"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="other"
+                  name="sam4s/gcc/gcc/sam4s_sram.ld"
+                  attr="config"/>
+            <file condition="ARMCC Exe"
+                  category="source"
+                  name="sam4s/armcc/Device/Source/ARM/startup_SAM4S.s"
+                  attr="config"/>
+            <file condition="ARMCC Exe"
+                  category="source"
+                  name="sam4s/armcc/Device/Source/system_SAM4S.c"
+                  attr="config"/>
+         </files>
+      </component>
+      <component Cvendor="Atmel"
+                 Cclass="Device"
+                 Cgroup="Startup"
+                 Cversion="1.0.0"
+                 condition="ATSAM4S2C">
+         <description>Headers and startup code for Atmel ATSAM4S2C</description>
+         <files>
+            <file condition="C" category="include" name="sam4s/include"/>
+            <file condition="C" category="header" name="sam4s/include/sam.h"/>
+            <file condition="C Exe"
+                  category="source"
+                  name="sam4s/templates/main.c"
+                  attr="template"
+                  select="Main file (.c)"/>
+            <file condition="C Exe"
+                  category="source"
+                  name="sam4s/templates/main.cpp"
+                  attr="template"
+                  select="Main file (.cpp)"/>
+            <file condition="C Lib"
+                  category="source"
+                  name="sam4s/templates/library.c"
+                  attr="template"
+                  select="Main file (.c)"/>
+            <file condition="C Lib"
+                  category="source"
+                  name="sam4s/templates/library.cpp"
+                  attr="template"
+                  select="Main file (.cpp)"/>
+            <file condition="GCC Exe"
+                  category="source"
+                  name="sam4s/gcc/system_sam4s.c"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="source"
+                  name="sam4s/gcc/gcc/startup_sam4s.c"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="linkerScript"
+                  name="sam4s/gcc/gcc/sam4s2c_flash.ld"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="other"
+                  name="sam4s/gcc/gcc/sam4s2c_sram.ld"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="other"
+                  name="sam4s/gcc/gcc/sam4s_flash.ld"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="other"
+                  name="sam4s/gcc/gcc/sam4s_sram.ld"
+                  attr="config"/>
+            <file condition="ARMCC Exe"
+                  category="source"
+                  name="sam4s/armcc/Device/Source/ARM/startup_SAM4S.s"
+                  attr="config"/>
+            <file condition="ARMCC Exe"
+                  category="source"
+                  name="sam4s/armcc/Device/Source/system_SAM4S.c"
+                  attr="config"/>
+         </files>
+      </component>
+      <component Cvendor="Atmel"
+                 Cclass="Device"
+                 Cgroup="Startup"
+                 Cversion="1.0.0"
+                 condition="ATSAM4S4B">
+         <description>Headers and startup code for Atmel ATSAM4S4B</description>
+         <files>
+            <file condition="C" category="include" name="sam4s/include"/>
+            <file condition="C" category="header" name="sam4s/include/sam.h"/>
+            <file condition="C Exe"
+                  category="source"
+                  name="sam4s/templates/main.c"
+                  attr="template"
+                  select="Main file (.c)"/>
+            <file condition="C Exe"
+                  category="source"
+                  name="sam4s/templates/main.cpp"
+                  attr="template"
+                  select="Main file (.cpp)"/>
+            <file condition="C Lib"
+                  category="source"
+                  name="sam4s/templates/library.c"
+                  attr="template"
+                  select="Main file (.c)"/>
+            <file condition="C Lib"
+                  category="source"
+                  name="sam4s/templates/library.cpp"
+                  attr="template"
+                  select="Main file (.cpp)"/>
+            <file condition="GCC Exe"
+                  category="source"
+                  name="sam4s/gcc/system_sam4s.c"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="source"
+                  name="sam4s/gcc/gcc/startup_sam4s.c"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="linkerScript"
+                  name="sam4s/gcc/gcc/sam4s4b_flash.ld"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="other"
+                  name="sam4s/gcc/gcc/sam4s4b_sram.ld"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="other"
+                  name="sam4s/gcc/gcc/sam4s_flash.ld"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="other"
+                  name="sam4s/gcc/gcc/sam4s_sram.ld"
+                  attr="config"/>
+            <file condition="ARMCC Exe"
+                  category="source"
+                  name="sam4s/armcc/Device/Source/ARM/startup_SAM4S.s"
+                  attr="config"/>
+            <file condition="ARMCC Exe"
+                  category="source"
+                  name="sam4s/armcc/Device/Source/system_SAM4S.c"
+                  attr="config"/>
+         </files>
+      </component>
+      <component Cvendor="Atmel"
+                 Cclass="Device"
+                 Cgroup="Startup"
+                 Cversion="1.0.0"
+                 condition="ATSAM4S4C">
+         <description>Headers and startup code for Atmel ATSAM4S4C</description>
+         <files>
+            <file condition="C" category="include" name="sam4s/include"/>
+            <file condition="C" category="header" name="sam4s/include/sam.h"/>
+            <file condition="C Exe"
+                  category="source"
+                  name="sam4s/templates/main.c"
+                  attr="template"
+                  select="Main file (.c)"/>
+            <file condition="C Exe"
+                  category="source"
+                  name="sam4s/templates/main.cpp"
+                  attr="template"
+                  select="Main file (.cpp)"/>
+            <file condition="C Lib"
+                  category="source"
+                  name="sam4s/templates/library.c"
+                  attr="template"
+                  select="Main file (.c)"/>
+            <file condition="C Lib"
+                  category="source"
+                  name="sam4s/templates/library.cpp"
+                  attr="template"
+                  select="Main file (.cpp)"/>
+            <file condition="GCC Exe"
+                  category="source"
+                  name="sam4s/gcc/system_sam4s.c"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="source"
+                  name="sam4s/gcc/gcc/startup_sam4s.c"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="linkerScript"
+                  name="sam4s/gcc/gcc/sam4s4c_flash.ld"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="other"
+                  name="sam4s/gcc/gcc/sam4s4c_sram.ld"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="other"
+                  name="sam4s/gcc/gcc/sam4s_flash.ld"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="other"
+                  name="sam4s/gcc/gcc/sam4s_sram.ld"
+                  attr="config"/>
+            <file condition="ARMCC Exe"
+                  category="source"
+                  name="sam4s/armcc/Device/Source/ARM/startup_SAM4S.s"
+                  attr="config"/>
+            <file condition="ARMCC Exe"
+                  category="source"
+                  name="sam4s/armcc/Device/Source/system_SAM4S.c"
+                  attr="config"/>
+         </files>
+      </component>
+      <component Cvendor="Atmel"
+                 Cclass="Device"
+                 Cgroup="Startup"
+                 Cversion="1.0.0"
+                 condition="ATSAM4SP32A">
+         <description>Headers and startup code for Atmel ATSAM4SP32A</description>
+         <files>
+            <file condition="C" category="include" name="sam4sp/include"/>
+            <file condition="C" category="header" name="sam4sp/include/sam.h"/>
+            <file condition="C Exe"
+                  category="source"
+                  name="sam4sp/templates/main.c"
+                  attr="template"
+                  select="Main file (.c)"/>
+            <file condition="C Exe"
+                  category="source"
+                  name="sam4sp/templates/main.cpp"
+                  attr="template"
+                  select="Main file (.cpp)"/>
+            <file condition="C Lib"
+                  category="source"
+                  name="sam4sp/templates/library.c"
+                  attr="template"
+                  select="Main file (.c)"/>
+            <file condition="C Lib"
+                  category="source"
+                  name="sam4sp/templates/library.cpp"
+                  attr="template"
+                  select="Main file (.cpp)"/>
+            <file condition="GCC Exe"
+                  category="source"
+                  name="sam4sp/gcc/system_sam4sp.c"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="source"
+                  name="sam4sp/gcc/gcc/startup_sam4sp.c"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="linkerScript"
+                  name="sam4sp/gcc/gcc/sam4sp32a_flash.ld"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="other"
+                  name="sam4sp/gcc/gcc/sam4sp32a_sram.ld"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="other"
+                  name="sam4sp/gcc/gcc/sam4sp_flash.ld"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="other"
+                  name="sam4sp/gcc/gcc/sam4sp_sram.ld"
+                  attr="config"/>
+            <file condition="ARMCC Exe"
+                  category="source"
+                  name="sam4sp/armcc/Device/Source/ARM/startup_sam4sp.s"
+                  attr="config"/>
+            <file condition="ARMCC Exe"
+                  category="source"
+                  name="sam4sp/armcc/Device/Source/system_sam4sp.c"
+                  attr="config"/>
+         </files>
+      </component>
+      <component Cvendor="Atmel"
+                 Cclass="Device"
+                 Cgroup="Startup"
+                 Cversion="1.0.0"
+                 condition="ATSAM4S4A">
+         <description>Headers and startup code for Atmel ATSAM4S4A</description>
+         <files>
+            <file condition="C" category="include" name="sam4s/include"/>
+            <file condition="C" category="header" name="sam4s/include/sam.h"/>
+            <file condition="C Exe"
+                  category="source"
+                  name="sam4s/templates/main.c"
+                  attr="template"
+                  select="Main file (.c)"/>
+            <file condition="C Exe"
+                  category="source"
+                  name="sam4s/templates/main.cpp"
+                  attr="template"
+                  select="Main file (.cpp)"/>
+            <file condition="C Lib"
+                  category="source"
+                  name="sam4s/templates/library.c"
+                  attr="template"
+                  select="Main file (.c)"/>
+            <file condition="C Lib"
+                  category="source"
+                  name="sam4s/templates/library.cpp"
+                  attr="template"
+                  select="Main file (.cpp)"/>
+            <file condition="GCC Exe"
+                  category="source"
+                  name="sam4s/gcc/system_sam4s.c"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="source"
+                  name="sam4s/gcc/gcc/startup_sam4s.c"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="linkerScript"
+                  name="sam4s/gcc/gcc/sam4s4a_flash.ld"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="other"
+                  name="sam4s/gcc/gcc/sam4s4a_sram.ld"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="other"
+                  name="sam4s/gcc/gcc/sam4s_flash.ld"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="other"
+                  name="sam4s/gcc/gcc/sam4s_sram.ld"
+                  attr="config"/>
+            <file condition="ARMCC Exe"
+                  category="source"
+                  name="sam4s/armcc/Device/Source/ARM/startup_SAM4S.s"
+                  attr="config"/>
+            <file condition="ARMCC Exe"
+                  category="source"
+                  name="sam4s/armcc/Device/Source/system_SAM4S.c"
+                  attr="config"/>
+         </files>
+      </component>
+      <component Cvendor="Atmel"
+                 Cclass="Device"
+                 Cgroup="Startup"
+                 Cversion="1.0.0"
+                 condition="ATSAM4SD32C">
+         <description>Headers and startup code for Atmel ATSAM4SD32C</description>
+         <files>
+            <file condition="C" category="include" name="sam4s/include"/>
+            <file condition="C" category="header" name="sam4s/include/sam.h"/>
+            <file condition="C Exe"
+                  category="source"
+                  name="sam4s/templates/main.c"
+                  attr="template"
+                  select="Main file (.c)"/>
+            <file condition="C Exe"
+                  category="source"
+                  name="sam4s/templates/main.cpp"
+                  attr="template"
+                  select="Main file (.cpp)"/>
+            <file condition="C Lib"
+                  category="source"
+                  name="sam4s/templates/library.c"
+                  attr="template"
+                  select="Main file (.c)"/>
+            <file condition="C Lib"
+                  category="source"
+                  name="sam4s/templates/library.cpp"
+                  attr="template"
+                  select="Main file (.cpp)"/>
+            <file condition="GCC Exe"
+                  category="source"
+                  name="sam4s/gcc/system_sam4s.c"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="source"
+                  name="sam4s/gcc/gcc/startup_sam4s.c"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="linkerScript"
+                  name="sam4s/gcc/gcc/sam4sd32c_flash.ld"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="other"
+                  name="sam4s/gcc/gcc/sam4sd32c_sram.ld"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="other"
+                  name="sam4s/gcc/gcc/sam4s_flash.ld"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="other"
+                  name="sam4s/gcc/gcc/sam4s_sram.ld"
+                  attr="config"/>
+            <file condition="ARMCC Exe"
+                  category="source"
+                  name="sam4s/armcc/Device/Source/ARM/startup_SAM4S.s"
+                  attr="config"/>
+            <file condition="ARMCC Exe"
+                  category="source"
+                  name="sam4s/armcc/Device/Source/system_SAM4S.c"
+                  attr="config"/>
+         </files>
+      </component>
+      <component Cvendor="Atmel"
+                 Cclass="Device"
+                 Cgroup="Startup"
+                 Cversion="1.0.0"
+                 condition="ATSAM4S16B">
+         <description>Headers and startup code for Atmel ATSAM4S16B</description>
+         <files>
+            <file condition="C" category="include" name="sam4s/include"/>
+            <file condition="C" category="header" name="sam4s/include/sam.h"/>
+            <file condition="C Exe"
+                  category="source"
+                  name="sam4s/templates/main.c"
+                  attr="template"
+                  select="Main file (.c)"/>
+            <file condition="C Exe"
+                  category="source"
+                  name="sam4s/templates/main.cpp"
+                  attr="template"
+                  select="Main file (.cpp)"/>
+            <file condition="C Lib"
+                  category="source"
+                  name="sam4s/templates/library.c"
+                  attr="template"
+                  select="Main file (.c)"/>
+            <file condition="C Lib"
+                  category="source"
+                  name="sam4s/templates/library.cpp"
+                  attr="template"
+                  select="Main file (.cpp)"/>
+            <file condition="GCC Exe"
+                  category="source"
+                  name="sam4s/gcc/system_sam4s.c"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="source"
+                  name="sam4s/gcc/gcc/startup_sam4s.c"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="linkerScript"
+                  name="sam4s/gcc/gcc/sam4s16b_flash.ld"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="other"
+                  name="sam4s/gcc/gcc/sam4s16b_sram.ld"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="other"
+                  name="sam4s/gcc/gcc/sam4s_flash.ld"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="other"
+                  name="sam4s/gcc/gcc/sam4s_sram.ld"
+                  attr="config"/>
+            <file condition="ARMCC Exe"
+                  category="source"
+                  name="sam4s/armcc/Device/Source/ARM/startup_SAM4S.s"
+                  attr="config"/>
+            <file condition="ARMCC Exe"
+                  category="source"
+                  name="sam4s/armcc/Device/Source/system_SAM4S.c"
+                  attr="config"/>
+         </files>
+      </component>
+      <component Cvendor="Atmel"
+                 Cclass="Device"
+                 Cgroup="Startup"
+                 Cversion="1.0.0"
+                 condition="ATSAM4S16C">
+         <description>Headers and startup code for Atmel ATSAM4S16C</description>
+         <files>
+            <file condition="C" category="include" name="sam4s/include"/>
+            <file condition="C" category="header" name="sam4s/include/sam.h"/>
+            <file condition="C Exe"
+                  category="source"
+                  name="sam4s/templates/main.c"
+                  attr="template"
+                  select="Main file (.c)"/>
+            <file condition="C Exe"
+                  category="source"
+                  name="sam4s/templates/main.cpp"
+                  attr="template"
+                  select="Main file (.cpp)"/>
+            <file condition="C Lib"
+                  category="source"
+                  name="sam4s/templates/library.c"
+                  attr="template"
+                  select="Main file (.c)"/>
+            <file condition="C Lib"
+                  category="source"
+                  name="sam4s/templates/library.cpp"
+                  attr="template"
+                  select="Main file (.cpp)"/>
+            <file condition="GCC Exe"
+                  category="source"
+                  name="sam4s/gcc/system_sam4s.c"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="source"
+                  name="sam4s/gcc/gcc/startup_sam4s.c"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="linkerScript"
+                  name="sam4s/gcc/gcc/sam4s16c_flash.ld"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="other"
+                  name="sam4s/gcc/gcc/sam4s16c_sram.ld"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="other"
+                  name="sam4s/gcc/gcc/sam4s_flash.ld"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="other"
+                  name="sam4s/gcc/gcc/sam4s_sram.ld"
+                  attr="config"/>
+            <file condition="ARMCC Exe"
+                  category="source"
+                  name="sam4s/armcc/Device/Source/ARM/startup_SAM4S.s"
+                  attr="config"/>
+            <file condition="ARMCC Exe"
+                  category="source"
+                  name="sam4s/armcc/Device/Source/system_SAM4S.c"
+                  attr="config"/>
+         </files>
+      </component>
+      <component Cvendor="Atmel"
+                 Cclass="Device"
+                 Cgroup="Startup"
+                 Cversion="1.0.0"
+                 condition="ATSAM4SD32B">
+         <description>Headers and startup code for Atmel ATSAM4SD32B</description>
+         <files>
+            <file condition="C" category="include" name="sam4s/include"/>
+            <file condition="C" category="header" name="sam4s/include/sam.h"/>
+            <file condition="C Exe"
+                  category="source"
+                  name="sam4s/templates/main.c"
+                  attr="template"
+                  select="Main file (.c)"/>
+            <file condition="C Exe"
+                  category="source"
+                  name="sam4s/templates/main.cpp"
+                  attr="template"
+                  select="Main file (.cpp)"/>
+            <file condition="C Lib"
+                  category="source"
+                  name="sam4s/templates/library.c"
+                  attr="template"
+                  select="Main file (.c)"/>
+            <file condition="C Lib"
+                  category="source"
+                  name="sam4s/templates/library.cpp"
+                  attr="template"
+                  select="Main file (.cpp)"/>
+            <file condition="GCC Exe"
+                  category="source"
+                  name="sam4s/gcc/system_sam4s.c"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="source"
+                  name="sam4s/gcc/gcc/startup_sam4s.c"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="linkerScript"
+                  name="sam4s/gcc/gcc/sam4sd32b_flash.ld"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="other"
+                  name="sam4s/gcc/gcc/sam4sd32b_sram.ld"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="other"
+                  name="sam4s/gcc/gcc/sam4s_flash.ld"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="other"
+                  name="sam4s/gcc/gcc/sam4s_sram.ld"
+                  attr="config"/>
+            <file condition="ARMCC Exe"
+                  category="source"
+                  name="sam4s/armcc/Device/Source/ARM/startup_SAM4S.s"
+                  attr="config"/>
+            <file condition="ARMCC Exe"
+                  category="source"
+                  name="sam4s/armcc/Device/Source/system_SAM4S.c"
+                  attr="config"/>
+         </files>
+      </component>
+      <component Cvendor="Atmel"
+                 Cclass="Device"
+                 Cgroup="Startup"
+                 Cversion="1.0.0"
+                 condition="ATSAM4S8B">
+         <description>Headers and startup code for Atmel ATSAM4S8B</description>
+         <files>
+            <file condition="C" category="include" name="sam4s/include"/>
+            <file condition="C" category="header" name="sam4s/include/sam.h"/>
+            <file condition="C Exe"
+                  category="source"
+                  name="sam4s/templates/main.c"
+                  attr="template"
+                  select="Main file (.c)"/>
+            <file condition="C Exe"
+                  category="source"
+                  name="sam4s/templates/main.cpp"
+                  attr="template"
+                  select="Main file (.cpp)"/>
+            <file condition="C Lib"
+                  category="source"
+                  name="sam4s/templates/library.c"
+                  attr="template"
+                  select="Main file (.c)"/>
+            <file condition="C Lib"
+                  category="source"
+                  name="sam4s/templates/library.cpp"
+                  attr="template"
+                  select="Main file (.cpp)"/>
+            <file condition="GCC Exe"
+                  category="source"
+                  name="sam4s/gcc/system_sam4s.c"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="source"
+                  name="sam4s/gcc/gcc/startup_sam4s.c"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="linkerScript"
+                  name="sam4s/gcc/gcc/sam4s8b_flash.ld"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="other"
+                  name="sam4s/gcc/gcc/sam4s8b_sram.ld"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="other"
+                  name="sam4s/gcc/gcc/sam4s_flash.ld"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="other"
+                  name="sam4s/gcc/gcc/sam4s_sram.ld"
+                  attr="config"/>
+            <file condition="ARMCC Exe"
+                  category="source"
+                  name="sam4s/armcc/Device/Source/ARM/startup_SAM4S.s"
+                  attr="config"/>
+            <file condition="ARMCC Exe"
+                  category="source"
+                  name="sam4s/armcc/Device/Source/system_SAM4S.c"
+                  attr="config"/>
+         </files>
+      </component>
+      <component Cvendor="Atmel"
+                 Cclass="Device"
+                 Cgroup="Startup"
+                 Cversion="1.0.0"
+                 condition="ATSAM4S8C">
+         <description>Headers and startup code for Atmel ATSAM4S8C</description>
+         <files>
+            <file condition="C" category="include" name="sam4s/include"/>
+            <file condition="C" category="header" name="sam4s/include/sam.h"/>
+            <file condition="C Exe"
+                  category="source"
+                  name="sam4s/templates/main.c"
+                  attr="template"
+                  select="Main file (.c)"/>
+            <file condition="C Exe"
+                  category="source"
+                  name="sam4s/templates/main.cpp"
+                  attr="template"
+                  select="Main file (.cpp)"/>
+            <file condition="C Lib"
+                  category="source"
+                  name="sam4s/templates/library.c"
+                  attr="template"
+                  select="Main file (.c)"/>
+            <file condition="C Lib"
+                  category="source"
+                  name="sam4s/templates/library.cpp"
+                  attr="template"
+                  select="Main file (.cpp)"/>
+            <file condition="GCC Exe"
+                  category="source"
+                  name="sam4s/gcc/system_sam4s.c"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="source"
+                  name="sam4s/gcc/gcc/startup_sam4s.c"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="linkerScript"
+                  name="sam4s/gcc/gcc/sam4s8c_flash.ld"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="other"
+                  name="sam4s/gcc/gcc/sam4s8c_sram.ld"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="other"
+                  name="sam4s/gcc/gcc/sam4s_flash.ld"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="other"
+                  name="sam4s/gcc/gcc/sam4s_sram.ld"
+                  attr="config"/>
+            <file condition="ARMCC Exe"
+                  category="source"
+                  name="sam4s/armcc/Device/Source/ARM/startup_SAM4S.s"
+                  attr="config"/>
+            <file condition="ARMCC Exe"
+                  category="source"
+                  name="sam4s/armcc/Device/Source/system_SAM4S.c"
+                  attr="config"/>
+         </files>
+      </component>
+      <component Cvendor="Atmel"
+                 Cclass="Device"
+                 Cgroup="Startup"
+                 Cversion="1.0.0"
+                 condition="ATSAM4SA16B">
+         <description>Headers and startup code for Atmel ATSAM4SA16B</description>
+         <files>
+            <file condition="C" category="include" name="sam4s/include"/>
+            <file condition="C" category="header" name="sam4s/include/sam.h"/>
+            <file condition="C Exe"
+                  category="source"
+                  name="sam4s/templates/main.c"
+                  attr="template"
+                  select="Main file (.c)"/>
+            <file condition="C Exe"
+                  category="source"
+                  name="sam4s/templates/main.cpp"
+                  attr="template"
+                  select="Main file (.cpp)"/>
+            <file condition="C Lib"
+                  category="source"
+                  name="sam4s/templates/library.c"
+                  attr="template"
+                  select="Main file (.c)"/>
+            <file condition="C Lib"
+                  category="source"
+                  name="sam4s/templates/library.cpp"
+                  attr="template"
+                  select="Main file (.cpp)"/>
+            <file condition="GCC Exe"
+                  category="source"
+                  name="sam4s/gcc/system_sam4s.c"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="source"
+                  name="sam4s/gcc/gcc/startup_sam4s.c"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="linkerScript"
+                  name="sam4s/gcc/gcc/sam4sa16b_flash.ld"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="other"
+                  name="sam4s/gcc/gcc/sam4sa16b_sram.ld"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="other"
+                  name="sam4s/gcc/gcc/sam4s_flash.ld"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="other"
+                  name="sam4s/gcc/gcc/sam4s_sram.ld"
+                  attr="config"/>
+            <file condition="ARMCC Exe"
+                  category="source"
+                  name="sam4s/armcc/Device/Source/ARM/startup_SAM4S.s"
+                  attr="config"/>
+            <file condition="ARMCC Exe"
+                  category="source"
+                  name="sam4s/armcc/Device/Source/system_SAM4S.c"
+                  attr="config"/>
+         </files>
+      </component>
+      <component Cvendor="Atmel"
+                 Cclass="Device"
+                 Cgroup="Startup"
+                 Cversion="1.0.0"
+                 condition="ATSAM4SA16C">
+         <description>Headers and startup code for Atmel ATSAM4SA16C</description>
+         <files>
+            <file condition="C" category="include" name="sam4s/include"/>
+            <file condition="C" category="header" name="sam4s/include/sam.h"/>
+            <file condition="C Exe"
+                  category="source"
+                  name="sam4s/templates/main.c"
+                  attr="template"
+                  select="Main file (.c)"/>
+            <file condition="C Exe"
+                  category="source"
+                  name="sam4s/templates/main.cpp"
+                  attr="template"
+                  select="Main file (.cpp)"/>
+            <file condition="C Lib"
+                  category="source"
+                  name="sam4s/templates/library.c"
+                  attr="template"
+                  select="Main file (.c)"/>
+            <file condition="C Lib"
+                  category="source"
+                  name="sam4s/templates/library.cpp"
+                  attr="template"
+                  select="Main file (.cpp)"/>
+            <file condition="GCC Exe"
+                  category="source"
+                  name="sam4s/gcc/system_sam4s.c"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="source"
+                  name="sam4s/gcc/gcc/startup_sam4s.c"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="linkerScript"
+                  name="sam4s/gcc/gcc/sam4sa16c_flash.ld"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="other"
+                  name="sam4s/gcc/gcc/sam4sa16c_sram.ld"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="other"
+                  name="sam4s/gcc/gcc/sam4s_flash.ld"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="other"
+                  name="sam4s/gcc/gcc/sam4s_sram.ld"
+                  attr="config"/>
+            <file condition="ARMCC Exe"
+                  category="source"
+                  name="sam4s/armcc/Device/Source/ARM/startup_SAM4S.s"
+                  attr="config"/>
+            <file condition="ARMCC Exe"
+                  category="source"
+                  name="sam4s/armcc/Device/Source/system_SAM4S.c"
+                  attr="config"/>
+         </files>
+      </component>
+      <component Cvendor="Atmel"
+                 Cclass="Device"
+                 Cgroup="Startup"
+                 Cversion="1.0.0"
+                 condition="ATSAM4SD16C">
+         <description>Headers and startup code for Atmel ATSAM4SD16C</description>
+         <files>
+            <file condition="C" category="include" name="sam4s/include"/>
+            <file condition="C" category="header" name="sam4s/include/sam.h"/>
+            <file condition="C Exe"
+                  category="source"
+                  name="sam4s/templates/main.c"
+                  attr="template"
+                  select="Main file (.c)"/>
+            <file condition="C Exe"
+                  category="source"
+                  name="sam4s/templates/main.cpp"
+                  attr="template"
+                  select="Main file (.cpp)"/>
+            <file condition="C Lib"
+                  category="source"
+                  name="sam4s/templates/library.c"
+                  attr="template"
+                  select="Main file (.c)"/>
+            <file condition="C Lib"
+                  category="source"
+                  name="sam4s/templates/library.cpp"
+                  attr="template"
+                  select="Main file (.cpp)"/>
+            <file condition="GCC Exe"
+                  category="source"
+                  name="sam4s/gcc/system_sam4s.c"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="source"
+                  name="sam4s/gcc/gcc/startup_sam4s.c"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="linkerScript"
+                  name="sam4s/gcc/gcc/sam4sd16c_flash.ld"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="other"
+                  name="sam4s/gcc/gcc/sam4sd16c_sram.ld"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="other"
+                  name="sam4s/gcc/gcc/sam4s_flash.ld"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="other"
+                  name="sam4s/gcc/gcc/sam4s_sram.ld"
+                  attr="config"/>
+            <file condition="ARMCC Exe"
+                  category="source"
+                  name="sam4s/armcc/Device/Source/ARM/startup_SAM4S.s"
+                  attr="config"/>
+            <file condition="ARMCC Exe"
+                  category="source"
+                  name="sam4s/armcc/Device/Source/system_SAM4S.c"
+                  attr="config"/>
+         </files>
+      </component>
+      <component Cvendor="Atmel"
+                 Cclass="Device"
+                 Cgroup="Startup"
+                 Cversion="1.0.0"
+                 condition="ATSAM4SD16B">
+         <description>Headers and startup code for Atmel ATSAM4SD16B</description>
+         <files>
+            <file condition="C" category="include" name="sam4s/include"/>
+            <file condition="C" category="header" name="sam4s/include/sam.h"/>
+            <file condition="C Exe"
+                  category="source"
+                  name="sam4s/templates/main.c"
+                  attr="template"
+                  select="Main file (.c)"/>
+            <file condition="C Exe"
+                  category="source"
+                  name="sam4s/templates/main.cpp"
+                  attr="template"
+                  select="Main file (.cpp)"/>
+            <file condition="C Lib"
+                  category="source"
+                  name="sam4s/templates/library.c"
+                  attr="template"
+                  select="Main file (.c)"/>
+            <file condition="C Lib"
+                  category="source"
+                  name="sam4s/templates/library.cpp"
+                  attr="template"
+                  select="Main file (.cpp)"/>
+            <file condition="GCC Exe"
+                  category="source"
+                  name="sam4s/gcc/system_sam4s.c"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="source"
+                  name="sam4s/gcc/gcc/startup_sam4s.c"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="linkerScript"
+                  name="sam4s/gcc/gcc/sam4sd16b_flash.ld"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="other"
+                  name="sam4s/gcc/gcc/sam4sd16b_sram.ld"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="other"
+                  name="sam4s/gcc/gcc/sam4s_flash.ld"
+                  attr="config"/>
+            <file condition="GCC Exe"
+                  category="other"
+                  name="sam4s/gcc/gcc/sam4s_sram.ld"
+                  attr="config"/>
+            <file condition="ARMCC Exe"
+                  category="source"
+                  name="sam4s/armcc/Device/Source/ARM/startup_SAM4S.s"
+                  attr="config"/>
+            <file condition="ARMCC Exe"
+                  category="source"
+                  name="sam4s/armcc/Device/Source/system_SAM4S.c"
+                  attr="config"/>
+         </files>
+      </component>
+   </components>
+</package>

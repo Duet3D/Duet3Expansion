@@ -1,0 +1,289 @@
+<?xml version='1.0' encoding='ASCII'?>
+<package schemaVersion="1.0">
+  <content>
+    <fileset id="moduleheaders">
+      <includes pattern="component/*"/>
+      <includes pattern="instance/*"/>
+    </fileset>
+    <resources target="ATSAM4E8E">
+      <resource type="atdf" subdir="ic.sam4e/atdf">
+        <includes pattern="ATSAM4E8E.atdf"/>
+      </resource>
+      <resource type="svd" subdir="ic.sam4e/svd">
+        <includes pattern="ATSAM4E8E.svd"/>
+      </resource>
+      <resource type="c.header" subdir="ic.sam4e/include">
+        <includes pattern="sam.h"/>
+        <includes pattern="sam4e.h"/>
+        <includes pattern="sam4e8e.h"/>
+        <includes pattern="system_sam4e.h"/>
+        <includes pattern="pio/*sam4e8e.h"/>
+        <includes pattern="component-version.h"/>
+        <includes fileset="moduleheaders"/>
+        <meta key="define" value="__SAM4E8E__"/>
+      </resource>
+      <resource type="c.source.exe.template" subdir="ic.sam4e/templates">
+        <includes pattern="main.c"/>
+      </resource>
+      <resource type="c.source.lib.template" subdir="ic.sam4e/templates">
+        <includes pattern="library.c"/>
+      </resource>
+      <resource type="cpp.source.exe.template" subdir="ic.sam4e/templates">
+        <includes pattern="main.cpp"/>
+      </resource>
+      <resource type="cpp.source.lib.template" subdir="ic.sam4e/templates">
+        <includes pattern="library.cpp"/>
+      </resource>
+      <resource type="armcc.source.startup" subdir="ic.sam4e/armcc">
+        <includes pattern="Device/Source/ARM/startup_SAM4E.s"/>
+        <includes pattern="Device/Source/system_SAM4E.c"/>
+      </resource>
+      <resource type="keil.flashloader" subdir="ic.sam4e/keil">
+        <includes pattern="Flash/ATSAM4E_512.FLM"/>
+        <meta key="Flash/ATSAM4E_512.FLM" value="start=0x00400000|size=0x80000|default=1"/>
+      </resource>
+      <resource type="gcc.source.startup" subdir="ic.sam4e/gcc">
+        <includes pattern="system_sam4e.c"/>
+        <includes pattern="gcc/startup_sam4e.c"/>
+      </resource>
+      <resource type="gcc.linker" subdir="ic.sam4e/gcc">
+        <includes pattern="gcc/sam4e8e_flash.ld"/>
+        <includes pattern="gcc/sam4e8e_sram.ld"/>
+        <includes optional="true" pattern="gcc/sam4e_flash.ld"/>
+        <includes optional="true" pattern="gcc/sam4e_sram.ld"/>
+      </resource>
+    </resources>
+    <resources target="ATSAM4E8CB">
+      <resource type="atdf" subdir="ic.sam4ecb/atdf">
+        <includes pattern="ATSAM4E8CB.atdf"/>
+      </resource>
+      <resource type="svd" subdir="ic.sam4ecb/svd">
+        <includes pattern="ATSAM4E8CB.svd"/>
+      </resource>
+      <resource type="c.header" subdir="ic.sam4ecb/include">
+        <includes pattern="sam.h"/>
+        <includes pattern="sam4e.h"/>
+        <includes pattern="sam4e8cb.h"/>
+        <includes pattern="system_sam4e.h"/>
+        <includes pattern="pio/*sam4e8cb.h"/>
+        <includes pattern="component-version.h"/>
+        <includes fileset="moduleheaders"/>
+        <meta key="define" value="__SAM4E8CB__"/>
+      </resource>
+      <resource type="c.source.exe.template" subdir="ic.sam4ecb/templates">
+        <includes pattern="main.c"/>
+      </resource>
+      <resource type="c.source.lib.template" subdir="ic.sam4ecb/templates">
+        <includes pattern="library.c"/>
+      </resource>
+      <resource type="cpp.source.exe.template" subdir="ic.sam4ecb/templates">
+        <includes pattern="main.cpp"/>
+      </resource>
+      <resource type="cpp.source.lib.template" subdir="ic.sam4ecb/templates">
+        <includes pattern="library.cpp"/>
+      </resource>
+      <resource type="gcc.source.startup" subdir="ic.sam4ecb/gcc">
+        <includes pattern="system_sam4e.c"/>
+        <includes pattern="gcc/startup_sam4e.c"/>
+      </resource>
+      <resource type="gcc.linker" subdir="ic.sam4ecb/gcc">
+        <includes pattern="gcc/sam4e8cb_flash.ld"/>
+        <includes pattern="gcc/sam4e8cb_sram.ld"/>
+        <includes optional="true" pattern="gcc/sam4e_flash.ld"/>
+        <includes optional="true" pattern="gcc/sam4e_sram.ld"/>
+      </resource>
+    </resources>
+    <resources target="ATSAM4E16E">
+      <resource type="atdf" subdir="ic.sam4e/atdf">
+        <includes pattern="ATSAM4E16E.atdf"/>
+      </resource>
+      <resource type="svd" subdir="ic.sam4e/svd">
+        <includes pattern="ATSAM4E16E.svd"/>
+      </resource>
+      <resource type="c.header" subdir="ic.sam4e/include">
+        <includes pattern="sam.h"/>
+        <includes pattern="sam4e.h"/>
+        <includes pattern="sam4e16e.h"/>
+        <includes pattern="system_sam4e.h"/>
+        <includes pattern="pio/*sam4e16e.h"/>
+        <includes pattern="component-version.h"/>
+        <includes fileset="moduleheaders"/>
+        <meta key="define" value="__SAM4E16E__"/>
+      </resource>
+      <resource type="c.source.exe.template" subdir="ic.sam4e/templates">
+        <includes pattern="main.c"/>
+      </resource>
+      <resource type="c.source.lib.template" subdir="ic.sam4e/templates">
+        <includes pattern="library.c"/>
+      </resource>
+      <resource type="cpp.source.exe.template" subdir="ic.sam4e/templates">
+        <includes pattern="main.cpp"/>
+      </resource>
+      <resource type="cpp.source.lib.template" subdir="ic.sam4e/templates">
+        <includes pattern="library.cpp"/>
+      </resource>
+      <resource type="armcc.source.startup" subdir="ic.sam4e/armcc">
+        <includes pattern="Device/Source/ARM/startup_SAM4E.s"/>
+        <includes pattern="Device/Source/system_SAM4E.c"/>
+      </resource>
+      <resource type="keil.flashloader" subdir="ic.sam4e/keil">
+        <includes pattern="Flash/ATSAM4E_1024.FLM"/>
+        <meta key="Flash/ATSAM4E_1024.FLM" value="start=0x00400000|size=0x100000|default=1"/>
+      </resource>
+      <resource type="gcc.source.startup" subdir="ic.sam4e/gcc">
+        <includes pattern="system_sam4e.c"/>
+        <includes pattern="gcc/startup_sam4e.c"/>
+      </resource>
+      <resource type="gcc.linker" subdir="ic.sam4e/gcc">
+        <includes pattern="gcc/sam4e16e_flash.ld"/>
+        <includes pattern="gcc/sam4e16e_sram.ld"/>
+        <includes optional="true" pattern="gcc/sam4e_flash.ld"/>
+        <includes optional="true" pattern="gcc/sam4e_sram.ld"/>
+      </resource>
+    </resources>
+    <resources target="ATSAM4E16CB">
+      <resource type="atdf" subdir="ic.sam4ecb/atdf">
+        <includes pattern="ATSAM4E16CB.atdf"/>
+      </resource>
+      <resource type="svd" subdir="ic.sam4ecb/svd">
+        <includes pattern="ATSAM4E16CB.svd"/>
+      </resource>
+      <resource type="c.header" subdir="ic.sam4ecb/include">
+        <includes pattern="sam.h"/>
+        <includes pattern="sam4e.h"/>
+        <includes pattern="sam4e16cb.h"/>
+        <includes pattern="system_sam4e.h"/>
+        <includes pattern="pio/*sam4e16cb.h"/>
+        <includes pattern="component-version.h"/>
+        <includes fileset="moduleheaders"/>
+        <meta key="define" value="__SAM4E16CB__"/>
+      </resource>
+      <resource type="c.source.exe.template" subdir="ic.sam4ecb/templates">
+        <includes pattern="main.c"/>
+      </resource>
+      <resource type="c.source.lib.template" subdir="ic.sam4ecb/templates">
+        <includes pattern="library.c"/>
+      </resource>
+      <resource type="cpp.source.exe.template" subdir="ic.sam4ecb/templates">
+        <includes pattern="main.cpp"/>
+      </resource>
+      <resource type="cpp.source.lib.template" subdir="ic.sam4ecb/templates">
+        <includes pattern="library.cpp"/>
+      </resource>
+      <resource type="gcc.source.startup" subdir="ic.sam4ecb/gcc">
+        <includes pattern="system_sam4e.c"/>
+        <includes pattern="gcc/startup_sam4e.c"/>
+      </resource>
+      <resource type="gcc.linker" subdir="ic.sam4ecb/gcc">
+        <includes pattern="gcc/sam4e16cb_flash.ld"/>
+        <includes pattern="gcc/sam4e16cb_sram.ld"/>
+        <includes optional="true" pattern="gcc/sam4e_flash.ld"/>
+        <includes optional="true" pattern="gcc/sam4e_sram.ld"/>
+      </resource>
+    </resources>
+    <resources target="ATSAM4E16C">
+      <resource type="atdf" subdir="ic.sam4e/atdf">
+        <includes pattern="ATSAM4E16C.atdf"/>
+      </resource>
+      <resource type="svd" subdir="ic.sam4e/svd">
+        <includes pattern="ATSAM4E16C.svd"/>
+      </resource>
+      <resource type="c.header" subdir="ic.sam4e/include">
+        <includes pattern="sam.h"/>
+        <includes pattern="sam4e.h"/>
+        <includes pattern="sam4e16c.h"/>
+        <includes pattern="system_sam4e.h"/>
+        <includes pattern="pio/*sam4e16c.h"/>
+        <includes pattern="component-version.h"/>
+        <includes fileset="moduleheaders"/>
+        <meta key="define" value="__SAM4E16C__"/>
+      </resource>
+      <resource type="c.source.exe.template" subdir="ic.sam4e/templates">
+        <includes pattern="main.c"/>
+      </resource>
+      <resource type="c.source.lib.template" subdir="ic.sam4e/templates">
+        <includes pattern="library.c"/>
+      </resource>
+      <resource type="cpp.source.exe.template" subdir="ic.sam4e/templates">
+        <includes pattern="main.cpp"/>
+      </resource>
+      <resource type="cpp.source.lib.template" subdir="ic.sam4e/templates">
+        <includes pattern="library.cpp"/>
+      </resource>
+      <resource type="armcc.source.startup" subdir="ic.sam4e/armcc">
+        <includes pattern="Device/Source/ARM/startup_SAM4E.s"/>
+        <includes pattern="Device/Source/system_SAM4E.c"/>
+      </resource>
+      <resource type="keil.flashloader" subdir="ic.sam4e/keil">
+        <includes pattern="Flash/ATSAM4E_1024.FLM"/>
+        <meta key="Flash/ATSAM4E_1024.FLM" value="start=0x00400000|size=0x100000|default=1"/>
+      </resource>
+      <resource type="gcc.source.startup" subdir="ic.sam4e/gcc">
+        <includes pattern="system_sam4e.c"/>
+        <includes pattern="gcc/startup_sam4e.c"/>
+      </resource>
+      <resource type="gcc.linker" subdir="ic.sam4e/gcc">
+        <includes pattern="gcc/sam4e16c_flash.ld"/>
+        <includes pattern="gcc/sam4e16c_sram.ld"/>
+        <includes optional="true" pattern="gcc/sam4e_flash.ld"/>
+        <includes optional="true" pattern="gcc/sam4e_sram.ld"/>
+      </resource>
+    </resources>
+    <resources target="ATSAM4E8C">
+      <resource type="atdf" subdir="ic.sam4e/atdf">
+        <includes pattern="ATSAM4E8C.atdf"/>
+      </resource>
+      <resource type="svd" subdir="ic.sam4e/svd">
+        <includes pattern="ATSAM4E8C.svd"/>
+      </resource>
+      <resource type="c.header" subdir="ic.sam4e/include">
+        <includes pattern="sam.h"/>
+        <includes pattern="sam4e.h"/>
+        <includes pattern="sam4e8c.h"/>
+        <includes pattern="system_sam4e.h"/>
+        <includes pattern="pio/*sam4e8c.h"/>
+        <includes pattern="component-version.h"/>
+        <includes fileset="moduleheaders"/>
+        <meta key="define" value="__SAM4E8C__"/>
+      </resource>
+      <resource type="c.source.exe.template" subdir="ic.sam4e/templates">
+        <includes pattern="main.c"/>
+      </resource>
+      <resource type="c.source.lib.template" subdir="ic.sam4e/templates">
+        <includes pattern="library.c"/>
+      </resource>
+      <resource type="cpp.source.exe.template" subdir="ic.sam4e/templates">
+        <includes pattern="main.cpp"/>
+      </resource>
+      <resource type="cpp.source.lib.template" subdir="ic.sam4e/templates">
+        <includes pattern="library.cpp"/>
+      </resource>
+      <resource type="armcc.source.startup" subdir="ic.sam4e/armcc">
+        <includes pattern="Device/Source/ARM/startup_SAM4E.s"/>
+        <includes pattern="Device/Source/system_SAM4E.c"/>
+      </resource>
+      <resource type="keil.flashloader" subdir="ic.sam4e/keil">
+        <includes pattern="Flash/ATSAM4E_512.FLM"/>
+        <meta key="Flash/ATSAM4E_512.FLM" value="start=0x00400000|size=0x80000|default=1"/>
+      </resource>
+      <resource type="gcc.source.startup" subdir="ic.sam4e/gcc">
+        <includes pattern="system_sam4e.c"/>
+        <includes pattern="gcc/startup_sam4e.c"/>
+      </resource>
+      <resource type="gcc.linker" subdir="ic.sam4e/gcc">
+        <includes pattern="gcc/sam4e8c_flash.ld"/>
+        <includes pattern="gcc/sam4e8c_sram.ld"/>
+        <includes optional="true" pattern="gcc/sam4e_flash.ld"/>
+        <includes optional="true" pattern="gcc/sam4e_sram.ld"/>
+      </resource>
+    </resources>
+  </content>
+  <pdsc xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+		<releases>
+			<release version="1.1.BUILDNUMBER">Add MPU peripheral in device file.</release>
+			<release version="1.1.45">Fix CHIPID_EXID for SAM4E8C and SAM4E16C.</release>
+			<release version="1.1.30">Fix CHIPID_EXID for SAM4E8C and SAM4E16C.</release>
+			<release version="1.0.27">Initial release.</release>
+		</releases>
+	</pdsc>
+</package>

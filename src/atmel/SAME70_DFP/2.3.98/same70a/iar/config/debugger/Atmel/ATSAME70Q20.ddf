@@ -1,0 +1,21 @@
+[Memory]
+;;       = Name        AdrSpace StartAdr   EndAdr     AccType
+Memory0  = ITCM        Memory   0x00000000 0x00200000 R
+Memory1  = IFLASH      Memory   0x00400000 0x00500000 R
+Memory2  = IROM        Memory   0x00800000 0x00804000 R
+Memory3  = DTCM        Memory   0x20000000 0x20020000 R
+Memory4  = IRAM        Memory   0x20400000 0x20460000 RW
+Memory5  = Peripherals Memory   0x40000000 0x5FFFFFFF RW
+Memory6  = EBI_CS0     Memory   0x60000000 0x61000000 RW
+Memory7  = EBI_CS1     Memory   0x61000000 0x62000000 RW
+Memory8  = EBI_CS2     Memory   0x62000000 0x63000000 RW
+Memory9  = EBI_CS3     Memory   0x63000000 0x64000000 RW
+Memory10 = SDRAM_CS    Memory   0x70000000 0x80000000 R
+Memory11 = QSPIMEM     Memory   0x80000000 0xA0000000 R
+Memory12 = AXIMX       Memory   0xA0000000 0xA0100000 R
+
+TrustedRanges = true
+UseSfrFilter  = true
+
+[SfrInclude]
+File = ATSAME70Q20.svd

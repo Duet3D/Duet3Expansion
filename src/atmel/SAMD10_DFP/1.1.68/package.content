@@ -1,0 +1,419 @@
+<?xml version='1.0' encoding='ASCII'?>
+<package schemaVersion="1.0">
+  <content>
+    <fileset id="moduleheaders">
+      <includes pattern="component/*"/>
+      <includes pattern="instance/*"/>
+    </fileset>
+    <resources target="ATSAMD10D14AM">
+      <resource type="atdf" subdir="atdf">
+        <includes pattern="ATSAMD10D14AM.atdf"/>
+      </resource>
+      <resource type="svd" subdir="svd">
+        <includes pattern="ATSAMD10D14AM.svd"/>
+      </resource>
+      <resource type="c.header" subdir="include">
+        <includes pattern="sam.h"/>
+        <includes pattern="samd10.h"/>
+        <includes pattern="samd10d14am.h"/>
+        <includes pattern="system_samd10.h"/>
+        <includes pattern="pio/samd10d14am.h"/>
+        <includes pattern="component-version.h"/>
+        <includes fileset="moduleheaders"/>
+        <meta key="define" value="__SAMD10D14AM__"/>
+      </resource>
+      <resource type="c.source.exe.template" subdir="templates">
+        <includes pattern="main.c"/>
+      </resource>
+      <resource type="c.source.lib.template" subdir="templates">
+        <includes pattern="library.c"/>
+      </resource>
+      <resource type="cpp.source.exe.template" subdir="templates">
+        <includes pattern="main.cpp"/>
+      </resource>
+      <resource type="cpp.source.lib.template" subdir="templates">
+        <includes pattern="library.cpp"/>
+      </resource>
+      <resource type="gcc.source.startup" subdir="gcc">
+        <includes pattern="system_samd10.c"/>
+        <includes pattern="gcc/startup_samd10.c"/>
+      </resource>
+      <resource type="gcc.linker" subdir="gcc">
+        <includes pattern="gcc/samd10d14am_flash.ld"/>
+        <includes pattern="gcc/samd10d14am_sram.ld"/>
+      </resource>
+      <resource type="iar.source.startup" subdir="iar">
+        <includes pattern="system_samd10.c"/>
+        <includes pattern="iar/startup_samd10.c"/>
+      </resource>
+      <resource type="iar.linker" subdir="iar">
+        <includes pattern="iar/samd10d14am_flash.icf"/>
+        <includes pattern="iar/samd10d14am_sram.icf"/>
+      </resource>
+      <resource type="iar.config" subdir="iar">
+        <includes pattern="config/debugger/Atmel/Trace_SAMD10.dmac"/>
+        <includes pattern="config/debugger/Atmel/ATSAMD10D14AM.ddf"/>
+        <includes pattern="config/devices/Atmel/**/ATSAMD10D14AM.i79"/>
+        <includes pattern="config/devices/Atmel/**/ATSAMD10D14AM.menu"/>
+        <includes pattern="config/flashloader/Atmel/samd10d14am/samd10d14am-flash.board"/>
+        <includes pattern="config/flashloader/Atmel/samd10d14am/samd10d14am-flash.flash"/>
+        <includes pattern="config/flashloader/Atmel/samd10d14am/samd10d14am-flash.out"/>
+      </resource>
+    </resources>
+    <resources target="ATSAMD10D13AM">
+      <resource type="atdf" subdir="atdf">
+        <includes pattern="ATSAMD10D13AM.atdf"/>
+      </resource>
+      <resource type="svd" subdir="svd">
+        <includes pattern="ATSAMD10D13AM.svd"/>
+      </resource>
+      <resource type="c.header" subdir="include">
+        <includes pattern="sam.h"/>
+        <includes pattern="samd10.h"/>
+        <includes pattern="samd10d13am.h"/>
+        <includes pattern="system_samd10.h"/>
+        <includes pattern="pio/samd10d13am.h"/>
+        <includes pattern="component-version.h"/>
+        <includes fileset="moduleheaders"/>
+        <meta key="define" value="__SAMD10D13AM__"/>
+      </resource>
+      <resource type="c.source.exe.template" subdir="templates">
+        <includes pattern="main.c"/>
+      </resource>
+      <resource type="c.source.lib.template" subdir="templates">
+        <includes pattern="library.c"/>
+      </resource>
+      <resource type="cpp.source.exe.template" subdir="templates">
+        <includes pattern="main.cpp"/>
+      </resource>
+      <resource type="cpp.source.lib.template" subdir="templates">
+        <includes pattern="library.cpp"/>
+      </resource>
+      <resource type="gcc.source.startup" subdir="gcc">
+        <includes pattern="system_samd10.c"/>
+        <includes pattern="gcc/startup_samd10.c"/>
+      </resource>
+      <resource type="gcc.linker" subdir="gcc">
+        <includes pattern="gcc/samd10d13am_flash.ld"/>
+        <includes pattern="gcc/samd10d13am_sram.ld"/>
+      </resource>
+      <resource type="iar.source.startup" subdir="iar">
+        <includes pattern="system_samd10.c"/>
+        <includes pattern="iar/startup_samd10.c"/>
+      </resource>
+      <resource type="iar.linker" subdir="iar">
+        <includes pattern="iar/samd10d13am_flash.icf"/>
+        <includes pattern="iar/samd10d13am_sram.icf"/>
+      </resource>
+      <resource type="iar.config" subdir="iar">
+        <includes pattern="config/debugger/Atmel/Trace_SAMD10.dmac"/>
+        <includes pattern="config/debugger/Atmel/ATSAMD10D13AM.ddf"/>
+        <includes pattern="config/devices/Atmel/**/ATSAMD10D13AM.i79"/>
+        <includes pattern="config/devices/Atmel/**/ATSAMD10D13AM.menu"/>
+        <includes pattern="config/flashloader/Atmel/samd10d13am/samd10d13am-flash.board"/>
+        <includes pattern="config/flashloader/Atmel/samd10d13am/samd10d13am-flash.flash"/>
+        <includes pattern="config/flashloader/Atmel/samd10d13am/samd10d13am-flash.out"/>
+      </resource>
+    </resources>
+    <resources target="ATSAMD10C13A">
+      <resource type="atdf" subdir="atdf">
+        <includes pattern="ATSAMD10C13A.atdf"/>
+      </resource>
+      <resource type="svd" subdir="svd">
+        <includes pattern="ATSAMD10C13A.svd"/>
+      </resource>
+      <resource type="c.header" subdir="include">
+        <includes pattern="sam.h"/>
+        <includes pattern="samd10.h"/>
+        <includes pattern="samd10c13a.h"/>
+        <includes pattern="system_samd10.h"/>
+        <includes pattern="pio/samd10c13a.h"/>
+        <includes pattern="component-version.h"/>
+        <includes fileset="moduleheaders"/>
+        <meta key="define" value="__SAMD10C13A__"/>
+      </resource>
+      <resource type="c.source.exe.template" subdir="templates">
+        <includes pattern="main.c"/>
+      </resource>
+      <resource type="c.source.lib.template" subdir="templates">
+        <includes pattern="library.c"/>
+      </resource>
+      <resource type="cpp.source.exe.template" subdir="templates">
+        <includes pattern="main.cpp"/>
+      </resource>
+      <resource type="cpp.source.lib.template" subdir="templates">
+        <includes pattern="library.cpp"/>
+      </resource>
+      <resource type="armcc.source.startup" subdir="armcc">
+        <includes pattern="Device/SAMD10/Source/ARM/startup_SAMD10.s"/>
+        <includes pattern="Device/SAMD10/Source/system_samd10.c"/>
+      </resource>
+      <resource type="keil.flashloader" subdir="keil">
+        <includes pattern="Flash/ATSAMD10_8.FLM"/>
+        <meta key="Flash/ATSAMD10_8.FLM" value="start=0x00000000|size=0x00002000|default=1"/>
+      </resource>
+      <resource type="gcc.source.startup" subdir="gcc">
+        <includes pattern="system_samd10.c"/>
+        <includes pattern="gcc/startup_samd10.c"/>
+      </resource>
+      <resource type="gcc.linker" subdir="gcc">
+        <includes pattern="gcc/samd10c13a_flash.ld"/>
+        <includes pattern="gcc/samd10c13a_sram.ld"/>
+      </resource>
+      <resource type="iar.source.startup" subdir="iar">
+        <includes pattern="system_samd10.c"/>
+        <includes pattern="iar/startup_samd10.c"/>
+      </resource>
+      <resource type="iar.linker" subdir="iar">
+        <includes pattern="iar/samd10c13a_flash.icf"/>
+        <includes pattern="iar/samd10c13a_sram.icf"/>
+      </resource>
+      <resource type="iar.config" subdir="iar">
+        <includes pattern="config/debugger/Atmel/Trace_SAMD10.dmac"/>
+        <includes pattern="config/debugger/Atmel/ATSAMD10C13A.ddf"/>
+        <includes pattern="config/devices/Atmel/**/ATSAMD10C13A.i79"/>
+        <includes pattern="config/devices/Atmel/**/ATSAMD10C13A.menu"/>
+        <includes pattern="config/flashloader/Atmel/samd10c13a/samd10c13a-flash.board"/>
+        <includes pattern="config/flashloader/Atmel/samd10c13a/samd10c13a-flash.flash"/>
+        <includes pattern="config/flashloader/Atmel/samd10c13a/samd10c13a-flash.out"/>
+      </resource>
+    </resources>
+    <resources target="ATSAMD10D13AS">
+      <resource type="atdf" subdir="atdf">
+        <includes pattern="ATSAMD10D13AS.atdf"/>
+      </resource>
+      <resource type="svd" subdir="svd">
+        <includes pattern="ATSAMD10D13AS.svd"/>
+      </resource>
+      <resource type="c.header" subdir="include">
+        <includes pattern="sam.h"/>
+        <includes pattern="samd10.h"/>
+        <includes pattern="samd10d13as.h"/>
+        <includes pattern="system_samd10.h"/>
+        <includes pattern="pio/samd10d13as.h"/>
+        <includes pattern="component-version.h"/>
+        <includes fileset="moduleheaders"/>
+        <meta key="define" value="__SAMD10D13AS__"/>
+      </resource>
+      <resource type="c.source.exe.template" subdir="templates">
+        <includes pattern="main.c"/>
+      </resource>
+      <resource type="c.source.lib.template" subdir="templates">
+        <includes pattern="library.c"/>
+      </resource>
+      <resource type="cpp.source.exe.template" subdir="templates">
+        <includes pattern="main.cpp"/>
+      </resource>
+      <resource type="cpp.source.lib.template" subdir="templates">
+        <includes pattern="library.cpp"/>
+      </resource>
+      <resource type="gcc.source.startup" subdir="gcc">
+        <includes pattern="system_samd10.c"/>
+        <includes pattern="gcc/startup_samd10.c"/>
+      </resource>
+      <resource type="gcc.linker" subdir="gcc">
+        <includes pattern="gcc/samd10d13as_flash.ld"/>
+        <includes pattern="gcc/samd10d13as_sram.ld"/>
+      </resource>
+      <resource type="iar.source.startup" subdir="iar">
+        <includes pattern="system_samd10.c"/>
+        <includes pattern="iar/startup_samd10.c"/>
+      </resource>
+      <resource type="iar.linker" subdir="iar">
+        <includes pattern="iar/samd10d13as_flash.icf"/>
+        <includes pattern="iar/samd10d13as_sram.icf"/>
+      </resource>
+      <resource type="iar.config" subdir="iar">
+        <includes pattern="config/debugger/Atmel/Trace_SAMD10.dmac"/>
+        <includes pattern="config/debugger/Atmel/ATSAMD10D13AS.ddf"/>
+        <includes pattern="config/devices/Atmel/**/ATSAMD10D13AS.i79"/>
+        <includes pattern="config/devices/Atmel/**/ATSAMD10D13AS.menu"/>
+        <includes pattern="config/flashloader/Atmel/samd10d13as/samd10d13as-flash.board"/>
+        <includes pattern="config/flashloader/Atmel/samd10d13as/samd10d13as-flash.flash"/>
+        <includes pattern="config/flashloader/Atmel/samd10d13as/samd10d13as-flash.out"/>
+      </resource>
+    </resources>
+    <resources target="ATSAMD10D14AU">
+      <resource type="atdf" subdir="atdf">
+        <includes pattern="ATSAMD10D14AU.atdf"/>
+      </resource>
+      <resource type="svd" subdir="svd">
+        <includes pattern="ATSAMD10D14AU.svd"/>
+      </resource>
+      <resource type="c.header" subdir="include">
+        <includes pattern="sam.h"/>
+        <includes pattern="samd10.h"/>
+        <includes pattern="samd10d14au.h"/>
+        <includes pattern="system_samd10.h"/>
+        <includes pattern="pio/samd10d14au.h"/>
+        <includes pattern="component-version.h"/>
+        <includes fileset="moduleheaders"/>
+        <meta key="define" value="__SAMD10D14AU__"/>
+      </resource>
+      <resource type="c.source.exe.template" subdir="templates">
+        <includes pattern="main.c"/>
+      </resource>
+      <resource type="c.source.lib.template" subdir="templates">
+        <includes pattern="library.c"/>
+      </resource>
+      <resource type="cpp.source.exe.template" subdir="templates">
+        <includes pattern="main.cpp"/>
+      </resource>
+      <resource type="cpp.source.lib.template" subdir="templates">
+        <includes pattern="library.cpp"/>
+      </resource>
+      <resource type="gcc.source.startup" subdir="gcc">
+        <includes pattern="system_samd10.c"/>
+        <includes pattern="gcc/startup_samd10.c"/>
+      </resource>
+      <resource type="gcc.linker" subdir="gcc">
+        <includes pattern="gcc/samd10d14au_flash.ld"/>
+        <includes pattern="gcc/samd10d14au_sram.ld"/>
+      </resource>
+      <resource type="iar.source.startup" subdir="iar">
+        <includes pattern="system_samd10.c"/>
+        <includes pattern="iar/startup_samd10.c"/>
+      </resource>
+      <resource type="iar.linker" subdir="iar">
+        <includes pattern="iar/samd10d14au_flash.icf"/>
+        <includes pattern="iar/samd10d14au_sram.icf"/>
+      </resource>
+      <resource type="iar.config" subdir="iar">
+        <includes pattern="config/debugger/Atmel/Trace_SAMD10.dmac"/>
+        <includes pattern="config/debugger/Atmel/ATSAMD10D14AU.ddf"/>
+        <includes pattern="config/devices/Atmel/**/ATSAMD10D14AU.i79"/>
+        <includes pattern="config/devices/Atmel/**/ATSAMD10D14AU.menu"/>
+        <includes pattern="config/flashloader/Atmel/samd10d14au/samd10d14au-flash.board"/>
+        <includes pattern="config/flashloader/Atmel/samd10d14au/samd10d14au-flash.flash"/>
+        <includes pattern="config/flashloader/Atmel/samd10d14au/samd10d14au-flash.out"/>
+      </resource>
+    </resources>
+    <resources target="ATSAMD10C14A">
+      <resource type="atdf" subdir="atdf">
+        <includes pattern="ATSAMD10C14A.atdf"/>
+      </resource>
+      <resource type="svd" subdir="svd">
+        <includes pattern="ATSAMD10C14A.svd"/>
+      </resource>
+      <resource type="c.header" subdir="include">
+        <includes pattern="sam.h"/>
+        <includes pattern="samd10.h"/>
+        <includes pattern="samd10c14a.h"/>
+        <includes pattern="system_samd10.h"/>
+        <includes pattern="pio/samd10c14a.h"/>
+        <includes pattern="component-version.h"/>
+        <includes fileset="moduleheaders"/>
+        <meta key="define" value="__SAMD10C14A__"/>
+      </resource>
+      <resource type="c.source.exe.template" subdir="templates">
+        <includes pattern="main.c"/>
+      </resource>
+      <resource type="c.source.lib.template" subdir="templates">
+        <includes pattern="library.c"/>
+      </resource>
+      <resource type="cpp.source.exe.template" subdir="templates">
+        <includes pattern="main.cpp"/>
+      </resource>
+      <resource type="cpp.source.lib.template" subdir="templates">
+        <includes pattern="library.cpp"/>
+      </resource>
+      <resource type="armcc.source.startup" subdir="armcc">
+        <includes pattern="Device/SAMD10/Source/ARM/startup_SAMD10.s"/>
+        <includes pattern="Device/SAMD10/Source/system_samd10.c"/>
+      </resource>
+      <resource type="keil.flashloader" subdir="keil">
+        <includes pattern="Flash/ATSAMD10_16.FLM"/>
+        <meta key="Flash/ATSAMD10_16.FLM" value="start=0x00000000|size=0x00004000|default=1"/>
+      </resource>
+      <resource type="gcc.source.startup" subdir="gcc">
+        <includes pattern="system_samd10.c"/>
+        <includes pattern="gcc/startup_samd10.c"/>
+      </resource>
+      <resource type="gcc.linker" subdir="gcc">
+        <includes pattern="gcc/samd10c14a_flash.ld"/>
+        <includes pattern="gcc/samd10c14a_sram.ld"/>
+      </resource>
+      <resource type="iar.source.startup" subdir="iar">
+        <includes pattern="system_samd10.c"/>
+        <includes pattern="iar/startup_samd10.c"/>
+      </resource>
+      <resource type="iar.linker" subdir="iar">
+        <includes pattern="iar/samd10c14a_flash.icf"/>
+        <includes pattern="iar/samd10c14a_sram.icf"/>
+      </resource>
+      <resource type="iar.config" subdir="iar">
+        <includes pattern="config/debugger/Atmel/Trace_SAMD10.dmac"/>
+        <includes pattern="config/debugger/Atmel/ATSAMD10C14A.ddf"/>
+        <includes pattern="config/devices/Atmel/**/ATSAMD10C14A.i79"/>
+        <includes pattern="config/devices/Atmel/**/ATSAMD10C14A.menu"/>
+        <includes pattern="config/flashloader/Atmel/samd10c14a/samd10c14a-flash.board"/>
+        <includes pattern="config/flashloader/Atmel/samd10c14a/samd10c14a-flash.flash"/>
+        <includes pattern="config/flashloader/Atmel/samd10c14a/samd10c14a-flash.out"/>
+      </resource>
+    </resources>
+    <resources target="ATSAMD10D14AS">
+      <resource type="atdf" subdir="atdf">
+        <includes pattern="ATSAMD10D14AS.atdf"/>
+      </resource>
+      <resource type="svd" subdir="svd">
+        <includes pattern="ATSAMD10D14AS.svd"/>
+      </resource>
+      <resource type="c.header" subdir="include">
+        <includes pattern="sam.h"/>
+        <includes pattern="samd10.h"/>
+        <includes pattern="samd10d14as.h"/>
+        <includes pattern="system_samd10.h"/>
+        <includes pattern="pio/samd10d14as.h"/>
+        <includes pattern="component-version.h"/>
+        <includes fileset="moduleheaders"/>
+        <meta key="define" value="__SAMD10D14AS__"/>
+      </resource>
+      <resource type="c.source.exe.template" subdir="templates">
+        <includes pattern="main.c"/>
+      </resource>
+      <resource type="c.source.lib.template" subdir="templates">
+        <includes pattern="library.c"/>
+      </resource>
+      <resource type="cpp.source.exe.template" subdir="templates">
+        <includes pattern="main.cpp"/>
+      </resource>
+      <resource type="cpp.source.lib.template" subdir="templates">
+        <includes pattern="library.cpp"/>
+      </resource>
+      <resource type="gcc.source.startup" subdir="gcc">
+        <includes pattern="system_samd10.c"/>
+        <includes pattern="gcc/startup_samd10.c"/>
+      </resource>
+      <resource type="gcc.linker" subdir="gcc">
+        <includes pattern="gcc/samd10d14as_flash.ld"/>
+        <includes pattern="gcc/samd10d14as_sram.ld"/>
+      </resource>
+      <resource type="iar.source.startup" subdir="iar">
+        <includes pattern="system_samd10.c"/>
+        <includes pattern="iar/startup_samd10.c"/>
+      </resource>
+      <resource type="iar.linker" subdir="iar">
+        <includes pattern="iar/samd10d14as_flash.icf"/>
+        <includes pattern="iar/samd10d14as_sram.icf"/>
+      </resource>
+      <resource type="iar.config" subdir="iar">
+        <includes pattern="config/debugger/Atmel/Trace_SAMD10.dmac"/>
+        <includes pattern="config/debugger/Atmel/ATSAMD10D14AS.ddf"/>
+        <includes pattern="config/devices/Atmel/**/ATSAMD10D14AS.i79"/>
+        <includes pattern="config/devices/Atmel/**/ATSAMD10D14AS.menu"/>
+        <includes pattern="config/flashloader/Atmel/samd10d14as/samd10d14as-flash.board"/>
+        <includes pattern="config/flashloader/Atmel/samd10d14as/samd10d14as-flash.flash"/>
+        <includes pattern="config/flashloader/Atmel/samd10d14as/samd10d14as-flash.out"/>
+      </resource>
+    </resources>
+  </content>
+  <pdsc xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+		<releases>
+			<release version="1.1.BUILDNUMBER">Removed warnings for some component headers.</release>
+			<release version="1.1.64">Fixed GNU/IAR assembler issues. Files now under Apache license.</release>
+			<release version="1.0.31">Updated documentation links.</release>
+			<release version="1.0.25">Added ATSAMD10D14AU.</release>
+			<release version="1.0.24">Initial release.</release>
+		</releases>
+	</pdsc>
+</package>

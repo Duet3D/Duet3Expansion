@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Properties schemaVersion="1.0">
+	<ExternalProgrammingToolCommand>"$(PROJECT_BLEAPP_ROOT)\tools\SambFlashTool.exe" write -i "$(OutputDirectory)\$(OutputFileName).img" -n $(avrtoolserialnumber) -c $(avrtoolinterfaceclock) -p $(avrdeviceexpectedsignature)</ExternalProgrammingToolCommand>
+	<PostBuildEvent Configuration="*">"$(PROJECT_BLEAPP_ROOT)\tools\samb_makeimage.bat" "$(PROJECT_BLEAPP_ROOT)\patches\patch.img" "$(OutputDirectory)\$(OutputFileName).bin"  app_entry _sstack _estack _sfixed</PostBuildEvent>
+</Properties>

@@ -1,0 +1,45 @@
+[FILEFORMAT]
+rev=1.6
+
+
+[CHIP]
+// Chip name
+name=ATSAME70Q20
+// What endian modes does the chip support? (le_be8_be32(default), le_be8, le_be32, le, be8_be32, be8, be32)
+endiansupport=le
+
+// Does the chip support the thumb instruction set? (true(default), false)
+thumbsupport=true
+// Does the chip support the arm instruction set? (true(default), false)
+armsupport=true
+
+// Does the chip have an FPU coprocessor? (VFPv1, VFPv2, VFP9-S, MaverickCrunch, None(default))
+fpu=VFPv4
+
+// Chip specific macros
+DeviceMacros=$TOOLKIT_DIR$\config\debugger\Atmel\Trace_SAME70.dmac
+
+// Debugger interface, default JTAG=true, RTCK=true, SWD=true if Cortex cores, SWD=false if ARM cores, SWO_TraceD0=false
+JTAG=true
+RTCK=true
+SWD=true
+SWO_TraceD0=false
+
+
+[CORE]
+// Name of ARM processor core
+name=Cortex-M7F
+
+
+[DDF FILE]
+// Name of DDF file
+name=Atmel\ATSAME70Q20.ddf
+
+
+[LINKER FILE]
+// Name of linker config file
+name=$TOOLKIT_DIR$\config\linker\Atmel\same70q20\flash.icf
+
+
+[FLASH LOADER]
+little=$TOOLKIT_DIR$\config\flashloader\Atmel\same70q20\same70q20-flash.board

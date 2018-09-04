@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+
+<flash_board>
+  <pass>
+    <loader>$TOOLKIT_DIR$\config\flashloader\Atmel\same70j21\same70j21-flash.flash</loader>
+    <range>CODE 0x00400000 0x00600000</range>
+    <rel_offset>0</rel_offset>
+    <args>--flash
+--boot
+</args>
+  </pass>
+</flash_board>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+
+<optionMenuItem>
+  <tag>ATSAME70Q20</tag>
+  <display>Atmel SAME70Q20</display>
+  <data>$CUR_DIR$\ATSAME70Q20.i79</data>
+</optionMenuItem>
