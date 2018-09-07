@@ -11,7 +11,6 @@
 #include "RTOSIface/RTOSIface.h"
 
 void AppMain();
-void delay(uint32_t ms);
 
 namespace Tasks
 {

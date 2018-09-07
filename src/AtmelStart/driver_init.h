@@ -21,7 +21,7 @@ extern "C" {
 #include <hal_io.h>
 #include <hal_sleep.h>
 
-#include <hal_adc_sync.h>
+#include <hal_adc_async.h>
 
 #include <hal_ext_irq.h>
 
@@ -37,9 +37,9 @@ extern "C" {
 #include <hal_wdt.h>
 #include <hal_can_async.h>
 
-extern struct adc_sync_descriptor ADC_0;
+extern struct adc_async_descriptor ADC_0;
+extern struct adc_async_descriptor ADC_1;
 
-extern struct adc_sync_descriptor ADC_1;
 extern struct timer_descriptor    TIMER_0;
 
 extern struct usart_async_descriptor USART_0;
@@ -49,14 +49,6 @@ extern struct timer_descriptor TIMER_1;
 
 extern struct wdt_descriptor       WDT_0;
 extern struct can_async_descriptor CAN_0;
-
-void ADC_0_PORT_init(void);
-void ADC_0_CLOCK_init(void);
-void ADC_0_init(void);
-
-void ADC_1_PORT_init(void);
-void ADC_1_CLOCK_init(void);
-void ADC_1_init(void);
 
 void USART_0_PORT_init(void);
 void USART_0_CLOCK_init(void);

@@ -11,7 +11,7 @@
 #include <utils.h>
 #include <hal_init.h>
 
-#include <hpl/adc/hpl_adc_base.h>
+//#include <hpl/adc/hpl_adc_base.h>
 #include <hpl/rtc/hpl_rtc_base.h>
 
 /*! The buffer size for USART */
@@ -24,47 +24,9 @@ struct can_async_descriptor CAN_0;
 
 static uint8_t USART_0_buffer[USART_0_BUFFER_SIZE];
 
-struct adc_sync_descriptor ADC_0;
-
-struct adc_sync_descriptor ADC_1;
-
 struct pwm_descriptor PWM_0;
 
 struct wdt_descriptor WDT_0;
-
-void ADC_0_PORT_init(void)
-{
-}
-
-void ADC_0_CLOCK_init(void)
-{
-	hri_mclk_set_APBDMASK_ADC0_bit(MCLK);
-	hri_gclk_write_PCHCTRL_reg(GCLK, ADC0_GCLK_ID, CONF_GCLK_ADC0_SRC | (1 << GCLK_PCHCTRL_CHEN_Pos));
-}
-
-void ADC_0_init(void)
-{
-	ADC_0_CLOCK_init();
-	ADC_0_PORT_init();
-	adc_sync_init(&ADC_0, ADC0, (void *)NULL);
-}
-
-void ADC_1_PORT_init(void)
-{
-}
-
-void ADC_1_CLOCK_init(void)
-{
-	hri_mclk_set_APBDMASK_ADC1_bit(MCLK);
-	hri_gclk_write_PCHCTRL_reg(GCLK, ADC1_GCLK_ID, CONF_GCLK_ADC1_SRC | (1 << GCLK_PCHCTRL_CHEN_Pos));
-}
-
-void ADC_1_init(void)
-{
-	ADC_1_CLOCK_init();
-	ADC_1_PORT_init();
-	adc_sync_init(&ADC_1, ADC1, (void *)NULL);
-}
 
 void EXTERNAL_IRQ_0_init(void)
 {
@@ -200,8 +162,6 @@ void system_init(void)
 //	TIMER_0_init();
 
 	USART_0_init();
-
-//	delay_driver_init();
 
 //	PWM_0_init();
 

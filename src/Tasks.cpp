@@ -188,12 +188,12 @@ extern "C" void vApplicationTickHook(void)
 //	wdt_restart(WDT);							// kick the watchdog
 }
 
-uint32_t millis( void )
+uint32_t millis()
 {
     return (uint32_t)g_ms_ticks;
 }
 
-uint64_t millis64( void )
+uint64_t millis64()
 {
 	hal_atomic_t flags;
 	atomic_enter_critical(&flags);

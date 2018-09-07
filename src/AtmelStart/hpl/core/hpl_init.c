@@ -66,7 +66,7 @@ void _init_chip(void)
 
 #if CONF_DMAC_ENABLE
 	hri_mclk_set_AHBMASK_DMAC_bit(MCLK);
-	_dma_init();
+//dc42	_dma_init();
 #endif
 
 #if CONF_CMCC_ENABLE
