@@ -28,6 +28,9 @@ namespace AnalogIn
 
 	// Enable an on-chip MCU temperature sensor
 	bool EnableTemperatureSensor(unsigned int sensorNumber, AnalogInCallbackFunction fn, CallbackParameter param, uint32_t ticksPerCall = 1, int adcnum = -1);
+
+	// Get the number of conversions that were started
+	void GetDebugInfo(uint32_t &convsStarted, uint32_t &convsCompleted);
 }
 
 #endif /* SRC_HAL_ANALOGIN_H_ */

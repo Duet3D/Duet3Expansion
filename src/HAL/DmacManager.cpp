@@ -50,6 +50,7 @@ void DmacInit()
 	{
 		NVIC_DisableIRQ((IRQn)(DMAC_0_IRQn + i));
 		NVIC_ClearPendingIRQ((IRQn)(DMAC_0_IRQn + i));
+		NVIC_SetPriority((IRQn)(DMAC_0_IRQn + i), NvicPriorityDmac);
 		NVIC_EnableIRQ((IRQn)(DMAC_0_IRQn + i));
 	}
 
@@ -61,14 +62,14 @@ void DmacSetBtctrl(const uint8_t channel, const uint16_t val)
 	hri_dmacdescriptor_write_BTCTRL_reg(&descriptor_section[channel], val);
 }
 
-void DmacSetDestinationAddress(const uint8_t channel, const void *const dst)
+void DmacSetDestinationAddress(const uint8_t channel, volatile void *const dst)
 {
-	hri_dmacdescriptor_write_DSTADDR_reg(&descriptor_section[channel], (uint32_t)dst);
+	hri_dmacdescriptor_write_DSTADDR_reg(&descriptor_section[channel], reinterpret_cast<uint32_t>(dst));
 }
 
 void DmacSetSourceAddress(const uint8_t channel, const void *const src)
 {
-	hri_dmacdescriptor_write_SRCADDR_reg(&descriptor_section[channel], (uint32_t)src);
+	hri_dmacdescriptor_write_SRCADDR_reg(&descriptor_section[channel], reinterpret_cast<uint32_t>(src));
 }
 
 void DmacSetDataLength(const uint8_t channel, const uint32_t amount)

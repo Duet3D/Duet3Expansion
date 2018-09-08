@@ -71,7 +71,7 @@ enum class DmaTrigSource : uint8_t
 	adc1_seq,
 
 	dac_empty = 0x48,
-	dac_resrdy =0x4A,
+	dac_resrdy = 0x4A,
 
 	i2s_rx = 0x4C,
 	i2s_tx = 0x4E,
@@ -86,7 +86,7 @@ enum class DmaTrigSource : uint8_t
 };
 
 void DmacInit();
-void DmacSetDestinationAddress(const uint8_t channel, const void *const dst);
+void DmacSetDestinationAddress(const uint8_t channel, volatile void *const dst);
 void DmacSetSourceAddress(const uint8_t channel, const void *const src);
 void DmacSetDataLength(const uint8_t channel, const uint32_t amount);
 void DmacEnableChannel(const uint8_t channel, const bool software_trigger = false);

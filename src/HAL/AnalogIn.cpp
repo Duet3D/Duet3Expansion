@@ -9,12 +9,16 @@
 #include "RTOSIface/RTOSIface.h"
 #include "HAL/DmacManager.h"
 
+static uint32_t conversionsStarted = 0;
+static uint32_t conversionsCompleted = 0;
+
 class AdcClass
 {
 public:
 	enum class State : uint8_t
 	{
 		noChannels = 0,
+		starting,
 		idle,
 		converting,
 		ready
@@ -46,12 +50,13 @@ private:
 	size_t numChannelsEnabled;
 	TaskBase *taskToWake;
 	State state;
+	bool justStarted;
 	AnalogInCallbackFunction callbackFunctions[MaxChannels];
 	CallbackParameter callbackParams[MaxChannels];
 	uint32_t ticksPerCall[MaxChannels];
 	uint32_t ticksAtLastCall[MaxChannels];
 	uint32_t inputRegisters[MaxChannels];
-	uint16_t results[MaxChannels];
+	volatile uint16_t results[MaxChannels];
 };
 
 AdcClass::AdcClass(Adc * const p_device, IRQn p_irqn, DmaChannel p_dmaChan, DmaTrigSource p_trigSrc, const int8_t *p_pinTable, size_t p_size)
@@ -95,7 +100,7 @@ bool AdcClass::EnableTemperatureSensor(unsigned int sensorNumber, AnalogInCallba
 		return false;
 	}
 
-	return InternalEnableChannel(sensorNumber + 0x1C, fn, param, p_ticksPerCall);
+	return InternalEnableChannel(sensorNumber + ADC_INPUTCTRL_MUXPOS_PTAT_Val, fn, param, p_ticksPerCall);
 }
 
 bool AdcClass::InternalEnableChannel(uint8_t chan, AnalogInCallbackFunction fn, CallbackParameter param, uint32_t p_ticksPerCall)
@@ -112,21 +117,7 @@ bool AdcClass::InternalEnableChannel(uint8_t chan, AnalogInCallbackFunction fn, 
 
 	if (numChannelsEnabled == 1)
 	{
-		// First channel is being enabled, so initialise the DMAC
-		// First the sequencer
-		DmacSetSourceAddress(dmaChan, inputRegisters);
-		DmacSetDestinationAddress(dmaChan, const_cast<uint32_t *>(&device->DSEQDATA.reg));
-		DmacSetBtctrl(dmaChan, DMAC_BTCTRL_VALID | DMAC_BTCTRL_EVOSEL_DISABLE | DMAC_BTCTRL_BLOCKACT_INT | DMAC_BTCTRL_BEATSIZE_WORD | DMAC_BTCTRL_SRCINC | DMAC_BTCTRL_STEPSIZE_X1);
-		DMAC->Channel[dmaChan].CHCTRLA.reg = DMAC_CHCTRLA_SWRST | DMAC_CHCTRLA_TRIGSRC((uint8_t)trigSrc + 1) | DMAC_CHCTRLA_TRIGACT_BURST
-														| DMAC_CHCTRLA_BURSTLEN_SINGLE | DMAC_CHCTRLA_THRESHOLD_1BEAT;
-		// Now the result reader
-		DmacSetSourceAddress(dmaChan + 1, const_cast<uint16_t *>(&device->RESULT.reg));
-		DmacSetDestinationAddress(dmaChan + 1, results);
-		DmacSetInterruptCallbacks(dmaChan + 1, DmaCompleteCallback, nullptr, this);
-		DmacSetBtctrl(dmaChan + 1, DMAC_BTCTRL_VALID | DMAC_BTCTRL_EVOSEL_DISABLE | DMAC_BTCTRL_BLOCKACT_INT | DMAC_BTCTRL_BEATSIZE_HWORD | DMAC_BTCTRL_DSTINC | DMAC_BTCTRL_STEPSIZE_X1);
-		DMAC->Channel[dmaChan + 1].CHCTRLA.reg = DMAC_CHCTRLA_SWRST | DMAC_CHCTRLA_TRIGSRC((uint8_t)trigSrc) | DMAC_CHCTRLA_TRIGACT_BURST
-														| DMAC_CHCTRLA_BURSTLEN_SINGLE | DMAC_CHCTRLA_THRESHOLD_1BEAT;
-
+		// First channel is being enabled
 		// Initialise the ADC
 		if (!hri_adc_is_syncing(device, ADC_SYNCBUSY_SWRST))
 		{
@@ -139,21 +130,39 @@ bool AdcClass::InternalEnableChannel(uint8_t chan, AnalogInCallbackFunction fn, 
 		}
 		hri_adc_wait_for_sync(device, ADC_SYNCBUSY_SWRST);
 
+		hri_adc_write_CTRLA_reg(device, ADC_CTRLA_PRESCALER_DIV32);
 		hri_adc_write_CTRLB_reg(device, 0);
 		hri_adc_write_REFCTRL_reg(device, ADC_REFCTRL_REFSEL_INTVCC1);
-		hri_adc_write_EVCTRL_reg(device, 0);
+		hri_adc_write_EVCTRL_reg(device, ADC_EVCTRL_RESRDYEO);
 		hri_adc_write_INPUTCTRL_reg(device, ADC_INPUTCTRL_MUXNEG_GND);
 		hri_adc_write_AVGCTRL_reg(device, 0);
-		hri_adc_write_SAMPCTRL_reg(device, ADC_SAMPCTRL_OFFCOMP);
+		hri_adc_write_SAMPCTRL_reg(device, ADC_SAMPCTRL_OFFCOMP);		// this also extends the sample time
 		hri_adc_write_WINLT_reg(device, 0);
 		hri_adc_write_WINUT_reg(device, 0xFFFF);
 		hri_adc_write_GAINCORR_reg(device, 1u << 11);
 		hri_adc_write_OFFSETCORR_reg(device, 0);
 		hri_adc_write_DBGCTRL_reg(device, 0);
-		hri_adc_write_DSEQCTRL_reg(device, ADC_DSEQCTRL_INPUTCTRL);						// enable DMA sequencing, update just the input register
-		hri_adc_write_CTRLA_reg(device, ADC_CTRLA_PRESCALER_DIV16 | ADC_CTRLA_ENABLE);
 
-		state = State::idle;
+		// Enable DMA sequencing, updating just the input register.
+		// We have to set the AUTOSTART bit too, otherwise the ADC requires one trigger per channel converted.
+		hri_adc_write_DSEQCTRL_reg(device, ADC_DSEQCTRL_INPUTCTRL | ADC_DSEQCTRL_AUTOSTART);
+		hri_adc_set_CTRLA_ENABLE_bit(device);
+
+
+		// Initialise the DMAC. First the sequencer
+		DmacSetDestinationAddress(dmaChan, &device->DSEQDATA.reg);
+		DmacSetBtctrl(dmaChan, DMAC_BTCTRL_VALID | DMAC_BTCTRL_EVOSEL_DISABLE | DMAC_BTCTRL_BLOCKACT_INT | DMAC_BTCTRL_BEATSIZE_WORD
+								| DMAC_BTCTRL_SRCINC | DMAC_BTCTRL_STEPSEL_SRC | DMAC_BTCTRL_STEPSIZE_X1);
+		DMAC->Channel[dmaChan].CHCTRLA.reg = DMAC_CHCTRLA_TRIGSRC((uint8_t)trigSrc + 1) | DMAC_CHCTRLA_TRIGACT_BURST
+											| DMAC_CHCTRLA_BURSTLEN_SINGLE | DMAC_CHCTRLA_THRESHOLD_1BEAT;
+		// Now the result reader
+		DmacSetSourceAddress(dmaChan + 1, const_cast<uint16_t *>(&device->RESULT.reg));
+		DmacSetInterruptCallbacks(dmaChan + 1, DmaCompleteCallback, nullptr, this);
+		DmacSetBtctrl(dmaChan + 1, DMAC_BTCTRL_VALID | DMAC_BTCTRL_EVOSEL_DISABLE | DMAC_BTCTRL_BLOCKACT_INT | DMAC_BTCTRL_BEATSIZE_HWORD
+									| DMAC_BTCTRL_DSTINC | DMAC_BTCTRL_STEPSEL_DST | DMAC_BTCTRL_STEPSIZE_X1);
+		DMAC->Channel[dmaChan + 1].CHCTRLA.reg = DMAC_CHCTRLA_TRIGSRC((uint8_t)trigSrc) | DMAC_CHCTRLA_TRIGACT_BURST
+												| DMAC_CHCTRLA_BURSTLEN_SINGLE | DMAC_CHCTRLA_THRESHOLD_1BEAT;
+		state = State::starting;
 	}
 
 	return true;
@@ -166,15 +175,35 @@ bool AdcClass::StartConversion(TaskBase *p_taskToWake)
 		return false;
 	}
 
-	DmacSetSourceAddress(dmaChan, inputRegisters);
-	DmacSetDataLength(dmaChan, numChannelsEnabled * sizeof(inputRegisters[0]));
+	taskToWake = p_taskToWake;
+
+	// Set up DMA to read the results our of the ADC into the results array
 	DmacSetDestinationAddress(dmaChan + 1, results);
-	DmacSetDataLength(dmaChan + 1, numChannelsEnabled * sizeof(results[0]));
+	DmacSetDataLength(dmaChan + 1, numChannelsEnabled);
+	DmacEnableCompletedInterrupt(dmaChan + 1);
+	DMAC->Channel[dmaChan + 1].CHCTRLA.bit.ENABLE = 1;
+
+#if 1
+	// This code works.
+	// Set the input register to the first one, to kick of the first conversion
+	device->DSEQDATA.reg = inputRegisters[0];
+
+	// If there are multiple channels enabled, configure DMA to send the remaining input registers when required
+	if (numChannelsEnabled > 1)
+	{
+		DmacSetSourceAddress(dmaChan, inputRegisters + 1);
+		DmacSetDataLength(dmaChan, numChannelsEnabled - 1);
+		DMAC->Channel[dmaChan].CHCTRLA.bit.ENABLE = 1;
+	}
+#else
+	// This code doesn't work. The results are out of sync with the requested input channels, all 1 channel late.
+	DmacSetSourceAddress(dmaChan, inputRegisters);
+	DmacSetDataLength(dmaChan, numChannelsEnabled);
+	DMAC->Channel[dmaChan].CHCTRLA.bit.ENABLE = 1;
+#endif
 
 	state = State::converting;
-	taskToWake = p_taskToWake;
-	DmacEnableCompletedInterrupt(dmaChan + 1);
-	hri_adc_set_SWTRIG_START_bit(device);
+	++conversionsStarted;
 	return true;
 }
 
@@ -198,6 +227,8 @@ void AdcClass::ExecuteCallbacks()
 void AdcClass::ResultReadyCallback()
 {
 	state = State::ready;
+	++conversionsCompleted;
+	DMAC->Channel[dmaChan].CHCTRLA.bit.ENABLE = 0;			// disable the sequencer DMA, just in case it is out of sync
 	if (taskToWake != nullptr)
 	{
 		taskToWake->GiveFromISR();
@@ -270,6 +301,7 @@ namespace AnalogIn
 					adc.ExecuteCallbacks();
 					//no break
 				case AdcClass::State::idle:
+				case AdcClass::State::starting:
 					adc.StartConversion(&analogInTask);
 					conversionStarted = true;
 					break;
@@ -285,6 +317,7 @@ namespace AnalogIn
 				{
 					//TODO we had a timeout so record an error
 				}
+				delay(2);
 			}
 			else
 			{
@@ -297,6 +330,17 @@ namespace AnalogIn
 	// Initialise the analog input subsystem. Call this just once.
 	void Init()
 	{
+		// Enable ADC clocks
+		hri_mclk_set_APBDMASK_ADC0_bit(MCLK);
+		hri_gclk_write_PCHCTRL_reg(GCLK, ADC0_GCLK_ID, GCLK_PCHCTRL_GEN_GCLK0_Val | (1 << GCLK_PCHCTRL_CHEN_Pos));
+		hri_mclk_set_APBDMASK_ADC1_bit(MCLK);
+		hri_gclk_write_PCHCTRL_reg(GCLK, ADC1_GCLK_ID, GCLK_PCHCTRL_GEN_GCLK0_Val | (1 << GCLK_PCHCTRL_CHEN_Pos));
+
+		// Set the supply controller to on-demand mode so that we can get at both temperature sensors
+		hri_supc_set_VREF_ONDEMAND_bit(SUPC);
+		hri_supc_set_VREF_TSEN_bit(SUPC);
+		hri_supc_clear_VREF_VREFOE_bit(SUPC);
+
 		analogInTask.Create(AinLoop, "AIN", nullptr, TaskBase::AinPriority);
 	}
 
@@ -354,6 +398,12 @@ namespace AnalogIn
 			return Adcs[adcnum]->EnableTemperatureSensor(sensorNumber, fn, param, ticksPerCall);
 		}
 		return false;
+	}
+
+	void GetDebugInfo(uint32_t &convsStarted, uint32_t &convsCompleted)
+	{
+		convsStarted = conversionsStarted;
+		convsCompleted = conversionsCompleted;
 	}
 }
 

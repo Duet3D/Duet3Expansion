@@ -30,6 +30,11 @@ constexpr DmaChannel Adc1TxDmaChannel = 4;
 
 constexpr unsigned int NumDmaChannelsUsed = 10;			// must be at least the number of channels used, may be larger. Max 32 on the SAME51.
 
+// Interrupt priorities, lower means higher priority. 0-2 can't make RTOS calls.
+const uint32_t NvicPriorityPins = 3;					// priority for GPIO pin interrupts - filament sensors must be higher than step
+const uint32_t NvicPriorityDmac = 4;					// priority for DMA complete interrupts
+const uint32_t NvicPriorityStep = 5;					// step interrupt is next highest, it can preempt most other interrupts
+
 // PWM frequencies
 //TODO move to Configuration.h ?
 constexpr PwmFrequency SlowHeaterPwmFreq = 10;			// slow PWM frequency for bed and chamber heaters, compatible with DC/AC SSRs
