@@ -20,6 +20,11 @@ Sercom * const SERCOM_TMC51xx = SERCOM0;
 
 constexpr Pin VinMonitorPin = PORTA_PIN(11);
 
+// Timer/counter used to generate step pulses and other sub-milisecond timings
+TcCount32 * const StepTc = &(TC6->COUNT32);
+constexpr IRQn StepTcIRQn = TC6_IRQn;
+constexpr unsigned int StepTcClockId = TC6_GCLK_ID;
+
 // DMA channel assignments. Channels 0-3 have individual interrupt vectors, channels 4-31 share an interrupt vector.
 constexpr DmaChannel TmcTxDmaChannel = 0;
 constexpr DmaChannel TmcRxDmaChannel = 1;

@@ -13,6 +13,7 @@
 
 #include "TMC51xx.h"
 #include "RTOSIface/RTOSIface.h"
+#include <Movement/StepTimer.h>
 
 #ifdef SAME51
 # include "HAL/IoPorts.h"
@@ -745,7 +746,7 @@ void TmcDriverState::SetStallDetectFilter(bool sgFilter)
 void TmcDriverState::SetStallMinimumStepsPerSecond(unsigned int stepsPerSecond)
 {
 	//TODO use hardware facility instead
-	maxStallStepInterval = StepClockRate/max<unsigned int>(stepsPerSecond, 1);
+	maxStallStepInterval = StepTimer::StepClockRate/max<unsigned int>(stepsPerSecond, 1);
 }
 
 void TmcDriverState::AppendStallConfig(const StringRef& reply) const
@@ -757,7 +758,7 @@ void TmcDriverState::AppendStallConfig(const StringRef& reply) const
 		threshold -= 128;
 	}
 	reply.catf("stall threshold %d, filter %s, steps/sec %" PRIu32 ", coolstep %" PRIx32,
-				threshold, ((filtered) ? "on" : "off"), StepClockRate/maxStallStepInterval, writeRegisters[WriteCoolConf] & 0xFFFF);
+				threshold, ((filtered) ? "on" : "off"), StepTimer::StepClockRate/maxStallStepInterval, writeRegisters[WriteCoolConf] & 0xFFFF);
 }
 
 void TmcDriverState::GetSpiCommand(uint8_t *sendDataBlock)

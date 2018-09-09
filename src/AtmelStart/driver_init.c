@@ -11,7 +11,6 @@
 #include <utils.h>
 #include <hal_init.h>
 
-//#include <hpl/adc/hpl_adc_base.h>
 #include <hpl/rtc/hpl_rtc_base.h>
 
 /*! The buffer size for USART */
@@ -34,19 +33,6 @@ void EXTERNAL_IRQ_0_init(void)
 	hri_mclk_set_APBAMASK_EIC_bit(MCLK);
 
 	ext_irq_init();
-}
-
-/**
- * \brief Timer initialization function
- *
- * Enables Timer peripheral, clocks and initializes Timer driver
- */
-static void TIMER_0_init(void)
-{
-	hri_mclk_set_APBDMASK_TC6_bit(MCLK);
-	hri_gclk_write_PCHCTRL_reg(GCLK, TC6_GCLK_ID, CONF_GCLK_TC6_SRC | (1 << GCLK_PCHCTRL_CHEN_Pos));
-
-	timer_init(&TIMER_0, TC6, _tc_get_timer());
 }
 
 /**
@@ -125,6 +111,7 @@ void WDT_0_init(void)
 void CAN_0_PORT_init(void)
 {
 }
+
 /**
  * \brief CAN initialization function
  *
@@ -143,8 +130,6 @@ void system_init(void)
 	init_mcu();
 
 //	EXTERNAL_IRQ_0_init();
-
-	TIMER_0_init();
 
 	USART_0_init();
 

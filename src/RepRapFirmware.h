@@ -101,6 +101,26 @@ union CallbackParameter
 
 typedef void (*StandardCallbackFunction)(CallbackParameter);
 
+// Atomic section locker, alternative to InterruptCriticalSectionLocker (may be faster)
+class AtomicCriticalSectionLocker
+{
+public:
+	AtomicCriticalSectionLocker() : basePrio(__get_PRIMASK())
+	{
+		__disable_irq();
+		__DMB();
+	}
+
+	~AtomicCriticalSectionLocker()
+	{
+		__DMB();
+		__set_PRIMASK(basePrio);
+	}
+
+private:
+	uint32_t basePrio;
+};
+
 // Macro to give us the number of elements in an array
 #ifndef ARRAY_SIZE
 # define ARRAY_SIZE(_x)	(sizeof(_x)/sizeof(_x[0]))
@@ -116,7 +136,6 @@ typedef void (*StandardCallbackFunction)(CallbackParameter);
 # define SAME51		1
 #endif
 
-const uint32_t StepClockRate = 120000/128;
 typedef uint8_t Pin;
 constexpr Pin NoPin = 0xFF;
 typedef uint16_t PwmFrequency;
