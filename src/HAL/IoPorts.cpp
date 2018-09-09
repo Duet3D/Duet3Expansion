@@ -80,4 +80,43 @@ void PwmPort::WriteAnalog(float pwm) const
 	}
 }
 
+void pinMode(Pin pin, PinMode mode)
+{
+	switch (mode)
+	{
+	case INPUT:
+		gpio_set_pin_pull_mode(pin, GPIO_PULL_OFF);
+		gpio_set_pin_direction(pin, GPIO_DIRECTION_IN);
+		break;
+
+	case INPUT_PULLUP:
+		gpio_set_pin_pull_mode(pin, GPIO_PULL_UP);
+		gpio_set_pin_direction(pin, GPIO_DIRECTION_IN);
+		break;
+
+	case INPUT_PULLDOWN:
+		gpio_set_pin_pull_mode(pin, GPIO_PULL_DOWN);
+		gpio_set_pin_direction(pin, GPIO_DIRECTION_IN);
+		break;
+
+	case OUTPUT_LOW:
+		gpio_set_pin_level(pin, false);
+		gpio_set_pin_direction(pin, GPIO_DIRECTION_OUT);
+		break;
+
+	case OUTPUT_HIGH:
+		gpio_set_pin_level(pin, true);
+		gpio_set_pin_direction(pin, GPIO_DIRECTION_OUT);
+		break;
+
+	case AIN:
+		gpio_set_pin_pull_mode(pin, GPIO_PULL_OFF);
+		gpio_set_pin_direction(pin, GPIO_DIRECTION_OFF);
+		break;
+
+	default:
+		break;
+	}
+}
+
 // End

@@ -43,8 +43,10 @@ void EXTERNAL_IRQ_0_init(void)
  */
 static void TIMER_0_init(void)
 {
-	hri_mclk_set_APBAMASK_RTC_bit(MCLK);
-	timer_init(&TIMER_0, RTC, _rtc_get_timer());
+	hri_mclk_set_APBDMASK_TC6_bit(MCLK);
+	hri_gclk_write_PCHCTRL_reg(GCLK, TC6_GCLK_ID, CONF_GCLK_TC6_SRC | (1 << GCLK_PCHCTRL_CHEN_Pos));
+
+	timer_init(&TIMER_0, TC6, _tc_get_timer());
 }
 
 /**
@@ -93,33 +95,20 @@ void delay_driver_init(void)
 
 void PWM_0_PORT_init(void)
 {
+	gpio_set_pin_function(PA18, PINMUX_PA18E_TC3_WO0);
 }
 
 void PWM_0_CLOCK_init(void)
 {
-
-	hri_mclk_set_APBAMASK_TC0_bit(MCLK);
-	hri_gclk_write_PCHCTRL_reg(GCLK, TC0_GCLK_ID, CONF_GCLK_TC0_SRC | (1 << GCLK_PCHCTRL_CHEN_Pos));
+	hri_mclk_set_APBBMASK_TC3_bit(MCLK);
+	hri_gclk_write_PCHCTRL_reg(GCLK, TC3_GCLK_ID, CONF_GCLK_TC3_SRC | (1 << GCLK_PCHCTRL_CHEN_Pos));
 }
 
 void PWM_0_init(void)
 {
 	PWM_0_CLOCK_init();
 	PWM_0_PORT_init();
-	pwm_init(&PWM_0, TC0, _tc_get_pwm());
-}
-
-/**
- * \brief Timer initialization function
- *
- * Enables Timer peripheral, clocks and initializes Timer driver
- */
-static void TIMER_1_init(void)
-{
-	hri_mclk_set_APBAMASK_TC1_bit(MCLK);
-	hri_gclk_write_PCHCTRL_reg(GCLK, TC1_GCLK_ID, CONF_GCLK_TC1_SRC | (1 << GCLK_PCHCTRL_CHEN_Pos));
-
-	timer_init(&TIMER_1, TC1, _tc_get_timer());
+	pwm_init(&PWM_0, TC3, _tc_get_pwm());
 }
 
 void WDT_0_CLOCK_init(void)
@@ -153,19 +142,14 @@ void system_init(void)
 {
 	init_mcu();
 
-//	ADC_0_init();
-
-//	ADC_1_init();
-
 //	EXTERNAL_IRQ_0_init();
 
-//	TIMER_0_init();
+	TIMER_0_init();
 
 	USART_0_init();
 
-//	PWM_0_init();
+	PWM_0_init();
 
-//	TIMER_1_init();
 //	WDT_0_init();
 //	CAN_0_init();
 }

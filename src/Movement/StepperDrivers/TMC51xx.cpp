@@ -934,11 +934,11 @@ static void SetupDMA()
 	xdmac_channel_enable(XDMAC, XDMAC_CHAN_TMC_TX);
 #elif SAME51
 	// Receive
-	DMAC->Channel[TmcRxDmaChannel].CHCTRLA.reg = DMAC_CHCTRLA_SWRST | DMAC_CHCTRLA_TRIGSRC((uint8_t)DmaTrigSource::sercom0_rx) | DMAC_CHCTRLA_TRIGACT_BURST
+	DMAC->Channel[TmcRxDmaChannel].CHCTRLA.reg = DMAC_CHCTRLA_TRIGSRC((uint8_t)DmaTrigSource::sercom0_rx) | DMAC_CHCTRLA_TRIGACT_BURST
 													| DMAC_CHCTRLA_BURSTLEN_SINGLE | DMAC_CHCTRLA_THRESHOLD_1BEAT;
 
 	// Transmit
-	DMAC->Channel[TmcTxDmaChannel].CHCTRLA.reg = DMAC_CHCTRLA_SWRST | DMAC_CHCTRLA_TRIGSRC((uint8_t)DmaTrigSource::sercom0_tx) | DMAC_CHCTRLA_TRIGACT_BURST
+	DMAC->Channel[TmcTxDmaChannel].CHCTRLA.reg = DMAC_CHCTRLA_TRIGSRC((uint8_t)DmaTrigSource::sercom0_tx) | DMAC_CHCTRLA_TRIGACT_BURST
 													| DMAC_CHCTRLA_BURSTLEN_SINGLE | DMAC_CHCTRLA_THRESHOLD_1BEAT;
 	// Enable both channels
 	DMAC->Channel[TmcRxDmaChannel].CHCTRLA.bit.ENABLE = 1;
@@ -973,7 +973,7 @@ static inline void DisableDma()
 static inline void ResetSpi()
 {
 #if TMC51xx_USES_SERCOM
-	SERCOM_TMC51xx->SPI.CTRLA.bit.ENABLE = 0;
+	// Don't disable the whole SPI between transmissions because that causes the clock output to go high impedance
 	SERCOM_TMC51xx->SPI.CTRLB.bit.RXEN = 0;
 #elif TMC51xx_USES_USART
 	USART_TMC51xx->US_CR = US_CR_RSTRX | US_CR_RSTTX;	// reset transmitter and receiver
@@ -987,7 +987,6 @@ static inline void EnableSpi()
 {
 #if TMC51xx_USES_SERCOM
 	SERCOM_TMC51xx->SPI.CTRLB.bit.RXEN = 1;
-	SERCOM_TMC51xx->SPI.CTRLA.bit.ENABLE = 1;
 #elif TMC51xx_USES_USART
 	USART_TMC51xx->US_CR = US_CR_RXEN | US_CR_TXEN;		// enable transmitter and receiver
 #else
@@ -1028,6 +1027,7 @@ static inline void EnableEndOfTransferInterrupt()
 // DMA complete callback
 void RxDmaCompleteIsr(CallbackParameter param)
 {
+	fastDigitalWriteHigh(GlobalTmc51xxCSPin);			// set CS high
 	tmcTask.GiveFromISR();
 }
 
@@ -1042,7 +1042,7 @@ extern "C" void TmcLoop(void *)
 	{
 		if (driversState == DriversState::noPower)
 		{
-			TaskBase::Take(0);
+			TaskBase::Take(portMAX_DELAY);
 		}
 		else
 		{
@@ -1096,16 +1096,16 @@ extern "C" void TmcLoop(void *)
 
 						if (allInitialised)
 						{
-							digitalWrite(GlobalTmc51xxEnablePin, false);
+							fastDigitalWriteLow(GlobalTmc51xxEnablePin);
 							driversState = DriversState::ready;
 						}
 					}
 				}
 			}
 			// Set up data to write
+			uint8_t *writeBufPtr = sendData;
 			for (size_t i = 0; i < numTmc51xxDrivers; ++i)
 			{
-				uint8_t *writeBufPtr = sendData;
 				driverStates[i].GetSpiCommand(writeBufPtr);
 				writeBufPtr += 5;
 			}
@@ -1126,7 +1126,7 @@ extern "C" void TmcLoop(void *)
 			}
 
 			// Wait for the end-of-transfer interrupt
-			timedOut = TaskBase::Take(TransferTimeout);
+			timedOut = TaskBase::Take(TransferTimeout) == 0;
 		}
 	}
 }
@@ -1163,8 +1163,7 @@ namespace SmartDrivers
 		hri_mclk_set_APBAMASK_SERCOM0_bit(MCLK);
 
 		// Set up the SERCOM
-		const uint32_t regCtrlA = SERCOM_SPI_CTRLA_SWRST | SERCOM_SPI_CTRLA_ENABLE
-								| SERCOM_SPI_CTRLA_MODE(3) | SERCOM_SPI_CTRLA_DIPO(3) | SERCOM_SPI_CTRLA_DOPO(0) | SERCOM_SPI_CTRLA_FORM(0)
+		const uint32_t regCtrlA = SERCOM_SPI_CTRLA_MODE(3) | SERCOM_SPI_CTRLA_DIPO(3) | SERCOM_SPI_CTRLA_DOPO(0) | SERCOM_SPI_CTRLA_FORM(0)
 								| SERCOM_SPI_CTRLA_CPOL | SERCOM_SPI_CTRLA_CPHA;
 		const uint32_t regCtrlB = 0;											// 8 bits, slave select disabled, receiver disabled for now
 		const uint32_t regCtrlC = 0;											// not 32-bit mode
@@ -1189,17 +1188,21 @@ namespace SmartDrivers
 
 		// Set up the DMA descriptors
 		// We use separate write-back descriptors, so we only need to set this up once, but it must be in SRAM
-		DmacSetBtctrl(TmcRxDmaChannel, DMAC_BTCTRL_VALID | DMAC_BTCTRL_EVOSEL_DISABLE | DMAC_BTCTRL_BLOCKACT_INT | DMAC_BTCTRL_BEATSIZE_BYTE | DMAC_BTCTRL_DSTINC | DMAC_BTCTRL_STEPSIZE_X1);
-		DmacSetSourceAddress(TmcRxDmaChannel, const_cast<uint32_t *>(&(SERCOM_TMC51xx->SPI.DATA.reg)));
+		DmacSetBtctrl(TmcRxDmaChannel, DMAC_BTCTRL_VALID | DMAC_BTCTRL_EVOSEL_DISABLE | DMAC_BTCTRL_BLOCKACT_INT | DMAC_BTCTRL_BEATSIZE_BYTE
+									| DMAC_BTCTRL_DSTINC | DMAC_BTCTRL_STEPSEL_DST | DMAC_BTCTRL_STEPSIZE_X1);
+		DmacSetSourceAddress(TmcRxDmaChannel, &(SERCOM_TMC51xx->SPI.DATA.reg));
 		DmacSetDestinationAddress(TmcRxDmaChannel, rcvData);
 		DmacSetDataLength(TmcRxDmaChannel, ARRAY_SIZE(rcvData));
 
-		DmacSetBtctrl(TmcTxDmaChannel, DMAC_BTCTRL_VALID | DMAC_BTCTRL_EVOSEL_DISABLE | DMAC_BTCTRL_BLOCKACT_INT | DMAC_BTCTRL_BEATSIZE_BYTE | DMAC_BTCTRL_SRCINC | DMAC_BTCTRL_STEPSIZE_X1);
+		DmacSetBtctrl(TmcTxDmaChannel, DMAC_BTCTRL_VALID | DMAC_BTCTRL_EVOSEL_DISABLE | DMAC_BTCTRL_BLOCKACT_INT | DMAC_BTCTRL_BEATSIZE_BYTE
+									| DMAC_BTCTRL_SRCINC | DMAC_BTCTRL_STEPSEL_SRC | DMAC_BTCTRL_STEPSIZE_X1);
 		DmacSetSourceAddress(TmcTxDmaChannel, sendData);
-		DmacSetDestinationAddress(TmcTxDmaChannel, const_cast<uint32_t *>(&(SERCOM_TMC51xx->SPI.DATA.reg)));
-		DmacSetDataLength(TmcRxDmaChannel, ARRAY_SIZE(sendData));
+		DmacSetDestinationAddress(TmcTxDmaChannel, &(SERCOM_TMC51xx->SPI.DATA.reg));
+		DmacSetDataLength(TmcTxDmaChannel, ARRAY_SIZE(sendData));
 
 		DmacSetInterruptCallbacks(TmcRxDmaChannel, RxDmaCompleteIsr, nullptr, 0U);
+
+		SERCOM_TMC51xx->SPI.CTRLA.bit.ENABLE = 1;		// keep the SPI enabled all the time so that the SPCLK line is driven
 
 #elif TMC51xx_USES_USART
 		// Set USART_EXT_DRV in SPI mode, with data changing on the falling edge of the clock and captured on the rising edge
@@ -1346,7 +1349,7 @@ namespace SmartDrivers
 		else
 		{
 			driversState = DriversState::noPower;				// flag that there is no power to the drivers
-			digitalWrite(GlobalTmc51xxEnablePin, true);			// disable the drivers
+			fastDigitalWriteHigh(GlobalTmc51xxEnablePin);		// disable the drivers
 		}
 		tmcTask.Resume();
 	}

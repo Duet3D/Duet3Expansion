@@ -6,6 +6,7 @@
 #include <HAL/DmacManager.h>
 #include <HAL/AnalogIn.h>
 #include "AdcAveragingFilter.h"
+#include <Movement/StepperDrivers/TMC51xx.h>
 
 #define USE_RTOS	1
 
@@ -107,6 +108,9 @@ void Init()
 	AnalogIn::EnableChannel(VinMonitorPin, vinFilter.CallbackFeedIntoFilter, &vinFilter);
 	AnalogIn::EnableTemperatureSensor(0, tpFilter.CallbackFeedIntoFilter, &tpFilter);
 	AnalogIn::EnableTemperatureSensor(1, tcFilter.CallbackFeedIntoFilter, &tcFilter);
+
+	// Set up the movement system
+	SmartDrivers::Init();
 }
 
 void Spin()
@@ -132,9 +136,17 @@ void Spin()
 	uint32_t conversionsStarted, conversionsCompleted;
 	AnalogIn::GetDebugInfo(conversionsStarted, conversionsCompleted);
 	String<200> str;
-	str.printf("{\"message\":\"Conv %u %u, %.1fV, %.1fdegC, ptat %d, ctat %d\"}\n",
-		(unsigned int)conversionsStarted, (unsigned int)conversionsCompleted, (double)volts, (double)temperature, tp_result, tc_result);
+	str.printf("{\"message\":\"Conv %u %u, %.1fV, %.1fdegC"
+//					", ptat %d, ctat %d"
+					", stat %08" PRIx32 " %08" PRIx32 " %08" PRIx32
+					"\"}\n",
+					(unsigned int)conversionsStarted, (unsigned int)conversionsCompleted, (double)volts, (double)temperature
+//					, tp_result, tc_result
+					, SmartDrivers::GetLiveStatus(0), SmartDrivers::GetLiveStatus(1), SmartDrivers::GetLiveStatus(1)
+				);
 	io_write(io, (const unsigned char *)str.c_str(), str.strlen());
+
+	SmartDrivers::Spin(volts >= 10.0);
 }
 
 // End

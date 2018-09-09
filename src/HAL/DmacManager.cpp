@@ -67,7 +67,7 @@ void DmacSetDestinationAddress(const uint8_t channel, volatile void *const dst)
 	hri_dmacdescriptor_write_DSTADDR_reg(&descriptor_section[channel], reinterpret_cast<uint32_t>(dst));
 }
 
-void DmacSetSourceAddress(const uint8_t channel, const void *const src)
+void DmacSetSourceAddress(const uint8_t channel, const volatile void *const src)
 {
 	hri_dmacdescriptor_write_SRCADDR_reg(&descriptor_section[channel], reinterpret_cast<uint32_t>(src));
 }

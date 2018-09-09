@@ -87,7 +87,7 @@ enum class DmaTrigSource : uint8_t
 
 void DmacInit();
 void DmacSetDestinationAddress(const uint8_t channel, volatile void *const dst);
-void DmacSetSourceAddress(const uint8_t channel, const void *const src);
+void DmacSetSourceAddress(const uint8_t channel, const volatile void *const src);
 void DmacSetDataLength(const uint8_t channel, const uint32_t amount);
 void DmacEnableChannel(const uint8_t channel, const bool software_trigger = false);
 void DmacSetBtctrl(const uint8_t channel, const uint16_t val);

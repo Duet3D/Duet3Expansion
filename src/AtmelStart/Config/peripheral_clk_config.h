@@ -336,16 +336,16 @@
 // <GCLK_PCHCTRL_GEN_GCLK11_Val"> Generic clock generator 11
 
 // <i> Select the clock source for TC.
-#ifndef CONF_GCLK_TC0_SRC
-#define CONF_GCLK_TC0_SRC GCLK_PCHCTRL_GEN_GCLK0_Val
+#ifndef CONF_GCLK_TC3_SRC
+#define CONF_GCLK_TC3_SRC GCLK_PCHCTRL_GEN_GCLK0_Val
 #endif
 
 /**
- * \def CONF_GCLK_TC0_FREQUENCY
+ * \def CONF_GCLK_TC3_FREQUENCY
  * \brief TC0's Clock frequency
  */
-#ifndef CONF_GCLK_TC0_FREQUENCY
-#define CONF_GCLK_TC0_FREQUENCY 120000000
+#ifndef CONF_GCLK_TC3_FREQUENCY
+#define CONF_GCLK_TC3_FREQUENCY 120000000
 #endif
 
 // <y> TC Clock Source
@@ -376,16 +376,16 @@
 // <GCLK_PCHCTRL_GEN_GCLK11_Val"> Generic clock generator 11
 
 // <i> Select the clock source for TC.
-#ifndef CONF_GCLK_TC1_SRC
-#define CONF_GCLK_TC1_SRC GCLK_PCHCTRL_GEN_GCLK0_Val
+#ifndef CONF_GCLK_TC6_SRC
+#define CONF_GCLK_TC6_SRC GCLK_PCHCTRL_GEN_GCLK0_Val
 #endif
 
 /**
  * \def CONF_GCLK_TC1_FREQUENCY
  * \brief TC1's Clock frequency
  */
-#ifndef CONF_GCLK_TC1_FREQUENCY
-#define CONF_GCLK_TC1_FREQUENCY 120000000
+#ifndef CONF_GCLK_TC6_FREQUENCY
+#define CONF_GCLK_TC6_FREQUENCY 120000000
 #endif
 
 // <y> CAN0 Clock Source

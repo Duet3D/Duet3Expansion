@@ -79,9 +79,23 @@ private:
 };
 
 void pinMode(Pin pin, PinMode mode);
-void digitalWrite(Pin p, bool high);
+
 bool digitalRead(Pin p);
-void fastDigitalWriteHigh(Pin p);
-void fastDigitalWriteLow(Pin p);
+
+inline void digitalWrite(Pin p, bool high)
+{
+	gpio_set_pin_level(p, high);
+
+}
+
+inline void fastDigitalWriteHigh(Pin p)
+{
+	gpio_set_pin_level(p, true);
+}
+
+inline void fastDigitalWriteLow(Pin p)
+{
+	gpio_set_pin_level(p, false);
+}
 
 #endif /* SRC_PORT_H_ */
