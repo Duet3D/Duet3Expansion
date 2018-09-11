@@ -7,13 +7,19 @@
 
 #include "StepTimer.h"
 #include <RTOSIface/RTOSIface.h>
+#include <SoftTimer.h>
+#include "Move.h"
 
 namespace StepTimer
 {
 	void Init()
 	{
-		hri_mclk_set_APBDMASK_TC6_bit(MCLK);			// TODO this is hard coded to TC6
+		hri_mclk_set_APBDMASK_TC6_bit(MCLK);			// TODO this is currently hard coded to TC6
 		hri_gclk_write_PCHCTRL_reg(GCLK, TC6_GCLK_ID, GCLK_PCHCTRL_GEN_GCLK0_Val | (1 << GCLK_PCHCTRL_CHEN_Pos));
+
+		// We will be using TC7 as a slave, so we must clock that too
+		hri_mclk_set_APBDMASK_TC7_bit(MCLK);			// TODO this is currently hard coded to TC7
+		hri_gclk_write_PCHCTRL_reg(GCLK, TC7_GCLK_ID, GCLK_PCHCTRL_GEN_GCLK0_Val | (1 << GCLK_PCHCTRL_CHEN_Pos));
 
 		if (!hri_tc_is_syncing(StepTc, TC_SYNCBUSY_SWRST))
 		{
@@ -29,7 +35,7 @@ namespace StepTimer
 		hri_tc_write_CTRLA_reg(StepTc, TC_CTRLA_MODE_COUNT32 | TC_CTRLA_PRESCALER_DIV64);
 		hri_tc_write_DBGCTRL_reg(StepTc, 0);
 		hri_tc_write_EVCTRL_reg(StepTc, 0);
-		hri_tc_write_WAVE_reg(StepTc, TC_WAVE_WAVEGEN_MFRQ);
+		hri_tc_write_WAVE_reg(StepTc, TC_WAVE_WAVEGEN_NFRQ);
 
 		hri_tc_set_CTRLA_ENABLE_bit(StepTc);
 
@@ -80,6 +86,33 @@ namespace StepTimer
 	void DisableSoftTimerInterrupt()
 	{
 		hri_tc_clear_INTEN_MC1_bit(StepTc);
+	}
+}
+
+extern "C" void STEP_TC_HANDLER()
+{
+	uint8_t tcsr = StepTc->INTFLAG.reg;									// read the status register, which clears the status bits
+	tcsr &= StepTc->INTENSET.reg;										// select only enabled interrupts
+
+	if ((tcsr & TC_INTFLAG_MC0) != 0)									// the step interrupt uses MC0 compare
+	{
+		StepTc->INTENCLR.reg = TC_INTFLAG_MC0;							// disable the interrupt
+		StepTc->INTFLAG.reg = TC_INTFLAG_MC0;							// clear the interrupt
+#ifdef MOVE_DEBUG
+		++numInterruptsExecuted;
+		lastInterruptTime = Platform::GetInterruptClocks();
+#endif
+		moveInstance->Interrupt();										// execute the step interrupt
+	}
+
+	if ((tcsr & TC_INTFLAG_MC1) != 0)									// soft timer uses MC1 compare
+	{
+		StepTc->INTENCLR.reg = TC_INTFLAG_MC1;							// disable the interrupt
+		StepTc->INTFLAG.reg = TC_INTFLAG_MC1;							// clear the interrupt
+#ifdef SOFT_TIMER_DEBUG
+		++numSoftTimerInterruptsExecuted;
+#endif
+		SoftTimer::Interrupt();
 	}
 }
 

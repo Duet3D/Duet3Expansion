@@ -9,6 +9,7 @@
 #define SRC_ADCAVERAGINGFILTER_H_
 
 #include "RepRapFirmware.h"
+#include "RTOSIface/RTOSIface.h"
 
 // Class to perform averaging of values read from the ADC
 // numAveraged should be a power of 2 for best efficiency

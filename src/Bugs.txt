@@ -1,0 +1,3 @@
+Issues
+
+- Freezer spray on the MCU makes the motors noisier

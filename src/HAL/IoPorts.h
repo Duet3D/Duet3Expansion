@@ -80,7 +80,10 @@ private:
 
 void pinMode(Pin pin, PinMode mode);
 
-bool digitalRead(Pin p);
+inline bool digitalRead(Pin p)
+{
+	return gpio_get_pin_level(p);
+}
 
 inline void digitalWrite(Pin p, bool high)
 {

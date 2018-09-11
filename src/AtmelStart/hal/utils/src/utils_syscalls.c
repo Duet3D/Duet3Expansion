@@ -124,7 +124,9 @@ extern int _lseek(int file, int ptr, int dir)
  */
 extern void _exit(int status)
 {
+#if 0	//dc42 the following pulls in lots of C++ library stuff that we don't want
 	printf("Exiting with status %d.\n", status);
+#endif
 
 	for (;;)
 		;

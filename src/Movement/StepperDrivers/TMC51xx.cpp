@@ -13,6 +13,7 @@
 
 #include "TMC51xx.h"
 #include "RTOSIface/RTOSIface.h"
+#include <Movement/Move.h>
 #include <Movement/StepTimer.h>
 
 #ifdef SAME51
@@ -41,7 +42,7 @@ constexpr float SenseResistor = 0.11;						// 0.082R external + 0.03 internal
 #elif TMC_TYPE == 5160
 constexpr float MaximumMotorCurrent = 3200.0;				// depends on sense resistor power rating
 constexpr float SenseResistor = 0.051;						// assume same as we use for TMC2660
-constexpr float FullScaleCurrent = 0.325/SenseResistor;
+constexpr float FullScaleCurrent = 325.0/SenseResistor;		// full scale current in mA
 #endif
 
 // The SPI clock speed is a compromise:
@@ -636,7 +637,7 @@ void TmcDriverState::UpdateCurrent()
 	UpdateRegister(WriteIholdIrun,
 					(writeRegisters[WriteIholdIrun] & ~(IHOLDIRUN_IRUN_MASK | IHOLDIRUN_IHOLD_MASK)) | (iRunCsBits << IHOLDIRUN_IRUN_SHIFT) | (iHoldCsBits << IHOLDIRUN_IHOLD_SHIFT));
 #elif TMC_TYPE == 5160
-	// See if we can set IRUN to 31 and do he current adjustment in the global scaler
+	// See if we can set IRUN to 31 and do the current adjustment in the global scaler
 	uint32_t gs = lrintf((motorCurrent * 256)/FullScaleCurrent);
 	uint32_t iRun = 31;
 	if (gs >= 256)
@@ -817,14 +818,42 @@ void TmcDriverState::TransferSucceeded(const uint8_t *rcvDataBlock)
 	// If we read a register, update our copy
 	if (previousRegIndexRequested < NumReadRegisters)
 	{
-		readRegisters[previousRegIndexRequested] = ((uint32_t)rcvDataBlock[1] << 24) | ((uint32_t)rcvDataBlock[2] << 16) | ((uint32_t)rcvDataBlock[3] << 8) | ((uint32_t)rcvDataBlock[4]);
+		uint32_t regVal = ((uint32_t)rcvDataBlock[1] << 24) | ((uint32_t)rcvDataBlock[2] << 16) | ((uint32_t)rcvDataBlock[3] << 8) | ((uint32_t)rcvDataBlock[4]);
+		if (previousRegIndexRequested == ReadDrvStat)
+		{
+			// We treat the DRV_STATUS register separately
+			if ((regVal & (TMC_RR_OLA | TMC_RR_OLB)) != 0)
+			{
+				uint32_t interval;
+				if (   (regVal & TMC_RR_STST) != 0
+					|| (interval = moveInstance->GetStepInterval(axisNumber, microstepShiftFactor)) == 0		// get the full step interval
+					|| interval > StepTimer::StepClockRate/MinimumOpenLoadFullStepsPerSec
+				   )
+				{
+					regVal &= ~(TMC_RR_OLA | TMC_RR_OLB);				// open load bits are unreliable at standstill and low speeds
+				}
+			}
+			// Only add bits to the accumulator if they appear in 2 successive samples. This is to avoid seeing transient S2G, S2VS, STST and open load errors.
+			const uint32_t oldDrvStat = accumulatedReadRegisters[previousRegIndexRequested];
+			readRegisters[previousRegIndexRequested] = regVal;
+			regVal &= oldDrvStat;
+			accumulatedReadRegisters[previousRegIndexRequested] |= regVal;
+		}
+		else
+		{
+			readRegisters[previousRegIndexRequested] = regVal;
+			accumulatedReadRegisters[previousRegIndexRequested] |= regVal;
+		}
 	}
-	uint32_t status = readRegisters[ReadDrvStat] & ~TMC_RR_SG;
-	if ((rcvDataBlock[0] & (1 << 2)) != 0)
+
+	if ((rcvDataBlock[0] & (1u << 2)) != 0)							// check the stall status
 	{
-		status |= TMC_RR_SG;
+		readRegisters[ReadDrvStat] |= TMC_RR_SG;
 	}
-	readRegisters[ReadDrvStat] = status;
+	else
+	{
+		readRegisters[ReadDrvStat] &= ~TMC_RR_SG;
+	}
 	previousRegIndexRequested = regIndexRequested;
 }
 
@@ -1074,12 +1103,12 @@ extern "C" void TmcLoop(void *)
 				}
 				else
 				{
-					// Handle the read response
-					const uint8_t *readPtr = rcvData;
+					// Handle the read response - data comes out of the drivers in reverse driver order
+					const uint8_t *readPtr = rcvData + 5 * numTmc51xxDrivers;
 					for (size_t drive = 0; drive < numTmc51xxDrivers; ++drive)
 					{
+						readPtr -= 5;
 						driverStates[drive].TransferSucceeded(readPtr);
-						readPtr += 5;
 					}
 
 					if (driversState == DriversState::initialising)
@@ -1338,7 +1367,8 @@ namespace SmartDrivers
 	// Before the first call to this function with 'powered' true, you must call Init()
 	void Spin(bool powered)
 	{
-		tmcTask.Suspend();
+		TaskCriticalSectionLocker lock;
+
 		if (powered)
 		{
 			if (driversState == DriversState::noPower)
@@ -1352,7 +1382,6 @@ namespace SmartDrivers
 			driversState = DriversState::noPower;				// flag that there is no power to the drivers
 			fastDigitalWriteHigh(GlobalTmc51xxEnablePin);		// disable the drivers
 		}
-		tmcTask.Resume();
 	}
 
 	// This is called from the tick ISR, possibly while Spin (with powered either true or false) is being executed

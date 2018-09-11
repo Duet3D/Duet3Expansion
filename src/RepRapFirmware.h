@@ -13,12 +13,99 @@
 
 #include <cmath>
 #include <cinttypes>
+#include <climits>		// for CHAR_BIT
+
+#ifdef __SAME51N19A__
+# define SAME51		1
+#endif
+
+typedef uint16_t PwmFrequency;		// type used to represent a PWM frequency. 0 sometimes means "default".
+typedef double floatc_t;
+
+#include "Configuration.h"
 #include "General/StringRef.h"
+#include "MessageType.h"
+
+// Warn of what's to come, so we can use pointers to classes without including the entire header files
+class Move;
+class DDA;
+class DriveMovement;
+class Kinematics;
+class Heat;
+class PID;
+class TemperatureSensor;
+class OutputBuffer;
+class OutputStack;
+//class GCodeBuffer;
+//class GCodeQueue;
+//class FilamentMonitor;
+class Logger;
+
+#if SUPPORT_IOBITS
+class PortControl;
+#endif
+
+#if SUPPORT_12864_LCD
+class Display;
+#endif
 
 // These three are implemented in Tasks.cpp
 void delay(uint32_t ms);
 uint32_t millis();
 uint64_t millis64();
+
+// Debugging support
+extern "C" void debugPrintf(const char* fmt, ...) __attribute__ ((format (printf, 1, 2)));
+#define DEBUG_HERE do { } while (false)
+//#define DEBUG_HERE do { debugPrintf("At " __FILE__ " line %d\n", __LINE__); delay(50); } while (false)
+
+// Helper functions to work on bitmaps of various lengths.
+// The primary purpose of these is to allow us to switch between 16, 32 and 64-bit bitmaps.
+
+// Convert an unsigned integer to a bit in a bitmap
+template<typename BitmapType> inline constexpr BitmapType MakeBitmap(unsigned int n)
+{
+	return (BitmapType)1u << n;
+}
+
+// Make a bitmap with the lowest n bits set
+template<typename BitmapType> inline constexpr BitmapType LowestNBits(unsigned int n)
+{
+	return ((BitmapType)1u << n) - 1;
+}
+
+// Check if a particular bit is set in a bitmap
+template<typename BitmapType> inline constexpr bool IsBitSet(BitmapType b, unsigned int n)
+{
+	return (b & ((BitmapType)1u << n)) != 0;
+}
+
+// Set a bit in a bitmap
+template<typename BitmapType> inline void SetBit(BitmapType &b, unsigned int n)
+{
+	b |= ((BitmapType)1u << n);
+}
+
+// Clear a bit in a bitmap
+template<typename BitmapType> inline void ClearBit(BitmapType &b, unsigned int n)
+{
+	b &= ~((BitmapType)1u << n);
+}
+
+// Convert an array of longs to a bit map with overflow checking
+template<typename BitmapType> BitmapType UnsignedArrayToBitMap(const uint32_t *arr, size_t numEntries)
+{
+	BitmapType res = 0;
+	for (size_t i = 0; i < numEntries; ++i)
+	{
+		const uint32_t f = arr[i];
+		if (f < sizeof(BitmapType) * CHAR_BIT)
+		{
+			SetBit(res, f);
+		}
+	}
+	return res;
+}
 
 template<class X> inline constexpr X min(X _a, X _b)
 {
@@ -84,6 +171,28 @@ template<class T> inline constexpr T constrain(T val, T vmin, T vmax)
 	return max<T>(min<T>(val, vmax), vmin);
 }
 
+constexpr size_t ScratchStringLength = 220;							// standard length of a scratch string, enough to print delta parameters to
+constexpr size_t ShortScratchStringLength = 50;
+
+constexpr size_t XYZ_AXES = 3;										// The number of Cartesian axes
+constexpr size_t X_AXIS = 0, Y_AXIS = 1, Z_AXIS = 2, E0_AXIS = 3;	// The indices of the Cartesian axes in drive arrays
+constexpr size_t CoreXYU_AXES = 5;									// The number of axes in a CoreXYU machine (there is a hidden V axis)
+constexpr size_t CoreXYUV_AXES = 5;									// The number of axes in a CoreXYUV machine
+constexpr size_t U_AXIS = 3, V_AXIS = 4;							// The indices of the U and V motors in a CoreXYU machine (needed by Platform)
+
+// Common conversion factors
+constexpr float MinutesToSeconds = 60.0;
+constexpr float SecondsToMinutes = 1.0/MinutesToSeconds;
+constexpr float SecondsToMillis = 1000.0;
+constexpr float MillisToSeconds = 0.001;
+constexpr float InchToMm = 25.4;
+constexpr float Pi = 3.141592653589793;
+constexpr float TwoPi = 3.141592653589793 * 2;
+constexpr float DegreesToRadians = 3.141592653589793/180.0;
+constexpr float RadiansToDegrees = 180.0/3.141592653589793;
+
+#define DEGREE_SYMBOL	"\xC2\xB0"									// degree-symbol encoding in UTF8
+
 // Standard callback function type
 union CallbackParameter
 {
@@ -132,13 +241,50 @@ private:
 // TEMPORARY stuff
 //TODO move these to the right place
 
+extern Move *moveInstance;
+
+namespace RepRap
+{
+	void Init();
+	void Spin();
+}
+
 #ifdef __SAME51N19A__
 # define SAME51		1
 #endif
 
+// Module numbers and names, used for diagnostics and debug
+enum Module : uint8_t
+{
+	modulePlatform = 0,
+	moduleNetwork = 1,
+	moduleWebserver = 2,
+	moduleGcodes = 3,
+	moduleMove = 4,
+	moduleHeat = 5,
+	moduleDda = 6,
+	moduleRoland = 7,
+	moduleScanner = 8,
+	modulePrintMonitor = 9,
+	moduleStorage = 10,
+	modulePortControl = 11,
+	moduleDuetExpansion = 12,
+	moduleFilamentSensors = 13,
+	moduleWiFi = 14,
+	moduleDisplay = 15,
+	numModules = 16,				// make this one greater than the last module number
+	noModule = 16
+};
+
+extern const char * const moduleName[];
+
 typedef uint8_t Pin;
 constexpr Pin NoPin = 0xFF;
+
 typedef uint16_t PwmFrequency;
+typedef uint32_t AxesBitmap;				// Type of a bitmap representing a set of axes
+typedef uint32_t DriversBitmap;				// Type of a bitmap representing a set of driver numbers
+typedef uint32_t FansBitmap;				// Type of a bitmap representing a set of fan numbers
 
 #define PORTA_PIN(_n)	(GPIO(GPIO_PORTA, (_n)))
 #define PORTB_PIN(_n)	(GPIO(GPIO_PORTB, (_n)))

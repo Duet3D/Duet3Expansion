@@ -35,7 +35,7 @@ public:
 	void ExecuteCallbacks();
 
 private:
-	bool InternalEnableChannel(uint8_t chan, AnalogInCallbackFunction fn, CallbackParameter param, uint32_t p_ticksPerCall);
+	bool InternalEnableChannel(uint8_t chan, uint8_t refCtrl, AnalogInCallbackFunction fn, CallbackParameter param, uint32_t p_ticksPerCall);
 	static void DmaCompleteCallback(CallbackParameter cp);
 
 	static constexpr size_t MaxChannels = 16;
@@ -55,7 +55,7 @@ private:
 	CallbackParameter callbackParams[MaxChannels];
 	uint32_t ticksPerCall[MaxChannels];
 	uint32_t ticksAtLastCall[MaxChannels];
-	uint32_t inputRegisters[MaxChannels];
+	uint32_t inputRegisters[MaxChannels * 2];
 	volatile uint16_t results[MaxChannels];
 };
 
@@ -90,7 +90,7 @@ bool AdcClass::EnableChannel(Pin pin, AnalogInCallbackFunction fn, CallbackParam
 	gpio_set_pin_direction(pin, GPIO_DIRECTION_OFF);							// disable the data input buffer
 	gpio_set_pin_function(pin, ((pin & 31) << 16) | GPIO_PIN_FUNCTION_B);		// ADC is always on peripheral B
 
-	return InternalEnableChannel(chan, fn, param, p_ticksPerCall);
+	return InternalEnableChannel(chan, ADC_REFCTRL_REFSEL_INTVCC1, fn, param, p_ticksPerCall);
 }
 
 bool AdcClass::EnableTemperatureSensor(unsigned int sensorNumber, AnalogInCallbackFunction fn, CallbackParameter param, uint32_t p_ticksPerCall)
@@ -100,10 +100,11 @@ bool AdcClass::EnableTemperatureSensor(unsigned int sensorNumber, AnalogInCallba
 		return false;
 	}
 
-	return InternalEnableChannel(sensorNumber + ADC_INPUTCTRL_MUXPOS_PTAT_Val, fn, param, p_ticksPerCall);
+//	return InternalEnableChannel(sensorNumber + ADC_INPUTCTRL_MUXPOS_PTAT_Val, ADC_REFCTRL_REFSEL_INTREF, fn, param, p_ticksPerCall);
+	return InternalEnableChannel(sensorNumber + ADC_INPUTCTRL_MUXPOS_PTAT_Val, ADC_REFCTRL_REFSEL_INTVCC1, fn, param, p_ticksPerCall);
 }
 
-bool AdcClass::InternalEnableChannel(uint8_t chan, AnalogInCallbackFunction fn, CallbackParameter param, uint32_t p_ticksPerCall)
+bool AdcClass::InternalEnableChannel(uint8_t chan, uint8_t refCtrl, AnalogInCallbackFunction fn, CallbackParameter param, uint32_t p_ticksPerCall)
 {
 	TaskCriticalSectionLocker lock;
 
@@ -112,7 +113,8 @@ bool AdcClass::InternalEnableChannel(uint8_t chan, AnalogInCallbackFunction fn, 
 	callbackParams[numChannelsEnabled] = param;
 	ticksPerCall[numChannelsEnabled] = p_ticksPerCall;
 	ticksAtLastCall[numChannelsEnabled] = millis();
-	inputRegisters[numChannelsEnabled] = 0x1800 | (uint16_t)chan;
+	inputRegisters[numChannelsEnabled * 2] = ADC_INPUTCTRL_MUXNEG_GND | (uint32_t)chan;
+	inputRegisters[numChannelsEnabled * 2 + 1] = refCtrl | (uint32_t)chan;
 	++numChannelsEnabled;
 
 	if (numChannelsEnabled == 1)
@@ -132,22 +134,27 @@ bool AdcClass::InternalEnableChannel(uint8_t chan, AnalogInCallbackFunction fn, 
 
 		hri_adc_write_CTRLA_reg(device, ADC_CTRLA_PRESCALER_DIV32);
 		hri_adc_write_CTRLB_reg(device, 0);
-		hri_adc_write_REFCTRL_reg(device, ADC_REFCTRL_REFSEL_INTVCC1);
+		hri_adc_write_REFCTRL_reg(device,  ADC_REFCTRL_REFSEL_INTVCC1);
 		hri_adc_write_EVCTRL_reg(device, ADC_EVCTRL_RESRDYEO);
 		hri_adc_write_INPUTCTRL_reg(device, ADC_INPUTCTRL_MUXNEG_GND);
 		hri_adc_write_AVGCTRL_reg(device, 0);
-		hri_adc_write_SAMPCTRL_reg(device, ADC_SAMPCTRL_OFFCOMP);		// this also extends the sample time
+//		hri_adc_write_SAMPCTRL_reg(device, ADC_SAMPCTRL_OFFCOMP);		// this also extends the sample time
+		hri_adc_write_SAMPCTRL_reg(device, ADC_SAMPCTRL_SAMPLEN(10));
 		hri_adc_write_WINLT_reg(device, 0);
 		hri_adc_write_WINUT_reg(device, 0xFFFF);
 		hri_adc_write_GAINCORR_reg(device, 1u << 11);
 		hri_adc_write_OFFSETCORR_reg(device, 0);
 		hri_adc_write_DBGCTRL_reg(device, 0);
 
-		// Enable DMA sequencing, updating just the input register.
+		// Enable DMA sequencing, updating just the input and reference control registers.
 		// We have to set the AUTOSTART bit too, otherwise the ADC requires one trigger per channel converted.
-		hri_adc_write_DSEQCTRL_reg(device, ADC_DSEQCTRL_INPUTCTRL | ADC_DSEQCTRL_AUTOSTART);
+		hri_adc_write_DSEQCTRL_reg(device, ADC_DSEQCTRL_INPUTCTRL | ADC_DSEQCTRL_REFCTRL | ADC_DSEQCTRL_AUTOSTART);
 		hri_adc_set_CTRLA_ENABLE_bit(device);
 
+		// Set the supply controller to on-demand mode so that we can get at both temperature sensors
+		hri_supc_set_VREF_ONDEMAND_bit(SUPC);
+		hri_supc_set_VREF_TSEN_bit(SUPC);
+		hri_supc_clear_VREF_VREFOE_bit(SUPC);
 
 		// Initialise the DMAC. First the sequencer
 		DmacSetDestinationAddress(dmaChan, &device->DSEQDATA.reg);
@@ -176,6 +183,7 @@ bool AdcClass::StartConversion(TaskBase *p_taskToWake)
 	}
 
 	taskToWake = p_taskToWake;
+	(void)device->RESULT.reg;			// make sure no result pending (this is necessary to make it work!)
 
 	// Set up DMA to read the results our of the ADC into the results array
 	DmacSetDestinationAddress(dmaChan + 1, results);
@@ -183,24 +191,9 @@ bool AdcClass::StartConversion(TaskBase *p_taskToWake)
 	DmacEnableCompletedInterrupt(dmaChan + 1);
 	DMAC->Channel[dmaChan + 1].CHCTRLA.bit.ENABLE = 1;
 
-#if 1
-	// This code works.
-	// Set the input register to the first one, to kick of the first conversion
-	device->DSEQDATA.reg = inputRegisters[0];
-
-	// If there are multiple channels enabled, configure DMA to send the remaining input registers when required
-	if (numChannelsEnabled > 1)
-	{
-		DmacSetSourceAddress(dmaChan, inputRegisters + 1);
-		DmacSetDataLength(dmaChan, numChannelsEnabled - 1);
-		DMAC->Channel[dmaChan].CHCTRLA.bit.ENABLE = 1;
-	}
-#else
-	// This code doesn't work. The results are out of sync with the requested input channels, all 1 channel late.
 	DmacSetSourceAddress(dmaChan, inputRegisters);
-	DmacSetDataLength(dmaChan, numChannelsEnabled);
+	DmacSetDataLength(dmaChan, numChannelsEnabled * 2);
 	DMAC->Channel[dmaChan].CHCTRLA.bit.ENABLE = 1;
-#endif
 
 	state = State::converting;
 	++conversionsStarted;
@@ -336,11 +329,12 @@ namespace AnalogIn
 		hri_mclk_set_APBDMASK_ADC1_bit(MCLK);
 		hri_gclk_write_PCHCTRL_reg(GCLK, ADC1_GCLK_ID, GCLK_PCHCTRL_GEN_GCLK0_Val | (1 << GCLK_PCHCTRL_CHEN_Pos));
 
+#if 0
 		// Set the supply controller to on-demand mode so that we can get at both temperature sensors
 		hri_supc_set_VREF_ONDEMAND_bit(SUPC);
 		hri_supc_set_VREF_TSEN_bit(SUPC);
 		hri_supc_clear_VREF_VREFOE_bit(SUPC);
-
+#endif
 		analogInTask.Create(AinLoop, "AIN", nullptr, TaskBase::AinPriority);
 	}
 
