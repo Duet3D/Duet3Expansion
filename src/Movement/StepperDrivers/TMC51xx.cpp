@@ -7,20 +7,20 @@
  *  	Support for TMC5130 and TMC5160 stepper drivers
  */
 
-#define SUPPORT_TMC51xx	1		// TEMP for expansion board
+#include "TMC51xx.h"
 
 #if SUPPORT_TMC51xx
 
-#include "TMC51xx.h"
 #include "RTOSIface/RTOSIface.h"
 #include <Movement/Move.h>
-#include <Movement/StepTimer.h>
 
 #ifdef SAME51
 # include "HAL/IoPorts.h"
 # include "HAL/DmacManager.h"
 # include "peripheral_clk_config.h"
 # include "HAL/SAME5x.h"
+#elif SAME70
+# include "DmacManager.h"
 #endif
 
 //#define TMC_TYPE	5130
@@ -238,7 +238,7 @@ constexpr uint8_t REGNUM_PWM_SCALE = 0x71;
 constexpr uint8_t REGNUM_PWM_AUTO = 0x72;
 
 // Common data
-static const size_t numTmc51xxDrivers = MaxSmartDrivers;
+static constexpr size_t numTmc51xxDrivers = MaxSmartDrivers;
 
 enum class DriversState : uint8_t
 {
@@ -266,7 +266,7 @@ public:
 	DriverMode GetDriverMode() const;
 	void SetCurrent(float current);
 	void Enable(bool en);
-	void AppendDriverStatus(const StringRef& reply);
+	void AppendDriverStatus(const StringRef& reply, bool clearGlobalStats);
 	uint8_t GetDriverNumber() const { return driverNumber; }
 	bool UpdatePending() const { return (registersToUpdate | newRegistersToUpdate) != 0; }
 	void SetStallDetectThreshold(int sgThreshold);
@@ -345,7 +345,7 @@ private:
 	uint32_t microstepShiftFactor;							// how much we need to shift 1 left by to get the current microstepping
 	uint32_t motorCurrent;									// the configured motor current in mA
 
-	static uint16_t numReads;								// how many successful reads we had
+	uint16_t numReads, numWrites;							// how many successful reads and writes we had
 	static uint16_t numTimeouts;							// how many times a transfer timed out
 
 	uint8_t driverNumber;									// the number of this driver as addressed by the UART multiplexer
@@ -379,7 +379,6 @@ const uint8_t TmcDriverState::ReadRegNumbers[NumReadRegisters] =
 	REGNUM_DRV_STATUS
 };
 
-uint16_t TmcDriverState::numReads = 0;								// how many successful reads we had
 uint16_t TmcDriverState::numTimeouts = 0;							// how many times a transfer timed out
 
 // Initialise the state of the driver and its CS pin
@@ -416,6 +415,7 @@ pre(!driversPowered)
 	}
 
 	regIndexBeingUpdated = regIndexRequested = previousRegIndexRequested = 0xFF;
+	numReads = numWrites = 0;
 }
 
 // Set a register value and flag it for updating
@@ -685,7 +685,7 @@ uint32_t TmcDriverState::ReadAccumulatedStatus(uint32_t bitsToKeep)
 }
 
 // Append the driver status to a string, and reset the min/max load values
-void TmcDriverState::AppendDriverStatus(const StringRef& reply)
+void TmcDriverState::AppendDriverStatus(const StringRef& reply, bool clearGlobalStats)
 {
 	const uint32_t lastReadStatus = readRegisters[ReadDrvStat];
 	if (lastReadStatus & TMC_RR_OT)
@@ -717,8 +717,12 @@ void TmcDriverState::AppendDriverStatus(const StringRef& reply)
 		reply.cat(" ok");
 	}
 
-	reply.catf(", reads %u, timeouts %u", numReads, numTimeouts);
-	numReads = numTimeouts = 0;
+	reply.catf(", reads %u, writes %u timeouts %u", numReads, numWrites, numTimeouts);
+	numReads = numWrites = 0;
+	if (clearGlobalStats)
+	{
+		numTimeouts = 0;
+	}
 
 	if (minSgLoadRegister <= maxSgLoadRegister)
 	{
@@ -813,11 +817,13 @@ void TmcDriverState::TransferSucceeded(const uint8_t *rcvDataBlock)
 	if (regIndexBeingUpdated < NumWriteRegisters)
 	{
 		registersToUpdate &= ~(1 << regIndexBeingUpdated);
+		++numWrites;
 	}
 
 	// If we read a register, update our copy
 	if (previousRegIndexRequested < NumReadRegisters)
 	{
+		++numReads;
 		uint32_t regVal = ((uint32_t)rcvDataBlock[1] << 24) | ((uint32_t)rcvDataBlock[2] << 16) | ((uint32_t)rcvDataBlock[3] << 8) | ((uint32_t)rcvDataBlock[4]);
 		if (previousRegIndexRequested == ReadDrvStat)
 		{
@@ -920,7 +926,7 @@ static void SetupDMA()
 
 	// Receive
 	{
-		xdmac_channel_disable(XDMAC, XDMAC_CHAN_TMC_RX);
+		xdmac_channel_disable(XDMAC, DmacChanTmcRx);
 		xdmac_channel_config_t p_cfg = {0, 0, 0, 0, 0, 0, 0, 0};
 		p_cfg.mbr_cfg = XDMAC_CC_TYPE_PER_TRAN
 						| XDMAC_CC_MBSIZE_SINGLE
@@ -931,17 +937,16 @@ static void SetupDMA()
 						| XDMAC_CC_DIF_AHB_IF0
 						| XDMAC_CC_SAM_FIXED_AM
 						| XDMAC_CC_DAM_INCREMENTED_AM
-						| XDMAC_CC_PERID(qq /*XDMAC_CHAN_TMC_RX*/);
+						| XDMAC_CC_PERID(TMC51xx_DmaRxPerid);
 		p_cfg.mbr_ubc = ARRAY_SIZE(rcvData);
-		HSMCI->HSMCI_MR |= HSMCI_MR_FBYTE;
 		p_cfg.mbr_sa = reinterpret_cast<uint32_t>(&(USART_TMC51xx->US_RHR));
 		p_cfg.mbr_da = reinterpret_cast<uint32_t>(rcvData);
-		xdmac_configure_transfer(XDMAC, XDMAC_CHAN_TMC_RX, &p_cfg);
+		xdmac_configure_transfer(XDMAC, DmacChanTmcRx, &p_cfg);
 	}
 
 	// Transmit
 	{
-		xdmac_channel_disable(XDMAC, XDMAC_CHAN_TMC_TX);
+		xdmac_channel_disable(XDMAC, DmacChanTmcTx);
 		xdmac_channel_config_t p_cfg = {0, 0, 0, 0, 0, 0, 0, 0};
 		p_cfg.mbr_cfg = XDMAC_CC_TYPE_PER_TRAN
 						| XDMAC_CC_MBSIZE_SINGLE
@@ -950,18 +955,17 @@ static void SetupDMA()
 						| XDMAC_CC_DWIDTH_BYTE
 						| XDMAC_CC_SIF_AHB_IF0
 						| XDMAC_CC_DIF_AHB_IF1
-						| XDMAC_CC_SAM_FIXED_AM
-						| XDMAC_CC_DAM_INCREMENTED_AM
-						| XDMAC_CC_PERID(qq /*XDMAC_CHAN_TMC_TX*/);
+						| XDMAC_CC_SAM_INCREMENTED_AM
+						| XDMAC_CC_DAM_FIXED_AM
+						| XDMAC_CC_PERID(TMC51xx_DmaTxPerid);
 		p_cfg.mbr_ubc = ARRAY_SIZE(sendData);
-		HSMCI->HSMCI_MR |= HSMCI_MR_FBYTE;
 		p_cfg.mbr_sa = reinterpret_cast<uint32_t>(sendData);
 		p_cfg.mbr_da = reinterpret_cast<uint32_t>(&(USART_TMC51xx->US_THR));
-		xdmac_configure_transfer(XDMAC, XDMAC_CHAN_TMC_TX, &p_cfg);
+		xdmac_configure_transfer(XDMAC, DmacChanTmcTx, &p_cfg);
 	}
 
-	xdmac_channel_enable(XDMAC, XDMAC_CHAN_TMC_RX);
-	xdmac_channel_enable(XDMAC, XDMAC_CHAN_TMC_TX);
+	xdmac_channel_enable(XDMAC, DmacChanTmcRx);
+	xdmac_channel_enable(XDMAC, DmacChanTmcTx);
 #elif SAME51
 	// Receive
 	DMAC->Channel[TmcRxDmaChannel].CHCTRLA.reg = DMAC_CHCTRLA_TRIGSRC((uint8_t)DmaTrigSource::sercom0_rx) | DMAC_CHCTRLA_TRIGACT_BURST
@@ -990,8 +994,8 @@ static void SetupDMA()
 static inline void DisableDma()
 {
 #if SAME70
-	xdmac_channel_disable(XDMAC, XDMAC_CHAN_TMC_TX);
-	xdmac_channel_disable(XDMAC, XDMAC_CHAN_TMC_RX);
+	xdmac_channel_disable(XDMAC, DmacChanTmcTx);
+	xdmac_channel_disable(XDMAC, DmacChanTmcRx);
 #elif SAME51
 	DMAC->Channel[TmcTxDmaChannel].CHCTRLA.bit.ENABLE = 0;
 	DMAC->Channel[TmcRxDmaChannel].CHCTRLA.bit.ENABLE = 0;
@@ -1027,7 +1031,7 @@ static inline void EnableSpi()
 static inline void DisableEndOfTransferInterrupt()
 {
 #if SAME70
-	xdmac_channel_disable_interrupt(XDMAC, XDMAC_CHAN_TMC_RX, XDMAC_CIE_BIE);
+	xdmac_channel_disable_interrupt(XDMAC, DmacChanTmcRx, XDMAC_CIE_BIE);
 #elif TMC51xx_USES_SERCOM
 	DmacDisableCompletedInterrupt(TmcRxDmaChannel);
 #elif TMC51xx_USES_USART
@@ -1040,7 +1044,7 @@ static inline void DisableEndOfTransferInterrupt()
 static inline void EnableEndOfTransferInterrupt()
 {
 #if SAME70
-	xdmac_channel_enable_interrupt(XDMAC, XDMAC_CHAN_TMC_RX, XDMAC_CIE_BIE);
+	xdmac_channel_enable_interrupt(XDMAC, DmacChanTmcRx, XDMAC_CIE_BIE);
 #elif TMC51xx_USES_SERCOM
 	DmacEnableCompletedInterrupt(TmcRxDmaChannel);
 #elif TMC51xx_USES_USART
@@ -1050,20 +1054,15 @@ static inline void EnableEndOfTransferInterrupt()
 #endif
 }
 
-#if SAME70
-# error ISR not written
-#elif TMC51xx_USES_SERCOM
-
 // DMA complete callback
-void RxDmaCompleteIsr(CallbackParameter param)
+void RxDmaCompleteCallback(CallbackParameter param)
 {
+#if SAME70
+	xdmac_channel_disable_interrupt(XDMAC, DmacChanTmcRx, 0xFFFFFFFF);
+#endif
 	fastDigitalWriteHigh(GlobalTmc51xxCSPin);			// set CS high
 	tmcTask.GiveFromISR();
 }
-
-#else
-# error ISR not written
-#endif
 
 extern "C" void TmcLoop(void *)
 {
@@ -1076,7 +1075,7 @@ extern "C" void TmcLoop(void *)
 		}
 		else
 		{
-			if (driversState == DriversState::notInitialised || timedOut)
+			if (driversState == DriversState::notInitialised)
 			{
 				for (size_t drive = 0; drive < numTmc51xxDrivers; ++drive)
 				{
@@ -1084,60 +1083,43 @@ extern "C" void TmcLoop(void *)
 				}
 				driversState = DriversState::initialising;
 			}
-			else
+			else if (!timedOut)
 			{
-				if (timedOut)
+				// Handle the read response - data comes out of the drivers in reverse driver order
+				const uint8_t *readPtr = rcvData;
+				for (size_t drive = 0; drive < numTmc51xxDrivers; ++drive)
 				{
-					TmcDriverState::TransferTimedOut();
-					// If the transfer was interrupted then we will have written dud data to the drivers. So we should re-initialise them all.
-					// Unfortunately registers that we don't normally write to may have changed too.
-					fastDigitalWriteHigh(GlobalTmc51xxEnablePin);
-					fastDigitalWriteHigh(GlobalTmc51xxCSPin);			// set CS high
-					driversState = DriversState::notInitialised;
-					DisableEndOfTransferInterrupt();
-					DisableDma();
-					for (size_t drive = 0; drive < numTmc51xxDrivers; ++drive)
-					{
-						driverStates[drive].TransferFailed();
-					}
+					driverStates[drive].TransferSucceeded(readPtr);
+					readPtr += 5;
 				}
-				else
+
+				if (driversState == DriversState::initialising)
 				{
-					// Handle the read response - data comes out of the drivers in reverse driver order
-					const uint8_t *readPtr = rcvData + 5 * numTmc51xxDrivers;
-					for (size_t drive = 0; drive < numTmc51xxDrivers; ++drive)
+					// If all drivers that share the global enable have been initialised, set the global enable
+					bool allInitialised = true;
+					for (size_t i = 0; i < numTmc51xxDrivers; ++i)
 					{
-						readPtr -= 5;
-						driverStates[drive].TransferSucceeded(readPtr);
+						if (driverStates[i].UpdatePending())
+						{
+							allInitialised = false;
+							break;
+						}
 					}
 
-					if (driversState == DriversState::initialising)
+					if (allInitialised)
 					{
-						// If all drivers that share the global enable have been initialised, set the global enable
-						bool allInitialised = true;
-						for (size_t i = 0; i < numTmc51xxDrivers; ++i)
-						{
-							if (driverStates[i].UpdatePending())
-							{
-								allInitialised = false;
-								break;
-							}
-						}
-
-						if (allInitialised)
-						{
-							fastDigitalWriteLow(GlobalTmc51xxEnablePin);
-							driversState = DriversState::ready;
-						}
+						fastDigitalWriteLow(GlobalTmc51xxEnablePin);
+						driversState = DriversState::ready;
 					}
 				}
 			}
-			// Set up data to write
-			uint8_t *writeBufPtr = sendData;
+
+			// Set up data to write. Driver 0 is the first in the SPI chain so we must write them in reverse order.
+			uint8_t *writeBufPtr = sendData + 5 * numTmc51xxDrivers;
 			for (size_t i = 0; i < numTmc51xxDrivers; ++i)
 			{
+				writeBufPtr -= 5;
 				driverStates[i].GetSpiCommand(writeBufPtr);
-				writeBufPtr += 5;
 			}
 
 			// Kick off a transfer
@@ -1157,6 +1139,21 @@ extern "C" void TmcLoop(void *)
 
 			// Wait for the end-of-transfer interrupt
 			timedOut = TaskBase::Take(TransferTimeout) == 0;
+			if (timedOut)
+			{
+				TmcDriverState::TransferTimedOut();
+				// If the transfer was interrupted then we will have written dud data to the drivers. So we should re-initialise them all.
+				// Unfortunately registers that we don't normally write to may have changed too.
+				fastDigitalWriteHigh(GlobalTmc51xxEnablePin);
+				fastDigitalWriteHigh(GlobalTmc51xxCSPin);			// set CS high
+				driversState = DriversState::notInitialised;
+				DisableEndOfTransferInterrupt();
+				DisableDma();
+				for (size_t drive = 0; drive < numTmc51xxDrivers; ++drive)
+				{
+					driverStates[drive].TransferFailed();
+				}
+			}
 		}
 	}
 }
@@ -1230,7 +1227,7 @@ namespace SmartDrivers
 		DmacSetDestinationAddress(TmcTxDmaChannel, &(SERCOM_TMC51xx->SPI.DATA.reg));
 		DmacSetDataLength(TmcTxDmaChannel, ARRAY_SIZE(sendData));
 
-		DmacSetInterruptCallbacks(TmcRxDmaChannel, RxDmaCompleteIsr, nullptr, 0U);
+		DmacSetInterruptCallbacks(TmcRxDmaChannel, RxDmaCompleteCallback, nullptr, 0U);
 
 		SERCOM_TMC51xx->SPI.CTRLA.bit.ENABLE = 1;		// keep the SPI enabled all the time so that the SPCLK line is driven
 
@@ -1275,7 +1272,9 @@ namespace SmartDrivers
 		}
 
 #if SAME70
-		pmc_enable_periph_clk(ID_XDMAC);
+		xdmac_channel_disable_interrupt(XDMAC, DmacChanTmcRx, 0xFFFFFFFF);
+		DmacManager::SetInterruptCallback(DmacChanTmcRx, RxDmaCompleteCallback, CallbackParameter());				// set up DMA receive complete callback
+		xdmac_enable_interrupt(XDMAC, DmacChanTmcRx);
 #endif
 
 		tmcTask.Create(TmcLoop, "TMC", nullptr, TaskBase::TmcPriority);
@@ -1374,7 +1373,7 @@ namespace SmartDrivers
 			if (driversState == DriversState::noPower)
 			{
 				driversState = DriversState::notInitialised;
-				tmcTask.Give();									// wake up- the TMC task because the drivers need to be initialised
+				tmcTask.Give();									// wake up the TMC task because the drivers need to be initialised
 			}
 		}
 		else
@@ -1427,7 +1426,7 @@ namespace SmartDrivers
 	{
 		if (driver < numTmc51xxDrivers)
 		{
-			driverStates[driver].AppendDriverStatus(reply);
+			driverStates[driver].AppendDriverStatus(reply, driver + 1 == numTmc51xxDrivers);
 		}
 	}
 

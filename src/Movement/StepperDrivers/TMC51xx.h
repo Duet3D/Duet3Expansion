@@ -9,7 +9,6 @@
 #define SRC_MOVEMENT_STEPPERDRIVERS_TMC51XX_H_
 
 #include "RepRapFirmware.h"
-#include "Pins.h"
 
 #if SUPPORT_TMC51xx
 
