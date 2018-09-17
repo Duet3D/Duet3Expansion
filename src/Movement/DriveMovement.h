@@ -106,6 +106,7 @@ struct PrepParams
 	float diagonalSquared;
 	float a2plusb2;								// sum of the squares of the X and Y movement fractions
 	float a2b2D2;
+	float dvecX, dvecY, dvecZ;
 };
 
 enum class DMState : uint8_t
@@ -127,11 +128,12 @@ public:
 	bool CalcNextStepTimeDelta(const DDA &dda, bool live) __attribute__ ((hot));
 	void PrepareCartesianAxis(const DDA& dda, const PrepParams& params) __attribute__ ((hot));
 	void PrepareDeltaAxis(const DDA& dda, const PrepParams& params) __attribute__ ((hot));
-	void PrepareExtruder(const DDA& dda, const PrepParams& params, float speedChange, bool doCompensation) __attribute__ ((hot));
+	void PrepareExtruder(const DDA& dda, const PrepParams& params, float speedChange) __attribute__ ((hot));
 	void ReduceSpeed(const DDA& dda, uint32_t inverseSpeedFactor);
-	void DebugPrint(char c, bool withDelta) const;
+	void DebugPrint(char c) const;
 	int32_t GetNetStepsLeft() const;
 	int32_t GetNetStepsTaken() const;
+	bool IsDeltaMovement() const { return isDeltaMovement; }
 
 #if HAS_SMART_DRIVERS
 	uint32_t GetStepInterval(uint32_t microstepShift) const;	// Get the current full step interval for this axis or extruder
@@ -160,7 +162,8 @@ private:
 	uint8_t drive;										// the drive that this DM controls
 	uint8_t microstepShift : 4,							// log2 of the microstepping factor (for when we use dynamic microstepping adjustment)
 			direction : 1,								// true=forwards, false=backwards
-			fullCurrent : 1;							// true if the drivers are set to the full current, false if they are set to the standstill current
+			fullCurrent : 1,							// true if the drivers are set to the full current, false if they are set to the standstill current
+			isDeltaMovement : 1;						// true if this motor is executing a delta tower move
 	uint8_t stepsTillRecalc;							// how soon we need to recalculate
 
 	uint32_t totalSteps;								// total number of steps for this move

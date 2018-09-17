@@ -38,11 +38,4 @@ void CartesianKinematics::MotorStepsToCartesian(const int32_t motorPos[], const 
 	}
 }
 
-// Limit the speed and acceleration of a move to values that the mechanics can handle.
-// The speeds in Cartesian space have already been limited.
-void CartesianKinematics::LimitSpeedAndAcceleration(DDA& dda, const float *normalisedDirectionVector) const
-{
-	// The axes of a Cartesian printer move independently, so there is nothing to do here
-}
-
 // End

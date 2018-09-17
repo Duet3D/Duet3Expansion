@@ -53,6 +53,6 @@ constexpr unsigned int NumDmaChannelsUsed = 10;			// must be at least the number
 // Interrupt priorities, lower means higher priority. 0-2 can't make RTOS calls.
 const uint32_t NvicPriorityPins = 3;					// priority for GPIO pin interrupts - filament sensors must be higher than step
 const uint32_t NvicPriorityDmac = 4;					// priority for DMA complete interrupts
-const uint32_t NvicPriorityStep = 5;					// step interrupt is next highest, it can preempt most other interrupts
+const uint32_t NvicPriorityStep = 2;					// step interrupt is next highest, it can preempt most other interrupts
 
 #endif /* SRC_PINS_H_ */

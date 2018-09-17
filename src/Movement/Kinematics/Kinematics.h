@@ -158,11 +158,11 @@ public:
 
 	// Write any calibration data that we need to resume a print after power fail, returning true if successful. Override where necessary.
 	virtual bool WriteResumeSettings(FileStore *f) const { return true; }
-#endif
 
 	// Limit the speed and acceleration of a move to values that the mechanics can handle.
 	// The speeds along individual Cartesian axes have already been limited before this is called.
 	virtual void LimitSpeedAndAcceleration(DDA& dda, const float *normalisedDirectionVector) const = 0;
+#endif
 
 	// Return true if the specified axis is a continuous rotation axis
 	virtual bool IsContinuousRotationAxis(size_t axis) const { return false; }

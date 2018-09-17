@@ -878,7 +878,7 @@ static Task<TMCTaskStackWords> tmcTask;
 static uint8_t sendData[5 * MaxSmartDrivers];
 static uint8_t rcvData[5 * MaxSmartDrivers];
 
-// Set up the PDC to send a register and receive the status
+// Set up the PDC or DMA to send a register and receive the status, but don't enable it yet
 static void SetupDMA()
 {
 #if SAME70
@@ -963,9 +963,6 @@ static void SetupDMA()
 		p_cfg.mbr_da = reinterpret_cast<uint32_t>(&(USART_TMC51xx->US_THR));
 		xdmac_configure_transfer(XDMAC, DmacChanTmcTx, &p_cfg);
 	}
-
-	xdmac_channel_enable(XDMAC, DmacChanTmcRx);
-	xdmac_channel_enable(XDMAC, DmacChanTmcTx);
 #elif SAME51
 	// Receive
 	DMAC->Channel[TmcRxDmaChannel].CHCTRLA.reg = DMAC_CHCTRLA_TRIGSRC((uint8_t)DmaTrigSource::sercom0_rx) | DMAC_CHCTRLA_TRIGACT_BURST
@@ -974,10 +971,6 @@ static void SetupDMA()
 	// Transmit
 	DMAC->Channel[TmcTxDmaChannel].CHCTRLA.reg = DMAC_CHCTRLA_TRIGSRC((uint8_t)DmaTrigSource::sercom0_tx) | DMAC_CHCTRLA_TRIGACT_BURST
 													| DMAC_CHCTRLA_BURSTLEN_SINGLE | DMAC_CHCTRLA_THRESHOLD_1BEAT;
-	// Enable both channels
-	DMAC->Channel[TmcRxDmaChannel].CHCTRLA.bit.ENABLE = 1;
-	DMAC->Channel[TmcTxDmaChannel].CHCTRLA.bit.ENABLE = 1;
-
 #else
 	spiPdc->PERIPH_PTCR = (PERIPH_PTCR_RXTDIS | PERIPH_PTCR_TXTDIS);		// disable the PDC
 
@@ -986,7 +979,18 @@ static void SetupDMA()
 
 	spiPdc->PERIPH_RPR = reinterpret_cast<uint32_t>(rcvData);
 	spiPdc->PERIPH_RCR = ARRAY_SIZE(rcvData);
+#endif
+}
 
+static inline void EnableDma()
+{
+#if SAME70
+	xdmac_channel_enable(XDMAC, DmacChanTmcRx);
+	xdmac_channel_enable(XDMAC, DmacChanTmcTx);
+#elif SAME51
+	DMAC->Channel[TmcRxDmaChannel].CHCTRLA.bit.ENABLE = 1;
+	DMAC->Channel[TmcTxDmaChannel].CHCTRLA.bit.ENABLE = 1;
+#else
 	spiPdc->PERIPH_PTCR = (PERIPH_PTCR_RXTEN | PERIPH_PTCR_TXTEN);			// enable the PDC
 #endif
 }
@@ -1086,11 +1090,11 @@ extern "C" void TmcLoop(void *)
 			else if (!timedOut)
 			{
 				// Handle the read response - data comes out of the drivers in reverse driver order
-				const uint8_t *readPtr = rcvData;
+				const uint8_t *readPtr = rcvData + 5 * numTmc51xxDrivers;
 				for (size_t drive = 0; drive < numTmc51xxDrivers; ++drive)
 				{
+					readPtr -= 5;
 					driverStates[drive].TransferSucceeded(readPtr);
-					readPtr += 5;
 				}
 
 				if (driversState == DriversState::initialising)
@@ -1128,6 +1132,8 @@ extern "C" void TmcLoop(void *)
 				ResetSpi();
 
 				fastDigitalWriteLow(GlobalTmc51xxCSPin);			// set CS low
+
+				// On the SAME51 the order of doing the rest is critical, else we sometimes don't get the end-of-DMA interrupt
 				SetupDMA();											// set up the PDC or DMAC
 
 				// Enable the interrupt
@@ -1135,6 +1141,7 @@ extern "C" void TmcLoop(void *)
 
 				// Enable the transfer
 				EnableSpi();
+				EnableDma();
 			}
 
 			// Wait for the end-of-transfer interrupt

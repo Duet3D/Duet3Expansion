@@ -365,18 +365,4 @@ void LinearDeltaKinematics::PrintParameters(const StringRef& reply) const
 		(double)angleCorrections[DELTA_A_AXIS], (double)angleCorrections[DELTA_B_AXIS], (double)angleCorrections[DELTA_C_AXIS], (double)(xTilt * 100.0), (double)(yTilt * 100.0));
 }
 
-// Limit the speed and acceleration of a move to values that the mechanics can handle.
-// The speeds in Cartesian space have already been limited.
-void LinearDeltaKinematics::LimitSpeedAndAcceleration(DDA& dda, const float *normalisedDirectionVector) const
-{
-	// Limit the speed in the XY plane to the lower of the X and Y maximum speeds, and similarly for the acceleration
-	const float xyFactor = sqrtf(fsquare(normalisedDirectionVector[X_AXIS]) + fsquare(normalisedDirectionVector[Y_AXIS]));
-	if (xyFactor > 0.01)
-	{
-		const float maxSpeed = min<float>(Platform::MaxFeedrate(X_AXIS), Platform::MaxFeedrate(Y_AXIS));
-		const float maxAcceleration = min<float>(Platform::Acceleration(X_AXIS), Platform::Acceleration(Y_AXIS));
-		dda.LimitSpeedAndAcceleration(maxSpeed/xyFactor, maxAcceleration/xyFactor);
-	}
-}
-
 // End

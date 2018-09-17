@@ -28,7 +28,6 @@ public:
 	bool LimitPosition(float coords[], size_t numVisibleAxes, AxesBitmap axesHomed, bool isCoordinated) const override;
 	void GetAssumedInitialPosition(size_t numAxes, float positions[]) const override;
 	MotionType GetMotionType(size_t axis) const override;
-	void LimitSpeedAndAcceleration(DDA& dda, const float *normalisedDirectionVector) const override;
 
     // Public functions specific to this class
 	float GetDiagonalSquared() const { return D2; }

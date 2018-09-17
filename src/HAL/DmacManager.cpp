@@ -142,7 +142,7 @@ static inline void CommonDmacHandler(uint8_t channel)
 			fn(callbackParams[channel]);
 		}
 	}
-	else if (hri_dmac_get_CHINTFLAG_TCMPL_bit(DMAC, channel))
+	if (hri_dmac_get_CHINTFLAG_TCMPL_bit(DMAC, channel))
 	{
 		hri_dmac_clear_CHINTFLAG_TCMPL_bit(DMAC, channel);
 		const StandardCallbackFunction fn = transferCompleteCallbacks[channel];
@@ -175,7 +175,11 @@ extern "C" void DMAC_3_Handler(void)
 
 extern "C" void DMAC_4_Handler(void)
 {
-	CommonDmacHandler(hri_dmac_get_INTPEND_reg(DMAC, DMAC_INTPEND_ID_Msk));
+	hri_dmac_intpend_reg_t intPend;
+	while ((intPend = hri_dmac_get_INTPEND_reg(DMAC, DMAC_INTPEND_ID_Msk)) > 3)
+	{
+		CommonDmacHandler(intPend);
+	}
 }
 
 // End

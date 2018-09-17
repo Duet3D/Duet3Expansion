@@ -9,6 +9,7 @@
 
 #include "HAL/IoPorts.h"
 #include "HAL/AnalogIn.h"
+#include <Movement/Move.h>
 #include "Movement/StepperDrivers/TMC51xx.h"
 #include <atmel_start.h>
 #include <Config/peripheral_clk_config.h>
@@ -146,10 +147,20 @@ namespace Platform
 	void Spin()
 	{
 		static uint8_t oldAddr = 0;
+		static bool powered = false;
 
 		// Get the VIN voltage
 		const float volts = (vinFilter.GetSum() * (3.3 * 11))/(4096 * NumReadingsAveraged);
-		SmartDrivers::Spin(volts >= 10.0);
+		if (!powered && volts >= 10.0)
+		{
+			powered = true;
+			SmartDrivers::Spin(true);
+		}
+		else if (powered && volts < 9.5)
+		{
+			powered = false;
+			SmartDrivers::Spin(false);
+		}
 
 		const uint32_t now = millis();
 		if (now - lastFlashTime > 500)
@@ -182,6 +193,13 @@ namespace Platform
 			result = (divisor == 0) ? 0 : result/divisor;
 			const float temperature = (float)result/16;
 
+#if 1
+			String<100> status;
+			SmartDrivers::AppendDriverStatus(2, status.GetRef());
+			debugPrintf("%s", status.c_str());
+#elif 0
+			moveInstance->Diagnostics(AuxMessage);
+#else
 			uint32_t conversionsStarted, conversionsCompleted;
 			AnalogIn::GetDebugInfo(conversionsStarted, conversionsCompleted);
 			debugPrintf(
@@ -198,6 +216,7 @@ namespace Platform
 							, SmartDrivers::GetAccumulatedStatus(0, 0), SmartDrivers::GetAccumulatedStatus(1, 0), SmartDrivers::GetAccumulatedStatus(2, 0)
 //							, SmartDrivers::GetLiveStatus(0), SmartDrivers::GetLiveStatus(1), SmartDrivers::GetLiveStatus(2)
 						);
+#endif
 
 		}
 	}

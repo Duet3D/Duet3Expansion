@@ -9,8 +9,6 @@
 
 namespace GCodes
 {
-	static bool toggle = false;
-
 	void Init()
 	{
 
@@ -20,6 +18,9 @@ namespace GCodes
 	{
 
 	}
+
+#if 0
+	static bool toggle = false;
 
 	// Called by the Move class to get a movement set by the last G Code
 	bool ReadMove(RawMove& m)
@@ -63,6 +64,8 @@ namespace GCodes
 		}
 		return true;
 	}
+#endif
+
 }
 
 // End

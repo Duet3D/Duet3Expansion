@@ -8,7 +8,7 @@
 #ifndef SRC_GCODES_H_
 #define SRC_GCODES_H_
 
-#include "ReprapFirmware.h"
+#include "RepRapFirmware.h"
 
 // Type for specifying which endstops we want to check
 typedef AxesBitmap EndstopChecks;						// must be large enough to hold a bitmap of drive numbers or ZProbeActive
