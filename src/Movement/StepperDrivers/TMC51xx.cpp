@@ -149,7 +149,7 @@ constexpr uint32_t DRVCONF_FILT_ISENSE_SHIFT = 20;
 constexpr uint32_t DRVCONF_FILT_ISENSE_MASK = (3 << 20);	// Filter time constant of sense amplifier to suppress ringing and coupling from second coil operation
 															// 00: low – 100ns 01: – 200ns 10: – 300ns 11: high – 400ns
 															// Hint: Increase setting if motor chopper noise occurs due to cross-coupling of both coils. Reset Default = 0.
-constexpr uint32_t DefaultDrvConfReg = (2 << DRVCONF_BBMCLKS_SHIFT) |(2 << DRVCONF_OTSELECT_SHIFT);
+constexpr uint32_t DefaultDrvConfReg = (2 << DRVCONF_BBMCLKS_SHIFT) | (2 << DRVCONF_OTSELECT_SHIFT);
 
 constexpr uint8_t REGNUM_5160_GLOBAL_SCALER = 0x0B;			// Global scaling of Motor current. This value is multiplied to the current scaling in order to adapt a drive to a
 															// certain motor type. This value should be chosen before tuning other settings, because it also influences chopper hysteresis.
@@ -878,7 +878,7 @@ static Task<TMCTaskStackWords> tmcTask;
 static uint8_t sendData[5 * MaxSmartDrivers];
 static uint8_t rcvData[5 * MaxSmartDrivers];
 
-// Set up the PDC or DMA to send a register and receive the status, but don't enable it yet
+// Set up the PDC or DMAC to send a register and receive the status, but don't enable it yet
 static void SetupDMA()
 {
 #if SAME70
