@@ -18,6 +18,9 @@ const unsigned int NumCanBuffers = 40;
 constexpr size_t CanReceiverTaskStackWords = 400;
 static Task<CanReceiverTaskStackWords> canReceiverTask;
 
+static CanMessageBuffer *pendingBuffers;
+static CanMessageBuffer *lastBuffer;			// only valid when pendingBuffers != nullptr
+
 extern "C" struct can_async_descriptor CAN_0;
 
 extern "C" void CAN_0_tx_callback(struct can_async_descriptor *const descr)
@@ -117,13 +120,29 @@ extern "C" void CanReceiverLoop(void *)
 			switch (rslt)
 			{
 			case ERR_NONE:
+				buf->msg.moveStartTime += StepTimer::GetInterruptClocks() - buf->msg.timeNow;
+				buf->next = nullptr;
+				{
+					TaskCriticalSectionLocker lock;
+
+					if (pendingBuffers == nullptr)
+					{
+						pendingBuffers = lastBuffer = buf;
+					}
+					else
+					{
+						lastBuffer->next = buf;
+					}
+				}
+
 				buf->msg.DebugPrint();
 				break;
+
 			default:
 				debugPrintf("CAN read err %d", (int)rslt);
+				CanMessageBuffer::Free(buf);
 				break;
 			}
-			CanMessageBuffer::Free(buf);
 		}
 	}
 }
@@ -131,16 +150,37 @@ extern "C" void CanReceiverLoop(void *)
 void CanSlaveInterface::Init()
 {
 	CanMessageBuffer::Init(NumCanBuffers);
+	pendingBuffers = nullptr;
 
 	// Create the task that sends CAN messages
 	canReceiverTask.Create(CanReceiverLoop, "CanSender", nullptr, TaskBase::CanReceiverPriority);
 }
 
-const CanMovementMessage& CanSlaveInterface::GetCanMove()
+bool CanSlaveInterface::GetCanMove(CanMovementMessage& msg)
 {
+#if 1
+	// See if there is a movement message
+	CanMessageBuffer *buf;
+	{
+		TaskCriticalSectionLocker lock;
+
+		buf = pendingBuffers;
+		if (buf != nullptr)
+		{
+			pendingBuffers = buf->next;
+		}
+	}
+
+	if (buf != nullptr)
+	{
+		msg = buf->msg;
+		CanMessageBuffer::Free(buf);
+		return true;
+	}
+	return false;
+#else
 	static bool running = false;
 	static bool forwards;
-	static CanMovementMessage msg;
 
 	static const int32_t steps1 = 6 * 200 * 16;
 
@@ -187,7 +227,8 @@ const CanMovementMessage& CanSlaveInterface::GetCanMove()
 	msg.timeNow = StepTimer::GetInterruptClocks();
 	forwards = !forwards;
 
-	return msg;
+	return true;
+#endif
 }
 
 // This is called from the step ISR when the move is stopped by the Z probe

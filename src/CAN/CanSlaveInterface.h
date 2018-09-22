@@ -15,7 +15,7 @@ struct CanMovementMessage;
 namespace CanSlaveInterface
 {
 	void Init();
-	const CanMovementMessage& GetCanMove();
+	bool GetCanMove(CanMovementMessage& move);
 	void MoveStoppedByZProbe();
 }
 
