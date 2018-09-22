@@ -10,7 +10,7 @@
 #include <peripheral_clk_config.h>
 #include <utils.h>
 #include <hal_init.h>
-
+#include <hal_can_async.h>
 #include <hpl/rtc/hpl_rtc_base.h>
 
 /*! The buffer size for USART */
@@ -110,6 +110,8 @@ void WDT_0_init(void)
 
 void CAN_0_PORT_init(void)
 {
+	gpio_set_pin_function(PB13, PINMUX_PB13H_CAN1_RX);
+	gpio_set_pin_function(PB12, PINMUX_PB12H_CAN1_TX);
 }
 
 /**
@@ -119,22 +121,20 @@ void CAN_0_PORT_init(void)
  */
 void CAN_0_init(void)
 {
-	hri_mclk_set_AHBMASK_CAN0_bit(MCLK);
-	hri_gclk_write_PCHCTRL_reg(GCLK, CAN0_GCLK_ID, CONF_GCLK_CAN0_SRC | (1 << GCLK_PCHCTRL_CHEN_Pos));
-	can_async_init(&CAN_0, CAN0);
+	hri_mclk_set_AHBMASK_CAN1_bit(MCLK);
+	hri_gclk_write_PCHCTRL_reg(GCLK, CAN1_GCLK_ID, CONF_GCLK_CAN1_SRC | (1 << GCLK_PCHCTRL_CHEN_Pos));
+	can_async_init(&CAN_0, CAN1);
 	CAN_0_PORT_init();
 }
+
 
 void system_init(void)
 {
 	init_mcu();
 
-//	EXTERNAL_IRQ_0_init();
-
 	USART_0_init();
-
 	PWM_0_init();
+	CAN_0_init();
 
 //	WDT_0_init();
-//	CAN_0_init();
 }

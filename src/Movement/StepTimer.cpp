@@ -15,11 +15,11 @@ namespace StepTimer
 	void Init()
 	{
 		hri_mclk_set_APBDMASK_TC6_bit(MCLK);			// TODO this is currently hard coded to TC6
-		hri_gclk_write_PCHCTRL_reg(GCLK, TC6_GCLK_ID, GCLK_PCHCTRL_GEN_GCLK0_Val | (1 << GCLK_PCHCTRL_CHEN_Pos));
+		hri_gclk_write_PCHCTRL_reg(GCLK, TC6_GCLK_ID, GCLK_PCHCTRL_GEN_GCLK1_Val | (1 << GCLK_PCHCTRL_CHEN_Pos));
 
 		// We will be using TC7 as a slave, so we must clock that too
 		hri_mclk_set_APBDMASK_TC7_bit(MCLK);			// TODO this is currently hard coded to TC7
-		hri_gclk_write_PCHCTRL_reg(GCLK, TC7_GCLK_ID, GCLK_PCHCTRL_GEN_GCLK0_Val | (1 << GCLK_PCHCTRL_CHEN_Pos));
+		hri_gclk_write_PCHCTRL_reg(GCLK, TC7_GCLK_ID, GCLK_PCHCTRL_GEN_GCLK1_Val | (1 << GCLK_PCHCTRL_CHEN_Pos));
 
 		if (!hri_tc_is_syncing(StepTc, TC_SYNCBUSY_SWRST))
 		{

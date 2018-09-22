@@ -36,7 +36,7 @@
 #include "Move.h"
 #include "StepTimer.h"
 #include "Platform.h"
-#include "CAN/CAN.h"
+#include "CAN/CanSlaveInterface.h"
 
 Move::Move() : currentDda(nullptr), active(false), scheduledMoves(0), completedMoves(0)
 {
@@ -186,7 +186,7 @@ void Move::Spin()
 	if (canAddMove)
 	{
 		// OK to add another move. First check if a special move is available.
-		ddaRingAddPointer->Init(CanManager::GetCanMove());
+		ddaRingAddPointer->Init(CanSlaveInterface::GetCanMove());
 		ddaRingAddPointer = ddaRingAddPointer->GetNext();
 		idleCount = 0;
 		scheduledMoves++;

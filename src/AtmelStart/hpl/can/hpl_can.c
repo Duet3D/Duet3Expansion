@@ -218,6 +218,9 @@ int32_t _can_async_read(struct _can_async_device *const dev, struct can_message 
 	msg->len                = dlc2len[f->R1.bit.DLC];
 
 	memcpy(msg->data, f->data, msg->len);
+#if 1	//dc42
+	hri_can_write_RXF0A_F0AI_bf(dev->hw, hri_can_read_RXF0S_F0GI_bf(dev->hw));
+#endif
 	return ERR_NONE;
 }
 
@@ -375,9 +378,9 @@ int32_t _can_async_set_filter(struct _can_async_device *const dev, uint8_t index
 /*
  * \brief CAN interrupt handler
  */
-void CAN0_Handler(void)
+void CAN1_Handler(void)
 {
-	struct _can_async_device *dev = _can0_dev;
+	struct _can_async_device *dev = _can1_dev;
 	uint32_t                  ir;
 	ir = hri_can_read_IR_reg(dev->hw);
 

@@ -15,6 +15,7 @@
 #include <Config/peripheral_clk_config.h>
 #include "AdcAveragingFilter.h"
 #include "Movement/StepTimer.h"
+#include "CAN/CanSlaveInterface.h"
 
 static bool txBusy = false;
 
@@ -72,7 +73,7 @@ namespace Platform
 	static AdcAveragingFilter<NumReadingsAveraged> tpFilter;
 	static AdcAveragingFilter<NumReadingsAveraged> tcFilter;
 
-	void ADC_temperature_init(void)
+	static void ADC_temperature_init(void)
 	{
 		temp_cal_vpl = (*((uint32_t *)(NVMCTRL_TEMP_LOG_W0) + (NVM_TEMP_CAL_VPL_POS / 32)) >> (NVM_TEMP_CAL_VPL_POS % 32))
 		               & ((1u << NVM_TEMP_CAL_VPL_SIZE) - 1);
@@ -96,131 +97,6 @@ namespace Platform
 		temp_cal_th = ((uint16_t)temp_cal_thi) << 4 | ((uint16_t)temp_cal_thd);
 	}
 
-	void Init()
-	{
-		// Set up the DIAG LED pin
-		gpio_set_pin_direction(DiagLedPin, GPIO_DIRECTION_OUT);
-		gpio_set_pin_level(DiagLedPin, true);
-
-		// Set up the UART to send to PanelDue
-		const uint32_t baudDiv = 65536 - ((65536 * 16.0f * 57600) / CONF_GCLK_SERCOM3_CORE_FREQUENCY);
-		usart_async_set_baud_rate(&USART_0, baudDiv);
-
-		usart_async_register_callback(&USART_0, USART_ASYNC_TXC_CB, tx_cb_USART_0);
-		//usart_async_register_callback(&USART_0, USART_ASYNC_RXC_CB, rx_cb);
-		//usart_async_register_callback(&USART_0, USART_ASYNC_ERROR_CB, err_cb);
-		usart_async_get_io_descriptor(&USART_0, &io);
-		usart_async_enable(&USART_0);
-
-		AnalogIn::Init();
-		ADC_temperature_init();
-
-		for (unsigned int i = 0; i < 4; ++i)
-		{
-			pinMode(BoardAddressPins[i], INPUT_PULLUP);
-		}
-
-		// Set up ADC to read VIN and the temperature sensors
-		vinFilter.Init(0);
-		tpFilter.Init(0);
-		tcFilter.Init(0);
-		AnalogIn::EnableChannel(VinMonitorPin, vinFilter.CallbackFeedIntoFilter, &vinFilter);
-		AnalogIn::EnableTemperatureSensor(0, tpFilter.CallbackFeedIntoFilter, &tpFilter, 1);
-		AnalogIn::EnableTemperatureSensor(1, tcFilter.CallbackFeedIntoFilter, &tcFilter, 1);
-
-		SmartDrivers::Init();
-
-		for (size_t i = 0; i < DRIVES; ++i)
-		{
-			pinMode(StepPins[i], OUTPUT_LOW);
-			pinMode(DirectionPins[i], OUTPUT_LOW);
-			const uint32_t driverBit = 1u << (StepPins[i] & 31);
-			driveDriverBits[i] = driverBit;
-			allDriverBits |= driverBit;
-
-			SmartDrivers::SetMicrostepping(i, 16, true);
-		}
-
-		lastFlashTime = millis();
-	}
-
-	void Spin()
-	{
-		static uint8_t oldAddr = 0;
-		static bool powered = false;
-
-		// Get the VIN voltage
-		const float volts = (vinFilter.GetSum() * (3.3 * 11))/(4096 * NumReadingsAveraged);
-		if (!powered && volts >= 10.0)
-		{
-			powered = true;
-			SmartDrivers::Spin(true);
-		}
-		else if (powered && volts < 9.5)
-		{
-			powered = false;
-			SmartDrivers::Spin(false);
-		}
-
-		const uint32_t now = millis();
-		if (now - lastFlashTime > 500)
-		{
-			lastFlashTime = now;
-
-			gpio_toggle_pin_level(DiagLedPin);
-
-			const uint8_t addr = ReadBoardAddress();
-			if (addr != oldAddr)
-			{
-				oldAddr = addr;
-				const float current = (addr >= 12) ? 3000.0 : (addr >= 8) ? 2000.0 : (addr >= 4) ? 1000.0 : 500.0;
-				for (size_t i = 0; i < DRIVES; ++i)
-				{
-					SmartDrivers::SetCurrent(i, current);
-				}
-			}
-
-			// Get the chip temperature
-			const uint16_t tc_result = tcFilter.GetSum()/(NumReadingsAveraged);
-			const uint16_t tp_result = tpFilter.GetSum()/(NumReadingsAveraged);
-
-			int32_t result = (int64_t)temp_cal_tl * temp_cal_vph * tc_result
-							- (int64_t)temp_cal_vpl * temp_cal_th * tc_result
-							- (int64_t)temp_cal_tl * temp_cal_vch * tp_result
-							+ (int64_t)temp_cal_th * temp_cal_vcl * tp_result;
-			const int32_t divisor = ((int32_t)temp_cal_vcl * tp_result - (int32_t)temp_cal_vch * tp_result
-			           	   	   - (int32_t)temp_cal_vpl * tc_result + (int32_t)temp_cal_vph * tc_result);
-			result = (divisor == 0) ? 0 : result/divisor;
-			const float temperature = (float)result/16;
-
-#if 1
-			String<100> status;
-			SmartDrivers::AppendDriverStatus(2, status.GetRef());
-			debugPrintf("%s", status.c_str());
-#elif 0
-			moveInstance->Diagnostics(AuxMessage);
-#else
-			uint32_t conversionsStarted, conversionsCompleted;
-			AnalogIn::GetDebugInfo(conversionsStarted, conversionsCompleted);
-			debugPrintf(
-//							"Conv %u %u"
-							"Addr %u"
-							", %.1fV, %.1fdegC"
-							", ptat %d, ctat %d"
-							", stat %08" PRIx32 " %08" PRIx32 " %08" PRIx32,
-//							(unsigned int)conversionsStarted, (unsigned int)conversionsCompleted,
-//							StepTimer::GetInterruptClocks(),
-							(unsigned int)addr,
-							(double)volts, (double)temperature
-							, tp_result, tc_result
-							, SmartDrivers::GetAccumulatedStatus(0, 0), SmartDrivers::GetAccumulatedStatus(1, 0), SmartDrivers::GetAccumulatedStatus(2, 0)
-//							, SmartDrivers::GetLiveStatus(0), SmartDrivers::GetLiveStatus(1), SmartDrivers::GetLiveStatus(2)
-						);
-#endif
-
-		}
-	}
-
 	// Send the specified message to the specified destinations. The Error and Warning flags have already been handled.
 	void RawMessage(MessageType type, const char *message)
 	{
@@ -234,134 +110,270 @@ namespace Platform
 		//while (txBusy) { delay(1); }
 	}
 
-	void MessageF(MessageType type, const char *fmt, va_list vargs)
+}	// end namespace Platform
+
+void Platform::Init()
+{
+	// Set up the DIAG LED pin
+	gpio_set_pin_direction(DiagLedPin, GPIO_DIRECTION_OUT);
+	gpio_set_pin_level(DiagLedPin, true);
+
+	// Set up the UART to send to PanelDue
+	const uint32_t baudDiv = 65536 - ((65536 * 16.0f * 57600) / CONF_GCLK_SERCOM3_CORE_FREQUENCY);
+	usart_async_set_baud_rate(&USART_0, baudDiv);
+
+	usart_async_register_callback(&USART_0, USART_ASYNC_TXC_CB, tx_cb_USART_0);
+	//usart_async_register_callback(&USART_0, USART_ASYNC_RXC_CB, rx_cb);
+	//usart_async_register_callback(&USART_0, USART_ASYNC_ERROR_CB, err_cb);
+	usart_async_get_io_descriptor(&USART_0, &io);
+	usart_async_enable(&USART_0);
+
+	AnalogIn::Init();
+	ADC_temperature_init();
+
+	for (unsigned int i = 0; i < 4; ++i)
+	{
+		pinMode(BoardAddressPins[i], INPUT_PULLUP);
+	}
+
+	// Set up ADC to read VIN and the temperature sensors
+	vinFilter.Init(0);
+	tpFilter.Init(0);
+	tcFilter.Init(0);
+	AnalogIn::EnableChannel(VinMonitorPin, vinFilter.CallbackFeedIntoFilter, &vinFilter);
+	AnalogIn::EnableTemperatureSensor(0, tpFilter.CallbackFeedIntoFilter, &tpFilter, 1);
+	AnalogIn::EnableTemperatureSensor(1, tcFilter.CallbackFeedIntoFilter, &tcFilter, 1);
+
+	SmartDrivers::Init();
+
+	for (size_t i = 0; i < DRIVES; ++i)
+	{
+		pinMode(StepPins[i], OUTPUT_LOW);
+		pinMode(DirectionPins[i], OUTPUT_LOW);
+		const uint32_t driverBit = 1u << (StepPins[i] & 31);
+		driveDriverBits[i] = driverBit;
+		allDriverBits |= driverBit;
+
+		SmartDrivers::SetMicrostepping(i, 16, true);
+	}
+
+	CanSlaveInterface::Init();
+
+	lastFlashTime = millis();
+}
+
+void Platform::Spin()
+{
+	static uint8_t oldAddr = 0;
+	static bool powered = false;
+
+	// Get the VIN voltage
+	const float volts = (vinFilter.GetSum() * (3.3 * 11))/(4096 * NumReadingsAveraged);
+	if (!powered && volts >= 10.0)
+	{
+		powered = true;
+		SmartDrivers::Spin(true);
+	}
+	else if (powered && volts < 9.5)
+	{
+		powered = false;
+		SmartDrivers::Spin(false);
+	}
+
+	const uint32_t now = millis();
+	if (now - lastFlashTime > 500)
+	{
+		lastFlashTime = now;
+
+		gpio_toggle_pin_level(DiagLedPin);
+
+		const uint8_t addr = ReadBoardSwitches() >> 2;
+		if (addr != oldAddr)
+		{
+			oldAddr = addr;
+			const float current = (addr == 3) ? 3000.0 : (addr == 2) ? 2000.0 : (addr == 1) ? 1000.0 : 500.0;
+			for (size_t i = 0; i < DRIVES; ++i)
+			{
+				SmartDrivers::SetCurrent(i, current);
+			}
+		}
+
+		// Get the chip temperature
+		const uint16_t tc_result = tcFilter.GetSum()/(NumReadingsAveraged);
+		const uint16_t tp_result = tpFilter.GetSum()/(NumReadingsAveraged);
+
+		int32_t result = (int64_t)temp_cal_tl * temp_cal_vph * tc_result
+						- (int64_t)temp_cal_vpl * temp_cal_th * tc_result
+						- (int64_t)temp_cal_tl * temp_cal_vch * tp_result
+						+ (int64_t)temp_cal_th * temp_cal_vcl * tp_result;
+		const int32_t divisor = ((int32_t)temp_cal_vcl * tp_result - (int32_t)temp_cal_vch * tp_result
+						   - (int32_t)temp_cal_vpl * tc_result + (int32_t)temp_cal_vph * tc_result);
+		result = (divisor == 0) ? 0 : result/divisor;
+		const float temperature = (float)result/16;
+
+#if 1
+		(void)temperature;
+#elif 0
+		String<100> status;
+		SmartDrivers::AppendDriverStatus(2, status.GetRef());
+		debugPrintf("%s", status.c_str());
+#elif 0
+		moveInstance->Diagnostics(AuxMessage);
+#else
+		uint32_t conversionsStarted, conversionsCompleted;
+		AnalogIn::GetDebugInfo(conversionsStarted, conversionsCompleted);
+		debugPrintf(
+//							"Conv %u %u"
+						"Addr %u"
+						", %.1fV, %.1fdegC"
+						", ptat %d, ctat %d"
+						", stat %08" PRIx32 " %08" PRIx32 " %08" PRIx32,
+//							(unsigned int)conversionsStarted, (unsigned int)conversionsCompleted,
+//							StepTimer::GetInterruptClocks(),
+						(unsigned int)addr,
+						(double)volts, (double)temperature
+						, tp_result, tc_result
+						, SmartDrivers::GetAccumulatedStatus(0, 0), SmartDrivers::GetAccumulatedStatus(1, 0), SmartDrivers::GetAccumulatedStatus(2, 0)
+//							, SmartDrivers::GetLiveStatus(0), SmartDrivers::GetLiveStatus(1), SmartDrivers::GetLiveStatus(2)
+					);
+#endif
+
+	}
+}
+
+void Platform::MessageF(MessageType type, const char *fmt, va_list vargs)
+{
+	String<FORMAT_STRING_LENGTH> formatString;
+	if ((type & ErrorMessageFlag) != 0)
+	{
+		formatString.copy("Error: ");
+		formatString.vcatf(fmt, vargs);
+	}
+	else if ((type & WarningMessageFlag) != 0)
+	{
+		formatString.copy("Warning: ");
+		formatString.vcatf(fmt, vargs);
+	}
+	else
+	{
+		formatString.vprintf(fmt, vargs);
+	}
+
+	RawMessage((MessageType)(type & ~(ErrorMessageFlag | WarningMessageFlag)), formatString.c_str());
+}
+
+void MessageF(MessageType type, const char *fmt, ...)
+{
+	va_list vargs;
+	va_start(vargs, fmt);
+	MessageF(type, fmt, vargs);
+	va_end(vargs);
+}
+
+void Platform::Message(MessageType type, const char *message)
+{
+	if ((type & (ErrorMessageFlag | WarningMessageFlag)) == 0)
+	{
+		RawMessage(type, message);
+	}
+	else
 	{
 		String<FORMAT_STRING_LENGTH> formatString;
-		if ((type & ErrorMessageFlag) != 0)
-		{
-			formatString.copy("Error: ");
-			formatString.vcatf(fmt, vargs);
-		}
-		else if ((type & WarningMessageFlag) != 0)
-		{
-			formatString.copy("Warning: ");
-			formatString.vcatf(fmt, vargs);
-		}
-		else
-		{
-			formatString.vprintf(fmt, vargs);
-		}
-
+		formatString.copy(((type & ErrorMessageFlag) != 0) ? "Error: " : "Warning: ");
+		formatString.cat(message);
 		RawMessage((MessageType)(type & ~(ErrorMessageFlag | WarningMessageFlag)), formatString.c_str());
 	}
+}
 
-	void MessageF(MessageType type, const char *fmt, ...)
-	{
-		va_list vargs;
-		va_start(vargs, fmt);
-		MessageF(type, fmt, vargs);
-		va_end(vargs);
-	}
+void Platform::LogError(ErrorCode e)
+{
+	errorCodeBits |= (uint32_t)e;
+}
 
-	void Message(MessageType type, const char *message)
-	{
-		if ((type & (ErrorMessageFlag | WarningMessageFlag)) == 0)
-		{
-			RawMessage(type, message);
-		}
-		else
-		{
-			String<FORMAT_STRING_LENGTH> formatString;
-			formatString.copy(((type & ErrorMessageFlag) != 0) ? "Error: " : "Warning: ");
-			formatString.cat(message);
-			RawMessage((MessageType)(type & ~(ErrorMessageFlag | WarningMessageFlag)), formatString.c_str());
-		}
-	}
+bool Platform::Debug(Module module)
+{
+	return false;
+}
 
-	void LogError(ErrorCode e)
-	{
-		errorCodeBits |= (uint32_t)e;
-	}
+void Platform::SetDriversIdle() { }
 
-	bool Debug(Module module)
-	{
-		return false;
-	}
+float Platform::DriveStepsPerUnit(size_t drive) { return stepsPerMm[drive]; }
 
-	void SetDriversIdle() { }
+const float *Platform::GetDriveStepsPerUnit() { return stepsPerMm; }
 
-	float DriveStepsPerUnit(size_t drive) { return stepsPerMm[drive]; }
-
-	const float *GetDriveStepsPerUnit() { return stepsPerMm; }
-
-	float AxisMaximum(size_t axis) { return axisMaxima[axis]; }
+float Platform::AxisMaximum(size_t axis) { return axisMaxima[axis]; }
 //	void SetAxisMaximum(size_t axis, float value, bool byProbing);
-	float AxisMinimum(size_t axis) { return axisMinima[axis]; }
+float Platform::AxisMinimum(size_t axis) { return axisMinima[axis]; }
 //	void SetAxisMinimum(size_t axis, float value, bool byProbing);
 //	float AxisTotalLength(size_t axis) ;
-	float GetPressureAdvance(size_t extruder) { return 0.4; }
+float Platform::GetPressureAdvance(size_t extruder) { return 0.4; }
 //	void SetPressureAdvance(size_t extruder, float factor);
-	float Acceleration(size_t axisOrExtruder) { return accelerations[axisOrExtruder]; }
-	const float* Accelerations() { return accelerations; }
+float Platform::Acceleration(size_t axisOrExtruder) { return accelerations[axisOrExtruder]; }
+const float* Platform::Accelerations() { return accelerations; }
 //	void SetAcceleration(size_t axisOrExtruder, float value);
-	float MaxFeedrate(size_t axisOrExtruder) { return feedrates[axisOrExtruder]; }
-	const float* MaxFeedrates() { return feedrates; }
+float Platform::MaxFeedrate(size_t axisOrExtruder) { return feedrates[axisOrExtruder]; }
+const float* Platform::MaxFeedrates() { return feedrates; }
 //	void SetMaxFeedrate(size_t axisOrExtruder, float value);
-	float GetInstantDv(size_t axis) { return instantDVs[axis]; }
+float Platform::GetInstantDv(size_t axis) { return instantDVs[axis]; }
 //	void SetInstantDv(size_t axis, float value);
-	EndStopHit Stopped(size_t axisOrExtruder) { return EndStopHit::lowHit; }
-	bool EndStopInputState(size_t axis) { return false; }
+EndStopHit Platform::Stopped(size_t axisOrExtruder) { return EndStopHit::lowHit; }
+bool Platform::EndStopInputState(size_t axis) { return false; }
 
-	void StepDriversLow()
-	{
-		StepPio->OUTCLR.reg = allDriverBits;
-	}
+void Platform::StepDriversLow()
+{
+	StepPio->OUTCLR.reg = allDriverBits;
+}
 
-	void StepDriversHigh(uint32_t driverMap)
-	{
-		StepPio->OUTSET.reg = driverMap;
-	}
+void Platform::StepDriversHigh(uint32_t driverMap)
+{
+	StepPio->OUTSET.reg = driverMap;
+}
 
 //	uint32_t CalcDriverBitmap(size_t driver);
 
-	uint32_t GetDriversBitmap(size_t axisOrExtruder) 	// get the bitmap of driver step bits for this axis or extruder
-	{
-		return driveDriverBits[axisOrExtruder];
-	}
+uint32_t Platform::GetDriversBitmap(size_t axisOrExtruder) 	// get the bitmap of driver step bits for this axis or extruder
+{
+	return driveDriverBits[axisOrExtruder];
+}
 
 //	unsigned int GetProhibitedExtruderMovements(unsigned int extrusions, unsigned int retractions);
 
-	void SetDirection(size_t axisOrExtruder, bool direction)
-	{
-		digitalWrite(DirectionPins[axisOrExtruder], direction);
-	}
+void Platform::SetDirection(size_t axisOrExtruder, bool direction)
+{
+	digitalWrite(DirectionPins[axisOrExtruder], direction);
+}
 
-	EndStopHit GetZProbeResult()
-	{
-		return EndStopHit::lowHit;
-	}
+EndStopHit Platform::GetZProbeResult()
+{
+	return EndStopHit::lowHit;
+}
 
-	void EnableDrive(size_t axisOrExtruder)
-	{
-		SmartDrivers::EnableDrive(axisOrExtruder, true);
-	}
+void Platform::EnableDrive(size_t axisOrExtruder)
+{
+	SmartDrivers::EnableDrive(axisOrExtruder, true);
+}
 
-//	void DisableDrive(size_t axisOrExtruder);
-//	void DisableAllDrives();
-//	void SetDriversIdle();
+//	void Platform::DisableDrive(size_t axisOrExtruder);
+//	void Platform::DisableAllDrives();
+//	void Platform::SetDriversIdle();
 
-	uint8_t ReadBoardAddress()
+uint8_t Platform::ReadBoardSwitches()
+{
+	uint8_t rslt = 0;
+	for (unsigned int i = 0; i < 4; ++i)
 	{
-		uint8_t rslt = 0;
-		for (unsigned int i = 0; i < 4; ++i)
+		if (!digitalRead(BoardAddressPins[i]))
 		{
-			if (!digitalRead(BoardAddressPins[i]))
-			{
-				rslt |= 1 << i;
-			}
+			rslt |= 1 << i;
 		}
-		return rslt;
 	}
+	return rslt;
+}
+
+uint8_t Platform::ReadBoardId()
+{
+	const uint8_t addr = ReadBoardSwitches() & 3;		// currently the top 2 buts are used to set motor current
+	return (addr == 0) ? 4 : addr;
 }
 
 // End

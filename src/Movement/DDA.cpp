@@ -11,7 +11,7 @@
 #include "GCodes/GCodes.h"
 #include "Kinematics/LinearDeltaKinematics.h"		// for DELTA_AXES
 #include "CAN/CanMessageFormats.h"
-#include "Can/Can.h"
+#include "CAN/CanSlaveInterface.h"
 
 #ifdef DUET_NG
 # define DDA_MOVE_DEBUG	(0)
@@ -363,7 +363,7 @@ void DDA::CheckEndstops()
 		{
 		case EndStopHit::lowHit:
 			MoveAborted();											// set the state to completed and recalculate the endpoints
-			CanManager::MoveStoppedByZProbe();
+			CanSlaveInterface::MoveStoppedByZProbe();
 			return;
 
 		case EndStopHit::nearStop:
@@ -418,7 +418,10 @@ void DDA::CheckEndstops()
 bool DDA::Start(uint32_t tim)
 pre(state == frozen)
 {
-	moveStartTime = tim;
+	if ((int32_t)(moveStartTime - tim) < 0)
+	{
+		moveStartTime = tim;			// this move is late starting, so record the actual start time
+	}
 	state = executing;
 
 	if (firstDM != nullptr)

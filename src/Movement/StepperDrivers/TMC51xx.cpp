@@ -1075,7 +1075,7 @@ extern "C" void TmcLoop(void *)
 	{
 		if (driversState == DriversState::noPower)
 		{
-			TaskBase::Take(portMAX_DELAY);
+			TaskBase::Take(Mutex::TimeoutUnlimited);
 		}
 		else
 		{

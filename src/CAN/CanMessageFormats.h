@@ -8,6 +8,8 @@
 #ifndef SRC_CAN_CANMESSAGEFORMATS_H_
 #define SRC_CAN_CANMESSAGEFORMATS_H_
 
+constexpr unsigned int DriversPerCanBoard = 3;
+
 union MovementFlags
 {
 	uint32_t u32;
@@ -42,7 +44,9 @@ struct CanMovementMessage
 	struct
 	{
 		int32_t steps;					// net steps moved
-	} perDrive[DRIVES];
+	} perDrive[DriversPerCanBoard];
+
+	void DebugPrint();
 };
 
 #endif /* SRC_CAN_CANMESSAGEFORMATS_H_ */

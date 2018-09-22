@@ -5,17 +5,18 @@
  *      Author: David
  */
 
-#ifndef SRC_CAN_CAN_H_
-#define SRC_CAN_CAN_H_
+#ifndef SRC_CAN_CANSLAVEINTERFACE_H_
+#define SRC_CAN_CANSLAVEINTERFACE_H_
 
 #include <RepRapFirmware.h>
 
 struct CanMovementMessage;
 
-namespace CanManager
+namespace CanSlaveInterface
 {
+	void Init();
 	const CanMovementMessage& GetCanMove();
 	void MoveStoppedByZProbe();
 }
 
-#endif /* SRC_CAN_CAN_H_ */
+#endif /* SRC_CAN_CANSLAVEINTERFACE_H_ */

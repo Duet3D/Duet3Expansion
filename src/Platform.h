@@ -100,7 +100,8 @@ namespace Platform
 	void DisableAllDrives();
 	void SetDriversIdle();
 
-	uint8_t ReadBoardAddress();
+	uint8_t ReadBoardSwitches();
+	uint8_t ReadBoardId();
 }
 
 #endif /* SRC_PLATFORM_H_ */

@@ -12,7 +12,7 @@
 
 namespace StepTimer
 {
-	constexpr uint32_t StepClockRate = 120000000/64;					// we don't have a divisor of 128 available unless we use another GCLK, so use 64
+	constexpr uint32_t StepClockRate = 120000000/128;					// we don't have a divisor of 128 available so we use GCLK1 which is half GCLK0
 	constexpr uint64_t StepClockRateSquared = (uint64_t)StepClockRate * StepClockRate;
 	constexpr float StepClocksToMillis = 1000.0/(float)StepClockRate;
 	constexpr uint32_t MinInterruptInterval = 12;						// 12 clocks is about 6us
