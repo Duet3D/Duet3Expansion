@@ -138,7 +138,6 @@ private:
 	float accelDistance;
 	float decelDistance;
 
-	uint32_t scheduledStartTime;
 	uint32_t clocksNeeded;
 
 	// Values that are not set or accessed before Prepare is called

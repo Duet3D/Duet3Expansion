@@ -186,20 +186,24 @@ void Move::Spin()
 	if (canAddMove)
 	{
 		// OK to add another move. First check if a special move is available.
-		ddaRingAddPointer->Init(CanSlaveInterface::GetCanMove());
-		ddaRingAddPointer = ddaRingAddPointer->GetNext();
-		idleCount = 0;
-		scheduledMoves++;
-		if (moveState == MoveState::idle || moveState == MoveState::timing)
+		CanMovementMessage move;
+		if (CanSlaveInterface::GetCanMove(move))
 		{
-			moveState = MoveState::collecting;
-			const uint32_t now = millis();
-			const uint32_t timeWaiting = now - lastStateChangeTime;
-			if (timeWaiting > longestGcodeWaitInterval)
+			ddaRingAddPointer->Init(move);
+			ddaRingAddPointer = ddaRingAddPointer->GetNext();
+			idleCount = 0;
+			scheduledMoves++;
+			if (moveState == MoveState::idle || moveState == MoveState::timing)
 			{
-				longestGcodeWaitInterval = timeWaiting;
+				moveState = MoveState::collecting;
+				const uint32_t now = millis();
+				const uint32_t timeWaiting = now - lastStateChangeTime;
+				if (timeWaiting > longestGcodeWaitInterval)
+				{
+					longestGcodeWaitInterval = timeWaiting;
+				}
+				lastStateChangeTime = now;
 			}
-			lastStateChangeTime = now;
 		}
 	}
 

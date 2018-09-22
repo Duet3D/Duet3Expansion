@@ -222,7 +222,7 @@ void DDA::Init(const CanMovementMessage& msg)
 	}
 
 	// 3. Store some values
-	scheduledStartTime = msg.moveStartTime;
+	moveStartTime = msg.moveStartTime;
 	clocksNeeded = msg.accelerationClocks + msg.steadyClocks + msg.decelClocks;
 	endStopsToCheck = msg.flags.endStopsToCheck;
 	stopAllDrivesOnEndstopHit = msg.flags.stopAllDrivesOnEndstopHit;
