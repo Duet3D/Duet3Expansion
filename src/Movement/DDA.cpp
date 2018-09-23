@@ -452,8 +452,8 @@ pre(state == frozen)
 		}
 	}
 
-	// No steps are pending. This should not happen, except perhaps for an extrude-only move when extrusion is prohibited
-	return true;	// schedule another interrupt immediately
+	// No steps are pending. This can happen if no local drives are involved in the move.
+	return StepTimer::ScheduleStepInterrupt(moveStartTime + clocksNeeded - WakeupTime);		// schedule an interrupt shortly before the end of the move
 }
 
 unsigned int DDA::numHiccups = 0;
@@ -549,7 +549,6 @@ bool DDA::Step()
 		// 6. Check for move completed
 		if (firstDM == nullptr)
 		{
-			state = completed;
 			break;
 		}
 
@@ -570,6 +569,17 @@ bool DDA::Step()
 		// If we have already spent too much time in the ISR, delay the interrupt
 		repeat = StepTimer::ScheduleStepInterrupt(nextStepDue);
 	} while (repeat);
+
+	if (state == executing && firstDM == nullptr)
+	{
+		// There are no steps left for this move, but don't say that the move has completed unless the allocated time for it has nearly elapsed,
+		// otherwise we tend to skip moves that use no drivers on this board
+		const uint32_t finishTime = moveStartTime + clocksNeeded;	// calculate when this move should finish
+		if (StepTimer::ScheduleStepInterrupt(finishTime - WakeupTime))
+		{
+			state = completed;
+		}
+	}
 
 	if (state == completed)
 	{

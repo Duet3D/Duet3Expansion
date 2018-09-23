@@ -1094,22 +1094,14 @@ extern "C" void TmcLoop(void *)
 			else if (!timedOut)
 			{
 				// Handle the read response
-#ifdef SAME51
-				const uint8_t *readPtr = rcvData;
-				for (size_t drive = 0; drive < numTmc51xxDrivers; ++drive)
-				{
-					driverStates[drive].TransferSucceeded(readPtr);
-					readPtr += 5;
-				}
-#else
-				// On the Duet 3 main board, driver 0 is the first in the SPI chain so we must read them in reverse order.
+				// Driver 0 is the first in the SPI chain so we must read them in reverse order.
 				const uint8_t *readPtr = rcvData + 5 * numTmc51xxDrivers;
 				for (size_t drive = 0; drive < numTmc51xxDrivers; ++drive)
 				{
 					readPtr -= 5;
 					driverStates[drive].TransferSucceeded(readPtr);
 				}
-#endif
+
 				if (driversState == DriversState::initialising)
 				{
 					// If all drivers that share the global enable have been initialised, set the global enable
@@ -1132,22 +1124,14 @@ extern "C" void TmcLoop(void *)
 			}
 
 			// Set up data to write
-#ifdef SAME51
-			uint8_t *writeBufPtr = sendData;
-			for (size_t i = 0; i < numTmc51xxDrivers; ++i)
-			{
-				driverStates[i].GetSpiCommand(writeBufPtr);
-				writeBufPtr += 5;
-			}
-#else
-			// On the Duet 3 main board, driver 0 is the first in the SPI chain so we must write them in reverse order.
+			// Driver 0 is the first in the SPI chain so we must write them in reverse order.
 			uint8_t *writeBufPtr = sendData + 5 * numTmc51xxDrivers;
 			for (size_t i = 0; i < numTmc51xxDrivers; ++i)
 			{
 				writeBufPtr -= 5;
 				driverStates[i].GetSpiCommand(writeBufPtr);
 			}
-#endif
+
 			// Kick off a transfer
 			{
 				TaskCriticalSectionLocker lock;

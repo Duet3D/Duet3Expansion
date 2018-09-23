@@ -88,6 +88,7 @@ public:
 	static constexpr uint32_t MinCalcIntervalCartesian = (40 * StepTimer::StepClockRate)/1000000;	// same as delta for now, but could be lower
 	static constexpr uint32_t MinInterruptInterval = 6;									// about 6us minimum interval between interrupts, in step clocks
 	static constexpr uint32_t MaxStepInterruptTime = 10 * MinInterruptInterval;			// the maximum time we spend looping in the ISR , in step clocks
+	static constexpr uint32_t WakeupTime = StepTimer::StepClockRate/10000;				// stop resting 100us before the move is due to end
 
 	static void PrintMoves();										// print saved moves for debugging
 
