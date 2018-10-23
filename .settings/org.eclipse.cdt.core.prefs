@@ -1,0 +1,6 @@
+eclipse.preferences.version=1
+environment/project/cdt.managedbuild.config.gnu.cross.exe.debug.513686287/PATH/delimiter=\:
+environment/project/cdt.managedbuild.config.gnu.cross.exe.debug.513686287/PATH/operation=replace
+environment/project/cdt.managedbuild.config.gnu.cross.exe.debug.513686287/PATH/value=${GccPath}\:/home/christian/.bin\:/usr/local/sbin\:/usr/local/bin\:/usr/bin\:/usr/lib/jvm/default/bin\:/usr/bin/site_perl\:/usr/bin/vendor_perl\:/usr/bin/core_perl
+environment/project/cdt.managedbuild.config.gnu.cross.exe.debug.513686287/append=true
+environment/project/cdt.managedbuild.config.gnu.cross.exe.debug.513686287/appendContributed=true
