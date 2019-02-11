@@ -30,3 +30,7 @@
 *.exe
 *.out
 *.app
+/Expansion1/
+
+# Eclipse
+.settings/language.settings.xml
