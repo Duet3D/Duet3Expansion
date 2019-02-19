@@ -107,7 +107,7 @@ int32_t DDA::GetTimeLeft() const
 pre(state == executing || state == frozen || state == completed)
 {
 	return (state == completed) ? 0
-			: (state == executing) ? (int32_t)(moveStartTime + clocksNeeded - StepTimer::GetInterruptClocks())
+			: (state == executing) ? (int32_t)(afterPrepare.moveStartTime + clocksNeeded - StepTimer::GetInterruptClocks())
 			: (int32_t)clocksNeeded;
 }
 
@@ -160,7 +160,7 @@ void DDA::DebugPrint() const
 				"a=%f d=%f startv=%f topv=%f endv=%f sa=%f sd=%f\n"
 				"cks=%" PRIu32 " sstcda=%" PRIu32 " tstcddpdsc=%" PRIu32 " exac=%" PRIi32 "\n",
 				(double)acceleration, (double)deceleration, (double)startSpeed, (double)topSpeed, (double)endSpeed, (double)accelDistance, (double)decelDistance,
-				clocksNeeded, startSpeedTimesCdivA, topSpeedTimesCdivDPlusDecelStartClocks, extraAccelerationClocks);
+				clocksNeeded, afterPrepare.startSpeedTimesCdivA, afterPrepare.topSpeedTimesCdivDPlusDecelStartClocks, afterPrepare.extraAccelerationClocks);
 }
 
 // Print the DDA and active DMs
@@ -222,7 +222,7 @@ void DDA::Init(const CanMovementMessage& msg)
 	}
 
 	// 3. Store some values
-	moveStartTime = msg.moveStartTime;
+	afterPrepare.moveStartTime = msg.moveStartTime;
 	clocksNeeded = msg.accelerationClocks + msg.steadyClocks + msg.decelClocks;
 	endStopsToCheck = msg.flags.endStopsToCheck;
 	stopAllDrivesOnEndstopHit = msg.flags.stopAllDrivesOnEndstopHit;
@@ -259,7 +259,7 @@ void DDA::Prepare(const CanMovementMessage& msg)
 	{
 		// This code assumes that the previous move in the DDA ring is the previously-executed move, because it fetches the X and Y end coordinates from that move.
 		// Therefore the Move code must not store a new move in that entry until this one has been prepared! (It took me ages to track this down.)
-		cKc = roundS32(msg.zMovement * DriveMovement::Kc);
+		afterPrepare.cKc = roundS32(msg.zMovement * DriveMovement::Kc);
 		params.dvecX = msg.finalX - msg.initialX;
 		params.dvecY = msg.finalY - msg.initialY;
 		params.dvecZ = msg.zMovement;
@@ -267,14 +267,12 @@ void DDA::Prepare(const CanMovementMessage& msg)
 		params.initialX = msg.initialX;
 		params.initialY = msg.initialY;
 		params.dparams = static_cast<const LinearDeltaKinematics*>(&(moveInstance->GetKinematics()));
-		params.diagonalSquared = params.dparams->GetDiagonalSquared();
-		params.a2b2D2 = params.a2plusb2 * params.diagonalSquared;
 	}
 
-	startSpeedTimesCdivA = (uint32_t)roundU32(startSpeed/acceleration);
+	afterPrepare.startSpeedTimesCdivA = (uint32_t)roundU32(startSpeed/acceleration);
 	params.topSpeedTimesCdivD = (uint32_t)roundU32(topSpeed/deceleration);
-	topSpeedTimesCdivDPlusDecelStartClocks = params.topSpeedTimesCdivD + msg.accelerationClocks + msg.steadyClocks;
-	extraAccelerationClocks = msg.accelerationClocks - roundS32(accelDistance/topSpeed);
+	afterPrepare.topSpeedTimesCdivDPlusDecelStartClocks = params.topSpeedTimesCdivD + msg.accelerationClocks + msg.steadyClocks;
+	afterPrepare.extraAccelerationClocks = msg.accelerationClocks - roundS32(accelDistance/topSpeed);
 	params.compFactor = (topSpeed - startSpeed)/topSpeed;
 
 	firstDM = nullptr;
@@ -418,9 +416,9 @@ void DDA::CheckEndstops()
 bool DDA::Start(uint32_t tim)
 pre(state == frozen)
 {
-	if ((int32_t)(moveStartTime - tim) < 0)
+	if ((int32_t)(afterPrepare.moveStartTime - tim) < 0)
 	{
-		moveStartTime = tim;			// this move is late starting, so record the actual start time
+		afterPrepare.moveStartTime = tim;			// this move is late starting, so record the actual start time
 	}
 	state = executing;
 
@@ -448,12 +446,12 @@ pre(state == frozen)
 
 		if (firstDM != nullptr)
 		{
-			return StepTimer::ScheduleStepInterrupt(firstDM->nextStepTime + moveStartTime);
+			return StepTimer::ScheduleStepInterrupt(firstDM->nextStepTime + afterPrepare.moveStartTime);
 		}
 	}
 
 	// No steps are pending. This can happen if no local drives are involved in the move.
-	return StepTimer::ScheduleStepInterrupt(moveStartTime + clocksNeeded - WakeupTime);		// schedule an interrupt shortly before the end of the move
+	return StepTimer::ScheduleStepInterrupt(afterPrepare.moveStartTime + clocksNeeded - WakeupTime);		// schedule an interrupt shortly before the end of the move
 }
 
 unsigned int DDA::numHiccups = 0;
@@ -489,7 +487,7 @@ bool DDA::Step()
 		{
 			isrStartTime = iClocks;		// first time through, so make a note of the ISR start time
 		}
-		const uint32_t elapsedTime = (iClocks - moveStartTime) + MinInterruptInterval;
+		const uint32_t elapsedTime = (iClocks - afterPrepare.moveStartTime) + MinInterruptInterval;
 		DriveMovement* dm = firstDM;
 		uint32_t driversStepping = 0;
 		while (dm != nullptr && elapsedTime >= dm->nextStepTime)		// if the next step is due
@@ -553,13 +551,13 @@ bool DDA::Step()
 		}
 
 		// 7. Check whether we have been in this ISR for too long already and need to take a break
-		uint32_t nextStepDue = firstDM->nextStepTime + moveStartTime;
+		uint32_t nextStepDue = firstDM->nextStepTime + afterPrepare.moveStartTime;
 		const uint32_t clocksTaken = StepTimer::GetInterruptClocks() - isrStartTime;
 		if (clocksTaken >= DDA::MaxStepInterruptTime && (nextStepDue - isrStartTime) < (clocksTaken + DDA::MinInterruptInterval))
 		{
 			// Force a break by updating the move start time
 			const uint32_t delayClocks = (clocksTaken + DDA::MinInterruptInterval) - (nextStepDue - isrStartTime);
-			moveStartTime += delayClocks;
+			afterPrepare.moveStartTime += delayClocks;
 			nextStepDue += delayClocks;
 			++numHiccups;
 			hadHiccup = true;
@@ -574,7 +572,7 @@ bool DDA::Step()
 	{
 		// There are no steps left for this move, but don't say that the move has completed unless the allocated time for it has nearly elapsed,
 		// otherwise we tend to skip moves that use no drivers on this board
-		const uint32_t finishTime = moveStartTime + clocksNeeded;	// calculate when this move should finish
+		const uint32_t finishTime = afterPrepare.moveStartTime + clocksNeeded;	// calculate when this move should finish
 		if (StepTimer::ScheduleStepInterrupt(finishTime - WakeupTime))
 		{
 			state = completed;
@@ -585,7 +583,7 @@ bool DDA::Step()
 	{
 		// The following finish time is wrong if we aborted the move because of endstop or Z probe checks.
 		// However, following a move that checks endstops or the Z probe, we always wait for the move to complete before we schedule another, so this doesn't matter.
-		const uint32_t finishTime = moveStartTime + clocksNeeded;	// calculate how long this move should take
+		const uint32_t finishTime = afterPrepare.moveStartTime + clocksNeeded;	// calculate how long this move should take
 		Move& move = *moveInstance;
 		move.CurrentMoveCompleted();								// tell Move that the current move is complete
 		return move.TryStartNextMove(finishTime);					// schedule the next move
@@ -610,7 +608,7 @@ void DDA::StopDrive(size_t drive)
 	}
 }
 
-// This is called when we abort a move because we have hit an endstop.
+// This is called when we abort a move because we have hit an endstop or we are doing an emergency pause.
 // It stop all drives and adjusts the end points of the current move to account for how far through the move we got.
 // The caller must call MoveCompleted at some point after calling this.
 void DDA::MoveAborted()
@@ -637,8 +635,8 @@ void DDA::ReduceHomingSpeed()
 		topSpeed *= (1.0/ProbingSpeedReductionFactor);
 
 		// Adjust extraAccelerationClocks so that step timing will be correct in the steady speed phase at the new speed
-		const uint32_t clocksSoFar = StepTimer::GetInterruptClocks() - moveStartTime;
-		extraAccelerationClocks = (extraAccelerationClocks * (int32_t)ProbingSpeedReductionFactor) - ((int32_t)clocksSoFar * (int32_t)(ProbingSpeedReductionFactor - 1));
+		const uint32_t clocksSoFar = StepTimer::GetInterruptClocks() - afterPrepare.moveStartTime;
+		afterPrepare.extraAccelerationClocks = (afterPrepare.extraAccelerationClocks * (int32_t)ProbingSpeedReductionFactor) - ((int32_t)clocksSoFar * (int32_t)(ProbingSpeedReductionFactor - 1));
 
 		// We also need to adjust the total clocks needed, to prevent step errors being recorded
 		if (clocksSoFar < clocksNeeded)

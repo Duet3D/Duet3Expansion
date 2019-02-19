@@ -90,8 +90,8 @@ public:
 	uint32_t GetStepInterval(size_t axis, uint32_t microstepShift) const;			// Get the current step interval for this axis or extruder
 #endif
 
-	static int32_t MotorEndPointToMachine(size_t drive, float coord);				// Convert a single motor position to number of steps
-	static float MotorEndpointToPosition(int32_t endpoint, size_t drive);			// Convert number of motor steps to motor position
+	static int32_t MotorMovementToSteps(size_t drive, float coord);					// Convert a single motor position to number of steps
+	static float MotorStepsToMovement(size_t drive, int32_t endpoint);				// Convert number of motor steps to motor position
 
 private:
 	enum class MoveState : uint8_t
@@ -163,7 +163,8 @@ inline bool Move::AllMovesAreFinished()
 	return NoLiveMovement();
 }
 
-// Start the next move. Must be called with interrupts disabled, to avoid a race with the step ISR.
+// Start the next move. Return true if the
+// Must be called with base priority greater than the step interrupt, to avoid a race with the step ISR.
 inline bool Move::StartNextMove(uint32_t startTime)
 pre(ddaRingGetPointer->GetState() == DDA::frozen)
 {

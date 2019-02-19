@@ -31,6 +31,7 @@ enum class KinematicsType : uint8_t
 	coreXYUV,
 	linearDeltaPlusZ,	// reserved for @sga, see https://forum.duet3d.com/topic/5775/aditional-carterian-z-axis-on-delta-printer
 	rotaryDelta,		// not yet implemented
+	markForged,
 
 	unknown				// this one must be last!
 };
@@ -76,19 +77,8 @@ public:
 	// 'machinePos' is the output set of converted axis and extruder positions
 	virtual void MotorStepsToCartesian(const int32_t motorPos[], const float stepsPerMm[], size_t numVisibleAxes, size_t numTotalAxes, float machinePos[]) const = 0;
 
-	// Limit the Cartesian position that the user wants to move to, returning true if any coordinates were changed
-	// The default implementation just applies the rectangular limits set up by M208 to those axes that have been homed.
-	virtual bool LimitPosition(float coords[], size_t numVisibleAxes, AxesBitmap axesHomed, bool isCoordinated) const;
-
-	// Return the initial Cartesian coordinates we assume after switching to this kinematics
-	virtual void GetAssumedInitialPosition(size_t numAxes, float positions[]) const;
-
 	// Override this one if any axes do not use the linear motion code (e.g. for segmentation-free delta motion)
 	virtual MotionType GetMotionType(size_t axis) const { return MotionType::linear; }
-
-	// Return true if the specified XY position is reachable by the print head reference point.
-	// The default implementation assumes a rectangular reachable area, so it just uses the bed dimensions give in the M208 commands.
-	virtual bool IsReachable(float x, float y, bool isCoordinated) const;
 
 	// Get the bed tilt fraction for the specified axis.
 	// Usually this is only relevant if we are auto calibrating the bed tilt, however you can also specify bed tilt manually if you wanted to.
@@ -185,10 +175,6 @@ public:
 protected:
 	// Constructor. Pass segsPerSecond <= 0.0 to get non-segmented motion.
 	Kinematics(KinematicsType t, float segsPerSecond, float minSegLength, bool doUseRawG0);
-
-	// Apply the M208 limits to the Cartesian position that the user wants to move to for all axes from the specified one upwards
-	// Return true if any coordinates were changed
-	bool LimitPositionFromAxis(float coords[], size_t firstAxis, size_t numVisibleAxes, AxesBitmap axesHomed) const;
 
 	// Debugging functions
 	static void PrintMatrix(const char* s, const MathMatrix<floatc_t>& m, size_t numRows = 0, size_t maxCols = 0);

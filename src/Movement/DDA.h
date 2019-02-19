@@ -25,7 +25,7 @@ class DDA
 
 public:
 
-	enum DDAState : unsigned char
+	enum DDAState : uint8_t
 	{
 		empty,				// empty or being filled in
 		provisional,		// ready, but could be subject to modifications
@@ -115,9 +115,9 @@ private:
 	{
 		struct
 		{
-			uint8_t goingSlow : 1;					// True if we have slowed the movement because the Z probe is approaching its threshold
-			uint8_t hadHiccup : 1;					// True if we had a hiccup while executing this move
-			uint8_t stopAllDrivesOnEndstopHit : 1;	// True if hitting an endstop stops the entire move
+			uint16_t goingSlow : 1,					// True if we have slowed the movement because the Z probe is approaching its threshold
+					 hadHiccup : 1,					// True if we had a hiccup while executing this move
+					 stopAllDrivesOnEndstopHit : 1;	// True if hitting an endstop stops the entire move
 		};
 		uint16_t flags;								// so that we can print all the flags at once for debugging
 	};
@@ -152,7 +152,7 @@ private:
 
 		// These are used only in delta calculations
 		int32_t cKc;						// The Z movement fraction multiplied by Kc and converted to integer
-	};
+	} afterPrepare;
 
     DriveMovement* firstDM;					// list of contained DMs that need steps, in step time order
 	DriveMovement *pddm[DRIVES];			// These describe the state of each drive movement

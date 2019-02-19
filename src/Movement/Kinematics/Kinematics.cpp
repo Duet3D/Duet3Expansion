@@ -17,60 +17,6 @@ Kinematics::Kinematics(KinematicsType t, float segsPerSecond, float minSegLength
 {
 }
 
-// Return true if the specified XY position is reachable by the print head reference point.
-// This default implementation assumes a rectangular reachable area, so it just uses the bed dimensions give in the M208 command.
-bool Kinematics::IsReachable(float x, float y, bool isCoordinated) const
-{
-#if 1
-	return true;
-#else
-	const Platform& platform = reprap.GetPlatform();
-	return x >= platform.AxisMinimum(X_AXIS) && y >= platform.AxisMinimum(Y_AXIS) && x <= platform.AxisMaximum(X_AXIS) && y <= platform.AxisMaximum(Y_AXIS);
-#endif
-}
-
-// Limit the Cartesian position that the user wants to move to, returning true if any coordinates were changed
-// This default implementation just applies the rectangular limits set up by M208 to those axes that have been homed.
-bool Kinematics::LimitPosition(float coords[], size_t numVisibleAxes, AxesBitmap axesHomed, bool isCoordinated) const
-{
-	return LimitPositionFromAxis(coords, 0, numVisibleAxes, axesHomed);
-}
-
-// Apply the M208 limits to the Cartesian position that the user wants to move to for all axes from the specified one upwards
-// Return true if any coordinates were changed
-bool Kinematics::LimitPositionFromAxis(float coords[], size_t firstAxis, size_t numVisibleAxes, AxesBitmap axesHomed) const
-{
-	bool limited = false;
-	for (size_t axis = firstAxis; axis < numVisibleAxes; axis++)
-	{
-		if (IsBitSet(axesHomed, axis))
-		{
-			float& f = coords[axis];
-			if (f < Platform::AxisMinimum(axis))
-			{
-				f = Platform::AxisMinimum(axis);
-				limited = true;
-			}
-			else if (f > Platform::AxisMaximum(axis))
-			{
-				f = Platform::AxisMaximum(axis);
-				limited = true;
-			}
-		}
-	}
-	return limited;
-}
-
-// Return the initial Cartesian coordinates we assume after switching to this kinematics
-// This default is suitable for Cartesian and CoreXY printers.
-void Kinematics::GetAssumedInitialPosition(size_t numAxes, float positions[]) const
-{
-	for (size_t i = 0; i < numAxes; ++i)
-	{
-		positions[i] = 0.0;
-	}
-}
-
 /*static*/ Kinematics *Kinematics::Create(KinematicsType k)
 {
 	switch (k)
