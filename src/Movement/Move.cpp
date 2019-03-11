@@ -474,6 +474,7 @@ void Move::SetNewPosition(const float positionNow[DRIVES], bool doBedCompensatio
 	//TODO do we need anything here?
 }
 
+// This may be called from an ISR, e.g. via Kinematics::OnHomingSwitchTriggered and DDA::SetPositions
 void Move::EndPointToMachine(const float coords[], int32_t ep[], size_t numDrives) const
 {
 	if (CartesianToMotorSteps(coords, ep, true))
@@ -481,13 +482,13 @@ void Move::EndPointToMachine(const float coords[], int32_t ep[], size_t numDrive
 		const size_t numAxes = GCodes::GetTotalAxes();
 		for (size_t drive = numAxes; drive < numDrives; ++drive)
 		{
-			ep[drive] = MotorEndPointToMachine(drive, coords[drive]);
+			ep[drive] = MotorMovementToSteps(drive, coords[drive]);
 		}
 	}
 }
 
 // Convert distance to steps for a particular drive
-int32_t Move::MotorEndPointToMachine(size_t drive, float coord)
+int32_t Move::MotorMovementToSteps(size_t drive, float coord)
 {
 	return lrintf(coord * Platform::DriveStepsPerUnit(drive));
 }
@@ -501,11 +502,12 @@ void Move::MotorStepsToCartesian(const int32_t motorPos[], size_t numVisibleAxes
 
 // Convert Cartesian coordinates to motor steps, axes only, returning true if successful.
 // Used to perform movement and G92 commands.
+// This may be called from an ISR, e.g. via Kinematics::OnHomingSwitchTriggered, DDA::SetPositions and Move::EndPointToMachine
 bool Move::CartesianToMotorSteps(const float machinePos[MaxAxes], int32_t motorPos[MaxAxes], bool isCoordinated) const
 {
 	const bool b = kinematics->CartesianToMotorSteps(machinePos, Platform::GetDriveStepsPerUnit(),
 														GCodes::GetVisibleAxes(), GCodes::GetTotalAxes(), motorPos, isCoordinated);
-	if (Platform::Debug(moduleMove) && Platform::Debug(moduleDda))
+	if (!inInterrupt() && Platform::Debug(moduleMove) && Platform::Debug(moduleDda))
 	{
 		if (b)
 		{
@@ -565,7 +567,7 @@ bool Move::TryStartNextMove(uint32_t startTime)
 	}
 }
 
-/*static*/ float Move::MotorEndpointToPosition(int32_t endpoint, size_t drive)
+/*static*/ float Move::MotorStepsToMovement(size_t drive, int32_t endpoint)
 {
 	return ((float)(endpoint))/Platform::DriveStepsPerUnit(drive);
 }

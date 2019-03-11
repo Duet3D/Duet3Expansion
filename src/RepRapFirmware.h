@@ -181,10 +181,10 @@ constexpr size_t CoreXYUV_AXES = 5;									// The number of axes in a CoreXYUV 
 constexpr size_t U_AXIS = 3, V_AXIS = 4;							// The indices of the U and V motors in a CoreXYU machine (needed by Platform)
 
 // Common conversion factors
-constexpr float MinutesToSeconds = 60.0;
-constexpr float SecondsToMinutes = 1.0/MinutesToSeconds;
-constexpr float SecondsToMillis = 1000.0;
-constexpr float MillisToSeconds = 0.001;
+constexpr unsigned int MinutesToSeconds = 60;
+constexpr float SecondsToMinutes = 1.0/(float)MinutesToSeconds;
+constexpr unsigned int SecondsToMillis = 1000.0;
+constexpr float MillisToSeconds = 1.0/(float)SecondsToMillis;
 constexpr float InchToMm = 25.4;
 constexpr float Pi = 3.141592653589793;
 constexpr float TwoPi = 3.141592653589793 * 2;
@@ -229,6 +229,12 @@ public:
 private:
 	uint32_t basePrio;
 };
+
+// Return true if we are in any interrupt service routine
+static inline bool inInterrupt()
+{
+	return (__get_IPSR() & 0x01FF) != 0;
+}
 
 // Macro to give us the number of elements in an array
 #ifndef ARRAY_SIZE

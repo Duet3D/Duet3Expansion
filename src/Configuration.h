@@ -38,7 +38,7 @@ constexpr uint32_t LogFlushInterval = 15000;			// Milliseconds
 constexpr uint32_t DriverCoolingTimeout = 4000;			// Milliseconds
 constexpr float DefaultMessageTimeout = 10.0;			// How long a message is displayed by default, in seconds
 
-constexpr uint32_t MinimumOpenLoadFullStepsPerSec = 4;
+constexpr uint32_t MinimumOpenLoadFullStepsPerSec = 20;
 
 // FanCheckInterval must be lower than MinimumWarningInterval to avoid giving driver over temperature warnings too soon when thermostatic control of electronics cooling fans is used
 static_assert(FanCheckInterval < MinimumWarningInterval, "FanCheckInterval too large");
@@ -50,21 +50,21 @@ constexpr unsigned int AUX2_BAUD_RATE = 115200;			// Ditto - for second auxiliar
 constexpr uint32_t SERIAL_MAIN_TIMEOUT = 1000;			// timeout in ms for sending data to the main serial/USB port
 
 // Heater values
-constexpr float HEAT_SAMPLE_TIME = 0.5;					// Seconds
-constexpr float HEAT_PWM_AVERAGE_TIME = 5.0;			// Seconds
+constexpr uint32_t HeatSampleIntervalMillis = 250;		// interval between taking temperature samples
+constexpr float HeatPwmAverageTime = 5.0;			// Seconds
 
 constexpr float TEMPERATURE_CLOSE_ENOUGH = 1.0;			// Celsius
 constexpr float TEMPERATURE_LOW_SO_DONT_CARE = 40.0;	// Celsius
 constexpr float HOT_ENOUGH_TO_EXTRUDE = 160.0;			// Celsius
 constexpr float HOT_ENOUGH_TO_RETRACT = 90.0;			// Celsius
 
-constexpr uint8_t MAX_BAD_TEMPERATURE_COUNT = 4;		// Number of bad temperature samples permitted before a heater fault is reported
-constexpr float BAD_LOW_TEMPERATURE = -10.0;			// Celsius
+constexpr uint8_t MaxBadTemperatureCount = 4;		// Number of bad temperature samples permitted before a heater fault is reported
+constexpr float BadLowTemperature = -10.0;			// Celsius
 constexpr float DefaultExtruderTemperatureLimit = 290.0; // Celsius - E3D say to tighten the hot end at 285C
 constexpr float DefaultBedTemperatureLimit = 125.0;		// Celsius
-constexpr float HOT_END_FAN_TEMPERATURE = 45.0;			// Temperature at which a thermostatic hot end fan comes on
+constexpr float HotEndFanTemperature = 45.0;			// Temperature at which a thermostatic hot end fan comes on
 constexpr float ThermostatHysteresis = 1.0;				// How much hysteresis we use to prevent noise turning fans on/off too often
-constexpr float BAD_ERROR_TEMPERATURE = 2000.0;			// Must exceed any reasonable 5temperature limit including DEFAULT_TEMPERATURE_LIMIT
+constexpr float BadErrorTemperature = 2000.0;			// Must exceed any reasonable 5temperature limit including DEFAULT_TEMPERATURE_LIMIT
 constexpr uint32_t DefaultHeaterFaultTimeout = 10 * 60 * 1000;	// How long we wait (in milliseconds) for user intervention after a heater fault before shutting down
 
 // Heating model default parameters. For the chamber heater, we use the same values as for the bed heater.
@@ -113,13 +113,13 @@ constexpr unsigned int NormalHeaterPwmFreq = 250;		// normal PWM frequency used 
 constexpr PwmFrequency DefaultFanPwmFreq = 250;			// increase to 25kHz using M106 command to meet Intel 4-wire PWM fan specification
 constexpr unsigned int DefaultPinWritePwmFreq = 500;	// default PWM frequency for M42 pin writes and extrusion ancillary PWM
 
-// String lengths
-constexpr size_t FORMAT_STRING_LENGTH = 256;
+// String lengths. Keeping the number of distinct lengths small will reduce flash memory usage.
+constexpr size_t FormatStringLength = 256;
+constexpr size_t MaxMessageLength = 256;
+constexpr size_t MaxTitleLength = 61;
 
 constexpr size_t GCODE_LENGTH = 161;					// maximum number of non-comment characters in a line of GCode including the null terminator
 constexpr size_t SHORT_GCODE_LENGTH = 61;				// maximum length of a GCode that we can queue to synchronise it to a move
-
-constexpr size_t MaxMessageLength = 256;
 
 constexpr size_t MaxHeaterNameLength = 20;				// Maximum number of characters in a heater name
 constexpr size_t MaxFanNameLength = 20;					// Maximum number of characters in a fan name
@@ -149,7 +149,7 @@ constexpr uint32_t DefaultIdleTimeout = 30000;			// Milliseconds
 constexpr float DefaultIdleCurrentFactor = 0.3;			// Proportion of normal motor current that we use for idle hold
 
 constexpr float DefaultNonlinearExtrusionLimit = 0.2;	// Maximum additional commanded extrusion to compensate for nonlinearity
-constexpr size_t NumRestorePoints = 3;					// Number of restore points, must be at least 3
+constexpr size_t NumRestorePoints = 4;					// Number of restore points, must be at least 3
 
 // Triggers
 constexpr unsigned int MaxTriggers = 10;				// Must be <= 32 because we store a bitmap of pending triggers in a uint32_t

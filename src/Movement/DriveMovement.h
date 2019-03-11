@@ -93,6 +93,9 @@ inline int64_t roundS64(double d)
 struct PrepParams
 {
 	// Parameters used for all types of motion
+	float totalDistance;
+	float acceleration;
+	float deceleration;
 	float decelStartDistance;
 	uint32_t topSpeedTimesCdivD;
 
@@ -103,9 +106,7 @@ struct PrepParams
 	float initialX;
 	float initialY;
 	const LinearDeltaKinematics *dparams;
-	float diagonalSquared;
 	float a2plusb2;								// sum of the squares of the X and Y movement fractions
-	float a2b2D2;
 	float dvecX, dvecY, dvecZ;
 };
 

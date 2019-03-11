@@ -243,7 +243,7 @@ void Platform::Spin()
 
 void Platform::MessageF(MessageType type, const char *fmt, va_list vargs)
 {
-	String<FORMAT_STRING_LENGTH> formatString;
+	String<FormatStringLength> formatString;
 	if ((type & ErrorMessageFlag) != 0)
 	{
 		formatString.copy("Error: ");
@@ -278,7 +278,7 @@ void Platform::Message(MessageType type, const char *message)
 	}
 	else
 	{
-		String<FORMAT_STRING_LENGTH> formatString;
+		String<FormatStringLength> formatString;
 		formatString.copy(((type & ErrorMessageFlag) != 0) ? "Error: " : "Warning: ");
 		formatString.cat(message);
 		RawMessage((MessageType)(type & ~(ErrorMessageFlag | WarningMessageFlag)), formatString.c_str());

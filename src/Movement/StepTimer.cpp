@@ -100,7 +100,7 @@ extern "C" void STEP_TC_HANDLER()
 		StepTc->INTFLAG.reg = TC_INTFLAG_MC0;							// clear the interrupt
 #ifdef MOVE_DEBUG
 		++numInterruptsExecuted;
-		lastInterruptTime = Platform::GetInterruptClocks();
+		lastInterruptTime = GetInterruptClocks();
 #endif
 		moveInstance->Interrupt();										// execute the step interrupt
 	}
