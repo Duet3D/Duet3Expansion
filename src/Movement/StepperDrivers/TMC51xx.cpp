@@ -89,9 +89,9 @@ constexpr uint32_t GCONF_DIRECT_MODE = 1 << 16;				// 0: Normal operation, 1: Mo
 constexpr uint32_t GCONF_TEST_MODE = 1 << 17;				// 0: Normal operation, 1: Enable analog test output on pin ENCN_DCO. IHOLD[1..0] selects the function of ENCN_DCO: 0…2: T120, DAC, VDDH
 
 #if TMC_TYPE == 5130
-constexpr uint32_t DefaultGConfReg = 0;
+constexpr uint32_t DefaultGConfReg = GCONF_DIAG0_STALL | GCONF_DIAG0_PUSHPULL;
 #elif TMC_TYPE == 5160
-constexpr uint32_t DefaultGConfReg = GCONF_5160_MULTISTEP_FILT;
+constexpr uint32_t DefaultGConfReg = GCONF_5160_RECAL | GCONF_5160_MULTISTEP_FILT | GCONF_DIAG0_STALL | GCONF_DIAG0_PUSHPULL;
 #endif
 
 // General configuration and status registers
@@ -144,7 +144,7 @@ constexpr uint32_t DRVCONF_OTSELECT_MASK = (3 << 16);		// Selection of over temp
 															// Hint: Adapt overtemperature threshold as required to protect the MOSFETs or other components on the PCB.
 constexpr uint32_t DRVCONF_STRENGTH_SHIFT = 18;
 constexpr uint32_t DRVCONF_STRENGTH_MASK = (3 << 18);		// Selection of gate driver current. Adapts the gate driver current to the gate charge of the external MOSFETs.
-															// 00: Normal slope (Recommended) 01: Normal+TC (medium above OTPW level) 10: Fast slope. Reset Default = 10.
+															// 00: Normal slope (Recommended), 01: Normal+TC (medium above OTPW level), 10: Fast slope. Reset Default = 10.
 constexpr uint32_t DRVCONF_FILT_ISENSE_SHIFT = 20;
 constexpr uint32_t DRVCONF_FILT_ISENSE_MASK = (3 << 20);	// Filter time constant of sense amplifier to suppress ringing and coupling from second coil operation
 															// 00: low – 100ns 01: – 200ns 10: – 300ns 11: high – 400ns
@@ -967,6 +967,7 @@ static void SetupDMA()
 		p_cfg.mbr_da = reinterpret_cast<uint32_t>(&(USART_TMC51xx->US_THR));
 		xdmac_configure_transfer(XDMAC, DmacChanTmcTx, &p_cfg);
 	}
+
 #elif SAME51
 	// Receive
 	DMAC->Channel[TmcRxDmaChannel].CHCTRLA.reg = DMAC_CHCTRLA_TRIGSRC((uint8_t)DmaTrigSource::sercom0_rx) | DMAC_CHCTRLA_TRIGACT_BURST
@@ -1093,8 +1094,7 @@ extern "C" void TmcLoop(void *)
 			}
 			else if (!timedOut)
 			{
-				// Handle the read response
-				// Driver 0 is the first in the SPI chain so we must read them in reverse order.
+				// Handle the read response - data comes out of the drivers in reverse driver order
 				const uint8_t *readPtr = rcvData + 5 * numTmc51xxDrivers;
 				for (size_t drive = 0; drive < numTmc51xxDrivers; ++drive)
 				{
@@ -1123,8 +1123,7 @@ extern "C" void TmcLoop(void *)
 				}
 			}
 
-			// Set up data to write
-			// Driver 0 is the first in the SPI chain so we must write them in reverse order.
+			// Set up data to write. Driver 0 is the first in the SPI chain so we must write them in reverse order.
 			uint8_t *writeBufPtr = sendData + 5 * numTmc51xxDrivers;
 			for (size_t i = 0; i < numTmc51xxDrivers; ++i)
 			{
@@ -1254,7 +1253,7 @@ namespace SmartDrivers
 						| US_MR_CHMODE_NORMAL
 						| US_MR_CPOL
 						| US_MR_CLKO;
-		USART_TMC51xx->US_BRGR = VARIANT_MCK/DriversSpiClockFrequency;		// set SPI clock frequency
+		USART_TMC51xx->US_BRGR = SystemPeripheralClock()/DriversSpiClockFrequency;		// set SPI clock frequency
 		USART_TMC51xx->US_CR = US_CR_RSTRX | US_CR_RSTTX | US_CR_RXDIS | US_CR_TXDIS | US_CR_RSTSTA;
 
 		// We need a few microseconds of delay here for the USART to sort itself out before we send any data,
@@ -1281,7 +1280,7 @@ namespace SmartDrivers
 		driversState = DriversState::noPower;
 		for (size_t driver = 0; driver < numTmc51xxDrivers; ++driver)
 		{
-			driverStates[driver].Init(driver);		// axes are mapped straight through to drivers initially
+			driverStates[driver].Init(driver);						// axes are mapped straight through to drivers initially
 		}
 
 #if SAME70

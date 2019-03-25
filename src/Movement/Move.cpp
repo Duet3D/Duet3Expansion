@@ -97,6 +97,7 @@ void Move::Init()
 	idleCount = 0;
 
 	longestGcodeWaitInterval = 0;
+//	numHiccups = 0;
 
 	StepTimer::Init();
 
