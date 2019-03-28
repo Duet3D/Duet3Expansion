@@ -32,13 +32,13 @@ void LinearDeltaKinematics::Init()
 	for (size_t axis = 0; axis < UsualNumTowers; ++axis)
 	{
 		angleCorrections[axis] = 0.0;
-		endstopAdjustments[axis] = 0.0;
 	}
 
 	for (size_t axis = 0; axis < MaxTowers; ++axis)
 	{
 		diagonals[axis] = DefaultDiagonal;
 		towerX[axis] = towerY[axis] = 0.0;
+		endstopAdjustments[axis] = 0.0;
 	}
 
 	Recalc();
@@ -69,14 +69,9 @@ void LinearDeltaKinematics::Recalc()
 	for (size_t axis = 0; axis < numTowers; ++axis)
 	{
 		D2[axis] = fsquare(diagonals[axis]);
-		if (axis < UsualNumTowers)
-		{
-			homedCarriageHeights[axis] = homedHeight + sqrtf(D2[axis] - fsquare(radius)) + endstopAdjustments[axis];
-		}
-		else
-		{
-			homedCarriageHeights[axis] = homedHeight + sqrtf(D2[axis] - fsquare(towerX[axis]) - fsquare(towerY[axis]));
-		}
+		homedCarriageHeights[axis] = homedHeight
+									+ sqrtf(D2[axis] - ((axis < UsualNumTowers) ? fsquare(radius) : fsquare(towerX[axis]) + fsquare(towerY[axis])))
+									+ endstopAdjustments[axis];
 	}
 
 	printRadiusSquared = fsquare(printRadius);

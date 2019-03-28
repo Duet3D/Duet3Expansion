@@ -10,6 +10,7 @@
 
 #include "atmel_start.h"
 #include "ecv.h"
+#undef value			// needed because we include <optional>
 
 #include <cmath>
 #include <cinttypes>
@@ -58,6 +59,28 @@ uint64_t millis64();
 extern "C" void debugPrintf(const char* fmt, ...) __attribute__ ((format (printf, 1, 2)));
 #define DEBUG_HERE do { } while (false)
 //#define DEBUG_HERE do { debugPrintf("At " __FILE__ " line %d\n", __LINE__); delay(50); } while (false)
+
+// Functions to change the base priority, to shut out interrupts up to a priority level
+
+// Get the base priority and shut out interrupts lower than or equal to a specified priority
+inline uint32_t ChangeBasePriority(uint32_t prio)
+{
+	const uint32_t oldPrio = __get_BASEPRI();
+	__set_BASEPRI_MAX(prio << (8 - __NVIC_PRIO_BITS));
+	return oldPrio;
+}
+
+// Restore the base priority following a call to ChangeBasePriority
+inline void RestoreBasePriority(uint32_t prio)
+{
+	__set_BASEPRI(prio);
+}
+
+// Set the base priority when we are not interested in the existing value i.e. definitely in non-interrupt code
+inline void SetBasePriority(uint32_t prio)
+{
+	__set_BASEPRI(prio << (8 - __NVIC_PRIO_BITS));
+}
 
 // Helper functions to work on bitmaps of various lengths.
 // The primary purpose of these is to allow us to switch between 16, 32 and 64-bit bitmaps.
