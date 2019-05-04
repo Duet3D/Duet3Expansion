@@ -12,7 +12,6 @@
 #include "DriveMovement.h"
 #include "GCodes/GCodes.h"			// for class RawMove, HomeAxes
 #include "StepTimer.h"
-#include "CAN/CanMessageFormats.h"
 
 struct CanMovementMessage;
 

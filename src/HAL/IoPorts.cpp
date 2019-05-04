@@ -15,7 +15,7 @@ IoPort::IoPort()
 
 void IoPort::Clear()
 {
-	logicalPort = NoLogicalPin;
+	logicalPin = NoLogicalPin;
 	pin = NoPin;
 	invert = false;
 }

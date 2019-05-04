@@ -110,7 +110,7 @@ extern "C" void CanReceiverLoop(void *)
 
 	for (;;)
 	{
-		TaskBase::Take(Mutex::TimeoutUnlimited);
+		TaskBase::Take();
 		CanMessageBuffer *buf = CanMessageBuffer::Allocate();
 		if (buf != nullptr)
 		{

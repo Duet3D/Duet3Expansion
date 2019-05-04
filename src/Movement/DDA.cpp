@@ -10,7 +10,7 @@
 #include "Move.h"
 #include "GCodes/GCodes.h"
 #include "Kinematics/LinearDeltaKinematics.h"		// for DELTA_AXES
-#include "CAN/CanMessageFormats.h"
+#include "CanMessageFormats.h"
 #include "CAN/CanSlaveInterface.h"
 
 #ifdef DUET_NG

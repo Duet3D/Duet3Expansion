@@ -94,17 +94,18 @@ constexpr float MinimumConnectedTemperature = -5.0;		// Temperatures below this 
 static_assert(DefaultMaxTempExcursion > TEMPERATURE_CLOSE_ENOUGH, "DefaultMaxTempExcursion is too low");
 
 // Temperature sense channels
-constexpr unsigned int FirstThermistorChannel = 0;		// Temperature sensor channels 0... are thermistors
+constexpr unsigned int FirstThermistorChannel = 0;				// Temperature sensor channels 0... are thermistors
+constexpr unsigned int FirstLinearAnalogChannel = 50;			// Sensor channels 50.. are linear sensors connected to ADC ports
 constexpr unsigned int FirstMax31855ThermocoupleChannel = 100;	// Temperature sensor channels 100... are MAX31855 thermocouples
 constexpr unsigned int FirstMax31856ThermocoupleChannel = 150;	// Temperature sensor channels 150... are MAX31856 thermocouples
-constexpr unsigned int FirstRtdChannel = 200;			// Temperature sensor channels 200... are RTDs
-constexpr unsigned int FirstLinearAdcChannel = 300;		// Temperature sensor channels 300... use an ADC that provides a linear output over a temperature range
-constexpr unsigned int FirstDhtTemperatureChannel = 400;	// Temperature sensor channel 400 for DHTxx temperature
-constexpr unsigned int FirstDhtHumidityChannel = 450;		// Temperature sensor channel 401 for DHTxx humidity
-constexpr unsigned int FirstPT1000Channel = 500;		// Temperature sensor channels 500... are PT1000 sensors connected to thermistor inputs
-constexpr unsigned int CpuTemperatureSenseChannel = 1000;  // Sensor 1000 is the MCJU's own temperature sensor
-constexpr unsigned int FirstTmcDriversSenseChannel = 1001; // Sensors 1001..1002 are the TMC2660 driver temperature sense
-constexpr unsigned int NumTmcDriversSenseChannels = 2;	// Sensors 1001..1002 are the TMC2660 driver temperature sense
+constexpr unsigned int FirstRtdChannel = 200;					// Temperature sensor channels 200... are RTDs
+constexpr unsigned int FirstLinearAdcChannel = 300;				// Temperature sensor channels 300... use an ADC that provides a linear output over a temperature range
+constexpr unsigned int FirstDhtTemperatureChannel = 400;		// Temperature sensor channel 400 for DHTxx temperature
+constexpr unsigned int FirstDhtHumidityChannel = 450;			// Temperature sensor channel 401 for DHTxx humidity
+constexpr unsigned int FirstPT1000Channel = 500;				// Temperature sensor channels 500... are PT1000 sensors connected to thermistor inputs
+constexpr unsigned int CpuTemperatureSenseChannel = 1000;		// Sensor 1000 is the MCJU's own temperature sensor
+constexpr unsigned int FirstTmcDriversSenseChannel = 1001;		// Sensors 1001..1002 are the TMC2660 driver temperature sense
+constexpr unsigned int NumTmcDriversSenseChannels = 2;			// Sensors 1001..1002 are the TMC2660 driver temperature sense
 
 // PWM frequencies
 constexpr PwmFrequency MaxHeaterPwmFrequency = 1000;	// maximum supported heater PWM frequency, to avoid overheating the mosfets

@@ -14,7 +14,8 @@
 enum class PinAccess : int
 {
 	read,
-	write,
+	write0,
+	write1,
 	pwm,
 	servo
 };
@@ -49,8 +50,8 @@ public:
 	void Clear();
 	bool Set(LogicalPin lp, PinAccess access, bool pInvert);
 
-	LogicalPin GetLogicalPin() const { return logicalPort; }
-	LogicalPin GetLogicalPin(bool& pInvert) const { pInvert = invert; return logicalPort; }
+	LogicalPin GetLogicalPin() const { return logicalPin; }
+	LogicalPin GetLogicalPin(bool& pInvert) const { pInvert = invert; return logicalPin; }
 	void WriteDigital(bool high) const { if (pin != NoPin) { WriteDigital(pin, (invert) ? !high : high); } }
 
 	// Low level port access
@@ -60,7 +61,7 @@ public:
 	static void WriteAnalog(Pin p, float pwm, uint16_t frequency);
 
 protected:
-	LogicalPin logicalPort;
+	LogicalPin logicalPin;
 	Pin pin;
 	bool invert;
 };

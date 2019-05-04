@@ -37,12 +37,14 @@ enum class EndStopPosition
 };
 
 // Type of an endstop input - values must tally with the M574 command S parameter
-enum class EndStopInputType
+enum class EndStopInputType : unsigned int
 {
 	activeLow = 0,
 	activeHigh = 1,
 	zProbe = 2,
-	motorStall = 3
+	motorStallAny = 3,
+	motorStallIndividual = 4,
+	numInputTypes = 5
 };
 
 namespace Platform

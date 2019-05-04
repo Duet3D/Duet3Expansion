@@ -37,6 +37,7 @@
 #include "StepTimer.h"
 #include "Platform.h"
 #include "CAN/CanSlaveInterface.h"
+#include "CanMessageFormats.h"
 
 Move::Move() : currentDda(nullptr), active(false), scheduledMoves(0), completedMoves(0)
 {

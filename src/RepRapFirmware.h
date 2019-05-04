@@ -315,10 +315,10 @@ typedef uint32_t AxesBitmap;				// Type of a bitmap representing a set of axes
 typedef uint32_t DriversBitmap;				// Type of a bitmap representing a set of driver numbers
 typedef uint32_t FansBitmap;				// Type of a bitmap representing a set of fan numbers
 
-#define PORTA_PIN(_n)	(GPIO(GPIO_PORTA, (_n)))
-#define PORTB_PIN(_n)	(GPIO(GPIO_PORTB, (_n)))
-#define PORTC_PIN(_n)	(GPIO(GPIO_PORTC, (_n)))
-#define PORTD_PIN(_n)	(GPIO(GPIO_PORTD, (_n)))
+#define PortAPin(_n)	(GPIO(GPIO_PORTA, (_n)))
+#define PortBPin(_n)	(GPIO(GPIO_PORTB, (_n)))
+#define PortCPin(_n)	(GPIO(GPIO_PORTC, (_n)))
+#define PortDPin(_n)	(GPIO(GPIO_PORTD, (_n)))
 
 typedef uint8_t DmaChannel;
 
