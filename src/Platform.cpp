@@ -7,8 +7,8 @@
 
 #include "Platform.h"
 
-#include "HAL/IoPorts.h"
-#include "HAL/AnalogIn.h"
+#include <Hardware/IoPorts.h>
+#include <Hardware/AnalogIn.h>
 #include <Movement/Move.h>
 #include "Movement/StepperDrivers/TMC51xx.h"
 #include <atmel_start.h>
@@ -32,19 +32,26 @@ namespace Platform
 	uint32_t slowDriversBitmap = 0;
 	uint32_t slowDriverStepTimingClocks[4] = { 0, 0, 0, 0 };
 
-	uint32_t driveDriverBits[DRIVES];
+	uint32_t driveDriverBits[NumDrivers];
 	uint32_t allDriverBits = 0;
 
-	static float stepsPerMm[DRIVES] = { 80.0, 80.0, 80.0 };
+	static float stepsPerMm[NumDrivers] = { 80.0, 80.0, 80.0 };
 	static float axisMinima[MaxAxes] = { 0.0, 0.0, 0.0 };
 	static float axisMaxima[MaxAxes] = { 500.0, 500.0, 500.0 };
-	static float accelerations[DRIVES] = { 1000.0, 1000.0, 1000.0 };
-	static float feedrates[DRIVES] = { 100.0, 100.0, 100.0 };			// mm/sec
-	static float instantDVs[DRIVES] = { 5.0, 5.0, 5.0 };				// mm/sec
+	static float accelerations[NumDrivers] = { 1000.0, 1000.0, 1000.0 };
+	static float feedrates[NumDrivers] = { 100.0, 100.0, 100.0 };			// mm/sec
+	static float instantDVs[NumDrivers] = { 5.0, 5.0, 5.0 };				// mm/sec
 
-	static uint32_t lastFlashTime;
+	static volatile uint16_t currentVin, highestVin, lowestVin;
+//	static uint16_t lastUnderVoltageValue, lastOverVoltageValue;
+	static uint32_t numUnderVoltageEvents, previousUnderVoltageEvents;
+	static volatile uint32_t numOverVoltageEvents, previousOverVoltageEvents;
 
-	const size_t NumReadingsAveraged = 32;
+	static float currentMcuTemperature, highestMcuTemperature, lowestMcuTemperature;
+	static float mcuTemperatureAdjust = 0.0;
+
+	static uint32_t lastPollTime;
+	static unsigned int heatTaskIdleTicks = 0;
 
 	// Temperature sense stuff
 	#define NVM_TEMP_CAL_TLI_POS 0
@@ -69,9 +76,10 @@ namespace Platform
 
 	// SERCOM3 Rx is on PB21 (OUT_8_TACHO), Tx is on PB20 (OUT_7_TACHO)
 
-	static AdcAveragingFilter<NumReadingsAveraged> vinFilter;
-	static AdcAveragingFilter<NumReadingsAveraged> tpFilter;
-	static AdcAveragingFilter<NumReadingsAveraged> tcFilter;
+	static ThermistorAveragingFilter thermistorFilters[NumThermistorFilters];
+	static AdcAveragingFilter<VinReadingsAveraged> vinFilter;
+	static AdcAveragingFilter<McuTempReadingsAveraged> tpFilter;
+	static AdcAveragingFilter<McuTempReadingsAveraged> tcFilter;
 
 	static void ADC_temperature_init(void)
 	{
@@ -110,6 +118,33 @@ namespace Platform
 		//while (txBusy) { delay(1); }
 	}
 
+	// Set a contiguous range of interrupts to the specified priority
+	static void SetInterruptPriority(IRQn base, unsigned int num, uint32_t prio)
+	{
+		do
+		{
+			NVIC_SetPriority(base, prio);
+			base = (IRQn)(base + 1);
+			--num;
+		}
+		while (num != 0);
+	}
+
+	static void InitialiseInterrupts()
+	{
+		// Set UART interrupt priority. Each SERCOM has up to 4 interrupts, numbered sequentially.
+		SetInterruptPriority(Serial0_IRQn, 4, NvicPriorityUart);
+		SetInterruptPriority(Serial1_IRQn, 4, NvicPriorityUart);
+
+		NVIC_SetPriority(CAN1_IRQn, NvicPriorityCan);
+		NVIC_SetPriority(StepTcIRQn, NvicPriorityStep);
+
+		SetInterruptPriority(DMAC_0_IRQn, 5, NvicPriorityDmac);
+		SetInterruptPriority(EIC_0_IRQn, 16, NvicPriorityPins);
+
+		StepTimer::Init();										// initialise the step pulse timer
+	}
+
 }	// end namespace Platform
 
 void Platform::Init()
@@ -146,7 +181,7 @@ void Platform::Init()
 
 	SmartDrivers::Init();
 
-	for (size_t i = 0; i < DRIVES; ++i)
+	for (size_t i = 0; i < NumDrivers; ++i)
 	{
 		pinMode(StepPins[i], OUTPUT_LOW);
 		pinMode(DirectionPins[i], OUTPUT_LOW);
@@ -157,9 +192,21 @@ void Platform::Init()
 		SmartDrivers::SetMicrostepping(i, 16, true);
 	}
 
+	// MCU temperature monitoring
+	currentMcuTemperature = 0.0;
+	highestMcuTemperature = -273.16;
+	lowestMcuTemperature = 999.0;
+	mcuTemperatureAdjust = 0.0;
+
+	currentVin = highestVin = 0;
+	lowestVin = 9999;
+	numUnderVoltageEvents = previousUnderVoltageEvents = numOverVoltageEvents = previousOverVoltageEvents = 0;
+
 	CanSlaveInterface::Init();
 
-	lastFlashTime = millis();
+	InitialiseInterrupts();
+
+	lastPollTime = millis();
 }
 
 void Platform::Spin()
@@ -168,7 +215,7 @@ void Platform::Spin()
 	static bool powered = false;
 
 	// Get the VIN voltage
-	const float volts = (vinFilter.GetSum() * (3.3 * 11))/(4096 * NumReadingsAveraged);
+	const float volts = (vinFilter.GetSum() * (3.3 * 11))/(4096 * vinFilter.NumAveraged());
 	if (!powered && volts >= 10.0)
 	{
 		powered = true;
@@ -180,40 +227,53 @@ void Platform::Spin()
 		SmartDrivers::Spin(false);
 	}
 
-	const uint32_t now = millis();
-	if (now - lastFlashTime > 500)
-	{
-		lastFlashTime = now;
+	// Update the Diag LED. Flash it quickly (8Hz) if we are not synced to the master, else flash in sync with the master (about 2Hz).
+	gpio_set_pin_level(DiagLedPin,
+						(StepTimer::IsSynced()) ? (StepTimer::GetMasterTime() & (1u << 19)) != 0
+							: (StepTimer::GetInterruptClocks() & (1u << 17)) != 0
+					  );
 
-		gpio_toggle_pin_level(DiagLedPin);
+	const uint32_t now = millis();
+	if (now - lastPollTime > 500)
+	{
+		lastPollTime = now;
 
 		const uint8_t addr = ReadBoardSwitches() >> 2;
 		if (addr != oldAddr)
 		{
 			oldAddr = addr;
 			const float current = (addr == 3) ? 3000.0 : (addr == 2) ? 2000.0 : (addr == 1) ? 1000.0 : 500.0;
-			for (size_t i = 0; i < DRIVES; ++i)
+			for (size_t i = 0; i < NumDrivers; ++i)
 			{
 				SmartDrivers::SetCurrent(i, current);
 			}
 		}
 
 		// Get the chip temperature
-		const uint16_t tc_result = tcFilter.GetSum()/(NumReadingsAveraged);
-		const uint16_t tp_result = tpFilter.GetSum()/(NumReadingsAveraged);
+		if (tcFilter.IsValid() && tpFilter.IsValid())
+		{
+			const uint16_t tc_result = tcFilter.GetSum()/tcFilter.NumAveraged();
+			const uint16_t tp_result = tpFilter.GetSum()/tpFilter.NumAveraged();
 
-		int32_t result = (int64_t)temp_cal_tl * temp_cal_vph * tc_result
-						- (int64_t)temp_cal_vpl * temp_cal_th * tc_result
-						- (int64_t)temp_cal_tl * temp_cal_vch * tp_result
-						+ (int64_t)temp_cal_th * temp_cal_vcl * tp_result;
-		const int32_t divisor = ((int32_t)temp_cal_vcl * tp_result - (int32_t)temp_cal_vch * tp_result
-						   - (int32_t)temp_cal_vpl * tc_result + (int32_t)temp_cal_vph * tc_result);
-		result = (divisor == 0) ? 0 : result/divisor;
-		const float temperature = (float)result/16;
+			int32_t result = (int64_t)temp_cal_tl * temp_cal_vph * tc_result
+							- (int64_t)temp_cal_vpl * temp_cal_th * tc_result
+							- (int64_t)temp_cal_tl * temp_cal_vch * tp_result
+							+ (int64_t)temp_cal_th * temp_cal_vcl * tp_result;
+			const int32_t divisor = ((int32_t)temp_cal_vcl * tp_result - (int32_t)temp_cal_vch * tp_result
+							   - (int32_t)temp_cal_vpl * tc_result + (int32_t)temp_cal_vph * tc_result);
+			result = (divisor == 0) ? 0 : result/divisor;
+			currentMcuTemperature = (float)result/16 + mcuTemperatureAdjust;
+			if (currentMcuTemperature < lowestMcuTemperature)
+			{
+				lowestMcuTemperature = currentMcuTemperature;
+			}
+			if (currentMcuTemperature > highestMcuTemperature)
+			{
+				highestMcuTemperature = currentMcuTemperature;
+			}
+		}
 
-#if 1
-		(void)temperature;
-#elif 0
+#if 0
 		String<100> status;
 		SmartDrivers::AppendDriverStatus(2, status.GetRef());
 		debugPrintf("%s", status.c_str());
@@ -226,19 +286,36 @@ void Platform::Spin()
 //							"Conv %u %u"
 						"Addr %u"
 						", %.1fV, %.1fdegC"
-						", ptat %d, ctat %d"
+//						", ptat %d, ctat %d"
 						", stat %08" PRIx32 " %08" PRIx32 " %08" PRIx32,
 //							(unsigned int)conversionsStarted, (unsigned int)conversionsCompleted,
 //							StepTimer::GetInterruptClocks(),
 						(unsigned int)addr,
-						(double)volts, (double)temperature
-						, tp_result, tc_result
+						(double)volts, (double)currentMcuTemperature
+//						, tp_result, tc_result
 						, SmartDrivers::GetAccumulatedStatus(0, 0), SmartDrivers::GetAccumulatedStatus(1, 0), SmartDrivers::GetAccumulatedStatus(2, 0)
 //							, SmartDrivers::GetLiveStatus(0), SmartDrivers::GetLiveStatus(1), SmartDrivers::GetLiveStatus(2)
 					);
 #endif
 
 	}
+}
+
+ThermistorAveragingFilter& Platform::GetAdcFilter(unsigned int filterNumber)
+{
+	return thermistorFilters[filterNumber];
+}
+
+void Platform::GetMcuTemperatures(float& minTemp, float& currentTemp, float& maxTemp)
+{
+	minTemp = lowestMcuTemperature;
+	currentTemp = currentMcuTemperature;
+	maxTemp = highestMcuTemperature;
+}
+
+void Platform::KickHeatTaskWatchdog()
+{
+	heatTaskIdleTicks = 0;
 }
 
 void Platform::MessageF(MessageType type, const char *fmt, va_list vargs)
@@ -372,8 +449,13 @@ uint8_t Platform::ReadBoardSwitches()
 
 uint8_t Platform::ReadBoardId()
 {
-	const uint8_t addr = ReadBoardSwitches() & 3;		// currently the top 2 buts are used to set motor current
+	const uint8_t addr = ReadBoardSwitches() & 3;		// currently the top 2 bits are used to set motor current
 	return (addr == 0) ? 4 : addr;
+}
+
+void Platform::Tick()
+{
+	//TODO
 }
 
 // End

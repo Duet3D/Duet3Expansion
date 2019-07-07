@@ -21,7 +21,7 @@ namespace GCodes
 {
 	struct RawMove
 	{
-		float coords[DRIVES];											// new positions for the axes, amount of movement for the extruders
+		float coords[NumDrivers];											// new positions for the axes, amount of movement for the extruders
 		float initialCoords[MaxAxes];									// the initial positions of the axes
 		float feedRate;													// feed rate of this move
 		float virtualExtruderPosition;									// the virtual extruder position at the start of this move

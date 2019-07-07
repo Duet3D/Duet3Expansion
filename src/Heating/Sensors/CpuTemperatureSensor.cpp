@@ -1,0 +1,30 @@
+/*
+ * CpuTemperatureSensor.cpp
+ *
+ *  Created on: 8 Jun 2017
+ *      Author: David
+ */
+
+#include "CpuTemperatureSensor.h"
+#include "Platform.h"
+
+#if HAS_CPU_TEMP_SENSOR
+
+CpuTemperatureSensor::CpuTemperatureSensor(unsigned int channel) : TemperatureSensor(channel)
+{
+}
+
+void CpuTemperatureSensor::Init()
+{
+}
+
+TemperatureError CpuTemperatureSensor::TryGetTemperature(float& t)
+{
+	float minT, maxT;
+	Platform::GetMcuTemperatures(minT, t, maxT);
+	return TemperatureError::success;
+}
+
+#endif
+
+// End

@@ -8,6 +8,7 @@
 #ifndef SRC_TASKS_H_
 #define SRC_TASKS_H_
 
+#include "RepRapFirmware.h"
 #include "RTOSIface/RTOSIface.h"
 
 void AppMain();

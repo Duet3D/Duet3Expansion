@@ -5,8 +5,8 @@
  *      Author: David
  */
 
-#ifndef SRC_HAL_ANALOGIN_H_
-#define SRC_HAL_ANALOGIN_H_
+#ifndef SRC_HARDWARE_ANALOGIN_H_
+#define SRC_HARDWARE_ANALOGIN_H_
 
 #include "RepRapFirmware.h"
 
@@ -33,4 +33,4 @@ namespace AnalogIn
 	void GetDebugInfo(uint32_t &convsStarted, uint32_t &convsCompleted);
 }
 
-#endif /* SRC_HAL_ANALOGIN_H_ */
+#endif /* SRC_HARDWARE_ANALOGIN_H_ */

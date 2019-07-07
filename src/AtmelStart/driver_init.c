@@ -56,10 +56,8 @@ void USART_0_CLOCK_init()
  */
 void USART_0_PORT_init()
 {
-
-	gpio_set_pin_function(PB20, PINMUX_PB20C_SERCOM3_PAD0);
-
-	gpio_set_pin_function(PB21, PINMUX_PB21C_SERCOM3_PAD1);
+	gpio_set_pin_function(PB20, PINMUX_PB20C_SERCOM3_PAD0);		// TxD
+	gpio_set_pin_function(PB21, PINMUX_PB21C_SERCOM3_PAD1);		// RxD
 }
 
 /**

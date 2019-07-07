@@ -44,8 +44,8 @@ public:
 	void Interrupt() __attribute__ ((hot));							// The hardware's (i.e. platform's)  interrupt should call this.
 	bool AllMovesAreFinished();										// Is the look-ahead ring empty?  Stops more moves being added as well.
 	void DoLookAhead() __attribute__ ((hot));						// Run the look-ahead procedure
-	void SetNewPosition(const float positionNow[DRIVES], bool doBedCompensation); // Set the current position to be this
-	void SetLiveCoordinates(const float coords[DRIVES]);			// Force the live coordinates (see above) to be these
+	void SetNewPosition(const float positionNow[NumDrivers], bool doBedCompensation); // Set the current position to be this
+	void SetLiveCoordinates(const float coords[NumDrivers]);			// Force the live coordinates (see above) to be these
 	void ResetExtruderPositions();									// Resets the extrusion amounts of the live coordinates
 
 	void Diagnostics(MessageType mtype);							// Report useful stuff
@@ -122,15 +122,9 @@ private:
 	unsigned int idleCount;								// The number of times Spin was called and had no new moves to process
 	uint32_t longestGcodeWaitInterval;					// the longest we had to wait for a new GCode
 
-	volatile float liveCoordinates[DRIVES];				// The endpoint that the machine moved to in the last completed move
+	volatile float liveCoordinates[NumDrivers];				// The endpoint that the machine moved to in the last completed move
 	volatile bool liveCoordinatesValid;					// True if the XYZ live coordinates are reliable (the extruder ones always are)
-	volatile int32_t liveEndPoints[DRIVES];				// The XYZ endpoints of the last completed move in motor coordinates
-
-	float taperHeight;									// Height over which we taper
-	float recipTaperHeight;								// Reciprocal of the taper height
-	float zShift;										// Height to add to the bed transform
-	bool usingMesh;										// true if we are using the height map, false if we are using the random probe point set
-	bool useTaper;										// True to taper off the compensation
+	volatile int32_t liveEndPoints[NumDrivers];				// The XYZ endpoints of the last completed move in motor coordinates
 
 	uint32_t idleTimeout;								// How long we wait with no activity before we reduce motor currents to idle, in milliseconds
 	uint32_t lastStateChangeTime;						// The approximate time at which the state last changed, except we don't record timing->idle

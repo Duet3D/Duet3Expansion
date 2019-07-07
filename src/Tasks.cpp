@@ -15,7 +15,7 @@
 const uint8_t memPattern = 0xA5;
 
 extern "C" char *sbrk(int i);
-extern char _end;
+//extern char _end;
 
 
 // The main task currently runs GCodes, so it needs to be large enough to hold the matrices used for auto calibration.
@@ -69,7 +69,7 @@ void AppMain()
 #endif
 
 	// Create the startup task
-	mainTask.Create(MainTask, "MAIN", nullptr, TaskBase::SpinPriority);
+	mainTask.Create(MainTask, "MAIN", nullptr, TaskPriority::SpinPriority);
 	vTaskStartScheduler();			// doesn't return
 }
 
@@ -185,6 +185,7 @@ static volatile uint64_t g_ms_ticks = 0;		// Count of 1ms time ticks. */
 extern "C" void vApplicationTickHook(void)
 {
 	g_ms_ticks++;
+	RepRap::Tick();
 //	wdt_restart(WDT);							// kick the watchdog
 }
 

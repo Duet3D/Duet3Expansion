@@ -8,7 +8,7 @@
 #include <utils.h>
 #include <hri_dmac_e51.h>
 #include <hpl_dmac_config.h>
-#include <HAL/DmacManager.h>
+#include <Hardware/DmacManager.h>
 #include <RTOSIface/RTOSIface.h>
 
 // Descriptors for all used DMAC channels

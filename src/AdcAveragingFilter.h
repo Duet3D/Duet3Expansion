@@ -13,7 +13,6 @@
 
 // Class to perform averaging of values read from the ADC
 // numAveraged should be a power of 2 for best efficiency
-//TODO move this into its own file
 template<size_t numAveraged> class AdcAveragingFilter
 {
 public:
@@ -56,11 +55,19 @@ public:
 		return sum;
 	}
 
+	// Return the last reading
+	uint32_t GetLastReading() const volatile
+	{
+		return readings[(index - 1) % numAveraged];
+	}
+
 	// Return true if we have a valid average
 	bool IsValid() const volatile
 	{
 		return isValid;
 	}
+
+	static constexpr size_t NumAveraged() { return numAveraged; }
 
 	// Function used as an ADC callback to feed a result into an averaging filter
 	static void CallbackFeedIntoFilter(CallbackParameter cp, uint16_t val);

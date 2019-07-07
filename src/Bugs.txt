@@ -1,2 +1,3 @@
-Issues
+Issues to fix
 
+- Time sync is crude and not accurate. Need to make use of CAN time stamps and use a PLL.

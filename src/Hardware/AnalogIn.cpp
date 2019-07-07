@@ -5,9 +5,9 @@
  *      Author: David
  */
 
-#include "AnalogIn.h"
+#include <Hardware/AnalogIn.h>
 #include "RTOSIface/RTOSIface.h"
-#include "HAL/DmacManager.h"
+#include <Hardware/DmacManager.h>
 
 static uint32_t conversionsStarted = 0;
 static uint32_t conversionsCompleted = 0;
@@ -88,7 +88,7 @@ bool AdcClass::EnableChannel(Pin pin, AnalogInCallbackFunction fn, CallbackParam
 
 	// We have a valid ADC number and channel for this pin
 	gpio_set_pin_direction(pin, GPIO_DIRECTION_OFF);							// disable the data input buffer
-	gpio_set_pin_function(pin, ((pin & 31) << 16) | GPIO_PIN_FUNCTION_B);		// ADC is always on peripheral B
+	gpio_set_pin_function(pin, ((uint32_t)pin << 16) | GPIO_PIN_FUNCTION_B);	// ADC is always on peripheral B
 
 	return InternalEnableChannel(chan, ADC_REFCTRL_REFSEL_INTVCC1, fn, param, p_ticksPerCall);
 }
@@ -335,7 +335,7 @@ namespace AnalogIn
 		hri_supc_set_VREF_TSEN_bit(SUPC);
 		hri_supc_clear_VREF_VREFOE_bit(SUPC);
 #endif
-		analogInTask.Create(AinLoop, "AIN", nullptr, TaskBase::AinPriority);
+		analogInTask.Create(AinLoop, "AIN", nullptr, TaskPriority::AinPriority);
 	}
 
 	// Enable analog input on a pin.

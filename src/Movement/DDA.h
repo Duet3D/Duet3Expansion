@@ -13,7 +13,7 @@
 #include "GCodes/GCodes.h"			// for class RawMove, HomeAxes
 #include "StepTimer.h"
 
-struct CanMovementMessage;
+struct CanMessageMovement;
 
 /**
  * This defines a single linear movement of the print head
@@ -35,7 +35,7 @@ public:
 
 	DDA(DDA* n);
 
-	void Init(const CanMovementMessage& msg);
+	void Init(const CanMessageMovement& msg);
 	void Init();													// Set up initial positions for machine startup
 	bool Start(uint32_t tim) __attribute__ ((hot));					// Start executing the DDA, i.e. move the move.
 	bool Step() __attribute__ ((hot));								// Take one step of the DDA, called by timed interrupt.
@@ -43,7 +43,7 @@ public:
 	void SetPrevious(DDA *p) { prev = p; }
 	void Complete() { state = completed; }
 	bool Free();
-	void Prepare(const CanMovementMessage& msg) __attribute__ ((hot));	// Calculate all the values and freeze this DDA
+	void Prepare(const CanMessageMovement& msg) __attribute__ ((hot));	// Calculate all the values and freeze this DDA
 	bool HasStepError() const;
 
 	DDAState GetState() const { return state; }
@@ -127,7 +127,7 @@ private:
 
     EndstopChecks endStopsToCheck;			// Which endstops we are checking on this move
 
-	int32_t endPoint[DRIVES];  				// Machine coordinates of the endpoint
+	int32_t endPoint[NumDrivers];  				// Machine coordinates of the endpoint
 	float acceleration;						// The acceleration to use
 	float deceleration;						// The deceleration to use
 
@@ -154,7 +154,7 @@ private:
 	} afterPrepare;
 
     DriveMovement* firstDM;					// list of contained DMs that need steps, in step time order
-	DriveMovement *pddm[DRIVES];			// These describe the state of each drive movement
+	DriveMovement *pddm[NumDrivers];			// These describe the state of each drive movement
 };
 
 // Find the DriveMovement record for a given drive, or return nullptr if there isn't one

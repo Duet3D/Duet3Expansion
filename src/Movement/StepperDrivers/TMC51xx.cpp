@@ -15,10 +15,10 @@
 #include <Movement/Move.h>
 
 #ifdef SAME51
-# include "HAL/IoPorts.h"
-# include "HAL/DmacManager.h"
+# include <Hardware/IoPorts.h>
+# include <Hardware/DmacManager.h>
 # include "peripheral_clk_config.h"
-# include "HAL/SAME5x.h"
+# include <Hardware/SAME5x.h>
 #elif SAME70
 # include "DmacManager.h"
 #endif
@@ -1289,7 +1289,7 @@ namespace SmartDrivers
 		xdmac_enable_interrupt(XDMAC, DmacChanTmcRx);
 #endif
 
-		tmcTask.Create(TmcLoop, "TMC", nullptr, TaskBase::TmcPriority);
+		tmcTask.Create(TmcLoop, "TMC", nullptr, TaskPriority::TmcPriority);
 	}
 
 	void SetAxisNumber(size_t driver, uint32_t axisNumber)

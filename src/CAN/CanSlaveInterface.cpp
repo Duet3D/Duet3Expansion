@@ -18,8 +18,13 @@ const unsigned int NumCanBuffers = 40;
 constexpr size_t CanReceiverTaskStackWords = 400;
 static Task<CanReceiverTaskStackWords> canReceiverTask;
 
-static CanMessageBuffer *pendingBuffers;
+static CanMessageBuffer *pendingMoves;
 static CanMessageBuffer *lastBuffer;			// only valid when pendingBuffers != nullptr
+
+namespace CanSlaveInterface
+{
+	void ProcessReceivedMessage(CanMessageBuffer *buf);
+}
 
 extern "C" struct can_async_descriptor CAN_0;
 
@@ -31,6 +36,12 @@ extern "C" void CAN_0_tx_callback(struct can_async_descriptor *const descr)
 extern "C" void CAN_0_rx_callback(struct can_async_descriptor *const descr)
 {
 	canReceiverTask.GiveFromISR();
+}
+
+CanAddress GetCanAddress()
+{
+	//TODO read this just once
+	return Platform::ReadBoardId();
 }
 
 #if 0
@@ -81,10 +92,10 @@ void CAN_0_example(void)
 #endif
 
 // CanMovementMessage is declared in project Duet3Expansion, so we need to implement its members here
-void CanMovementMessage::DebugPrint()
+void CanMessageMovement::DebugPrint()
 {
-	debugPrintf("Can: %08" PRIx32 " %08" PRIx32 " %" PRIu32 " %" PRIu32 " %" PRIu32 " %.2f %.2f:",
-		timeNow, moveStartTime , accelerationClocks, steadyClocks, decelClocks, (double)initialSpeedFraction, (double)finalSpeedFraction);
+	debugPrintf("Can: %08" PRIx32 " %" PRIu32 " %" PRIu32 " %" PRIu32 " %.2f %.2f:",
+		whenToExecute , accelerationClocks, steadyClocks, decelClocks, (double)initialSpeedFraction, (double)finalSpeedFraction);
 #if 0
 	for (size_t i = 0; i < DriversPerCanBoard; ++i)
 	{
@@ -99,49 +110,41 @@ extern "C" void CanReceiverLoop(void *)
 //	int32_t can_async_set_mode(struct can_async_descriptor *const descr, enum can_mode mode);
 
 	can_async_register_callback(&CAN_0, CAN_ASYNC_RX_CB, (FUNC_PTR)CAN_0_rx_callback);
+
+	// Set up CAN receiver filtering
 	can_filter filter;
-	filter.id = Platform::ReadBoardId();
-	filter.mask = 3;
-	can_async_set_filter(&CAN_0, 0, CAN_FMT_STDID, &filter);
+
+	// First a filter for our own ID
+	filter.id = (uint32_t)Platform::ReadBoardId() << CanId::DestIdShift;
+	filter.mask = CanId::DestIdMask;
+	can_async_set_filter(&CAN_0, 0, CAN_FMT_EXTID, &filter);
+
+	// Now a filter for the broadcast ID
+	filter.id = (uint32_t)CanId::BroadcastId << CanId::DestIdShift;
+	filter.mask = CanId::DestIdMask;
 	can_async_set_filter(&CAN_0, 1, CAN_FMT_EXTID, &filter);
 
-	NVIC_SetPriority(CAN1_IRQn, NvicPriorityCan);
 	can_async_enable(&CAN_0);
 
 	for (;;)
 	{
-		TaskBase::Take();
-		CanMessageBuffer *buf = CanMessageBuffer::Allocate();
+		TaskBase::Take();											// wait until we are woken up because a message is available
+		CanMessageBuffer *buf = CanMessageBuffer::Allocate();		// allocate a buffer to receive the message
 		if (buf != nullptr)
 		{
-			can_message msg;
-			msg.data = reinterpret_cast<uint8_t*>(&(buf->msg));
-			const int32_t rslt = can_async_read(&CAN_0, &msg);
-			switch (rslt)
+			can_message msg;										// descriptor for the message
+			msg.data = reinterpret_cast<uint8_t*>(&(buf->msg));		// set up where we want the message data to be stored
+			const int32_t rslt = can_async_read(&CAN_0, &msg);		// fetch the message
+			if (rslt == ERR_NONE)
 			{
-			case ERR_NONE:
-				buf->msg.moveStartTime += StepTimer::GetInterruptClocks() - buf->msg.timeNow;
-				buf->next = nullptr;
-				{
-					TaskCriticalSectionLocker lock;
-
-					if (pendingBuffers == nullptr)
-					{
-						pendingBuffers = lastBuffer = buf;
-					}
-					else
-					{
-						lastBuffer->next = buf;
-					}
-				}
-
-				buf->msg.DebugPrint();
-				break;
-
-			default:
-				debugPrintf("CAN read err %d", (int)rslt);
+				buf->dataLength = msg.len;
+				buf->id.SetReceivedId(msg.id);
+				CanSlaveInterface::ProcessReceivedMessage(buf);
+			}
+			else
+			{
+				debugPrintf("CAN read err %d\n", (int)rslt);
 				CanMessageBuffer::Free(buf);
-				break;
 			}
 		}
 	}
@@ -150,85 +153,73 @@ extern "C" void CanReceiverLoop(void *)
 void CanSlaveInterface::Init()
 {
 	CanMessageBuffer::Init(NumCanBuffers);
-	pendingBuffers = nullptr;
+	pendingMoves = nullptr;
 
 	// Create the task that sends CAN messages
-	canReceiverTask.Create(CanReceiverLoop, "CanSender", nullptr, TaskBase::CanReceiverPriority);
+	canReceiverTask.Create(CanReceiverLoop, "CanSender", nullptr, TaskPriority::CanReceiverPriority);
 }
 
-bool CanSlaveInterface::GetCanMove(CanMovementMessage& msg)
+bool CanSlaveInterface::GetCanMove(CanMessageMovement& msg)
 {
-#if 1
 	// See if there is a movement message
 	CanMessageBuffer *buf;
 	{
 		TaskCriticalSectionLocker lock;
 
-		buf = pendingBuffers;
+		buf = pendingMoves;
 		if (buf != nullptr)
 		{
-			pendingBuffers = buf->next;
+			pendingMoves = buf->next;
 		}
 	}
 
 	if (buf != nullptr)
 	{
-		msg = buf->msg;
+		msg = buf->msg.move;
 		CanMessageBuffer::Free(buf);
 		return true;
 	}
 	return false;
-#else
-	static bool running = false;
-	static bool forwards;
+}
 
-	static const int32_t steps1 = 6 * 200 * 16;
-
-	if (!running)
+void CanSlaveInterface::ProcessReceivedMessage(CanMessageBuffer *buf)
+{
+	switch (buf->id.MsgType())
 	{
-		forwards = true;
-		msg.accelerationClocks = StepTimer::StepClockRate/2;
-		msg.steadyClocks = StepTimer::StepClockRate * 2;
-		msg.decelClocks = StepTimer::StepClockRate/2;
-		msg.initialSpeedFraction = 0.0;
-		msg.finalSpeedFraction = 0.0;
+	case CanMessageType::timeSync:
+		//TODO re-implement this as a PLL and use the CAN time stamps for greater accuracy
+		StepTimer::SetLocalTimeOffset(StepTimer::GetInterruptClocks() - buf->msg.sync.timeSent);
+		CanMessageBuffer::Free(buf);
+		break;
 
-		msg.flags.deltaDrives = 0;
-		msg.flags.endStopsToCheck = 0;
-		msg.flags.pressureAdvanceDrives = 0;
-		msg.flags.stopAllDrivesOnEndstopHit = false;
-
-		msg.initialX = 0.0;			// only relevant for delta moves
-		msg.initialY = 0.0;			// only relevant for delta moves
-		msg.finalX = 1.0;			// only relevant for delta moves
-		msg.finalY = 1.0;			// only relevant for delta moves
-		msg.zMovement = 0.0;		// only relevant for delta moves
-
-		msg.moveStartTime = StepTimer::GetInterruptClocks() + StepTimer::StepClockRate/100;		// start the move 10ms from now
-		running = true;
-	}
-	else
-	{
-		if (msg.steadyClocks >= StepTimer::StepClockRate * 4)
+	case CanMessageType::movement:
+		//TODO if we haven't established time sync yet then we should defer this
+		buf->msg.move.whenToExecute += StepTimer::GetLocalTimeOffset();
+		buf->next = nullptr;
 		{
-			msg.steadyClocks = 0;
+			TaskCriticalSectionLocker lock;
+
+			if (pendingMoves == nullptr)
+			{
+				pendingMoves = lastBuffer = buf;
+			}
+			else
+			{
+				lastBuffer->next = buf;
+			}
 		}
-		else
-		{
-			msg.steadyClocks += StepTimer::StepClockRate;
-		}
-		// We can leave all the other parameters the same
-		msg.moveStartTime += msg.accelerationClocks + msg.steadyClocks + msg.decelClocks;
+		buf->msg.move.DebugPrint();
+		break;
+
+	case CanMessageType::startup:
+	case CanMessageType::controlledStop:
+	case CanMessageType::emergencyStop:
+	case CanMessageType::m906:
+	default:
+		debugPrintf("Unknown CAN message type %u\n", (unsigned int)(buf->id.MsgType()));
+		CanMessageBuffer::Free(buf);
+		break;
 	}
-
-	msg.perDrive[0].steps = (forwards) ? steps1 : -steps1;
-	msg.perDrive[1].steps = msg.perDrive[0].steps/2;
-	msg.perDrive[2].steps = msg.perDrive[0].steps/4;
-	msg.timeNow = StepTimer::GetInterruptClocks();
-	forwards = !forwards;
-
-	return true;
-#endif
 }
 
 // This is called from the step ISR when the move is stopped by the Z probe

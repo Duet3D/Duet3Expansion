@@ -167,7 +167,7 @@ void DDA::DebugPrint() const
 void DDA::DebugPrintAll() const
 {
 	DebugPrint();
-	for (size_t axis = 0; axis < DRIVES; ++axis)
+	for (size_t axis = 0; axis < NumDrivers; ++axis)
 	{
 		if (pddm[axis] != nullptr)
 		{
@@ -194,13 +194,13 @@ void DDA::Init()
 
 // Set up a real move. Return true if it represents real movement, else false.
 // Either way, return the amount of extrusion we didn't do in the extruder coordinates of nextMove
-void DDA::Init(const CanMovementMessage& msg)
+void DDA::Init(const CanMessageMovement& msg)
 {
 	// 0. Update the endpoints (do we even need them?)
 	const int32_t * const positionNow = prev->DriveCoordinates();
 	bool realMove = false;
 
-	for (size_t drive = 0; drive < DRIVES; drive++)
+	for (size_t drive = 0; drive < NumDrivers; drive++)
 	{
 		int32_t delta = msg.perDrive[drive].steps;
 		endPoint[drive] = positionNow[drive] + delta;
@@ -222,10 +222,10 @@ void DDA::Init(const CanMovementMessage& msg)
 	}
 
 	// 3. Store some values
-	afterPrepare.moveStartTime = msg.moveStartTime;
+	afterPrepare.moveStartTime = msg.whenToExecute;
 	clocksNeeded = msg.accelerationClocks + msg.steadyClocks + msg.decelClocks;
-	endStopsToCheck = msg.flags.endStopsToCheck;
-	stopAllDrivesOnEndstopHit = msg.flags.stopAllDrivesOnEndstopHit;
+	endStopsToCheck = msg.hdr.u.endStopsToCheck;
+	stopAllDrivesOnEndstopHit = msg.hdr.u.stopAllDrivesOnEndstopHit;
 
 	hadHiccup = false;
 	goingSlow = false;
@@ -250,15 +250,13 @@ void DDA::Init(const CanMovementMessage& msg)
 
 // Prepare this DDA for execution.
 // This must not be called with interrupts disabled, because it calls Platform::EnableDrive.
-void DDA::Prepare(const CanMovementMessage& msg)
+void DDA::Prepare(const CanMessageMovement& msg)
 {
 	PrepParams params;
 	params.decelStartDistance = 1.0 - decelDistance;
 
-	if (msg.flags.deltaDrives != 0)
+	if (msg.hdr.u.deltaDrives != 0)
 	{
-		// This code assumes that the previous move in the DDA ring is the previously-executed move, because it fetches the X and Y end coordinates from that move.
-		// Therefore the Move code must not store a new move in that entry until this one has been prepared! (It took me ages to track this down.)
 		afterPrepare.cKc = roundS32(msg.zMovement * DriveMovement::Kc);
 		params.dvecX = msg.finalX - msg.initialX;
 		params.dvecY = msg.finalY - msg.initialY;
@@ -277,13 +275,13 @@ void DDA::Prepare(const CanMovementMessage& msg)
 
 	firstDM = nullptr;
 
-	for (size_t drive = 0; drive < DRIVES; ++drive)
+	for (size_t drive = 0; drive < NumDrivers; ++drive)
 	{
 		DriveMovement* const pdm = FindDM(drive);
 		if (pdm != nullptr && pdm->state == DMState::moving)
 		{
 			Platform::EnableDrive(drive);
-			if ((msg.flags.deltaDrives & (1 << drive)) != 0)			// for now, additional axes are assumed to be not part of the delta mechanism
+			if ((msg.hdr.u.deltaDrives & (1u << drive)) != 0)			// for now, additional axes are assumed to be not part of the delta mechanism
 			{
 				pdm->PrepareDeltaAxis(*this, params);
 
@@ -293,7 +291,7 @@ void DDA::Prepare(const CanMovementMessage& msg)
 					DebugPrintAll();
 				}
 			}
-			else if ((msg.flags.pressureAdvanceDrives & (1 << drive)) != 0)
+			else if ((msg.hdr.u.pressureAdvanceDrives & (1u << drive)) != 0)
 			{
 				// If there is any extruder jerk in this move, in theory that means we need to instantly extrude or retract some amount of filament.
 				// Pass the speed change to PrepareExtruder
@@ -373,7 +371,7 @@ void DDA::CheckEndstops()
 		}
 	}
 
-	for (size_t drive = 0; drive < DRIVES; ++drive)
+	for (size_t drive = 0; drive < NumDrivers; ++drive)
 	{
 		if (IsBitSet(endStopsToCheck, drive))
 		{
@@ -434,7 +432,7 @@ pre(state == frozen)
 		}
 #endif
 
-		for (size_t i = 0; i < DRIVES; ++i)
+		for (size_t i = 0; i < NumDrivers; ++i)
 		{
 			DriveMovement* const pdm = FindDM(i);
 			if (pdm != nullptr && pdm->state == DMState::moving)
@@ -615,7 +613,7 @@ void DDA::MoveAborted()
 {
 	if (state == executing)
 	{
-		for (size_t drive = 0; drive < DRIVES; ++drive)
+		for (size_t drive = 0; drive < NumDrivers; ++drive)
 		{
 			StopDrive(drive);
 		}
@@ -645,7 +643,7 @@ void DDA::ReduceHomingSpeed()
 		}
 
 		// Adjust the speed in the DMs
-		for (size_t drive = 0; drive < DRIVES; ++drive)
+		for (size_t drive = 0; drive < NumDrivers; ++drive)
 		{
 			DriveMovement* const pdm = FindDM(drive);
 			if (pdm != nullptr && pdm->state == DMState::moving)
@@ -665,7 +663,7 @@ bool DDA::HasStepError() const
 	}
 #endif
 
-	for (size_t drive = 0; drive < DRIVES; ++drive)
+	for (size_t drive = 0; drive < NumDrivers; ++drive)
 	{
 		const DriveMovement* const pdm = FindDM(drive);
 		if (pdm != nullptr && pdm->state == DMState::stepError)
