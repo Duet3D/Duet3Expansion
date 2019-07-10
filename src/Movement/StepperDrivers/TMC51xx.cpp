@@ -1177,8 +1177,8 @@ namespace SmartDrivers
 	void Init()
 	{
 		// Make sure the ENN and CS pins are high
-		pinMode(GlobalTmc51xxEnablePin, OUTPUT_HIGH);
-		pinMode(GlobalTmc51xxCSPin, OUTPUT_HIGH);
+		IoPort::SetPinMode(GlobalTmc51xxEnablePin, OUTPUT_HIGH);
+		IoPort::SetPinMode(GlobalTmc51xxCSPin, OUTPUT_HIGH);
 
 #ifndef SAME51
 		// The pins are already set up for SPI in the pins table

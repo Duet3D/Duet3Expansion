@@ -60,12 +60,12 @@ void InitialisePinChangeInterrupts()
 // Attach an interrupt to the specified pin returning true if successful
 bool AttachInterrupt(uint32_t pin, StandardCallbackFunction callback, enum InterruptMode mode, CallbackParameter param)
 {
-	if (pin >= ARRAY_SIZE(PinToExint))
+	if (pin >= ARRAY_SIZE(PinTable))
 	{
 		return false;			// pin number out of range
 	}
 
-	const unsigned int exintNumber = PinToExint[pin];
+	const unsigned int exintNumber = PinTable[pin].exintNumber;
 	if (exintNumber >= ARRAY_SIZE(pinUsingExint))
 	{
 		return false;			// no EXINT available on this pin (only occurs for PA8 which is NMI)
@@ -116,11 +116,11 @@ bool AttachInterrupt(uint32_t pin, StandardCallbackFunction callback, enum Inter
 	return true;
 }
 
-void DetachInterrupt(uint32_t pin)
+void DetachInterrupt(Pin pin)
 {
-	if (pin <= ARRAY_SIZE(PinToExint))
+	if (pin <= ARRAY_SIZE(PinTable))
 	{
-		const unsigned int exintNumber = PinToExint[pin];
+		const unsigned int exintNumber = PinTable[pin].exintNumber;
 		if (exintNumber < ARRAY_SIZE(pinUsingExint) && pinUsingExint[exintNumber] == pin)
 		{
 			const unsigned int shift = (exintNumber & 7u) << 2u;

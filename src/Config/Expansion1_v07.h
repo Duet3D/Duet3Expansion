@@ -9,6 +9,7 @@
 #define SRC_CONFIG_EXPANSION1_V07_H_
 
 #include "RepRapFirmware.h"
+#include "Hardware/SAME5X.h"
 
 const size_t MaxHeaters = 6;
 const size_t MaxExtraHeaterProtections = 6;
@@ -19,13 +20,12 @@ const size_t MaxExtraHeaterProtections = 6;
 
 #define SUPPORT_TMC51xx		1
 #define SUPPORT_DHT_SENSOR	1
-#define SUPPORT_SPI_SENSORS	0	//TEMP!!!
+#define SUPPORT_SPI_SENSORS	1
 
 constexpr size_t NumDrivers = 3;
 constexpr size_t MaxSmartDrivers = 3;
 
 constexpr size_t MaxAxes = 3;			//TEMP we won't need this
-constexpr size_t MaxExtruders = 3;		//TEMP we won't need this
 
 constexpr size_t NumOutputPorts = 9;
 constexpr size_t NumIoPorts = 6;
@@ -60,11 +60,116 @@ constexpr int VssaADC = 1;
 
 constexpr Pin BoardAddressPins[4] = { PortCPin(11), PortCPin(12), PortCPin(14), PortCPin(15) };
 constexpr Pin TempSensePins[NumThermistorInputs] = { PortAPin(9), PortBPin(9), PortBPin(7) };
-constexpr int TempSenseADCs[NumThermistorInputs] = { 1, 1, 1 };
 constexpr Pin TachoInputPins[NumTachoInputs] = { PortAPin(13), PortBPin(19), PortCPin(21) };			// tachos are on output connectors 6-8
 constexpr Pin IoInPins[NumIoPorts] = { PortAPin(2), PortCPin(2), PortCPin(0), PortAPin(3), PortCPin(3), PortCPin(1) };
 constexpr Pin IoOutPins[NumIoPorts] = { PortAPin(16), PortBPin(16), PortBPin(20), PortAPin(5), PortBPin(0), PortAPin(20) };
 constexpr Pin SpiCSPins[NumSpiSlaves] = { PortBPin(11), PortAPin(9), PortBPin(15), PortBPin(14) };
+
+// Table of pin functions that we are allowed to use
+constexpr PinDescription PinTable[] =
+{
+	// Port A
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA00
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA01
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA02
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA03
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA04
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA05
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA06
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA07
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA08
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA09
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA10
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA11
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA12
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA13
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA14
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA15
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA16
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA17
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA18
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA19
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA20
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA21
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA22
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA23
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA24
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA25
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA26
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA27
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA28
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA29
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA30
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA31
+
+	// Port B
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB00
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB01
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB02
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB03
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB04
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB05
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB06
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB07
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB08
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB09
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB10
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB11
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB12
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB13
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB14
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB15
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB16
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB17
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB18
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB19
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB20
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB21
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB22
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB23
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB24
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB25
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB26
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB27
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB28
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB29
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB30
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB31
+
+	// Port C
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC00
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC01
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC02
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC03
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC04
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC05
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC06
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC07
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC08
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC09
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC10
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC11
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC12
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC13
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC14
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC15
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC16
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC17
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC18
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC19
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC20
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC21
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC22
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC23
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC24
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC25
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC26
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC27
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC28
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC29
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC30
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC31
+};
 
 // Timer/counter used to generate step pulses and other sub-millisecond timings
 TcCount32 * const StepTc = &(TC6->COUNT32);

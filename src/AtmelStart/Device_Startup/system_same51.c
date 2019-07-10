@@ -14,9 +14,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License.
  * You may obtain a copy of the Licence at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an AS IS BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -35,7 +35,8 @@
  */
 #define __SYSTEM_CLOCK    (48000000)
 
-uint32_t SystemCoreClock = __SYSTEM_CLOCK;/*!< System Clock Frequency (Core Clock)*/
+uint32_t SystemCoreClock = __SYSTEM_CLOCK;
+uint32_t SystemPeripheralClock = __SYSTEM_CLOCK;
 
 /**
  * Initialize the system
@@ -47,18 +48,6 @@ void SystemInit(void)
 {
 	// Keep the default device state after reset
 	SystemCoreClock = __SYSTEM_CLOCK;
-	return;
 }
 
-/**
- * Update SystemCoreClock variable
- *
- * @brief  Updates the SystemCoreClock with current core Clock
- *         retrieved from cpu registers.
- */
-void SystemCoreClockUpdate(void)
-{
-	// Not implemented
-	SystemCoreClock = __SYSTEM_CLOCK;
-	return;
-}
+// End

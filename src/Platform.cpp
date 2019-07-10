@@ -9,6 +9,7 @@
 
 #include <Hardware/IoPorts.h>
 #include <Hardware/AnalogIn.h>
+#include <Hardware/AnalogOut.h>
 #include <Movement/Move.h>
 #include "Movement/StepperDrivers/TMC51xx.h"
 #include <atmel_start.h>
@@ -149,9 +150,20 @@ namespace Platform
 
 void Platform::Init()
 {
+	IoPort::Init();
+
 	// Set up the DIAG LED pin
-	gpio_set_pin_direction(DiagLedPin, GPIO_DIRECTION_OUT);
-	gpio_set_pin_level(DiagLedPin, true);
+	IoPort::SetPinMode(DiagLedPin, OUTPUT_HIGH);
+
+	// Turn all outputs off
+	for (size_t pin = 0; pin < ARRAY_SIZE(PinTable); ++pin)
+	{
+		const PinDescription& p = PinTable[pin];
+		if (p.pinNames != nullptr && StringStartsWith(p.pinNames, "out"))
+		{
+			IoPort::SetPinMode(pin, OUTPUT_LOW);
+		}
+	}
 
 	// Set up the UART to send to PanelDue
 	const uint32_t baudDiv = 65536 - ((65536 * 16.0f * 57600) / CONF_GCLK_SERCOM3_CORE_FREQUENCY);
@@ -164,11 +176,12 @@ void Platform::Init()
 	usart_async_enable(&USART_0);
 
 	AnalogIn::Init();
+	AnalogOut::Init();
 	ADC_temperature_init();
 
 	for (unsigned int i = 0; i < 4; ++i)
 	{
-		pinMode(BoardAddressPins[i], INPUT_PULLUP);
+		IoPort::SetPinMode(BoardAddressPins[i], INPUT_PULLUP);
 	}
 
 	// Set up ADC to read VIN and the temperature sensors
@@ -176,6 +189,9 @@ void Platform::Init()
 	tpFilter.Init(0);
 	tcFilter.Init(0);
 	AnalogIn::EnableChannel(VinMonitorPin, vinFilter.CallbackFeedIntoFilter, &vinFilter);
+#if HAS_12V_MONITOR
+	AnalogIn::EnableChannel(V12MonitorPin, vinFilter.CallbackFeedIntoFilter, &v12Filter);
+#endif
 	AnalogIn::EnableTemperatureSensor(0, tpFilter.CallbackFeedIntoFilter, &tpFilter, 1);
 	AnalogIn::EnableTemperatureSensor(1, tcFilter.CallbackFeedIntoFilter, &tcFilter, 1);
 
@@ -183,8 +199,8 @@ void Platform::Init()
 
 	for (size_t i = 0; i < NumDrivers; ++i)
 	{
-		pinMode(StepPins[i], OUTPUT_LOW);
-		pinMode(DirectionPins[i], OUTPUT_LOW);
+		IoPort::SetPinMode(StepPins[i], OUTPUT_LOW);
+		IoPort::SetPinMode(DirectionPins[i], OUTPUT_LOW);
 		const uint32_t driverBit = 1u << (StepPins[i] & 31);
 		driveDriverBits[i] = driverBit;
 		allDriverBits |= driverBit;
@@ -207,6 +223,47 @@ void Platform::Init()
 	InitialiseInterrupts();
 
 	lastPollTime = millis();
+
+	//TEST set up some PWM values
+	static PwmPort out0, out1, out2, out3, out4, out5, out6, out7, out8;
+	String<100> reply;
+
+	out0.AssignPort("out0", reply.GetRef(), PinUsedBy::gpio, PinAccess::pwm);
+	out1.AssignPort("out1", reply.GetRef(), PinUsedBy::gpio, PinAccess::pwm);
+	out2.AssignPort("out2", reply.GetRef(), PinUsedBy::gpio, PinAccess::pwm);
+	out3.AssignPort("out3", reply.GetRef(), PinUsedBy::gpio, PinAccess::pwm);
+	out4.AssignPort("out4", reply.GetRef(), PinUsedBy::gpio, PinAccess::pwm);
+	out5.AssignPort("out5", reply.GetRef(), PinUsedBy::gpio, PinAccess::pwm);
+	out6.AssignPort("out6", reply.GetRef(), PinUsedBy::gpio, PinAccess::pwm);
+	out7.AssignPort("out7", reply.GetRef(), PinUsedBy::gpio, PinAccess::pwm);
+	out8.AssignPort("out8", reply.GetRef(), PinUsedBy::gpio, PinAccess::pwm);
+
+	out0.SetFrequency(100);
+	out0.WriteAnalog(0.1);
+
+	out1.SetFrequency(200);
+	out1.WriteAnalog(0.2);
+
+	out2.SetFrequency(400);
+	out2.WriteAnalog(0.3);
+
+	out3.SetFrequency(500);
+	out3.WriteAnalog(0.4);
+
+	out4.SetFrequency(1000);
+	out4.WriteAnalog(0.5);
+
+	out5.SetFrequency(2000);
+	out5.WriteAnalog(0.6);
+
+	out6.SetFrequency(4000);
+	out6.WriteAnalog(0.7);
+
+	out7.SetFrequency(10000);
+	out7.WriteAnalog(0.8);
+
+	out8.SetFrequency(25000);
+	out8.WriteAnalog(0.9);
 }
 
 void Platform::Spin()

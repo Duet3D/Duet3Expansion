@@ -25,6 +25,7 @@ typedef double floatc_t;
 
 #include "Configuration.h"
 #include "General/StringRef.h"
+#include "General/StringFunctions.h"
 #include "General/BitMap.h"
 #include "MessageType.h"
 
@@ -38,7 +39,6 @@ class TemperatureSensor;
 class OutputBuffer;
 class OutputStack;
 class FilamentMonitor;
-//class Logger;
 
 #if SUPPORT_IOBITS
 class PortControl;
