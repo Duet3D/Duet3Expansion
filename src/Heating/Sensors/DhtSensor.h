@@ -67,11 +67,13 @@ private:
 class DhtTemperatureSensor : public TemperatureSensor
 {
 public:
-	DhtTemperatureSensor(unsigned int channel);
+	DhtTemperatureSensor(unsigned int sensorNum);
 	~DhtTemperatureSensor();
 
 	GCodeResult Configure(unsigned int heater, const CanMessageM305& msg, const StringRef& reply) override;
 	void Init() override;
+
+	static constexpr const char *TypeName = "dhttemp";
 
 protected:
 	TemperatureError TryGetTemperature(float& t) override;
@@ -81,11 +83,13 @@ protected:
 class DhtHumiditySensor : public TemperatureSensor
 {
 public:
-	DhtHumiditySensor(unsigned int channel);
+	DhtHumiditySensor(unsigned int sensorNum);
 	~DhtHumiditySensor();
 
 	GCodeResult Configure(unsigned int heater, const CanMessageM305& msg, const StringRef& reply) override;
 	void Init() override;
+
+	static constexpr const char *TypeName = "dhthumidity";
 
 protected:
 	TemperatureError TryGetTemperature(float& t) override;

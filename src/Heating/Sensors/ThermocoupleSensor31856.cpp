@@ -55,8 +55,8 @@ const uint8_t Cr1ReadMask = 0b01111111;			// ignore the reserved bits
 //  Openfault=0	assert fault on open circuit condition
 const uint8_t DefaultFaultMask = 0b00111100;
 
-ThermocoupleSensor31856::ThermocoupleSensor31856(unsigned int channel)
-	: SpiTemperatureSensor(channel, "Thermocouple (MAX31856)", channel - FirstMax31856ThermocoupleChannel, MAX31856_SpiMode, MAX31856_Frequency),
+ThermocoupleSensor31856::ThermocoupleSensor31856(unsigned int sensorNum)
+	: SpiTemperatureSensor(sensorNum, "Thermocouple (MAX31856)", MAX31856_SpiMode, MAX31856_Frequency),
 	  cr0(DefaultCr0), thermocoupleType(TypeK)
 {
 }

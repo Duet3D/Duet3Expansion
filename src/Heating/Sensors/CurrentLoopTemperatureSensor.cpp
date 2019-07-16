@@ -20,8 +20,8 @@ const uint8_t MCP3204_SpiMode = SPI_MODE_0;
 // Define the minimum interval between readings
 const uint32_t MinimumReadInterval = 100;		// minimum interval between reads, in milliseconds
 
-CurrentLoopTemperatureSensor::CurrentLoopTemperatureSensor(unsigned int channel)
-	: SpiTemperatureSensor(channel, "Current Loop", channel - FirstLinearAdcChannel, MCP3204_SpiMode, MCP3204_Frequency),
+CurrentLoopTemperatureSensor::CurrentLoopTemperatureSensor(unsigned int sensorNum)
+	: SpiTemperatureSensor(sensorNum, "Current Loop", MCP3204_SpiMode, MCP3204_Frequency),
 	  tempAt4mA(DefaultTempAt4mA), tempAt20mA(DefaultTempAt20mA), chipChannel(DefaultChipChannel), isDifferential(false)
 {
 	CalcDerivedParameters();

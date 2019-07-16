@@ -123,7 +123,7 @@ namespace Platform
 
 	ThermistorAveragingFilter& GetAdcFilter(unsigned int filterNumber);
 	void GetMcuTemperatures(float& minTemp, float& currentTemp, float& maxTemp);
-	float GetTmcDriversTemperature(unsigned int driversChannel);
+	float GetTmcDriversTemperature();
 
 	void SetHeater(unsigned int heater, float pwm);
 	void HandleHeaterFault(unsigned int heater);

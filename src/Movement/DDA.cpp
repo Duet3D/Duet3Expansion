@@ -224,8 +224,8 @@ void DDA::Init(const CanMessageMovement& msg)
 	// 3. Store some values
 	afterPrepare.moveStartTime = msg.whenToExecute;
 	clocksNeeded = msg.accelerationClocks + msg.steadyClocks + msg.decelClocks;
-	endStopsToCheck = msg.hdr.u.endStopsToCheck;
-	stopAllDrivesOnEndstopHit = msg.hdr.u.stopAllDrivesOnEndstopHit;
+	endStopsToCheck = msg.endStopsToCheck;
+	stopAllDrivesOnEndstopHit = msg.stopAllDrivesOnEndstopHit;
 
 	hadHiccup = false;
 	goingSlow = false;
@@ -255,7 +255,7 @@ void DDA::Prepare(const CanMessageMovement& msg)
 	PrepParams params;
 	params.decelStartDistance = 1.0 - decelDistance;
 
-	if (msg.hdr.u.deltaDrives != 0)
+	if (msg.deltaDrives != 0)
 	{
 		afterPrepare.cKc = roundS32(msg.zMovement * DriveMovement::Kc);
 		params.dvecX = msg.finalX - msg.initialX;
@@ -281,7 +281,7 @@ void DDA::Prepare(const CanMessageMovement& msg)
 		if (pdm != nullptr && pdm->state == DMState::moving)
 		{
 			Platform::EnableDrive(drive);
-			if ((msg.hdr.u.deltaDrives & (1u << drive)) != 0)			// for now, additional axes are assumed to be not part of the delta mechanism
+			if ((msg.deltaDrives & (1u << drive)) != 0)			// for now, additional axes are assumed to be not part of the delta mechanism
 			{
 				pdm->PrepareDeltaAxis(*this, params);
 
@@ -291,7 +291,7 @@ void DDA::Prepare(const CanMessageMovement& msg)
 					DebugPrintAll();
 				}
 			}
-			else if ((msg.hdr.u.pressureAdvanceDrives & (1u << drive)) != 0)
+			else if ((msg.pressureAdvanceDrives & (1u << drive)) != 0)
 			{
 				// If there is any extruder jerk in this move, in theory that means we need to instantly extrude or retract some amount of filament.
 				// Pass the speed change to PrepareExtruder

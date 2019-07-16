@@ -15,7 +15,7 @@
 const unsigned int NumCanBuffers = 40;
 
 // CanReceiver management task
-constexpr size_t CanReceiverTaskStackWords = 400;
+constexpr size_t CanReceiverTaskStackWords = 400;		// need quite a large stack to allow for calls to debugPrint, 400 is not enough
 static Task<CanReceiverTaskStackWords> canReceiverTask;
 
 static CanMessageBuffer *pendingMoves;
@@ -91,20 +91,6 @@ void CAN_0_example(void)
 }
 #endif
 
-// CanMovementMessage is declared in project Duet3Expansion, so we need to implement its members here
-void CanMessageMovement::DebugPrint()
-{
-	debugPrintf("Can: %08" PRIx32 " %" PRIu32 " %" PRIu32 " %" PRIu32 " %.2f %.2f:",
-		whenToExecute , accelerationClocks, steadyClocks, decelClocks, (double)initialSpeedFraction, (double)finalSpeedFraction);
-#if 0
-	for (size_t i = 0; i < DriversPerCanBoard; ++i)
-	{
-		debugPrintf(" %" PRIi32, perDrive[i].steps);
-	}
-	debugPrintf("\n");
-#endif
-}
-
 extern "C" void CanReceiverLoop(void *)
 {
 //	int32_t can_async_set_mode(struct can_async_descriptor *const descr, enum can_mode mode);
@@ -115,13 +101,13 @@ extern "C" void CanReceiverLoop(void *)
 	can_filter filter;
 
 	// First a filter for our own ID
-	filter.id = (uint32_t)Platform::ReadBoardId() << CanId::DestIdShift;
-	filter.mask = CanId::DestIdMask;
+	filter.id = (uint32_t)Platform::ReadBoardId() << CanId::DstAddressShift;
+	filter.mask = CanId::BoardAddressMask << CanId::DstAddressShift;
 	can_async_set_filter(&CAN_0, 0, CAN_FMT_EXTID, &filter);
 
 	// Now a filter for the broadcast ID
-	filter.id = (uint32_t)CanId::BroadcastId << CanId::DestIdShift;
-	filter.mask = CanId::DestIdMask;
+	filter.id = (uint32_t)CanId::BroadcastAddress << CanId::DstAddressShift;
+	filter.mask = CanId::BoardAddressMask << CanId::DstAddressShift;
 	can_async_set_filter(&CAN_0, 1, CAN_FMT_EXTID, &filter);
 
 	can_async_enable(&CAN_0);
@@ -194,6 +180,8 @@ void CanSlaveInterface::ProcessReceivedMessage(CanMessageBuffer *buf)
 
 	case CanMessageType::movement:
 		//TODO if we haven't established time sync yet then we should defer this
+// calling debugPrint here crashes the firmware even if we provide a large stack
+//		buf->msg.move.DebugPrint();
 		buf->msg.move.whenToExecute += StepTimer::GetLocalTimeOffset();
 		buf->next = nullptr;
 		{
@@ -208,7 +196,6 @@ void CanSlaveInterface::ProcessReceivedMessage(CanMessageBuffer *buf)
 				lastBuffer->next = buf;
 			}
 		}
-		buf->msg.move.DebugPrint();
 		break;
 
 	case CanMessageType::startup:

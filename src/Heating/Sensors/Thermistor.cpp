@@ -19,13 +19,13 @@
 // The parameters that can be configured in RRF are R25 (the resistance at 25C), Beta, and optionally C.
 
 // Create an instance with default values
-Thermistor::Thermistor(unsigned int channel, bool p_isPT1000)
-	: TemperatureSensor(channel), isPT1000(p_isPT1000)
+Thermistor::Thermistor(unsigned int sensorNum, bool p_isPT1000)
+	: TemperatureSensor(sensorNum), isPT1000(p_isPT1000)
 #if !HAS_VREF_MONITOR
 		, adcLowOffset(0), adcHighOffset(0)
 #endif
 {
-	thermistorInputChannel = (isPT1000) ? channel - FirstPT1000Channel : channel - FirstThermistorChannel;
+//	thermistorInputChannel = (isPT1000) ? channel - FirstPT1000Channel : channel - FirstThermistorChannel;
 	seriesR = DefaultThermistorSeriesR;
 
 	// The following only apply to thermistors
@@ -41,7 +41,7 @@ void Thermistor::Init()
 }
 
 // Configure the temperature sensor
-GCodeResult Thermistor::Configure(unsigned int heater, const CanMessageM305& msg, const StringRef& reply)
+GCodeResult Thermistor::Configure(const CanMessageM305& msg, const StringRef& reply)
 {
 	M305_SET_IF_PRESENT(seriesR, msg, R);
 	if (!isPT1000)

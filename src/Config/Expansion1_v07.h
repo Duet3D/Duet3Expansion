@@ -16,11 +16,12 @@ const size_t MaxExtraHeaterProtections = 6;
 
 #define HAS_SMART_DRIVERS	1
 #define HAS_VREF_MONITOR	1
+#define HAS_12V_MONITOR		1
 #define HAS_CPU_TEMP_SENSOR	1
 
 #define SUPPORT_TMC51xx		1
-#define SUPPORT_DHT_SENSOR	1
-#define SUPPORT_SPI_SENSORS	1
+#define SUPPORT_DHT_SENSOR	0	//TEMP!!!
+#define SUPPORT_SPI_SENSORS	0	//TEMP!!!
 
 constexpr size_t NumDrivers = 3;
 constexpr size_t MaxSmartDrivers = 3;
@@ -52,124 +53,128 @@ constexpr Pin OutPins[NumOutputPorts] = { PortAPin(18), PortAPin(19), PortAPin(2
 
 constexpr Pin BoardTypePins[NumBoardTypeBits] = { PortBPin(18), PortCPin(19), PortCPin(16) };
 
-constexpr Pin VinMonitorPin = PortAPin(11);
-constexpr Pin VRefPin = PortBPin(4);
-constexpr int VRefADC = 1;
+constexpr Pin VinMonitorPin = PortAPin(10);
+constexpr Pin V12MonitorPin = PortBPin(5);
+constexpr Pin VrefPin = PortBPin(4);
 constexpr Pin VssaPin = PortBPin(6);
-constexpr int VssaADC = 1;
 
 constexpr Pin BoardAddressPins[4] = { PortCPin(11), PortCPin(12), PortCPin(14), PortCPin(15) };
-constexpr Pin TempSensePins[NumThermistorInputs] = { PortAPin(9), PortBPin(9), PortBPin(7) };
+constexpr Pin TempSensePins[NumThermistorInputs] = { PortCPin(3), PortBPin(8), PortBPin(7) };
 constexpr Pin TachoInputPins[NumTachoInputs] = { PortAPin(13), PortBPin(19), PortCPin(21) };			// tachos are on output connectors 6-8
 constexpr Pin IoInPins[NumIoPorts] = { PortAPin(2), PortCPin(2), PortCPin(0), PortAPin(3), PortCPin(3), PortCPin(1) };
 constexpr Pin IoOutPins[NumIoPorts] = { PortAPin(16), PortBPin(16), PortBPin(20), PortAPin(5), PortBPin(0), PortAPin(20) };
 constexpr Pin SpiCSPins[NumSpiSlaves] = { PortBPin(11), PortAPin(9), PortBPin(15), PortBPin(14) };
 
 // Table of pin functions that we are allowed to use
+constexpr uint8_t Nx = 0xFF;
+
 constexpr PinDescription PinTable[] =
 {
 	// Port A
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA00
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA01
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA02
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA03
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA04
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA05
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA06
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA07
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA08
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA09
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA10
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA11
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA12
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA13
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA14
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA15
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA16
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA17
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA18
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA19
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA20
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA21
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA22
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA23
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA24
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA25
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA26
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA27
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA28
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA29
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA30
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PA31
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PA00 driver2 DIR
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PA01 driver2 step
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx, nullptr		},	// PA02 unused
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx, nullptr		},	// PA03 unused
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"io3.out"	},	// PA04
+	{ TcOutput::tc0_1,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"out4"		},	// PA05
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		6,	"io0.in"	},	// PA06
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		7,	"spi.cs2"	},	// PA07
+	{ TcOutput::none,		TccOutput::tcc0_0F,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"out0"		},	// PA08
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		9,	nullptr		},	// PA09 driver0 diag0
+	{ TcOutput::none,		TccOutput::none,		AdcInput::adc0_10,	SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PA10 VINmon
+	{ TcOutput::tc1_1,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"out6"		},	// PA11
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		12,	"out3.tach" },	// PA12
+	{ TcOutput::tc2_1,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"out8"		},	// PA13
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PA14 crystal
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PA15 crystal
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::sercom1c,	Nx,	"io0.out,uart0.tx" },	// PA16
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::sercom1c,	SercomIo::none,		Nx,	"uart0.rx"	},	// PA17
+	{ TcOutput::none,		TccOutput::tcc1_2F,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"out0" 		},	// PA18
+	{ TcOutput::tc3_1,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"out1"		},	// PA19
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"io5.out"	},	// PA20
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PA21 unused
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PA22 driver0 diag1
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PA23 driver0 dir
+	{ TcOutput::none,		TccOutput::tcc2_2F,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"out2"		},	// PA24
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PA25 driver0 step
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PA26 not on chip
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PA27 driver1 step
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PA28 not on chip
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PA29 not on chip
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PA30 swclk
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PA31 swdio
 
 	// Port B
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB00
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB01
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB02
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB03
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB04
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB05
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB06
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB07
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB08
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB09
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB10
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB11
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB12
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB13
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB14
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB15
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB16
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB17
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB18
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB19
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB20
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB21
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB22
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB23
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB24
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB25
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB26
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB27
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB28
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB29
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB30
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PB31
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PB00 driver2 diag1
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PB01 unused
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PB02 unused
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PB03 unused
+	{ TcOutput::none,		TccOutput::none,		AdcInput::adc1_6,	SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PB04 VrefMon
+	{ TcOutput::none,		TccOutput::none,		AdcInput::adc1_7,	SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PB05 12VMon
+	{ TcOutput::none,		TccOutput::none,		AdcInput::adc1_8,	SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PB06 VssaMon
+	{ TcOutput::none,		TccOutput::none,		AdcInput::adc1_9,	SercomIo::none,		SercomIo::none,		Nx,	"therm2"	},	// PB07
+	{ TcOutput::none,		TccOutput::none,		AdcInput::adc1_0,	SercomIo::none,		SercomIo::none,		Nx,	"therm1"	},	// PB08
+	{ TcOutput::tc4_1,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"out3"		},	// PB09
+	{ TcOutput::tc5_1,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		10,	"spi1.cs0"	},	// PB10
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"out7"		},	// PB11
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PB12 CANtx
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PB13 CANrx
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"spi.cs3"	},	// PB14 don't allow DHT11 on this pin, no EXINT
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		15,	"spi.cs1"	},	// PB15
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"io1.out,uart1.tx"	},	// PB16
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"uart1.rx"	},	// PB17
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PB18 board type 0
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		3,	"out4.tach"	},	// PB19
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"io2.out,uart2.tx" },	// PB20
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"uart2.rx"	},	// PB21
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PB22 drivers CS
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PB23 drivers ENN
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PB24 spi0 mosi
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PB25 spi0 clock
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PB26 not on 100-pin chip
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PB27 not on 100-pin chip
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PB28 not on 100-pin chip
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PB29 not on 100-pin chip
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		14,	nullptr		},	// PB30 driver2 diag0
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		15,	"io4.out"	},	// PB31
 
 	// Port C
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC00
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC01
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC02
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC03
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC04
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC05
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC06
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC07
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC08
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC09
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC10
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC11
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC12
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC13
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC14
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC15
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC16
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC17
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC18
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC19
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC20
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC21
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC22
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC23
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC24
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC25
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC26
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC27
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC28
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC29
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC30
-	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none },	// PC31
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		0,	"io2.in"	},	// PC00 IO2 in
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		1,	"io5.in"	},	// PC01 IO5 in
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		2,	"io1.in"	},	// PC02 IO1 in
+	{ TcOutput::none,		TccOutput::none,		AdcInput::adc1_5,	SercomIo::none,		SercomIo::none,		Nx,	"therm0"	},	// PC03 thermistor 0
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PC04 not on 100-pin chip
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PC05 SPI1 clock
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PC06 unused
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PC07 SPI1 miso
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PC08 not on chip
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PC09 not on chip
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PC10 diag LED
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PC11 board ID 0
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PC12 board ID 1
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PC13 SPI1 mosi
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PC14 board ID 2
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PC15 board ID 3
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PC16 board type 2
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PC17 unused
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PC18 unused
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PC19 board type 1
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		4,	"io3.in"	},	// PC20
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		5,	"out5.tach"	},	// PC21
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PC22 not on 100-pin chip
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PC23 not on 100-pin chip
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"io4.in"	},	// PC24
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PC25 spi0 mosi
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PC26 driver1 diag1
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		11,	nullptr		},	// PC27 driver1 diag0
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PC28 driver1 dir
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PC29 not on chip
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PC30 not on 100-pin chip
+	{ TcOutput::none,		TccOutput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PC31 not on 100-pin chip
 };
+
+static constexpr size_t NumPins = ARRAY_SIZE(PinTable);
+static_assert(NumPins == 96);
 
 // Timer/counter used to generate step pulses and other sub-millisecond timings
 TcCount32 * const StepTc = &(TC6->COUNT32);

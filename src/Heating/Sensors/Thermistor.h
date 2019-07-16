@@ -21,9 +21,12 @@
 class Thermistor : public TemperatureSensor
 {
 public:
-	Thermistor(unsigned int channel, bool p_isPT1000);						// create an instance with default values
-	GCodeResult Configure(unsigned int heater, const CanMessageM305& msg, const StringRef& reply) override; // configure the sensor from M305 parameters
+	Thermistor(unsigned int sensorNum, bool p_isPT1000);					// create an instance with default values
+	GCodeResult Configure(const CanMessageM305& msg, const StringRef& reply) override; // configure the sensor from M305 parameters
 	void Init() override;
+
+	static constexpr const char *TypeNameThermistor = "thermistor";
+	static constexpr const char *TypeNamePT1000 = "pt1000";
 
 protected:
 	TemperatureError TryGetTemperature(float& t) override;

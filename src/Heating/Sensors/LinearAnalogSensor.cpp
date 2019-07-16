@@ -9,13 +9,13 @@
 #include "Platform.h"
 #include "CanMessageFormats.h"
 
-LinearAnalogSensor::LinearAnalogSensor(unsigned int channel)
-	: TemperatureSensor(channel), thermistorInputChannel(channel - FirstLinearAnalogChannel), lowTemp(DefaultLowTemp), highTemp(DefaultHighTemp), filtered(true)
+LinearAnalogSensor::LinearAnalogSensor(unsigned int sensorNum)
+	: TemperatureSensor(sensorNum), lowTemp(DefaultLowTemp), highTemp(DefaultHighTemp), filtered(true)
 {
 	CalcDerivedParameters();
 }
 
-GCodeResult LinearAnalogSensor::Configure(unsigned int heater, const CanMessageM305& msg, const StringRef& reply)
+GCodeResult LinearAnalogSensor::Configure(const CanMessageM305& msg, const StringRef& reply)
 {
 	M305_SET_IF_PRESENT(lowTemp, msg, L);
 	M305_SET_IF_PRESENT(highTemp, msg, H);

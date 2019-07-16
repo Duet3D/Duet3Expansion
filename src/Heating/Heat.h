@@ -39,7 +39,7 @@ namespace Heat
 	float GetHighestTemperatureLimit(int8_t heater);
 	float GetLowestTemperatureLimit(int8_t heater);
 	void Activate(int8_t heater);								// Turn on a heater
-	float GetTemperature(int8_t heater);						// Get the temperature of a heater
+	float GetHeaterTemperature(int8_t sensor);					// Get the temperature of a heater
 	float GetTargetTemperature(int8_t heater);					// Get the target temperature
 	HeaterStatus GetStatus(int8_t heater);						// Get the off/standby/active status
 	void SwitchOff(int8_t heater);								// Turn off a specific heater
@@ -82,7 +82,8 @@ namespace Heat
 
 	int GetHeaterChannel(size_t heater);						// Return the channel used by a particular heater, or -1 if not configured
 	bool SetHeaterChannel(size_t heater, int channel);			// Set the channel used by a heater, returning true if bad heater or channel number
-	GCodeResult ConfigureHeaterSensor(size_t heater, unsigned int mcode, CanMessageM305& msg, const StringRef& reply);	// Configure the temperature sensor for a channel
+	GCodeResult ConfigureSensor(unsigned int sensorNumber, unsigned int mcode, CanMessageM305& msg, const StringRef& reply);
+																// Configure a sensor
 	const char *GetHeaterName(size_t heater);					// Get the name of a heater, or nullptr if it hasn't been named
 
 	HeaterProtection& AccessHeaterProtection(size_t index);		// Return the protection parameters of the given index
@@ -91,7 +92,7 @@ namespace Heat
 	bool CheckHeater(size_t heater)								// Check if the heater is able to operate
 	pre(heater < NumTotalHeaters);
 
-	float GetTemperature(size_t heater, TemperatureError& err); // Result is in degrees Celsius
+	float GetTemperature(size_t sensor, TemperatureError& err); // Result is in degrees Celsius
 
 	void SuspendHeaters(bool sus);								// Suspend the heaters to conserve power
 };

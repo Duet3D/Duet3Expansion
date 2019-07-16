@@ -10,7 +10,7 @@
 
 #if HAS_SMART_DRIVERS
 
-TmcDriverTemperatureSensor::TmcDriverTemperatureSensor(unsigned int channel) : TemperatureSensor(channel)
+TmcDriverTemperatureSensor::TmcDriverTemperatureSensor(unsigned int sensorNum) : TemperatureSensor(sensorNum)
 {
 }
 
@@ -20,7 +20,7 @@ void TmcDriverTemperatureSensor::Init()
 
 TemperatureError TmcDriverTemperatureSensor::TryGetTemperature(float& t)
 {
-	t = Platform::GetTmcDriversTemperature(GetSensorChannel() - FirstTmcDriversSenseChannel);
+	t = Platform::GetTmcDriversTemperature();
 	return TemperatureError::success;
 }
 

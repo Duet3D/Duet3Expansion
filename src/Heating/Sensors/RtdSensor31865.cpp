@@ -37,8 +37,8 @@ const uint8_t Cr0ReadMask = 0b11011101;		// bits 1 and 5 auto clear, so ignore t
 
 const uint16_t DefaultRef = 400;
 
-RtdSensor31865::RtdSensor31865(unsigned int channel)
-	: SpiTemperatureSensor(channel, "PT100 (MAX31865)", channel - FirstRtdChannel, MAX31865_SpiMode, MAX31865_Frequency),
+RtdSensor31865::RtdSensor31865(unsigned int sensorNum)
+	: SpiTemperatureSensor(sensorNum, "PT100 (MAX31865)", MAX31865_SpiMode, MAX31865_Frequency),
 	  rref(DefaultRef), cr0(DefaultCr0)
 {
 }

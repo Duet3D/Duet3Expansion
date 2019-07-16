@@ -13,10 +13,12 @@
 class LinearAnalogSensor : public TemperatureSensor
 {
 public:
-	LinearAnalogSensor(unsigned int channel);
+	LinearAnalogSensor(unsigned int sensorNum);
 
-	GCodeResult Configure(unsigned int heater, const CanMessageM305& msg, const StringRef& reply) override;
+	GCodeResult Configure(const CanMessageM305& msg, const StringRef& reply) override;
 	void Init() override;
+
+	static constexpr const char *TypeName = "linearanalog";
 
 protected:
 	TemperatureError TryGetTemperature(float& t) override;

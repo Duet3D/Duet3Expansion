@@ -17,12 +17,9 @@ struct InterruptCallback
 };
 
 // On the SAME5x we have 16 external interrupts shared between multiple pins. Only one of those pins may be programmed to generate an interrupt.
-// Therefore we will have a clash if we try to attach an interrupt to two pins that use the aame EXINT.
+// Therefore we will have a clash if we try to attach an interrupt to two pins that use the same EXINT.
+// The pin table ensures that only one pin is flagged as able to use each EXINT.
 static InterruptCallback exintCallbacks[16];
-
-// Record of which pin is using each EXINT
-static Pin pinUsingExint[] = { NoPin, NoPin, NoPin, NoPin, NoPin, NoPin, NoPin, NoPin, NoPin, NoPin, NoPin, NoPin, NoPin, NoPin, NoPin, NoPin };
-static_assert(ARRAY_SIZE(pinUsingExint) == 16);
 
 void InitialisePinChangeInterrupts()
 {
@@ -66,18 +63,9 @@ bool AttachInterrupt(uint32_t pin, StandardCallbackFunction callback, enum Inter
 	}
 
 	const unsigned int exintNumber = PinTable[pin].exintNumber;
-	if (exintNumber >= ARRAY_SIZE(pinUsingExint))
+	if (exintNumber >= 16)
 	{
 		return false;			// no EXINT available on this pin (only occurs for PA8 which is NMI)
-	}
-
-	if (pinUsingExint[exintNumber] != pin)
-	{
-		if (pinUsingExint[exintNumber] != NoPin)
-		{
-			return false;		// this EXINT number is already used by another pin
-		}
-		pinUsingExint[exintNumber] = pin;
 	}
 
 	exintCallbacks[exintNumber].func = callback;
@@ -121,7 +109,7 @@ void DetachInterrupt(Pin pin)
 	if (pin <= ARRAY_SIZE(PinTable))
 	{
 		const unsigned int exintNumber = PinTable[pin].exintNumber;
-		if (exintNumber < ARRAY_SIZE(pinUsingExint) && pinUsingExint[exintNumber] == pin)
+		if (exintNumber < 16)
 		{
 			const unsigned int shift = (exintNumber & 7u) << 2u;
 			const uint32_t mask = ~(0x0000000F << shift);
@@ -141,7 +129,6 @@ void DetachInterrupt(Pin pin)
 			gpio_set_pin_function(pin, GPIO_PIN_FUNCTION_OFF);
 
 			exintCallbacks[exintNumber].func = nullptr;
-			pinUsingExint[exintNumber] = NoPin;
 		}
 	}
 }

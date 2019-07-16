@@ -19,7 +19,8 @@
 #endif
 
 // Constructor
-TemperatureSensor::TemperatureSensor(unsigned int chan) : sensorChannel(chan), lastError(TemperatureError::success) {}
+TemperatureSensor::TemperatureSensor(unsigned int sensorNum)
+	: next(nullptr), sensorNumber(sensorNum), lastError(TemperatureError::success) {}
 
 // Virtual destructor
 TemperatureSensor::~TemperatureSensor()
@@ -27,7 +28,7 @@ TemperatureSensor::~TemperatureSensor()
 }
 
 // Default config function for sensors with nothing to configure
-GCodeResult TemperatureSensor::Configure(unsigned int heater, const CanMessageM305& msg, const StringRef& reply)
+GCodeResult TemperatureSensor::Configure(const CanMessageM305& msg, const StringRef& reply)
 {
 	return GCodeResult::ok;
 }
@@ -44,59 +45,59 @@ TemperatureError TemperatureSensor::GetTemperature(float& t)
 }
 
 // Factory method
-TemperatureSensor *TemperatureSensor::Create(unsigned int channel)
+TemperatureSensor *TemperatureSensor::Create(unsigned int sensorNum, const char *typeName)
 {
 	TemperatureSensor *ts = nullptr;
-	if (channel < NumThermistorInputs)
+	if (ReducedStringEquals(typeName, Thermistor::TypeNameThermistor))
 	{
-		ts = new Thermistor(channel, false);
+		ts = new Thermistor(sensorNum, false);
 	}
-	else if (FirstLinearAnalogChannel <= channel && channel < FirstLinearAnalogChannel + NumThermistorInputs)
+	else if (ReducedStringEquals(typeName, Thermistor::TypeNamePT1000))
 	{
-		ts = new LinearAnalogSensor(channel);
+		ts = new Thermistor(sensorNum, true);
 	}
-	else if (FirstPT1000Channel <= channel && channel < FirstPT1000Channel + NumThermistorInputs)
+	else if (ReducedStringEquals(typeName, LinearAnalogSensor::TypeName))
 	{
-		ts = new Thermistor(channel, true);
+		ts = new LinearAnalogSensor(sensorNum);
 	}
 #if SUPPORT_SPI_SENSORS
-	else if (FirstMax31855ThermocoupleChannel <= channel && channel < FirstMax31855ThermocoupleChannel + MaxSpiTempSensors)
+	else if (ReducedStringEquals(typeName, ThermocoupleSensor31855::TypeName))
 	{
-		ts = new ThermocoupleSensor31855(channel);
+		ts = new ThermocoupleSensor31855(sensorNum);
 	}
-	else if (FirstMax31856ThermocoupleChannel <= channel && channel < FirstMax31856ThermocoupleChannel + MaxSpiTempSensors)
+	else if (ReducedStringEquals(typeName, ThermocoupleSensor31856::TypeName))
 	{
-		ts = new ThermocoupleSensor31856(channel);
+		ts = new ThermocoupleSensor31856(sensorNum);
 	}
-	else if (FirstRtdChannel <= channel && channel < FirstRtdChannel + MaxSpiTempSensors)
+	else if (ReducedStringEquals(typeName, RtdSensor31865::TypeName))
 	{
-		ts = new RtdSensor31865(channel);
+		ts = new RtdSensor31865(sensorNum);
 	}
-	else if (FirstLinearAdcChannel <= channel && channel < FirstLinearAdcChannel + MaxSpiTempSensors)
+	else if (ReducedStringEquals(typeName, CurrentLoopTemperatureSensor::TypeName))
 	{
-		ts = new CurrentLoopTemperatureSensor(channel);
+		ts = new CurrentLoopTemperatureSensor(sensorNum);
 	}
 #endif
 #if SUPPORT_DHT_SENSOR
-	else if (FirstDhtTemperatureChannel <= channel && channel < FirstDhtTemperatureChannel + MaxSpiTempSensors)
+	else if (ReducedStringEquals(typeName, DhtTemperatureSensor::TypeName))
 	{
-		ts = new DhtTemperatureSensor(channel);
+		ts = new DhtTemperatureSensor(sensorNum);
 	}
-	else if (FirstDhtHumidityChannel <= channel && channel < FirstDhtHumidityChannel + MaxSpiTempSensors)
+	else if (ReducedStringEquals(typeName, DhtHumiditySensor::TypeName))
 	{
-		ts = new DhtHumiditySensor(channel);
+		ts = new DhtHumiditySensor(sensorNum);
 	}
 #endif
 #if HAS_CPU_TEMP_SENSOR
-	else if (channel == CpuTemperatureSenseChannel)
+	else if (ReducedStringEquals(typeName, CpuTemperatureSensor::TypeName))
 	{
-		ts = new CpuTemperatureSensor(channel);
+		ts = new CpuTemperatureSensor(sensorNum);
 	}
 #endif
 #if HAS_SMART_DRIVERS
-	else if (channel >= FirstTmcDriversSenseChannel && channel < FirstTmcDriversSenseChannel + NumTmcDriversSenseChannels)
+	else if (ReducedStringEquals(typeName, TmcDriverTemperatureSensor::TypeName))
 	{
-		ts = new TmcDriverTemperatureSensor(channel);
+		ts = new TmcDriverTemperatureSensor(sensorNum);
 	}
 #endif
 

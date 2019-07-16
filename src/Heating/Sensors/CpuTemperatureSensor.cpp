@@ -10,7 +10,7 @@
 
 #if HAS_CPU_TEMP_SENSOR
 
-CpuTemperatureSensor::CpuTemperatureSensor(unsigned int channel) : TemperatureSensor(channel)
+CpuTemperatureSensor::CpuTemperatureSensor(unsigned int sensorNum) : TemperatureSensor(sensorNum)
 {
 }
 

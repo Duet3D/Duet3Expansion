@@ -15,8 +15,10 @@
 class TmcDriverTemperatureSensor : public TemperatureSensor
 {
 public:
-	TmcDriverTemperatureSensor(unsigned int channel);
+	TmcDriverTemperatureSensor(unsigned int sensorNum);
 	void Init() override;
+
+	static constexpr const char *TypeName = "drivertemp";
 
 protected:
 	TemperatureError TryGetTemperature(float& t) override;

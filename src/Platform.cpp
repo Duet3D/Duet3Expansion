@@ -44,6 +44,10 @@ namespace Platform
 	static float instantDVs[NumDrivers] = { 5.0, 5.0, 5.0 };				// mm/sec
 
 	static volatile uint16_t currentVin, highestVin, lowestVin;
+#if HAS_12V_MONITOR
+	static volatile uint16_t currentV12, highestV12, lowestV12;
+#endif
+
 //	static uint16_t lastUnderVoltageValue, lastOverVoltageValue;
 	static uint32_t numUnderVoltageEvents, previousUnderVoltageEvents;
 	static volatile uint32_t numOverVoltageEvents, previousOverVoltageEvents;
@@ -53,6 +57,16 @@ namespace Platform
 
 	static uint32_t lastPollTime;
 	static unsigned int heatTaskIdleTicks = 0;
+
+	// SERCOM3 Rx is on PB21 (OUT_8_TACHO), Tx is on PB20 (OUT_7_TACHO)
+
+	static ThermistorAveragingFilter thermistorFilters[NumThermistorFilters];
+	static AdcAveragingFilter<VinReadingsAveraged> vinFilter;
+#if HAS_12V_MONITOR
+	static AdcAveragingFilter<VinReadingsAveraged> v12Filter;
+#endif
+	static AdcAveragingFilter<McuTempReadingsAveraged> tpFilter;
+	static AdcAveragingFilter<McuTempReadingsAveraged> tcFilter;
 
 	// Temperature sense stuff
 	#define NVM_TEMP_CAL_TLI_POS 0
@@ -72,15 +86,8 @@ namespace Platform
 	#define NVM_TEMP_CAL_VCH_POS 76
 	#define NVM_TEMP_CAL_VCH_SIZE 12
 
-	uint16_t temp_cal_tl, temp_cal_th;
-	uint16_t temp_cal_vpl, temp_cal_vph, temp_cal_vcl, temp_cal_vch;
-
-	// SERCOM3 Rx is on PB21 (OUT_8_TACHO), Tx is on PB20 (OUT_7_TACHO)
-
-	static ThermistorAveragingFilter thermistorFilters[NumThermistorFilters];
-	static AdcAveragingFilter<VinReadingsAveraged> vinFilter;
-	static AdcAveragingFilter<McuTempReadingsAveraged> tpFilter;
-	static AdcAveragingFilter<McuTempReadingsAveraged> tcFilter;
+	static uint16_t temp_cal_tl, temp_cal_th;
+	static uint16_t temp_cal_vpl, temp_cal_vph, temp_cal_vcl, temp_cal_vch;
 
 	static void ADC_temperature_init(void)
 	{
@@ -109,13 +116,13 @@ namespace Platform
 	// Send the specified message to the specified destinations. The Error and Warning flags have already been handled.
 	void RawMessage(MessageType type, const char *message)
 	{
+		// io_write requires that the message doesn't go out of scope until transmission is complete, so copy it to a static buffer
 		static String<200> buffer;
 		buffer.copy("{\"message\":\"");
 		buffer.cat(message);		// should do JSON escaping here
 		buffer.cat("\"}\n");
 		txBusy = true;
 		io_write(io, (const unsigned char *)buffer.c_str(), buffer.strlen());
-		// io_write requires that the message doesn't go out of scope until transmission is complete
 		//while (txBusy) { delay(1); }
 	}
 
@@ -159,7 +166,10 @@ void Platform::Init()
 	for (size_t pin = 0; pin < ARRAY_SIZE(PinTable); ++pin)
 	{
 		const PinDescription& p = PinTable[pin];
-		if (p.pinNames != nullptr && StringStartsWith(p.pinNames, "out"))
+		if (   p.pinNames != nullptr
+			&& StringStartsWith(p.pinNames, "out")
+			&& strlen(p.pinNames) < 5							// don't set "outN.tach" pins to outputs
+		   )
 		{
 			IoPort::SetPinMode(pin, OUTPUT_LOW);
 		}
@@ -175,26 +185,59 @@ void Platform::Init()
 	usart_async_get_io_descriptor(&USART_0, &io);
 	usart_async_enable(&USART_0);
 
+	// Initialise the rest of the IO subsystem
 	AnalogIn::Init();
 	AnalogOut::Init();
 	ADC_temperature_init();
 
+	// Set up the board ID switch inputs
 	for (unsigned int i = 0; i < 4; ++i)
 	{
 		IoPort::SetPinMode(BoardAddressPins[i], INPUT_PULLUP);
 	}
 
-	// Set up ADC to read VIN and the temperature sensors
+	// Set up VIN voltage monitoring
+	currentVin = highestVin = 0;
+	lowestVin = 9999;
+	numUnderVoltageEvents = previousUnderVoltageEvents = numOverVoltageEvents = previousOverVoltageEvents = 0;
+
 	vinFilter.Init(0);
-	tpFilter.Init(0);
-	tcFilter.Init(0);
 	AnalogIn::EnableChannel(VinMonitorPin, vinFilter.CallbackFeedIntoFilter, &vinFilter);
+
 #if HAS_12V_MONITOR
+	currentV12 = highestV12 = 0;
+	lowestV12 = 9999;
+
+	v12Filter.Init(0);
 	AnalogIn::EnableChannel(V12MonitorPin, vinFilter.CallbackFeedIntoFilter, &v12Filter);
 #endif
+
+	// Set up the MCU temperature sensors
+	currentMcuTemperature = 0.0;
+	highestMcuTemperature = -273.16;
+	lowestMcuTemperature = 999.0;
+	mcuTemperatureAdjust = 0.0;
+
+	tpFilter.Init(0);
 	AnalogIn::EnableTemperatureSensor(0, tpFilter.CallbackFeedIntoFilter, &tpFilter, 1);
+	tcFilter.Init(0);
 	AnalogIn::EnableTemperatureSensor(1, tcFilter.CallbackFeedIntoFilter, &tcFilter, 1);
 
+	// Set up the thermistor filters
+	for (size_t i = 0; i < NumThermistorInputs; ++i)
+	{
+		thermistorFilters[i].Init(0);
+		AnalogIn::EnableChannel(TempSensePins[i], thermistorFilters[i].CallbackFeedIntoFilter, &thermistorFilters[i]);
+	}
+
+#if HAS_VREF_MONITOR
+	thermistorFilters[VrefFilterIndex].Init(0);
+	AnalogIn::EnableChannel(VrefPin, thermistorFilters[VrefFilterIndex].CallbackFeedIntoFilter, &thermistorFilters[VrefFilterIndex]);
+	thermistorFilters[VssaFilterIndex].Init(0);
+	AnalogIn::EnableChannel(VssaPin, thermistorFilters[VssaFilterIndex].CallbackFeedIntoFilter, &thermistorFilters[VssaFilterIndex]);
+#endif
+
+	// Initialise stepper drivers
 	SmartDrivers::Init();
 
 	for (size_t i = 0; i < NumDrivers; ++i)
@@ -207,16 +250,6 @@ void Platform::Init()
 
 		SmartDrivers::SetMicrostepping(i, 16, true);
 	}
-
-	// MCU temperature monitoring
-	currentMcuTemperature = 0.0;
-	highestMcuTemperature = -273.16;
-	lowestMcuTemperature = 999.0;
-	mcuTemperatureAdjust = 0.0;
-
-	currentVin = highestVin = 0;
-	lowestVin = 9999;
-	numUnderVoltageEvents = previousUnderVoltageEvents = numOverVoltageEvents = previousOverVoltageEvents = 0;
 
 	CanSlaveInterface::Init();
 
@@ -291,7 +324,7 @@ void Platform::Spin()
 					  );
 
 	const uint32_t now = millis();
-	if (now - lastPollTime > 500)
+	if (now - lastPollTime > 2000)
 	{
 		lastPollTime = now;
 
@@ -336,6 +369,7 @@ void Platform::Spin()
 		debugPrintf("%s", status.c_str());
 #elif 0
 		moveInstance->Diagnostics(AuxMessage);
+#elif 1
 #else
 		uint32_t conversionsStarted, conversionsCompleted;
 		AnalogIn::GetDebugInfo(conversionsStarted, conversionsCompleted);

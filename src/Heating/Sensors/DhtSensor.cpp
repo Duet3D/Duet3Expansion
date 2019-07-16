@@ -290,12 +290,12 @@ DhtTemperatureSensor::DhtTemperatureSensor(unsigned int channel) : TemperatureSe
 
 void DhtTemperatureSensor::Init()
 {
-	DhtSensorHardwareInterface::Create(GetSensorChannel() - FirstDhtTemperatureChannel);
+	DhtSensorHardwareInterface::Create();
 }
 
 GCodeResult DhtTemperatureSensor::Configure(unsigned int heater, const CanMessageM305& msg, const StringRef& reply)
 {
-	return DhtSensorHardwareInterface::Configure(this, GetSensorChannel() - FirstDhtTemperatureChannel, heater, msg, reply);
+	return DhtSensorHardwareInterface::Configure(this, heater, msg, reply);
 }
 
 DhtTemperatureSensor::~DhtTemperatureSensor()
@@ -305,7 +305,7 @@ DhtTemperatureSensor::~DhtTemperatureSensor()
 
 TemperatureError DhtTemperatureSensor::TryGetTemperature(float& t)
 {
-	return DhtSensorHardwareInterface::GetTemperatureOrHumidity(GetSensorChannel() - FirstDhtTemperatureChannel, t, false);
+	return DhtSensorHardwareInterface::GetTemperatureOrHumidity(t, false);
 }
 
 // Class DhtHumiditySensor members
@@ -315,12 +315,12 @@ DhtHumiditySensor::DhtHumiditySensor(unsigned int channel) : TemperatureSensor(c
 
 void DhtHumiditySensor::Init()
 {
-	DhtSensorHardwareInterface::Create(GetSensorChannel() - FirstDhtHumidityChannel);
+	DhtSensorHardwareInterface::Create();
 }
 
 GCodeResult DhtHumiditySensor::Configure(unsigned int heater, const CanMessageM305& msg, const StringRef& reply)
 {
-	return DhtSensorHardwareInterface::Configure(this, GetSensorChannel() - FirstDhtHumidityChannel, heater, msg, reply);
+	return DhtSensorHardwareInterface::Configure(this, heater, msg, reply);
 }
 
 DhtHumiditySensor::~DhtHumiditySensor()
@@ -330,7 +330,7 @@ DhtHumiditySensor::~DhtHumiditySensor()
 
 TemperatureError DhtHumiditySensor::TryGetTemperature(float& t)
 {
-	return DhtSensorHardwareInterface::GetTemperatureOrHumidity(GetSensorChannel() - FirstDhtHumidityChannel, t, true);
+	return DhtSensorHardwareInterface::GetTemperatureOrHumidity(t, true);
 }
 
 #endif
