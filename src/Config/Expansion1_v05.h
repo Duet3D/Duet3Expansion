@@ -13,9 +13,6 @@
 
 const size_t MaxHeaters = 6;
 const size_t MaxExtraHeaterProtections = 6;
-const size_t MaxSensors = 10;
-const size_t MaxGpoPorts = 10;
-const size_t MaxFans = 6;
 
 #define HAS_SMART_DRIVERS	1
 #define HAS_VREF_MONITOR	1
@@ -23,8 +20,8 @@ const size_t MaxFans = 6;
 #define HAS_CPU_TEMP_SENSOR	1
 
 #define SUPPORT_TMC51xx		1
-#define SUPPORT_DHT_SENSOR	0
-#define SUPPORT_SPI_SENSORS	0
+#define SUPPORT_DHT_SENSOR	0	//TEMP!!!
+#define SUPPORT_SPI_SENSORS	0	//TEMP!!!
 
 constexpr size_t NumDrivers = 3;
 constexpr size_t MaxSmartDrivers = 3;
@@ -57,6 +54,7 @@ constexpr Pin OutPins[NumOutputPorts] = { PortAPin(18), PortAPin(19), PortAPin(2
 constexpr Pin BoardTypePins[NumBoardTypeBits] = { PortBPin(18), PortCPin(19), PortCPin(16) };
 
 constexpr Pin VinMonitorPin = PortAPin(11);
+constexpr float VinDividerRatio = 11.0;
 constexpr Pin VrefPin = PortBPin(4);
 constexpr Pin VssaPin = PortBPin(6);
 

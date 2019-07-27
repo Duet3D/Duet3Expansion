@@ -209,19 +209,15 @@ void Platform::Init()
 	lowestV12 = 9999;
 
 	v12Filter.Init(0);
-	AnalogIn::EnableChannel(V12MonitorPin, vinFilter.CallbackFeedIntoFilter, &v12Filter);
+	AnalogIn::EnableChannel(V12MonitorPin, v12Filter.CallbackFeedIntoFilter, &v12Filter);
 #endif
 
-	// Set up the MCU temperature sensors
-	currentMcuTemperature = 0.0;
-	highestMcuTemperature = -273.16;
-	lowestMcuTemperature = 999.0;
-	mcuTemperatureAdjust = 0.0;
-
-	tpFilter.Init(0);
-	AnalogIn::EnableTemperatureSensor(0, tpFilter.CallbackFeedIntoFilter, &tpFilter, 1);
-	tcFilter.Init(0);
-	AnalogIn::EnableTemperatureSensor(1, tcFilter.CallbackFeedIntoFilter, &tcFilter, 1);
+#if HAS_VREF_MONITOR
+	thermistorFilters[VrefFilterIndex].Init(0);
+	AnalogIn::EnableChannel(VrefPin, thermistorFilters[VrefFilterIndex].CallbackFeedIntoFilter, &thermistorFilters[VrefFilterIndex]);
+	thermistorFilters[VssaFilterIndex].Init(0);
+	AnalogIn::EnableChannel(VssaPin, thermistorFilters[VssaFilterIndex].CallbackFeedIntoFilter, &thermistorFilters[VssaFilterIndex]);
+#endif
 
 	// Set up the thermistor filters
 	for (size_t i = 0; i < NumThermistorInputs; ++i)
@@ -230,12 +226,16 @@ void Platform::Init()
 		AnalogIn::EnableChannel(TempSensePins[i], thermistorFilters[i].CallbackFeedIntoFilter, &thermistorFilters[i]);
 	}
 
-#if HAS_VREF_MONITOR
-	thermistorFilters[VrefFilterIndex].Init(0);
-	AnalogIn::EnableChannel(VrefPin, thermistorFilters[VrefFilterIndex].CallbackFeedIntoFilter, &thermistorFilters[VrefFilterIndex]);
-	thermistorFilters[VssaFilterIndex].Init(0);
-	AnalogIn::EnableChannel(VssaPin, thermistorFilters[VssaFilterIndex].CallbackFeedIntoFilter, &thermistorFilters[VssaFilterIndex]);
-#endif
+	// Set up the MCU temperature sensors
+	currentMcuTemperature = 0.0;
+	highestMcuTemperature = -273.16;
+	lowestMcuTemperature = 999.0;
+	mcuTemperatureAdjust = 0.0;
+
+	tpFilter.Init(0);
+	AnalogIn::EnableTemperatureSensor(0, tpFilter.CallbackFeedIntoFilter, &tpFilter, 1, 0);
+	tcFilter.Init(0);
+	AnalogIn::EnableTemperatureSensor(1, tcFilter.CallbackFeedIntoFilter, &tcFilter, 1, 0);
 
 	// Initialise stepper drivers
 	SmartDrivers::Init();
@@ -305,17 +305,31 @@ void Platform::Spin()
 	static bool powered = false;
 
 	// Get the VIN voltage
-	const float volts = (vinFilter.GetSum() * (3.3 * 11))/(4096 * vinFilter.NumAveraged());
-	if (!powered && volts >= 10.0)
+	const float voltsVin = (vinFilter.GetSum() * (3.3 * VinDividerRatio))/(4096 * vinFilter.NumAveraged());
+#if HAS_12V_MONITOR
+	const float volts12 = (v12Filter.GetSum() * (3.3 * V12DividerRatio))/(4096 * v12Filter.NumAveraged());
+	if (!powered && voltsVin >= 10.5 && volts12 >= 10.5)
 	{
 		powered = true;
 		SmartDrivers::Spin(true);
 	}
-	else if (powered && volts < 9.5)
+	else if (powered && (voltsVin < 10.0 || volts12 < 10.0))
 	{
 		powered = false;
 		SmartDrivers::Spin(false);
 	}
+#else
+	if (!powered && voltsVin >= 10.5)
+	{
+		powered = true;
+		SmartDrivers::Spin(true);
+	}
+	else if (powered && voltsVin < 10.0)
+	{
+		powered = false;
+		SmartDrivers::Spin(false);
+	}
+#endif
 
 	// Update the Diag LED. Flash it quickly (8Hz) if we are not synced to the master, else flash in sync with the master (about 2Hz).
 	gpio_set_pin_level(DiagLedPin,
@@ -328,7 +342,7 @@ void Platform::Spin()
 	{
 		lastPollTime = now;
 
-		const uint8_t addr = ReadBoardSwitches() >> 2;
+		const uint8_t addr = ReadBoardSwitches();
 		if (addr != oldAddr)
 		{
 			oldAddr = addr;
@@ -369,20 +383,32 @@ void Platform::Spin()
 		debugPrintf("%s", status.c_str());
 #elif 0
 		moveInstance->Diagnostics(AuxMessage);
-#elif 1
+#elif 0
 #else
 		uint32_t conversionsStarted, conversionsCompleted;
 		AnalogIn::GetDebugInfo(conversionsStarted, conversionsCompleted);
 		debugPrintf(
 //							"Conv %u %u"
 						"Addr %u"
-						", %.1fV, %.1fdegC"
+#if HAS_12V_MONITOR
+						" %.1fV %.1fV"
+#else
+						" %.1fV"
+#endif
+						" %.1fC"
+						" %u %u"
 //						", ptat %d, ctat %d"
 						", stat %08" PRIx32 " %08" PRIx32 " %08" PRIx32,
 //							(unsigned int)conversionsStarted, (unsigned int)conversionsCompleted,
 //							StepTimer::GetInterruptClocks(),
 						(unsigned int)addr,
-						(double)volts, (double)currentMcuTemperature
+#if HAS_12V_MONITOR
+						(double)voltsVin, (double)volts12,
+#else
+						(double)voltsVin,
+#endif
+						(double)currentMcuTemperature
+						, (unsigned int)thermistorFilters[VrefFilterIndex].GetSum(), (unsigned int)thermistorFilters[VssaFilterIndex].GetSum()
 //						, tp_result, tc_result
 						, SmartDrivers::GetAccumulatedStatus(0, 0), SmartDrivers::GetAccumulatedStatus(1, 0), SmartDrivers::GetAccumulatedStatus(2, 0)
 //							, SmartDrivers::GetLiveStatus(0), SmartDrivers::GetLiveStatus(1), SmartDrivers::GetLiveStatus(2)

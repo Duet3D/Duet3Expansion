@@ -12,8 +12,8 @@ constexpr float DefaultThermistorR25 = 100000.0;
 constexpr float DefaultThermistorbeta = 4388.0;
 constexpr float DefaultThermistorC = 0.0;
 
-#ifdef EXPANSION_1_V07
-# include "Expansion1_v07.h"
+#ifdef EXPANSION_1_V09
+# include <Config/Expansion1_v09.h>
 #endif
 
 #ifdef EXPANSION_1_V05
