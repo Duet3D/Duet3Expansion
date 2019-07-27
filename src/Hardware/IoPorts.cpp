@@ -205,6 +205,110 @@ void IoPort::ToggleInvert(bool pInvert)
 	}
 }
 
+void IoPort::AppendDetails(const StringRef& str)
+{
+	if (IsValid())
+	{
+		str.catf(" pin ");
+		AppendPinName(str);
+		if (logicalPinModes[pin] == INPUT_PULLUP)
+		{
+			str.cat(", pullup enabled");
+		}
+		else if (logicalPinModes[pin] == INPUT)
+		{
+			str.cat(", pullup disabled");
+		}
+	}
+	else
+	{
+		str.cat(" is not assigned to a pin");
+	}
+}
+
+// Append the names of the pin to a string, picking only those that have the correct hardware invert status
+void IoPort::AppendPinName(const StringRef& str) const
+{
+	if (IsValid())
+	{
+		if (GetInvert())
+		{
+			str.cat('!');
+		}
+		const size_t insertPoint = str.strlen();
+		const char *pn = PinTable[pin].pinNames;
+		unsigned int numPrinted = 0;
+		do
+		{
+			bool inverted = (*pn == '!');
+			if (inverted)
+			{
+				++pn;
+			}
+			if (hardwareInvert)
+			{
+				inverted = !inverted;
+			}
+			if (inverted)
+			{
+				// skip this one
+				while (*pn != 0 && *pn != ',')
+				{
+					++pn;
+				}
+			}
+			else
+			{
+				// Include this one
+				if (numPrinted != 0)
+				{
+					str.cat(',');
+				}
+				++numPrinted;
+				while (*pn != 0 && *pn != ',')
+				{
+					str.cat(*pn);
+					++pn;
+				}
+			}
+
+		} while (*pn++ == ',');
+
+		if (numPrinted > 1)
+		{
+			str.Insert(insertPoint, '(');
+			str.cat(')');
+		}
+	}
+	else
+	{
+		str.cat(NoPinName);
+	}
+}
+
+/*static*/ void IoPort::AppendPinNames(const StringRef& str, size_t numPorts, IoPort * const ports[])
+{
+	for (size_t i = 0; i < numPorts; ++i)
+	{
+		if (ports[i]->IsValid())
+		{
+			if (i != 0)
+			{
+				str.cat('+');
+			}
+			ports[i]->AppendPinName(str);
+		}
+		else
+		{
+			if (i == 0)
+			{
+				str.cat("nil");
+			}
+			break;
+		}
+	}
+}
+
 // Function to look up a pin name pass back the corresponding index into the pin table
 // On this platform, the mapping from pin names to pins is fixed, so this is a simple lookup
 /*static*/ bool IoPort::LookupPinName(const char*pn, Pin& pin, bool& hardwareInverted)

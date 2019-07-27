@@ -36,7 +36,8 @@ enum class PinUsedBy : uint8_t
 	laser,
 	gpio,
 	filamentMonitor,
-	temporaryInput
+	temporaryInput,
+	sensor
 };
 
 // Pin mode enumeration. Would ideally be a C++ scoped enum, but we need to use it from C library functions.
@@ -64,12 +65,14 @@ public:
 	IoPort();
 	bool SetMode(PinAccess access);
 	void Release();
+	void AppendDetails(const StringRef& str);
 
 //	Pin GetPin() const { return pin; }
 
 	static size_t AssignPorts(const char *pinNames, const StringRef& reply, PinUsedBy neededFor, size_t numPorts, IoPort * const ports[], const PinAccess access[]);
 	bool AssignPort(const char *pinName, const StringRef& reply, PinUsedBy neededFor, PinAccess access) { return Allocate(pinName, reply, neededFor, access); }
 
+	void AppendPinName(const StringRef& str) const;
 	bool IsValid() const { return pin != NoPin; }
 	bool GetInvert() const;
 	void SetInvert(bool pInvert);
@@ -83,6 +86,8 @@ public:
 
 	// Initialise static data
 	static void Init();
+
+	static void AppendPinNames(const StringRef& str, size_t numPorts, IoPort * const ports[]);
 
 	// Look up a pin name in the pins table
 	static bool LookupPinName(const char*pn, Pin& pin, bool& hardwareInverted);

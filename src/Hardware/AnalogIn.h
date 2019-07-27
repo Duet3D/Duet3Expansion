@@ -30,7 +30,7 @@ namespace AnalogIn
 	//bool DisableChannel(Pin pin);
 
 	// Enable an on-chip MCU temperature sensor
-	bool EnableTemperatureSensor(unsigned int sensorNumber, AnalogInCallbackFunction fn, CallbackParameter param, uint32_t ticksPerCall = 1, int adcnum = -1);
+	bool EnableTemperatureSensor(unsigned int sensorNumber, AnalogInCallbackFunction fn, CallbackParameter param, uint32_t ticksPerCall, unsigned int adcnum);
 
 	// Get the latest result form a channel. the channel must havew been enabled first.
 	uint16_t ReadChannel(AdcInput adcin);
