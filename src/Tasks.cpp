@@ -22,7 +22,7 @@ extern "C" char *sbrk(int i);
 constexpr unsigned int MainTaskStackWords = 2040;
 
 static Task<MainTaskStackWords> mainTask;
-//static Mutex spiMutex;
+static Mutex spiMutex;
 static Mutex mallocMutex;
 
 extern "C" void MainTask(void * pvParameters);
@@ -109,14 +109,6 @@ namespace Tasks
 		if (neverUsed != nullptr) { *neverUsed = stack_lwm - heapend; }
 	}
 
-	uint32_t GetNeverUsedRam()
-	{
-		uint32_t neverUsedRam;
-
-		GetHandlerStackUsage(nullptr, &neverUsedRam);
-		return neverUsedRam;
-	}
-
 #if 0
 	// Write data about the current task (if RTOS) or the system
 	void Diagnostics(MessageType mtype)
@@ -175,6 +167,18 @@ namespace Tasks
 	}
 #endif
 
+}
+
+uint32_t Tasks::GetNeverUsedRam()
+{
+	uint32_t neverUsedRam;
+	GetHandlerStackUsage(nullptr, &neverUsedRam);
+	return neverUsedRam;
+}
+
+Mutex *Tasks::GetSpiMutex()
+{
+	return &spiMutex;
 }
 
 static StaticTask_t xIdleTaskTCB;

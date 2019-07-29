@@ -10,11 +10,8 @@
 
 #if HAS_SMART_DRIVERS
 
-TmcDriverTemperatureSensor::TmcDriverTemperatureSensor(unsigned int sensorNum) : TemperatureSensor(sensorNum)
-{
-}
-
-void TmcDriverTemperatureSensor::Init()
+TmcDriverTemperatureSensor::TmcDriverTemperatureSensor(unsigned int sensorNum)
+	: TemperatureSensor(sensorNum, "TMC temperature warnings")
 {
 }
 

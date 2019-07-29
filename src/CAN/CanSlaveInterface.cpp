@@ -18,8 +18,55 @@ const unsigned int NumCanBuffers = 40;
 constexpr size_t CanReceiverTaskStackWords = 400;		// need quite a large stack to allow for calls to debugPrint, 400 is not enough
 static Task<CanReceiverTaskStackWords> canReceiverTask;
 
-static CanMessageBuffer *pendingMoves;
-static CanMessageBuffer *lastBuffer;			// only valid when pendingBuffers != nullptr
+class CanMessageQueue
+{
+public:
+	CanMessageQueue();
+	void AddMessage(CanMessageBuffer *buf);
+	CanMessageBuffer *GetMessage();
+
+private:
+	CanMessageBuffer *pendingMessages;
+	CanMessageBuffer *lastPendingMessage;			// only valid when pendingMessages != nullptr
+};
+
+CanMessageQueue::CanMessageQueue() : pendingMessages(nullptr) { }
+
+void CanMessageQueue::AddMessage(CanMessageBuffer *buf)
+{
+	buf->next = nullptr;
+	{
+		TaskCriticalSectionLocker lock;
+
+		if (pendingMessages == nullptr)
+		{
+			pendingMessages = lastPendingMessage = buf;
+		}
+		else
+		{
+			lastPendingMessage->next = buf;
+		}
+	}
+}
+
+// Fetch a message from the queue, or return nullptr if there are no messages
+CanMessageBuffer *CanMessageQueue::GetMessage()
+{
+	CanMessageBuffer *buf;
+	{
+		TaskCriticalSectionLocker lock;
+
+		buf = pendingMessages;
+		if (buf != nullptr)
+		{
+			pendingMessages = buf->next;
+		}
+	}
+	return buf;
+}
+
+static CanMessageQueue PendingMoves;
+static CanMessageQueue PendingCommands;
 
 namespace CanSlaveInterface
 {
@@ -139,7 +186,6 @@ extern "C" void CanReceiverLoop(void *)
 void CanSlaveInterface::Init()
 {
 	CanMessageBuffer::Init(NumCanBuffers);
-	pendingMoves = nullptr;
 
 	// Create the task that sends CAN messages
 	canReceiverTask.Create(CanReceiverLoop, "CanSender", nullptr, TaskPriority::CanReceiverPriority);
@@ -148,17 +194,7 @@ void CanSlaveInterface::Init()
 bool CanSlaveInterface::GetCanMove(CanMessageMovement& msg)
 {
 	// See if there is a movement message
-	CanMessageBuffer *buf;
-	{
-		TaskCriticalSectionLocker lock;
-
-		buf = pendingMoves;
-		if (buf != nullptr)
-		{
-			pendingMoves = buf->next;
-		}
-	}
-
+	CanMessageBuffer * buf = PendingMoves.GetMessage();
 	if (buf != nullptr)
 	{
 		msg = buf->msg.move;
@@ -166,6 +202,11 @@ bool CanSlaveInterface::GetCanMove(CanMessageMovement& msg)
 		return true;
 	}
 	return false;
+}
+
+CanMessageBuffer *CanSlaveInterface::GetCanCommand()
+{
+	return PendingCommands.GetMessage();
 }
 
 void CanSlaveInterface::ProcessReceivedMessage(CanMessageBuffer *buf)
@@ -183,25 +224,23 @@ void CanSlaveInterface::ProcessReceivedMessage(CanMessageBuffer *buf)
 // calling debugPrint here crashes the firmware even if we provide a large stack
 //		buf->msg.move.DebugPrint();
 		buf->msg.move.whenToExecute += StepTimer::GetLocalTimeOffset();
-		buf->next = nullptr;
-		{
-			TaskCriticalSectionLocker lock;
+		PendingMoves.AddMessage(buf);
+		break;
 
-			if (pendingMoves == nullptr)
-			{
-				pendingMoves = lastBuffer = buf;
-			}
-			else
-			{
-				lastBuffer->next = buf;
-			}
-		}
+	case CanMessageType::m307:
+	case CanMessageType::m308:
+	case CanMessageType::m906:
+	case CanMessageType::m950:
+		PendingCommands.AddMessage(buf);
 		break;
 
 	case CanMessageType::startup:
 	case CanMessageType::controlledStop:
 	case CanMessageType::emergencyStop:
-	case CanMessageType::m906:
+		debugPrintf("Unsupported CAN message type %u\n", (unsigned int)(buf->id.MsgType()));
+		CanMessageBuffer::Free(buf);
+		break;
+
 	default:
 		debugPrintf("Unknown CAN message type %u\n", (unsigned int)(buf->id.MsgType()));
 		CanMessageBuffer::Free(buf);

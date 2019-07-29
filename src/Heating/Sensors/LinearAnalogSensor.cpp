@@ -7,30 +7,49 @@
 
 #include "LinearAnalogSensor.h"
 #include "Platform.h"
-#include "CanMessageFormats.h"
+#include "CanMessageGenericParser.h"
 
 LinearAnalogSensor::LinearAnalogSensor(unsigned int sensorNum)
-	: TemperatureSensor(sensorNum), lowTemp(DefaultLowTemp), highTemp(DefaultHighTemp), filtered(true)
+	: SensorWithPort(sensorNum, "Linear analog"), lowTemp(DefaultLowTemp), highTemp(DefaultHighTemp), filtered(true), adcFilterChannel(-1)
 {
 	CalcDerivedParameters();
 }
 
-GCodeResult LinearAnalogSensor::Configure(const CanMessageM305& msg, const StringRef& reply)
+GCodeResult LinearAnalogSensor::Configure(const CanMessageGenericParser& parser, const StringRef& reply)
 {
-	M305_SET_IF_PRESENT(lowTemp, msg, L);
-	M305_SET_IF_PRESENT(highTemp, msg, H);
-	if (msg.GotParamF())
+	bool seen = false;
+	if (!ConfigurePort(parser, reply, PinAccess::readAnalog, seen))
 	{
-		filtered = msg.paramF >= 1;
+		return GCodeResult::error;
 	}
 
-	CalcDerivedParameters();
-	return GCodeResult::ok;
-}
+	if (parser.GetFloatParam('B', lowTemp))
+	{
+		seen = true;
+	}
+	if (parser.GetFloatParam('C', highTemp))
+	{
+		seen = true;
+	}
+	if (parser.GetBoolParam('F', filtered))
+	{
+		seen = true;
+	}
 
-void LinearAnalogSensor::Init()
-{
-	Platform::GetAdcFilter(thermistorInputChannel).Init(0);
+	if (seen)
+	{
+		CalcDerivedParameters();
+		if (adcFilterChannel >= 0)
+		{
+			Platform::GetAdcFilter(adcFilterChannel).Init(0);
+		}
+	}
+	else
+	{
+		CopyBasicDetails(reply);
+		reply.catf(", %sfiltered, range %.1f to %.1f", (filtered) ? "" : "un", (double)lowTemp, (double)highTemp);
+	}
+	return GCodeResult::ok;
 }
 
 TemperatureError LinearAnalogSensor::TryGetTemperature(float& t)

@@ -16,6 +16,7 @@ void AppMain();
 namespace Tasks
 {
 	uint32_t GetNeverUsedRam();
+	Mutex* GetSpiMutex();
 }
 
 #endif /* SRC_TASKS_H_ */

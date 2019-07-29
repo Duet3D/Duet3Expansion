@@ -68,6 +68,23 @@ namespace Platform
 	static AdcAveragingFilter<McuTempReadingsAveraged> tpFilter;
 	static AdcAveragingFilter<McuTempReadingsAveraged> tcFilter;
 
+#if HAS_SMART_DRIVERS
+	static DriversBitmap temperatureShutdownDrivers, temperatureWarningDrivers, shortToGroundDrivers;
+	static DriversBitmap openLoadADrivers, openLoadBDrivers, notOpenLoadADrivers, notOpenLoadBDrivers;
+	MillisTimer openLoadATimer, openLoadBTimer;
+	MillisTimer driversFanTimer;		// driver cooling fan timer
+	static uint8_t nextDriveToPoll;
+#endif
+
+#if HAS_SMART_DRIVERS && HAS_VOLTAGE_MONITOR
+	bool warnDriversNotPowered;
+#endif
+
+#if HAS_STALL_DETECT
+	DriversBitmap logOnStallDrivers, pauseOnStallDrivers, rehomeOnStallDrivers;
+	DriversBitmap stalledDrivers, stalledDriversToLog, stalledDriversToPause, stalledDriversToRehome;
+#endif
+
 	// Temperature sense stuff
 	#define NVM_TEMP_CAL_TLI_POS 0
 	#define NVM_TEMP_CAL_TLI_SIZE 8
@@ -239,6 +256,7 @@ void Platform::Init()
 
 	// Initialise stepper drivers
 	SmartDrivers::Init();
+	temperatureShutdownDrivers = temperatureWarningDrivers = shortToGroundDrivers = openLoadADrivers = openLoadBDrivers = notOpenLoadADrivers = notOpenLoadBDrivers = 0;
 
 	for (size_t i = 0; i < NumDrivers; ++i)
 	{
@@ -250,6 +268,21 @@ void Platform::Init()
 
 		SmartDrivers::SetMicrostepping(i, 16, true);
 	}
+
+#if HAS_STALL_DETECT
+	stalledDrivers = 0;
+	logOnStallDrivers = pauseOnStallDrivers = rehomeOnStallDrivers = 0;
+	stalledDriversToLog = stalledDriversToPause = stalledDriversToRehome = 0;
+#endif
+
+#if HAS_VOLTAGE_MONITOR
+	autoSaveEnabled = false;
+	autoSaveState = AutoSaveState::starting;
+#endif
+
+#if HAS_SMART_DRIVERS && HAS_VOLTAGE_MONITOR
+	warnDriversNotPowered = false;
+#endif
 
 	CanSlaveInterface::Init();
 
@@ -317,6 +350,7 @@ void Platform::Spin()
 	{
 		powered = false;
 		SmartDrivers::Spin(false);
+		++numUnderVoltageEvents;
 	}
 #else
 	if (!powered && voltsVin >= 10.5)
@@ -330,6 +364,120 @@ void Platform::Spin()
 		SmartDrivers::Spin(false);
 	}
 #endif
+	else
+	{
+		// Check one TMC driver for temperature warning or temperature shutdown
+		if (true) // (enableValues[nextDriveToPoll] >= 0)				// don't poll driver if it is flagged "no poll"
+		{
+			const uint32_t stat = SmartDrivers::GetAccumulatedStatus(nextDriveToPoll, 0);
+			const DriversBitmap mask = MakeBitmap<DriversBitmap>(nextDriveToPoll);
+			if (stat & TMC_RR_OT)
+			{
+				temperatureShutdownDrivers |= mask;
+			}
+			else if (stat & TMC_RR_OTPW)
+			{
+				temperatureWarningDrivers |= mask;
+			}
+			if (stat & TMC_RR_S2G)
+			{
+				shortToGroundDrivers |= mask;
+			}
+			else
+			{
+				shortToGroundDrivers &= ~mask;
+			}
+
+			// The driver often produces a transient open-load error, especially in stealthchop mode, so we require the condition to persist before we report it.
+			// Also, false open load indications persist when in standstill, if the phase has zero current in that position
+			if ((stat & TMC_RR_OLA) != 0)
+			{
+				if (!openLoadATimer.IsRunning())
+				{
+					openLoadATimer.Start();
+					openLoadADrivers = notOpenLoadADrivers = 0;
+				}
+				openLoadADrivers |= mask;
+			}
+			else if (openLoadATimer.IsRunning())
+			{
+				notOpenLoadADrivers |= mask;
+				if ((openLoadADrivers & ~notOpenLoadADrivers) == 0)
+				{
+					openLoadATimer.Stop();
+				}
+			}
+
+			if ((stat & TMC_RR_OLB) != 0)
+			{
+				if (!openLoadBTimer.IsRunning())
+				{
+					openLoadBTimer.Start();
+					openLoadBDrivers = notOpenLoadBDrivers = 0;
+				}
+				openLoadBDrivers |= mask;
+			}
+			else if (openLoadBTimer.IsRunning())
+			{
+				notOpenLoadBDrivers |= mask;
+				if ((openLoadBDrivers & ~notOpenLoadBDrivers) == 0)
+				{
+					openLoadBTimer.Stop();
+				}
+			}
+
+# if HAS_STALL_DETECT
+			if ((stat & TMC_RR_SG) != 0)
+			{
+				if ((stalledDrivers & mask) == 0)
+				{
+					// This stall is new so check whether we need to perform some action in response to the stall
+					if ((rehomeOnStallDrivers & mask) != 0)
+					{
+						stalledDriversToRehome |= mask;
+					}
+					else if ((pauseOnStallDrivers & mask) != 0)
+					{
+						stalledDriversToPause |= mask;
+					}
+					else if ((logOnStallDrivers & mask) != 0)
+					{
+						stalledDriversToLog |= mask;
+					}
+				}
+				stalledDrivers |= mask;
+			}
+			else
+			{
+				stalledDrivers &= ~mask;
+			}
+# endif
+		}
+
+# if 0 //HAS_STALL_DETECT
+		// Action any pause or rehome actions due to motor stalls. This may have to be done more than once.
+		if (stalledDriversToRehome != 0)
+		{
+			if (reprap.GetGCodes().ReHomeOnStall(stalledDriversToRehome))
+			{
+				stalledDriversToRehome = 0;
+			}
+		}
+		else if (stalledDriversToPause != 0)
+		{
+			if (reprap.GetGCodes().PauseOnStall(stalledDriversToPause))
+			{
+				stalledDriversToPause = 0;
+			}
+		}
+# endif
+		// Advance drive number ready for next time
+		++nextDriveToPoll;
+		if (nextDriveToPoll == MaxSmartDrivers)
+		{
+			nextDriveToPoll = 0;
+		}
+	}
 
 	// Update the Diag LED. Flash it quickly (8Hz) if we are not synced to the master, else flash in sync with the master (about 2Hz).
 	gpio_set_pin_level(DiagLedPin,
@@ -418,6 +566,20 @@ void Platform::Spin()
 	}
 }
 
+// Get the index of the averaging filter for an analog port
+int Platform::GetAveragingFilterIndex(const IoPort& port)
+{
+	for (size_t i = 0; i < NumThermistorFilters; ++i)
+	{
+		if (port.GetPin() == TempSensePins[i])
+		{
+			return (int)i;
+		}
+	}
+	return -1;
+}
+
+
 ThermistorAveragingFilter& Platform::GetAdcFilter(unsigned int filterNumber)
 {
 	return thermistorFilters[filterNumber];
@@ -456,7 +618,7 @@ void Platform::MessageF(MessageType type, const char *fmt, va_list vargs)
 	RawMessage((MessageType)(type & ~(ErrorMessageFlag | WarningMessageFlag)), formatString.c_str());
 }
 
-void MessageF(MessageType type, const char *fmt, ...)
+void Platform::MessageF(MessageType type, const char *fmt, ...)
 {
 	va_list vargs;
 	va_start(vargs, fmt);
@@ -568,6 +730,15 @@ uint8_t Platform::ReadBoardId()
 {
 	const uint8_t addr = ReadBoardSwitches() & 3;		// currently the top 2 bits are used to set motor current
 	return (addr == 0) ? 4 : addr;
+}
+
+// TMC driver temperatures
+float Platform::GetTmcDriversTemperature()
+{
+	const uint16_t mask = (1u << MaxSmartDrivers) - 1;
+	return ((temperatureShutdownDrivers & mask) != 0) ? 150.0
+			: ((temperatureWarningDrivers & mask) != 0) ? 100.0
+				: 0.0;
 }
 
 void Platform::Tick()

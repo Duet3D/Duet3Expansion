@@ -15,13 +15,14 @@ const size_t MaxHeaters = 6;
 const size_t MaxExtraHeaterProtections = 6;
 
 #define HAS_SMART_DRIVERS	1
+#define HAS_STALL_DETECT	1
 #define HAS_VREF_MONITOR	1
 #define HAS_12V_MONITOR		1
 #define HAS_CPU_TEMP_SENSOR	1
 
 #define SUPPORT_TMC51xx		1
 #define SUPPORT_DHT_SENSOR	0	//TEMP!!!
-#define SUPPORT_SPI_SENSORS	0	//TEMP!!!
+#define SUPPORT_SPI_SENSORS	1
 
 constexpr size_t NumDrivers = 3;
 constexpr size_t MaxSmartDrivers = 3;
@@ -47,7 +48,7 @@ Sercom * const SERCOM_TMC51xx = SERCOM0;
 
 PortGroup * const StepPio = &(PORT->Group[0]);		// the PIO that all the step pins are on
 constexpr Pin StepPins[NumDrivers] = { PortAPin(25), PortAPin(27), PortAPin(1) };
-constexpr Pin DirectionPins[NumDrivers] = { PortAPin(21), PortCPin(28), PortAPin(0) };
+constexpr Pin DirectionPins[NumDrivers] = { PortAPin(23), PortCPin(28), PortAPin(0) };
 
 constexpr Pin OutPins[NumOutputPorts] = { PortAPin(18), PortAPin(19), PortAPin(24), PortBPin(8), PortAPin(4), PortAPin(8), PortAPin(10), PortBPin(10), PortAPin(12) };
 
@@ -65,6 +66,10 @@ constexpr Pin TempSensePins[NumThermistorInputs] = { PortCPin(3), PortBPin(8), P
 constexpr Pin TachoInputPins[NumTachoInputs] = { PortAPin(13), PortBPin(19), PortCPin(21) };			// tachos are on output connectors 6-8
 constexpr Pin IoInPins[NumIoPorts] = { PortAPin(2), PortCPin(2), PortCPin(0), PortAPin(3), PortCPin(3), PortCPin(1) };
 constexpr Pin IoOutPins[NumIoPorts] = { PortAPin(16), PortBPin(16), PortBPin(20), PortAPin(5), PortBPin(0), PortAPin(20) };
+
+// Shared SPI
+Sercom * const SERCOM_SSPI = SERCOM6;
+
 constexpr Pin SpiCSPins[NumSpiSlaves] = { PortBPin(11), PortAPin(9), PortBPin(15), PortBPin(14) };
 
 // Table of pin functions that we are allowed to use

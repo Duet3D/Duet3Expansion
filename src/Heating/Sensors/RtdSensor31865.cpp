@@ -10,7 +10,7 @@
 #if SUPPORT_SPI_SENSORS
 
 #include "Platform.h"
-#include "CanMessageFormats.h"
+#include "CanMessageGenericParser.h"
 
 const uint32_t MAX31865_Frequency = 4000000;	// maximum for MAX31865 is also 5MHz
 
@@ -18,7 +18,7 @@ const uint32_t MAX31865_Frequency = 4000000;	// maximum for MAX31865 is also 5MH
 // If the inactive state of SCL is LOW (CPOL = 0) (in the case of the MAX31865, this is sampled on the falling edge of CS):
 // The MAX31865 changes data after the rising edge of CLK, and samples input data on the falling edge.
 // This requires NCPHA = 0.
-const uint8_t MAX31865_SpiMode = SPI_MODE_1;
+const SpiMode MAX31865_SpiMode = SpiMode::mode1;
 
 // Define the minimum interval between readings. The MAX31865 needs 62.5ms in 50Hz filter mode.
 const uint32_t MinimumReadInterval = 100;		// minimum interval between reads, in milliseconds
@@ -44,11 +44,19 @@ RtdSensor31865::RtdSensor31865(unsigned int sensorNum)
 }
 
 // Configure this temperature sensor
-GCodeResult RtdSensor31865::Configure(unsigned int heater, const CanMessageM305& msg, const StringRef& reply)
+GCodeResult RtdSensor31865::Configure(const CanMessageGenericParser& parser, const StringRef& reply)
 {
-	if (msg.GotParamF())
+	bool seen = false;
+	if (!ConfigurePort(parser, reply, seen))
 	{
-		if (msg.paramF == 60)
+		return GCodeResult::error;
+	}
+
+	uint8_t paramF;
+	if (parser.GetUintParam('F', paramF))
+	{
+		seen = true;
+		if (paramF == 60)
 		{
 			cr0 &= ~0x01;		// set 60Hz rejection
 		}
@@ -58,9 +66,11 @@ GCodeResult RtdSensor31865::Configure(unsigned int heater, const CanMessageM305&
 		}
 	}
 
-	if (msg.GotParamW())
+	uint8_t paramW;
+	if (parser.GetUintParam('W', paramW))
 	{
-		if (msg.paramW == 3)
+		seen = true;
+		if (paramW == 3)
 		{
 			cr0 |= 0x10;		// 3 wire configuration
 		}
@@ -70,38 +80,45 @@ GCodeResult RtdSensor31865::Configure(unsigned int heater, const CanMessageM305&
 		}
 	}
 
-	if (msg.GotParamR())
+	float paramR;
+	if (parser.GetFloatParam('R', paramR))
 	{
-		rref = (uint16_t)msg.paramR;
+		seen = true;
+		rref = (uint16_t)paramR;
 	}
 
-	return GCodeResult::ok;
-}
-
-// Perform the actual hardware initialization for attaching and using this device on the SPI hardware bus.
-void RtdSensor31865::Init()
-{
-	InitSpi();
-
-	TemperatureError rslt;
-	for (unsigned int i = 0; i < 3; ++i)		// try 3 times
+	if (seen)
 	{
-		rslt = TryInitRtd();
-		if (rslt == TemperatureError::success)
+		// Initialise the sensor
+		InitSpi();
+
+		TemperatureError rslt;
+		for (unsigned int i = 0; i < 3; ++i)		// try 3 times
 		{
-			break;
+			rslt = TryInitRtd();
+			if (rslt == TemperatureError::success)
+			{
+				break;
+			}
+			delay(MinimumReadInterval);
 		}
-		delay(MinimumReadInterval);
+
+		lastReadingTime = millis();
+		lastResult = rslt;
+		lastTemperature = 0.0;
+
+		if (rslt != TemperatureError::success)
+		{
+			Platform::MessageF(ErrorMessage, "Failed to initialise RTD: %s\n", TemperatureErrorString(rslt));
+		}
+
 	}
-
-	lastReadingTime = millis();
-	lastResult = rslt;
-	lastTemperature = 0.0;
-
-	if (rslt != TemperatureError::success)
+	else
 	{
-		Platform::MessageF(ErrorMessage, "Failed to initialise RTD: %s\n", TemperatureErrorString(rslt));
+		CopyBasicDetails(reply);
+		reply.catf(", %s wires, reject %dHz, reference resistor %u ohms", (cr0 & 0x10) ? "3" : "2/4", (cr0 & 0x01) ? 50 : 60, (unsigned int)rref);
 	}
+	return GCodeResult::ok;
 }
 
 // Try to initialise the RTD
@@ -113,6 +130,7 @@ TemperatureError RtdSensor31865::TryInitRtd() const
 
 	if (sts == TemperatureError::success)
 	{
+		delayMicroseconds(1);
 		static const uint8_t readData[2] = { 0x00, 0x00 };	// read register 0
 		sts = DoSpiTransaction(readData, ARRAY_SIZE(readData), rawVal);
 	}

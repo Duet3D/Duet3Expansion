@@ -10,12 +10,12 @@
 #if SUPPORT_SPI_SENSORS
 
 #include "Platform.h"
-#include "CanMessageFormats.h"
+#include "CanMessageGenericParser.h"
 
 const uint32_t MCP3204_Frequency = 1000000;		// maximum for MCP3204 is 1MHz @ 2.7V, will be slightly higher at 3.3V
 
 // The MCP3204 samples input data on the rising edge and changes the output data on the rising edge.
-const uint8_t MCP3204_SpiMode = SPI_MODE_0;
+const SpiMode MCP3204_SpiMode = SpiMode::mode0;
 
 // Define the minimum interval between readings
 const uint32_t MinimumReadInterval = 100;		// minimum interval between reads, in milliseconds
@@ -27,37 +27,43 @@ CurrentLoopTemperatureSensor::CurrentLoopTemperatureSensor(unsigned int sensorNu
 	CalcDerivedParameters();
 }
 
-// Initialise the linear ADC
-void CurrentLoopTemperatureSensor::Init()
-{
-	InitSpi();
-
-	for (unsigned int i = 0; i < 3; ++i)		// try 3 times
-	{
-		TryGetLinearAdcTemperature();
-		if (lastResult == TemperatureError::success)
-		{
-			break;
-		}
-		delay(MinimumReadInterval);
-	}
-
-	lastReadingTime = millis();
-
-	if (lastResult != TemperatureError::success)
-	{
-		Platform::MessageF(ErrorMessage, "Failed to initialise daughter board ADC: %s\n", TemperatureErrorString(lastResult));
-	}
-}
-
 // Configure this temperature sensor
-GCodeResult CurrentLoopTemperatureSensor::Configure(unsigned int heater, const CanMessageM305& msg, const StringRef& reply)
+GCodeResult CurrentLoopTemperatureSensor::Configure(const CanMessageGenericParser& parser, const StringRef& reply)
 {
-	M305_SET_IF_PRESENT(tempAt4mA, msg, L);
-	M305_SET_IF_PRESENT(tempAt20mA, msg, H);
-	M305_SET_IF_PRESENT(chipChannel, msg, C);				// note, float-to-int conversion happens here
-	M305_SET_IF_PRESENT(isDifferential, msg, D);
-	CalcDerivedParameters();
+	bool seen = parser.GetFloatParam('B', tempAt4mA);
+	seen = parser.GetFloatParam('C', tempAt20mA) || seen;
+	seen = parser.GetUintParam('W', chipChannel) || seen;
+	seen = parser.GetUintParam('D', isDifferential) || seen;
+
+	if (seen)
+	{
+		CalcDerivedParameters();
+
+		// Initialise the sensor
+		InitSpi();
+
+		for (unsigned int i = 0; i < 3; ++i)		// try 3 times
+		{
+			TryGetLinearAdcTemperature();
+			if (lastResult == TemperatureError::success)
+			{
+				break;
+			}
+			delay(MinimumReadInterval);
+		}
+
+		lastReadingTime = millis();
+
+		if (lastResult != TemperatureError::success)
+		{
+			Platform::MessageF(ErrorMessage, "Failed to initialise daughter board ADC: %s\n", TemperatureErrorString(lastResult));
+		}
+	}
+	else
+	{
+		CopyBasicDetails(reply);
+		reply.catf(", temperature range %.1f to %.1fC", (double)tempAt4mA, (double)tempAt20mA);
+	}
 	return GCodeResult::ok;
 }
 

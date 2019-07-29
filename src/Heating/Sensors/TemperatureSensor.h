@@ -6,35 +6,42 @@
 #include "GCodes/GCodeResult.h"
 #include <Hardware/IoPorts.h>
 
-class CanMessageM305;
+class CanMessageGenericParser;
 
 class TemperatureSensor
 {
 public:
-	TemperatureSensor(unsigned int sensorNum);
+	TemperatureSensor(unsigned int sensorNum, const char *type);
+
+	// Virtual destructor
+	virtual ~TemperatureSensor();
 
 	// Try to get a temperature reading
 	TemperatureError GetTemperature(float& t);
 
 	// Configure the sensor from M305 parameters.
-	// If we find any parameters, process them and return true. If an error occurs while processing them, set 'error' to true and write an error message to 'reply.
-	// if we find no relevant parameters, report the current parameters to 'reply' and return 'false'.
-	virtual GCodeResult Configure(const CanMessageM305& msg, const StringRef& reply);
+	// If we find any parameters, process them and return true. If an error occurs while processing them, return error and write an error message to 'reply.
+	// If we find no relevant parameters, report the current parameters to 'reply' and return ok.
+	virtual GCodeResult Configure(const CanMessageGenericParser& parser, const StringRef& reply);
 
-	// Initialise or re-initialise the temperature sensor
-	virtual void Init() = 0;
-
-	// Virtual destructor
-	virtual ~TemperatureSensor();
+	// Return the sensor type
+	const char *GetSensorType() const { return sensorType; }
 
 	// Return the sensor number
 	unsigned int GetSensorNumber() const { return sensorNumber; }
 
+	// Return the code for the most recent error
+	TemperatureError GetLastError() const { return lastError; }
+
+	// Copy the basic details to the reply buffer
+	void CopyBasicDetails(const StringRef& reply) const;
+
+	// Get/set the next sensor in the linked list
 	TemperatureSensor *GetNext() const { return next; }
 	void SetNext(TemperatureSensor *n) { next = n; }
 
 	// Factory method
-	static TemperatureSensor *Create(unsigned int sensorNum, const char *typeName);
+	static TemperatureSensor *Create(unsigned int sensorNum, const char *typeName, const StringRef& reply);
 
 protected:
 	// Try to get a temperature reading
@@ -45,7 +52,7 @@ protected:
 private:
 	TemperatureSensor *next;
 	unsigned int sensorNumber;
-	IoPort port;
+	const char * const sensorType;
 	TemperatureError lastError;
 };
 

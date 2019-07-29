@@ -8,7 +8,7 @@
 
 #include "Thermistor.h"
 #include "Platform.h"
-#include "CanMessageFormats.h"
+#include "CanMessageGenericParser.h"
 
 // The Steinhart-Hart equation for thermistor resistance is:
 // 1/T = A + B ln(R) + C [ln(R)]^3
@@ -20,48 +20,69 @@
 
 // Create an instance with default values
 Thermistor::Thermistor(unsigned int sensorNum, bool p_isPT1000)
-	: TemperatureSensor(sensorNum), isPT1000(p_isPT1000)
+	: SensorWithPort(sensorNum, (p_isPT1000) ? "PT1000" : "Thermistor"), adcFilterChannel(-1),
+	  r25(DefaultR25), beta(DefaultBeta), shC(DefaultShc), seriesR(DefaultThermistorSeriesR), isPT1000(p_isPT1000)
 #if !HAS_VREF_MONITOR
 		, adcLowOffset(0), adcHighOffset(0)
 #endif
 {
-//	thermistorInputChannel = (isPT1000) ? channel - FirstPT1000Channel : channel - FirstThermistorChannel;
-	seriesR = DefaultThermistorSeriesR;
-
-	// The following only apply to thermistors
-	r25 = DefaultThermistorR25;
-	beta = DefaultThermistorbeta;
-	shC = DefaultThermistorC;
 	CalcDerivedParameters();
 }
 
-void Thermistor::Init()
-{
-	Platform::GetAdcFilter(thermistorInputChannel).Init((1 << AdcBits) - 1);
-}
-
 // Configure the temperature sensor
-GCodeResult Thermistor::Configure(const CanMessageM305& msg, const StringRef& reply)
+GCodeResult Thermistor::Configure(const CanMessageGenericParser& parser, const StringRef& reply)
 {
-	M305_SET_IF_PRESENT(seriesR, msg, R);
+	bool seen = false;
+	if (!ConfigurePort(parser, reply, PinAccess::readAnalog, seen))
+	{
+		return GCodeResult::error;
+	}
+
+	seen = parser.GetFloatParam('R', seriesR) || seen;
 	if (!isPT1000)
 	{
-		M305_SET_IF_PRESENT(beta, msg, B);
-		M305_SET_IF_PRESENT(shC, msg, C);
-		M305_SET_IF_PRESENT(r25, msg, T);
-		CalcDerivedParameters();
+		seen = parser.GetFloatParam('B', beta) || seen;
+		if (seen)
+		{
+			shC = 0.0;						// if user changes B and doesn't define C, assume C=0
+		}
+		seen = parser.GetFloatParam('C', shC) || seen;
+		seen = parser.GetFloatParam('T', r25) || seen;
+		if (seen)
+		{
+			CalcDerivedParameters();
+		}
 	}
 
 #if !HAS_VREF_MONITOR
-	if (msg.GotParamL())
-	{
-		adcLowOffset = (int8_t)constrain<int>(msg.paramL, -120, 120);
-	}
-	if (msg.GotParamH())
-	{
-		adcHighOffset = (int8_t)constrain<int>(msg.paramH, -120, 120);
-	}
+	seen = parser.GetIntValue('L', adcLowOffset) || seen;
+	seen = parser.GetIntValue('H', adcHighOffset) || seen;
 #endif
+
+	if (seen)
+	{
+		adcFilterChannel = Platform::GetAveragingFilterIndex(port);
+		if (adcFilterChannel >= 0)
+		{
+			Platform::GetAdcFilter(adcFilterChannel).Init((1 << AdcBits) - 1);
+		}
+	}
+	else
+	{
+		CopyBasicDetails(reply);
+		if (isPT1000)
+		{
+			// For a PT1000 sensor, only the series resistor is configurable
+			reply.catf(", R:%.1f", (double)seriesR);
+		}
+		else
+		{
+			reply.catf(", T:%.1f B:%.1f C:%.2e R:%.1f", (double)r25, (double)beta, (double)shC, (double)seriesR);
+		}
+#if !HAS_VREF_MONITOR
+		reply.catf(" L:%d H:%d", adcLowOffset, adcHighOffset);
+#endif
+	}
 
 	return GCodeResult::ok;
 }
@@ -69,7 +90,7 @@ GCodeResult Thermistor::Configure(const CanMessageM305& msg, const StringRef& re
 // Get the temperature
 TemperatureError Thermistor::TryGetTemperature(float& t)
 {
-	const volatile ThermistorAveragingFilter& tempFilter = Platform::GetAdcFilter(thermistorInputChannel);
+	const volatile ThermistorAveragingFilter& tempFilter = Platform::GetAdcFilter(adcFilterChannel);
 
 #if HAS_VREF_MONITOR
 	// Use the actual VSSA and VREF values read by the ADC

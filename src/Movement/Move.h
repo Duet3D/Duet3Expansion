@@ -44,12 +44,8 @@ public:
 	void Interrupt() __attribute__ ((hot));							// The hardware's (i.e. platform's)  interrupt should call this.
 	bool AllMovesAreFinished();										// Is the look-ahead ring empty?  Stops more moves being added as well.
 	void DoLookAhead() __attribute__ ((hot));						// Run the look-ahead procedure
-	void SetNewPosition(const float positionNow[NumDrivers], bool doBedCompensation); // Set the current position to be this
-	void SetLiveCoordinates(const float coords[NumDrivers]);			// Force the live coordinates (see above) to be these
-	void ResetExtruderPositions();									// Resets the extrusion amounts of the live coordinates
 
 	void Diagnostics(MessageType mtype);							// Report useful stuff
-	void RecordLookaheadError() { ++numLookaheadErrors; }			// Record a lookahead error
 
 	// Kinematics and related functions
 	Kinematics& GetKinematics() const { return *kinematics; }
@@ -73,10 +69,6 @@ public:
 	void SetIdleTimeout(float timeout);												// Set the idle timeout in seconds
 
 	void PrintCurrentDda() const;													// For debugging
-
-#if HAS_VOLTAGE_MONITOR || HAS_STALL_DETECT
-	bool LowPowerOrStallPause(RestorePoint& rp);									// Pause the print immediately, returning true if we were able to
-#endif
 
 	bool NoLiveMovement() const;													// Is a move running, or are there any queued?
 
@@ -118,13 +110,8 @@ private:
 
 	unsigned int numLookaheadUnderruns;					// How many times we have run out of moves to adjust during lookahead
 	unsigned int numPrepareUnderruns;					// How many times we wanted a new move but there were only un-prepared moves in the queue
-	unsigned int numLookaheadErrors;					// How many times our lookahead algorithm failed
 	unsigned int idleCount;								// The number of times Spin was called and had no new moves to process
 	uint32_t longestGcodeWaitInterval;					// the longest we had to wait for a new GCode
-
-	volatile float liveCoordinates[NumDrivers];				// The endpoint that the machine moved to in the last completed move
-	volatile bool liveCoordinatesValid;					// True if the XYZ live coordinates are reliable (the extruder ones always are)
-	volatile int32_t liveEndPoints[NumDrivers];				// The XYZ endpoints of the last completed move in motor coordinates
 
 	uint32_t idleTimeout;								// How long we wait with no activity before we reduce motor currents to idle, in milliseconds
 	uint32_t lastStateChangeTime;						// The approximate time at which the state last changed, except we don't record timing->idle

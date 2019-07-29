@@ -185,6 +185,8 @@ namespace AnalogOut
 					hri_tcc_write_CC_CC_bf(tccdev, output, cc);
 
 					hri_tcc_set_CTRLA_ENABLE_bit(tccdev);
+					hri_tcc_wait_for_sync(tccdev, TCC_SYNCBUSY_MASK);
+					hri_tcc_write_COUNT_reg(tccdev, 0);							// if we don't do this then there may be a 5 second delay before PWM starts
 					gpio_set_pin_function(pin, peri);
 				}
 				else
@@ -194,6 +196,7 @@ namespace AnalogOut
 					hri_tcc_write_PER_PER_bf(tccdev, tccTop[device]);
 					hri_tcc_write_CCBUF_CCBUF_bf(tccdev, output, cc);
 					hri_tcc_write_CC_CC_bf(tccdev, output, cc);
+					hri_tcc_write_COUNT_reg(tccdev, 0);
 				}
 				tccFreq[device] = freq;
 			}

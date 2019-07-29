@@ -66,6 +66,8 @@ enum class EndStopInputType : unsigned int
 	numInputTypes = 5
 };
 
+class IoPort;
+
 namespace Platform
 {
 	// These would ideally be private
@@ -82,6 +84,7 @@ namespace Platform
 	void MessageF(MessageType type, const char *fmt, va_list vargs);
 	void LogError(ErrorCode e);
 	bool Debug(Module module);
+
 	void SetDriversIdle();
 	float DriveStepsPerUnit(size_t drive);
 	const float *GetDriveStepsPerUnit();
@@ -121,6 +124,7 @@ namespace Platform
 	void DisableAllDrives();
 	void SetDriversIdle();
 
+	int GetAveragingFilterIndex(const IoPort&);
 	ThermistorAveragingFilter& GetAdcFilter(unsigned int filterNumber);
 	void GetMcuTemperatures(float& minTemp, float& currentTemp, float& maxTemp);
 	float GetTmcDriversTemperature();

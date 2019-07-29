@@ -5,6 +5,7 @@
 #include "RtdSensor31865.h"
 #include "CurrentLoopTemperatureSensor.h"
 #include "LinearAnalogSensor.h"
+#include "CanMessageGenericParser.h"
 
 #if HAS_CPU_TEMP_SENSOR
 #include "CpuTemperatureSensor.h"
@@ -19,18 +20,12 @@
 #endif
 
 // Constructor
-TemperatureSensor::TemperatureSensor(unsigned int sensorNum)
-	: next(nullptr), sensorNumber(sensorNum), lastError(TemperatureError::success) {}
+TemperatureSensor::TemperatureSensor(unsigned int sensorNum, const char *t)
+	: next(nullptr), sensorNumber(sensorNum), sensorType(t), lastError(TemperatureError::success) {}
 
 // Virtual destructor
 TemperatureSensor::~TemperatureSensor()
 {
-}
-
-// Default config function for sensors with nothing to configure
-GCodeResult TemperatureSensor::Configure(const CanMessageM305& msg, const StringRef& reply)
-{
-	return GCodeResult::ok;
 }
 
 // Try to get a temperature reading
@@ -44,10 +39,27 @@ TemperatureError TemperatureSensor::GetTemperature(float& t)
 	return rslt;
 }
 
-// Factory method
-TemperatureSensor *TemperatureSensor::Create(unsigned int sensorNum, const char *typeName)
+// Default implementation of Configure, for sensors that have no configurable parameters
+GCodeResult TemperatureSensor::Configure(const CanMessageGenericParser& parser, const StringRef& reply)
 {
-	TemperatureSensor *ts = nullptr;
+	if (!parser.HasParameter('Y'))
+	{
+		// No parameters were provided, so report the current configuration
+		CopyBasicDetails(reply);
+	}
+	return GCodeResult::ok;
+}
+
+void TemperatureSensor::CopyBasicDetails(const StringRef& reply) const
+{
+	reply.printf("Sensor %u", sensorNumber);
+	reply.catf(" type %s, last error: %s", sensorType, TemperatureErrorString(lastError));
+}
+
+// Factory method
+TemperatureSensor *TemperatureSensor::Create(unsigned int sensorNum, const char *typeName, const StringRef& reply)
+{
+	TemperatureSensor *ts;
 	if (ReducedStringEquals(typeName, Thermistor::TypeNameThermistor))
 	{
 		ts = new Thermistor(sensorNum, false);
@@ -100,11 +112,12 @@ TemperatureSensor *TemperatureSensor::Create(unsigned int sensorNum, const char 
 		ts = new TmcDriverTemperatureSensor(sensorNum);
 	}
 #endif
-
-	if (ts != nullptr)
+	else
 	{
-		ts->Init();
+		ts = nullptr;
+		reply.printf("Unknown sensor type name \"%s\"", typeName);
 	}
+
 	return ts;
 }
 

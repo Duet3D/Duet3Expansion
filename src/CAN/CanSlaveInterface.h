@@ -11,11 +11,13 @@
 #include "RepRapFirmware.h"
 
 struct CanMessageMovement;
+class CanMessageBuffer;
 
 namespace CanSlaveInterface
 {
 	void Init();
 	bool GetCanMove(CanMessageMovement& move);
+	CanMessageBuffer *GetCanCommand();
 	void MoveStoppedByZProbe();
 }
 

@@ -8,15 +8,14 @@
 #ifndef SRC_HEATING_SENSORS_LINEARANALOGSENSOR_H_
 #define SRC_HEATING_SENSORS_LINEARANALOGSENSOR_H_
 
-#include "TemperatureSensor.h"
+#include "SensorWithPort.h"
 
-class LinearAnalogSensor : public TemperatureSensor
+class LinearAnalogSensor : public SensorWithPort
 {
 public:
 	LinearAnalogSensor(unsigned int sensorNum);
 
-	GCodeResult Configure(const CanMessageM305& msg, const StringRef& reply) override;
-	void Init() override;
+	GCodeResult Configure(const CanMessageGenericParser& parser, const StringRef& reply) override;
 
 	static constexpr const char *TypeName = "linearanalog";
 
@@ -32,6 +31,7 @@ private:
 	bool filtered;
 
 	// Derived parameters
+	int adcFilterChannel;
 	float linearIncreasePerCount;
 
 	static constexpr float DefaultLowTemp = 0.0;

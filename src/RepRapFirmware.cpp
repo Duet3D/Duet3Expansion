@@ -9,6 +9,7 @@
 #include "Movement/Move.h"
 #include "GCodes/GCodes.h"
 #include "Platform.h"
+#include "CommandProcessing/CommandProcessor.h"
 #include "RTOSIface/RTOSIface.h"
 
 Move *moveInstance;
@@ -30,6 +31,7 @@ namespace RepRap
 	{
 		Platform::Spin();
 		GCodes::Spin();
+		CommandProcessor::Spin();
 		moveInstance->Spin();
 //		//RTOSIface::Yield();
 //		delay(1);
@@ -70,6 +72,32 @@ void debugPrintf(const char* fmt, ...)
 	va_start(vargs, fmt);
 	Platform::MessageF(DebugMessage, fmt, vargs);
 	va_end(vargs);
+}
+
+// class MillisTimer members
+
+// Start or restart the timer
+void MillisTimer::Start()
+{
+	whenStarted = millis();
+	running = true;
+}
+
+// Check whether the timer is running and a timeout has expired, but don't stop it
+bool MillisTimer::Check(uint32_t timeoutMillis) const
+{
+	return running && millis() - whenStarted >= timeoutMillis;
+}
+
+// Check whether a timeout has expired and stop the timer if it has, else leave it running if it was running
+bool MillisTimer::CheckAndStop(uint32_t timeoutMillis)
+{
+	const bool ret = Check(timeoutMillis);
+	if (ret)
+	{
+		running = false;
+	}
+	return ret;
 }
 
 // End

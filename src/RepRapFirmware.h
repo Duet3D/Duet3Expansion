@@ -34,15 +34,8 @@ class Move;
 class DDA;
 class DriveMovement;
 class Kinematics;
-class PID;
 class TemperatureSensor;
-class OutputBuffer;
-class OutputStack;
 class FilamentMonitor;
-
-#if SUPPORT_IOBITS
-class PortControl;
-#endif
 
 // These three are implemented in Tasks.cpp
 void delay(uint32_t ms);
@@ -160,14 +153,28 @@ template<class T> inline constexpr T constrain(T val, T vmin, T vmax)
 	return max<T>(min<T>(val, vmax), vmin);
 }
 
+// A simple milliseconds timer class
+class MillisTimer
+{
+public:
+	MillisTimer() { running = false; }
+	void Start();
+	void Stop() { running = false; }
+	bool Check(uint32_t timeoutMillis) const;
+	bool CheckAndStop(uint32_t timeoutMillis);
+	bool IsRunning() const { return running; }
+
+private:
+	uint32_t whenStarted;
+	bool running;
+};
+
 constexpr size_t ScratchStringLength = 220;							// standard length of a scratch string, enough to print delta parameters to
 constexpr size_t ShortScratchStringLength = 50;
 
 constexpr size_t XYZ_AXES = 3;										// The number of Cartesian axes
-constexpr size_t X_AXIS = 0, Y_AXIS = 1, Z_AXIS = 2, E0_AXIS = 3;	// The indices of the Cartesian axes in drive arrays
-constexpr size_t CoreXYU_AXES = 5;									// The number of axes in a CoreXYU machine (there is a hidden V axis)
-constexpr size_t CoreXYUV_AXES = 5;									// The number of axes in a CoreXYUV machine
-constexpr size_t U_AXIS = 3, V_AXIS = 4;							// The indices of the U and V motors in a CoreXYU machine (needed by Platform)
+constexpr size_t X_AXIS = 0, Y_AXIS = 1, Z_AXIS = 2;				// The indices of the Cartesian axes in drive arrays
+constexpr size_t U_AXIS = 3;										// The assumed index of the U motor when aligning a rotary axis
 
 // Common conversion factors
 constexpr unsigned int MinutesToSeconds = 60;

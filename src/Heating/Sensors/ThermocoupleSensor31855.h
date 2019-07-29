@@ -16,7 +16,7 @@ class ThermocoupleSensor31855 : public SpiTemperatureSensor
 {
 public:
 	ThermocoupleSensor31855(unsigned int sensorNum);
-	void Init() override;
+	GCodeResult Configure(const CanMessageGenericParser& parser, const StringRef& reply) override;
 
 	static constexpr const char *TypeName = "thermocouplemax31855";
 

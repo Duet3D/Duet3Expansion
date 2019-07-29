@@ -15,6 +15,7 @@ const size_t MaxHeaters = 6;
 const size_t MaxExtraHeaterProtections = 6;
 
 #define HAS_SMART_DRIVERS	1
+#define HAS_STALL_DETECT	1
 #define HAS_VREF_MONITOR	1
 #define HAS_12V_MONITOR		0
 #define HAS_CPU_TEMP_SENSOR	1

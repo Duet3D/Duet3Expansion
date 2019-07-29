@@ -11,6 +11,7 @@
 
 #include "Platform.h"
 #include "CanMessageFormats.h"
+#include "CanMessageGenericParser.h"
 
 const uint32_t MAX31856_Frequency = 4000000;	// maximum for MAX31865 is 5MHz
 
@@ -21,7 +22,7 @@ const uint8_t TypeK = 3;
 // If the inactive state of SCL is LOW (CPOL = 0): (in the case of the MAX31865, this is sampled on the falling edge of CS):
 // The MAX31856 changes data after the rising edge of CLK, and samples input data on the falling edge.
 // This requires NCPHA = 0.
-const uint8_t MAX31856_SpiMode = SPI_MODE_1;
+const SpiMode MAX31856_SpiMode = SpiMode::mode1;
 
 // Define the minimum interval between readings
 const uint32_t MinimumReadInterval = 100;		// minimum interval between reads, in milliseconds
@@ -62,11 +63,19 @@ ThermocoupleSensor31856::ThermocoupleSensor31856(unsigned int sensorNum)
 }
 
 // Configure this temperature sensor
-GCodeResult ThermocoupleSensor31856::Configure(unsigned int heater, const CanMessageM305& msg, const StringRef& reply)
+GCodeResult ThermocoupleSensor31856::Configure(const CanMessageGenericParser& parser, const StringRef& reply)
 {
-	if (msg.GotParamF())
+	bool seen = false;
+	if (!ConfigurePort(parser, reply, seen))
 	{
-		if (msg.paramF == 60)
+		return GCodeResult::error;
+	}
+
+	uint8_t paramF;
+	if (parser.GetUintParam('F', paramF))
+	{
+		seen = true;
+		if (paramF == 60)
 		{
 			cr0 &= ~0x01;		// set 60Hz rejection
 		}
@@ -76,10 +85,12 @@ GCodeResult ThermocoupleSensor31856::Configure(unsigned int heater, const CanMes
 		}
 	}
 
-	if (msg.GotParamT())
+	char paramK;
+	if (parser.GetCharParam('K', paramK))
 	{
+		seen = true;
 		const char *p;
-		if ((p = strchr(TypeLetters, toupper((char)msg.paramT))) != nullptr)
+		if ((p = strchr(TypeLetters, toupper(paramK))) != nullptr)
 		{
 			thermocoupleType = p - TypeLetters;
 		}
@@ -89,33 +100,39 @@ GCodeResult ThermocoupleSensor31856::Configure(unsigned int heater, const CanMes
 			return GCodeResult::error;
 		}
 	}
-	return GCodeResult::ok;
-}
 
-// Perform the actual hardware initialization for attaching and using this device on the SPI hardware bus.
-void ThermocoupleSensor31856::Init()
-{
-	InitSpi();
-
-	TemperatureError rslt;
-	for (unsigned int i = 0; i < 3; ++i)		// try 3 times
+	if (seen)
 	{
-		rslt = TryInitThermocouple();
-		if (rslt == TemperatureError::success)
+		// Initialise the sensor
+		InitSpi();
+
+		TemperatureError rslt;
+		for (unsigned int i = 0; i < 3; ++i)		// try 3 times
 		{
-			break;
+			rslt = TryInitThermocouple();
+			if (rslt == TemperatureError::success)
+			{
+				break;
+			}
+			delay(MinimumReadInterval);
 		}
-		delay(MinimumReadInterval);
+
+		lastReadingTime = millis();
+		lastResult = rslt;
+		lastTemperature = 0.0;
+
+		if (rslt != TemperatureError::success)
+		{
+			Platform::MessageF(ErrorMessage, "Failed to initialise thermocouple: %s\n", TemperatureErrorString(rslt));
+		}
+
 	}
-
-	lastReadingTime = millis();
-	lastResult = rslt;
-	lastTemperature = 0.0;
-
-	if (rslt != TemperatureError::success)
+	else
 	{
-		Platform::MessageF(ErrorMessage, "Failed to initialise thermocouple: %s\n", TemperatureErrorString(rslt));
+		CopyBasicDetails(reply);
+		reply.catf(", thermocouple type %c, reject %dHz", TypeLetters[thermocoupleType], (cr0 & 0x01) ? 50 : 60);
 	}
+	return GCodeResult::ok;
 }
 
 TemperatureError ThermocoupleSensor31856::TryInitThermocouple() const

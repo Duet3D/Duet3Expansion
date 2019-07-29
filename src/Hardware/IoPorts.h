@@ -67,7 +67,7 @@ public:
 	void Release();
 	void AppendDetails(const StringRef& str);
 
-//	Pin GetPin() const { return pin; }
+	Pin GetPin() const { return pin; }
 
 	static size_t AssignPorts(const char *pinNames, const StringRef& reply, PinUsedBy neededFor, size_t numPorts, IoPort * const ports[], const PinAccess access[]);
 	bool AssignPort(const char *pinName, const StringRef& reply, PinUsedBy neededFor, PinAccess access) { return Allocate(pinName, reply, neededFor, access); }
