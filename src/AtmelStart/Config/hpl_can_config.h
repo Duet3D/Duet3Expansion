@@ -182,7 +182,7 @@
 // <7=> 64 byte data field.
 // <id> can_txesc_tbds
 #ifndef CONF_CAN1_TXESC_TBDS
-#define CONF_CAN1_TXESC_TBDS 0
+#define CONF_CAN1_TXESC_TBDS 7
 #endif
 
 /* Bytes size for CAN Transmit Buffer element, plus 8 bytes for R0,R1 */

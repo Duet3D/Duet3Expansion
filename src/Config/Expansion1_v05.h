@@ -31,8 +31,6 @@ constexpr size_t MaxAxes = 3;			//TEMP we won't need this
 
 constexpr size_t NumOutputPorts = 9;
 constexpr size_t NumIoPorts = 6;
-constexpr size_t NumSpiSlaves = 4;
-constexpr size_t MaxSpiTempSensors = NumSpiSlaves;
 constexpr size_t NumTachoInputs = 3;
 constexpr size_t NumThermistorInputs = 3;
 constexpr size_t NumAddressBits = 4;
@@ -64,7 +62,6 @@ constexpr Pin TempSensePins[NumThermistorInputs] = { PortBPin(3), PortBPin(1), P
 constexpr Pin TachoInputPins[NumTachoInputs] = { PortAPin(13), PortBPin(20), PortBPin(21) };			// tachos are on output connectors 3-5
 constexpr Pin IoInPins[NumIoPorts] = { PortAPin(3), PortCPin(3), PortCPin(1), PortAPin(2), PortCPin(2), PortCPin(0) };
 constexpr Pin IoOutPins[NumIoPorts] = { PortAPin(5), PortBPin(7), PortAPin(20), PortAPin(6), PortBPin(9), PortBPin(5) };
-constexpr Pin SpiCSPins[NumSpiSlaves] = { PortBPin(11), PortAPin(9), PortAPin(7), PortBPin(14) };
 
 // Table of pin functions that we are allowed to use
 constexpr uint8_t Nx = 0xFF;

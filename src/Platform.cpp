@@ -18,6 +18,8 @@
 #include "Movement/StepTimer.h"
 #include "CAN/CanSlaveInterface.h"
 #include "Tasks.h"
+#include "Heating/Heat.h"
+#include "Heating/Sensors/TemperatureSensor.h"
 
 static bool txBusy = false;
 
@@ -195,12 +197,18 @@ void Platform::Init()
 	for (size_t pin = 0; pin < ARRAY_SIZE(PinTable); ++pin)
 	{
 		const PinDescription& p = PinTable[pin];
-		if (   p.pinNames != nullptr
-			&& StringStartsWith(p.pinNames, "out")
-			&& strlen(p.pinNames) < 5							// don't set "outN.tach" pins to outputs
-		   )
+		if (p.pinNames != nullptr)
 		{
-			IoPort::SetPinMode(pin, OUTPUT_LOW);
+			if (   StringStartsWith(p.pinNames, "out")
+				&& strlen(p.pinNames) < 5							// don't set "outN.tach" pins to outputs
+		      )
+			{
+				IoPort::SetPinMode(pin, OUTPUT_LOW);				// turn off heaters and fans (although this will turn on PWM fans)
+			}
+			else if (StringStartsWith(p.pinNames, "spi.cs"))
+			{
+				IoPort::SetPinMode(pin, INPUT_PULLUP);				// ensure SPI CS lines are high so that temp daughter boards don't drive the bus before they are configured
+			}
 		}
 	}
 
@@ -534,17 +542,30 @@ void Platform::Spin()
 			}
 		}
 
+		static unsigned int nextSensor = 0;
+
+		TemperatureSensor *ts = Heat::GetSensorAtOrAbove(nextSensor);
+		if (ts != nullptr)
+		{
+			float temp;
+			TemperatureError err = ts->GetTemperature(temp);
+			debugPrintf("Sensor %u err %u temp %.1f", ts->GetSensorNumber(), (unsigned int)err, (double)temp);
+			nextSensor = ts->GetSensorNumber() + 1;
+		}
+		else
+		{
+			nextSensor = 0;
 #if 0
-		String<100> status;
-		SmartDrivers::AppendDriverStatus(2, status.GetRef());
-		debugPrintf("%s", status.c_str());
+			String<100> status;
+			SmartDrivers::AppendDriverStatus(2, status.GetRef());
+			debugPrintf("%s", status.c_str());
 #elif 0
-		moveInstance->Diagnostics(AuxMessage);
+			moveInstance->Diagnostics(AuxMessage);
 #elif 0
 #else
-		uint32_t conversionsStarted, conversionsCompleted;
-		AnalogIn::GetDebugInfo(conversionsStarted, conversionsCompleted);
-		debugPrintf(
+//			uint32_t conversionsStarted, conversionsCompleted;
+//			AnalogIn::GetDebugInfo(conversionsStarted, conversionsCompleted);
+			debugPrintf(
 //							"Conv %u %u"
 						"Addr %u"
 #if HAS_12V_MONITOR
@@ -569,9 +590,9 @@ void Platform::Spin()
 //						, tp_result, tc_result
 						, SmartDrivers::GetAccumulatedStatus(0, 0), SmartDrivers::GetAccumulatedStatus(1, 0), SmartDrivers::GetAccumulatedStatus(2, 0)
 //							, SmartDrivers::GetLiveStatus(0), SmartDrivers::GetLiveStatus(1), SmartDrivers::GetLiveStatus(2)
-					);
+					   );
 #endif
-
+		}
 	}
 }
 

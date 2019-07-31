@@ -13,7 +13,7 @@
 // Result codes returned by temperature sensor drivers
 enum class TemperatureError : uint8_t
 {
-	success,
+	success = 0,
 	shortCircuit,
 	shortToVcc,
 	shortToGround,

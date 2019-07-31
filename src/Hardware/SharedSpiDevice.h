@@ -23,7 +23,6 @@ public:
 	SharedSpiDevice(uint32_t clockFreq, SpiMode m, bool polarity);
 
 	void InitMaster();
-	void SetupMaster() const;
 	void Select() const;
 	void Deselect() const;
 	bool TransceivePacket(const uint8_t *tx_data, uint8_t *rx_data, size_t len) const;

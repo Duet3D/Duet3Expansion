@@ -18,25 +18,24 @@ constexpr uint32_t SpiTimeout = 10000;
 
 static void InitSpi()
 {
-	// Temporary fixed pin assignment
+	// Enable the clock
+	hri_gclk_write_PCHCTRL_reg(GCLK, SERCOM6_GCLK_ID_CORE, CONF_GCLK_SERCOM6_CORE_SRC | (1 << GCLK_PCHCTRL_CHEN_Pos));
+	hri_gclk_write_PCHCTRL_reg(GCLK, SERCOM6_GCLK_ID_SLOW, CONF_GCLK_SERCOM6_SLOW_SRC | (1 << GCLK_PCHCTRL_CHEN_Pos));
+	hri_mclk_set_APBDMASK_SERCOM6_bit(MCLK);
+
+	// Set the pin functions - temporary fixed pin assignment
 	gpio_set_pin_function(PortCPin(16), PINMUX_PC16C_SERCOM6_PAD0);		// MOSI
 	gpio_set_pin_function(PortCPin(17), PINMUX_PC17C_SERCOM6_PAD1);		// SCLK
 	gpio_set_pin_function(PortCPin(19), PINMUX_PC19C_SERCOM6_PAD3);		// MISO
 
-	// Enable the clock
-	hri_gclk_write_PCHCTRL_reg(GCLK, SERCOM0_GCLK_ID_CORE, CONF_GCLK_SERCOM0_CORE_SRC | (1 << GCLK_PCHCTRL_CHEN_Pos));
-	hri_gclk_write_PCHCTRL_reg(GCLK, SERCOM0_GCLK_ID_SLOW, CONF_GCLK_SERCOM0_SLOW_SRC | (1 << GCLK_PCHCTRL_CHEN_Pos));
-	hri_mclk_set_APBAMASK_SERCOM0_bit(MCLK);
-
 	// Set up the SERCOM
-	const uint32_t regCtrlA = SERCOM_SPI_CTRLA_MODE(3) | SERCOM_SPI_CTRLA_DIPO(3) | SERCOM_SPI_CTRLA_DOPO(0) | SERCOM_SPI_CTRLA_FORM(0)
-							| SERCOM_SPI_CTRLA_CPOL | SERCOM_SPI_CTRLA_CPHA;
+	const uint32_t regCtrlA = SERCOM_SPI_CTRLA_MODE(3) | SERCOM_SPI_CTRLA_DIPO(3) | SERCOM_SPI_CTRLA_DOPO(0) | SERCOM_SPI_CTRLA_FORM(0);
 	const uint32_t regCtrlB = 0;											// 8 bits, slave select disabled, receiver disabled for now
 	const uint32_t regCtrlC = 0;											// not 32-bit mode
 
 	if (!hri_sercomusart_is_syncing(SERCOM_SSPI, SERCOM_USART_SYNCBUSY_SWRST))
 	{
-		uint32_t mode = regCtrlA & SERCOM_USART_CTRLA_MODE_Msk;
+		const uint32_t mode = regCtrlA & SERCOM_USART_CTRLA_MODE_Msk;
 		if (hri_sercomusart_get_CTRLA_reg(SERCOM_SSPI, SERCOM_USART_CTRLA_ENABLE))
 		{
 			hri_sercomusart_clear_CTRLA_ENABLE_bit(SERCOM_SSPI);
@@ -49,7 +48,7 @@ static void InitSpi()
 	hri_sercomusart_write_CTRLA_reg(SERCOM_SSPI, regCtrlA);
 	hri_sercomusart_write_CTRLB_reg(SERCOM_SSPI, regCtrlB);
 	hri_sercomusart_write_CTRLC_reg(SERCOM_SSPI, regCtrlC);
-	hri_sercomusart_write_BAUD_reg(SERCOM_SSPI, SERCOM_SPI_BAUD_BAUD(CONF_GCLK_SERCOM0_CORE_FREQUENCY/(2 * DefaultSharedSpiClockFrequency) - 1));
+	hri_sercomusart_write_BAUD_reg(SERCOM_SSPI, SERCOM_SPI_BAUD_BAUD(CONF_GCLK_SERCOM6_CORE_FREQUENCY/(2 * DefaultSharedSpiClockFrequency) - 1));
 	hri_sercomusart_write_DBGCTRL_reg(SERCOM_SSPI, SERCOM_I2CM_DBGCTRL_DBGSTOP);			// baud rate generator is stopped when CPU halted by debugger
 
 #if 0	// if using DMA
@@ -70,19 +69,19 @@ static void InitSpi()
 	DmacSetInterruptCallbacks(SspiRxDmaChannel, RxDmaCompleteCallback, nullptr, 0U);
 #endif
 
-	SERCOM_SSPI->SPI.CTRLA.bit.ENABLE = 1;		// keep the SPI enabled all the time so that the SPCLK line is driven
+	SERCOM_SSPI->SPI.CTRLB.bit.RXEN = 1;
 }
 
 static inline void DisableSpi()
 {
-	// Don't disable the whole SPI between transmissions because that causes the clock output to go high impedance
-	SERCOM_SSPI->SPI.CTRLB.bit.RXEN = 0;
+	SERCOM_SSPI->SPI.CTRLA.bit.ENABLE = 0;
+	hri_sercomusart_wait_for_sync(SERCOM_SSPI, SERCOM_USART_CTRLA_ENABLE);
 }
 
 static inline void EnableSpi()
 {
-	SERCOM_SSPI->SPI.CTRLB.bit.RXEN = 1;
-	hri_sercomusart_wait_for_sync(SERCOM_SSPI, SERCOM_USART_SYNCBUSY_CTRLB);
+	SERCOM_SSPI->SPI.CTRLA.bit.ENABLE = 1;
+	hri_sercomusart_wait_for_sync(SERCOM_SSPI, SERCOM_USART_CTRLA_ENABLE);
 }
 
 // Wait for transmitter ready returning true if timed out
@@ -146,41 +145,39 @@ void SharedSpiDevice::InitMaster()
 	}
 }
 
-void SharedSpiDevice::SetupMaster() const
+void SharedSpiDevice::Select() const
 {
+	// We have to disable SPI device in order to change the baud rate and mode
 	DisableSpi();
-	hri_sercomusart_write_BAUD_reg(SERCOM_SSPI, SERCOM_SPI_BAUD_BAUD(CONF_GCLK_SERCOM0_CORE_FREQUENCY/(2 * clockFrequency) - 1));
+	hri_sercomusart_write_BAUD_reg(SERCOM_SSPI, SERCOM_SPI_BAUD_BAUD(CONF_GCLK_SERCOM6_CORE_FREQUENCY/(2 * clockFrequency) - 1));
 
-	uint32_t regCtrlA = SERCOM_SPI_CTRLA_MODE(3) | SERCOM_SPI_CTRLA_DIPO(3) | SERCOM_SPI_CTRLA_DOPO(0) | SERCOM_SPI_CTRLA_FORM(0)
-							| SERCOM_SPI_CTRLA_CPOL | SERCOM_SPI_CTRLA_CPHA;
+	uint32_t regCtrlA = SERCOM_SPI_CTRLA_MODE(3) | SERCOM_SPI_CTRLA_DIPO(3) | SERCOM_SPI_CTRLA_DOPO(0) | SERCOM_SPI_CTRLA_FORM(0) | SERCOM_SPI_CTRLA_ENABLE;
 	if (((uint8_t)mode & 2) != 0)
 	{
 		regCtrlA |= SERCOM_SPI_CTRLA_CPOL;
 	}
-	if (((int8_t)mode & 1) == 0)							// the bit is called CPHA but is actually NPCHA
+	if (((uint8_t)mode & 1) != 0)
 	{
 		regCtrlA |= SERCOM_SPI_CTRLA_CPHA;
 	}
 	hri_sercomusart_write_CTRLA_reg(SERCOM_SSPI, regCtrlA);
 	EnableSpi();
-}
 
-void SharedSpiDevice::Select() const
-{
 	IoPort::WriteDigital(csPin, csActivePolarity);
 }
 
 void SharedSpiDevice::Deselect() const
 {
 	IoPort::WriteDigital(csPin, !csActivePolarity);
+	DisableSpi();
 }
 
 bool SharedSpiDevice::TransceivePacket(const uint8_t* tx_data, uint8_t* rx_data, size_t len) const
 {
 	for (uint32_t i = 0; i < len; ++i)
 	{
-		uint32_t dOut = (tx_data == nullptr) ? 0x000000FF : (uint32_t)*tx_data++;
-		if (waitForTxReady())
+		const uint32_t dOut = (tx_data == nullptr) ? 0x000000FF : (uint32_t)*tx_data++;
+		if (waitForTxReady())			// we have to write the first byte after enabling the device without waiting for DRE to be set
 		{
 			return false;
 		}

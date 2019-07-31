@@ -43,8 +43,6 @@ TemperatureError SpiTemperatureSensor::DoSpiTransaction(const uint8_t dataOut[],
 			return TemperatureError::busBusy;
 		}
 
-		device.SetupMaster();
-		delayMicroseconds(1);
 		device.Select();
 		delayMicroseconds(1);
 
