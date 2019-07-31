@@ -18,6 +18,8 @@ const unsigned int NumCanBuffers = 40;
 constexpr size_t CanReceiverTaskStackWords = 400;		// need quite a large stack to allow for calls to debugPrint, 400 is not enough
 static Task<CanReceiverTaskStackWords> canReceiverTask;
 
+static TaskHandle sendingTaskHandle = nullptr;
+
 class CanMessageQueue
 {
 public:
@@ -77,7 +79,13 @@ extern "C" struct can_async_descriptor CAN_0;
 
 extern "C" void CAN_0_tx_callback(struct can_async_descriptor *const descr)
 {
-	(void)descr;
+	if (sendingTaskHandle != nullptr)
+	{
+		long higherPriorityTaskWoken;
+		vTaskNotifyGiveFromISR(sendingTaskHandle, &higherPriorityTaskWoken);
+		sendingTaskHandle = nullptr;
+		portYIELD_FROM_ISR(higherPriorityTaskWoken);
+	}
 }
 
 extern "C" void CAN_0_rx_callback(struct can_async_descriptor *const descr)
@@ -142,8 +150,6 @@ extern "C" void CanReceiverLoop(void *)
 {
 //	int32_t can_async_set_mode(struct can_async_descriptor *const descr, enum can_mode mode);
 
-	can_async_register_callback(&CAN_0, CAN_ASYNC_RX_CB, (FUNC_PTR)CAN_0_rx_callback);
-
 	// Set up CAN receiver filtering
 	can_filter filter;
 
@@ -187,8 +193,24 @@ void CanSlaveInterface::Init()
 {
 	CanMessageBuffer::Init(NumCanBuffers);
 
+	can_async_register_callback(&CAN_0, CAN_ASYNC_RX_CB, (FUNC_PTR)CAN_0_rx_callback);
+	can_async_register_callback(&CAN_0, CAN_ASYNC_TX_CB, (FUNC_PTR)CAN_0_tx_callback);
+
 	// Create the task that sends CAN messages
 	canReceiverTask.Create(CanReceiverLoop, "CanSender", nullptr, TaskPriority::CanReceiverPriority);
+}
+
+void CanSlaveInterface::Send(CanMessageBuffer *buf)
+{
+	struct can_message msg;
+	msg.id = buf->id.GetWholeId();
+	msg.type = CAN_TYPE_DATA;
+	msg.data = buf->msg.raw;
+	msg.len = buf->dataLength;
+	msg.fmt = CAN_FMT_EXTID;
+	can_async_write(&CAN_0, &msg);
+	TaskBase::Take(100);
+	CanMessageBuffer::Free(buf);
 }
 
 bool CanSlaveInterface::GetCanMove(CanMessageMovement& msg)
@@ -227,9 +249,9 @@ void CanSlaveInterface::ProcessReceivedMessage(CanMessageBuffer *buf)
 		PendingMoves.AddMessage(buf);
 		break;
 
-	case CanMessageType::m307:
+//	case CanMessageType::m307:
 	case CanMessageType::m308:
-	case CanMessageType::m906:
+//	case CanMessageType::m906:
 	case CanMessageType::m950:
 		PendingCommands.AddMessage(buf);
 		break;

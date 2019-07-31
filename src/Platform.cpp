@@ -17,6 +17,7 @@
 #include "AdcAveragingFilter.h"
 #include "Movement/StepTimer.h"
 #include "CAN/CanSlaveInterface.h"
+#include "Tasks.h"
 
 static bool txBusy = false;
 
@@ -27,6 +28,8 @@ extern "C" void tx_cb_USART_0(const struct usart_async_descriptor *const io_desc
 
 namespace Platform
 {
+	Mutex messageMutex;
+
 	static struct io_descriptor *io;
 
 	static uint32_t errorCodeBits = 0;
@@ -85,49 +88,53 @@ namespace Platform
 	DriversBitmap stalledDrivers, stalledDriversToLog, stalledDriversToPause, stalledDriversToRehome;
 #endif
 
-	// Temperature sense stuff
-	#define NVM_TEMP_CAL_TLI_POS 0
-	#define NVM_TEMP_CAL_TLI_SIZE 8
-	#define NVM_TEMP_CAL_TLD_POS 8
-	#define NVM_TEMP_CAL_TLD_SIZE 4
-	#define NVM_TEMP_CAL_THI_POS 12
-	#define NVM_TEMP_CAL_THI_SIZE 8
-	#define NVM_TEMP_CAL_THD_POS 20
-	#define NVM_TEMP_CAL_THD_SIZE 4
-	#define NVM_TEMP_CAL_VPL_POS 40
-	#define NVM_TEMP_CAL_VPL_SIZE 12
-	#define NVM_TEMP_CAL_VPH_POS 52
-	#define NVM_TEMP_CAL_VPH_SIZE 12
-	#define NVM_TEMP_CAL_VCL_POS 64
-	#define NVM_TEMP_CAL_VCL_SIZE 12
-	#define NVM_TEMP_CAL_VCH_POS 76
-	#define NVM_TEMP_CAL_VCH_SIZE 12
-
-	static uint16_t temp_cal_tl, temp_cal_th;
-	static uint16_t temp_cal_vpl, temp_cal_vph, temp_cal_vcl, temp_cal_vch;
+	static int32_t tempCalF1, tempCalF2, tempCalF3, tempCalF4;		// temperature calibration factors
 
 	static void ADC_temperature_init(void)
 	{
-		temp_cal_vpl = (*((uint32_t *)(NVMCTRL_TEMP_LOG_W0) + (NVM_TEMP_CAL_VPL_POS / 32)) >> (NVM_TEMP_CAL_VPL_POS % 32))
+		// Temperature sense stuff
+		constexpr uint32_t NVM_TEMP_CAL_TLI_POS = 0;
+		constexpr uint32_t NVM_TEMP_CAL_TLI_SIZE = 8;
+		constexpr uint32_t NVM_TEMP_CAL_TLD_POS = 8;
+		constexpr uint32_t NVM_TEMP_CAL_TLD_SIZE = 4;
+		constexpr uint32_t NVM_TEMP_CAL_THI_POS = 12;
+		constexpr uint32_t NVM_TEMP_CAL_THI_SIZE = 8;
+		constexpr uint32_t NVM_TEMP_CAL_THD_POS = 20;
+		constexpr uint32_t NVM_TEMP_CAL_THD_SIZE = 4;
+		constexpr uint32_t NVM_TEMP_CAL_VPL_POS = 40;
+		constexpr uint32_t NVM_TEMP_CAL_VPL_SIZE = 12;
+		constexpr uint32_t NVM_TEMP_CAL_VPH_POS = 52;
+		constexpr uint32_t NVM_TEMP_CAL_VPH_SIZE = 12;
+		constexpr uint32_t NVM_TEMP_CAL_VCL_POS = 64;
+		constexpr uint32_t NVM_TEMP_CAL_VCL_SIZE = 12;
+		constexpr uint32_t NVM_TEMP_CAL_VCH_POS = 76;
+		constexpr uint32_t NVM_TEMP_CAL_VCH_SIZE = 12;
+
+		const uint16_t temp_cal_vpl = (*((uint32_t *)(NVMCTRL_TEMP_LOG_W0) + (NVM_TEMP_CAL_VPL_POS / 32)) >> (NVM_TEMP_CAL_VPL_POS % 32))
 		               & ((1u << NVM_TEMP_CAL_VPL_SIZE) - 1);
-		temp_cal_vph = (*((uint32_t *)(NVMCTRL_TEMP_LOG_W0) + (NVM_TEMP_CAL_VPH_POS / 32)) >> (NVM_TEMP_CAL_VPH_POS % 32))
+		const uint16_t temp_cal_vph = (*((uint32_t *)(NVMCTRL_TEMP_LOG_W0) + (NVM_TEMP_CAL_VPH_POS / 32)) >> (NVM_TEMP_CAL_VPH_POS % 32))
 		               & ((1u << NVM_TEMP_CAL_VPH_SIZE) - 1);
-		temp_cal_vcl = (*((uint32_t *)(NVMCTRL_TEMP_LOG_W0) + (NVM_TEMP_CAL_VCL_POS / 32)) >> (NVM_TEMP_CAL_VCL_POS % 32))
+		const uint16_t temp_cal_vcl = (*((uint32_t *)(NVMCTRL_TEMP_LOG_W0) + (NVM_TEMP_CAL_VCL_POS / 32)) >> (NVM_TEMP_CAL_VCL_POS % 32))
 		               & ((1u << NVM_TEMP_CAL_VCL_SIZE) - 1);
-		temp_cal_vch = (*((uint32_t *)(NVMCTRL_TEMP_LOG_W0) + (NVM_TEMP_CAL_VCH_POS / 32)) >> (NVM_TEMP_CAL_VCH_POS % 32))
+		const uint16_t temp_cal_vch = (*((uint32_t *)(NVMCTRL_TEMP_LOG_W0) + (NVM_TEMP_CAL_VCH_POS / 32)) >> (NVM_TEMP_CAL_VCH_POS % 32))
 		               & ((1u << NVM_TEMP_CAL_VCH_SIZE) - 1);
 
 		const uint8_t temp_cal_tli = (*((uint32_t *)(NVMCTRL_TEMP_LOG_W0) + (NVM_TEMP_CAL_TLI_POS / 32)) >> (NVM_TEMP_CAL_TLI_POS % 32))
 		               & ((1u << NVM_TEMP_CAL_TLI_SIZE) - 1);
 		const uint8_t temp_cal_tld = (*((uint32_t *)(NVMCTRL_TEMP_LOG_W0) + (NVM_TEMP_CAL_TLD_POS / 32)) >> (NVM_TEMP_CAL_TLD_POS % 32))
 		               & ((1u << NVM_TEMP_CAL_TLD_SIZE) - 1);
-		temp_cal_tl = ((uint16_t)temp_cal_tli) << 4 | ((uint16_t)temp_cal_tld);
+		const uint16_t temp_cal_tl = ((uint16_t)temp_cal_tli) << 4 | ((uint16_t)temp_cal_tld);
 
 		const uint8_t temp_cal_thi = (*((uint32_t *)(NVMCTRL_TEMP_LOG_W0) + (NVM_TEMP_CAL_THI_POS / 32)) >> (NVM_TEMP_CAL_THI_POS % 32))
 		               & ((1u << NVM_TEMP_CAL_THI_SIZE) - 1);
 		const uint8_t temp_cal_thd = (*((uint32_t *)(NVMCTRL_TEMP_LOG_W0) + (NVM_TEMP_CAL_THD_POS / 32)) >> (NVM_TEMP_CAL_THD_POS % 32))
 		               & ((1u << NVM_TEMP_CAL_THD_SIZE) - 1);
-		temp_cal_th = ((uint16_t)temp_cal_thi) << 4 | ((uint16_t)temp_cal_thd);
+		const uint16_t temp_cal_th = ((uint16_t)temp_cal_thi) << 4 | ((uint16_t)temp_cal_thd);
+
+		tempCalF1 = (int32_t)temp_cal_tl * (int32_t)temp_cal_vph - (int32_t)temp_cal_th * (int32_t)temp_cal_vpl;
+		tempCalF2 = (int32_t)temp_cal_tl * (int32_t)temp_cal_vch - (int32_t)temp_cal_th * (int32_t)temp_cal_vcl;
+		tempCalF3 = (int32_t)temp_cal_vcl - (int32_t)temp_cal_vch;
+		tempCalF4 = (int32_t)temp_cal_vpl - (int32_t)temp_cal_vph;
 	}
 
 	// Send the specified message to the specified destinations. The Error and Warning flags have already been handled.
@@ -135,6 +142,9 @@ namespace Platform
 	{
 		// io_write requires that the message doesn't go out of scope until transmission is complete, so copy it to a static buffer
 		static String<200> buffer;
+
+		MutexLocker lock(messageMutex);
+
 		buffer.copy("{\"message\":\"");
 		buffer.cat(message);		// should do JSON escaping here
 		buffer.cat("\"}\n");
@@ -178,6 +188,8 @@ void Platform::Init()
 
 	// Set up the DIAG LED pin
 	IoPort::SetPinMode(DiagLedPin, OUTPUT_HIGH);
+
+	messageMutex.Create("Message");
 
 	// Turn all outputs off
 	for (size_t pin = 0; pin < ARRAY_SIZE(PinTable); ++pin)
@@ -501,18 +513,15 @@ void Platform::Spin()
 			}
 		}
 
-		// Get the chip temperature
+		// Get the chip temperature. From the datasheet:
+		// T = (tl * vph * tc - th * vph * tc - tl * tp *vch + th * tp * vcl)/(tp * vcl - tp * vch - tc * vpl * tc * vph)
 		if (tcFilter.IsValid() && tpFilter.IsValid())
 		{
 			const uint16_t tc_result = tcFilter.GetSum()/tcFilter.NumAveraged();
 			const uint16_t tp_result = tpFilter.GetSum()/tpFilter.NumAveraged();
 
-			int32_t result = (int64_t)temp_cal_tl * temp_cal_vph * tc_result
-							- (int64_t)temp_cal_vpl * temp_cal_th * tc_result
-							- (int64_t)temp_cal_tl * temp_cal_vch * tp_result
-							+ (int64_t)temp_cal_th * temp_cal_vcl * tp_result;
-			const int32_t divisor = ((int32_t)temp_cal_vcl * tp_result - (int32_t)temp_cal_vch * tp_result
-							   - (int32_t)temp_cal_vpl * tc_result + (int32_t)temp_cal_vph * tc_result);
+			int32_t result =  (tempCalF1 * tc_result - tempCalF2 * tp_result);
+			const int32_t divisor = (tempCalF3 * tp_result - tempCalF4 * tc_result);
 			result = (divisor == 0) ? 0 : result/divisor;
 			currentMcuTemperature = (float)result/16 + mcuTemperatureAdjust;
 			if (currentMcuTemperature < lowestMcuTemperature)

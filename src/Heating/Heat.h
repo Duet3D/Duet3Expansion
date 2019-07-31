@@ -30,7 +30,9 @@ namespace Heat
 	void Exit();												// Shut everything down
 	void ResetHeaterModels();									// Reset all active heater models to defaults
 
+#if 0
 	GCodeResult ProcessM307(const CanMessageGeneric& msg, const StringRef& reply);
+#endif
 	GCodeResult ProcessM308(const CanMessageGeneric& msg, const StringRef& reply);
 	GCodeResult TuneHeater(const CanMessageGeneric& msg, const StringRef& reply);
 	GCodeResult SetPidParameters(const CanMessageGeneric& msg, const StringRef& reply);
@@ -71,6 +73,7 @@ namespace Heat
 	void SuspendHeaters(bool sus);								// Suspend the heaters to conserve power
 
 	TemperatureSensor *GetSensor(int sn);						// Get a pointer to the temperature sensor entry
+	TemperatureSensor *GetSensorAtOrAbove(unsigned int sn);		// Get a pointer to the first temperature sensor with the specified or higher number
 	void RemoveSensor(unsigned int sensorNum);
 	void InsertSensor(TemperatureSensor *sensor);
 

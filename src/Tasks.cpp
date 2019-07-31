@@ -84,7 +84,8 @@ extern void Spin();
 extern "C" void MainTask(void *pvParameters)
 {
 	mallocMutex.Create("Malloc");
-//	spiMutex.Create("SPI");
+	spiMutex.Create("SPI");
+
 	Init();
 	for (;;)
 	{

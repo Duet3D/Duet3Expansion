@@ -17,6 +17,7 @@ namespace CanSlaveInterface
 {
 	void Init();
 	bool GetCanMove(CanMessageMovement& move);
+	void Send(CanMessageBuffer *buf);
 	CanMessageBuffer *GetCanCommand();
 	void MoveStoppedByZProbe();
 }

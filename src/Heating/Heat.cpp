@@ -152,6 +152,7 @@ void Heat::Exit()
 	}
 }
 
+#if 0
 GCodeResult Heat::ProcessM307(const CanMessageGeneric& msg, const StringRef& reply)
 {
 	CanMessageGenericParser parser(msg, M307Params);
@@ -220,6 +221,7 @@ GCodeResult Heat::ProcessM307(const CanMessageGeneric& msg, const StringRef& rep
 
 	return GCodeResult::badOrMissingParameter;
 }
+#endif
 
 GCodeResult Heat::ProcessM308(const CanMessageGeneric& msg, const StringRef& reply)
 {
@@ -483,6 +485,21 @@ TemperatureSensor *Heat::GetSensor(int sn)
 			{
 				return sensor;
 			}
+		}
+	}
+	return nullptr;
+}
+
+// Get a pointer to the first temperature sensor with the specified or higher number
+TemperatureSensor *Heat::GetSensorAtOrAbove(unsigned int sn)
+{
+	TaskCriticalSectionLocker lock;		// make sure the linked list doesn't change while we are searching it
+
+	for (TemperatureSensor *sensor = sensorsRoot; sensor != nullptr; sensor = sensor->GetNext())
+	{
+		if (sensor->GetSensorNumber() >= sn)
+		{
+			return sensor;
 		}
 	}
 	return nullptr;

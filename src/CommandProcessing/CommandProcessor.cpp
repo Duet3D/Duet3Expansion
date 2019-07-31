@@ -52,11 +52,12 @@ void CommandProcessor::Spin()
 		String<MaxCanReplyLength> reply;
 		GCodeResult rslt;
 
-		switch (buf->id.MsgType())
+		const CanMessageType id = buf->id.MsgType();
+		switch (id)
 		{
-		case CanMessageType::m307:
-			rslt = Heat::ProcessM307(buf->msg.generic, reply.GetRef());
-			break;
+//		case CanMessageType::m307:
+//			rslt = Heat::ProcessM307(buf->msg.generic, reply.GetRef());
+//			break;
 
 		case CanMessageType::m308:
 			rslt = Heat::ProcessM308(buf->msg.generic, reply.GetRef());
@@ -66,16 +67,20 @@ void CommandProcessor::Spin()
 			rslt = ProcessM950(buf->msg.generic, reply.GetRef());
 			break;
 
-		case CanMessageType::m906:
 		default:
 			reply.printf("Unknown message type %04x", (unsigned int)buf->id.MsgType());
 			rslt = GCodeResult::error;
-			break;						// unrecognised message type
+			break;
 		}
 
-		CanMessageBuffer::Free(buf);
-		//TODO send the reply
-		(void)rslt;
+		// Re-use the message buffer to send the reply
+		CanMessageStandardReply *msg = buf->SetupResponseMessage<CanMessageStandardReply>(buf->id.Src());
+		msg->requestId = (uint16_t)id;
+		msg->resultCode = (uint16_t)rslt;
+		const size_t textLength = min<size_t>(reply.strlen() + 1, sizeof(buf->msg.standardReply.text));
+		buf->dataLength = textLength + 2;
+		memcpy(msg->text, reply.c_str(), textLength);
+		CanSlaveInterface::Send(buf);
 	}
 }
 
