@@ -8,6 +8,7 @@
 #ifndef SRC_TASKS_H_
 #define SRC_TASKS_H_
 
+#include "RepRapFirmware.h"
 #include "RTOSIface/RTOSIface.h"
 
 void AppMain();
@@ -15,6 +16,7 @@ void AppMain();
 namespace Tasks
 {
 	uint32_t GetNeverUsedRam();
+	Mutex* GetSpiMutex();
 }
 
 #endif /* SRC_TASKS_H_ */

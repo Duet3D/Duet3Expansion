@@ -8,14 +8,17 @@
 #ifndef SRC_CAN_CANSLAVEINTERFACE_H_
 #define SRC_CAN_CANSLAVEINTERFACE_H_
 
-#include <RepRapFirmware.h>
+#include "RepRapFirmware.h"
 
-struct CanMovementMessage;
+struct CanMessageMovement;
+class CanMessageBuffer;
 
 namespace CanSlaveInterface
 {
 	void Init();
-	bool GetCanMove(CanMovementMessage& move);
+	bool GetCanMove(CanMessageMovement& move);
+	void Send(CanMessageBuffer *buf);
+	CanMessageBuffer *GetCanCommand();
 	void MoveStoppedByZProbe();
 }
 

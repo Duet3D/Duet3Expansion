@@ -51,30 +51,32 @@ constexpr uint32_t SERIAL_MAIN_TIMEOUT = 1000;			// timeout in ms for sending da
 
 // Heater values
 constexpr uint32_t HeatSampleIntervalMillis = 250;		// interval between taking temperature samples
-constexpr float HeatPwmAverageTime = 5.0;			// Seconds
+constexpr float HeatPwmAverageTime = 5.0;				// Seconds
 
 constexpr float TEMPERATURE_CLOSE_ENOUGH = 1.0;			// Celsius
 constexpr float TEMPERATURE_LOW_SO_DONT_CARE = 40.0;	// Celsius
 constexpr float HOT_ENOUGH_TO_EXTRUDE = 160.0;			// Celsius
 constexpr float HOT_ENOUGH_TO_RETRACT = 90.0;			// Celsius
 
-constexpr uint8_t MaxBadTemperatureCount = 4;		// Number of bad temperature samples permitted before a heater fault is reported
-constexpr float BadLowTemperature = -10.0;			// Celsius
+constexpr uint8_t MaxBadTemperatureCount = 4;			// Number of bad temperature samples permitted before a heater fault is reported
+constexpr float BadLowTemperature = -10.0;				// Celsius
 constexpr float DefaultExtruderTemperatureLimit = 290.0; // Celsius - E3D say to tighten the hot end at 285C
 constexpr float DefaultBedTemperatureLimit = 125.0;		// Celsius
-constexpr float HotEndFanTemperature = 45.0;			// Temperature at which a thermostatic hot end fan comes on
+constexpr float DefaultHotEndFanTemperature = 45.0;		// Temperature at which a thermostatic hot end fan comes on
 constexpr float ThermostatHysteresis = 1.0;				// How much hysteresis we use to prevent noise turning fans on/off too often
 constexpr float BadErrorTemperature = 2000.0;			// Must exceed any reasonable 5temperature limit including DEFAULT_TEMPERATURE_LIMIT
 constexpr uint32_t DefaultHeaterFaultTimeout = 10 * 60 * 1000;	// How long we wait (in milliseconds) for user intervention after a heater fault before shutting down
+
+// Default thermistor parameters
+constexpr float DefaultR25 = 100000.0;
+constexpr float DefaultBeta = 4388.0;
+constexpr float DefaultShc = 0.0;
 
 // Heating model default parameters. For the chamber heater, we use the same values as for the bed heater.
 // These parameters are about right for an E3Dv6 hot end with 30W heater.
 constexpr float DefaultHotEndHeaterGain = 340.0;
 constexpr float DefaultHotEndHeaterTimeConstant = 140.0;
 constexpr float DefaultHotEndHeaterDeadTime = 5.5;
-
-constexpr unsigned int FirstVirtualHeater = 100;		// the heater number at which virtual heaters start
-constexpr unsigned int MaxVirtualHeaters = 10;			// the number of virtual heaters supported
 
 constexpr unsigned int FirstExtraHeaterProtection = 100;	// Index of the first extra heater protection item
 
@@ -84,27 +86,14 @@ constexpr float DefaultBedHeaterTimeConstant = 700.0;
 constexpr float DefaultBedHeaterDeadTime = 10.0;
 
 // Parameters used to detect heating errors
-constexpr float DefaultMaxHeatingFaultTime = 5.0;		// How many seconds we allow a heating fault to persist
+constexpr float DefaultMaxHeatingFaultTime = 5.0;			// How many seconds we allow a heating fault to persist
 constexpr float AllowedTemperatureDerivativeNoise = 0.25;	// How much fluctuation in the averaged temperature derivative we allow
-constexpr float MaxAmbientTemperature = 45.0;			// We expect heaters to cool to this temperature or lower when switched off
-constexpr float NormalAmbientTemperature = 25.0;		// The ambient temperature we assume - allow for the printer heating its surroundings a little
-constexpr float DefaultMaxTempExcursion = 15.0;			// How much error we tolerate when maintaining temperature before deciding that a heater fault has occurred
-constexpr float MinimumConnectedTemperature = -5.0;		// Temperatures below this we treat as a disconnected thermistor
+constexpr float MaxAmbientTemperature = 45.0;				// We expect heaters to cool to this temperature or lower when switched off
+constexpr float NormalAmbientTemperature = 25.0;			// The ambient temperature we assume - allow for the printer heating its surroundings a little
+constexpr float DefaultMaxTempExcursion = 15.0;				// How much error we tolerate when maintaining temperature before deciding that a heater fault has occurred
+constexpr float MinimumConnectedTemperature = -5.0;			// Temperatures below this we treat as a disconnected thermistor
 
 static_assert(DefaultMaxTempExcursion > TEMPERATURE_CLOSE_ENOUGH, "DefaultMaxTempExcursion is too low");
-
-// Temperature sense channels
-constexpr unsigned int FirstThermistorChannel = 0;		// Temperature sensor channels 0... are thermistors
-constexpr unsigned int FirstMax31855ThermocoupleChannel = 100;	// Temperature sensor channels 100... are MAX31855 thermocouples
-constexpr unsigned int FirstMax31856ThermocoupleChannel = 150;	// Temperature sensor channels 150... are MAX31856 thermocouples
-constexpr unsigned int FirstRtdChannel = 200;			// Temperature sensor channels 200... are RTDs
-constexpr unsigned int FirstLinearAdcChannel = 300;		// Temperature sensor channels 300... use an ADC that provides a linear output over a temperature range
-constexpr unsigned int FirstDhtTemperatureChannel = 400;	// Temperature sensor channel 400 for DHTxx temperature
-constexpr unsigned int FirstDhtHumidityChannel = 450;		// Temperature sensor channel 401 for DHTxx humidity
-constexpr unsigned int FirstPT1000Channel = 500;		// Temperature sensor channels 500... are PT1000 sensors connected to thermistor inputs
-constexpr unsigned int CpuTemperatureSenseChannel = 1000;  // Sensor 1000 is the MCJU's own temperature sensor
-constexpr unsigned int FirstTmcDriversSenseChannel = 1001; // Sensors 1001..1002 are the TMC2660 driver temperature sense
-constexpr unsigned int NumTmcDriversSenseChannels = 2;	// Sensors 1001..1002 are the TMC2660 driver temperature sense
 
 // PWM frequencies
 constexpr PwmFrequency MaxHeaterPwmFrequency = 1000;	// maximum supported heater PWM frequency, to avoid overheating the mosfets
@@ -117,12 +106,10 @@ constexpr unsigned int DefaultPinWritePwmFreq = 500;	// default PWM frequency fo
 constexpr size_t FormatStringLength = 256;
 constexpr size_t MaxMessageLength = 256;
 constexpr size_t MaxTitleLength = 61;
+constexpr size_t StringLength20 = 20;
 
 constexpr size_t GCODE_LENGTH = 161;					// maximum number of non-comment characters in a line of GCode including the null terminator
 constexpr size_t SHORT_GCODE_LENGTH = 61;				// maximum length of a GCode that we can queue to synchronise it to a move
-
-constexpr size_t MaxHeaterNameLength = 20;				// Maximum number of characters in a heater name
-constexpr size_t MaxFanNameLength = 20;					// Maximum number of characters in a fan name
 
 // Output buffer length and number of buffers
 // When using RTOS, it is best if it is possible to fit an HTTP response header in a single buffer. Our headers are currently about 230 bytes long.

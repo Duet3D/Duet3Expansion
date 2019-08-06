@@ -5,8 +5,8 @@
  *      Author: David
  */
 
-#ifndef SRC_HAL_DMACMANAGER_H_
-#define SRC_HAL_DMACMANAGER_H_
+#ifndef SRC_HARDWARE_DMACMANAGER_H_
+#define SRC_HARDWARE_DMACMANAGER_H_
 
 #include "RepRapFirmware.h"
 
@@ -97,4 +97,4 @@ void DmacEnableErrorInterrupt(const uint8_t channel);
 void DmacDisableCompletedInterrupt(const uint8_t channel);
 void DmacDisableErrorInterrupt(const uint8_t channel);
 
-#endif /* SRC_HAL_DMACMANAGER_H_ */
+#endif /* SRC_HARDWARE_DMACMANAGER_H_ */

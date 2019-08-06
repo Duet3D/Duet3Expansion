@@ -40,12 +40,7 @@ extern "C" {
 extern struct adc_async_descriptor ADC_0;
 extern struct adc_async_descriptor ADC_1;
 
-extern struct timer_descriptor    TIMER_0;
-
 extern struct usart_async_descriptor USART_0;
-
-extern struct pwm_descriptor   PWM_0;
-extern struct timer_descriptor TIMER_1;
 
 extern struct wdt_descriptor       WDT_0;
 extern struct can_async_descriptor CAN_0;
@@ -55,10 +50,6 @@ void USART_0_CLOCK_init(void);
 void USART_0_init(void);
 
 void delay_driver_init(void);
-
-void PWM_0_PORT_init(void);
-void PWM_0_CLOCK_init(void);
-void PWM_0_init(void);
 
 void WDT_0_CLOCK_init(void);
 void WDT_0_init(void);

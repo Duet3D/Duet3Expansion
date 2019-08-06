@@ -1,2 +1,5 @@
-Issues
+Issues to fix
 
+- Time sync is crude and not accurate. Need to make use of CAN time stamps and use a PLL.
+- Finish PWM module
+- VIN and V12 monitoring need to be faster to raise ENN when insufficient voltage, so do it in the tick ISR

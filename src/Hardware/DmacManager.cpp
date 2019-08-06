@@ -8,7 +8,7 @@
 #include <utils.h>
 #include <hri_dmac_e51.h>
 #include <hpl_dmac_config.h>
-#include <HAL/DmacManager.h>
+#include <Hardware/DmacManager.h>
 #include <RTOSIface/RTOSIface.h>
 
 // Descriptors for all used DMAC channels
@@ -158,22 +158,22 @@ extern "C" void DMAC_0_Handler()
 	CommonDmacHandler(0);
 }
 
-extern "C" void DMAC_1_Handler(void)
+extern "C" void DMAC_1_Handler()
 {
 	CommonDmacHandler(1);
 }
 
-extern "C" void DMAC_2_Handler(void)
+extern "C" void DMAC_2_Handler()
 {
 	CommonDmacHandler(2);
 }
 
-extern "C" void DMAC_3_Handler(void)
+extern "C" void DMAC_3_Handler()
 {
 	CommonDmacHandler(3);
 }
 
-extern "C" void DMAC_4_Handler(void)
+extern "C" void DMAC_4_Handler()
 {
 	hri_dmac_intpend_reg_t intPend;
 	while ((intPend = hri_dmac_get_INTPEND_reg(DMAC, DMAC_INTPEND_ID_Msk)) > 3)

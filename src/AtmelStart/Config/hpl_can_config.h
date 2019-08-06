@@ -182,7 +182,7 @@
 // <7=> 64 byte data field.
 // <id> can_txesc_tbds
 #ifndef CONF_CAN1_TXESC_TBDS
-#define CONF_CAN1_TXESC_TBDS 0
+#define CONF_CAN1_TXESC_TBDS 7
 #endif
 
 /* Bytes size for CAN Transmit Buffer element, plus 8 bytes for R0,R1 */
@@ -256,7 +256,7 @@
 // <i> Number of standard Message ID filter elements
 // <id> can_sidfc_lss
 #ifndef CONF_CAN1_SIDFC_LSS
-#define CONF_CAN1_SIDFC_LSS 2
+#define CONF_CAN1_SIDFC_LSS 0
 #endif
 
 // <o> Number of Extended Message ID filter elements <0-128>
@@ -273,7 +273,7 @@
 // <i> mask is not active.
 // <id> can_xidam_eidm
 #ifndef CONF_CAN1_XIDAM_EIDM
-#define CONF_CAN1_XIDAM_EIDM 0x0
+#define CONF_CAN1_XIDAM_EIDM (0x1FFFFFFF)
 #endif
 
 // </h>

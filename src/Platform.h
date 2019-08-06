@@ -9,6 +9,25 @@
 #define SRC_PLATFORM_H_
 
 #include "RepRapFirmware.h"
+#include "AdcAveragingFilter.h"
+
+// Define the number of temperature readings we average for each thermistor. This should be a power of 2 and at least 4 ^ AD_OVERSAMPLE_BITS.
+// Keep THERMISTOR_AVERAGE_READINGS * NUM_HEATERS * 2ms no greater than HEAT_SAMPLE_TIME or the PIDs won't work well.
+constexpr size_t ThermistorReadingsAveraged = 16;
+constexpr size_t ZProbeReadingsAveraged = 8;		// We average this number of readings with IR on, and the same number with IR off
+constexpr size_t McuTempReadingsAveraged = 16;
+constexpr size_t VinReadingsAveraged = 8;
+
+typedef AdcAveragingFilter<ThermistorReadingsAveraged> ThermistorAveragingFilter;
+typedef AdcAveragingFilter<ZProbeReadingsAveraged> ZProbeAveragingFilter;
+
+#if HAS_VREF_MONITOR
+constexpr size_t NumThermistorFilters = NumThermistorInputs + 2;
+constexpr size_t VssaFilterIndex = NumThermistorInputs;
+constexpr size_t VrefFilterIndex = NumThermistorInputs + 1;
+#else
+constexpr size_t NumThermistorFilters = NumThermistorInputs;
+#endif
 
 // Enumeration of error condition bits
 enum class ErrorCode : uint32_t
@@ -37,13 +56,17 @@ enum class EndStopPosition
 };
 
 // Type of an endstop input - values must tally with the M574 command S parameter
-enum class EndStopInputType
+enum class EndStopInputType : unsigned int
 {
 	activeLow = 0,
 	activeHigh = 1,
 	zProbe = 2,
-	motorStall = 3
+	motorStallAny = 3,
+	motorStallIndividual = 4,
+	numInputTypes = 5
 };
+
+class IoPort;
 
 namespace Platform
 {
@@ -61,6 +84,7 @@ namespace Platform
 	void MessageF(MessageType type, const char *fmt, va_list vargs);
 	void LogError(ErrorCode e);
 	bool Debug(Module module);
+
 	void SetDriversIdle();
 	float DriveStepsPerUnit(size_t drive);
 	const float *GetDriveStepsPerUnit();
@@ -100,8 +124,20 @@ namespace Platform
 	void DisableAllDrives();
 	void SetDriversIdle();
 
+	int GetAveragingFilterIndex(const IoPort&);
+	ThermistorAveragingFilter& GetAdcFilter(unsigned int filterNumber);
+	void GetMcuTemperatures(float& minTemp, float& currentTemp, float& maxTemp);
+	float GetTmcDriversTemperature();
+
+	void SetHeater(unsigned int heater, float pwm);
+	void HandleHeaterFault(unsigned int heater);
+
+	void KickHeatTaskWatchdog();
+
 	uint8_t ReadBoardSwitches();
 	uint8_t ReadBoardId();
+
+	void Tick();
 }
 
 #endif /* SRC_PLATFORM_H_ */

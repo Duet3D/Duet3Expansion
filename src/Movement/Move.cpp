@@ -37,6 +37,8 @@
 #include "StepTimer.h"
 #include "Platform.h"
 #include "CAN/CanSlaveInterface.h"
+#include "Hardware/Interrupts.h"
+#include "CanMessageFormats.h"
 
 Move::Move() : currentDda(nullptr), active(false), scheduledMoves(0), completedMoves(0)
 {
@@ -70,26 +72,7 @@ void Move::Init()
 
 	currentDda = nullptr;
 	stepErrors = 0;
-	numLookaheadUnderruns = numPrepareUnderruns = numLookaheadErrors = 0;
-
-	// Put the origin on the lookahead ring with default velocity in the previous position to the first one that will be used.
-	// Do this by calling SetLiveCoordinates and SetPositions, so that the motor coordinates will be correct too even on a delta.
-	{
-		float move[DRIVES];
-		for (size_t i = 0; i < DRIVES; i++)
-		{
-			move[i] = 0.0;
-			liveEndPoints[i] = 0;								// not actually right for a delta, but better than printing random values in response to M114
-		}
-		SetLiveCoordinates(move);
-#if 0
-		SetPositions(move);
-#endif
-	}
-
-	usingMesh = false;
-	useTaper = false;
-	zShift = 0.0;
+	numLookaheadUnderruns = numPrepareUnderruns = 0;
 
 	idleTimeout = DefaultIdleTimeout;
 	moveState = MoveState::idle;
@@ -98,8 +81,6 @@ void Move::Init()
 
 	longestGcodeWaitInterval = 0;
 //	numHiccups = 0;
-
-	StepTimer::Init();
 
 	active = true;
 }
@@ -161,7 +142,7 @@ void Move::Spin()
 	// See if we can add another move to the ring
 	bool canAddMove = (   ddaRingAddPointer->GetState() == DDA::empty
 					   && ddaRingAddPointer->GetNext()->GetState() != DDA::provisional		// function Prepare needs to access the endpoints in the previous move, so don't change them
-					   && DriveMovement::NumFree() >= (int)DRIVES							// check that we won't run out of DMs
+					   && DriveMovement::NumFree() >= (int)NumDrivers							// check that we won't run out of DMs
 					  );
 	if (canAddMove)
 	{
@@ -187,7 +168,7 @@ void Move::Spin()
 	if (canAddMove)
 	{
 		// OK to add another move. First check if a special move is available.
-		CanMovementMessage move;
+		CanMessageMovement move;
 		if (CanSlaveInterface::GetCanMove(move))
 		{
 			ddaRingAddPointer->Init(move);
@@ -258,7 +239,7 @@ bool Move::SetKinematics(KinematicsType k)
 {
 	if (kinematics->GetKinematicsType() != k)
 	{
-		Kinematics *nk = Kinematics::Create(k);
+		Kinematics * const nk = Kinematics::Create(k);
 		if (nk == nullptr)
 		{
 			return false;
@@ -469,12 +450,6 @@ void Move::Diagnostics(MessageType mtype)
 	Platform::MessageF(mtype, "Scheduled moves: %" PRIu32 ", completed moves: %" PRIu32 /*"\n"*/, scheduledMoves, completedMoves);
 }
 
-// Set the current position to be this
-void Move::SetNewPosition(const float positionNow[DRIVES], bool doBedCompensation)
-{
-	//TODO do we need anything here?
-}
-
 // This may be called from an ISR, e.g. via Kinematics::OnHomingSwitchTriggered and DDA::SetPositions
 void Move::EndPointToMachine(const float coords[], int32_t ep[], size_t numDrives) const
 {
@@ -525,23 +500,7 @@ bool Move::CartesianToMotorSteps(const float machinePos[MaxAxes], int32_t motorP
 // This is called from the step ISR when the current move has been completed
 void Move::CurrentMoveCompleted()
 {
-#if 1
-	liveCoordinatesValid = false;
-#else
-	// Save the current motor coordinates, and the machine Cartesian coordinates if known
-	liveCoordinatesValid = currentDda->FetchEndPosition(const_cast<int32_t*>(liveEndPoints), const_cast<float *>(liveCoordinates));
-	const size_t numAxes = GCodes::GetTotalAxes();
-	for (size_t drive = numAxes; drive < DRIVES; ++drive)
-	{
-		extrusionAccumulators[drive - numAxes] += currentDda->GetStepsTaken(drive);
-		if (currentDda->IsNonPrintingExtruderMove(drive))
-		{
-			extruderNonPrinting[drive - numAxes] = true;
-		}
-	}
-#endif
 	currentDda = nullptr;
-
 	ddaRingGetPointer = ddaRingGetPointer->GetNext();
 	completedMoves++;
 }
@@ -571,29 +530,6 @@ bool Move::TryStartNextMove(uint32_t startTime)
 /*static*/ float Move::MotorStepsToMovement(size_t drive, int32_t endpoint)
 {
 	return ((float)(endpoint))/Platform::DriveStepsPerUnit(drive);
-}
-
-// These are the actual numbers that we want to be the coordinates, so don't transform them.
-// The caller must make sure that no moves are in progress or pending when calling this
-void Move::SetLiveCoordinates(const float coords[DRIVES])
-{
-	for (size_t drive = 0; drive < DRIVES; drive++)
-	{
-		liveCoordinates[drive] = coords[drive];
-	}
-	liveCoordinatesValid = true;
-	EndPointToMachine(coords, const_cast<int32_t *>(liveEndPoints), GCodes::GetVisibleAxes());
-}
-
-void Move::ResetExtruderPositions()
-{
-	AtomicCriticalSectionLocker lock;
-
-	const size_t totalAxes = GCodes::GetTotalAxes();
-	for (size_t eDrive = totalAxes; eDrive < DRIVES; eDrive++)
-	{
-		liveCoordinates[eDrive] = 0.0;
-	}
 }
 
 // Return the idle timeout in seconds

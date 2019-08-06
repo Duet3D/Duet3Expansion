@@ -25,6 +25,8 @@ typedef double floatc_t;
 
 #include "Configuration.h"
 #include "General/StringRef.h"
+#include "General/StringFunctions.h"
+#include "General/BitMap.h"
 #include "MessageType.h"
 
 // Warn of what's to come, so we can use pointers to classes without including the entire header files
@@ -32,23 +34,8 @@ class Move;
 class DDA;
 class DriveMovement;
 class Kinematics;
-class Heat;
-class PID;
 class TemperatureSensor;
-class OutputBuffer;
-class OutputStack;
-//class GCodeBuffer;
-//class GCodeQueue;
-//class FilamentMonitor;
-class Logger;
-
-#if SUPPORT_IOBITS
-class PortControl;
-#endif
-
-#if SUPPORT_12864_LCD
-class Display;
-#endif
+class FilamentMonitor;
 
 // These three are implemented in Tasks.cpp
 void delay(uint32_t ms);
@@ -82,53 +69,32 @@ inline void SetBasePriority(uint32_t prio)
 	__set_BASEPRI(prio << (8 - __NVIC_PRIO_BITS));
 }
 
-// Helper functions to work on bitmaps of various lengths.
-// The primary purpose of these is to allow us to switch between 16, 32 and 64-bit bitmaps.
-
-// Convert an unsigned integer to a bit in a bitmap
-template<typename BitmapType> inline constexpr BitmapType MakeBitmap(unsigned int n)
+// Classes to facilitate range-based for loops that iterate from 0 up to just below a limit
+template<class T> class SimpleRangeIterator
 {
-	return (BitmapType)1u << n;
-}
+public:
+	SimpleRangeIterator(T value_) : val(value_) {}
+    bool operator != (SimpleRangeIterator<T> const& other) const { return val != other.val;     }
+    T const& operator*() const { return val; }
+    SimpleRangeIterator& operator++() { ++val; return *this; }
 
-// Make a bitmap with the lowest n bits set
-template<typename BitmapType> inline constexpr BitmapType LowestNBits(unsigned int n)
-{
-	return ((BitmapType)1u << n) - 1;
-}
+private:
+    T val;
+};
 
-// Check if a particular bit is set in a bitmap
-template<typename BitmapType> inline constexpr bool IsBitSet(BitmapType b, unsigned int n)
+template<class T> class SimpleRange
 {
-	return (b & ((BitmapType)1u << n)) != 0;
-}
+public:
+	SimpleRange(T limit) : _end(limit) {}
+	SimpleRangeIterator<T> begin() const { return SimpleRangeIterator<T>(0); }
+	SimpleRangeIterator<T> end() const { return SimpleRangeIterator<T>(_end); 	}
 
-// Set a bit in a bitmap
-template<typename BitmapType> inline void SetBit(BitmapType &b, unsigned int n)
-{
-	b |= ((BitmapType)1u << n);
-}
+private:
+	const T _end;
+};
 
-// Clear a bit in a bitmap
-template<typename BitmapType> inline void ClearBit(BitmapType &b, unsigned int n)
-{
-	b &= ~((BitmapType)1u << n);
-}
-
-// Convert an array of longs to a bit map with overflow checking
-template<typename BitmapType> BitmapType UnsignedArrayToBitMap(const uint32_t *arr, size_t numEntries)
-{
-	BitmapType res = 0;
-	for (size_t i = 0; i < numEntries; ++i)
-	{
-		const uint32_t f = arr[i];
-		if (f < sizeof(BitmapType) * CHAR_BIT)
-		{
-			SetBit(res, f);
-		}
-	}
-	return res;
-}
+// Macro to create a SimpleRange from an array
+#define ARRAY_INDICES(_arr) (SimpleRange<size_t>(ARRAY_SIZE(_arr)))
 
 template<class X> inline constexpr X min(X _a, X _b)
 {
@@ -181,27 +147,34 @@ inline constexpr uint64_t isquare64(uint32_t arg)
 	return (uint64_t)arg * arg;
 }
 
-inline void swap(float& a, float& b)
-{
-	float temp = a;
-	a = b;
-	b = temp;
-}
-
 // Note that constrain<float> will return NaN for a NaN input because of the way we define min<float> and max<float>
 template<class T> inline constexpr T constrain(T val, T vmin, T vmax)
 {
 	return max<T>(min<T>(val, vmax), vmin);
 }
 
+// A simple milliseconds timer class
+class MillisTimer
+{
+public:
+	MillisTimer() { running = false; }
+	void Start();
+	void Stop() { running = false; }
+	bool Check(uint32_t timeoutMillis) const;
+	bool CheckAndStop(uint32_t timeoutMillis);
+	bool IsRunning() const { return running; }
+
+private:
+	uint32_t whenStarted;
+	bool running;
+};
+
 constexpr size_t ScratchStringLength = 220;							// standard length of a scratch string, enough to print delta parameters to
 constexpr size_t ShortScratchStringLength = 50;
 
 constexpr size_t XYZ_AXES = 3;										// The number of Cartesian axes
-constexpr size_t X_AXIS = 0, Y_AXIS = 1, Z_AXIS = 2, E0_AXIS = 3;	// The indices of the Cartesian axes in drive arrays
-constexpr size_t CoreXYU_AXES = 5;									// The number of axes in a CoreXYU machine (there is a hidden V axis)
-constexpr size_t CoreXYUV_AXES = 5;									// The number of axes in a CoreXYUV machine
-constexpr size_t U_AXIS = 3, V_AXIS = 4;							// The indices of the U and V motors in a CoreXYU machine (needed by Platform)
+constexpr size_t X_AXIS = 0, Y_AXIS = 1, Z_AXIS = 2;				// The indices of the Cartesian axes in drive arrays
+constexpr size_t U_AXIS = 3;										// The assumed index of the U motor when aligning a rotary axis
 
 // Common conversion factors
 constexpr unsigned int MinutesToSeconds = 60;
@@ -253,12 +226,6 @@ private:
 	uint32_t basePrio;
 };
 
-// Return true if we are in any interrupt service routine
-static inline bool inInterrupt()
-{
-	return (__get_IPSR() & 0x01FF) != 0;
-}
-
 // Macro to give us the number of elements in an array
 #ifndef ARRAY_SIZE
 # define ARRAY_SIZE(_x)	(sizeof(_x)/sizeof(_x[0]))
@@ -276,6 +243,7 @@ namespace RepRap
 {
 	void Init();
 	void Spin();
+	void Tick();
 }
 
 #ifdef __SAME51N19A__
@@ -315,13 +283,28 @@ typedef uint32_t AxesBitmap;				// Type of a bitmap representing a set of axes
 typedef uint32_t DriversBitmap;				// Type of a bitmap representing a set of driver numbers
 typedef uint32_t FansBitmap;				// Type of a bitmap representing a set of fan numbers
 
-#define PORTA_PIN(_n)	(GPIO(GPIO_PORTA, (_n)))
-#define PORTB_PIN(_n)	(GPIO(GPIO_PORTB, (_n)))
-#define PORTC_PIN(_n)	(GPIO(GPIO_PORTC, (_n)))
-#define PORTD_PIN(_n)	(GPIO(GPIO_PORTD, (_n)))
+#define PortAPin(_n)	(GPIO(GPIO_PORTA, (_n)))
+#define PortBPin(_n)	(GPIO(GPIO_PORTB, (_n)))
+#define PortCPin(_n)	(GPIO(GPIO_PORTC, (_n)))
+#define PortDPin(_n)	(GPIO(GPIO_PORTD, (_n)))
 
 typedef uint8_t DmaChannel;
 
-#include "Pins.h"
+#include "Config/BoardDef.h"
+
+// Task priorities
+namespace TaskPriority
+{
+	static constexpr int SpinPriority = 1;							// priority for tasks that rarely block
+	static constexpr int HeatPriority = 2;
+	static constexpr int DhtPriority = 2;
+	static constexpr int TmcPriority = 2;
+	static constexpr int AinPriority = 2;
+	static constexpr int HeightFollowingPriority = 2;
+	static constexpr int DueXPriority = 3;
+	static constexpr int LaserPriority = 3;
+	static constexpr int CanSenderPriority = 3;
+	static constexpr int CanReceiverPriority = 3;
+}
 
 #endif /* SRC_REPRAPFIRMWARE_H_ */

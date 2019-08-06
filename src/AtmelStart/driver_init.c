@@ -13,17 +13,15 @@
 #include <hal_can_async.h>
 #include <hpl/rtc/hpl_rtc_base.h>
 
+extern uint32_t SystemPeripheralClock;
+
 /*! The buffer size for USART */
 #define USART_0_BUFFER_SIZE 256
 
-struct timer_descriptor     TIMER_0;
 struct usart_async_descriptor USART_0;
-struct timer_descriptor     TIMER_1;
 struct can_async_descriptor CAN_0;
 
 static uint8_t USART_0_buffer[USART_0_BUFFER_SIZE];
-
-struct pwm_descriptor PWM_0;
 
 struct wdt_descriptor WDT_0;
 
@@ -56,10 +54,8 @@ void USART_0_CLOCK_init()
  */
 void USART_0_PORT_init()
 {
-
-	gpio_set_pin_function(PB20, PINMUX_PB20C_SERCOM3_PAD0);
-
-	gpio_set_pin_function(PB21, PINMUX_PB21C_SERCOM3_PAD1);
+	gpio_set_pin_function(PB20, PINMUX_PB20C_SERCOM3_PAD0);		// TxD
+	gpio_set_pin_function(PB21, PINMUX_PB21C_SERCOM3_PAD1);		// RxD
 }
 
 /**
@@ -77,24 +73,6 @@ void USART_0_init(void)
 void delay_driver_init(void)
 {
 	delay_init(SysTick);
-}
-
-void PWM_0_PORT_init(void)
-{
-	gpio_set_pin_function(PA18, PINMUX_PA18E_TC3_WO0);
-}
-
-void PWM_0_CLOCK_init(void)
-{
-	hri_mclk_set_APBBMASK_TC3_bit(MCLK);
-	hri_gclk_write_PCHCTRL_reg(GCLK, TC3_GCLK_ID, CONF_GCLK_TC3_SRC | (1 << GCLK_PCHCTRL_CHEN_Pos));
-}
-
-void PWM_0_init(void)
-{
-	PWM_0_CLOCK_init();
-	PWM_0_PORT_init();
-	pwm_init(&PWM_0, TC3, _tc_get_pwm());
 }
 
 void WDT_0_CLOCK_init(void)
@@ -131,9 +109,10 @@ void CAN_0_init(void)
 void system_init(void)
 {
 	init_mcu();
+	SystemCoreClock = 120000000;
+	SystemPeripheralClock = 60000000;
 
 	USART_0_init();
-	PWM_0_init();
 	CAN_0_init();
 
 //	WDT_0_init();

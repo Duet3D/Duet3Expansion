@@ -33,7 +33,7 @@
 
 // <i> Select the clock source for ADC.
 #ifndef CONF_GCLK_ADC0_SRC
-#define CONF_GCLK_ADC0_SRC GCLK_PCHCTRL_GEN_GCLK0_Val
+#define CONF_GCLK_ADC0_SRC GCLK_PCHCTRL_GEN_GCLK1_Val
 #endif
 
 /**
@@ -41,7 +41,7 @@
  * \brief ADC0's Clock frequency
  */
 #ifndef CONF_GCLK_ADC0_FREQUENCY
-#define CONF_GCLK_ADC0_FREQUENCY 120000000
+#define CONF_GCLK_ADC0_FREQUENCY 60000000
 #endif
 
 // <y> ADC Clock Source
@@ -73,7 +73,7 @@
 
 // <i> Select the clock source for ADC.
 #ifndef CONF_GCLK_ADC1_SRC
-#define CONF_GCLK_ADC1_SRC GCLK_PCHCTRL_GEN_GCLK0_Val
+#define CONF_GCLK_ADC1_SRC GCLK_PCHCTRL_GEN_GCLK1_Val
 #endif
 
 /**
@@ -81,7 +81,7 @@
  * \brief ADC1's Clock frequency
  */
 #ifndef CONF_GCLK_ADC1_FREQUENCY
-#define CONF_GCLK_ADC1_FREQUENCY 120000000
+#define CONF_GCLK_ADC1_FREQUENCY 60000000
 #endif
 
 // <y> EIC Clock Source
@@ -113,7 +113,7 @@
 
 // <i> Select the clock source for EIC.
 #ifndef CONF_GCLK_EIC_SRC
-#define CONF_GCLK_EIC_SRC GCLK_PCHCTRL_GEN_GCLK0_Val
+#define CONF_GCLK_EIC_SRC GCLK_PCHCTRL_GEN_GCLK1_Val
 #endif
 
 /**
@@ -121,7 +121,7 @@
  * \brief EIC's Clock frequency
  */
 #ifndef CONF_GCLK_EIC_FREQUENCY
-#define CONF_GCLK_EIC_FREQUENCY 120000000
+#define CONF_GCLK_EIC_FREQUENCY 60000000
 #endif
 
 /**
@@ -177,7 +177,7 @@
 
 // <i> Select the clock source for CORE.
 #ifndef CONF_GCLK_SERCOM0_CORE_SRC
-#define CONF_GCLK_SERCOM0_CORE_SRC GCLK_PCHCTRL_GEN_GCLK0_Val
+#define CONF_GCLK_SERCOM0_CORE_SRC GCLK_PCHCTRL_GEN_GCLK1_Val
 #endif
 
 // <y> Slow Clock Source
@@ -217,7 +217,7 @@
  * \brief SERCOM3's Core Clock frequency
  */
 #ifndef CONF_GCLK_SERCOM0_CORE_FREQUENCY
-#define CONF_GCLK_SERCOM0_CORE_FREQUENCY 120000000
+#define CONF_GCLK_SERCOM0_CORE_FREQUENCY 60000000
 #endif
 
 /**
@@ -257,7 +257,7 @@
 
 // <i> Select the clock source for CORE.
 #ifndef CONF_GCLK_SERCOM3_CORE_SRC
-#define CONF_GCLK_SERCOM3_CORE_SRC GCLK_PCHCTRL_GEN_GCLK0_Val
+#define CONF_GCLK_SERCOM3_CORE_SRC GCLK_PCHCTRL_GEN_GCLK1_Val
 #endif
 
 // <y> Slow Clock Source
@@ -297,7 +297,7 @@
  * \brief SERCOM3's Core Clock frequency
  */
 #ifndef CONF_GCLK_SERCOM3_CORE_FREQUENCY
-#define CONF_GCLK_SERCOM3_CORE_FREQUENCY 120000000
+#define CONF_GCLK_SERCOM3_CORE_FREQUENCY 60000000
 #endif
 
 /**
@@ -308,8 +308,14 @@
 #define CONF_GCLK_SERCOM3_SLOW_FREQUENCY 32768
 #endif
 
-// <y> TC Clock Source
-// <id> tc_gclk_selection
+// SERCOM6
+// <i> Select the clock source for CORE.
+#ifndef CONF_GCLK_SERCOM6_CORE_SRC
+#define CONF_GCLK_SERCOM6_CORE_SRC GCLK_PCHCTRL_GEN_GCLK1_Val
+#endif
+
+// <y> Slow Clock Source
+// <id> slow_gclk_selection
 
 // <GCLK_PCHCTRL_GEN_GCLK0_Val"> Generic clock generator 0
 
@@ -335,17 +341,25 @@
 
 // <GCLK_PCHCTRL_GEN_GCLK11_Val"> Generic clock generator 11
 
-// <i> Select the clock source for TC.
-#ifndef CONF_GCLK_TC3_SRC
-#define CONF_GCLK_TC3_SRC GCLK_PCHCTRL_GEN_GCLK0_Val
+// <i> Select the slow clock source.
+#ifndef CONF_GCLK_SERCOM6_SLOW_SRC
+#define CONF_GCLK_SERCOM6_SLOW_SRC GCLK_PCHCTRL_GEN_GCLK3_Val
 #endif
 
 /**
- * \def CONF_GCLK_TC3_FREQUENCY
- * \brief TC0's Clock frequency
+ * \def CONF_GCLK_SERCOM3_CORE_FREQUENCY
+ * \brief SERCOM3's Core Clock frequency
  */
-#ifndef CONF_GCLK_TC3_FREQUENCY
-#define CONF_GCLK_TC3_FREQUENCY 120000000
+#ifndef CONF_GCLK_SERCOM6_CORE_FREQUENCY
+#define CONF_GCLK_SERCOM6_CORE_FREQUENCY 60000000
+#endif
+
+/**
+ * \def CONF_GCLK_SERCOM3_SLOW_FREQUENCY
+ * \brief SERCOM3's Slow Clock frequency
+ */
+#ifndef CONF_GCLK_SERCOM6_SLOW_FREQUENCY
+#define CONF_GCLK_SERCOM6_SLOW_FREQUENCY 32768
 #endif
 
 // <y> TC Clock Source
@@ -377,7 +391,7 @@
 
 // <i> Select the clock source for TC.
 #ifndef CONF_GCLK_TC6_SRC
-#define CONF_GCLK_TC6_SRC GCLK_PCHCTRL_GEN_GCLK0_Val
+#define CONF_GCLK_TC6_SRC GCLK_PCHCTRL_GEN_GCLK1_Val
 #endif
 
 /**
@@ -385,7 +399,7 @@
  * \brief TC1's Clock frequency
  */
 #ifndef CONF_GCLK_TC6_FREQUENCY
-#define CONF_GCLK_TC6_FREQUENCY 120000000
+#define CONF_GCLK_TC6_FREQUENCY 60000000
 #endif
 
 // <y> CAN1 Clock Source

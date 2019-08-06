@@ -15,14 +15,14 @@
 const uint8_t memPattern = 0xA5;
 
 extern "C" char *sbrk(int i);
-extern char _end;
+//extern char _end;
 
 
 // The main task currently runs GCodes, so it needs to be large enough to hold the matrices used for auto calibration.
 constexpr unsigned int MainTaskStackWords = 2040;
 
 static Task<MainTaskStackWords> mainTask;
-//static Mutex spiMutex;
+static Mutex spiMutex;
 static Mutex mallocMutex;
 
 extern "C" void MainTask(void * pvParameters);
@@ -69,7 +69,7 @@ void AppMain()
 #endif
 
 	// Create the startup task
-	mainTask.Create(MainTask, "MAIN", nullptr, TaskBase::SpinPriority);
+	mainTask.Create(MainTask, "MAIN", nullptr, TaskPriority::SpinPriority);
 	vTaskStartScheduler();			// doesn't return
 }
 
@@ -84,7 +84,8 @@ extern void Spin();
 extern "C" void MainTask(void *pvParameters)
 {
 	mallocMutex.Create("Malloc");
-//	spiMutex.Create("SPI");
+	spiMutex.Create("SPI");
+
 	Init();
 	for (;;)
 	{
@@ -107,14 +108,6 @@ namespace Tasks
 		}
 		if (maxStack != nullptr) { *maxStack = ramend - stack_lwm; }
 		if (neverUsed != nullptr) { *neverUsed = stack_lwm - heapend; }
-	}
-
-	uint32_t GetNeverUsedRam()
-	{
-		uint32_t neverUsedRam;
-
-		GetHandlerStackUsage(nullptr, &neverUsedRam);
-		return neverUsedRam;
 	}
 
 #if 0
@@ -177,6 +170,18 @@ namespace Tasks
 
 }
 
+uint32_t Tasks::GetNeverUsedRam()
+{
+	uint32_t neverUsedRam;
+	GetHandlerStackUsage(nullptr, &neverUsedRam);
+	return neverUsedRam;
+}
+
+Mutex *Tasks::GetSpiMutex()
+{
+	return &spiMutex;
+}
+
 static StaticTask_t xIdleTaskTCB;
 static StackType_t uxIdleTaskStack[configMINIMAL_STACK_SIZE];
 
@@ -185,6 +190,7 @@ static volatile uint64_t g_ms_ticks = 0;		// Count of 1ms time ticks. */
 extern "C" void vApplicationTickHook(void)
 {
 	g_ms_ticks++;
+	RepRap::Tick();
 //	wdt_restart(WDT);							// kick the watchdog
 }
 
