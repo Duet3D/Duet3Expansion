@@ -14,9 +14,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License.
  * You may obtain a copy of the Licence at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an AS IS BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -39,6 +39,7 @@ extern uint32_t _szero;
 extern uint32_t _ezero;
 extern uint32_t _sstack;
 extern uint32_t _estack;
+extern uint32_t _firmwarecrc;
 
 /** \cond DOXYGEN_SHOULD_SKIP_THIS */
 int main(void);
@@ -249,7 +250,11 @@ const DeviceVectors exception_table = {
         .pfnMemManage_Handler   = (void*) MemManage_Handler,
         .pfnBusFault_Handler    = (void*) BusFault_Handler,
         .pfnUsageFault_Handler  = (void*) UsageFault_Handler,
+#if 1
+		.pvReservedM9			= (void*) (&_firmwarecrc),		/* we store a pointer to the firmware CRC here */
+#else
         .pvReservedM9           = (void*) (0UL), /* Reserved */
+#endif
         .pvReservedM8           = (void*) (0UL), /* Reserved */
         .pvReservedM7           = (void*) (0UL), /* Reserved */
         .pvReservedM6           = (void*) (0UL), /* Reserved */

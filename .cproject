@@ -34,7 +34,6 @@
 								</option>
 								<option id="gnu.c.compiler.option.misc.other.622378623" name="Other flags" superClass="gnu.c.compiler.option.misc.other" useByScannerDiscovery="false" value="-c -mcpu=cortex-m4 -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=hard -ffunction-sections -fdata-sections -nostdlib -Wdouble-promotion -fsingle-precision-constant &quot;-Wa,-ahl=$*.s&quot;" valueType="string"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.c.compiler.option.include.paths.260159221" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart}&quot;"/>
@@ -61,7 +60,6 @@
 								<option id="gnu.cpp.compiler.option.other.other.50174794" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" useByScannerDiscovery="false" value="-c -mcpu=cortex-m4 -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=hard -ffunction-sections -fdata-sections -fno-threadsafe-statics -fno-rtti -fno-exceptions -nostdlib -Wdouble-promotion -fsingle-precision-constant &quot;-Wa,-ahl=$*.s&quot;" valueType="string"/>
 								<option id="gnu.cpp.compiler.option.include.files.1201407149" name="Include files (-include)" superClass="gnu.cpp.compiler.option.include.files" useByScannerDiscovery="false"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.compiler.option.include.paths.29133653" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart}&quot;"/>
@@ -89,7 +87,7 @@
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.paths.2035263680" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" useByScannerDiscovery="false" valueType="libPaths">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries/SAME51_RTOS}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CANlib/SAME51}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CANlib/SAME51_RTOS}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS/SAME51}&quot;"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.477950556" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
@@ -104,25 +102,6 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS}&quot;"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1557659060" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
-							</tool>
-						</toolChain>
-					</folderInfo>
-					<folderInfo id="cdt.managedbuild.config.gnu.cross.exe.release.1668726908.749003367" name="/" resourcePath="src/AtmelStart/hpl/eic">
-						<toolChain id="cdt.managedbuild.toolchain.gnu.cross.exe.release.812794819" name="Cross GCC" superClass="cdt.managedbuild.toolchain.gnu.cross.exe.release" unusedChildren="">
-							<option id="cdt.managedbuild.option.gnu.cross.prefix.1625269932.1128597488" name="Prefix" superClass="cdt.managedbuild.option.gnu.cross.prefix.1625269932"/>
-							<option id="cdt.managedbuild.option.gnu.cross.path.910467274.399217926" name="Path" superClass="cdt.managedbuild.option.gnu.cross.path.910467274"/>
-							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="cdt.managedbuild.targetPlatform.gnu.cross" isAbstract="false" osList="all" superClass="cdt.managedbuild.targetPlatform.gnu.cross"/>
-							<tool id="cdt.managedbuild.tool.gnu.cross.c.compiler.782154192" name="Cross GCC Compiler" superClass="cdt.managedbuild.tool.gnu.cross.c.compiler.95132780">
-								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1784282781" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
-							</tool>
-							<tool id="cdt.managedbuild.tool.gnu.cross.cpp.compiler.1932725155" name="Cross G++ Compiler" superClass="cdt.managedbuild.tool.gnu.cross.cpp.compiler.1152197361">
-								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.2004408690" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
-							</tool>
-							<tool id="cdt.managedbuild.tool.gnu.cross.c.linker.1560922416" name="Cross GCC Linker" superClass="cdt.managedbuild.tool.gnu.cross.c.linker.1647954029"/>
-							<tool id="cdt.managedbuild.tool.gnu.cross.cpp.linker.785957043" name="Cross G++ Linker" superClass="cdt.managedbuild.tool.gnu.cross.cpp.linker.753299533"/>
-							<tool id="cdt.managedbuild.tool.gnu.cross.archiver.1315162613" name="Cross GCC Archiver" superClass="cdt.managedbuild.tool.gnu.cross.archiver.2087617507"/>
-							<tool id="cdt.managedbuild.tool.gnu.cross.assembler.1309007133" name="Cross GCC Assembler" superClass="cdt.managedbuild.tool.gnu.cross.assembler.680505495">
-								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.70816459" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 							</tool>
 						</toolChain>
 					</folderInfo>
@@ -181,7 +160,6 @@
 								</option>
 								<option id="gnu.c.compiler.option.misc.other.2011481472" name="Other flags" superClass="gnu.c.compiler.option.misc.other" useByScannerDiscovery="false" value="-c -mcpu=cortex-m4 -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=hard -ffunction-sections -fdata-sections -nostdlib -Wdouble-promotion -fsingle-precision-constant &quot;-Wa,-ahl=$*.s&quot;" valueType="string"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.c.compiler.option.include.paths.1789898629" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart}&quot;"/>
@@ -192,7 +170,7 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/atmel/SAME51_DFP/1.0.65/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/CMSIS/5.0.1/CMSIS/Include}&quot;"/>
 								</option>
-								<option id="gnu.c.compiler.option.misc.pic.2062418422" name="Position Independent Code (-fPIC)" superClass="gnu.c.compiler.option.misc.pic" useByScannerDiscovery="false" value="true" valueType="boolean"/>
+								<option id="gnu.c.compiler.option.misc.pic.2062418422" name="Position Independent Code (-fPIC)" superClass="gnu.c.compiler.option.misc.pic" useByScannerDiscovery="false" value="false" valueType="boolean"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.212968607" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.cross.cpp.compiler.1418725277" name="Cross G++ Compiler" superClass="cdt.managedbuild.tool.gnu.cross.cpp.compiler">
@@ -208,7 +186,6 @@
 								<option id="gnu.cpp.compiler.option.other.other.1209048113" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" useByScannerDiscovery="false" value="-c -mcpu=cortex-m4 -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=hard -ffunction-sections -fdata-sections -fno-threadsafe-statics -fno-rtti -fno-exceptions -nostdlib -Wdouble-promotion -fsingle-precision-constant &quot;-Wa,-ahl=$*.s&quot;" valueType="string"/>
 								<option id="gnu.cpp.compiler.option.include.files.390765618" name="Include files (-include)" superClass="gnu.cpp.compiler.option.include.files" useByScannerDiscovery="false"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.compiler.option.include.paths.1252685874" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart}&quot;"/>
@@ -228,7 +205,7 @@
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.cross.c.linker.2038810831" name="Cross GCC Linker" superClass="cdt.managedbuild.tool.gnu.cross.c.linker"/>
 							<tool id="cdt.managedbuild.tool.gnu.cross.cpp.linker.1729351730" name="Cross G++ Linker" superClass="cdt.managedbuild.tool.gnu.cross.cpp.linker">
-								<option id="gnu.cpp.link.option.flags.560499087" name="Linker flags" superClass="gnu.cpp.link.option.flags" useByScannerDiscovery="false" value="-Os --specs=nano.specs -Wl,--gc-sections -Wl,--fatal-warnings -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -T&quot;${workspace_loc:/${ProjName}/src/atmel/SAME51_DFP/1.0.65/gcc/gcc/same51n19a_flash.ld}&quot; -Wl,-Map,&quot;${workspace_loc:/${ProjName}/${ConfigName}}/${BuildArtifactFileBaseName}.map&quot;" valueType="string"/>
+								<option id="gnu.cpp.link.option.flags.560499087" name="Linker flags" superClass="gnu.cpp.link.option.flags" useByScannerDiscovery="false" value="-Os --specs=nano.specs -Wl,--gc-sections -Wl,--fatal-warnings -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -T&quot;${workspace_loc:/${ProjName}/src/AtmelStart/Device_Startup/same51n19a_flash_with_bootloader.ld}&quot; -Wl,-Map,&quot;${workspace_loc:/${ProjName}/${ConfigName}}/${BuildArtifactFileBaseName}.map&quot;" valueType="string"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.libs.1841208264" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" useByScannerDiscovery="false" valueType="libs">
 									<listOptionValue builtIn="false" value="RRFLibraries"/>
 									<listOptionValue builtIn="false" value="CANlib"/>
@@ -236,7 +213,7 @@
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.paths.484669035" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" useByScannerDiscovery="false" valueType="libPaths">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries/SAME51_RTOS}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CANlib/SAME51}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CANlib/SAME51_RTOS}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS/SAME51}&quot;"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.1503315330" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
@@ -251,25 +228,6 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS}&quot;"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1107963422" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
-							</tool>
-						</toolChain>
-					</folderInfo>
-					<folderInfo id="cdt.managedbuild.config.gnu.cross.exe.release.1668726908.1420356148.381470108" name="/" resourcePath="src/AtmelStart/hpl/eic">
-						<toolChain id="cdt.managedbuild.toolchain.gnu.cross.exe.release.754425196" name="Cross GCC" superClass="cdt.managedbuild.toolchain.gnu.cross.exe.release" unusedChildren="">
-							<option id="cdt.managedbuild.option.gnu.cross.prefix.1640600595.1678312804" name="Prefix" superClass="cdt.managedbuild.option.gnu.cross.prefix.1640600595"/>
-							<option id="cdt.managedbuild.option.gnu.cross.path.1656922410.1952692991" name="Path" superClass="cdt.managedbuild.option.gnu.cross.path.1656922410"/>
-							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="cdt.managedbuild.targetPlatform.gnu.cross" isAbstract="false" osList="all" superClass="cdt.managedbuild.targetPlatform.gnu.cross"/>
-							<tool id="cdt.managedbuild.tool.gnu.cross.c.compiler.1903163262" name="Cross GCC Compiler" superClass="cdt.managedbuild.tool.gnu.cross.c.compiler.1089751052">
-								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.811749842" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
-							</tool>
-							<tool id="cdt.managedbuild.tool.gnu.cross.cpp.compiler.1335340499" name="Cross G++ Compiler" superClass="cdt.managedbuild.tool.gnu.cross.cpp.compiler.1418725277">
-								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.450431239" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
-							</tool>
-							<tool id="cdt.managedbuild.tool.gnu.cross.c.linker.1350932652" name="Cross GCC Linker" superClass="cdt.managedbuild.tool.gnu.cross.c.linker.2038810831"/>
-							<tool id="cdt.managedbuild.tool.gnu.cross.cpp.linker.1074016351" name="Cross G++ Linker" superClass="cdt.managedbuild.tool.gnu.cross.cpp.linker.1729351730"/>
-							<tool id="cdt.managedbuild.tool.gnu.cross.archiver.155219436" name="Cross GCC Archiver" superClass="cdt.managedbuild.tool.gnu.cross.archiver.194171547"/>
-							<tool id="cdt.managedbuild.tool.gnu.cross.assembler.1407762313" name="Cross GCC Assembler" superClass="cdt.managedbuild.tool.gnu.cross.assembler.982006552">
-								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.2088322214" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 							</tool>
 						</toolChain>
 					</folderInfo>
@@ -307,6 +265,7 @@
 		<configuration configurationName="Expansion1-v0.5">
 			<resource resourceType="PROJECT" workspacePath="/Duet3Expansion"/>
 		</configuration>
+		<configuration configurationName="Expansion1-v0.9"/>
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.make.core.buildtargets"/>
 	<storageModule moduleId="scannerConfiguration">

@@ -1,11 +1,11 @@
 /*
- * Can.cpp
+ * CanInterface.cpp
  *
  *  Created on: 17 Sep 2018
  *      Author: David
  */
 
-#include "CanSlaveInterface.h"
+#include <CAN/CanInterface.h>
 #include "CanMessageFormats.h"
 #include "CanMessageBuffer.h"
 #include "Platform.h"
@@ -13,6 +13,8 @@
 #include "RTOSIface/RTOSIface.h"
 
 const unsigned int NumCanBuffers = 40;
+
+static CanAddress boardAddress;
 
 // CanReceiver management task
 constexpr size_t CanReceiverTaskStackWords = 400;		// need quite a large stack to allow for calls to debugPrint, 400 is not enough
@@ -70,7 +72,7 @@ CanMessageBuffer *CanMessageQueue::GetMessage()
 static CanMessageQueue PendingMoves;
 static CanMessageQueue PendingCommands;
 
-namespace CanSlaveInterface
+namespace CanInterface
 {
 	void ProcessReceivedMessage(CanMessageBuffer *buf);
 }
@@ -91,12 +93,6 @@ extern "C" void CAN_0_tx_callback(struct can_async_descriptor *const descr)
 extern "C" void CAN_0_rx_callback(struct can_async_descriptor *const descr)
 {
 	canReceiverTask.GiveFromISR();
-}
-
-CanAddress GetCanAddress()
-{
-	//TODO read this just once
-	return Platform::ReadBoardId();
 }
 
 #if 0
@@ -178,7 +174,7 @@ extern "C" void CanReceiverLoop(void *)
 			{
 				buf->dataLength = msg.len;
 				buf->id.SetReceivedId(msg.id);
-				CanSlaveInterface::ProcessReceivedMessage(buf);
+				CanInterface::ProcessReceivedMessage(buf);
 			}
 			else
 			{
@@ -189,8 +185,9 @@ extern "C" void CanReceiverLoop(void *)
 	}
 }
 
-void CanSlaveInterface::Init()
+void CanInterface::Init(CanAddress pBoardAddress)
 {
+	boardAddress = pBoardAddress;
 	CanMessageBuffer::Init(NumCanBuffers);
 
 	can_async_register_callback(&CAN_0, CAN_ASYNC_RX_CB, (FUNC_PTR)CAN_0_rx_callback);
@@ -200,7 +197,12 @@ void CanSlaveInterface::Init()
 	canReceiverTask.Create(CanReceiverLoop, "CanSender", nullptr, TaskPriority::CanReceiverPriority);
 }
 
-void CanSlaveInterface::Send(CanMessageBuffer *buf)
+CanAddress CanInterface::GetCanAddress()
+{
+	return boardAddress;
+}
+
+void CanInterface::Send(CanMessageBuffer *buf)
 {
 	struct can_message msg;
 	msg.id = buf->id.GetWholeId();
@@ -213,7 +215,7 @@ void CanSlaveInterface::Send(CanMessageBuffer *buf)
 	CanMessageBuffer::Free(buf);
 }
 
-bool CanSlaveInterface::GetCanMove(CanMessageMovement& msg)
+bool CanInterface::GetCanMove(CanMessageMovement& msg)
 {
 	// See if there is a movement message
 	CanMessageBuffer * buf = PendingMoves.GetMessage();
@@ -226,12 +228,12 @@ bool CanSlaveInterface::GetCanMove(CanMessageMovement& msg)
 	return false;
 }
 
-CanMessageBuffer *CanSlaveInterface::GetCanCommand()
+CanMessageBuffer *CanInterface::GetCanCommand()
 {
 	return PendingCommands.GetMessage();
 }
 
-void CanSlaveInterface::ProcessReceivedMessage(CanMessageBuffer *buf)
+void CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf)
 {
 	switch (buf->id.MsgType())
 	{
@@ -271,7 +273,7 @@ void CanSlaveInterface::ProcessReceivedMessage(CanMessageBuffer *buf)
 }
 
 // This is called from the step ISR when the move is stopped by the Z probe
-void CanSlaveInterface::MoveStoppedByZProbe()
+void CanInterface::MoveStoppedByZProbe()
 {
 	//TODO
 }

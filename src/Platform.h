@@ -134,7 +134,6 @@ namespace Platform
 
 	void KickHeatTaskWatchdog();
 
-	uint8_t ReadBoardSwitches();
 	uint8_t ReadBoardId();
 
 	void Tick();

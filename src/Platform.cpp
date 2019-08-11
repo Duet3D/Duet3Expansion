@@ -16,7 +16,7 @@
 #include <Config/peripheral_clk_config.h>
 #include "AdcAveragingFilter.h"
 #include "Movement/StepTimer.h"
-#include "CAN/CanSlaveInterface.h"
+#include <CAN/CanInterface.h>
 #include "Tasks.h"
 #include "Heating/Heat.h"
 #include "Heating/Sensors/TemperatureSensor.h"
@@ -304,7 +304,7 @@ void Platform::Init()
 	warnDriversNotPowered = false;
 #endif
 
-	CanSlaveInterface::Init();
+	CanInterface::Init(ReadBoardId());
 
 	InitialiseInterrupts();
 
@@ -510,11 +510,11 @@ void Platform::Spin()
 	{
 		lastPollTime = now;
 
-		const uint8_t addr = ReadBoardSwitches();
+		const uint8_t addr = ReadBoardId();
 		if (addr != oldAddr)
 		{
 			oldAddr = addr;
-			const float current = (addr == 3) ? 3000.0 : (addr == 2) ? 2000.0 : (addr == 1) ? 1000.0 : 500.0;
+			const float current = (addr == 3) ? 6300.0 : (addr == 2) ? 2000.0 : (addr == 1) ? 1000.0 : 500.0;
 			for (size_t i = 0; i < NumDrivers; ++i)
 			{
 				SmartDrivers::SetCurrent(i, current);
@@ -743,7 +743,7 @@ void Platform::EnableDrive(size_t axisOrExtruder)
 //	void Platform::DisableAllDrives();
 //	void Platform::SetDriversIdle();
 
-uint8_t Platform::ReadBoardSwitches()
+uint8_t Platform::ReadBoardId()
 {
 	uint8_t rslt = 0;
 	for (unsigned int i = 0; i < 4; ++i)
@@ -754,12 +754,6 @@ uint8_t Platform::ReadBoardSwitches()
 		}
 	}
 	return rslt;
-}
-
-uint8_t Platform::ReadBoardId()
-{
-	const uint8_t addr = ReadBoardSwitches() & 3;		// currently the top 2 bits are used to set motor current
-	return (addr == 0) ? 4 : addr;
 }
 
 // TMC driver temperatures
