@@ -116,10 +116,11 @@ SECTIONS
         *(.data .data.*);
         . = ALIGN(4);
         _erelocate = .;
-		_firmwarecrc = .;		/* we store the CRC32 of the binary file here */
     } > ram
 
-    .bkupram (NOLOAD):
+ 	_firmware_crc = _etext + (_erelocate - _srelocate);		/* We append the CRC32 to the binary file. This is its offset in memory. */
+
+   .bkupram (NOLOAD):
     {
         . = ALIGN(8);
         _sbkupram = .;

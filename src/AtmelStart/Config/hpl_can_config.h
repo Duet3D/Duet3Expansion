@@ -20,7 +20,7 @@
 // <i> Bit Rate Switch Enable
 // <id> can_cccr_brse
 #ifndef CONF_CAN1_CCCR_BRSE
-#define CONF_CAN1_CCCR_BRSE 1
+#define CONF_CAN1_CCCR_BRSE 0
 #endif
 
 // <q> Run In Standby
