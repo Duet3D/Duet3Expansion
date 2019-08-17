@@ -47,9 +47,13 @@
 extern "C" {
 #endif
 
-/** Uses common SPI async device driver. */
+/** Uses common SPI sync device driver. */
 #define _spi_m_sync_dev _spi_sync_dev
 
+/**
+ * \name HPL functions
+ */
+//@{
 /**
  *  \brief Initialize SPI for access without interrupts
  *  It will load default hardware configuration and software struct.
@@ -118,7 +122,7 @@ int32_t _spi_m_sync_set_mode(struct _spi_m_sync_dev *dev, const enum spi_transfe
 int32_t _spi_m_sync_set_baudrate(struct _spi_m_sync_dev *dev, const uint32_t baud_val);
 
 /**
- *  \brief Set SPI baudrate
+ *  \brief Set SPI char size
  *  \param[in, out] dev Pointer to the SPI device instance.
  *  \param[in] char_size The character size, see \ref spi_char_size.
  *  \return Operation status.
@@ -152,6 +156,7 @@ int32_t _spi_m_sync_set_data_order(struct _spi_m_sync_dev *dev, const enum spi_d
  *  \retval >=0 Number of characters transferred.
  */
 int32_t _spi_m_sync_trans(struct _spi_m_sync_dev *dev, const struct spi_msg *msg);
+//@}
 
 #ifdef __cplusplus
 }

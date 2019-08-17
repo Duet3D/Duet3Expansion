@@ -28,6 +28,7 @@
  * THAT YOU HAVE PAID DIRECTLY TO MICROCHIP FOR THIS SOFTWARE.
  *
  * \asf_license_stop
+ *
  */
 
 #ifdef _SAME51_AC_COMPONENT_
@@ -72,6 +73,84 @@ static inline void hri_ac_wait_for_sync(const void *const hw, hri_ac_syncbusy_re
 static inline bool hri_ac_is_syncing(const void *const hw, hri_ac_syncbusy_reg_t reg)
 {
 	return ((Ac *)hw)->SYNCBUSY.reg & reg;
+}
+
+static inline bool hri_ac_get_INTFLAG_COMP0_bit(const void *const hw)
+{
+	return (((Ac *)hw)->INTFLAG.reg & AC_INTFLAG_COMP0) >> AC_INTFLAG_COMP0_Pos;
+}
+
+static inline void hri_ac_clear_INTFLAG_COMP0_bit(const void *const hw)
+{
+	((Ac *)hw)->INTFLAG.reg = AC_INTFLAG_COMP0;
+}
+
+static inline bool hri_ac_get_INTFLAG_COMP1_bit(const void *const hw)
+{
+	return (((Ac *)hw)->INTFLAG.reg & AC_INTFLAG_COMP1) >> AC_INTFLAG_COMP1_Pos;
+}
+
+static inline void hri_ac_clear_INTFLAG_COMP1_bit(const void *const hw)
+{
+	((Ac *)hw)->INTFLAG.reg = AC_INTFLAG_COMP1;
+}
+
+static inline bool hri_ac_get_INTFLAG_WIN0_bit(const void *const hw)
+{
+	return (((Ac *)hw)->INTFLAG.reg & AC_INTFLAG_WIN0) >> AC_INTFLAG_WIN0_Pos;
+}
+
+static inline void hri_ac_clear_INTFLAG_WIN0_bit(const void *const hw)
+{
+	((Ac *)hw)->INTFLAG.reg = AC_INTFLAG_WIN0;
+}
+
+static inline bool hri_ac_get_interrupt_COMP0_bit(const void *const hw)
+{
+	return (((Ac *)hw)->INTFLAG.reg & AC_INTFLAG_COMP0) >> AC_INTFLAG_COMP0_Pos;
+}
+
+static inline void hri_ac_clear_interrupt_COMP0_bit(const void *const hw)
+{
+	((Ac *)hw)->INTFLAG.reg = AC_INTFLAG_COMP0;
+}
+
+static inline bool hri_ac_get_interrupt_COMP1_bit(const void *const hw)
+{
+	return (((Ac *)hw)->INTFLAG.reg & AC_INTFLAG_COMP1) >> AC_INTFLAG_COMP1_Pos;
+}
+
+static inline void hri_ac_clear_interrupt_COMP1_bit(const void *const hw)
+{
+	((Ac *)hw)->INTFLAG.reg = AC_INTFLAG_COMP1;
+}
+
+static inline bool hri_ac_get_interrupt_WIN0_bit(const void *const hw)
+{
+	return (((Ac *)hw)->INTFLAG.reg & AC_INTFLAG_WIN0) >> AC_INTFLAG_WIN0_Pos;
+}
+
+static inline void hri_ac_clear_interrupt_WIN0_bit(const void *const hw)
+{
+	((Ac *)hw)->INTFLAG.reg = AC_INTFLAG_WIN0;
+}
+
+static inline hri_ac_intflag_reg_t hri_ac_get_INTFLAG_reg(const void *const hw, hri_ac_intflag_reg_t mask)
+{
+	uint8_t tmp;
+	tmp = ((Ac *)hw)->INTFLAG.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline hri_ac_intflag_reg_t hri_ac_read_INTFLAG_reg(const void *const hw)
+{
+	return ((Ac *)hw)->INTFLAG.reg;
+}
+
+static inline void hri_ac_clear_INTFLAG_reg(const void *const hw, hri_ac_intflag_reg_t mask)
+{
+	((Ac *)hw)->INTFLAG.reg = mask;
 }
 
 static inline void hri_ac_set_INTEN_COMP0_bit(const void *const hw)
@@ -175,96 +254,105 @@ static inline void hri_ac_clear_INTEN_reg(const void *const hw, hri_ac_intenset_
 	((Ac *)hw)->INTENCLR.reg = mask;
 }
 
-static inline bool hri_ac_get_INTFLAG_COMP0_bit(const void *const hw)
+static inline bool hri_ac_get_STATUSA_STATE0_bit(const void *const hw)
 {
-	return (((Ac *)hw)->INTFLAG.reg & AC_INTFLAG_COMP0) >> AC_INTFLAG_COMP0_Pos;
+	return (((Ac *)hw)->STATUSA.reg & AC_STATUSA_STATE0) >> AC_STATUSA_STATE0_Pos;
 }
 
-static inline void hri_ac_clear_INTFLAG_COMP0_bit(const void *const hw)
+static inline bool hri_ac_get_STATUSA_STATE1_bit(const void *const hw)
 {
-	((Ac *)hw)->INTFLAG.reg = AC_INTFLAG_COMP0;
+	return (((Ac *)hw)->STATUSA.reg & AC_STATUSA_STATE1) >> AC_STATUSA_STATE1_Pos;
 }
 
-static inline bool hri_ac_get_INTFLAG_COMP1_bit(const void *const hw)
+static inline hri_ac_statusa_reg_t hri_ac_get_STATUSA_WSTATE0_bf(const void *const hw, hri_ac_statusa_reg_t mask)
 {
-	return (((Ac *)hw)->INTFLAG.reg & AC_INTFLAG_COMP1) >> AC_INTFLAG_COMP1_Pos;
+	return (((Ac *)hw)->STATUSA.reg & AC_STATUSA_WSTATE0(mask)) >> AC_STATUSA_WSTATE0_Pos;
 }
 
-static inline void hri_ac_clear_INTFLAG_COMP1_bit(const void *const hw)
+static inline hri_ac_statusa_reg_t hri_ac_read_STATUSA_WSTATE0_bf(const void *const hw)
 {
-	((Ac *)hw)->INTFLAG.reg = AC_INTFLAG_COMP1;
+	return (((Ac *)hw)->STATUSA.reg & AC_STATUSA_WSTATE0_Msk) >> AC_STATUSA_WSTATE0_Pos;
 }
 
-static inline bool hri_ac_get_INTFLAG_WIN0_bit(const void *const hw)
-{
-	return (((Ac *)hw)->INTFLAG.reg & AC_INTFLAG_WIN0) >> AC_INTFLAG_WIN0_Pos;
-}
-
-static inline void hri_ac_clear_INTFLAG_WIN0_bit(const void *const hw)
-{
-	((Ac *)hw)->INTFLAG.reg = AC_INTFLAG_WIN0;
-}
-
-static inline bool hri_ac_get_interrupt_COMP0_bit(const void *const hw)
-{
-	return (((Ac *)hw)->INTFLAG.reg & AC_INTFLAG_COMP0) >> AC_INTFLAG_COMP0_Pos;
-}
-
-static inline void hri_ac_clear_interrupt_COMP0_bit(const void *const hw)
-{
-	((Ac *)hw)->INTFLAG.reg = AC_INTFLAG_COMP0;
-}
-
-static inline bool hri_ac_get_interrupt_COMP1_bit(const void *const hw)
-{
-	return (((Ac *)hw)->INTFLAG.reg & AC_INTFLAG_COMP1) >> AC_INTFLAG_COMP1_Pos;
-}
-
-static inline void hri_ac_clear_interrupt_COMP1_bit(const void *const hw)
-{
-	((Ac *)hw)->INTFLAG.reg = AC_INTFLAG_COMP1;
-}
-
-static inline bool hri_ac_get_interrupt_WIN0_bit(const void *const hw)
-{
-	return (((Ac *)hw)->INTFLAG.reg & AC_INTFLAG_WIN0) >> AC_INTFLAG_WIN0_Pos;
-}
-
-static inline void hri_ac_clear_interrupt_WIN0_bit(const void *const hw)
-{
-	((Ac *)hw)->INTFLAG.reg = AC_INTFLAG_WIN0;
-}
-
-static inline hri_ac_intflag_reg_t hri_ac_get_INTFLAG_reg(const void *const hw, hri_ac_intflag_reg_t mask)
+static inline hri_ac_statusa_reg_t hri_ac_get_STATUSA_reg(const void *const hw, hri_ac_statusa_reg_t mask)
 {
 	uint8_t tmp;
-	tmp = ((Ac *)hw)->INTFLAG.reg;
+	tmp = ((Ac *)hw)->STATUSA.reg;
 	tmp &= mask;
 	return tmp;
 }
 
-static inline hri_ac_intflag_reg_t hri_ac_read_INTFLAG_reg(const void *const hw)
+static inline hri_ac_statusa_reg_t hri_ac_read_STATUSA_reg(const void *const hw)
 {
-	return ((Ac *)hw)->INTFLAG.reg;
+	return ((Ac *)hw)->STATUSA.reg;
 }
 
-static inline void hri_ac_clear_INTFLAG_reg(const void *const hw, hri_ac_intflag_reg_t mask)
+static inline bool hri_ac_get_STATUSB_READY0_bit(const void *const hw)
 {
-	((Ac *)hw)->INTFLAG.reg = mask;
+	return (((Ac *)hw)->STATUSB.reg & AC_STATUSB_READY0) >> AC_STATUSB_READY0_Pos;
 }
 
-static inline void hri_ac_write_CTRLB_reg(const void *const hw, hri_ac_ctrlb_reg_t data)
+static inline bool hri_ac_get_STATUSB_READY1_bit(const void *const hw)
 {
-	AC_CRITICAL_SECTION_ENTER();
-	((Ac *)hw)->CTRLB.reg = data;
-	AC_CRITICAL_SECTION_LEAVE();
+	return (((Ac *)hw)->STATUSB.reg & AC_STATUSB_READY1) >> AC_STATUSB_READY1_Pos;
+}
+
+static inline hri_ac_statusb_reg_t hri_ac_get_STATUSB_reg(const void *const hw, hri_ac_statusb_reg_t mask)
+{
+	uint8_t tmp;
+	tmp = ((Ac *)hw)->STATUSB.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline hri_ac_statusb_reg_t hri_ac_read_STATUSB_reg(const void *const hw)
+{
+	return ((Ac *)hw)->STATUSB.reg;
+}
+
+static inline bool hri_ac_get_SYNCBUSY_SWRST_bit(const void *const hw)
+{
+	return (((Ac *)hw)->SYNCBUSY.reg & AC_SYNCBUSY_SWRST) >> AC_SYNCBUSY_SWRST_Pos;
+}
+
+static inline bool hri_ac_get_SYNCBUSY_ENABLE_bit(const void *const hw)
+{
+	return (((Ac *)hw)->SYNCBUSY.reg & AC_SYNCBUSY_ENABLE) >> AC_SYNCBUSY_ENABLE_Pos;
+}
+
+static inline bool hri_ac_get_SYNCBUSY_WINCTRL_bit(const void *const hw)
+{
+	return (((Ac *)hw)->SYNCBUSY.reg & AC_SYNCBUSY_WINCTRL) >> AC_SYNCBUSY_WINCTRL_Pos;
+}
+
+static inline bool hri_ac_get_SYNCBUSY_COMPCTRL0_bit(const void *const hw)
+{
+	return (((Ac *)hw)->SYNCBUSY.reg & AC_SYNCBUSY_COMPCTRL0) >> AC_SYNCBUSY_COMPCTRL0_Pos;
+}
+
+static inline bool hri_ac_get_SYNCBUSY_COMPCTRL1_bit(const void *const hw)
+{
+	return (((Ac *)hw)->SYNCBUSY.reg & AC_SYNCBUSY_COMPCTRL1) >> AC_SYNCBUSY_COMPCTRL1_Pos;
+}
+
+static inline hri_ac_syncbusy_reg_t hri_ac_get_SYNCBUSY_reg(const void *const hw, hri_ac_syncbusy_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Ac *)hw)->SYNCBUSY.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline hri_ac_syncbusy_reg_t hri_ac_read_SYNCBUSY_reg(const void *const hw)
+{
+	return ((Ac *)hw)->SYNCBUSY.reg;
 }
 
 static inline void hri_ac_set_CTRLA_SWRST_bit(const void *const hw)
 {
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_SWRST);
 	((Ac *)hw)->CTRLA.reg |= AC_CTRLA_SWRST;
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_SWRST);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -280,8 +368,8 @@ static inline bool hri_ac_get_CTRLA_SWRST_bit(const void *const hw)
 static inline void hri_ac_set_CTRLA_ENABLE_bit(const void *const hw)
 {
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_SWRST | AC_SYNCBUSY_ENABLE);
 	((Ac *)hw)->CTRLA.reg |= AC_CTRLA_ENABLE;
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_SWRST | AC_SYNCBUSY_ENABLE);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -298,27 +386,27 @@ static inline void hri_ac_write_CTRLA_ENABLE_bit(const void *const hw, bool valu
 {
 	uint8_t tmp;
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_SWRST | AC_SYNCBUSY_ENABLE);
 	tmp = ((Ac *)hw)->CTRLA.reg;
 	tmp &= ~AC_CTRLA_ENABLE;
 	tmp |= value << AC_CTRLA_ENABLE_Pos;
 	((Ac *)hw)->CTRLA.reg = tmp;
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_SWRST | AC_SYNCBUSY_ENABLE);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_ac_clear_CTRLA_ENABLE_bit(const void *const hw)
 {
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_SWRST | AC_SYNCBUSY_ENABLE);
 	((Ac *)hw)->CTRLA.reg &= ~AC_CTRLA_ENABLE;
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_SWRST | AC_SYNCBUSY_ENABLE);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_ac_toggle_CTRLA_ENABLE_bit(const void *const hw)
 {
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_SWRST | AC_SYNCBUSY_ENABLE);
 	((Ac *)hw)->CTRLA.reg ^= AC_CTRLA_ENABLE;
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_SWRST | AC_SYNCBUSY_ENABLE);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -326,12 +414,14 @@ static inline void hri_ac_set_CTRLA_reg(const void *const hw, hri_ac_ctrla_reg_t
 {
 	AC_CRITICAL_SECTION_ENTER();
 	((Ac *)hw)->CTRLA.reg |= mask;
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_SWRST | AC_SYNCBUSY_ENABLE);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline hri_ac_ctrla_reg_t hri_ac_get_CTRLA_reg(const void *const hw, hri_ac_ctrla_reg_t mask)
 {
 	uint8_t tmp;
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_SWRST | AC_SYNCBUSY_ENABLE);
 	tmp = ((Ac *)hw)->CTRLA.reg;
 	tmp &= mask;
 	return tmp;
@@ -341,6 +431,7 @@ static inline void hri_ac_write_CTRLA_reg(const void *const hw, hri_ac_ctrla_reg
 {
 	AC_CRITICAL_SECTION_ENTER();
 	((Ac *)hw)->CTRLA.reg = data;
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_SWRST | AC_SYNCBUSY_ENABLE);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -348,6 +439,7 @@ static inline void hri_ac_clear_CTRLA_reg(const void *const hw, hri_ac_ctrla_reg
 {
 	AC_CRITICAL_SECTION_ENTER();
 	((Ac *)hw)->CTRLA.reg &= ~mask;
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_SWRST | AC_SYNCBUSY_ENABLE);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -355,11 +447,13 @@ static inline void hri_ac_toggle_CTRLA_reg(const void *const hw, hri_ac_ctrla_re
 {
 	AC_CRITICAL_SECTION_ENTER();
 	((Ac *)hw)->CTRLA.reg ^= mask;
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_SWRST | AC_SYNCBUSY_ENABLE);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline hri_ac_ctrla_reg_t hri_ac_read_CTRLA_reg(const void *const hw)
 {
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_SWRST | AC_SYNCBUSY_ENABLE);
 	return ((Ac *)hw)->CTRLA.reg;
 }
 
@@ -768,8 +862,8 @@ static inline hri_ac_dbgctrl_reg_t hri_ac_read_DBGCTRL_reg(const void *const hw)
 static inline void hri_ac_set_WINCTRL_WEN0_bit(const void *const hw)
 {
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	((Ac *)hw)->WINCTRL.reg |= AC_WINCTRL_WEN0;
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -785,35 +879,35 @@ static inline void hri_ac_write_WINCTRL_WEN0_bit(const void *const hw, bool valu
 {
 	uint8_t tmp;
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	tmp = ((Ac *)hw)->WINCTRL.reg;
 	tmp &= ~AC_WINCTRL_WEN0;
 	tmp |= value << AC_WINCTRL_WEN0_Pos;
 	((Ac *)hw)->WINCTRL.reg = tmp;
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_ac_clear_WINCTRL_WEN0_bit(const void *const hw)
 {
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	((Ac *)hw)->WINCTRL.reg &= ~AC_WINCTRL_WEN0;
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_ac_toggle_WINCTRL_WEN0_bit(const void *const hw)
 {
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	((Ac *)hw)->WINCTRL.reg ^= AC_WINCTRL_WEN0;
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_ac_set_WINCTRL_WINTSEL0_bf(const void *const hw, hri_ac_winctrl_reg_t mask)
 {
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	((Ac *)hw)->WINCTRL.reg |= AC_WINCTRL_WINTSEL0(mask);
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -829,27 +923,27 @@ static inline void hri_ac_write_WINCTRL_WINTSEL0_bf(const void *const hw, hri_ac
 {
 	uint8_t tmp;
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	tmp = ((Ac *)hw)->WINCTRL.reg;
 	tmp &= ~AC_WINCTRL_WINTSEL0_Msk;
 	tmp |= AC_WINCTRL_WINTSEL0(data);
 	((Ac *)hw)->WINCTRL.reg = tmp;
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_ac_clear_WINCTRL_WINTSEL0_bf(const void *const hw, hri_ac_winctrl_reg_t mask)
 {
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	((Ac *)hw)->WINCTRL.reg &= ~AC_WINCTRL_WINTSEL0(mask);
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_ac_toggle_WINCTRL_WINTSEL0_bf(const void *const hw, hri_ac_winctrl_reg_t mask)
 {
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	((Ac *)hw)->WINCTRL.reg ^= AC_WINCTRL_WINTSEL0(mask);
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -865,12 +959,14 @@ static inline void hri_ac_set_WINCTRL_reg(const void *const hw, hri_ac_winctrl_r
 {
 	AC_CRITICAL_SECTION_ENTER();
 	((Ac *)hw)->WINCTRL.reg |= mask;
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline hri_ac_winctrl_reg_t hri_ac_get_WINCTRL_reg(const void *const hw, hri_ac_winctrl_reg_t mask)
 {
 	uint8_t tmp;
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	tmp = ((Ac *)hw)->WINCTRL.reg;
 	tmp &= mask;
 	return tmp;
@@ -880,6 +976,7 @@ static inline void hri_ac_write_WINCTRL_reg(const void *const hw, hri_ac_winctrl
 {
 	AC_CRITICAL_SECTION_ENTER();
 	((Ac *)hw)->WINCTRL.reg = data;
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -887,6 +984,7 @@ static inline void hri_ac_clear_WINCTRL_reg(const void *const hw, hri_ac_winctrl
 {
 	AC_CRITICAL_SECTION_ENTER();
 	((Ac *)hw)->WINCTRL.reg &= ~mask;
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -894,11 +992,13 @@ static inline void hri_ac_toggle_WINCTRL_reg(const void *const hw, hri_ac_winctr
 {
 	AC_CRITICAL_SECTION_ENTER();
 	((Ac *)hw)->WINCTRL.reg ^= mask;
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline hri_ac_winctrl_reg_t hri_ac_read_WINCTRL_reg(const void *const hw)
 {
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	return ((Ac *)hw)->WINCTRL.reg;
 }
 
@@ -995,8 +1095,8 @@ static inline hri_ac_scaler_reg_t hri_ac_read_SCALER_reg(const void *const hw, u
 static inline void hri_ac_set_COMPCTRL_ENABLE_bit(const void *const hw, uint8_t index)
 {
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_ENABLE);
 	((Ac *)hw)->COMPCTRL[index].reg |= AC_COMPCTRL_ENABLE;
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_ENABLE);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -1013,35 +1113,35 @@ static inline void hri_ac_write_COMPCTRL_ENABLE_bit(const void *const hw, uint8_
 {
 	uint32_t tmp;
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_ENABLE);
 	tmp = ((Ac *)hw)->COMPCTRL[index].reg;
 	tmp &= ~AC_COMPCTRL_ENABLE;
 	tmp |= value << AC_COMPCTRL_ENABLE_Pos;
 	((Ac *)hw)->COMPCTRL[index].reg = tmp;
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_ENABLE);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_ac_clear_COMPCTRL_ENABLE_bit(const void *const hw, uint8_t index)
 {
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_ENABLE);
 	((Ac *)hw)->COMPCTRL[index].reg &= ~AC_COMPCTRL_ENABLE;
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_ENABLE);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_ac_toggle_COMPCTRL_ENABLE_bit(const void *const hw, uint8_t index)
 {
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_ENABLE);
 	((Ac *)hw)->COMPCTRL[index].reg ^= AC_COMPCTRL_ENABLE;
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_ENABLE);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_ac_set_COMPCTRL_SINGLE_bit(const void *const hw, uint8_t index)
 {
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	((Ac *)hw)->COMPCTRL[index].reg |= AC_COMPCTRL_SINGLE;
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -1057,35 +1157,35 @@ static inline void hri_ac_write_COMPCTRL_SINGLE_bit(const void *const hw, uint8_
 {
 	uint32_t tmp;
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	tmp = ((Ac *)hw)->COMPCTRL[index].reg;
 	tmp &= ~AC_COMPCTRL_SINGLE;
 	tmp |= value << AC_COMPCTRL_SINGLE_Pos;
 	((Ac *)hw)->COMPCTRL[index].reg = tmp;
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_ac_clear_COMPCTRL_SINGLE_bit(const void *const hw, uint8_t index)
 {
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	((Ac *)hw)->COMPCTRL[index].reg &= ~AC_COMPCTRL_SINGLE;
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_ac_toggle_COMPCTRL_SINGLE_bit(const void *const hw, uint8_t index)
 {
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	((Ac *)hw)->COMPCTRL[index].reg ^= AC_COMPCTRL_SINGLE;
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_ac_set_COMPCTRL_RUNSTDBY_bit(const void *const hw, uint8_t index)
 {
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	((Ac *)hw)->COMPCTRL[index].reg |= AC_COMPCTRL_RUNSTDBY;
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -1101,35 +1201,35 @@ static inline void hri_ac_write_COMPCTRL_RUNSTDBY_bit(const void *const hw, uint
 {
 	uint32_t tmp;
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	tmp = ((Ac *)hw)->COMPCTRL[index].reg;
 	tmp &= ~AC_COMPCTRL_RUNSTDBY;
 	tmp |= value << AC_COMPCTRL_RUNSTDBY_Pos;
 	((Ac *)hw)->COMPCTRL[index].reg = tmp;
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_ac_clear_COMPCTRL_RUNSTDBY_bit(const void *const hw, uint8_t index)
 {
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	((Ac *)hw)->COMPCTRL[index].reg &= ~AC_COMPCTRL_RUNSTDBY;
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_ac_toggle_COMPCTRL_RUNSTDBY_bit(const void *const hw, uint8_t index)
 {
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	((Ac *)hw)->COMPCTRL[index].reg ^= AC_COMPCTRL_RUNSTDBY;
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_ac_set_COMPCTRL_SWAP_bit(const void *const hw, uint8_t index)
 {
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	((Ac *)hw)->COMPCTRL[index].reg |= AC_COMPCTRL_SWAP;
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -1145,35 +1245,35 @@ static inline void hri_ac_write_COMPCTRL_SWAP_bit(const void *const hw, uint8_t 
 {
 	uint32_t tmp;
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	tmp = ((Ac *)hw)->COMPCTRL[index].reg;
 	tmp &= ~AC_COMPCTRL_SWAP;
 	tmp |= value << AC_COMPCTRL_SWAP_Pos;
 	((Ac *)hw)->COMPCTRL[index].reg = tmp;
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_ac_clear_COMPCTRL_SWAP_bit(const void *const hw, uint8_t index)
 {
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	((Ac *)hw)->COMPCTRL[index].reg &= ~AC_COMPCTRL_SWAP;
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_ac_toggle_COMPCTRL_SWAP_bit(const void *const hw, uint8_t index)
 {
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	((Ac *)hw)->COMPCTRL[index].reg ^= AC_COMPCTRL_SWAP;
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_ac_set_COMPCTRL_HYSTEN_bit(const void *const hw, uint8_t index)
 {
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	((Ac *)hw)->COMPCTRL[index].reg |= AC_COMPCTRL_HYSTEN;
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -1189,35 +1289,35 @@ static inline void hri_ac_write_COMPCTRL_HYSTEN_bit(const void *const hw, uint8_
 {
 	uint32_t tmp;
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	tmp = ((Ac *)hw)->COMPCTRL[index].reg;
 	tmp &= ~AC_COMPCTRL_HYSTEN;
 	tmp |= value << AC_COMPCTRL_HYSTEN_Pos;
 	((Ac *)hw)->COMPCTRL[index].reg = tmp;
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_ac_clear_COMPCTRL_HYSTEN_bit(const void *const hw, uint8_t index)
 {
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	((Ac *)hw)->COMPCTRL[index].reg &= ~AC_COMPCTRL_HYSTEN;
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_ac_toggle_COMPCTRL_HYSTEN_bit(const void *const hw, uint8_t index)
 {
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	((Ac *)hw)->COMPCTRL[index].reg ^= AC_COMPCTRL_HYSTEN;
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_ac_set_COMPCTRL_INTSEL_bf(const void *const hw, uint8_t index, hri_ac_compctrl_reg_t mask)
 {
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	((Ac *)hw)->COMPCTRL[index].reg |= AC_COMPCTRL_INTSEL(mask);
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -1234,27 +1334,27 @@ static inline void hri_ac_write_COMPCTRL_INTSEL_bf(const void *const hw, uint8_t
 {
 	uint32_t tmp;
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	tmp = ((Ac *)hw)->COMPCTRL[index].reg;
 	tmp &= ~AC_COMPCTRL_INTSEL_Msk;
 	tmp |= AC_COMPCTRL_INTSEL(data);
 	((Ac *)hw)->COMPCTRL[index].reg = tmp;
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_ac_clear_COMPCTRL_INTSEL_bf(const void *const hw, uint8_t index, hri_ac_compctrl_reg_t mask)
 {
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	((Ac *)hw)->COMPCTRL[index].reg &= ~AC_COMPCTRL_INTSEL(mask);
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_ac_toggle_COMPCTRL_INTSEL_bf(const void *const hw, uint8_t index, hri_ac_compctrl_reg_t mask)
 {
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	((Ac *)hw)->COMPCTRL[index].reg ^= AC_COMPCTRL_INTSEL(mask);
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -1269,8 +1369,8 @@ static inline hri_ac_compctrl_reg_t hri_ac_read_COMPCTRL_INTSEL_bf(const void *c
 static inline void hri_ac_set_COMPCTRL_MUXNEG_bf(const void *const hw, uint8_t index, hri_ac_compctrl_reg_t mask)
 {
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	((Ac *)hw)->COMPCTRL[index].reg |= AC_COMPCTRL_MUXNEG(mask);
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -1287,27 +1387,27 @@ static inline void hri_ac_write_COMPCTRL_MUXNEG_bf(const void *const hw, uint8_t
 {
 	uint32_t tmp;
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	tmp = ((Ac *)hw)->COMPCTRL[index].reg;
 	tmp &= ~AC_COMPCTRL_MUXNEG_Msk;
 	tmp |= AC_COMPCTRL_MUXNEG(data);
 	((Ac *)hw)->COMPCTRL[index].reg = tmp;
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_ac_clear_COMPCTRL_MUXNEG_bf(const void *const hw, uint8_t index, hri_ac_compctrl_reg_t mask)
 {
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	((Ac *)hw)->COMPCTRL[index].reg &= ~AC_COMPCTRL_MUXNEG(mask);
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_ac_toggle_COMPCTRL_MUXNEG_bf(const void *const hw, uint8_t index, hri_ac_compctrl_reg_t mask)
 {
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	((Ac *)hw)->COMPCTRL[index].reg ^= AC_COMPCTRL_MUXNEG(mask);
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -1322,8 +1422,8 @@ static inline hri_ac_compctrl_reg_t hri_ac_read_COMPCTRL_MUXNEG_bf(const void *c
 static inline void hri_ac_set_COMPCTRL_MUXPOS_bf(const void *const hw, uint8_t index, hri_ac_compctrl_reg_t mask)
 {
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	((Ac *)hw)->COMPCTRL[index].reg |= AC_COMPCTRL_MUXPOS(mask);
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -1340,27 +1440,27 @@ static inline void hri_ac_write_COMPCTRL_MUXPOS_bf(const void *const hw, uint8_t
 {
 	uint32_t tmp;
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	tmp = ((Ac *)hw)->COMPCTRL[index].reg;
 	tmp &= ~AC_COMPCTRL_MUXPOS_Msk;
 	tmp |= AC_COMPCTRL_MUXPOS(data);
 	((Ac *)hw)->COMPCTRL[index].reg = tmp;
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_ac_clear_COMPCTRL_MUXPOS_bf(const void *const hw, uint8_t index, hri_ac_compctrl_reg_t mask)
 {
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	((Ac *)hw)->COMPCTRL[index].reg &= ~AC_COMPCTRL_MUXPOS(mask);
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_ac_toggle_COMPCTRL_MUXPOS_bf(const void *const hw, uint8_t index, hri_ac_compctrl_reg_t mask)
 {
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	((Ac *)hw)->COMPCTRL[index].reg ^= AC_COMPCTRL_MUXPOS(mask);
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -1375,8 +1475,8 @@ static inline hri_ac_compctrl_reg_t hri_ac_read_COMPCTRL_MUXPOS_bf(const void *c
 static inline void hri_ac_set_COMPCTRL_SPEED_bf(const void *const hw, uint8_t index, hri_ac_compctrl_reg_t mask)
 {
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	((Ac *)hw)->COMPCTRL[index].reg |= AC_COMPCTRL_SPEED(mask);
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -1393,27 +1493,27 @@ static inline void hri_ac_write_COMPCTRL_SPEED_bf(const void *const hw, uint8_t 
 {
 	uint32_t tmp;
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	tmp = ((Ac *)hw)->COMPCTRL[index].reg;
 	tmp &= ~AC_COMPCTRL_SPEED_Msk;
 	tmp |= AC_COMPCTRL_SPEED(data);
 	((Ac *)hw)->COMPCTRL[index].reg = tmp;
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_ac_clear_COMPCTRL_SPEED_bf(const void *const hw, uint8_t index, hri_ac_compctrl_reg_t mask)
 {
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	((Ac *)hw)->COMPCTRL[index].reg &= ~AC_COMPCTRL_SPEED(mask);
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_ac_toggle_COMPCTRL_SPEED_bf(const void *const hw, uint8_t index, hri_ac_compctrl_reg_t mask)
 {
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	((Ac *)hw)->COMPCTRL[index].reg ^= AC_COMPCTRL_SPEED(mask);
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -1428,8 +1528,8 @@ static inline hri_ac_compctrl_reg_t hri_ac_read_COMPCTRL_SPEED_bf(const void *co
 static inline void hri_ac_set_COMPCTRL_HYST_bf(const void *const hw, uint8_t index, hri_ac_compctrl_reg_t mask)
 {
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	((Ac *)hw)->COMPCTRL[index].reg |= AC_COMPCTRL_HYST(mask);
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -1446,27 +1546,27 @@ static inline void hri_ac_write_COMPCTRL_HYST_bf(const void *const hw, uint8_t i
 {
 	uint32_t tmp;
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	tmp = ((Ac *)hw)->COMPCTRL[index].reg;
 	tmp &= ~AC_COMPCTRL_HYST_Msk;
 	tmp |= AC_COMPCTRL_HYST(data);
 	((Ac *)hw)->COMPCTRL[index].reg = tmp;
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_ac_clear_COMPCTRL_HYST_bf(const void *const hw, uint8_t index, hri_ac_compctrl_reg_t mask)
 {
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	((Ac *)hw)->COMPCTRL[index].reg &= ~AC_COMPCTRL_HYST(mask);
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_ac_toggle_COMPCTRL_HYST_bf(const void *const hw, uint8_t index, hri_ac_compctrl_reg_t mask)
 {
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	((Ac *)hw)->COMPCTRL[index].reg ^= AC_COMPCTRL_HYST(mask);
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -1481,8 +1581,8 @@ static inline hri_ac_compctrl_reg_t hri_ac_read_COMPCTRL_HYST_bf(const void *con
 static inline void hri_ac_set_COMPCTRL_FLEN_bf(const void *const hw, uint8_t index, hri_ac_compctrl_reg_t mask)
 {
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	((Ac *)hw)->COMPCTRL[index].reg |= AC_COMPCTRL_FLEN(mask);
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -1499,27 +1599,27 @@ static inline void hri_ac_write_COMPCTRL_FLEN_bf(const void *const hw, uint8_t i
 {
 	uint32_t tmp;
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	tmp = ((Ac *)hw)->COMPCTRL[index].reg;
 	tmp &= ~AC_COMPCTRL_FLEN_Msk;
 	tmp |= AC_COMPCTRL_FLEN(data);
 	((Ac *)hw)->COMPCTRL[index].reg = tmp;
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_ac_clear_COMPCTRL_FLEN_bf(const void *const hw, uint8_t index, hri_ac_compctrl_reg_t mask)
 {
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	((Ac *)hw)->COMPCTRL[index].reg &= ~AC_COMPCTRL_FLEN(mask);
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_ac_toggle_COMPCTRL_FLEN_bf(const void *const hw, uint8_t index, hri_ac_compctrl_reg_t mask)
 {
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	((Ac *)hw)->COMPCTRL[index].reg ^= AC_COMPCTRL_FLEN(mask);
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -1534,8 +1634,8 @@ static inline hri_ac_compctrl_reg_t hri_ac_read_COMPCTRL_FLEN_bf(const void *con
 static inline void hri_ac_set_COMPCTRL_OUT_bf(const void *const hw, uint8_t index, hri_ac_compctrl_reg_t mask)
 {
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	((Ac *)hw)->COMPCTRL[index].reg |= AC_COMPCTRL_OUT(mask);
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -1552,27 +1652,27 @@ static inline void hri_ac_write_COMPCTRL_OUT_bf(const void *const hw, uint8_t in
 {
 	uint32_t tmp;
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	tmp = ((Ac *)hw)->COMPCTRL[index].reg;
 	tmp &= ~AC_COMPCTRL_OUT_Msk;
 	tmp |= AC_COMPCTRL_OUT(data);
 	((Ac *)hw)->COMPCTRL[index].reg = tmp;
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_ac_clear_COMPCTRL_OUT_bf(const void *const hw, uint8_t index, hri_ac_compctrl_reg_t mask)
 {
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	((Ac *)hw)->COMPCTRL[index].reg &= ~AC_COMPCTRL_OUT(mask);
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_ac_toggle_COMPCTRL_OUT_bf(const void *const hw, uint8_t index, hri_ac_compctrl_reg_t mask)
 {
 	AC_CRITICAL_SECTION_ENTER();
-	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	((Ac *)hw)->COMPCTRL[index].reg ^= AC_COMPCTRL_OUT(mask);
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_MASK);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -1588,6 +1688,7 @@ static inline void hri_ac_set_COMPCTRL_reg(const void *const hw, uint8_t index, 
 {
 	AC_CRITICAL_SECTION_ENTER();
 	((Ac *)hw)->COMPCTRL[index].reg |= mask;
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_ENABLE);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -1595,6 +1696,7 @@ static inline hri_ac_compctrl_reg_t hri_ac_get_COMPCTRL_reg(const void *const hw
                                                             hri_ac_compctrl_reg_t mask)
 {
 	uint32_t tmp;
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_ENABLE);
 	tmp = ((Ac *)hw)->COMPCTRL[index].reg;
 	tmp &= mask;
 	return tmp;
@@ -1604,6 +1706,7 @@ static inline void hri_ac_write_COMPCTRL_reg(const void *const hw, uint8_t index
 {
 	AC_CRITICAL_SECTION_ENTER();
 	((Ac *)hw)->COMPCTRL[index].reg = data;
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_ENABLE);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -1611,6 +1714,7 @@ static inline void hri_ac_clear_COMPCTRL_reg(const void *const hw, uint8_t index
 {
 	AC_CRITICAL_SECTION_ENTER();
 	((Ac *)hw)->COMPCTRL[index].reg &= ~mask;
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_ENABLE);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -1618,11 +1722,13 @@ static inline void hri_ac_toggle_COMPCTRL_reg(const void *const hw, uint8_t inde
 {
 	AC_CRITICAL_SECTION_ENTER();
 	((Ac *)hw)->COMPCTRL[index].reg ^= mask;
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_ENABLE);
 	AC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline hri_ac_compctrl_reg_t hri_ac_read_COMPCTRL_reg(const void *const hw, uint8_t index)
 {
+	hri_ac_wait_for_sync(hw, AC_SYNCBUSY_ENABLE);
 	return ((Ac *)hw)->COMPCTRL[index].reg;
 }
 
@@ -1715,98 +1821,11 @@ static inline hri_ac_calib_reg_t hri_ac_read_CALIB_reg(const void *const hw)
 	return ((Ac *)hw)->CALIB.reg;
 }
 
-static inline bool hri_ac_get_STATUSA_STATE0_bit(const void *const hw)
+static inline void hri_ac_write_CTRLB_reg(const void *const hw, hri_ac_ctrlb_reg_t data)
 {
-	return (((Ac *)hw)->STATUSA.reg & AC_STATUSA_STATE0) >> AC_STATUSA_STATE0_Pos;
-}
-
-static inline bool hri_ac_get_STATUSA_STATE1_bit(const void *const hw)
-{
-	return (((Ac *)hw)->STATUSA.reg & AC_STATUSA_STATE1) >> AC_STATUSA_STATE1_Pos;
-}
-
-static inline hri_ac_statusa_reg_t hri_ac_get_STATUSA_WSTATE0_bf(const void *const hw, hri_ac_statusa_reg_t mask)
-{
-	return (((Ac *)hw)->STATUSA.reg & AC_STATUSA_WSTATE0(mask)) >> AC_STATUSA_WSTATE0_Pos;
-}
-
-static inline hri_ac_statusa_reg_t hri_ac_read_STATUSA_WSTATE0_bf(const void *const hw)
-{
-	return (((Ac *)hw)->STATUSA.reg & AC_STATUSA_WSTATE0_Msk) >> AC_STATUSA_WSTATE0_Pos;
-}
-
-static inline hri_ac_statusa_reg_t hri_ac_get_STATUSA_reg(const void *const hw, hri_ac_statusa_reg_t mask)
-{
-	uint8_t tmp;
-	tmp = ((Ac *)hw)->STATUSA.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline hri_ac_statusa_reg_t hri_ac_read_STATUSA_reg(const void *const hw)
-{
-	return ((Ac *)hw)->STATUSA.reg;
-}
-
-static inline bool hri_ac_get_STATUSB_READY0_bit(const void *const hw)
-{
-	return (((Ac *)hw)->STATUSB.reg & AC_STATUSB_READY0) >> AC_STATUSB_READY0_Pos;
-}
-
-static inline bool hri_ac_get_STATUSB_READY1_bit(const void *const hw)
-{
-	return (((Ac *)hw)->STATUSB.reg & AC_STATUSB_READY1) >> AC_STATUSB_READY1_Pos;
-}
-
-static inline hri_ac_statusb_reg_t hri_ac_get_STATUSB_reg(const void *const hw, hri_ac_statusb_reg_t mask)
-{
-	uint8_t tmp;
-	tmp = ((Ac *)hw)->STATUSB.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline hri_ac_statusb_reg_t hri_ac_read_STATUSB_reg(const void *const hw)
-{
-	return ((Ac *)hw)->STATUSB.reg;
-}
-
-static inline bool hri_ac_get_SYNCBUSY_SWRST_bit(const void *const hw)
-{
-	return (((Ac *)hw)->SYNCBUSY.reg & AC_SYNCBUSY_SWRST) >> AC_SYNCBUSY_SWRST_Pos;
-}
-
-static inline bool hri_ac_get_SYNCBUSY_ENABLE_bit(const void *const hw)
-{
-	return (((Ac *)hw)->SYNCBUSY.reg & AC_SYNCBUSY_ENABLE) >> AC_SYNCBUSY_ENABLE_Pos;
-}
-
-static inline bool hri_ac_get_SYNCBUSY_WINCTRL_bit(const void *const hw)
-{
-	return (((Ac *)hw)->SYNCBUSY.reg & AC_SYNCBUSY_WINCTRL) >> AC_SYNCBUSY_WINCTRL_Pos;
-}
-
-static inline bool hri_ac_get_SYNCBUSY_COMPCTRL0_bit(const void *const hw)
-{
-	return (((Ac *)hw)->SYNCBUSY.reg & AC_SYNCBUSY_COMPCTRL0) >> AC_SYNCBUSY_COMPCTRL0_Pos;
-}
-
-static inline bool hri_ac_get_SYNCBUSY_COMPCTRL1_bit(const void *const hw)
-{
-	return (((Ac *)hw)->SYNCBUSY.reg & AC_SYNCBUSY_COMPCTRL1) >> AC_SYNCBUSY_COMPCTRL1_Pos;
-}
-
-static inline hri_ac_syncbusy_reg_t hri_ac_get_SYNCBUSY_reg(const void *const hw, hri_ac_syncbusy_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Ac *)hw)->SYNCBUSY.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline hri_ac_syncbusy_reg_t hri_ac_read_SYNCBUSY_reg(const void *const hw)
-{
-	return ((Ac *)hw)->SYNCBUSY.reg;
+	AC_CRITICAL_SECTION_ENTER();
+	((Ac *)hw)->CTRLB.reg = data;
+	AC_CRITICAL_SECTION_LEAVE();
 }
 
 #ifdef __cplusplus

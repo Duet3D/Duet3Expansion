@@ -28,6 +28,7 @@
  * THAT YOU HAVE PAID DIRECTLY TO MICROCHIP FOR THIS SOFTWARE.
  *
  * \asf_license_stop
+ *
  */
 
 #ifdef _SAME51_OSCCTRL_COMPONENT_
@@ -70,16 +71,91 @@ typedef uint8_t  hri_oscctrl_dpllctrla_reg_t;
 typedef uint8_t  hri_oscctrl_evctrl_reg_t;
 typedef uint8_t  hri_oscctrldpll_dpllctrla_reg_t;
 
+static inline void hri_oscctrldpll_wait_for_sync(const void *const hw, hri_oscctrl_dpllsyncbusy_reg_t reg)
+{
+	while (((OscctrlDpll *)hw)->DPLLSYNCBUSY.reg & reg) {
+	};
+}
+
+static inline bool hri_oscctrldpll_is_syncing(const void *const hw, hri_oscctrl_dpllsyncbusy_reg_t reg)
+{
+	return ((OscctrlDpll *)hw)->DPLLSYNCBUSY.reg & reg;
+}
+
+static inline void hri_oscctrl_wait_for_sync(const void *const hw, uint8_t submodule_index,
+                                             hri_oscctrl_dpllsyncbusy_reg_t reg)
+{
+	while (((Oscctrl *)hw)->Dpll[submodule_index].DPLLSYNCBUSY.reg & reg) {
+	};
+}
+
+static inline bool hri_oscctrl_is_syncing(const void *const hw, uint8_t submodule_index,
+                                          hri_oscctrl_dpllsyncbusy_reg_t reg)
+{
+	return ((Oscctrl *)hw)->Dpll[submodule_index].DPLLSYNCBUSY.reg & reg;
+}
+
+static inline bool hri_oscctrldpll_get_DPLLSYNCBUSY_ENABLE_bit(const void *const hw)
+{
+	return (((OscctrlDpll *)hw)->DPLLSYNCBUSY.reg & OSCCTRL_DPLLSYNCBUSY_ENABLE) >> OSCCTRL_DPLLSYNCBUSY_ENABLE_Pos;
+}
+
+static inline bool hri_oscctrldpll_get_DPLLSYNCBUSY_DPLLRATIO_bit(const void *const hw)
+{
+	return (((OscctrlDpll *)hw)->DPLLSYNCBUSY.reg & OSCCTRL_DPLLSYNCBUSY_DPLLRATIO)
+	       >> OSCCTRL_DPLLSYNCBUSY_DPLLRATIO_Pos;
+}
+
+static inline hri_oscctrl_dpllsyncbusy_reg_t hri_oscctrldpll_get_DPLLSYNCBUSY_reg(const void *const              hw,
+                                                                                  hri_oscctrl_dpllsyncbusy_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((OscctrlDpll *)hw)->DPLLSYNCBUSY.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline hri_oscctrl_dpllsyncbusy_reg_t hri_oscctrldpll_read_DPLLSYNCBUSY_reg(const void *const hw)
+{
+	return ((OscctrlDpll *)hw)->DPLLSYNCBUSY.reg;
+}
+
+static inline bool hri_oscctrldpll_get_DPLLSTATUS_LOCK_bit(const void *const hw)
+{
+	return (((OscctrlDpll *)hw)->DPLLSTATUS.reg & OSCCTRL_DPLLSTATUS_LOCK) >> OSCCTRL_DPLLSTATUS_LOCK_Pos;
+}
+
+static inline bool hri_oscctrldpll_get_DPLLSTATUS_CLKRDY_bit(const void *const hw)
+{
+	return (((OscctrlDpll *)hw)->DPLLSTATUS.reg & OSCCTRL_DPLLSTATUS_CLKRDY) >> OSCCTRL_DPLLSTATUS_CLKRDY_Pos;
+}
+
+static inline hri_oscctrl_dpllstatus_reg_t hri_oscctrldpll_get_DPLLSTATUS_reg(const void *const            hw,
+                                                                              hri_oscctrl_dpllstatus_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((OscctrlDpll *)hw)->DPLLSTATUS.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline hri_oscctrl_dpllstatus_reg_t hri_oscctrldpll_read_DPLLSTATUS_reg(const void *const hw)
+{
+	return ((OscctrlDpll *)hw)->DPLLSTATUS.reg;
+}
+
 static inline void hri_oscctrldpll_set_DPLLCTRLA_ENABLE_bit(const void *const hw)
 {
 	OSCCTRL_CRITICAL_SECTION_ENTER();
 	((OscctrlDpll *)hw)->DPLLCTRLA.reg |= OSCCTRL_DPLLCTRLA_ENABLE;
+	hri_oscctrldpll_wait_for_sync(hw, OSCCTRL_DPLLSYNCBUSY_ENABLE);
 	OSCCTRL_CRITICAL_SECTION_LEAVE();
 }
 
 static inline bool hri_oscctrldpll_get_DPLLCTRLA_ENABLE_bit(const void *const hw)
 {
 	uint8_t tmp;
+	hri_oscctrldpll_wait_for_sync(hw, OSCCTRL_DPLLSYNCBUSY_ENABLE);
 	tmp = ((OscctrlDpll *)hw)->DPLLCTRLA.reg;
 	tmp = (tmp & OSCCTRL_DPLLCTRLA_ENABLE) >> OSCCTRL_DPLLCTRLA_ENABLE_Pos;
 	return (bool)tmp;
@@ -93,6 +169,7 @@ static inline void hri_oscctrldpll_write_DPLLCTRLA_ENABLE_bit(const void *const 
 	tmp &= ~OSCCTRL_DPLLCTRLA_ENABLE;
 	tmp |= value << OSCCTRL_DPLLCTRLA_ENABLE_Pos;
 	((OscctrlDpll *)hw)->DPLLCTRLA.reg = tmp;
+	hri_oscctrldpll_wait_for_sync(hw, OSCCTRL_DPLLSYNCBUSY_ENABLE);
 	OSCCTRL_CRITICAL_SECTION_LEAVE();
 }
 
@@ -100,6 +177,7 @@ static inline void hri_oscctrldpll_clear_DPLLCTRLA_ENABLE_bit(const void *const 
 {
 	OSCCTRL_CRITICAL_SECTION_ENTER();
 	((OscctrlDpll *)hw)->DPLLCTRLA.reg &= ~OSCCTRL_DPLLCTRLA_ENABLE;
+	hri_oscctrldpll_wait_for_sync(hw, OSCCTRL_DPLLSYNCBUSY_ENABLE);
 	OSCCTRL_CRITICAL_SECTION_LEAVE();
 }
 
@@ -107,6 +185,7 @@ static inline void hri_oscctrldpll_toggle_DPLLCTRLA_ENABLE_bit(const void *const
 {
 	OSCCTRL_CRITICAL_SECTION_ENTER();
 	((OscctrlDpll *)hw)->DPLLCTRLA.reg ^= OSCCTRL_DPLLCTRLA_ENABLE;
+	hri_oscctrldpll_wait_for_sync(hw, OSCCTRL_DPLLSYNCBUSY_ENABLE);
 	OSCCTRL_CRITICAL_SECTION_LEAVE();
 }
 
@@ -114,6 +193,7 @@ static inline void hri_oscctrldpll_set_DPLLCTRLA_RUNSTDBY_bit(const void *const 
 {
 	OSCCTRL_CRITICAL_SECTION_ENTER();
 	((OscctrlDpll *)hw)->DPLLCTRLA.reg |= OSCCTRL_DPLLCTRLA_RUNSTDBY;
+	hri_oscctrldpll_wait_for_sync(hw, OSCCTRL_DPLLSYNCBUSY_MASK);
 	OSCCTRL_CRITICAL_SECTION_LEAVE();
 }
 
@@ -133,6 +213,7 @@ static inline void hri_oscctrldpll_write_DPLLCTRLA_RUNSTDBY_bit(const void *cons
 	tmp &= ~OSCCTRL_DPLLCTRLA_RUNSTDBY;
 	tmp |= value << OSCCTRL_DPLLCTRLA_RUNSTDBY_Pos;
 	((OscctrlDpll *)hw)->DPLLCTRLA.reg = tmp;
+	hri_oscctrldpll_wait_for_sync(hw, OSCCTRL_DPLLSYNCBUSY_MASK);
 	OSCCTRL_CRITICAL_SECTION_LEAVE();
 }
 
@@ -140,6 +221,7 @@ static inline void hri_oscctrldpll_clear_DPLLCTRLA_RUNSTDBY_bit(const void *cons
 {
 	OSCCTRL_CRITICAL_SECTION_ENTER();
 	((OscctrlDpll *)hw)->DPLLCTRLA.reg &= ~OSCCTRL_DPLLCTRLA_RUNSTDBY;
+	hri_oscctrldpll_wait_for_sync(hw, OSCCTRL_DPLLSYNCBUSY_MASK);
 	OSCCTRL_CRITICAL_SECTION_LEAVE();
 }
 
@@ -147,6 +229,7 @@ static inline void hri_oscctrldpll_toggle_DPLLCTRLA_RUNSTDBY_bit(const void *con
 {
 	OSCCTRL_CRITICAL_SECTION_ENTER();
 	((OscctrlDpll *)hw)->DPLLCTRLA.reg ^= OSCCTRL_DPLLCTRLA_RUNSTDBY;
+	hri_oscctrldpll_wait_for_sync(hw, OSCCTRL_DPLLSYNCBUSY_MASK);
 	OSCCTRL_CRITICAL_SECTION_LEAVE();
 }
 
@@ -154,6 +237,7 @@ static inline void hri_oscctrldpll_set_DPLLCTRLA_ONDEMAND_bit(const void *const 
 {
 	OSCCTRL_CRITICAL_SECTION_ENTER();
 	((OscctrlDpll *)hw)->DPLLCTRLA.reg |= OSCCTRL_DPLLCTRLA_ONDEMAND;
+	hri_oscctrldpll_wait_for_sync(hw, OSCCTRL_DPLLSYNCBUSY_MASK);
 	OSCCTRL_CRITICAL_SECTION_LEAVE();
 }
 
@@ -173,6 +257,7 @@ static inline void hri_oscctrldpll_write_DPLLCTRLA_ONDEMAND_bit(const void *cons
 	tmp &= ~OSCCTRL_DPLLCTRLA_ONDEMAND;
 	tmp |= value << OSCCTRL_DPLLCTRLA_ONDEMAND_Pos;
 	((OscctrlDpll *)hw)->DPLLCTRLA.reg = tmp;
+	hri_oscctrldpll_wait_for_sync(hw, OSCCTRL_DPLLSYNCBUSY_MASK);
 	OSCCTRL_CRITICAL_SECTION_LEAVE();
 }
 
@@ -180,6 +265,7 @@ static inline void hri_oscctrldpll_clear_DPLLCTRLA_ONDEMAND_bit(const void *cons
 {
 	OSCCTRL_CRITICAL_SECTION_ENTER();
 	((OscctrlDpll *)hw)->DPLLCTRLA.reg &= ~OSCCTRL_DPLLCTRLA_ONDEMAND;
+	hri_oscctrldpll_wait_for_sync(hw, OSCCTRL_DPLLSYNCBUSY_MASK);
 	OSCCTRL_CRITICAL_SECTION_LEAVE();
 }
 
@@ -187,6 +273,7 @@ static inline void hri_oscctrldpll_toggle_DPLLCTRLA_ONDEMAND_bit(const void *con
 {
 	OSCCTRL_CRITICAL_SECTION_ENTER();
 	((OscctrlDpll *)hw)->DPLLCTRLA.reg ^= OSCCTRL_DPLLCTRLA_ONDEMAND;
+	hri_oscctrldpll_wait_for_sync(hw, OSCCTRL_DPLLSYNCBUSY_MASK);
 	OSCCTRL_CRITICAL_SECTION_LEAVE();
 }
 
@@ -194,6 +281,7 @@ static inline void hri_oscctrldpll_set_DPLLCTRLA_reg(const void *const hw, hri_o
 {
 	OSCCTRL_CRITICAL_SECTION_ENTER();
 	((OscctrlDpll *)hw)->DPLLCTRLA.reg |= mask;
+	hri_oscctrldpll_wait_for_sync(hw, OSCCTRL_DPLLSYNCBUSY_ENABLE);
 	OSCCTRL_CRITICAL_SECTION_LEAVE();
 }
 
@@ -201,6 +289,7 @@ static inline hri_oscctrl_dpllctrla_reg_t hri_oscctrldpll_get_DPLLCTRLA_reg(cons
                                                                             hri_oscctrl_dpllctrla_reg_t mask)
 {
 	uint8_t tmp;
+	hri_oscctrldpll_wait_for_sync(hw, OSCCTRL_DPLLSYNCBUSY_ENABLE);
 	tmp = ((OscctrlDpll *)hw)->DPLLCTRLA.reg;
 	tmp &= mask;
 	return tmp;
@@ -210,6 +299,7 @@ static inline void hri_oscctrldpll_write_DPLLCTRLA_reg(const void *const hw, hri
 {
 	OSCCTRL_CRITICAL_SECTION_ENTER();
 	((OscctrlDpll *)hw)->DPLLCTRLA.reg = data;
+	hri_oscctrldpll_wait_for_sync(hw, OSCCTRL_DPLLSYNCBUSY_ENABLE);
 	OSCCTRL_CRITICAL_SECTION_LEAVE();
 }
 
@@ -217,6 +307,7 @@ static inline void hri_oscctrldpll_clear_DPLLCTRLA_reg(const void *const hw, hri
 {
 	OSCCTRL_CRITICAL_SECTION_ENTER();
 	((OscctrlDpll *)hw)->DPLLCTRLA.reg &= ~mask;
+	hri_oscctrldpll_wait_for_sync(hw, OSCCTRL_DPLLSYNCBUSY_ENABLE);
 	OSCCTRL_CRITICAL_SECTION_LEAVE();
 }
 
@@ -224,11 +315,13 @@ static inline void hri_oscctrldpll_toggle_DPLLCTRLA_reg(const void *const hw, hr
 {
 	OSCCTRL_CRITICAL_SECTION_ENTER();
 	((OscctrlDpll *)hw)->DPLLCTRLA.reg ^= mask;
+	hri_oscctrldpll_wait_for_sync(hw, OSCCTRL_DPLLSYNCBUSY_ENABLE);
 	OSCCTRL_CRITICAL_SECTION_LEAVE();
 }
 
 static inline hri_oscctrl_dpllctrla_reg_t hri_oscctrldpll_read_DPLLCTRLA_reg(const void *const hw)
 {
+	hri_oscctrldpll_wait_for_sync(hw, OSCCTRL_DPLLSYNCBUSY_ENABLE);
 	return ((OscctrlDpll *)hw)->DPLLCTRLA.reg;
 }
 
@@ -236,6 +329,7 @@ static inline void hri_oscctrldpll_set_DPLLRATIO_LDR_bf(const void *const hw, hr
 {
 	OSCCTRL_CRITICAL_SECTION_ENTER();
 	((OscctrlDpll *)hw)->DPLLRATIO.reg |= OSCCTRL_DPLLRATIO_LDR(mask);
+	hri_oscctrldpll_wait_for_sync(hw, OSCCTRL_DPLLSYNCBUSY_MASK);
 	OSCCTRL_CRITICAL_SECTION_LEAVE();
 }
 
@@ -256,6 +350,7 @@ static inline void hri_oscctrldpll_write_DPLLRATIO_LDR_bf(const void *const hw, 
 	tmp &= ~OSCCTRL_DPLLRATIO_LDR_Msk;
 	tmp |= OSCCTRL_DPLLRATIO_LDR(data);
 	((OscctrlDpll *)hw)->DPLLRATIO.reg = tmp;
+	hri_oscctrldpll_wait_for_sync(hw, OSCCTRL_DPLLSYNCBUSY_MASK);
 	OSCCTRL_CRITICAL_SECTION_LEAVE();
 }
 
@@ -263,6 +358,7 @@ static inline void hri_oscctrldpll_clear_DPLLRATIO_LDR_bf(const void *const hw, 
 {
 	OSCCTRL_CRITICAL_SECTION_ENTER();
 	((OscctrlDpll *)hw)->DPLLRATIO.reg &= ~OSCCTRL_DPLLRATIO_LDR(mask);
+	hri_oscctrldpll_wait_for_sync(hw, OSCCTRL_DPLLSYNCBUSY_MASK);
 	OSCCTRL_CRITICAL_SECTION_LEAVE();
 }
 
@@ -270,6 +366,7 @@ static inline void hri_oscctrldpll_toggle_DPLLRATIO_LDR_bf(const void *const hw,
 {
 	OSCCTRL_CRITICAL_SECTION_ENTER();
 	((OscctrlDpll *)hw)->DPLLRATIO.reg ^= OSCCTRL_DPLLRATIO_LDR(mask);
+	hri_oscctrldpll_wait_for_sync(hw, OSCCTRL_DPLLSYNCBUSY_MASK);
 	OSCCTRL_CRITICAL_SECTION_LEAVE();
 }
 
@@ -285,6 +382,7 @@ static inline void hri_oscctrldpll_set_DPLLRATIO_LDRFRAC_bf(const void *const hw
 {
 	OSCCTRL_CRITICAL_SECTION_ENTER();
 	((OscctrlDpll *)hw)->DPLLRATIO.reg |= OSCCTRL_DPLLRATIO_LDRFRAC(mask);
+	hri_oscctrldpll_wait_for_sync(hw, OSCCTRL_DPLLSYNCBUSY_MASK);
 	OSCCTRL_CRITICAL_SECTION_LEAVE();
 }
 
@@ -305,6 +403,7 @@ static inline void hri_oscctrldpll_write_DPLLRATIO_LDRFRAC_bf(const void *const 
 	tmp &= ~OSCCTRL_DPLLRATIO_LDRFRAC_Msk;
 	tmp |= OSCCTRL_DPLLRATIO_LDRFRAC(data);
 	((OscctrlDpll *)hw)->DPLLRATIO.reg = tmp;
+	hri_oscctrldpll_wait_for_sync(hw, OSCCTRL_DPLLSYNCBUSY_MASK);
 	OSCCTRL_CRITICAL_SECTION_LEAVE();
 }
 
@@ -312,6 +411,7 @@ static inline void hri_oscctrldpll_clear_DPLLRATIO_LDRFRAC_bf(const void *const 
 {
 	OSCCTRL_CRITICAL_SECTION_ENTER();
 	((OscctrlDpll *)hw)->DPLLRATIO.reg &= ~OSCCTRL_DPLLRATIO_LDRFRAC(mask);
+	hri_oscctrldpll_wait_for_sync(hw, OSCCTRL_DPLLSYNCBUSY_MASK);
 	OSCCTRL_CRITICAL_SECTION_LEAVE();
 }
 
@@ -319,6 +419,7 @@ static inline void hri_oscctrldpll_toggle_DPLLRATIO_LDRFRAC_bf(const void *const
 {
 	OSCCTRL_CRITICAL_SECTION_ENTER();
 	((OscctrlDpll *)hw)->DPLLRATIO.reg ^= OSCCTRL_DPLLRATIO_LDRFRAC(mask);
+	hri_oscctrldpll_wait_for_sync(hw, OSCCTRL_DPLLSYNCBUSY_MASK);
 	OSCCTRL_CRITICAL_SECTION_LEAVE();
 }
 
@@ -334,6 +435,7 @@ static inline void hri_oscctrldpll_set_DPLLRATIO_reg(const void *const hw, hri_o
 {
 	OSCCTRL_CRITICAL_SECTION_ENTER();
 	((OscctrlDpll *)hw)->DPLLRATIO.reg |= mask;
+	hri_oscctrldpll_wait_for_sync(hw, OSCCTRL_DPLLSYNCBUSY_MASK);
 	OSCCTRL_CRITICAL_SECTION_LEAVE();
 }
 
@@ -341,6 +443,7 @@ static inline hri_oscctrl_dpllratio_reg_t hri_oscctrldpll_get_DPLLRATIO_reg(cons
                                                                             hri_oscctrl_dpllratio_reg_t mask)
 {
 	uint32_t tmp;
+	hri_oscctrldpll_wait_for_sync(hw, OSCCTRL_DPLLSYNCBUSY_MASK);
 	tmp = ((OscctrlDpll *)hw)->DPLLRATIO.reg;
 	tmp &= mask;
 	return tmp;
@@ -350,6 +453,7 @@ static inline void hri_oscctrldpll_write_DPLLRATIO_reg(const void *const hw, hri
 {
 	OSCCTRL_CRITICAL_SECTION_ENTER();
 	((OscctrlDpll *)hw)->DPLLRATIO.reg = data;
+	hri_oscctrldpll_wait_for_sync(hw, OSCCTRL_DPLLSYNCBUSY_MASK);
 	OSCCTRL_CRITICAL_SECTION_LEAVE();
 }
 
@@ -357,6 +461,7 @@ static inline void hri_oscctrldpll_clear_DPLLRATIO_reg(const void *const hw, hri
 {
 	OSCCTRL_CRITICAL_SECTION_ENTER();
 	((OscctrlDpll *)hw)->DPLLRATIO.reg &= ~mask;
+	hri_oscctrldpll_wait_for_sync(hw, OSCCTRL_DPLLSYNCBUSY_MASK);
 	OSCCTRL_CRITICAL_SECTION_LEAVE();
 }
 
@@ -364,11 +469,13 @@ static inline void hri_oscctrldpll_toggle_DPLLRATIO_reg(const void *const hw, hr
 {
 	OSCCTRL_CRITICAL_SECTION_ENTER();
 	((OscctrlDpll *)hw)->DPLLRATIO.reg ^= mask;
+	hri_oscctrldpll_wait_for_sync(hw, OSCCTRL_DPLLSYNCBUSY_MASK);
 	OSCCTRL_CRITICAL_SECTION_LEAVE();
 }
 
 static inline hri_oscctrl_dpllratio_reg_t hri_oscctrldpll_read_DPLLRATIO_reg(const void *const hw)
 {
+	hri_oscctrldpll_wait_for_sync(hw, OSCCTRL_DPLLSYNCBUSY_MASK);
 	return ((OscctrlDpll *)hw)->DPLLRATIO.reg;
 }
 
@@ -779,65 +886,72 @@ static inline hri_oscctrl_dpllctrlb_reg_t hri_oscctrldpll_read_DPLLCTRLB_reg(con
 	return ((OscctrlDpll *)hw)->DPLLCTRLB.reg;
 }
 
-static inline bool hri_oscctrldpll_get_DPLLSYNCBUSY_ENABLE_bit(const void *const hw)
+static inline bool hri_oscctrl_get_DPLLSYNCBUSY_ENABLE_bit(const void *const hw, uint8_t submodule_index)
 {
-	return (((OscctrlDpll *)hw)->DPLLSYNCBUSY.reg & OSCCTRL_DPLLSYNCBUSY_ENABLE) >> OSCCTRL_DPLLSYNCBUSY_ENABLE_Pos;
+	return (((Oscctrl *)hw)->Dpll[submodule_index].DPLLSYNCBUSY.reg & OSCCTRL_DPLLSYNCBUSY_ENABLE)
+	       >> OSCCTRL_DPLLSYNCBUSY_ENABLE_Pos;
 }
 
-static inline bool hri_oscctrldpll_get_DPLLSYNCBUSY_DPLLRATIO_bit(const void *const hw)
+static inline bool hri_oscctrl_get_DPLLSYNCBUSY_DPLLRATIO_bit(const void *const hw, uint8_t submodule_index)
 {
-	return (((OscctrlDpll *)hw)->DPLLSYNCBUSY.reg & OSCCTRL_DPLLSYNCBUSY_DPLLRATIO)
+	return (((Oscctrl *)hw)->Dpll[submodule_index].DPLLSYNCBUSY.reg & OSCCTRL_DPLLSYNCBUSY_DPLLRATIO)
 	       >> OSCCTRL_DPLLSYNCBUSY_DPLLRATIO_Pos;
 }
 
-static inline hri_oscctrl_dpllsyncbusy_reg_t hri_oscctrldpll_get_DPLLSYNCBUSY_reg(const void *const              hw,
-                                                                                  hri_oscctrl_dpllsyncbusy_reg_t mask)
+static inline hri_oscctrl_dpllsyncbusy_reg_t
+hri_oscctrl_get_DPLLSYNCBUSY_reg(const void *const hw, uint8_t submodule_index, hri_oscctrl_dpllsyncbusy_reg_t mask)
 {
 	uint32_t tmp;
-	tmp = ((OscctrlDpll *)hw)->DPLLSYNCBUSY.reg;
+	tmp = ((Oscctrl *)hw)->Dpll[submodule_index].DPLLSYNCBUSY.reg;
 	tmp &= mask;
 	return tmp;
 }
 
-static inline hri_oscctrl_dpllsyncbusy_reg_t hri_oscctrldpll_read_DPLLSYNCBUSY_reg(const void *const hw)
+static inline hri_oscctrl_dpllsyncbusy_reg_t hri_oscctrl_read_DPLLSYNCBUSY_reg(const void *const hw,
+                                                                               uint8_t           submodule_index)
 {
-	return ((OscctrlDpll *)hw)->DPLLSYNCBUSY.reg;
+	return ((Oscctrl *)hw)->Dpll[submodule_index].DPLLSYNCBUSY.reg;
 }
 
-static inline bool hri_oscctrldpll_get_DPLLSTATUS_LOCK_bit(const void *const hw)
+static inline bool hri_oscctrl_get_DPLLSTATUS_LOCK_bit(const void *const hw, uint8_t submodule_index)
 {
-	return (((OscctrlDpll *)hw)->DPLLSTATUS.reg & OSCCTRL_DPLLSTATUS_LOCK) >> OSCCTRL_DPLLSTATUS_LOCK_Pos;
+	return (((Oscctrl *)hw)->Dpll[submodule_index].DPLLSTATUS.reg & OSCCTRL_DPLLSTATUS_LOCK)
+	       >> OSCCTRL_DPLLSTATUS_LOCK_Pos;
 }
 
-static inline bool hri_oscctrldpll_get_DPLLSTATUS_CLKRDY_bit(const void *const hw)
+static inline bool hri_oscctrl_get_DPLLSTATUS_CLKRDY_bit(const void *const hw, uint8_t submodule_index)
 {
-	return (((OscctrlDpll *)hw)->DPLLSTATUS.reg & OSCCTRL_DPLLSTATUS_CLKRDY) >> OSCCTRL_DPLLSTATUS_CLKRDY_Pos;
+	return (((Oscctrl *)hw)->Dpll[submodule_index].DPLLSTATUS.reg & OSCCTRL_DPLLSTATUS_CLKRDY)
+	       >> OSCCTRL_DPLLSTATUS_CLKRDY_Pos;
 }
 
-static inline hri_oscctrl_dpllstatus_reg_t hri_oscctrldpll_get_DPLLSTATUS_reg(const void *const            hw,
-                                                                              hri_oscctrl_dpllstatus_reg_t mask)
+static inline hri_oscctrl_dpllstatus_reg_t hri_oscctrl_get_DPLLSTATUS_reg(const void *const hw, uint8_t submodule_index,
+                                                                          hri_oscctrl_dpllstatus_reg_t mask)
 {
 	uint32_t tmp;
-	tmp = ((OscctrlDpll *)hw)->DPLLSTATUS.reg;
+	tmp = ((Oscctrl *)hw)->Dpll[submodule_index].DPLLSTATUS.reg;
 	tmp &= mask;
 	return tmp;
 }
 
-static inline hri_oscctrl_dpllstatus_reg_t hri_oscctrldpll_read_DPLLSTATUS_reg(const void *const hw)
+static inline hri_oscctrl_dpllstatus_reg_t hri_oscctrl_read_DPLLSTATUS_reg(const void *const hw,
+                                                                           uint8_t           submodule_index)
 {
-	return ((OscctrlDpll *)hw)->DPLLSTATUS.reg;
+	return ((Oscctrl *)hw)->Dpll[submodule_index].DPLLSTATUS.reg;
 }
 
 static inline void hri_oscctrl_set_DPLLCTRLA_ENABLE_bit(const void *const hw, uint8_t submodule_index)
 {
 	OSCCTRL_CRITICAL_SECTION_ENTER();
 	((Oscctrl *)hw)->Dpll[submodule_index].DPLLCTRLA.reg |= OSCCTRL_DPLLCTRLA_ENABLE;
+	hri_oscctrl_wait_for_sync(hw, submodule_index, OSCCTRL_DPLLSYNCBUSY_ENABLE);
 	OSCCTRL_CRITICAL_SECTION_LEAVE();
 }
 
 static inline bool hri_oscctrl_get_DPLLCTRLA_ENABLE_bit(const void *const hw, uint8_t submodule_index)
 {
 	uint8_t tmp;
+	hri_oscctrl_wait_for_sync(hw, submodule_index, OSCCTRL_DPLLSYNCBUSY_ENABLE);
 	tmp = ((Oscctrl *)hw)->Dpll[submodule_index].DPLLCTRLA.reg;
 	tmp = (tmp & OSCCTRL_DPLLCTRLA_ENABLE) >> OSCCTRL_DPLLCTRLA_ENABLE_Pos;
 	return (bool)tmp;
@@ -851,6 +965,7 @@ static inline void hri_oscctrl_write_DPLLCTRLA_ENABLE_bit(const void *const hw, 
 	tmp &= ~OSCCTRL_DPLLCTRLA_ENABLE;
 	tmp |= value << OSCCTRL_DPLLCTRLA_ENABLE_Pos;
 	((Oscctrl *)hw)->Dpll[submodule_index].DPLLCTRLA.reg = tmp;
+	hri_oscctrl_wait_for_sync(hw, submodule_index, OSCCTRL_DPLLSYNCBUSY_ENABLE);
 	OSCCTRL_CRITICAL_SECTION_LEAVE();
 }
 
@@ -858,6 +973,7 @@ static inline void hri_oscctrl_clear_DPLLCTRLA_ENABLE_bit(const void *const hw, 
 {
 	OSCCTRL_CRITICAL_SECTION_ENTER();
 	((Oscctrl *)hw)->Dpll[submodule_index].DPLLCTRLA.reg &= ~OSCCTRL_DPLLCTRLA_ENABLE;
+	hri_oscctrl_wait_for_sync(hw, submodule_index, OSCCTRL_DPLLSYNCBUSY_ENABLE);
 	OSCCTRL_CRITICAL_SECTION_LEAVE();
 }
 
@@ -865,6 +981,7 @@ static inline void hri_oscctrl_toggle_DPLLCTRLA_ENABLE_bit(const void *const hw,
 {
 	OSCCTRL_CRITICAL_SECTION_ENTER();
 	((Oscctrl *)hw)->Dpll[submodule_index].DPLLCTRLA.reg ^= OSCCTRL_DPLLCTRLA_ENABLE;
+	hri_oscctrl_wait_for_sync(hw, submodule_index, OSCCTRL_DPLLSYNCBUSY_ENABLE);
 	OSCCTRL_CRITICAL_SECTION_LEAVE();
 }
 
@@ -872,6 +989,7 @@ static inline void hri_oscctrl_set_DPLLCTRLA_RUNSTDBY_bit(const void *const hw, 
 {
 	OSCCTRL_CRITICAL_SECTION_ENTER();
 	((Oscctrl *)hw)->Dpll[submodule_index].DPLLCTRLA.reg |= OSCCTRL_DPLLCTRLA_RUNSTDBY;
+	hri_oscctrl_wait_for_sync(hw, submodule_index, OSCCTRL_DPLLSYNCBUSY_MASK);
 	OSCCTRL_CRITICAL_SECTION_LEAVE();
 }
 
@@ -891,6 +1009,7 @@ static inline void hri_oscctrl_write_DPLLCTRLA_RUNSTDBY_bit(const void *const hw
 	tmp &= ~OSCCTRL_DPLLCTRLA_RUNSTDBY;
 	tmp |= value << OSCCTRL_DPLLCTRLA_RUNSTDBY_Pos;
 	((Oscctrl *)hw)->Dpll[submodule_index].DPLLCTRLA.reg = tmp;
+	hri_oscctrl_wait_for_sync(hw, submodule_index, OSCCTRL_DPLLSYNCBUSY_MASK);
 	OSCCTRL_CRITICAL_SECTION_LEAVE();
 }
 
@@ -898,6 +1017,7 @@ static inline void hri_oscctrl_clear_DPLLCTRLA_RUNSTDBY_bit(const void *const hw
 {
 	OSCCTRL_CRITICAL_SECTION_ENTER();
 	((Oscctrl *)hw)->Dpll[submodule_index].DPLLCTRLA.reg &= ~OSCCTRL_DPLLCTRLA_RUNSTDBY;
+	hri_oscctrl_wait_for_sync(hw, submodule_index, OSCCTRL_DPLLSYNCBUSY_MASK);
 	OSCCTRL_CRITICAL_SECTION_LEAVE();
 }
 
@@ -905,6 +1025,7 @@ static inline void hri_oscctrl_toggle_DPLLCTRLA_RUNSTDBY_bit(const void *const h
 {
 	OSCCTRL_CRITICAL_SECTION_ENTER();
 	((Oscctrl *)hw)->Dpll[submodule_index].DPLLCTRLA.reg ^= OSCCTRL_DPLLCTRLA_RUNSTDBY;
+	hri_oscctrl_wait_for_sync(hw, submodule_index, OSCCTRL_DPLLSYNCBUSY_MASK);
 	OSCCTRL_CRITICAL_SECTION_LEAVE();
 }
 
@@ -912,6 +1033,7 @@ static inline void hri_oscctrl_set_DPLLCTRLA_ONDEMAND_bit(const void *const hw, 
 {
 	OSCCTRL_CRITICAL_SECTION_ENTER();
 	((Oscctrl *)hw)->Dpll[submodule_index].DPLLCTRLA.reg |= OSCCTRL_DPLLCTRLA_ONDEMAND;
+	hri_oscctrl_wait_for_sync(hw, submodule_index, OSCCTRL_DPLLSYNCBUSY_MASK);
 	OSCCTRL_CRITICAL_SECTION_LEAVE();
 }
 
@@ -931,6 +1053,7 @@ static inline void hri_oscctrl_write_DPLLCTRLA_ONDEMAND_bit(const void *const hw
 	tmp &= ~OSCCTRL_DPLLCTRLA_ONDEMAND;
 	tmp |= value << OSCCTRL_DPLLCTRLA_ONDEMAND_Pos;
 	((Oscctrl *)hw)->Dpll[submodule_index].DPLLCTRLA.reg = tmp;
+	hri_oscctrl_wait_for_sync(hw, submodule_index, OSCCTRL_DPLLSYNCBUSY_MASK);
 	OSCCTRL_CRITICAL_SECTION_LEAVE();
 }
 
@@ -938,6 +1061,7 @@ static inline void hri_oscctrl_clear_DPLLCTRLA_ONDEMAND_bit(const void *const hw
 {
 	OSCCTRL_CRITICAL_SECTION_ENTER();
 	((Oscctrl *)hw)->Dpll[submodule_index].DPLLCTRLA.reg &= ~OSCCTRL_DPLLCTRLA_ONDEMAND;
+	hri_oscctrl_wait_for_sync(hw, submodule_index, OSCCTRL_DPLLSYNCBUSY_MASK);
 	OSCCTRL_CRITICAL_SECTION_LEAVE();
 }
 
@@ -945,6 +1069,7 @@ static inline void hri_oscctrl_toggle_DPLLCTRLA_ONDEMAND_bit(const void *const h
 {
 	OSCCTRL_CRITICAL_SECTION_ENTER();
 	((Oscctrl *)hw)->Dpll[submodule_index].DPLLCTRLA.reg ^= OSCCTRL_DPLLCTRLA_ONDEMAND;
+	hri_oscctrl_wait_for_sync(hw, submodule_index, OSCCTRL_DPLLSYNCBUSY_MASK);
 	OSCCTRL_CRITICAL_SECTION_LEAVE();
 }
 
@@ -953,6 +1078,7 @@ static inline void hri_oscctrl_set_DPLLCTRLA_reg(const void *const hw, uint8_t s
 {
 	OSCCTRL_CRITICAL_SECTION_ENTER();
 	((Oscctrl *)hw)->Dpll[submodule_index].DPLLCTRLA.reg |= mask;
+	hri_oscctrl_wait_for_sync(hw, submodule_index, OSCCTRL_DPLLSYNCBUSY_ENABLE);
 	OSCCTRL_CRITICAL_SECTION_LEAVE();
 }
 
@@ -960,6 +1086,7 @@ static inline hri_oscctrl_dpllctrla_reg_t hri_oscctrl_get_DPLLCTRLA_reg(const vo
                                                                         hri_oscctrl_dpllctrla_reg_t mask)
 {
 	uint8_t tmp;
+	hri_oscctrl_wait_for_sync(hw, submodule_index, OSCCTRL_DPLLSYNCBUSY_ENABLE);
 	tmp = ((Oscctrl *)hw)->Dpll[submodule_index].DPLLCTRLA.reg;
 	tmp &= mask;
 	return tmp;
@@ -970,6 +1097,7 @@ static inline void hri_oscctrl_write_DPLLCTRLA_reg(const void *const hw, uint8_t
 {
 	OSCCTRL_CRITICAL_SECTION_ENTER();
 	((Oscctrl *)hw)->Dpll[submodule_index].DPLLCTRLA.reg = data;
+	hri_oscctrl_wait_for_sync(hw, submodule_index, OSCCTRL_DPLLSYNCBUSY_ENABLE);
 	OSCCTRL_CRITICAL_SECTION_LEAVE();
 }
 
@@ -978,6 +1106,7 @@ static inline void hri_oscctrl_clear_DPLLCTRLA_reg(const void *const hw, uint8_t
 {
 	OSCCTRL_CRITICAL_SECTION_ENTER();
 	((Oscctrl *)hw)->Dpll[submodule_index].DPLLCTRLA.reg &= ~mask;
+	hri_oscctrl_wait_for_sync(hw, submodule_index, OSCCTRL_DPLLSYNCBUSY_ENABLE);
 	OSCCTRL_CRITICAL_SECTION_LEAVE();
 }
 
@@ -986,11 +1115,13 @@ static inline void hri_oscctrl_toggle_DPLLCTRLA_reg(const void *const hw, uint8_
 {
 	OSCCTRL_CRITICAL_SECTION_ENTER();
 	((Oscctrl *)hw)->Dpll[submodule_index].DPLLCTRLA.reg ^= mask;
+	hri_oscctrl_wait_for_sync(hw, submodule_index, OSCCTRL_DPLLSYNCBUSY_ENABLE);
 	OSCCTRL_CRITICAL_SECTION_LEAVE();
 }
 
 static inline hri_oscctrl_dpllctrla_reg_t hri_oscctrl_read_DPLLCTRLA_reg(const void *const hw, uint8_t submodule_index)
 {
+	hri_oscctrl_wait_for_sync(hw, submodule_index, OSCCTRL_DPLLSYNCBUSY_ENABLE);
 	return ((Oscctrl *)hw)->Dpll[submodule_index].DPLLCTRLA.reg;
 }
 
@@ -999,6 +1130,7 @@ static inline void hri_oscctrl_set_DPLLRATIO_LDR_bf(const void *const hw, uint8_
 {
 	OSCCTRL_CRITICAL_SECTION_ENTER();
 	((Oscctrl *)hw)->Dpll[submodule_index].DPLLRATIO.reg |= OSCCTRL_DPLLRATIO_LDR(mask);
+	hri_oscctrl_wait_for_sync(hw, submodule_index, OSCCTRL_DPLLSYNCBUSY_MASK);
 	OSCCTRL_CRITICAL_SECTION_LEAVE();
 }
 
@@ -1020,6 +1152,7 @@ static inline void hri_oscctrl_write_DPLLRATIO_LDR_bf(const void *const hw, uint
 	tmp &= ~OSCCTRL_DPLLRATIO_LDR_Msk;
 	tmp |= OSCCTRL_DPLLRATIO_LDR(data);
 	((Oscctrl *)hw)->Dpll[submodule_index].DPLLRATIO.reg = tmp;
+	hri_oscctrl_wait_for_sync(hw, submodule_index, OSCCTRL_DPLLSYNCBUSY_MASK);
 	OSCCTRL_CRITICAL_SECTION_LEAVE();
 }
 
@@ -1028,6 +1161,7 @@ static inline void hri_oscctrl_clear_DPLLRATIO_LDR_bf(const void *const hw, uint
 {
 	OSCCTRL_CRITICAL_SECTION_ENTER();
 	((Oscctrl *)hw)->Dpll[submodule_index].DPLLRATIO.reg &= ~OSCCTRL_DPLLRATIO_LDR(mask);
+	hri_oscctrl_wait_for_sync(hw, submodule_index, OSCCTRL_DPLLSYNCBUSY_MASK);
 	OSCCTRL_CRITICAL_SECTION_LEAVE();
 }
 
@@ -1036,6 +1170,7 @@ static inline void hri_oscctrl_toggle_DPLLRATIO_LDR_bf(const void *const hw, uin
 {
 	OSCCTRL_CRITICAL_SECTION_ENTER();
 	((Oscctrl *)hw)->Dpll[submodule_index].DPLLRATIO.reg ^= OSCCTRL_DPLLRATIO_LDR(mask);
+	hri_oscctrl_wait_for_sync(hw, submodule_index, OSCCTRL_DPLLSYNCBUSY_MASK);
 	OSCCTRL_CRITICAL_SECTION_LEAVE();
 }
 
@@ -1053,6 +1188,7 @@ static inline void hri_oscctrl_set_DPLLRATIO_LDRFRAC_bf(const void *const hw, ui
 {
 	OSCCTRL_CRITICAL_SECTION_ENTER();
 	((Oscctrl *)hw)->Dpll[submodule_index].DPLLRATIO.reg |= OSCCTRL_DPLLRATIO_LDRFRAC(mask);
+	hri_oscctrl_wait_for_sync(hw, submodule_index, OSCCTRL_DPLLSYNCBUSY_MASK);
 	OSCCTRL_CRITICAL_SECTION_LEAVE();
 }
 
@@ -1074,6 +1210,7 @@ static inline void hri_oscctrl_write_DPLLRATIO_LDRFRAC_bf(const void *const hw, 
 	tmp &= ~OSCCTRL_DPLLRATIO_LDRFRAC_Msk;
 	tmp |= OSCCTRL_DPLLRATIO_LDRFRAC(data);
 	((Oscctrl *)hw)->Dpll[submodule_index].DPLLRATIO.reg = tmp;
+	hri_oscctrl_wait_for_sync(hw, submodule_index, OSCCTRL_DPLLSYNCBUSY_MASK);
 	OSCCTRL_CRITICAL_SECTION_LEAVE();
 }
 
@@ -1082,6 +1219,7 @@ static inline void hri_oscctrl_clear_DPLLRATIO_LDRFRAC_bf(const void *const hw, 
 {
 	OSCCTRL_CRITICAL_SECTION_ENTER();
 	((Oscctrl *)hw)->Dpll[submodule_index].DPLLRATIO.reg &= ~OSCCTRL_DPLLRATIO_LDRFRAC(mask);
+	hri_oscctrl_wait_for_sync(hw, submodule_index, OSCCTRL_DPLLSYNCBUSY_MASK);
 	OSCCTRL_CRITICAL_SECTION_LEAVE();
 }
 
@@ -1090,6 +1228,7 @@ static inline void hri_oscctrl_toggle_DPLLRATIO_LDRFRAC_bf(const void *const hw,
 {
 	OSCCTRL_CRITICAL_SECTION_ENTER();
 	((Oscctrl *)hw)->Dpll[submodule_index].DPLLRATIO.reg ^= OSCCTRL_DPLLRATIO_LDRFRAC(mask);
+	hri_oscctrl_wait_for_sync(hw, submodule_index, OSCCTRL_DPLLSYNCBUSY_MASK);
 	OSCCTRL_CRITICAL_SECTION_LEAVE();
 }
 
@@ -1107,6 +1246,7 @@ static inline void hri_oscctrl_set_DPLLRATIO_reg(const void *const hw, uint8_t s
 {
 	OSCCTRL_CRITICAL_SECTION_ENTER();
 	((Oscctrl *)hw)->Dpll[submodule_index].DPLLRATIO.reg |= mask;
+	hri_oscctrl_wait_for_sync(hw, submodule_index, OSCCTRL_DPLLSYNCBUSY_MASK);
 	OSCCTRL_CRITICAL_SECTION_LEAVE();
 }
 
@@ -1114,6 +1254,7 @@ static inline hri_oscctrl_dpllratio_reg_t hri_oscctrl_get_DPLLRATIO_reg(const vo
                                                                         hri_oscctrl_dpllratio_reg_t mask)
 {
 	uint32_t tmp;
+	hri_oscctrl_wait_for_sync(hw, submodule_index, OSCCTRL_DPLLSYNCBUSY_MASK);
 	tmp = ((Oscctrl *)hw)->Dpll[submodule_index].DPLLRATIO.reg;
 	tmp &= mask;
 	return tmp;
@@ -1124,6 +1265,7 @@ static inline void hri_oscctrl_write_DPLLRATIO_reg(const void *const hw, uint8_t
 {
 	OSCCTRL_CRITICAL_SECTION_ENTER();
 	((Oscctrl *)hw)->Dpll[submodule_index].DPLLRATIO.reg = data;
+	hri_oscctrl_wait_for_sync(hw, submodule_index, OSCCTRL_DPLLSYNCBUSY_MASK);
 	OSCCTRL_CRITICAL_SECTION_LEAVE();
 }
 
@@ -1132,6 +1274,7 @@ static inline void hri_oscctrl_clear_DPLLRATIO_reg(const void *const hw, uint8_t
 {
 	OSCCTRL_CRITICAL_SECTION_ENTER();
 	((Oscctrl *)hw)->Dpll[submodule_index].DPLLRATIO.reg &= ~mask;
+	hri_oscctrl_wait_for_sync(hw, submodule_index, OSCCTRL_DPLLSYNCBUSY_MASK);
 	OSCCTRL_CRITICAL_SECTION_LEAVE();
 }
 
@@ -1140,11 +1283,13 @@ static inline void hri_oscctrl_toggle_DPLLRATIO_reg(const void *const hw, uint8_
 {
 	OSCCTRL_CRITICAL_SECTION_ENTER();
 	((Oscctrl *)hw)->Dpll[submodule_index].DPLLRATIO.reg ^= mask;
+	hri_oscctrl_wait_for_sync(hw, submodule_index, OSCCTRL_DPLLSYNCBUSY_MASK);
 	OSCCTRL_CRITICAL_SECTION_LEAVE();
 }
 
 static inline hri_oscctrl_dpllratio_reg_t hri_oscctrl_read_DPLLRATIO_reg(const void *const hw, uint8_t submodule_index)
 {
+	hri_oscctrl_wait_for_sync(hw, submodule_index, OSCCTRL_DPLLSYNCBUSY_MASK);
 	return ((Oscctrl *)hw)->Dpll[submodule_index].DPLLRATIO.reg;
 }
 
@@ -1584,58 +1729,363 @@ static inline hri_oscctrl_dpllctrlb_reg_t hri_oscctrl_read_DPLLCTRLB_reg(const v
 	return ((Oscctrl *)hw)->Dpll[submodule_index].DPLLCTRLB.reg;
 }
 
-static inline bool hri_oscctrl_get_DPLLSYNCBUSY_ENABLE_bit(const void *const hw, uint8_t submodule_index)
+static inline bool hri_oscctrl_get_INTFLAG_XOSCRDY0_bit(const void *const hw)
 {
-	return (((Oscctrl *)hw)->Dpll[submodule_index].DPLLSYNCBUSY.reg & OSCCTRL_DPLLSYNCBUSY_ENABLE)
-	       >> OSCCTRL_DPLLSYNCBUSY_ENABLE_Pos;
+	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_XOSCRDY0) >> OSCCTRL_INTFLAG_XOSCRDY0_Pos;
 }
 
-static inline bool hri_oscctrl_get_DPLLSYNCBUSY_DPLLRATIO_bit(const void *const hw, uint8_t submodule_index)
+static inline void hri_oscctrl_clear_INTFLAG_XOSCRDY0_bit(const void *const hw)
 {
-	return (((Oscctrl *)hw)->Dpll[submodule_index].DPLLSYNCBUSY.reg & OSCCTRL_DPLLSYNCBUSY_DPLLRATIO)
-	       >> OSCCTRL_DPLLSYNCBUSY_DPLLRATIO_Pos;
+	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_XOSCRDY0;
 }
 
-static inline hri_oscctrl_dpllsyncbusy_reg_t
-hri_oscctrl_get_DPLLSYNCBUSY_reg(const void *const hw, uint8_t submodule_index, hri_oscctrl_dpllsyncbusy_reg_t mask)
+static inline bool hri_oscctrl_get_INTFLAG_XOSCRDY1_bit(const void *const hw)
+{
+	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_XOSCRDY1) >> OSCCTRL_INTFLAG_XOSCRDY1_Pos;
+}
+
+static inline void hri_oscctrl_clear_INTFLAG_XOSCRDY1_bit(const void *const hw)
+{
+	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_XOSCRDY1;
+}
+
+static inline bool hri_oscctrl_get_INTFLAG_XOSCFAIL0_bit(const void *const hw)
+{
+	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_XOSCFAIL0) >> OSCCTRL_INTFLAG_XOSCFAIL0_Pos;
+}
+
+static inline void hri_oscctrl_clear_INTFLAG_XOSCFAIL0_bit(const void *const hw)
+{
+	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_XOSCFAIL0;
+}
+
+static inline bool hri_oscctrl_get_INTFLAG_XOSCFAIL1_bit(const void *const hw)
+{
+	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_XOSCFAIL1) >> OSCCTRL_INTFLAG_XOSCFAIL1_Pos;
+}
+
+static inline void hri_oscctrl_clear_INTFLAG_XOSCFAIL1_bit(const void *const hw)
+{
+	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_XOSCFAIL1;
+}
+
+static inline bool hri_oscctrl_get_INTFLAG_DFLLRDY_bit(const void *const hw)
+{
+	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_DFLLRDY) >> OSCCTRL_INTFLAG_DFLLRDY_Pos;
+}
+
+static inline void hri_oscctrl_clear_INTFLAG_DFLLRDY_bit(const void *const hw)
+{
+	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_DFLLRDY;
+}
+
+static inline bool hri_oscctrl_get_INTFLAG_DFLLOOB_bit(const void *const hw)
+{
+	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_DFLLOOB) >> OSCCTRL_INTFLAG_DFLLOOB_Pos;
+}
+
+static inline void hri_oscctrl_clear_INTFLAG_DFLLOOB_bit(const void *const hw)
+{
+	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_DFLLOOB;
+}
+
+static inline bool hri_oscctrl_get_INTFLAG_DFLLLCKF_bit(const void *const hw)
+{
+	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_DFLLLCKF) >> OSCCTRL_INTFLAG_DFLLLCKF_Pos;
+}
+
+static inline void hri_oscctrl_clear_INTFLAG_DFLLLCKF_bit(const void *const hw)
+{
+	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_DFLLLCKF;
+}
+
+static inline bool hri_oscctrl_get_INTFLAG_DFLLLCKC_bit(const void *const hw)
+{
+	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_DFLLLCKC) >> OSCCTRL_INTFLAG_DFLLLCKC_Pos;
+}
+
+static inline void hri_oscctrl_clear_INTFLAG_DFLLLCKC_bit(const void *const hw)
+{
+	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_DFLLLCKC;
+}
+
+static inline bool hri_oscctrl_get_INTFLAG_DFLLRCS_bit(const void *const hw)
+{
+	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_DFLLRCS) >> OSCCTRL_INTFLAG_DFLLRCS_Pos;
+}
+
+static inline void hri_oscctrl_clear_INTFLAG_DFLLRCS_bit(const void *const hw)
+{
+	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_DFLLRCS;
+}
+
+static inline bool hri_oscctrl_get_INTFLAG_DPLL0LCKR_bit(const void *const hw)
+{
+	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_DPLL0LCKR) >> OSCCTRL_INTFLAG_DPLL0LCKR_Pos;
+}
+
+static inline void hri_oscctrl_clear_INTFLAG_DPLL0LCKR_bit(const void *const hw)
+{
+	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_DPLL0LCKR;
+}
+
+static inline bool hri_oscctrl_get_INTFLAG_DPLL0LCKF_bit(const void *const hw)
+{
+	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_DPLL0LCKF) >> OSCCTRL_INTFLAG_DPLL0LCKF_Pos;
+}
+
+static inline void hri_oscctrl_clear_INTFLAG_DPLL0LCKF_bit(const void *const hw)
+{
+	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_DPLL0LCKF;
+}
+
+static inline bool hri_oscctrl_get_INTFLAG_DPLL0LTO_bit(const void *const hw)
+{
+	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_DPLL0LTO) >> OSCCTRL_INTFLAG_DPLL0LTO_Pos;
+}
+
+static inline void hri_oscctrl_clear_INTFLAG_DPLL0LTO_bit(const void *const hw)
+{
+	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_DPLL0LTO;
+}
+
+static inline bool hri_oscctrl_get_INTFLAG_DPLL0LDRTO_bit(const void *const hw)
+{
+	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_DPLL0LDRTO) >> OSCCTRL_INTFLAG_DPLL0LDRTO_Pos;
+}
+
+static inline void hri_oscctrl_clear_INTFLAG_DPLL0LDRTO_bit(const void *const hw)
+{
+	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_DPLL0LDRTO;
+}
+
+static inline bool hri_oscctrl_get_INTFLAG_DPLL1LCKR_bit(const void *const hw)
+{
+	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_DPLL1LCKR) >> OSCCTRL_INTFLAG_DPLL1LCKR_Pos;
+}
+
+static inline void hri_oscctrl_clear_INTFLAG_DPLL1LCKR_bit(const void *const hw)
+{
+	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_DPLL1LCKR;
+}
+
+static inline bool hri_oscctrl_get_INTFLAG_DPLL1LCKF_bit(const void *const hw)
+{
+	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_DPLL1LCKF) >> OSCCTRL_INTFLAG_DPLL1LCKF_Pos;
+}
+
+static inline void hri_oscctrl_clear_INTFLAG_DPLL1LCKF_bit(const void *const hw)
+{
+	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_DPLL1LCKF;
+}
+
+static inline bool hri_oscctrl_get_INTFLAG_DPLL1LTO_bit(const void *const hw)
+{
+	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_DPLL1LTO) >> OSCCTRL_INTFLAG_DPLL1LTO_Pos;
+}
+
+static inline void hri_oscctrl_clear_INTFLAG_DPLL1LTO_bit(const void *const hw)
+{
+	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_DPLL1LTO;
+}
+
+static inline bool hri_oscctrl_get_INTFLAG_DPLL1LDRTO_bit(const void *const hw)
+{
+	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_DPLL1LDRTO) >> OSCCTRL_INTFLAG_DPLL1LDRTO_Pos;
+}
+
+static inline void hri_oscctrl_clear_INTFLAG_DPLL1LDRTO_bit(const void *const hw)
+{
+	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_DPLL1LDRTO;
+}
+
+static inline bool hri_oscctrl_get_interrupt_XOSCRDY0_bit(const void *const hw)
+{
+	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_XOSCRDY0) >> OSCCTRL_INTFLAG_XOSCRDY0_Pos;
+}
+
+static inline void hri_oscctrl_clear_interrupt_XOSCRDY0_bit(const void *const hw)
+{
+	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_XOSCRDY0;
+}
+
+static inline bool hri_oscctrl_get_interrupt_XOSCRDY1_bit(const void *const hw)
+{
+	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_XOSCRDY1) >> OSCCTRL_INTFLAG_XOSCRDY1_Pos;
+}
+
+static inline void hri_oscctrl_clear_interrupt_XOSCRDY1_bit(const void *const hw)
+{
+	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_XOSCRDY1;
+}
+
+static inline bool hri_oscctrl_get_interrupt_XOSCFAIL0_bit(const void *const hw)
+{
+	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_XOSCFAIL0) >> OSCCTRL_INTFLAG_XOSCFAIL0_Pos;
+}
+
+static inline void hri_oscctrl_clear_interrupt_XOSCFAIL0_bit(const void *const hw)
+{
+	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_XOSCFAIL0;
+}
+
+static inline bool hri_oscctrl_get_interrupt_XOSCFAIL1_bit(const void *const hw)
+{
+	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_XOSCFAIL1) >> OSCCTRL_INTFLAG_XOSCFAIL1_Pos;
+}
+
+static inline void hri_oscctrl_clear_interrupt_XOSCFAIL1_bit(const void *const hw)
+{
+	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_XOSCFAIL1;
+}
+
+static inline bool hri_oscctrl_get_interrupt_DFLLRDY_bit(const void *const hw)
+{
+	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_DFLLRDY) >> OSCCTRL_INTFLAG_DFLLRDY_Pos;
+}
+
+static inline void hri_oscctrl_clear_interrupt_DFLLRDY_bit(const void *const hw)
+{
+	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_DFLLRDY;
+}
+
+static inline bool hri_oscctrl_get_interrupt_DFLLOOB_bit(const void *const hw)
+{
+	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_DFLLOOB) >> OSCCTRL_INTFLAG_DFLLOOB_Pos;
+}
+
+static inline void hri_oscctrl_clear_interrupt_DFLLOOB_bit(const void *const hw)
+{
+	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_DFLLOOB;
+}
+
+static inline bool hri_oscctrl_get_interrupt_DFLLLCKF_bit(const void *const hw)
+{
+	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_DFLLLCKF) >> OSCCTRL_INTFLAG_DFLLLCKF_Pos;
+}
+
+static inline void hri_oscctrl_clear_interrupt_DFLLLCKF_bit(const void *const hw)
+{
+	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_DFLLLCKF;
+}
+
+static inline bool hri_oscctrl_get_interrupt_DFLLLCKC_bit(const void *const hw)
+{
+	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_DFLLLCKC) >> OSCCTRL_INTFLAG_DFLLLCKC_Pos;
+}
+
+static inline void hri_oscctrl_clear_interrupt_DFLLLCKC_bit(const void *const hw)
+{
+	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_DFLLLCKC;
+}
+
+static inline bool hri_oscctrl_get_interrupt_DFLLRCS_bit(const void *const hw)
+{
+	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_DFLLRCS) >> OSCCTRL_INTFLAG_DFLLRCS_Pos;
+}
+
+static inline void hri_oscctrl_clear_interrupt_DFLLRCS_bit(const void *const hw)
+{
+	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_DFLLRCS;
+}
+
+static inline bool hri_oscctrl_get_interrupt_DPLL0LCKR_bit(const void *const hw)
+{
+	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_DPLL0LCKR) >> OSCCTRL_INTFLAG_DPLL0LCKR_Pos;
+}
+
+static inline void hri_oscctrl_clear_interrupt_DPLL0LCKR_bit(const void *const hw)
+{
+	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_DPLL0LCKR;
+}
+
+static inline bool hri_oscctrl_get_interrupt_DPLL0LCKF_bit(const void *const hw)
+{
+	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_DPLL0LCKF) >> OSCCTRL_INTFLAG_DPLL0LCKF_Pos;
+}
+
+static inline void hri_oscctrl_clear_interrupt_DPLL0LCKF_bit(const void *const hw)
+{
+	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_DPLL0LCKF;
+}
+
+static inline bool hri_oscctrl_get_interrupt_DPLL0LTO_bit(const void *const hw)
+{
+	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_DPLL0LTO) >> OSCCTRL_INTFLAG_DPLL0LTO_Pos;
+}
+
+static inline void hri_oscctrl_clear_interrupt_DPLL0LTO_bit(const void *const hw)
+{
+	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_DPLL0LTO;
+}
+
+static inline bool hri_oscctrl_get_interrupt_DPLL0LDRTO_bit(const void *const hw)
+{
+	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_DPLL0LDRTO) >> OSCCTRL_INTFLAG_DPLL0LDRTO_Pos;
+}
+
+static inline void hri_oscctrl_clear_interrupt_DPLL0LDRTO_bit(const void *const hw)
+{
+	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_DPLL0LDRTO;
+}
+
+static inline bool hri_oscctrl_get_interrupt_DPLL1LCKR_bit(const void *const hw)
+{
+	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_DPLL1LCKR) >> OSCCTRL_INTFLAG_DPLL1LCKR_Pos;
+}
+
+static inline void hri_oscctrl_clear_interrupt_DPLL1LCKR_bit(const void *const hw)
+{
+	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_DPLL1LCKR;
+}
+
+static inline bool hri_oscctrl_get_interrupt_DPLL1LCKF_bit(const void *const hw)
+{
+	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_DPLL1LCKF) >> OSCCTRL_INTFLAG_DPLL1LCKF_Pos;
+}
+
+static inline void hri_oscctrl_clear_interrupt_DPLL1LCKF_bit(const void *const hw)
+{
+	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_DPLL1LCKF;
+}
+
+static inline bool hri_oscctrl_get_interrupt_DPLL1LTO_bit(const void *const hw)
+{
+	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_DPLL1LTO) >> OSCCTRL_INTFLAG_DPLL1LTO_Pos;
+}
+
+static inline void hri_oscctrl_clear_interrupt_DPLL1LTO_bit(const void *const hw)
+{
+	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_DPLL1LTO;
+}
+
+static inline bool hri_oscctrl_get_interrupt_DPLL1LDRTO_bit(const void *const hw)
+{
+	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_DPLL1LDRTO) >> OSCCTRL_INTFLAG_DPLL1LDRTO_Pos;
+}
+
+static inline void hri_oscctrl_clear_interrupt_DPLL1LDRTO_bit(const void *const hw)
+{
+	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_DPLL1LDRTO;
+}
+
+static inline hri_oscctrl_intflag_reg_t hri_oscctrl_get_INTFLAG_reg(const void *const         hw,
+                                                                    hri_oscctrl_intflag_reg_t mask)
 {
 	uint32_t tmp;
-	tmp = ((Oscctrl *)hw)->Dpll[submodule_index].DPLLSYNCBUSY.reg;
+	tmp = ((Oscctrl *)hw)->INTFLAG.reg;
 	tmp &= mask;
 	return tmp;
 }
 
-static inline hri_oscctrl_dpllsyncbusy_reg_t hri_oscctrl_read_DPLLSYNCBUSY_reg(const void *const hw,
-                                                                               uint8_t           submodule_index)
+static inline hri_oscctrl_intflag_reg_t hri_oscctrl_read_INTFLAG_reg(const void *const hw)
 {
-	return ((Oscctrl *)hw)->Dpll[submodule_index].DPLLSYNCBUSY.reg;
+	return ((Oscctrl *)hw)->INTFLAG.reg;
 }
 
-static inline bool hri_oscctrl_get_DPLLSTATUS_LOCK_bit(const void *const hw, uint8_t submodule_index)
+static inline void hri_oscctrl_clear_INTFLAG_reg(const void *const hw, hri_oscctrl_intflag_reg_t mask)
 {
-	return (((Oscctrl *)hw)->Dpll[submodule_index].DPLLSTATUS.reg & OSCCTRL_DPLLSTATUS_LOCK)
-	       >> OSCCTRL_DPLLSTATUS_LOCK_Pos;
-}
-
-static inline bool hri_oscctrl_get_DPLLSTATUS_CLKRDY_bit(const void *const hw, uint8_t submodule_index)
-{
-	return (((Oscctrl *)hw)->Dpll[submodule_index].DPLLSTATUS.reg & OSCCTRL_DPLLSTATUS_CLKRDY)
-	       >> OSCCTRL_DPLLSTATUS_CLKRDY_Pos;
-}
-
-static inline hri_oscctrl_dpllstatus_reg_t hri_oscctrl_get_DPLLSTATUS_reg(const void *const hw, uint8_t submodule_index,
-                                                                          hri_oscctrl_dpllstatus_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Oscctrl *)hw)->Dpll[submodule_index].DPLLSTATUS.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline hri_oscctrl_dpllstatus_reg_t hri_oscctrl_read_DPLLSTATUS_reg(const void *const hw,
-                                                                           uint8_t           submodule_index)
-{
-	return ((Oscctrl *)hw)->Dpll[submodule_index].DPLLSTATUS.reg;
+	((Oscctrl *)hw)->INTFLAG.reg = mask;
 }
 
 static inline void hri_oscctrl_set_INTEN_XOSCRDY0_bit(const void *const hw)
@@ -2076,363 +2526,112 @@ static inline void hri_oscctrl_clear_INTEN_reg(const void *const hw, hri_oscctrl
 	((Oscctrl *)hw)->INTENCLR.reg = mask;
 }
 
-static inline bool hri_oscctrl_get_INTFLAG_XOSCRDY0_bit(const void *const hw)
+static inline bool hri_oscctrl_get_STATUS_XOSCRDY0_bit(const void *const hw)
 {
-	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_XOSCRDY0) >> OSCCTRL_INTFLAG_XOSCRDY0_Pos;
+	return (((Oscctrl *)hw)->STATUS.reg & OSCCTRL_STATUS_XOSCRDY0) >> OSCCTRL_STATUS_XOSCRDY0_Pos;
 }
 
-static inline void hri_oscctrl_clear_INTFLAG_XOSCRDY0_bit(const void *const hw)
+static inline bool hri_oscctrl_get_STATUS_XOSCRDY1_bit(const void *const hw)
 {
-	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_XOSCRDY0;
+	return (((Oscctrl *)hw)->STATUS.reg & OSCCTRL_STATUS_XOSCRDY1) >> OSCCTRL_STATUS_XOSCRDY1_Pos;
 }
 
-static inline bool hri_oscctrl_get_INTFLAG_XOSCRDY1_bit(const void *const hw)
+static inline bool hri_oscctrl_get_STATUS_XOSCFAIL0_bit(const void *const hw)
 {
-	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_XOSCRDY1) >> OSCCTRL_INTFLAG_XOSCRDY1_Pos;
+	return (((Oscctrl *)hw)->STATUS.reg & OSCCTRL_STATUS_XOSCFAIL0) >> OSCCTRL_STATUS_XOSCFAIL0_Pos;
 }
 
-static inline void hri_oscctrl_clear_INTFLAG_XOSCRDY1_bit(const void *const hw)
+static inline bool hri_oscctrl_get_STATUS_XOSCFAIL1_bit(const void *const hw)
 {
-	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_XOSCRDY1;
+	return (((Oscctrl *)hw)->STATUS.reg & OSCCTRL_STATUS_XOSCFAIL1) >> OSCCTRL_STATUS_XOSCFAIL1_Pos;
 }
 
-static inline bool hri_oscctrl_get_INTFLAG_XOSCFAIL0_bit(const void *const hw)
+static inline bool hri_oscctrl_get_STATUS_XOSCCKSW0_bit(const void *const hw)
 {
-	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_XOSCFAIL0) >> OSCCTRL_INTFLAG_XOSCFAIL0_Pos;
+	return (((Oscctrl *)hw)->STATUS.reg & OSCCTRL_STATUS_XOSCCKSW0) >> OSCCTRL_STATUS_XOSCCKSW0_Pos;
 }
 
-static inline void hri_oscctrl_clear_INTFLAG_XOSCFAIL0_bit(const void *const hw)
+static inline bool hri_oscctrl_get_STATUS_XOSCCKSW1_bit(const void *const hw)
 {
-	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_XOSCFAIL0;
+	return (((Oscctrl *)hw)->STATUS.reg & OSCCTRL_STATUS_XOSCCKSW1) >> OSCCTRL_STATUS_XOSCCKSW1_Pos;
 }
 
-static inline bool hri_oscctrl_get_INTFLAG_XOSCFAIL1_bit(const void *const hw)
+static inline bool hri_oscctrl_get_STATUS_DFLLRDY_bit(const void *const hw)
 {
-	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_XOSCFAIL1) >> OSCCTRL_INTFLAG_XOSCFAIL1_Pos;
+	return (((Oscctrl *)hw)->STATUS.reg & OSCCTRL_STATUS_DFLLRDY) >> OSCCTRL_STATUS_DFLLRDY_Pos;
 }
 
-static inline void hri_oscctrl_clear_INTFLAG_XOSCFAIL1_bit(const void *const hw)
+static inline bool hri_oscctrl_get_STATUS_DFLLOOB_bit(const void *const hw)
 {
-	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_XOSCFAIL1;
+	return (((Oscctrl *)hw)->STATUS.reg & OSCCTRL_STATUS_DFLLOOB) >> OSCCTRL_STATUS_DFLLOOB_Pos;
 }
 
-static inline bool hri_oscctrl_get_INTFLAG_DFLLRDY_bit(const void *const hw)
+static inline bool hri_oscctrl_get_STATUS_DFLLLCKF_bit(const void *const hw)
 {
-	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_DFLLRDY) >> OSCCTRL_INTFLAG_DFLLRDY_Pos;
+	return (((Oscctrl *)hw)->STATUS.reg & OSCCTRL_STATUS_DFLLLCKF) >> OSCCTRL_STATUS_DFLLLCKF_Pos;
 }
 
-static inline void hri_oscctrl_clear_INTFLAG_DFLLRDY_bit(const void *const hw)
+static inline bool hri_oscctrl_get_STATUS_DFLLLCKC_bit(const void *const hw)
 {
-	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_DFLLRDY;
+	return (((Oscctrl *)hw)->STATUS.reg & OSCCTRL_STATUS_DFLLLCKC) >> OSCCTRL_STATUS_DFLLLCKC_Pos;
 }
 
-static inline bool hri_oscctrl_get_INTFLAG_DFLLOOB_bit(const void *const hw)
+static inline bool hri_oscctrl_get_STATUS_DFLLRCS_bit(const void *const hw)
 {
-	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_DFLLOOB) >> OSCCTRL_INTFLAG_DFLLOOB_Pos;
+	return (((Oscctrl *)hw)->STATUS.reg & OSCCTRL_STATUS_DFLLRCS) >> OSCCTRL_STATUS_DFLLRCS_Pos;
 }
 
-static inline void hri_oscctrl_clear_INTFLAG_DFLLOOB_bit(const void *const hw)
+static inline bool hri_oscctrl_get_STATUS_DPLL0LCKR_bit(const void *const hw)
 {
-	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_DFLLOOB;
+	return (((Oscctrl *)hw)->STATUS.reg & OSCCTRL_STATUS_DPLL0LCKR) >> OSCCTRL_STATUS_DPLL0LCKR_Pos;
 }
 
-static inline bool hri_oscctrl_get_INTFLAG_DFLLLCKF_bit(const void *const hw)
+static inline bool hri_oscctrl_get_STATUS_DPLL0LCKF_bit(const void *const hw)
 {
-	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_DFLLLCKF) >> OSCCTRL_INTFLAG_DFLLLCKF_Pos;
+	return (((Oscctrl *)hw)->STATUS.reg & OSCCTRL_STATUS_DPLL0LCKF) >> OSCCTRL_STATUS_DPLL0LCKF_Pos;
 }
 
-static inline void hri_oscctrl_clear_INTFLAG_DFLLLCKF_bit(const void *const hw)
+static inline bool hri_oscctrl_get_STATUS_DPLL0TO_bit(const void *const hw)
 {
-	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_DFLLLCKF;
+	return (((Oscctrl *)hw)->STATUS.reg & OSCCTRL_STATUS_DPLL0TO) >> OSCCTRL_STATUS_DPLL0TO_Pos;
 }
 
-static inline bool hri_oscctrl_get_INTFLAG_DFLLLCKC_bit(const void *const hw)
+static inline bool hri_oscctrl_get_STATUS_DPLL0LDRTO_bit(const void *const hw)
 {
-	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_DFLLLCKC) >> OSCCTRL_INTFLAG_DFLLLCKC_Pos;
+	return (((Oscctrl *)hw)->STATUS.reg & OSCCTRL_STATUS_DPLL0LDRTO) >> OSCCTRL_STATUS_DPLL0LDRTO_Pos;
 }
 
-static inline void hri_oscctrl_clear_INTFLAG_DFLLLCKC_bit(const void *const hw)
+static inline bool hri_oscctrl_get_STATUS_DPLL1LCKR_bit(const void *const hw)
 {
-	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_DFLLLCKC;
+	return (((Oscctrl *)hw)->STATUS.reg & OSCCTRL_STATUS_DPLL1LCKR) >> OSCCTRL_STATUS_DPLL1LCKR_Pos;
 }
 
-static inline bool hri_oscctrl_get_INTFLAG_DFLLRCS_bit(const void *const hw)
+static inline bool hri_oscctrl_get_STATUS_DPLL1LCKF_bit(const void *const hw)
 {
-	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_DFLLRCS) >> OSCCTRL_INTFLAG_DFLLRCS_Pos;
+	return (((Oscctrl *)hw)->STATUS.reg & OSCCTRL_STATUS_DPLL1LCKF) >> OSCCTRL_STATUS_DPLL1LCKF_Pos;
 }
 
-static inline void hri_oscctrl_clear_INTFLAG_DFLLRCS_bit(const void *const hw)
+static inline bool hri_oscctrl_get_STATUS_DPLL1TO_bit(const void *const hw)
 {
-	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_DFLLRCS;
+	return (((Oscctrl *)hw)->STATUS.reg & OSCCTRL_STATUS_DPLL1TO) >> OSCCTRL_STATUS_DPLL1TO_Pos;
 }
 
-static inline bool hri_oscctrl_get_INTFLAG_DPLL0LCKR_bit(const void *const hw)
+static inline bool hri_oscctrl_get_STATUS_DPLL1LDRTO_bit(const void *const hw)
 {
-	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_DPLL0LCKR) >> OSCCTRL_INTFLAG_DPLL0LCKR_Pos;
+	return (((Oscctrl *)hw)->STATUS.reg & OSCCTRL_STATUS_DPLL1LDRTO) >> OSCCTRL_STATUS_DPLL1LDRTO_Pos;
 }
 
-static inline void hri_oscctrl_clear_INTFLAG_DPLL0LCKR_bit(const void *const hw)
-{
-	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_DPLL0LCKR;
-}
-
-static inline bool hri_oscctrl_get_INTFLAG_DPLL0LCKF_bit(const void *const hw)
-{
-	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_DPLL0LCKF) >> OSCCTRL_INTFLAG_DPLL0LCKF_Pos;
-}
-
-static inline void hri_oscctrl_clear_INTFLAG_DPLL0LCKF_bit(const void *const hw)
-{
-	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_DPLL0LCKF;
-}
-
-static inline bool hri_oscctrl_get_INTFLAG_DPLL0LTO_bit(const void *const hw)
-{
-	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_DPLL0LTO) >> OSCCTRL_INTFLAG_DPLL0LTO_Pos;
-}
-
-static inline void hri_oscctrl_clear_INTFLAG_DPLL0LTO_bit(const void *const hw)
-{
-	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_DPLL0LTO;
-}
-
-static inline bool hri_oscctrl_get_INTFLAG_DPLL0LDRTO_bit(const void *const hw)
-{
-	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_DPLL0LDRTO) >> OSCCTRL_INTFLAG_DPLL0LDRTO_Pos;
-}
-
-static inline void hri_oscctrl_clear_INTFLAG_DPLL0LDRTO_bit(const void *const hw)
-{
-	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_DPLL0LDRTO;
-}
-
-static inline bool hri_oscctrl_get_INTFLAG_DPLL1LCKR_bit(const void *const hw)
-{
-	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_DPLL1LCKR) >> OSCCTRL_INTFLAG_DPLL1LCKR_Pos;
-}
-
-static inline void hri_oscctrl_clear_INTFLAG_DPLL1LCKR_bit(const void *const hw)
-{
-	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_DPLL1LCKR;
-}
-
-static inline bool hri_oscctrl_get_INTFLAG_DPLL1LCKF_bit(const void *const hw)
-{
-	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_DPLL1LCKF) >> OSCCTRL_INTFLAG_DPLL1LCKF_Pos;
-}
-
-static inline void hri_oscctrl_clear_INTFLAG_DPLL1LCKF_bit(const void *const hw)
-{
-	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_DPLL1LCKF;
-}
-
-static inline bool hri_oscctrl_get_INTFLAG_DPLL1LTO_bit(const void *const hw)
-{
-	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_DPLL1LTO) >> OSCCTRL_INTFLAG_DPLL1LTO_Pos;
-}
-
-static inline void hri_oscctrl_clear_INTFLAG_DPLL1LTO_bit(const void *const hw)
-{
-	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_DPLL1LTO;
-}
-
-static inline bool hri_oscctrl_get_INTFLAG_DPLL1LDRTO_bit(const void *const hw)
-{
-	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_DPLL1LDRTO) >> OSCCTRL_INTFLAG_DPLL1LDRTO_Pos;
-}
-
-static inline void hri_oscctrl_clear_INTFLAG_DPLL1LDRTO_bit(const void *const hw)
-{
-	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_DPLL1LDRTO;
-}
-
-static inline bool hri_oscctrl_get_interrupt_XOSCRDY0_bit(const void *const hw)
-{
-	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_XOSCRDY0) >> OSCCTRL_INTFLAG_XOSCRDY0_Pos;
-}
-
-static inline void hri_oscctrl_clear_interrupt_XOSCRDY0_bit(const void *const hw)
-{
-	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_XOSCRDY0;
-}
-
-static inline bool hri_oscctrl_get_interrupt_XOSCRDY1_bit(const void *const hw)
-{
-	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_XOSCRDY1) >> OSCCTRL_INTFLAG_XOSCRDY1_Pos;
-}
-
-static inline void hri_oscctrl_clear_interrupt_XOSCRDY1_bit(const void *const hw)
-{
-	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_XOSCRDY1;
-}
-
-static inline bool hri_oscctrl_get_interrupt_XOSCFAIL0_bit(const void *const hw)
-{
-	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_XOSCFAIL0) >> OSCCTRL_INTFLAG_XOSCFAIL0_Pos;
-}
-
-static inline void hri_oscctrl_clear_interrupt_XOSCFAIL0_bit(const void *const hw)
-{
-	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_XOSCFAIL0;
-}
-
-static inline bool hri_oscctrl_get_interrupt_XOSCFAIL1_bit(const void *const hw)
-{
-	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_XOSCFAIL1) >> OSCCTRL_INTFLAG_XOSCFAIL1_Pos;
-}
-
-static inline void hri_oscctrl_clear_interrupt_XOSCFAIL1_bit(const void *const hw)
-{
-	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_XOSCFAIL1;
-}
-
-static inline bool hri_oscctrl_get_interrupt_DFLLRDY_bit(const void *const hw)
-{
-	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_DFLLRDY) >> OSCCTRL_INTFLAG_DFLLRDY_Pos;
-}
-
-static inline void hri_oscctrl_clear_interrupt_DFLLRDY_bit(const void *const hw)
-{
-	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_DFLLRDY;
-}
-
-static inline bool hri_oscctrl_get_interrupt_DFLLOOB_bit(const void *const hw)
-{
-	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_DFLLOOB) >> OSCCTRL_INTFLAG_DFLLOOB_Pos;
-}
-
-static inline void hri_oscctrl_clear_interrupt_DFLLOOB_bit(const void *const hw)
-{
-	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_DFLLOOB;
-}
-
-static inline bool hri_oscctrl_get_interrupt_DFLLLCKF_bit(const void *const hw)
-{
-	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_DFLLLCKF) >> OSCCTRL_INTFLAG_DFLLLCKF_Pos;
-}
-
-static inline void hri_oscctrl_clear_interrupt_DFLLLCKF_bit(const void *const hw)
-{
-	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_DFLLLCKF;
-}
-
-static inline bool hri_oscctrl_get_interrupt_DFLLLCKC_bit(const void *const hw)
-{
-	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_DFLLLCKC) >> OSCCTRL_INTFLAG_DFLLLCKC_Pos;
-}
-
-static inline void hri_oscctrl_clear_interrupt_DFLLLCKC_bit(const void *const hw)
-{
-	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_DFLLLCKC;
-}
-
-static inline bool hri_oscctrl_get_interrupt_DFLLRCS_bit(const void *const hw)
-{
-	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_DFLLRCS) >> OSCCTRL_INTFLAG_DFLLRCS_Pos;
-}
-
-static inline void hri_oscctrl_clear_interrupt_DFLLRCS_bit(const void *const hw)
-{
-	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_DFLLRCS;
-}
-
-static inline bool hri_oscctrl_get_interrupt_DPLL0LCKR_bit(const void *const hw)
-{
-	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_DPLL0LCKR) >> OSCCTRL_INTFLAG_DPLL0LCKR_Pos;
-}
-
-static inline void hri_oscctrl_clear_interrupt_DPLL0LCKR_bit(const void *const hw)
-{
-	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_DPLL0LCKR;
-}
-
-static inline bool hri_oscctrl_get_interrupt_DPLL0LCKF_bit(const void *const hw)
-{
-	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_DPLL0LCKF) >> OSCCTRL_INTFLAG_DPLL0LCKF_Pos;
-}
-
-static inline void hri_oscctrl_clear_interrupt_DPLL0LCKF_bit(const void *const hw)
-{
-	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_DPLL0LCKF;
-}
-
-static inline bool hri_oscctrl_get_interrupt_DPLL0LTO_bit(const void *const hw)
-{
-	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_DPLL0LTO) >> OSCCTRL_INTFLAG_DPLL0LTO_Pos;
-}
-
-static inline void hri_oscctrl_clear_interrupt_DPLL0LTO_bit(const void *const hw)
-{
-	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_DPLL0LTO;
-}
-
-static inline bool hri_oscctrl_get_interrupt_DPLL0LDRTO_bit(const void *const hw)
-{
-	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_DPLL0LDRTO) >> OSCCTRL_INTFLAG_DPLL0LDRTO_Pos;
-}
-
-static inline void hri_oscctrl_clear_interrupt_DPLL0LDRTO_bit(const void *const hw)
-{
-	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_DPLL0LDRTO;
-}
-
-static inline bool hri_oscctrl_get_interrupt_DPLL1LCKR_bit(const void *const hw)
-{
-	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_DPLL1LCKR) >> OSCCTRL_INTFLAG_DPLL1LCKR_Pos;
-}
-
-static inline void hri_oscctrl_clear_interrupt_DPLL1LCKR_bit(const void *const hw)
-{
-	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_DPLL1LCKR;
-}
-
-static inline bool hri_oscctrl_get_interrupt_DPLL1LCKF_bit(const void *const hw)
-{
-	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_DPLL1LCKF) >> OSCCTRL_INTFLAG_DPLL1LCKF_Pos;
-}
-
-static inline void hri_oscctrl_clear_interrupt_DPLL1LCKF_bit(const void *const hw)
-{
-	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_DPLL1LCKF;
-}
-
-static inline bool hri_oscctrl_get_interrupt_DPLL1LTO_bit(const void *const hw)
-{
-	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_DPLL1LTO) >> OSCCTRL_INTFLAG_DPLL1LTO_Pos;
-}
-
-static inline void hri_oscctrl_clear_interrupt_DPLL1LTO_bit(const void *const hw)
-{
-	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_DPLL1LTO;
-}
-
-static inline bool hri_oscctrl_get_interrupt_DPLL1LDRTO_bit(const void *const hw)
-{
-	return (((Oscctrl *)hw)->INTFLAG.reg & OSCCTRL_INTFLAG_DPLL1LDRTO) >> OSCCTRL_INTFLAG_DPLL1LDRTO_Pos;
-}
-
-static inline void hri_oscctrl_clear_interrupt_DPLL1LDRTO_bit(const void *const hw)
-{
-	((Oscctrl *)hw)->INTFLAG.reg = OSCCTRL_INTFLAG_DPLL1LDRTO;
-}
-
-static inline hri_oscctrl_intflag_reg_t hri_oscctrl_get_INTFLAG_reg(const void *const         hw,
-                                                                    hri_oscctrl_intflag_reg_t mask)
+static inline hri_oscctrl_status_reg_t hri_oscctrl_get_STATUS_reg(const void *const hw, hri_oscctrl_status_reg_t mask)
 {
 	uint32_t tmp;
-	tmp = ((Oscctrl *)hw)->INTFLAG.reg;
+	tmp = ((Oscctrl *)hw)->STATUS.reg;
 	tmp &= mask;
 	return tmp;
 }
 
-static inline hri_oscctrl_intflag_reg_t hri_oscctrl_read_INTFLAG_reg(const void *const hw)
+static inline hri_oscctrl_status_reg_t hri_oscctrl_read_STATUS_reg(const void *const hw)
 {
-	return ((Oscctrl *)hw)->INTFLAG.reg;
-}
-
-static inline void hri_oscctrl_clear_INTFLAG_reg(const void *const hw, hri_oscctrl_intflag_reg_t mask)
-{
-	((Oscctrl *)hw)->INTFLAG.reg = mask;
+	return ((Oscctrl *)hw)->STATUS.reg;
 }
 
 static inline void hri_oscctrl_set_EVCTRL_CFDEO0_bit(const void *const hw)
@@ -4232,114 +4431,6 @@ static inline void hri_oscctrl_toggle_DFLLSYNC_reg(const void *const hw, hri_osc
 static inline hri_oscctrl_dfllsync_reg_t hri_oscctrl_read_DFLLSYNC_reg(const void *const hw)
 {
 	return ((Oscctrl *)hw)->DFLLSYNC.reg;
-}
-
-static inline bool hri_oscctrl_get_STATUS_XOSCRDY0_bit(const void *const hw)
-{
-	return (((Oscctrl *)hw)->STATUS.reg & OSCCTRL_STATUS_XOSCRDY0) >> OSCCTRL_STATUS_XOSCRDY0_Pos;
-}
-
-static inline bool hri_oscctrl_get_STATUS_XOSCRDY1_bit(const void *const hw)
-{
-	return (((Oscctrl *)hw)->STATUS.reg & OSCCTRL_STATUS_XOSCRDY1) >> OSCCTRL_STATUS_XOSCRDY1_Pos;
-}
-
-static inline bool hri_oscctrl_get_STATUS_XOSCFAIL0_bit(const void *const hw)
-{
-	return (((Oscctrl *)hw)->STATUS.reg & OSCCTRL_STATUS_XOSCFAIL0) >> OSCCTRL_STATUS_XOSCFAIL0_Pos;
-}
-
-static inline bool hri_oscctrl_get_STATUS_XOSCFAIL1_bit(const void *const hw)
-{
-	return (((Oscctrl *)hw)->STATUS.reg & OSCCTRL_STATUS_XOSCFAIL1) >> OSCCTRL_STATUS_XOSCFAIL1_Pos;
-}
-
-static inline bool hri_oscctrl_get_STATUS_XOSCCKSW0_bit(const void *const hw)
-{
-	return (((Oscctrl *)hw)->STATUS.reg & OSCCTRL_STATUS_XOSCCKSW0) >> OSCCTRL_STATUS_XOSCCKSW0_Pos;
-}
-
-static inline bool hri_oscctrl_get_STATUS_XOSCCKSW1_bit(const void *const hw)
-{
-	return (((Oscctrl *)hw)->STATUS.reg & OSCCTRL_STATUS_XOSCCKSW1) >> OSCCTRL_STATUS_XOSCCKSW1_Pos;
-}
-
-static inline bool hri_oscctrl_get_STATUS_DFLLRDY_bit(const void *const hw)
-{
-	return (((Oscctrl *)hw)->STATUS.reg & OSCCTRL_STATUS_DFLLRDY) >> OSCCTRL_STATUS_DFLLRDY_Pos;
-}
-
-static inline bool hri_oscctrl_get_STATUS_DFLLOOB_bit(const void *const hw)
-{
-	return (((Oscctrl *)hw)->STATUS.reg & OSCCTRL_STATUS_DFLLOOB) >> OSCCTRL_STATUS_DFLLOOB_Pos;
-}
-
-static inline bool hri_oscctrl_get_STATUS_DFLLLCKF_bit(const void *const hw)
-{
-	return (((Oscctrl *)hw)->STATUS.reg & OSCCTRL_STATUS_DFLLLCKF) >> OSCCTRL_STATUS_DFLLLCKF_Pos;
-}
-
-static inline bool hri_oscctrl_get_STATUS_DFLLLCKC_bit(const void *const hw)
-{
-	return (((Oscctrl *)hw)->STATUS.reg & OSCCTRL_STATUS_DFLLLCKC) >> OSCCTRL_STATUS_DFLLLCKC_Pos;
-}
-
-static inline bool hri_oscctrl_get_STATUS_DFLLRCS_bit(const void *const hw)
-{
-	return (((Oscctrl *)hw)->STATUS.reg & OSCCTRL_STATUS_DFLLRCS) >> OSCCTRL_STATUS_DFLLRCS_Pos;
-}
-
-static inline bool hri_oscctrl_get_STATUS_DPLL0LCKR_bit(const void *const hw)
-{
-	return (((Oscctrl *)hw)->STATUS.reg & OSCCTRL_STATUS_DPLL0LCKR) >> OSCCTRL_STATUS_DPLL0LCKR_Pos;
-}
-
-static inline bool hri_oscctrl_get_STATUS_DPLL0LCKF_bit(const void *const hw)
-{
-	return (((Oscctrl *)hw)->STATUS.reg & OSCCTRL_STATUS_DPLL0LCKF) >> OSCCTRL_STATUS_DPLL0LCKF_Pos;
-}
-
-static inline bool hri_oscctrl_get_STATUS_DPLL0TO_bit(const void *const hw)
-{
-	return (((Oscctrl *)hw)->STATUS.reg & OSCCTRL_STATUS_DPLL0TO) >> OSCCTRL_STATUS_DPLL0TO_Pos;
-}
-
-static inline bool hri_oscctrl_get_STATUS_DPLL0LDRTO_bit(const void *const hw)
-{
-	return (((Oscctrl *)hw)->STATUS.reg & OSCCTRL_STATUS_DPLL0LDRTO) >> OSCCTRL_STATUS_DPLL0LDRTO_Pos;
-}
-
-static inline bool hri_oscctrl_get_STATUS_DPLL1LCKR_bit(const void *const hw)
-{
-	return (((Oscctrl *)hw)->STATUS.reg & OSCCTRL_STATUS_DPLL1LCKR) >> OSCCTRL_STATUS_DPLL1LCKR_Pos;
-}
-
-static inline bool hri_oscctrl_get_STATUS_DPLL1LCKF_bit(const void *const hw)
-{
-	return (((Oscctrl *)hw)->STATUS.reg & OSCCTRL_STATUS_DPLL1LCKF) >> OSCCTRL_STATUS_DPLL1LCKF_Pos;
-}
-
-static inline bool hri_oscctrl_get_STATUS_DPLL1TO_bit(const void *const hw)
-{
-	return (((Oscctrl *)hw)->STATUS.reg & OSCCTRL_STATUS_DPLL1TO) >> OSCCTRL_STATUS_DPLL1TO_Pos;
-}
-
-static inline bool hri_oscctrl_get_STATUS_DPLL1LDRTO_bit(const void *const hw)
-{
-	return (((Oscctrl *)hw)->STATUS.reg & OSCCTRL_STATUS_DPLL1LDRTO) >> OSCCTRL_STATUS_DPLL1LDRTO_Pos;
-}
-
-static inline hri_oscctrl_status_reg_t hri_oscctrl_get_STATUS_reg(const void *const hw, hri_oscctrl_status_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Oscctrl *)hw)->STATUS.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline hri_oscctrl_status_reg_t hri_oscctrl_read_STATUS_reg(const void *const hw)
-{
-	return ((Oscctrl *)hw)->STATUS.reg;
 }
 
 #ifdef __cplusplus

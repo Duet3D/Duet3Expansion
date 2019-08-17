@@ -14,8 +14,6 @@
 SpiTemperatureSensor::SpiTemperatureSensor(unsigned int sensorNum, const char *name, SpiMode spiMode, uint32_t clockFreq)
 	: SensorWithPort(sensorNum, name), device(clockFreq, spiMode, false)
 {
-	lastTemperature = 0.0;
-	lastResult = TemperatureError::notInitialised;
 }
 
 bool SpiTemperatureSensor::ConfigurePort(const CanMessageGenericParser& parser, const StringRef& reply, bool& seen)
@@ -28,7 +26,6 @@ bool SpiTemperatureSensor::ConfigurePort(const CanMessageGenericParser& parser, 
 void SpiTemperatureSensor::InitSpi()
 {
 	device.InitMaster();
-	lastReadingTime = millis();
 }
 
 // Send and receive 1 to 8 bytes of data and return the result as a single 32-bit word

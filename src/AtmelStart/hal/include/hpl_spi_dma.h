@@ -1,7 +1,7 @@
 /**
  * \file
  *
- * \brief RTC
+ * \brief Common SPI DMA related functionality declaration.
  *
  * Copyright (c) 2016-2018 Microchip Technology Inc. and its subsidiaries.
  *
@@ -28,25 +28,61 @@
  * THAT YOU HAVE PAID DIRECTLY TO MICROCHIP FOR THIS SOFTWARE.
  *
  * \asf_license_stop
+ *
  */
 
-#ifndef _HPL_RTC2_V200_H_INCLUDED
-#define _HPL_RTC2_V200_H_INCLUDED
+#ifndef _HPL_SPI_DMA_H_INCLUDED
+#define _HPL_SPI_DMA_H_INCLUDED
 
-#include <hpl_timer.h>
+#include <hpl_irq.h>
+#include <hpl_dma.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+/** The callback types */
+enum _spi_dma_dev_cb_type {
+	/** Callback type for DMA transmit. */
+	SPI_DEV_CB_DMA_TX,
+	/** Callback type for DMA receive. */
+	SPI_DEV_CB_DMA_RX,
+	/** Callback type for DMA error. */
+	SPI_DEV_CB_DMA_ERROR,
+	/** Number of callbacks. */
+	SPI_DEV_CB_DMA_N
+};
+
+struct _spi_dma_dev;
+
 /**
- * \brief Retrieve timer helper functions
- *
- * \return A pointer to set of timer helper functions
+ *  \brief The prototype for callback on SPI DMA.
  */
-struct _timer_hpl_interface *_rtc_get_timer(void);
+typedef void (*_spi_dma_cb_t)(struct _dma_resource *resource);
+
+/**
+ *  \brief The callbacks offered by SPI driver
+ */
+struct _spi_dma_dev_callbacks {
+	_spi_dma_cb_t tx;
+	_spi_dma_cb_t rx;
+	_spi_dma_cb_t error;
+};
+
+/** SPI driver to support DMA HAL */
+struct _spi_dma_dev {
+	/** Pointer to the hardware base or private data for special device. */
+	void *prvt;
+	/** Pointer to callback functions */
+	struct _spi_dma_dev_callbacks callbacks;
+	/** IRQ instance for SPI device. */
+	struct _irq_descriptor irq;
+	/** DMA resource */
+	struct _dma_resource *resource;
+};
 
 #ifdef __cplusplus
 }
 #endif
-#endif /* _HPL_RTC2_V200_H_INCLUDED */
+
+#endif /* ifndef _HPL_SPI_DMA_H_INCLUDED */

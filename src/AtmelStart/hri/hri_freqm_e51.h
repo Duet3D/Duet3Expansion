@@ -28,6 +28,7 @@
  * THAT YOU HAVE PAID DIRECTLY TO MICROCHIP FOR THIS SOFTWARE.
  *
  * \asf_license_stop
+ *
  */
 
 #ifdef _SAME51_FREQM_COMPONENT_
@@ -67,6 +68,44 @@ static inline void hri_freqm_wait_for_sync(const void *const hw, hri_freqm_syncb
 static inline bool hri_freqm_is_syncing(const void *const hw, hri_freqm_syncbusy_reg_t reg)
 {
 	return ((Freqm *)hw)->SYNCBUSY.reg & reg;
+}
+
+static inline bool hri_freqm_get_INTFLAG_DONE_bit(const void *const hw)
+{
+	return (((Freqm *)hw)->INTFLAG.reg & FREQM_INTFLAG_DONE) >> FREQM_INTFLAG_DONE_Pos;
+}
+
+static inline void hri_freqm_clear_INTFLAG_DONE_bit(const void *const hw)
+{
+	((Freqm *)hw)->INTFLAG.reg = FREQM_INTFLAG_DONE;
+}
+
+static inline bool hri_freqm_get_interrupt_DONE_bit(const void *const hw)
+{
+	return (((Freqm *)hw)->INTFLAG.reg & FREQM_INTFLAG_DONE) >> FREQM_INTFLAG_DONE_Pos;
+}
+
+static inline void hri_freqm_clear_interrupt_DONE_bit(const void *const hw)
+{
+	((Freqm *)hw)->INTFLAG.reg = FREQM_INTFLAG_DONE;
+}
+
+static inline hri_freqm_intflag_reg_t hri_freqm_get_INTFLAG_reg(const void *const hw, hri_freqm_intflag_reg_t mask)
+{
+	uint8_t tmp;
+	tmp = ((Freqm *)hw)->INTFLAG.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline hri_freqm_intflag_reg_t hri_freqm_read_INTFLAG_reg(const void *const hw)
+{
+	return ((Freqm *)hw)->INTFLAG.reg;
+}
+
+static inline void hri_freqm_clear_INTFLAG_reg(const void *const hw, hri_freqm_intflag_reg_t mask)
+{
+	((Freqm *)hw)->INTFLAG.reg = mask;
 }
 
 static inline void hri_freqm_set_INTEN_DONE_bit(const void *const hw)
@@ -122,56 +161,57 @@ static inline void hri_freqm_clear_INTEN_reg(const void *const hw, hri_freqm_int
 	((Freqm *)hw)->INTENCLR.reg = mask;
 }
 
-static inline bool hri_freqm_get_INTFLAG_DONE_bit(const void *const hw)
+static inline bool hri_freqm_get_SYNCBUSY_SWRST_bit(const void *const hw)
 {
-	return (((Freqm *)hw)->INTFLAG.reg & FREQM_INTFLAG_DONE) >> FREQM_INTFLAG_DONE_Pos;
+	return (((Freqm *)hw)->SYNCBUSY.reg & FREQM_SYNCBUSY_SWRST) >> FREQM_SYNCBUSY_SWRST_Pos;
 }
 
-static inline void hri_freqm_clear_INTFLAG_DONE_bit(const void *const hw)
+static inline bool hri_freqm_get_SYNCBUSY_ENABLE_bit(const void *const hw)
 {
-	((Freqm *)hw)->INTFLAG.reg = FREQM_INTFLAG_DONE;
+	return (((Freqm *)hw)->SYNCBUSY.reg & FREQM_SYNCBUSY_ENABLE) >> FREQM_SYNCBUSY_ENABLE_Pos;
 }
 
-static inline bool hri_freqm_get_interrupt_DONE_bit(const void *const hw)
+static inline hri_freqm_syncbusy_reg_t hri_freqm_get_SYNCBUSY_reg(const void *const hw, hri_freqm_syncbusy_reg_t mask)
 {
-	return (((Freqm *)hw)->INTFLAG.reg & FREQM_INTFLAG_DONE) >> FREQM_INTFLAG_DONE_Pos;
-}
-
-static inline void hri_freqm_clear_interrupt_DONE_bit(const void *const hw)
-{
-	((Freqm *)hw)->INTFLAG.reg = FREQM_INTFLAG_DONE;
-}
-
-static inline hri_freqm_intflag_reg_t hri_freqm_get_INTFLAG_reg(const void *const hw, hri_freqm_intflag_reg_t mask)
-{
-	uint8_t tmp;
-	tmp = ((Freqm *)hw)->INTFLAG.reg;
+	uint32_t tmp;
+	tmp = ((Freqm *)hw)->SYNCBUSY.reg;
 	tmp &= mask;
 	return tmp;
 }
 
-static inline hri_freqm_intflag_reg_t hri_freqm_read_INTFLAG_reg(const void *const hw)
+static inline hri_freqm_syncbusy_reg_t hri_freqm_read_SYNCBUSY_reg(const void *const hw)
 {
-	return ((Freqm *)hw)->INTFLAG.reg;
+	return ((Freqm *)hw)->SYNCBUSY.reg;
 }
 
-static inline void hri_freqm_clear_INTFLAG_reg(const void *const hw, hri_freqm_intflag_reg_t mask)
+static inline hri_freqm_value_reg_t hri_freqm_get_VALUE_VALUE_bf(const void *const hw, hri_freqm_value_reg_t mask)
 {
-	((Freqm *)hw)->INTFLAG.reg = mask;
+	return (((Freqm *)hw)->VALUE.reg & FREQM_VALUE_VALUE(mask)) >> FREQM_VALUE_VALUE_Pos;
 }
 
-static inline void hri_freqm_write_CTRLB_reg(const void *const hw, hri_freqm_ctrlb_reg_t data)
+static inline hri_freqm_value_reg_t hri_freqm_read_VALUE_VALUE_bf(const void *const hw)
 {
-	FREQM_CRITICAL_SECTION_ENTER();
-	((Freqm *)hw)->CTRLB.reg = data;
-	FREQM_CRITICAL_SECTION_LEAVE();
+	return (((Freqm *)hw)->VALUE.reg & FREQM_VALUE_VALUE_Msk) >> FREQM_VALUE_VALUE_Pos;
+}
+
+static inline hri_freqm_value_reg_t hri_freqm_get_VALUE_reg(const void *const hw, hri_freqm_value_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Freqm *)hw)->VALUE.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline hri_freqm_value_reg_t hri_freqm_read_VALUE_reg(const void *const hw)
+{
+	return ((Freqm *)hw)->VALUE.reg;
 }
 
 static inline void hri_freqm_set_CTRLA_SWRST_bit(const void *const hw)
 {
 	FREQM_CRITICAL_SECTION_ENTER();
-	hri_freqm_wait_for_sync(hw, FREQM_SYNCBUSY_SWRST);
 	((Freqm *)hw)->CTRLA.reg |= FREQM_CTRLA_SWRST;
+	hri_freqm_wait_for_sync(hw, FREQM_SYNCBUSY_SWRST);
 	FREQM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -187,8 +227,8 @@ static inline bool hri_freqm_get_CTRLA_SWRST_bit(const void *const hw)
 static inline void hri_freqm_set_CTRLA_ENABLE_bit(const void *const hw)
 {
 	FREQM_CRITICAL_SECTION_ENTER();
-	hri_freqm_wait_for_sync(hw, FREQM_SYNCBUSY_SWRST | FREQM_SYNCBUSY_ENABLE);
 	((Freqm *)hw)->CTRLA.reg |= FREQM_CTRLA_ENABLE;
+	hri_freqm_wait_for_sync(hw, FREQM_SYNCBUSY_SWRST | FREQM_SYNCBUSY_ENABLE);
 	FREQM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -205,27 +245,27 @@ static inline void hri_freqm_write_CTRLA_ENABLE_bit(const void *const hw, bool v
 {
 	uint8_t tmp;
 	FREQM_CRITICAL_SECTION_ENTER();
-	hri_freqm_wait_for_sync(hw, FREQM_SYNCBUSY_SWRST | FREQM_SYNCBUSY_ENABLE);
 	tmp = ((Freqm *)hw)->CTRLA.reg;
 	tmp &= ~FREQM_CTRLA_ENABLE;
 	tmp |= value << FREQM_CTRLA_ENABLE_Pos;
 	((Freqm *)hw)->CTRLA.reg = tmp;
+	hri_freqm_wait_for_sync(hw, FREQM_SYNCBUSY_SWRST | FREQM_SYNCBUSY_ENABLE);
 	FREQM_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_freqm_clear_CTRLA_ENABLE_bit(const void *const hw)
 {
 	FREQM_CRITICAL_SECTION_ENTER();
-	hri_freqm_wait_for_sync(hw, FREQM_SYNCBUSY_SWRST | FREQM_SYNCBUSY_ENABLE);
 	((Freqm *)hw)->CTRLA.reg &= ~FREQM_CTRLA_ENABLE;
+	hri_freqm_wait_for_sync(hw, FREQM_SYNCBUSY_SWRST | FREQM_SYNCBUSY_ENABLE);
 	FREQM_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_freqm_toggle_CTRLA_ENABLE_bit(const void *const hw)
 {
 	FREQM_CRITICAL_SECTION_ENTER();
-	hri_freqm_wait_for_sync(hw, FREQM_SYNCBUSY_SWRST | FREQM_SYNCBUSY_ENABLE);
 	((Freqm *)hw)->CTRLA.reg ^= FREQM_CTRLA_ENABLE;
+	hri_freqm_wait_for_sync(hw, FREQM_SYNCBUSY_SWRST | FREQM_SYNCBUSY_ENABLE);
 	FREQM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -233,12 +273,14 @@ static inline void hri_freqm_set_CTRLA_reg(const void *const hw, hri_freqm_ctrla
 {
 	FREQM_CRITICAL_SECTION_ENTER();
 	((Freqm *)hw)->CTRLA.reg |= mask;
+	hri_freqm_wait_for_sync(hw, FREQM_SYNCBUSY_MASK);
 	FREQM_CRITICAL_SECTION_LEAVE();
 }
 
 static inline hri_freqm_ctrla_reg_t hri_freqm_get_CTRLA_reg(const void *const hw, hri_freqm_ctrla_reg_t mask)
 {
 	uint8_t tmp;
+	hri_freqm_wait_for_sync(hw, FREQM_SYNCBUSY_MASK);
 	tmp = ((Freqm *)hw)->CTRLA.reg;
 	tmp &= mask;
 	return tmp;
@@ -248,6 +290,7 @@ static inline void hri_freqm_write_CTRLA_reg(const void *const hw, hri_freqm_ctr
 {
 	FREQM_CRITICAL_SECTION_ENTER();
 	((Freqm *)hw)->CTRLA.reg = data;
+	hri_freqm_wait_for_sync(hw, FREQM_SYNCBUSY_MASK);
 	FREQM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -255,6 +298,7 @@ static inline void hri_freqm_clear_CTRLA_reg(const void *const hw, hri_freqm_ctr
 {
 	FREQM_CRITICAL_SECTION_ENTER();
 	((Freqm *)hw)->CTRLA.reg &= ~mask;
+	hri_freqm_wait_for_sync(hw, FREQM_SYNCBUSY_MASK);
 	FREQM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -262,11 +306,13 @@ static inline void hri_freqm_toggle_CTRLA_reg(const void *const hw, hri_freqm_ct
 {
 	FREQM_CRITICAL_SECTION_ENTER();
 	((Freqm *)hw)->CTRLA.reg ^= mask;
+	hri_freqm_wait_for_sync(hw, FREQM_SYNCBUSY_MASK);
 	FREQM_CRITICAL_SECTION_LEAVE();
 }
 
 static inline hri_freqm_ctrla_reg_t hri_freqm_read_CTRLA_reg(const void *const hw)
 {
+	hri_freqm_wait_for_sync(hw, FREQM_SYNCBUSY_MASK);
 	return ((Freqm *)hw)->CTRLA.reg;
 }
 
@@ -359,52 +405,6 @@ static inline hri_freqm_cfga_reg_t hri_freqm_read_CFGA_reg(const void *const hw)
 	return ((Freqm *)hw)->CFGA.reg;
 }
 
-static inline bool hri_freqm_get_SYNCBUSY_SWRST_bit(const void *const hw)
-{
-	return (((Freqm *)hw)->SYNCBUSY.reg & FREQM_SYNCBUSY_SWRST) >> FREQM_SYNCBUSY_SWRST_Pos;
-}
-
-static inline bool hri_freqm_get_SYNCBUSY_ENABLE_bit(const void *const hw)
-{
-	return (((Freqm *)hw)->SYNCBUSY.reg & FREQM_SYNCBUSY_ENABLE) >> FREQM_SYNCBUSY_ENABLE_Pos;
-}
-
-static inline hri_freqm_syncbusy_reg_t hri_freqm_get_SYNCBUSY_reg(const void *const hw, hri_freqm_syncbusy_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Freqm *)hw)->SYNCBUSY.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline hri_freqm_syncbusy_reg_t hri_freqm_read_SYNCBUSY_reg(const void *const hw)
-{
-	return ((Freqm *)hw)->SYNCBUSY.reg;
-}
-
-static inline hri_freqm_value_reg_t hri_freqm_get_VALUE_VALUE_bf(const void *const hw, hri_freqm_value_reg_t mask)
-{
-	return (((Freqm *)hw)->VALUE.reg & FREQM_VALUE_VALUE(mask)) >> FREQM_VALUE_VALUE_Pos;
-}
-
-static inline hri_freqm_value_reg_t hri_freqm_read_VALUE_VALUE_bf(const void *const hw)
-{
-	return (((Freqm *)hw)->VALUE.reg & FREQM_VALUE_VALUE_Msk) >> FREQM_VALUE_VALUE_Pos;
-}
-
-static inline hri_freqm_value_reg_t hri_freqm_get_VALUE_reg(const void *const hw, hri_freqm_value_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Freqm *)hw)->VALUE.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline hri_freqm_value_reg_t hri_freqm_read_VALUE_reg(const void *const hw)
-{
-	return ((Freqm *)hw)->VALUE.reg;
-}
-
 static inline bool hri_freqm_get_STATUS_BUSY_bit(const void *const hw)
 {
 	return (((Freqm *)hw)->STATUS.reg & FREQM_STATUS_BUSY) >> FREQM_STATUS_BUSY_Pos;
@@ -447,6 +447,13 @@ static inline void hri_freqm_clear_STATUS_reg(const void *const hw, hri_freqm_st
 static inline hri_freqm_status_reg_t hri_freqm_read_STATUS_reg(const void *const hw)
 {
 	return ((Freqm *)hw)->STATUS.reg;
+}
+
+static inline void hri_freqm_write_CTRLB_reg(const void *const hw, hri_freqm_ctrlb_reg_t data)
+{
+	FREQM_CRITICAL_SECTION_ENTER();
+	((Freqm *)hw)->CTRLB.reg = data;
+	FREQM_CRITICAL_SECTION_LEAVE();
 }
 
 #ifdef __cplusplus

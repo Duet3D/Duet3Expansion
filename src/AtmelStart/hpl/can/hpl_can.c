@@ -182,19 +182,22 @@ int32_t _can_async_disable(struct _can_async_device *const dev)
 int32_t _can_async_read(struct _can_async_device *const dev, struct can_message *msg)
 {
 	struct _can_rx_fifo_entry *f = NULL;
+	hri_can_rxf0s_reg_t        get_index;
 
 	if (!hri_can_read_RXF0S_F0FL_bf(dev->hw)) {
 		return ERR_NOT_FOUND;
 	}
 
+	get_index = hri_can_read_RXF0S_F0GI_bf(dev->hw);
+
 #ifdef CONF_CAN0_ENABLED
 	if (dev->hw == CAN0) {
-		f = (struct _can_rx_fifo_entry *)(can0_rx_fifo + hri_can_read_RXF0S_F0GI_bf(dev->hw) * CONF_CAN0_F0DS);
+		f = (struct _can_rx_fifo_entry *)(can0_rx_fifo + get_index * CONF_CAN0_F0DS);
 	}
 #endif
 #ifdef CONF_CAN1_ENABLED
 	if (dev->hw == CAN1) {
-		f = (struct _can_rx_fifo_entry *)(can1_rx_fifo + hri_can_read_RXF0S_F0GI_bf(dev->hw) * CONF_CAN1_F0DS);
+		f = (struct _can_rx_fifo_entry *)(can1_rx_fifo + get_index * CONF_CAN1_F0DS);
 	}
 #endif
 
@@ -219,9 +222,9 @@ int32_t _can_async_read(struct _can_async_device *const dev, struct can_message 
 	msg->len                = dlc2len[f->R1.bit.DLC];
 
 	memcpy(msg->data, f->data, msg->len);
-#if 1	//dc42
-	hri_can_write_RXF0A_F0AI_bf(dev->hw, hri_can_read_RXF0S_F0GI_bf(dev->hw));
-#endif
+
+	hri_can_write_RXF0A_F0AI_bf(dev->hw, get_index);
+
 	return ERR_NONE;
 }
 
@@ -231,17 +234,22 @@ int32_t _can_async_read(struct _can_async_device *const dev, struct can_message 
 int32_t _can_async_write(struct _can_async_device *const dev, struct can_message *msg)
 {
 	struct _can_tx_fifo_entry *f = NULL;
+	hri_can_txfqs_reg_t        put_index;
+
 	if (hri_can_get_TXFQS_TFQF_bit(dev->hw)) {
 		return ERR_NO_RESOURCE;
 	}
+
+	put_index = hri_can_read_TXFQS_TFQPI_bf(dev->hw);
+
 #ifdef CONF_CAN0_ENABLED
 	if (dev->hw == CAN0) {
-		f = (struct _can_tx_fifo_entry *)(can0_tx_fifo + hri_can_read_TXFQS_TFQPI_bf(dev->hw) * CONF_CAN0_TBDS);
+		f = (struct _can_tx_fifo_entry *)(can0_tx_fifo + put_index * CONF_CAN0_TBDS);
 	}
 #endif
 #ifdef CONF_CAN1_ENABLED
 	if (dev->hw == CAN1) {
-		f = (struct _can_tx_fifo_entry *)(can1_tx_fifo + hri_can_read_TXFQS_TFQPI_bf(dev->hw) * CONF_CAN1_TBDS);
+		f = (struct _can_tx_fifo_entry *)(can1_tx_fifo + put_index * CONF_CAN1_TBDS);
 	}
 #endif
 	if (f == NULL) {
@@ -249,30 +257,33 @@ int32_t _can_async_write(struct _can_async_device *const dev, struct can_message
 	}
 
 	if (msg->fmt == CAN_FMT_EXTID) {
-		f->R0.val     = msg->id;
-		f->R0.bit.XTD = 1;
+		f->T0.val     = msg->id;
+		f->T0.bit.XTD = 1;
 	} else {
 		/* A standard identifier is stored into ID[28:18] */
-		f->R0.val = msg->id << 18;
+		f->T0.val = msg->id << 18;
 	}
 
 	if (msg->len <= 8) {
-		f->R1.bit.DLC = msg->len;
+		f->T1.bit.DLC = msg->len;
 	} else if (msg->len <= 12) {
-		f->R1.bit.DLC = 0x9;
+		f->T1.bit.DLC = 0x9;
 	} else if (msg->len <= 16) {
-		f->R1.bit.DLC = 0xA;
+		f->T1.bit.DLC = 0xA;
 	} else if (msg->len <= 20) {
-		f->R1.bit.DLC = 0xB;
+		f->T1.bit.DLC = 0xB;
 	} else if (msg->len <= 24) {
-		f->R1.bit.DLC = 0xC;
+		f->T1.bit.DLC = 0xC;
 	} else if (msg->len <= 32) {
-		f->R1.bit.DLC = 0xD;
+		f->T1.bit.DLC = 0xD;
 	} else if (msg->len <= 48) {
-		f->R1.bit.DLC = 0xE;
+		f->T1.bit.DLC = 0xE;
 	} else if (msg->len <= 64) {
-		f->R1.bit.DLC = 0xF;
+		f->T1.bit.DLC = 0xF;
 	}
+
+	f->T1.bit.FDF = hri_can_get_CCCR_FDOE_bit(dev->hw);
+	f->T1.bit.BRS = hri_can_get_CCCR_BRSE_bit(dev->hw);
 
 	memcpy(f->data, msg->data, msg->len);
 

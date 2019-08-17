@@ -75,8 +75,7 @@ public:
 
 	static constexpr const char *TypeName = "dhttemp";
 
-protected:
-	TemperatureError TryGetTemperature(float& t) override;
+	TemperatureError Poll() override;
 };
 
 // This class represents a DHT humidity sensor
@@ -91,8 +90,7 @@ public:
 
 	static constexpr const char *TypeName = "dhthumidity";
 
-protected:
-	TemperatureError TryGetTemperature(float& t) override;
+	TemperatureError Poll() override;
 };
 
 #endif

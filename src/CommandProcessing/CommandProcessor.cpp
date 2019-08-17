@@ -49,7 +49,7 @@ void CommandProcessor::Spin()
 	CanMessageBuffer *buf = CanInterface::GetCanCommand();
 	if (buf != nullptr)
 	{
-		String<MaxCanReplyLength> reply;
+		String<CanMessageStandardReply::MaxTextLength> reply;
 		GCodeResult rslt;
 
 		const CanMessageType id = buf->id.MsgType();
@@ -74,12 +74,13 @@ void CommandProcessor::Spin()
 		}
 
 		// Re-use the message buffer to send the reply
-		CanMessageStandardReply *msg = buf->SetupResponseMessage<CanMessageStandardReply>(CanInterface::GetCanAddress(), buf->id.Src());
+		const CanAddress srcAddress = buf->id.Src();
+		CanMessageStandardReply *msg = buf->SetupResponseMessage<CanMessageStandardReply>(CanInterface::GetCanAddress(), srcAddress);
 		msg->requestId = (uint16_t)id;
 		msg->resultCode = (uint16_t)rslt;
-		const size_t textLength = min<size_t>(reply.strlen() + 1, sizeof(buf->msg.standardReply.text));
-		buf->dataLength = textLength + 2;
+		const size_t textLength = min<size_t>(reply.strlen(), CanMessageStandardReply::MaxTextLength);
 		memcpy(msg->text, reply.c_str(), textLength);
+		buf->dataLength = msg->GetActualDataLength(textLength);
 		CanInterface::Send(buf);
 	}
 }

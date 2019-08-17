@@ -28,6 +28,7 @@
  * THAT YOU HAVE PAID DIRECTLY TO MICROCHIP FOR THIS SOFTWARE.
  *
  * \asf_license_stop
+ *
  */
 
 #ifdef _SAME51_DMAC_COMPONENT_
@@ -83,6 +84,583 @@ typedef uint8_t  hri_dmacchannel_chintenset_reg_t;
 typedef uint8_t  hri_dmacchannel_chintflag_reg_t;
 typedef uint8_t  hri_dmacchannel_chprilvl_reg_t;
 typedef uint8_t  hri_dmacchannel_chstatus_reg_t;
+
+static inline bool hri_dmac_get_INTSTATUS_CHINT0_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT0) >> DMAC_INTSTATUS_CHINT0_Pos;
+}
+
+static inline bool hri_dmac_get_INTSTATUS_CHINT1_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT1) >> DMAC_INTSTATUS_CHINT1_Pos;
+}
+
+static inline bool hri_dmac_get_INTSTATUS_CHINT2_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT2) >> DMAC_INTSTATUS_CHINT2_Pos;
+}
+
+static inline bool hri_dmac_get_INTSTATUS_CHINT3_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT3) >> DMAC_INTSTATUS_CHINT3_Pos;
+}
+
+static inline bool hri_dmac_get_INTSTATUS_CHINT4_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT4) >> DMAC_INTSTATUS_CHINT4_Pos;
+}
+
+static inline bool hri_dmac_get_INTSTATUS_CHINT5_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT5) >> DMAC_INTSTATUS_CHINT5_Pos;
+}
+
+static inline bool hri_dmac_get_INTSTATUS_CHINT6_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT6) >> DMAC_INTSTATUS_CHINT6_Pos;
+}
+
+static inline bool hri_dmac_get_INTSTATUS_CHINT7_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT7) >> DMAC_INTSTATUS_CHINT7_Pos;
+}
+
+static inline bool hri_dmac_get_INTSTATUS_CHINT8_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT8) >> DMAC_INTSTATUS_CHINT8_Pos;
+}
+
+static inline bool hri_dmac_get_INTSTATUS_CHINT9_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT9) >> DMAC_INTSTATUS_CHINT9_Pos;
+}
+
+static inline bool hri_dmac_get_INTSTATUS_CHINT10_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT10) >> DMAC_INTSTATUS_CHINT10_Pos;
+}
+
+static inline bool hri_dmac_get_INTSTATUS_CHINT11_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT11) >> DMAC_INTSTATUS_CHINT11_Pos;
+}
+
+static inline bool hri_dmac_get_INTSTATUS_CHINT12_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT12) >> DMAC_INTSTATUS_CHINT12_Pos;
+}
+
+static inline bool hri_dmac_get_INTSTATUS_CHINT13_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT13) >> DMAC_INTSTATUS_CHINT13_Pos;
+}
+
+static inline bool hri_dmac_get_INTSTATUS_CHINT14_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT14) >> DMAC_INTSTATUS_CHINT14_Pos;
+}
+
+static inline bool hri_dmac_get_INTSTATUS_CHINT15_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT15) >> DMAC_INTSTATUS_CHINT15_Pos;
+}
+
+static inline bool hri_dmac_get_INTSTATUS_CHINT16_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT16) >> DMAC_INTSTATUS_CHINT16_Pos;
+}
+
+static inline bool hri_dmac_get_INTSTATUS_CHINT17_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT17) >> DMAC_INTSTATUS_CHINT17_Pos;
+}
+
+static inline bool hri_dmac_get_INTSTATUS_CHINT18_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT18) >> DMAC_INTSTATUS_CHINT18_Pos;
+}
+
+static inline bool hri_dmac_get_INTSTATUS_CHINT19_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT19) >> DMAC_INTSTATUS_CHINT19_Pos;
+}
+
+static inline bool hri_dmac_get_INTSTATUS_CHINT20_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT20) >> DMAC_INTSTATUS_CHINT20_Pos;
+}
+
+static inline bool hri_dmac_get_INTSTATUS_CHINT21_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT21) >> DMAC_INTSTATUS_CHINT21_Pos;
+}
+
+static inline bool hri_dmac_get_INTSTATUS_CHINT22_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT22) >> DMAC_INTSTATUS_CHINT22_Pos;
+}
+
+static inline bool hri_dmac_get_INTSTATUS_CHINT23_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT23) >> DMAC_INTSTATUS_CHINT23_Pos;
+}
+
+static inline bool hri_dmac_get_INTSTATUS_CHINT24_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT24) >> DMAC_INTSTATUS_CHINT24_Pos;
+}
+
+static inline bool hri_dmac_get_INTSTATUS_CHINT25_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT25) >> DMAC_INTSTATUS_CHINT25_Pos;
+}
+
+static inline bool hri_dmac_get_INTSTATUS_CHINT26_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT26) >> DMAC_INTSTATUS_CHINT26_Pos;
+}
+
+static inline bool hri_dmac_get_INTSTATUS_CHINT27_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT27) >> DMAC_INTSTATUS_CHINT27_Pos;
+}
+
+static inline bool hri_dmac_get_INTSTATUS_CHINT28_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT28) >> DMAC_INTSTATUS_CHINT28_Pos;
+}
+
+static inline bool hri_dmac_get_INTSTATUS_CHINT29_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT29) >> DMAC_INTSTATUS_CHINT29_Pos;
+}
+
+static inline bool hri_dmac_get_INTSTATUS_CHINT30_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT30) >> DMAC_INTSTATUS_CHINT30_Pos;
+}
+
+static inline bool hri_dmac_get_INTSTATUS_CHINT31_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT31) >> DMAC_INTSTATUS_CHINT31_Pos;
+}
+
+static inline hri_dmac_intstatus_reg_t hri_dmac_get_INTSTATUS_reg(const void *const hw, hri_dmac_intstatus_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Dmac *)hw)->INTSTATUS.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline hri_dmac_intstatus_reg_t hri_dmac_read_INTSTATUS_reg(const void *const hw)
+{
+	return ((Dmac *)hw)->INTSTATUS.reg;
+}
+
+static inline bool hri_dmac_get_BUSYCH_BUSYCH0_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH0) >> DMAC_BUSYCH_BUSYCH0_Pos;
+}
+
+static inline bool hri_dmac_get_BUSYCH_BUSYCH1_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH1) >> DMAC_BUSYCH_BUSYCH1_Pos;
+}
+
+static inline bool hri_dmac_get_BUSYCH_BUSYCH2_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH2) >> DMAC_BUSYCH_BUSYCH2_Pos;
+}
+
+static inline bool hri_dmac_get_BUSYCH_BUSYCH3_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH3) >> DMAC_BUSYCH_BUSYCH3_Pos;
+}
+
+static inline bool hri_dmac_get_BUSYCH_BUSYCH4_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH4) >> DMAC_BUSYCH_BUSYCH4_Pos;
+}
+
+static inline bool hri_dmac_get_BUSYCH_BUSYCH5_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH5) >> DMAC_BUSYCH_BUSYCH5_Pos;
+}
+
+static inline bool hri_dmac_get_BUSYCH_BUSYCH6_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH6) >> DMAC_BUSYCH_BUSYCH6_Pos;
+}
+
+static inline bool hri_dmac_get_BUSYCH_BUSYCH7_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH7) >> DMAC_BUSYCH_BUSYCH7_Pos;
+}
+
+static inline bool hri_dmac_get_BUSYCH_BUSYCH8_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH8) >> DMAC_BUSYCH_BUSYCH8_Pos;
+}
+
+static inline bool hri_dmac_get_BUSYCH_BUSYCH9_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH9) >> DMAC_BUSYCH_BUSYCH9_Pos;
+}
+
+static inline bool hri_dmac_get_BUSYCH_BUSYCH10_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH10) >> DMAC_BUSYCH_BUSYCH10_Pos;
+}
+
+static inline bool hri_dmac_get_BUSYCH_BUSYCH11_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH11) >> DMAC_BUSYCH_BUSYCH11_Pos;
+}
+
+static inline bool hri_dmac_get_BUSYCH_BUSYCH12_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH12) >> DMAC_BUSYCH_BUSYCH12_Pos;
+}
+
+static inline bool hri_dmac_get_BUSYCH_BUSYCH13_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH13) >> DMAC_BUSYCH_BUSYCH13_Pos;
+}
+
+static inline bool hri_dmac_get_BUSYCH_BUSYCH14_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH14) >> DMAC_BUSYCH_BUSYCH14_Pos;
+}
+
+static inline bool hri_dmac_get_BUSYCH_BUSYCH15_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH15) >> DMAC_BUSYCH_BUSYCH15_Pos;
+}
+
+static inline bool hri_dmac_get_BUSYCH_BUSYCH16_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH16) >> DMAC_BUSYCH_BUSYCH16_Pos;
+}
+
+static inline bool hri_dmac_get_BUSYCH_BUSYCH17_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH17) >> DMAC_BUSYCH_BUSYCH17_Pos;
+}
+
+static inline bool hri_dmac_get_BUSYCH_BUSYCH18_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH18) >> DMAC_BUSYCH_BUSYCH18_Pos;
+}
+
+static inline bool hri_dmac_get_BUSYCH_BUSYCH19_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH19) >> DMAC_BUSYCH_BUSYCH19_Pos;
+}
+
+static inline bool hri_dmac_get_BUSYCH_BUSYCH20_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH20) >> DMAC_BUSYCH_BUSYCH20_Pos;
+}
+
+static inline bool hri_dmac_get_BUSYCH_BUSYCH21_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH21) >> DMAC_BUSYCH_BUSYCH21_Pos;
+}
+
+static inline bool hri_dmac_get_BUSYCH_BUSYCH22_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH22) >> DMAC_BUSYCH_BUSYCH22_Pos;
+}
+
+static inline bool hri_dmac_get_BUSYCH_BUSYCH23_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH23) >> DMAC_BUSYCH_BUSYCH23_Pos;
+}
+
+static inline bool hri_dmac_get_BUSYCH_BUSYCH24_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH24) >> DMAC_BUSYCH_BUSYCH24_Pos;
+}
+
+static inline bool hri_dmac_get_BUSYCH_BUSYCH25_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH25) >> DMAC_BUSYCH_BUSYCH25_Pos;
+}
+
+static inline bool hri_dmac_get_BUSYCH_BUSYCH26_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH26) >> DMAC_BUSYCH_BUSYCH26_Pos;
+}
+
+static inline bool hri_dmac_get_BUSYCH_BUSYCH27_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH27) >> DMAC_BUSYCH_BUSYCH27_Pos;
+}
+
+static inline bool hri_dmac_get_BUSYCH_BUSYCH28_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH28) >> DMAC_BUSYCH_BUSYCH28_Pos;
+}
+
+static inline bool hri_dmac_get_BUSYCH_BUSYCH29_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH29) >> DMAC_BUSYCH_BUSYCH29_Pos;
+}
+
+static inline bool hri_dmac_get_BUSYCH_BUSYCH30_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH30) >> DMAC_BUSYCH_BUSYCH30_Pos;
+}
+
+static inline bool hri_dmac_get_BUSYCH_BUSYCH31_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH31) >> DMAC_BUSYCH_BUSYCH31_Pos;
+}
+
+static inline hri_dmac_busych_reg_t hri_dmac_get_BUSYCH_reg(const void *const hw, hri_dmac_busych_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Dmac *)hw)->BUSYCH.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline hri_dmac_busych_reg_t hri_dmac_read_BUSYCH_reg(const void *const hw)
+{
+	return ((Dmac *)hw)->BUSYCH.reg;
+}
+
+static inline bool hri_dmac_get_PENDCH_PENDCH0_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH0) >> DMAC_PENDCH_PENDCH0_Pos;
+}
+
+static inline bool hri_dmac_get_PENDCH_PENDCH1_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH1) >> DMAC_PENDCH_PENDCH1_Pos;
+}
+
+static inline bool hri_dmac_get_PENDCH_PENDCH2_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH2) >> DMAC_PENDCH_PENDCH2_Pos;
+}
+
+static inline bool hri_dmac_get_PENDCH_PENDCH3_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH3) >> DMAC_PENDCH_PENDCH3_Pos;
+}
+
+static inline bool hri_dmac_get_PENDCH_PENDCH4_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH4) >> DMAC_PENDCH_PENDCH4_Pos;
+}
+
+static inline bool hri_dmac_get_PENDCH_PENDCH5_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH5) >> DMAC_PENDCH_PENDCH5_Pos;
+}
+
+static inline bool hri_dmac_get_PENDCH_PENDCH6_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH6) >> DMAC_PENDCH_PENDCH6_Pos;
+}
+
+static inline bool hri_dmac_get_PENDCH_PENDCH7_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH7) >> DMAC_PENDCH_PENDCH7_Pos;
+}
+
+static inline bool hri_dmac_get_PENDCH_PENDCH8_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH8) >> DMAC_PENDCH_PENDCH8_Pos;
+}
+
+static inline bool hri_dmac_get_PENDCH_PENDCH9_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH9) >> DMAC_PENDCH_PENDCH9_Pos;
+}
+
+static inline bool hri_dmac_get_PENDCH_PENDCH10_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH10) >> DMAC_PENDCH_PENDCH10_Pos;
+}
+
+static inline bool hri_dmac_get_PENDCH_PENDCH11_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH11) >> DMAC_PENDCH_PENDCH11_Pos;
+}
+
+static inline bool hri_dmac_get_PENDCH_PENDCH12_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH12) >> DMAC_PENDCH_PENDCH12_Pos;
+}
+
+static inline bool hri_dmac_get_PENDCH_PENDCH13_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH13) >> DMAC_PENDCH_PENDCH13_Pos;
+}
+
+static inline bool hri_dmac_get_PENDCH_PENDCH14_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH14) >> DMAC_PENDCH_PENDCH14_Pos;
+}
+
+static inline bool hri_dmac_get_PENDCH_PENDCH15_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH15) >> DMAC_PENDCH_PENDCH15_Pos;
+}
+
+static inline bool hri_dmac_get_PENDCH_PENDCH16_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH16) >> DMAC_PENDCH_PENDCH16_Pos;
+}
+
+static inline bool hri_dmac_get_PENDCH_PENDCH17_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH17) >> DMAC_PENDCH_PENDCH17_Pos;
+}
+
+static inline bool hri_dmac_get_PENDCH_PENDCH18_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH18) >> DMAC_PENDCH_PENDCH18_Pos;
+}
+
+static inline bool hri_dmac_get_PENDCH_PENDCH19_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH19) >> DMAC_PENDCH_PENDCH19_Pos;
+}
+
+static inline bool hri_dmac_get_PENDCH_PENDCH20_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH20) >> DMAC_PENDCH_PENDCH20_Pos;
+}
+
+static inline bool hri_dmac_get_PENDCH_PENDCH21_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH21) >> DMAC_PENDCH_PENDCH21_Pos;
+}
+
+static inline bool hri_dmac_get_PENDCH_PENDCH22_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH22) >> DMAC_PENDCH_PENDCH22_Pos;
+}
+
+static inline bool hri_dmac_get_PENDCH_PENDCH23_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH23) >> DMAC_PENDCH_PENDCH23_Pos;
+}
+
+static inline bool hri_dmac_get_PENDCH_PENDCH24_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH24) >> DMAC_PENDCH_PENDCH24_Pos;
+}
+
+static inline bool hri_dmac_get_PENDCH_PENDCH25_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH25) >> DMAC_PENDCH_PENDCH25_Pos;
+}
+
+static inline bool hri_dmac_get_PENDCH_PENDCH26_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH26) >> DMAC_PENDCH_PENDCH26_Pos;
+}
+
+static inline bool hri_dmac_get_PENDCH_PENDCH27_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH27) >> DMAC_PENDCH_PENDCH27_Pos;
+}
+
+static inline bool hri_dmac_get_PENDCH_PENDCH28_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH28) >> DMAC_PENDCH_PENDCH28_Pos;
+}
+
+static inline bool hri_dmac_get_PENDCH_PENDCH29_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH29) >> DMAC_PENDCH_PENDCH29_Pos;
+}
+
+static inline bool hri_dmac_get_PENDCH_PENDCH30_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH30) >> DMAC_PENDCH_PENDCH30_Pos;
+}
+
+static inline bool hri_dmac_get_PENDCH_PENDCH31_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH31) >> DMAC_PENDCH_PENDCH31_Pos;
+}
+
+static inline hri_dmac_pendch_reg_t hri_dmac_get_PENDCH_reg(const void *const hw, hri_dmac_pendch_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Dmac *)hw)->PENDCH.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline hri_dmac_pendch_reg_t hri_dmac_read_PENDCH_reg(const void *const hw)
+{
+	return ((Dmac *)hw)->PENDCH.reg;
+}
+
+static inline bool hri_dmac_get_ACTIVE_LVLEX0_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->ACTIVE.reg & DMAC_ACTIVE_LVLEX0) >> DMAC_ACTIVE_LVLEX0_Pos;
+}
+
+static inline bool hri_dmac_get_ACTIVE_LVLEX1_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->ACTIVE.reg & DMAC_ACTIVE_LVLEX1) >> DMAC_ACTIVE_LVLEX1_Pos;
+}
+
+static inline bool hri_dmac_get_ACTIVE_LVLEX2_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->ACTIVE.reg & DMAC_ACTIVE_LVLEX2) >> DMAC_ACTIVE_LVLEX2_Pos;
+}
+
+static inline bool hri_dmac_get_ACTIVE_LVLEX3_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->ACTIVE.reg & DMAC_ACTIVE_LVLEX3) >> DMAC_ACTIVE_LVLEX3_Pos;
+}
+
+static inline bool hri_dmac_get_ACTIVE_ABUSY_bit(const void *const hw)
+{
+	return (((Dmac *)hw)->ACTIVE.reg & DMAC_ACTIVE_ABUSY) >> DMAC_ACTIVE_ABUSY_Pos;
+}
+
+static inline hri_dmac_active_reg_t hri_dmac_get_ACTIVE_ID_bf(const void *const hw, hri_dmac_active_reg_t mask)
+{
+	return (((Dmac *)hw)->ACTIVE.reg & DMAC_ACTIVE_ID(mask)) >> DMAC_ACTIVE_ID_Pos;
+}
+
+static inline hri_dmac_active_reg_t hri_dmac_read_ACTIVE_ID_bf(const void *const hw)
+{
+	return (((Dmac *)hw)->ACTIVE.reg & DMAC_ACTIVE_ID_Msk) >> DMAC_ACTIVE_ID_Pos;
+}
+
+static inline hri_dmac_active_reg_t hri_dmac_get_ACTIVE_BTCNT_bf(const void *const hw, hri_dmac_active_reg_t mask)
+{
+	return (((Dmac *)hw)->ACTIVE.reg & DMAC_ACTIVE_BTCNT(mask)) >> DMAC_ACTIVE_BTCNT_Pos;
+}
+
+static inline hri_dmac_active_reg_t hri_dmac_read_ACTIVE_BTCNT_bf(const void *const hw)
+{
+	return (((Dmac *)hw)->ACTIVE.reg & DMAC_ACTIVE_BTCNT_Msk) >> DMAC_ACTIVE_BTCNT_Pos;
+}
+
+static inline hri_dmac_active_reg_t hri_dmac_get_ACTIVE_reg(const void *const hw, hri_dmac_active_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Dmac *)hw)->ACTIVE.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline hri_dmac_active_reg_t hri_dmac_read_ACTIVE_reg(const void *const hw)
+{
+	return ((Dmac *)hw)->ACTIVE.reg;
+}
 
 static inline void hri_dmac_set_CTRL_SWRST_bit(const void *const hw)
 {
@@ -3294,583 +3872,6 @@ static inline hri_dmac_wrbaddr_reg_t hri_dmac_read_WRBADDR_reg(const void *const
 	return ((Dmac *)hw)->WRBADDR.reg;
 }
 
-static inline bool hri_dmac_get_INTSTATUS_CHINT0_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT0) >> DMAC_INTSTATUS_CHINT0_Pos;
-}
-
-static inline bool hri_dmac_get_INTSTATUS_CHINT1_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT1) >> DMAC_INTSTATUS_CHINT1_Pos;
-}
-
-static inline bool hri_dmac_get_INTSTATUS_CHINT2_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT2) >> DMAC_INTSTATUS_CHINT2_Pos;
-}
-
-static inline bool hri_dmac_get_INTSTATUS_CHINT3_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT3) >> DMAC_INTSTATUS_CHINT3_Pos;
-}
-
-static inline bool hri_dmac_get_INTSTATUS_CHINT4_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT4) >> DMAC_INTSTATUS_CHINT4_Pos;
-}
-
-static inline bool hri_dmac_get_INTSTATUS_CHINT5_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT5) >> DMAC_INTSTATUS_CHINT5_Pos;
-}
-
-static inline bool hri_dmac_get_INTSTATUS_CHINT6_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT6) >> DMAC_INTSTATUS_CHINT6_Pos;
-}
-
-static inline bool hri_dmac_get_INTSTATUS_CHINT7_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT7) >> DMAC_INTSTATUS_CHINT7_Pos;
-}
-
-static inline bool hri_dmac_get_INTSTATUS_CHINT8_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT8) >> DMAC_INTSTATUS_CHINT8_Pos;
-}
-
-static inline bool hri_dmac_get_INTSTATUS_CHINT9_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT9) >> DMAC_INTSTATUS_CHINT9_Pos;
-}
-
-static inline bool hri_dmac_get_INTSTATUS_CHINT10_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT10) >> DMAC_INTSTATUS_CHINT10_Pos;
-}
-
-static inline bool hri_dmac_get_INTSTATUS_CHINT11_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT11) >> DMAC_INTSTATUS_CHINT11_Pos;
-}
-
-static inline bool hri_dmac_get_INTSTATUS_CHINT12_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT12) >> DMAC_INTSTATUS_CHINT12_Pos;
-}
-
-static inline bool hri_dmac_get_INTSTATUS_CHINT13_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT13) >> DMAC_INTSTATUS_CHINT13_Pos;
-}
-
-static inline bool hri_dmac_get_INTSTATUS_CHINT14_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT14) >> DMAC_INTSTATUS_CHINT14_Pos;
-}
-
-static inline bool hri_dmac_get_INTSTATUS_CHINT15_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT15) >> DMAC_INTSTATUS_CHINT15_Pos;
-}
-
-static inline bool hri_dmac_get_INTSTATUS_CHINT16_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT16) >> DMAC_INTSTATUS_CHINT16_Pos;
-}
-
-static inline bool hri_dmac_get_INTSTATUS_CHINT17_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT17) >> DMAC_INTSTATUS_CHINT17_Pos;
-}
-
-static inline bool hri_dmac_get_INTSTATUS_CHINT18_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT18) >> DMAC_INTSTATUS_CHINT18_Pos;
-}
-
-static inline bool hri_dmac_get_INTSTATUS_CHINT19_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT19) >> DMAC_INTSTATUS_CHINT19_Pos;
-}
-
-static inline bool hri_dmac_get_INTSTATUS_CHINT20_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT20) >> DMAC_INTSTATUS_CHINT20_Pos;
-}
-
-static inline bool hri_dmac_get_INTSTATUS_CHINT21_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT21) >> DMAC_INTSTATUS_CHINT21_Pos;
-}
-
-static inline bool hri_dmac_get_INTSTATUS_CHINT22_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT22) >> DMAC_INTSTATUS_CHINT22_Pos;
-}
-
-static inline bool hri_dmac_get_INTSTATUS_CHINT23_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT23) >> DMAC_INTSTATUS_CHINT23_Pos;
-}
-
-static inline bool hri_dmac_get_INTSTATUS_CHINT24_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT24) >> DMAC_INTSTATUS_CHINT24_Pos;
-}
-
-static inline bool hri_dmac_get_INTSTATUS_CHINT25_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT25) >> DMAC_INTSTATUS_CHINT25_Pos;
-}
-
-static inline bool hri_dmac_get_INTSTATUS_CHINT26_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT26) >> DMAC_INTSTATUS_CHINT26_Pos;
-}
-
-static inline bool hri_dmac_get_INTSTATUS_CHINT27_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT27) >> DMAC_INTSTATUS_CHINT27_Pos;
-}
-
-static inline bool hri_dmac_get_INTSTATUS_CHINT28_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT28) >> DMAC_INTSTATUS_CHINT28_Pos;
-}
-
-static inline bool hri_dmac_get_INTSTATUS_CHINT29_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT29) >> DMAC_INTSTATUS_CHINT29_Pos;
-}
-
-static inline bool hri_dmac_get_INTSTATUS_CHINT30_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT30) >> DMAC_INTSTATUS_CHINT30_Pos;
-}
-
-static inline bool hri_dmac_get_INTSTATUS_CHINT31_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->INTSTATUS.reg & DMAC_INTSTATUS_CHINT31) >> DMAC_INTSTATUS_CHINT31_Pos;
-}
-
-static inline hri_dmac_intstatus_reg_t hri_dmac_get_INTSTATUS_reg(const void *const hw, hri_dmac_intstatus_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Dmac *)hw)->INTSTATUS.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline hri_dmac_intstatus_reg_t hri_dmac_read_INTSTATUS_reg(const void *const hw)
-{
-	return ((Dmac *)hw)->INTSTATUS.reg;
-}
-
-static inline bool hri_dmac_get_BUSYCH_BUSYCH0_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH0) >> DMAC_BUSYCH_BUSYCH0_Pos;
-}
-
-static inline bool hri_dmac_get_BUSYCH_BUSYCH1_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH1) >> DMAC_BUSYCH_BUSYCH1_Pos;
-}
-
-static inline bool hri_dmac_get_BUSYCH_BUSYCH2_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH2) >> DMAC_BUSYCH_BUSYCH2_Pos;
-}
-
-static inline bool hri_dmac_get_BUSYCH_BUSYCH3_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH3) >> DMAC_BUSYCH_BUSYCH3_Pos;
-}
-
-static inline bool hri_dmac_get_BUSYCH_BUSYCH4_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH4) >> DMAC_BUSYCH_BUSYCH4_Pos;
-}
-
-static inline bool hri_dmac_get_BUSYCH_BUSYCH5_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH5) >> DMAC_BUSYCH_BUSYCH5_Pos;
-}
-
-static inline bool hri_dmac_get_BUSYCH_BUSYCH6_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH6) >> DMAC_BUSYCH_BUSYCH6_Pos;
-}
-
-static inline bool hri_dmac_get_BUSYCH_BUSYCH7_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH7) >> DMAC_BUSYCH_BUSYCH7_Pos;
-}
-
-static inline bool hri_dmac_get_BUSYCH_BUSYCH8_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH8) >> DMAC_BUSYCH_BUSYCH8_Pos;
-}
-
-static inline bool hri_dmac_get_BUSYCH_BUSYCH9_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH9) >> DMAC_BUSYCH_BUSYCH9_Pos;
-}
-
-static inline bool hri_dmac_get_BUSYCH_BUSYCH10_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH10) >> DMAC_BUSYCH_BUSYCH10_Pos;
-}
-
-static inline bool hri_dmac_get_BUSYCH_BUSYCH11_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH11) >> DMAC_BUSYCH_BUSYCH11_Pos;
-}
-
-static inline bool hri_dmac_get_BUSYCH_BUSYCH12_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH12) >> DMAC_BUSYCH_BUSYCH12_Pos;
-}
-
-static inline bool hri_dmac_get_BUSYCH_BUSYCH13_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH13) >> DMAC_BUSYCH_BUSYCH13_Pos;
-}
-
-static inline bool hri_dmac_get_BUSYCH_BUSYCH14_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH14) >> DMAC_BUSYCH_BUSYCH14_Pos;
-}
-
-static inline bool hri_dmac_get_BUSYCH_BUSYCH15_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH15) >> DMAC_BUSYCH_BUSYCH15_Pos;
-}
-
-static inline bool hri_dmac_get_BUSYCH_BUSYCH16_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH16) >> DMAC_BUSYCH_BUSYCH16_Pos;
-}
-
-static inline bool hri_dmac_get_BUSYCH_BUSYCH17_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH17) >> DMAC_BUSYCH_BUSYCH17_Pos;
-}
-
-static inline bool hri_dmac_get_BUSYCH_BUSYCH18_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH18) >> DMAC_BUSYCH_BUSYCH18_Pos;
-}
-
-static inline bool hri_dmac_get_BUSYCH_BUSYCH19_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH19) >> DMAC_BUSYCH_BUSYCH19_Pos;
-}
-
-static inline bool hri_dmac_get_BUSYCH_BUSYCH20_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH20) >> DMAC_BUSYCH_BUSYCH20_Pos;
-}
-
-static inline bool hri_dmac_get_BUSYCH_BUSYCH21_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH21) >> DMAC_BUSYCH_BUSYCH21_Pos;
-}
-
-static inline bool hri_dmac_get_BUSYCH_BUSYCH22_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH22) >> DMAC_BUSYCH_BUSYCH22_Pos;
-}
-
-static inline bool hri_dmac_get_BUSYCH_BUSYCH23_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH23) >> DMAC_BUSYCH_BUSYCH23_Pos;
-}
-
-static inline bool hri_dmac_get_BUSYCH_BUSYCH24_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH24) >> DMAC_BUSYCH_BUSYCH24_Pos;
-}
-
-static inline bool hri_dmac_get_BUSYCH_BUSYCH25_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH25) >> DMAC_BUSYCH_BUSYCH25_Pos;
-}
-
-static inline bool hri_dmac_get_BUSYCH_BUSYCH26_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH26) >> DMAC_BUSYCH_BUSYCH26_Pos;
-}
-
-static inline bool hri_dmac_get_BUSYCH_BUSYCH27_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH27) >> DMAC_BUSYCH_BUSYCH27_Pos;
-}
-
-static inline bool hri_dmac_get_BUSYCH_BUSYCH28_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH28) >> DMAC_BUSYCH_BUSYCH28_Pos;
-}
-
-static inline bool hri_dmac_get_BUSYCH_BUSYCH29_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH29) >> DMAC_BUSYCH_BUSYCH29_Pos;
-}
-
-static inline bool hri_dmac_get_BUSYCH_BUSYCH30_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH30) >> DMAC_BUSYCH_BUSYCH30_Pos;
-}
-
-static inline bool hri_dmac_get_BUSYCH_BUSYCH31_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->BUSYCH.reg & DMAC_BUSYCH_BUSYCH31) >> DMAC_BUSYCH_BUSYCH31_Pos;
-}
-
-static inline hri_dmac_busych_reg_t hri_dmac_get_BUSYCH_reg(const void *const hw, hri_dmac_busych_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Dmac *)hw)->BUSYCH.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline hri_dmac_busych_reg_t hri_dmac_read_BUSYCH_reg(const void *const hw)
-{
-	return ((Dmac *)hw)->BUSYCH.reg;
-}
-
-static inline bool hri_dmac_get_PENDCH_PENDCH0_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH0) >> DMAC_PENDCH_PENDCH0_Pos;
-}
-
-static inline bool hri_dmac_get_PENDCH_PENDCH1_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH1) >> DMAC_PENDCH_PENDCH1_Pos;
-}
-
-static inline bool hri_dmac_get_PENDCH_PENDCH2_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH2) >> DMAC_PENDCH_PENDCH2_Pos;
-}
-
-static inline bool hri_dmac_get_PENDCH_PENDCH3_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH3) >> DMAC_PENDCH_PENDCH3_Pos;
-}
-
-static inline bool hri_dmac_get_PENDCH_PENDCH4_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH4) >> DMAC_PENDCH_PENDCH4_Pos;
-}
-
-static inline bool hri_dmac_get_PENDCH_PENDCH5_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH5) >> DMAC_PENDCH_PENDCH5_Pos;
-}
-
-static inline bool hri_dmac_get_PENDCH_PENDCH6_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH6) >> DMAC_PENDCH_PENDCH6_Pos;
-}
-
-static inline bool hri_dmac_get_PENDCH_PENDCH7_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH7) >> DMAC_PENDCH_PENDCH7_Pos;
-}
-
-static inline bool hri_dmac_get_PENDCH_PENDCH8_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH8) >> DMAC_PENDCH_PENDCH8_Pos;
-}
-
-static inline bool hri_dmac_get_PENDCH_PENDCH9_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH9) >> DMAC_PENDCH_PENDCH9_Pos;
-}
-
-static inline bool hri_dmac_get_PENDCH_PENDCH10_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH10) >> DMAC_PENDCH_PENDCH10_Pos;
-}
-
-static inline bool hri_dmac_get_PENDCH_PENDCH11_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH11) >> DMAC_PENDCH_PENDCH11_Pos;
-}
-
-static inline bool hri_dmac_get_PENDCH_PENDCH12_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH12) >> DMAC_PENDCH_PENDCH12_Pos;
-}
-
-static inline bool hri_dmac_get_PENDCH_PENDCH13_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH13) >> DMAC_PENDCH_PENDCH13_Pos;
-}
-
-static inline bool hri_dmac_get_PENDCH_PENDCH14_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH14) >> DMAC_PENDCH_PENDCH14_Pos;
-}
-
-static inline bool hri_dmac_get_PENDCH_PENDCH15_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH15) >> DMAC_PENDCH_PENDCH15_Pos;
-}
-
-static inline bool hri_dmac_get_PENDCH_PENDCH16_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH16) >> DMAC_PENDCH_PENDCH16_Pos;
-}
-
-static inline bool hri_dmac_get_PENDCH_PENDCH17_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH17) >> DMAC_PENDCH_PENDCH17_Pos;
-}
-
-static inline bool hri_dmac_get_PENDCH_PENDCH18_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH18) >> DMAC_PENDCH_PENDCH18_Pos;
-}
-
-static inline bool hri_dmac_get_PENDCH_PENDCH19_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH19) >> DMAC_PENDCH_PENDCH19_Pos;
-}
-
-static inline bool hri_dmac_get_PENDCH_PENDCH20_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH20) >> DMAC_PENDCH_PENDCH20_Pos;
-}
-
-static inline bool hri_dmac_get_PENDCH_PENDCH21_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH21) >> DMAC_PENDCH_PENDCH21_Pos;
-}
-
-static inline bool hri_dmac_get_PENDCH_PENDCH22_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH22) >> DMAC_PENDCH_PENDCH22_Pos;
-}
-
-static inline bool hri_dmac_get_PENDCH_PENDCH23_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH23) >> DMAC_PENDCH_PENDCH23_Pos;
-}
-
-static inline bool hri_dmac_get_PENDCH_PENDCH24_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH24) >> DMAC_PENDCH_PENDCH24_Pos;
-}
-
-static inline bool hri_dmac_get_PENDCH_PENDCH25_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH25) >> DMAC_PENDCH_PENDCH25_Pos;
-}
-
-static inline bool hri_dmac_get_PENDCH_PENDCH26_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH26) >> DMAC_PENDCH_PENDCH26_Pos;
-}
-
-static inline bool hri_dmac_get_PENDCH_PENDCH27_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH27) >> DMAC_PENDCH_PENDCH27_Pos;
-}
-
-static inline bool hri_dmac_get_PENDCH_PENDCH28_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH28) >> DMAC_PENDCH_PENDCH28_Pos;
-}
-
-static inline bool hri_dmac_get_PENDCH_PENDCH29_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH29) >> DMAC_PENDCH_PENDCH29_Pos;
-}
-
-static inline bool hri_dmac_get_PENDCH_PENDCH30_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH30) >> DMAC_PENDCH_PENDCH30_Pos;
-}
-
-static inline bool hri_dmac_get_PENDCH_PENDCH31_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->PENDCH.reg & DMAC_PENDCH_PENDCH31) >> DMAC_PENDCH_PENDCH31_Pos;
-}
-
-static inline hri_dmac_pendch_reg_t hri_dmac_get_PENDCH_reg(const void *const hw, hri_dmac_pendch_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Dmac *)hw)->PENDCH.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline hri_dmac_pendch_reg_t hri_dmac_read_PENDCH_reg(const void *const hw)
-{
-	return ((Dmac *)hw)->PENDCH.reg;
-}
-
-static inline bool hri_dmac_get_ACTIVE_LVLEX0_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->ACTIVE.reg & DMAC_ACTIVE_LVLEX0) >> DMAC_ACTIVE_LVLEX0_Pos;
-}
-
-static inline bool hri_dmac_get_ACTIVE_LVLEX1_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->ACTIVE.reg & DMAC_ACTIVE_LVLEX1) >> DMAC_ACTIVE_LVLEX1_Pos;
-}
-
-static inline bool hri_dmac_get_ACTIVE_LVLEX2_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->ACTIVE.reg & DMAC_ACTIVE_LVLEX2) >> DMAC_ACTIVE_LVLEX2_Pos;
-}
-
-static inline bool hri_dmac_get_ACTIVE_LVLEX3_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->ACTIVE.reg & DMAC_ACTIVE_LVLEX3) >> DMAC_ACTIVE_LVLEX3_Pos;
-}
-
-static inline bool hri_dmac_get_ACTIVE_ABUSY_bit(const void *const hw)
-{
-	return (((Dmac *)hw)->ACTIVE.reg & DMAC_ACTIVE_ABUSY) >> DMAC_ACTIVE_ABUSY_Pos;
-}
-
-static inline hri_dmac_active_reg_t hri_dmac_get_ACTIVE_ID_bf(const void *const hw, hri_dmac_active_reg_t mask)
-{
-	return (((Dmac *)hw)->ACTIVE.reg & DMAC_ACTIVE_ID(mask)) >> DMAC_ACTIVE_ID_Pos;
-}
-
-static inline hri_dmac_active_reg_t hri_dmac_read_ACTIVE_ID_bf(const void *const hw)
-{
-	return (((Dmac *)hw)->ACTIVE.reg & DMAC_ACTIVE_ID_Msk) >> DMAC_ACTIVE_ID_Pos;
-}
-
-static inline hri_dmac_active_reg_t hri_dmac_get_ACTIVE_BTCNT_bf(const void *const hw, hri_dmac_active_reg_t mask)
-{
-	return (((Dmac *)hw)->ACTIVE.reg & DMAC_ACTIVE_BTCNT(mask)) >> DMAC_ACTIVE_BTCNT_Pos;
-}
-
-static inline hri_dmac_active_reg_t hri_dmac_read_ACTIVE_BTCNT_bf(const void *const hw)
-{
-	return (((Dmac *)hw)->ACTIVE.reg & DMAC_ACTIVE_BTCNT_Msk) >> DMAC_ACTIVE_BTCNT_Pos;
-}
-
-static inline hri_dmac_active_reg_t hri_dmac_get_ACTIVE_reg(const void *const hw, hri_dmac_active_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Dmac *)hw)->ACTIVE.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline hri_dmac_active_reg_t hri_dmac_read_ACTIVE_reg(const void *const hw)
-{
-	return ((Dmac *)hw)->ACTIVE.reg;
-}
-
 static inline bool hri_dmac_get_CRCSTATUS_CRCBUSY_bit(const void *const hw)
 {
 	return (((Dmac *)hw)->CRCSTATUS.reg & DMAC_CRCSTATUS_CRCBUSY) >> DMAC_CRCSTATUS_CRCBUSY_Pos;
@@ -3925,197 +3926,6 @@ static inline void hri_dmac_clear_CRCSTATUS_reg(const void *const hw, hri_dmac_c
 static inline hri_dmac_crcstatus_reg_t hri_dmac_read_CRCSTATUS_reg(const void *const hw)
 {
 	return ((Dmac *)hw)->CRCSTATUS.reg;
-}
-
-static inline void hri_dmacdescriptor_set_DSTADDR_CRC_CHKINIT_bf(const void *const                hw,
-                                                                 hri_dmacdescriptor_dstaddr_reg_t mask)
-{
-	DMAC_CRITICAL_SECTION_ENTER();
-	((DmacDescriptor *)hw)->DSTADDR.reg |= DMAC_DSTADDR_CRC_CHKINIT(mask);
-	DMAC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_dmacdescriptor_dstaddr_reg_t
-hri_dmacdescriptor_get_DSTADDR_CRC_CHKINIT_bf(const void *const hw, hri_dmacdescriptor_dstaddr_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((DmacDescriptor *)hw)->DSTADDR.reg;
-	tmp = (tmp & DMAC_DSTADDR_CRC_CHKINIT(mask)) >> DMAC_DSTADDR_CRC_CHKINIT_Pos;
-	return tmp;
-}
-
-static inline void hri_dmacdescriptor_write_DSTADDR_CRC_CHKINIT_bf(const void *const                hw,
-                                                                   hri_dmacdescriptor_dstaddr_reg_t data)
-{
-	uint32_t tmp;
-	DMAC_CRITICAL_SECTION_ENTER();
-	tmp = ((DmacDescriptor *)hw)->DSTADDR.reg;
-	tmp &= ~DMAC_DSTADDR_CRC_CHKINIT_Msk;
-	tmp |= DMAC_DSTADDR_CRC_CHKINIT(data);
-	((DmacDescriptor *)hw)->DSTADDR.reg = tmp;
-	DMAC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_dmacdescriptor_clear_DSTADDR_CRC_CHKINIT_bf(const void *const                hw,
-                                                                   hri_dmacdescriptor_dstaddr_reg_t mask)
-{
-	DMAC_CRITICAL_SECTION_ENTER();
-	((DmacDescriptor *)hw)->DSTADDR.reg &= ~DMAC_DSTADDR_CRC_CHKINIT(mask);
-	DMAC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_dmacdescriptor_toggle_DSTADDR_CRC_CHKINIT_bf(const void *const                hw,
-                                                                    hri_dmacdescriptor_dstaddr_reg_t mask)
-{
-	DMAC_CRITICAL_SECTION_ENTER();
-	((DmacDescriptor *)hw)->DSTADDR.reg ^= DMAC_DSTADDR_CRC_CHKINIT(mask);
-	DMAC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_dmacdescriptor_dstaddr_reg_t hri_dmacdescriptor_read_DSTADDR_CRC_CHKINIT_bf(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((DmacDescriptor *)hw)->DSTADDR.reg;
-	tmp = (tmp & DMAC_DSTADDR_CRC_CHKINIT_Msk) >> DMAC_DSTADDR_CRC_CHKINIT_Pos;
-	return tmp;
-}
-
-static inline void hri_dmacdescriptor_set_DSTADDR_DSTADDR_bf(const void *const                hw,
-                                                             hri_dmacdescriptor_dstaddr_reg_t mask)
-{
-	DMAC_CRITICAL_SECTION_ENTER();
-	((DmacDescriptor *)hw)->DSTADDR.reg |= DMAC_DSTADDR_DSTADDR(mask);
-	DMAC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_dmacdescriptor_dstaddr_reg_t
-hri_dmacdescriptor_get_DSTADDR_DSTADDR_bf(const void *const hw, hri_dmacdescriptor_dstaddr_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((DmacDescriptor *)hw)->DSTADDR.reg;
-	tmp = (tmp & DMAC_DSTADDR_DSTADDR(mask)) >> DMAC_DSTADDR_DSTADDR_Pos;
-	return tmp;
-}
-
-static inline void hri_dmacdescriptor_write_DSTADDR_DSTADDR_bf(const void *const                hw,
-                                                               hri_dmacdescriptor_dstaddr_reg_t data)
-{
-	uint32_t tmp;
-	DMAC_CRITICAL_SECTION_ENTER();
-	tmp = ((DmacDescriptor *)hw)->DSTADDR.reg;
-	tmp &= ~DMAC_DSTADDR_DSTADDR_Msk;
-	tmp |= DMAC_DSTADDR_DSTADDR(data);
-	((DmacDescriptor *)hw)->DSTADDR.reg = tmp;
-	DMAC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_dmacdescriptor_clear_DSTADDR_DSTADDR_bf(const void *const                hw,
-                                                               hri_dmacdescriptor_dstaddr_reg_t mask)
-{
-	DMAC_CRITICAL_SECTION_ENTER();
-	((DmacDescriptor *)hw)->DSTADDR.reg &= ~DMAC_DSTADDR_DSTADDR(mask);
-	DMAC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_dmacdescriptor_toggle_DSTADDR_DSTADDR_bf(const void *const                hw,
-                                                                hri_dmacdescriptor_dstaddr_reg_t mask)
-{
-	DMAC_CRITICAL_SECTION_ENTER();
-	((DmacDescriptor *)hw)->DSTADDR.reg ^= DMAC_DSTADDR_DSTADDR(mask);
-	DMAC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_dmacdescriptor_dstaddr_reg_t hri_dmacdescriptor_read_DSTADDR_DSTADDR_bf(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((DmacDescriptor *)hw)->DSTADDR.reg;
-	tmp = (tmp & DMAC_DSTADDR_DSTADDR_Msk) >> DMAC_DSTADDR_DSTADDR_Pos;
-	return tmp;
-}
-
-static inline void hri_dmacdescriptor_set_DSTADDR_CRC_reg(const void *const hw, hri_dmacdescriptor_dstaddr_reg_t mask)
-{
-	DMAC_CRITICAL_SECTION_ENTER();
-	((DmacDescriptor *)hw)->DSTADDR.reg |= mask;
-	DMAC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_dmacdescriptor_dstaddr_reg_t
-hri_dmacdescriptor_get_DSTADDR_CRC_reg(const void *const hw, hri_dmacdescriptor_dstaddr_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((DmacDescriptor *)hw)->DSTADDR.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline void hri_dmacdescriptor_write_DSTADDR_CRC_reg(const void *const hw, hri_dmacdescriptor_dstaddr_reg_t data)
-{
-	DMAC_CRITICAL_SECTION_ENTER();
-	((DmacDescriptor *)hw)->DSTADDR.reg = data;
-	DMAC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_dmacdescriptor_clear_DSTADDR_CRC_reg(const void *const hw, hri_dmacdescriptor_dstaddr_reg_t mask)
-{
-	DMAC_CRITICAL_SECTION_ENTER();
-	((DmacDescriptor *)hw)->DSTADDR.reg &= ~mask;
-	DMAC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_dmacdescriptor_toggle_DSTADDR_CRC_reg(const void *const                hw,
-                                                             hri_dmacdescriptor_dstaddr_reg_t mask)
-{
-	DMAC_CRITICAL_SECTION_ENTER();
-	((DmacDescriptor *)hw)->DSTADDR.reg ^= mask;
-	DMAC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_dmacdescriptor_dstaddr_reg_t hri_dmacdescriptor_read_DSTADDR_CRC_reg(const void *const hw)
-{
-	return ((DmacDescriptor *)hw)->DSTADDR.reg;
-}
-
-static inline void hri_dmacdescriptor_set_DSTADDR_reg(const void *const hw, hri_dmacdescriptor_dstaddr_reg_t mask)
-{
-	DMAC_CRITICAL_SECTION_ENTER();
-	((DmacDescriptor *)hw)->DSTADDR.reg |= mask;
-	DMAC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_dmacdescriptor_dstaddr_reg_t hri_dmacdescriptor_get_DSTADDR_reg(const void *const                hw,
-                                                                                  hri_dmacdescriptor_dstaddr_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((DmacDescriptor *)hw)->DSTADDR.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline void hri_dmacdescriptor_write_DSTADDR_reg(const void *const hw, hri_dmacdescriptor_dstaddr_reg_t data)
-{
-	DMAC_CRITICAL_SECTION_ENTER();
-	((DmacDescriptor *)hw)->DSTADDR.reg = data;
-	DMAC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_dmacdescriptor_clear_DSTADDR_reg(const void *const hw, hri_dmacdescriptor_dstaddr_reg_t mask)
-{
-	DMAC_CRITICAL_SECTION_ENTER();
-	((DmacDescriptor *)hw)->DSTADDR.reg &= ~mask;
-	DMAC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_dmacdescriptor_toggle_DSTADDR_reg(const void *const hw, hri_dmacdescriptor_dstaddr_reg_t mask)
-{
-	DMAC_CRITICAL_SECTION_ENTER();
-	((DmacDescriptor *)hw)->DSTADDR.reg ^= mask;
-	DMAC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_dmacdescriptor_dstaddr_reg_t hri_dmacdescriptor_read_DSTADDR_reg(const void *const hw)
-{
-	return ((DmacDescriptor *)hw)->DSTADDR.reg;
 }
 
 static inline void hri_dmacdescriptor_set_BTCTRL_VALID_bit(const void *const hw)
@@ -4712,6 +4522,154 @@ static inline hri_dmacdescriptor_srcaddr_reg_t hri_dmacdescriptor_read_SRCADDR_r
 	return ((DmacDescriptor *)hw)->SRCADDR.reg;
 }
 
+static inline void hri_dmacdescriptor_set_DSTADDR_CRC_CHKINIT_bf(const void *const                hw,
+                                                                 hri_dmacdescriptor_dstaddr_reg_t mask)
+{
+	DMAC_CRITICAL_SECTION_ENTER();
+	((DmacDescriptor *)hw)->DSTADDR.reg |= DMAC_DSTADDR_CRC_CHKINIT(mask);
+	DMAC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_dmacdescriptor_dstaddr_reg_t
+hri_dmacdescriptor_get_DSTADDR_CRC_CHKINIT_bf(const void *const hw, hri_dmacdescriptor_dstaddr_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((DmacDescriptor *)hw)->DSTADDR.reg;
+	tmp = (tmp & DMAC_DSTADDR_CRC_CHKINIT(mask)) >> DMAC_DSTADDR_CRC_CHKINIT_Pos;
+	return tmp;
+}
+
+static inline void hri_dmacdescriptor_write_DSTADDR_CRC_CHKINIT_bf(const void *const                hw,
+                                                                   hri_dmacdescriptor_dstaddr_reg_t data)
+{
+	uint32_t tmp;
+	DMAC_CRITICAL_SECTION_ENTER();
+	tmp = ((DmacDescriptor *)hw)->DSTADDR.reg;
+	tmp &= ~DMAC_DSTADDR_CRC_CHKINIT_Msk;
+	tmp |= DMAC_DSTADDR_CRC_CHKINIT(data);
+	((DmacDescriptor *)hw)->DSTADDR.reg = tmp;
+	DMAC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_dmacdescriptor_clear_DSTADDR_CRC_CHKINIT_bf(const void *const                hw,
+                                                                   hri_dmacdescriptor_dstaddr_reg_t mask)
+{
+	DMAC_CRITICAL_SECTION_ENTER();
+	((DmacDescriptor *)hw)->DSTADDR.reg &= ~DMAC_DSTADDR_CRC_CHKINIT(mask);
+	DMAC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_dmacdescriptor_toggle_DSTADDR_CRC_CHKINIT_bf(const void *const                hw,
+                                                                    hri_dmacdescriptor_dstaddr_reg_t mask)
+{
+	DMAC_CRITICAL_SECTION_ENTER();
+	((DmacDescriptor *)hw)->DSTADDR.reg ^= DMAC_DSTADDR_CRC_CHKINIT(mask);
+	DMAC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_dmacdescriptor_dstaddr_reg_t hri_dmacdescriptor_read_DSTADDR_CRC_CHKINIT_bf(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((DmacDescriptor *)hw)->DSTADDR.reg;
+	tmp = (tmp & DMAC_DSTADDR_CRC_CHKINIT_Msk) >> DMAC_DSTADDR_CRC_CHKINIT_Pos;
+	return tmp;
+}
+
+static inline void hri_dmacdescriptor_set_DSTADDR_DSTADDR_bf(const void *const                hw,
+                                                             hri_dmacdescriptor_dstaddr_reg_t mask)
+{
+	DMAC_CRITICAL_SECTION_ENTER();
+	((DmacDescriptor *)hw)->DSTADDR.reg |= DMAC_DSTADDR_DSTADDR(mask);
+	DMAC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_dmacdescriptor_dstaddr_reg_t
+hri_dmacdescriptor_get_DSTADDR_DSTADDR_bf(const void *const hw, hri_dmacdescriptor_dstaddr_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((DmacDescriptor *)hw)->DSTADDR.reg;
+	tmp = (tmp & DMAC_DSTADDR_DSTADDR(mask)) >> DMAC_DSTADDR_DSTADDR_Pos;
+	return tmp;
+}
+
+static inline void hri_dmacdescriptor_write_DSTADDR_DSTADDR_bf(const void *const                hw,
+                                                               hri_dmacdescriptor_dstaddr_reg_t data)
+{
+	uint32_t tmp;
+	DMAC_CRITICAL_SECTION_ENTER();
+	tmp = ((DmacDescriptor *)hw)->DSTADDR.reg;
+	tmp &= ~DMAC_DSTADDR_DSTADDR_Msk;
+	tmp |= DMAC_DSTADDR_DSTADDR(data);
+	((DmacDescriptor *)hw)->DSTADDR.reg = tmp;
+	DMAC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_dmacdescriptor_clear_DSTADDR_DSTADDR_bf(const void *const                hw,
+                                                               hri_dmacdescriptor_dstaddr_reg_t mask)
+{
+	DMAC_CRITICAL_SECTION_ENTER();
+	((DmacDescriptor *)hw)->DSTADDR.reg &= ~DMAC_DSTADDR_DSTADDR(mask);
+	DMAC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_dmacdescriptor_toggle_DSTADDR_DSTADDR_bf(const void *const                hw,
+                                                                hri_dmacdescriptor_dstaddr_reg_t mask)
+{
+	DMAC_CRITICAL_SECTION_ENTER();
+	((DmacDescriptor *)hw)->DSTADDR.reg ^= DMAC_DSTADDR_DSTADDR(mask);
+	DMAC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_dmacdescriptor_dstaddr_reg_t hri_dmacdescriptor_read_DSTADDR_DSTADDR_bf(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((DmacDescriptor *)hw)->DSTADDR.reg;
+	tmp = (tmp & DMAC_DSTADDR_DSTADDR_Msk) >> DMAC_DSTADDR_DSTADDR_Pos;
+	return tmp;
+}
+
+static inline void hri_dmacdescriptor_set_DSTADDR_reg(const void *const hw, hri_dmacdescriptor_dstaddr_reg_t mask)
+{
+	DMAC_CRITICAL_SECTION_ENTER();
+	((DmacDescriptor *)hw)->DSTADDR.reg |= mask;
+	DMAC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_dmacdescriptor_dstaddr_reg_t hri_dmacdescriptor_get_DSTADDR_reg(const void *const                hw,
+                                                                                  hri_dmacdescriptor_dstaddr_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((DmacDescriptor *)hw)->DSTADDR.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline void hri_dmacdescriptor_write_DSTADDR_reg(const void *const hw, hri_dmacdescriptor_dstaddr_reg_t data)
+{
+	DMAC_CRITICAL_SECTION_ENTER();
+	((DmacDescriptor *)hw)->DSTADDR.reg = data;
+	DMAC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_dmacdescriptor_clear_DSTADDR_reg(const void *const hw, hri_dmacdescriptor_dstaddr_reg_t mask)
+{
+	DMAC_CRITICAL_SECTION_ENTER();
+	((DmacDescriptor *)hw)->DSTADDR.reg &= ~mask;
+	DMAC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_dmacdescriptor_toggle_DSTADDR_reg(const void *const hw, hri_dmacdescriptor_dstaddr_reg_t mask)
+{
+	DMAC_CRITICAL_SECTION_ENTER();
+	((DmacDescriptor *)hw)->DSTADDR.reg ^= mask;
+	DMAC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_dmacdescriptor_dstaddr_reg_t hri_dmacdescriptor_read_DSTADDR_reg(const void *const hw)
+{
+	return ((DmacDescriptor *)hw)->DSTADDR.reg;
+}
+
 static inline void hri_dmacdescriptor_set_DESCADDR_DESCADDR_bf(const void *const                 hw,
                                                                hri_dmacdescriptor_descaddr_reg_t mask)
 {
@@ -4805,6 +4763,85 @@ static inline void hri_dmacdescriptor_toggle_DESCADDR_reg(const void *const hw, 
 static inline hri_dmacdescriptor_descaddr_reg_t hri_dmacdescriptor_read_DESCADDR_reg(const void *const hw)
 {
 	return ((DmacDescriptor *)hw)->DESCADDR.reg;
+}
+
+static inline bool hri_dmacchannel_get_CHINTFLAG_TERR_bit(const void *const hw)
+{
+	return (((DmacChannel *)hw)->CHINTFLAG.reg & DMAC_CHINTFLAG_TERR) >> DMAC_CHINTFLAG_TERR_Pos;
+}
+
+static inline void hri_dmacchannel_clear_CHINTFLAG_TERR_bit(const void *const hw)
+{
+	((DmacChannel *)hw)->CHINTFLAG.reg = DMAC_CHINTFLAG_TERR;
+}
+
+static inline bool hri_dmacchannel_get_CHINTFLAG_TCMPL_bit(const void *const hw)
+{
+	return (((DmacChannel *)hw)->CHINTFLAG.reg & DMAC_CHINTFLAG_TCMPL) >> DMAC_CHINTFLAG_TCMPL_Pos;
+}
+
+static inline void hri_dmacchannel_clear_CHINTFLAG_TCMPL_bit(const void *const hw)
+{
+	((DmacChannel *)hw)->CHINTFLAG.reg = DMAC_CHINTFLAG_TCMPL;
+}
+
+static inline bool hri_dmacchannel_get_CHINTFLAG_SUSP_bit(const void *const hw)
+{
+	return (((DmacChannel *)hw)->CHINTFLAG.reg & DMAC_CHINTFLAG_SUSP) >> DMAC_CHINTFLAG_SUSP_Pos;
+}
+
+static inline void hri_dmacchannel_clear_CHINTFLAG_SUSP_bit(const void *const hw)
+{
+	((DmacChannel *)hw)->CHINTFLAG.reg = DMAC_CHINTFLAG_SUSP;
+}
+
+static inline bool hri_dmacchannel_get_interrupt_TERR_bit(const void *const hw)
+{
+	return (((DmacChannel *)hw)->CHINTFLAG.reg & DMAC_CHINTFLAG_TERR) >> DMAC_CHINTFLAG_TERR_Pos;
+}
+
+static inline void hri_dmacchannel_clear_interrupt_TERR_bit(const void *const hw)
+{
+	((DmacChannel *)hw)->CHINTFLAG.reg = DMAC_CHINTFLAG_TERR;
+}
+
+static inline bool hri_dmacchannel_get_interrupt_TCMPL_bit(const void *const hw)
+{
+	return (((DmacChannel *)hw)->CHINTFLAG.reg & DMAC_CHINTFLAG_TCMPL) >> DMAC_CHINTFLAG_TCMPL_Pos;
+}
+
+static inline void hri_dmacchannel_clear_interrupt_TCMPL_bit(const void *const hw)
+{
+	((DmacChannel *)hw)->CHINTFLAG.reg = DMAC_CHINTFLAG_TCMPL;
+}
+
+static inline bool hri_dmacchannel_get_interrupt_SUSP_bit(const void *const hw)
+{
+	return (((DmacChannel *)hw)->CHINTFLAG.reg & DMAC_CHINTFLAG_SUSP) >> DMAC_CHINTFLAG_SUSP_Pos;
+}
+
+static inline void hri_dmacchannel_clear_interrupt_SUSP_bit(const void *const hw)
+{
+	((DmacChannel *)hw)->CHINTFLAG.reg = DMAC_CHINTFLAG_SUSP;
+}
+
+static inline hri_dmac_chintflag_reg_t hri_dmacchannel_get_CHINTFLAG_reg(const void *const        hw,
+                                                                         hri_dmac_chintflag_reg_t mask)
+{
+	uint8_t tmp;
+	tmp = ((DmacChannel *)hw)->CHINTFLAG.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline hri_dmac_chintflag_reg_t hri_dmacchannel_read_CHINTFLAG_reg(const void *const hw)
+{
+	return ((DmacChannel *)hw)->CHINTFLAG.reg;
+}
+
+static inline void hri_dmacchannel_clear_CHINTFLAG_reg(const void *const hw, hri_dmac_chintflag_reg_t mask)
+{
+	((DmacChannel *)hw)->CHINTFLAG.reg = mask;
 }
 
 static inline void hri_dmacchannel_set_CHINTEN_TERR_bit(const void *const hw)
@@ -4907,85 +4944,6 @@ static inline void hri_dmacchannel_write_CHINTEN_reg(const void *const hw, hri_d
 static inline void hri_dmacchannel_clear_CHINTEN_reg(const void *const hw, hri_dmac_chintenset_reg_t mask)
 {
 	((DmacChannel *)hw)->CHINTENCLR.reg = mask;
-}
-
-static inline bool hri_dmacchannel_get_CHINTFLAG_TERR_bit(const void *const hw)
-{
-	return (((DmacChannel *)hw)->CHINTFLAG.reg & DMAC_CHINTFLAG_TERR) >> DMAC_CHINTFLAG_TERR_Pos;
-}
-
-static inline void hri_dmacchannel_clear_CHINTFLAG_TERR_bit(const void *const hw)
-{
-	((DmacChannel *)hw)->CHINTFLAG.reg = DMAC_CHINTFLAG_TERR;
-}
-
-static inline bool hri_dmacchannel_get_CHINTFLAG_TCMPL_bit(const void *const hw)
-{
-	return (((DmacChannel *)hw)->CHINTFLAG.reg & DMAC_CHINTFLAG_TCMPL) >> DMAC_CHINTFLAG_TCMPL_Pos;
-}
-
-static inline void hri_dmacchannel_clear_CHINTFLAG_TCMPL_bit(const void *const hw)
-{
-	((DmacChannel *)hw)->CHINTFLAG.reg = DMAC_CHINTFLAG_TCMPL;
-}
-
-static inline bool hri_dmacchannel_get_CHINTFLAG_SUSP_bit(const void *const hw)
-{
-	return (((DmacChannel *)hw)->CHINTFLAG.reg & DMAC_CHINTFLAG_SUSP) >> DMAC_CHINTFLAG_SUSP_Pos;
-}
-
-static inline void hri_dmacchannel_clear_CHINTFLAG_SUSP_bit(const void *const hw)
-{
-	((DmacChannel *)hw)->CHINTFLAG.reg = DMAC_CHINTFLAG_SUSP;
-}
-
-static inline bool hri_dmacchannel_get_interrupt_TERR_bit(const void *const hw)
-{
-	return (((DmacChannel *)hw)->CHINTFLAG.reg & DMAC_CHINTFLAG_TERR) >> DMAC_CHINTFLAG_TERR_Pos;
-}
-
-static inline void hri_dmacchannel_clear_interrupt_TERR_bit(const void *const hw)
-{
-	((DmacChannel *)hw)->CHINTFLAG.reg = DMAC_CHINTFLAG_TERR;
-}
-
-static inline bool hri_dmacchannel_get_interrupt_TCMPL_bit(const void *const hw)
-{
-	return (((DmacChannel *)hw)->CHINTFLAG.reg & DMAC_CHINTFLAG_TCMPL) >> DMAC_CHINTFLAG_TCMPL_Pos;
-}
-
-static inline void hri_dmacchannel_clear_interrupt_TCMPL_bit(const void *const hw)
-{
-	((DmacChannel *)hw)->CHINTFLAG.reg = DMAC_CHINTFLAG_TCMPL;
-}
-
-static inline bool hri_dmacchannel_get_interrupt_SUSP_bit(const void *const hw)
-{
-	return (((DmacChannel *)hw)->CHINTFLAG.reg & DMAC_CHINTFLAG_SUSP) >> DMAC_CHINTFLAG_SUSP_Pos;
-}
-
-static inline void hri_dmacchannel_clear_interrupt_SUSP_bit(const void *const hw)
-{
-	((DmacChannel *)hw)->CHINTFLAG.reg = DMAC_CHINTFLAG_SUSP;
-}
-
-static inline hri_dmac_chintflag_reg_t hri_dmacchannel_get_CHINTFLAG_reg(const void *const        hw,
-                                                                         hri_dmac_chintflag_reg_t mask)
-{
-	uint8_t tmp;
-	tmp = ((DmacChannel *)hw)->CHINTFLAG.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline hri_dmac_chintflag_reg_t hri_dmacchannel_read_CHINTFLAG_reg(const void *const hw)
-{
-	return ((DmacChannel *)hw)->CHINTFLAG.reg;
-}
-
-static inline void hri_dmacchannel_clear_CHINTFLAG_reg(const void *const hw, hri_dmac_chintflag_reg_t mask)
-{
-	((DmacChannel *)hw)->CHINTFLAG.reg = mask;
 }
 
 static inline void hri_dmacchannel_set_CHCTRLA_SWRST_bit(const void *const hw)
@@ -5790,6 +5748,86 @@ static inline hri_dmac_chstatus_reg_t hri_dmacchannel_read_CHSTATUS_reg(const vo
 	return ((DmacChannel *)hw)->CHSTATUS.reg;
 }
 
+static inline bool hri_dmac_get_CHINTFLAG_TERR_bit(const void *const hw, uint8_t submodule_index)
+{
+	return (((Dmac *)hw)->Channel[submodule_index].CHINTFLAG.reg & DMAC_CHINTFLAG_TERR) >> DMAC_CHINTFLAG_TERR_Pos;
+}
+
+static inline void hri_dmac_clear_CHINTFLAG_TERR_bit(const void *const hw, uint8_t submodule_index)
+{
+	((Dmac *)hw)->Channel[submodule_index].CHINTFLAG.reg = DMAC_CHINTFLAG_TERR;
+}
+
+static inline bool hri_dmac_get_CHINTFLAG_TCMPL_bit(const void *const hw, uint8_t submodule_index)
+{
+	return (((Dmac *)hw)->Channel[submodule_index].CHINTFLAG.reg & DMAC_CHINTFLAG_TCMPL) >> DMAC_CHINTFLAG_TCMPL_Pos;
+}
+
+static inline void hri_dmac_clear_CHINTFLAG_TCMPL_bit(const void *const hw, uint8_t submodule_index)
+{
+	((Dmac *)hw)->Channel[submodule_index].CHINTFLAG.reg = DMAC_CHINTFLAG_TCMPL;
+}
+
+static inline bool hri_dmac_get_CHINTFLAG_SUSP_bit(const void *const hw, uint8_t submodule_index)
+{
+	return (((Dmac *)hw)->Channel[submodule_index].CHINTFLAG.reg & DMAC_CHINTFLAG_SUSP) >> DMAC_CHINTFLAG_SUSP_Pos;
+}
+
+static inline void hri_dmac_clear_CHINTFLAG_SUSP_bit(const void *const hw, uint8_t submodule_index)
+{
+	((Dmac *)hw)->Channel[submodule_index].CHINTFLAG.reg = DMAC_CHINTFLAG_SUSP;
+}
+
+static inline bool hri_dmac_get_interrupt_TERR_bit(const void *const hw, uint8_t submodule_index)
+{
+	return (((Dmac *)hw)->Channel[submodule_index].CHINTFLAG.reg & DMAC_CHINTFLAG_TERR) >> DMAC_CHINTFLAG_TERR_Pos;
+}
+
+static inline void hri_dmac_clear_interrupt_TERR_bit(const void *const hw, uint8_t submodule_index)
+{
+	((Dmac *)hw)->Channel[submodule_index].CHINTFLAG.reg = DMAC_CHINTFLAG_TERR;
+}
+
+static inline bool hri_dmac_get_interrupt_TCMPL_bit(const void *const hw, uint8_t submodule_index)
+{
+	return (((Dmac *)hw)->Channel[submodule_index].CHINTFLAG.reg & DMAC_CHINTFLAG_TCMPL) >> DMAC_CHINTFLAG_TCMPL_Pos;
+}
+
+static inline void hri_dmac_clear_interrupt_TCMPL_bit(const void *const hw, uint8_t submodule_index)
+{
+	((Dmac *)hw)->Channel[submodule_index].CHINTFLAG.reg = DMAC_CHINTFLAG_TCMPL;
+}
+
+static inline bool hri_dmac_get_interrupt_SUSP_bit(const void *const hw, uint8_t submodule_index)
+{
+	return (((Dmac *)hw)->Channel[submodule_index].CHINTFLAG.reg & DMAC_CHINTFLAG_SUSP) >> DMAC_CHINTFLAG_SUSP_Pos;
+}
+
+static inline void hri_dmac_clear_interrupt_SUSP_bit(const void *const hw, uint8_t submodule_index)
+{
+	((Dmac *)hw)->Channel[submodule_index].CHINTFLAG.reg = DMAC_CHINTFLAG_SUSP;
+}
+
+static inline hri_dmac_chintflag_reg_t hri_dmac_get_CHINTFLAG_reg(const void *const hw, uint8_t submodule_index,
+                                                                  hri_dmac_chintflag_reg_t mask)
+{
+	uint8_t tmp;
+	tmp = ((Dmac *)hw)->Channel[submodule_index].CHINTFLAG.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline hri_dmac_chintflag_reg_t hri_dmac_read_CHINTFLAG_reg(const void *const hw, uint8_t submodule_index)
+{
+	return ((Dmac *)hw)->Channel[submodule_index].CHINTFLAG.reg;
+}
+
+static inline void hri_dmac_clear_CHINTFLAG_reg(const void *const hw, uint8_t submodule_index,
+                                                hri_dmac_chintflag_reg_t mask)
+{
+	((Dmac *)hw)->Channel[submodule_index].CHINTFLAG.reg = mask;
+}
+
 static inline void hri_dmac_set_CHINTEN_TERR_bit(const void *const hw, uint8_t submodule_index)
 {
 	((Dmac *)hw)->Channel[submodule_index].CHINTENSET.reg = DMAC_CHINTENSET_TERR;
@@ -5893,86 +5931,6 @@ static inline void hri_dmac_clear_CHINTEN_reg(const void *const hw, uint8_t subm
                                               hri_dmac_chintenset_reg_t mask)
 {
 	((Dmac *)hw)->Channel[submodule_index].CHINTENCLR.reg = mask;
-}
-
-static inline bool hri_dmac_get_CHINTFLAG_TERR_bit(const void *const hw, uint8_t submodule_index)
-{
-	return (((Dmac *)hw)->Channel[submodule_index].CHINTFLAG.reg & DMAC_CHINTFLAG_TERR) >> DMAC_CHINTFLAG_TERR_Pos;
-}
-
-static inline void hri_dmac_clear_CHINTFLAG_TERR_bit(const void *const hw, uint8_t submodule_index)
-{
-	((Dmac *)hw)->Channel[submodule_index].CHINTFLAG.reg = DMAC_CHINTFLAG_TERR;
-}
-
-static inline bool hri_dmac_get_CHINTFLAG_TCMPL_bit(const void *const hw, uint8_t submodule_index)
-{
-	return (((Dmac *)hw)->Channel[submodule_index].CHINTFLAG.reg & DMAC_CHINTFLAG_TCMPL) >> DMAC_CHINTFLAG_TCMPL_Pos;
-}
-
-static inline void hri_dmac_clear_CHINTFLAG_TCMPL_bit(const void *const hw, uint8_t submodule_index)
-{
-	((Dmac *)hw)->Channel[submodule_index].CHINTFLAG.reg = DMAC_CHINTFLAG_TCMPL;
-}
-
-static inline bool hri_dmac_get_CHINTFLAG_SUSP_bit(const void *const hw, uint8_t submodule_index)
-{
-	return (((Dmac *)hw)->Channel[submodule_index].CHINTFLAG.reg & DMAC_CHINTFLAG_SUSP) >> DMAC_CHINTFLAG_SUSP_Pos;
-}
-
-static inline void hri_dmac_clear_CHINTFLAG_SUSP_bit(const void *const hw, uint8_t submodule_index)
-{
-	((Dmac *)hw)->Channel[submodule_index].CHINTFLAG.reg = DMAC_CHINTFLAG_SUSP;
-}
-
-static inline bool hri_dmac_get_interrupt_TERR_bit(const void *const hw, uint8_t submodule_index)
-{
-	return (((Dmac *)hw)->Channel[submodule_index].CHINTFLAG.reg & DMAC_CHINTFLAG_TERR) >> DMAC_CHINTFLAG_TERR_Pos;
-}
-
-static inline void hri_dmac_clear_interrupt_TERR_bit(const void *const hw, uint8_t submodule_index)
-{
-	((Dmac *)hw)->Channel[submodule_index].CHINTFLAG.reg = DMAC_CHINTFLAG_TERR;
-}
-
-static inline bool hri_dmac_get_interrupt_TCMPL_bit(const void *const hw, uint8_t submodule_index)
-{
-	return (((Dmac *)hw)->Channel[submodule_index].CHINTFLAG.reg & DMAC_CHINTFLAG_TCMPL) >> DMAC_CHINTFLAG_TCMPL_Pos;
-}
-
-static inline void hri_dmac_clear_interrupt_TCMPL_bit(const void *const hw, uint8_t submodule_index)
-{
-	((Dmac *)hw)->Channel[submodule_index].CHINTFLAG.reg = DMAC_CHINTFLAG_TCMPL;
-}
-
-static inline bool hri_dmac_get_interrupt_SUSP_bit(const void *const hw, uint8_t submodule_index)
-{
-	return (((Dmac *)hw)->Channel[submodule_index].CHINTFLAG.reg & DMAC_CHINTFLAG_SUSP) >> DMAC_CHINTFLAG_SUSP_Pos;
-}
-
-static inline void hri_dmac_clear_interrupt_SUSP_bit(const void *const hw, uint8_t submodule_index)
-{
-	((Dmac *)hw)->Channel[submodule_index].CHINTFLAG.reg = DMAC_CHINTFLAG_SUSP;
-}
-
-static inline hri_dmac_chintflag_reg_t hri_dmac_get_CHINTFLAG_reg(const void *const hw, uint8_t submodule_index,
-                                                                  hri_dmac_chintflag_reg_t mask)
-{
-	uint8_t tmp;
-	tmp = ((Dmac *)hw)->Channel[submodule_index].CHINTFLAG.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline hri_dmac_chintflag_reg_t hri_dmac_read_CHINTFLAG_reg(const void *const hw, uint8_t submodule_index)
-{
-	return ((Dmac *)hw)->Channel[submodule_index].CHINTFLAG.reg;
-}
-
-static inline void hri_dmac_clear_CHINTFLAG_reg(const void *const hw, uint8_t submodule_index,
-                                                hri_dmac_chintflag_reg_t mask)
-{
-	((Dmac *)hw)->Channel[submodule_index].CHINTFLAG.reg = mask;
 }
 
 static inline void hri_dmac_set_CHCTRLA_SWRST_bit(const void *const hw, uint8_t submodule_index)
@@ -6825,6 +6783,14 @@ static inline hri_dmac_chstatus_reg_t hri_dmac_read_CHSTATUS_reg(const void *con
 {
 	return ((Dmac *)hw)->Channel[submodule_index].CHSTATUS.reg;
 }
+
+/* Below section is for legacy hri apis name, not recommended to use below left side apis in application */
+#define hri_dmacdescriptor_set_DSTADDR_CRC_reg(a, b) hri_dmacdescriptor_set_DSTADDR_reg(a, b)
+#define hri_dmacdescriptor_get_DSTADDR_CRC_reg(a, b) hri_dmacdescriptor_get_DSTADDR_reg(a, b)
+#define hri_dmacdescriptor_write_DSTADDR_CRC_reg(a, b) hri_dmacdescriptor_write_DSTADDR_reg(a, b)
+#define hri_dmacdescriptor_clear_DSTADDR_CRC_reg(a, b) hri_dmacdescriptor_clear_DSTADDR_reg(a, b)
+#define hri_dmacdescriptor_toggle_DSTADDR_CRC_reg(a, b) hri_dmacdescriptor_toggle_DSTADDR_reg(a, b)
+#define hri_dmacdescriptor_read_DSTADDR_CRC_reg(a) hri_dmacdescriptor_read_DSTADDR_reg(a)
 
 #ifdef __cplusplus
 }

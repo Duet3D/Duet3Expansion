@@ -74,8 +74,6 @@ namespace Heat
 
 	TemperatureSensor *GetSensor(int sn);						// Get a pointer to the temperature sensor entry
 	TemperatureSensor *GetSensorAtOrAbove(unsigned int sn);		// Get a pointer to the first temperature sensor with the specified or higher number
-	void RemoveSensor(unsigned int sensorNum);
-	void InsertSensor(TemperatureSensor *sensor);
 
 	inline bool IsBedOrChamberHeater(int heater) { return false; }
 };

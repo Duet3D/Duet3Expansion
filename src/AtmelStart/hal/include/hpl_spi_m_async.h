@@ -60,6 +60,10 @@ extern "C" {
 #define _spi_m_async_dev_cb_xfer_t _spi_async_dev_cb_xfer_t
 
 /**
+ * \name HPL functions
+ */
+//@{
+/**
  *  \brief Initialize SPI for access with interrupts
  *  It will load default hardware configuration and software struct.
  *  \param[in, out] dev Pointer to the SPI device instance.
@@ -229,6 +233,7 @@ int32_t _spi_m_async_register_callback(struct _spi_m_async_dev *dev, const enum 
  */
 void _spi_m_async_set_irq_state(struct _spi_m_async_dev *const device, const enum _spi_m_async_dev_cb_type type,
                                 const bool state);
+//@}
 
 #ifdef __cplusplus
 }

@@ -11,7 +11,6 @@
 #include <utils.h>
 #include <hal_init.h>
 #include <hal_can_async.h>
-#include <hpl/rtc/hpl_rtc_base.h>
 
 /*! The buffer size for USART */
 #define USART_0_BUFFER_SIZE 256

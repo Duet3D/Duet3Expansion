@@ -28,6 +28,7 @@
  * THAT YOU HAVE PAID DIRECTLY TO MICROCHIP FOR THIS SOFTWARE.
  *
  * \asf_license_stop
+ *
  */
 
 #ifdef _SAME51_PAC_COMPONENT_
@@ -61,59 +62,6 @@ typedef uint32_t hri_pac_statusd_reg_t;
 typedef uint32_t hri_pac_wrctrl_reg_t;
 typedef uint8_t  hri_pac_evctrl_reg_t;
 typedef uint8_t  hri_pac_intenset_reg_t;
-
-static inline void hri_pac_set_INTEN_ERR_bit(const void *const hw)
-{
-	((Pac *)hw)->INTENSET.reg = PAC_INTENSET_ERR;
-}
-
-static inline bool hri_pac_get_INTEN_ERR_bit(const void *const hw)
-{
-	return (((Pac *)hw)->INTENSET.reg & PAC_INTENSET_ERR) >> PAC_INTENSET_ERR_Pos;
-}
-
-static inline void hri_pac_write_INTEN_ERR_bit(const void *const hw, bool value)
-{
-	if (value == 0x0) {
-		((Pac *)hw)->INTENCLR.reg = PAC_INTENSET_ERR;
-	} else {
-		((Pac *)hw)->INTENSET.reg = PAC_INTENSET_ERR;
-	}
-}
-
-static inline void hri_pac_clear_INTEN_ERR_bit(const void *const hw)
-{
-	((Pac *)hw)->INTENCLR.reg = PAC_INTENSET_ERR;
-}
-
-static inline void hri_pac_set_INTEN_reg(const void *const hw, hri_pac_intenset_reg_t mask)
-{
-	((Pac *)hw)->INTENSET.reg = mask;
-}
-
-static inline hri_pac_intenset_reg_t hri_pac_get_INTEN_reg(const void *const hw, hri_pac_intenset_reg_t mask)
-{
-	uint8_t tmp;
-	tmp = ((Pac *)hw)->INTENSET.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline hri_pac_intenset_reg_t hri_pac_read_INTEN_reg(const void *const hw)
-{
-	return ((Pac *)hw)->INTENSET.reg;
-}
-
-static inline void hri_pac_write_INTEN_reg(const void *const hw, hri_pac_intenset_reg_t data)
-{
-	((Pac *)hw)->INTENSET.reg = data;
-	((Pac *)hw)->INTENCLR.reg = ~data;
-}
-
-static inline void hri_pac_clear_INTEN_reg(const void *const hw, hri_pac_intenset_reg_t mask)
-{
-	((Pac *)hw)->INTENCLR.reg = mask;
-}
 
 static inline bool hri_pac_get_INTFLAGAHB_FLASH_bit(const void *const hw)
 {
@@ -601,16 +549,6 @@ static inline void hri_pac_clear_INTFLAGB_TC3_bit(const void *const hw)
 	((Pac *)hw)->INTFLAGB.reg = PAC_INTFLAGB_TC3;
 }
 
-static inline bool hri_pac_get_INTFLAGB_TAL_bit(const void *const hw)
-{
-	return (((Pac *)hw)->INTFLAGB.reg & PAC_INTFLAGB_TAL) >> PAC_INTFLAGB_TAL_Pos;
-}
-
-static inline void hri_pac_clear_INTFLAGB_TAL_bit(const void *const hw)
-{
-	((Pac *)hw)->INTFLAGB.reg = PAC_INTFLAGB_TAL;
-}
-
 static inline bool hri_pac_get_INTFLAGB_RAMECC_bit(const void *const hw)
 {
 	return (((Pac *)hw)->INTFLAGB.reg & PAC_INTFLAGB_RAMECC) >> PAC_INTFLAGB_RAMECC_Pos;
@@ -935,6 +873,396 @@ static inline void hri_pac_clear_INTFLAGD_reg(const void *const hw, hri_pac_intf
 	((Pac *)hw)->INTFLAGD.reg = mask;
 }
 
+static inline void hri_pac_set_INTEN_ERR_bit(const void *const hw)
+{
+	((Pac *)hw)->INTENSET.reg = PAC_INTENSET_ERR;
+}
+
+static inline bool hri_pac_get_INTEN_ERR_bit(const void *const hw)
+{
+	return (((Pac *)hw)->INTENSET.reg & PAC_INTENSET_ERR) >> PAC_INTENSET_ERR_Pos;
+}
+
+static inline void hri_pac_write_INTEN_ERR_bit(const void *const hw, bool value)
+{
+	if (value == 0x0) {
+		((Pac *)hw)->INTENCLR.reg = PAC_INTENSET_ERR;
+	} else {
+		((Pac *)hw)->INTENSET.reg = PAC_INTENSET_ERR;
+	}
+}
+
+static inline void hri_pac_clear_INTEN_ERR_bit(const void *const hw)
+{
+	((Pac *)hw)->INTENCLR.reg = PAC_INTENSET_ERR;
+}
+
+static inline void hri_pac_set_INTEN_reg(const void *const hw, hri_pac_intenset_reg_t mask)
+{
+	((Pac *)hw)->INTENSET.reg = mask;
+}
+
+static inline hri_pac_intenset_reg_t hri_pac_get_INTEN_reg(const void *const hw, hri_pac_intenset_reg_t mask)
+{
+	uint8_t tmp;
+	tmp = ((Pac *)hw)->INTENSET.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline hri_pac_intenset_reg_t hri_pac_read_INTEN_reg(const void *const hw)
+{
+	return ((Pac *)hw)->INTENSET.reg;
+}
+
+static inline void hri_pac_write_INTEN_reg(const void *const hw, hri_pac_intenset_reg_t data)
+{
+	((Pac *)hw)->INTENSET.reg = data;
+	((Pac *)hw)->INTENCLR.reg = ~data;
+}
+
+static inline void hri_pac_clear_INTEN_reg(const void *const hw, hri_pac_intenset_reg_t mask)
+{
+	((Pac *)hw)->INTENCLR.reg = mask;
+}
+
+static inline bool hri_pac_get_STATUSA_PAC_bit(const void *const hw)
+{
+	return (((Pac *)hw)->STATUSA.reg & PAC_STATUSA_PAC) >> PAC_STATUSA_PAC_Pos;
+}
+
+static inline bool hri_pac_get_STATUSA_PM_bit(const void *const hw)
+{
+	return (((Pac *)hw)->STATUSA.reg & PAC_STATUSA_PM) >> PAC_STATUSA_PM_Pos;
+}
+
+static inline bool hri_pac_get_STATUSA_MCLK_bit(const void *const hw)
+{
+	return (((Pac *)hw)->STATUSA.reg & PAC_STATUSA_MCLK) >> PAC_STATUSA_MCLK_Pos;
+}
+
+static inline bool hri_pac_get_STATUSA_RSTC_bit(const void *const hw)
+{
+	return (((Pac *)hw)->STATUSA.reg & PAC_STATUSA_RSTC) >> PAC_STATUSA_RSTC_Pos;
+}
+
+static inline bool hri_pac_get_STATUSA_OSCCTRL_bit(const void *const hw)
+{
+	return (((Pac *)hw)->STATUSA.reg & PAC_STATUSA_OSCCTRL) >> PAC_STATUSA_OSCCTRL_Pos;
+}
+
+static inline bool hri_pac_get_STATUSA_OSC32KCTRL_bit(const void *const hw)
+{
+	return (((Pac *)hw)->STATUSA.reg & PAC_STATUSA_OSC32KCTRL) >> PAC_STATUSA_OSC32KCTRL_Pos;
+}
+
+static inline bool hri_pac_get_STATUSA_SUPC_bit(const void *const hw)
+{
+	return (((Pac *)hw)->STATUSA.reg & PAC_STATUSA_SUPC) >> PAC_STATUSA_SUPC_Pos;
+}
+
+static inline bool hri_pac_get_STATUSA_GCLK_bit(const void *const hw)
+{
+	return (((Pac *)hw)->STATUSA.reg & PAC_STATUSA_GCLK) >> PAC_STATUSA_GCLK_Pos;
+}
+
+static inline bool hri_pac_get_STATUSA_WDT_bit(const void *const hw)
+{
+	return (((Pac *)hw)->STATUSA.reg & PAC_STATUSA_WDT) >> PAC_STATUSA_WDT_Pos;
+}
+
+static inline bool hri_pac_get_STATUSA_RTC_bit(const void *const hw)
+{
+	return (((Pac *)hw)->STATUSA.reg & PAC_STATUSA_RTC) >> PAC_STATUSA_RTC_Pos;
+}
+
+static inline bool hri_pac_get_STATUSA_EIC_bit(const void *const hw)
+{
+	return (((Pac *)hw)->STATUSA.reg & PAC_STATUSA_EIC) >> PAC_STATUSA_EIC_Pos;
+}
+
+static inline bool hri_pac_get_STATUSA_FREQM_bit(const void *const hw)
+{
+	return (((Pac *)hw)->STATUSA.reg & PAC_STATUSA_FREQM) >> PAC_STATUSA_FREQM_Pos;
+}
+
+static inline bool hri_pac_get_STATUSA_SERCOM0_bit(const void *const hw)
+{
+	return (((Pac *)hw)->STATUSA.reg & PAC_STATUSA_SERCOM0) >> PAC_STATUSA_SERCOM0_Pos;
+}
+
+static inline bool hri_pac_get_STATUSA_SERCOM1_bit(const void *const hw)
+{
+	return (((Pac *)hw)->STATUSA.reg & PAC_STATUSA_SERCOM1) >> PAC_STATUSA_SERCOM1_Pos;
+}
+
+static inline bool hri_pac_get_STATUSA_TC0_bit(const void *const hw)
+{
+	return (((Pac *)hw)->STATUSA.reg & PAC_STATUSA_TC0) >> PAC_STATUSA_TC0_Pos;
+}
+
+static inline bool hri_pac_get_STATUSA_TC1_bit(const void *const hw)
+{
+	return (((Pac *)hw)->STATUSA.reg & PAC_STATUSA_TC1) >> PAC_STATUSA_TC1_Pos;
+}
+
+static inline hri_pac_statusa_reg_t hri_pac_get_STATUSA_reg(const void *const hw, hri_pac_statusa_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Pac *)hw)->STATUSA.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline hri_pac_statusa_reg_t hri_pac_read_STATUSA_reg(const void *const hw)
+{
+	return ((Pac *)hw)->STATUSA.reg;
+}
+
+static inline bool hri_pac_get_STATUSB_USB_bit(const void *const hw)
+{
+	return (((Pac *)hw)->STATUSB.reg & PAC_STATUSB_USB) >> PAC_STATUSB_USB_Pos;
+}
+
+static inline bool hri_pac_get_STATUSB_DSU_bit(const void *const hw)
+{
+	return (((Pac *)hw)->STATUSB.reg & PAC_STATUSB_DSU) >> PAC_STATUSB_DSU_Pos;
+}
+
+static inline bool hri_pac_get_STATUSB_NVMCTRL_bit(const void *const hw)
+{
+	return (((Pac *)hw)->STATUSB.reg & PAC_STATUSB_NVMCTRL) >> PAC_STATUSB_NVMCTRL_Pos;
+}
+
+static inline bool hri_pac_get_STATUSB_CMCC_bit(const void *const hw)
+{
+	return (((Pac *)hw)->STATUSB.reg & PAC_STATUSB_CMCC) >> PAC_STATUSB_CMCC_Pos;
+}
+
+static inline bool hri_pac_get_STATUSB_PORT_bit(const void *const hw)
+{
+	return (((Pac *)hw)->STATUSB.reg & PAC_STATUSB_PORT) >> PAC_STATUSB_PORT_Pos;
+}
+
+static inline bool hri_pac_get_STATUSB_DMAC_bit(const void *const hw)
+{
+	return (((Pac *)hw)->STATUSB.reg & PAC_STATUSB_DMAC) >> PAC_STATUSB_DMAC_Pos;
+}
+
+static inline bool hri_pac_get_STATUSB_HMATRIX_bit(const void *const hw)
+{
+	return (((Pac *)hw)->STATUSB.reg & PAC_STATUSB_HMATRIX) >> PAC_STATUSB_HMATRIX_Pos;
+}
+
+static inline bool hri_pac_get_STATUSB_EVSYS_bit(const void *const hw)
+{
+	return (((Pac *)hw)->STATUSB.reg & PAC_STATUSB_EVSYS) >> PAC_STATUSB_EVSYS_Pos;
+}
+
+static inline bool hri_pac_get_STATUSB_SERCOM2_bit(const void *const hw)
+{
+	return (((Pac *)hw)->STATUSB.reg & PAC_STATUSB_SERCOM2) >> PAC_STATUSB_SERCOM2_Pos;
+}
+
+static inline bool hri_pac_get_STATUSB_SERCOM3_bit(const void *const hw)
+{
+	return (((Pac *)hw)->STATUSB.reg & PAC_STATUSB_SERCOM3) >> PAC_STATUSB_SERCOM3_Pos;
+}
+
+static inline bool hri_pac_get_STATUSB_TCC0_bit(const void *const hw)
+{
+	return (((Pac *)hw)->STATUSB.reg & PAC_STATUSB_TCC0) >> PAC_STATUSB_TCC0_Pos;
+}
+
+static inline bool hri_pac_get_STATUSB_TCC1_bit(const void *const hw)
+{
+	return (((Pac *)hw)->STATUSB.reg & PAC_STATUSB_TCC1) >> PAC_STATUSB_TCC1_Pos;
+}
+
+static inline bool hri_pac_get_STATUSB_TC2_bit(const void *const hw)
+{
+	return (((Pac *)hw)->STATUSB.reg & PAC_STATUSB_TC2) >> PAC_STATUSB_TC2_Pos;
+}
+
+static inline bool hri_pac_get_STATUSB_TC3_bit(const void *const hw)
+{
+	return (((Pac *)hw)->STATUSB.reg & PAC_STATUSB_TC3) >> PAC_STATUSB_TC3_Pos;
+}
+
+static inline bool hri_pac_get_STATUSB_RAMECC_bit(const void *const hw)
+{
+	return (((Pac *)hw)->STATUSB.reg & PAC_STATUSB_RAMECC) >> PAC_STATUSB_RAMECC_Pos;
+}
+
+static inline hri_pac_statusb_reg_t hri_pac_get_STATUSB_reg(const void *const hw, hri_pac_statusb_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Pac *)hw)->STATUSB.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline hri_pac_statusb_reg_t hri_pac_read_STATUSB_reg(const void *const hw)
+{
+	return ((Pac *)hw)->STATUSB.reg;
+}
+
+static inline bool hri_pac_get_STATUSC_CAN0_bit(const void *const hw)
+{
+	return (((Pac *)hw)->STATUSC.reg & PAC_STATUSC_CAN0) >> PAC_STATUSC_CAN0_Pos;
+}
+
+static inline bool hri_pac_get_STATUSC_CAN1_bit(const void *const hw)
+{
+	return (((Pac *)hw)->STATUSC.reg & PAC_STATUSC_CAN1) >> PAC_STATUSC_CAN1_Pos;
+}
+
+static inline bool hri_pac_get_STATUSC_TCC2_bit(const void *const hw)
+{
+	return (((Pac *)hw)->STATUSC.reg & PAC_STATUSC_TCC2) >> PAC_STATUSC_TCC2_Pos;
+}
+
+static inline bool hri_pac_get_STATUSC_TCC3_bit(const void *const hw)
+{
+	return (((Pac *)hw)->STATUSC.reg & PAC_STATUSC_TCC3) >> PAC_STATUSC_TCC3_Pos;
+}
+
+static inline bool hri_pac_get_STATUSC_TC4_bit(const void *const hw)
+{
+	return (((Pac *)hw)->STATUSC.reg & PAC_STATUSC_TC4) >> PAC_STATUSC_TC4_Pos;
+}
+
+static inline bool hri_pac_get_STATUSC_TC5_bit(const void *const hw)
+{
+	return (((Pac *)hw)->STATUSC.reg & PAC_STATUSC_TC5) >> PAC_STATUSC_TC5_Pos;
+}
+
+static inline bool hri_pac_get_STATUSC_PDEC_bit(const void *const hw)
+{
+	return (((Pac *)hw)->STATUSC.reg & PAC_STATUSC_PDEC) >> PAC_STATUSC_PDEC_Pos;
+}
+
+static inline bool hri_pac_get_STATUSC_AC_bit(const void *const hw)
+{
+	return (((Pac *)hw)->STATUSC.reg & PAC_STATUSC_AC) >> PAC_STATUSC_AC_Pos;
+}
+
+static inline bool hri_pac_get_STATUSC_AES_bit(const void *const hw)
+{
+	return (((Pac *)hw)->STATUSC.reg & PAC_STATUSC_AES) >> PAC_STATUSC_AES_Pos;
+}
+
+static inline bool hri_pac_get_STATUSC_TRNG_bit(const void *const hw)
+{
+	return (((Pac *)hw)->STATUSC.reg & PAC_STATUSC_TRNG) >> PAC_STATUSC_TRNG_Pos;
+}
+
+static inline bool hri_pac_get_STATUSC_ICM_bit(const void *const hw)
+{
+	return (((Pac *)hw)->STATUSC.reg & PAC_STATUSC_ICM) >> PAC_STATUSC_ICM_Pos;
+}
+
+static inline bool hri_pac_get_STATUSC_PUKCC_bit(const void *const hw)
+{
+	return (((Pac *)hw)->STATUSC.reg & PAC_STATUSC_PUKCC) >> PAC_STATUSC_PUKCC_Pos;
+}
+
+static inline bool hri_pac_get_STATUSC_QSPI_bit(const void *const hw)
+{
+	return (((Pac *)hw)->STATUSC.reg & PAC_STATUSC_QSPI) >> PAC_STATUSC_QSPI_Pos;
+}
+
+static inline bool hri_pac_get_STATUSC_CCL_bit(const void *const hw)
+{
+	return (((Pac *)hw)->STATUSC.reg & PAC_STATUSC_CCL) >> PAC_STATUSC_CCL_Pos;
+}
+
+static inline hri_pac_statusc_reg_t hri_pac_get_STATUSC_reg(const void *const hw, hri_pac_statusc_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Pac *)hw)->STATUSC.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline hri_pac_statusc_reg_t hri_pac_read_STATUSC_reg(const void *const hw)
+{
+	return ((Pac *)hw)->STATUSC.reg;
+}
+
+static inline bool hri_pac_get_STATUSD_SERCOM4_bit(const void *const hw)
+{
+	return (((Pac *)hw)->STATUSD.reg & PAC_STATUSD_SERCOM4) >> PAC_STATUSD_SERCOM4_Pos;
+}
+
+static inline bool hri_pac_get_STATUSD_SERCOM5_bit(const void *const hw)
+{
+	return (((Pac *)hw)->STATUSD.reg & PAC_STATUSD_SERCOM5) >> PAC_STATUSD_SERCOM5_Pos;
+}
+
+static inline bool hri_pac_get_STATUSD_SERCOM6_bit(const void *const hw)
+{
+	return (((Pac *)hw)->STATUSD.reg & PAC_STATUSD_SERCOM6) >> PAC_STATUSD_SERCOM6_Pos;
+}
+
+static inline bool hri_pac_get_STATUSD_SERCOM7_bit(const void *const hw)
+{
+	return (((Pac *)hw)->STATUSD.reg & PAC_STATUSD_SERCOM7) >> PAC_STATUSD_SERCOM7_Pos;
+}
+
+static inline bool hri_pac_get_STATUSD_TCC4_bit(const void *const hw)
+{
+	return (((Pac *)hw)->STATUSD.reg & PAC_STATUSD_TCC4) >> PAC_STATUSD_TCC4_Pos;
+}
+
+static inline bool hri_pac_get_STATUSD_TC6_bit(const void *const hw)
+{
+	return (((Pac *)hw)->STATUSD.reg & PAC_STATUSD_TC6) >> PAC_STATUSD_TC6_Pos;
+}
+
+static inline bool hri_pac_get_STATUSD_TC7_bit(const void *const hw)
+{
+	return (((Pac *)hw)->STATUSD.reg & PAC_STATUSD_TC7) >> PAC_STATUSD_TC7_Pos;
+}
+
+static inline bool hri_pac_get_STATUSD_ADC0_bit(const void *const hw)
+{
+	return (((Pac *)hw)->STATUSD.reg & PAC_STATUSD_ADC0) >> PAC_STATUSD_ADC0_Pos;
+}
+
+static inline bool hri_pac_get_STATUSD_ADC1_bit(const void *const hw)
+{
+	return (((Pac *)hw)->STATUSD.reg & PAC_STATUSD_ADC1) >> PAC_STATUSD_ADC1_Pos;
+}
+
+static inline bool hri_pac_get_STATUSD_DAC_bit(const void *const hw)
+{
+	return (((Pac *)hw)->STATUSD.reg & PAC_STATUSD_DAC) >> PAC_STATUSD_DAC_Pos;
+}
+
+static inline bool hri_pac_get_STATUSD_I2S_bit(const void *const hw)
+{
+	return (((Pac *)hw)->STATUSD.reg & PAC_STATUSD_I2S) >> PAC_STATUSD_I2S_Pos;
+}
+
+static inline bool hri_pac_get_STATUSD_PCC_bit(const void *const hw)
+{
+	return (((Pac *)hw)->STATUSD.reg & PAC_STATUSD_PCC) >> PAC_STATUSD_PCC_Pos;
+}
+
+static inline hri_pac_statusd_reg_t hri_pac_get_STATUSD_reg(const void *const hw, hri_pac_statusd_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Pac *)hw)->STATUSD.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline hri_pac_statusd_reg_t hri_pac_read_STATUSD_reg(const void *const hw)
+{
+	return ((Pac *)hw)->STATUSD.reg;
+}
+
 static inline void hri_pac_set_WRCTRL_PERID_bf(const void *const hw, hri_pac_wrctrl_reg_t mask)
 {
 	PAC_CRITICAL_SECTION_ENTER();
@@ -1151,348 +1479,6 @@ static inline void hri_pac_toggle_EVCTRL_reg(const void *const hw, hri_pac_evctr
 static inline hri_pac_evctrl_reg_t hri_pac_read_EVCTRL_reg(const void *const hw)
 {
 	return ((Pac *)hw)->EVCTRL.reg;
-}
-
-static inline bool hri_pac_get_STATUSA_PAC_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSA.reg & PAC_STATUSA_PAC) >> PAC_STATUSA_PAC_Pos;
-}
-
-static inline bool hri_pac_get_STATUSA_PM_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSA.reg & PAC_STATUSA_PM) >> PAC_STATUSA_PM_Pos;
-}
-
-static inline bool hri_pac_get_STATUSA_MCLK_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSA.reg & PAC_STATUSA_MCLK) >> PAC_STATUSA_MCLK_Pos;
-}
-
-static inline bool hri_pac_get_STATUSA_RSTC_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSA.reg & PAC_STATUSA_RSTC) >> PAC_STATUSA_RSTC_Pos;
-}
-
-static inline bool hri_pac_get_STATUSA_OSCCTRL_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSA.reg & PAC_STATUSA_OSCCTRL) >> PAC_STATUSA_OSCCTRL_Pos;
-}
-
-static inline bool hri_pac_get_STATUSA_OSC32KCTRL_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSA.reg & PAC_STATUSA_OSC32KCTRL) >> PAC_STATUSA_OSC32KCTRL_Pos;
-}
-
-static inline bool hri_pac_get_STATUSA_SUPC_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSA.reg & PAC_STATUSA_SUPC) >> PAC_STATUSA_SUPC_Pos;
-}
-
-static inline bool hri_pac_get_STATUSA_GCLK_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSA.reg & PAC_STATUSA_GCLK) >> PAC_STATUSA_GCLK_Pos;
-}
-
-static inline bool hri_pac_get_STATUSA_WDT_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSA.reg & PAC_STATUSA_WDT) >> PAC_STATUSA_WDT_Pos;
-}
-
-static inline bool hri_pac_get_STATUSA_RTC_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSA.reg & PAC_STATUSA_RTC) >> PAC_STATUSA_RTC_Pos;
-}
-
-static inline bool hri_pac_get_STATUSA_EIC_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSA.reg & PAC_STATUSA_EIC) >> PAC_STATUSA_EIC_Pos;
-}
-
-static inline bool hri_pac_get_STATUSA_FREQM_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSA.reg & PAC_STATUSA_FREQM) >> PAC_STATUSA_FREQM_Pos;
-}
-
-static inline bool hri_pac_get_STATUSA_SERCOM0_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSA.reg & PAC_STATUSA_SERCOM0) >> PAC_STATUSA_SERCOM0_Pos;
-}
-
-static inline bool hri_pac_get_STATUSA_SERCOM1_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSA.reg & PAC_STATUSA_SERCOM1) >> PAC_STATUSA_SERCOM1_Pos;
-}
-
-static inline bool hri_pac_get_STATUSA_TC0_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSA.reg & PAC_STATUSA_TC0) >> PAC_STATUSA_TC0_Pos;
-}
-
-static inline bool hri_pac_get_STATUSA_TC1_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSA.reg & PAC_STATUSA_TC1) >> PAC_STATUSA_TC1_Pos;
-}
-
-static inline hri_pac_statusa_reg_t hri_pac_get_STATUSA_reg(const void *const hw, hri_pac_statusa_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Pac *)hw)->STATUSA.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline hri_pac_statusa_reg_t hri_pac_read_STATUSA_reg(const void *const hw)
-{
-	return ((Pac *)hw)->STATUSA.reg;
-}
-
-static inline bool hri_pac_get_STATUSB_USB_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSB.reg & PAC_STATUSB_USB) >> PAC_STATUSB_USB_Pos;
-}
-
-static inline bool hri_pac_get_STATUSB_DSU_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSB.reg & PAC_STATUSB_DSU) >> PAC_STATUSB_DSU_Pos;
-}
-
-static inline bool hri_pac_get_STATUSB_NVMCTRL_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSB.reg & PAC_STATUSB_NVMCTRL) >> PAC_STATUSB_NVMCTRL_Pos;
-}
-
-static inline bool hri_pac_get_STATUSB_CMCC_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSB.reg & PAC_STATUSB_CMCC) >> PAC_STATUSB_CMCC_Pos;
-}
-
-static inline bool hri_pac_get_STATUSB_PORT_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSB.reg & PAC_STATUSB_PORT) >> PAC_STATUSB_PORT_Pos;
-}
-
-static inline bool hri_pac_get_STATUSB_DMAC_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSB.reg & PAC_STATUSB_DMAC) >> PAC_STATUSB_DMAC_Pos;
-}
-
-static inline bool hri_pac_get_STATUSB_HMATRIX_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSB.reg & PAC_STATUSB_HMATRIX) >> PAC_STATUSB_HMATRIX_Pos;
-}
-
-static inline bool hri_pac_get_STATUSB_EVSYS_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSB.reg & PAC_STATUSB_EVSYS) >> PAC_STATUSB_EVSYS_Pos;
-}
-
-static inline bool hri_pac_get_STATUSB_SERCOM2_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSB.reg & PAC_STATUSB_SERCOM2) >> PAC_STATUSB_SERCOM2_Pos;
-}
-
-static inline bool hri_pac_get_STATUSB_SERCOM3_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSB.reg & PAC_STATUSB_SERCOM3) >> PAC_STATUSB_SERCOM3_Pos;
-}
-
-static inline bool hri_pac_get_STATUSB_TCC0_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSB.reg & PAC_STATUSB_TCC0) >> PAC_STATUSB_TCC0_Pos;
-}
-
-static inline bool hri_pac_get_STATUSB_TCC1_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSB.reg & PAC_STATUSB_TCC1) >> PAC_STATUSB_TCC1_Pos;
-}
-
-static inline bool hri_pac_get_STATUSB_TC2_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSB.reg & PAC_STATUSB_TC2) >> PAC_STATUSB_TC2_Pos;
-}
-
-static inline bool hri_pac_get_STATUSB_TC3_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSB.reg & PAC_STATUSB_TC3) >> PAC_STATUSB_TC3_Pos;
-}
-
-static inline bool hri_pac_get_STATUSB_TAL_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSB.reg & PAC_STATUSB_TAL) >> PAC_STATUSB_TAL_Pos;
-}
-
-static inline bool hri_pac_get_STATUSB_RAMECC_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSB.reg & PAC_STATUSB_RAMECC) >> PAC_STATUSB_RAMECC_Pos;
-}
-
-static inline hri_pac_statusb_reg_t hri_pac_get_STATUSB_reg(const void *const hw, hri_pac_statusb_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Pac *)hw)->STATUSB.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline hri_pac_statusb_reg_t hri_pac_read_STATUSB_reg(const void *const hw)
-{
-	return ((Pac *)hw)->STATUSB.reg;
-}
-
-static inline bool hri_pac_get_STATUSC_CAN0_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSC.reg & PAC_STATUSC_CAN0) >> PAC_STATUSC_CAN0_Pos;
-}
-
-static inline bool hri_pac_get_STATUSC_CAN1_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSC.reg & PAC_STATUSC_CAN1) >> PAC_STATUSC_CAN1_Pos;
-}
-
-static inline bool hri_pac_get_STATUSC_TCC2_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSC.reg & PAC_STATUSC_TCC2) >> PAC_STATUSC_TCC2_Pos;
-}
-
-static inline bool hri_pac_get_STATUSC_TCC3_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSC.reg & PAC_STATUSC_TCC3) >> PAC_STATUSC_TCC3_Pos;
-}
-
-static inline bool hri_pac_get_STATUSC_TC4_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSC.reg & PAC_STATUSC_TC4) >> PAC_STATUSC_TC4_Pos;
-}
-
-static inline bool hri_pac_get_STATUSC_TC5_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSC.reg & PAC_STATUSC_TC5) >> PAC_STATUSC_TC5_Pos;
-}
-
-static inline bool hri_pac_get_STATUSC_PDEC_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSC.reg & PAC_STATUSC_PDEC) >> PAC_STATUSC_PDEC_Pos;
-}
-
-static inline bool hri_pac_get_STATUSC_AC_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSC.reg & PAC_STATUSC_AC) >> PAC_STATUSC_AC_Pos;
-}
-
-static inline bool hri_pac_get_STATUSC_AES_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSC.reg & PAC_STATUSC_AES) >> PAC_STATUSC_AES_Pos;
-}
-
-static inline bool hri_pac_get_STATUSC_TRNG_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSC.reg & PAC_STATUSC_TRNG) >> PAC_STATUSC_TRNG_Pos;
-}
-
-static inline bool hri_pac_get_STATUSC_ICM_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSC.reg & PAC_STATUSC_ICM) >> PAC_STATUSC_ICM_Pos;
-}
-
-static inline bool hri_pac_get_STATUSC_PUKCC_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSC.reg & PAC_STATUSC_PUKCC) >> PAC_STATUSC_PUKCC_Pos;
-}
-
-static inline bool hri_pac_get_STATUSC_QSPI_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSC.reg & PAC_STATUSC_QSPI) >> PAC_STATUSC_QSPI_Pos;
-}
-
-static inline bool hri_pac_get_STATUSC_CCL_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSC.reg & PAC_STATUSC_CCL) >> PAC_STATUSC_CCL_Pos;
-}
-
-static inline hri_pac_statusc_reg_t hri_pac_get_STATUSC_reg(const void *const hw, hri_pac_statusc_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Pac *)hw)->STATUSC.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline hri_pac_statusc_reg_t hri_pac_read_STATUSC_reg(const void *const hw)
-{
-	return ((Pac *)hw)->STATUSC.reg;
-}
-
-static inline bool hri_pac_get_STATUSD_SERCOM4_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSD.reg & PAC_STATUSD_SERCOM4) >> PAC_STATUSD_SERCOM4_Pos;
-}
-
-static inline bool hri_pac_get_STATUSD_SERCOM5_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSD.reg & PAC_STATUSD_SERCOM5) >> PAC_STATUSD_SERCOM5_Pos;
-}
-
-static inline bool hri_pac_get_STATUSD_SERCOM6_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSD.reg & PAC_STATUSD_SERCOM6) >> PAC_STATUSD_SERCOM6_Pos;
-}
-
-static inline bool hri_pac_get_STATUSD_SERCOM7_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSD.reg & PAC_STATUSD_SERCOM7) >> PAC_STATUSD_SERCOM7_Pos;
-}
-
-static inline bool hri_pac_get_STATUSD_TCC4_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSD.reg & PAC_STATUSD_TCC4) >> PAC_STATUSD_TCC4_Pos;
-}
-
-static inline bool hri_pac_get_STATUSD_TC6_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSD.reg & PAC_STATUSD_TC6) >> PAC_STATUSD_TC6_Pos;
-}
-
-static inline bool hri_pac_get_STATUSD_TC7_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSD.reg & PAC_STATUSD_TC7) >> PAC_STATUSD_TC7_Pos;
-}
-
-static inline bool hri_pac_get_STATUSD_ADC0_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSD.reg & PAC_STATUSD_ADC0) >> PAC_STATUSD_ADC0_Pos;
-}
-
-static inline bool hri_pac_get_STATUSD_ADC1_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSD.reg & PAC_STATUSD_ADC1) >> PAC_STATUSD_ADC1_Pos;
-}
-
-static inline bool hri_pac_get_STATUSD_DAC_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSD.reg & PAC_STATUSD_DAC) >> PAC_STATUSD_DAC_Pos;
-}
-
-static inline bool hri_pac_get_STATUSD_I2S_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSD.reg & PAC_STATUSD_I2S) >> PAC_STATUSD_I2S_Pos;
-}
-
-static inline bool hri_pac_get_STATUSD_PCC_bit(const void *const hw)
-{
-	return (((Pac *)hw)->STATUSD.reg & PAC_STATUSD_PCC) >> PAC_STATUSD_PCC_Pos;
-}
-
-static inline hri_pac_statusd_reg_t hri_pac_get_STATUSD_reg(const void *const hw, hri_pac_statusd_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Pac *)hw)->STATUSD.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline hri_pac_statusd_reg_t hri_pac_read_STATUSD_reg(const void *const hw)
-{
-	return ((Pac *)hw)->STATUSD.reg;
 }
 
 #ifdef __cplusplus

@@ -52,7 +52,7 @@ GCodeResult LinearAnalogSensor::Configure(const CanMessageGenericParser& parser,
 	return GCodeResult::ok;
 }
 
-TemperatureError LinearAnalogSensor::TryGetTemperature(float& t)
+void LinearAnalogSensor::Poll()
 {
 	const volatile ThermistorAveragingFilter& tempFilter = Platform::GetAdcFilter(thermistorInputChannel);
 	int32_t tempReading;
@@ -60,8 +60,7 @@ TemperatureError LinearAnalogSensor::TryGetTemperature(float& t)
 	{
 		if (!tempFilter.IsValid())
 		{
-			t = BadErrorTemperature;
-			return TemperatureError::notReady;
+			SetResult(TemperatureError::notReady);
 		}
 		tempReading = tempFilter.GetSum()/(tempFilter.NumAveraged() >> AdcOversampleBits);
 	}
@@ -70,8 +69,7 @@ TemperatureError LinearAnalogSensor::TryGetTemperature(float& t)
 		tempReading = tempFilter.GetLastReading() << AdcOversampleBits;
 	}
 
-	t = (tempReading * linearIncreasePerCount) + lowTemp;
-	return TemperatureError::success;
+	SetResult((tempReading * linearIncreasePerCount) + lowTemp, TemperatureError::success);
 }
 
 void LinearAnalogSensor::CalcDerivedParameters()

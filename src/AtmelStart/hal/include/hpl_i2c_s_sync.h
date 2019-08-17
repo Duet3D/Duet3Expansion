@@ -138,6 +138,15 @@ void _i2c_s_sync_write_byte(struct _i2c_s_sync_device *const device, const uint8
 i2c_s_status_t _i2c_s_sync_get_status(const struct _i2c_s_sync_device *const device);
 
 /**
+ * \brief Clear the Data Ready interrupt flag
+ *
+ * \param[in] device The pointer to i2c slave device structure
+ *
+ * \return Return 0 for success and negative value for error
+ */
+int32_t _i2c_s_sync_clear_data_ready_flag(const struct _i2c_s_sync_device *const device);
+
+/**
  * \brief Read a byte from the given I2C instance
  *
  * \param[in] device The pointer to i2c slave device structure

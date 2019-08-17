@@ -28,6 +28,7 @@
  * THAT YOU HAVE PAID DIRECTLY TO MICROCHIP FOR THIS SOFTWARE.
  *
  * \asf_license_stop
+ *
  */
 
 #ifdef _SAME51_NVMCTRL_COMPONENT_
@@ -62,6 +63,245 @@ typedef uint32_t hri_nvmctrl_runlock_reg_t;
 typedef uint32_t hri_nvmctrl_seestat_reg_t;
 typedef uint8_t  hri_nvmctrl_dbgctrl_reg_t;
 typedef uint8_t  hri_nvmctrl_seecfg_reg_t;
+
+static inline bool hri_nvmctrl_get_INTFLAG_DONE_bit(const void *const hw)
+{
+	return (((Nvmctrl *)hw)->INTFLAG.reg & NVMCTRL_INTFLAG_DONE) >> NVMCTRL_INTFLAG_DONE_Pos;
+}
+
+static inline void hri_nvmctrl_clear_INTFLAG_DONE_bit(const void *const hw)
+{
+	((Nvmctrl *)hw)->INTFLAG.reg = NVMCTRL_INTFLAG_DONE;
+}
+
+static inline bool hri_nvmctrl_get_INTFLAG_ADDRE_bit(const void *const hw)
+{
+	return (((Nvmctrl *)hw)->INTFLAG.reg & NVMCTRL_INTFLAG_ADDRE) >> NVMCTRL_INTFLAG_ADDRE_Pos;
+}
+
+static inline void hri_nvmctrl_clear_INTFLAG_ADDRE_bit(const void *const hw)
+{
+	((Nvmctrl *)hw)->INTFLAG.reg = NVMCTRL_INTFLAG_ADDRE;
+}
+
+static inline bool hri_nvmctrl_get_INTFLAG_PROGE_bit(const void *const hw)
+{
+	return (((Nvmctrl *)hw)->INTFLAG.reg & NVMCTRL_INTFLAG_PROGE) >> NVMCTRL_INTFLAG_PROGE_Pos;
+}
+
+static inline void hri_nvmctrl_clear_INTFLAG_PROGE_bit(const void *const hw)
+{
+	((Nvmctrl *)hw)->INTFLAG.reg = NVMCTRL_INTFLAG_PROGE;
+}
+
+static inline bool hri_nvmctrl_get_INTFLAG_LOCKE_bit(const void *const hw)
+{
+	return (((Nvmctrl *)hw)->INTFLAG.reg & NVMCTRL_INTFLAG_LOCKE) >> NVMCTRL_INTFLAG_LOCKE_Pos;
+}
+
+static inline void hri_nvmctrl_clear_INTFLAG_LOCKE_bit(const void *const hw)
+{
+	((Nvmctrl *)hw)->INTFLAG.reg = NVMCTRL_INTFLAG_LOCKE;
+}
+
+static inline bool hri_nvmctrl_get_INTFLAG_ECCSE_bit(const void *const hw)
+{
+	return (((Nvmctrl *)hw)->INTFLAG.reg & NVMCTRL_INTFLAG_ECCSE) >> NVMCTRL_INTFLAG_ECCSE_Pos;
+}
+
+static inline void hri_nvmctrl_clear_INTFLAG_ECCSE_bit(const void *const hw)
+{
+	((Nvmctrl *)hw)->INTFLAG.reg = NVMCTRL_INTFLAG_ECCSE;
+}
+
+static inline bool hri_nvmctrl_get_INTFLAG_ECCDE_bit(const void *const hw)
+{
+	return (((Nvmctrl *)hw)->INTFLAG.reg & NVMCTRL_INTFLAG_ECCDE) >> NVMCTRL_INTFLAG_ECCDE_Pos;
+}
+
+static inline void hri_nvmctrl_clear_INTFLAG_ECCDE_bit(const void *const hw)
+{
+	((Nvmctrl *)hw)->INTFLAG.reg = NVMCTRL_INTFLAG_ECCDE;
+}
+
+static inline bool hri_nvmctrl_get_INTFLAG_NVME_bit(const void *const hw)
+{
+	return (((Nvmctrl *)hw)->INTFLAG.reg & NVMCTRL_INTFLAG_NVME) >> NVMCTRL_INTFLAG_NVME_Pos;
+}
+
+static inline void hri_nvmctrl_clear_INTFLAG_NVME_bit(const void *const hw)
+{
+	((Nvmctrl *)hw)->INTFLAG.reg = NVMCTRL_INTFLAG_NVME;
+}
+
+static inline bool hri_nvmctrl_get_INTFLAG_SUSP_bit(const void *const hw)
+{
+	return (((Nvmctrl *)hw)->INTFLAG.reg & NVMCTRL_INTFLAG_SUSP) >> NVMCTRL_INTFLAG_SUSP_Pos;
+}
+
+static inline void hri_nvmctrl_clear_INTFLAG_SUSP_bit(const void *const hw)
+{
+	((Nvmctrl *)hw)->INTFLAG.reg = NVMCTRL_INTFLAG_SUSP;
+}
+
+static inline bool hri_nvmctrl_get_INTFLAG_SEESFULL_bit(const void *const hw)
+{
+	return (((Nvmctrl *)hw)->INTFLAG.reg & NVMCTRL_INTFLAG_SEESFULL) >> NVMCTRL_INTFLAG_SEESFULL_Pos;
+}
+
+static inline void hri_nvmctrl_clear_INTFLAG_SEESFULL_bit(const void *const hw)
+{
+	((Nvmctrl *)hw)->INTFLAG.reg = NVMCTRL_INTFLAG_SEESFULL;
+}
+
+static inline bool hri_nvmctrl_get_INTFLAG_SEESOVF_bit(const void *const hw)
+{
+	return (((Nvmctrl *)hw)->INTFLAG.reg & NVMCTRL_INTFLAG_SEESOVF) >> NVMCTRL_INTFLAG_SEESOVF_Pos;
+}
+
+static inline void hri_nvmctrl_clear_INTFLAG_SEESOVF_bit(const void *const hw)
+{
+	((Nvmctrl *)hw)->INTFLAG.reg = NVMCTRL_INTFLAG_SEESOVF;
+}
+
+static inline bool hri_nvmctrl_get_INTFLAG_SEEWRC_bit(const void *const hw)
+{
+	return (((Nvmctrl *)hw)->INTFLAG.reg & NVMCTRL_INTFLAG_SEEWRC) >> NVMCTRL_INTFLAG_SEEWRC_Pos;
+}
+
+static inline void hri_nvmctrl_clear_INTFLAG_SEEWRC_bit(const void *const hw)
+{
+	((Nvmctrl *)hw)->INTFLAG.reg = NVMCTRL_INTFLAG_SEEWRC;
+}
+
+static inline bool hri_nvmctrl_get_interrupt_DONE_bit(const void *const hw)
+{
+	return (((Nvmctrl *)hw)->INTFLAG.reg & NVMCTRL_INTFLAG_DONE) >> NVMCTRL_INTFLAG_DONE_Pos;
+}
+
+static inline void hri_nvmctrl_clear_interrupt_DONE_bit(const void *const hw)
+{
+	((Nvmctrl *)hw)->INTFLAG.reg = NVMCTRL_INTFLAG_DONE;
+}
+
+static inline bool hri_nvmctrl_get_interrupt_ADDRE_bit(const void *const hw)
+{
+	return (((Nvmctrl *)hw)->INTFLAG.reg & NVMCTRL_INTFLAG_ADDRE) >> NVMCTRL_INTFLAG_ADDRE_Pos;
+}
+
+static inline void hri_nvmctrl_clear_interrupt_ADDRE_bit(const void *const hw)
+{
+	((Nvmctrl *)hw)->INTFLAG.reg = NVMCTRL_INTFLAG_ADDRE;
+}
+
+static inline bool hri_nvmctrl_get_interrupt_PROGE_bit(const void *const hw)
+{
+	return (((Nvmctrl *)hw)->INTFLAG.reg & NVMCTRL_INTFLAG_PROGE) >> NVMCTRL_INTFLAG_PROGE_Pos;
+}
+
+static inline void hri_nvmctrl_clear_interrupt_PROGE_bit(const void *const hw)
+{
+	((Nvmctrl *)hw)->INTFLAG.reg = NVMCTRL_INTFLAG_PROGE;
+}
+
+static inline bool hri_nvmctrl_get_interrupt_LOCKE_bit(const void *const hw)
+{
+	return (((Nvmctrl *)hw)->INTFLAG.reg & NVMCTRL_INTFLAG_LOCKE) >> NVMCTRL_INTFLAG_LOCKE_Pos;
+}
+
+static inline void hri_nvmctrl_clear_interrupt_LOCKE_bit(const void *const hw)
+{
+	((Nvmctrl *)hw)->INTFLAG.reg = NVMCTRL_INTFLAG_LOCKE;
+}
+
+static inline bool hri_nvmctrl_get_interrupt_ECCSE_bit(const void *const hw)
+{
+	return (((Nvmctrl *)hw)->INTFLAG.reg & NVMCTRL_INTFLAG_ECCSE) >> NVMCTRL_INTFLAG_ECCSE_Pos;
+}
+
+static inline void hri_nvmctrl_clear_interrupt_ECCSE_bit(const void *const hw)
+{
+	((Nvmctrl *)hw)->INTFLAG.reg = NVMCTRL_INTFLAG_ECCSE;
+}
+
+static inline bool hri_nvmctrl_get_interrupt_ECCDE_bit(const void *const hw)
+{
+	return (((Nvmctrl *)hw)->INTFLAG.reg & NVMCTRL_INTFLAG_ECCDE) >> NVMCTRL_INTFLAG_ECCDE_Pos;
+}
+
+static inline void hri_nvmctrl_clear_interrupt_ECCDE_bit(const void *const hw)
+{
+	((Nvmctrl *)hw)->INTFLAG.reg = NVMCTRL_INTFLAG_ECCDE;
+}
+
+static inline bool hri_nvmctrl_get_interrupt_NVME_bit(const void *const hw)
+{
+	return (((Nvmctrl *)hw)->INTFLAG.reg & NVMCTRL_INTFLAG_NVME) >> NVMCTRL_INTFLAG_NVME_Pos;
+}
+
+static inline void hri_nvmctrl_clear_interrupt_NVME_bit(const void *const hw)
+{
+	((Nvmctrl *)hw)->INTFLAG.reg = NVMCTRL_INTFLAG_NVME;
+}
+
+static inline bool hri_nvmctrl_get_interrupt_SUSP_bit(const void *const hw)
+{
+	return (((Nvmctrl *)hw)->INTFLAG.reg & NVMCTRL_INTFLAG_SUSP) >> NVMCTRL_INTFLAG_SUSP_Pos;
+}
+
+static inline void hri_nvmctrl_clear_interrupt_SUSP_bit(const void *const hw)
+{
+	((Nvmctrl *)hw)->INTFLAG.reg = NVMCTRL_INTFLAG_SUSP;
+}
+
+static inline bool hri_nvmctrl_get_interrupt_SEESFULL_bit(const void *const hw)
+{
+	return (((Nvmctrl *)hw)->INTFLAG.reg & NVMCTRL_INTFLAG_SEESFULL) >> NVMCTRL_INTFLAG_SEESFULL_Pos;
+}
+
+static inline void hri_nvmctrl_clear_interrupt_SEESFULL_bit(const void *const hw)
+{
+	((Nvmctrl *)hw)->INTFLAG.reg = NVMCTRL_INTFLAG_SEESFULL;
+}
+
+static inline bool hri_nvmctrl_get_interrupt_SEESOVF_bit(const void *const hw)
+{
+	return (((Nvmctrl *)hw)->INTFLAG.reg & NVMCTRL_INTFLAG_SEESOVF) >> NVMCTRL_INTFLAG_SEESOVF_Pos;
+}
+
+static inline void hri_nvmctrl_clear_interrupt_SEESOVF_bit(const void *const hw)
+{
+	((Nvmctrl *)hw)->INTFLAG.reg = NVMCTRL_INTFLAG_SEESOVF;
+}
+
+static inline bool hri_nvmctrl_get_interrupt_SEEWRC_bit(const void *const hw)
+{
+	return (((Nvmctrl *)hw)->INTFLAG.reg & NVMCTRL_INTFLAG_SEEWRC) >> NVMCTRL_INTFLAG_SEEWRC_Pos;
+}
+
+static inline void hri_nvmctrl_clear_interrupt_SEEWRC_bit(const void *const hw)
+{
+	((Nvmctrl *)hw)->INTFLAG.reg = NVMCTRL_INTFLAG_SEEWRC;
+}
+
+static inline hri_nvmctrl_intflag_reg_t hri_nvmctrl_get_INTFLAG_reg(const void *const         hw,
+                                                                    hri_nvmctrl_intflag_reg_t mask)
+{
+	uint16_t tmp;
+	tmp = ((Nvmctrl *)hw)->INTFLAG.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline hri_nvmctrl_intflag_reg_t hri_nvmctrl_read_INTFLAG_reg(const void *const hw)
+{
+	return ((Nvmctrl *)hw)->INTFLAG.reg;
+}
+
+static inline void hri_nvmctrl_clear_INTFLAG_reg(const void *const hw, hri_nvmctrl_intflag_reg_t mask)
+{
+	((Nvmctrl *)hw)->INTFLAG.reg = mask;
+}
 
 static inline void hri_nvmctrl_set_INTEN_DONE_bit(const void *const hw)
 {
@@ -357,250 +597,253 @@ static inline void hri_nvmctrl_clear_INTEN_reg(const void *const hw, hri_nvmctrl
 	((Nvmctrl *)hw)->INTENCLR.reg = mask;
 }
 
-static inline bool hri_nvmctrl_get_INTFLAG_DONE_bit(const void *const hw)
+static inline bool hri_nvmctrl_get_PARAM_SEE_bit(const void *const hw)
 {
-	return (((Nvmctrl *)hw)->INTFLAG.reg & NVMCTRL_INTFLAG_DONE) >> NVMCTRL_INTFLAG_DONE_Pos;
+	return (((Nvmctrl *)hw)->PARAM.reg & NVMCTRL_PARAM_SEE) >> NVMCTRL_PARAM_SEE_Pos;
 }
 
-static inline void hri_nvmctrl_clear_INTFLAG_DONE_bit(const void *const hw)
+static inline hri_nvmctrl_param_reg_t hri_nvmctrl_get_PARAM_NVMP_bf(const void *const hw, hri_nvmctrl_param_reg_t mask)
 {
-	((Nvmctrl *)hw)->INTFLAG.reg = NVMCTRL_INTFLAG_DONE;
+	return (((Nvmctrl *)hw)->PARAM.reg & NVMCTRL_PARAM_NVMP(mask)) >> NVMCTRL_PARAM_NVMP_Pos;
 }
 
-static inline bool hri_nvmctrl_get_INTFLAG_ADDRE_bit(const void *const hw)
+static inline hri_nvmctrl_param_reg_t hri_nvmctrl_read_PARAM_NVMP_bf(const void *const hw)
 {
-	return (((Nvmctrl *)hw)->INTFLAG.reg & NVMCTRL_INTFLAG_ADDRE) >> NVMCTRL_INTFLAG_ADDRE_Pos;
+	return (((Nvmctrl *)hw)->PARAM.reg & NVMCTRL_PARAM_NVMP_Msk) >> NVMCTRL_PARAM_NVMP_Pos;
 }
 
-static inline void hri_nvmctrl_clear_INTFLAG_ADDRE_bit(const void *const hw)
+static inline hri_nvmctrl_param_reg_t hri_nvmctrl_get_PARAM_PSZ_bf(const void *const hw, hri_nvmctrl_param_reg_t mask)
 {
-	((Nvmctrl *)hw)->INTFLAG.reg = NVMCTRL_INTFLAG_ADDRE;
+	return (((Nvmctrl *)hw)->PARAM.reg & NVMCTRL_PARAM_PSZ(mask)) >> NVMCTRL_PARAM_PSZ_Pos;
 }
 
-static inline bool hri_nvmctrl_get_INTFLAG_PROGE_bit(const void *const hw)
+static inline hri_nvmctrl_param_reg_t hri_nvmctrl_read_PARAM_PSZ_bf(const void *const hw)
 {
-	return (((Nvmctrl *)hw)->INTFLAG.reg & NVMCTRL_INTFLAG_PROGE) >> NVMCTRL_INTFLAG_PROGE_Pos;
+	return (((Nvmctrl *)hw)->PARAM.reg & NVMCTRL_PARAM_PSZ_Msk) >> NVMCTRL_PARAM_PSZ_Pos;
 }
 
-static inline void hri_nvmctrl_clear_INTFLAG_PROGE_bit(const void *const hw)
+static inline hri_nvmctrl_param_reg_t hri_nvmctrl_get_PARAM_reg(const void *const hw, hri_nvmctrl_param_reg_t mask)
 {
-	((Nvmctrl *)hw)->INTFLAG.reg = NVMCTRL_INTFLAG_PROGE;
-}
-
-static inline bool hri_nvmctrl_get_INTFLAG_LOCKE_bit(const void *const hw)
-{
-	return (((Nvmctrl *)hw)->INTFLAG.reg & NVMCTRL_INTFLAG_LOCKE) >> NVMCTRL_INTFLAG_LOCKE_Pos;
-}
-
-static inline void hri_nvmctrl_clear_INTFLAG_LOCKE_bit(const void *const hw)
-{
-	((Nvmctrl *)hw)->INTFLAG.reg = NVMCTRL_INTFLAG_LOCKE;
-}
-
-static inline bool hri_nvmctrl_get_INTFLAG_ECCSE_bit(const void *const hw)
-{
-	return (((Nvmctrl *)hw)->INTFLAG.reg & NVMCTRL_INTFLAG_ECCSE) >> NVMCTRL_INTFLAG_ECCSE_Pos;
-}
-
-static inline void hri_nvmctrl_clear_INTFLAG_ECCSE_bit(const void *const hw)
-{
-	((Nvmctrl *)hw)->INTFLAG.reg = NVMCTRL_INTFLAG_ECCSE;
-}
-
-static inline bool hri_nvmctrl_get_INTFLAG_ECCDE_bit(const void *const hw)
-{
-	return (((Nvmctrl *)hw)->INTFLAG.reg & NVMCTRL_INTFLAG_ECCDE) >> NVMCTRL_INTFLAG_ECCDE_Pos;
-}
-
-static inline void hri_nvmctrl_clear_INTFLAG_ECCDE_bit(const void *const hw)
-{
-	((Nvmctrl *)hw)->INTFLAG.reg = NVMCTRL_INTFLAG_ECCDE;
-}
-
-static inline bool hri_nvmctrl_get_INTFLAG_NVME_bit(const void *const hw)
-{
-	return (((Nvmctrl *)hw)->INTFLAG.reg & NVMCTRL_INTFLAG_NVME) >> NVMCTRL_INTFLAG_NVME_Pos;
-}
-
-static inline void hri_nvmctrl_clear_INTFLAG_NVME_bit(const void *const hw)
-{
-	((Nvmctrl *)hw)->INTFLAG.reg = NVMCTRL_INTFLAG_NVME;
-}
-
-static inline bool hri_nvmctrl_get_INTFLAG_SUSP_bit(const void *const hw)
-{
-	return (((Nvmctrl *)hw)->INTFLAG.reg & NVMCTRL_INTFLAG_SUSP) >> NVMCTRL_INTFLAG_SUSP_Pos;
-}
-
-static inline void hri_nvmctrl_clear_INTFLAG_SUSP_bit(const void *const hw)
-{
-	((Nvmctrl *)hw)->INTFLAG.reg = NVMCTRL_INTFLAG_SUSP;
-}
-
-static inline bool hri_nvmctrl_get_INTFLAG_SEESFULL_bit(const void *const hw)
-{
-	return (((Nvmctrl *)hw)->INTFLAG.reg & NVMCTRL_INTFLAG_SEESFULL) >> NVMCTRL_INTFLAG_SEESFULL_Pos;
-}
-
-static inline void hri_nvmctrl_clear_INTFLAG_SEESFULL_bit(const void *const hw)
-{
-	((Nvmctrl *)hw)->INTFLAG.reg = NVMCTRL_INTFLAG_SEESFULL;
-}
-
-static inline bool hri_nvmctrl_get_INTFLAG_SEESOVF_bit(const void *const hw)
-{
-	return (((Nvmctrl *)hw)->INTFLAG.reg & NVMCTRL_INTFLAG_SEESOVF) >> NVMCTRL_INTFLAG_SEESOVF_Pos;
-}
-
-static inline void hri_nvmctrl_clear_INTFLAG_SEESOVF_bit(const void *const hw)
-{
-	((Nvmctrl *)hw)->INTFLAG.reg = NVMCTRL_INTFLAG_SEESOVF;
-}
-
-static inline bool hri_nvmctrl_get_INTFLAG_SEEWRC_bit(const void *const hw)
-{
-	return (((Nvmctrl *)hw)->INTFLAG.reg & NVMCTRL_INTFLAG_SEEWRC) >> NVMCTRL_INTFLAG_SEEWRC_Pos;
-}
-
-static inline void hri_nvmctrl_clear_INTFLAG_SEEWRC_bit(const void *const hw)
-{
-	((Nvmctrl *)hw)->INTFLAG.reg = NVMCTRL_INTFLAG_SEEWRC;
-}
-
-static inline bool hri_nvmctrl_get_interrupt_DONE_bit(const void *const hw)
-{
-	return (((Nvmctrl *)hw)->INTFLAG.reg & NVMCTRL_INTFLAG_DONE) >> NVMCTRL_INTFLAG_DONE_Pos;
-}
-
-static inline void hri_nvmctrl_clear_interrupt_DONE_bit(const void *const hw)
-{
-	((Nvmctrl *)hw)->INTFLAG.reg = NVMCTRL_INTFLAG_DONE;
-}
-
-static inline bool hri_nvmctrl_get_interrupt_ADDRE_bit(const void *const hw)
-{
-	return (((Nvmctrl *)hw)->INTFLAG.reg & NVMCTRL_INTFLAG_ADDRE) >> NVMCTRL_INTFLAG_ADDRE_Pos;
-}
-
-static inline void hri_nvmctrl_clear_interrupt_ADDRE_bit(const void *const hw)
-{
-	((Nvmctrl *)hw)->INTFLAG.reg = NVMCTRL_INTFLAG_ADDRE;
-}
-
-static inline bool hri_nvmctrl_get_interrupt_PROGE_bit(const void *const hw)
-{
-	return (((Nvmctrl *)hw)->INTFLAG.reg & NVMCTRL_INTFLAG_PROGE) >> NVMCTRL_INTFLAG_PROGE_Pos;
-}
-
-static inline void hri_nvmctrl_clear_interrupt_PROGE_bit(const void *const hw)
-{
-	((Nvmctrl *)hw)->INTFLAG.reg = NVMCTRL_INTFLAG_PROGE;
-}
-
-static inline bool hri_nvmctrl_get_interrupt_LOCKE_bit(const void *const hw)
-{
-	return (((Nvmctrl *)hw)->INTFLAG.reg & NVMCTRL_INTFLAG_LOCKE) >> NVMCTRL_INTFLAG_LOCKE_Pos;
-}
-
-static inline void hri_nvmctrl_clear_interrupt_LOCKE_bit(const void *const hw)
-{
-	((Nvmctrl *)hw)->INTFLAG.reg = NVMCTRL_INTFLAG_LOCKE;
-}
-
-static inline bool hri_nvmctrl_get_interrupt_ECCSE_bit(const void *const hw)
-{
-	return (((Nvmctrl *)hw)->INTFLAG.reg & NVMCTRL_INTFLAG_ECCSE) >> NVMCTRL_INTFLAG_ECCSE_Pos;
-}
-
-static inline void hri_nvmctrl_clear_interrupt_ECCSE_bit(const void *const hw)
-{
-	((Nvmctrl *)hw)->INTFLAG.reg = NVMCTRL_INTFLAG_ECCSE;
-}
-
-static inline bool hri_nvmctrl_get_interrupt_ECCDE_bit(const void *const hw)
-{
-	return (((Nvmctrl *)hw)->INTFLAG.reg & NVMCTRL_INTFLAG_ECCDE) >> NVMCTRL_INTFLAG_ECCDE_Pos;
-}
-
-static inline void hri_nvmctrl_clear_interrupt_ECCDE_bit(const void *const hw)
-{
-	((Nvmctrl *)hw)->INTFLAG.reg = NVMCTRL_INTFLAG_ECCDE;
-}
-
-static inline bool hri_nvmctrl_get_interrupt_NVME_bit(const void *const hw)
-{
-	return (((Nvmctrl *)hw)->INTFLAG.reg & NVMCTRL_INTFLAG_NVME) >> NVMCTRL_INTFLAG_NVME_Pos;
-}
-
-static inline void hri_nvmctrl_clear_interrupt_NVME_bit(const void *const hw)
-{
-	((Nvmctrl *)hw)->INTFLAG.reg = NVMCTRL_INTFLAG_NVME;
-}
-
-static inline bool hri_nvmctrl_get_interrupt_SUSP_bit(const void *const hw)
-{
-	return (((Nvmctrl *)hw)->INTFLAG.reg & NVMCTRL_INTFLAG_SUSP) >> NVMCTRL_INTFLAG_SUSP_Pos;
-}
-
-static inline void hri_nvmctrl_clear_interrupt_SUSP_bit(const void *const hw)
-{
-	((Nvmctrl *)hw)->INTFLAG.reg = NVMCTRL_INTFLAG_SUSP;
-}
-
-static inline bool hri_nvmctrl_get_interrupt_SEESFULL_bit(const void *const hw)
-{
-	return (((Nvmctrl *)hw)->INTFLAG.reg & NVMCTRL_INTFLAG_SEESFULL) >> NVMCTRL_INTFLAG_SEESFULL_Pos;
-}
-
-static inline void hri_nvmctrl_clear_interrupt_SEESFULL_bit(const void *const hw)
-{
-	((Nvmctrl *)hw)->INTFLAG.reg = NVMCTRL_INTFLAG_SEESFULL;
-}
-
-static inline bool hri_nvmctrl_get_interrupt_SEESOVF_bit(const void *const hw)
-{
-	return (((Nvmctrl *)hw)->INTFLAG.reg & NVMCTRL_INTFLAG_SEESOVF) >> NVMCTRL_INTFLAG_SEESOVF_Pos;
-}
-
-static inline void hri_nvmctrl_clear_interrupt_SEESOVF_bit(const void *const hw)
-{
-	((Nvmctrl *)hw)->INTFLAG.reg = NVMCTRL_INTFLAG_SEESOVF;
-}
-
-static inline bool hri_nvmctrl_get_interrupt_SEEWRC_bit(const void *const hw)
-{
-	return (((Nvmctrl *)hw)->INTFLAG.reg & NVMCTRL_INTFLAG_SEEWRC) >> NVMCTRL_INTFLAG_SEEWRC_Pos;
-}
-
-static inline void hri_nvmctrl_clear_interrupt_SEEWRC_bit(const void *const hw)
-{
-	((Nvmctrl *)hw)->INTFLAG.reg = NVMCTRL_INTFLAG_SEEWRC;
-}
-
-static inline hri_nvmctrl_intflag_reg_t hri_nvmctrl_get_INTFLAG_reg(const void *const         hw,
-                                                                    hri_nvmctrl_intflag_reg_t mask)
-{
-	uint16_t tmp;
-	tmp = ((Nvmctrl *)hw)->INTFLAG.reg;
+	uint32_t tmp;
+	tmp = ((Nvmctrl *)hw)->PARAM.reg;
 	tmp &= mask;
 	return tmp;
 }
 
-static inline hri_nvmctrl_intflag_reg_t hri_nvmctrl_read_INTFLAG_reg(const void *const hw)
+static inline hri_nvmctrl_param_reg_t hri_nvmctrl_read_PARAM_reg(const void *const hw)
 {
-	return ((Nvmctrl *)hw)->INTFLAG.reg;
+	return ((Nvmctrl *)hw)->PARAM.reg;
 }
 
-static inline void hri_nvmctrl_clear_INTFLAG_reg(const void *const hw, hri_nvmctrl_intflag_reg_t mask)
+static inline bool hri_nvmctrl_get_STATUS_READY_bit(const void *const hw)
 {
-	((Nvmctrl *)hw)->INTFLAG.reg = mask;
+	return (((Nvmctrl *)hw)->STATUS.reg & NVMCTRL_STATUS_READY) >> NVMCTRL_STATUS_READY_Pos;
 }
 
-static inline void hri_nvmctrl_write_CTRLB_reg(const void *const hw, hri_nvmctrl_ctrlb_reg_t data)
+static inline bool hri_nvmctrl_get_STATUS_PRM_bit(const void *const hw)
 {
-	NVMCTRL_CRITICAL_SECTION_ENTER();
-	((Nvmctrl *)hw)->CTRLB.reg = data;
-	NVMCTRL_CRITICAL_SECTION_LEAVE();
+	return (((Nvmctrl *)hw)->STATUS.reg & NVMCTRL_STATUS_PRM) >> NVMCTRL_STATUS_PRM_Pos;
+}
+
+static inline bool hri_nvmctrl_get_STATUS_LOAD_bit(const void *const hw)
+{
+	return (((Nvmctrl *)hw)->STATUS.reg & NVMCTRL_STATUS_LOAD) >> NVMCTRL_STATUS_LOAD_Pos;
+}
+
+static inline bool hri_nvmctrl_get_STATUS_SUSP_bit(const void *const hw)
+{
+	return (((Nvmctrl *)hw)->STATUS.reg & NVMCTRL_STATUS_SUSP) >> NVMCTRL_STATUS_SUSP_Pos;
+}
+
+static inline bool hri_nvmctrl_get_STATUS_AFIRST_bit(const void *const hw)
+{
+	return (((Nvmctrl *)hw)->STATUS.reg & NVMCTRL_STATUS_AFIRST) >> NVMCTRL_STATUS_AFIRST_Pos;
+}
+
+static inline bool hri_nvmctrl_get_STATUS_BPDIS_bit(const void *const hw)
+{
+	return (((Nvmctrl *)hw)->STATUS.reg & NVMCTRL_STATUS_BPDIS) >> NVMCTRL_STATUS_BPDIS_Pos;
+}
+
+static inline hri_nvmctrl_status_reg_t hri_nvmctrl_get_STATUS_BOOTPROT_bf(const void *const        hw,
+                                                                          hri_nvmctrl_status_reg_t mask)
+{
+	return (((Nvmctrl *)hw)->STATUS.reg & NVMCTRL_STATUS_BOOTPROT(mask)) >> NVMCTRL_STATUS_BOOTPROT_Pos;
+}
+
+static inline hri_nvmctrl_status_reg_t hri_nvmctrl_read_STATUS_BOOTPROT_bf(const void *const hw)
+{
+	return (((Nvmctrl *)hw)->STATUS.reg & NVMCTRL_STATUS_BOOTPROT_Msk) >> NVMCTRL_STATUS_BOOTPROT_Pos;
+}
+
+static inline hri_nvmctrl_status_reg_t hri_nvmctrl_get_STATUS_reg(const void *const hw, hri_nvmctrl_status_reg_t mask)
+{
+	uint16_t tmp;
+	tmp = ((Nvmctrl *)hw)->STATUS.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline hri_nvmctrl_status_reg_t hri_nvmctrl_read_STATUS_reg(const void *const hw)
+{
+	return ((Nvmctrl *)hw)->STATUS.reg;
+}
+
+static inline hri_nvmctrl_runlock_reg_t hri_nvmctrl_get_RUNLOCK_RUNLOCK_bf(const void *const         hw,
+                                                                           hri_nvmctrl_runlock_reg_t mask)
+{
+	return (((Nvmctrl *)hw)->RUNLOCK.reg & NVMCTRL_RUNLOCK_RUNLOCK(mask)) >> NVMCTRL_RUNLOCK_RUNLOCK_Pos;
+}
+
+static inline hri_nvmctrl_runlock_reg_t hri_nvmctrl_read_RUNLOCK_RUNLOCK_bf(const void *const hw)
+{
+	return (((Nvmctrl *)hw)->RUNLOCK.reg & NVMCTRL_RUNLOCK_RUNLOCK_Msk) >> NVMCTRL_RUNLOCK_RUNLOCK_Pos;
+}
+
+static inline hri_nvmctrl_runlock_reg_t hri_nvmctrl_get_RUNLOCK_reg(const void *const         hw,
+                                                                    hri_nvmctrl_runlock_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Nvmctrl *)hw)->RUNLOCK.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline hri_nvmctrl_runlock_reg_t hri_nvmctrl_read_RUNLOCK_reg(const void *const hw)
+{
+	return ((Nvmctrl *)hw)->RUNLOCK.reg;
+}
+
+static inline hri_nvmctrl_pbldata_reg_t hri_nvmctrl_get_PBLDATA_DATA_bf(const void *const hw, uint8_t index,
+                                                                        hri_nvmctrl_pbldata_reg_t mask)
+{
+	return (((Nvmctrl *)hw)->PBLDATA[index].reg & NVMCTRL_PBLDATA_DATA(mask)) >> NVMCTRL_PBLDATA_DATA_Pos;
+}
+
+static inline hri_nvmctrl_pbldata_reg_t hri_nvmctrl_read_PBLDATA_DATA_bf(const void *const hw, uint8_t index)
+{
+	return (((Nvmctrl *)hw)->PBLDATA[index].reg & NVMCTRL_PBLDATA_DATA_Msk) >> NVMCTRL_PBLDATA_DATA_Pos;
+}
+
+static inline hri_nvmctrl_pbldata_reg_t hri_nvmctrl_get_PBLDATA_reg(const void *const hw, uint8_t index,
+                                                                    hri_nvmctrl_pbldata_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Nvmctrl *)hw)->PBLDATA[index].reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline hri_nvmctrl_pbldata_reg_t hri_nvmctrl_read_PBLDATA_reg(const void *const hw, uint8_t index)
+{
+	return ((Nvmctrl *)hw)->PBLDATA[index].reg;
+}
+
+static inline hri_nvmctrl_eccerr_reg_t hri_nvmctrl_get_ECCERR_ADDR_bf(const void *const        hw,
+                                                                      hri_nvmctrl_eccerr_reg_t mask)
+{
+	return (((Nvmctrl *)hw)->ECCERR.reg & NVMCTRL_ECCERR_ADDR(mask)) >> NVMCTRL_ECCERR_ADDR_Pos;
+}
+
+static inline hri_nvmctrl_eccerr_reg_t hri_nvmctrl_read_ECCERR_ADDR_bf(const void *const hw)
+{
+	return (((Nvmctrl *)hw)->ECCERR.reg & NVMCTRL_ECCERR_ADDR_Msk) >> NVMCTRL_ECCERR_ADDR_Pos;
+}
+
+static inline hri_nvmctrl_eccerr_reg_t hri_nvmctrl_get_ECCERR_TYPEL_bf(const void *const        hw,
+                                                                       hri_nvmctrl_eccerr_reg_t mask)
+{
+	return (((Nvmctrl *)hw)->ECCERR.reg & NVMCTRL_ECCERR_TYPEL(mask)) >> NVMCTRL_ECCERR_TYPEL_Pos;
+}
+
+static inline hri_nvmctrl_eccerr_reg_t hri_nvmctrl_read_ECCERR_TYPEL_bf(const void *const hw)
+{
+	return (((Nvmctrl *)hw)->ECCERR.reg & NVMCTRL_ECCERR_TYPEL_Msk) >> NVMCTRL_ECCERR_TYPEL_Pos;
+}
+
+static inline hri_nvmctrl_eccerr_reg_t hri_nvmctrl_get_ECCERR_TYPEH_bf(const void *const        hw,
+                                                                       hri_nvmctrl_eccerr_reg_t mask)
+{
+	return (((Nvmctrl *)hw)->ECCERR.reg & NVMCTRL_ECCERR_TYPEH(mask)) >> NVMCTRL_ECCERR_TYPEH_Pos;
+}
+
+static inline hri_nvmctrl_eccerr_reg_t hri_nvmctrl_read_ECCERR_TYPEH_bf(const void *const hw)
+{
+	return (((Nvmctrl *)hw)->ECCERR.reg & NVMCTRL_ECCERR_TYPEH_Msk) >> NVMCTRL_ECCERR_TYPEH_Pos;
+}
+
+static inline hri_nvmctrl_eccerr_reg_t hri_nvmctrl_get_ECCERR_reg(const void *const hw, hri_nvmctrl_eccerr_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Nvmctrl *)hw)->ECCERR.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline hri_nvmctrl_eccerr_reg_t hri_nvmctrl_read_ECCERR_reg(const void *const hw)
+{
+	return ((Nvmctrl *)hw)->ECCERR.reg;
+}
+
+static inline bool hri_nvmctrl_get_SEESTAT_ASEES_bit(const void *const hw)
+{
+	return (((Nvmctrl *)hw)->SEESTAT.reg & NVMCTRL_SEESTAT_ASEES) >> NVMCTRL_SEESTAT_ASEES_Pos;
+}
+
+static inline bool hri_nvmctrl_get_SEESTAT_LOAD_bit(const void *const hw)
+{
+	return (((Nvmctrl *)hw)->SEESTAT.reg & NVMCTRL_SEESTAT_LOAD) >> NVMCTRL_SEESTAT_LOAD_Pos;
+}
+
+static inline bool hri_nvmctrl_get_SEESTAT_BUSY_bit(const void *const hw)
+{
+	return (((Nvmctrl *)hw)->SEESTAT.reg & NVMCTRL_SEESTAT_BUSY) >> NVMCTRL_SEESTAT_BUSY_Pos;
+}
+
+static inline bool hri_nvmctrl_get_SEESTAT_LOCK_bit(const void *const hw)
+{
+	return (((Nvmctrl *)hw)->SEESTAT.reg & NVMCTRL_SEESTAT_LOCK) >> NVMCTRL_SEESTAT_LOCK_Pos;
+}
+
+static inline bool hri_nvmctrl_get_SEESTAT_RLOCK_bit(const void *const hw)
+{
+	return (((Nvmctrl *)hw)->SEESTAT.reg & NVMCTRL_SEESTAT_RLOCK) >> NVMCTRL_SEESTAT_RLOCK_Pos;
+}
+
+static inline hri_nvmctrl_seestat_reg_t hri_nvmctrl_get_SEESTAT_SBLK_bf(const void *const         hw,
+                                                                        hri_nvmctrl_seestat_reg_t mask)
+{
+	return (((Nvmctrl *)hw)->SEESTAT.reg & NVMCTRL_SEESTAT_SBLK(mask)) >> NVMCTRL_SEESTAT_SBLK_Pos;
+}
+
+static inline hri_nvmctrl_seestat_reg_t hri_nvmctrl_read_SEESTAT_SBLK_bf(const void *const hw)
+{
+	return (((Nvmctrl *)hw)->SEESTAT.reg & NVMCTRL_SEESTAT_SBLK_Msk) >> NVMCTRL_SEESTAT_SBLK_Pos;
+}
+
+static inline hri_nvmctrl_seestat_reg_t hri_nvmctrl_get_SEESTAT_PSZ_bf(const void *const         hw,
+                                                                       hri_nvmctrl_seestat_reg_t mask)
+{
+	return (((Nvmctrl *)hw)->SEESTAT.reg & NVMCTRL_SEESTAT_PSZ(mask)) >> NVMCTRL_SEESTAT_PSZ_Pos;
+}
+
+static inline hri_nvmctrl_seestat_reg_t hri_nvmctrl_read_SEESTAT_PSZ_bf(const void *const hw)
+{
+	return (((Nvmctrl *)hw)->SEESTAT.reg & NVMCTRL_SEESTAT_PSZ_Msk) >> NVMCTRL_SEESTAT_PSZ_Pos;
+}
+
+static inline hri_nvmctrl_seestat_reg_t hri_nvmctrl_get_SEESTAT_reg(const void *const         hw,
+                                                                    hri_nvmctrl_seestat_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Nvmctrl *)hw)->SEESTAT.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline hri_nvmctrl_seestat_reg_t hri_nvmctrl_read_SEESTAT_reg(const void *const hw)
+{
+	return ((Nvmctrl *)hw)->SEESTAT.reg;
 }
 
 static inline void hri_nvmctrl_set_CTRLA_AUTOWS_bit(const void *const hw)
@@ -1360,253 +1603,11 @@ static inline hri_nvmctrl_seecfg_reg_t hri_nvmctrl_read_SEECFG_reg(const void *c
 	return ((Nvmctrl *)hw)->SEECFG.reg;
 }
 
-static inline bool hri_nvmctrl_get_PARAM_SEE_bit(const void *const hw)
+static inline void hri_nvmctrl_write_CTRLB_reg(const void *const hw, hri_nvmctrl_ctrlb_reg_t data)
 {
-	return (((Nvmctrl *)hw)->PARAM.reg & NVMCTRL_PARAM_SEE) >> NVMCTRL_PARAM_SEE_Pos;
-}
-
-static inline hri_nvmctrl_param_reg_t hri_nvmctrl_get_PARAM_NVMP_bf(const void *const hw, hri_nvmctrl_param_reg_t mask)
-{
-	return (((Nvmctrl *)hw)->PARAM.reg & NVMCTRL_PARAM_NVMP(mask)) >> NVMCTRL_PARAM_NVMP_Pos;
-}
-
-static inline hri_nvmctrl_param_reg_t hri_nvmctrl_read_PARAM_NVMP_bf(const void *const hw)
-{
-	return (((Nvmctrl *)hw)->PARAM.reg & NVMCTRL_PARAM_NVMP_Msk) >> NVMCTRL_PARAM_NVMP_Pos;
-}
-
-static inline hri_nvmctrl_param_reg_t hri_nvmctrl_get_PARAM_PSZ_bf(const void *const hw, hri_nvmctrl_param_reg_t mask)
-{
-	return (((Nvmctrl *)hw)->PARAM.reg & NVMCTRL_PARAM_PSZ(mask)) >> NVMCTRL_PARAM_PSZ_Pos;
-}
-
-static inline hri_nvmctrl_param_reg_t hri_nvmctrl_read_PARAM_PSZ_bf(const void *const hw)
-{
-	return (((Nvmctrl *)hw)->PARAM.reg & NVMCTRL_PARAM_PSZ_Msk) >> NVMCTRL_PARAM_PSZ_Pos;
-}
-
-static inline hri_nvmctrl_param_reg_t hri_nvmctrl_get_PARAM_reg(const void *const hw, hri_nvmctrl_param_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Nvmctrl *)hw)->PARAM.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline hri_nvmctrl_param_reg_t hri_nvmctrl_read_PARAM_reg(const void *const hw)
-{
-	return ((Nvmctrl *)hw)->PARAM.reg;
-}
-
-static inline bool hri_nvmctrl_get_STATUS_READY_bit(const void *const hw)
-{
-	return (((Nvmctrl *)hw)->STATUS.reg & NVMCTRL_STATUS_READY) >> NVMCTRL_STATUS_READY_Pos;
-}
-
-static inline bool hri_nvmctrl_get_STATUS_PRM_bit(const void *const hw)
-{
-	return (((Nvmctrl *)hw)->STATUS.reg & NVMCTRL_STATUS_PRM) >> NVMCTRL_STATUS_PRM_Pos;
-}
-
-static inline bool hri_nvmctrl_get_STATUS_LOAD_bit(const void *const hw)
-{
-	return (((Nvmctrl *)hw)->STATUS.reg & NVMCTRL_STATUS_LOAD) >> NVMCTRL_STATUS_LOAD_Pos;
-}
-
-static inline bool hri_nvmctrl_get_STATUS_SUSP_bit(const void *const hw)
-{
-	return (((Nvmctrl *)hw)->STATUS.reg & NVMCTRL_STATUS_SUSP) >> NVMCTRL_STATUS_SUSP_Pos;
-}
-
-static inline bool hri_nvmctrl_get_STATUS_AFIRST_bit(const void *const hw)
-{
-	return (((Nvmctrl *)hw)->STATUS.reg & NVMCTRL_STATUS_AFIRST) >> NVMCTRL_STATUS_AFIRST_Pos;
-}
-
-static inline bool hri_nvmctrl_get_STATUS_BPDIS_bit(const void *const hw)
-{
-	return (((Nvmctrl *)hw)->STATUS.reg & NVMCTRL_STATUS_BPDIS) >> NVMCTRL_STATUS_BPDIS_Pos;
-}
-
-static inline hri_nvmctrl_status_reg_t hri_nvmctrl_get_STATUS_BOOTPROT_bf(const void *const        hw,
-                                                                          hri_nvmctrl_status_reg_t mask)
-{
-	return (((Nvmctrl *)hw)->STATUS.reg & NVMCTRL_STATUS_BOOTPROT(mask)) >> NVMCTRL_STATUS_BOOTPROT_Pos;
-}
-
-static inline hri_nvmctrl_status_reg_t hri_nvmctrl_read_STATUS_BOOTPROT_bf(const void *const hw)
-{
-	return (((Nvmctrl *)hw)->STATUS.reg & NVMCTRL_STATUS_BOOTPROT_Msk) >> NVMCTRL_STATUS_BOOTPROT_Pos;
-}
-
-static inline hri_nvmctrl_status_reg_t hri_nvmctrl_get_STATUS_reg(const void *const hw, hri_nvmctrl_status_reg_t mask)
-{
-	uint16_t tmp;
-	tmp = ((Nvmctrl *)hw)->STATUS.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline hri_nvmctrl_status_reg_t hri_nvmctrl_read_STATUS_reg(const void *const hw)
-{
-	return ((Nvmctrl *)hw)->STATUS.reg;
-}
-
-static inline hri_nvmctrl_runlock_reg_t hri_nvmctrl_get_RUNLOCK_RUNLOCK_bf(const void *const         hw,
-                                                                           hri_nvmctrl_runlock_reg_t mask)
-{
-	return (((Nvmctrl *)hw)->RUNLOCK.reg & NVMCTRL_RUNLOCK_RUNLOCK(mask)) >> NVMCTRL_RUNLOCK_RUNLOCK_Pos;
-}
-
-static inline hri_nvmctrl_runlock_reg_t hri_nvmctrl_read_RUNLOCK_RUNLOCK_bf(const void *const hw)
-{
-	return (((Nvmctrl *)hw)->RUNLOCK.reg & NVMCTRL_RUNLOCK_RUNLOCK_Msk) >> NVMCTRL_RUNLOCK_RUNLOCK_Pos;
-}
-
-static inline hri_nvmctrl_runlock_reg_t hri_nvmctrl_get_RUNLOCK_reg(const void *const         hw,
-                                                                    hri_nvmctrl_runlock_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Nvmctrl *)hw)->RUNLOCK.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline hri_nvmctrl_runlock_reg_t hri_nvmctrl_read_RUNLOCK_reg(const void *const hw)
-{
-	return ((Nvmctrl *)hw)->RUNLOCK.reg;
-}
-
-static inline hri_nvmctrl_pbldata_reg_t hri_nvmctrl_get_PBLDATA_DATA_bf(const void *const hw, uint8_t index,
-                                                                        hri_nvmctrl_pbldata_reg_t mask)
-{
-	return (((Nvmctrl *)hw)->PBLDATA[index].reg & NVMCTRL_PBLDATA_DATA(mask)) >> NVMCTRL_PBLDATA_DATA_Pos;
-}
-
-static inline hri_nvmctrl_pbldata_reg_t hri_nvmctrl_read_PBLDATA_DATA_bf(const void *const hw, uint8_t index)
-{
-	return (((Nvmctrl *)hw)->PBLDATA[index].reg & NVMCTRL_PBLDATA_DATA_Msk) >> NVMCTRL_PBLDATA_DATA_Pos;
-}
-
-static inline hri_nvmctrl_pbldata_reg_t hri_nvmctrl_get_PBLDATA_reg(const void *const hw, uint8_t index,
-                                                                    hri_nvmctrl_pbldata_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Nvmctrl *)hw)->PBLDATA[index].reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline hri_nvmctrl_pbldata_reg_t hri_nvmctrl_read_PBLDATA_reg(const void *const hw, uint8_t index)
-{
-	return ((Nvmctrl *)hw)->PBLDATA[index].reg;
-}
-
-static inline hri_nvmctrl_eccerr_reg_t hri_nvmctrl_get_ECCERR_ADDR_bf(const void *const        hw,
-                                                                      hri_nvmctrl_eccerr_reg_t mask)
-{
-	return (((Nvmctrl *)hw)->ECCERR.reg & NVMCTRL_ECCERR_ADDR(mask)) >> NVMCTRL_ECCERR_ADDR_Pos;
-}
-
-static inline hri_nvmctrl_eccerr_reg_t hri_nvmctrl_read_ECCERR_ADDR_bf(const void *const hw)
-{
-	return (((Nvmctrl *)hw)->ECCERR.reg & NVMCTRL_ECCERR_ADDR_Msk) >> NVMCTRL_ECCERR_ADDR_Pos;
-}
-
-static inline hri_nvmctrl_eccerr_reg_t hri_nvmctrl_get_ECCERR_TYPEL_bf(const void *const        hw,
-                                                                       hri_nvmctrl_eccerr_reg_t mask)
-{
-	return (((Nvmctrl *)hw)->ECCERR.reg & NVMCTRL_ECCERR_TYPEL(mask)) >> NVMCTRL_ECCERR_TYPEL_Pos;
-}
-
-static inline hri_nvmctrl_eccerr_reg_t hri_nvmctrl_read_ECCERR_TYPEL_bf(const void *const hw)
-{
-	return (((Nvmctrl *)hw)->ECCERR.reg & NVMCTRL_ECCERR_TYPEL_Msk) >> NVMCTRL_ECCERR_TYPEL_Pos;
-}
-
-static inline hri_nvmctrl_eccerr_reg_t hri_nvmctrl_get_ECCERR_TYPEH_bf(const void *const        hw,
-                                                                       hri_nvmctrl_eccerr_reg_t mask)
-{
-	return (((Nvmctrl *)hw)->ECCERR.reg & NVMCTRL_ECCERR_TYPEH(mask)) >> NVMCTRL_ECCERR_TYPEH_Pos;
-}
-
-static inline hri_nvmctrl_eccerr_reg_t hri_nvmctrl_read_ECCERR_TYPEH_bf(const void *const hw)
-{
-	return (((Nvmctrl *)hw)->ECCERR.reg & NVMCTRL_ECCERR_TYPEH_Msk) >> NVMCTRL_ECCERR_TYPEH_Pos;
-}
-
-static inline hri_nvmctrl_eccerr_reg_t hri_nvmctrl_get_ECCERR_reg(const void *const hw, hri_nvmctrl_eccerr_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Nvmctrl *)hw)->ECCERR.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline hri_nvmctrl_eccerr_reg_t hri_nvmctrl_read_ECCERR_reg(const void *const hw)
-{
-	return ((Nvmctrl *)hw)->ECCERR.reg;
-}
-
-static inline bool hri_nvmctrl_get_SEESTAT_ASEES_bit(const void *const hw)
-{
-	return (((Nvmctrl *)hw)->SEESTAT.reg & NVMCTRL_SEESTAT_ASEES) >> NVMCTRL_SEESTAT_ASEES_Pos;
-}
-
-static inline bool hri_nvmctrl_get_SEESTAT_LOAD_bit(const void *const hw)
-{
-	return (((Nvmctrl *)hw)->SEESTAT.reg & NVMCTRL_SEESTAT_LOAD) >> NVMCTRL_SEESTAT_LOAD_Pos;
-}
-
-static inline bool hri_nvmctrl_get_SEESTAT_BUSY_bit(const void *const hw)
-{
-	return (((Nvmctrl *)hw)->SEESTAT.reg & NVMCTRL_SEESTAT_BUSY) >> NVMCTRL_SEESTAT_BUSY_Pos;
-}
-
-static inline bool hri_nvmctrl_get_SEESTAT_LOCK_bit(const void *const hw)
-{
-	return (((Nvmctrl *)hw)->SEESTAT.reg & NVMCTRL_SEESTAT_LOCK) >> NVMCTRL_SEESTAT_LOCK_Pos;
-}
-
-static inline bool hri_nvmctrl_get_SEESTAT_RLOCK_bit(const void *const hw)
-{
-	return (((Nvmctrl *)hw)->SEESTAT.reg & NVMCTRL_SEESTAT_RLOCK) >> NVMCTRL_SEESTAT_RLOCK_Pos;
-}
-
-static inline hri_nvmctrl_seestat_reg_t hri_nvmctrl_get_SEESTAT_SBLK_bf(const void *const         hw,
-                                                                        hri_nvmctrl_seestat_reg_t mask)
-{
-	return (((Nvmctrl *)hw)->SEESTAT.reg & NVMCTRL_SEESTAT_SBLK(mask)) >> NVMCTRL_SEESTAT_SBLK_Pos;
-}
-
-static inline hri_nvmctrl_seestat_reg_t hri_nvmctrl_read_SEESTAT_SBLK_bf(const void *const hw)
-{
-	return (((Nvmctrl *)hw)->SEESTAT.reg & NVMCTRL_SEESTAT_SBLK_Msk) >> NVMCTRL_SEESTAT_SBLK_Pos;
-}
-
-static inline hri_nvmctrl_seestat_reg_t hri_nvmctrl_get_SEESTAT_PSZ_bf(const void *const         hw,
-                                                                       hri_nvmctrl_seestat_reg_t mask)
-{
-	return (((Nvmctrl *)hw)->SEESTAT.reg & NVMCTRL_SEESTAT_PSZ(mask)) >> NVMCTRL_SEESTAT_PSZ_Pos;
-}
-
-static inline hri_nvmctrl_seestat_reg_t hri_nvmctrl_read_SEESTAT_PSZ_bf(const void *const hw)
-{
-	return (((Nvmctrl *)hw)->SEESTAT.reg & NVMCTRL_SEESTAT_PSZ_Msk) >> NVMCTRL_SEESTAT_PSZ_Pos;
-}
-
-static inline hri_nvmctrl_seestat_reg_t hri_nvmctrl_get_SEESTAT_reg(const void *const         hw,
-                                                                    hri_nvmctrl_seestat_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Nvmctrl *)hw)->SEESTAT.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline hri_nvmctrl_seestat_reg_t hri_nvmctrl_read_SEESTAT_reg(const void *const hw)
-{
-	return ((Nvmctrl *)hw)->SEESTAT.reg;
+	NVMCTRL_CRITICAL_SECTION_ENTER();
+	((Nvmctrl *)hw)->CTRLB.reg = data;
+	NVMCTRL_CRITICAL_SECTION_LEAVE();
 }
 
 #ifdef __cplusplus

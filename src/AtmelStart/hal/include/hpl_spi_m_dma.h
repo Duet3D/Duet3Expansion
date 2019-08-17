@@ -54,6 +54,10 @@ extern "C" {
 #define _spi_m_dma_dev_cb_type _spi_dma_dev_cb_type
 
 /**
+ * \name HPL functions
+ */
+//@{
+/**
  *  \brief Initialize SPI for access with interrupts
  *  It will load default hardware configuration and software struct.
  *  \param[in, out] dev Pointer to the SPI device instance.
@@ -168,6 +172,7 @@ void _spi_m_dma_register_callback(struct _spi_m_dma_dev *dev, enum _spi_dma_dev_
  */
 int32_t _spi_m_dma_transfer(struct _spi_m_dma_dev *dev, uint8_t const *txbuf, uint8_t *const rxbuf,
                             const uint16_t length);
+//@}
 
 #ifdef __cplusplus
 }

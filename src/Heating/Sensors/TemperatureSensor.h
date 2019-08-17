@@ -16,8 +16,11 @@ public:
 	// Virtual destructor
 	virtual ~TemperatureSensor();
 
-	// Try to get a temperature reading
-	TemperatureError GetTemperature(float& t);
+	// Mark this sensor as invalid and to be deleted
+	void FlagForDeletion() { sensorNumber = -1; }
+
+	// Get the latest temperature reading
+	TemperatureError GetLatestTemperature(float& t);
 
 	// Configure the sensor from M305 parameters.
 	// If we find any parameters, process them and return true. If an error occurs while processing them, return error and write an error message to 'reply.
@@ -28,10 +31,10 @@ public:
 	const char *GetSensorType() const { return sensorType; }
 
 	// Return the sensor number
-	unsigned int GetSensorNumber() const { return sensorNumber; }
+	int GetSensorNumber() const { return sensorNumber; }
 
 	// Return the code for the most recent error
-	TemperatureError GetLastError() const { return lastError; }
+	TemperatureError GetLastError() const { return lastRealError; }
 
 	// Copy the basic details to the reply buffer
 	void CopyBasicDetails(const StringRef& reply) const;
@@ -43,17 +46,24 @@ public:
 	// Factory method
 	static TemperatureSensor *Create(unsigned int sensorNum, const char *typeName, const StringRef& reply);
 
-protected:
 	// Try to get a temperature reading
-	virtual TemperatureError TryGetTemperature(float& t) = 0;
+	virtual void Poll() = 0;
+
+protected:
+	void SetResult(float t, TemperatureError rslt);
+	void SetResult(TemperatureError rslt);
 
 	static TemperatureError GetPT100Temperature(float& t, uint16_t ohmsx100);		// shared function used by two derived classes
 
 private:
+	static constexpr uint32_t TemperatureReadingTimeout = 2000;			// any reading older than this number of milliseconds is considered unreliable
+
 	TemperatureSensor *next;
-	unsigned int sensorNumber;
+	int sensorNumber;					// the number of this sensor. A value of -1 means it is flagged for deletion.
 	const char * const sensorType;
-	TemperatureError lastError;
+	float lastTemperature;
+	uint32_t whenLastRead;
+	TemperatureError lastResult, lastRealError;
 };
 
 #endif // TEMPERATURESENSOR_H

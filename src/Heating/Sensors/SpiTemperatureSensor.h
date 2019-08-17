@@ -24,9 +24,6 @@ protected:
 		pre(nbytes <= 8);
 
 	SharedSpiDevice device;
-	uint32_t lastReadingTime;
-	float lastTemperature;
-	TemperatureError lastResult;
 };
 
 #endif

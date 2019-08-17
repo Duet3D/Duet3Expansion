@@ -621,7 +621,7 @@ DriverMode TmcDriverState::GetDriverMode() const
 // Set the motor current
 void TmcDriverState::SetCurrent(float current)
 {
-	motorCurrent = static_cast<uint32_t>(constrain<float>(current, MinimumMotorCurrent, MaximumMotorCurrent));
+	motorCurrent = static_cast<uint32_t>(constrain<float>(current, MinimumMotorCurrent, MaxTmc5160Current));
 	UpdateCurrent();
 }
 

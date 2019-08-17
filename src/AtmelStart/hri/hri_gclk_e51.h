@@ -28,6 +28,7 @@
  * THAT YOU HAVE PAID DIRECTLY TO MICROCHIP FOR THIS SOFTWARE.
  *
  * \asf_license_stop
+ *
  */
 
 #ifdef _SAME51_GCLK_COMPONENT_
@@ -65,11 +66,89 @@ static inline bool hri_gclk_is_syncing(const void *const hw, hri_gclk_syncbusy_r
 	return ((Gclk *)hw)->SYNCBUSY.reg & reg;
 }
 
+static inline bool hri_gclk_get_SYNCBUSY_SWRST_bit(const void *const hw)
+{
+	return (((Gclk *)hw)->SYNCBUSY.reg & GCLK_SYNCBUSY_SWRST) >> GCLK_SYNCBUSY_SWRST_Pos;
+}
+
+static inline bool hri_gclk_get_SYNCBUSY_GENCTRL0_bit(const void *const hw)
+{
+	return (((Gclk *)hw)->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL0) >> GCLK_SYNCBUSY_GENCTRL0_Pos;
+}
+
+static inline bool hri_gclk_get_SYNCBUSY_GENCTRL1_bit(const void *const hw)
+{
+	return (((Gclk *)hw)->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL1) >> GCLK_SYNCBUSY_GENCTRL1_Pos;
+}
+
+static inline bool hri_gclk_get_SYNCBUSY_GENCTRL2_bit(const void *const hw)
+{
+	return (((Gclk *)hw)->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL2) >> GCLK_SYNCBUSY_GENCTRL2_Pos;
+}
+
+static inline bool hri_gclk_get_SYNCBUSY_GENCTRL3_bit(const void *const hw)
+{
+	return (((Gclk *)hw)->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL3) >> GCLK_SYNCBUSY_GENCTRL3_Pos;
+}
+
+static inline bool hri_gclk_get_SYNCBUSY_GENCTRL4_bit(const void *const hw)
+{
+	return (((Gclk *)hw)->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL4) >> GCLK_SYNCBUSY_GENCTRL4_Pos;
+}
+
+static inline bool hri_gclk_get_SYNCBUSY_GENCTRL5_bit(const void *const hw)
+{
+	return (((Gclk *)hw)->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL5) >> GCLK_SYNCBUSY_GENCTRL5_Pos;
+}
+
+static inline bool hri_gclk_get_SYNCBUSY_GENCTRL6_bit(const void *const hw)
+{
+	return (((Gclk *)hw)->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL6) >> GCLK_SYNCBUSY_GENCTRL6_Pos;
+}
+
+static inline bool hri_gclk_get_SYNCBUSY_GENCTRL7_bit(const void *const hw)
+{
+	return (((Gclk *)hw)->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL7) >> GCLK_SYNCBUSY_GENCTRL7_Pos;
+}
+
+static inline bool hri_gclk_get_SYNCBUSY_GENCTRL8_bit(const void *const hw)
+{
+	return (((Gclk *)hw)->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL8) >> GCLK_SYNCBUSY_GENCTRL8_Pos;
+}
+
+static inline bool hri_gclk_get_SYNCBUSY_GENCTRL9_bit(const void *const hw)
+{
+	return (((Gclk *)hw)->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL9) >> GCLK_SYNCBUSY_GENCTRL9_Pos;
+}
+
+static inline bool hri_gclk_get_SYNCBUSY_GENCTRL10_bit(const void *const hw)
+{
+	return (((Gclk *)hw)->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL10) >> GCLK_SYNCBUSY_GENCTRL10_Pos;
+}
+
+static inline bool hri_gclk_get_SYNCBUSY_GENCTRL11_bit(const void *const hw)
+{
+	return (((Gclk *)hw)->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL11) >> GCLK_SYNCBUSY_GENCTRL11_Pos;
+}
+
+static inline hri_gclk_syncbusy_reg_t hri_gclk_get_SYNCBUSY_reg(const void *const hw, hri_gclk_syncbusy_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Gclk *)hw)->SYNCBUSY.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline hri_gclk_syncbusy_reg_t hri_gclk_read_SYNCBUSY_reg(const void *const hw)
+{
+	return ((Gclk *)hw)->SYNCBUSY.reg;
+}
+
 static inline void hri_gclk_set_CTRLA_SWRST_bit(const void *const hw)
 {
 	GCLK_CRITICAL_SECTION_ENTER();
-	hri_gclk_wait_for_sync(hw, GCLK_SYNCBUSY_SWRST);
 	((Gclk *)hw)->CTRLA.reg |= GCLK_CTRLA_SWRST;
+	hri_gclk_wait_for_sync(hw, GCLK_SYNCBUSY_SWRST);
 	GCLK_CRITICAL_SECTION_LEAVE();
 }
 
@@ -86,12 +165,14 @@ static inline void hri_gclk_set_CTRLA_reg(const void *const hw, hri_gclk_ctrla_r
 {
 	GCLK_CRITICAL_SECTION_ENTER();
 	((Gclk *)hw)->CTRLA.reg |= mask;
+	hri_gclk_wait_for_sync(hw, GCLK_SYNCBUSY_SWRST);
 	GCLK_CRITICAL_SECTION_LEAVE();
 }
 
 static inline hri_gclk_ctrla_reg_t hri_gclk_get_CTRLA_reg(const void *const hw, hri_gclk_ctrla_reg_t mask)
 {
 	uint8_t tmp;
+	hri_gclk_wait_for_sync(hw, GCLK_SYNCBUSY_SWRST);
 	tmp = ((Gclk *)hw)->CTRLA.reg;
 	tmp &= mask;
 	return tmp;
@@ -101,6 +182,7 @@ static inline void hri_gclk_write_CTRLA_reg(const void *const hw, hri_gclk_ctrla
 {
 	GCLK_CRITICAL_SECTION_ENTER();
 	((Gclk *)hw)->CTRLA.reg = data;
+	hri_gclk_wait_for_sync(hw, GCLK_SYNCBUSY_SWRST);
 	GCLK_CRITICAL_SECTION_LEAVE();
 }
 
@@ -108,6 +190,7 @@ static inline void hri_gclk_clear_CTRLA_reg(const void *const hw, hri_gclk_ctrla
 {
 	GCLK_CRITICAL_SECTION_ENTER();
 	((Gclk *)hw)->CTRLA.reg &= ~mask;
+	hri_gclk_wait_for_sync(hw, GCLK_SYNCBUSY_SWRST);
 	GCLK_CRITICAL_SECTION_LEAVE();
 }
 
@@ -115,11 +198,13 @@ static inline void hri_gclk_toggle_CTRLA_reg(const void *const hw, hri_gclk_ctrl
 {
 	GCLK_CRITICAL_SECTION_ENTER();
 	((Gclk *)hw)->CTRLA.reg ^= mask;
+	hri_gclk_wait_for_sync(hw, GCLK_SYNCBUSY_SWRST);
 	GCLK_CRITICAL_SECTION_LEAVE();
 }
 
 static inline hri_gclk_ctrla_reg_t hri_gclk_read_CTRLA_reg(const void *const hw)
 {
+	hri_gclk_wait_for_sync(hw, GCLK_SYNCBUSY_SWRST);
 	return ((Gclk *)hw)->CTRLA.reg;
 }
 
@@ -127,6 +212,7 @@ static inline void hri_gclk_set_GENCTRL_GENEN_bit(const void *const hw, uint8_t 
 {
 	GCLK_CRITICAL_SECTION_ENTER();
 	((Gclk *)hw)->GENCTRL[index].reg |= GCLK_GENCTRL_GENEN;
+	hri_gclk_wait_for_sync(hw, GCLK_SYNCBUSY_MASK);
 	GCLK_CRITICAL_SECTION_LEAVE();
 }
 
@@ -146,6 +232,7 @@ static inline void hri_gclk_write_GENCTRL_GENEN_bit(const void *const hw, uint8_
 	tmp &= ~GCLK_GENCTRL_GENEN;
 	tmp |= value << GCLK_GENCTRL_GENEN_Pos;
 	((Gclk *)hw)->GENCTRL[index].reg = tmp;
+	hri_gclk_wait_for_sync(hw, GCLK_SYNCBUSY_MASK);
 	GCLK_CRITICAL_SECTION_LEAVE();
 }
 
@@ -153,6 +240,7 @@ static inline void hri_gclk_clear_GENCTRL_GENEN_bit(const void *const hw, uint8_
 {
 	GCLK_CRITICAL_SECTION_ENTER();
 	((Gclk *)hw)->GENCTRL[index].reg &= ~GCLK_GENCTRL_GENEN;
+	hri_gclk_wait_for_sync(hw, GCLK_SYNCBUSY_MASK);
 	GCLK_CRITICAL_SECTION_LEAVE();
 }
 
@@ -160,6 +248,7 @@ static inline void hri_gclk_toggle_GENCTRL_GENEN_bit(const void *const hw, uint8
 {
 	GCLK_CRITICAL_SECTION_ENTER();
 	((Gclk *)hw)->GENCTRL[index].reg ^= GCLK_GENCTRL_GENEN;
+	hri_gclk_wait_for_sync(hw, GCLK_SYNCBUSY_MASK);
 	GCLK_CRITICAL_SECTION_LEAVE();
 }
 
@@ -167,6 +256,7 @@ static inline void hri_gclk_set_GENCTRL_IDC_bit(const void *const hw, uint8_t in
 {
 	GCLK_CRITICAL_SECTION_ENTER();
 	((Gclk *)hw)->GENCTRL[index].reg |= GCLK_GENCTRL_IDC;
+	hri_gclk_wait_for_sync(hw, GCLK_SYNCBUSY_MASK);
 	GCLK_CRITICAL_SECTION_LEAVE();
 }
 
@@ -186,6 +276,7 @@ static inline void hri_gclk_write_GENCTRL_IDC_bit(const void *const hw, uint8_t 
 	tmp &= ~GCLK_GENCTRL_IDC;
 	tmp |= value << GCLK_GENCTRL_IDC_Pos;
 	((Gclk *)hw)->GENCTRL[index].reg = tmp;
+	hri_gclk_wait_for_sync(hw, GCLK_SYNCBUSY_MASK);
 	GCLK_CRITICAL_SECTION_LEAVE();
 }
 
@@ -193,6 +284,7 @@ static inline void hri_gclk_clear_GENCTRL_IDC_bit(const void *const hw, uint8_t 
 {
 	GCLK_CRITICAL_SECTION_ENTER();
 	((Gclk *)hw)->GENCTRL[index].reg &= ~GCLK_GENCTRL_IDC;
+	hri_gclk_wait_for_sync(hw, GCLK_SYNCBUSY_MASK);
 	GCLK_CRITICAL_SECTION_LEAVE();
 }
 
@@ -200,6 +292,7 @@ static inline void hri_gclk_toggle_GENCTRL_IDC_bit(const void *const hw, uint8_t
 {
 	GCLK_CRITICAL_SECTION_ENTER();
 	((Gclk *)hw)->GENCTRL[index].reg ^= GCLK_GENCTRL_IDC;
+	hri_gclk_wait_for_sync(hw, GCLK_SYNCBUSY_MASK);
 	GCLK_CRITICAL_SECTION_LEAVE();
 }
 
@@ -207,6 +300,7 @@ static inline void hri_gclk_set_GENCTRL_OOV_bit(const void *const hw, uint8_t in
 {
 	GCLK_CRITICAL_SECTION_ENTER();
 	((Gclk *)hw)->GENCTRL[index].reg |= GCLK_GENCTRL_OOV;
+	hri_gclk_wait_for_sync(hw, GCLK_SYNCBUSY_MASK);
 	GCLK_CRITICAL_SECTION_LEAVE();
 }
 
@@ -226,6 +320,7 @@ static inline void hri_gclk_write_GENCTRL_OOV_bit(const void *const hw, uint8_t 
 	tmp &= ~GCLK_GENCTRL_OOV;
 	tmp |= value << GCLK_GENCTRL_OOV_Pos;
 	((Gclk *)hw)->GENCTRL[index].reg = tmp;
+	hri_gclk_wait_for_sync(hw, GCLK_SYNCBUSY_MASK);
 	GCLK_CRITICAL_SECTION_LEAVE();
 }
 
@@ -233,6 +328,7 @@ static inline void hri_gclk_clear_GENCTRL_OOV_bit(const void *const hw, uint8_t 
 {
 	GCLK_CRITICAL_SECTION_ENTER();
 	((Gclk *)hw)->GENCTRL[index].reg &= ~GCLK_GENCTRL_OOV;
+	hri_gclk_wait_for_sync(hw, GCLK_SYNCBUSY_MASK);
 	GCLK_CRITICAL_SECTION_LEAVE();
 }
 
@@ -240,6 +336,7 @@ static inline void hri_gclk_toggle_GENCTRL_OOV_bit(const void *const hw, uint8_t
 {
 	GCLK_CRITICAL_SECTION_ENTER();
 	((Gclk *)hw)->GENCTRL[index].reg ^= GCLK_GENCTRL_OOV;
+	hri_gclk_wait_for_sync(hw, GCLK_SYNCBUSY_MASK);
 	GCLK_CRITICAL_SECTION_LEAVE();
 }
 
@@ -247,6 +344,7 @@ static inline void hri_gclk_set_GENCTRL_OE_bit(const void *const hw, uint8_t ind
 {
 	GCLK_CRITICAL_SECTION_ENTER();
 	((Gclk *)hw)->GENCTRL[index].reg |= GCLK_GENCTRL_OE;
+	hri_gclk_wait_for_sync(hw, GCLK_SYNCBUSY_MASK);
 	GCLK_CRITICAL_SECTION_LEAVE();
 }
 
@@ -266,6 +364,7 @@ static inline void hri_gclk_write_GENCTRL_OE_bit(const void *const hw, uint8_t i
 	tmp &= ~GCLK_GENCTRL_OE;
 	tmp |= value << GCLK_GENCTRL_OE_Pos;
 	((Gclk *)hw)->GENCTRL[index].reg = tmp;
+	hri_gclk_wait_for_sync(hw, GCLK_SYNCBUSY_MASK);
 	GCLK_CRITICAL_SECTION_LEAVE();
 }
 
@@ -273,6 +372,7 @@ static inline void hri_gclk_clear_GENCTRL_OE_bit(const void *const hw, uint8_t i
 {
 	GCLK_CRITICAL_SECTION_ENTER();
 	((Gclk *)hw)->GENCTRL[index].reg &= ~GCLK_GENCTRL_OE;
+	hri_gclk_wait_for_sync(hw, GCLK_SYNCBUSY_MASK);
 	GCLK_CRITICAL_SECTION_LEAVE();
 }
 
@@ -280,6 +380,7 @@ static inline void hri_gclk_toggle_GENCTRL_OE_bit(const void *const hw, uint8_t 
 {
 	GCLK_CRITICAL_SECTION_ENTER();
 	((Gclk *)hw)->GENCTRL[index].reg ^= GCLK_GENCTRL_OE;
+	hri_gclk_wait_for_sync(hw, GCLK_SYNCBUSY_MASK);
 	GCLK_CRITICAL_SECTION_LEAVE();
 }
 
@@ -287,6 +388,7 @@ static inline void hri_gclk_set_GENCTRL_DIVSEL_bit(const void *const hw, uint8_t
 {
 	GCLK_CRITICAL_SECTION_ENTER();
 	((Gclk *)hw)->GENCTRL[index].reg |= GCLK_GENCTRL_DIVSEL;
+	hri_gclk_wait_for_sync(hw, GCLK_SYNCBUSY_MASK);
 	GCLK_CRITICAL_SECTION_LEAVE();
 }
 
@@ -306,6 +408,7 @@ static inline void hri_gclk_write_GENCTRL_DIVSEL_bit(const void *const hw, uint8
 	tmp &= ~GCLK_GENCTRL_DIVSEL;
 	tmp |= value << GCLK_GENCTRL_DIVSEL_Pos;
 	((Gclk *)hw)->GENCTRL[index].reg = tmp;
+	hri_gclk_wait_for_sync(hw, GCLK_SYNCBUSY_MASK);
 	GCLK_CRITICAL_SECTION_LEAVE();
 }
 
@@ -313,6 +416,7 @@ static inline void hri_gclk_clear_GENCTRL_DIVSEL_bit(const void *const hw, uint8
 {
 	GCLK_CRITICAL_SECTION_ENTER();
 	((Gclk *)hw)->GENCTRL[index].reg &= ~GCLK_GENCTRL_DIVSEL;
+	hri_gclk_wait_for_sync(hw, GCLK_SYNCBUSY_MASK);
 	GCLK_CRITICAL_SECTION_LEAVE();
 }
 
@@ -320,6 +424,7 @@ static inline void hri_gclk_toggle_GENCTRL_DIVSEL_bit(const void *const hw, uint
 {
 	GCLK_CRITICAL_SECTION_ENTER();
 	((Gclk *)hw)->GENCTRL[index].reg ^= GCLK_GENCTRL_DIVSEL;
+	hri_gclk_wait_for_sync(hw, GCLK_SYNCBUSY_MASK);
 	GCLK_CRITICAL_SECTION_LEAVE();
 }
 
@@ -327,6 +432,7 @@ static inline void hri_gclk_set_GENCTRL_RUNSTDBY_bit(const void *const hw, uint8
 {
 	GCLK_CRITICAL_SECTION_ENTER();
 	((Gclk *)hw)->GENCTRL[index].reg |= GCLK_GENCTRL_RUNSTDBY;
+	hri_gclk_wait_for_sync(hw, GCLK_SYNCBUSY_MASK);
 	GCLK_CRITICAL_SECTION_LEAVE();
 }
 
@@ -346,6 +452,7 @@ static inline void hri_gclk_write_GENCTRL_RUNSTDBY_bit(const void *const hw, uin
 	tmp &= ~GCLK_GENCTRL_RUNSTDBY;
 	tmp |= value << GCLK_GENCTRL_RUNSTDBY_Pos;
 	((Gclk *)hw)->GENCTRL[index].reg = tmp;
+	hri_gclk_wait_for_sync(hw, GCLK_SYNCBUSY_MASK);
 	GCLK_CRITICAL_SECTION_LEAVE();
 }
 
@@ -353,6 +460,7 @@ static inline void hri_gclk_clear_GENCTRL_RUNSTDBY_bit(const void *const hw, uin
 {
 	GCLK_CRITICAL_SECTION_ENTER();
 	((Gclk *)hw)->GENCTRL[index].reg &= ~GCLK_GENCTRL_RUNSTDBY;
+	hri_gclk_wait_for_sync(hw, GCLK_SYNCBUSY_MASK);
 	GCLK_CRITICAL_SECTION_LEAVE();
 }
 
@@ -360,6 +468,7 @@ static inline void hri_gclk_toggle_GENCTRL_RUNSTDBY_bit(const void *const hw, ui
 {
 	GCLK_CRITICAL_SECTION_ENTER();
 	((Gclk *)hw)->GENCTRL[index].reg ^= GCLK_GENCTRL_RUNSTDBY;
+	hri_gclk_wait_for_sync(hw, GCLK_SYNCBUSY_MASK);
 	GCLK_CRITICAL_SECTION_LEAVE();
 }
 
@@ -367,6 +476,7 @@ static inline void hri_gclk_set_GENCTRL_SRC_bf(const void *const hw, uint8_t ind
 {
 	GCLK_CRITICAL_SECTION_ENTER();
 	((Gclk *)hw)->GENCTRL[index].reg |= GCLK_GENCTRL_SRC(mask);
+	hri_gclk_wait_for_sync(hw, GCLK_SYNCBUSY_MASK);
 	GCLK_CRITICAL_SECTION_LEAVE();
 }
 
@@ -387,6 +497,7 @@ static inline void hri_gclk_write_GENCTRL_SRC_bf(const void *const hw, uint8_t i
 	tmp &= ~GCLK_GENCTRL_SRC_Msk;
 	tmp |= GCLK_GENCTRL_SRC(data);
 	((Gclk *)hw)->GENCTRL[index].reg = tmp;
+	hri_gclk_wait_for_sync(hw, GCLK_SYNCBUSY_MASK);
 	GCLK_CRITICAL_SECTION_LEAVE();
 }
 
@@ -394,6 +505,7 @@ static inline void hri_gclk_clear_GENCTRL_SRC_bf(const void *const hw, uint8_t i
 {
 	GCLK_CRITICAL_SECTION_ENTER();
 	((Gclk *)hw)->GENCTRL[index].reg &= ~GCLK_GENCTRL_SRC(mask);
+	hri_gclk_wait_for_sync(hw, GCLK_SYNCBUSY_MASK);
 	GCLK_CRITICAL_SECTION_LEAVE();
 }
 
@@ -401,6 +513,7 @@ static inline void hri_gclk_toggle_GENCTRL_SRC_bf(const void *const hw, uint8_t 
 {
 	GCLK_CRITICAL_SECTION_ENTER();
 	((Gclk *)hw)->GENCTRL[index].reg ^= GCLK_GENCTRL_SRC(mask);
+	hri_gclk_wait_for_sync(hw, GCLK_SYNCBUSY_MASK);
 	GCLK_CRITICAL_SECTION_LEAVE();
 }
 
@@ -416,6 +529,7 @@ static inline void hri_gclk_set_GENCTRL_DIV_bf(const void *const hw, uint8_t ind
 {
 	GCLK_CRITICAL_SECTION_ENTER();
 	((Gclk *)hw)->GENCTRL[index].reg |= GCLK_GENCTRL_DIV(mask);
+	hri_gclk_wait_for_sync(hw, GCLK_SYNCBUSY_MASK);
 	GCLK_CRITICAL_SECTION_LEAVE();
 }
 
@@ -436,6 +550,7 @@ static inline void hri_gclk_write_GENCTRL_DIV_bf(const void *const hw, uint8_t i
 	tmp &= ~GCLK_GENCTRL_DIV_Msk;
 	tmp |= GCLK_GENCTRL_DIV(data);
 	((Gclk *)hw)->GENCTRL[index].reg = tmp;
+	hri_gclk_wait_for_sync(hw, GCLK_SYNCBUSY_MASK);
 	GCLK_CRITICAL_SECTION_LEAVE();
 }
 
@@ -443,6 +558,7 @@ static inline void hri_gclk_clear_GENCTRL_DIV_bf(const void *const hw, uint8_t i
 {
 	GCLK_CRITICAL_SECTION_ENTER();
 	((Gclk *)hw)->GENCTRL[index].reg &= ~GCLK_GENCTRL_DIV(mask);
+	hri_gclk_wait_for_sync(hw, GCLK_SYNCBUSY_MASK);
 	GCLK_CRITICAL_SECTION_LEAVE();
 }
 
@@ -450,6 +566,7 @@ static inline void hri_gclk_toggle_GENCTRL_DIV_bf(const void *const hw, uint8_t 
 {
 	GCLK_CRITICAL_SECTION_ENTER();
 	((Gclk *)hw)->GENCTRL[index].reg ^= GCLK_GENCTRL_DIV(mask);
+	hri_gclk_wait_for_sync(hw, GCLK_SYNCBUSY_MASK);
 	GCLK_CRITICAL_SECTION_LEAVE();
 }
 
@@ -465,6 +582,7 @@ static inline void hri_gclk_set_GENCTRL_reg(const void *const hw, uint8_t index,
 {
 	GCLK_CRITICAL_SECTION_ENTER();
 	((Gclk *)hw)->GENCTRL[index].reg |= mask;
+	hri_gclk_wait_for_sync(hw, GCLK_SYNCBUSY_MASK);
 	GCLK_CRITICAL_SECTION_LEAVE();
 }
 
@@ -472,6 +590,7 @@ static inline hri_gclk_genctrl_reg_t hri_gclk_get_GENCTRL_reg(const void *const 
                                                               hri_gclk_genctrl_reg_t mask)
 {
 	uint32_t tmp;
+	hri_gclk_wait_for_sync(hw, GCLK_SYNCBUSY_MASK);
 	tmp = ((Gclk *)hw)->GENCTRL[index].reg;
 	tmp &= mask;
 	return tmp;
@@ -481,6 +600,7 @@ static inline void hri_gclk_write_GENCTRL_reg(const void *const hw, uint8_t inde
 {
 	GCLK_CRITICAL_SECTION_ENTER();
 	((Gclk *)hw)->GENCTRL[index].reg = data;
+	hri_gclk_wait_for_sync(hw, GCLK_SYNCBUSY_MASK);
 	GCLK_CRITICAL_SECTION_LEAVE();
 }
 
@@ -488,6 +608,7 @@ static inline void hri_gclk_clear_GENCTRL_reg(const void *const hw, uint8_t inde
 {
 	GCLK_CRITICAL_SECTION_ENTER();
 	((Gclk *)hw)->GENCTRL[index].reg &= ~mask;
+	hri_gclk_wait_for_sync(hw, GCLK_SYNCBUSY_MASK);
 	GCLK_CRITICAL_SECTION_LEAVE();
 }
 
@@ -495,11 +616,13 @@ static inline void hri_gclk_toggle_GENCTRL_reg(const void *const hw, uint8_t ind
 {
 	GCLK_CRITICAL_SECTION_ENTER();
 	((Gclk *)hw)->GENCTRL[index].reg ^= mask;
+	hri_gclk_wait_for_sync(hw, GCLK_SYNCBUSY_MASK);
 	GCLK_CRITICAL_SECTION_LEAVE();
 }
 
 static inline hri_gclk_genctrl_reg_t hri_gclk_read_GENCTRL_reg(const void *const hw, uint8_t index)
 {
+	hri_gclk_wait_for_sync(hw, GCLK_SYNCBUSY_MASK);
 	return ((Gclk *)hw)->GENCTRL[index].reg;
 }
 
@@ -672,84 +795,6 @@ static inline void hri_gclk_toggle_PCHCTRL_reg(const void *const hw, uint8_t ind
 static inline hri_gclk_pchctrl_reg_t hri_gclk_read_PCHCTRL_reg(const void *const hw, uint8_t index)
 {
 	return ((Gclk *)hw)->PCHCTRL[index].reg;
-}
-
-static inline bool hri_gclk_get_SYNCBUSY_SWRST_bit(const void *const hw)
-{
-	return (((Gclk *)hw)->SYNCBUSY.reg & GCLK_SYNCBUSY_SWRST) >> GCLK_SYNCBUSY_SWRST_Pos;
-}
-
-static inline bool hri_gclk_get_SYNCBUSY_GENCTRL0_bit(const void *const hw)
-{
-	return (((Gclk *)hw)->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL0) >> GCLK_SYNCBUSY_GENCTRL0_Pos;
-}
-
-static inline bool hri_gclk_get_SYNCBUSY_GENCTRL1_bit(const void *const hw)
-{
-	return (((Gclk *)hw)->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL1) >> GCLK_SYNCBUSY_GENCTRL1_Pos;
-}
-
-static inline bool hri_gclk_get_SYNCBUSY_GENCTRL2_bit(const void *const hw)
-{
-	return (((Gclk *)hw)->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL2) >> GCLK_SYNCBUSY_GENCTRL2_Pos;
-}
-
-static inline bool hri_gclk_get_SYNCBUSY_GENCTRL3_bit(const void *const hw)
-{
-	return (((Gclk *)hw)->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL3) >> GCLK_SYNCBUSY_GENCTRL3_Pos;
-}
-
-static inline bool hri_gclk_get_SYNCBUSY_GENCTRL4_bit(const void *const hw)
-{
-	return (((Gclk *)hw)->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL4) >> GCLK_SYNCBUSY_GENCTRL4_Pos;
-}
-
-static inline bool hri_gclk_get_SYNCBUSY_GENCTRL5_bit(const void *const hw)
-{
-	return (((Gclk *)hw)->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL5) >> GCLK_SYNCBUSY_GENCTRL5_Pos;
-}
-
-static inline bool hri_gclk_get_SYNCBUSY_GENCTRL6_bit(const void *const hw)
-{
-	return (((Gclk *)hw)->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL6) >> GCLK_SYNCBUSY_GENCTRL6_Pos;
-}
-
-static inline bool hri_gclk_get_SYNCBUSY_GENCTRL7_bit(const void *const hw)
-{
-	return (((Gclk *)hw)->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL7) >> GCLK_SYNCBUSY_GENCTRL7_Pos;
-}
-
-static inline bool hri_gclk_get_SYNCBUSY_GENCTRL8_bit(const void *const hw)
-{
-	return (((Gclk *)hw)->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL8) >> GCLK_SYNCBUSY_GENCTRL8_Pos;
-}
-
-static inline bool hri_gclk_get_SYNCBUSY_GENCTRL9_bit(const void *const hw)
-{
-	return (((Gclk *)hw)->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL9) >> GCLK_SYNCBUSY_GENCTRL9_Pos;
-}
-
-static inline bool hri_gclk_get_SYNCBUSY_GENCTRL10_bit(const void *const hw)
-{
-	return (((Gclk *)hw)->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL10) >> GCLK_SYNCBUSY_GENCTRL10_Pos;
-}
-
-static inline bool hri_gclk_get_SYNCBUSY_GENCTRL11_bit(const void *const hw)
-{
-	return (((Gclk *)hw)->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL11) >> GCLK_SYNCBUSY_GENCTRL11_Pos;
-}
-
-static inline hri_gclk_syncbusy_reg_t hri_gclk_get_SYNCBUSY_reg(const void *const hw, hri_gclk_syncbusy_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Gclk *)hw)->SYNCBUSY.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline hri_gclk_syncbusy_reg_t hri_gclk_read_SYNCBUSY_reg(const void *const hw)
-{
-	return ((Gclk *)hw)->SYNCBUSY.reg;
 }
 
 #ifdef __cplusplus

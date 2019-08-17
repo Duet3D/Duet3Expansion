@@ -14,11 +14,11 @@ CpuTemperatureSensor::CpuTemperatureSensor(unsigned int sensorNum) : Temperature
 {
 }
 
-TemperatureError CpuTemperatureSensor::TryGetTemperature(float& t)
+void CpuTemperatureSensor::Poll()
 {
-	float minT, maxT;
-	Platform::GetMcuTemperatures(minT, t, maxT);
-	return TemperatureError::success;
+	float minT, currentT, maxT;
+	Platform::GetMcuTemperatures(minT, currentT, maxT);
+	SetResult(currentT, TemperatureError::success);
 }
 
 #endif

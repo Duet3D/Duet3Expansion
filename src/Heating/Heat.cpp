@@ -24,6 +24,8 @@ Licence: GPL
 #include "Platform.h"
 #include "Sensors/TemperatureSensor.h"
 #include "CanMessageGenericParser.h"
+#include <CanMessageBuffer.h>
+#include "CAN/CanInterface.h"
 
 #if SUPPORT_DHT_SENSOR
 # include "Sensors/DhtSensor.h"
@@ -44,7 +46,8 @@ namespace Heat
 	// Private members
 	static Heater* heaters[MaxHeaters];							// A PID controller for each heater
 
-	static TemperatureSensor *sensorsRoot = nullptr;			// The sensor list
+	static TemperatureSensor *sensorsRoot = nullptr;			// The sensor list. Only the Heat task is allowed to modify the linkeage.
+	static TemperatureSensor *newSensors = nullptr;				// New sensors waiting to be linked into the main list
 	HeaterProtection *heaterProtections[MaxHeaters + MaxExtraHeaterProtections];	// Heater protection instances to guarantee legal heater temperature ranges
 
 	static uint32_t lastWakeTime;
@@ -130,6 +133,86 @@ void Heat::Exit()
 	lastWakeTime = xTaskGetTickCount();
 	for (;;)
 	{
+		// Walk the sensor list and poll all sensors except those flagged for deletion. Don'y mess with the list during this pass because polling may need to acquire mutexes.
+		TemperatureSensor *currentSensor = sensorsRoot;
+		bool sawDeletedSensor = false;
+		while (currentSensor != nullptr)
+		{
+			if (currentSensor->GetSensorNumber() < 0)
+			{
+				sawDeletedSensor = true;
+			}
+			else
+			{
+				currentSensor->Poll();
+			}
+			currentSensor = currentSensor->GetNext();
+		}
+
+		// If we saw any sensors flagged for deletion, delete them, locking out other tasks while we do this
+		if (sawDeletedSensor)
+		{
+			TaskCriticalSectionLocker lock;
+
+			currentSensor = sensorsRoot;
+			TemperatureSensor *lastSensor = nullptr;
+			while (currentSensor != nullptr)
+			{
+				if (currentSensor->GetSensorNumber() < 0)
+				{
+					TemperatureSensor *sensorToDelete = currentSensor;
+					currentSensor = currentSensor->GetNext();
+					if (lastSensor == nullptr)
+					{
+						sensorsRoot = currentSensor;
+					}
+					else
+					{
+						lastSensor->SetNext(currentSensor);
+					}
+					delete sensorToDelete;
+				}
+				else
+				{
+					lastSensor = currentSensor;
+					currentSensor = currentSensor->GetNext();
+				}
+			}
+		}
+
+		// Insert any new sensors. We don't poll them yet because they may only just have finished being initialised so they may not accept another transaction yet.
+		for (;;)
+		{
+			TaskCriticalSectionLocker lock;
+			TemperatureSensor *currentNewSensor = newSensors;
+			if (currentNewSensor == nullptr)
+			{
+				break;
+			}
+			newSensors = currentNewSensor->GetNext();
+			TemperatureSensor *prev = nullptr;
+			TemperatureSensor *ts = sensorsRoot;
+			for (;;)
+			{
+				if (ts == nullptr || ts->GetSensorNumber() > currentNewSensor->GetSensorNumber())
+				{
+					currentNewSensor->SetNext(ts);
+					if (prev == nullptr)
+					{
+						sensorsRoot = currentNewSensor;
+					}
+					else
+					{
+						prev->SetNext(currentNewSensor);
+					}
+					break;
+				}
+				prev = ts;
+				ts = ts->GetNext();
+			}
+		}
+
+		// Spin the heaters
 		for (Heater *h : heaters)
 		{
 			if (h != nullptr)
@@ -147,81 +230,48 @@ void Heat::Exit()
 
 		Platform::KickHeatTaskWatchdog();
 
+		// Broadcast our sensor temperatures
+		CanMessageBuffer * buf = CanMessageBuffer::Allocate();
+		if (buf != nullptr)
+		{
+			CanMessageSensorTemperatures * const msg = buf->SetupBroadcastMessage<CanMessageSensorTemperatures>(CanInterface::GetCanAddress());
+			msg->whichSensors = 0;
+			unsigned int sensorsFound = 0;
+			unsigned int currentSensorNumber = 0;
+			for (;;)
+			{
+				TemperatureSensor * const sensor = GetSensorAtOrAbove(currentSensorNumber);
+				if (sensor == nullptr)
+				{
+					break;
+				}
+				const int sn = sensor->GetSensorNumber();
+				if (sn >= 0)
+				{
+					msg->whichSensors |= (uint64_t)1u << (unsigned int)sn;
+					float temperature;
+					msg->temperatureReports[sensorsFound].errorCode = (uint8_t)sensor->GetLatestTemperature(temperature);
+					msg->temperatureReports[sensorsFound].temperature = temperature;
+					++sensorsFound;
+					currentSensorNumber = sn + 1;
+				}
+			}
+			if (sensorsFound == 0)
+			{
+				// Don't send an empty report
+				CanMessageBuffer::Free(buf);
+			}
+			else
+			{
+				buf->dataLength = msg->GetActualDataLength(sensorsFound);
+				CanInterface::Send(buf);
+			}
+		}
+
 		// Delay until it is time again
 		vTaskDelayUntil(&lastWakeTime, HeatSampleIntervalMillis);
 	}
 }
-
-#if 0
-GCodeResult Heat::ProcessM307(const CanMessageGeneric& msg, const StringRef& reply)
-{
-	CanMessageGenericParser parser(msg, M307Params);
-	uint16_t heater;
-	if (parser.GetUintParam('H', heater))
-	{
-		Heater * const h = FindHeater(heater);
-		if (h != nullptr)
-		{
-			const FopDt& model = h->GetModel();
-			bool seen = false;
-			float gain = model.GetGain(),
-				tc = model.GetTimeConstant(),
-				td = model.GetDeadTime(),
-				maxPwm = model.GetMaxPwm(),
-				voltage = model.GetVoltage();
-			uint8_t dontUsePid = model.UsePid() ? 0 : 1;
-			uint8_t inversionParameter = 0;
-
-			seen = parser.GetFloatParam('A', gain) || seen;
-			seen = parser.GetFloatParam('C', tc) || seen;
-			seen = parser.GetFloatParam('D', td) || seen;
-			seen = parser.GetUintParam('B', dontUsePid) || seen;
-			seen = parser.GetFloatParam('S', maxPwm) || seen;
-			seen = parser.GetFloatParam('V', voltage) || seen;
-			seen = parser.GetUintParam('I', inversionParameter) || seen;
-
-			if (seen)
-			{
-				const bool inverseTemperatureControl = (inversionParameter == 1 || inversionParameter == 3);
-				const GCodeResult rslt = h->SetModel(gain, tc, td, maxPwm, voltage, dontUsePid == 0, inverseTemperatureControl, reply);
-				if (rslt != GCodeResult::ok)
-				{
-					return rslt;
-				}
-			}
-			else if (!model.IsEnabled())
-			{
-				reply.printf("Heater %u is disabled", heater);
-			}
-			else
-			{
-				const char* const mode = (!model.UsePid()) ? "bang-bang"
-											: (model.ArePidParametersOverridden()) ? "custom PID"
-												: "PID";
-				reply.printf("Heater %u model: gain %.1f, time constant %.1f, dead time %.1f, max PWM %.2f, calibration voltage %.1f, mode %s", heater,
-							 (double)model.GetGain(), (double)model.GetTimeConstant(), (double)model.GetDeadTime(), (double)model.GetMaxPwm(), (double)model.GetVoltage(), mode);
-				if (model.IsInverted())
-				{
-					reply.cat(", inverted temperature control");
-				}
-				if (model.UsePid())
-				{
-					// When reporting the PID parameters, we scale them by 255 for compatibility with older firmware and other firmware
-					M301PidParameters params = model.GetM301PidParameters(false);
-					reply.catf("\nComputed PID parameters for setpoint change: P%.1f, I%.3f, D%.1f", (double)params.kP, (double)params.kI, (double)params.kD);
-					params = model.GetM301PidParameters(true);
-					reply.catf("\nComputed PID parameters for load change: P%.1f, I%.3f, D%.1f", (double)params.kP, (double)params.kI, (double)params.kD);
-				}
-			}
-		}
-
-		reply.printf("Heater %u not found", heater);
-		return GCodeResult::error;
-	}
-
-	return GCodeResult::badOrMissingParameter;
-}
-#endif
 
 GCodeResult Heat::ProcessM308(const CanMessageGeneric& msg, const StringRef& reply)
 {
@@ -229,41 +279,56 @@ GCodeResult Heat::ProcessM308(const CanMessageGeneric& msg, const StringRef& rep
 	uint16_t sensorNum;
 	if (parser.GetUintParam('S', sensorNum))
 	{
-		TemperatureSensor *sensor;
-		String<StringLength20> sensorTypeName;
-		bool newSensor = parser.GetStringParam('Y', sensorTypeName.GetRef());
-		if (newSensor)
+		if (sensorNum < MaxSensorsInSystem)
 		{
-			RemoveSensor(sensorNum);
-			sensor = TemperatureSensor::Create(sensorNum, sensorTypeName.c_str(), reply);
-			if (sensor == nullptr)
+			TemperatureSensor *sensor;
+			String<StringLength20> sensorTypeName;
+			bool newSensor = parser.GetStringParam('Y', sensorTypeName.GetRef());
+			if (newSensor)
 			{
-				return GCodeResult::error;
-			}
-		}
-		else
-		{
-			sensor = GetSensor(sensorNum);
-			if (sensor == nullptr)
-			{
-				reply.printf("Sensor %u does not exist", sensorNum);
-				return GCodeResult::error;
-			}
+				TemperatureSensor * const oldSensor = GetSensor(sensorNum);
+				if (oldSensor != nullptr)
+				{
+					oldSensor->FlagForDeletion();
+				}
 
-		}
-		const GCodeResult rslt = sensor->Configure(parser, reply);
-		if (newSensor)
-		{
-			if (rslt == GCodeResult::ok)
-			{
-				InsertSensor(sensor);
+				sensor = TemperatureSensor::Create(sensorNum, sensorTypeName.c_str(), reply);
+				if (sensor == nullptr)
+				{
+					return GCodeResult::error;
+				}
 			}
 			else
 			{
-				delete sensor;
+				sensor = GetSensor(sensorNum);
+				if (sensor == nullptr)
+				{
+					reply.printf("Sensor %u does not exist", sensorNum);
+					return GCodeResult::error;
+				}
+
 			}
+			const GCodeResult rslt = sensor->Configure(parser, reply);
+			if (newSensor)
+			{
+				if (rslt == GCodeResult::ok)
+				{
+					TaskCriticalSectionLocker lock;
+					sensor->SetNext(newSensors);
+					newSensors = sensor;
+				}
+				else
+				{
+					delete sensor;
+				}
+			}
+			return rslt;
 		}
-		return rslt;
+		else
+		{
+			reply.copy("Sensor number our of range");
+			return GCodeResult::error;
+		}
 	}
 
 	reply.copy("Missing sensor number parameter");
@@ -393,7 +458,7 @@ float Heat::GetSensorTemperature(int sensorNum, TemperatureError& err)
 	if (sensor != nullptr)
 	{
 		float temp;
-		err = sensor->GetTemperature(temp);
+		err = sensor->GetLatestTemperature(temp);
 		return temp;
 	}
 
@@ -481,7 +546,7 @@ TemperatureSensor *Heat::GetSensor(int sn)
 		TaskCriticalSectionLocker lock;		// make sure the linked list doesn't change while we are searching it
 		for (TemperatureSensor *sensor = sensorsRoot; sensor != nullptr; sensor = sensor->GetNext())
 		{
-			if (sensor->GetSensorNumber() == (unsigned int)sn)
+			if (sensor->GetSensorNumber() == sn)
 			{
 				return sensor;
 			}
@@ -497,68 +562,12 @@ TemperatureSensor *Heat::GetSensorAtOrAbove(unsigned int sn)
 
 	for (TemperatureSensor *sensor = sensorsRoot; sensor != nullptr; sensor = sensor->GetNext())
 	{
-		if (sensor->GetSensorNumber() >= sn)
+		if (sensor->GetSensorNumber() >= (int)sn)
 		{
 			return sensor;
 		}
 	}
 	return nullptr;
-}
-
-// Remove any existing sensor with the specified number
-void Heat::RemoveSensor(unsigned int sensorNum)
-{
-	TaskCriticalSectionLocker lock;		// make sure nothing searches the linked list while we are changing it
-
-	TemperatureSensor *prev = nullptr;
-	for (TemperatureSensor *ts = sensorsRoot; ts != nullptr; ts = ts->GetNext())
-	{
-		const unsigned int sn = ts->GetSensorNumber();
-		if (sn == sensorNum)
-		{
-			if (prev == nullptr)
-			{
-				sensorsRoot = ts->GetNext();
-			}
-			else
-			{
-				prev->SetNext(ts->GetNext());
-			}
-			delete ts;
-			break;
-		}
-		if (sn > sensorNum)
-		{
-			break;
-		}
-		prev = ts;
-	}
-}
-
-void Heat::InsertSensor(TemperatureSensor *sensor)
-{
-	TaskCriticalSectionLocker lock;		// make sure nothing searches the linked list while we are changing it
-
-	TemperatureSensor *prev = nullptr;
-	TemperatureSensor *ts = sensorsRoot;
-	for (;;)
-	{
-		if (ts == nullptr || ts->GetSensorNumber() > sensor->GetSensorNumber())
-		{
-			sensor->SetNext(ts);
-			if (prev == nullptr)
-			{
-				sensorsRoot = sensor;
-			}
-			else
-			{
-				prev->SetNext(sensor);
-			}
-			break;
-		}
-		prev = ts;
-		ts = ts->GetNext();
-	}
 }
 
 // Get the temperature of a real or virtual heater
@@ -572,7 +581,7 @@ float Heat::GetTemperature(size_t heater, TemperatureError& err)
 	}
 
 	float t;
-	err = spp->GetTemperature(t);
+	err = spp->GetLatestTemperature(t);
 	if (err != TemperatureError::success)
 	{
 		t = BadErrorTemperature;

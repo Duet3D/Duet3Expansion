@@ -45,9 +45,8 @@ extern "C" {
  * Set pin pull mode, non existing pull modes throws an fatal assert
  *
  * \param[in] pin       The pin number for device
- * \param[in] pull_mode GPIO_PULL_DOWN = Pull pin high with internal
- *                      resistor
- *                      GPIO_PULL_UP   = Pull pin low with internal resistor
+ * \param[in] pull_mode GPIO_PULL_DOWN = Pull pin low with internal resistor
+ *                      GPIO_PULL_UP   = Pull pin high with internal resistor
  *                      GPIO_PULL_OFF  = Disable pin pull mode
  */
 static inline void gpio_set_pin_pull_mode(const uint8_t pin, const enum gpio_pull_mode pull_mode)

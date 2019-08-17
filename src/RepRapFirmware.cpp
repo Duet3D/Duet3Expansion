@@ -8,6 +8,7 @@
 #include "RepRapFirmware.h"
 #include "Movement/Move.h"
 #include "GCodes/GCodes.h"
+#include "Heating/Heat.h"
 #include "Platform.h"
 #include "CommandProcessing/CommandProcessor.h"
 #include "RTOSIface/RTOSIface.h"
@@ -23,6 +24,7 @@ namespace RepRap
 	{
 		Platform::Init();
 		GCodes::Init();
+		Heat::Init();
 		moveInstance = new Move();
 		moveInstance->Init();
 	}

@@ -28,6 +28,7 @@
  * THAT YOU HAVE PAID DIRECTLY TO MICROCHIP FOR THIS SOFTWARE.
  *
  * \asf_license_stop
+ *
  */
 
 #ifdef _SAME51_CAN_COMPONENT_
@@ -96,6 +97,1015 @@ typedef uint32_t hri_can_txesc_reg_t;
 typedef uint32_t hri_can_txfqs_reg_t;
 typedef uint32_t hri_can_xidam_reg_t;
 typedef uint32_t hri_can_xidfc_reg_t;
+
+static inline hri_can_crel_reg_t hri_can_get_CREL_SUBSTEP_bf(const void *const hw, hri_can_crel_reg_t mask)
+{
+	return (((Can *)hw)->CREL.reg & CAN_CREL_SUBSTEP(mask)) >> CAN_CREL_SUBSTEP_Pos;
+}
+
+static inline hri_can_crel_reg_t hri_can_read_CREL_SUBSTEP_bf(const void *const hw)
+{
+	return (((Can *)hw)->CREL.reg & CAN_CREL_SUBSTEP_Msk) >> CAN_CREL_SUBSTEP_Pos;
+}
+
+static inline hri_can_crel_reg_t hri_can_get_CREL_STEP_bf(const void *const hw, hri_can_crel_reg_t mask)
+{
+	return (((Can *)hw)->CREL.reg & CAN_CREL_STEP(mask)) >> CAN_CREL_STEP_Pos;
+}
+
+static inline hri_can_crel_reg_t hri_can_read_CREL_STEP_bf(const void *const hw)
+{
+	return (((Can *)hw)->CREL.reg & CAN_CREL_STEP_Msk) >> CAN_CREL_STEP_Pos;
+}
+
+static inline hri_can_crel_reg_t hri_can_get_CREL_REL_bf(const void *const hw, hri_can_crel_reg_t mask)
+{
+	return (((Can *)hw)->CREL.reg & CAN_CREL_REL(mask)) >> CAN_CREL_REL_Pos;
+}
+
+static inline hri_can_crel_reg_t hri_can_read_CREL_REL_bf(const void *const hw)
+{
+	return (((Can *)hw)->CREL.reg & CAN_CREL_REL_Msk) >> CAN_CREL_REL_Pos;
+}
+
+static inline hri_can_crel_reg_t hri_can_get_CREL_reg(const void *const hw, hri_can_crel_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Can *)hw)->CREL.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline hri_can_crel_reg_t hri_can_read_CREL_reg(const void *const hw)
+{
+	return ((Can *)hw)->CREL.reg;
+}
+
+static inline hri_can_endn_reg_t hri_can_get_ENDN_ETV_bf(const void *const hw, hri_can_endn_reg_t mask)
+{
+	return (((Can *)hw)->ENDN.reg & CAN_ENDN_ETV(mask)) >> CAN_ENDN_ETV_Pos;
+}
+
+static inline hri_can_endn_reg_t hri_can_read_ENDN_ETV_bf(const void *const hw)
+{
+	return (((Can *)hw)->ENDN.reg & CAN_ENDN_ETV_Msk) >> CAN_ENDN_ETV_Pos;
+}
+
+static inline hri_can_endn_reg_t hri_can_get_ENDN_reg(const void *const hw, hri_can_endn_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Can *)hw)->ENDN.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline hri_can_endn_reg_t hri_can_read_ENDN_reg(const void *const hw)
+{
+	return ((Can *)hw)->ENDN.reg;
+}
+
+static inline hri_can_tscv_reg_t hri_can_get_TSCV_TSC_bf(const void *const hw, hri_can_tscv_reg_t mask)
+{
+	return (((Can *)hw)->TSCV.reg & CAN_TSCV_TSC(mask)) >> CAN_TSCV_TSC_Pos;
+}
+
+static inline hri_can_tscv_reg_t hri_can_read_TSCV_TSC_bf(const void *const hw)
+{
+	return (((Can *)hw)->TSCV.reg & CAN_TSCV_TSC_Msk) >> CAN_TSCV_TSC_Pos;
+}
+
+static inline hri_can_tscv_reg_t hri_can_get_TSCV_reg(const void *const hw, hri_can_tscv_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Can *)hw)->TSCV.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline hri_can_tscv_reg_t hri_can_read_TSCV_reg(const void *const hw)
+{
+	return ((Can *)hw)->TSCV.reg;
+}
+
+static inline bool hri_can_get_ECR_RP_bit(const void *const hw)
+{
+	return (((Can *)hw)->ECR.reg & CAN_ECR_RP) >> CAN_ECR_RP_Pos;
+}
+
+static inline hri_can_ecr_reg_t hri_can_get_ECR_TEC_bf(const void *const hw, hri_can_ecr_reg_t mask)
+{
+	return (((Can *)hw)->ECR.reg & CAN_ECR_TEC(mask)) >> CAN_ECR_TEC_Pos;
+}
+
+static inline hri_can_ecr_reg_t hri_can_read_ECR_TEC_bf(const void *const hw)
+{
+	return (((Can *)hw)->ECR.reg & CAN_ECR_TEC_Msk) >> CAN_ECR_TEC_Pos;
+}
+
+static inline hri_can_ecr_reg_t hri_can_get_ECR_REC_bf(const void *const hw, hri_can_ecr_reg_t mask)
+{
+	return (((Can *)hw)->ECR.reg & CAN_ECR_REC(mask)) >> CAN_ECR_REC_Pos;
+}
+
+static inline hri_can_ecr_reg_t hri_can_read_ECR_REC_bf(const void *const hw)
+{
+	return (((Can *)hw)->ECR.reg & CAN_ECR_REC_Msk) >> CAN_ECR_REC_Pos;
+}
+
+static inline hri_can_ecr_reg_t hri_can_get_ECR_CEL_bf(const void *const hw, hri_can_ecr_reg_t mask)
+{
+	return (((Can *)hw)->ECR.reg & CAN_ECR_CEL(mask)) >> CAN_ECR_CEL_Pos;
+}
+
+static inline hri_can_ecr_reg_t hri_can_read_ECR_CEL_bf(const void *const hw)
+{
+	return (((Can *)hw)->ECR.reg & CAN_ECR_CEL_Msk) >> CAN_ECR_CEL_Pos;
+}
+
+static inline hri_can_ecr_reg_t hri_can_get_ECR_reg(const void *const hw, hri_can_ecr_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Can *)hw)->ECR.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline hri_can_ecr_reg_t hri_can_read_ECR_reg(const void *const hw)
+{
+	return ((Can *)hw)->ECR.reg;
+}
+
+static inline bool hri_can_get_PSR_EP_bit(const void *const hw)
+{
+	return (((Can *)hw)->PSR.reg & CAN_PSR_EP) >> CAN_PSR_EP_Pos;
+}
+
+static inline bool hri_can_get_PSR_EW_bit(const void *const hw)
+{
+	return (((Can *)hw)->PSR.reg & CAN_PSR_EW) >> CAN_PSR_EW_Pos;
+}
+
+static inline bool hri_can_get_PSR_BO_bit(const void *const hw)
+{
+	return (((Can *)hw)->PSR.reg & CAN_PSR_BO) >> CAN_PSR_BO_Pos;
+}
+
+static inline bool hri_can_get_PSR_RESI_bit(const void *const hw)
+{
+	return (((Can *)hw)->PSR.reg & CAN_PSR_RESI) >> CAN_PSR_RESI_Pos;
+}
+
+static inline bool hri_can_get_PSR_RBRS_bit(const void *const hw)
+{
+	return (((Can *)hw)->PSR.reg & CAN_PSR_RBRS) >> CAN_PSR_RBRS_Pos;
+}
+
+static inline bool hri_can_get_PSR_RFDF_bit(const void *const hw)
+{
+	return (((Can *)hw)->PSR.reg & CAN_PSR_RFDF) >> CAN_PSR_RFDF_Pos;
+}
+
+static inline bool hri_can_get_PSR_PXE_bit(const void *const hw)
+{
+	return (((Can *)hw)->PSR.reg & CAN_PSR_PXE) >> CAN_PSR_PXE_Pos;
+}
+
+static inline hri_can_psr_reg_t hri_can_get_PSR_LEC_bf(const void *const hw, hri_can_psr_reg_t mask)
+{
+	return (((Can *)hw)->PSR.reg & CAN_PSR_LEC(mask)) >> CAN_PSR_LEC_Pos;
+}
+
+static inline hri_can_psr_reg_t hri_can_read_PSR_LEC_bf(const void *const hw)
+{
+	return (((Can *)hw)->PSR.reg & CAN_PSR_LEC_Msk) >> CAN_PSR_LEC_Pos;
+}
+
+static inline hri_can_psr_reg_t hri_can_get_PSR_ACT_bf(const void *const hw, hri_can_psr_reg_t mask)
+{
+	return (((Can *)hw)->PSR.reg & CAN_PSR_ACT(mask)) >> CAN_PSR_ACT_Pos;
+}
+
+static inline hri_can_psr_reg_t hri_can_read_PSR_ACT_bf(const void *const hw)
+{
+	return (((Can *)hw)->PSR.reg & CAN_PSR_ACT_Msk) >> CAN_PSR_ACT_Pos;
+}
+
+static inline hri_can_psr_reg_t hri_can_get_PSR_DLEC_bf(const void *const hw, hri_can_psr_reg_t mask)
+{
+	return (((Can *)hw)->PSR.reg & CAN_PSR_DLEC(mask)) >> CAN_PSR_DLEC_Pos;
+}
+
+static inline hri_can_psr_reg_t hri_can_read_PSR_DLEC_bf(const void *const hw)
+{
+	return (((Can *)hw)->PSR.reg & CAN_PSR_DLEC_Msk) >> CAN_PSR_DLEC_Pos;
+}
+
+static inline hri_can_psr_reg_t hri_can_get_PSR_TDCV_bf(const void *const hw, hri_can_psr_reg_t mask)
+{
+	return (((Can *)hw)->PSR.reg & CAN_PSR_TDCV(mask)) >> CAN_PSR_TDCV_Pos;
+}
+
+static inline hri_can_psr_reg_t hri_can_read_PSR_TDCV_bf(const void *const hw)
+{
+	return (((Can *)hw)->PSR.reg & CAN_PSR_TDCV_Msk) >> CAN_PSR_TDCV_Pos;
+}
+
+static inline hri_can_psr_reg_t hri_can_get_PSR_reg(const void *const hw, hri_can_psr_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Can *)hw)->PSR.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline hri_can_psr_reg_t hri_can_read_PSR_reg(const void *const hw)
+{
+	return ((Can *)hw)->PSR.reg;
+}
+
+static inline bool hri_can_get_HPMS_FLST_bit(const void *const hw)
+{
+	return (((Can *)hw)->HPMS.reg & CAN_HPMS_FLST) >> CAN_HPMS_FLST_Pos;
+}
+
+static inline hri_can_hpms_reg_t hri_can_get_HPMS_BIDX_bf(const void *const hw, hri_can_hpms_reg_t mask)
+{
+	return (((Can *)hw)->HPMS.reg & CAN_HPMS_BIDX(mask)) >> CAN_HPMS_BIDX_Pos;
+}
+
+static inline hri_can_hpms_reg_t hri_can_read_HPMS_BIDX_bf(const void *const hw)
+{
+	return (((Can *)hw)->HPMS.reg & CAN_HPMS_BIDX_Msk) >> CAN_HPMS_BIDX_Pos;
+}
+
+static inline hri_can_hpms_reg_t hri_can_get_HPMS_MSI_bf(const void *const hw, hri_can_hpms_reg_t mask)
+{
+	return (((Can *)hw)->HPMS.reg & CAN_HPMS_MSI(mask)) >> CAN_HPMS_MSI_Pos;
+}
+
+static inline hri_can_hpms_reg_t hri_can_read_HPMS_MSI_bf(const void *const hw)
+{
+	return (((Can *)hw)->HPMS.reg & CAN_HPMS_MSI_Msk) >> CAN_HPMS_MSI_Pos;
+}
+
+static inline hri_can_hpms_reg_t hri_can_get_HPMS_FIDX_bf(const void *const hw, hri_can_hpms_reg_t mask)
+{
+	return (((Can *)hw)->HPMS.reg & CAN_HPMS_FIDX(mask)) >> CAN_HPMS_FIDX_Pos;
+}
+
+static inline hri_can_hpms_reg_t hri_can_read_HPMS_FIDX_bf(const void *const hw)
+{
+	return (((Can *)hw)->HPMS.reg & CAN_HPMS_FIDX_Msk) >> CAN_HPMS_FIDX_Pos;
+}
+
+static inline hri_can_hpms_reg_t hri_can_get_HPMS_reg(const void *const hw, hri_can_hpms_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Can *)hw)->HPMS.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline hri_can_hpms_reg_t hri_can_read_HPMS_reg(const void *const hw)
+{
+	return ((Can *)hw)->HPMS.reg;
+}
+
+static inline bool hri_can_get_RXF0S_F0F_bit(const void *const hw)
+{
+	return (((Can *)hw)->RXF0S.reg & CAN_RXF0S_F0F) >> CAN_RXF0S_F0F_Pos;
+}
+
+static inline bool hri_can_get_RXF0S_RF0L_bit(const void *const hw)
+{
+	return (((Can *)hw)->RXF0S.reg & CAN_RXF0S_RF0L) >> CAN_RXF0S_RF0L_Pos;
+}
+
+static inline hri_can_rxf0s_reg_t hri_can_get_RXF0S_F0FL_bf(const void *const hw, hri_can_rxf0s_reg_t mask)
+{
+	return (((Can *)hw)->RXF0S.reg & CAN_RXF0S_F0FL(mask)) >> CAN_RXF0S_F0FL_Pos;
+}
+
+static inline hri_can_rxf0s_reg_t hri_can_read_RXF0S_F0FL_bf(const void *const hw)
+{
+	return (((Can *)hw)->RXF0S.reg & CAN_RXF0S_F0FL_Msk) >> CAN_RXF0S_F0FL_Pos;
+}
+
+static inline hri_can_rxf0s_reg_t hri_can_get_RXF0S_F0GI_bf(const void *const hw, hri_can_rxf0s_reg_t mask)
+{
+	return (((Can *)hw)->RXF0S.reg & CAN_RXF0S_F0GI(mask)) >> CAN_RXF0S_F0GI_Pos;
+}
+
+static inline hri_can_rxf0s_reg_t hri_can_read_RXF0S_F0GI_bf(const void *const hw)
+{
+	return (((Can *)hw)->RXF0S.reg & CAN_RXF0S_F0GI_Msk) >> CAN_RXF0S_F0GI_Pos;
+}
+
+static inline hri_can_rxf0s_reg_t hri_can_get_RXF0S_F0PI_bf(const void *const hw, hri_can_rxf0s_reg_t mask)
+{
+	return (((Can *)hw)->RXF0S.reg & CAN_RXF0S_F0PI(mask)) >> CAN_RXF0S_F0PI_Pos;
+}
+
+static inline hri_can_rxf0s_reg_t hri_can_read_RXF0S_F0PI_bf(const void *const hw)
+{
+	return (((Can *)hw)->RXF0S.reg & CAN_RXF0S_F0PI_Msk) >> CAN_RXF0S_F0PI_Pos;
+}
+
+static inline hri_can_rxf0s_reg_t hri_can_get_RXF0S_reg(const void *const hw, hri_can_rxf0s_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Can *)hw)->RXF0S.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline hri_can_rxf0s_reg_t hri_can_read_RXF0S_reg(const void *const hw)
+{
+	return ((Can *)hw)->RXF0S.reg;
+}
+
+static inline bool hri_can_get_RXF1S_F1F_bit(const void *const hw)
+{
+	return (((Can *)hw)->RXF1S.reg & CAN_RXF1S_F1F) >> CAN_RXF1S_F1F_Pos;
+}
+
+static inline bool hri_can_get_RXF1S_RF1L_bit(const void *const hw)
+{
+	return (((Can *)hw)->RXF1S.reg & CAN_RXF1S_RF1L) >> CAN_RXF1S_RF1L_Pos;
+}
+
+static inline hri_can_rxf1s_reg_t hri_can_get_RXF1S_F1FL_bf(const void *const hw, hri_can_rxf1s_reg_t mask)
+{
+	return (((Can *)hw)->RXF1S.reg & CAN_RXF1S_F1FL(mask)) >> CAN_RXF1S_F1FL_Pos;
+}
+
+static inline hri_can_rxf1s_reg_t hri_can_read_RXF1S_F1FL_bf(const void *const hw)
+{
+	return (((Can *)hw)->RXF1S.reg & CAN_RXF1S_F1FL_Msk) >> CAN_RXF1S_F1FL_Pos;
+}
+
+static inline hri_can_rxf1s_reg_t hri_can_get_RXF1S_F1GI_bf(const void *const hw, hri_can_rxf1s_reg_t mask)
+{
+	return (((Can *)hw)->RXF1S.reg & CAN_RXF1S_F1GI(mask)) >> CAN_RXF1S_F1GI_Pos;
+}
+
+static inline hri_can_rxf1s_reg_t hri_can_read_RXF1S_F1GI_bf(const void *const hw)
+{
+	return (((Can *)hw)->RXF1S.reg & CAN_RXF1S_F1GI_Msk) >> CAN_RXF1S_F1GI_Pos;
+}
+
+static inline hri_can_rxf1s_reg_t hri_can_get_RXF1S_F1PI_bf(const void *const hw, hri_can_rxf1s_reg_t mask)
+{
+	return (((Can *)hw)->RXF1S.reg & CAN_RXF1S_F1PI(mask)) >> CAN_RXF1S_F1PI_Pos;
+}
+
+static inline hri_can_rxf1s_reg_t hri_can_read_RXF1S_F1PI_bf(const void *const hw)
+{
+	return (((Can *)hw)->RXF1S.reg & CAN_RXF1S_F1PI_Msk) >> CAN_RXF1S_F1PI_Pos;
+}
+
+static inline hri_can_rxf1s_reg_t hri_can_get_RXF1S_DMS_bf(const void *const hw, hri_can_rxf1s_reg_t mask)
+{
+	return (((Can *)hw)->RXF1S.reg & CAN_RXF1S_DMS(mask)) >> CAN_RXF1S_DMS_Pos;
+}
+
+static inline hri_can_rxf1s_reg_t hri_can_read_RXF1S_DMS_bf(const void *const hw)
+{
+	return (((Can *)hw)->RXF1S.reg & CAN_RXF1S_DMS_Msk) >> CAN_RXF1S_DMS_Pos;
+}
+
+static inline hri_can_rxf1s_reg_t hri_can_get_RXF1S_reg(const void *const hw, hri_can_rxf1s_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Can *)hw)->RXF1S.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline hri_can_rxf1s_reg_t hri_can_read_RXF1S_reg(const void *const hw)
+{
+	return ((Can *)hw)->RXF1S.reg;
+}
+
+static inline bool hri_can_get_TXFQS_TFQF_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXFQS.reg & CAN_TXFQS_TFQF) >> CAN_TXFQS_TFQF_Pos;
+}
+
+static inline hri_can_txfqs_reg_t hri_can_get_TXFQS_TFFL_bf(const void *const hw, hri_can_txfqs_reg_t mask)
+{
+	return (((Can *)hw)->TXFQS.reg & CAN_TXFQS_TFFL(mask)) >> CAN_TXFQS_TFFL_Pos;
+}
+
+static inline hri_can_txfqs_reg_t hri_can_read_TXFQS_TFFL_bf(const void *const hw)
+{
+	return (((Can *)hw)->TXFQS.reg & CAN_TXFQS_TFFL_Msk) >> CAN_TXFQS_TFFL_Pos;
+}
+
+static inline hri_can_txfqs_reg_t hri_can_get_TXFQS_TFGI_bf(const void *const hw, hri_can_txfqs_reg_t mask)
+{
+	return (((Can *)hw)->TXFQS.reg & CAN_TXFQS_TFGI(mask)) >> CAN_TXFQS_TFGI_Pos;
+}
+
+static inline hri_can_txfqs_reg_t hri_can_read_TXFQS_TFGI_bf(const void *const hw)
+{
+	return (((Can *)hw)->TXFQS.reg & CAN_TXFQS_TFGI_Msk) >> CAN_TXFQS_TFGI_Pos;
+}
+
+static inline hri_can_txfqs_reg_t hri_can_get_TXFQS_TFQPI_bf(const void *const hw, hri_can_txfqs_reg_t mask)
+{
+	return (((Can *)hw)->TXFQS.reg & CAN_TXFQS_TFQPI(mask)) >> CAN_TXFQS_TFQPI_Pos;
+}
+
+static inline hri_can_txfqs_reg_t hri_can_read_TXFQS_TFQPI_bf(const void *const hw)
+{
+	return (((Can *)hw)->TXFQS.reg & CAN_TXFQS_TFQPI_Msk) >> CAN_TXFQS_TFQPI_Pos;
+}
+
+static inline hri_can_txfqs_reg_t hri_can_get_TXFQS_reg(const void *const hw, hri_can_txfqs_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Can *)hw)->TXFQS.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline hri_can_txfqs_reg_t hri_can_read_TXFQS_reg(const void *const hw)
+{
+	return ((Can *)hw)->TXFQS.reg;
+}
+
+static inline bool hri_can_get_TXBRP_TRP0_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP0) >> CAN_TXBRP_TRP0_Pos;
+}
+
+static inline bool hri_can_get_TXBRP_TRP1_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP1) >> CAN_TXBRP_TRP1_Pos;
+}
+
+static inline bool hri_can_get_TXBRP_TRP2_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP2) >> CAN_TXBRP_TRP2_Pos;
+}
+
+static inline bool hri_can_get_TXBRP_TRP3_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP3) >> CAN_TXBRP_TRP3_Pos;
+}
+
+static inline bool hri_can_get_TXBRP_TRP4_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP4) >> CAN_TXBRP_TRP4_Pos;
+}
+
+static inline bool hri_can_get_TXBRP_TRP5_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP5) >> CAN_TXBRP_TRP5_Pos;
+}
+
+static inline bool hri_can_get_TXBRP_TRP6_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP6) >> CAN_TXBRP_TRP6_Pos;
+}
+
+static inline bool hri_can_get_TXBRP_TRP7_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP7) >> CAN_TXBRP_TRP7_Pos;
+}
+
+static inline bool hri_can_get_TXBRP_TRP8_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP8) >> CAN_TXBRP_TRP8_Pos;
+}
+
+static inline bool hri_can_get_TXBRP_TRP9_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP9) >> CAN_TXBRP_TRP9_Pos;
+}
+
+static inline bool hri_can_get_TXBRP_TRP10_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP10) >> CAN_TXBRP_TRP10_Pos;
+}
+
+static inline bool hri_can_get_TXBRP_TRP11_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP11) >> CAN_TXBRP_TRP11_Pos;
+}
+
+static inline bool hri_can_get_TXBRP_TRP12_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP12) >> CAN_TXBRP_TRP12_Pos;
+}
+
+static inline bool hri_can_get_TXBRP_TRP13_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP13) >> CAN_TXBRP_TRP13_Pos;
+}
+
+static inline bool hri_can_get_TXBRP_TRP14_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP14) >> CAN_TXBRP_TRP14_Pos;
+}
+
+static inline bool hri_can_get_TXBRP_TRP15_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP15) >> CAN_TXBRP_TRP15_Pos;
+}
+
+static inline bool hri_can_get_TXBRP_TRP16_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP16) >> CAN_TXBRP_TRP16_Pos;
+}
+
+static inline bool hri_can_get_TXBRP_TRP17_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP17) >> CAN_TXBRP_TRP17_Pos;
+}
+
+static inline bool hri_can_get_TXBRP_TRP18_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP18) >> CAN_TXBRP_TRP18_Pos;
+}
+
+static inline bool hri_can_get_TXBRP_TRP19_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP19) >> CAN_TXBRP_TRP19_Pos;
+}
+
+static inline bool hri_can_get_TXBRP_TRP20_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP20) >> CAN_TXBRP_TRP20_Pos;
+}
+
+static inline bool hri_can_get_TXBRP_TRP21_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP21) >> CAN_TXBRP_TRP21_Pos;
+}
+
+static inline bool hri_can_get_TXBRP_TRP22_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP22) >> CAN_TXBRP_TRP22_Pos;
+}
+
+static inline bool hri_can_get_TXBRP_TRP23_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP23) >> CAN_TXBRP_TRP23_Pos;
+}
+
+static inline bool hri_can_get_TXBRP_TRP24_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP24) >> CAN_TXBRP_TRP24_Pos;
+}
+
+static inline bool hri_can_get_TXBRP_TRP25_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP25) >> CAN_TXBRP_TRP25_Pos;
+}
+
+static inline bool hri_can_get_TXBRP_TRP26_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP26) >> CAN_TXBRP_TRP26_Pos;
+}
+
+static inline bool hri_can_get_TXBRP_TRP27_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP27) >> CAN_TXBRP_TRP27_Pos;
+}
+
+static inline bool hri_can_get_TXBRP_TRP28_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP28) >> CAN_TXBRP_TRP28_Pos;
+}
+
+static inline bool hri_can_get_TXBRP_TRP29_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP29) >> CAN_TXBRP_TRP29_Pos;
+}
+
+static inline bool hri_can_get_TXBRP_TRP30_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP30) >> CAN_TXBRP_TRP30_Pos;
+}
+
+static inline bool hri_can_get_TXBRP_TRP31_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP31) >> CAN_TXBRP_TRP31_Pos;
+}
+
+static inline hri_can_txbrp_reg_t hri_can_get_TXBRP_reg(const void *const hw, hri_can_txbrp_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Can *)hw)->TXBRP.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline hri_can_txbrp_reg_t hri_can_read_TXBRP_reg(const void *const hw)
+{
+	return ((Can *)hw)->TXBRP.reg;
+}
+
+static inline bool hri_can_get_TXBTO_TO0_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO0) >> CAN_TXBTO_TO0_Pos;
+}
+
+static inline bool hri_can_get_TXBTO_TO1_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO1) >> CAN_TXBTO_TO1_Pos;
+}
+
+static inline bool hri_can_get_TXBTO_TO2_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO2) >> CAN_TXBTO_TO2_Pos;
+}
+
+static inline bool hri_can_get_TXBTO_TO3_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO3) >> CAN_TXBTO_TO3_Pos;
+}
+
+static inline bool hri_can_get_TXBTO_TO4_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO4) >> CAN_TXBTO_TO4_Pos;
+}
+
+static inline bool hri_can_get_TXBTO_TO5_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO5) >> CAN_TXBTO_TO5_Pos;
+}
+
+static inline bool hri_can_get_TXBTO_TO6_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO6) >> CAN_TXBTO_TO6_Pos;
+}
+
+static inline bool hri_can_get_TXBTO_TO7_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO7) >> CAN_TXBTO_TO7_Pos;
+}
+
+static inline bool hri_can_get_TXBTO_TO8_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO8) >> CAN_TXBTO_TO8_Pos;
+}
+
+static inline bool hri_can_get_TXBTO_TO9_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO9) >> CAN_TXBTO_TO9_Pos;
+}
+
+static inline bool hri_can_get_TXBTO_TO10_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO10) >> CAN_TXBTO_TO10_Pos;
+}
+
+static inline bool hri_can_get_TXBTO_TO11_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO11) >> CAN_TXBTO_TO11_Pos;
+}
+
+static inline bool hri_can_get_TXBTO_TO12_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO12) >> CAN_TXBTO_TO12_Pos;
+}
+
+static inline bool hri_can_get_TXBTO_TO13_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO13) >> CAN_TXBTO_TO13_Pos;
+}
+
+static inline bool hri_can_get_TXBTO_TO14_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO14) >> CAN_TXBTO_TO14_Pos;
+}
+
+static inline bool hri_can_get_TXBTO_TO15_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO15) >> CAN_TXBTO_TO15_Pos;
+}
+
+static inline bool hri_can_get_TXBTO_TO16_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO16) >> CAN_TXBTO_TO16_Pos;
+}
+
+static inline bool hri_can_get_TXBTO_TO17_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO17) >> CAN_TXBTO_TO17_Pos;
+}
+
+static inline bool hri_can_get_TXBTO_TO18_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO18) >> CAN_TXBTO_TO18_Pos;
+}
+
+static inline bool hri_can_get_TXBTO_TO19_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO19) >> CAN_TXBTO_TO19_Pos;
+}
+
+static inline bool hri_can_get_TXBTO_TO20_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO20) >> CAN_TXBTO_TO20_Pos;
+}
+
+static inline bool hri_can_get_TXBTO_TO21_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO21) >> CAN_TXBTO_TO21_Pos;
+}
+
+static inline bool hri_can_get_TXBTO_TO22_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO22) >> CAN_TXBTO_TO22_Pos;
+}
+
+static inline bool hri_can_get_TXBTO_TO23_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO23) >> CAN_TXBTO_TO23_Pos;
+}
+
+static inline bool hri_can_get_TXBTO_TO24_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO24) >> CAN_TXBTO_TO24_Pos;
+}
+
+static inline bool hri_can_get_TXBTO_TO25_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO25) >> CAN_TXBTO_TO25_Pos;
+}
+
+static inline bool hri_can_get_TXBTO_TO26_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO26) >> CAN_TXBTO_TO26_Pos;
+}
+
+static inline bool hri_can_get_TXBTO_TO27_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO27) >> CAN_TXBTO_TO27_Pos;
+}
+
+static inline bool hri_can_get_TXBTO_TO28_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO28) >> CAN_TXBTO_TO28_Pos;
+}
+
+static inline bool hri_can_get_TXBTO_TO29_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO29) >> CAN_TXBTO_TO29_Pos;
+}
+
+static inline bool hri_can_get_TXBTO_TO30_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO30) >> CAN_TXBTO_TO30_Pos;
+}
+
+static inline bool hri_can_get_TXBTO_TO31_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO31) >> CAN_TXBTO_TO31_Pos;
+}
+
+static inline hri_can_txbto_reg_t hri_can_get_TXBTO_reg(const void *const hw, hri_can_txbto_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Can *)hw)->TXBTO.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline hri_can_txbto_reg_t hri_can_read_TXBTO_reg(const void *const hw)
+{
+	return ((Can *)hw)->TXBTO.reg;
+}
+
+static inline bool hri_can_get_TXBCF_CF0_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF0) >> CAN_TXBCF_CF0_Pos;
+}
+
+static inline bool hri_can_get_TXBCF_CF1_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF1) >> CAN_TXBCF_CF1_Pos;
+}
+
+static inline bool hri_can_get_TXBCF_CF2_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF2) >> CAN_TXBCF_CF2_Pos;
+}
+
+static inline bool hri_can_get_TXBCF_CF3_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF3) >> CAN_TXBCF_CF3_Pos;
+}
+
+static inline bool hri_can_get_TXBCF_CF4_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF4) >> CAN_TXBCF_CF4_Pos;
+}
+
+static inline bool hri_can_get_TXBCF_CF5_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF5) >> CAN_TXBCF_CF5_Pos;
+}
+
+static inline bool hri_can_get_TXBCF_CF6_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF6) >> CAN_TXBCF_CF6_Pos;
+}
+
+static inline bool hri_can_get_TXBCF_CF7_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF7) >> CAN_TXBCF_CF7_Pos;
+}
+
+static inline bool hri_can_get_TXBCF_CF8_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF8) >> CAN_TXBCF_CF8_Pos;
+}
+
+static inline bool hri_can_get_TXBCF_CF9_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF9) >> CAN_TXBCF_CF9_Pos;
+}
+
+static inline bool hri_can_get_TXBCF_CF10_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF10) >> CAN_TXBCF_CF10_Pos;
+}
+
+static inline bool hri_can_get_TXBCF_CF11_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF11) >> CAN_TXBCF_CF11_Pos;
+}
+
+static inline bool hri_can_get_TXBCF_CF12_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF12) >> CAN_TXBCF_CF12_Pos;
+}
+
+static inline bool hri_can_get_TXBCF_CF13_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF13) >> CAN_TXBCF_CF13_Pos;
+}
+
+static inline bool hri_can_get_TXBCF_CF14_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF14) >> CAN_TXBCF_CF14_Pos;
+}
+
+static inline bool hri_can_get_TXBCF_CF15_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF15) >> CAN_TXBCF_CF15_Pos;
+}
+
+static inline bool hri_can_get_TXBCF_CF16_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF16) >> CAN_TXBCF_CF16_Pos;
+}
+
+static inline bool hri_can_get_TXBCF_CF17_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF17) >> CAN_TXBCF_CF17_Pos;
+}
+
+static inline bool hri_can_get_TXBCF_CF18_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF18) >> CAN_TXBCF_CF18_Pos;
+}
+
+static inline bool hri_can_get_TXBCF_CF19_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF19) >> CAN_TXBCF_CF19_Pos;
+}
+
+static inline bool hri_can_get_TXBCF_CF20_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF20) >> CAN_TXBCF_CF20_Pos;
+}
+
+static inline bool hri_can_get_TXBCF_CF21_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF21) >> CAN_TXBCF_CF21_Pos;
+}
+
+static inline bool hri_can_get_TXBCF_CF22_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF22) >> CAN_TXBCF_CF22_Pos;
+}
+
+static inline bool hri_can_get_TXBCF_CF23_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF23) >> CAN_TXBCF_CF23_Pos;
+}
+
+static inline bool hri_can_get_TXBCF_CF24_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF24) >> CAN_TXBCF_CF24_Pos;
+}
+
+static inline bool hri_can_get_TXBCF_CF25_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF25) >> CAN_TXBCF_CF25_Pos;
+}
+
+static inline bool hri_can_get_TXBCF_CF26_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF26) >> CAN_TXBCF_CF26_Pos;
+}
+
+static inline bool hri_can_get_TXBCF_CF27_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF27) >> CAN_TXBCF_CF27_Pos;
+}
+
+static inline bool hri_can_get_TXBCF_CF28_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF28) >> CAN_TXBCF_CF28_Pos;
+}
+
+static inline bool hri_can_get_TXBCF_CF29_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF29) >> CAN_TXBCF_CF29_Pos;
+}
+
+static inline bool hri_can_get_TXBCF_CF30_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF30) >> CAN_TXBCF_CF30_Pos;
+}
+
+static inline bool hri_can_get_TXBCF_CF31_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF31) >> CAN_TXBCF_CF31_Pos;
+}
+
+static inline hri_can_txbcf_reg_t hri_can_get_TXBCF_reg(const void *const hw, hri_can_txbcf_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Can *)hw)->TXBCF.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline hri_can_txbcf_reg_t hri_can_read_TXBCF_reg(const void *const hw)
+{
+	return ((Can *)hw)->TXBCF.reg;
+}
+
+static inline bool hri_can_get_TXEFS_EFF_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXEFS.reg & CAN_TXEFS_EFF) >> CAN_TXEFS_EFF_Pos;
+}
+
+static inline bool hri_can_get_TXEFS_TEFL_bit(const void *const hw)
+{
+	return (((Can *)hw)->TXEFS.reg & CAN_TXEFS_TEFL) >> CAN_TXEFS_TEFL_Pos;
+}
+
+static inline hri_can_txefs_reg_t hri_can_get_TXEFS_EFFL_bf(const void *const hw, hri_can_txefs_reg_t mask)
+{
+	return (((Can *)hw)->TXEFS.reg & CAN_TXEFS_EFFL(mask)) >> CAN_TXEFS_EFFL_Pos;
+}
+
+static inline hri_can_txefs_reg_t hri_can_read_TXEFS_EFFL_bf(const void *const hw)
+{
+	return (((Can *)hw)->TXEFS.reg & CAN_TXEFS_EFFL_Msk) >> CAN_TXEFS_EFFL_Pos;
+}
+
+static inline hri_can_txefs_reg_t hri_can_get_TXEFS_EFGI_bf(const void *const hw, hri_can_txefs_reg_t mask)
+{
+	return (((Can *)hw)->TXEFS.reg & CAN_TXEFS_EFGI(mask)) >> CAN_TXEFS_EFGI_Pos;
+}
+
+static inline hri_can_txefs_reg_t hri_can_read_TXEFS_EFGI_bf(const void *const hw)
+{
+	return (((Can *)hw)->TXEFS.reg & CAN_TXEFS_EFGI_Msk) >> CAN_TXEFS_EFGI_Pos;
+}
+
+static inline hri_can_txefs_reg_t hri_can_get_TXEFS_EFPI_bf(const void *const hw, hri_can_txefs_reg_t mask)
+{
+	return (((Can *)hw)->TXEFS.reg & CAN_TXEFS_EFPI(mask)) >> CAN_TXEFS_EFPI_Pos;
+}
+
+static inline hri_can_txefs_reg_t hri_can_read_TXEFS_EFPI_bf(const void *const hw)
+{
+	return (((Can *)hw)->TXEFS.reg & CAN_TXEFS_EFPI_Msk) >> CAN_TXEFS_EFPI_Pos;
+}
+
+static inline hri_can_txefs_reg_t hri_can_get_TXEFS_reg(const void *const hw, hri_can_txefs_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Can *)hw)->TXEFS.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline hri_can_txefs_reg_t hri_can_read_TXEFS_reg(const void *const hw)
+{
+	return ((Can *)hw)->TXEFS.reg;
+}
 
 static inline void hri_can_set_MRCFG_QOS_bf(const void *const hw, hri_can_mrcfg_reg_t mask)
 {
@@ -15977,1015 +16987,6 @@ static inline void hri_can_toggle_TXEFA_reg(const void *const hw, hri_can_txefa_
 static inline hri_can_txefa_reg_t hri_can_read_TXEFA_reg(const void *const hw)
 {
 	return ((Can *)hw)->TXEFA.reg;
-}
-
-static inline hri_can_crel_reg_t hri_can_get_CREL_SUBSTEP_bf(const void *const hw, hri_can_crel_reg_t mask)
-{
-	return (((Can *)hw)->CREL.reg & CAN_CREL_SUBSTEP(mask)) >> CAN_CREL_SUBSTEP_Pos;
-}
-
-static inline hri_can_crel_reg_t hri_can_read_CREL_SUBSTEP_bf(const void *const hw)
-{
-	return (((Can *)hw)->CREL.reg & CAN_CREL_SUBSTEP_Msk) >> CAN_CREL_SUBSTEP_Pos;
-}
-
-static inline hri_can_crel_reg_t hri_can_get_CREL_STEP_bf(const void *const hw, hri_can_crel_reg_t mask)
-{
-	return (((Can *)hw)->CREL.reg & CAN_CREL_STEP(mask)) >> CAN_CREL_STEP_Pos;
-}
-
-static inline hri_can_crel_reg_t hri_can_read_CREL_STEP_bf(const void *const hw)
-{
-	return (((Can *)hw)->CREL.reg & CAN_CREL_STEP_Msk) >> CAN_CREL_STEP_Pos;
-}
-
-static inline hri_can_crel_reg_t hri_can_get_CREL_REL_bf(const void *const hw, hri_can_crel_reg_t mask)
-{
-	return (((Can *)hw)->CREL.reg & CAN_CREL_REL(mask)) >> CAN_CREL_REL_Pos;
-}
-
-static inline hri_can_crel_reg_t hri_can_read_CREL_REL_bf(const void *const hw)
-{
-	return (((Can *)hw)->CREL.reg & CAN_CREL_REL_Msk) >> CAN_CREL_REL_Pos;
-}
-
-static inline hri_can_crel_reg_t hri_can_get_CREL_reg(const void *const hw, hri_can_crel_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Can *)hw)->CREL.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline hri_can_crel_reg_t hri_can_read_CREL_reg(const void *const hw)
-{
-	return ((Can *)hw)->CREL.reg;
-}
-
-static inline hri_can_endn_reg_t hri_can_get_ENDN_ETV_bf(const void *const hw, hri_can_endn_reg_t mask)
-{
-	return (((Can *)hw)->ENDN.reg & CAN_ENDN_ETV(mask)) >> CAN_ENDN_ETV_Pos;
-}
-
-static inline hri_can_endn_reg_t hri_can_read_ENDN_ETV_bf(const void *const hw)
-{
-	return (((Can *)hw)->ENDN.reg & CAN_ENDN_ETV_Msk) >> CAN_ENDN_ETV_Pos;
-}
-
-static inline hri_can_endn_reg_t hri_can_get_ENDN_reg(const void *const hw, hri_can_endn_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Can *)hw)->ENDN.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline hri_can_endn_reg_t hri_can_read_ENDN_reg(const void *const hw)
-{
-	return ((Can *)hw)->ENDN.reg;
-}
-
-static inline hri_can_tscv_reg_t hri_can_get_TSCV_TSC_bf(const void *const hw, hri_can_tscv_reg_t mask)
-{
-	return (((Can *)hw)->TSCV.reg & CAN_TSCV_TSC(mask)) >> CAN_TSCV_TSC_Pos;
-}
-
-static inline hri_can_tscv_reg_t hri_can_read_TSCV_TSC_bf(const void *const hw)
-{
-	return (((Can *)hw)->TSCV.reg & CAN_TSCV_TSC_Msk) >> CAN_TSCV_TSC_Pos;
-}
-
-static inline hri_can_tscv_reg_t hri_can_get_TSCV_reg(const void *const hw, hri_can_tscv_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Can *)hw)->TSCV.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline hri_can_tscv_reg_t hri_can_read_TSCV_reg(const void *const hw)
-{
-	return ((Can *)hw)->TSCV.reg;
-}
-
-static inline bool hri_can_get_ECR_RP_bit(const void *const hw)
-{
-	return (((Can *)hw)->ECR.reg & CAN_ECR_RP) >> CAN_ECR_RP_Pos;
-}
-
-static inline hri_can_ecr_reg_t hri_can_get_ECR_TEC_bf(const void *const hw, hri_can_ecr_reg_t mask)
-{
-	return (((Can *)hw)->ECR.reg & CAN_ECR_TEC(mask)) >> CAN_ECR_TEC_Pos;
-}
-
-static inline hri_can_ecr_reg_t hri_can_read_ECR_TEC_bf(const void *const hw)
-{
-	return (((Can *)hw)->ECR.reg & CAN_ECR_TEC_Msk) >> CAN_ECR_TEC_Pos;
-}
-
-static inline hri_can_ecr_reg_t hri_can_get_ECR_REC_bf(const void *const hw, hri_can_ecr_reg_t mask)
-{
-	return (((Can *)hw)->ECR.reg & CAN_ECR_REC(mask)) >> CAN_ECR_REC_Pos;
-}
-
-static inline hri_can_ecr_reg_t hri_can_read_ECR_REC_bf(const void *const hw)
-{
-	return (((Can *)hw)->ECR.reg & CAN_ECR_REC_Msk) >> CAN_ECR_REC_Pos;
-}
-
-static inline hri_can_ecr_reg_t hri_can_get_ECR_CEL_bf(const void *const hw, hri_can_ecr_reg_t mask)
-{
-	return (((Can *)hw)->ECR.reg & CAN_ECR_CEL(mask)) >> CAN_ECR_CEL_Pos;
-}
-
-static inline hri_can_ecr_reg_t hri_can_read_ECR_CEL_bf(const void *const hw)
-{
-	return (((Can *)hw)->ECR.reg & CAN_ECR_CEL_Msk) >> CAN_ECR_CEL_Pos;
-}
-
-static inline hri_can_ecr_reg_t hri_can_get_ECR_reg(const void *const hw, hri_can_ecr_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Can *)hw)->ECR.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline hri_can_ecr_reg_t hri_can_read_ECR_reg(const void *const hw)
-{
-	return ((Can *)hw)->ECR.reg;
-}
-
-static inline bool hri_can_get_PSR_EP_bit(const void *const hw)
-{
-	return (((Can *)hw)->PSR.reg & CAN_PSR_EP) >> CAN_PSR_EP_Pos;
-}
-
-static inline bool hri_can_get_PSR_EW_bit(const void *const hw)
-{
-	return (((Can *)hw)->PSR.reg & CAN_PSR_EW) >> CAN_PSR_EW_Pos;
-}
-
-static inline bool hri_can_get_PSR_BO_bit(const void *const hw)
-{
-	return (((Can *)hw)->PSR.reg & CAN_PSR_BO) >> CAN_PSR_BO_Pos;
-}
-
-static inline bool hri_can_get_PSR_RESI_bit(const void *const hw)
-{
-	return (((Can *)hw)->PSR.reg & CAN_PSR_RESI) >> CAN_PSR_RESI_Pos;
-}
-
-static inline bool hri_can_get_PSR_RBRS_bit(const void *const hw)
-{
-	return (((Can *)hw)->PSR.reg & CAN_PSR_RBRS) >> CAN_PSR_RBRS_Pos;
-}
-
-static inline bool hri_can_get_PSR_RFDF_bit(const void *const hw)
-{
-	return (((Can *)hw)->PSR.reg & CAN_PSR_RFDF) >> CAN_PSR_RFDF_Pos;
-}
-
-static inline bool hri_can_get_PSR_PXE_bit(const void *const hw)
-{
-	return (((Can *)hw)->PSR.reg & CAN_PSR_PXE) >> CAN_PSR_PXE_Pos;
-}
-
-static inline hri_can_psr_reg_t hri_can_get_PSR_LEC_bf(const void *const hw, hri_can_psr_reg_t mask)
-{
-	return (((Can *)hw)->PSR.reg & CAN_PSR_LEC(mask)) >> CAN_PSR_LEC_Pos;
-}
-
-static inline hri_can_psr_reg_t hri_can_read_PSR_LEC_bf(const void *const hw)
-{
-	return (((Can *)hw)->PSR.reg & CAN_PSR_LEC_Msk) >> CAN_PSR_LEC_Pos;
-}
-
-static inline hri_can_psr_reg_t hri_can_get_PSR_ACT_bf(const void *const hw, hri_can_psr_reg_t mask)
-{
-	return (((Can *)hw)->PSR.reg & CAN_PSR_ACT(mask)) >> CAN_PSR_ACT_Pos;
-}
-
-static inline hri_can_psr_reg_t hri_can_read_PSR_ACT_bf(const void *const hw)
-{
-	return (((Can *)hw)->PSR.reg & CAN_PSR_ACT_Msk) >> CAN_PSR_ACT_Pos;
-}
-
-static inline hri_can_psr_reg_t hri_can_get_PSR_DLEC_bf(const void *const hw, hri_can_psr_reg_t mask)
-{
-	return (((Can *)hw)->PSR.reg & CAN_PSR_DLEC(mask)) >> CAN_PSR_DLEC_Pos;
-}
-
-static inline hri_can_psr_reg_t hri_can_read_PSR_DLEC_bf(const void *const hw)
-{
-	return (((Can *)hw)->PSR.reg & CAN_PSR_DLEC_Msk) >> CAN_PSR_DLEC_Pos;
-}
-
-static inline hri_can_psr_reg_t hri_can_get_PSR_TDCV_bf(const void *const hw, hri_can_psr_reg_t mask)
-{
-	return (((Can *)hw)->PSR.reg & CAN_PSR_TDCV(mask)) >> CAN_PSR_TDCV_Pos;
-}
-
-static inline hri_can_psr_reg_t hri_can_read_PSR_TDCV_bf(const void *const hw)
-{
-	return (((Can *)hw)->PSR.reg & CAN_PSR_TDCV_Msk) >> CAN_PSR_TDCV_Pos;
-}
-
-static inline hri_can_psr_reg_t hri_can_get_PSR_reg(const void *const hw, hri_can_psr_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Can *)hw)->PSR.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline hri_can_psr_reg_t hri_can_read_PSR_reg(const void *const hw)
-{
-	return ((Can *)hw)->PSR.reg;
-}
-
-static inline bool hri_can_get_HPMS_FLST_bit(const void *const hw)
-{
-	return (((Can *)hw)->HPMS.reg & CAN_HPMS_FLST) >> CAN_HPMS_FLST_Pos;
-}
-
-static inline hri_can_hpms_reg_t hri_can_get_HPMS_BIDX_bf(const void *const hw, hri_can_hpms_reg_t mask)
-{
-	return (((Can *)hw)->HPMS.reg & CAN_HPMS_BIDX(mask)) >> CAN_HPMS_BIDX_Pos;
-}
-
-static inline hri_can_hpms_reg_t hri_can_read_HPMS_BIDX_bf(const void *const hw)
-{
-	return (((Can *)hw)->HPMS.reg & CAN_HPMS_BIDX_Msk) >> CAN_HPMS_BIDX_Pos;
-}
-
-static inline hri_can_hpms_reg_t hri_can_get_HPMS_MSI_bf(const void *const hw, hri_can_hpms_reg_t mask)
-{
-	return (((Can *)hw)->HPMS.reg & CAN_HPMS_MSI(mask)) >> CAN_HPMS_MSI_Pos;
-}
-
-static inline hri_can_hpms_reg_t hri_can_read_HPMS_MSI_bf(const void *const hw)
-{
-	return (((Can *)hw)->HPMS.reg & CAN_HPMS_MSI_Msk) >> CAN_HPMS_MSI_Pos;
-}
-
-static inline hri_can_hpms_reg_t hri_can_get_HPMS_FIDX_bf(const void *const hw, hri_can_hpms_reg_t mask)
-{
-	return (((Can *)hw)->HPMS.reg & CAN_HPMS_FIDX(mask)) >> CAN_HPMS_FIDX_Pos;
-}
-
-static inline hri_can_hpms_reg_t hri_can_read_HPMS_FIDX_bf(const void *const hw)
-{
-	return (((Can *)hw)->HPMS.reg & CAN_HPMS_FIDX_Msk) >> CAN_HPMS_FIDX_Pos;
-}
-
-static inline hri_can_hpms_reg_t hri_can_get_HPMS_reg(const void *const hw, hri_can_hpms_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Can *)hw)->HPMS.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline hri_can_hpms_reg_t hri_can_read_HPMS_reg(const void *const hw)
-{
-	return ((Can *)hw)->HPMS.reg;
-}
-
-static inline bool hri_can_get_RXF0S_F0F_bit(const void *const hw)
-{
-	return (((Can *)hw)->RXF0S.reg & CAN_RXF0S_F0F) >> CAN_RXF0S_F0F_Pos;
-}
-
-static inline bool hri_can_get_RXF0S_RF0L_bit(const void *const hw)
-{
-	return (((Can *)hw)->RXF0S.reg & CAN_RXF0S_RF0L) >> CAN_RXF0S_RF0L_Pos;
-}
-
-static inline hri_can_rxf0s_reg_t hri_can_get_RXF0S_F0FL_bf(const void *const hw, hri_can_rxf0s_reg_t mask)
-{
-	return (((Can *)hw)->RXF0S.reg & CAN_RXF0S_F0FL(mask)) >> CAN_RXF0S_F0FL_Pos;
-}
-
-static inline hri_can_rxf0s_reg_t hri_can_read_RXF0S_F0FL_bf(const void *const hw)
-{
-	return (((Can *)hw)->RXF0S.reg & CAN_RXF0S_F0FL_Msk) >> CAN_RXF0S_F0FL_Pos;
-}
-
-static inline hri_can_rxf0s_reg_t hri_can_get_RXF0S_F0GI_bf(const void *const hw, hri_can_rxf0s_reg_t mask)
-{
-	return (((Can *)hw)->RXF0S.reg & CAN_RXF0S_F0GI(mask)) >> CAN_RXF0S_F0GI_Pos;
-}
-
-static inline hri_can_rxf0s_reg_t hri_can_read_RXF0S_F0GI_bf(const void *const hw)
-{
-	return (((Can *)hw)->RXF0S.reg & CAN_RXF0S_F0GI_Msk) >> CAN_RXF0S_F0GI_Pos;
-}
-
-static inline hri_can_rxf0s_reg_t hri_can_get_RXF0S_F0PI_bf(const void *const hw, hri_can_rxf0s_reg_t mask)
-{
-	return (((Can *)hw)->RXF0S.reg & CAN_RXF0S_F0PI(mask)) >> CAN_RXF0S_F0PI_Pos;
-}
-
-static inline hri_can_rxf0s_reg_t hri_can_read_RXF0S_F0PI_bf(const void *const hw)
-{
-	return (((Can *)hw)->RXF0S.reg & CAN_RXF0S_F0PI_Msk) >> CAN_RXF0S_F0PI_Pos;
-}
-
-static inline hri_can_rxf0s_reg_t hri_can_get_RXF0S_reg(const void *const hw, hri_can_rxf0s_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Can *)hw)->RXF0S.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline hri_can_rxf0s_reg_t hri_can_read_RXF0S_reg(const void *const hw)
-{
-	return ((Can *)hw)->RXF0S.reg;
-}
-
-static inline bool hri_can_get_RXF1S_F1F_bit(const void *const hw)
-{
-	return (((Can *)hw)->RXF1S.reg & CAN_RXF1S_F1F) >> CAN_RXF1S_F1F_Pos;
-}
-
-static inline bool hri_can_get_RXF1S_RF1L_bit(const void *const hw)
-{
-	return (((Can *)hw)->RXF1S.reg & CAN_RXF1S_RF1L) >> CAN_RXF1S_RF1L_Pos;
-}
-
-static inline hri_can_rxf1s_reg_t hri_can_get_RXF1S_F1FL_bf(const void *const hw, hri_can_rxf1s_reg_t mask)
-{
-	return (((Can *)hw)->RXF1S.reg & CAN_RXF1S_F1FL(mask)) >> CAN_RXF1S_F1FL_Pos;
-}
-
-static inline hri_can_rxf1s_reg_t hri_can_read_RXF1S_F1FL_bf(const void *const hw)
-{
-	return (((Can *)hw)->RXF1S.reg & CAN_RXF1S_F1FL_Msk) >> CAN_RXF1S_F1FL_Pos;
-}
-
-static inline hri_can_rxf1s_reg_t hri_can_get_RXF1S_F1GI_bf(const void *const hw, hri_can_rxf1s_reg_t mask)
-{
-	return (((Can *)hw)->RXF1S.reg & CAN_RXF1S_F1GI(mask)) >> CAN_RXF1S_F1GI_Pos;
-}
-
-static inline hri_can_rxf1s_reg_t hri_can_read_RXF1S_F1GI_bf(const void *const hw)
-{
-	return (((Can *)hw)->RXF1S.reg & CAN_RXF1S_F1GI_Msk) >> CAN_RXF1S_F1GI_Pos;
-}
-
-static inline hri_can_rxf1s_reg_t hri_can_get_RXF1S_F1PI_bf(const void *const hw, hri_can_rxf1s_reg_t mask)
-{
-	return (((Can *)hw)->RXF1S.reg & CAN_RXF1S_F1PI(mask)) >> CAN_RXF1S_F1PI_Pos;
-}
-
-static inline hri_can_rxf1s_reg_t hri_can_read_RXF1S_F1PI_bf(const void *const hw)
-{
-	return (((Can *)hw)->RXF1S.reg & CAN_RXF1S_F1PI_Msk) >> CAN_RXF1S_F1PI_Pos;
-}
-
-static inline hri_can_rxf1s_reg_t hri_can_get_RXF1S_DMS_bf(const void *const hw, hri_can_rxf1s_reg_t mask)
-{
-	return (((Can *)hw)->RXF1S.reg & CAN_RXF1S_DMS(mask)) >> CAN_RXF1S_DMS_Pos;
-}
-
-static inline hri_can_rxf1s_reg_t hri_can_read_RXF1S_DMS_bf(const void *const hw)
-{
-	return (((Can *)hw)->RXF1S.reg & CAN_RXF1S_DMS_Msk) >> CAN_RXF1S_DMS_Pos;
-}
-
-static inline hri_can_rxf1s_reg_t hri_can_get_RXF1S_reg(const void *const hw, hri_can_rxf1s_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Can *)hw)->RXF1S.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline hri_can_rxf1s_reg_t hri_can_read_RXF1S_reg(const void *const hw)
-{
-	return ((Can *)hw)->RXF1S.reg;
-}
-
-static inline bool hri_can_get_TXFQS_TFQF_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXFQS.reg & CAN_TXFQS_TFQF) >> CAN_TXFQS_TFQF_Pos;
-}
-
-static inline hri_can_txfqs_reg_t hri_can_get_TXFQS_TFFL_bf(const void *const hw, hri_can_txfqs_reg_t mask)
-{
-	return (((Can *)hw)->TXFQS.reg & CAN_TXFQS_TFFL(mask)) >> CAN_TXFQS_TFFL_Pos;
-}
-
-static inline hri_can_txfqs_reg_t hri_can_read_TXFQS_TFFL_bf(const void *const hw)
-{
-	return (((Can *)hw)->TXFQS.reg & CAN_TXFQS_TFFL_Msk) >> CAN_TXFQS_TFFL_Pos;
-}
-
-static inline hri_can_txfqs_reg_t hri_can_get_TXFQS_TFGI_bf(const void *const hw, hri_can_txfqs_reg_t mask)
-{
-	return (((Can *)hw)->TXFQS.reg & CAN_TXFQS_TFGI(mask)) >> CAN_TXFQS_TFGI_Pos;
-}
-
-static inline hri_can_txfqs_reg_t hri_can_read_TXFQS_TFGI_bf(const void *const hw)
-{
-	return (((Can *)hw)->TXFQS.reg & CAN_TXFQS_TFGI_Msk) >> CAN_TXFQS_TFGI_Pos;
-}
-
-static inline hri_can_txfqs_reg_t hri_can_get_TXFQS_TFQPI_bf(const void *const hw, hri_can_txfqs_reg_t mask)
-{
-	return (((Can *)hw)->TXFQS.reg & CAN_TXFQS_TFQPI(mask)) >> CAN_TXFQS_TFQPI_Pos;
-}
-
-static inline hri_can_txfqs_reg_t hri_can_read_TXFQS_TFQPI_bf(const void *const hw)
-{
-	return (((Can *)hw)->TXFQS.reg & CAN_TXFQS_TFQPI_Msk) >> CAN_TXFQS_TFQPI_Pos;
-}
-
-static inline hri_can_txfqs_reg_t hri_can_get_TXFQS_reg(const void *const hw, hri_can_txfqs_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Can *)hw)->TXFQS.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline hri_can_txfqs_reg_t hri_can_read_TXFQS_reg(const void *const hw)
-{
-	return ((Can *)hw)->TXFQS.reg;
-}
-
-static inline bool hri_can_get_TXBRP_TRP0_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP0) >> CAN_TXBRP_TRP0_Pos;
-}
-
-static inline bool hri_can_get_TXBRP_TRP1_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP1) >> CAN_TXBRP_TRP1_Pos;
-}
-
-static inline bool hri_can_get_TXBRP_TRP2_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP2) >> CAN_TXBRP_TRP2_Pos;
-}
-
-static inline bool hri_can_get_TXBRP_TRP3_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP3) >> CAN_TXBRP_TRP3_Pos;
-}
-
-static inline bool hri_can_get_TXBRP_TRP4_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP4) >> CAN_TXBRP_TRP4_Pos;
-}
-
-static inline bool hri_can_get_TXBRP_TRP5_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP5) >> CAN_TXBRP_TRP5_Pos;
-}
-
-static inline bool hri_can_get_TXBRP_TRP6_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP6) >> CAN_TXBRP_TRP6_Pos;
-}
-
-static inline bool hri_can_get_TXBRP_TRP7_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP7) >> CAN_TXBRP_TRP7_Pos;
-}
-
-static inline bool hri_can_get_TXBRP_TRP8_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP8) >> CAN_TXBRP_TRP8_Pos;
-}
-
-static inline bool hri_can_get_TXBRP_TRP9_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP9) >> CAN_TXBRP_TRP9_Pos;
-}
-
-static inline bool hri_can_get_TXBRP_TRP10_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP10) >> CAN_TXBRP_TRP10_Pos;
-}
-
-static inline bool hri_can_get_TXBRP_TRP11_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP11) >> CAN_TXBRP_TRP11_Pos;
-}
-
-static inline bool hri_can_get_TXBRP_TRP12_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP12) >> CAN_TXBRP_TRP12_Pos;
-}
-
-static inline bool hri_can_get_TXBRP_TRP13_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP13) >> CAN_TXBRP_TRP13_Pos;
-}
-
-static inline bool hri_can_get_TXBRP_TRP14_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP14) >> CAN_TXBRP_TRP14_Pos;
-}
-
-static inline bool hri_can_get_TXBRP_TRP15_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP15) >> CAN_TXBRP_TRP15_Pos;
-}
-
-static inline bool hri_can_get_TXBRP_TRP16_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP16) >> CAN_TXBRP_TRP16_Pos;
-}
-
-static inline bool hri_can_get_TXBRP_TRP17_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP17) >> CAN_TXBRP_TRP17_Pos;
-}
-
-static inline bool hri_can_get_TXBRP_TRP18_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP18) >> CAN_TXBRP_TRP18_Pos;
-}
-
-static inline bool hri_can_get_TXBRP_TRP19_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP19) >> CAN_TXBRP_TRP19_Pos;
-}
-
-static inline bool hri_can_get_TXBRP_TRP20_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP20) >> CAN_TXBRP_TRP20_Pos;
-}
-
-static inline bool hri_can_get_TXBRP_TRP21_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP21) >> CAN_TXBRP_TRP21_Pos;
-}
-
-static inline bool hri_can_get_TXBRP_TRP22_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP22) >> CAN_TXBRP_TRP22_Pos;
-}
-
-static inline bool hri_can_get_TXBRP_TRP23_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP23) >> CAN_TXBRP_TRP23_Pos;
-}
-
-static inline bool hri_can_get_TXBRP_TRP24_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP24) >> CAN_TXBRP_TRP24_Pos;
-}
-
-static inline bool hri_can_get_TXBRP_TRP25_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP25) >> CAN_TXBRP_TRP25_Pos;
-}
-
-static inline bool hri_can_get_TXBRP_TRP26_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP26) >> CAN_TXBRP_TRP26_Pos;
-}
-
-static inline bool hri_can_get_TXBRP_TRP27_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP27) >> CAN_TXBRP_TRP27_Pos;
-}
-
-static inline bool hri_can_get_TXBRP_TRP28_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP28) >> CAN_TXBRP_TRP28_Pos;
-}
-
-static inline bool hri_can_get_TXBRP_TRP29_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP29) >> CAN_TXBRP_TRP29_Pos;
-}
-
-static inline bool hri_can_get_TXBRP_TRP30_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP30) >> CAN_TXBRP_TRP30_Pos;
-}
-
-static inline bool hri_can_get_TXBRP_TRP31_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBRP.reg & CAN_TXBRP_TRP31) >> CAN_TXBRP_TRP31_Pos;
-}
-
-static inline hri_can_txbrp_reg_t hri_can_get_TXBRP_reg(const void *const hw, hri_can_txbrp_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Can *)hw)->TXBRP.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline hri_can_txbrp_reg_t hri_can_read_TXBRP_reg(const void *const hw)
-{
-	return ((Can *)hw)->TXBRP.reg;
-}
-
-static inline bool hri_can_get_TXBTO_TO0_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO0) >> CAN_TXBTO_TO0_Pos;
-}
-
-static inline bool hri_can_get_TXBTO_TO1_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO1) >> CAN_TXBTO_TO1_Pos;
-}
-
-static inline bool hri_can_get_TXBTO_TO2_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO2) >> CAN_TXBTO_TO2_Pos;
-}
-
-static inline bool hri_can_get_TXBTO_TO3_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO3) >> CAN_TXBTO_TO3_Pos;
-}
-
-static inline bool hri_can_get_TXBTO_TO4_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO4) >> CAN_TXBTO_TO4_Pos;
-}
-
-static inline bool hri_can_get_TXBTO_TO5_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO5) >> CAN_TXBTO_TO5_Pos;
-}
-
-static inline bool hri_can_get_TXBTO_TO6_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO6) >> CAN_TXBTO_TO6_Pos;
-}
-
-static inline bool hri_can_get_TXBTO_TO7_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO7) >> CAN_TXBTO_TO7_Pos;
-}
-
-static inline bool hri_can_get_TXBTO_TO8_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO8) >> CAN_TXBTO_TO8_Pos;
-}
-
-static inline bool hri_can_get_TXBTO_TO9_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO9) >> CAN_TXBTO_TO9_Pos;
-}
-
-static inline bool hri_can_get_TXBTO_TO10_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO10) >> CAN_TXBTO_TO10_Pos;
-}
-
-static inline bool hri_can_get_TXBTO_TO11_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO11) >> CAN_TXBTO_TO11_Pos;
-}
-
-static inline bool hri_can_get_TXBTO_TO12_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO12) >> CAN_TXBTO_TO12_Pos;
-}
-
-static inline bool hri_can_get_TXBTO_TO13_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO13) >> CAN_TXBTO_TO13_Pos;
-}
-
-static inline bool hri_can_get_TXBTO_TO14_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO14) >> CAN_TXBTO_TO14_Pos;
-}
-
-static inline bool hri_can_get_TXBTO_TO15_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO15) >> CAN_TXBTO_TO15_Pos;
-}
-
-static inline bool hri_can_get_TXBTO_TO16_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO16) >> CAN_TXBTO_TO16_Pos;
-}
-
-static inline bool hri_can_get_TXBTO_TO17_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO17) >> CAN_TXBTO_TO17_Pos;
-}
-
-static inline bool hri_can_get_TXBTO_TO18_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO18) >> CAN_TXBTO_TO18_Pos;
-}
-
-static inline bool hri_can_get_TXBTO_TO19_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO19) >> CAN_TXBTO_TO19_Pos;
-}
-
-static inline bool hri_can_get_TXBTO_TO20_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO20) >> CAN_TXBTO_TO20_Pos;
-}
-
-static inline bool hri_can_get_TXBTO_TO21_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO21) >> CAN_TXBTO_TO21_Pos;
-}
-
-static inline bool hri_can_get_TXBTO_TO22_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO22) >> CAN_TXBTO_TO22_Pos;
-}
-
-static inline bool hri_can_get_TXBTO_TO23_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO23) >> CAN_TXBTO_TO23_Pos;
-}
-
-static inline bool hri_can_get_TXBTO_TO24_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO24) >> CAN_TXBTO_TO24_Pos;
-}
-
-static inline bool hri_can_get_TXBTO_TO25_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO25) >> CAN_TXBTO_TO25_Pos;
-}
-
-static inline bool hri_can_get_TXBTO_TO26_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO26) >> CAN_TXBTO_TO26_Pos;
-}
-
-static inline bool hri_can_get_TXBTO_TO27_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO27) >> CAN_TXBTO_TO27_Pos;
-}
-
-static inline bool hri_can_get_TXBTO_TO28_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO28) >> CAN_TXBTO_TO28_Pos;
-}
-
-static inline bool hri_can_get_TXBTO_TO29_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO29) >> CAN_TXBTO_TO29_Pos;
-}
-
-static inline bool hri_can_get_TXBTO_TO30_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO30) >> CAN_TXBTO_TO30_Pos;
-}
-
-static inline bool hri_can_get_TXBTO_TO31_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBTO.reg & CAN_TXBTO_TO31) >> CAN_TXBTO_TO31_Pos;
-}
-
-static inline hri_can_txbto_reg_t hri_can_get_TXBTO_reg(const void *const hw, hri_can_txbto_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Can *)hw)->TXBTO.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline hri_can_txbto_reg_t hri_can_read_TXBTO_reg(const void *const hw)
-{
-	return ((Can *)hw)->TXBTO.reg;
-}
-
-static inline bool hri_can_get_TXBCF_CF0_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF0) >> CAN_TXBCF_CF0_Pos;
-}
-
-static inline bool hri_can_get_TXBCF_CF1_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF1) >> CAN_TXBCF_CF1_Pos;
-}
-
-static inline bool hri_can_get_TXBCF_CF2_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF2) >> CAN_TXBCF_CF2_Pos;
-}
-
-static inline bool hri_can_get_TXBCF_CF3_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF3) >> CAN_TXBCF_CF3_Pos;
-}
-
-static inline bool hri_can_get_TXBCF_CF4_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF4) >> CAN_TXBCF_CF4_Pos;
-}
-
-static inline bool hri_can_get_TXBCF_CF5_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF5) >> CAN_TXBCF_CF5_Pos;
-}
-
-static inline bool hri_can_get_TXBCF_CF6_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF6) >> CAN_TXBCF_CF6_Pos;
-}
-
-static inline bool hri_can_get_TXBCF_CF7_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF7) >> CAN_TXBCF_CF7_Pos;
-}
-
-static inline bool hri_can_get_TXBCF_CF8_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF8) >> CAN_TXBCF_CF8_Pos;
-}
-
-static inline bool hri_can_get_TXBCF_CF9_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF9) >> CAN_TXBCF_CF9_Pos;
-}
-
-static inline bool hri_can_get_TXBCF_CF10_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF10) >> CAN_TXBCF_CF10_Pos;
-}
-
-static inline bool hri_can_get_TXBCF_CF11_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF11) >> CAN_TXBCF_CF11_Pos;
-}
-
-static inline bool hri_can_get_TXBCF_CF12_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF12) >> CAN_TXBCF_CF12_Pos;
-}
-
-static inline bool hri_can_get_TXBCF_CF13_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF13) >> CAN_TXBCF_CF13_Pos;
-}
-
-static inline bool hri_can_get_TXBCF_CF14_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF14) >> CAN_TXBCF_CF14_Pos;
-}
-
-static inline bool hri_can_get_TXBCF_CF15_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF15) >> CAN_TXBCF_CF15_Pos;
-}
-
-static inline bool hri_can_get_TXBCF_CF16_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF16) >> CAN_TXBCF_CF16_Pos;
-}
-
-static inline bool hri_can_get_TXBCF_CF17_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF17) >> CAN_TXBCF_CF17_Pos;
-}
-
-static inline bool hri_can_get_TXBCF_CF18_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF18) >> CAN_TXBCF_CF18_Pos;
-}
-
-static inline bool hri_can_get_TXBCF_CF19_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF19) >> CAN_TXBCF_CF19_Pos;
-}
-
-static inline bool hri_can_get_TXBCF_CF20_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF20) >> CAN_TXBCF_CF20_Pos;
-}
-
-static inline bool hri_can_get_TXBCF_CF21_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF21) >> CAN_TXBCF_CF21_Pos;
-}
-
-static inline bool hri_can_get_TXBCF_CF22_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF22) >> CAN_TXBCF_CF22_Pos;
-}
-
-static inline bool hri_can_get_TXBCF_CF23_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF23) >> CAN_TXBCF_CF23_Pos;
-}
-
-static inline bool hri_can_get_TXBCF_CF24_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF24) >> CAN_TXBCF_CF24_Pos;
-}
-
-static inline bool hri_can_get_TXBCF_CF25_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF25) >> CAN_TXBCF_CF25_Pos;
-}
-
-static inline bool hri_can_get_TXBCF_CF26_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF26) >> CAN_TXBCF_CF26_Pos;
-}
-
-static inline bool hri_can_get_TXBCF_CF27_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF27) >> CAN_TXBCF_CF27_Pos;
-}
-
-static inline bool hri_can_get_TXBCF_CF28_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF28) >> CAN_TXBCF_CF28_Pos;
-}
-
-static inline bool hri_can_get_TXBCF_CF29_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF29) >> CAN_TXBCF_CF29_Pos;
-}
-
-static inline bool hri_can_get_TXBCF_CF30_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF30) >> CAN_TXBCF_CF30_Pos;
-}
-
-static inline bool hri_can_get_TXBCF_CF31_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXBCF.reg & CAN_TXBCF_CF31) >> CAN_TXBCF_CF31_Pos;
-}
-
-static inline hri_can_txbcf_reg_t hri_can_get_TXBCF_reg(const void *const hw, hri_can_txbcf_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Can *)hw)->TXBCF.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline hri_can_txbcf_reg_t hri_can_read_TXBCF_reg(const void *const hw)
-{
-	return ((Can *)hw)->TXBCF.reg;
-}
-
-static inline bool hri_can_get_TXEFS_EFF_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXEFS.reg & CAN_TXEFS_EFF) >> CAN_TXEFS_EFF_Pos;
-}
-
-static inline bool hri_can_get_TXEFS_TEFL_bit(const void *const hw)
-{
-	return (((Can *)hw)->TXEFS.reg & CAN_TXEFS_TEFL) >> CAN_TXEFS_TEFL_Pos;
-}
-
-static inline hri_can_txefs_reg_t hri_can_get_TXEFS_EFFL_bf(const void *const hw, hri_can_txefs_reg_t mask)
-{
-	return (((Can *)hw)->TXEFS.reg & CAN_TXEFS_EFFL(mask)) >> CAN_TXEFS_EFFL_Pos;
-}
-
-static inline hri_can_txefs_reg_t hri_can_read_TXEFS_EFFL_bf(const void *const hw)
-{
-	return (((Can *)hw)->TXEFS.reg & CAN_TXEFS_EFFL_Msk) >> CAN_TXEFS_EFFL_Pos;
-}
-
-static inline hri_can_txefs_reg_t hri_can_get_TXEFS_EFGI_bf(const void *const hw, hri_can_txefs_reg_t mask)
-{
-	return (((Can *)hw)->TXEFS.reg & CAN_TXEFS_EFGI(mask)) >> CAN_TXEFS_EFGI_Pos;
-}
-
-static inline hri_can_txefs_reg_t hri_can_read_TXEFS_EFGI_bf(const void *const hw)
-{
-	return (((Can *)hw)->TXEFS.reg & CAN_TXEFS_EFGI_Msk) >> CAN_TXEFS_EFGI_Pos;
-}
-
-static inline hri_can_txefs_reg_t hri_can_get_TXEFS_EFPI_bf(const void *const hw, hri_can_txefs_reg_t mask)
-{
-	return (((Can *)hw)->TXEFS.reg & CAN_TXEFS_EFPI(mask)) >> CAN_TXEFS_EFPI_Pos;
-}
-
-static inline hri_can_txefs_reg_t hri_can_read_TXEFS_EFPI_bf(const void *const hw)
-{
-	return (((Can *)hw)->TXEFS.reg & CAN_TXEFS_EFPI_Msk) >> CAN_TXEFS_EFPI_Pos;
-}
-
-static inline hri_can_txefs_reg_t hri_can_get_TXEFS_reg(const void *const hw, hri_can_txefs_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Can *)hw)->TXEFS.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline hri_can_txefs_reg_t hri_can_read_TXEFS_reg(const void *const hw)
-{
-	return ((Can *)hw)->TXEFS.reg;
 }
 
 #ifdef __cplusplus

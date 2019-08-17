@@ -3,7 +3,7 @@
  *
  * \brief SAM SERCOM
  *
- * Copyright (c) 2016-2018 Microchip Technology Inc. and its subsidiaries.
+ * Copyright (c) 2016-2019 Microchip Technology Inc. and its subsidiaries.
  *
  * \asf_license_start
  *
@@ -28,6 +28,7 @@
  * THAT YOU HAVE PAID DIRECTLY TO MICROCHIP FOR THIS SOFTWARE.
  *
  * \asf_license_stop
+ *
  */
 
 #ifdef _SAME51_SERCOM_COMPONENT_
@@ -138,6 +139,690 @@ static inline void hri_sercomusart_wait_for_sync(const void *const hw, hri_serco
 static inline bool hri_sercomusart_is_syncing(const void *const hw, hri_sercomusart_syncbusy_reg_t reg)
 {
 	return ((Sercom *)hw)->USART.SYNCBUSY.reg & reg;
+}
+
+static inline bool hri_sercomi2cm_get_INTFLAG_MB_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->I2CM.INTFLAG.reg & SERCOM_I2CM_INTFLAG_MB) >> SERCOM_I2CM_INTFLAG_MB_Pos;
+}
+
+static inline void hri_sercomi2cm_clear_INTFLAG_MB_bit(const void *const hw)
+{
+	((Sercom *)hw)->I2CM.INTFLAG.reg = SERCOM_I2CM_INTFLAG_MB;
+}
+
+static inline bool hri_sercomi2cm_get_INTFLAG_SB_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->I2CM.INTFLAG.reg & SERCOM_I2CM_INTFLAG_SB) >> SERCOM_I2CM_INTFLAG_SB_Pos;
+}
+
+static inline void hri_sercomi2cm_clear_INTFLAG_SB_bit(const void *const hw)
+{
+	((Sercom *)hw)->I2CM.INTFLAG.reg = SERCOM_I2CM_INTFLAG_SB;
+}
+
+static inline bool hri_sercomi2cm_get_INTFLAG_ERROR_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->I2CM.INTFLAG.reg & SERCOM_I2CM_INTFLAG_ERROR) >> SERCOM_I2CM_INTFLAG_ERROR_Pos;
+}
+
+static inline void hri_sercomi2cm_clear_INTFLAG_ERROR_bit(const void *const hw)
+{
+	((Sercom *)hw)->I2CM.INTFLAG.reg = SERCOM_I2CM_INTFLAG_ERROR;
+}
+
+static inline bool hri_sercomi2cm_get_interrupt_MB_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->I2CM.INTFLAG.reg & SERCOM_I2CM_INTFLAG_MB) >> SERCOM_I2CM_INTFLAG_MB_Pos;
+}
+
+static inline void hri_sercomi2cm_clear_interrupt_MB_bit(const void *const hw)
+{
+	((Sercom *)hw)->I2CM.INTFLAG.reg = SERCOM_I2CM_INTFLAG_MB;
+}
+
+static inline bool hri_sercomi2cm_get_interrupt_SB_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->I2CM.INTFLAG.reg & SERCOM_I2CM_INTFLAG_SB) >> SERCOM_I2CM_INTFLAG_SB_Pos;
+}
+
+static inline void hri_sercomi2cm_clear_interrupt_SB_bit(const void *const hw)
+{
+	((Sercom *)hw)->I2CM.INTFLAG.reg = SERCOM_I2CM_INTFLAG_SB;
+}
+
+static inline bool hri_sercomi2cm_get_interrupt_ERROR_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->I2CM.INTFLAG.reg & SERCOM_I2CM_INTFLAG_ERROR) >> SERCOM_I2CM_INTFLAG_ERROR_Pos;
+}
+
+static inline void hri_sercomi2cm_clear_interrupt_ERROR_bit(const void *const hw)
+{
+	((Sercom *)hw)->I2CM.INTFLAG.reg = SERCOM_I2CM_INTFLAG_ERROR;
+}
+
+static inline hri_sercomi2cm_intflag_reg_t hri_sercomi2cm_get_INTFLAG_reg(const void *const            hw,
+                                                                          hri_sercomi2cm_intflag_reg_t mask)
+{
+	uint8_t tmp;
+	tmp = ((Sercom *)hw)->I2CM.INTFLAG.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline hri_sercomi2cm_intflag_reg_t hri_sercomi2cm_read_INTFLAG_reg(const void *const hw)
+{
+	return ((Sercom *)hw)->I2CM.INTFLAG.reg;
+}
+
+static inline void hri_sercomi2cm_clear_INTFLAG_reg(const void *const hw, hri_sercomi2cm_intflag_reg_t mask)
+{
+	((Sercom *)hw)->I2CM.INTFLAG.reg = mask;
+}
+
+static inline bool hri_sercomi2cs_get_INTFLAG_PREC_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->I2CS.INTFLAG.reg & SERCOM_I2CS_INTFLAG_PREC) >> SERCOM_I2CS_INTFLAG_PREC_Pos;
+}
+
+static inline void hri_sercomi2cs_clear_INTFLAG_PREC_bit(const void *const hw)
+{
+	((Sercom *)hw)->I2CS.INTFLAG.reg = SERCOM_I2CS_INTFLAG_PREC;
+}
+
+static inline bool hri_sercomi2cs_get_INTFLAG_AMATCH_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->I2CS.INTFLAG.reg & SERCOM_I2CS_INTFLAG_AMATCH) >> SERCOM_I2CS_INTFLAG_AMATCH_Pos;
+}
+
+static inline void hri_sercomi2cs_clear_INTFLAG_AMATCH_bit(const void *const hw)
+{
+	((Sercom *)hw)->I2CS.INTFLAG.reg = SERCOM_I2CS_INTFLAG_AMATCH;
+}
+
+static inline bool hri_sercomi2cs_get_INTFLAG_DRDY_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->I2CS.INTFLAG.reg & SERCOM_I2CS_INTFLAG_DRDY) >> SERCOM_I2CS_INTFLAG_DRDY_Pos;
+}
+
+static inline void hri_sercomi2cs_clear_INTFLAG_DRDY_bit(const void *const hw)
+{
+	((Sercom *)hw)->I2CS.INTFLAG.reg = SERCOM_I2CS_INTFLAG_DRDY;
+}
+
+static inline bool hri_sercomi2cs_get_INTFLAG_ERROR_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->I2CS.INTFLAG.reg & SERCOM_I2CS_INTFLAG_ERROR) >> SERCOM_I2CS_INTFLAG_ERROR_Pos;
+}
+
+static inline void hri_sercomi2cs_clear_INTFLAG_ERROR_bit(const void *const hw)
+{
+	((Sercom *)hw)->I2CS.INTFLAG.reg = SERCOM_I2CS_INTFLAG_ERROR;
+}
+
+static inline bool hri_sercomi2cs_get_interrupt_PREC_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->I2CS.INTFLAG.reg & SERCOM_I2CS_INTFLAG_PREC) >> SERCOM_I2CS_INTFLAG_PREC_Pos;
+}
+
+static inline void hri_sercomi2cs_clear_interrupt_PREC_bit(const void *const hw)
+{
+	((Sercom *)hw)->I2CS.INTFLAG.reg = SERCOM_I2CS_INTFLAG_PREC;
+}
+
+static inline bool hri_sercomi2cs_get_interrupt_AMATCH_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->I2CS.INTFLAG.reg & SERCOM_I2CS_INTFLAG_AMATCH) >> SERCOM_I2CS_INTFLAG_AMATCH_Pos;
+}
+
+static inline void hri_sercomi2cs_clear_interrupt_AMATCH_bit(const void *const hw)
+{
+	((Sercom *)hw)->I2CS.INTFLAG.reg = SERCOM_I2CS_INTFLAG_AMATCH;
+}
+
+static inline bool hri_sercomi2cs_get_interrupt_DRDY_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->I2CS.INTFLAG.reg & SERCOM_I2CS_INTFLAG_DRDY) >> SERCOM_I2CS_INTFLAG_DRDY_Pos;
+}
+
+static inline void hri_sercomi2cs_clear_interrupt_DRDY_bit(const void *const hw)
+{
+	((Sercom *)hw)->I2CS.INTFLAG.reg = SERCOM_I2CS_INTFLAG_DRDY;
+}
+
+static inline bool hri_sercomi2cs_get_interrupt_ERROR_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->I2CS.INTFLAG.reg & SERCOM_I2CS_INTFLAG_ERROR) >> SERCOM_I2CS_INTFLAG_ERROR_Pos;
+}
+
+static inline void hri_sercomi2cs_clear_interrupt_ERROR_bit(const void *const hw)
+{
+	((Sercom *)hw)->I2CS.INTFLAG.reg = SERCOM_I2CS_INTFLAG_ERROR;
+}
+
+static inline hri_sercomi2cs_intflag_reg_t hri_sercomi2cs_get_INTFLAG_reg(const void *const            hw,
+                                                                          hri_sercomi2cs_intflag_reg_t mask)
+{
+	uint8_t tmp;
+	tmp = ((Sercom *)hw)->I2CS.INTFLAG.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline hri_sercomi2cs_intflag_reg_t hri_sercomi2cs_read_INTFLAG_reg(const void *const hw)
+{
+	return ((Sercom *)hw)->I2CS.INTFLAG.reg;
+}
+
+static inline void hri_sercomi2cs_clear_INTFLAG_reg(const void *const hw, hri_sercomi2cs_intflag_reg_t mask)
+{
+	((Sercom *)hw)->I2CS.INTFLAG.reg = mask;
+}
+
+static inline bool hri_sercomspi_get_INTFLAG_DRE_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->SPI.INTFLAG.reg & SERCOM_SPI_INTFLAG_DRE) >> SERCOM_SPI_INTFLAG_DRE_Pos;
+}
+
+static inline void hri_sercomspi_clear_INTFLAG_DRE_bit(const void *const hw)
+{
+	((Sercom *)hw)->SPI.INTFLAG.reg = SERCOM_SPI_INTFLAG_DRE;
+}
+
+static inline bool hri_sercomspi_get_INTFLAG_TXC_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->SPI.INTFLAG.reg & SERCOM_SPI_INTFLAG_TXC) >> SERCOM_SPI_INTFLAG_TXC_Pos;
+}
+
+static inline void hri_sercomspi_clear_INTFLAG_TXC_bit(const void *const hw)
+{
+	((Sercom *)hw)->SPI.INTFLAG.reg = SERCOM_SPI_INTFLAG_TXC;
+}
+
+static inline bool hri_sercomspi_get_INTFLAG_RXC_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->SPI.INTFLAG.reg & SERCOM_SPI_INTFLAG_RXC) >> SERCOM_SPI_INTFLAG_RXC_Pos;
+}
+
+static inline void hri_sercomspi_clear_INTFLAG_RXC_bit(const void *const hw)
+{
+	((Sercom *)hw)->SPI.INTFLAG.reg = SERCOM_SPI_INTFLAG_RXC;
+}
+
+static inline bool hri_sercomspi_get_INTFLAG_SSL_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->SPI.INTFLAG.reg & SERCOM_SPI_INTFLAG_SSL) >> SERCOM_SPI_INTFLAG_SSL_Pos;
+}
+
+static inline void hri_sercomspi_clear_INTFLAG_SSL_bit(const void *const hw)
+{
+	((Sercom *)hw)->SPI.INTFLAG.reg = SERCOM_SPI_INTFLAG_SSL;
+}
+
+static inline bool hri_sercomspi_get_INTFLAG_ERROR_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->SPI.INTFLAG.reg & SERCOM_SPI_INTFLAG_ERROR) >> SERCOM_SPI_INTFLAG_ERROR_Pos;
+}
+
+static inline void hri_sercomspi_clear_INTFLAG_ERROR_bit(const void *const hw)
+{
+	((Sercom *)hw)->SPI.INTFLAG.reg = SERCOM_SPI_INTFLAG_ERROR;
+}
+
+static inline bool hri_sercomspi_get_interrupt_DRE_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->SPI.INTFLAG.reg & SERCOM_SPI_INTFLAG_DRE) >> SERCOM_SPI_INTFLAG_DRE_Pos;
+}
+
+static inline void hri_sercomspi_clear_interrupt_DRE_bit(const void *const hw)
+{
+	((Sercom *)hw)->SPI.INTFLAG.reg = SERCOM_SPI_INTFLAG_DRE;
+}
+
+static inline bool hri_sercomspi_get_interrupt_TXC_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->SPI.INTFLAG.reg & SERCOM_SPI_INTFLAG_TXC) >> SERCOM_SPI_INTFLAG_TXC_Pos;
+}
+
+static inline void hri_sercomspi_clear_interrupt_TXC_bit(const void *const hw)
+{
+	((Sercom *)hw)->SPI.INTFLAG.reg = SERCOM_SPI_INTFLAG_TXC;
+}
+
+static inline bool hri_sercomspi_get_interrupt_RXC_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->SPI.INTFLAG.reg & SERCOM_SPI_INTFLAG_RXC) >> SERCOM_SPI_INTFLAG_RXC_Pos;
+}
+
+static inline void hri_sercomspi_clear_interrupt_RXC_bit(const void *const hw)
+{
+	((Sercom *)hw)->SPI.INTFLAG.reg = SERCOM_SPI_INTFLAG_RXC;
+}
+
+static inline bool hri_sercomspi_get_interrupt_SSL_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->SPI.INTFLAG.reg & SERCOM_SPI_INTFLAG_SSL) >> SERCOM_SPI_INTFLAG_SSL_Pos;
+}
+
+static inline void hri_sercomspi_clear_interrupt_SSL_bit(const void *const hw)
+{
+	((Sercom *)hw)->SPI.INTFLAG.reg = SERCOM_SPI_INTFLAG_SSL;
+}
+
+static inline bool hri_sercomspi_get_interrupt_ERROR_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->SPI.INTFLAG.reg & SERCOM_SPI_INTFLAG_ERROR) >> SERCOM_SPI_INTFLAG_ERROR_Pos;
+}
+
+static inline void hri_sercomspi_clear_interrupt_ERROR_bit(const void *const hw)
+{
+	((Sercom *)hw)->SPI.INTFLAG.reg = SERCOM_SPI_INTFLAG_ERROR;
+}
+
+static inline hri_sercomspi_intflag_reg_t hri_sercomspi_get_INTFLAG_reg(const void *const           hw,
+                                                                        hri_sercomspi_intflag_reg_t mask)
+{
+	uint8_t tmp;
+	tmp = ((Sercom *)hw)->SPI.INTFLAG.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline hri_sercomspi_intflag_reg_t hri_sercomspi_read_INTFLAG_reg(const void *const hw)
+{
+	return ((Sercom *)hw)->SPI.INTFLAG.reg;
+}
+
+static inline void hri_sercomspi_clear_INTFLAG_reg(const void *const hw, hri_sercomspi_intflag_reg_t mask)
+{
+	((Sercom *)hw)->SPI.INTFLAG.reg = mask;
+}
+
+static inline bool hri_sercomusart_get_INTFLAG_DRE_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->USART.INTFLAG.reg & SERCOM_USART_INTFLAG_DRE) >> SERCOM_USART_INTFLAG_DRE_Pos;
+}
+
+static inline void hri_sercomusart_clear_INTFLAG_DRE_bit(const void *const hw)
+{
+	((Sercom *)hw)->USART.INTFLAG.reg = SERCOM_USART_INTFLAG_DRE;
+}
+
+static inline bool hri_sercomusart_get_INTFLAG_TXC_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->USART.INTFLAG.reg & SERCOM_USART_INTFLAG_TXC) >> SERCOM_USART_INTFLAG_TXC_Pos;
+}
+
+static inline void hri_sercomusart_clear_INTFLAG_TXC_bit(const void *const hw)
+{
+	((Sercom *)hw)->USART.INTFLAG.reg = SERCOM_USART_INTFLAG_TXC;
+}
+
+static inline bool hri_sercomusart_get_INTFLAG_RXC_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->USART.INTFLAG.reg & SERCOM_USART_INTFLAG_RXC) >> SERCOM_USART_INTFLAG_RXC_Pos;
+}
+
+static inline void hri_sercomusart_clear_INTFLAG_RXC_bit(const void *const hw)
+{
+	((Sercom *)hw)->USART.INTFLAG.reg = SERCOM_USART_INTFLAG_RXC;
+}
+
+static inline bool hri_sercomusart_get_INTFLAG_RXS_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->USART.INTFLAG.reg & SERCOM_USART_INTFLAG_RXS) >> SERCOM_USART_INTFLAG_RXS_Pos;
+}
+
+static inline void hri_sercomusart_clear_INTFLAG_RXS_bit(const void *const hw)
+{
+	((Sercom *)hw)->USART.INTFLAG.reg = SERCOM_USART_INTFLAG_RXS;
+}
+
+static inline bool hri_sercomusart_get_INTFLAG_CTSIC_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->USART.INTFLAG.reg & SERCOM_USART_INTFLAG_CTSIC) >> SERCOM_USART_INTFLAG_CTSIC_Pos;
+}
+
+static inline void hri_sercomusart_clear_INTFLAG_CTSIC_bit(const void *const hw)
+{
+	((Sercom *)hw)->USART.INTFLAG.reg = SERCOM_USART_INTFLAG_CTSIC;
+}
+
+static inline bool hri_sercomusart_get_INTFLAG_RXBRK_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->USART.INTFLAG.reg & SERCOM_USART_INTFLAG_RXBRK) >> SERCOM_USART_INTFLAG_RXBRK_Pos;
+}
+
+static inline void hri_sercomusart_clear_INTFLAG_RXBRK_bit(const void *const hw)
+{
+	((Sercom *)hw)->USART.INTFLAG.reg = SERCOM_USART_INTFLAG_RXBRK;
+}
+
+static inline bool hri_sercomusart_get_INTFLAG_ERROR_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->USART.INTFLAG.reg & SERCOM_USART_INTFLAG_ERROR) >> SERCOM_USART_INTFLAG_ERROR_Pos;
+}
+
+static inline void hri_sercomusart_clear_INTFLAG_ERROR_bit(const void *const hw)
+{
+	((Sercom *)hw)->USART.INTFLAG.reg = SERCOM_USART_INTFLAG_ERROR;
+}
+
+static inline bool hri_sercomusart_get_interrupt_DRE_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->USART.INTFLAG.reg & SERCOM_USART_INTFLAG_DRE) >> SERCOM_USART_INTFLAG_DRE_Pos;
+}
+
+static inline void hri_sercomusart_clear_interrupt_DRE_bit(const void *const hw)
+{
+	((Sercom *)hw)->USART.INTFLAG.reg = SERCOM_USART_INTFLAG_DRE;
+}
+
+static inline bool hri_sercomusart_get_interrupt_TXC_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->USART.INTFLAG.reg & SERCOM_USART_INTFLAG_TXC) >> SERCOM_USART_INTFLAG_TXC_Pos;
+}
+
+static inline void hri_sercomusart_clear_interrupt_TXC_bit(const void *const hw)
+{
+	((Sercom *)hw)->USART.INTFLAG.reg = SERCOM_USART_INTFLAG_TXC;
+}
+
+static inline bool hri_sercomusart_get_interrupt_RXC_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->USART.INTFLAG.reg & SERCOM_USART_INTFLAG_RXC) >> SERCOM_USART_INTFLAG_RXC_Pos;
+}
+
+static inline void hri_sercomusart_clear_interrupt_RXC_bit(const void *const hw)
+{
+	((Sercom *)hw)->USART.INTFLAG.reg = SERCOM_USART_INTFLAG_RXC;
+}
+
+static inline bool hri_sercomusart_get_interrupt_RXS_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->USART.INTFLAG.reg & SERCOM_USART_INTFLAG_RXS) >> SERCOM_USART_INTFLAG_RXS_Pos;
+}
+
+static inline void hri_sercomusart_clear_interrupt_RXS_bit(const void *const hw)
+{
+	((Sercom *)hw)->USART.INTFLAG.reg = SERCOM_USART_INTFLAG_RXS;
+}
+
+static inline bool hri_sercomusart_get_interrupt_CTSIC_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->USART.INTFLAG.reg & SERCOM_USART_INTFLAG_CTSIC) >> SERCOM_USART_INTFLAG_CTSIC_Pos;
+}
+
+static inline void hri_sercomusart_clear_interrupt_CTSIC_bit(const void *const hw)
+{
+	((Sercom *)hw)->USART.INTFLAG.reg = SERCOM_USART_INTFLAG_CTSIC;
+}
+
+static inline bool hri_sercomusart_get_interrupt_RXBRK_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->USART.INTFLAG.reg & SERCOM_USART_INTFLAG_RXBRK) >> SERCOM_USART_INTFLAG_RXBRK_Pos;
+}
+
+static inline void hri_sercomusart_clear_interrupt_RXBRK_bit(const void *const hw)
+{
+	((Sercom *)hw)->USART.INTFLAG.reg = SERCOM_USART_INTFLAG_RXBRK;
+}
+
+static inline bool hri_sercomusart_get_interrupt_ERROR_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->USART.INTFLAG.reg & SERCOM_USART_INTFLAG_ERROR) >> SERCOM_USART_INTFLAG_ERROR_Pos;
+}
+
+static inline void hri_sercomusart_clear_interrupt_ERROR_bit(const void *const hw)
+{
+	((Sercom *)hw)->USART.INTFLAG.reg = SERCOM_USART_INTFLAG_ERROR;
+}
+
+static inline hri_sercomusart_intflag_reg_t hri_sercomusart_get_INTFLAG_reg(const void *const             hw,
+                                                                            hri_sercomusart_intflag_reg_t mask)
+{
+	uint8_t tmp;
+	tmp = ((Sercom *)hw)->USART.INTFLAG.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline hri_sercomusart_intflag_reg_t hri_sercomusart_read_INTFLAG_reg(const void *const hw)
+{
+	return ((Sercom *)hw)->USART.INTFLAG.reg;
+}
+
+static inline void hri_sercomusart_clear_INTFLAG_reg(const void *const hw, hri_sercomusart_intflag_reg_t mask)
+{
+	((Sercom *)hw)->USART.INTFLAG.reg = mask;
+}
+
+static inline void hri_sercomi2cm_set_INTEN_MB_bit(const void *const hw)
+{
+	((Sercom *)hw)->I2CM.INTENSET.reg = SERCOM_I2CM_INTENSET_MB;
+}
+
+static inline bool hri_sercomi2cm_get_INTEN_MB_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->I2CM.INTENSET.reg & SERCOM_I2CM_INTENSET_MB) >> SERCOM_I2CM_INTENSET_MB_Pos;
+}
+
+static inline void hri_sercomi2cm_write_INTEN_MB_bit(const void *const hw, bool value)
+{
+	if (value == 0x0) {
+		((Sercom *)hw)->I2CM.INTENCLR.reg = SERCOM_I2CM_INTENSET_MB;
+	} else {
+		((Sercom *)hw)->I2CM.INTENSET.reg = SERCOM_I2CM_INTENSET_MB;
+	}
+}
+
+static inline void hri_sercomi2cm_clear_INTEN_MB_bit(const void *const hw)
+{
+	((Sercom *)hw)->I2CM.INTENCLR.reg = SERCOM_I2CM_INTENSET_MB;
+}
+
+static inline void hri_sercomi2cm_set_INTEN_SB_bit(const void *const hw)
+{
+	((Sercom *)hw)->I2CM.INTENSET.reg = SERCOM_I2CM_INTENSET_SB;
+}
+
+static inline bool hri_sercomi2cm_get_INTEN_SB_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->I2CM.INTENSET.reg & SERCOM_I2CM_INTENSET_SB) >> SERCOM_I2CM_INTENSET_SB_Pos;
+}
+
+static inline void hri_sercomi2cm_write_INTEN_SB_bit(const void *const hw, bool value)
+{
+	if (value == 0x0) {
+		((Sercom *)hw)->I2CM.INTENCLR.reg = SERCOM_I2CM_INTENSET_SB;
+	} else {
+		((Sercom *)hw)->I2CM.INTENSET.reg = SERCOM_I2CM_INTENSET_SB;
+	}
+}
+
+static inline void hri_sercomi2cm_clear_INTEN_SB_bit(const void *const hw)
+{
+	((Sercom *)hw)->I2CM.INTENCLR.reg = SERCOM_I2CM_INTENSET_SB;
+}
+
+static inline void hri_sercomi2cm_set_INTEN_ERROR_bit(const void *const hw)
+{
+	((Sercom *)hw)->I2CM.INTENSET.reg = SERCOM_I2CM_INTENSET_ERROR;
+}
+
+static inline bool hri_sercomi2cm_get_INTEN_ERROR_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->I2CM.INTENSET.reg & SERCOM_I2CM_INTENSET_ERROR) >> SERCOM_I2CM_INTENSET_ERROR_Pos;
+}
+
+static inline void hri_sercomi2cm_write_INTEN_ERROR_bit(const void *const hw, bool value)
+{
+	if (value == 0x0) {
+		((Sercom *)hw)->I2CM.INTENCLR.reg = SERCOM_I2CM_INTENSET_ERROR;
+	} else {
+		((Sercom *)hw)->I2CM.INTENSET.reg = SERCOM_I2CM_INTENSET_ERROR;
+	}
+}
+
+static inline void hri_sercomi2cm_clear_INTEN_ERROR_bit(const void *const hw)
+{
+	((Sercom *)hw)->I2CM.INTENCLR.reg = SERCOM_I2CM_INTENSET_ERROR;
+}
+
+static inline void hri_sercomi2cm_set_INTEN_reg(const void *const hw, hri_sercomi2cm_intenset_reg_t mask)
+{
+	((Sercom *)hw)->I2CM.INTENSET.reg = mask;
+}
+
+static inline hri_sercomi2cm_intenset_reg_t hri_sercomi2cm_get_INTEN_reg(const void *const             hw,
+                                                                         hri_sercomi2cm_intenset_reg_t mask)
+{
+	uint8_t tmp;
+	tmp = ((Sercom *)hw)->I2CM.INTENSET.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline hri_sercomi2cm_intenset_reg_t hri_sercomi2cm_read_INTEN_reg(const void *const hw)
+{
+	return ((Sercom *)hw)->I2CM.INTENSET.reg;
+}
+
+static inline void hri_sercomi2cm_write_INTEN_reg(const void *const hw, hri_sercomi2cm_intenset_reg_t data)
+{
+	((Sercom *)hw)->I2CM.INTENSET.reg = data;
+	((Sercom *)hw)->I2CM.INTENCLR.reg = ~data;
+}
+
+static inline void hri_sercomi2cm_clear_INTEN_reg(const void *const hw, hri_sercomi2cm_intenset_reg_t mask)
+{
+	((Sercom *)hw)->I2CM.INTENCLR.reg = mask;
+}
+
+static inline void hri_sercomi2cs_set_INTEN_PREC_bit(const void *const hw)
+{
+	((Sercom *)hw)->I2CS.INTENSET.reg = SERCOM_I2CS_INTENSET_PREC;
+}
+
+static inline bool hri_sercomi2cs_get_INTEN_PREC_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->I2CS.INTENSET.reg & SERCOM_I2CS_INTENSET_PREC) >> SERCOM_I2CS_INTENSET_PREC_Pos;
+}
+
+static inline void hri_sercomi2cs_write_INTEN_PREC_bit(const void *const hw, bool value)
+{
+	if (value == 0x0) {
+		((Sercom *)hw)->I2CS.INTENCLR.reg = SERCOM_I2CS_INTENSET_PREC;
+	} else {
+		((Sercom *)hw)->I2CS.INTENSET.reg = SERCOM_I2CS_INTENSET_PREC;
+	}
+}
+
+static inline void hri_sercomi2cs_clear_INTEN_PREC_bit(const void *const hw)
+{
+	((Sercom *)hw)->I2CS.INTENCLR.reg = SERCOM_I2CS_INTENSET_PREC;
+}
+
+static inline void hri_sercomi2cs_set_INTEN_AMATCH_bit(const void *const hw)
+{
+	((Sercom *)hw)->I2CS.INTENSET.reg = SERCOM_I2CS_INTENSET_AMATCH;
+}
+
+static inline bool hri_sercomi2cs_get_INTEN_AMATCH_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->I2CS.INTENSET.reg & SERCOM_I2CS_INTENSET_AMATCH) >> SERCOM_I2CS_INTENSET_AMATCH_Pos;
+}
+
+static inline void hri_sercomi2cs_write_INTEN_AMATCH_bit(const void *const hw, bool value)
+{
+	if (value == 0x0) {
+		((Sercom *)hw)->I2CS.INTENCLR.reg = SERCOM_I2CS_INTENSET_AMATCH;
+	} else {
+		((Sercom *)hw)->I2CS.INTENSET.reg = SERCOM_I2CS_INTENSET_AMATCH;
+	}
+}
+
+static inline void hri_sercomi2cs_clear_INTEN_AMATCH_bit(const void *const hw)
+{
+	((Sercom *)hw)->I2CS.INTENCLR.reg = SERCOM_I2CS_INTENSET_AMATCH;
+}
+
+static inline void hri_sercomi2cs_set_INTEN_DRDY_bit(const void *const hw)
+{
+	((Sercom *)hw)->I2CS.INTENSET.reg = SERCOM_I2CS_INTENSET_DRDY;
+}
+
+static inline bool hri_sercomi2cs_get_INTEN_DRDY_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->I2CS.INTENSET.reg & SERCOM_I2CS_INTENSET_DRDY) >> SERCOM_I2CS_INTENSET_DRDY_Pos;
+}
+
+static inline void hri_sercomi2cs_write_INTEN_DRDY_bit(const void *const hw, bool value)
+{
+	if (value == 0x0) {
+		((Sercom *)hw)->I2CS.INTENCLR.reg = SERCOM_I2CS_INTENSET_DRDY;
+	} else {
+		((Sercom *)hw)->I2CS.INTENSET.reg = SERCOM_I2CS_INTENSET_DRDY;
+	}
+}
+
+static inline void hri_sercomi2cs_clear_INTEN_DRDY_bit(const void *const hw)
+{
+	((Sercom *)hw)->I2CS.INTENCLR.reg = SERCOM_I2CS_INTENSET_DRDY;
+}
+
+static inline void hri_sercomi2cs_set_INTEN_ERROR_bit(const void *const hw)
+{
+	((Sercom *)hw)->I2CS.INTENSET.reg = SERCOM_I2CS_INTENSET_ERROR;
+}
+
+static inline bool hri_sercomi2cs_get_INTEN_ERROR_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->I2CS.INTENSET.reg & SERCOM_I2CS_INTENSET_ERROR) >> SERCOM_I2CS_INTENSET_ERROR_Pos;
+}
+
+static inline void hri_sercomi2cs_write_INTEN_ERROR_bit(const void *const hw, bool value)
+{
+	if (value == 0x0) {
+		((Sercom *)hw)->I2CS.INTENCLR.reg = SERCOM_I2CS_INTENSET_ERROR;
+	} else {
+		((Sercom *)hw)->I2CS.INTENSET.reg = SERCOM_I2CS_INTENSET_ERROR;
+	}
+}
+
+static inline void hri_sercomi2cs_clear_INTEN_ERROR_bit(const void *const hw)
+{
+	((Sercom *)hw)->I2CS.INTENCLR.reg = SERCOM_I2CS_INTENSET_ERROR;
+}
+
+static inline void hri_sercomi2cs_set_INTEN_reg(const void *const hw, hri_sercomi2cs_intenset_reg_t mask)
+{
+	((Sercom *)hw)->I2CS.INTENSET.reg = mask;
+}
+
+static inline hri_sercomi2cs_intenset_reg_t hri_sercomi2cs_get_INTEN_reg(const void *const             hw,
+                                                                         hri_sercomi2cs_intenset_reg_t mask)
+{
+	uint8_t tmp;
+	tmp = ((Sercom *)hw)->I2CS.INTENSET.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline hri_sercomi2cs_intenset_reg_t hri_sercomi2cs_read_INTEN_reg(const void *const hw)
+{
+	return ((Sercom *)hw)->I2CS.INTENSET.reg;
+}
+
+static inline void hri_sercomi2cs_write_INTEN_reg(const void *const hw, hri_sercomi2cs_intenset_reg_t data)
+{
+	((Sercom *)hw)->I2CS.INTENSET.reg = data;
+	((Sercom *)hw)->I2CS.INTENCLR.reg = ~data;
+}
+
+static inline void hri_sercomi2cs_clear_INTEN_reg(const void *const hw, hri_sercomi2cs_intenset_reg_t mask)
+{
+	((Sercom *)hw)->I2CS.INTENCLR.reg = mask;
 }
 
 static inline void hri_sercomspi_set_INTEN_DRE_bit(const void *const hw)
@@ -288,4210 +973,6 @@ static inline void hri_sercomspi_write_INTEN_reg(const void *const hw, hri_serco
 static inline void hri_sercomspi_clear_INTEN_reg(const void *const hw, hri_sercomspi_intenset_reg_t mask)
 {
 	((Sercom *)hw)->SPI.INTENCLR.reg = mask;
-}
-
-static inline bool hri_sercomspi_get_INTFLAG_DRE_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->SPI.INTFLAG.reg & SERCOM_SPI_INTFLAG_DRE) >> SERCOM_SPI_INTFLAG_DRE_Pos;
-}
-
-static inline void hri_sercomspi_clear_INTFLAG_DRE_bit(const void *const hw)
-{
-	((Sercom *)hw)->SPI.INTFLAG.reg = SERCOM_SPI_INTFLAG_DRE;
-}
-
-static inline bool hri_sercomspi_get_INTFLAG_TXC_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->SPI.INTFLAG.reg & SERCOM_SPI_INTFLAG_TXC) >> SERCOM_SPI_INTFLAG_TXC_Pos;
-}
-
-static inline void hri_sercomspi_clear_INTFLAG_TXC_bit(const void *const hw)
-{
-	((Sercom *)hw)->SPI.INTFLAG.reg = SERCOM_SPI_INTFLAG_TXC;
-}
-
-static inline bool hri_sercomspi_get_INTFLAG_RXC_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->SPI.INTFLAG.reg & SERCOM_SPI_INTFLAG_RXC) >> SERCOM_SPI_INTFLAG_RXC_Pos;
-}
-
-static inline void hri_sercomspi_clear_INTFLAG_RXC_bit(const void *const hw)
-{
-	((Sercom *)hw)->SPI.INTFLAG.reg = SERCOM_SPI_INTFLAG_RXC;
-}
-
-static inline bool hri_sercomspi_get_INTFLAG_SSL_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->SPI.INTFLAG.reg & SERCOM_SPI_INTFLAG_SSL) >> SERCOM_SPI_INTFLAG_SSL_Pos;
-}
-
-static inline void hri_sercomspi_clear_INTFLAG_SSL_bit(const void *const hw)
-{
-	((Sercom *)hw)->SPI.INTFLAG.reg = SERCOM_SPI_INTFLAG_SSL;
-}
-
-static inline bool hri_sercomspi_get_INTFLAG_ERROR_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->SPI.INTFLAG.reg & SERCOM_SPI_INTFLAG_ERROR) >> SERCOM_SPI_INTFLAG_ERROR_Pos;
-}
-
-static inline void hri_sercomspi_clear_INTFLAG_ERROR_bit(const void *const hw)
-{
-	((Sercom *)hw)->SPI.INTFLAG.reg = SERCOM_SPI_INTFLAG_ERROR;
-}
-
-static inline bool hri_sercomspi_get_interrupt_DRE_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->SPI.INTFLAG.reg & SERCOM_SPI_INTFLAG_DRE) >> SERCOM_SPI_INTFLAG_DRE_Pos;
-}
-
-static inline void hri_sercomspi_clear_interrupt_DRE_bit(const void *const hw)
-{
-	((Sercom *)hw)->SPI.INTFLAG.reg = SERCOM_SPI_INTFLAG_DRE;
-}
-
-static inline bool hri_sercomspi_get_interrupt_TXC_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->SPI.INTFLAG.reg & SERCOM_SPI_INTFLAG_TXC) >> SERCOM_SPI_INTFLAG_TXC_Pos;
-}
-
-static inline void hri_sercomspi_clear_interrupt_TXC_bit(const void *const hw)
-{
-	((Sercom *)hw)->SPI.INTFLAG.reg = SERCOM_SPI_INTFLAG_TXC;
-}
-
-static inline bool hri_sercomspi_get_interrupt_RXC_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->SPI.INTFLAG.reg & SERCOM_SPI_INTFLAG_RXC) >> SERCOM_SPI_INTFLAG_RXC_Pos;
-}
-
-static inline void hri_sercomspi_clear_interrupt_RXC_bit(const void *const hw)
-{
-	((Sercom *)hw)->SPI.INTFLAG.reg = SERCOM_SPI_INTFLAG_RXC;
-}
-
-static inline bool hri_sercomspi_get_interrupt_SSL_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->SPI.INTFLAG.reg & SERCOM_SPI_INTFLAG_SSL) >> SERCOM_SPI_INTFLAG_SSL_Pos;
-}
-
-static inline void hri_sercomspi_clear_interrupt_SSL_bit(const void *const hw)
-{
-	((Sercom *)hw)->SPI.INTFLAG.reg = SERCOM_SPI_INTFLAG_SSL;
-}
-
-static inline bool hri_sercomspi_get_interrupt_ERROR_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->SPI.INTFLAG.reg & SERCOM_SPI_INTFLAG_ERROR) >> SERCOM_SPI_INTFLAG_ERROR_Pos;
-}
-
-static inline void hri_sercomspi_clear_interrupt_ERROR_bit(const void *const hw)
-{
-	((Sercom *)hw)->SPI.INTFLAG.reg = SERCOM_SPI_INTFLAG_ERROR;
-}
-
-static inline hri_sercomspi_intflag_reg_t hri_sercomspi_get_INTFLAG_reg(const void *const           hw,
-                                                                        hri_sercomspi_intflag_reg_t mask)
-{
-	uint8_t tmp;
-	tmp = ((Sercom *)hw)->SPI.INTFLAG.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline hri_sercomspi_intflag_reg_t hri_sercomspi_read_INTFLAG_reg(const void *const hw)
-{
-	return ((Sercom *)hw)->SPI.INTFLAG.reg;
-}
-
-static inline void hri_sercomspi_clear_INTFLAG_reg(const void *const hw, hri_sercomspi_intflag_reg_t mask)
-{
-	((Sercom *)hw)->SPI.INTFLAG.reg = mask;
-}
-
-static inline void hri_sercomspi_set_CTRLA_SWRST_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_SWRST);
-	((Sercom *)hw)->SPI.CTRLA.reg |= SERCOM_SPI_CTRLA_SWRST;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomspi_get_CTRLA_SWRST_bit(const void *const hw)
-{
-	uint32_t tmp;
-	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_SWRST);
-	tmp = ((Sercom *)hw)->SPI.CTRLA.reg;
-	tmp = (tmp & SERCOM_SPI_CTRLA_SWRST) >> SERCOM_SPI_CTRLA_SWRST_Pos;
-	return (bool)tmp;
-}
-
-static inline void hri_sercomspi_set_CTRLA_ENABLE_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_SWRST | SERCOM_SPI_SYNCBUSY_ENABLE);
-	((Sercom *)hw)->SPI.CTRLA.reg |= SERCOM_SPI_CTRLA_ENABLE;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomspi_get_CTRLA_ENABLE_bit(const void *const hw)
-{
-	uint32_t tmp;
-	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_SWRST | SERCOM_SPI_SYNCBUSY_ENABLE);
-	tmp = ((Sercom *)hw)->SPI.CTRLA.reg;
-	tmp = (tmp & SERCOM_SPI_CTRLA_ENABLE) >> SERCOM_SPI_CTRLA_ENABLE_Pos;
-	return (bool)tmp;
-}
-
-static inline void hri_sercomspi_write_CTRLA_ENABLE_bit(const void *const hw, bool value)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_SWRST | SERCOM_SPI_SYNCBUSY_ENABLE);
-	tmp = ((Sercom *)hw)->SPI.CTRLA.reg;
-	tmp &= ~SERCOM_SPI_CTRLA_ENABLE;
-	tmp |= value << SERCOM_SPI_CTRLA_ENABLE_Pos;
-	((Sercom *)hw)->SPI.CTRLA.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_clear_CTRLA_ENABLE_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_SWRST | SERCOM_SPI_SYNCBUSY_ENABLE);
-	((Sercom *)hw)->SPI.CTRLA.reg &= ~SERCOM_SPI_CTRLA_ENABLE;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_toggle_CTRLA_ENABLE_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_SWRST | SERCOM_SPI_SYNCBUSY_ENABLE);
-	((Sercom *)hw)->SPI.CTRLA.reg ^= SERCOM_SPI_CTRLA_ENABLE;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_set_CTRLA_RUNSTDBY_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
-	((Sercom *)hw)->SPI.CTRLA.reg |= SERCOM_SPI_CTRLA_RUNSTDBY;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomspi_get_CTRLA_RUNSTDBY_bit(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->SPI.CTRLA.reg;
-	tmp = (tmp & SERCOM_SPI_CTRLA_RUNSTDBY) >> SERCOM_SPI_CTRLA_RUNSTDBY_Pos;
-	return (bool)tmp;
-}
-
-static inline void hri_sercomspi_write_CTRLA_RUNSTDBY_bit(const void *const hw, bool value)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
-	tmp = ((Sercom *)hw)->SPI.CTRLA.reg;
-	tmp &= ~SERCOM_SPI_CTRLA_RUNSTDBY;
-	tmp |= value << SERCOM_SPI_CTRLA_RUNSTDBY_Pos;
-	((Sercom *)hw)->SPI.CTRLA.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_clear_CTRLA_RUNSTDBY_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
-	((Sercom *)hw)->SPI.CTRLA.reg &= ~SERCOM_SPI_CTRLA_RUNSTDBY;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_toggle_CTRLA_RUNSTDBY_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
-	((Sercom *)hw)->SPI.CTRLA.reg ^= SERCOM_SPI_CTRLA_RUNSTDBY;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_set_CTRLA_IBON_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
-	((Sercom *)hw)->SPI.CTRLA.reg |= SERCOM_SPI_CTRLA_IBON;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomspi_get_CTRLA_IBON_bit(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->SPI.CTRLA.reg;
-	tmp = (tmp & SERCOM_SPI_CTRLA_IBON) >> SERCOM_SPI_CTRLA_IBON_Pos;
-	return (bool)tmp;
-}
-
-static inline void hri_sercomspi_write_CTRLA_IBON_bit(const void *const hw, bool value)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
-	tmp = ((Sercom *)hw)->SPI.CTRLA.reg;
-	tmp &= ~SERCOM_SPI_CTRLA_IBON;
-	tmp |= value << SERCOM_SPI_CTRLA_IBON_Pos;
-	((Sercom *)hw)->SPI.CTRLA.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_clear_CTRLA_IBON_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
-	((Sercom *)hw)->SPI.CTRLA.reg &= ~SERCOM_SPI_CTRLA_IBON;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_toggle_CTRLA_IBON_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
-	((Sercom *)hw)->SPI.CTRLA.reg ^= SERCOM_SPI_CTRLA_IBON;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_set_CTRLA_CPHA_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
-	((Sercom *)hw)->SPI.CTRLA.reg |= SERCOM_SPI_CTRLA_CPHA;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomspi_get_CTRLA_CPHA_bit(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->SPI.CTRLA.reg;
-	tmp = (tmp & SERCOM_SPI_CTRLA_CPHA) >> SERCOM_SPI_CTRLA_CPHA_Pos;
-	return (bool)tmp;
-}
-
-static inline void hri_sercomspi_write_CTRLA_CPHA_bit(const void *const hw, bool value)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
-	tmp = ((Sercom *)hw)->SPI.CTRLA.reg;
-	tmp &= ~SERCOM_SPI_CTRLA_CPHA;
-	tmp |= value << SERCOM_SPI_CTRLA_CPHA_Pos;
-	((Sercom *)hw)->SPI.CTRLA.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_clear_CTRLA_CPHA_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
-	((Sercom *)hw)->SPI.CTRLA.reg &= ~SERCOM_SPI_CTRLA_CPHA;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_toggle_CTRLA_CPHA_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
-	((Sercom *)hw)->SPI.CTRLA.reg ^= SERCOM_SPI_CTRLA_CPHA;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_set_CTRLA_CPOL_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
-	((Sercom *)hw)->SPI.CTRLA.reg |= SERCOM_SPI_CTRLA_CPOL;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomspi_get_CTRLA_CPOL_bit(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->SPI.CTRLA.reg;
-	tmp = (tmp & SERCOM_SPI_CTRLA_CPOL) >> SERCOM_SPI_CTRLA_CPOL_Pos;
-	return (bool)tmp;
-}
-
-static inline void hri_sercomspi_write_CTRLA_CPOL_bit(const void *const hw, bool value)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
-	tmp = ((Sercom *)hw)->SPI.CTRLA.reg;
-	tmp &= ~SERCOM_SPI_CTRLA_CPOL;
-	tmp |= value << SERCOM_SPI_CTRLA_CPOL_Pos;
-	((Sercom *)hw)->SPI.CTRLA.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_clear_CTRLA_CPOL_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
-	((Sercom *)hw)->SPI.CTRLA.reg &= ~SERCOM_SPI_CTRLA_CPOL;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_toggle_CTRLA_CPOL_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
-	((Sercom *)hw)->SPI.CTRLA.reg ^= SERCOM_SPI_CTRLA_CPOL;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_set_CTRLA_DORD_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
-	((Sercom *)hw)->SPI.CTRLA.reg |= SERCOM_SPI_CTRLA_DORD;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomspi_get_CTRLA_DORD_bit(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->SPI.CTRLA.reg;
-	tmp = (tmp & SERCOM_SPI_CTRLA_DORD) >> SERCOM_SPI_CTRLA_DORD_Pos;
-	return (bool)tmp;
-}
-
-static inline void hri_sercomspi_write_CTRLA_DORD_bit(const void *const hw, bool value)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
-	tmp = ((Sercom *)hw)->SPI.CTRLA.reg;
-	tmp &= ~SERCOM_SPI_CTRLA_DORD;
-	tmp |= value << SERCOM_SPI_CTRLA_DORD_Pos;
-	((Sercom *)hw)->SPI.CTRLA.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_clear_CTRLA_DORD_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
-	((Sercom *)hw)->SPI.CTRLA.reg &= ~SERCOM_SPI_CTRLA_DORD;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_toggle_CTRLA_DORD_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
-	((Sercom *)hw)->SPI.CTRLA.reg ^= SERCOM_SPI_CTRLA_DORD;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_set_CTRLA_MODE_bf(const void *const hw, hri_sercomspi_ctrla_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
-	((Sercom *)hw)->SPI.CTRLA.reg |= SERCOM_SPI_CTRLA_MODE(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomspi_ctrla_reg_t hri_sercomspi_get_CTRLA_MODE_bf(const void *const         hw,
-                                                                        hri_sercomspi_ctrla_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->SPI.CTRLA.reg;
-	tmp = (tmp & SERCOM_SPI_CTRLA_MODE(mask)) >> SERCOM_SPI_CTRLA_MODE_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomspi_write_CTRLA_MODE_bf(const void *const hw, hri_sercomspi_ctrla_reg_t data)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
-	tmp = ((Sercom *)hw)->SPI.CTRLA.reg;
-	tmp &= ~SERCOM_SPI_CTRLA_MODE_Msk;
-	tmp |= SERCOM_SPI_CTRLA_MODE(data);
-	((Sercom *)hw)->SPI.CTRLA.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_clear_CTRLA_MODE_bf(const void *const hw, hri_sercomspi_ctrla_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
-	((Sercom *)hw)->SPI.CTRLA.reg &= ~SERCOM_SPI_CTRLA_MODE(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_toggle_CTRLA_MODE_bf(const void *const hw, hri_sercomspi_ctrla_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
-	((Sercom *)hw)->SPI.CTRLA.reg ^= SERCOM_SPI_CTRLA_MODE(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomspi_ctrla_reg_t hri_sercomspi_read_CTRLA_MODE_bf(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->SPI.CTRLA.reg;
-	tmp = (tmp & SERCOM_SPI_CTRLA_MODE_Msk) >> SERCOM_SPI_CTRLA_MODE_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomspi_set_CTRLA_DOPO_bf(const void *const hw, hri_sercomspi_ctrla_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
-	((Sercom *)hw)->SPI.CTRLA.reg |= SERCOM_SPI_CTRLA_DOPO(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomspi_ctrla_reg_t hri_sercomspi_get_CTRLA_DOPO_bf(const void *const         hw,
-                                                                        hri_sercomspi_ctrla_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->SPI.CTRLA.reg;
-	tmp = (tmp & SERCOM_SPI_CTRLA_DOPO(mask)) >> SERCOM_SPI_CTRLA_DOPO_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomspi_write_CTRLA_DOPO_bf(const void *const hw, hri_sercomspi_ctrla_reg_t data)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
-	tmp = ((Sercom *)hw)->SPI.CTRLA.reg;
-	tmp &= ~SERCOM_SPI_CTRLA_DOPO_Msk;
-	tmp |= SERCOM_SPI_CTRLA_DOPO(data);
-	((Sercom *)hw)->SPI.CTRLA.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_clear_CTRLA_DOPO_bf(const void *const hw, hri_sercomspi_ctrla_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
-	((Sercom *)hw)->SPI.CTRLA.reg &= ~SERCOM_SPI_CTRLA_DOPO(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_toggle_CTRLA_DOPO_bf(const void *const hw, hri_sercomspi_ctrla_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
-	((Sercom *)hw)->SPI.CTRLA.reg ^= SERCOM_SPI_CTRLA_DOPO(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomspi_ctrla_reg_t hri_sercomspi_read_CTRLA_DOPO_bf(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->SPI.CTRLA.reg;
-	tmp = (tmp & SERCOM_SPI_CTRLA_DOPO_Msk) >> SERCOM_SPI_CTRLA_DOPO_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomspi_set_CTRLA_DIPO_bf(const void *const hw, hri_sercomspi_ctrla_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
-	((Sercom *)hw)->SPI.CTRLA.reg |= SERCOM_SPI_CTRLA_DIPO(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomspi_ctrla_reg_t hri_sercomspi_get_CTRLA_DIPO_bf(const void *const         hw,
-                                                                        hri_sercomspi_ctrla_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->SPI.CTRLA.reg;
-	tmp = (tmp & SERCOM_SPI_CTRLA_DIPO(mask)) >> SERCOM_SPI_CTRLA_DIPO_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomspi_write_CTRLA_DIPO_bf(const void *const hw, hri_sercomspi_ctrla_reg_t data)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
-	tmp = ((Sercom *)hw)->SPI.CTRLA.reg;
-	tmp &= ~SERCOM_SPI_CTRLA_DIPO_Msk;
-	tmp |= SERCOM_SPI_CTRLA_DIPO(data);
-	((Sercom *)hw)->SPI.CTRLA.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_clear_CTRLA_DIPO_bf(const void *const hw, hri_sercomspi_ctrla_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
-	((Sercom *)hw)->SPI.CTRLA.reg &= ~SERCOM_SPI_CTRLA_DIPO(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_toggle_CTRLA_DIPO_bf(const void *const hw, hri_sercomspi_ctrla_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
-	((Sercom *)hw)->SPI.CTRLA.reg ^= SERCOM_SPI_CTRLA_DIPO(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomspi_ctrla_reg_t hri_sercomspi_read_CTRLA_DIPO_bf(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->SPI.CTRLA.reg;
-	tmp = (tmp & SERCOM_SPI_CTRLA_DIPO_Msk) >> SERCOM_SPI_CTRLA_DIPO_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomspi_set_CTRLA_FORM_bf(const void *const hw, hri_sercomspi_ctrla_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
-	((Sercom *)hw)->SPI.CTRLA.reg |= SERCOM_SPI_CTRLA_FORM(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomspi_ctrla_reg_t hri_sercomspi_get_CTRLA_FORM_bf(const void *const         hw,
-                                                                        hri_sercomspi_ctrla_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->SPI.CTRLA.reg;
-	tmp = (tmp & SERCOM_SPI_CTRLA_FORM(mask)) >> SERCOM_SPI_CTRLA_FORM_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomspi_write_CTRLA_FORM_bf(const void *const hw, hri_sercomspi_ctrla_reg_t data)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
-	tmp = ((Sercom *)hw)->SPI.CTRLA.reg;
-	tmp &= ~SERCOM_SPI_CTRLA_FORM_Msk;
-	tmp |= SERCOM_SPI_CTRLA_FORM(data);
-	((Sercom *)hw)->SPI.CTRLA.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_clear_CTRLA_FORM_bf(const void *const hw, hri_sercomspi_ctrla_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
-	((Sercom *)hw)->SPI.CTRLA.reg &= ~SERCOM_SPI_CTRLA_FORM(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_toggle_CTRLA_FORM_bf(const void *const hw, hri_sercomspi_ctrla_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
-	((Sercom *)hw)->SPI.CTRLA.reg ^= SERCOM_SPI_CTRLA_FORM(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomspi_ctrla_reg_t hri_sercomspi_read_CTRLA_FORM_bf(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->SPI.CTRLA.reg;
-	tmp = (tmp & SERCOM_SPI_CTRLA_FORM_Msk) >> SERCOM_SPI_CTRLA_FORM_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomspi_set_CTRLA_reg(const void *const hw, hri_sercomspi_ctrla_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.CTRLA.reg |= mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomspi_ctrla_reg_t hri_sercomspi_get_CTRLA_reg(const void *const         hw,
-                                                                    hri_sercomspi_ctrla_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->SPI.CTRLA.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline void hri_sercomspi_write_CTRLA_reg(const void *const hw, hri_sercomspi_ctrla_reg_t data)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.CTRLA.reg = data;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_clear_CTRLA_reg(const void *const hw, hri_sercomspi_ctrla_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.CTRLA.reg &= ~mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_toggle_CTRLA_reg(const void *const hw, hri_sercomspi_ctrla_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.CTRLA.reg ^= mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomspi_ctrla_reg_t hri_sercomspi_read_CTRLA_reg(const void *const hw)
-{
-	return ((Sercom *)hw)->SPI.CTRLA.reg;
-}
-
-static inline void hri_sercomspi_set_CTRLB_PLOADEN_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.CTRLB.reg |= SERCOM_SPI_CTRLB_PLOADEN;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomspi_get_CTRLB_PLOADEN_bit(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->SPI.CTRLB.reg;
-	tmp = (tmp & SERCOM_SPI_CTRLB_PLOADEN) >> SERCOM_SPI_CTRLB_PLOADEN_Pos;
-	return (bool)tmp;
-}
-
-static inline void hri_sercomspi_write_CTRLB_PLOADEN_bit(const void *const hw, bool value)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	tmp = ((Sercom *)hw)->SPI.CTRLB.reg;
-	tmp &= ~SERCOM_SPI_CTRLB_PLOADEN;
-	tmp |= value << SERCOM_SPI_CTRLB_PLOADEN_Pos;
-	((Sercom *)hw)->SPI.CTRLB.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_clear_CTRLB_PLOADEN_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.CTRLB.reg &= ~SERCOM_SPI_CTRLB_PLOADEN;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_toggle_CTRLB_PLOADEN_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.CTRLB.reg ^= SERCOM_SPI_CTRLB_PLOADEN;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_set_CTRLB_SSDE_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.CTRLB.reg |= SERCOM_SPI_CTRLB_SSDE;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomspi_get_CTRLB_SSDE_bit(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->SPI.CTRLB.reg;
-	tmp = (tmp & SERCOM_SPI_CTRLB_SSDE) >> SERCOM_SPI_CTRLB_SSDE_Pos;
-	return (bool)tmp;
-}
-
-static inline void hri_sercomspi_write_CTRLB_SSDE_bit(const void *const hw, bool value)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	tmp = ((Sercom *)hw)->SPI.CTRLB.reg;
-	tmp &= ~SERCOM_SPI_CTRLB_SSDE;
-	tmp |= value << SERCOM_SPI_CTRLB_SSDE_Pos;
-	((Sercom *)hw)->SPI.CTRLB.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_clear_CTRLB_SSDE_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.CTRLB.reg &= ~SERCOM_SPI_CTRLB_SSDE;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_toggle_CTRLB_SSDE_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.CTRLB.reg ^= SERCOM_SPI_CTRLB_SSDE;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_set_CTRLB_MSSEN_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.CTRLB.reg |= SERCOM_SPI_CTRLB_MSSEN;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomspi_get_CTRLB_MSSEN_bit(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->SPI.CTRLB.reg;
-	tmp = (tmp & SERCOM_SPI_CTRLB_MSSEN) >> SERCOM_SPI_CTRLB_MSSEN_Pos;
-	return (bool)tmp;
-}
-
-static inline void hri_sercomspi_write_CTRLB_MSSEN_bit(const void *const hw, bool value)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	tmp = ((Sercom *)hw)->SPI.CTRLB.reg;
-	tmp &= ~SERCOM_SPI_CTRLB_MSSEN;
-	tmp |= value << SERCOM_SPI_CTRLB_MSSEN_Pos;
-	((Sercom *)hw)->SPI.CTRLB.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_clear_CTRLB_MSSEN_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.CTRLB.reg &= ~SERCOM_SPI_CTRLB_MSSEN;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_toggle_CTRLB_MSSEN_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.CTRLB.reg ^= SERCOM_SPI_CTRLB_MSSEN;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_set_CTRLB_RXEN_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.CTRLB.reg |= SERCOM_SPI_CTRLB_RXEN;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomspi_get_CTRLB_RXEN_bit(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->SPI.CTRLB.reg;
-	tmp = (tmp & SERCOM_SPI_CTRLB_RXEN) >> SERCOM_SPI_CTRLB_RXEN_Pos;
-	return (bool)tmp;
-}
-
-static inline void hri_sercomspi_write_CTRLB_RXEN_bit(const void *const hw, bool value)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	tmp = ((Sercom *)hw)->SPI.CTRLB.reg;
-	tmp &= ~SERCOM_SPI_CTRLB_RXEN;
-	tmp |= value << SERCOM_SPI_CTRLB_RXEN_Pos;
-	((Sercom *)hw)->SPI.CTRLB.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_clear_CTRLB_RXEN_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.CTRLB.reg &= ~SERCOM_SPI_CTRLB_RXEN;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_toggle_CTRLB_RXEN_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.CTRLB.reg ^= SERCOM_SPI_CTRLB_RXEN;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_set_CTRLB_CHSIZE_bf(const void *const hw, hri_sercomspi_ctrlb_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.CTRLB.reg |= SERCOM_SPI_CTRLB_CHSIZE(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomspi_ctrlb_reg_t hri_sercomspi_get_CTRLB_CHSIZE_bf(const void *const         hw,
-                                                                          hri_sercomspi_ctrlb_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->SPI.CTRLB.reg;
-	tmp = (tmp & SERCOM_SPI_CTRLB_CHSIZE(mask)) >> SERCOM_SPI_CTRLB_CHSIZE_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomspi_write_CTRLB_CHSIZE_bf(const void *const hw, hri_sercomspi_ctrlb_reg_t data)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	tmp = ((Sercom *)hw)->SPI.CTRLB.reg;
-	tmp &= ~SERCOM_SPI_CTRLB_CHSIZE_Msk;
-	tmp |= SERCOM_SPI_CTRLB_CHSIZE(data);
-	((Sercom *)hw)->SPI.CTRLB.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_clear_CTRLB_CHSIZE_bf(const void *const hw, hri_sercomspi_ctrlb_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.CTRLB.reg &= ~SERCOM_SPI_CTRLB_CHSIZE(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_toggle_CTRLB_CHSIZE_bf(const void *const hw, hri_sercomspi_ctrlb_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.CTRLB.reg ^= SERCOM_SPI_CTRLB_CHSIZE(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomspi_ctrlb_reg_t hri_sercomspi_read_CTRLB_CHSIZE_bf(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->SPI.CTRLB.reg;
-	tmp = (tmp & SERCOM_SPI_CTRLB_CHSIZE_Msk) >> SERCOM_SPI_CTRLB_CHSIZE_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomspi_set_CTRLB_AMODE_bf(const void *const hw, hri_sercomspi_ctrlb_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.CTRLB.reg |= SERCOM_SPI_CTRLB_AMODE(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomspi_ctrlb_reg_t hri_sercomspi_get_CTRLB_AMODE_bf(const void *const         hw,
-                                                                         hri_sercomspi_ctrlb_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->SPI.CTRLB.reg;
-	tmp = (tmp & SERCOM_SPI_CTRLB_AMODE(mask)) >> SERCOM_SPI_CTRLB_AMODE_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomspi_write_CTRLB_AMODE_bf(const void *const hw, hri_sercomspi_ctrlb_reg_t data)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	tmp = ((Sercom *)hw)->SPI.CTRLB.reg;
-	tmp &= ~SERCOM_SPI_CTRLB_AMODE_Msk;
-	tmp |= SERCOM_SPI_CTRLB_AMODE(data);
-	((Sercom *)hw)->SPI.CTRLB.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_clear_CTRLB_AMODE_bf(const void *const hw, hri_sercomspi_ctrlb_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.CTRLB.reg &= ~SERCOM_SPI_CTRLB_AMODE(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_toggle_CTRLB_AMODE_bf(const void *const hw, hri_sercomspi_ctrlb_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.CTRLB.reg ^= SERCOM_SPI_CTRLB_AMODE(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomspi_ctrlb_reg_t hri_sercomspi_read_CTRLB_AMODE_bf(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->SPI.CTRLB.reg;
-	tmp = (tmp & SERCOM_SPI_CTRLB_AMODE_Msk) >> SERCOM_SPI_CTRLB_AMODE_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomspi_set_CTRLB_reg(const void *const hw, hri_sercomspi_ctrlb_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.CTRLB.reg |= mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomspi_ctrlb_reg_t hri_sercomspi_get_CTRLB_reg(const void *const         hw,
-                                                                    hri_sercomspi_ctrlb_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->SPI.CTRLB.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline void hri_sercomspi_write_CTRLB_reg(const void *const hw, hri_sercomspi_ctrlb_reg_t data)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.CTRLB.reg = data;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_clear_CTRLB_reg(const void *const hw, hri_sercomspi_ctrlb_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.CTRLB.reg &= ~mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_toggle_CTRLB_reg(const void *const hw, hri_sercomspi_ctrlb_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.CTRLB.reg ^= mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomspi_ctrlb_reg_t hri_sercomspi_read_CTRLB_reg(const void *const hw)
-{
-	return ((Sercom *)hw)->SPI.CTRLB.reg;
-}
-
-static inline void hri_sercomspi_set_CTRLC_DATA32B_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.CTRLC.reg |= SERCOM_SPI_CTRLC_DATA32B;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomspi_get_CTRLC_DATA32B_bit(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->SPI.CTRLC.reg;
-	tmp = (tmp & SERCOM_SPI_CTRLC_DATA32B) >> SERCOM_SPI_CTRLC_DATA32B_Pos;
-	return (bool)tmp;
-}
-
-static inline void hri_sercomspi_write_CTRLC_DATA32B_bit(const void *const hw, bool value)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	tmp = ((Sercom *)hw)->SPI.CTRLC.reg;
-	tmp &= ~SERCOM_SPI_CTRLC_DATA32B;
-	tmp |= value << SERCOM_SPI_CTRLC_DATA32B_Pos;
-	((Sercom *)hw)->SPI.CTRLC.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_clear_CTRLC_DATA32B_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.CTRLC.reg &= ~SERCOM_SPI_CTRLC_DATA32B;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_toggle_CTRLC_DATA32B_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.CTRLC.reg ^= SERCOM_SPI_CTRLC_DATA32B;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_set_CTRLC_ICSPACE_bf(const void *const hw, hri_sercomspi_ctrlc_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.CTRLC.reg |= SERCOM_SPI_CTRLC_ICSPACE(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomspi_ctrlc_reg_t hri_sercomspi_get_CTRLC_ICSPACE_bf(const void *const         hw,
-                                                                           hri_sercomspi_ctrlc_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->SPI.CTRLC.reg;
-	tmp = (tmp & SERCOM_SPI_CTRLC_ICSPACE(mask)) >> SERCOM_SPI_CTRLC_ICSPACE_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomspi_write_CTRLC_ICSPACE_bf(const void *const hw, hri_sercomspi_ctrlc_reg_t data)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	tmp = ((Sercom *)hw)->SPI.CTRLC.reg;
-	tmp &= ~SERCOM_SPI_CTRLC_ICSPACE_Msk;
-	tmp |= SERCOM_SPI_CTRLC_ICSPACE(data);
-	((Sercom *)hw)->SPI.CTRLC.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_clear_CTRLC_ICSPACE_bf(const void *const hw, hri_sercomspi_ctrlc_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.CTRLC.reg &= ~SERCOM_SPI_CTRLC_ICSPACE(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_toggle_CTRLC_ICSPACE_bf(const void *const hw, hri_sercomspi_ctrlc_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.CTRLC.reg ^= SERCOM_SPI_CTRLC_ICSPACE(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomspi_ctrlc_reg_t hri_sercomspi_read_CTRLC_ICSPACE_bf(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->SPI.CTRLC.reg;
-	tmp = (tmp & SERCOM_SPI_CTRLC_ICSPACE_Msk) >> SERCOM_SPI_CTRLC_ICSPACE_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomspi_set_CTRLC_reg(const void *const hw, hri_sercomspi_ctrlc_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.CTRLC.reg |= mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomspi_ctrlc_reg_t hri_sercomspi_get_CTRLC_reg(const void *const         hw,
-                                                                    hri_sercomspi_ctrlc_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->SPI.CTRLC.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline void hri_sercomspi_write_CTRLC_reg(const void *const hw, hri_sercomspi_ctrlc_reg_t data)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.CTRLC.reg = data;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_clear_CTRLC_reg(const void *const hw, hri_sercomspi_ctrlc_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.CTRLC.reg &= ~mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_toggle_CTRLC_reg(const void *const hw, hri_sercomspi_ctrlc_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.CTRLC.reg ^= mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomspi_ctrlc_reg_t hri_sercomspi_read_CTRLC_reg(const void *const hw)
-{
-	return ((Sercom *)hw)->SPI.CTRLC.reg;
-}
-
-static inline void hri_sercomspi_set_BAUD_BAUD_bf(const void *const hw, hri_sercomspi_baud_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.BAUD.reg |= SERCOM_SPI_BAUD_BAUD(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomspi_baud_reg_t hri_sercomspi_get_BAUD_BAUD_bf(const void *const        hw,
-                                                                      hri_sercomspi_baud_reg_t mask)
-{
-	uint8_t tmp;
-	tmp = ((Sercom *)hw)->SPI.BAUD.reg;
-	tmp = (tmp & SERCOM_SPI_BAUD_BAUD(mask)) >> SERCOM_SPI_BAUD_BAUD_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomspi_write_BAUD_BAUD_bf(const void *const hw, hri_sercomspi_baud_reg_t data)
-{
-	uint8_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	tmp = ((Sercom *)hw)->SPI.BAUD.reg;
-	tmp &= ~SERCOM_SPI_BAUD_BAUD_Msk;
-	tmp |= SERCOM_SPI_BAUD_BAUD(data);
-	((Sercom *)hw)->SPI.BAUD.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_clear_BAUD_BAUD_bf(const void *const hw, hri_sercomspi_baud_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.BAUD.reg &= ~SERCOM_SPI_BAUD_BAUD(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_toggle_BAUD_BAUD_bf(const void *const hw, hri_sercomspi_baud_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.BAUD.reg ^= SERCOM_SPI_BAUD_BAUD(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomspi_baud_reg_t hri_sercomspi_read_BAUD_BAUD_bf(const void *const hw)
-{
-	uint8_t tmp;
-	tmp = ((Sercom *)hw)->SPI.BAUD.reg;
-	tmp = (tmp & SERCOM_SPI_BAUD_BAUD_Msk) >> SERCOM_SPI_BAUD_BAUD_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomspi_set_BAUD_reg(const void *const hw, hri_sercomspi_baud_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.BAUD.reg |= mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomspi_baud_reg_t hri_sercomspi_get_BAUD_reg(const void *const hw, hri_sercomspi_baud_reg_t mask)
-{
-	uint8_t tmp;
-	tmp = ((Sercom *)hw)->SPI.BAUD.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline void hri_sercomspi_write_BAUD_reg(const void *const hw, hri_sercomspi_baud_reg_t data)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.BAUD.reg = data;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_clear_BAUD_reg(const void *const hw, hri_sercomspi_baud_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.BAUD.reg &= ~mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_toggle_BAUD_reg(const void *const hw, hri_sercomspi_baud_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.BAUD.reg ^= mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomspi_baud_reg_t hri_sercomspi_read_BAUD_reg(const void *const hw)
-{
-	return ((Sercom *)hw)->SPI.BAUD.reg;
-}
-
-static inline void hri_sercomspi_set_LENGTH_LENEN_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.LENGTH.reg |= SERCOM_SPI_LENGTH_LENEN;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomspi_get_LENGTH_LENEN_bit(const void *const hw)
-{
-	uint16_t tmp;
-	tmp = ((Sercom *)hw)->SPI.LENGTH.reg;
-	tmp = (tmp & SERCOM_SPI_LENGTH_LENEN) >> SERCOM_SPI_LENGTH_LENEN_Pos;
-	return (bool)tmp;
-}
-
-static inline void hri_sercomspi_write_LENGTH_LENEN_bit(const void *const hw, bool value)
-{
-	uint16_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	tmp = ((Sercom *)hw)->SPI.LENGTH.reg;
-	tmp &= ~SERCOM_SPI_LENGTH_LENEN;
-	tmp |= value << SERCOM_SPI_LENGTH_LENEN_Pos;
-	((Sercom *)hw)->SPI.LENGTH.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_clear_LENGTH_LENEN_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.LENGTH.reg &= ~SERCOM_SPI_LENGTH_LENEN;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_toggle_LENGTH_LENEN_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.LENGTH.reg ^= SERCOM_SPI_LENGTH_LENEN;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_set_LENGTH_LEN_bf(const void *const hw, hri_sercomspi_length_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.LENGTH.reg |= SERCOM_SPI_LENGTH_LEN(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomspi_length_reg_t hri_sercomspi_get_LENGTH_LEN_bf(const void *const          hw,
-                                                                         hri_sercomspi_length_reg_t mask)
-{
-	uint16_t tmp;
-	tmp = ((Sercom *)hw)->SPI.LENGTH.reg;
-	tmp = (tmp & SERCOM_SPI_LENGTH_LEN(mask)) >> SERCOM_SPI_LENGTH_LEN_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomspi_write_LENGTH_LEN_bf(const void *const hw, hri_sercomspi_length_reg_t data)
-{
-	uint16_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	tmp = ((Sercom *)hw)->SPI.LENGTH.reg;
-	tmp &= ~SERCOM_SPI_LENGTH_LEN_Msk;
-	tmp |= SERCOM_SPI_LENGTH_LEN(data);
-	((Sercom *)hw)->SPI.LENGTH.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_clear_LENGTH_LEN_bf(const void *const hw, hri_sercomspi_length_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.LENGTH.reg &= ~SERCOM_SPI_LENGTH_LEN(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_toggle_LENGTH_LEN_bf(const void *const hw, hri_sercomspi_length_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.LENGTH.reg ^= SERCOM_SPI_LENGTH_LEN(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomspi_length_reg_t hri_sercomspi_read_LENGTH_LEN_bf(const void *const hw)
-{
-	uint16_t tmp;
-	tmp = ((Sercom *)hw)->SPI.LENGTH.reg;
-	tmp = (tmp & SERCOM_SPI_LENGTH_LEN_Msk) >> SERCOM_SPI_LENGTH_LEN_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomspi_set_LENGTH_reg(const void *const hw, hri_sercomspi_length_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.LENGTH.reg |= mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomspi_length_reg_t hri_sercomspi_get_LENGTH_reg(const void *const          hw,
-                                                                      hri_sercomspi_length_reg_t mask)
-{
-	uint16_t tmp;
-	tmp = ((Sercom *)hw)->SPI.LENGTH.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline void hri_sercomspi_write_LENGTH_reg(const void *const hw, hri_sercomspi_length_reg_t data)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.LENGTH.reg = data;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_clear_LENGTH_reg(const void *const hw, hri_sercomspi_length_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.LENGTH.reg &= ~mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_toggle_LENGTH_reg(const void *const hw, hri_sercomspi_length_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.LENGTH.reg ^= mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomspi_length_reg_t hri_sercomspi_read_LENGTH_reg(const void *const hw)
-{
-	return ((Sercom *)hw)->SPI.LENGTH.reg;
-}
-
-static inline void hri_sercomspi_set_ADDR_ADDR_bf(const void *const hw, hri_sercomspi_addr_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.ADDR.reg |= SERCOM_SPI_ADDR_ADDR(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomspi_addr_reg_t hri_sercomspi_get_ADDR_ADDR_bf(const void *const        hw,
-                                                                      hri_sercomspi_addr_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->SPI.ADDR.reg;
-	tmp = (tmp & SERCOM_SPI_ADDR_ADDR(mask)) >> SERCOM_SPI_ADDR_ADDR_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomspi_write_ADDR_ADDR_bf(const void *const hw, hri_sercomspi_addr_reg_t data)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	tmp = ((Sercom *)hw)->SPI.ADDR.reg;
-	tmp &= ~SERCOM_SPI_ADDR_ADDR_Msk;
-	tmp |= SERCOM_SPI_ADDR_ADDR(data);
-	((Sercom *)hw)->SPI.ADDR.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_clear_ADDR_ADDR_bf(const void *const hw, hri_sercomspi_addr_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.ADDR.reg &= ~SERCOM_SPI_ADDR_ADDR(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_toggle_ADDR_ADDR_bf(const void *const hw, hri_sercomspi_addr_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.ADDR.reg ^= SERCOM_SPI_ADDR_ADDR(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomspi_addr_reg_t hri_sercomspi_read_ADDR_ADDR_bf(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->SPI.ADDR.reg;
-	tmp = (tmp & SERCOM_SPI_ADDR_ADDR_Msk) >> SERCOM_SPI_ADDR_ADDR_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomspi_set_ADDR_ADDRMASK_bf(const void *const hw, hri_sercomspi_addr_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.ADDR.reg |= SERCOM_SPI_ADDR_ADDRMASK(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomspi_addr_reg_t hri_sercomspi_get_ADDR_ADDRMASK_bf(const void *const        hw,
-                                                                          hri_sercomspi_addr_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->SPI.ADDR.reg;
-	tmp = (tmp & SERCOM_SPI_ADDR_ADDRMASK(mask)) >> SERCOM_SPI_ADDR_ADDRMASK_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomspi_write_ADDR_ADDRMASK_bf(const void *const hw, hri_sercomspi_addr_reg_t data)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	tmp = ((Sercom *)hw)->SPI.ADDR.reg;
-	tmp &= ~SERCOM_SPI_ADDR_ADDRMASK_Msk;
-	tmp |= SERCOM_SPI_ADDR_ADDRMASK(data);
-	((Sercom *)hw)->SPI.ADDR.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_clear_ADDR_ADDRMASK_bf(const void *const hw, hri_sercomspi_addr_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.ADDR.reg &= ~SERCOM_SPI_ADDR_ADDRMASK(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_toggle_ADDR_ADDRMASK_bf(const void *const hw, hri_sercomspi_addr_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.ADDR.reg ^= SERCOM_SPI_ADDR_ADDRMASK(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomspi_addr_reg_t hri_sercomspi_read_ADDR_ADDRMASK_bf(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->SPI.ADDR.reg;
-	tmp = (tmp & SERCOM_SPI_ADDR_ADDRMASK_Msk) >> SERCOM_SPI_ADDR_ADDRMASK_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomspi_set_ADDR_reg(const void *const hw, hri_sercomspi_addr_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.ADDR.reg |= mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomspi_addr_reg_t hri_sercomspi_get_ADDR_reg(const void *const hw, hri_sercomspi_addr_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->SPI.ADDR.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline void hri_sercomspi_write_ADDR_reg(const void *const hw, hri_sercomspi_addr_reg_t data)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.ADDR.reg = data;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_clear_ADDR_reg(const void *const hw, hri_sercomspi_addr_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.ADDR.reg &= ~mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_toggle_ADDR_reg(const void *const hw, hri_sercomspi_addr_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.ADDR.reg ^= mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomspi_addr_reg_t hri_sercomspi_read_ADDR_reg(const void *const hw)
-{
-	return ((Sercom *)hw)->SPI.ADDR.reg;
-}
-
-static inline hri_sercomspi_data_reg_t hri_sercomspi_read_DATA_reg(const void *const hw)
-{
-	return ((Sercom *)hw)->SPI.DATA.reg;
-}
-
-static inline void hri_sercomspi_write_DATA_reg(const void *const hw, hri_sercomspi_data_reg_t data)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.DATA.reg = data;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_set_DBGCTRL_DBGSTOP_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.DBGCTRL.reg |= SERCOM_SPI_DBGCTRL_DBGSTOP;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomspi_get_DBGCTRL_DBGSTOP_bit(const void *const hw)
-{
-	uint8_t tmp;
-	tmp = ((Sercom *)hw)->SPI.DBGCTRL.reg;
-	tmp = (tmp & SERCOM_SPI_DBGCTRL_DBGSTOP) >> SERCOM_SPI_DBGCTRL_DBGSTOP_Pos;
-	return (bool)tmp;
-}
-
-static inline void hri_sercomspi_write_DBGCTRL_DBGSTOP_bit(const void *const hw, bool value)
-{
-	uint8_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	tmp = ((Sercom *)hw)->SPI.DBGCTRL.reg;
-	tmp &= ~SERCOM_SPI_DBGCTRL_DBGSTOP;
-	tmp |= value << SERCOM_SPI_DBGCTRL_DBGSTOP_Pos;
-	((Sercom *)hw)->SPI.DBGCTRL.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_clear_DBGCTRL_DBGSTOP_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.DBGCTRL.reg &= ~SERCOM_SPI_DBGCTRL_DBGSTOP;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_toggle_DBGCTRL_DBGSTOP_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.DBGCTRL.reg ^= SERCOM_SPI_DBGCTRL_DBGSTOP;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_set_DBGCTRL_reg(const void *const hw, hri_sercomspi_dbgctrl_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.DBGCTRL.reg |= mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomspi_dbgctrl_reg_t hri_sercomspi_get_DBGCTRL_reg(const void *const           hw,
-                                                                        hri_sercomspi_dbgctrl_reg_t mask)
-{
-	uint8_t tmp;
-	tmp = ((Sercom *)hw)->SPI.DBGCTRL.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline void hri_sercomspi_write_DBGCTRL_reg(const void *const hw, hri_sercomspi_dbgctrl_reg_t data)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.DBGCTRL.reg = data;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_clear_DBGCTRL_reg(const void *const hw, hri_sercomspi_dbgctrl_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.DBGCTRL.reg &= ~mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomspi_toggle_DBGCTRL_reg(const void *const hw, hri_sercomspi_dbgctrl_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.DBGCTRL.reg ^= mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomspi_dbgctrl_reg_t hri_sercomspi_read_DBGCTRL_reg(const void *const hw)
-{
-	return ((Sercom *)hw)->SPI.DBGCTRL.reg;
-}
-
-static inline bool hri_sercomspi_get_SYNCBUSY_SWRST_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->SPI.SYNCBUSY.reg & SERCOM_SPI_SYNCBUSY_SWRST) >> SERCOM_SPI_SYNCBUSY_SWRST_Pos;
-}
-
-static inline bool hri_sercomspi_get_SYNCBUSY_ENABLE_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->SPI.SYNCBUSY.reg & SERCOM_SPI_SYNCBUSY_ENABLE) >> SERCOM_SPI_SYNCBUSY_ENABLE_Pos;
-}
-
-static inline bool hri_sercomspi_get_SYNCBUSY_CTRLB_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->SPI.SYNCBUSY.reg & SERCOM_SPI_SYNCBUSY_CTRLB) >> SERCOM_SPI_SYNCBUSY_CTRLB_Pos;
-}
-
-static inline bool hri_sercomspi_get_SYNCBUSY_LENGTH_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->SPI.SYNCBUSY.reg & SERCOM_SPI_SYNCBUSY_LENGTH) >> SERCOM_SPI_SYNCBUSY_LENGTH_Pos;
-}
-
-static inline hri_sercomspi_syncbusy_reg_t hri_sercomspi_get_SYNCBUSY_reg(const void *const            hw,
-                                                                          hri_sercomspi_syncbusy_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->SPI.SYNCBUSY.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline hri_sercomspi_syncbusy_reg_t hri_sercomspi_read_SYNCBUSY_reg(const void *const hw)
-{
-	return ((Sercom *)hw)->SPI.SYNCBUSY.reg;
-}
-
-static inline bool hri_sercomspi_get_STATUS_BUFOVF_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->SPI.STATUS.reg & SERCOM_SPI_STATUS_BUFOVF) >> SERCOM_SPI_STATUS_BUFOVF_Pos;
-}
-
-static inline void hri_sercomspi_clear_STATUS_BUFOVF_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.STATUS.reg = SERCOM_SPI_STATUS_BUFOVF;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomspi_get_STATUS_LENERR_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->SPI.STATUS.reg & SERCOM_SPI_STATUS_LENERR) >> SERCOM_SPI_STATUS_LENERR_Pos;
-}
-
-static inline void hri_sercomspi_clear_STATUS_LENERR_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.STATUS.reg = SERCOM_SPI_STATUS_LENERR;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomspi_status_reg_t hri_sercomspi_get_STATUS_reg(const void *const          hw,
-                                                                      hri_sercomspi_status_reg_t mask)
-{
-	uint16_t tmp;
-	tmp = ((Sercom *)hw)->SPI.STATUS.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline void hri_sercomspi_clear_STATUS_reg(const void *const hw, hri_sercomspi_status_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->SPI.STATUS.reg = mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomspi_status_reg_t hri_sercomspi_read_STATUS_reg(const void *const hw)
-{
-	return ((Sercom *)hw)->SPI.STATUS.reg;
-}
-
-static inline void hri_sercomi2cm_set_INTEN_MB_bit(const void *const hw)
-{
-	((Sercom *)hw)->I2CM.INTENSET.reg = SERCOM_I2CM_INTENSET_MB;
-}
-
-static inline bool hri_sercomi2cm_get_INTEN_MB_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->I2CM.INTENSET.reg & SERCOM_I2CM_INTENSET_MB) >> SERCOM_I2CM_INTENSET_MB_Pos;
-}
-
-static inline void hri_sercomi2cm_write_INTEN_MB_bit(const void *const hw, bool value)
-{
-	if (value == 0x0) {
-		((Sercom *)hw)->I2CM.INTENCLR.reg = SERCOM_I2CM_INTENSET_MB;
-	} else {
-		((Sercom *)hw)->I2CM.INTENSET.reg = SERCOM_I2CM_INTENSET_MB;
-	}
-}
-
-static inline void hri_sercomi2cm_clear_INTEN_MB_bit(const void *const hw)
-{
-	((Sercom *)hw)->I2CM.INTENCLR.reg = SERCOM_I2CM_INTENSET_MB;
-}
-
-static inline void hri_sercomi2cm_set_INTEN_SB_bit(const void *const hw)
-{
-	((Sercom *)hw)->I2CM.INTENSET.reg = SERCOM_I2CM_INTENSET_SB;
-}
-
-static inline bool hri_sercomi2cm_get_INTEN_SB_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->I2CM.INTENSET.reg & SERCOM_I2CM_INTENSET_SB) >> SERCOM_I2CM_INTENSET_SB_Pos;
-}
-
-static inline void hri_sercomi2cm_write_INTEN_SB_bit(const void *const hw, bool value)
-{
-	if (value == 0x0) {
-		((Sercom *)hw)->I2CM.INTENCLR.reg = SERCOM_I2CM_INTENSET_SB;
-	} else {
-		((Sercom *)hw)->I2CM.INTENSET.reg = SERCOM_I2CM_INTENSET_SB;
-	}
-}
-
-static inline void hri_sercomi2cm_clear_INTEN_SB_bit(const void *const hw)
-{
-	((Sercom *)hw)->I2CM.INTENCLR.reg = SERCOM_I2CM_INTENSET_SB;
-}
-
-static inline void hri_sercomi2cm_set_INTEN_ERROR_bit(const void *const hw)
-{
-	((Sercom *)hw)->I2CM.INTENSET.reg = SERCOM_I2CM_INTENSET_ERROR;
-}
-
-static inline bool hri_sercomi2cm_get_INTEN_ERROR_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->I2CM.INTENSET.reg & SERCOM_I2CM_INTENSET_ERROR) >> SERCOM_I2CM_INTENSET_ERROR_Pos;
-}
-
-static inline void hri_sercomi2cm_write_INTEN_ERROR_bit(const void *const hw, bool value)
-{
-	if (value == 0x0) {
-		((Sercom *)hw)->I2CM.INTENCLR.reg = SERCOM_I2CM_INTENSET_ERROR;
-	} else {
-		((Sercom *)hw)->I2CM.INTENSET.reg = SERCOM_I2CM_INTENSET_ERROR;
-	}
-}
-
-static inline void hri_sercomi2cm_clear_INTEN_ERROR_bit(const void *const hw)
-{
-	((Sercom *)hw)->I2CM.INTENCLR.reg = SERCOM_I2CM_INTENSET_ERROR;
-}
-
-static inline void hri_sercomi2cm_set_INTEN_reg(const void *const hw, hri_sercomi2cm_intenset_reg_t mask)
-{
-	((Sercom *)hw)->I2CM.INTENSET.reg = mask;
-}
-
-static inline hri_sercomi2cm_intenset_reg_t hri_sercomi2cm_get_INTEN_reg(const void *const             hw,
-                                                                         hri_sercomi2cm_intenset_reg_t mask)
-{
-	uint8_t tmp;
-	tmp = ((Sercom *)hw)->I2CM.INTENSET.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline hri_sercomi2cm_intenset_reg_t hri_sercomi2cm_read_INTEN_reg(const void *const hw)
-{
-	return ((Sercom *)hw)->I2CM.INTENSET.reg;
-}
-
-static inline void hri_sercomi2cm_write_INTEN_reg(const void *const hw, hri_sercomi2cm_intenset_reg_t data)
-{
-	((Sercom *)hw)->I2CM.INTENSET.reg = data;
-	((Sercom *)hw)->I2CM.INTENCLR.reg = ~data;
-}
-
-static inline void hri_sercomi2cm_clear_INTEN_reg(const void *const hw, hri_sercomi2cm_intenset_reg_t mask)
-{
-	((Sercom *)hw)->I2CM.INTENCLR.reg = mask;
-}
-
-static inline bool hri_sercomi2cm_get_INTFLAG_MB_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->I2CM.INTFLAG.reg & SERCOM_I2CM_INTFLAG_MB) >> SERCOM_I2CM_INTFLAG_MB_Pos;
-}
-
-static inline void hri_sercomi2cm_clear_INTFLAG_MB_bit(const void *const hw)
-{
-	((Sercom *)hw)->I2CM.INTFLAG.reg = SERCOM_I2CM_INTFLAG_MB;
-}
-
-static inline bool hri_sercomi2cm_get_INTFLAG_SB_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->I2CM.INTFLAG.reg & SERCOM_I2CM_INTFLAG_SB) >> SERCOM_I2CM_INTFLAG_SB_Pos;
-}
-
-static inline void hri_sercomi2cm_clear_INTFLAG_SB_bit(const void *const hw)
-{
-	((Sercom *)hw)->I2CM.INTFLAG.reg = SERCOM_I2CM_INTFLAG_SB;
-}
-
-static inline bool hri_sercomi2cm_get_INTFLAG_ERROR_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->I2CM.INTFLAG.reg & SERCOM_I2CM_INTFLAG_ERROR) >> SERCOM_I2CM_INTFLAG_ERROR_Pos;
-}
-
-static inline void hri_sercomi2cm_clear_INTFLAG_ERROR_bit(const void *const hw)
-{
-	((Sercom *)hw)->I2CM.INTFLAG.reg = SERCOM_I2CM_INTFLAG_ERROR;
-}
-
-static inline bool hri_sercomi2cm_get_interrupt_MB_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->I2CM.INTFLAG.reg & SERCOM_I2CM_INTFLAG_MB) >> SERCOM_I2CM_INTFLAG_MB_Pos;
-}
-
-static inline void hri_sercomi2cm_clear_interrupt_MB_bit(const void *const hw)
-{
-	((Sercom *)hw)->I2CM.INTFLAG.reg = SERCOM_I2CM_INTFLAG_MB;
-}
-
-static inline bool hri_sercomi2cm_get_interrupt_SB_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->I2CM.INTFLAG.reg & SERCOM_I2CM_INTFLAG_SB) >> SERCOM_I2CM_INTFLAG_SB_Pos;
-}
-
-static inline void hri_sercomi2cm_clear_interrupt_SB_bit(const void *const hw)
-{
-	((Sercom *)hw)->I2CM.INTFLAG.reg = SERCOM_I2CM_INTFLAG_SB;
-}
-
-static inline bool hri_sercomi2cm_get_interrupt_ERROR_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->I2CM.INTFLAG.reg & SERCOM_I2CM_INTFLAG_ERROR) >> SERCOM_I2CM_INTFLAG_ERROR_Pos;
-}
-
-static inline void hri_sercomi2cm_clear_interrupt_ERROR_bit(const void *const hw)
-{
-	((Sercom *)hw)->I2CM.INTFLAG.reg = SERCOM_I2CM_INTFLAG_ERROR;
-}
-
-static inline hri_sercomi2cm_intflag_reg_t hri_sercomi2cm_get_INTFLAG_reg(const void *const            hw,
-                                                                          hri_sercomi2cm_intflag_reg_t mask)
-{
-	uint8_t tmp;
-	tmp = ((Sercom *)hw)->I2CM.INTFLAG.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline hri_sercomi2cm_intflag_reg_t hri_sercomi2cm_read_INTFLAG_reg(const void *const hw)
-{
-	return ((Sercom *)hw)->I2CM.INTFLAG.reg;
-}
-
-static inline void hri_sercomi2cm_clear_INTFLAG_reg(const void *const hw, hri_sercomi2cm_intflag_reg_t mask)
-{
-	((Sercom *)hw)->I2CM.INTFLAG.reg = mask;
-}
-
-static inline void hri_sercomi2cm_set_STATUS_BUSERR_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.STATUS.reg |= SERCOM_I2CM_STATUS_BUSERR;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomi2cm_get_STATUS_BUSERR_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->I2CM.STATUS.reg & SERCOM_I2CM_STATUS_BUSERR) >> SERCOM_I2CM_STATUS_BUSERR_Pos;
-}
-
-static inline void hri_sercomi2cm_write_STATUS_BUSERR_bit(const void *const hw, bool value)
-{
-	uint16_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	tmp = ((Sercom *)hw)->I2CM.STATUS.reg;
-	tmp &= ~SERCOM_I2CM_STATUS_BUSERR;
-	tmp |= value << SERCOM_I2CM_STATUS_BUSERR_Pos;
-	((Sercom *)hw)->I2CM.STATUS.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_clear_STATUS_BUSERR_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.STATUS.reg = SERCOM_I2CM_STATUS_BUSERR;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_toggle_STATUS_BUSERR_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.STATUS.reg ^= SERCOM_I2CM_STATUS_BUSERR;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_set_STATUS_ARBLOST_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.STATUS.reg |= SERCOM_I2CM_STATUS_ARBLOST;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomi2cm_get_STATUS_ARBLOST_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->I2CM.STATUS.reg & SERCOM_I2CM_STATUS_ARBLOST) >> SERCOM_I2CM_STATUS_ARBLOST_Pos;
-}
-
-static inline void hri_sercomi2cm_write_STATUS_ARBLOST_bit(const void *const hw, bool value)
-{
-	uint16_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	tmp = ((Sercom *)hw)->I2CM.STATUS.reg;
-	tmp &= ~SERCOM_I2CM_STATUS_ARBLOST;
-	tmp |= value << SERCOM_I2CM_STATUS_ARBLOST_Pos;
-	((Sercom *)hw)->I2CM.STATUS.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_clear_STATUS_ARBLOST_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.STATUS.reg = SERCOM_I2CM_STATUS_ARBLOST;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_toggle_STATUS_ARBLOST_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.STATUS.reg ^= SERCOM_I2CM_STATUS_ARBLOST;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_set_STATUS_RXNACK_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.STATUS.reg |= SERCOM_I2CM_STATUS_RXNACK;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomi2cm_get_STATUS_RXNACK_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->I2CM.STATUS.reg & SERCOM_I2CM_STATUS_RXNACK) >> SERCOM_I2CM_STATUS_RXNACK_Pos;
-}
-
-static inline void hri_sercomi2cm_write_STATUS_RXNACK_bit(const void *const hw, bool value)
-{
-	uint16_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	tmp = ((Sercom *)hw)->I2CM.STATUS.reg;
-	tmp &= ~SERCOM_I2CM_STATUS_RXNACK;
-	tmp |= value << SERCOM_I2CM_STATUS_RXNACK_Pos;
-	((Sercom *)hw)->I2CM.STATUS.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_clear_STATUS_RXNACK_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.STATUS.reg = SERCOM_I2CM_STATUS_RXNACK;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_toggle_STATUS_RXNACK_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.STATUS.reg ^= SERCOM_I2CM_STATUS_RXNACK;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_set_STATUS_LOWTOUT_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.STATUS.reg |= SERCOM_I2CM_STATUS_LOWTOUT;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomi2cm_get_STATUS_LOWTOUT_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->I2CM.STATUS.reg & SERCOM_I2CM_STATUS_LOWTOUT) >> SERCOM_I2CM_STATUS_LOWTOUT_Pos;
-}
-
-static inline void hri_sercomi2cm_write_STATUS_LOWTOUT_bit(const void *const hw, bool value)
-{
-	uint16_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	tmp = ((Sercom *)hw)->I2CM.STATUS.reg;
-	tmp &= ~SERCOM_I2CM_STATUS_LOWTOUT;
-	tmp |= value << SERCOM_I2CM_STATUS_LOWTOUT_Pos;
-	((Sercom *)hw)->I2CM.STATUS.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_clear_STATUS_LOWTOUT_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.STATUS.reg = SERCOM_I2CM_STATUS_LOWTOUT;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_toggle_STATUS_LOWTOUT_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.STATUS.reg ^= SERCOM_I2CM_STATUS_LOWTOUT;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_set_STATUS_CLKHOLD_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.STATUS.reg |= SERCOM_I2CM_STATUS_CLKHOLD;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomi2cm_get_STATUS_CLKHOLD_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->I2CM.STATUS.reg & SERCOM_I2CM_STATUS_CLKHOLD) >> SERCOM_I2CM_STATUS_CLKHOLD_Pos;
-}
-
-static inline void hri_sercomi2cm_write_STATUS_CLKHOLD_bit(const void *const hw, bool value)
-{
-	uint16_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	tmp = ((Sercom *)hw)->I2CM.STATUS.reg;
-	tmp &= ~SERCOM_I2CM_STATUS_CLKHOLD;
-	tmp |= value << SERCOM_I2CM_STATUS_CLKHOLD_Pos;
-	((Sercom *)hw)->I2CM.STATUS.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_clear_STATUS_CLKHOLD_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.STATUS.reg = SERCOM_I2CM_STATUS_CLKHOLD;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_toggle_STATUS_CLKHOLD_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.STATUS.reg ^= SERCOM_I2CM_STATUS_CLKHOLD;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_set_STATUS_MEXTTOUT_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.STATUS.reg |= SERCOM_I2CM_STATUS_MEXTTOUT;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomi2cm_get_STATUS_MEXTTOUT_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->I2CM.STATUS.reg & SERCOM_I2CM_STATUS_MEXTTOUT) >> SERCOM_I2CM_STATUS_MEXTTOUT_Pos;
-}
-
-static inline void hri_sercomi2cm_write_STATUS_MEXTTOUT_bit(const void *const hw, bool value)
-{
-	uint16_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	tmp = ((Sercom *)hw)->I2CM.STATUS.reg;
-	tmp &= ~SERCOM_I2CM_STATUS_MEXTTOUT;
-	tmp |= value << SERCOM_I2CM_STATUS_MEXTTOUT_Pos;
-	((Sercom *)hw)->I2CM.STATUS.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_clear_STATUS_MEXTTOUT_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.STATUS.reg = SERCOM_I2CM_STATUS_MEXTTOUT;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_toggle_STATUS_MEXTTOUT_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.STATUS.reg ^= SERCOM_I2CM_STATUS_MEXTTOUT;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_set_STATUS_SEXTTOUT_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.STATUS.reg |= SERCOM_I2CM_STATUS_SEXTTOUT;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomi2cm_get_STATUS_SEXTTOUT_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->I2CM.STATUS.reg & SERCOM_I2CM_STATUS_SEXTTOUT) >> SERCOM_I2CM_STATUS_SEXTTOUT_Pos;
-}
-
-static inline void hri_sercomi2cm_write_STATUS_SEXTTOUT_bit(const void *const hw, bool value)
-{
-	uint16_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	tmp = ((Sercom *)hw)->I2CM.STATUS.reg;
-	tmp &= ~SERCOM_I2CM_STATUS_SEXTTOUT;
-	tmp |= value << SERCOM_I2CM_STATUS_SEXTTOUT_Pos;
-	((Sercom *)hw)->I2CM.STATUS.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_clear_STATUS_SEXTTOUT_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.STATUS.reg = SERCOM_I2CM_STATUS_SEXTTOUT;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_toggle_STATUS_SEXTTOUT_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.STATUS.reg ^= SERCOM_I2CM_STATUS_SEXTTOUT;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_set_STATUS_LENERR_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.STATUS.reg |= SERCOM_I2CM_STATUS_LENERR;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomi2cm_get_STATUS_LENERR_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->I2CM.STATUS.reg & SERCOM_I2CM_STATUS_LENERR) >> SERCOM_I2CM_STATUS_LENERR_Pos;
-}
-
-static inline void hri_sercomi2cm_write_STATUS_LENERR_bit(const void *const hw, bool value)
-{
-	uint16_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	tmp = ((Sercom *)hw)->I2CM.STATUS.reg;
-	tmp &= ~SERCOM_I2CM_STATUS_LENERR;
-	tmp |= value << SERCOM_I2CM_STATUS_LENERR_Pos;
-	((Sercom *)hw)->I2CM.STATUS.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_clear_STATUS_LENERR_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.STATUS.reg = SERCOM_I2CM_STATUS_LENERR;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_toggle_STATUS_LENERR_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.STATUS.reg ^= SERCOM_I2CM_STATUS_LENERR;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomi2cm_status_reg_t hri_sercomi2cm_get_STATUS_BUSSTATE_bf(const void *const           hw,
-                                                                                hri_sercomi2cm_status_reg_t mask)
-{
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
-	return (((Sercom *)hw)->I2CM.STATUS.reg & SERCOM_I2CM_STATUS_BUSSTATE(mask)) >> SERCOM_I2CM_STATUS_BUSSTATE_Pos;
-}
-
-static inline void hri_sercomi2cm_set_STATUS_BUSSTATE_bf(const void *const hw, hri_sercomi2cm_status_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
-	((Sercom *)hw)->I2CM.STATUS.reg |= SERCOM_I2CM_STATUS_BUSSTATE(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomi2cm_status_reg_t hri_sercomi2cm_read_STATUS_BUSSTATE_bf(const void *const hw)
-{
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
-	return (((Sercom *)hw)->I2CM.STATUS.reg & SERCOM_I2CM_STATUS_BUSSTATE_Msk) >> SERCOM_I2CM_STATUS_BUSSTATE_Pos;
-}
-
-static inline void hri_sercomi2cm_write_STATUS_BUSSTATE_bf(const void *const hw, hri_sercomi2cm_status_reg_t data)
-{
-	uint16_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
-	tmp = ((Sercom *)hw)->I2CM.STATUS.reg;
-	tmp &= ~SERCOM_I2CM_STATUS_BUSSTATE_Msk;
-	tmp |= SERCOM_I2CM_STATUS_BUSSTATE(data);
-	((Sercom *)hw)->I2CM.STATUS.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_toggle_STATUS_BUSSTATE_bf(const void *const hw, hri_sercomi2cm_status_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
-	((Sercom *)hw)->I2CM.STATUS.reg ^= SERCOM_I2CM_STATUS_BUSSTATE(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_clear_STATUS_BUSSTATE_bf(const void *const hw, hri_sercomi2cm_status_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
-	((Sercom *)hw)->I2CM.STATUS.reg = SERCOM_I2CM_STATUS_BUSSTATE(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomi2cm_status_reg_t hri_sercomi2cm_get_STATUS_reg(const void *const           hw,
-                                                                        hri_sercomi2cm_status_reg_t mask)
-{
-	uint16_t tmp;
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
-	tmp = ((Sercom *)hw)->I2CM.STATUS.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline void hri_sercomi2cm_set_STATUS_reg(const void *const hw, hri_sercomi2cm_status_reg_t mask)
-{
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
-	((Sercom *)hw)->I2CM.STATUS.reg |= mask;
-}
-
-static inline hri_sercomi2cm_status_reg_t hri_sercomi2cm_read_STATUS_reg(const void *const hw)
-{
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
-	return ((Sercom *)hw)->I2CM.STATUS.reg;
-}
-
-static inline void hri_sercomi2cm_write_STATUS_reg(const void *const hw, hri_sercomi2cm_status_reg_t data)
-{
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
-	((Sercom *)hw)->I2CM.STATUS.reg = data;
-}
-
-static inline void hri_sercomi2cm_toggle_STATUS_reg(const void *const hw, hri_sercomi2cm_status_reg_t mask)
-{
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
-	((Sercom *)hw)->I2CM.STATUS.reg ^= mask;
-}
-
-static inline void hri_sercomi2cm_clear_STATUS_reg(const void *const hw, hri_sercomi2cm_status_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
-	((Sercom *)hw)->I2CM.STATUS.reg = mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_set_CTRLA_SWRST_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SWRST);
-	((Sercom *)hw)->I2CM.CTRLA.reg |= SERCOM_I2CM_CTRLA_SWRST;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomi2cm_get_CTRLA_SWRST_bit(const void *const hw)
-{
-	uint32_t tmp;
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SWRST);
-	tmp = ((Sercom *)hw)->I2CM.CTRLA.reg;
-	tmp = (tmp & SERCOM_I2CM_CTRLA_SWRST) >> SERCOM_I2CM_CTRLA_SWRST_Pos;
-	return (bool)tmp;
-}
-
-static inline void hri_sercomi2cm_set_CTRLA_ENABLE_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SWRST | SERCOM_I2CM_SYNCBUSY_ENABLE);
-	((Sercom *)hw)->I2CM.CTRLA.reg |= SERCOM_I2CM_CTRLA_ENABLE;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomi2cm_get_CTRLA_ENABLE_bit(const void *const hw)
-{
-	uint32_t tmp;
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SWRST | SERCOM_I2CM_SYNCBUSY_ENABLE);
-	tmp = ((Sercom *)hw)->I2CM.CTRLA.reg;
-	tmp = (tmp & SERCOM_I2CM_CTRLA_ENABLE) >> SERCOM_I2CM_CTRLA_ENABLE_Pos;
-	return (bool)tmp;
-}
-
-static inline void hri_sercomi2cm_write_CTRLA_ENABLE_bit(const void *const hw, bool value)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SWRST | SERCOM_I2CM_SYNCBUSY_ENABLE);
-	tmp = ((Sercom *)hw)->I2CM.CTRLA.reg;
-	tmp &= ~SERCOM_I2CM_CTRLA_ENABLE;
-	tmp |= value << SERCOM_I2CM_CTRLA_ENABLE_Pos;
-	((Sercom *)hw)->I2CM.CTRLA.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_clear_CTRLA_ENABLE_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SWRST | SERCOM_I2CM_SYNCBUSY_ENABLE);
-	((Sercom *)hw)->I2CM.CTRLA.reg &= ~SERCOM_I2CM_CTRLA_ENABLE;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_toggle_CTRLA_ENABLE_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SWRST | SERCOM_I2CM_SYNCBUSY_ENABLE);
-	((Sercom *)hw)->I2CM.CTRLA.reg ^= SERCOM_I2CM_CTRLA_ENABLE;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_set_CTRLA_RUNSTDBY_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
-	((Sercom *)hw)->I2CM.CTRLA.reg |= SERCOM_I2CM_CTRLA_RUNSTDBY;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomi2cm_get_CTRLA_RUNSTDBY_bit(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CM.CTRLA.reg;
-	tmp = (tmp & SERCOM_I2CM_CTRLA_RUNSTDBY) >> SERCOM_I2CM_CTRLA_RUNSTDBY_Pos;
-	return (bool)tmp;
-}
-
-static inline void hri_sercomi2cm_write_CTRLA_RUNSTDBY_bit(const void *const hw, bool value)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
-	tmp = ((Sercom *)hw)->I2CM.CTRLA.reg;
-	tmp &= ~SERCOM_I2CM_CTRLA_RUNSTDBY;
-	tmp |= value << SERCOM_I2CM_CTRLA_RUNSTDBY_Pos;
-	((Sercom *)hw)->I2CM.CTRLA.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_clear_CTRLA_RUNSTDBY_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
-	((Sercom *)hw)->I2CM.CTRLA.reg &= ~SERCOM_I2CM_CTRLA_RUNSTDBY;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_toggle_CTRLA_RUNSTDBY_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
-	((Sercom *)hw)->I2CM.CTRLA.reg ^= SERCOM_I2CM_CTRLA_RUNSTDBY;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_set_CTRLA_PINOUT_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
-	((Sercom *)hw)->I2CM.CTRLA.reg |= SERCOM_I2CM_CTRLA_PINOUT;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomi2cm_get_CTRLA_PINOUT_bit(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CM.CTRLA.reg;
-	tmp = (tmp & SERCOM_I2CM_CTRLA_PINOUT) >> SERCOM_I2CM_CTRLA_PINOUT_Pos;
-	return (bool)tmp;
-}
-
-static inline void hri_sercomi2cm_write_CTRLA_PINOUT_bit(const void *const hw, bool value)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
-	tmp = ((Sercom *)hw)->I2CM.CTRLA.reg;
-	tmp &= ~SERCOM_I2CM_CTRLA_PINOUT;
-	tmp |= value << SERCOM_I2CM_CTRLA_PINOUT_Pos;
-	((Sercom *)hw)->I2CM.CTRLA.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_clear_CTRLA_PINOUT_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
-	((Sercom *)hw)->I2CM.CTRLA.reg &= ~SERCOM_I2CM_CTRLA_PINOUT;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_toggle_CTRLA_PINOUT_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
-	((Sercom *)hw)->I2CM.CTRLA.reg ^= SERCOM_I2CM_CTRLA_PINOUT;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_set_CTRLA_MEXTTOEN_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
-	((Sercom *)hw)->I2CM.CTRLA.reg |= SERCOM_I2CM_CTRLA_MEXTTOEN;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomi2cm_get_CTRLA_MEXTTOEN_bit(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CM.CTRLA.reg;
-	tmp = (tmp & SERCOM_I2CM_CTRLA_MEXTTOEN) >> SERCOM_I2CM_CTRLA_MEXTTOEN_Pos;
-	return (bool)tmp;
-}
-
-static inline void hri_sercomi2cm_write_CTRLA_MEXTTOEN_bit(const void *const hw, bool value)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
-	tmp = ((Sercom *)hw)->I2CM.CTRLA.reg;
-	tmp &= ~SERCOM_I2CM_CTRLA_MEXTTOEN;
-	tmp |= value << SERCOM_I2CM_CTRLA_MEXTTOEN_Pos;
-	((Sercom *)hw)->I2CM.CTRLA.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_clear_CTRLA_MEXTTOEN_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
-	((Sercom *)hw)->I2CM.CTRLA.reg &= ~SERCOM_I2CM_CTRLA_MEXTTOEN;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_toggle_CTRLA_MEXTTOEN_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
-	((Sercom *)hw)->I2CM.CTRLA.reg ^= SERCOM_I2CM_CTRLA_MEXTTOEN;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_set_CTRLA_SEXTTOEN_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
-	((Sercom *)hw)->I2CM.CTRLA.reg |= SERCOM_I2CM_CTRLA_SEXTTOEN;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomi2cm_get_CTRLA_SEXTTOEN_bit(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CM.CTRLA.reg;
-	tmp = (tmp & SERCOM_I2CM_CTRLA_SEXTTOEN) >> SERCOM_I2CM_CTRLA_SEXTTOEN_Pos;
-	return (bool)tmp;
-}
-
-static inline void hri_sercomi2cm_write_CTRLA_SEXTTOEN_bit(const void *const hw, bool value)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
-	tmp = ((Sercom *)hw)->I2CM.CTRLA.reg;
-	tmp &= ~SERCOM_I2CM_CTRLA_SEXTTOEN;
-	tmp |= value << SERCOM_I2CM_CTRLA_SEXTTOEN_Pos;
-	((Sercom *)hw)->I2CM.CTRLA.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_clear_CTRLA_SEXTTOEN_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
-	((Sercom *)hw)->I2CM.CTRLA.reg &= ~SERCOM_I2CM_CTRLA_SEXTTOEN;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_toggle_CTRLA_SEXTTOEN_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
-	((Sercom *)hw)->I2CM.CTRLA.reg ^= SERCOM_I2CM_CTRLA_SEXTTOEN;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_set_CTRLA_SCLSM_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
-	((Sercom *)hw)->I2CM.CTRLA.reg |= SERCOM_I2CM_CTRLA_SCLSM;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomi2cm_get_CTRLA_SCLSM_bit(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CM.CTRLA.reg;
-	tmp = (tmp & SERCOM_I2CM_CTRLA_SCLSM) >> SERCOM_I2CM_CTRLA_SCLSM_Pos;
-	return (bool)tmp;
-}
-
-static inline void hri_sercomi2cm_write_CTRLA_SCLSM_bit(const void *const hw, bool value)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
-	tmp = ((Sercom *)hw)->I2CM.CTRLA.reg;
-	tmp &= ~SERCOM_I2CM_CTRLA_SCLSM;
-	tmp |= value << SERCOM_I2CM_CTRLA_SCLSM_Pos;
-	((Sercom *)hw)->I2CM.CTRLA.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_clear_CTRLA_SCLSM_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
-	((Sercom *)hw)->I2CM.CTRLA.reg &= ~SERCOM_I2CM_CTRLA_SCLSM;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_toggle_CTRLA_SCLSM_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
-	((Sercom *)hw)->I2CM.CTRLA.reg ^= SERCOM_I2CM_CTRLA_SCLSM;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_set_CTRLA_LOWTOUTEN_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
-	((Sercom *)hw)->I2CM.CTRLA.reg |= SERCOM_I2CM_CTRLA_LOWTOUTEN;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomi2cm_get_CTRLA_LOWTOUTEN_bit(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CM.CTRLA.reg;
-	tmp = (tmp & SERCOM_I2CM_CTRLA_LOWTOUTEN) >> SERCOM_I2CM_CTRLA_LOWTOUTEN_Pos;
-	return (bool)tmp;
-}
-
-static inline void hri_sercomi2cm_write_CTRLA_LOWTOUTEN_bit(const void *const hw, bool value)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
-	tmp = ((Sercom *)hw)->I2CM.CTRLA.reg;
-	tmp &= ~SERCOM_I2CM_CTRLA_LOWTOUTEN;
-	tmp |= value << SERCOM_I2CM_CTRLA_LOWTOUTEN_Pos;
-	((Sercom *)hw)->I2CM.CTRLA.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_clear_CTRLA_LOWTOUTEN_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
-	((Sercom *)hw)->I2CM.CTRLA.reg &= ~SERCOM_I2CM_CTRLA_LOWTOUTEN;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_toggle_CTRLA_LOWTOUTEN_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
-	((Sercom *)hw)->I2CM.CTRLA.reg ^= SERCOM_I2CM_CTRLA_LOWTOUTEN;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_set_CTRLA_MODE_bf(const void *const hw, hri_sercomi2cm_ctrla_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
-	((Sercom *)hw)->I2CM.CTRLA.reg |= SERCOM_I2CM_CTRLA_MODE(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomi2cm_ctrla_reg_t hri_sercomi2cm_get_CTRLA_MODE_bf(const void *const          hw,
-                                                                          hri_sercomi2cm_ctrla_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CM.CTRLA.reg;
-	tmp = (tmp & SERCOM_I2CM_CTRLA_MODE(mask)) >> SERCOM_I2CM_CTRLA_MODE_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomi2cm_write_CTRLA_MODE_bf(const void *const hw, hri_sercomi2cm_ctrla_reg_t data)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
-	tmp = ((Sercom *)hw)->I2CM.CTRLA.reg;
-	tmp &= ~SERCOM_I2CM_CTRLA_MODE_Msk;
-	tmp |= SERCOM_I2CM_CTRLA_MODE(data);
-	((Sercom *)hw)->I2CM.CTRLA.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_clear_CTRLA_MODE_bf(const void *const hw, hri_sercomi2cm_ctrla_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
-	((Sercom *)hw)->I2CM.CTRLA.reg &= ~SERCOM_I2CM_CTRLA_MODE(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_toggle_CTRLA_MODE_bf(const void *const hw, hri_sercomi2cm_ctrla_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
-	((Sercom *)hw)->I2CM.CTRLA.reg ^= SERCOM_I2CM_CTRLA_MODE(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomi2cm_ctrla_reg_t hri_sercomi2cm_read_CTRLA_MODE_bf(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CM.CTRLA.reg;
-	tmp = (tmp & SERCOM_I2CM_CTRLA_MODE_Msk) >> SERCOM_I2CM_CTRLA_MODE_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomi2cm_set_CTRLA_SDAHOLD_bf(const void *const hw, hri_sercomi2cm_ctrla_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
-	((Sercom *)hw)->I2CM.CTRLA.reg |= SERCOM_I2CM_CTRLA_SDAHOLD(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomi2cm_ctrla_reg_t hri_sercomi2cm_get_CTRLA_SDAHOLD_bf(const void *const          hw,
-                                                                             hri_sercomi2cm_ctrla_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CM.CTRLA.reg;
-	tmp = (tmp & SERCOM_I2CM_CTRLA_SDAHOLD(mask)) >> SERCOM_I2CM_CTRLA_SDAHOLD_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomi2cm_write_CTRLA_SDAHOLD_bf(const void *const hw, hri_sercomi2cm_ctrla_reg_t data)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
-	tmp = ((Sercom *)hw)->I2CM.CTRLA.reg;
-	tmp &= ~SERCOM_I2CM_CTRLA_SDAHOLD_Msk;
-	tmp |= SERCOM_I2CM_CTRLA_SDAHOLD(data);
-	((Sercom *)hw)->I2CM.CTRLA.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_clear_CTRLA_SDAHOLD_bf(const void *const hw, hri_sercomi2cm_ctrla_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
-	((Sercom *)hw)->I2CM.CTRLA.reg &= ~SERCOM_I2CM_CTRLA_SDAHOLD(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_toggle_CTRLA_SDAHOLD_bf(const void *const hw, hri_sercomi2cm_ctrla_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
-	((Sercom *)hw)->I2CM.CTRLA.reg ^= SERCOM_I2CM_CTRLA_SDAHOLD(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomi2cm_ctrla_reg_t hri_sercomi2cm_read_CTRLA_SDAHOLD_bf(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CM.CTRLA.reg;
-	tmp = (tmp & SERCOM_I2CM_CTRLA_SDAHOLD_Msk) >> SERCOM_I2CM_CTRLA_SDAHOLD_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomi2cm_set_CTRLA_SPEED_bf(const void *const hw, hri_sercomi2cm_ctrla_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
-	((Sercom *)hw)->I2CM.CTRLA.reg |= SERCOM_I2CM_CTRLA_SPEED(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomi2cm_ctrla_reg_t hri_sercomi2cm_get_CTRLA_SPEED_bf(const void *const          hw,
-                                                                           hri_sercomi2cm_ctrla_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CM.CTRLA.reg;
-	tmp = (tmp & SERCOM_I2CM_CTRLA_SPEED(mask)) >> SERCOM_I2CM_CTRLA_SPEED_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomi2cm_write_CTRLA_SPEED_bf(const void *const hw, hri_sercomi2cm_ctrla_reg_t data)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
-	tmp = ((Sercom *)hw)->I2CM.CTRLA.reg;
-	tmp &= ~SERCOM_I2CM_CTRLA_SPEED_Msk;
-	tmp |= SERCOM_I2CM_CTRLA_SPEED(data);
-	((Sercom *)hw)->I2CM.CTRLA.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_clear_CTRLA_SPEED_bf(const void *const hw, hri_sercomi2cm_ctrla_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
-	((Sercom *)hw)->I2CM.CTRLA.reg &= ~SERCOM_I2CM_CTRLA_SPEED(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_toggle_CTRLA_SPEED_bf(const void *const hw, hri_sercomi2cm_ctrla_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
-	((Sercom *)hw)->I2CM.CTRLA.reg ^= SERCOM_I2CM_CTRLA_SPEED(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomi2cm_ctrla_reg_t hri_sercomi2cm_read_CTRLA_SPEED_bf(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CM.CTRLA.reg;
-	tmp = (tmp & SERCOM_I2CM_CTRLA_SPEED_Msk) >> SERCOM_I2CM_CTRLA_SPEED_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomi2cm_set_CTRLA_INACTOUT_bf(const void *const hw, hri_sercomi2cm_ctrla_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
-	((Sercom *)hw)->I2CM.CTRLA.reg |= SERCOM_I2CM_CTRLA_INACTOUT(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomi2cm_ctrla_reg_t hri_sercomi2cm_get_CTRLA_INACTOUT_bf(const void *const          hw,
-                                                                              hri_sercomi2cm_ctrla_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CM.CTRLA.reg;
-	tmp = (tmp & SERCOM_I2CM_CTRLA_INACTOUT(mask)) >> SERCOM_I2CM_CTRLA_INACTOUT_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomi2cm_write_CTRLA_INACTOUT_bf(const void *const hw, hri_sercomi2cm_ctrla_reg_t data)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
-	tmp = ((Sercom *)hw)->I2CM.CTRLA.reg;
-	tmp &= ~SERCOM_I2CM_CTRLA_INACTOUT_Msk;
-	tmp |= SERCOM_I2CM_CTRLA_INACTOUT(data);
-	((Sercom *)hw)->I2CM.CTRLA.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_clear_CTRLA_INACTOUT_bf(const void *const hw, hri_sercomi2cm_ctrla_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
-	((Sercom *)hw)->I2CM.CTRLA.reg &= ~SERCOM_I2CM_CTRLA_INACTOUT(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_toggle_CTRLA_INACTOUT_bf(const void *const hw, hri_sercomi2cm_ctrla_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
-	((Sercom *)hw)->I2CM.CTRLA.reg ^= SERCOM_I2CM_CTRLA_INACTOUT(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomi2cm_ctrla_reg_t hri_sercomi2cm_read_CTRLA_INACTOUT_bf(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CM.CTRLA.reg;
-	tmp = (tmp & SERCOM_I2CM_CTRLA_INACTOUT_Msk) >> SERCOM_I2CM_CTRLA_INACTOUT_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomi2cm_set_CTRLA_reg(const void *const hw, hri_sercomi2cm_ctrla_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.CTRLA.reg |= mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomi2cm_ctrla_reg_t hri_sercomi2cm_get_CTRLA_reg(const void *const          hw,
-                                                                      hri_sercomi2cm_ctrla_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CM.CTRLA.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline void hri_sercomi2cm_write_CTRLA_reg(const void *const hw, hri_sercomi2cm_ctrla_reg_t data)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.CTRLA.reg = data;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_clear_CTRLA_reg(const void *const hw, hri_sercomi2cm_ctrla_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.CTRLA.reg &= ~mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_toggle_CTRLA_reg(const void *const hw, hri_sercomi2cm_ctrla_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.CTRLA.reg ^= mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomi2cm_ctrla_reg_t hri_sercomi2cm_read_CTRLA_reg(const void *const hw)
-{
-	return ((Sercom *)hw)->I2CM.CTRLA.reg;
-}
-
-static inline void hri_sercomi2cm_set_CTRLB_SMEN_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
-	((Sercom *)hw)->I2CM.CTRLB.reg |= SERCOM_I2CM_CTRLB_SMEN;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomi2cm_get_CTRLB_SMEN_bit(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CM.CTRLB.reg;
-	tmp = (tmp & SERCOM_I2CM_CTRLB_SMEN) >> SERCOM_I2CM_CTRLB_SMEN_Pos;
-	return (bool)tmp;
-}
-
-static inline void hri_sercomi2cm_write_CTRLB_SMEN_bit(const void *const hw, bool value)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
-	tmp = ((Sercom *)hw)->I2CM.CTRLB.reg;
-	tmp &= ~SERCOM_I2CM_CTRLB_SMEN;
-	tmp |= value << SERCOM_I2CM_CTRLB_SMEN_Pos;
-	((Sercom *)hw)->I2CM.CTRLB.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_clear_CTRLB_SMEN_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
-	((Sercom *)hw)->I2CM.CTRLB.reg &= ~SERCOM_I2CM_CTRLB_SMEN;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_toggle_CTRLB_SMEN_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
-	((Sercom *)hw)->I2CM.CTRLB.reg ^= SERCOM_I2CM_CTRLB_SMEN;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_set_CTRLB_QCEN_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
-	((Sercom *)hw)->I2CM.CTRLB.reg |= SERCOM_I2CM_CTRLB_QCEN;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomi2cm_get_CTRLB_QCEN_bit(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CM.CTRLB.reg;
-	tmp = (tmp & SERCOM_I2CM_CTRLB_QCEN) >> SERCOM_I2CM_CTRLB_QCEN_Pos;
-	return (bool)tmp;
-}
-
-static inline void hri_sercomi2cm_write_CTRLB_QCEN_bit(const void *const hw, bool value)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
-	tmp = ((Sercom *)hw)->I2CM.CTRLB.reg;
-	tmp &= ~SERCOM_I2CM_CTRLB_QCEN;
-	tmp |= value << SERCOM_I2CM_CTRLB_QCEN_Pos;
-	((Sercom *)hw)->I2CM.CTRLB.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_clear_CTRLB_QCEN_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
-	((Sercom *)hw)->I2CM.CTRLB.reg &= ~SERCOM_I2CM_CTRLB_QCEN;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_toggle_CTRLB_QCEN_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
-	((Sercom *)hw)->I2CM.CTRLB.reg ^= SERCOM_I2CM_CTRLB_QCEN;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_set_CTRLB_ACKACT_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
-	((Sercom *)hw)->I2CM.CTRLB.reg |= SERCOM_I2CM_CTRLB_ACKACT;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomi2cm_get_CTRLB_ACKACT_bit(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CM.CTRLB.reg;
-	tmp = (tmp & SERCOM_I2CM_CTRLB_ACKACT) >> SERCOM_I2CM_CTRLB_ACKACT_Pos;
-	return (bool)tmp;
-}
-
-static inline void hri_sercomi2cm_write_CTRLB_ACKACT_bit(const void *const hw, bool value)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
-	tmp = ((Sercom *)hw)->I2CM.CTRLB.reg;
-	tmp &= ~SERCOM_I2CM_CTRLB_ACKACT;
-	tmp |= value << SERCOM_I2CM_CTRLB_ACKACT_Pos;
-	((Sercom *)hw)->I2CM.CTRLB.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_clear_CTRLB_ACKACT_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
-	((Sercom *)hw)->I2CM.CTRLB.reg &= ~SERCOM_I2CM_CTRLB_ACKACT;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_toggle_CTRLB_ACKACT_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
-	((Sercom *)hw)->I2CM.CTRLB.reg ^= SERCOM_I2CM_CTRLB_ACKACT;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_set_CTRLB_CMD_bf(const void *const hw, hri_sercomi2cm_ctrlb_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
-	((Sercom *)hw)->I2CM.CTRLB.reg |= SERCOM_I2CM_CTRLB_CMD(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomi2cm_ctrlb_reg_t hri_sercomi2cm_get_CTRLB_CMD_bf(const void *const          hw,
-                                                                         hri_sercomi2cm_ctrlb_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CM.CTRLB.reg;
-	tmp = (tmp & SERCOM_I2CM_CTRLB_CMD(mask)) >> SERCOM_I2CM_CTRLB_CMD_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomi2cm_write_CTRLB_CMD_bf(const void *const hw, hri_sercomi2cm_ctrlb_reg_t data)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
-	tmp = ((Sercom *)hw)->I2CM.CTRLB.reg;
-	tmp &= ~SERCOM_I2CM_CTRLB_CMD_Msk;
-	tmp |= SERCOM_I2CM_CTRLB_CMD(data);
-	((Sercom *)hw)->I2CM.CTRLB.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_clear_CTRLB_CMD_bf(const void *const hw, hri_sercomi2cm_ctrlb_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
-	((Sercom *)hw)->I2CM.CTRLB.reg &= ~SERCOM_I2CM_CTRLB_CMD(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_toggle_CTRLB_CMD_bf(const void *const hw, hri_sercomi2cm_ctrlb_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
-	((Sercom *)hw)->I2CM.CTRLB.reg ^= SERCOM_I2CM_CTRLB_CMD(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomi2cm_ctrlb_reg_t hri_sercomi2cm_read_CTRLB_CMD_bf(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CM.CTRLB.reg;
-	tmp = (tmp & SERCOM_I2CM_CTRLB_CMD_Msk) >> SERCOM_I2CM_CTRLB_CMD_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomi2cm_set_CTRLB_reg(const void *const hw, hri_sercomi2cm_ctrlb_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.CTRLB.reg |= mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomi2cm_ctrlb_reg_t hri_sercomi2cm_get_CTRLB_reg(const void *const          hw,
-                                                                      hri_sercomi2cm_ctrlb_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CM.CTRLB.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline void hri_sercomi2cm_write_CTRLB_reg(const void *const hw, hri_sercomi2cm_ctrlb_reg_t data)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.CTRLB.reg = data;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_clear_CTRLB_reg(const void *const hw, hri_sercomi2cm_ctrlb_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.CTRLB.reg &= ~mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_toggle_CTRLB_reg(const void *const hw, hri_sercomi2cm_ctrlb_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.CTRLB.reg ^= mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomi2cm_ctrlb_reg_t hri_sercomi2cm_read_CTRLB_reg(const void *const hw)
-{
-	return ((Sercom *)hw)->I2CM.CTRLB.reg;
-}
-
-static inline void hri_sercomi2cm_set_CTRLC_DATA32B_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.CTRLC.reg |= SERCOM_I2CM_CTRLC_DATA32B;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomi2cm_get_CTRLC_DATA32B_bit(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CM.CTRLC.reg;
-	tmp = (tmp & SERCOM_I2CM_CTRLC_DATA32B) >> SERCOM_I2CM_CTRLC_DATA32B_Pos;
-	return (bool)tmp;
-}
-
-static inline void hri_sercomi2cm_write_CTRLC_DATA32B_bit(const void *const hw, bool value)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	tmp = ((Sercom *)hw)->I2CM.CTRLC.reg;
-	tmp &= ~SERCOM_I2CM_CTRLC_DATA32B;
-	tmp |= value << SERCOM_I2CM_CTRLC_DATA32B_Pos;
-	((Sercom *)hw)->I2CM.CTRLC.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_clear_CTRLC_DATA32B_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.CTRLC.reg &= ~SERCOM_I2CM_CTRLC_DATA32B;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_toggle_CTRLC_DATA32B_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.CTRLC.reg ^= SERCOM_I2CM_CTRLC_DATA32B;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_set_CTRLC_reg(const void *const hw, hri_sercomi2cm_ctrlc_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.CTRLC.reg |= mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomi2cm_ctrlc_reg_t hri_sercomi2cm_get_CTRLC_reg(const void *const          hw,
-                                                                      hri_sercomi2cm_ctrlc_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CM.CTRLC.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline void hri_sercomi2cm_write_CTRLC_reg(const void *const hw, hri_sercomi2cm_ctrlc_reg_t data)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.CTRLC.reg = data;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_clear_CTRLC_reg(const void *const hw, hri_sercomi2cm_ctrlc_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.CTRLC.reg &= ~mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_toggle_CTRLC_reg(const void *const hw, hri_sercomi2cm_ctrlc_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.CTRLC.reg ^= mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomi2cm_ctrlc_reg_t hri_sercomi2cm_read_CTRLC_reg(const void *const hw)
-{
-	return ((Sercom *)hw)->I2CM.CTRLC.reg;
-}
-
-static inline void hri_sercomi2cm_set_BAUD_BAUD_bf(const void *const hw, hri_sercomi2cm_baud_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.BAUD.reg |= SERCOM_I2CM_BAUD_BAUD(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomi2cm_baud_reg_t hri_sercomi2cm_get_BAUD_BAUD_bf(const void *const         hw,
-                                                                        hri_sercomi2cm_baud_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CM.BAUD.reg;
-	tmp = (tmp & SERCOM_I2CM_BAUD_BAUD(mask)) >> SERCOM_I2CM_BAUD_BAUD_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomi2cm_write_BAUD_BAUD_bf(const void *const hw, hri_sercomi2cm_baud_reg_t data)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	tmp = ((Sercom *)hw)->I2CM.BAUD.reg;
-	tmp &= ~SERCOM_I2CM_BAUD_BAUD_Msk;
-	tmp |= SERCOM_I2CM_BAUD_BAUD(data);
-	((Sercom *)hw)->I2CM.BAUD.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_clear_BAUD_BAUD_bf(const void *const hw, hri_sercomi2cm_baud_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.BAUD.reg &= ~SERCOM_I2CM_BAUD_BAUD(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_toggle_BAUD_BAUD_bf(const void *const hw, hri_sercomi2cm_baud_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.BAUD.reg ^= SERCOM_I2CM_BAUD_BAUD(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomi2cm_baud_reg_t hri_sercomi2cm_read_BAUD_BAUD_bf(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CM.BAUD.reg;
-	tmp = (tmp & SERCOM_I2CM_BAUD_BAUD_Msk) >> SERCOM_I2CM_BAUD_BAUD_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomi2cm_set_BAUD_BAUDLOW_bf(const void *const hw, hri_sercomi2cm_baud_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.BAUD.reg |= SERCOM_I2CM_BAUD_BAUDLOW(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomi2cm_baud_reg_t hri_sercomi2cm_get_BAUD_BAUDLOW_bf(const void *const         hw,
-                                                                           hri_sercomi2cm_baud_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CM.BAUD.reg;
-	tmp = (tmp & SERCOM_I2CM_BAUD_BAUDLOW(mask)) >> SERCOM_I2CM_BAUD_BAUDLOW_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomi2cm_write_BAUD_BAUDLOW_bf(const void *const hw, hri_sercomi2cm_baud_reg_t data)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	tmp = ((Sercom *)hw)->I2CM.BAUD.reg;
-	tmp &= ~SERCOM_I2CM_BAUD_BAUDLOW_Msk;
-	tmp |= SERCOM_I2CM_BAUD_BAUDLOW(data);
-	((Sercom *)hw)->I2CM.BAUD.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_clear_BAUD_BAUDLOW_bf(const void *const hw, hri_sercomi2cm_baud_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.BAUD.reg &= ~SERCOM_I2CM_BAUD_BAUDLOW(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_toggle_BAUD_BAUDLOW_bf(const void *const hw, hri_sercomi2cm_baud_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.BAUD.reg ^= SERCOM_I2CM_BAUD_BAUDLOW(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomi2cm_baud_reg_t hri_sercomi2cm_read_BAUD_BAUDLOW_bf(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CM.BAUD.reg;
-	tmp = (tmp & SERCOM_I2CM_BAUD_BAUDLOW_Msk) >> SERCOM_I2CM_BAUD_BAUDLOW_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomi2cm_set_BAUD_HSBAUD_bf(const void *const hw, hri_sercomi2cm_baud_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.BAUD.reg |= SERCOM_I2CM_BAUD_HSBAUD(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomi2cm_baud_reg_t hri_sercomi2cm_get_BAUD_HSBAUD_bf(const void *const         hw,
-                                                                          hri_sercomi2cm_baud_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CM.BAUD.reg;
-	tmp = (tmp & SERCOM_I2CM_BAUD_HSBAUD(mask)) >> SERCOM_I2CM_BAUD_HSBAUD_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomi2cm_write_BAUD_HSBAUD_bf(const void *const hw, hri_sercomi2cm_baud_reg_t data)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	tmp = ((Sercom *)hw)->I2CM.BAUD.reg;
-	tmp &= ~SERCOM_I2CM_BAUD_HSBAUD_Msk;
-	tmp |= SERCOM_I2CM_BAUD_HSBAUD(data);
-	((Sercom *)hw)->I2CM.BAUD.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_clear_BAUD_HSBAUD_bf(const void *const hw, hri_sercomi2cm_baud_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.BAUD.reg &= ~SERCOM_I2CM_BAUD_HSBAUD(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_toggle_BAUD_HSBAUD_bf(const void *const hw, hri_sercomi2cm_baud_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.BAUD.reg ^= SERCOM_I2CM_BAUD_HSBAUD(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomi2cm_baud_reg_t hri_sercomi2cm_read_BAUD_HSBAUD_bf(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CM.BAUD.reg;
-	tmp = (tmp & SERCOM_I2CM_BAUD_HSBAUD_Msk) >> SERCOM_I2CM_BAUD_HSBAUD_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomi2cm_set_BAUD_HSBAUDLOW_bf(const void *const hw, hri_sercomi2cm_baud_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.BAUD.reg |= SERCOM_I2CM_BAUD_HSBAUDLOW(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomi2cm_baud_reg_t hri_sercomi2cm_get_BAUD_HSBAUDLOW_bf(const void *const         hw,
-                                                                             hri_sercomi2cm_baud_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CM.BAUD.reg;
-	tmp = (tmp & SERCOM_I2CM_BAUD_HSBAUDLOW(mask)) >> SERCOM_I2CM_BAUD_HSBAUDLOW_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomi2cm_write_BAUD_HSBAUDLOW_bf(const void *const hw, hri_sercomi2cm_baud_reg_t data)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	tmp = ((Sercom *)hw)->I2CM.BAUD.reg;
-	tmp &= ~SERCOM_I2CM_BAUD_HSBAUDLOW_Msk;
-	tmp |= SERCOM_I2CM_BAUD_HSBAUDLOW(data);
-	((Sercom *)hw)->I2CM.BAUD.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_clear_BAUD_HSBAUDLOW_bf(const void *const hw, hri_sercomi2cm_baud_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.BAUD.reg &= ~SERCOM_I2CM_BAUD_HSBAUDLOW(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_toggle_BAUD_HSBAUDLOW_bf(const void *const hw, hri_sercomi2cm_baud_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.BAUD.reg ^= SERCOM_I2CM_BAUD_HSBAUDLOW(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomi2cm_baud_reg_t hri_sercomi2cm_read_BAUD_HSBAUDLOW_bf(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CM.BAUD.reg;
-	tmp = (tmp & SERCOM_I2CM_BAUD_HSBAUDLOW_Msk) >> SERCOM_I2CM_BAUD_HSBAUDLOW_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomi2cm_set_BAUD_reg(const void *const hw, hri_sercomi2cm_baud_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.BAUD.reg |= mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomi2cm_baud_reg_t hri_sercomi2cm_get_BAUD_reg(const void *const         hw,
-                                                                    hri_sercomi2cm_baud_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CM.BAUD.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline void hri_sercomi2cm_write_BAUD_reg(const void *const hw, hri_sercomi2cm_baud_reg_t data)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.BAUD.reg = data;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_clear_BAUD_reg(const void *const hw, hri_sercomi2cm_baud_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.BAUD.reg &= ~mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_toggle_BAUD_reg(const void *const hw, hri_sercomi2cm_baud_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.BAUD.reg ^= mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomi2cm_baud_reg_t hri_sercomi2cm_read_BAUD_reg(const void *const hw)
-{
-	return ((Sercom *)hw)->I2CM.BAUD.reg;
-}
-
-static inline void hri_sercomi2cm_set_ADDR_LENEN_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
-	((Sercom *)hw)->I2CM.ADDR.reg |= SERCOM_I2CM_ADDR_LENEN;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomi2cm_get_ADDR_LENEN_bit(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CM.ADDR.reg;
-	tmp = (tmp & SERCOM_I2CM_ADDR_LENEN) >> SERCOM_I2CM_ADDR_LENEN_Pos;
-	return (bool)tmp;
-}
-
-static inline void hri_sercomi2cm_write_ADDR_LENEN_bit(const void *const hw, bool value)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
-	tmp = ((Sercom *)hw)->I2CM.ADDR.reg;
-	tmp &= ~SERCOM_I2CM_ADDR_LENEN;
-	tmp |= value << SERCOM_I2CM_ADDR_LENEN_Pos;
-	((Sercom *)hw)->I2CM.ADDR.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_clear_ADDR_LENEN_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
-	((Sercom *)hw)->I2CM.ADDR.reg &= ~SERCOM_I2CM_ADDR_LENEN;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_toggle_ADDR_LENEN_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
-	((Sercom *)hw)->I2CM.ADDR.reg ^= SERCOM_I2CM_ADDR_LENEN;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_set_ADDR_HS_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
-	((Sercom *)hw)->I2CM.ADDR.reg |= SERCOM_I2CM_ADDR_HS;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomi2cm_get_ADDR_HS_bit(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CM.ADDR.reg;
-	tmp = (tmp & SERCOM_I2CM_ADDR_HS) >> SERCOM_I2CM_ADDR_HS_Pos;
-	return (bool)tmp;
-}
-
-static inline void hri_sercomi2cm_write_ADDR_HS_bit(const void *const hw, bool value)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
-	tmp = ((Sercom *)hw)->I2CM.ADDR.reg;
-	tmp &= ~SERCOM_I2CM_ADDR_HS;
-	tmp |= value << SERCOM_I2CM_ADDR_HS_Pos;
-	((Sercom *)hw)->I2CM.ADDR.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_clear_ADDR_HS_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
-	((Sercom *)hw)->I2CM.ADDR.reg &= ~SERCOM_I2CM_ADDR_HS;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_toggle_ADDR_HS_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
-	((Sercom *)hw)->I2CM.ADDR.reg ^= SERCOM_I2CM_ADDR_HS;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_set_ADDR_TENBITEN_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
-	((Sercom *)hw)->I2CM.ADDR.reg |= SERCOM_I2CM_ADDR_TENBITEN;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomi2cm_get_ADDR_TENBITEN_bit(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CM.ADDR.reg;
-	tmp = (tmp & SERCOM_I2CM_ADDR_TENBITEN) >> SERCOM_I2CM_ADDR_TENBITEN_Pos;
-	return (bool)tmp;
-}
-
-static inline void hri_sercomi2cm_write_ADDR_TENBITEN_bit(const void *const hw, bool value)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
-	tmp = ((Sercom *)hw)->I2CM.ADDR.reg;
-	tmp &= ~SERCOM_I2CM_ADDR_TENBITEN;
-	tmp |= value << SERCOM_I2CM_ADDR_TENBITEN_Pos;
-	((Sercom *)hw)->I2CM.ADDR.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_clear_ADDR_TENBITEN_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
-	((Sercom *)hw)->I2CM.ADDR.reg &= ~SERCOM_I2CM_ADDR_TENBITEN;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_toggle_ADDR_TENBITEN_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
-	((Sercom *)hw)->I2CM.ADDR.reg ^= SERCOM_I2CM_ADDR_TENBITEN;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_set_ADDR_ADDR_bf(const void *const hw, hri_sercomi2cm_addr_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
-	((Sercom *)hw)->I2CM.ADDR.reg |= SERCOM_I2CM_ADDR_ADDR(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomi2cm_addr_reg_t hri_sercomi2cm_get_ADDR_ADDR_bf(const void *const         hw,
-                                                                        hri_sercomi2cm_addr_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CM.ADDR.reg;
-	tmp = (tmp & SERCOM_I2CM_ADDR_ADDR(mask)) >> SERCOM_I2CM_ADDR_ADDR_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomi2cm_write_ADDR_ADDR_bf(const void *const hw, hri_sercomi2cm_addr_reg_t data)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
-	tmp = ((Sercom *)hw)->I2CM.ADDR.reg;
-	tmp &= ~SERCOM_I2CM_ADDR_ADDR_Msk;
-	tmp |= SERCOM_I2CM_ADDR_ADDR(data);
-	((Sercom *)hw)->I2CM.ADDR.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_clear_ADDR_ADDR_bf(const void *const hw, hri_sercomi2cm_addr_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
-	((Sercom *)hw)->I2CM.ADDR.reg &= ~SERCOM_I2CM_ADDR_ADDR(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_toggle_ADDR_ADDR_bf(const void *const hw, hri_sercomi2cm_addr_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
-	((Sercom *)hw)->I2CM.ADDR.reg ^= SERCOM_I2CM_ADDR_ADDR(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomi2cm_addr_reg_t hri_sercomi2cm_read_ADDR_ADDR_bf(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CM.ADDR.reg;
-	tmp = (tmp & SERCOM_I2CM_ADDR_ADDR_Msk) >> SERCOM_I2CM_ADDR_ADDR_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomi2cm_set_ADDR_LEN_bf(const void *const hw, hri_sercomi2cm_addr_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
-	((Sercom *)hw)->I2CM.ADDR.reg |= SERCOM_I2CM_ADDR_LEN(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomi2cm_addr_reg_t hri_sercomi2cm_get_ADDR_LEN_bf(const void *const         hw,
-                                                                       hri_sercomi2cm_addr_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CM.ADDR.reg;
-	tmp = (tmp & SERCOM_I2CM_ADDR_LEN(mask)) >> SERCOM_I2CM_ADDR_LEN_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomi2cm_write_ADDR_LEN_bf(const void *const hw, hri_sercomi2cm_addr_reg_t data)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
-	tmp = ((Sercom *)hw)->I2CM.ADDR.reg;
-	tmp &= ~SERCOM_I2CM_ADDR_LEN_Msk;
-	tmp |= SERCOM_I2CM_ADDR_LEN(data);
-	((Sercom *)hw)->I2CM.ADDR.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_clear_ADDR_LEN_bf(const void *const hw, hri_sercomi2cm_addr_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
-	((Sercom *)hw)->I2CM.ADDR.reg &= ~SERCOM_I2CM_ADDR_LEN(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_toggle_ADDR_LEN_bf(const void *const hw, hri_sercomi2cm_addr_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
-	((Sercom *)hw)->I2CM.ADDR.reg ^= SERCOM_I2CM_ADDR_LEN(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomi2cm_addr_reg_t hri_sercomi2cm_read_ADDR_LEN_bf(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CM.ADDR.reg;
-	tmp = (tmp & SERCOM_I2CM_ADDR_LEN_Msk) >> SERCOM_I2CM_ADDR_LEN_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomi2cm_set_ADDR_reg(const void *const hw, hri_sercomi2cm_addr_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.ADDR.reg |= mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomi2cm_addr_reg_t hri_sercomi2cm_get_ADDR_reg(const void *const         hw,
-                                                                    hri_sercomi2cm_addr_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CM.ADDR.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline void hri_sercomi2cm_write_ADDR_reg(const void *const hw, hri_sercomi2cm_addr_reg_t data)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.ADDR.reg = data;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_clear_ADDR_reg(const void *const hw, hri_sercomi2cm_addr_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.ADDR.reg &= ~mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_toggle_ADDR_reg(const void *const hw, hri_sercomi2cm_addr_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.ADDR.reg ^= mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomi2cm_addr_reg_t hri_sercomi2cm_read_ADDR_reg(const void *const hw)
-{
-	return ((Sercom *)hw)->I2CM.ADDR.reg;
-}
-
-static inline hri_sercomi2cm_data_reg_t hri_sercomi2cm_read_DATA_DATA_bf(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CM.DATA.reg;
-	tmp = (tmp & SERCOM_I2CM_DATA_DATA_Msk) >> SERCOM_I2CM_DATA_DATA_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomi2cm_write_DATA_DATA_bf(const void *const hw, hri_sercomi2cm_data_reg_t data)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
-	tmp = ((Sercom *)hw)->I2CM.DATA.reg;
-	tmp &= ~SERCOM_I2CM_DATA_DATA_Msk;
-	tmp |= SERCOM_I2CM_DATA_DATA(data);
-	((Sercom *)hw)->I2CM.DATA.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomi2cm_data_reg_t hri_sercomi2cm_read_DATA_reg(const void *const hw)
-{
-	return ((Sercom *)hw)->I2CM.DATA.reg;
-}
-
-static inline void hri_sercomi2cm_write_DATA_reg(const void *const hw, hri_sercomi2cm_data_reg_t data)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.DATA.reg = data;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_set_DBGCTRL_DBGSTOP_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.DBGCTRL.reg |= SERCOM_I2CM_DBGCTRL_DBGSTOP;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomi2cm_get_DBGCTRL_DBGSTOP_bit(const void *const hw)
-{
-	uint8_t tmp;
-	tmp = ((Sercom *)hw)->I2CM.DBGCTRL.reg;
-	tmp = (tmp & SERCOM_I2CM_DBGCTRL_DBGSTOP) >> SERCOM_I2CM_DBGCTRL_DBGSTOP_Pos;
-	return (bool)tmp;
-}
-
-static inline void hri_sercomi2cm_write_DBGCTRL_DBGSTOP_bit(const void *const hw, bool value)
-{
-	uint8_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	tmp = ((Sercom *)hw)->I2CM.DBGCTRL.reg;
-	tmp &= ~SERCOM_I2CM_DBGCTRL_DBGSTOP;
-	tmp |= value << SERCOM_I2CM_DBGCTRL_DBGSTOP_Pos;
-	((Sercom *)hw)->I2CM.DBGCTRL.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_clear_DBGCTRL_DBGSTOP_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.DBGCTRL.reg &= ~SERCOM_I2CM_DBGCTRL_DBGSTOP;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_toggle_DBGCTRL_DBGSTOP_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.DBGCTRL.reg ^= SERCOM_I2CM_DBGCTRL_DBGSTOP;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_set_DBGCTRL_reg(const void *const hw, hri_sercomi2cm_dbgctrl_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.DBGCTRL.reg |= mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomi2cm_dbgctrl_reg_t hri_sercomi2cm_get_DBGCTRL_reg(const void *const            hw,
-                                                                          hri_sercomi2cm_dbgctrl_reg_t mask)
-{
-	uint8_t tmp;
-	tmp = ((Sercom *)hw)->I2CM.DBGCTRL.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline void hri_sercomi2cm_write_DBGCTRL_reg(const void *const hw, hri_sercomi2cm_dbgctrl_reg_t data)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.DBGCTRL.reg = data;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_clear_DBGCTRL_reg(const void *const hw, hri_sercomi2cm_dbgctrl_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.DBGCTRL.reg &= ~mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cm_toggle_DBGCTRL_reg(const void *const hw, hri_sercomi2cm_dbgctrl_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CM.DBGCTRL.reg ^= mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomi2cm_dbgctrl_reg_t hri_sercomi2cm_read_DBGCTRL_reg(const void *const hw)
-{
-	return ((Sercom *)hw)->I2CM.DBGCTRL.reg;
-}
-
-static inline bool hri_sercomi2cm_get_SYNCBUSY_SWRST_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->I2CM.SYNCBUSY.reg & SERCOM_I2CM_SYNCBUSY_SWRST) >> SERCOM_I2CM_SYNCBUSY_SWRST_Pos;
-}
-
-static inline bool hri_sercomi2cm_get_SYNCBUSY_ENABLE_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->I2CM.SYNCBUSY.reg & SERCOM_I2CM_SYNCBUSY_ENABLE) >> SERCOM_I2CM_SYNCBUSY_ENABLE_Pos;
-}
-
-static inline bool hri_sercomi2cm_get_SYNCBUSY_SYSOP_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->I2CM.SYNCBUSY.reg & SERCOM_I2CM_SYNCBUSY_SYSOP) >> SERCOM_I2CM_SYNCBUSY_SYSOP_Pos;
-}
-
-static inline bool hri_sercomi2cm_get_SYNCBUSY_LENGTH_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->I2CM.SYNCBUSY.reg & SERCOM_I2CM_SYNCBUSY_LENGTH) >> SERCOM_I2CM_SYNCBUSY_LENGTH_Pos;
-}
-
-static inline hri_sercomi2cm_syncbusy_reg_t hri_sercomi2cm_get_SYNCBUSY_reg(const void *const             hw,
-                                                                            hri_sercomi2cm_syncbusy_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CM.SYNCBUSY.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline hri_sercomi2cm_syncbusy_reg_t hri_sercomi2cm_read_SYNCBUSY_reg(const void *const hw)
-{
-	return ((Sercom *)hw)->I2CM.SYNCBUSY.reg;
-}
-
-static inline void hri_sercomusart_set_BAUD_BAUD_bf(const void *const hw, hri_sercomusart_baud_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.BAUD.reg |= SERCOM_USART_BAUD_BAUD(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomusart_baud_reg_t hri_sercomusart_get_BAUD_BAUD_bf(const void *const          hw,
-                                                                          hri_sercomusart_baud_reg_t mask)
-{
-	uint16_t tmp;
-	tmp = ((Sercom *)hw)->USART.BAUD.reg;
-	tmp = (tmp & SERCOM_USART_BAUD_BAUD(mask)) >> SERCOM_USART_BAUD_BAUD_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomusart_write_BAUD_BAUD_bf(const void *const hw, hri_sercomusart_baud_reg_t data)
-{
-	uint16_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	tmp = ((Sercom *)hw)->USART.BAUD.reg;
-	tmp &= ~SERCOM_USART_BAUD_BAUD_Msk;
-	tmp |= SERCOM_USART_BAUD_BAUD(data);
-	((Sercom *)hw)->USART.BAUD.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomusart_clear_BAUD_BAUD_bf(const void *const hw, hri_sercomusart_baud_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.BAUD.reg &= ~SERCOM_USART_BAUD_BAUD(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomusart_toggle_BAUD_BAUD_bf(const void *const hw, hri_sercomusart_baud_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.BAUD.reg ^= SERCOM_USART_BAUD_BAUD(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomusart_baud_reg_t hri_sercomusart_read_BAUD_BAUD_bf(const void *const hw)
-{
-	uint16_t tmp;
-	tmp = ((Sercom *)hw)->USART.BAUD.reg;
-	tmp = (tmp & SERCOM_USART_BAUD_BAUD_Msk) >> SERCOM_USART_BAUD_BAUD_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomusart_set_BAUD_FRAC_BAUD_bf(const void *const hw, hri_sercomusart_baud_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.BAUD.reg |= SERCOM_USART_BAUD_FRAC_BAUD(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomusart_baud_reg_t hri_sercomusart_get_BAUD_FRAC_BAUD_bf(const void *const          hw,
-                                                                               hri_sercomusart_baud_reg_t mask)
-{
-	uint16_t tmp;
-	tmp = ((Sercom *)hw)->USART.BAUD.reg;
-	tmp = (tmp & SERCOM_USART_BAUD_FRAC_BAUD(mask)) >> SERCOM_USART_BAUD_FRAC_BAUD_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomusart_write_BAUD_FRAC_BAUD_bf(const void *const hw, hri_sercomusart_baud_reg_t data)
-{
-	uint16_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	tmp = ((Sercom *)hw)->USART.BAUD.reg;
-	tmp &= ~SERCOM_USART_BAUD_FRAC_BAUD_Msk;
-	tmp |= SERCOM_USART_BAUD_FRAC_BAUD(data);
-	((Sercom *)hw)->USART.BAUD.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomusart_clear_BAUD_FRAC_BAUD_bf(const void *const hw, hri_sercomusart_baud_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.BAUD.reg &= ~SERCOM_USART_BAUD_FRAC_BAUD(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomusart_toggle_BAUD_FRAC_BAUD_bf(const void *const hw, hri_sercomusart_baud_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.BAUD.reg ^= SERCOM_USART_BAUD_FRAC_BAUD(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomusart_baud_reg_t hri_sercomusart_read_BAUD_FRAC_BAUD_bf(const void *const hw)
-{
-	uint16_t tmp;
-	tmp = ((Sercom *)hw)->USART.BAUD.reg;
-	tmp = (tmp & SERCOM_USART_BAUD_FRAC_BAUD_Msk) >> SERCOM_USART_BAUD_FRAC_BAUD_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomusart_set_BAUD_FRAC_FP_bf(const void *const hw, hri_sercomusart_baud_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.BAUD.reg |= SERCOM_USART_BAUD_FRAC_FP(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomusart_baud_reg_t hri_sercomusart_get_BAUD_FRAC_FP_bf(const void *const          hw,
-                                                                             hri_sercomusart_baud_reg_t mask)
-{
-	uint16_t tmp;
-	tmp = ((Sercom *)hw)->USART.BAUD.reg;
-	tmp = (tmp & SERCOM_USART_BAUD_FRAC_FP(mask)) >> SERCOM_USART_BAUD_FRAC_FP_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomusart_write_BAUD_FRAC_FP_bf(const void *const hw, hri_sercomusart_baud_reg_t data)
-{
-	uint16_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	tmp = ((Sercom *)hw)->USART.BAUD.reg;
-	tmp &= ~SERCOM_USART_BAUD_FRAC_FP_Msk;
-	tmp |= SERCOM_USART_BAUD_FRAC_FP(data);
-	((Sercom *)hw)->USART.BAUD.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomusart_clear_BAUD_FRAC_FP_bf(const void *const hw, hri_sercomusart_baud_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.BAUD.reg &= ~SERCOM_USART_BAUD_FRAC_FP(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomusart_toggle_BAUD_FRAC_FP_bf(const void *const hw, hri_sercomusart_baud_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.BAUD.reg ^= SERCOM_USART_BAUD_FRAC_FP(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomusart_baud_reg_t hri_sercomusart_read_BAUD_FRAC_FP_bf(const void *const hw)
-{
-	uint16_t tmp;
-	tmp = ((Sercom *)hw)->USART.BAUD.reg;
-	tmp = (tmp & SERCOM_USART_BAUD_FRAC_FP_Msk) >> SERCOM_USART_BAUD_FRAC_FP_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomusart_set_BAUD_FRACFP_BAUD_bf(const void *const hw, hri_sercomusart_baud_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.BAUD.reg |= SERCOM_USART_BAUD_FRACFP_BAUD(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomusart_baud_reg_t hri_sercomusart_get_BAUD_FRACFP_BAUD_bf(const void *const          hw,
-                                                                                 hri_sercomusart_baud_reg_t mask)
-{
-	uint16_t tmp;
-	tmp = ((Sercom *)hw)->USART.BAUD.reg;
-	tmp = (tmp & SERCOM_USART_BAUD_FRACFP_BAUD(mask)) >> SERCOM_USART_BAUD_FRACFP_BAUD_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomusart_write_BAUD_FRACFP_BAUD_bf(const void *const hw, hri_sercomusart_baud_reg_t data)
-{
-	uint16_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	tmp = ((Sercom *)hw)->USART.BAUD.reg;
-	tmp &= ~SERCOM_USART_BAUD_FRACFP_BAUD_Msk;
-	tmp |= SERCOM_USART_BAUD_FRACFP_BAUD(data);
-	((Sercom *)hw)->USART.BAUD.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomusart_clear_BAUD_FRACFP_BAUD_bf(const void *const hw, hri_sercomusart_baud_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.BAUD.reg &= ~SERCOM_USART_BAUD_FRACFP_BAUD(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomusart_toggle_BAUD_FRACFP_BAUD_bf(const void *const hw, hri_sercomusart_baud_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.BAUD.reg ^= SERCOM_USART_BAUD_FRACFP_BAUD(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomusart_baud_reg_t hri_sercomusart_read_BAUD_FRACFP_BAUD_bf(const void *const hw)
-{
-	uint16_t tmp;
-	tmp = ((Sercom *)hw)->USART.BAUD.reg;
-	tmp = (tmp & SERCOM_USART_BAUD_FRACFP_BAUD_Msk) >> SERCOM_USART_BAUD_FRACFP_BAUD_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomusart_set_BAUD_FRACFP_FP_bf(const void *const hw, hri_sercomusart_baud_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.BAUD.reg |= SERCOM_USART_BAUD_FRACFP_FP(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomusart_baud_reg_t hri_sercomusart_get_BAUD_FRACFP_FP_bf(const void *const          hw,
-                                                                               hri_sercomusart_baud_reg_t mask)
-{
-	uint16_t tmp;
-	tmp = ((Sercom *)hw)->USART.BAUD.reg;
-	tmp = (tmp & SERCOM_USART_BAUD_FRACFP_FP(mask)) >> SERCOM_USART_BAUD_FRACFP_FP_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomusart_write_BAUD_FRACFP_FP_bf(const void *const hw, hri_sercomusart_baud_reg_t data)
-{
-	uint16_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	tmp = ((Sercom *)hw)->USART.BAUD.reg;
-	tmp &= ~SERCOM_USART_BAUD_FRACFP_FP_Msk;
-	tmp |= SERCOM_USART_BAUD_FRACFP_FP(data);
-	((Sercom *)hw)->USART.BAUD.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomusart_clear_BAUD_FRACFP_FP_bf(const void *const hw, hri_sercomusart_baud_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.BAUD.reg &= ~SERCOM_USART_BAUD_FRACFP_FP(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomusart_toggle_BAUD_FRACFP_FP_bf(const void *const hw, hri_sercomusart_baud_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.BAUD.reg ^= SERCOM_USART_BAUD_FRACFP_FP(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomusart_baud_reg_t hri_sercomusart_read_BAUD_FRACFP_FP_bf(const void *const hw)
-{
-	uint16_t tmp;
-	tmp = ((Sercom *)hw)->USART.BAUD.reg;
-	tmp = (tmp & SERCOM_USART_BAUD_FRACFP_FP_Msk) >> SERCOM_USART_BAUD_FRACFP_FP_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomusart_set_BAUD_USARTFP_BAUD_bf(const void *const hw, hri_sercomusart_baud_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.BAUD.reg |= SERCOM_USART_BAUD_USARTFP_BAUD(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomusart_baud_reg_t hri_sercomusart_get_BAUD_USARTFP_BAUD_bf(const void *const          hw,
-                                                                                  hri_sercomusart_baud_reg_t mask)
-{
-	uint16_t tmp;
-	tmp = ((Sercom *)hw)->USART.BAUD.reg;
-	tmp = (tmp & SERCOM_USART_BAUD_USARTFP_BAUD(mask)) >> SERCOM_USART_BAUD_USARTFP_BAUD_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomusart_write_BAUD_USARTFP_BAUD_bf(const void *const hw, hri_sercomusart_baud_reg_t data)
-{
-	uint16_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	tmp = ((Sercom *)hw)->USART.BAUD.reg;
-	tmp &= ~SERCOM_USART_BAUD_USARTFP_BAUD_Msk;
-	tmp |= SERCOM_USART_BAUD_USARTFP_BAUD(data);
-	((Sercom *)hw)->USART.BAUD.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomusart_clear_BAUD_USARTFP_BAUD_bf(const void *const hw, hri_sercomusart_baud_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.BAUD.reg &= ~SERCOM_USART_BAUD_USARTFP_BAUD(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomusart_toggle_BAUD_USARTFP_BAUD_bf(const void *const hw, hri_sercomusart_baud_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.BAUD.reg ^= SERCOM_USART_BAUD_USARTFP_BAUD(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomusart_baud_reg_t hri_sercomusart_read_BAUD_USARTFP_BAUD_bf(const void *const hw)
-{
-	uint16_t tmp;
-	tmp = ((Sercom *)hw)->USART.BAUD.reg;
-	tmp = (tmp & SERCOM_USART_BAUD_USARTFP_BAUD_Msk) >> SERCOM_USART_BAUD_USARTFP_BAUD_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomusart_set_BAUD_reg(const void *const hw, hri_sercomusart_baud_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.BAUD.reg |= mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomusart_baud_reg_t hri_sercomusart_get_BAUD_reg(const void *const          hw,
-                                                                      hri_sercomusart_baud_reg_t mask)
-{
-	uint16_t tmp;
-	tmp = ((Sercom *)hw)->USART.BAUD.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline void hri_sercomusart_write_BAUD_reg(const void *const hw, hri_sercomusart_baud_reg_t data)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.BAUD.reg = data;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomusart_clear_BAUD_reg(const void *const hw, hri_sercomusart_baud_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.BAUD.reg &= ~mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomusart_toggle_BAUD_reg(const void *const hw, hri_sercomusart_baud_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.BAUD.reg ^= mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomusart_baud_reg_t hri_sercomusart_read_BAUD_reg(const void *const hw)
-{
-	return ((Sercom *)hw)->USART.BAUD.reg;
-}
-
-static inline void hri_sercomusart_set_BAUD_FRAC_reg(const void *const hw, hri_sercomusart_baud_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.BAUD.reg |= mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomusart_baud_reg_t hri_sercomusart_get_BAUD_FRAC_reg(const void *const          hw,
-                                                                           hri_sercomusart_baud_reg_t mask)
-{
-	uint16_t tmp;
-	tmp = ((Sercom *)hw)->USART.BAUD.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline void hri_sercomusart_write_BAUD_FRAC_reg(const void *const hw, hri_sercomusart_baud_reg_t data)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.BAUD.reg = data;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomusart_clear_BAUD_FRAC_reg(const void *const hw, hri_sercomusart_baud_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.BAUD.reg &= ~mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomusart_toggle_BAUD_FRAC_reg(const void *const hw, hri_sercomusart_baud_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.BAUD.reg ^= mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomusart_baud_reg_t hri_sercomusart_read_BAUD_FRAC_reg(const void *const hw)
-{
-	return ((Sercom *)hw)->USART.BAUD.reg;
-}
-
-static inline void hri_sercomusart_set_BAUD_FRACFP_reg(const void *const hw, hri_sercomusart_baud_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.BAUD.reg |= mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomusart_baud_reg_t hri_sercomusart_get_BAUD_FRACFP_reg(const void *const          hw,
-                                                                             hri_sercomusart_baud_reg_t mask)
-{
-	uint16_t tmp;
-	tmp = ((Sercom *)hw)->USART.BAUD.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline void hri_sercomusart_write_BAUD_FRACFP_reg(const void *const hw, hri_sercomusart_baud_reg_t data)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.BAUD.reg = data;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomusart_clear_BAUD_FRACFP_reg(const void *const hw, hri_sercomusart_baud_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.BAUD.reg &= ~mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomusart_toggle_BAUD_FRACFP_reg(const void *const hw, hri_sercomusart_baud_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.BAUD.reg ^= mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomusart_baud_reg_t hri_sercomusart_read_BAUD_FRACFP_reg(const void *const hw)
-{
-	return ((Sercom *)hw)->USART.BAUD.reg;
-}
-
-static inline void hri_sercomusart_set_BAUD_USARTFP_reg(const void *const hw, hri_sercomusart_baud_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.BAUD.reg |= mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomusart_baud_reg_t hri_sercomusart_get_BAUD_USARTFP_reg(const void *const          hw,
-                                                                              hri_sercomusart_baud_reg_t mask)
-{
-	uint16_t tmp;
-	tmp = ((Sercom *)hw)->USART.BAUD.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline void hri_sercomusart_write_BAUD_USARTFP_reg(const void *const hw, hri_sercomusart_baud_reg_t data)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.BAUD.reg = data;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomusart_clear_BAUD_USARTFP_reg(const void *const hw, hri_sercomusart_baud_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.BAUD.reg &= ~mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomusart_toggle_BAUD_USARTFP_reg(const void *const hw, hri_sercomusart_baud_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.BAUD.reg ^= mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomusart_baud_reg_t hri_sercomusart_read_BAUD_USARTFP_reg(const void *const hw)
-{
-	return ((Sercom *)hw)->USART.BAUD.reg;
 }
 
 static inline void hri_sercomusart_set_INTEN_DRE_bit(const void *const hw)
@@ -4692,170 +1173,1780 @@ static inline void hri_sercomusart_clear_INTEN_reg(const void *const hw, hri_ser
 	((Sercom *)hw)->USART.INTENCLR.reg = mask;
 }
 
-static inline bool hri_sercomusart_get_INTFLAG_DRE_bit(const void *const hw)
+static inline bool hri_sercomi2cm_get_SYNCBUSY_SWRST_bit(const void *const hw)
 {
-	return (((Sercom *)hw)->USART.INTFLAG.reg & SERCOM_USART_INTFLAG_DRE) >> SERCOM_USART_INTFLAG_DRE_Pos;
+	return (((Sercom *)hw)->I2CM.SYNCBUSY.reg & SERCOM_I2CM_SYNCBUSY_SWRST) >> SERCOM_I2CM_SYNCBUSY_SWRST_Pos;
 }
 
-static inline void hri_sercomusart_clear_INTFLAG_DRE_bit(const void *const hw)
+static inline bool hri_sercomi2cm_get_SYNCBUSY_ENABLE_bit(const void *const hw)
 {
-	((Sercom *)hw)->USART.INTFLAG.reg = SERCOM_USART_INTFLAG_DRE;
+	return (((Sercom *)hw)->I2CM.SYNCBUSY.reg & SERCOM_I2CM_SYNCBUSY_ENABLE) >> SERCOM_I2CM_SYNCBUSY_ENABLE_Pos;
 }
 
-static inline bool hri_sercomusart_get_INTFLAG_TXC_bit(const void *const hw)
+static inline bool hri_sercomi2cm_get_SYNCBUSY_SYSOP_bit(const void *const hw)
 {
-	return (((Sercom *)hw)->USART.INTFLAG.reg & SERCOM_USART_INTFLAG_TXC) >> SERCOM_USART_INTFLAG_TXC_Pos;
+	return (((Sercom *)hw)->I2CM.SYNCBUSY.reg & SERCOM_I2CM_SYNCBUSY_SYSOP) >> SERCOM_I2CM_SYNCBUSY_SYSOP_Pos;
 }
 
-static inline void hri_sercomusart_clear_INTFLAG_TXC_bit(const void *const hw)
+static inline bool hri_sercomi2cm_get_SYNCBUSY_LENGTH_bit(const void *const hw)
 {
-	((Sercom *)hw)->USART.INTFLAG.reg = SERCOM_USART_INTFLAG_TXC;
+	return (((Sercom *)hw)->I2CM.SYNCBUSY.reg & SERCOM_I2CM_SYNCBUSY_LENGTH) >> SERCOM_I2CM_SYNCBUSY_LENGTH_Pos;
 }
 
-static inline bool hri_sercomusart_get_INTFLAG_RXC_bit(const void *const hw)
+static inline hri_sercomi2cm_syncbusy_reg_t hri_sercomi2cm_get_SYNCBUSY_reg(const void *const             hw,
+                                                                            hri_sercomi2cm_syncbusy_reg_t mask)
 {
-	return (((Sercom *)hw)->USART.INTFLAG.reg & SERCOM_USART_INTFLAG_RXC) >> SERCOM_USART_INTFLAG_RXC_Pos;
-}
-
-static inline void hri_sercomusart_clear_INTFLAG_RXC_bit(const void *const hw)
-{
-	((Sercom *)hw)->USART.INTFLAG.reg = SERCOM_USART_INTFLAG_RXC;
-}
-
-static inline bool hri_sercomusart_get_INTFLAG_RXS_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->USART.INTFLAG.reg & SERCOM_USART_INTFLAG_RXS) >> SERCOM_USART_INTFLAG_RXS_Pos;
-}
-
-static inline void hri_sercomusart_clear_INTFLAG_RXS_bit(const void *const hw)
-{
-	((Sercom *)hw)->USART.INTFLAG.reg = SERCOM_USART_INTFLAG_RXS;
-}
-
-static inline bool hri_sercomusart_get_INTFLAG_CTSIC_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->USART.INTFLAG.reg & SERCOM_USART_INTFLAG_CTSIC) >> SERCOM_USART_INTFLAG_CTSIC_Pos;
-}
-
-static inline void hri_sercomusart_clear_INTFLAG_CTSIC_bit(const void *const hw)
-{
-	((Sercom *)hw)->USART.INTFLAG.reg = SERCOM_USART_INTFLAG_CTSIC;
-}
-
-static inline bool hri_sercomusart_get_INTFLAG_RXBRK_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->USART.INTFLAG.reg & SERCOM_USART_INTFLAG_RXBRK) >> SERCOM_USART_INTFLAG_RXBRK_Pos;
-}
-
-static inline void hri_sercomusart_clear_INTFLAG_RXBRK_bit(const void *const hw)
-{
-	((Sercom *)hw)->USART.INTFLAG.reg = SERCOM_USART_INTFLAG_RXBRK;
-}
-
-static inline bool hri_sercomusart_get_INTFLAG_ERROR_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->USART.INTFLAG.reg & SERCOM_USART_INTFLAG_ERROR) >> SERCOM_USART_INTFLAG_ERROR_Pos;
-}
-
-static inline void hri_sercomusart_clear_INTFLAG_ERROR_bit(const void *const hw)
-{
-	((Sercom *)hw)->USART.INTFLAG.reg = SERCOM_USART_INTFLAG_ERROR;
-}
-
-static inline bool hri_sercomusart_get_interrupt_DRE_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->USART.INTFLAG.reg & SERCOM_USART_INTFLAG_DRE) >> SERCOM_USART_INTFLAG_DRE_Pos;
-}
-
-static inline void hri_sercomusart_clear_interrupt_DRE_bit(const void *const hw)
-{
-	((Sercom *)hw)->USART.INTFLAG.reg = SERCOM_USART_INTFLAG_DRE;
-}
-
-static inline bool hri_sercomusart_get_interrupt_TXC_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->USART.INTFLAG.reg & SERCOM_USART_INTFLAG_TXC) >> SERCOM_USART_INTFLAG_TXC_Pos;
-}
-
-static inline void hri_sercomusart_clear_interrupt_TXC_bit(const void *const hw)
-{
-	((Sercom *)hw)->USART.INTFLAG.reg = SERCOM_USART_INTFLAG_TXC;
-}
-
-static inline bool hri_sercomusart_get_interrupt_RXC_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->USART.INTFLAG.reg & SERCOM_USART_INTFLAG_RXC) >> SERCOM_USART_INTFLAG_RXC_Pos;
-}
-
-static inline void hri_sercomusart_clear_interrupt_RXC_bit(const void *const hw)
-{
-	((Sercom *)hw)->USART.INTFLAG.reg = SERCOM_USART_INTFLAG_RXC;
-}
-
-static inline bool hri_sercomusart_get_interrupt_RXS_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->USART.INTFLAG.reg & SERCOM_USART_INTFLAG_RXS) >> SERCOM_USART_INTFLAG_RXS_Pos;
-}
-
-static inline void hri_sercomusart_clear_interrupt_RXS_bit(const void *const hw)
-{
-	((Sercom *)hw)->USART.INTFLAG.reg = SERCOM_USART_INTFLAG_RXS;
-}
-
-static inline bool hri_sercomusart_get_interrupt_CTSIC_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->USART.INTFLAG.reg & SERCOM_USART_INTFLAG_CTSIC) >> SERCOM_USART_INTFLAG_CTSIC_Pos;
-}
-
-static inline void hri_sercomusart_clear_interrupt_CTSIC_bit(const void *const hw)
-{
-	((Sercom *)hw)->USART.INTFLAG.reg = SERCOM_USART_INTFLAG_CTSIC;
-}
-
-static inline bool hri_sercomusart_get_interrupt_RXBRK_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->USART.INTFLAG.reg & SERCOM_USART_INTFLAG_RXBRK) >> SERCOM_USART_INTFLAG_RXBRK_Pos;
-}
-
-static inline void hri_sercomusart_clear_interrupt_RXBRK_bit(const void *const hw)
-{
-	((Sercom *)hw)->USART.INTFLAG.reg = SERCOM_USART_INTFLAG_RXBRK;
-}
-
-static inline bool hri_sercomusart_get_interrupt_ERROR_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->USART.INTFLAG.reg & SERCOM_USART_INTFLAG_ERROR) >> SERCOM_USART_INTFLAG_ERROR_Pos;
-}
-
-static inline void hri_sercomusart_clear_interrupt_ERROR_bit(const void *const hw)
-{
-	((Sercom *)hw)->USART.INTFLAG.reg = SERCOM_USART_INTFLAG_ERROR;
-}
-
-static inline hri_sercomusart_intflag_reg_t hri_sercomusart_get_INTFLAG_reg(const void *const             hw,
-                                                                            hri_sercomusart_intflag_reg_t mask)
-{
-	uint8_t tmp;
-	tmp = ((Sercom *)hw)->USART.INTFLAG.reg;
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CM.SYNCBUSY.reg;
 	tmp &= mask;
 	return tmp;
 }
 
-static inline hri_sercomusart_intflag_reg_t hri_sercomusart_read_INTFLAG_reg(const void *const hw)
+static inline hri_sercomi2cm_syncbusy_reg_t hri_sercomi2cm_read_SYNCBUSY_reg(const void *const hw)
 {
-	return ((Sercom *)hw)->USART.INTFLAG.reg;
+	return ((Sercom *)hw)->I2CM.SYNCBUSY.reg;
 }
 
-static inline void hri_sercomusart_clear_INTFLAG_reg(const void *const hw, hri_sercomusart_intflag_reg_t mask)
+static inline bool hri_sercomi2cs_get_SYNCBUSY_SWRST_bit(const void *const hw)
 {
-	((Sercom *)hw)->USART.INTFLAG.reg = mask;
+	return (((Sercom *)hw)->I2CS.SYNCBUSY.reg & SERCOM_I2CS_SYNCBUSY_SWRST) >> SERCOM_I2CS_SYNCBUSY_SWRST_Pos;
+}
+
+static inline bool hri_sercomi2cs_get_SYNCBUSY_ENABLE_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->I2CS.SYNCBUSY.reg & SERCOM_I2CS_SYNCBUSY_ENABLE) >> SERCOM_I2CS_SYNCBUSY_ENABLE_Pos;
+}
+
+static inline bool hri_sercomi2cs_get_SYNCBUSY_LENGTH_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->I2CS.SYNCBUSY.reg & SERCOM_I2CS_SYNCBUSY_LENGTH) >> SERCOM_I2CS_SYNCBUSY_LENGTH_Pos;
+}
+
+static inline hri_sercomi2cs_syncbusy_reg_t hri_sercomi2cs_get_SYNCBUSY_reg(const void *const             hw,
+                                                                            hri_sercomi2cs_syncbusy_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CS.SYNCBUSY.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline hri_sercomi2cs_syncbusy_reg_t hri_sercomi2cs_read_SYNCBUSY_reg(const void *const hw)
+{
+	return ((Sercom *)hw)->I2CS.SYNCBUSY.reg;
+}
+
+static inline bool hri_sercomspi_get_SYNCBUSY_SWRST_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->SPI.SYNCBUSY.reg & SERCOM_SPI_SYNCBUSY_SWRST) >> SERCOM_SPI_SYNCBUSY_SWRST_Pos;
+}
+
+static inline bool hri_sercomspi_get_SYNCBUSY_ENABLE_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->SPI.SYNCBUSY.reg & SERCOM_SPI_SYNCBUSY_ENABLE) >> SERCOM_SPI_SYNCBUSY_ENABLE_Pos;
+}
+
+static inline bool hri_sercomspi_get_SYNCBUSY_CTRLB_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->SPI.SYNCBUSY.reg & SERCOM_SPI_SYNCBUSY_CTRLB) >> SERCOM_SPI_SYNCBUSY_CTRLB_Pos;
+}
+
+static inline bool hri_sercomspi_get_SYNCBUSY_LENGTH_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->SPI.SYNCBUSY.reg & SERCOM_SPI_SYNCBUSY_LENGTH) >> SERCOM_SPI_SYNCBUSY_LENGTH_Pos;
+}
+
+static inline hri_sercomspi_syncbusy_reg_t hri_sercomspi_get_SYNCBUSY_reg(const void *const            hw,
+                                                                          hri_sercomspi_syncbusy_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->SPI.SYNCBUSY.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline hri_sercomspi_syncbusy_reg_t hri_sercomspi_read_SYNCBUSY_reg(const void *const hw)
+{
+	return ((Sercom *)hw)->SPI.SYNCBUSY.reg;
+}
+
+static inline bool hri_sercomusart_get_SYNCBUSY_SWRST_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->USART.SYNCBUSY.reg & SERCOM_USART_SYNCBUSY_SWRST) >> SERCOM_USART_SYNCBUSY_SWRST_Pos;
+}
+
+static inline bool hri_sercomusart_get_SYNCBUSY_ENABLE_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->USART.SYNCBUSY.reg & SERCOM_USART_SYNCBUSY_ENABLE) >> SERCOM_USART_SYNCBUSY_ENABLE_Pos;
+}
+
+static inline bool hri_sercomusart_get_SYNCBUSY_CTRLB_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->USART.SYNCBUSY.reg & SERCOM_USART_SYNCBUSY_CTRLB) >> SERCOM_USART_SYNCBUSY_CTRLB_Pos;
+}
+
+static inline bool hri_sercomusart_get_SYNCBUSY_RXERRCNT_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->USART.SYNCBUSY.reg & SERCOM_USART_SYNCBUSY_RXERRCNT) >> SERCOM_USART_SYNCBUSY_RXERRCNT_Pos;
+}
+
+static inline bool hri_sercomusart_get_SYNCBUSY_LENGTH_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->USART.SYNCBUSY.reg & SERCOM_USART_SYNCBUSY_LENGTH) >> SERCOM_USART_SYNCBUSY_LENGTH_Pos;
+}
+
+static inline hri_sercomusart_syncbusy_reg_t hri_sercomusart_get_SYNCBUSY_reg(const void *const              hw,
+                                                                              hri_sercomusart_syncbusy_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->USART.SYNCBUSY.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline hri_sercomusart_syncbusy_reg_t hri_sercomusart_read_SYNCBUSY_reg(const void *const hw)
+{
+	return ((Sercom *)hw)->USART.SYNCBUSY.reg;
+}
+
+static inline hri_sercomusart_rxerrcnt_reg_t hri_sercomusart_get_RXERRCNT_reg(const void *const              hw,
+                                                                              hri_sercomusart_rxerrcnt_reg_t mask)
+{
+	uint8_t tmp;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
+	tmp = ((Sercom *)hw)->USART.RXERRCNT.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline hri_sercomusart_rxerrcnt_reg_t hri_sercomusart_read_RXERRCNT_reg(const void *const hw)
+{
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
+	return ((Sercom *)hw)->USART.RXERRCNT.reg;
+}
+
+static inline void hri_sercomi2cm_set_CTRLA_SWRST_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLA.reg |= SERCOM_I2CM_CTRLA_SWRST;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SWRST);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomi2cm_get_CTRLA_SWRST_bit(const void *const hw)
+{
+	uint32_t tmp;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SWRST);
+	tmp = ((Sercom *)hw)->I2CM.CTRLA.reg;
+	tmp = (tmp & SERCOM_I2CM_CTRLA_SWRST) >> SERCOM_I2CM_CTRLA_SWRST_Pos;
+	return (bool)tmp;
+}
+
+static inline void hri_sercomi2cm_set_CTRLA_ENABLE_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLA.reg |= SERCOM_I2CM_CTRLA_ENABLE;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SWRST | SERCOM_I2CM_SYNCBUSY_ENABLE);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomi2cm_get_CTRLA_ENABLE_bit(const void *const hw)
+{
+	uint32_t tmp;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SWRST | SERCOM_I2CM_SYNCBUSY_ENABLE);
+	tmp = ((Sercom *)hw)->I2CM.CTRLA.reg;
+	tmp = (tmp & SERCOM_I2CM_CTRLA_ENABLE) >> SERCOM_I2CM_CTRLA_ENABLE_Pos;
+	return (bool)tmp;
+}
+
+static inline void hri_sercomi2cm_write_CTRLA_ENABLE_bit(const void *const hw, bool value)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->I2CM.CTRLA.reg;
+	tmp &= ~SERCOM_I2CM_CTRLA_ENABLE;
+	tmp |= value << SERCOM_I2CM_CTRLA_ENABLE_Pos;
+	((Sercom *)hw)->I2CM.CTRLA.reg = tmp;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SWRST | SERCOM_I2CM_SYNCBUSY_ENABLE);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_clear_CTRLA_ENABLE_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLA.reg &= ~SERCOM_I2CM_CTRLA_ENABLE;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SWRST | SERCOM_I2CM_SYNCBUSY_ENABLE);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_toggle_CTRLA_ENABLE_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLA.reg ^= SERCOM_I2CM_CTRLA_ENABLE;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SWRST | SERCOM_I2CM_SYNCBUSY_ENABLE);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_set_CTRLA_RUNSTDBY_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLA.reg |= SERCOM_I2CM_CTRLA_RUNSTDBY;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomi2cm_get_CTRLA_RUNSTDBY_bit(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CM.CTRLA.reg;
+	tmp = (tmp & SERCOM_I2CM_CTRLA_RUNSTDBY) >> SERCOM_I2CM_CTRLA_RUNSTDBY_Pos;
+	return (bool)tmp;
+}
+
+static inline void hri_sercomi2cm_write_CTRLA_RUNSTDBY_bit(const void *const hw, bool value)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->I2CM.CTRLA.reg;
+	tmp &= ~SERCOM_I2CM_CTRLA_RUNSTDBY;
+	tmp |= value << SERCOM_I2CM_CTRLA_RUNSTDBY_Pos;
+	((Sercom *)hw)->I2CM.CTRLA.reg = tmp;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_clear_CTRLA_RUNSTDBY_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLA.reg &= ~SERCOM_I2CM_CTRLA_RUNSTDBY;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_toggle_CTRLA_RUNSTDBY_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLA.reg ^= SERCOM_I2CM_CTRLA_RUNSTDBY;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_set_CTRLA_PINOUT_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLA.reg |= SERCOM_I2CM_CTRLA_PINOUT;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomi2cm_get_CTRLA_PINOUT_bit(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CM.CTRLA.reg;
+	tmp = (tmp & SERCOM_I2CM_CTRLA_PINOUT) >> SERCOM_I2CM_CTRLA_PINOUT_Pos;
+	return (bool)tmp;
+}
+
+static inline void hri_sercomi2cm_write_CTRLA_PINOUT_bit(const void *const hw, bool value)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->I2CM.CTRLA.reg;
+	tmp &= ~SERCOM_I2CM_CTRLA_PINOUT;
+	tmp |= value << SERCOM_I2CM_CTRLA_PINOUT_Pos;
+	((Sercom *)hw)->I2CM.CTRLA.reg = tmp;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_clear_CTRLA_PINOUT_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLA.reg &= ~SERCOM_I2CM_CTRLA_PINOUT;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_toggle_CTRLA_PINOUT_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLA.reg ^= SERCOM_I2CM_CTRLA_PINOUT;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_set_CTRLA_MEXTTOEN_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLA.reg |= SERCOM_I2CM_CTRLA_MEXTTOEN;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomi2cm_get_CTRLA_MEXTTOEN_bit(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CM.CTRLA.reg;
+	tmp = (tmp & SERCOM_I2CM_CTRLA_MEXTTOEN) >> SERCOM_I2CM_CTRLA_MEXTTOEN_Pos;
+	return (bool)tmp;
+}
+
+static inline void hri_sercomi2cm_write_CTRLA_MEXTTOEN_bit(const void *const hw, bool value)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->I2CM.CTRLA.reg;
+	tmp &= ~SERCOM_I2CM_CTRLA_MEXTTOEN;
+	tmp |= value << SERCOM_I2CM_CTRLA_MEXTTOEN_Pos;
+	((Sercom *)hw)->I2CM.CTRLA.reg = tmp;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_clear_CTRLA_MEXTTOEN_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLA.reg &= ~SERCOM_I2CM_CTRLA_MEXTTOEN;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_toggle_CTRLA_MEXTTOEN_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLA.reg ^= SERCOM_I2CM_CTRLA_MEXTTOEN;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_set_CTRLA_SEXTTOEN_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLA.reg |= SERCOM_I2CM_CTRLA_SEXTTOEN;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomi2cm_get_CTRLA_SEXTTOEN_bit(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CM.CTRLA.reg;
+	tmp = (tmp & SERCOM_I2CM_CTRLA_SEXTTOEN) >> SERCOM_I2CM_CTRLA_SEXTTOEN_Pos;
+	return (bool)tmp;
+}
+
+static inline void hri_sercomi2cm_write_CTRLA_SEXTTOEN_bit(const void *const hw, bool value)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->I2CM.CTRLA.reg;
+	tmp &= ~SERCOM_I2CM_CTRLA_SEXTTOEN;
+	tmp |= value << SERCOM_I2CM_CTRLA_SEXTTOEN_Pos;
+	((Sercom *)hw)->I2CM.CTRLA.reg = tmp;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_clear_CTRLA_SEXTTOEN_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLA.reg &= ~SERCOM_I2CM_CTRLA_SEXTTOEN;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_toggle_CTRLA_SEXTTOEN_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLA.reg ^= SERCOM_I2CM_CTRLA_SEXTTOEN;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_set_CTRLA_SCLSM_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLA.reg |= SERCOM_I2CM_CTRLA_SCLSM;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomi2cm_get_CTRLA_SCLSM_bit(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CM.CTRLA.reg;
+	tmp = (tmp & SERCOM_I2CM_CTRLA_SCLSM) >> SERCOM_I2CM_CTRLA_SCLSM_Pos;
+	return (bool)tmp;
+}
+
+static inline void hri_sercomi2cm_write_CTRLA_SCLSM_bit(const void *const hw, bool value)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->I2CM.CTRLA.reg;
+	tmp &= ~SERCOM_I2CM_CTRLA_SCLSM;
+	tmp |= value << SERCOM_I2CM_CTRLA_SCLSM_Pos;
+	((Sercom *)hw)->I2CM.CTRLA.reg = tmp;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_clear_CTRLA_SCLSM_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLA.reg &= ~SERCOM_I2CM_CTRLA_SCLSM;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_toggle_CTRLA_SCLSM_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLA.reg ^= SERCOM_I2CM_CTRLA_SCLSM;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_set_CTRLA_LOWTOUTEN_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLA.reg |= SERCOM_I2CM_CTRLA_LOWTOUTEN;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomi2cm_get_CTRLA_LOWTOUTEN_bit(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CM.CTRLA.reg;
+	tmp = (tmp & SERCOM_I2CM_CTRLA_LOWTOUTEN) >> SERCOM_I2CM_CTRLA_LOWTOUTEN_Pos;
+	return (bool)tmp;
+}
+
+static inline void hri_sercomi2cm_write_CTRLA_LOWTOUTEN_bit(const void *const hw, bool value)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->I2CM.CTRLA.reg;
+	tmp &= ~SERCOM_I2CM_CTRLA_LOWTOUTEN;
+	tmp |= value << SERCOM_I2CM_CTRLA_LOWTOUTEN_Pos;
+	((Sercom *)hw)->I2CM.CTRLA.reg = tmp;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_clear_CTRLA_LOWTOUTEN_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLA.reg &= ~SERCOM_I2CM_CTRLA_LOWTOUTEN;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_toggle_CTRLA_LOWTOUTEN_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLA.reg ^= SERCOM_I2CM_CTRLA_LOWTOUTEN;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_set_CTRLA_MODE_bf(const void *const hw, hri_sercomi2cm_ctrla_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLA.reg |= SERCOM_I2CM_CTRLA_MODE(mask);
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cm_ctrla_reg_t hri_sercomi2cm_get_CTRLA_MODE_bf(const void *const          hw,
+                                                                          hri_sercomi2cm_ctrla_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CM.CTRLA.reg;
+	tmp = (tmp & SERCOM_I2CM_CTRLA_MODE(mask)) >> SERCOM_I2CM_CTRLA_MODE_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomi2cm_write_CTRLA_MODE_bf(const void *const hw, hri_sercomi2cm_ctrla_reg_t data)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->I2CM.CTRLA.reg;
+	tmp &= ~SERCOM_I2CM_CTRLA_MODE_Msk;
+	tmp |= SERCOM_I2CM_CTRLA_MODE(data);
+	((Sercom *)hw)->I2CM.CTRLA.reg = tmp;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_clear_CTRLA_MODE_bf(const void *const hw, hri_sercomi2cm_ctrla_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLA.reg &= ~SERCOM_I2CM_CTRLA_MODE(mask);
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_toggle_CTRLA_MODE_bf(const void *const hw, hri_sercomi2cm_ctrla_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLA.reg ^= SERCOM_I2CM_CTRLA_MODE(mask);
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cm_ctrla_reg_t hri_sercomi2cm_read_CTRLA_MODE_bf(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CM.CTRLA.reg;
+	tmp = (tmp & SERCOM_I2CM_CTRLA_MODE_Msk) >> SERCOM_I2CM_CTRLA_MODE_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomi2cm_set_CTRLA_SDAHOLD_bf(const void *const hw, hri_sercomi2cm_ctrla_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLA.reg |= SERCOM_I2CM_CTRLA_SDAHOLD(mask);
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cm_ctrla_reg_t hri_sercomi2cm_get_CTRLA_SDAHOLD_bf(const void *const          hw,
+                                                                             hri_sercomi2cm_ctrla_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CM.CTRLA.reg;
+	tmp = (tmp & SERCOM_I2CM_CTRLA_SDAHOLD(mask)) >> SERCOM_I2CM_CTRLA_SDAHOLD_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomi2cm_write_CTRLA_SDAHOLD_bf(const void *const hw, hri_sercomi2cm_ctrla_reg_t data)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->I2CM.CTRLA.reg;
+	tmp &= ~SERCOM_I2CM_CTRLA_SDAHOLD_Msk;
+	tmp |= SERCOM_I2CM_CTRLA_SDAHOLD(data);
+	((Sercom *)hw)->I2CM.CTRLA.reg = tmp;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_clear_CTRLA_SDAHOLD_bf(const void *const hw, hri_sercomi2cm_ctrla_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLA.reg &= ~SERCOM_I2CM_CTRLA_SDAHOLD(mask);
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_toggle_CTRLA_SDAHOLD_bf(const void *const hw, hri_sercomi2cm_ctrla_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLA.reg ^= SERCOM_I2CM_CTRLA_SDAHOLD(mask);
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cm_ctrla_reg_t hri_sercomi2cm_read_CTRLA_SDAHOLD_bf(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CM.CTRLA.reg;
+	tmp = (tmp & SERCOM_I2CM_CTRLA_SDAHOLD_Msk) >> SERCOM_I2CM_CTRLA_SDAHOLD_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomi2cm_set_CTRLA_SPEED_bf(const void *const hw, hri_sercomi2cm_ctrla_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLA.reg |= SERCOM_I2CM_CTRLA_SPEED(mask);
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cm_ctrla_reg_t hri_sercomi2cm_get_CTRLA_SPEED_bf(const void *const          hw,
+                                                                           hri_sercomi2cm_ctrla_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CM.CTRLA.reg;
+	tmp = (tmp & SERCOM_I2CM_CTRLA_SPEED(mask)) >> SERCOM_I2CM_CTRLA_SPEED_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomi2cm_write_CTRLA_SPEED_bf(const void *const hw, hri_sercomi2cm_ctrla_reg_t data)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->I2CM.CTRLA.reg;
+	tmp &= ~SERCOM_I2CM_CTRLA_SPEED_Msk;
+	tmp |= SERCOM_I2CM_CTRLA_SPEED(data);
+	((Sercom *)hw)->I2CM.CTRLA.reg = tmp;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_clear_CTRLA_SPEED_bf(const void *const hw, hri_sercomi2cm_ctrla_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLA.reg &= ~SERCOM_I2CM_CTRLA_SPEED(mask);
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_toggle_CTRLA_SPEED_bf(const void *const hw, hri_sercomi2cm_ctrla_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLA.reg ^= SERCOM_I2CM_CTRLA_SPEED(mask);
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cm_ctrla_reg_t hri_sercomi2cm_read_CTRLA_SPEED_bf(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CM.CTRLA.reg;
+	tmp = (tmp & SERCOM_I2CM_CTRLA_SPEED_Msk) >> SERCOM_I2CM_CTRLA_SPEED_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomi2cm_set_CTRLA_INACTOUT_bf(const void *const hw, hri_sercomi2cm_ctrla_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLA.reg |= SERCOM_I2CM_CTRLA_INACTOUT(mask);
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cm_ctrla_reg_t hri_sercomi2cm_get_CTRLA_INACTOUT_bf(const void *const          hw,
+                                                                              hri_sercomi2cm_ctrla_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CM.CTRLA.reg;
+	tmp = (tmp & SERCOM_I2CM_CTRLA_INACTOUT(mask)) >> SERCOM_I2CM_CTRLA_INACTOUT_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomi2cm_write_CTRLA_INACTOUT_bf(const void *const hw, hri_sercomi2cm_ctrla_reg_t data)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->I2CM.CTRLA.reg;
+	tmp &= ~SERCOM_I2CM_CTRLA_INACTOUT_Msk;
+	tmp |= SERCOM_I2CM_CTRLA_INACTOUT(data);
+	((Sercom *)hw)->I2CM.CTRLA.reg = tmp;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_clear_CTRLA_INACTOUT_bf(const void *const hw, hri_sercomi2cm_ctrla_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLA.reg &= ~SERCOM_I2CM_CTRLA_INACTOUT(mask);
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_toggle_CTRLA_INACTOUT_bf(const void *const hw, hri_sercomi2cm_ctrla_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLA.reg ^= SERCOM_I2CM_CTRLA_INACTOUT(mask);
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cm_ctrla_reg_t hri_sercomi2cm_read_CTRLA_INACTOUT_bf(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CM.CTRLA.reg;
+	tmp = (tmp & SERCOM_I2CM_CTRLA_INACTOUT_Msk) >> SERCOM_I2CM_CTRLA_INACTOUT_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomi2cm_set_CTRLA_reg(const void *const hw, hri_sercomi2cm_ctrla_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLA.reg |= mask;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SWRST | SERCOM_I2CM_SYNCBUSY_ENABLE);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cm_ctrla_reg_t hri_sercomi2cm_get_CTRLA_reg(const void *const          hw,
+                                                                      hri_sercomi2cm_ctrla_reg_t mask)
+{
+	uint32_t tmp;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SWRST | SERCOM_I2CM_SYNCBUSY_ENABLE);
+	tmp = ((Sercom *)hw)->I2CM.CTRLA.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline void hri_sercomi2cm_write_CTRLA_reg(const void *const hw, hri_sercomi2cm_ctrla_reg_t data)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLA.reg = data;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SWRST | SERCOM_I2CM_SYNCBUSY_ENABLE);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_clear_CTRLA_reg(const void *const hw, hri_sercomi2cm_ctrla_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLA.reg &= ~mask;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SWRST | SERCOM_I2CM_SYNCBUSY_ENABLE);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_toggle_CTRLA_reg(const void *const hw, hri_sercomi2cm_ctrla_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLA.reg ^= mask;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SWRST | SERCOM_I2CM_SYNCBUSY_ENABLE);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cm_ctrla_reg_t hri_sercomi2cm_read_CTRLA_reg(const void *const hw)
+{
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SWRST | SERCOM_I2CM_SYNCBUSY_ENABLE);
+	return ((Sercom *)hw)->I2CM.CTRLA.reg;
+}
+
+static inline void hri_sercomi2cs_set_CTRLA_SWRST_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLA.reg |= SERCOM_I2CS_CTRLA_SWRST;
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_SWRST);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomi2cs_get_CTRLA_SWRST_bit(const void *const hw)
+{
+	uint32_t tmp;
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_SWRST);
+	tmp = ((Sercom *)hw)->I2CS.CTRLA.reg;
+	tmp = (tmp & SERCOM_I2CS_CTRLA_SWRST) >> SERCOM_I2CS_CTRLA_SWRST_Pos;
+	return (bool)tmp;
+}
+
+static inline void hri_sercomi2cs_set_CTRLA_ENABLE_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLA.reg |= SERCOM_I2CS_CTRLA_ENABLE;
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_SWRST | SERCOM_I2CS_SYNCBUSY_ENABLE);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomi2cs_get_CTRLA_ENABLE_bit(const void *const hw)
+{
+	uint32_t tmp;
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_SWRST | SERCOM_I2CS_SYNCBUSY_ENABLE);
+	tmp = ((Sercom *)hw)->I2CS.CTRLA.reg;
+	tmp = (tmp & SERCOM_I2CS_CTRLA_ENABLE) >> SERCOM_I2CS_CTRLA_ENABLE_Pos;
+	return (bool)tmp;
+}
+
+static inline void hri_sercomi2cs_write_CTRLA_ENABLE_bit(const void *const hw, bool value)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->I2CS.CTRLA.reg;
+	tmp &= ~SERCOM_I2CS_CTRLA_ENABLE;
+	tmp |= value << SERCOM_I2CS_CTRLA_ENABLE_Pos;
+	((Sercom *)hw)->I2CS.CTRLA.reg = tmp;
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_SWRST | SERCOM_I2CS_SYNCBUSY_ENABLE);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cs_clear_CTRLA_ENABLE_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLA.reg &= ~SERCOM_I2CS_CTRLA_ENABLE;
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_SWRST | SERCOM_I2CS_SYNCBUSY_ENABLE);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cs_toggle_CTRLA_ENABLE_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLA.reg ^= SERCOM_I2CS_CTRLA_ENABLE;
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_SWRST | SERCOM_I2CS_SYNCBUSY_ENABLE);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cs_set_CTRLA_RUNSTDBY_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLA.reg |= SERCOM_I2CS_CTRLA_RUNSTDBY;
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomi2cs_get_CTRLA_RUNSTDBY_bit(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CS.CTRLA.reg;
+	tmp = (tmp & SERCOM_I2CS_CTRLA_RUNSTDBY) >> SERCOM_I2CS_CTRLA_RUNSTDBY_Pos;
+	return (bool)tmp;
+}
+
+static inline void hri_sercomi2cs_write_CTRLA_RUNSTDBY_bit(const void *const hw, bool value)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->I2CS.CTRLA.reg;
+	tmp &= ~SERCOM_I2CS_CTRLA_RUNSTDBY;
+	tmp |= value << SERCOM_I2CS_CTRLA_RUNSTDBY_Pos;
+	((Sercom *)hw)->I2CS.CTRLA.reg = tmp;
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cs_clear_CTRLA_RUNSTDBY_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLA.reg &= ~SERCOM_I2CS_CTRLA_RUNSTDBY;
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cs_toggle_CTRLA_RUNSTDBY_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLA.reg ^= SERCOM_I2CS_CTRLA_RUNSTDBY;
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cs_set_CTRLA_PINOUT_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLA.reg |= SERCOM_I2CS_CTRLA_PINOUT;
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomi2cs_get_CTRLA_PINOUT_bit(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CS.CTRLA.reg;
+	tmp = (tmp & SERCOM_I2CS_CTRLA_PINOUT) >> SERCOM_I2CS_CTRLA_PINOUT_Pos;
+	return (bool)tmp;
+}
+
+static inline void hri_sercomi2cs_write_CTRLA_PINOUT_bit(const void *const hw, bool value)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->I2CS.CTRLA.reg;
+	tmp &= ~SERCOM_I2CS_CTRLA_PINOUT;
+	tmp |= value << SERCOM_I2CS_CTRLA_PINOUT_Pos;
+	((Sercom *)hw)->I2CS.CTRLA.reg = tmp;
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cs_clear_CTRLA_PINOUT_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLA.reg &= ~SERCOM_I2CS_CTRLA_PINOUT;
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cs_toggle_CTRLA_PINOUT_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLA.reg ^= SERCOM_I2CS_CTRLA_PINOUT;
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cs_set_CTRLA_SEXTTOEN_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLA.reg |= SERCOM_I2CS_CTRLA_SEXTTOEN;
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomi2cs_get_CTRLA_SEXTTOEN_bit(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CS.CTRLA.reg;
+	tmp = (tmp & SERCOM_I2CS_CTRLA_SEXTTOEN) >> SERCOM_I2CS_CTRLA_SEXTTOEN_Pos;
+	return (bool)tmp;
+}
+
+static inline void hri_sercomi2cs_write_CTRLA_SEXTTOEN_bit(const void *const hw, bool value)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->I2CS.CTRLA.reg;
+	tmp &= ~SERCOM_I2CS_CTRLA_SEXTTOEN;
+	tmp |= value << SERCOM_I2CS_CTRLA_SEXTTOEN_Pos;
+	((Sercom *)hw)->I2CS.CTRLA.reg = tmp;
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cs_clear_CTRLA_SEXTTOEN_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLA.reg &= ~SERCOM_I2CS_CTRLA_SEXTTOEN;
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cs_toggle_CTRLA_SEXTTOEN_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLA.reg ^= SERCOM_I2CS_CTRLA_SEXTTOEN;
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cs_set_CTRLA_SCLSM_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLA.reg |= SERCOM_I2CS_CTRLA_SCLSM;
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomi2cs_get_CTRLA_SCLSM_bit(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CS.CTRLA.reg;
+	tmp = (tmp & SERCOM_I2CS_CTRLA_SCLSM) >> SERCOM_I2CS_CTRLA_SCLSM_Pos;
+	return (bool)tmp;
+}
+
+static inline void hri_sercomi2cs_write_CTRLA_SCLSM_bit(const void *const hw, bool value)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->I2CS.CTRLA.reg;
+	tmp &= ~SERCOM_I2CS_CTRLA_SCLSM;
+	tmp |= value << SERCOM_I2CS_CTRLA_SCLSM_Pos;
+	((Sercom *)hw)->I2CS.CTRLA.reg = tmp;
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cs_clear_CTRLA_SCLSM_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLA.reg &= ~SERCOM_I2CS_CTRLA_SCLSM;
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cs_toggle_CTRLA_SCLSM_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLA.reg ^= SERCOM_I2CS_CTRLA_SCLSM;
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cs_set_CTRLA_LOWTOUTEN_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLA.reg |= SERCOM_I2CS_CTRLA_LOWTOUTEN;
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomi2cs_get_CTRLA_LOWTOUTEN_bit(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CS.CTRLA.reg;
+	tmp = (tmp & SERCOM_I2CS_CTRLA_LOWTOUTEN) >> SERCOM_I2CS_CTRLA_LOWTOUTEN_Pos;
+	return (bool)tmp;
+}
+
+static inline void hri_sercomi2cs_write_CTRLA_LOWTOUTEN_bit(const void *const hw, bool value)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->I2CS.CTRLA.reg;
+	tmp &= ~SERCOM_I2CS_CTRLA_LOWTOUTEN;
+	tmp |= value << SERCOM_I2CS_CTRLA_LOWTOUTEN_Pos;
+	((Sercom *)hw)->I2CS.CTRLA.reg = tmp;
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cs_clear_CTRLA_LOWTOUTEN_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLA.reg &= ~SERCOM_I2CS_CTRLA_LOWTOUTEN;
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cs_toggle_CTRLA_LOWTOUTEN_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLA.reg ^= SERCOM_I2CS_CTRLA_LOWTOUTEN;
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cs_set_CTRLA_MODE_bf(const void *const hw, hri_sercomi2cs_ctrla_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLA.reg |= SERCOM_I2CS_CTRLA_MODE(mask);
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cs_ctrla_reg_t hri_sercomi2cs_get_CTRLA_MODE_bf(const void *const          hw,
+                                                                          hri_sercomi2cs_ctrla_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CS.CTRLA.reg;
+	tmp = (tmp & SERCOM_I2CS_CTRLA_MODE(mask)) >> SERCOM_I2CS_CTRLA_MODE_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomi2cs_write_CTRLA_MODE_bf(const void *const hw, hri_sercomi2cs_ctrla_reg_t data)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->I2CS.CTRLA.reg;
+	tmp &= ~SERCOM_I2CS_CTRLA_MODE_Msk;
+	tmp |= SERCOM_I2CS_CTRLA_MODE(data);
+	((Sercom *)hw)->I2CS.CTRLA.reg = tmp;
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cs_clear_CTRLA_MODE_bf(const void *const hw, hri_sercomi2cs_ctrla_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLA.reg &= ~SERCOM_I2CS_CTRLA_MODE(mask);
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cs_toggle_CTRLA_MODE_bf(const void *const hw, hri_sercomi2cs_ctrla_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLA.reg ^= SERCOM_I2CS_CTRLA_MODE(mask);
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cs_ctrla_reg_t hri_sercomi2cs_read_CTRLA_MODE_bf(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CS.CTRLA.reg;
+	tmp = (tmp & SERCOM_I2CS_CTRLA_MODE_Msk) >> SERCOM_I2CS_CTRLA_MODE_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomi2cs_set_CTRLA_SDAHOLD_bf(const void *const hw, hri_sercomi2cs_ctrla_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLA.reg |= SERCOM_I2CS_CTRLA_SDAHOLD(mask);
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cs_ctrla_reg_t hri_sercomi2cs_get_CTRLA_SDAHOLD_bf(const void *const          hw,
+                                                                             hri_sercomi2cs_ctrla_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CS.CTRLA.reg;
+	tmp = (tmp & SERCOM_I2CS_CTRLA_SDAHOLD(mask)) >> SERCOM_I2CS_CTRLA_SDAHOLD_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomi2cs_write_CTRLA_SDAHOLD_bf(const void *const hw, hri_sercomi2cs_ctrla_reg_t data)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->I2CS.CTRLA.reg;
+	tmp &= ~SERCOM_I2CS_CTRLA_SDAHOLD_Msk;
+	tmp |= SERCOM_I2CS_CTRLA_SDAHOLD(data);
+	((Sercom *)hw)->I2CS.CTRLA.reg = tmp;
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cs_clear_CTRLA_SDAHOLD_bf(const void *const hw, hri_sercomi2cs_ctrla_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLA.reg &= ~SERCOM_I2CS_CTRLA_SDAHOLD(mask);
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cs_toggle_CTRLA_SDAHOLD_bf(const void *const hw, hri_sercomi2cs_ctrla_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLA.reg ^= SERCOM_I2CS_CTRLA_SDAHOLD(mask);
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cs_ctrla_reg_t hri_sercomi2cs_read_CTRLA_SDAHOLD_bf(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CS.CTRLA.reg;
+	tmp = (tmp & SERCOM_I2CS_CTRLA_SDAHOLD_Msk) >> SERCOM_I2CS_CTRLA_SDAHOLD_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomi2cs_set_CTRLA_SPEED_bf(const void *const hw, hri_sercomi2cs_ctrla_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLA.reg |= SERCOM_I2CS_CTRLA_SPEED(mask);
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cs_ctrla_reg_t hri_sercomi2cs_get_CTRLA_SPEED_bf(const void *const          hw,
+                                                                           hri_sercomi2cs_ctrla_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CS.CTRLA.reg;
+	tmp = (tmp & SERCOM_I2CS_CTRLA_SPEED(mask)) >> SERCOM_I2CS_CTRLA_SPEED_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomi2cs_write_CTRLA_SPEED_bf(const void *const hw, hri_sercomi2cs_ctrla_reg_t data)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->I2CS.CTRLA.reg;
+	tmp &= ~SERCOM_I2CS_CTRLA_SPEED_Msk;
+	tmp |= SERCOM_I2CS_CTRLA_SPEED(data);
+	((Sercom *)hw)->I2CS.CTRLA.reg = tmp;
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cs_clear_CTRLA_SPEED_bf(const void *const hw, hri_sercomi2cs_ctrla_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLA.reg &= ~SERCOM_I2CS_CTRLA_SPEED(mask);
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cs_toggle_CTRLA_SPEED_bf(const void *const hw, hri_sercomi2cs_ctrla_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLA.reg ^= SERCOM_I2CS_CTRLA_SPEED(mask);
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cs_ctrla_reg_t hri_sercomi2cs_read_CTRLA_SPEED_bf(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CS.CTRLA.reg;
+	tmp = (tmp & SERCOM_I2CS_CTRLA_SPEED_Msk) >> SERCOM_I2CS_CTRLA_SPEED_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomi2cs_set_CTRLA_reg(const void *const hw, hri_sercomi2cs_ctrla_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLA.reg |= mask;
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_SWRST | SERCOM_I2CS_SYNCBUSY_ENABLE);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cs_ctrla_reg_t hri_sercomi2cs_get_CTRLA_reg(const void *const          hw,
+                                                                      hri_sercomi2cs_ctrla_reg_t mask)
+{
+	uint32_t tmp;
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_SWRST | SERCOM_I2CS_SYNCBUSY_ENABLE);
+	tmp = ((Sercom *)hw)->I2CS.CTRLA.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline void hri_sercomi2cs_write_CTRLA_reg(const void *const hw, hri_sercomi2cs_ctrla_reg_t data)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLA.reg = data;
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_SWRST | SERCOM_I2CS_SYNCBUSY_ENABLE);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cs_clear_CTRLA_reg(const void *const hw, hri_sercomi2cs_ctrla_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLA.reg &= ~mask;
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_SWRST | SERCOM_I2CS_SYNCBUSY_ENABLE);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cs_toggle_CTRLA_reg(const void *const hw, hri_sercomi2cs_ctrla_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLA.reg ^= mask;
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_SWRST | SERCOM_I2CS_SYNCBUSY_ENABLE);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cs_ctrla_reg_t hri_sercomi2cs_read_CTRLA_reg(const void *const hw)
+{
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_SWRST | SERCOM_I2CS_SYNCBUSY_ENABLE);
+	return ((Sercom *)hw)->I2CS.CTRLA.reg;
+}
+
+static inline void hri_sercomspi_set_CTRLA_SWRST_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLA.reg |= SERCOM_SPI_CTRLA_SWRST;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_SWRST);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomspi_get_CTRLA_SWRST_bit(const void *const hw)
+{
+	uint32_t tmp;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_SWRST);
+	tmp = ((Sercom *)hw)->SPI.CTRLA.reg;
+	tmp = (tmp & SERCOM_SPI_CTRLA_SWRST) >> SERCOM_SPI_CTRLA_SWRST_Pos;
+	return (bool)tmp;
+}
+
+static inline void hri_sercomspi_set_CTRLA_ENABLE_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLA.reg |= SERCOM_SPI_CTRLA_ENABLE;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_SWRST | SERCOM_SPI_SYNCBUSY_ENABLE);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomspi_get_CTRLA_ENABLE_bit(const void *const hw)
+{
+	uint32_t tmp;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_SWRST | SERCOM_SPI_SYNCBUSY_ENABLE);
+	tmp = ((Sercom *)hw)->SPI.CTRLA.reg;
+	tmp = (tmp & SERCOM_SPI_CTRLA_ENABLE) >> SERCOM_SPI_CTRLA_ENABLE_Pos;
+	return (bool)tmp;
+}
+
+static inline void hri_sercomspi_write_CTRLA_ENABLE_bit(const void *const hw, bool value)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->SPI.CTRLA.reg;
+	tmp &= ~SERCOM_SPI_CTRLA_ENABLE;
+	tmp |= value << SERCOM_SPI_CTRLA_ENABLE_Pos;
+	((Sercom *)hw)->SPI.CTRLA.reg = tmp;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_SWRST | SERCOM_SPI_SYNCBUSY_ENABLE);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_clear_CTRLA_ENABLE_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLA.reg &= ~SERCOM_SPI_CTRLA_ENABLE;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_SWRST | SERCOM_SPI_SYNCBUSY_ENABLE);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_toggle_CTRLA_ENABLE_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLA.reg ^= SERCOM_SPI_CTRLA_ENABLE;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_SWRST | SERCOM_SPI_SYNCBUSY_ENABLE);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_set_CTRLA_RUNSTDBY_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLA.reg |= SERCOM_SPI_CTRLA_RUNSTDBY;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomspi_get_CTRLA_RUNSTDBY_bit(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->SPI.CTRLA.reg;
+	tmp = (tmp & SERCOM_SPI_CTRLA_RUNSTDBY) >> SERCOM_SPI_CTRLA_RUNSTDBY_Pos;
+	return (bool)tmp;
+}
+
+static inline void hri_sercomspi_write_CTRLA_RUNSTDBY_bit(const void *const hw, bool value)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->SPI.CTRLA.reg;
+	tmp &= ~SERCOM_SPI_CTRLA_RUNSTDBY;
+	tmp |= value << SERCOM_SPI_CTRLA_RUNSTDBY_Pos;
+	((Sercom *)hw)->SPI.CTRLA.reg = tmp;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_clear_CTRLA_RUNSTDBY_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLA.reg &= ~SERCOM_SPI_CTRLA_RUNSTDBY;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_toggle_CTRLA_RUNSTDBY_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLA.reg ^= SERCOM_SPI_CTRLA_RUNSTDBY;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_set_CTRLA_IBON_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLA.reg |= SERCOM_SPI_CTRLA_IBON;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomspi_get_CTRLA_IBON_bit(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->SPI.CTRLA.reg;
+	tmp = (tmp & SERCOM_SPI_CTRLA_IBON) >> SERCOM_SPI_CTRLA_IBON_Pos;
+	return (bool)tmp;
+}
+
+static inline void hri_sercomspi_write_CTRLA_IBON_bit(const void *const hw, bool value)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->SPI.CTRLA.reg;
+	tmp &= ~SERCOM_SPI_CTRLA_IBON;
+	tmp |= value << SERCOM_SPI_CTRLA_IBON_Pos;
+	((Sercom *)hw)->SPI.CTRLA.reg = tmp;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_clear_CTRLA_IBON_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLA.reg &= ~SERCOM_SPI_CTRLA_IBON;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_toggle_CTRLA_IBON_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLA.reg ^= SERCOM_SPI_CTRLA_IBON;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_set_CTRLA_CPHA_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLA.reg |= SERCOM_SPI_CTRLA_CPHA;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomspi_get_CTRLA_CPHA_bit(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->SPI.CTRLA.reg;
+	tmp = (tmp & SERCOM_SPI_CTRLA_CPHA) >> SERCOM_SPI_CTRLA_CPHA_Pos;
+	return (bool)tmp;
+}
+
+static inline void hri_sercomspi_write_CTRLA_CPHA_bit(const void *const hw, bool value)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->SPI.CTRLA.reg;
+	tmp &= ~SERCOM_SPI_CTRLA_CPHA;
+	tmp |= value << SERCOM_SPI_CTRLA_CPHA_Pos;
+	((Sercom *)hw)->SPI.CTRLA.reg = tmp;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_clear_CTRLA_CPHA_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLA.reg &= ~SERCOM_SPI_CTRLA_CPHA;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_toggle_CTRLA_CPHA_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLA.reg ^= SERCOM_SPI_CTRLA_CPHA;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_set_CTRLA_CPOL_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLA.reg |= SERCOM_SPI_CTRLA_CPOL;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomspi_get_CTRLA_CPOL_bit(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->SPI.CTRLA.reg;
+	tmp = (tmp & SERCOM_SPI_CTRLA_CPOL) >> SERCOM_SPI_CTRLA_CPOL_Pos;
+	return (bool)tmp;
+}
+
+static inline void hri_sercomspi_write_CTRLA_CPOL_bit(const void *const hw, bool value)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->SPI.CTRLA.reg;
+	tmp &= ~SERCOM_SPI_CTRLA_CPOL;
+	tmp |= value << SERCOM_SPI_CTRLA_CPOL_Pos;
+	((Sercom *)hw)->SPI.CTRLA.reg = tmp;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_clear_CTRLA_CPOL_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLA.reg &= ~SERCOM_SPI_CTRLA_CPOL;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_toggle_CTRLA_CPOL_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLA.reg ^= SERCOM_SPI_CTRLA_CPOL;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_set_CTRLA_DORD_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLA.reg |= SERCOM_SPI_CTRLA_DORD;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomspi_get_CTRLA_DORD_bit(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->SPI.CTRLA.reg;
+	tmp = (tmp & SERCOM_SPI_CTRLA_DORD) >> SERCOM_SPI_CTRLA_DORD_Pos;
+	return (bool)tmp;
+}
+
+static inline void hri_sercomspi_write_CTRLA_DORD_bit(const void *const hw, bool value)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->SPI.CTRLA.reg;
+	tmp &= ~SERCOM_SPI_CTRLA_DORD;
+	tmp |= value << SERCOM_SPI_CTRLA_DORD_Pos;
+	((Sercom *)hw)->SPI.CTRLA.reg = tmp;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_clear_CTRLA_DORD_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLA.reg &= ~SERCOM_SPI_CTRLA_DORD;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_toggle_CTRLA_DORD_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLA.reg ^= SERCOM_SPI_CTRLA_DORD;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_set_CTRLA_MODE_bf(const void *const hw, hri_sercomspi_ctrla_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLA.reg |= SERCOM_SPI_CTRLA_MODE(mask);
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomspi_ctrla_reg_t hri_sercomspi_get_CTRLA_MODE_bf(const void *const         hw,
+                                                                        hri_sercomspi_ctrla_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->SPI.CTRLA.reg;
+	tmp = (tmp & SERCOM_SPI_CTRLA_MODE(mask)) >> SERCOM_SPI_CTRLA_MODE_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomspi_write_CTRLA_MODE_bf(const void *const hw, hri_sercomspi_ctrla_reg_t data)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->SPI.CTRLA.reg;
+	tmp &= ~SERCOM_SPI_CTRLA_MODE_Msk;
+	tmp |= SERCOM_SPI_CTRLA_MODE(data);
+	((Sercom *)hw)->SPI.CTRLA.reg = tmp;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_clear_CTRLA_MODE_bf(const void *const hw, hri_sercomspi_ctrla_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLA.reg &= ~SERCOM_SPI_CTRLA_MODE(mask);
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_toggle_CTRLA_MODE_bf(const void *const hw, hri_sercomspi_ctrla_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLA.reg ^= SERCOM_SPI_CTRLA_MODE(mask);
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomspi_ctrla_reg_t hri_sercomspi_read_CTRLA_MODE_bf(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->SPI.CTRLA.reg;
+	tmp = (tmp & SERCOM_SPI_CTRLA_MODE_Msk) >> SERCOM_SPI_CTRLA_MODE_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomspi_set_CTRLA_DOPO_bf(const void *const hw, hri_sercomspi_ctrla_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLA.reg |= SERCOM_SPI_CTRLA_DOPO(mask);
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomspi_ctrla_reg_t hri_sercomspi_get_CTRLA_DOPO_bf(const void *const         hw,
+                                                                        hri_sercomspi_ctrla_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->SPI.CTRLA.reg;
+	tmp = (tmp & SERCOM_SPI_CTRLA_DOPO(mask)) >> SERCOM_SPI_CTRLA_DOPO_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomspi_write_CTRLA_DOPO_bf(const void *const hw, hri_sercomspi_ctrla_reg_t data)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->SPI.CTRLA.reg;
+	tmp &= ~SERCOM_SPI_CTRLA_DOPO_Msk;
+	tmp |= SERCOM_SPI_CTRLA_DOPO(data);
+	((Sercom *)hw)->SPI.CTRLA.reg = tmp;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_clear_CTRLA_DOPO_bf(const void *const hw, hri_sercomspi_ctrla_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLA.reg &= ~SERCOM_SPI_CTRLA_DOPO(mask);
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_toggle_CTRLA_DOPO_bf(const void *const hw, hri_sercomspi_ctrla_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLA.reg ^= SERCOM_SPI_CTRLA_DOPO(mask);
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomspi_ctrla_reg_t hri_sercomspi_read_CTRLA_DOPO_bf(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->SPI.CTRLA.reg;
+	tmp = (tmp & SERCOM_SPI_CTRLA_DOPO_Msk) >> SERCOM_SPI_CTRLA_DOPO_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomspi_set_CTRLA_DIPO_bf(const void *const hw, hri_sercomspi_ctrla_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLA.reg |= SERCOM_SPI_CTRLA_DIPO(mask);
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomspi_ctrla_reg_t hri_sercomspi_get_CTRLA_DIPO_bf(const void *const         hw,
+                                                                        hri_sercomspi_ctrla_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->SPI.CTRLA.reg;
+	tmp = (tmp & SERCOM_SPI_CTRLA_DIPO(mask)) >> SERCOM_SPI_CTRLA_DIPO_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomspi_write_CTRLA_DIPO_bf(const void *const hw, hri_sercomspi_ctrla_reg_t data)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->SPI.CTRLA.reg;
+	tmp &= ~SERCOM_SPI_CTRLA_DIPO_Msk;
+	tmp |= SERCOM_SPI_CTRLA_DIPO(data);
+	((Sercom *)hw)->SPI.CTRLA.reg = tmp;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_clear_CTRLA_DIPO_bf(const void *const hw, hri_sercomspi_ctrla_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLA.reg &= ~SERCOM_SPI_CTRLA_DIPO(mask);
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_toggle_CTRLA_DIPO_bf(const void *const hw, hri_sercomspi_ctrla_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLA.reg ^= SERCOM_SPI_CTRLA_DIPO(mask);
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomspi_ctrla_reg_t hri_sercomspi_read_CTRLA_DIPO_bf(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->SPI.CTRLA.reg;
+	tmp = (tmp & SERCOM_SPI_CTRLA_DIPO_Msk) >> SERCOM_SPI_CTRLA_DIPO_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomspi_set_CTRLA_FORM_bf(const void *const hw, hri_sercomspi_ctrla_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLA.reg |= SERCOM_SPI_CTRLA_FORM(mask);
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomspi_ctrla_reg_t hri_sercomspi_get_CTRLA_FORM_bf(const void *const         hw,
+                                                                        hri_sercomspi_ctrla_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->SPI.CTRLA.reg;
+	tmp = (tmp & SERCOM_SPI_CTRLA_FORM(mask)) >> SERCOM_SPI_CTRLA_FORM_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomspi_write_CTRLA_FORM_bf(const void *const hw, hri_sercomspi_ctrla_reg_t data)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->SPI.CTRLA.reg;
+	tmp &= ~SERCOM_SPI_CTRLA_FORM_Msk;
+	tmp |= SERCOM_SPI_CTRLA_FORM(data);
+	((Sercom *)hw)->SPI.CTRLA.reg = tmp;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_clear_CTRLA_FORM_bf(const void *const hw, hri_sercomspi_ctrla_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLA.reg &= ~SERCOM_SPI_CTRLA_FORM(mask);
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_toggle_CTRLA_FORM_bf(const void *const hw, hri_sercomspi_ctrla_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLA.reg ^= SERCOM_SPI_CTRLA_FORM(mask);
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomspi_ctrla_reg_t hri_sercomspi_read_CTRLA_FORM_bf(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->SPI.CTRLA.reg;
+	tmp = (tmp & SERCOM_SPI_CTRLA_FORM_Msk) >> SERCOM_SPI_CTRLA_FORM_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomspi_set_CTRLA_reg(const void *const hw, hri_sercomspi_ctrla_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLA.reg |= mask;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_SWRST | SERCOM_SPI_SYNCBUSY_ENABLE);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomspi_ctrla_reg_t hri_sercomspi_get_CTRLA_reg(const void *const         hw,
+                                                                    hri_sercomspi_ctrla_reg_t mask)
+{
+	uint32_t tmp;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_SWRST | SERCOM_SPI_SYNCBUSY_ENABLE);
+	tmp = ((Sercom *)hw)->SPI.CTRLA.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline void hri_sercomspi_write_CTRLA_reg(const void *const hw, hri_sercomspi_ctrla_reg_t data)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLA.reg = data;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_SWRST | SERCOM_SPI_SYNCBUSY_ENABLE);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_clear_CTRLA_reg(const void *const hw, hri_sercomspi_ctrla_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLA.reg &= ~mask;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_SWRST | SERCOM_SPI_SYNCBUSY_ENABLE);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_toggle_CTRLA_reg(const void *const hw, hri_sercomspi_ctrla_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLA.reg ^= mask;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_SWRST | SERCOM_SPI_SYNCBUSY_ENABLE);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomspi_ctrla_reg_t hri_sercomspi_read_CTRLA_reg(const void *const hw)
+{
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_SWRST | SERCOM_SPI_SYNCBUSY_ENABLE);
+	return ((Sercom *)hw)->SPI.CTRLA.reg;
 }
 
 static inline void hri_sercomusart_set_CTRLA_SWRST_bit(const void *const hw)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_SWRST);
 	((Sercom *)hw)->USART.CTRLA.reg |= SERCOM_USART_CTRLA_SWRST;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_SWRST);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -4871,8 +2962,8 @@ static inline bool hri_sercomusart_get_CTRLA_SWRST_bit(const void *const hw)
 static inline void hri_sercomusart_set_CTRLA_ENABLE_bit(const void *const hw)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_SWRST | SERCOM_USART_SYNCBUSY_ENABLE);
 	((Sercom *)hw)->USART.CTRLA.reg |= SERCOM_USART_CTRLA_ENABLE;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_SWRST | SERCOM_USART_SYNCBUSY_ENABLE);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -4889,35 +2980,35 @@ static inline void hri_sercomusart_write_CTRLA_ENABLE_bit(const void *const hw, 
 {
 	uint32_t tmp;
 	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_SWRST | SERCOM_USART_SYNCBUSY_ENABLE);
 	tmp = ((Sercom *)hw)->USART.CTRLA.reg;
 	tmp &= ~SERCOM_USART_CTRLA_ENABLE;
 	tmp |= value << SERCOM_USART_CTRLA_ENABLE_Pos;
 	((Sercom *)hw)->USART.CTRLA.reg = tmp;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_SWRST | SERCOM_USART_SYNCBUSY_ENABLE);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_sercomusart_clear_CTRLA_ENABLE_bit(const void *const hw)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_SWRST | SERCOM_USART_SYNCBUSY_ENABLE);
 	((Sercom *)hw)->USART.CTRLA.reg &= ~SERCOM_USART_CTRLA_ENABLE;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_SWRST | SERCOM_USART_SYNCBUSY_ENABLE);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_sercomusart_toggle_CTRLA_ENABLE_bit(const void *const hw)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_SWRST | SERCOM_USART_SYNCBUSY_ENABLE);
 	((Sercom *)hw)->USART.CTRLA.reg ^= SERCOM_USART_CTRLA_ENABLE;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_SWRST | SERCOM_USART_SYNCBUSY_ENABLE);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_sercomusart_set_CTRLA_RUNSTDBY_bit(const void *const hw)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	((Sercom *)hw)->USART.CTRLA.reg |= SERCOM_USART_CTRLA_RUNSTDBY;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -4933,35 +3024,35 @@ static inline void hri_sercomusart_write_CTRLA_RUNSTDBY_bit(const void *const hw
 {
 	uint32_t tmp;
 	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	tmp = ((Sercom *)hw)->USART.CTRLA.reg;
 	tmp &= ~SERCOM_USART_CTRLA_RUNSTDBY;
 	tmp |= value << SERCOM_USART_CTRLA_RUNSTDBY_Pos;
 	((Sercom *)hw)->USART.CTRLA.reg = tmp;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_sercomusart_clear_CTRLA_RUNSTDBY_bit(const void *const hw)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	((Sercom *)hw)->USART.CTRLA.reg &= ~SERCOM_USART_CTRLA_RUNSTDBY;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_sercomusart_toggle_CTRLA_RUNSTDBY_bit(const void *const hw)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	((Sercom *)hw)->USART.CTRLA.reg ^= SERCOM_USART_CTRLA_RUNSTDBY;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_sercomusart_set_CTRLA_IBON_bit(const void *const hw)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	((Sercom *)hw)->USART.CTRLA.reg |= SERCOM_USART_CTRLA_IBON;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -4977,35 +3068,35 @@ static inline void hri_sercomusart_write_CTRLA_IBON_bit(const void *const hw, bo
 {
 	uint32_t tmp;
 	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	tmp = ((Sercom *)hw)->USART.CTRLA.reg;
 	tmp &= ~SERCOM_USART_CTRLA_IBON;
 	tmp |= value << SERCOM_USART_CTRLA_IBON_Pos;
 	((Sercom *)hw)->USART.CTRLA.reg = tmp;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_sercomusart_clear_CTRLA_IBON_bit(const void *const hw)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	((Sercom *)hw)->USART.CTRLA.reg &= ~SERCOM_USART_CTRLA_IBON;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_sercomusart_toggle_CTRLA_IBON_bit(const void *const hw)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	((Sercom *)hw)->USART.CTRLA.reg ^= SERCOM_USART_CTRLA_IBON;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_sercomusart_set_CTRLA_TXINV_bit(const void *const hw)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	((Sercom *)hw)->USART.CTRLA.reg |= SERCOM_USART_CTRLA_TXINV;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5021,35 +3112,35 @@ static inline void hri_sercomusart_write_CTRLA_TXINV_bit(const void *const hw, b
 {
 	uint32_t tmp;
 	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	tmp = ((Sercom *)hw)->USART.CTRLA.reg;
 	tmp &= ~SERCOM_USART_CTRLA_TXINV;
 	tmp |= value << SERCOM_USART_CTRLA_TXINV_Pos;
 	((Sercom *)hw)->USART.CTRLA.reg = tmp;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_sercomusart_clear_CTRLA_TXINV_bit(const void *const hw)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	((Sercom *)hw)->USART.CTRLA.reg &= ~SERCOM_USART_CTRLA_TXINV;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_sercomusart_toggle_CTRLA_TXINV_bit(const void *const hw)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	((Sercom *)hw)->USART.CTRLA.reg ^= SERCOM_USART_CTRLA_TXINV;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_sercomusart_set_CTRLA_RXINV_bit(const void *const hw)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	((Sercom *)hw)->USART.CTRLA.reg |= SERCOM_USART_CTRLA_RXINV;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5065,35 +3156,35 @@ static inline void hri_sercomusart_write_CTRLA_RXINV_bit(const void *const hw, b
 {
 	uint32_t tmp;
 	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	tmp = ((Sercom *)hw)->USART.CTRLA.reg;
 	tmp &= ~SERCOM_USART_CTRLA_RXINV;
 	tmp |= value << SERCOM_USART_CTRLA_RXINV_Pos;
 	((Sercom *)hw)->USART.CTRLA.reg = tmp;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_sercomusart_clear_CTRLA_RXINV_bit(const void *const hw)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	((Sercom *)hw)->USART.CTRLA.reg &= ~SERCOM_USART_CTRLA_RXINV;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_sercomusart_toggle_CTRLA_RXINV_bit(const void *const hw)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	((Sercom *)hw)->USART.CTRLA.reg ^= SERCOM_USART_CTRLA_RXINV;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_sercomusart_set_CTRLA_CMODE_bit(const void *const hw)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	((Sercom *)hw)->USART.CTRLA.reg |= SERCOM_USART_CTRLA_CMODE;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5109,35 +3200,35 @@ static inline void hri_sercomusart_write_CTRLA_CMODE_bit(const void *const hw, b
 {
 	uint32_t tmp;
 	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	tmp = ((Sercom *)hw)->USART.CTRLA.reg;
 	tmp &= ~SERCOM_USART_CTRLA_CMODE;
 	tmp |= value << SERCOM_USART_CTRLA_CMODE_Pos;
 	((Sercom *)hw)->USART.CTRLA.reg = tmp;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_sercomusart_clear_CTRLA_CMODE_bit(const void *const hw)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	((Sercom *)hw)->USART.CTRLA.reg &= ~SERCOM_USART_CTRLA_CMODE;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_sercomusart_toggle_CTRLA_CMODE_bit(const void *const hw)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	((Sercom *)hw)->USART.CTRLA.reg ^= SERCOM_USART_CTRLA_CMODE;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_sercomusart_set_CTRLA_CPOL_bit(const void *const hw)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	((Sercom *)hw)->USART.CTRLA.reg |= SERCOM_USART_CTRLA_CPOL;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5153,35 +3244,35 @@ static inline void hri_sercomusart_write_CTRLA_CPOL_bit(const void *const hw, bo
 {
 	uint32_t tmp;
 	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	tmp = ((Sercom *)hw)->USART.CTRLA.reg;
 	tmp &= ~SERCOM_USART_CTRLA_CPOL;
 	tmp |= value << SERCOM_USART_CTRLA_CPOL_Pos;
 	((Sercom *)hw)->USART.CTRLA.reg = tmp;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_sercomusart_clear_CTRLA_CPOL_bit(const void *const hw)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	((Sercom *)hw)->USART.CTRLA.reg &= ~SERCOM_USART_CTRLA_CPOL;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_sercomusart_toggle_CTRLA_CPOL_bit(const void *const hw)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	((Sercom *)hw)->USART.CTRLA.reg ^= SERCOM_USART_CTRLA_CPOL;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_sercomusart_set_CTRLA_DORD_bit(const void *const hw)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	((Sercom *)hw)->USART.CTRLA.reg |= SERCOM_USART_CTRLA_DORD;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5197,35 +3288,35 @@ static inline void hri_sercomusart_write_CTRLA_DORD_bit(const void *const hw, bo
 {
 	uint32_t tmp;
 	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	tmp = ((Sercom *)hw)->USART.CTRLA.reg;
 	tmp &= ~SERCOM_USART_CTRLA_DORD;
 	tmp |= value << SERCOM_USART_CTRLA_DORD_Pos;
 	((Sercom *)hw)->USART.CTRLA.reg = tmp;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_sercomusart_clear_CTRLA_DORD_bit(const void *const hw)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	((Sercom *)hw)->USART.CTRLA.reg &= ~SERCOM_USART_CTRLA_DORD;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_sercomusart_toggle_CTRLA_DORD_bit(const void *const hw)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	((Sercom *)hw)->USART.CTRLA.reg ^= SERCOM_USART_CTRLA_DORD;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_sercomusart_set_CTRLA_MODE_bf(const void *const hw, hri_sercomusart_ctrla_reg_t mask)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	((Sercom *)hw)->USART.CTRLA.reg |= SERCOM_USART_CTRLA_MODE(mask);
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5242,27 +3333,27 @@ static inline void hri_sercomusart_write_CTRLA_MODE_bf(const void *const hw, hri
 {
 	uint32_t tmp;
 	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	tmp = ((Sercom *)hw)->USART.CTRLA.reg;
 	tmp &= ~SERCOM_USART_CTRLA_MODE_Msk;
 	tmp |= SERCOM_USART_CTRLA_MODE(data);
 	((Sercom *)hw)->USART.CTRLA.reg = tmp;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_sercomusart_clear_CTRLA_MODE_bf(const void *const hw, hri_sercomusart_ctrla_reg_t mask)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	((Sercom *)hw)->USART.CTRLA.reg &= ~SERCOM_USART_CTRLA_MODE(mask);
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_sercomusart_toggle_CTRLA_MODE_bf(const void *const hw, hri_sercomusart_ctrla_reg_t mask)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	((Sercom *)hw)->USART.CTRLA.reg ^= SERCOM_USART_CTRLA_MODE(mask);
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5277,8 +3368,8 @@ static inline hri_sercomusart_ctrla_reg_t hri_sercomusart_read_CTRLA_MODE_bf(con
 static inline void hri_sercomusart_set_CTRLA_SAMPR_bf(const void *const hw, hri_sercomusart_ctrla_reg_t mask)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	((Sercom *)hw)->USART.CTRLA.reg |= SERCOM_USART_CTRLA_SAMPR(mask);
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5295,27 +3386,27 @@ static inline void hri_sercomusart_write_CTRLA_SAMPR_bf(const void *const hw, hr
 {
 	uint32_t tmp;
 	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	tmp = ((Sercom *)hw)->USART.CTRLA.reg;
 	tmp &= ~SERCOM_USART_CTRLA_SAMPR_Msk;
 	tmp |= SERCOM_USART_CTRLA_SAMPR(data);
 	((Sercom *)hw)->USART.CTRLA.reg = tmp;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_sercomusart_clear_CTRLA_SAMPR_bf(const void *const hw, hri_sercomusart_ctrla_reg_t mask)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	((Sercom *)hw)->USART.CTRLA.reg &= ~SERCOM_USART_CTRLA_SAMPR(mask);
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_sercomusart_toggle_CTRLA_SAMPR_bf(const void *const hw, hri_sercomusart_ctrla_reg_t mask)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	((Sercom *)hw)->USART.CTRLA.reg ^= SERCOM_USART_CTRLA_SAMPR(mask);
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5330,8 +3421,8 @@ static inline hri_sercomusart_ctrla_reg_t hri_sercomusart_read_CTRLA_SAMPR_bf(co
 static inline void hri_sercomusart_set_CTRLA_TXPO_bf(const void *const hw, hri_sercomusart_ctrla_reg_t mask)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	((Sercom *)hw)->USART.CTRLA.reg |= SERCOM_USART_CTRLA_TXPO(mask);
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5348,27 +3439,27 @@ static inline void hri_sercomusart_write_CTRLA_TXPO_bf(const void *const hw, hri
 {
 	uint32_t tmp;
 	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	tmp = ((Sercom *)hw)->USART.CTRLA.reg;
 	tmp &= ~SERCOM_USART_CTRLA_TXPO_Msk;
 	tmp |= SERCOM_USART_CTRLA_TXPO(data);
 	((Sercom *)hw)->USART.CTRLA.reg = tmp;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_sercomusart_clear_CTRLA_TXPO_bf(const void *const hw, hri_sercomusart_ctrla_reg_t mask)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	((Sercom *)hw)->USART.CTRLA.reg &= ~SERCOM_USART_CTRLA_TXPO(mask);
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_sercomusart_toggle_CTRLA_TXPO_bf(const void *const hw, hri_sercomusart_ctrla_reg_t mask)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	((Sercom *)hw)->USART.CTRLA.reg ^= SERCOM_USART_CTRLA_TXPO(mask);
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5383,8 +3474,8 @@ static inline hri_sercomusart_ctrla_reg_t hri_sercomusart_read_CTRLA_TXPO_bf(con
 static inline void hri_sercomusart_set_CTRLA_RXPO_bf(const void *const hw, hri_sercomusart_ctrla_reg_t mask)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	((Sercom *)hw)->USART.CTRLA.reg |= SERCOM_USART_CTRLA_RXPO(mask);
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5401,27 +3492,27 @@ static inline void hri_sercomusart_write_CTRLA_RXPO_bf(const void *const hw, hri
 {
 	uint32_t tmp;
 	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	tmp = ((Sercom *)hw)->USART.CTRLA.reg;
 	tmp &= ~SERCOM_USART_CTRLA_RXPO_Msk;
 	tmp |= SERCOM_USART_CTRLA_RXPO(data);
 	((Sercom *)hw)->USART.CTRLA.reg = tmp;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_sercomusart_clear_CTRLA_RXPO_bf(const void *const hw, hri_sercomusart_ctrla_reg_t mask)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	((Sercom *)hw)->USART.CTRLA.reg &= ~SERCOM_USART_CTRLA_RXPO(mask);
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_sercomusart_toggle_CTRLA_RXPO_bf(const void *const hw, hri_sercomusart_ctrla_reg_t mask)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	((Sercom *)hw)->USART.CTRLA.reg ^= SERCOM_USART_CTRLA_RXPO(mask);
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5436,8 +3527,8 @@ static inline hri_sercomusart_ctrla_reg_t hri_sercomusart_read_CTRLA_RXPO_bf(con
 static inline void hri_sercomusart_set_CTRLA_SAMPA_bf(const void *const hw, hri_sercomusart_ctrla_reg_t mask)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	((Sercom *)hw)->USART.CTRLA.reg |= SERCOM_USART_CTRLA_SAMPA(mask);
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5454,27 +3545,27 @@ static inline void hri_sercomusart_write_CTRLA_SAMPA_bf(const void *const hw, hr
 {
 	uint32_t tmp;
 	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	tmp = ((Sercom *)hw)->USART.CTRLA.reg;
 	tmp &= ~SERCOM_USART_CTRLA_SAMPA_Msk;
 	tmp |= SERCOM_USART_CTRLA_SAMPA(data);
 	((Sercom *)hw)->USART.CTRLA.reg = tmp;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_sercomusart_clear_CTRLA_SAMPA_bf(const void *const hw, hri_sercomusart_ctrla_reg_t mask)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	((Sercom *)hw)->USART.CTRLA.reg &= ~SERCOM_USART_CTRLA_SAMPA(mask);
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_sercomusart_toggle_CTRLA_SAMPA_bf(const void *const hw, hri_sercomusart_ctrla_reg_t mask)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	((Sercom *)hw)->USART.CTRLA.reg ^= SERCOM_USART_CTRLA_SAMPA(mask);
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5489,8 +3580,8 @@ static inline hri_sercomusart_ctrla_reg_t hri_sercomusart_read_CTRLA_SAMPA_bf(co
 static inline void hri_sercomusart_set_CTRLA_FORM_bf(const void *const hw, hri_sercomusart_ctrla_reg_t mask)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	((Sercom *)hw)->USART.CTRLA.reg |= SERCOM_USART_CTRLA_FORM(mask);
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5507,27 +3598,27 @@ static inline void hri_sercomusart_write_CTRLA_FORM_bf(const void *const hw, hri
 {
 	uint32_t tmp;
 	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	tmp = ((Sercom *)hw)->USART.CTRLA.reg;
 	tmp &= ~SERCOM_USART_CTRLA_FORM_Msk;
 	tmp |= SERCOM_USART_CTRLA_FORM(data);
 	((Sercom *)hw)->USART.CTRLA.reg = tmp;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_sercomusart_clear_CTRLA_FORM_bf(const void *const hw, hri_sercomusart_ctrla_reg_t mask)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	((Sercom *)hw)->USART.CTRLA.reg &= ~SERCOM_USART_CTRLA_FORM(mask);
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_sercomusart_toggle_CTRLA_FORM_bf(const void *const hw, hri_sercomusart_ctrla_reg_t mask)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	((Sercom *)hw)->USART.CTRLA.reg ^= SERCOM_USART_CTRLA_FORM(mask);
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5543,6 +3634,7 @@ static inline void hri_sercomusart_set_CTRLA_reg(const void *const hw, hri_serco
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
 	((Sercom *)hw)->USART.CTRLA.reg |= mask;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_SWRST | SERCOM_USART_SYNCBUSY_ENABLE);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5550,6 +3642,7 @@ static inline hri_sercomusart_ctrla_reg_t hri_sercomusart_get_CTRLA_reg(const vo
                                                                         hri_sercomusart_ctrla_reg_t mask)
 {
 	uint32_t tmp;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_SWRST | SERCOM_USART_SYNCBUSY_ENABLE);
 	tmp = ((Sercom *)hw)->USART.CTRLA.reg;
 	tmp &= mask;
 	return tmp;
@@ -5559,6 +3652,7 @@ static inline void hri_sercomusart_write_CTRLA_reg(const void *const hw, hri_ser
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
 	((Sercom *)hw)->USART.CTRLA.reg = data;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_SWRST | SERCOM_USART_SYNCBUSY_ENABLE);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5566,6 +3660,7 @@ static inline void hri_sercomusart_clear_CTRLA_reg(const void *const hw, hri_ser
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
 	((Sercom *)hw)->USART.CTRLA.reg &= ~mask;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_SWRST | SERCOM_USART_SYNCBUSY_ENABLE);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5573,18 +3668,884 @@ static inline void hri_sercomusart_toggle_CTRLA_reg(const void *const hw, hri_se
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
 	((Sercom *)hw)->USART.CTRLA.reg ^= mask;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_SWRST | SERCOM_USART_SYNCBUSY_ENABLE);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
 static inline hri_sercomusart_ctrla_reg_t hri_sercomusart_read_CTRLA_reg(const void *const hw)
 {
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_SWRST | SERCOM_USART_SYNCBUSY_ENABLE);
 	return ((Sercom *)hw)->USART.CTRLA.reg;
+}
+
+static inline void hri_sercomi2cm_set_CTRLB_SMEN_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLB.reg |= SERCOM_I2CM_CTRLB_SMEN;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomi2cm_get_CTRLB_SMEN_bit(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CM.CTRLB.reg;
+	tmp = (tmp & SERCOM_I2CM_CTRLB_SMEN) >> SERCOM_I2CM_CTRLB_SMEN_Pos;
+	return (bool)tmp;
+}
+
+static inline void hri_sercomi2cm_write_CTRLB_SMEN_bit(const void *const hw, bool value)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->I2CM.CTRLB.reg;
+	tmp &= ~SERCOM_I2CM_CTRLB_SMEN;
+	tmp |= value << SERCOM_I2CM_CTRLB_SMEN_Pos;
+	((Sercom *)hw)->I2CM.CTRLB.reg = tmp;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_clear_CTRLB_SMEN_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLB.reg &= ~SERCOM_I2CM_CTRLB_SMEN;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_toggle_CTRLB_SMEN_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLB.reg ^= SERCOM_I2CM_CTRLB_SMEN;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_set_CTRLB_QCEN_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLB.reg |= SERCOM_I2CM_CTRLB_QCEN;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomi2cm_get_CTRLB_QCEN_bit(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CM.CTRLB.reg;
+	tmp = (tmp & SERCOM_I2CM_CTRLB_QCEN) >> SERCOM_I2CM_CTRLB_QCEN_Pos;
+	return (bool)tmp;
+}
+
+static inline void hri_sercomi2cm_write_CTRLB_QCEN_bit(const void *const hw, bool value)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->I2CM.CTRLB.reg;
+	tmp &= ~SERCOM_I2CM_CTRLB_QCEN;
+	tmp |= value << SERCOM_I2CM_CTRLB_QCEN_Pos;
+	((Sercom *)hw)->I2CM.CTRLB.reg = tmp;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_clear_CTRLB_QCEN_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLB.reg &= ~SERCOM_I2CM_CTRLB_QCEN;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_toggle_CTRLB_QCEN_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLB.reg ^= SERCOM_I2CM_CTRLB_QCEN;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_set_CTRLB_ACKACT_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLB.reg |= SERCOM_I2CM_CTRLB_ACKACT;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomi2cm_get_CTRLB_ACKACT_bit(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CM.CTRLB.reg;
+	tmp = (tmp & SERCOM_I2CM_CTRLB_ACKACT) >> SERCOM_I2CM_CTRLB_ACKACT_Pos;
+	return (bool)tmp;
+}
+
+static inline void hri_sercomi2cm_write_CTRLB_ACKACT_bit(const void *const hw, bool value)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->I2CM.CTRLB.reg;
+	tmp &= ~SERCOM_I2CM_CTRLB_ACKACT;
+	tmp |= value << SERCOM_I2CM_CTRLB_ACKACT_Pos;
+	((Sercom *)hw)->I2CM.CTRLB.reg = tmp;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_clear_CTRLB_ACKACT_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLB.reg &= ~SERCOM_I2CM_CTRLB_ACKACT;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_toggle_CTRLB_ACKACT_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLB.reg ^= SERCOM_I2CM_CTRLB_ACKACT;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_set_CTRLB_CMD_bf(const void *const hw, hri_sercomi2cm_ctrlb_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLB.reg |= SERCOM_I2CM_CTRLB_CMD(mask);
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cm_ctrlb_reg_t hri_sercomi2cm_get_CTRLB_CMD_bf(const void *const          hw,
+                                                                         hri_sercomi2cm_ctrlb_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CM.CTRLB.reg;
+	tmp = (tmp & SERCOM_I2CM_CTRLB_CMD(mask)) >> SERCOM_I2CM_CTRLB_CMD_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomi2cm_write_CTRLB_CMD_bf(const void *const hw, hri_sercomi2cm_ctrlb_reg_t data)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->I2CM.CTRLB.reg;
+	tmp &= ~SERCOM_I2CM_CTRLB_CMD_Msk;
+	tmp |= SERCOM_I2CM_CTRLB_CMD(data);
+	((Sercom *)hw)->I2CM.CTRLB.reg = tmp;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_clear_CTRLB_CMD_bf(const void *const hw, hri_sercomi2cm_ctrlb_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLB.reg &= ~SERCOM_I2CM_CTRLB_CMD(mask);
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_toggle_CTRLB_CMD_bf(const void *const hw, hri_sercomi2cm_ctrlb_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLB.reg ^= SERCOM_I2CM_CTRLB_CMD(mask);
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cm_ctrlb_reg_t hri_sercomi2cm_read_CTRLB_CMD_bf(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CM.CTRLB.reg;
+	tmp = (tmp & SERCOM_I2CM_CTRLB_CMD_Msk) >> SERCOM_I2CM_CTRLB_CMD_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomi2cm_set_CTRLB_reg(const void *const hw, hri_sercomi2cm_ctrlb_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLB.reg |= mask;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cm_ctrlb_reg_t hri_sercomi2cm_get_CTRLB_reg(const void *const          hw,
+                                                                      hri_sercomi2cm_ctrlb_reg_t mask)
+{
+	uint32_t tmp;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	tmp = ((Sercom *)hw)->I2CM.CTRLB.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline void hri_sercomi2cm_write_CTRLB_reg(const void *const hw, hri_sercomi2cm_ctrlb_reg_t data)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLB.reg = data;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_clear_CTRLB_reg(const void *const hw, hri_sercomi2cm_ctrlb_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLB.reg &= ~mask;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_toggle_CTRLB_reg(const void *const hw, hri_sercomi2cm_ctrlb_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLB.reg ^= mask;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cm_ctrlb_reg_t hri_sercomi2cm_read_CTRLB_reg(const void *const hw)
+{
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	return ((Sercom *)hw)->I2CM.CTRLB.reg;
+}
+
+static inline void hri_sercomi2cs_set_CTRLB_SMEN_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLB.reg |= SERCOM_I2CS_CTRLB_SMEN;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomi2cs_get_CTRLB_SMEN_bit(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CS.CTRLB.reg;
+	tmp = (tmp & SERCOM_I2CS_CTRLB_SMEN) >> SERCOM_I2CS_CTRLB_SMEN_Pos;
+	return (bool)tmp;
+}
+
+static inline void hri_sercomi2cs_write_CTRLB_SMEN_bit(const void *const hw, bool value)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->I2CS.CTRLB.reg;
+	tmp &= ~SERCOM_I2CS_CTRLB_SMEN;
+	tmp |= value << SERCOM_I2CS_CTRLB_SMEN_Pos;
+	((Sercom *)hw)->I2CS.CTRLB.reg = tmp;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cs_clear_CTRLB_SMEN_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLB.reg &= ~SERCOM_I2CS_CTRLB_SMEN;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cs_toggle_CTRLB_SMEN_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLB.reg ^= SERCOM_I2CS_CTRLB_SMEN;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cs_set_CTRLB_GCMD_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLB.reg |= SERCOM_I2CS_CTRLB_GCMD;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomi2cs_get_CTRLB_GCMD_bit(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CS.CTRLB.reg;
+	tmp = (tmp & SERCOM_I2CS_CTRLB_GCMD) >> SERCOM_I2CS_CTRLB_GCMD_Pos;
+	return (bool)tmp;
+}
+
+static inline void hri_sercomi2cs_write_CTRLB_GCMD_bit(const void *const hw, bool value)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->I2CS.CTRLB.reg;
+	tmp &= ~SERCOM_I2CS_CTRLB_GCMD;
+	tmp |= value << SERCOM_I2CS_CTRLB_GCMD_Pos;
+	((Sercom *)hw)->I2CS.CTRLB.reg = tmp;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cs_clear_CTRLB_GCMD_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLB.reg &= ~SERCOM_I2CS_CTRLB_GCMD;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cs_toggle_CTRLB_GCMD_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLB.reg ^= SERCOM_I2CS_CTRLB_GCMD;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cs_set_CTRLB_AACKEN_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLB.reg |= SERCOM_I2CS_CTRLB_AACKEN;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomi2cs_get_CTRLB_AACKEN_bit(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CS.CTRLB.reg;
+	tmp = (tmp & SERCOM_I2CS_CTRLB_AACKEN) >> SERCOM_I2CS_CTRLB_AACKEN_Pos;
+	return (bool)tmp;
+}
+
+static inline void hri_sercomi2cs_write_CTRLB_AACKEN_bit(const void *const hw, bool value)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->I2CS.CTRLB.reg;
+	tmp &= ~SERCOM_I2CS_CTRLB_AACKEN;
+	tmp |= value << SERCOM_I2CS_CTRLB_AACKEN_Pos;
+	((Sercom *)hw)->I2CS.CTRLB.reg = tmp;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cs_clear_CTRLB_AACKEN_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLB.reg &= ~SERCOM_I2CS_CTRLB_AACKEN;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cs_toggle_CTRLB_AACKEN_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLB.reg ^= SERCOM_I2CS_CTRLB_AACKEN;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cs_set_CTRLB_ACKACT_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLB.reg |= SERCOM_I2CS_CTRLB_ACKACT;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomi2cs_get_CTRLB_ACKACT_bit(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CS.CTRLB.reg;
+	tmp = (tmp & SERCOM_I2CS_CTRLB_ACKACT) >> SERCOM_I2CS_CTRLB_ACKACT_Pos;
+	return (bool)tmp;
+}
+
+static inline void hri_sercomi2cs_write_CTRLB_ACKACT_bit(const void *const hw, bool value)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->I2CS.CTRLB.reg;
+	tmp &= ~SERCOM_I2CS_CTRLB_ACKACT;
+	tmp |= value << SERCOM_I2CS_CTRLB_ACKACT_Pos;
+	((Sercom *)hw)->I2CS.CTRLB.reg = tmp;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cs_clear_CTRLB_ACKACT_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLB.reg &= ~SERCOM_I2CS_CTRLB_ACKACT;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cs_toggle_CTRLB_ACKACT_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLB.reg ^= SERCOM_I2CS_CTRLB_ACKACT;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cs_set_CTRLB_AMODE_bf(const void *const hw, hri_sercomi2cs_ctrlb_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLB.reg |= SERCOM_I2CS_CTRLB_AMODE(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cs_ctrlb_reg_t hri_sercomi2cs_get_CTRLB_AMODE_bf(const void *const          hw,
+                                                                           hri_sercomi2cs_ctrlb_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CS.CTRLB.reg;
+	tmp = (tmp & SERCOM_I2CS_CTRLB_AMODE(mask)) >> SERCOM_I2CS_CTRLB_AMODE_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomi2cs_write_CTRLB_AMODE_bf(const void *const hw, hri_sercomi2cs_ctrlb_reg_t data)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->I2CS.CTRLB.reg;
+	tmp &= ~SERCOM_I2CS_CTRLB_AMODE_Msk;
+	tmp |= SERCOM_I2CS_CTRLB_AMODE(data);
+	((Sercom *)hw)->I2CS.CTRLB.reg = tmp;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cs_clear_CTRLB_AMODE_bf(const void *const hw, hri_sercomi2cs_ctrlb_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLB.reg &= ~SERCOM_I2CS_CTRLB_AMODE(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cs_toggle_CTRLB_AMODE_bf(const void *const hw, hri_sercomi2cs_ctrlb_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLB.reg ^= SERCOM_I2CS_CTRLB_AMODE(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cs_ctrlb_reg_t hri_sercomi2cs_read_CTRLB_AMODE_bf(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CS.CTRLB.reg;
+	tmp = (tmp & SERCOM_I2CS_CTRLB_AMODE_Msk) >> SERCOM_I2CS_CTRLB_AMODE_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomi2cs_set_CTRLB_CMD_bf(const void *const hw, hri_sercomi2cs_ctrlb_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLB.reg |= SERCOM_I2CS_CTRLB_CMD(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cs_ctrlb_reg_t hri_sercomi2cs_get_CTRLB_CMD_bf(const void *const          hw,
+                                                                         hri_sercomi2cs_ctrlb_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CS.CTRLB.reg;
+	tmp = (tmp & SERCOM_I2CS_CTRLB_CMD(mask)) >> SERCOM_I2CS_CTRLB_CMD_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomi2cs_write_CTRLB_CMD_bf(const void *const hw, hri_sercomi2cs_ctrlb_reg_t data)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->I2CS.CTRLB.reg;
+	tmp &= ~SERCOM_I2CS_CTRLB_CMD_Msk;
+	tmp |= SERCOM_I2CS_CTRLB_CMD(data);
+	((Sercom *)hw)->I2CS.CTRLB.reg = tmp;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cs_clear_CTRLB_CMD_bf(const void *const hw, hri_sercomi2cs_ctrlb_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLB.reg &= ~SERCOM_I2CS_CTRLB_CMD(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cs_toggle_CTRLB_CMD_bf(const void *const hw, hri_sercomi2cs_ctrlb_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLB.reg ^= SERCOM_I2CS_CTRLB_CMD(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cs_ctrlb_reg_t hri_sercomi2cs_read_CTRLB_CMD_bf(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CS.CTRLB.reg;
+	tmp = (tmp & SERCOM_I2CS_CTRLB_CMD_Msk) >> SERCOM_I2CS_CTRLB_CMD_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomi2cs_set_CTRLB_reg(const void *const hw, hri_sercomi2cs_ctrlb_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLB.reg |= mask;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cs_ctrlb_reg_t hri_sercomi2cs_get_CTRLB_reg(const void *const          hw,
+                                                                      hri_sercomi2cs_ctrlb_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CS.CTRLB.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline void hri_sercomi2cs_write_CTRLB_reg(const void *const hw, hri_sercomi2cs_ctrlb_reg_t data)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLB.reg = data;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cs_clear_CTRLB_reg(const void *const hw, hri_sercomi2cs_ctrlb_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLB.reg &= ~mask;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cs_toggle_CTRLB_reg(const void *const hw, hri_sercomi2cs_ctrlb_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLB.reg ^= mask;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cs_ctrlb_reg_t hri_sercomi2cs_read_CTRLB_reg(const void *const hw)
+{
+	return ((Sercom *)hw)->I2CS.CTRLB.reg;
+}
+
+static inline void hri_sercomspi_set_CTRLB_PLOADEN_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLB.reg |= SERCOM_SPI_CTRLB_PLOADEN;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomspi_get_CTRLB_PLOADEN_bit(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->SPI.CTRLB.reg;
+	tmp = (tmp & SERCOM_SPI_CTRLB_PLOADEN) >> SERCOM_SPI_CTRLB_PLOADEN_Pos;
+	return (bool)tmp;
+}
+
+static inline void hri_sercomspi_write_CTRLB_PLOADEN_bit(const void *const hw, bool value)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->SPI.CTRLB.reg;
+	tmp &= ~SERCOM_SPI_CTRLB_PLOADEN;
+	tmp |= value << SERCOM_SPI_CTRLB_PLOADEN_Pos;
+	((Sercom *)hw)->SPI.CTRLB.reg = tmp;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_clear_CTRLB_PLOADEN_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLB.reg &= ~SERCOM_SPI_CTRLB_PLOADEN;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_toggle_CTRLB_PLOADEN_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLB.reg ^= SERCOM_SPI_CTRLB_PLOADEN;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_set_CTRLB_SSDE_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLB.reg |= SERCOM_SPI_CTRLB_SSDE;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomspi_get_CTRLB_SSDE_bit(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->SPI.CTRLB.reg;
+	tmp = (tmp & SERCOM_SPI_CTRLB_SSDE) >> SERCOM_SPI_CTRLB_SSDE_Pos;
+	return (bool)tmp;
+}
+
+static inline void hri_sercomspi_write_CTRLB_SSDE_bit(const void *const hw, bool value)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->SPI.CTRLB.reg;
+	tmp &= ~SERCOM_SPI_CTRLB_SSDE;
+	tmp |= value << SERCOM_SPI_CTRLB_SSDE_Pos;
+	((Sercom *)hw)->SPI.CTRLB.reg = tmp;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_clear_CTRLB_SSDE_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLB.reg &= ~SERCOM_SPI_CTRLB_SSDE;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_toggle_CTRLB_SSDE_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLB.reg ^= SERCOM_SPI_CTRLB_SSDE;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_set_CTRLB_MSSEN_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLB.reg |= SERCOM_SPI_CTRLB_MSSEN;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomspi_get_CTRLB_MSSEN_bit(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->SPI.CTRLB.reg;
+	tmp = (tmp & SERCOM_SPI_CTRLB_MSSEN) >> SERCOM_SPI_CTRLB_MSSEN_Pos;
+	return (bool)tmp;
+}
+
+static inline void hri_sercomspi_write_CTRLB_MSSEN_bit(const void *const hw, bool value)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->SPI.CTRLB.reg;
+	tmp &= ~SERCOM_SPI_CTRLB_MSSEN;
+	tmp |= value << SERCOM_SPI_CTRLB_MSSEN_Pos;
+	((Sercom *)hw)->SPI.CTRLB.reg = tmp;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_clear_CTRLB_MSSEN_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLB.reg &= ~SERCOM_SPI_CTRLB_MSSEN;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_toggle_CTRLB_MSSEN_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLB.reg ^= SERCOM_SPI_CTRLB_MSSEN;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_set_CTRLB_RXEN_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLB.reg |= SERCOM_SPI_CTRLB_RXEN;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomspi_get_CTRLB_RXEN_bit(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->SPI.CTRLB.reg;
+	tmp = (tmp & SERCOM_SPI_CTRLB_RXEN) >> SERCOM_SPI_CTRLB_RXEN_Pos;
+	return (bool)tmp;
+}
+
+static inline void hri_sercomspi_write_CTRLB_RXEN_bit(const void *const hw, bool value)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->SPI.CTRLB.reg;
+	tmp &= ~SERCOM_SPI_CTRLB_RXEN;
+	tmp |= value << SERCOM_SPI_CTRLB_RXEN_Pos;
+	((Sercom *)hw)->SPI.CTRLB.reg = tmp;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_clear_CTRLB_RXEN_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLB.reg &= ~SERCOM_SPI_CTRLB_RXEN;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_toggle_CTRLB_RXEN_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLB.reg ^= SERCOM_SPI_CTRLB_RXEN;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_set_CTRLB_CHSIZE_bf(const void *const hw, hri_sercomspi_ctrlb_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLB.reg |= SERCOM_SPI_CTRLB_CHSIZE(mask);
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomspi_ctrlb_reg_t hri_sercomspi_get_CTRLB_CHSIZE_bf(const void *const         hw,
+                                                                          hri_sercomspi_ctrlb_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->SPI.CTRLB.reg;
+	tmp = (tmp & SERCOM_SPI_CTRLB_CHSIZE(mask)) >> SERCOM_SPI_CTRLB_CHSIZE_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomspi_write_CTRLB_CHSIZE_bf(const void *const hw, hri_sercomspi_ctrlb_reg_t data)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->SPI.CTRLB.reg;
+	tmp &= ~SERCOM_SPI_CTRLB_CHSIZE_Msk;
+	tmp |= SERCOM_SPI_CTRLB_CHSIZE(data);
+	((Sercom *)hw)->SPI.CTRLB.reg = tmp;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_clear_CTRLB_CHSIZE_bf(const void *const hw, hri_sercomspi_ctrlb_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLB.reg &= ~SERCOM_SPI_CTRLB_CHSIZE(mask);
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_toggle_CTRLB_CHSIZE_bf(const void *const hw, hri_sercomspi_ctrlb_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLB.reg ^= SERCOM_SPI_CTRLB_CHSIZE(mask);
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomspi_ctrlb_reg_t hri_sercomspi_read_CTRLB_CHSIZE_bf(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->SPI.CTRLB.reg;
+	tmp = (tmp & SERCOM_SPI_CTRLB_CHSIZE_Msk) >> SERCOM_SPI_CTRLB_CHSIZE_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomspi_set_CTRLB_AMODE_bf(const void *const hw, hri_sercomspi_ctrlb_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLB.reg |= SERCOM_SPI_CTRLB_AMODE(mask);
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomspi_ctrlb_reg_t hri_sercomspi_get_CTRLB_AMODE_bf(const void *const         hw,
+                                                                         hri_sercomspi_ctrlb_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->SPI.CTRLB.reg;
+	tmp = (tmp & SERCOM_SPI_CTRLB_AMODE(mask)) >> SERCOM_SPI_CTRLB_AMODE_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomspi_write_CTRLB_AMODE_bf(const void *const hw, hri_sercomspi_ctrlb_reg_t data)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->SPI.CTRLB.reg;
+	tmp &= ~SERCOM_SPI_CTRLB_AMODE_Msk;
+	tmp |= SERCOM_SPI_CTRLB_AMODE(data);
+	((Sercom *)hw)->SPI.CTRLB.reg = tmp;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_clear_CTRLB_AMODE_bf(const void *const hw, hri_sercomspi_ctrlb_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLB.reg &= ~SERCOM_SPI_CTRLB_AMODE(mask);
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_toggle_CTRLB_AMODE_bf(const void *const hw, hri_sercomspi_ctrlb_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLB.reg ^= SERCOM_SPI_CTRLB_AMODE(mask);
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomspi_ctrlb_reg_t hri_sercomspi_read_CTRLB_AMODE_bf(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->SPI.CTRLB.reg;
+	tmp = (tmp & SERCOM_SPI_CTRLB_AMODE_Msk) >> SERCOM_SPI_CTRLB_AMODE_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomspi_set_CTRLB_reg(const void *const hw, hri_sercomspi_ctrlb_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLB.reg |= mask;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomspi_ctrlb_reg_t hri_sercomspi_get_CTRLB_reg(const void *const         hw,
+                                                                    hri_sercomspi_ctrlb_reg_t mask)
+{
+	uint32_t tmp;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	tmp = ((Sercom *)hw)->SPI.CTRLB.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline void hri_sercomspi_write_CTRLB_reg(const void *const hw, hri_sercomspi_ctrlb_reg_t data)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLB.reg = data;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_clear_CTRLB_reg(const void *const hw, hri_sercomspi_ctrlb_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLB.reg &= ~mask;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_toggle_CTRLB_reg(const void *const hw, hri_sercomspi_ctrlb_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLB.reg ^= mask;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomspi_ctrlb_reg_t hri_sercomspi_read_CTRLB_reg(const void *const hw)
+{
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	return ((Sercom *)hw)->SPI.CTRLB.reg;
 }
 
 static inline void hri_sercomusart_set_CTRLB_SBMODE_bit(const void *const hw)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
 	((Sercom *)hw)->USART.CTRLB.reg |= SERCOM_USART_CTRLB_SBMODE;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5604,6 +4565,7 @@ static inline void hri_sercomusart_write_CTRLB_SBMODE_bit(const void *const hw, 
 	tmp &= ~SERCOM_USART_CTRLB_SBMODE;
 	tmp |= value << SERCOM_USART_CTRLB_SBMODE_Pos;
 	((Sercom *)hw)->USART.CTRLB.reg = tmp;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5611,6 +4573,7 @@ static inline void hri_sercomusart_clear_CTRLB_SBMODE_bit(const void *const hw)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
 	((Sercom *)hw)->USART.CTRLB.reg &= ~SERCOM_USART_CTRLB_SBMODE;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5618,6 +4581,7 @@ static inline void hri_sercomusart_toggle_CTRLB_SBMODE_bit(const void *const hw)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
 	((Sercom *)hw)->USART.CTRLB.reg ^= SERCOM_USART_CTRLB_SBMODE;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5625,6 +4589,7 @@ static inline void hri_sercomusart_set_CTRLB_COLDEN_bit(const void *const hw)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
 	((Sercom *)hw)->USART.CTRLB.reg |= SERCOM_USART_CTRLB_COLDEN;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5644,6 +4609,7 @@ static inline void hri_sercomusart_write_CTRLB_COLDEN_bit(const void *const hw, 
 	tmp &= ~SERCOM_USART_CTRLB_COLDEN;
 	tmp |= value << SERCOM_USART_CTRLB_COLDEN_Pos;
 	((Sercom *)hw)->USART.CTRLB.reg = tmp;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5651,6 +4617,7 @@ static inline void hri_sercomusart_clear_CTRLB_COLDEN_bit(const void *const hw)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
 	((Sercom *)hw)->USART.CTRLB.reg &= ~SERCOM_USART_CTRLB_COLDEN;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5658,6 +4625,7 @@ static inline void hri_sercomusart_toggle_CTRLB_COLDEN_bit(const void *const hw)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
 	((Sercom *)hw)->USART.CTRLB.reg ^= SERCOM_USART_CTRLB_COLDEN;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5665,6 +4633,7 @@ static inline void hri_sercomusart_set_CTRLB_SFDE_bit(const void *const hw)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
 	((Sercom *)hw)->USART.CTRLB.reg |= SERCOM_USART_CTRLB_SFDE;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5684,6 +4653,7 @@ static inline void hri_sercomusart_write_CTRLB_SFDE_bit(const void *const hw, bo
 	tmp &= ~SERCOM_USART_CTRLB_SFDE;
 	tmp |= value << SERCOM_USART_CTRLB_SFDE_Pos;
 	((Sercom *)hw)->USART.CTRLB.reg = tmp;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5691,6 +4661,7 @@ static inline void hri_sercomusart_clear_CTRLB_SFDE_bit(const void *const hw)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
 	((Sercom *)hw)->USART.CTRLB.reg &= ~SERCOM_USART_CTRLB_SFDE;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5698,6 +4669,7 @@ static inline void hri_sercomusart_toggle_CTRLB_SFDE_bit(const void *const hw)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
 	((Sercom *)hw)->USART.CTRLB.reg ^= SERCOM_USART_CTRLB_SFDE;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5705,6 +4677,7 @@ static inline void hri_sercomusart_set_CTRLB_ENC_bit(const void *const hw)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
 	((Sercom *)hw)->USART.CTRLB.reg |= SERCOM_USART_CTRLB_ENC;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5724,6 +4697,7 @@ static inline void hri_sercomusart_write_CTRLB_ENC_bit(const void *const hw, boo
 	tmp &= ~SERCOM_USART_CTRLB_ENC;
 	tmp |= value << SERCOM_USART_CTRLB_ENC_Pos;
 	((Sercom *)hw)->USART.CTRLB.reg = tmp;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5731,6 +4705,7 @@ static inline void hri_sercomusart_clear_CTRLB_ENC_bit(const void *const hw)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
 	((Sercom *)hw)->USART.CTRLB.reg &= ~SERCOM_USART_CTRLB_ENC;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5738,6 +4713,7 @@ static inline void hri_sercomusart_toggle_CTRLB_ENC_bit(const void *const hw)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
 	((Sercom *)hw)->USART.CTRLB.reg ^= SERCOM_USART_CTRLB_ENC;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5745,6 +4721,7 @@ static inline void hri_sercomusart_set_CTRLB_PMODE_bit(const void *const hw)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
 	((Sercom *)hw)->USART.CTRLB.reg |= SERCOM_USART_CTRLB_PMODE;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5764,6 +4741,7 @@ static inline void hri_sercomusart_write_CTRLB_PMODE_bit(const void *const hw, b
 	tmp &= ~SERCOM_USART_CTRLB_PMODE;
 	tmp |= value << SERCOM_USART_CTRLB_PMODE_Pos;
 	((Sercom *)hw)->USART.CTRLB.reg = tmp;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5771,6 +4749,7 @@ static inline void hri_sercomusart_clear_CTRLB_PMODE_bit(const void *const hw)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
 	((Sercom *)hw)->USART.CTRLB.reg &= ~SERCOM_USART_CTRLB_PMODE;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5778,6 +4757,7 @@ static inline void hri_sercomusart_toggle_CTRLB_PMODE_bit(const void *const hw)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
 	((Sercom *)hw)->USART.CTRLB.reg ^= SERCOM_USART_CTRLB_PMODE;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5785,6 +4765,7 @@ static inline void hri_sercomusart_set_CTRLB_TXEN_bit(const void *const hw)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
 	((Sercom *)hw)->USART.CTRLB.reg |= SERCOM_USART_CTRLB_TXEN;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5804,6 +4785,7 @@ static inline void hri_sercomusart_write_CTRLB_TXEN_bit(const void *const hw, bo
 	tmp &= ~SERCOM_USART_CTRLB_TXEN;
 	tmp |= value << SERCOM_USART_CTRLB_TXEN_Pos;
 	((Sercom *)hw)->USART.CTRLB.reg = tmp;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5811,6 +4793,7 @@ static inline void hri_sercomusart_clear_CTRLB_TXEN_bit(const void *const hw)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
 	((Sercom *)hw)->USART.CTRLB.reg &= ~SERCOM_USART_CTRLB_TXEN;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5818,6 +4801,7 @@ static inline void hri_sercomusart_toggle_CTRLB_TXEN_bit(const void *const hw)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
 	((Sercom *)hw)->USART.CTRLB.reg ^= SERCOM_USART_CTRLB_TXEN;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5825,6 +4809,7 @@ static inline void hri_sercomusart_set_CTRLB_RXEN_bit(const void *const hw)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
 	((Sercom *)hw)->USART.CTRLB.reg |= SERCOM_USART_CTRLB_RXEN;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5844,6 +4829,7 @@ static inline void hri_sercomusart_write_CTRLB_RXEN_bit(const void *const hw, bo
 	tmp &= ~SERCOM_USART_CTRLB_RXEN;
 	tmp |= value << SERCOM_USART_CTRLB_RXEN_Pos;
 	((Sercom *)hw)->USART.CTRLB.reg = tmp;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5851,6 +4837,7 @@ static inline void hri_sercomusart_clear_CTRLB_RXEN_bit(const void *const hw)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
 	((Sercom *)hw)->USART.CTRLB.reg &= ~SERCOM_USART_CTRLB_RXEN;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5858,6 +4845,7 @@ static inline void hri_sercomusart_toggle_CTRLB_RXEN_bit(const void *const hw)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
 	((Sercom *)hw)->USART.CTRLB.reg ^= SERCOM_USART_CTRLB_RXEN;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5865,6 +4853,7 @@ static inline void hri_sercomusart_set_CTRLB_CHSIZE_bf(const void *const hw, hri
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
 	((Sercom *)hw)->USART.CTRLB.reg |= SERCOM_USART_CTRLB_CHSIZE(mask);
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5885,6 +4874,7 @@ static inline void hri_sercomusart_write_CTRLB_CHSIZE_bf(const void *const hw, h
 	tmp &= ~SERCOM_USART_CTRLB_CHSIZE_Msk;
 	tmp |= SERCOM_USART_CTRLB_CHSIZE(data);
 	((Sercom *)hw)->USART.CTRLB.reg = tmp;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5892,6 +4882,7 @@ static inline void hri_sercomusart_clear_CTRLB_CHSIZE_bf(const void *const hw, h
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
 	((Sercom *)hw)->USART.CTRLB.reg &= ~SERCOM_USART_CTRLB_CHSIZE(mask);
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5899,6 +4890,7 @@ static inline void hri_sercomusart_toggle_CTRLB_CHSIZE_bf(const void *const hw, 
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
 	((Sercom *)hw)->USART.CTRLB.reg ^= SERCOM_USART_CTRLB_CHSIZE(mask);
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5914,6 +4906,7 @@ static inline void hri_sercomusart_set_CTRLB_LINCMD_bf(const void *const hw, hri
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
 	((Sercom *)hw)->USART.CTRLB.reg |= SERCOM_USART_CTRLB_LINCMD(mask);
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5934,6 +4927,7 @@ static inline void hri_sercomusart_write_CTRLB_LINCMD_bf(const void *const hw, h
 	tmp &= ~SERCOM_USART_CTRLB_LINCMD_Msk;
 	tmp |= SERCOM_USART_CTRLB_LINCMD(data);
 	((Sercom *)hw)->USART.CTRLB.reg = tmp;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5941,6 +4935,7 @@ static inline void hri_sercomusart_clear_CTRLB_LINCMD_bf(const void *const hw, h
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
 	((Sercom *)hw)->USART.CTRLB.reg &= ~SERCOM_USART_CTRLB_LINCMD(mask);
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5948,6 +4943,7 @@ static inline void hri_sercomusart_toggle_CTRLB_LINCMD_bf(const void *const hw, 
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
 	((Sercom *)hw)->USART.CTRLB.reg ^= SERCOM_USART_CTRLB_LINCMD(mask);
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5963,6 +4959,7 @@ static inline void hri_sercomusart_set_CTRLB_reg(const void *const hw, hri_serco
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
 	((Sercom *)hw)->USART.CTRLB.reg |= mask;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5970,6 +4967,7 @@ static inline hri_sercomusart_ctrlb_reg_t hri_sercomusart_get_CTRLB_reg(const vo
                                                                         hri_sercomusart_ctrlb_reg_t mask)
 {
 	uint32_t tmp;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	tmp = ((Sercom *)hw)->USART.CTRLB.reg;
 	tmp &= mask;
 	return tmp;
@@ -5979,6 +4977,7 @@ static inline void hri_sercomusart_write_CTRLB_reg(const void *const hw, hri_ser
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
 	((Sercom *)hw)->USART.CTRLB.reg = data;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5986,6 +4985,7 @@ static inline void hri_sercomusart_clear_CTRLB_reg(const void *const hw, hri_ser
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
 	((Sercom *)hw)->USART.CTRLB.reg &= ~mask;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -5993,12 +4993,358 @@ static inline void hri_sercomusart_toggle_CTRLB_reg(const void *const hw, hri_se
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
 	((Sercom *)hw)->USART.CTRLB.reg ^= mask;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
 static inline hri_sercomusart_ctrlb_reg_t hri_sercomusart_read_CTRLB_reg(const void *const hw)
 {
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
 	return ((Sercom *)hw)->USART.CTRLB.reg;
+}
+
+static inline void hri_sercomi2cm_set_CTRLC_DATA32B_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLC.reg |= SERCOM_I2CM_CTRLC_DATA32B;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomi2cm_get_CTRLC_DATA32B_bit(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CM.CTRLC.reg;
+	tmp = (tmp & SERCOM_I2CM_CTRLC_DATA32B) >> SERCOM_I2CM_CTRLC_DATA32B_Pos;
+	return (bool)tmp;
+}
+
+static inline void hri_sercomi2cm_write_CTRLC_DATA32B_bit(const void *const hw, bool value)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->I2CM.CTRLC.reg;
+	tmp &= ~SERCOM_I2CM_CTRLC_DATA32B;
+	tmp |= value << SERCOM_I2CM_CTRLC_DATA32B_Pos;
+	((Sercom *)hw)->I2CM.CTRLC.reg = tmp;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_clear_CTRLC_DATA32B_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLC.reg &= ~SERCOM_I2CM_CTRLC_DATA32B;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_toggle_CTRLC_DATA32B_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLC.reg ^= SERCOM_I2CM_CTRLC_DATA32B;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_set_CTRLC_reg(const void *const hw, hri_sercomi2cm_ctrlc_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLC.reg |= mask;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cm_ctrlc_reg_t hri_sercomi2cm_get_CTRLC_reg(const void *const          hw,
+                                                                      hri_sercomi2cm_ctrlc_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CM.CTRLC.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline void hri_sercomi2cm_write_CTRLC_reg(const void *const hw, hri_sercomi2cm_ctrlc_reg_t data)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLC.reg = data;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_clear_CTRLC_reg(const void *const hw, hri_sercomi2cm_ctrlc_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLC.reg &= ~mask;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_toggle_CTRLC_reg(const void *const hw, hri_sercomi2cm_ctrlc_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.CTRLC.reg ^= mask;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cm_ctrlc_reg_t hri_sercomi2cm_read_CTRLC_reg(const void *const hw)
+{
+	return ((Sercom *)hw)->I2CM.CTRLC.reg;
+}
+
+static inline void hri_sercomi2cs_set_CTRLC_DATA32B_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLC.reg |= SERCOM_I2CS_CTRLC_DATA32B;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomi2cs_get_CTRLC_DATA32B_bit(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CS.CTRLC.reg;
+	tmp = (tmp & SERCOM_I2CS_CTRLC_DATA32B) >> SERCOM_I2CS_CTRLC_DATA32B_Pos;
+	return (bool)tmp;
+}
+
+static inline void hri_sercomi2cs_write_CTRLC_DATA32B_bit(const void *const hw, bool value)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->I2CS.CTRLC.reg;
+	tmp &= ~SERCOM_I2CS_CTRLC_DATA32B;
+	tmp |= value << SERCOM_I2CS_CTRLC_DATA32B_Pos;
+	((Sercom *)hw)->I2CS.CTRLC.reg = tmp;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cs_clear_CTRLC_DATA32B_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLC.reg &= ~SERCOM_I2CS_CTRLC_DATA32B;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cs_toggle_CTRLC_DATA32B_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLC.reg ^= SERCOM_I2CS_CTRLC_DATA32B;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cs_set_CTRLC_SDASETUP_bf(const void *const hw, hri_sercomi2cs_ctrlc_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLC.reg |= SERCOM_I2CS_CTRLC_SDASETUP(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cs_ctrlc_reg_t hri_sercomi2cs_get_CTRLC_SDASETUP_bf(const void *const          hw,
+                                                                              hri_sercomi2cs_ctrlc_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CS.CTRLC.reg;
+	tmp = (tmp & SERCOM_I2CS_CTRLC_SDASETUP(mask)) >> SERCOM_I2CS_CTRLC_SDASETUP_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomi2cs_write_CTRLC_SDASETUP_bf(const void *const hw, hri_sercomi2cs_ctrlc_reg_t data)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->I2CS.CTRLC.reg;
+	tmp &= ~SERCOM_I2CS_CTRLC_SDASETUP_Msk;
+	tmp |= SERCOM_I2CS_CTRLC_SDASETUP(data);
+	((Sercom *)hw)->I2CS.CTRLC.reg = tmp;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cs_clear_CTRLC_SDASETUP_bf(const void *const hw, hri_sercomi2cs_ctrlc_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLC.reg &= ~SERCOM_I2CS_CTRLC_SDASETUP(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cs_toggle_CTRLC_SDASETUP_bf(const void *const hw, hri_sercomi2cs_ctrlc_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLC.reg ^= SERCOM_I2CS_CTRLC_SDASETUP(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cs_ctrlc_reg_t hri_sercomi2cs_read_CTRLC_SDASETUP_bf(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CS.CTRLC.reg;
+	tmp = (tmp & SERCOM_I2CS_CTRLC_SDASETUP_Msk) >> SERCOM_I2CS_CTRLC_SDASETUP_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomi2cs_set_CTRLC_reg(const void *const hw, hri_sercomi2cs_ctrlc_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLC.reg |= mask;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cs_ctrlc_reg_t hri_sercomi2cs_get_CTRLC_reg(const void *const          hw,
+                                                                      hri_sercomi2cs_ctrlc_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CS.CTRLC.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline void hri_sercomi2cs_write_CTRLC_reg(const void *const hw, hri_sercomi2cs_ctrlc_reg_t data)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLC.reg = data;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cs_clear_CTRLC_reg(const void *const hw, hri_sercomi2cs_ctrlc_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLC.reg &= ~mask;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cs_toggle_CTRLC_reg(const void *const hw, hri_sercomi2cs_ctrlc_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.CTRLC.reg ^= mask;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cs_ctrlc_reg_t hri_sercomi2cs_read_CTRLC_reg(const void *const hw)
+{
+	return ((Sercom *)hw)->I2CS.CTRLC.reg;
+}
+
+static inline void hri_sercomspi_set_CTRLC_DATA32B_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLC.reg |= SERCOM_SPI_CTRLC_DATA32B;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomspi_get_CTRLC_DATA32B_bit(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->SPI.CTRLC.reg;
+	tmp = (tmp & SERCOM_SPI_CTRLC_DATA32B) >> SERCOM_SPI_CTRLC_DATA32B_Pos;
+	return (bool)tmp;
+}
+
+static inline void hri_sercomspi_write_CTRLC_DATA32B_bit(const void *const hw, bool value)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->SPI.CTRLC.reg;
+	tmp &= ~SERCOM_SPI_CTRLC_DATA32B;
+	tmp |= value << SERCOM_SPI_CTRLC_DATA32B_Pos;
+	((Sercom *)hw)->SPI.CTRLC.reg = tmp;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_clear_CTRLC_DATA32B_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLC.reg &= ~SERCOM_SPI_CTRLC_DATA32B;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_toggle_CTRLC_DATA32B_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLC.reg ^= SERCOM_SPI_CTRLC_DATA32B;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_set_CTRLC_ICSPACE_bf(const void *const hw, hri_sercomspi_ctrlc_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLC.reg |= SERCOM_SPI_CTRLC_ICSPACE(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomspi_ctrlc_reg_t hri_sercomspi_get_CTRLC_ICSPACE_bf(const void *const         hw,
+                                                                           hri_sercomspi_ctrlc_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->SPI.CTRLC.reg;
+	tmp = (tmp & SERCOM_SPI_CTRLC_ICSPACE(mask)) >> SERCOM_SPI_CTRLC_ICSPACE_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomspi_write_CTRLC_ICSPACE_bf(const void *const hw, hri_sercomspi_ctrlc_reg_t data)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->SPI.CTRLC.reg;
+	tmp &= ~SERCOM_SPI_CTRLC_ICSPACE_Msk;
+	tmp |= SERCOM_SPI_CTRLC_ICSPACE(data);
+	((Sercom *)hw)->SPI.CTRLC.reg = tmp;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_clear_CTRLC_ICSPACE_bf(const void *const hw, hri_sercomspi_ctrlc_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLC.reg &= ~SERCOM_SPI_CTRLC_ICSPACE(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_toggle_CTRLC_ICSPACE_bf(const void *const hw, hri_sercomspi_ctrlc_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLC.reg ^= SERCOM_SPI_CTRLC_ICSPACE(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomspi_ctrlc_reg_t hri_sercomspi_read_CTRLC_ICSPACE_bf(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->SPI.CTRLC.reg;
+	tmp = (tmp & SERCOM_SPI_CTRLC_ICSPACE_Msk) >> SERCOM_SPI_CTRLC_ICSPACE_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomspi_set_CTRLC_reg(const void *const hw, hri_sercomspi_ctrlc_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLC.reg |= mask;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomspi_ctrlc_reg_t hri_sercomspi_get_CTRLC_reg(const void *const         hw,
+                                                                    hri_sercomspi_ctrlc_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->SPI.CTRLC.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline void hri_sercomspi_write_CTRLC_reg(const void *const hw, hri_sercomspi_ctrlc_reg_t data)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLC.reg = data;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_clear_CTRLC_reg(const void *const hw, hri_sercomspi_ctrlc_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLC.reg &= ~mask;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_toggle_CTRLC_reg(const void *const hw, hri_sercomspi_ctrlc_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.CTRLC.reg ^= mask;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomspi_ctrlc_reg_t hri_sercomspi_read_CTRLC_reg(const void *const hw)
+{
+	return ((Sercom *)hw)->SPI.CTRLC.reg;
 }
 
 static inline void hri_sercomusart_set_CTRLC_INACK_bit(const void *const hw)
@@ -6368,6 +5714,670 @@ static inline hri_sercomusart_ctrlc_reg_t hri_sercomusart_read_CTRLC_reg(const v
 	return ((Sercom *)hw)->USART.CTRLC.reg;
 }
 
+static inline void hri_sercomi2cm_set_BAUD_BAUD_bf(const void *const hw, hri_sercomi2cm_baud_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.BAUD.reg |= SERCOM_I2CM_BAUD_BAUD(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cm_baud_reg_t hri_sercomi2cm_get_BAUD_BAUD_bf(const void *const         hw,
+                                                                        hri_sercomi2cm_baud_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CM.BAUD.reg;
+	tmp = (tmp & SERCOM_I2CM_BAUD_BAUD(mask)) >> SERCOM_I2CM_BAUD_BAUD_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomi2cm_write_BAUD_BAUD_bf(const void *const hw, hri_sercomi2cm_baud_reg_t data)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->I2CM.BAUD.reg;
+	tmp &= ~SERCOM_I2CM_BAUD_BAUD_Msk;
+	tmp |= SERCOM_I2CM_BAUD_BAUD(data);
+	((Sercom *)hw)->I2CM.BAUD.reg = tmp;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_clear_BAUD_BAUD_bf(const void *const hw, hri_sercomi2cm_baud_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.BAUD.reg &= ~SERCOM_I2CM_BAUD_BAUD(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_toggle_BAUD_BAUD_bf(const void *const hw, hri_sercomi2cm_baud_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.BAUD.reg ^= SERCOM_I2CM_BAUD_BAUD(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cm_baud_reg_t hri_sercomi2cm_read_BAUD_BAUD_bf(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CM.BAUD.reg;
+	tmp = (tmp & SERCOM_I2CM_BAUD_BAUD_Msk) >> SERCOM_I2CM_BAUD_BAUD_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomi2cm_set_BAUD_BAUDLOW_bf(const void *const hw, hri_sercomi2cm_baud_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.BAUD.reg |= SERCOM_I2CM_BAUD_BAUDLOW(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cm_baud_reg_t hri_sercomi2cm_get_BAUD_BAUDLOW_bf(const void *const         hw,
+                                                                           hri_sercomi2cm_baud_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CM.BAUD.reg;
+	tmp = (tmp & SERCOM_I2CM_BAUD_BAUDLOW(mask)) >> SERCOM_I2CM_BAUD_BAUDLOW_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomi2cm_write_BAUD_BAUDLOW_bf(const void *const hw, hri_sercomi2cm_baud_reg_t data)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->I2CM.BAUD.reg;
+	tmp &= ~SERCOM_I2CM_BAUD_BAUDLOW_Msk;
+	tmp |= SERCOM_I2CM_BAUD_BAUDLOW(data);
+	((Sercom *)hw)->I2CM.BAUD.reg = tmp;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_clear_BAUD_BAUDLOW_bf(const void *const hw, hri_sercomi2cm_baud_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.BAUD.reg &= ~SERCOM_I2CM_BAUD_BAUDLOW(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_toggle_BAUD_BAUDLOW_bf(const void *const hw, hri_sercomi2cm_baud_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.BAUD.reg ^= SERCOM_I2CM_BAUD_BAUDLOW(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cm_baud_reg_t hri_sercomi2cm_read_BAUD_BAUDLOW_bf(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CM.BAUD.reg;
+	tmp = (tmp & SERCOM_I2CM_BAUD_BAUDLOW_Msk) >> SERCOM_I2CM_BAUD_BAUDLOW_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomi2cm_set_BAUD_HSBAUD_bf(const void *const hw, hri_sercomi2cm_baud_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.BAUD.reg |= SERCOM_I2CM_BAUD_HSBAUD(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cm_baud_reg_t hri_sercomi2cm_get_BAUD_HSBAUD_bf(const void *const         hw,
+                                                                          hri_sercomi2cm_baud_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CM.BAUD.reg;
+	tmp = (tmp & SERCOM_I2CM_BAUD_HSBAUD(mask)) >> SERCOM_I2CM_BAUD_HSBAUD_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomi2cm_write_BAUD_HSBAUD_bf(const void *const hw, hri_sercomi2cm_baud_reg_t data)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->I2CM.BAUD.reg;
+	tmp &= ~SERCOM_I2CM_BAUD_HSBAUD_Msk;
+	tmp |= SERCOM_I2CM_BAUD_HSBAUD(data);
+	((Sercom *)hw)->I2CM.BAUD.reg = tmp;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_clear_BAUD_HSBAUD_bf(const void *const hw, hri_sercomi2cm_baud_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.BAUD.reg &= ~SERCOM_I2CM_BAUD_HSBAUD(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_toggle_BAUD_HSBAUD_bf(const void *const hw, hri_sercomi2cm_baud_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.BAUD.reg ^= SERCOM_I2CM_BAUD_HSBAUD(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cm_baud_reg_t hri_sercomi2cm_read_BAUD_HSBAUD_bf(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CM.BAUD.reg;
+	tmp = (tmp & SERCOM_I2CM_BAUD_HSBAUD_Msk) >> SERCOM_I2CM_BAUD_HSBAUD_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomi2cm_set_BAUD_HSBAUDLOW_bf(const void *const hw, hri_sercomi2cm_baud_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.BAUD.reg |= SERCOM_I2CM_BAUD_HSBAUDLOW(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cm_baud_reg_t hri_sercomi2cm_get_BAUD_HSBAUDLOW_bf(const void *const         hw,
+                                                                             hri_sercomi2cm_baud_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CM.BAUD.reg;
+	tmp = (tmp & SERCOM_I2CM_BAUD_HSBAUDLOW(mask)) >> SERCOM_I2CM_BAUD_HSBAUDLOW_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomi2cm_write_BAUD_HSBAUDLOW_bf(const void *const hw, hri_sercomi2cm_baud_reg_t data)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->I2CM.BAUD.reg;
+	tmp &= ~SERCOM_I2CM_BAUD_HSBAUDLOW_Msk;
+	tmp |= SERCOM_I2CM_BAUD_HSBAUDLOW(data);
+	((Sercom *)hw)->I2CM.BAUD.reg = tmp;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_clear_BAUD_HSBAUDLOW_bf(const void *const hw, hri_sercomi2cm_baud_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.BAUD.reg &= ~SERCOM_I2CM_BAUD_HSBAUDLOW(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_toggle_BAUD_HSBAUDLOW_bf(const void *const hw, hri_sercomi2cm_baud_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.BAUD.reg ^= SERCOM_I2CM_BAUD_HSBAUDLOW(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cm_baud_reg_t hri_sercomi2cm_read_BAUD_HSBAUDLOW_bf(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CM.BAUD.reg;
+	tmp = (tmp & SERCOM_I2CM_BAUD_HSBAUDLOW_Msk) >> SERCOM_I2CM_BAUD_HSBAUDLOW_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomi2cm_set_BAUD_reg(const void *const hw, hri_sercomi2cm_baud_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.BAUD.reg |= mask;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cm_baud_reg_t hri_sercomi2cm_get_BAUD_reg(const void *const         hw,
+                                                                    hri_sercomi2cm_baud_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CM.BAUD.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline void hri_sercomi2cm_write_BAUD_reg(const void *const hw, hri_sercomi2cm_baud_reg_t data)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.BAUD.reg = data;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_clear_BAUD_reg(const void *const hw, hri_sercomi2cm_baud_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.BAUD.reg &= ~mask;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_toggle_BAUD_reg(const void *const hw, hri_sercomi2cm_baud_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.BAUD.reg ^= mask;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cm_baud_reg_t hri_sercomi2cm_read_BAUD_reg(const void *const hw)
+{
+	return ((Sercom *)hw)->I2CM.BAUD.reg;
+}
+
+static inline void hri_sercomspi_set_BAUD_BAUD_bf(const void *const hw, hri_sercomspi_baud_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.BAUD.reg |= SERCOM_SPI_BAUD_BAUD(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomspi_baud_reg_t hri_sercomspi_get_BAUD_BAUD_bf(const void *const        hw,
+                                                                      hri_sercomspi_baud_reg_t mask)
+{
+	uint8_t tmp;
+	tmp = ((Sercom *)hw)->SPI.BAUD.reg;
+	tmp = (tmp & SERCOM_SPI_BAUD_BAUD(mask)) >> SERCOM_SPI_BAUD_BAUD_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomspi_write_BAUD_BAUD_bf(const void *const hw, hri_sercomspi_baud_reg_t data)
+{
+	uint8_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->SPI.BAUD.reg;
+	tmp &= ~SERCOM_SPI_BAUD_BAUD_Msk;
+	tmp |= SERCOM_SPI_BAUD_BAUD(data);
+	((Sercom *)hw)->SPI.BAUD.reg = tmp;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_clear_BAUD_BAUD_bf(const void *const hw, hri_sercomspi_baud_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.BAUD.reg &= ~SERCOM_SPI_BAUD_BAUD(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_toggle_BAUD_BAUD_bf(const void *const hw, hri_sercomspi_baud_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.BAUD.reg ^= SERCOM_SPI_BAUD_BAUD(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomspi_baud_reg_t hri_sercomspi_read_BAUD_BAUD_bf(const void *const hw)
+{
+	uint8_t tmp;
+	tmp = ((Sercom *)hw)->SPI.BAUD.reg;
+	tmp = (tmp & SERCOM_SPI_BAUD_BAUD_Msk) >> SERCOM_SPI_BAUD_BAUD_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomspi_set_BAUD_reg(const void *const hw, hri_sercomspi_baud_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.BAUD.reg |= mask;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomspi_baud_reg_t hri_sercomspi_get_BAUD_reg(const void *const hw, hri_sercomspi_baud_reg_t mask)
+{
+	uint8_t tmp;
+	tmp = ((Sercom *)hw)->SPI.BAUD.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline void hri_sercomspi_write_BAUD_reg(const void *const hw, hri_sercomspi_baud_reg_t data)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.BAUD.reg = data;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_clear_BAUD_reg(const void *const hw, hri_sercomspi_baud_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.BAUD.reg &= ~mask;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_toggle_BAUD_reg(const void *const hw, hri_sercomspi_baud_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.BAUD.reg ^= mask;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomspi_baud_reg_t hri_sercomspi_read_BAUD_reg(const void *const hw)
+{
+	return ((Sercom *)hw)->SPI.BAUD.reg;
+}
+
+static inline void hri_sercomusart_set_BAUD_FRAC_BAUD_bf(const void *const hw, hri_sercomusart_baud_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->USART.BAUD.reg |= SERCOM_USART_BAUD_BAUD(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomusart_set_BAUD_FRACFP_BAUD_bf(const void *const hw, hri_sercomusart_baud_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->USART.BAUD.reg |= SERCOM_USART_BAUD_BAUD(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomusart_baud_reg_t hri_sercomusart_get_BAUD_FRAC_BAUD_bf(const void *const          hw,
+                                                                               hri_sercomusart_baud_reg_t mask)
+{
+	uint16_t tmp;
+	tmp = ((Sercom *)hw)->USART.BAUD.reg;
+	tmp = (tmp & SERCOM_USART_BAUD_BAUD(mask)) >> SERCOM_USART_BAUD_BAUD_Pos;
+	return tmp;
+}
+
+static inline hri_sercomusart_baud_reg_t hri_sercomusart_get_BAUD_FRACFP_BAUD_bf(const void *const          hw,
+                                                                                 hri_sercomusart_baud_reg_t mask)
+{
+	uint16_t tmp;
+	tmp = ((Sercom *)hw)->USART.BAUD.reg;
+	tmp = (tmp & SERCOM_USART_BAUD_BAUD(mask)) >> SERCOM_USART_BAUD_BAUD_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomusart_write_BAUD_FRAC_BAUD_bf(const void *const hw, hri_sercomusart_baud_reg_t data)
+{
+	uint16_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->USART.BAUD.reg;
+	tmp &= ~SERCOM_USART_BAUD_BAUD_Msk;
+	tmp |= SERCOM_USART_BAUD_BAUD(data);
+	((Sercom *)hw)->USART.BAUD.reg = tmp;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomusart_write_BAUD_FRACFP_BAUD_bf(const void *const hw, hri_sercomusart_baud_reg_t data)
+{
+	uint16_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->USART.BAUD.reg;
+	tmp &= ~SERCOM_USART_BAUD_BAUD_Msk;
+	tmp |= SERCOM_USART_BAUD_BAUD(data);
+	((Sercom *)hw)->USART.BAUD.reg = tmp;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomusart_clear_BAUD_FRAC_BAUD_bf(const void *const hw, hri_sercomusart_baud_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->USART.BAUD.reg &= ~SERCOM_USART_BAUD_BAUD(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomusart_clear_BAUD_FRACFP_BAUD_bf(const void *const hw, hri_sercomusart_baud_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->USART.BAUD.reg &= ~SERCOM_USART_BAUD_BAUD(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomusart_toggle_BAUD_FRAC_BAUD_bf(const void *const hw, hri_sercomusart_baud_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->USART.BAUD.reg ^= SERCOM_USART_BAUD_BAUD(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomusart_toggle_BAUD_FRACFP_BAUD_bf(const void *const hw, hri_sercomusart_baud_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->USART.BAUD.reg ^= SERCOM_USART_BAUD_BAUD(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomusart_baud_reg_t hri_sercomusart_read_BAUD_FRAC_BAUD_bf(const void *const hw)
+{
+	uint16_t tmp;
+	tmp = ((Sercom *)hw)->USART.BAUD.reg;
+	tmp = (tmp & SERCOM_USART_BAUD_BAUD_Msk) >> SERCOM_USART_BAUD_BAUD_Pos;
+	return tmp;
+}
+
+static inline hri_sercomusart_baud_reg_t hri_sercomusart_read_BAUD_FRACFP_BAUD_bf(const void *const hw)
+{
+	uint16_t tmp;
+	tmp = ((Sercom *)hw)->USART.BAUD.reg;
+	tmp = (tmp & SERCOM_USART_BAUD_BAUD_Msk) >> SERCOM_USART_BAUD_BAUD_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomusart_set_BAUD_FRAC_FP_bf(const void *const hw, hri_sercomusart_baud_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->USART.BAUD.reg |= SERCOM_USART_BAUD_FRAC_FP(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomusart_set_BAUD_FRACFP_FP_bf(const void *const hw, hri_sercomusart_baud_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->USART.BAUD.reg |= SERCOM_USART_BAUD_FRACFP_FP(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomusart_baud_reg_t hri_sercomusart_get_BAUD_FRAC_FP_bf(const void *const          hw,
+                                                                             hri_sercomusart_baud_reg_t mask)
+{
+	uint16_t tmp;
+	tmp = ((Sercom *)hw)->USART.BAUD.reg;
+	tmp = (tmp & SERCOM_USART_BAUD_FRAC_FP(mask)) >> SERCOM_USART_BAUD_FRAC_FP_Pos;
+	return tmp;
+}
+
+static inline hri_sercomusart_baud_reg_t hri_sercomusart_get_BAUD_FRACFP_FP_bf(const void *const          hw,
+                                                                               hri_sercomusart_baud_reg_t mask)
+{
+	uint16_t tmp;
+	tmp = ((Sercom *)hw)->USART.BAUD.reg;
+	tmp = (tmp & SERCOM_USART_BAUD_FRACFP_FP(mask)) >> SERCOM_USART_BAUD_FRACFP_FP_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomusart_write_BAUD_FRAC_FP_bf(const void *const hw, hri_sercomusart_baud_reg_t data)
+{
+	uint16_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->USART.BAUD.reg;
+	tmp &= ~SERCOM_USART_BAUD_FRAC_FP_Msk;
+	tmp |= SERCOM_USART_BAUD_FRAC_FP(data);
+	((Sercom *)hw)->USART.BAUD.reg = tmp;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomusart_write_BAUD_FRACFP_FP_bf(const void *const hw, hri_sercomusart_baud_reg_t data)
+{
+	uint16_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->USART.BAUD.reg;
+	tmp &= ~SERCOM_USART_BAUD_FRACFP_FP_Msk;
+	tmp |= SERCOM_USART_BAUD_FRACFP_FP(data);
+	((Sercom *)hw)->USART.BAUD.reg = tmp;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomusart_clear_BAUD_FRAC_FP_bf(const void *const hw, hri_sercomusart_baud_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->USART.BAUD.reg &= ~SERCOM_USART_BAUD_FRAC_FP(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomusart_clear_BAUD_FRACFP_FP_bf(const void *const hw, hri_sercomusart_baud_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->USART.BAUD.reg &= ~SERCOM_USART_BAUD_FRACFP_FP(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomusart_toggle_BAUD_FRAC_FP_bf(const void *const hw, hri_sercomusart_baud_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->USART.BAUD.reg ^= SERCOM_USART_BAUD_FRAC_FP(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomusart_toggle_BAUD_FRACFP_FP_bf(const void *const hw, hri_sercomusart_baud_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->USART.BAUD.reg ^= SERCOM_USART_BAUD_FRACFP_FP(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomusart_baud_reg_t hri_sercomusart_read_BAUD_FRAC_FP_bf(const void *const hw)
+{
+	uint16_t tmp;
+	tmp = ((Sercom *)hw)->USART.BAUD.reg;
+	tmp = (tmp & SERCOM_USART_BAUD_FRAC_FP_Msk) >> SERCOM_USART_BAUD_FRAC_FP_Pos;
+	return tmp;
+}
+
+static inline hri_sercomusart_baud_reg_t hri_sercomusart_read_BAUD_FRACFP_FP_bf(const void *const hw)
+{
+	uint16_t tmp;
+	tmp = ((Sercom *)hw)->USART.BAUD.reg;
+	tmp = (tmp & SERCOM_USART_BAUD_FRACFP_FP_Msk) >> SERCOM_USART_BAUD_FRACFP_FP_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomusart_set_BAUD_BAUD_bf(const void *const hw, hri_sercomusart_baud_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->USART.BAUD.reg |= SERCOM_USART_BAUD_BAUD(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomusart_set_BAUD_USARTFP_BAUD_bf(const void *const hw, hri_sercomusart_baud_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->USART.BAUD.reg |= SERCOM_USART_BAUD_BAUD(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomusart_baud_reg_t hri_sercomusart_get_BAUD_BAUD_bf(const void *const          hw,
+                                                                          hri_sercomusart_baud_reg_t mask)
+{
+	uint16_t tmp;
+	tmp = ((Sercom *)hw)->USART.BAUD.reg;
+	tmp = (tmp & SERCOM_USART_BAUD_BAUD(mask)) >> SERCOM_USART_BAUD_BAUD_Pos;
+	return tmp;
+}
+
+static inline hri_sercomusart_baud_reg_t hri_sercomusart_get_BAUD_USARTFP_BAUD_bf(const void *const          hw,
+                                                                                  hri_sercomusart_baud_reg_t mask)
+{
+	uint16_t tmp;
+	tmp = ((Sercom *)hw)->USART.BAUD.reg;
+	tmp = (tmp & SERCOM_USART_BAUD_BAUD(mask)) >> SERCOM_USART_BAUD_BAUD_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomusart_write_BAUD_BAUD_bf(const void *const hw, hri_sercomusart_baud_reg_t data)
+{
+	uint16_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->USART.BAUD.reg;
+	tmp &= ~SERCOM_USART_BAUD_BAUD_Msk;
+	tmp |= SERCOM_USART_BAUD_BAUD(data);
+	((Sercom *)hw)->USART.BAUD.reg = tmp;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomusart_write_BAUD_USARTFP_BAUD_bf(const void *const hw, hri_sercomusart_baud_reg_t data)
+{
+	uint16_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->USART.BAUD.reg;
+	tmp &= ~SERCOM_USART_BAUD_BAUD_Msk;
+	tmp |= SERCOM_USART_BAUD_BAUD(data);
+	((Sercom *)hw)->USART.BAUD.reg = tmp;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomusart_clear_BAUD_BAUD_bf(const void *const hw, hri_sercomusart_baud_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->USART.BAUD.reg &= ~SERCOM_USART_BAUD_BAUD(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomusart_clear_BAUD_USARTFP_BAUD_bf(const void *const hw, hri_sercomusart_baud_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->USART.BAUD.reg &= ~SERCOM_USART_BAUD_BAUD(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomusart_toggle_BAUD_BAUD_bf(const void *const hw, hri_sercomusart_baud_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->USART.BAUD.reg ^= SERCOM_USART_BAUD_BAUD(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomusart_toggle_BAUD_USARTFP_BAUD_bf(const void *const hw, hri_sercomusart_baud_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->USART.BAUD.reg ^= SERCOM_USART_BAUD_BAUD(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomusart_baud_reg_t hri_sercomusart_read_BAUD_BAUD_bf(const void *const hw)
+{
+	uint16_t tmp;
+	tmp = ((Sercom *)hw)->USART.BAUD.reg;
+	tmp = (tmp & SERCOM_USART_BAUD_BAUD_Msk) >> SERCOM_USART_BAUD_BAUD_Pos;
+	return tmp;
+}
+
+static inline hri_sercomusart_baud_reg_t hri_sercomusart_read_BAUD_USARTFP_BAUD_bf(const void *const hw)
+{
+	uint16_t tmp;
+	tmp = ((Sercom *)hw)->USART.BAUD.reg;
+	tmp = (tmp & SERCOM_USART_BAUD_BAUD_Msk) >> SERCOM_USART_BAUD_BAUD_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomusart_set_BAUD_reg(const void *const hw, hri_sercomusart_baud_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->USART.BAUD.reg |= mask;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomusart_baud_reg_t hri_sercomusart_get_BAUD_reg(const void *const          hw,
+                                                                      hri_sercomusart_baud_reg_t mask)
+{
+	uint16_t tmp;
+	tmp = ((Sercom *)hw)->USART.BAUD.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline void hri_sercomusart_write_BAUD_reg(const void *const hw, hri_sercomusart_baud_reg_t data)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->USART.BAUD.reg = data;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomusart_clear_BAUD_reg(const void *const hw, hri_sercomusart_baud_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->USART.BAUD.reg &= ~mask;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomusart_toggle_BAUD_reg(const void *const hw, hri_sercomusart_baud_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->USART.BAUD.reg ^= mask;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomusart_baud_reg_t hri_sercomusart_read_BAUD_reg(const void *const hw)
+{
+	return ((Sercom *)hw)->USART.BAUD.reg;
+}
+
 static inline void hri_sercomusart_set_RXPL_RXPL_bf(const void *const hw, hri_sercomusart_rxpl_reg_t mask)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
@@ -6459,1572 +6469,11 @@ static inline hri_sercomusart_rxpl_reg_t hri_sercomusart_read_RXPL_reg(const voi
 	return ((Sercom *)hw)->USART.RXPL.reg;
 }
 
-static inline void hri_sercomusart_set_LENGTH_LEN_bf(const void *const hw, hri_sercomusart_length_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.LENGTH.reg |= SERCOM_USART_LENGTH_LEN(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomusart_length_reg_t hri_sercomusart_get_LENGTH_LEN_bf(const void *const            hw,
-                                                                             hri_sercomusart_length_reg_t mask)
-{
-	uint16_t tmp;
-	tmp = ((Sercom *)hw)->USART.LENGTH.reg;
-	tmp = (tmp & SERCOM_USART_LENGTH_LEN(mask)) >> SERCOM_USART_LENGTH_LEN_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomusart_write_LENGTH_LEN_bf(const void *const hw, hri_sercomusart_length_reg_t data)
-{
-	uint16_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	tmp = ((Sercom *)hw)->USART.LENGTH.reg;
-	tmp &= ~SERCOM_USART_LENGTH_LEN_Msk;
-	tmp |= SERCOM_USART_LENGTH_LEN(data);
-	((Sercom *)hw)->USART.LENGTH.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomusart_clear_LENGTH_LEN_bf(const void *const hw, hri_sercomusart_length_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.LENGTH.reg &= ~SERCOM_USART_LENGTH_LEN(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomusart_toggle_LENGTH_LEN_bf(const void *const hw, hri_sercomusart_length_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.LENGTH.reg ^= SERCOM_USART_LENGTH_LEN(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomusart_length_reg_t hri_sercomusart_read_LENGTH_LEN_bf(const void *const hw)
-{
-	uint16_t tmp;
-	tmp = ((Sercom *)hw)->USART.LENGTH.reg;
-	tmp = (tmp & SERCOM_USART_LENGTH_LEN_Msk) >> SERCOM_USART_LENGTH_LEN_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomusart_set_LENGTH_LENEN_bf(const void *const hw, hri_sercomusart_length_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.LENGTH.reg |= SERCOM_USART_LENGTH_LENEN(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomusart_length_reg_t hri_sercomusart_get_LENGTH_LENEN_bf(const void *const            hw,
-                                                                               hri_sercomusart_length_reg_t mask)
-{
-	uint16_t tmp;
-	tmp = ((Sercom *)hw)->USART.LENGTH.reg;
-	tmp = (tmp & SERCOM_USART_LENGTH_LENEN(mask)) >> SERCOM_USART_LENGTH_LENEN_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomusart_write_LENGTH_LENEN_bf(const void *const hw, hri_sercomusart_length_reg_t data)
-{
-	uint16_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	tmp = ((Sercom *)hw)->USART.LENGTH.reg;
-	tmp &= ~SERCOM_USART_LENGTH_LENEN_Msk;
-	tmp |= SERCOM_USART_LENGTH_LENEN(data);
-	((Sercom *)hw)->USART.LENGTH.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomusart_clear_LENGTH_LENEN_bf(const void *const hw, hri_sercomusart_length_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.LENGTH.reg &= ~SERCOM_USART_LENGTH_LENEN(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomusart_toggle_LENGTH_LENEN_bf(const void *const hw, hri_sercomusart_length_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.LENGTH.reg ^= SERCOM_USART_LENGTH_LENEN(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomusart_length_reg_t hri_sercomusart_read_LENGTH_LENEN_bf(const void *const hw)
-{
-	uint16_t tmp;
-	tmp = ((Sercom *)hw)->USART.LENGTH.reg;
-	tmp = (tmp & SERCOM_USART_LENGTH_LENEN_Msk) >> SERCOM_USART_LENGTH_LENEN_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomusart_set_LENGTH_reg(const void *const hw, hri_sercomusart_length_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.LENGTH.reg |= mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomusart_length_reg_t hri_sercomusart_get_LENGTH_reg(const void *const            hw,
-                                                                          hri_sercomusart_length_reg_t mask)
-{
-	uint16_t tmp;
-	tmp = ((Sercom *)hw)->USART.LENGTH.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline void hri_sercomusart_write_LENGTH_reg(const void *const hw, hri_sercomusart_length_reg_t data)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.LENGTH.reg = data;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomusart_clear_LENGTH_reg(const void *const hw, hri_sercomusart_length_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.LENGTH.reg &= ~mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomusart_toggle_LENGTH_reg(const void *const hw, hri_sercomusart_length_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.LENGTH.reg ^= mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomusart_length_reg_t hri_sercomusart_read_LENGTH_reg(const void *const hw)
-{
-	return ((Sercom *)hw)->USART.LENGTH.reg;
-}
-
-static inline hri_sercomusart_data_reg_t hri_sercomusart_read_DATA_DATA_bf(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->USART.DATA.reg;
-	tmp = (tmp & SERCOM_USART_DATA_DATA_Msk) >> SERCOM_USART_DATA_DATA_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomusart_write_DATA_DATA_bf(const void *const hw, hri_sercomusart_data_reg_t data)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	tmp = ((Sercom *)hw)->USART.DATA.reg;
-	tmp &= ~SERCOM_USART_DATA_DATA_Msk;
-	tmp |= SERCOM_USART_DATA_DATA(data);
-	((Sercom *)hw)->USART.DATA.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomusart_data_reg_t hri_sercomusart_read_DATA_reg(const void *const hw)
-{
-	return ((Sercom *)hw)->USART.DATA.reg;
-}
-
-static inline void hri_sercomusart_write_DATA_reg(const void *const hw, hri_sercomusart_data_reg_t data)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.DATA.reg = data;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomusart_set_DBGCTRL_DBGSTOP_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.DBGCTRL.reg |= SERCOM_USART_DBGCTRL_DBGSTOP;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomusart_get_DBGCTRL_DBGSTOP_bit(const void *const hw)
-{
-	uint8_t tmp;
-	tmp = ((Sercom *)hw)->USART.DBGCTRL.reg;
-	tmp = (tmp & SERCOM_USART_DBGCTRL_DBGSTOP) >> SERCOM_USART_DBGCTRL_DBGSTOP_Pos;
-	return (bool)tmp;
-}
-
-static inline void hri_sercomusart_write_DBGCTRL_DBGSTOP_bit(const void *const hw, bool value)
-{
-	uint8_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	tmp = ((Sercom *)hw)->USART.DBGCTRL.reg;
-	tmp &= ~SERCOM_USART_DBGCTRL_DBGSTOP;
-	tmp |= value << SERCOM_USART_DBGCTRL_DBGSTOP_Pos;
-	((Sercom *)hw)->USART.DBGCTRL.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomusart_clear_DBGCTRL_DBGSTOP_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.DBGCTRL.reg &= ~SERCOM_USART_DBGCTRL_DBGSTOP;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomusart_toggle_DBGCTRL_DBGSTOP_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.DBGCTRL.reg ^= SERCOM_USART_DBGCTRL_DBGSTOP;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomusart_set_DBGCTRL_reg(const void *const hw, hri_sercomusart_dbgctrl_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.DBGCTRL.reg |= mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomusart_dbgctrl_reg_t hri_sercomusart_get_DBGCTRL_reg(const void *const             hw,
-                                                                            hri_sercomusart_dbgctrl_reg_t mask)
-{
-	uint8_t tmp;
-	tmp = ((Sercom *)hw)->USART.DBGCTRL.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline void hri_sercomusart_write_DBGCTRL_reg(const void *const hw, hri_sercomusart_dbgctrl_reg_t data)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.DBGCTRL.reg = data;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomusart_clear_DBGCTRL_reg(const void *const hw, hri_sercomusart_dbgctrl_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.DBGCTRL.reg &= ~mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomusart_toggle_DBGCTRL_reg(const void *const hw, hri_sercomusart_dbgctrl_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.DBGCTRL.reg ^= mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomusart_dbgctrl_reg_t hri_sercomusart_read_DBGCTRL_reg(const void *const hw)
-{
-	return ((Sercom *)hw)->USART.DBGCTRL.reg;
-}
-
-static inline bool hri_sercomusart_get_SYNCBUSY_SWRST_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->USART.SYNCBUSY.reg & SERCOM_USART_SYNCBUSY_SWRST) >> SERCOM_USART_SYNCBUSY_SWRST_Pos;
-}
-
-static inline bool hri_sercomusart_get_SYNCBUSY_ENABLE_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->USART.SYNCBUSY.reg & SERCOM_USART_SYNCBUSY_ENABLE) >> SERCOM_USART_SYNCBUSY_ENABLE_Pos;
-}
-
-static inline bool hri_sercomusart_get_SYNCBUSY_CTRLB_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->USART.SYNCBUSY.reg & SERCOM_USART_SYNCBUSY_CTRLB) >> SERCOM_USART_SYNCBUSY_CTRLB_Pos;
-}
-
-static inline bool hri_sercomusart_get_SYNCBUSY_RXERRCNT_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->USART.SYNCBUSY.reg & SERCOM_USART_SYNCBUSY_RXERRCNT) >> SERCOM_USART_SYNCBUSY_RXERRCNT_Pos;
-}
-
-static inline bool hri_sercomusart_get_SYNCBUSY_LENGTH_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->USART.SYNCBUSY.reg & SERCOM_USART_SYNCBUSY_LENGTH) >> SERCOM_USART_SYNCBUSY_LENGTH_Pos;
-}
-
-static inline hri_sercomusart_syncbusy_reg_t hri_sercomusart_get_SYNCBUSY_reg(const void *const              hw,
-                                                                              hri_sercomusart_syncbusy_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->USART.SYNCBUSY.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline hri_sercomusart_syncbusy_reg_t hri_sercomusart_read_SYNCBUSY_reg(const void *const hw)
-{
-	return ((Sercom *)hw)->USART.SYNCBUSY.reg;
-}
-
-static inline hri_sercomusart_rxerrcnt_reg_t hri_sercomusart_get_RXERRCNT_reg(const void *const              hw,
-                                                                              hri_sercomusart_rxerrcnt_reg_t mask)
-{
-	uint8_t tmp;
-	tmp = ((Sercom *)hw)->USART.RXERRCNT.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline hri_sercomusart_rxerrcnt_reg_t hri_sercomusart_read_RXERRCNT_reg(const void *const hw)
-{
-	return ((Sercom *)hw)->USART.RXERRCNT.reg;
-}
-
-static inline bool hri_sercomusart_get_STATUS_PERR_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->USART.STATUS.reg & SERCOM_USART_STATUS_PERR) >> SERCOM_USART_STATUS_PERR_Pos;
-}
-
-static inline void hri_sercomusart_clear_STATUS_PERR_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.STATUS.reg = SERCOM_USART_STATUS_PERR;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomusart_get_STATUS_FERR_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->USART.STATUS.reg & SERCOM_USART_STATUS_FERR) >> SERCOM_USART_STATUS_FERR_Pos;
-}
-
-static inline void hri_sercomusart_clear_STATUS_FERR_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.STATUS.reg = SERCOM_USART_STATUS_FERR;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomusart_get_STATUS_BUFOVF_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->USART.STATUS.reg & SERCOM_USART_STATUS_BUFOVF) >> SERCOM_USART_STATUS_BUFOVF_Pos;
-}
-
-static inline void hri_sercomusart_clear_STATUS_BUFOVF_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.STATUS.reg = SERCOM_USART_STATUS_BUFOVF;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomusart_get_STATUS_CTS_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->USART.STATUS.reg & SERCOM_USART_STATUS_CTS) >> SERCOM_USART_STATUS_CTS_Pos;
-}
-
-static inline void hri_sercomusart_clear_STATUS_CTS_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.STATUS.reg = SERCOM_USART_STATUS_CTS;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomusart_get_STATUS_ISF_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->USART.STATUS.reg & SERCOM_USART_STATUS_ISF) >> SERCOM_USART_STATUS_ISF_Pos;
-}
-
-static inline void hri_sercomusart_clear_STATUS_ISF_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.STATUS.reg = SERCOM_USART_STATUS_ISF;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomusart_get_STATUS_COLL_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->USART.STATUS.reg & SERCOM_USART_STATUS_COLL) >> SERCOM_USART_STATUS_COLL_Pos;
-}
-
-static inline void hri_sercomusart_clear_STATUS_COLL_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.STATUS.reg = SERCOM_USART_STATUS_COLL;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomusart_get_STATUS_TXE_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->USART.STATUS.reg & SERCOM_USART_STATUS_TXE) >> SERCOM_USART_STATUS_TXE_Pos;
-}
-
-static inline void hri_sercomusart_clear_STATUS_TXE_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.STATUS.reg = SERCOM_USART_STATUS_TXE;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomusart_get_STATUS_ITER_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->USART.STATUS.reg & SERCOM_USART_STATUS_ITER) >> SERCOM_USART_STATUS_ITER_Pos;
-}
-
-static inline void hri_sercomusart_clear_STATUS_ITER_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.STATUS.reg = SERCOM_USART_STATUS_ITER;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomusart_status_reg_t hri_sercomusart_get_STATUS_reg(const void *const            hw,
-                                                                          hri_sercomusart_status_reg_t mask)
-{
-	uint16_t tmp;
-	tmp = ((Sercom *)hw)->USART.STATUS.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline void hri_sercomusart_clear_STATUS_reg(const void *const hw, hri_sercomusart_status_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->USART.STATUS.reg = mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomusart_status_reg_t hri_sercomusart_read_STATUS_reg(const void *const hw)
-{
-	return ((Sercom *)hw)->USART.STATUS.reg;
-}
-
-static inline void hri_sercomi2cs_set_INTEN_PREC_bit(const void *const hw)
-{
-	((Sercom *)hw)->I2CS.INTENSET.reg = SERCOM_I2CS_INTENSET_PREC;
-}
-
-static inline bool hri_sercomi2cs_get_INTEN_PREC_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->I2CS.INTENSET.reg & SERCOM_I2CS_INTENSET_PREC) >> SERCOM_I2CS_INTENSET_PREC_Pos;
-}
-
-static inline void hri_sercomi2cs_write_INTEN_PREC_bit(const void *const hw, bool value)
-{
-	if (value == 0x0) {
-		((Sercom *)hw)->I2CS.INTENCLR.reg = SERCOM_I2CS_INTENSET_PREC;
-	} else {
-		((Sercom *)hw)->I2CS.INTENSET.reg = SERCOM_I2CS_INTENSET_PREC;
-	}
-}
-
-static inline void hri_sercomi2cs_clear_INTEN_PREC_bit(const void *const hw)
-{
-	((Sercom *)hw)->I2CS.INTENCLR.reg = SERCOM_I2CS_INTENSET_PREC;
-}
-
-static inline void hri_sercomi2cs_set_INTEN_AMATCH_bit(const void *const hw)
-{
-	((Sercom *)hw)->I2CS.INTENSET.reg = SERCOM_I2CS_INTENSET_AMATCH;
-}
-
-static inline bool hri_sercomi2cs_get_INTEN_AMATCH_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->I2CS.INTENSET.reg & SERCOM_I2CS_INTENSET_AMATCH) >> SERCOM_I2CS_INTENSET_AMATCH_Pos;
-}
-
-static inline void hri_sercomi2cs_write_INTEN_AMATCH_bit(const void *const hw, bool value)
-{
-	if (value == 0x0) {
-		((Sercom *)hw)->I2CS.INTENCLR.reg = SERCOM_I2CS_INTENSET_AMATCH;
-	} else {
-		((Sercom *)hw)->I2CS.INTENSET.reg = SERCOM_I2CS_INTENSET_AMATCH;
-	}
-}
-
-static inline void hri_sercomi2cs_clear_INTEN_AMATCH_bit(const void *const hw)
-{
-	((Sercom *)hw)->I2CS.INTENCLR.reg = SERCOM_I2CS_INTENSET_AMATCH;
-}
-
-static inline void hri_sercomi2cs_set_INTEN_DRDY_bit(const void *const hw)
-{
-	((Sercom *)hw)->I2CS.INTENSET.reg = SERCOM_I2CS_INTENSET_DRDY;
-}
-
-static inline bool hri_sercomi2cs_get_INTEN_DRDY_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->I2CS.INTENSET.reg & SERCOM_I2CS_INTENSET_DRDY) >> SERCOM_I2CS_INTENSET_DRDY_Pos;
-}
-
-static inline void hri_sercomi2cs_write_INTEN_DRDY_bit(const void *const hw, bool value)
-{
-	if (value == 0x0) {
-		((Sercom *)hw)->I2CS.INTENCLR.reg = SERCOM_I2CS_INTENSET_DRDY;
-	} else {
-		((Sercom *)hw)->I2CS.INTENSET.reg = SERCOM_I2CS_INTENSET_DRDY;
-	}
-}
-
-static inline void hri_sercomi2cs_clear_INTEN_DRDY_bit(const void *const hw)
-{
-	((Sercom *)hw)->I2CS.INTENCLR.reg = SERCOM_I2CS_INTENSET_DRDY;
-}
-
-static inline void hri_sercomi2cs_set_INTEN_ERROR_bit(const void *const hw)
-{
-	((Sercom *)hw)->I2CS.INTENSET.reg = SERCOM_I2CS_INTENSET_ERROR;
-}
-
-static inline bool hri_sercomi2cs_get_INTEN_ERROR_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->I2CS.INTENSET.reg & SERCOM_I2CS_INTENSET_ERROR) >> SERCOM_I2CS_INTENSET_ERROR_Pos;
-}
-
-static inline void hri_sercomi2cs_write_INTEN_ERROR_bit(const void *const hw, bool value)
-{
-	if (value == 0x0) {
-		((Sercom *)hw)->I2CS.INTENCLR.reg = SERCOM_I2CS_INTENSET_ERROR;
-	} else {
-		((Sercom *)hw)->I2CS.INTENSET.reg = SERCOM_I2CS_INTENSET_ERROR;
-	}
-}
-
-static inline void hri_sercomi2cs_clear_INTEN_ERROR_bit(const void *const hw)
-{
-	((Sercom *)hw)->I2CS.INTENCLR.reg = SERCOM_I2CS_INTENSET_ERROR;
-}
-
-static inline void hri_sercomi2cs_set_INTEN_reg(const void *const hw, hri_sercomi2cs_intenset_reg_t mask)
-{
-	((Sercom *)hw)->I2CS.INTENSET.reg = mask;
-}
-
-static inline hri_sercomi2cs_intenset_reg_t hri_sercomi2cs_get_INTEN_reg(const void *const             hw,
-                                                                         hri_sercomi2cs_intenset_reg_t mask)
-{
-	uint8_t tmp;
-	tmp = ((Sercom *)hw)->I2CS.INTENSET.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline hri_sercomi2cs_intenset_reg_t hri_sercomi2cs_read_INTEN_reg(const void *const hw)
-{
-	return ((Sercom *)hw)->I2CS.INTENSET.reg;
-}
-
-static inline void hri_sercomi2cs_write_INTEN_reg(const void *const hw, hri_sercomi2cs_intenset_reg_t data)
-{
-	((Sercom *)hw)->I2CS.INTENSET.reg = data;
-	((Sercom *)hw)->I2CS.INTENCLR.reg = ~data;
-}
-
-static inline void hri_sercomi2cs_clear_INTEN_reg(const void *const hw, hri_sercomi2cs_intenset_reg_t mask)
-{
-	((Sercom *)hw)->I2CS.INTENCLR.reg = mask;
-}
-
-static inline bool hri_sercomi2cs_get_INTFLAG_PREC_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->I2CS.INTFLAG.reg & SERCOM_I2CS_INTFLAG_PREC) >> SERCOM_I2CS_INTFLAG_PREC_Pos;
-}
-
-static inline void hri_sercomi2cs_clear_INTFLAG_PREC_bit(const void *const hw)
-{
-	((Sercom *)hw)->I2CS.INTFLAG.reg = SERCOM_I2CS_INTFLAG_PREC;
-}
-
-static inline bool hri_sercomi2cs_get_INTFLAG_AMATCH_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->I2CS.INTFLAG.reg & SERCOM_I2CS_INTFLAG_AMATCH) >> SERCOM_I2CS_INTFLAG_AMATCH_Pos;
-}
-
-static inline void hri_sercomi2cs_clear_INTFLAG_AMATCH_bit(const void *const hw)
-{
-	((Sercom *)hw)->I2CS.INTFLAG.reg = SERCOM_I2CS_INTFLAG_AMATCH;
-}
-
-static inline bool hri_sercomi2cs_get_INTFLAG_DRDY_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->I2CS.INTFLAG.reg & SERCOM_I2CS_INTFLAG_DRDY) >> SERCOM_I2CS_INTFLAG_DRDY_Pos;
-}
-
-static inline void hri_sercomi2cs_clear_INTFLAG_DRDY_bit(const void *const hw)
-{
-	((Sercom *)hw)->I2CS.INTFLAG.reg = SERCOM_I2CS_INTFLAG_DRDY;
-}
-
-static inline bool hri_sercomi2cs_get_INTFLAG_ERROR_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->I2CS.INTFLAG.reg & SERCOM_I2CS_INTFLAG_ERROR) >> SERCOM_I2CS_INTFLAG_ERROR_Pos;
-}
-
-static inline void hri_sercomi2cs_clear_INTFLAG_ERROR_bit(const void *const hw)
-{
-	((Sercom *)hw)->I2CS.INTFLAG.reg = SERCOM_I2CS_INTFLAG_ERROR;
-}
-
-static inline bool hri_sercomi2cs_get_interrupt_PREC_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->I2CS.INTFLAG.reg & SERCOM_I2CS_INTFLAG_PREC) >> SERCOM_I2CS_INTFLAG_PREC_Pos;
-}
-
-static inline void hri_sercomi2cs_clear_interrupt_PREC_bit(const void *const hw)
-{
-	((Sercom *)hw)->I2CS.INTFLAG.reg = SERCOM_I2CS_INTFLAG_PREC;
-}
-
-static inline bool hri_sercomi2cs_get_interrupt_AMATCH_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->I2CS.INTFLAG.reg & SERCOM_I2CS_INTFLAG_AMATCH) >> SERCOM_I2CS_INTFLAG_AMATCH_Pos;
-}
-
-static inline void hri_sercomi2cs_clear_interrupt_AMATCH_bit(const void *const hw)
-{
-	((Sercom *)hw)->I2CS.INTFLAG.reg = SERCOM_I2CS_INTFLAG_AMATCH;
-}
-
-static inline bool hri_sercomi2cs_get_interrupt_DRDY_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->I2CS.INTFLAG.reg & SERCOM_I2CS_INTFLAG_DRDY) >> SERCOM_I2CS_INTFLAG_DRDY_Pos;
-}
-
-static inline void hri_sercomi2cs_clear_interrupt_DRDY_bit(const void *const hw)
-{
-	((Sercom *)hw)->I2CS.INTFLAG.reg = SERCOM_I2CS_INTFLAG_DRDY;
-}
-
-static inline bool hri_sercomi2cs_get_interrupt_ERROR_bit(const void *const hw)
-{
-	return (((Sercom *)hw)->I2CS.INTFLAG.reg & SERCOM_I2CS_INTFLAG_ERROR) >> SERCOM_I2CS_INTFLAG_ERROR_Pos;
-}
-
-static inline void hri_sercomi2cs_clear_interrupt_ERROR_bit(const void *const hw)
-{
-	((Sercom *)hw)->I2CS.INTFLAG.reg = SERCOM_I2CS_INTFLAG_ERROR;
-}
-
-static inline hri_sercomi2cs_intflag_reg_t hri_sercomi2cs_get_INTFLAG_reg(const void *const            hw,
-                                                                          hri_sercomi2cs_intflag_reg_t mask)
-{
-	uint8_t tmp;
-	tmp = ((Sercom *)hw)->I2CS.INTFLAG.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline hri_sercomi2cs_intflag_reg_t hri_sercomi2cs_read_INTFLAG_reg(const void *const hw)
-{
-	return ((Sercom *)hw)->I2CS.INTFLAG.reg;
-}
-
-static inline void hri_sercomi2cs_clear_INTFLAG_reg(const void *const hw, hri_sercomi2cs_intflag_reg_t mask)
-{
-	((Sercom *)hw)->I2CS.INTFLAG.reg = mask;
-}
-
-static inline void hri_sercomi2cs_set_CTRLA_SWRST_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_SWRST);
-	((Sercom *)hw)->I2CS.CTRLA.reg |= SERCOM_I2CS_CTRLA_SWRST;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomi2cs_get_CTRLA_SWRST_bit(const void *const hw)
-{
-	uint32_t tmp;
-	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_SWRST);
-	tmp = ((Sercom *)hw)->I2CS.CTRLA.reg;
-	tmp = (tmp & SERCOM_I2CS_CTRLA_SWRST) >> SERCOM_I2CS_CTRLA_SWRST_Pos;
-	return (bool)tmp;
-}
-
-static inline void hri_sercomi2cs_set_CTRLA_ENABLE_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_SWRST | SERCOM_I2CS_SYNCBUSY_ENABLE);
-	((Sercom *)hw)->I2CS.CTRLA.reg |= SERCOM_I2CS_CTRLA_ENABLE;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomi2cs_get_CTRLA_ENABLE_bit(const void *const hw)
-{
-	uint32_t tmp;
-	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_SWRST | SERCOM_I2CS_SYNCBUSY_ENABLE);
-	tmp = ((Sercom *)hw)->I2CS.CTRLA.reg;
-	tmp = (tmp & SERCOM_I2CS_CTRLA_ENABLE) >> SERCOM_I2CS_CTRLA_ENABLE_Pos;
-	return (bool)tmp;
-}
-
-static inline void hri_sercomi2cs_write_CTRLA_ENABLE_bit(const void *const hw, bool value)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_SWRST | SERCOM_I2CS_SYNCBUSY_ENABLE);
-	tmp = ((Sercom *)hw)->I2CS.CTRLA.reg;
-	tmp &= ~SERCOM_I2CS_CTRLA_ENABLE;
-	tmp |= value << SERCOM_I2CS_CTRLA_ENABLE_Pos;
-	((Sercom *)hw)->I2CS.CTRLA.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cs_clear_CTRLA_ENABLE_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_SWRST | SERCOM_I2CS_SYNCBUSY_ENABLE);
-	((Sercom *)hw)->I2CS.CTRLA.reg &= ~SERCOM_I2CS_CTRLA_ENABLE;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cs_toggle_CTRLA_ENABLE_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_SWRST | SERCOM_I2CS_SYNCBUSY_ENABLE);
-	((Sercom *)hw)->I2CS.CTRLA.reg ^= SERCOM_I2CS_CTRLA_ENABLE;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cs_set_CTRLA_RUNSTDBY_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
-	((Sercom *)hw)->I2CS.CTRLA.reg |= SERCOM_I2CS_CTRLA_RUNSTDBY;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomi2cs_get_CTRLA_RUNSTDBY_bit(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CS.CTRLA.reg;
-	tmp = (tmp & SERCOM_I2CS_CTRLA_RUNSTDBY) >> SERCOM_I2CS_CTRLA_RUNSTDBY_Pos;
-	return (bool)tmp;
-}
-
-static inline void hri_sercomi2cs_write_CTRLA_RUNSTDBY_bit(const void *const hw, bool value)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
-	tmp = ((Sercom *)hw)->I2CS.CTRLA.reg;
-	tmp &= ~SERCOM_I2CS_CTRLA_RUNSTDBY;
-	tmp |= value << SERCOM_I2CS_CTRLA_RUNSTDBY_Pos;
-	((Sercom *)hw)->I2CS.CTRLA.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cs_clear_CTRLA_RUNSTDBY_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
-	((Sercom *)hw)->I2CS.CTRLA.reg &= ~SERCOM_I2CS_CTRLA_RUNSTDBY;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cs_toggle_CTRLA_RUNSTDBY_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
-	((Sercom *)hw)->I2CS.CTRLA.reg ^= SERCOM_I2CS_CTRLA_RUNSTDBY;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cs_set_CTRLA_PINOUT_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
-	((Sercom *)hw)->I2CS.CTRLA.reg |= SERCOM_I2CS_CTRLA_PINOUT;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomi2cs_get_CTRLA_PINOUT_bit(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CS.CTRLA.reg;
-	tmp = (tmp & SERCOM_I2CS_CTRLA_PINOUT) >> SERCOM_I2CS_CTRLA_PINOUT_Pos;
-	return (bool)tmp;
-}
-
-static inline void hri_sercomi2cs_write_CTRLA_PINOUT_bit(const void *const hw, bool value)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
-	tmp = ((Sercom *)hw)->I2CS.CTRLA.reg;
-	tmp &= ~SERCOM_I2CS_CTRLA_PINOUT;
-	tmp |= value << SERCOM_I2CS_CTRLA_PINOUT_Pos;
-	((Sercom *)hw)->I2CS.CTRLA.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cs_clear_CTRLA_PINOUT_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
-	((Sercom *)hw)->I2CS.CTRLA.reg &= ~SERCOM_I2CS_CTRLA_PINOUT;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cs_toggle_CTRLA_PINOUT_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
-	((Sercom *)hw)->I2CS.CTRLA.reg ^= SERCOM_I2CS_CTRLA_PINOUT;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cs_set_CTRLA_SEXTTOEN_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
-	((Sercom *)hw)->I2CS.CTRLA.reg |= SERCOM_I2CS_CTRLA_SEXTTOEN;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomi2cs_get_CTRLA_SEXTTOEN_bit(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CS.CTRLA.reg;
-	tmp = (tmp & SERCOM_I2CS_CTRLA_SEXTTOEN) >> SERCOM_I2CS_CTRLA_SEXTTOEN_Pos;
-	return (bool)tmp;
-}
-
-static inline void hri_sercomi2cs_write_CTRLA_SEXTTOEN_bit(const void *const hw, bool value)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
-	tmp = ((Sercom *)hw)->I2CS.CTRLA.reg;
-	tmp &= ~SERCOM_I2CS_CTRLA_SEXTTOEN;
-	tmp |= value << SERCOM_I2CS_CTRLA_SEXTTOEN_Pos;
-	((Sercom *)hw)->I2CS.CTRLA.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cs_clear_CTRLA_SEXTTOEN_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
-	((Sercom *)hw)->I2CS.CTRLA.reg &= ~SERCOM_I2CS_CTRLA_SEXTTOEN;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cs_toggle_CTRLA_SEXTTOEN_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
-	((Sercom *)hw)->I2CS.CTRLA.reg ^= SERCOM_I2CS_CTRLA_SEXTTOEN;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cs_set_CTRLA_SCLSM_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
-	((Sercom *)hw)->I2CS.CTRLA.reg |= SERCOM_I2CS_CTRLA_SCLSM;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomi2cs_get_CTRLA_SCLSM_bit(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CS.CTRLA.reg;
-	tmp = (tmp & SERCOM_I2CS_CTRLA_SCLSM) >> SERCOM_I2CS_CTRLA_SCLSM_Pos;
-	return (bool)tmp;
-}
-
-static inline void hri_sercomi2cs_write_CTRLA_SCLSM_bit(const void *const hw, bool value)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
-	tmp = ((Sercom *)hw)->I2CS.CTRLA.reg;
-	tmp &= ~SERCOM_I2CS_CTRLA_SCLSM;
-	tmp |= value << SERCOM_I2CS_CTRLA_SCLSM_Pos;
-	((Sercom *)hw)->I2CS.CTRLA.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cs_clear_CTRLA_SCLSM_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
-	((Sercom *)hw)->I2CS.CTRLA.reg &= ~SERCOM_I2CS_CTRLA_SCLSM;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cs_toggle_CTRLA_SCLSM_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
-	((Sercom *)hw)->I2CS.CTRLA.reg ^= SERCOM_I2CS_CTRLA_SCLSM;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cs_set_CTRLA_LOWTOUTEN_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
-	((Sercom *)hw)->I2CS.CTRLA.reg |= SERCOM_I2CS_CTRLA_LOWTOUTEN;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomi2cs_get_CTRLA_LOWTOUTEN_bit(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CS.CTRLA.reg;
-	tmp = (tmp & SERCOM_I2CS_CTRLA_LOWTOUTEN) >> SERCOM_I2CS_CTRLA_LOWTOUTEN_Pos;
-	return (bool)tmp;
-}
-
-static inline void hri_sercomi2cs_write_CTRLA_LOWTOUTEN_bit(const void *const hw, bool value)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
-	tmp = ((Sercom *)hw)->I2CS.CTRLA.reg;
-	tmp &= ~SERCOM_I2CS_CTRLA_LOWTOUTEN;
-	tmp |= value << SERCOM_I2CS_CTRLA_LOWTOUTEN_Pos;
-	((Sercom *)hw)->I2CS.CTRLA.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cs_clear_CTRLA_LOWTOUTEN_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
-	((Sercom *)hw)->I2CS.CTRLA.reg &= ~SERCOM_I2CS_CTRLA_LOWTOUTEN;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cs_toggle_CTRLA_LOWTOUTEN_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
-	((Sercom *)hw)->I2CS.CTRLA.reg ^= SERCOM_I2CS_CTRLA_LOWTOUTEN;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cs_set_CTRLA_MODE_bf(const void *const hw, hri_sercomi2cs_ctrla_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
-	((Sercom *)hw)->I2CS.CTRLA.reg |= SERCOM_I2CS_CTRLA_MODE(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomi2cs_ctrla_reg_t hri_sercomi2cs_get_CTRLA_MODE_bf(const void *const          hw,
-                                                                          hri_sercomi2cs_ctrla_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CS.CTRLA.reg;
-	tmp = (tmp & SERCOM_I2CS_CTRLA_MODE(mask)) >> SERCOM_I2CS_CTRLA_MODE_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomi2cs_write_CTRLA_MODE_bf(const void *const hw, hri_sercomi2cs_ctrla_reg_t data)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
-	tmp = ((Sercom *)hw)->I2CS.CTRLA.reg;
-	tmp &= ~SERCOM_I2CS_CTRLA_MODE_Msk;
-	tmp |= SERCOM_I2CS_CTRLA_MODE(data);
-	((Sercom *)hw)->I2CS.CTRLA.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cs_clear_CTRLA_MODE_bf(const void *const hw, hri_sercomi2cs_ctrla_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
-	((Sercom *)hw)->I2CS.CTRLA.reg &= ~SERCOM_I2CS_CTRLA_MODE(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cs_toggle_CTRLA_MODE_bf(const void *const hw, hri_sercomi2cs_ctrla_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
-	((Sercom *)hw)->I2CS.CTRLA.reg ^= SERCOM_I2CS_CTRLA_MODE(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomi2cs_ctrla_reg_t hri_sercomi2cs_read_CTRLA_MODE_bf(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CS.CTRLA.reg;
-	tmp = (tmp & SERCOM_I2CS_CTRLA_MODE_Msk) >> SERCOM_I2CS_CTRLA_MODE_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomi2cs_set_CTRLA_SDAHOLD_bf(const void *const hw, hri_sercomi2cs_ctrla_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
-	((Sercom *)hw)->I2CS.CTRLA.reg |= SERCOM_I2CS_CTRLA_SDAHOLD(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomi2cs_ctrla_reg_t hri_sercomi2cs_get_CTRLA_SDAHOLD_bf(const void *const          hw,
-                                                                             hri_sercomi2cs_ctrla_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CS.CTRLA.reg;
-	tmp = (tmp & SERCOM_I2CS_CTRLA_SDAHOLD(mask)) >> SERCOM_I2CS_CTRLA_SDAHOLD_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomi2cs_write_CTRLA_SDAHOLD_bf(const void *const hw, hri_sercomi2cs_ctrla_reg_t data)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
-	tmp = ((Sercom *)hw)->I2CS.CTRLA.reg;
-	tmp &= ~SERCOM_I2CS_CTRLA_SDAHOLD_Msk;
-	tmp |= SERCOM_I2CS_CTRLA_SDAHOLD(data);
-	((Sercom *)hw)->I2CS.CTRLA.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cs_clear_CTRLA_SDAHOLD_bf(const void *const hw, hri_sercomi2cs_ctrla_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
-	((Sercom *)hw)->I2CS.CTRLA.reg &= ~SERCOM_I2CS_CTRLA_SDAHOLD(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cs_toggle_CTRLA_SDAHOLD_bf(const void *const hw, hri_sercomi2cs_ctrla_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
-	((Sercom *)hw)->I2CS.CTRLA.reg ^= SERCOM_I2CS_CTRLA_SDAHOLD(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomi2cs_ctrla_reg_t hri_sercomi2cs_read_CTRLA_SDAHOLD_bf(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CS.CTRLA.reg;
-	tmp = (tmp & SERCOM_I2CS_CTRLA_SDAHOLD_Msk) >> SERCOM_I2CS_CTRLA_SDAHOLD_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomi2cs_set_CTRLA_SPEED_bf(const void *const hw, hri_sercomi2cs_ctrla_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
-	((Sercom *)hw)->I2CS.CTRLA.reg |= SERCOM_I2CS_CTRLA_SPEED(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomi2cs_ctrla_reg_t hri_sercomi2cs_get_CTRLA_SPEED_bf(const void *const          hw,
-                                                                           hri_sercomi2cs_ctrla_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CS.CTRLA.reg;
-	tmp = (tmp & SERCOM_I2CS_CTRLA_SPEED(mask)) >> SERCOM_I2CS_CTRLA_SPEED_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomi2cs_write_CTRLA_SPEED_bf(const void *const hw, hri_sercomi2cs_ctrla_reg_t data)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
-	tmp = ((Sercom *)hw)->I2CS.CTRLA.reg;
-	tmp &= ~SERCOM_I2CS_CTRLA_SPEED_Msk;
-	tmp |= SERCOM_I2CS_CTRLA_SPEED(data);
-	((Sercom *)hw)->I2CS.CTRLA.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cs_clear_CTRLA_SPEED_bf(const void *const hw, hri_sercomi2cs_ctrla_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
-	((Sercom *)hw)->I2CS.CTRLA.reg &= ~SERCOM_I2CS_CTRLA_SPEED(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cs_toggle_CTRLA_SPEED_bf(const void *const hw, hri_sercomi2cs_ctrla_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
-	((Sercom *)hw)->I2CS.CTRLA.reg ^= SERCOM_I2CS_CTRLA_SPEED(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomi2cs_ctrla_reg_t hri_sercomi2cs_read_CTRLA_SPEED_bf(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CS.CTRLA.reg;
-	tmp = (tmp & SERCOM_I2CS_CTRLA_SPEED_Msk) >> SERCOM_I2CS_CTRLA_SPEED_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomi2cs_set_CTRLA_reg(const void *const hw, hri_sercomi2cs_ctrla_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CS.CTRLA.reg |= mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomi2cs_ctrla_reg_t hri_sercomi2cs_get_CTRLA_reg(const void *const          hw,
-                                                                      hri_sercomi2cs_ctrla_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CS.CTRLA.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline void hri_sercomi2cs_write_CTRLA_reg(const void *const hw, hri_sercomi2cs_ctrla_reg_t data)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CS.CTRLA.reg = data;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cs_clear_CTRLA_reg(const void *const hw, hri_sercomi2cs_ctrla_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CS.CTRLA.reg &= ~mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cs_toggle_CTRLA_reg(const void *const hw, hri_sercomi2cs_ctrla_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CS.CTRLA.reg ^= mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomi2cs_ctrla_reg_t hri_sercomi2cs_read_CTRLA_reg(const void *const hw)
-{
-	return ((Sercom *)hw)->I2CS.CTRLA.reg;
-}
-
-static inline void hri_sercomi2cs_set_CTRLB_SMEN_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CS.CTRLB.reg |= SERCOM_I2CS_CTRLB_SMEN;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomi2cs_get_CTRLB_SMEN_bit(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CS.CTRLB.reg;
-	tmp = (tmp & SERCOM_I2CS_CTRLB_SMEN) >> SERCOM_I2CS_CTRLB_SMEN_Pos;
-	return (bool)tmp;
-}
-
-static inline void hri_sercomi2cs_write_CTRLB_SMEN_bit(const void *const hw, bool value)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	tmp = ((Sercom *)hw)->I2CS.CTRLB.reg;
-	tmp &= ~SERCOM_I2CS_CTRLB_SMEN;
-	tmp |= value << SERCOM_I2CS_CTRLB_SMEN_Pos;
-	((Sercom *)hw)->I2CS.CTRLB.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cs_clear_CTRLB_SMEN_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CS.CTRLB.reg &= ~SERCOM_I2CS_CTRLB_SMEN;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cs_toggle_CTRLB_SMEN_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CS.CTRLB.reg ^= SERCOM_I2CS_CTRLB_SMEN;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cs_set_CTRLB_GCMD_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CS.CTRLB.reg |= SERCOM_I2CS_CTRLB_GCMD;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomi2cs_get_CTRLB_GCMD_bit(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CS.CTRLB.reg;
-	tmp = (tmp & SERCOM_I2CS_CTRLB_GCMD) >> SERCOM_I2CS_CTRLB_GCMD_Pos;
-	return (bool)tmp;
-}
-
-static inline void hri_sercomi2cs_write_CTRLB_GCMD_bit(const void *const hw, bool value)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	tmp = ((Sercom *)hw)->I2CS.CTRLB.reg;
-	tmp &= ~SERCOM_I2CS_CTRLB_GCMD;
-	tmp |= value << SERCOM_I2CS_CTRLB_GCMD_Pos;
-	((Sercom *)hw)->I2CS.CTRLB.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cs_clear_CTRLB_GCMD_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CS.CTRLB.reg &= ~SERCOM_I2CS_CTRLB_GCMD;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cs_toggle_CTRLB_GCMD_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CS.CTRLB.reg ^= SERCOM_I2CS_CTRLB_GCMD;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cs_set_CTRLB_AACKEN_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CS.CTRLB.reg |= SERCOM_I2CS_CTRLB_AACKEN;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomi2cs_get_CTRLB_AACKEN_bit(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CS.CTRLB.reg;
-	tmp = (tmp & SERCOM_I2CS_CTRLB_AACKEN) >> SERCOM_I2CS_CTRLB_AACKEN_Pos;
-	return (bool)tmp;
-}
-
-static inline void hri_sercomi2cs_write_CTRLB_AACKEN_bit(const void *const hw, bool value)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	tmp = ((Sercom *)hw)->I2CS.CTRLB.reg;
-	tmp &= ~SERCOM_I2CS_CTRLB_AACKEN;
-	tmp |= value << SERCOM_I2CS_CTRLB_AACKEN_Pos;
-	((Sercom *)hw)->I2CS.CTRLB.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cs_clear_CTRLB_AACKEN_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CS.CTRLB.reg &= ~SERCOM_I2CS_CTRLB_AACKEN;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cs_toggle_CTRLB_AACKEN_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CS.CTRLB.reg ^= SERCOM_I2CS_CTRLB_AACKEN;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cs_set_CTRLB_ACKACT_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CS.CTRLB.reg |= SERCOM_I2CS_CTRLB_ACKACT;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomi2cs_get_CTRLB_ACKACT_bit(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CS.CTRLB.reg;
-	tmp = (tmp & SERCOM_I2CS_CTRLB_ACKACT) >> SERCOM_I2CS_CTRLB_ACKACT_Pos;
-	return (bool)tmp;
-}
-
-static inline void hri_sercomi2cs_write_CTRLB_ACKACT_bit(const void *const hw, bool value)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	tmp = ((Sercom *)hw)->I2CS.CTRLB.reg;
-	tmp &= ~SERCOM_I2CS_CTRLB_ACKACT;
-	tmp |= value << SERCOM_I2CS_CTRLB_ACKACT_Pos;
-	((Sercom *)hw)->I2CS.CTRLB.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cs_clear_CTRLB_ACKACT_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CS.CTRLB.reg &= ~SERCOM_I2CS_CTRLB_ACKACT;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cs_toggle_CTRLB_ACKACT_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CS.CTRLB.reg ^= SERCOM_I2CS_CTRLB_ACKACT;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cs_set_CTRLB_AMODE_bf(const void *const hw, hri_sercomi2cs_ctrlb_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CS.CTRLB.reg |= SERCOM_I2CS_CTRLB_AMODE(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomi2cs_ctrlb_reg_t hri_sercomi2cs_get_CTRLB_AMODE_bf(const void *const          hw,
-                                                                           hri_sercomi2cs_ctrlb_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CS.CTRLB.reg;
-	tmp = (tmp & SERCOM_I2CS_CTRLB_AMODE(mask)) >> SERCOM_I2CS_CTRLB_AMODE_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomi2cs_write_CTRLB_AMODE_bf(const void *const hw, hri_sercomi2cs_ctrlb_reg_t data)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	tmp = ((Sercom *)hw)->I2CS.CTRLB.reg;
-	tmp &= ~SERCOM_I2CS_CTRLB_AMODE_Msk;
-	tmp |= SERCOM_I2CS_CTRLB_AMODE(data);
-	((Sercom *)hw)->I2CS.CTRLB.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cs_clear_CTRLB_AMODE_bf(const void *const hw, hri_sercomi2cs_ctrlb_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CS.CTRLB.reg &= ~SERCOM_I2CS_CTRLB_AMODE(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cs_toggle_CTRLB_AMODE_bf(const void *const hw, hri_sercomi2cs_ctrlb_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CS.CTRLB.reg ^= SERCOM_I2CS_CTRLB_AMODE(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomi2cs_ctrlb_reg_t hri_sercomi2cs_read_CTRLB_AMODE_bf(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CS.CTRLB.reg;
-	tmp = (tmp & SERCOM_I2CS_CTRLB_AMODE_Msk) >> SERCOM_I2CS_CTRLB_AMODE_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomi2cs_set_CTRLB_CMD_bf(const void *const hw, hri_sercomi2cs_ctrlb_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CS.CTRLB.reg |= SERCOM_I2CS_CTRLB_CMD(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomi2cs_ctrlb_reg_t hri_sercomi2cs_get_CTRLB_CMD_bf(const void *const          hw,
-                                                                         hri_sercomi2cs_ctrlb_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CS.CTRLB.reg;
-	tmp = (tmp & SERCOM_I2CS_CTRLB_CMD(mask)) >> SERCOM_I2CS_CTRLB_CMD_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomi2cs_write_CTRLB_CMD_bf(const void *const hw, hri_sercomi2cs_ctrlb_reg_t data)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	tmp = ((Sercom *)hw)->I2CS.CTRLB.reg;
-	tmp &= ~SERCOM_I2CS_CTRLB_CMD_Msk;
-	tmp |= SERCOM_I2CS_CTRLB_CMD(data);
-	((Sercom *)hw)->I2CS.CTRLB.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cs_clear_CTRLB_CMD_bf(const void *const hw, hri_sercomi2cs_ctrlb_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CS.CTRLB.reg &= ~SERCOM_I2CS_CTRLB_CMD(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cs_toggle_CTRLB_CMD_bf(const void *const hw, hri_sercomi2cs_ctrlb_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CS.CTRLB.reg ^= SERCOM_I2CS_CTRLB_CMD(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomi2cs_ctrlb_reg_t hri_sercomi2cs_read_CTRLB_CMD_bf(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CS.CTRLB.reg;
-	tmp = (tmp & SERCOM_I2CS_CTRLB_CMD_Msk) >> SERCOM_I2CS_CTRLB_CMD_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomi2cs_set_CTRLB_reg(const void *const hw, hri_sercomi2cs_ctrlb_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CS.CTRLB.reg |= mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomi2cs_ctrlb_reg_t hri_sercomi2cs_get_CTRLB_reg(const void *const          hw,
-                                                                      hri_sercomi2cs_ctrlb_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CS.CTRLB.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline void hri_sercomi2cs_write_CTRLB_reg(const void *const hw, hri_sercomi2cs_ctrlb_reg_t data)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CS.CTRLB.reg = data;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cs_clear_CTRLB_reg(const void *const hw, hri_sercomi2cs_ctrlb_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CS.CTRLB.reg &= ~mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cs_toggle_CTRLB_reg(const void *const hw, hri_sercomi2cs_ctrlb_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CS.CTRLB.reg ^= mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomi2cs_ctrlb_reg_t hri_sercomi2cs_read_CTRLB_reg(const void *const hw)
-{
-	return ((Sercom *)hw)->I2CS.CTRLB.reg;
-}
-
-static inline void hri_sercomi2cs_set_CTRLC_DATA32B_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CS.CTRLC.reg |= SERCOM_I2CS_CTRLC_DATA32B;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_sercomi2cs_get_CTRLC_DATA32B_bit(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CS.CTRLC.reg;
-	tmp = (tmp & SERCOM_I2CS_CTRLC_DATA32B) >> SERCOM_I2CS_CTRLC_DATA32B_Pos;
-	return (bool)tmp;
-}
-
-static inline void hri_sercomi2cs_write_CTRLC_DATA32B_bit(const void *const hw, bool value)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	tmp = ((Sercom *)hw)->I2CS.CTRLC.reg;
-	tmp &= ~SERCOM_I2CS_CTRLC_DATA32B;
-	tmp |= value << SERCOM_I2CS_CTRLC_DATA32B_Pos;
-	((Sercom *)hw)->I2CS.CTRLC.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cs_clear_CTRLC_DATA32B_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CS.CTRLC.reg &= ~SERCOM_I2CS_CTRLC_DATA32B;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cs_toggle_CTRLC_DATA32B_bit(const void *const hw)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CS.CTRLC.reg ^= SERCOM_I2CS_CTRLC_DATA32B;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cs_set_CTRLC_SDASETUP_bf(const void *const hw, hri_sercomi2cs_ctrlc_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CS.CTRLC.reg |= SERCOM_I2CS_CTRLC_SDASETUP(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomi2cs_ctrlc_reg_t hri_sercomi2cs_get_CTRLC_SDASETUP_bf(const void *const          hw,
-                                                                              hri_sercomi2cs_ctrlc_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CS.CTRLC.reg;
-	tmp = (tmp & SERCOM_I2CS_CTRLC_SDASETUP(mask)) >> SERCOM_I2CS_CTRLC_SDASETUP_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomi2cs_write_CTRLC_SDASETUP_bf(const void *const hw, hri_sercomi2cs_ctrlc_reg_t data)
-{
-	uint32_t tmp;
-	SERCOM_CRITICAL_SECTION_ENTER();
-	tmp = ((Sercom *)hw)->I2CS.CTRLC.reg;
-	tmp &= ~SERCOM_I2CS_CTRLC_SDASETUP_Msk;
-	tmp |= SERCOM_I2CS_CTRLC_SDASETUP(data);
-	((Sercom *)hw)->I2CS.CTRLC.reg = tmp;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cs_clear_CTRLC_SDASETUP_bf(const void *const hw, hri_sercomi2cs_ctrlc_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CS.CTRLC.reg &= ~SERCOM_I2CS_CTRLC_SDASETUP(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cs_toggle_CTRLC_SDASETUP_bf(const void *const hw, hri_sercomi2cs_ctrlc_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CS.CTRLC.reg ^= SERCOM_I2CS_CTRLC_SDASETUP(mask);
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomi2cs_ctrlc_reg_t hri_sercomi2cs_read_CTRLC_SDASETUP_bf(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CS.CTRLC.reg;
-	tmp = (tmp & SERCOM_I2CS_CTRLC_SDASETUP_Msk) >> SERCOM_I2CS_CTRLC_SDASETUP_Pos;
-	return tmp;
-}
-
-static inline void hri_sercomi2cs_set_CTRLC_reg(const void *const hw, hri_sercomi2cs_ctrlc_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CS.CTRLC.reg |= mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomi2cs_ctrlc_reg_t hri_sercomi2cs_get_CTRLC_reg(const void *const          hw,
-                                                                      hri_sercomi2cs_ctrlc_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CS.CTRLC.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline void hri_sercomi2cs_write_CTRLC_reg(const void *const hw, hri_sercomi2cs_ctrlc_reg_t data)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CS.CTRLC.reg = data;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cs_clear_CTRLC_reg(const void *const hw, hri_sercomi2cs_ctrlc_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CS.CTRLC.reg &= ~mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_sercomi2cs_toggle_CTRLC_reg(const void *const hw, hri_sercomi2cs_ctrlc_reg_t mask)
-{
-	SERCOM_CRITICAL_SECTION_ENTER();
-	((Sercom *)hw)->I2CS.CTRLC.reg ^= mask;
-	SERCOM_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_sercomi2cs_ctrlc_reg_t hri_sercomi2cs_read_CTRLC_reg(const void *const hw)
-{
-	return ((Sercom *)hw)->I2CS.CTRLC.reg;
-}
-
 static inline void hri_sercomi2cs_set_LENGTH_LENEN_bit(const void *const hw)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
 	((Sercom *)hw)->I2CS.LENGTH.reg |= SERCOM_I2CS_LENGTH_LENEN;
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -8044,6 +6493,7 @@ static inline void hri_sercomi2cs_write_LENGTH_LENEN_bit(const void *const hw, b
 	tmp &= ~SERCOM_I2CS_LENGTH_LENEN;
 	tmp |= value << SERCOM_I2CS_LENGTH_LENEN_Pos;
 	((Sercom *)hw)->I2CS.LENGTH.reg = tmp;
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -8051,6 +6501,7 @@ static inline void hri_sercomi2cs_clear_LENGTH_LENEN_bit(const void *const hw)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
 	((Sercom *)hw)->I2CS.LENGTH.reg &= ~SERCOM_I2CS_LENGTH_LENEN;
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -8058,6 +6509,7 @@ static inline void hri_sercomi2cs_toggle_LENGTH_LENEN_bit(const void *const hw)
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
 	((Sercom *)hw)->I2CS.LENGTH.reg ^= SERCOM_I2CS_LENGTH_LENEN;
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -8065,6 +6517,7 @@ static inline void hri_sercomi2cs_set_LENGTH_LEN_bf(const void *const hw, hri_se
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
 	((Sercom *)hw)->I2CS.LENGTH.reg |= SERCOM_I2CS_LENGTH_LEN(mask);
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -8085,6 +6538,7 @@ static inline void hri_sercomi2cs_write_LENGTH_LEN_bf(const void *const hw, hri_
 	tmp &= ~SERCOM_I2CS_LENGTH_LEN_Msk;
 	tmp |= SERCOM_I2CS_LENGTH_LEN(data);
 	((Sercom *)hw)->I2CS.LENGTH.reg = tmp;
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -8092,6 +6546,7 @@ static inline void hri_sercomi2cs_clear_LENGTH_LEN_bf(const void *const hw, hri_
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
 	((Sercom *)hw)->I2CS.LENGTH.reg &= ~SERCOM_I2CS_LENGTH_LEN(mask);
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -8099,6 +6554,7 @@ static inline void hri_sercomi2cs_toggle_LENGTH_LEN_bf(const void *const hw, hri
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
 	((Sercom *)hw)->I2CS.LENGTH.reg ^= SERCOM_I2CS_LENGTH_LEN(mask);
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -8114,6 +6570,7 @@ static inline void hri_sercomi2cs_set_LENGTH_reg(const void *const hw, hri_serco
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
 	((Sercom *)hw)->I2CS.LENGTH.reg |= mask;
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -8121,6 +6578,7 @@ static inline hri_sercomi2cs_length_reg_t hri_sercomi2cs_get_LENGTH_reg(const vo
                                                                         hri_sercomi2cs_length_reg_t mask)
 {
 	uint16_t tmp;
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
 	tmp = ((Sercom *)hw)->I2CS.LENGTH.reg;
 	tmp &= mask;
 	return tmp;
@@ -8130,6 +6588,7 @@ static inline void hri_sercomi2cs_write_LENGTH_reg(const void *const hw, hri_ser
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
 	((Sercom *)hw)->I2CS.LENGTH.reg = data;
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -8137,6 +6596,7 @@ static inline void hri_sercomi2cs_clear_LENGTH_reg(const void *const hw, hri_ser
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
 	((Sercom *)hw)->I2CS.LENGTH.reg &= ~mask;
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
@@ -8144,12 +6604,599 @@ static inline void hri_sercomi2cs_toggle_LENGTH_reg(const void *const hw, hri_se
 {
 	SERCOM_CRITICAL_SECTION_ENTER();
 	((Sercom *)hw)->I2CS.LENGTH.reg ^= mask;
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
 static inline hri_sercomi2cs_length_reg_t hri_sercomi2cs_read_LENGTH_reg(const void *const hw)
 {
+	hri_sercomi2cs_wait_for_sync(hw, SERCOM_I2CS_SYNCBUSY_MASK);
 	return ((Sercom *)hw)->I2CS.LENGTH.reg;
+}
+
+static inline void hri_sercomspi_set_LENGTH_LENEN_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.LENGTH.reg |= SERCOM_SPI_LENGTH_LENEN;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomspi_get_LENGTH_LENEN_bit(const void *const hw)
+{
+	uint16_t tmp;
+	tmp = ((Sercom *)hw)->SPI.LENGTH.reg;
+	tmp = (tmp & SERCOM_SPI_LENGTH_LENEN) >> SERCOM_SPI_LENGTH_LENEN_Pos;
+	return (bool)tmp;
+}
+
+static inline void hri_sercomspi_write_LENGTH_LENEN_bit(const void *const hw, bool value)
+{
+	uint16_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->SPI.LENGTH.reg;
+	tmp &= ~SERCOM_SPI_LENGTH_LENEN;
+	tmp |= value << SERCOM_SPI_LENGTH_LENEN_Pos;
+	((Sercom *)hw)->SPI.LENGTH.reg = tmp;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_clear_LENGTH_LENEN_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.LENGTH.reg &= ~SERCOM_SPI_LENGTH_LENEN;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_toggle_LENGTH_LENEN_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.LENGTH.reg ^= SERCOM_SPI_LENGTH_LENEN;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_set_LENGTH_LEN_bf(const void *const hw, hri_sercomspi_length_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.LENGTH.reg |= SERCOM_SPI_LENGTH_LEN(mask);
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomspi_length_reg_t hri_sercomspi_get_LENGTH_LEN_bf(const void *const          hw,
+                                                                         hri_sercomspi_length_reg_t mask)
+{
+	uint16_t tmp;
+	tmp = ((Sercom *)hw)->SPI.LENGTH.reg;
+	tmp = (tmp & SERCOM_SPI_LENGTH_LEN(mask)) >> SERCOM_SPI_LENGTH_LEN_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomspi_write_LENGTH_LEN_bf(const void *const hw, hri_sercomspi_length_reg_t data)
+{
+	uint16_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->SPI.LENGTH.reg;
+	tmp &= ~SERCOM_SPI_LENGTH_LEN_Msk;
+	tmp |= SERCOM_SPI_LENGTH_LEN(data);
+	((Sercom *)hw)->SPI.LENGTH.reg = tmp;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_clear_LENGTH_LEN_bf(const void *const hw, hri_sercomspi_length_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.LENGTH.reg &= ~SERCOM_SPI_LENGTH_LEN(mask);
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_toggle_LENGTH_LEN_bf(const void *const hw, hri_sercomspi_length_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.LENGTH.reg ^= SERCOM_SPI_LENGTH_LEN(mask);
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomspi_length_reg_t hri_sercomspi_read_LENGTH_LEN_bf(const void *const hw)
+{
+	uint16_t tmp;
+	tmp = ((Sercom *)hw)->SPI.LENGTH.reg;
+	tmp = (tmp & SERCOM_SPI_LENGTH_LEN_Msk) >> SERCOM_SPI_LENGTH_LEN_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomspi_set_LENGTH_reg(const void *const hw, hri_sercomspi_length_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.LENGTH.reg |= mask;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomspi_length_reg_t hri_sercomspi_get_LENGTH_reg(const void *const          hw,
+                                                                      hri_sercomspi_length_reg_t mask)
+{
+	uint16_t tmp;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	tmp = ((Sercom *)hw)->SPI.LENGTH.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline void hri_sercomspi_write_LENGTH_reg(const void *const hw, hri_sercomspi_length_reg_t data)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.LENGTH.reg = data;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_clear_LENGTH_reg(const void *const hw, hri_sercomspi_length_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.LENGTH.reg &= ~mask;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_toggle_LENGTH_reg(const void *const hw, hri_sercomspi_length_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.LENGTH.reg ^= mask;
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomspi_length_reg_t hri_sercomspi_read_LENGTH_reg(const void *const hw)
+{
+	hri_sercomspi_wait_for_sync(hw, SERCOM_SPI_SYNCBUSY_MASK);
+	return ((Sercom *)hw)->SPI.LENGTH.reg;
+}
+
+static inline void hri_sercomusart_set_LENGTH_LEN_bf(const void *const hw, hri_sercomusart_length_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->USART.LENGTH.reg |= SERCOM_USART_LENGTH_LEN(mask);
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomusart_length_reg_t hri_sercomusart_get_LENGTH_LEN_bf(const void *const            hw,
+                                                                             hri_sercomusart_length_reg_t mask)
+{
+	uint16_t tmp;
+	tmp = ((Sercom *)hw)->USART.LENGTH.reg;
+	tmp = (tmp & SERCOM_USART_LENGTH_LEN(mask)) >> SERCOM_USART_LENGTH_LEN_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomusart_write_LENGTH_LEN_bf(const void *const hw, hri_sercomusart_length_reg_t data)
+{
+	uint16_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->USART.LENGTH.reg;
+	tmp &= ~SERCOM_USART_LENGTH_LEN_Msk;
+	tmp |= SERCOM_USART_LENGTH_LEN(data);
+	((Sercom *)hw)->USART.LENGTH.reg = tmp;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomusart_clear_LENGTH_LEN_bf(const void *const hw, hri_sercomusart_length_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->USART.LENGTH.reg &= ~SERCOM_USART_LENGTH_LEN(mask);
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomusart_toggle_LENGTH_LEN_bf(const void *const hw, hri_sercomusart_length_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->USART.LENGTH.reg ^= SERCOM_USART_LENGTH_LEN(mask);
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomusart_length_reg_t hri_sercomusart_read_LENGTH_LEN_bf(const void *const hw)
+{
+	uint16_t tmp;
+	tmp = ((Sercom *)hw)->USART.LENGTH.reg;
+	tmp = (tmp & SERCOM_USART_LENGTH_LEN_Msk) >> SERCOM_USART_LENGTH_LEN_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomusart_set_LENGTH_LENEN_bf(const void *const hw, hri_sercomusart_length_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->USART.LENGTH.reg |= SERCOM_USART_LENGTH_LENEN(mask);
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomusart_length_reg_t hri_sercomusart_get_LENGTH_LENEN_bf(const void *const            hw,
+                                                                               hri_sercomusart_length_reg_t mask)
+{
+	uint16_t tmp;
+	tmp = ((Sercom *)hw)->USART.LENGTH.reg;
+	tmp = (tmp & SERCOM_USART_LENGTH_LENEN(mask)) >> SERCOM_USART_LENGTH_LENEN_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomusart_write_LENGTH_LENEN_bf(const void *const hw, hri_sercomusart_length_reg_t data)
+{
+	uint16_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->USART.LENGTH.reg;
+	tmp &= ~SERCOM_USART_LENGTH_LENEN_Msk;
+	tmp |= SERCOM_USART_LENGTH_LENEN(data);
+	((Sercom *)hw)->USART.LENGTH.reg = tmp;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomusart_clear_LENGTH_LENEN_bf(const void *const hw, hri_sercomusart_length_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->USART.LENGTH.reg &= ~SERCOM_USART_LENGTH_LENEN(mask);
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomusart_toggle_LENGTH_LENEN_bf(const void *const hw, hri_sercomusart_length_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->USART.LENGTH.reg ^= SERCOM_USART_LENGTH_LENEN(mask);
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomusart_length_reg_t hri_sercomusart_read_LENGTH_LENEN_bf(const void *const hw)
+{
+	uint16_t tmp;
+	tmp = ((Sercom *)hw)->USART.LENGTH.reg;
+	tmp = (tmp & SERCOM_USART_LENGTH_LENEN_Msk) >> SERCOM_USART_LENGTH_LENEN_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomusart_set_LENGTH_reg(const void *const hw, hri_sercomusart_length_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->USART.LENGTH.reg |= mask;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomusart_length_reg_t hri_sercomusart_get_LENGTH_reg(const void *const            hw,
+                                                                          hri_sercomusart_length_reg_t mask)
+{
+	uint16_t tmp;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
+	tmp = ((Sercom *)hw)->USART.LENGTH.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline void hri_sercomusart_write_LENGTH_reg(const void *const hw, hri_sercomusart_length_reg_t data)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->USART.LENGTH.reg = data;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomusart_clear_LENGTH_reg(const void *const hw, hri_sercomusart_length_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->USART.LENGTH.reg &= ~mask;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomusart_toggle_LENGTH_reg(const void *const hw, hri_sercomusart_length_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->USART.LENGTH.reg ^= mask;
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomusart_length_reg_t hri_sercomusart_read_LENGTH_reg(const void *const hw)
+{
+	hri_sercomusart_wait_for_sync(hw, SERCOM_USART_SYNCBUSY_MASK);
+	return ((Sercom *)hw)->USART.LENGTH.reg;
+}
+
+static inline void hri_sercomi2cm_set_ADDR_LENEN_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.ADDR.reg |= SERCOM_I2CM_ADDR_LENEN;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomi2cm_get_ADDR_LENEN_bit(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CM.ADDR.reg;
+	tmp = (tmp & SERCOM_I2CM_ADDR_LENEN) >> SERCOM_I2CM_ADDR_LENEN_Pos;
+	return (bool)tmp;
+}
+
+static inline void hri_sercomi2cm_write_ADDR_LENEN_bit(const void *const hw, bool value)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->I2CM.ADDR.reg;
+	tmp &= ~SERCOM_I2CM_ADDR_LENEN;
+	tmp |= value << SERCOM_I2CM_ADDR_LENEN_Pos;
+	((Sercom *)hw)->I2CM.ADDR.reg = tmp;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_clear_ADDR_LENEN_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.ADDR.reg &= ~SERCOM_I2CM_ADDR_LENEN;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_toggle_ADDR_LENEN_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.ADDR.reg ^= SERCOM_I2CM_ADDR_LENEN;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_set_ADDR_HS_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.ADDR.reg |= SERCOM_I2CM_ADDR_HS;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomi2cm_get_ADDR_HS_bit(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CM.ADDR.reg;
+	tmp = (tmp & SERCOM_I2CM_ADDR_HS) >> SERCOM_I2CM_ADDR_HS_Pos;
+	return (bool)tmp;
+}
+
+static inline void hri_sercomi2cm_write_ADDR_HS_bit(const void *const hw, bool value)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->I2CM.ADDR.reg;
+	tmp &= ~SERCOM_I2CM_ADDR_HS;
+	tmp |= value << SERCOM_I2CM_ADDR_HS_Pos;
+	((Sercom *)hw)->I2CM.ADDR.reg = tmp;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_clear_ADDR_HS_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.ADDR.reg &= ~SERCOM_I2CM_ADDR_HS;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_toggle_ADDR_HS_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.ADDR.reg ^= SERCOM_I2CM_ADDR_HS;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_set_ADDR_TENBITEN_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.ADDR.reg |= SERCOM_I2CM_ADDR_TENBITEN;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomi2cm_get_ADDR_TENBITEN_bit(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CM.ADDR.reg;
+	tmp = (tmp & SERCOM_I2CM_ADDR_TENBITEN) >> SERCOM_I2CM_ADDR_TENBITEN_Pos;
+	return (bool)tmp;
+}
+
+static inline void hri_sercomi2cm_write_ADDR_TENBITEN_bit(const void *const hw, bool value)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->I2CM.ADDR.reg;
+	tmp &= ~SERCOM_I2CM_ADDR_TENBITEN;
+	tmp |= value << SERCOM_I2CM_ADDR_TENBITEN_Pos;
+	((Sercom *)hw)->I2CM.ADDR.reg = tmp;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_clear_ADDR_TENBITEN_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.ADDR.reg &= ~SERCOM_I2CM_ADDR_TENBITEN;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_toggle_ADDR_TENBITEN_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.ADDR.reg ^= SERCOM_I2CM_ADDR_TENBITEN;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_set_ADDR_ADDR_bf(const void *const hw, hri_sercomi2cm_addr_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.ADDR.reg |= SERCOM_I2CM_ADDR_ADDR(mask);
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cm_addr_reg_t hri_sercomi2cm_get_ADDR_ADDR_bf(const void *const         hw,
+                                                                        hri_sercomi2cm_addr_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CM.ADDR.reg;
+	tmp = (tmp & SERCOM_I2CM_ADDR_ADDR(mask)) >> SERCOM_I2CM_ADDR_ADDR_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomi2cm_write_ADDR_ADDR_bf(const void *const hw, hri_sercomi2cm_addr_reg_t data)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->I2CM.ADDR.reg;
+	tmp &= ~SERCOM_I2CM_ADDR_ADDR_Msk;
+	tmp |= SERCOM_I2CM_ADDR_ADDR(data);
+	((Sercom *)hw)->I2CM.ADDR.reg = tmp;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_clear_ADDR_ADDR_bf(const void *const hw, hri_sercomi2cm_addr_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.ADDR.reg &= ~SERCOM_I2CM_ADDR_ADDR(mask);
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_toggle_ADDR_ADDR_bf(const void *const hw, hri_sercomi2cm_addr_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.ADDR.reg ^= SERCOM_I2CM_ADDR_ADDR(mask);
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cm_addr_reg_t hri_sercomi2cm_read_ADDR_ADDR_bf(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CM.ADDR.reg;
+	tmp = (tmp & SERCOM_I2CM_ADDR_ADDR_Msk) >> SERCOM_I2CM_ADDR_ADDR_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomi2cm_set_ADDR_LEN_bf(const void *const hw, hri_sercomi2cm_addr_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.ADDR.reg |= SERCOM_I2CM_ADDR_LEN(mask);
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cm_addr_reg_t hri_sercomi2cm_get_ADDR_LEN_bf(const void *const         hw,
+                                                                       hri_sercomi2cm_addr_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CM.ADDR.reg;
+	tmp = (tmp & SERCOM_I2CM_ADDR_LEN(mask)) >> SERCOM_I2CM_ADDR_LEN_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomi2cm_write_ADDR_LEN_bf(const void *const hw, hri_sercomi2cm_addr_reg_t data)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->I2CM.ADDR.reg;
+	tmp &= ~SERCOM_I2CM_ADDR_LEN_Msk;
+	tmp |= SERCOM_I2CM_ADDR_LEN(data);
+	((Sercom *)hw)->I2CM.ADDR.reg = tmp;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_clear_ADDR_LEN_bf(const void *const hw, hri_sercomi2cm_addr_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.ADDR.reg &= ~SERCOM_I2CM_ADDR_LEN(mask);
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_toggle_ADDR_LEN_bf(const void *const hw, hri_sercomi2cm_addr_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.ADDR.reg ^= SERCOM_I2CM_ADDR_LEN(mask);
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cm_addr_reg_t hri_sercomi2cm_read_ADDR_LEN_bf(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CM.ADDR.reg;
+	tmp = (tmp & SERCOM_I2CM_ADDR_LEN_Msk) >> SERCOM_I2CM_ADDR_LEN_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomi2cm_set_ADDR_reg(const void *const hw, hri_sercomi2cm_addr_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.ADDR.reg |= mask;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cm_addr_reg_t hri_sercomi2cm_get_ADDR_reg(const void *const         hw,
+                                                                    hri_sercomi2cm_addr_reg_t mask)
+{
+	uint32_t tmp;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	tmp = ((Sercom *)hw)->I2CM.ADDR.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline void hri_sercomi2cm_write_ADDR_reg(const void *const hw, hri_sercomi2cm_addr_reg_t data)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.ADDR.reg = data;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_clear_ADDR_reg(const void *const hw, hri_sercomi2cm_addr_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.ADDR.reg &= ~mask;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_toggle_ADDR_reg(const void *const hw, hri_sercomi2cm_addr_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.ADDR.reg ^= mask;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cm_addr_reg_t hri_sercomi2cm_read_ADDR_reg(const void *const hw)
+{
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	return ((Sercom *)hw)->I2CM.ADDR.reg;
 }
 
 static inline void hri_sercomi2cs_set_ADDR_GENCEN_bit(const void *const hw)
@@ -8372,11 +7419,259 @@ static inline hri_sercomi2cs_addr_reg_t hri_sercomi2cs_read_ADDR_reg(const void 
 	return ((Sercom *)hw)->I2CS.ADDR.reg;
 }
 
-static inline hri_sercomi2cs_data_reg_t hri_sercomi2cs_read_DATA_DATA_bf(const void *const hw)
+static inline void hri_sercomspi_set_ADDR_ADDR_bf(const void *const hw, hri_sercomspi_addr_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.ADDR.reg |= SERCOM_SPI_ADDR_ADDR(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomspi_addr_reg_t hri_sercomspi_get_ADDR_ADDR_bf(const void *const        hw,
+                                                                      hri_sercomspi_addr_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->SPI.ADDR.reg;
+	tmp = (tmp & SERCOM_SPI_ADDR_ADDR(mask)) >> SERCOM_SPI_ADDR_ADDR_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomspi_write_ADDR_ADDR_bf(const void *const hw, hri_sercomspi_addr_reg_t data)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->SPI.ADDR.reg;
+	tmp &= ~SERCOM_SPI_ADDR_ADDR_Msk;
+	tmp |= SERCOM_SPI_ADDR_ADDR(data);
+	((Sercom *)hw)->SPI.ADDR.reg = tmp;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_clear_ADDR_ADDR_bf(const void *const hw, hri_sercomspi_addr_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.ADDR.reg &= ~SERCOM_SPI_ADDR_ADDR(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_toggle_ADDR_ADDR_bf(const void *const hw, hri_sercomspi_addr_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.ADDR.reg ^= SERCOM_SPI_ADDR_ADDR(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomspi_addr_reg_t hri_sercomspi_read_ADDR_ADDR_bf(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->SPI.ADDR.reg;
+	tmp = (tmp & SERCOM_SPI_ADDR_ADDR_Msk) >> SERCOM_SPI_ADDR_ADDR_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomspi_set_ADDR_ADDRMASK_bf(const void *const hw, hri_sercomspi_addr_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.ADDR.reg |= SERCOM_SPI_ADDR_ADDRMASK(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomspi_addr_reg_t hri_sercomspi_get_ADDR_ADDRMASK_bf(const void *const        hw,
+                                                                          hri_sercomspi_addr_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->SPI.ADDR.reg;
+	tmp = (tmp & SERCOM_SPI_ADDR_ADDRMASK(mask)) >> SERCOM_SPI_ADDR_ADDRMASK_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomspi_write_ADDR_ADDRMASK_bf(const void *const hw, hri_sercomspi_addr_reg_t data)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->SPI.ADDR.reg;
+	tmp &= ~SERCOM_SPI_ADDR_ADDRMASK_Msk;
+	tmp |= SERCOM_SPI_ADDR_ADDRMASK(data);
+	((Sercom *)hw)->SPI.ADDR.reg = tmp;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_clear_ADDR_ADDRMASK_bf(const void *const hw, hri_sercomspi_addr_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.ADDR.reg &= ~SERCOM_SPI_ADDR_ADDRMASK(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_toggle_ADDR_ADDRMASK_bf(const void *const hw, hri_sercomspi_addr_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.ADDR.reg ^= SERCOM_SPI_ADDR_ADDRMASK(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomspi_addr_reg_t hri_sercomspi_read_ADDR_ADDRMASK_bf(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->SPI.ADDR.reg;
+	tmp = (tmp & SERCOM_SPI_ADDR_ADDRMASK_Msk) >> SERCOM_SPI_ADDR_ADDRMASK_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomspi_set_ADDR_reg(const void *const hw, hri_sercomspi_addr_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.ADDR.reg |= mask;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomspi_addr_reg_t hri_sercomspi_get_ADDR_reg(const void *const hw, hri_sercomspi_addr_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->SPI.ADDR.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline void hri_sercomspi_write_ADDR_reg(const void *const hw, hri_sercomspi_addr_reg_t data)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.ADDR.reg = data;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_clear_ADDR_reg(const void *const hw, hri_sercomspi_addr_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.ADDR.reg &= ~mask;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_toggle_ADDR_reg(const void *const hw, hri_sercomspi_addr_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.ADDR.reg ^= mask;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomspi_addr_reg_t hri_sercomspi_read_ADDR_reg(const void *const hw)
+{
+	return ((Sercom *)hw)->SPI.ADDR.reg;
+}
+
+static inline void hri_sercomi2cm_set_DATA_DATA_bf(const void *const hw, hri_sercomi2cm_data_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.DATA.reg |= SERCOM_I2CM_DATA_DATA(mask);
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cm_data_reg_t hri_sercomi2cm_get_DATA_DATA_bf(const void *const         hw,
+                                                                        hri_sercomi2cm_data_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CM.DATA.reg;
+	tmp = (tmp & SERCOM_I2CM_DATA_DATA(mask)) >> SERCOM_I2CM_DATA_DATA_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomi2cm_write_DATA_DATA_bf(const void *const hw, hri_sercomi2cm_data_reg_t data)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->I2CM.DATA.reg;
+	tmp &= ~SERCOM_I2CM_DATA_DATA_Msk;
+	tmp |= SERCOM_I2CM_DATA_DATA(data);
+	((Sercom *)hw)->I2CM.DATA.reg = tmp;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_clear_DATA_DATA_bf(const void *const hw, hri_sercomi2cm_data_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.DATA.reg &= ~SERCOM_I2CM_DATA_DATA(mask);
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_toggle_DATA_DATA_bf(const void *const hw, hri_sercomi2cm_data_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.DATA.reg ^= SERCOM_I2CM_DATA_DATA(mask);
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cm_data_reg_t hri_sercomi2cm_read_DATA_DATA_bf(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CM.DATA.reg;
+	tmp = (tmp & SERCOM_I2CM_DATA_DATA_Msk) >> SERCOM_I2CM_DATA_DATA_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomi2cm_set_DATA_reg(const void *const hw, hri_sercomi2cm_data_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.DATA.reg |= mask;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cm_data_reg_t hri_sercomi2cm_get_DATA_reg(const void *const         hw,
+                                                                    hri_sercomi2cm_data_reg_t mask)
+{
+	uint32_t tmp;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	tmp = ((Sercom *)hw)->I2CM.DATA.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline void hri_sercomi2cm_write_DATA_reg(const void *const hw, hri_sercomi2cm_data_reg_t data)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.DATA.reg = data;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_clear_DATA_reg(const void *const hw, hri_sercomi2cm_data_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.DATA.reg &= ~mask;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_toggle_DATA_reg(const void *const hw, hri_sercomi2cm_data_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.DATA.reg ^= mask;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cm_data_reg_t hri_sercomi2cm_read_DATA_reg(const void *const hw)
+{
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	return ((Sercom *)hw)->I2CM.DATA.reg;
+}
+
+static inline void hri_sercomi2cs_set_DATA_DATA_bf(const void *const hw, hri_sercomi2cs_data_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.DATA.reg |= SERCOM_I2CS_DATA_DATA(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cs_data_reg_t hri_sercomi2cs_get_DATA_DATA_bf(const void *const         hw,
+                                                                        hri_sercomi2cs_data_reg_t mask)
 {
 	uint32_t tmp;
 	tmp = ((Sercom *)hw)->I2CS.DATA.reg;
-	tmp = (tmp & SERCOM_I2CS_DATA_DATA_Msk) >> SERCOM_I2CS_DATA_DATA_Pos;
+	tmp = (tmp & SERCOM_I2CS_DATA_DATA(mask)) >> SERCOM_I2CS_DATA_DATA_Pos;
 	return tmp;
 }
 
@@ -8391,9 +7686,42 @@ static inline void hri_sercomi2cs_write_DATA_DATA_bf(const void *const hw, hri_s
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
-static inline hri_sercomi2cs_data_reg_t hri_sercomi2cs_read_DATA_reg(const void *const hw)
+static inline void hri_sercomi2cs_clear_DATA_DATA_bf(const void *const hw, hri_sercomi2cs_data_reg_t mask)
 {
-	return ((Sercom *)hw)->I2CS.DATA.reg;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.DATA.reg &= ~SERCOM_I2CS_DATA_DATA(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cs_toggle_DATA_DATA_bf(const void *const hw, hri_sercomi2cs_data_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.DATA.reg ^= SERCOM_I2CS_DATA_DATA(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cs_data_reg_t hri_sercomi2cs_read_DATA_DATA_bf(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CS.DATA.reg;
+	tmp = (tmp & SERCOM_I2CS_DATA_DATA_Msk) >> SERCOM_I2CS_DATA_DATA_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomi2cs_set_DATA_reg(const void *const hw, hri_sercomi2cs_data_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.DATA.reg |= mask;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cs_data_reg_t hri_sercomi2cs_get_DATA_reg(const void *const         hw,
+                                                                    hri_sercomi2cs_data_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->I2CS.DATA.reg;
+	tmp &= mask;
+	return tmp;
 }
 
 static inline void hri_sercomi2cs_write_DATA_reg(const void *const hw, hri_sercomi2cs_data_reg_t data)
@@ -8403,33 +7731,450 @@ static inline void hri_sercomi2cs_write_DATA_reg(const void *const hw, hri_serco
 	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
-static inline bool hri_sercomi2cs_get_SYNCBUSY_SWRST_bit(const void *const hw)
+static inline void hri_sercomi2cs_clear_DATA_reg(const void *const hw, hri_sercomi2cs_data_reg_t mask)
 {
-	return (((Sercom *)hw)->I2CS.SYNCBUSY.reg & SERCOM_I2CS_SYNCBUSY_SWRST) >> SERCOM_I2CS_SYNCBUSY_SWRST_Pos;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.DATA.reg &= ~mask;
+	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
-static inline bool hri_sercomi2cs_get_SYNCBUSY_ENABLE_bit(const void *const hw)
+static inline void hri_sercomi2cs_toggle_DATA_reg(const void *const hw, hri_sercomi2cs_data_reg_t mask)
 {
-	return (((Sercom *)hw)->I2CS.SYNCBUSY.reg & SERCOM_I2CS_SYNCBUSY_ENABLE) >> SERCOM_I2CS_SYNCBUSY_ENABLE_Pos;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CS.DATA.reg ^= mask;
+	SERCOM_CRITICAL_SECTION_LEAVE();
 }
 
-static inline bool hri_sercomi2cs_get_SYNCBUSY_LENGTH_bit(const void *const hw)
+static inline hri_sercomi2cs_data_reg_t hri_sercomi2cs_read_DATA_reg(const void *const hw)
 {
-	return (((Sercom *)hw)->I2CS.SYNCBUSY.reg & SERCOM_I2CS_SYNCBUSY_LENGTH) >> SERCOM_I2CS_SYNCBUSY_LENGTH_Pos;
+	return ((Sercom *)hw)->I2CS.DATA.reg;
 }
 
-static inline hri_sercomi2cs_syncbusy_reg_t hri_sercomi2cs_get_SYNCBUSY_reg(const void *const             hw,
-                                                                            hri_sercomi2cs_syncbusy_reg_t mask)
+static inline void hri_sercomspi_set_DATA_DATA_bf(const void *const hw, hri_sercomspi_data_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.DATA.reg |= SERCOM_SPI_DATA_DATA(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomspi_data_reg_t hri_sercomspi_get_DATA_DATA_bf(const void *const        hw,
+                                                                      hri_sercomspi_data_reg_t mask)
 {
 	uint32_t tmp;
-	tmp = ((Sercom *)hw)->I2CS.SYNCBUSY.reg;
+	tmp = ((Sercom *)hw)->SPI.DATA.reg;
+	tmp = (tmp & SERCOM_SPI_DATA_DATA(mask)) >> SERCOM_SPI_DATA_DATA_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomspi_write_DATA_DATA_bf(const void *const hw, hri_sercomspi_data_reg_t data)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->SPI.DATA.reg;
+	tmp &= ~SERCOM_SPI_DATA_DATA_Msk;
+	tmp |= SERCOM_SPI_DATA_DATA(data);
+	((Sercom *)hw)->SPI.DATA.reg = tmp;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_clear_DATA_DATA_bf(const void *const hw, hri_sercomspi_data_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.DATA.reg &= ~SERCOM_SPI_DATA_DATA(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_toggle_DATA_DATA_bf(const void *const hw, hri_sercomspi_data_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.DATA.reg ^= SERCOM_SPI_DATA_DATA(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomspi_data_reg_t hri_sercomspi_read_DATA_DATA_bf(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->SPI.DATA.reg;
+	tmp = (tmp & SERCOM_SPI_DATA_DATA_Msk) >> SERCOM_SPI_DATA_DATA_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomspi_set_DATA_reg(const void *const hw, hri_sercomspi_data_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.DATA.reg |= mask;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomspi_data_reg_t hri_sercomspi_get_DATA_reg(const void *const hw, hri_sercomspi_data_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->SPI.DATA.reg;
 	tmp &= mask;
 	return tmp;
 }
 
-static inline hri_sercomi2cs_syncbusy_reg_t hri_sercomi2cs_read_SYNCBUSY_reg(const void *const hw)
+static inline void hri_sercomspi_write_DATA_reg(const void *const hw, hri_sercomspi_data_reg_t data)
 {
-	return ((Sercom *)hw)->I2CS.SYNCBUSY.reg;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.DATA.reg = data;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_clear_DATA_reg(const void *const hw, hri_sercomspi_data_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.DATA.reg &= ~mask;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_toggle_DATA_reg(const void *const hw, hri_sercomspi_data_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.DATA.reg ^= mask;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomspi_data_reg_t hri_sercomspi_read_DATA_reg(const void *const hw)
+{
+	return ((Sercom *)hw)->SPI.DATA.reg;
+}
+
+static inline void hri_sercomusart_set_DATA_DATA_bf(const void *const hw, hri_sercomusart_data_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->USART.DATA.reg |= SERCOM_USART_DATA_DATA(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomusart_data_reg_t hri_sercomusart_get_DATA_DATA_bf(const void *const          hw,
+                                                                          hri_sercomusart_data_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->USART.DATA.reg;
+	tmp = (tmp & SERCOM_USART_DATA_DATA(mask)) >> SERCOM_USART_DATA_DATA_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomusart_write_DATA_DATA_bf(const void *const hw, hri_sercomusart_data_reg_t data)
+{
+	uint32_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->USART.DATA.reg;
+	tmp &= ~SERCOM_USART_DATA_DATA_Msk;
+	tmp |= SERCOM_USART_DATA_DATA(data);
+	((Sercom *)hw)->USART.DATA.reg = tmp;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomusart_clear_DATA_DATA_bf(const void *const hw, hri_sercomusart_data_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->USART.DATA.reg &= ~SERCOM_USART_DATA_DATA(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomusart_toggle_DATA_DATA_bf(const void *const hw, hri_sercomusart_data_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->USART.DATA.reg ^= SERCOM_USART_DATA_DATA(mask);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomusart_data_reg_t hri_sercomusart_read_DATA_DATA_bf(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->USART.DATA.reg;
+	tmp = (tmp & SERCOM_USART_DATA_DATA_Msk) >> SERCOM_USART_DATA_DATA_Pos;
+	return tmp;
+}
+
+static inline void hri_sercomusart_set_DATA_reg(const void *const hw, hri_sercomusart_data_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->USART.DATA.reg |= mask;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomusart_data_reg_t hri_sercomusart_get_DATA_reg(const void *const          hw,
+                                                                      hri_sercomusart_data_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Sercom *)hw)->USART.DATA.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline void hri_sercomusart_write_DATA_reg(const void *const hw, hri_sercomusart_data_reg_t data)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->USART.DATA.reg = data;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomusart_clear_DATA_reg(const void *const hw, hri_sercomusart_data_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->USART.DATA.reg &= ~mask;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomusart_toggle_DATA_reg(const void *const hw, hri_sercomusart_data_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->USART.DATA.reg ^= mask;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomusart_data_reg_t hri_sercomusart_read_DATA_reg(const void *const hw)
+{
+	return ((Sercom *)hw)->USART.DATA.reg;
+}
+
+static inline void hri_sercomi2cm_set_DBGCTRL_DBGSTOP_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.DBGCTRL.reg |= SERCOM_I2CM_DBGCTRL_DBGSTOP;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomi2cm_get_DBGCTRL_DBGSTOP_bit(const void *const hw)
+{
+	uint8_t tmp;
+	tmp = ((Sercom *)hw)->I2CM.DBGCTRL.reg;
+	tmp = (tmp & SERCOM_I2CM_DBGCTRL_DBGSTOP) >> SERCOM_I2CM_DBGCTRL_DBGSTOP_Pos;
+	return (bool)tmp;
+}
+
+static inline void hri_sercomi2cm_write_DBGCTRL_DBGSTOP_bit(const void *const hw, bool value)
+{
+	uint8_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->I2CM.DBGCTRL.reg;
+	tmp &= ~SERCOM_I2CM_DBGCTRL_DBGSTOP;
+	tmp |= value << SERCOM_I2CM_DBGCTRL_DBGSTOP_Pos;
+	((Sercom *)hw)->I2CM.DBGCTRL.reg = tmp;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_clear_DBGCTRL_DBGSTOP_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.DBGCTRL.reg &= ~SERCOM_I2CM_DBGCTRL_DBGSTOP;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_toggle_DBGCTRL_DBGSTOP_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.DBGCTRL.reg ^= SERCOM_I2CM_DBGCTRL_DBGSTOP;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_set_DBGCTRL_reg(const void *const hw, hri_sercomi2cm_dbgctrl_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.DBGCTRL.reg |= mask;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cm_dbgctrl_reg_t hri_sercomi2cm_get_DBGCTRL_reg(const void *const            hw,
+                                                                          hri_sercomi2cm_dbgctrl_reg_t mask)
+{
+	uint8_t tmp;
+	tmp = ((Sercom *)hw)->I2CM.DBGCTRL.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline void hri_sercomi2cm_write_DBGCTRL_reg(const void *const hw, hri_sercomi2cm_dbgctrl_reg_t data)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.DBGCTRL.reg = data;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_clear_DBGCTRL_reg(const void *const hw, hri_sercomi2cm_dbgctrl_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.DBGCTRL.reg &= ~mask;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_toggle_DBGCTRL_reg(const void *const hw, hri_sercomi2cm_dbgctrl_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.DBGCTRL.reg ^= mask;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cm_dbgctrl_reg_t hri_sercomi2cm_read_DBGCTRL_reg(const void *const hw)
+{
+	return ((Sercom *)hw)->I2CM.DBGCTRL.reg;
+}
+
+static inline void hri_sercomspi_set_DBGCTRL_DBGSTOP_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.DBGCTRL.reg |= SERCOM_SPI_DBGCTRL_DBGSTOP;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomspi_get_DBGCTRL_DBGSTOP_bit(const void *const hw)
+{
+	uint8_t tmp;
+	tmp = ((Sercom *)hw)->SPI.DBGCTRL.reg;
+	tmp = (tmp & SERCOM_SPI_DBGCTRL_DBGSTOP) >> SERCOM_SPI_DBGCTRL_DBGSTOP_Pos;
+	return (bool)tmp;
+}
+
+static inline void hri_sercomspi_write_DBGCTRL_DBGSTOP_bit(const void *const hw, bool value)
+{
+	uint8_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->SPI.DBGCTRL.reg;
+	tmp &= ~SERCOM_SPI_DBGCTRL_DBGSTOP;
+	tmp |= value << SERCOM_SPI_DBGCTRL_DBGSTOP_Pos;
+	((Sercom *)hw)->SPI.DBGCTRL.reg = tmp;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_clear_DBGCTRL_DBGSTOP_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.DBGCTRL.reg &= ~SERCOM_SPI_DBGCTRL_DBGSTOP;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_toggle_DBGCTRL_DBGSTOP_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.DBGCTRL.reg ^= SERCOM_SPI_DBGCTRL_DBGSTOP;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_set_DBGCTRL_reg(const void *const hw, hri_sercomspi_dbgctrl_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.DBGCTRL.reg |= mask;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomspi_dbgctrl_reg_t hri_sercomspi_get_DBGCTRL_reg(const void *const           hw,
+                                                                        hri_sercomspi_dbgctrl_reg_t mask)
+{
+	uint8_t tmp;
+	tmp = ((Sercom *)hw)->SPI.DBGCTRL.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline void hri_sercomspi_write_DBGCTRL_reg(const void *const hw, hri_sercomspi_dbgctrl_reg_t data)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.DBGCTRL.reg = data;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_clear_DBGCTRL_reg(const void *const hw, hri_sercomspi_dbgctrl_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.DBGCTRL.reg &= ~mask;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomspi_toggle_DBGCTRL_reg(const void *const hw, hri_sercomspi_dbgctrl_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.DBGCTRL.reg ^= mask;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomspi_dbgctrl_reg_t hri_sercomspi_read_DBGCTRL_reg(const void *const hw)
+{
+	return ((Sercom *)hw)->SPI.DBGCTRL.reg;
+}
+
+static inline void hri_sercomusart_set_DBGCTRL_DBGSTOP_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->USART.DBGCTRL.reg |= SERCOM_USART_DBGCTRL_DBGSTOP;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomusart_get_DBGCTRL_DBGSTOP_bit(const void *const hw)
+{
+	uint8_t tmp;
+	tmp = ((Sercom *)hw)->USART.DBGCTRL.reg;
+	tmp = (tmp & SERCOM_USART_DBGCTRL_DBGSTOP) >> SERCOM_USART_DBGCTRL_DBGSTOP_Pos;
+	return (bool)tmp;
+}
+
+static inline void hri_sercomusart_write_DBGCTRL_DBGSTOP_bit(const void *const hw, bool value)
+{
+	uint8_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->USART.DBGCTRL.reg;
+	tmp &= ~SERCOM_USART_DBGCTRL_DBGSTOP;
+	tmp |= value << SERCOM_USART_DBGCTRL_DBGSTOP_Pos;
+	((Sercom *)hw)->USART.DBGCTRL.reg = tmp;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomusart_clear_DBGCTRL_DBGSTOP_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->USART.DBGCTRL.reg &= ~SERCOM_USART_DBGCTRL_DBGSTOP;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomusart_toggle_DBGCTRL_DBGSTOP_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->USART.DBGCTRL.reg ^= SERCOM_USART_DBGCTRL_DBGSTOP;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomusart_set_DBGCTRL_reg(const void *const hw, hri_sercomusart_dbgctrl_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->USART.DBGCTRL.reg |= mask;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomusart_dbgctrl_reg_t hri_sercomusart_get_DBGCTRL_reg(const void *const             hw,
+                                                                            hri_sercomusart_dbgctrl_reg_t mask)
+{
+	uint8_t tmp;
+	tmp = ((Sercom *)hw)->USART.DBGCTRL.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline void hri_sercomusart_write_DBGCTRL_reg(const void *const hw, hri_sercomusart_dbgctrl_reg_t data)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->USART.DBGCTRL.reg = data;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomusart_clear_DBGCTRL_reg(const void *const hw, hri_sercomusart_dbgctrl_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->USART.DBGCTRL.reg &= ~mask;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomusart_toggle_DBGCTRL_reg(const void *const hw, hri_sercomusart_dbgctrl_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->USART.DBGCTRL.reg ^= mask;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomusart_dbgctrl_reg_t hri_sercomusart_read_DBGCTRL_reg(const void *const hw)
+{
+	return ((Sercom *)hw)->USART.DBGCTRL.reg;
 }
 
 static inline bool hri_sercomi2cs_get_STATUS_BUSERR_bit(const void *const hw)
@@ -8572,6 +8317,572 @@ static inline hri_sercomi2cs_status_reg_t hri_sercomi2cs_read_STATUS_reg(const v
 {
 	return ((Sercom *)hw)->I2CS.STATUS.reg;
 }
+
+static inline bool hri_sercomspi_get_STATUS_BUFOVF_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->SPI.STATUS.reg & SERCOM_SPI_STATUS_BUFOVF) >> SERCOM_SPI_STATUS_BUFOVF_Pos;
+}
+
+static inline void hri_sercomspi_clear_STATUS_BUFOVF_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.STATUS.reg = SERCOM_SPI_STATUS_BUFOVF;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomspi_get_STATUS_LENERR_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->SPI.STATUS.reg & SERCOM_SPI_STATUS_LENERR) >> SERCOM_SPI_STATUS_LENERR_Pos;
+}
+
+static inline void hri_sercomspi_clear_STATUS_LENERR_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.STATUS.reg = SERCOM_SPI_STATUS_LENERR;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomspi_status_reg_t hri_sercomspi_get_STATUS_reg(const void *const          hw,
+                                                                      hri_sercomspi_status_reg_t mask)
+{
+	uint16_t tmp;
+	tmp = ((Sercom *)hw)->SPI.STATUS.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline void hri_sercomspi_clear_STATUS_reg(const void *const hw, hri_sercomspi_status_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->SPI.STATUS.reg = mask;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomspi_status_reg_t hri_sercomspi_read_STATUS_reg(const void *const hw)
+{
+	return ((Sercom *)hw)->SPI.STATUS.reg;
+}
+
+static inline bool hri_sercomusart_get_STATUS_PERR_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->USART.STATUS.reg & SERCOM_USART_STATUS_PERR) >> SERCOM_USART_STATUS_PERR_Pos;
+}
+
+static inline void hri_sercomusart_clear_STATUS_PERR_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->USART.STATUS.reg = SERCOM_USART_STATUS_PERR;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomusart_get_STATUS_FERR_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->USART.STATUS.reg & SERCOM_USART_STATUS_FERR) >> SERCOM_USART_STATUS_FERR_Pos;
+}
+
+static inline void hri_sercomusart_clear_STATUS_FERR_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->USART.STATUS.reg = SERCOM_USART_STATUS_FERR;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomusart_get_STATUS_BUFOVF_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->USART.STATUS.reg & SERCOM_USART_STATUS_BUFOVF) >> SERCOM_USART_STATUS_BUFOVF_Pos;
+}
+
+static inline void hri_sercomusart_clear_STATUS_BUFOVF_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->USART.STATUS.reg = SERCOM_USART_STATUS_BUFOVF;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomusart_get_STATUS_CTS_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->USART.STATUS.reg & SERCOM_USART_STATUS_CTS) >> SERCOM_USART_STATUS_CTS_Pos;
+}
+
+static inline void hri_sercomusart_clear_STATUS_CTS_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->USART.STATUS.reg = SERCOM_USART_STATUS_CTS;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomusart_get_STATUS_ISF_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->USART.STATUS.reg & SERCOM_USART_STATUS_ISF) >> SERCOM_USART_STATUS_ISF_Pos;
+}
+
+static inline void hri_sercomusart_clear_STATUS_ISF_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->USART.STATUS.reg = SERCOM_USART_STATUS_ISF;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomusart_get_STATUS_COLL_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->USART.STATUS.reg & SERCOM_USART_STATUS_COLL) >> SERCOM_USART_STATUS_COLL_Pos;
+}
+
+static inline void hri_sercomusart_clear_STATUS_COLL_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->USART.STATUS.reg = SERCOM_USART_STATUS_COLL;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomusart_get_STATUS_TXE_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->USART.STATUS.reg & SERCOM_USART_STATUS_TXE) >> SERCOM_USART_STATUS_TXE_Pos;
+}
+
+static inline void hri_sercomusart_clear_STATUS_TXE_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->USART.STATUS.reg = SERCOM_USART_STATUS_TXE;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomusart_get_STATUS_ITER_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->USART.STATUS.reg & SERCOM_USART_STATUS_ITER) >> SERCOM_USART_STATUS_ITER_Pos;
+}
+
+static inline void hri_sercomusart_clear_STATUS_ITER_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->USART.STATUS.reg = SERCOM_USART_STATUS_ITER;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomusart_status_reg_t hri_sercomusart_get_STATUS_reg(const void *const            hw,
+                                                                          hri_sercomusart_status_reg_t mask)
+{
+	uint16_t tmp;
+	tmp = ((Sercom *)hw)->USART.STATUS.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline void hri_sercomusart_clear_STATUS_reg(const void *const hw, hri_sercomusart_status_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->USART.STATUS.reg = mask;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomusart_status_reg_t hri_sercomusart_read_STATUS_reg(const void *const hw)
+{
+	return ((Sercom *)hw)->USART.STATUS.reg;
+}
+
+static inline void hri_sercomi2cm_set_STATUS_BUSERR_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.STATUS.reg |= SERCOM_I2CM_STATUS_BUSERR;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomi2cm_get_STATUS_BUSERR_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->I2CM.STATUS.reg & SERCOM_I2CM_STATUS_BUSERR) >> SERCOM_I2CM_STATUS_BUSERR_Pos;
+}
+
+static inline void hri_sercomi2cm_write_STATUS_BUSERR_bit(const void *const hw, bool value)
+{
+	uint16_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->I2CM.STATUS.reg;
+	tmp &= ~SERCOM_I2CM_STATUS_BUSERR;
+	tmp |= value << SERCOM_I2CM_STATUS_BUSERR_Pos;
+	((Sercom *)hw)->I2CM.STATUS.reg = tmp;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_clear_STATUS_BUSERR_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.STATUS.reg = SERCOM_I2CM_STATUS_BUSERR;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_toggle_STATUS_BUSERR_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.STATUS.reg ^= SERCOM_I2CM_STATUS_BUSERR;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_set_STATUS_ARBLOST_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.STATUS.reg |= SERCOM_I2CM_STATUS_ARBLOST;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomi2cm_get_STATUS_ARBLOST_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->I2CM.STATUS.reg & SERCOM_I2CM_STATUS_ARBLOST) >> SERCOM_I2CM_STATUS_ARBLOST_Pos;
+}
+
+static inline void hri_sercomi2cm_write_STATUS_ARBLOST_bit(const void *const hw, bool value)
+{
+	uint16_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->I2CM.STATUS.reg;
+	tmp &= ~SERCOM_I2CM_STATUS_ARBLOST;
+	tmp |= value << SERCOM_I2CM_STATUS_ARBLOST_Pos;
+	((Sercom *)hw)->I2CM.STATUS.reg = tmp;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_clear_STATUS_ARBLOST_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.STATUS.reg = SERCOM_I2CM_STATUS_ARBLOST;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_toggle_STATUS_ARBLOST_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.STATUS.reg ^= SERCOM_I2CM_STATUS_ARBLOST;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_set_STATUS_RXNACK_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.STATUS.reg |= SERCOM_I2CM_STATUS_RXNACK;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomi2cm_get_STATUS_RXNACK_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->I2CM.STATUS.reg & SERCOM_I2CM_STATUS_RXNACK) >> SERCOM_I2CM_STATUS_RXNACK_Pos;
+}
+
+static inline void hri_sercomi2cm_write_STATUS_RXNACK_bit(const void *const hw, bool value)
+{
+	uint16_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->I2CM.STATUS.reg;
+	tmp &= ~SERCOM_I2CM_STATUS_RXNACK;
+	tmp |= value << SERCOM_I2CM_STATUS_RXNACK_Pos;
+	((Sercom *)hw)->I2CM.STATUS.reg = tmp;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_clear_STATUS_RXNACK_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.STATUS.reg = SERCOM_I2CM_STATUS_RXNACK;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_toggle_STATUS_RXNACK_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.STATUS.reg ^= SERCOM_I2CM_STATUS_RXNACK;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_set_STATUS_LOWTOUT_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.STATUS.reg |= SERCOM_I2CM_STATUS_LOWTOUT;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomi2cm_get_STATUS_LOWTOUT_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->I2CM.STATUS.reg & SERCOM_I2CM_STATUS_LOWTOUT) >> SERCOM_I2CM_STATUS_LOWTOUT_Pos;
+}
+
+static inline void hri_sercomi2cm_write_STATUS_LOWTOUT_bit(const void *const hw, bool value)
+{
+	uint16_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->I2CM.STATUS.reg;
+	tmp &= ~SERCOM_I2CM_STATUS_LOWTOUT;
+	tmp |= value << SERCOM_I2CM_STATUS_LOWTOUT_Pos;
+	((Sercom *)hw)->I2CM.STATUS.reg = tmp;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_clear_STATUS_LOWTOUT_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.STATUS.reg = SERCOM_I2CM_STATUS_LOWTOUT;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_toggle_STATUS_LOWTOUT_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.STATUS.reg ^= SERCOM_I2CM_STATUS_LOWTOUT;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_set_STATUS_CLKHOLD_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.STATUS.reg |= SERCOM_I2CM_STATUS_CLKHOLD;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomi2cm_get_STATUS_CLKHOLD_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->I2CM.STATUS.reg & SERCOM_I2CM_STATUS_CLKHOLD) >> SERCOM_I2CM_STATUS_CLKHOLD_Pos;
+}
+
+static inline void hri_sercomi2cm_write_STATUS_CLKHOLD_bit(const void *const hw, bool value)
+{
+	uint16_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->I2CM.STATUS.reg;
+	tmp &= ~SERCOM_I2CM_STATUS_CLKHOLD;
+	tmp |= value << SERCOM_I2CM_STATUS_CLKHOLD_Pos;
+	((Sercom *)hw)->I2CM.STATUS.reg = tmp;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_clear_STATUS_CLKHOLD_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.STATUS.reg = SERCOM_I2CM_STATUS_CLKHOLD;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_toggle_STATUS_CLKHOLD_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.STATUS.reg ^= SERCOM_I2CM_STATUS_CLKHOLD;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_set_STATUS_MEXTTOUT_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.STATUS.reg |= SERCOM_I2CM_STATUS_MEXTTOUT;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomi2cm_get_STATUS_MEXTTOUT_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->I2CM.STATUS.reg & SERCOM_I2CM_STATUS_MEXTTOUT) >> SERCOM_I2CM_STATUS_MEXTTOUT_Pos;
+}
+
+static inline void hri_sercomi2cm_write_STATUS_MEXTTOUT_bit(const void *const hw, bool value)
+{
+	uint16_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->I2CM.STATUS.reg;
+	tmp &= ~SERCOM_I2CM_STATUS_MEXTTOUT;
+	tmp |= value << SERCOM_I2CM_STATUS_MEXTTOUT_Pos;
+	((Sercom *)hw)->I2CM.STATUS.reg = tmp;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_clear_STATUS_MEXTTOUT_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.STATUS.reg = SERCOM_I2CM_STATUS_MEXTTOUT;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_toggle_STATUS_MEXTTOUT_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.STATUS.reg ^= SERCOM_I2CM_STATUS_MEXTTOUT;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_set_STATUS_SEXTTOUT_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.STATUS.reg |= SERCOM_I2CM_STATUS_SEXTTOUT;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomi2cm_get_STATUS_SEXTTOUT_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->I2CM.STATUS.reg & SERCOM_I2CM_STATUS_SEXTTOUT) >> SERCOM_I2CM_STATUS_SEXTTOUT_Pos;
+}
+
+static inline void hri_sercomi2cm_write_STATUS_SEXTTOUT_bit(const void *const hw, bool value)
+{
+	uint16_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->I2CM.STATUS.reg;
+	tmp &= ~SERCOM_I2CM_STATUS_SEXTTOUT;
+	tmp |= value << SERCOM_I2CM_STATUS_SEXTTOUT_Pos;
+	((Sercom *)hw)->I2CM.STATUS.reg = tmp;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_clear_STATUS_SEXTTOUT_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.STATUS.reg = SERCOM_I2CM_STATUS_SEXTTOUT;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_toggle_STATUS_SEXTTOUT_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.STATUS.reg ^= SERCOM_I2CM_STATUS_SEXTTOUT;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_set_STATUS_LENERR_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.STATUS.reg |= SERCOM_I2CM_STATUS_LENERR;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline bool hri_sercomi2cm_get_STATUS_LENERR_bit(const void *const hw)
+{
+	return (((Sercom *)hw)->I2CM.STATUS.reg & SERCOM_I2CM_STATUS_LENERR) >> SERCOM_I2CM_STATUS_LENERR_Pos;
+}
+
+static inline void hri_sercomi2cm_write_STATUS_LENERR_bit(const void *const hw, bool value)
+{
+	uint16_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->I2CM.STATUS.reg;
+	tmp &= ~SERCOM_I2CM_STATUS_LENERR;
+	tmp |= value << SERCOM_I2CM_STATUS_LENERR_Pos;
+	((Sercom *)hw)->I2CM.STATUS.reg = tmp;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_clear_STATUS_LENERR_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.STATUS.reg = SERCOM_I2CM_STATUS_LENERR;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_toggle_STATUS_LENERR_bit(const void *const hw)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.STATUS.reg ^= SERCOM_I2CM_STATUS_LENERR;
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cm_status_reg_t hri_sercomi2cm_get_STATUS_BUSSTATE_bf(const void *const           hw,
+                                                                                hri_sercomi2cm_status_reg_t mask)
+{
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	return (((Sercom *)hw)->I2CM.STATUS.reg & SERCOM_I2CM_STATUS_BUSSTATE(mask)) >> SERCOM_I2CM_STATUS_BUSSTATE_Pos;
+}
+
+static inline void hri_sercomi2cm_set_STATUS_BUSSTATE_bf(const void *const hw, hri_sercomi2cm_status_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.STATUS.reg |= SERCOM_I2CM_STATUS_BUSSTATE(mask);
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cm_status_reg_t hri_sercomi2cm_read_STATUS_BUSSTATE_bf(const void *const hw)
+{
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	return (((Sercom *)hw)->I2CM.STATUS.reg & SERCOM_I2CM_STATUS_BUSSTATE_Msk) >> SERCOM_I2CM_STATUS_BUSSTATE_Pos;
+}
+
+static inline void hri_sercomi2cm_write_STATUS_BUSSTATE_bf(const void *const hw, hri_sercomi2cm_status_reg_t data)
+{
+	uint16_t tmp;
+	SERCOM_CRITICAL_SECTION_ENTER();
+	tmp = ((Sercom *)hw)->I2CM.STATUS.reg;
+	tmp &= ~SERCOM_I2CM_STATUS_BUSSTATE_Msk;
+	tmp |= SERCOM_I2CM_STATUS_BUSSTATE(data);
+	((Sercom *)hw)->I2CM.STATUS.reg = tmp;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_toggle_STATUS_BUSSTATE_bf(const void *const hw, hri_sercomi2cm_status_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.STATUS.reg ^= SERCOM_I2CM_STATUS_BUSSTATE(mask);
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_sercomi2cm_clear_STATUS_BUSSTATE_bf(const void *const hw, hri_sercomi2cm_status_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.STATUS.reg = SERCOM_I2CM_STATUS_BUSSTATE(mask);
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_sercomi2cm_status_reg_t hri_sercomi2cm_get_STATUS_reg(const void *const           hw,
+                                                                        hri_sercomi2cm_status_reg_t mask)
+{
+	uint16_t tmp;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	tmp = ((Sercom *)hw)->I2CM.STATUS.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline void hri_sercomi2cm_set_STATUS_reg(const void *const hw, hri_sercomi2cm_status_reg_t mask)
+{
+	((Sercom *)hw)->I2CM.STATUS.reg |= mask;
+}
+
+static inline hri_sercomi2cm_status_reg_t hri_sercomi2cm_read_STATUS_reg(const void *const hw)
+{
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	return ((Sercom *)hw)->I2CM.STATUS.reg;
+}
+
+static inline void hri_sercomi2cm_write_STATUS_reg(const void *const hw, hri_sercomi2cm_status_reg_t data)
+{
+	((Sercom *)hw)->I2CM.STATUS.reg = data;
+}
+
+static inline void hri_sercomi2cm_toggle_STATUS_reg(const void *const hw, hri_sercomi2cm_status_reg_t mask)
+{
+	((Sercom *)hw)->I2CM.STATUS.reg ^= mask;
+}
+
+static inline void hri_sercomi2cm_clear_STATUS_reg(const void *const hw, hri_sercomi2cm_status_reg_t mask)
+{
+	SERCOM_CRITICAL_SECTION_ENTER();
+	((Sercom *)hw)->I2CM.STATUS.reg = mask;
+	hri_sercomi2cm_wait_for_sync(hw, SERCOM_I2CM_SYNCBUSY_SYSOP);
+	SERCOM_CRITICAL_SECTION_LEAVE();
+}
+
+/* Below section is for legacy hri apis name, not recommended to use below left side apis in application */
+#define hri_sercomusart_set_BAUD_FRAC_reg(a, b) hri_sercomusart_set_BAUD_reg(a, b)
+#define hri_sercomusart_get_BAUD_FRAC_reg(a, b) hri_sercomusart_get_BAUD_reg(a, b)
+#define hri_sercomusart_write_BAUD_FRAC_reg(a, b) hri_sercomusart_write_BAUD_reg(a, b)
+#define hri_sercomusart_clear_BAUD_FRAC_reg(a, b) hri_sercomusart_clear_BAUD_reg(a, b)
+#define hri_sercomusart_toggle_BAUD_FRAC_reg(a, b) hri_sercomusart_toggle_BAUD_reg(a, b)
+#define hri_sercomusart_read_BAUD_FRAC_reg(a) hri_sercomusart_read_BAUD_reg(a)
+#define hri_sercomusart_set_BAUD_FRACFP_reg(a, b) hri_sercomusart_set_BAUD_reg(a, b)
+#define hri_sercomusart_get_BAUD_FRACFP_reg(a, b) hri_sercomusart_get_BAUD_reg(a, b)
+#define hri_sercomusart_write_BAUD_FRACFP_reg(a, b) hri_sercomusart_write_BAUD_reg(a, b)
+#define hri_sercomusart_clear_BAUD_FRACFP_reg(a, b) hri_sercomusart_clear_BAUD_reg(a, b)
+#define hri_sercomusart_toggle_BAUD_FRACFP_reg(a, b) hri_sercomusart_toggle_BAUD_reg(a, b)
+#define hri_sercomusart_read_BAUD_FRACFP_reg(a) hri_sercomusart_read_BAUD_reg(a)
+#define hri_sercomusart_set_BAUD_USARTFP_reg(a, b) hri_sercomusart_set_BAUD_reg(a, b)
+#define hri_sercomusart_get_BAUD_USARTFP_reg(a, b) hri_sercomusart_get_BAUD_reg(a, b)
+#define hri_sercomusart_write_BAUD_USARTFP_reg(a, b) hri_sercomusart_write_BAUD_reg(a, b)
+#define hri_sercomusart_clear_BAUD_USARTFP_reg(a, b) hri_sercomusart_clear_BAUD_reg(a, b)
+#define hri_sercomusart_toggle_BAUD_USARTFP_reg(a, b) hri_sercomusart_toggle_BAUD_reg(a, b)
+#define hri_sercomusart_read_BAUD_USARTFP_reg(a) hri_sercomusart_read_BAUD_reg(a)
 
 #ifdef __cplusplus
 }

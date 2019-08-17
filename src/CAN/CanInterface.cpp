@@ -211,7 +211,6 @@ void CanInterface::Send(CanMessageBuffer *buf)
 	msg.len = buf->dataLength;
 	msg.fmt = CAN_FMT_EXTID;
 	can_async_write(&CAN_0, &msg);
-	TaskBase::Take(100);
 	CanMessageBuffer::Free(buf);
 }
 

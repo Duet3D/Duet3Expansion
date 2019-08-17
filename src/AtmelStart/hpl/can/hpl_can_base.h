@@ -81,7 +81,7 @@ struct _can_tx_fifo_entry {
 			uint32_t ESI : 1; /*!< Error State Indicator */
 		} bit;
 		uint32_t val; /*!< Type used for register access */
-	} R0;
+	} T0;
 	__IO union {
 		struct {
 			uint32_t : 16;    /*!< Reserved */
@@ -93,7 +93,7 @@ struct _can_tx_fifo_entry {
 			uint32_t MM : 8;  /*!< Message Marker */
 		} bit;
 		uint32_t val; /*!< Type used for register access */
-	} R1;
+	} T1;
 	uint8_t data[];
 };
 

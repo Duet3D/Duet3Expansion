@@ -28,6 +28,7 @@
  * THAT YOU HAVE PAID DIRECTLY TO MICROCHIP FOR THIS SOFTWARE.
  *
  * \asf_license_stop
+ *
  */
 
 #ifdef _SAME51_TRNG_COMPONENT_
@@ -54,6 +55,44 @@ typedef uint8_t  hri_trng_ctrla_reg_t;
 typedef uint8_t  hri_trng_evctrl_reg_t;
 typedef uint8_t  hri_trng_intenset_reg_t;
 typedef uint8_t  hri_trng_intflag_reg_t;
+
+static inline bool hri_trng_get_INTFLAG_DATARDY_bit(const void *const hw)
+{
+	return (((Trng *)hw)->INTFLAG.reg & TRNG_INTFLAG_DATARDY) >> TRNG_INTFLAG_DATARDY_Pos;
+}
+
+static inline void hri_trng_clear_INTFLAG_DATARDY_bit(const void *const hw)
+{
+	((Trng *)hw)->INTFLAG.reg = TRNG_INTFLAG_DATARDY;
+}
+
+static inline bool hri_trng_get_interrupt_DATARDY_bit(const void *const hw)
+{
+	return (((Trng *)hw)->INTFLAG.reg & TRNG_INTFLAG_DATARDY) >> TRNG_INTFLAG_DATARDY_Pos;
+}
+
+static inline void hri_trng_clear_interrupt_DATARDY_bit(const void *const hw)
+{
+	((Trng *)hw)->INTFLAG.reg = TRNG_INTFLAG_DATARDY;
+}
+
+static inline hri_trng_intflag_reg_t hri_trng_get_INTFLAG_reg(const void *const hw, hri_trng_intflag_reg_t mask)
+{
+	uint8_t tmp;
+	tmp = ((Trng *)hw)->INTFLAG.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline hri_trng_intflag_reg_t hri_trng_read_INTFLAG_reg(const void *const hw)
+{
+	return ((Trng *)hw)->INTFLAG.reg;
+}
+
+static inline void hri_trng_clear_INTFLAG_reg(const void *const hw, hri_trng_intflag_reg_t mask)
+{
+	((Trng *)hw)->INTFLAG.reg = mask;
+}
 
 static inline void hri_trng_set_INTEN_DATARDY_bit(const void *const hw)
 {
@@ -108,42 +147,27 @@ static inline void hri_trng_clear_INTEN_reg(const void *const hw, hri_trng_inten
 	((Trng *)hw)->INTENCLR.reg = mask;
 }
 
-static inline bool hri_trng_get_INTFLAG_DATARDY_bit(const void *const hw)
+static inline hri_trng_data_reg_t hri_trng_get_DATA_DATA_bf(const void *const hw, hri_trng_data_reg_t mask)
 {
-	return (((Trng *)hw)->INTFLAG.reg & TRNG_INTFLAG_DATARDY) >> TRNG_INTFLAG_DATARDY_Pos;
+	return (((Trng *)hw)->DATA.reg & TRNG_DATA_DATA(mask)) >> TRNG_DATA_DATA_Pos;
 }
 
-static inline void hri_trng_clear_INTFLAG_DATARDY_bit(const void *const hw)
+static inline hri_trng_data_reg_t hri_trng_read_DATA_DATA_bf(const void *const hw)
 {
-	((Trng *)hw)->INTFLAG.reg = TRNG_INTFLAG_DATARDY;
+	return (((Trng *)hw)->DATA.reg & TRNG_DATA_DATA_Msk) >> TRNG_DATA_DATA_Pos;
 }
 
-static inline bool hri_trng_get_interrupt_DATARDY_bit(const void *const hw)
+static inline hri_trng_data_reg_t hri_trng_get_DATA_reg(const void *const hw, hri_trng_data_reg_t mask)
 {
-	return (((Trng *)hw)->INTFLAG.reg & TRNG_INTFLAG_DATARDY) >> TRNG_INTFLAG_DATARDY_Pos;
-}
-
-static inline void hri_trng_clear_interrupt_DATARDY_bit(const void *const hw)
-{
-	((Trng *)hw)->INTFLAG.reg = TRNG_INTFLAG_DATARDY;
-}
-
-static inline hri_trng_intflag_reg_t hri_trng_get_INTFLAG_reg(const void *const hw, hri_trng_intflag_reg_t mask)
-{
-	uint8_t tmp;
-	tmp = ((Trng *)hw)->INTFLAG.reg;
+	uint32_t tmp;
+	tmp = ((Trng *)hw)->DATA.reg;
 	tmp &= mask;
 	return tmp;
 }
 
-static inline hri_trng_intflag_reg_t hri_trng_read_INTFLAG_reg(const void *const hw)
+static inline hri_trng_data_reg_t hri_trng_read_DATA_reg(const void *const hw)
 {
-	return ((Trng *)hw)->INTFLAG.reg;
-}
-
-static inline void hri_trng_clear_INTFLAG_reg(const void *const hw, hri_trng_intflag_reg_t mask)
-{
-	((Trng *)hw)->INTFLAG.reg = mask;
+	return ((Trng *)hw)->DATA.reg;
 }
 
 static inline void hri_trng_set_CTRLA_ENABLE_bit(const void *const hw)
@@ -346,29 +370,6 @@ static inline void hri_trng_toggle_EVCTRL_reg(const void *const hw, hri_trng_evc
 static inline hri_trng_evctrl_reg_t hri_trng_read_EVCTRL_reg(const void *const hw)
 {
 	return ((Trng *)hw)->EVCTRL.reg;
-}
-
-static inline hri_trng_data_reg_t hri_trng_get_DATA_DATA_bf(const void *const hw, hri_trng_data_reg_t mask)
-{
-	return (((Trng *)hw)->DATA.reg & TRNG_DATA_DATA(mask)) >> TRNG_DATA_DATA_Pos;
-}
-
-static inline hri_trng_data_reg_t hri_trng_read_DATA_DATA_bf(const void *const hw)
-{
-	return (((Trng *)hw)->DATA.reg & TRNG_DATA_DATA_Msk) >> TRNG_DATA_DATA_Pos;
-}
-
-static inline hri_trng_data_reg_t hri_trng_get_DATA_reg(const void *const hw, hri_trng_data_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Trng *)hw)->DATA.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline hri_trng_data_reg_t hri_trng_read_DATA_reg(const void *const hw)
-{
-	return ((Trng *)hw)->DATA.reg;
 }
 
 #ifdef __cplusplus

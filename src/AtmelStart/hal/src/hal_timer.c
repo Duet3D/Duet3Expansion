@@ -56,9 +56,8 @@ static void timer_process_counted(struct _timer_device *device);
  */
 int32_t timer_init(struct timer_descriptor *const descr, void *const hw, struct _timer_hpl_interface *const func)
 {
-	ASSERT(descr && hw && func);
-	descr->func = func;
-	descr->func->init(&descr->device, hw);
+	ASSERT(descr && hw);
+	_timer_init(&descr->device, hw);
 	descr->time                           = 0;
 	descr->device.timer_cb.period_expired = timer_process_counted;
 
@@ -70,8 +69,8 @@ int32_t timer_init(struct timer_descriptor *const descr, void *const hw, struct 
  */
 int32_t timer_deinit(struct timer_descriptor *const descr)
 {
-	ASSERT(descr && descr->func);
-	descr->func->deinit(&descr->device);
+	ASSERT(descr);
+	_timer_deinit(&descr->device);
 
 	return ERR_NONE;
 }
@@ -81,11 +80,11 @@ int32_t timer_deinit(struct timer_descriptor *const descr)
  */
 int32_t timer_start(struct timer_descriptor *const descr)
 {
-	ASSERT(descr && descr->func);
-	if (descr->func->is_timer_started(&descr->device)) {
+	ASSERT(descr);
+	if (_timer_is_started(&descr->device)) {
 		return ERR_DENIED;
 	}
-	descr->func->start_timer(&descr->device);
+	_timer_start(&descr->device);
 
 	return ERR_NONE;
 }
@@ -95,11 +94,11 @@ int32_t timer_start(struct timer_descriptor *const descr)
  */
 int32_t timer_stop(struct timer_descriptor *const descr)
 {
-	ASSERT(descr && descr->func);
-	if (!descr->func->is_timer_started(&descr->device)) {
+	ASSERT(descr);
+	if (!_timer_is_started(&descr->device)) {
 		return ERR_DENIED;
 	}
-	descr->func->stop_timer(&descr->device);
+	_timer_stop(&descr->device);
 
 	return ERR_NONE;
 }
@@ -109,8 +108,8 @@ int32_t timer_stop(struct timer_descriptor *const descr)
  */
 int32_t timer_set_clock_cycles_per_tick(struct timer_descriptor *const descr, const uint32_t clock_cycles)
 {
-	ASSERT(descr && descr->func);
-	descr->func->set_timer_period(&descr->device, clock_cycles);
+	ASSERT(descr);
+	_timer_set_period(&descr->device, clock_cycles);
 
 	return ERR_NONE;
 }
@@ -120,7 +119,7 @@ int32_t timer_set_clock_cycles_per_tick(struct timer_descriptor *const descr, co
  */
 int32_t timer_add_task(struct timer_descriptor *const descr, struct timer_task *const task)
 {
-	ASSERT(descr && task && descr->func);
+	ASSERT(descr && task);
 
 	descr->flags |= TIMER_FLAG_QUEUE_IS_TAKEN;
 	if (is_list_element(&descr->tasks, task)) {
@@ -135,7 +134,7 @@ int32_t timer_add_task(struct timer_descriptor *const descr, struct timer_task *
 	if (descr->flags & TIMER_FLAG_INTERRUPT_TRIGERRED) {
 		CRITICAL_SECTION_ENTER()
 		descr->flags &= ~TIMER_FLAG_INTERRUPT_TRIGERRED;
-		descr->func->set_timer_irq(&descr->device);
+		_timer_set_irq(&descr->device);
 		CRITICAL_SECTION_LEAVE()
 	}
 
@@ -147,7 +146,7 @@ int32_t timer_add_task(struct timer_descriptor *const descr, struct timer_task *
  */
 int32_t timer_remove_task(struct timer_descriptor *const descr, const struct timer_task *const task)
 {
-	ASSERT(descr && task && descr->func);
+	ASSERT(descr && task);
 
 	descr->flags |= TIMER_FLAG_QUEUE_IS_TAKEN;
 	if (!is_list_element(&descr->tasks, task)) {
@@ -161,7 +160,7 @@ int32_t timer_remove_task(struct timer_descriptor *const descr, const struct tim
 	if (descr->flags & TIMER_FLAG_INTERRUPT_TRIGERRED) {
 		CRITICAL_SECTION_ENTER()
 		descr->flags &= ~TIMER_FLAG_INTERRUPT_TRIGERRED;
-		descr->func->set_timer_irq(&descr->device);
+		_timer_set_irq(&descr->device);
 		CRITICAL_SECTION_LEAVE()
 	}
 
@@ -173,8 +172,8 @@ int32_t timer_remove_task(struct timer_descriptor *const descr, const struct tim
  */
 int32_t timer_get_clock_cycles_in_tick(const struct timer_descriptor *const descr, uint32_t *const cycles)
 {
-	ASSERT(descr && cycles && descr->func);
-	*cycles = descr->func->get_period(&descr->device);
+	ASSERT(descr && cycles);
+	*cycles = _timer_get_period(&descr->device);
 	return ERR_NONE;
 }
 

@@ -28,6 +28,7 @@
  * THAT YOU HAVE PAID DIRECTLY TO MICROCHIP FOR THIS SOFTWARE.
  *
  * \asf_license_stop
+ *
  */
 
 #ifdef _SAME51_MCLK_COMPONENT_
@@ -58,6 +59,44 @@ typedef uint8_t  hri_mclk_cpudiv_reg_t;
 typedef uint8_t  hri_mclk_hsdiv_reg_t;
 typedef uint8_t  hri_mclk_intenset_reg_t;
 typedef uint8_t  hri_mclk_intflag_reg_t;
+
+static inline bool hri_mclk_get_INTFLAG_CKRDY_bit(const void *const hw)
+{
+	return (((Mclk *)hw)->INTFLAG.reg & MCLK_INTFLAG_CKRDY) >> MCLK_INTFLAG_CKRDY_Pos;
+}
+
+static inline void hri_mclk_clear_INTFLAG_CKRDY_bit(const void *const hw)
+{
+	((Mclk *)hw)->INTFLAG.reg = MCLK_INTFLAG_CKRDY;
+}
+
+static inline bool hri_mclk_get_interrupt_CKRDY_bit(const void *const hw)
+{
+	return (((Mclk *)hw)->INTFLAG.reg & MCLK_INTFLAG_CKRDY) >> MCLK_INTFLAG_CKRDY_Pos;
+}
+
+static inline void hri_mclk_clear_interrupt_CKRDY_bit(const void *const hw)
+{
+	((Mclk *)hw)->INTFLAG.reg = MCLK_INTFLAG_CKRDY;
+}
+
+static inline hri_mclk_intflag_reg_t hri_mclk_get_INTFLAG_reg(const void *const hw, hri_mclk_intflag_reg_t mask)
+{
+	uint8_t tmp;
+	tmp = ((Mclk *)hw)->INTFLAG.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline hri_mclk_intflag_reg_t hri_mclk_read_INTFLAG_reg(const void *const hw)
+{
+	return ((Mclk *)hw)->INTFLAG.reg;
+}
+
+static inline void hri_mclk_clear_INTFLAG_reg(const void *const hw, hri_mclk_intflag_reg_t mask)
+{
+	((Mclk *)hw)->INTFLAG.reg = mask;
+}
 
 static inline void hri_mclk_set_INTEN_CKRDY_bit(const void *const hw)
 {
@@ -112,42 +151,27 @@ static inline void hri_mclk_clear_INTEN_reg(const void *const hw, hri_mclk_inten
 	((Mclk *)hw)->INTENCLR.reg = mask;
 }
 
-static inline bool hri_mclk_get_INTFLAG_CKRDY_bit(const void *const hw)
+static inline hri_mclk_hsdiv_reg_t hri_mclk_get_HSDIV_DIV_bf(const void *const hw, hri_mclk_hsdiv_reg_t mask)
 {
-	return (((Mclk *)hw)->INTFLAG.reg & MCLK_INTFLAG_CKRDY) >> MCLK_INTFLAG_CKRDY_Pos;
+	return (((Mclk *)hw)->HSDIV.reg & MCLK_HSDIV_DIV(mask)) >> MCLK_HSDIV_DIV_Pos;
 }
 
-static inline void hri_mclk_clear_INTFLAG_CKRDY_bit(const void *const hw)
+static inline hri_mclk_hsdiv_reg_t hri_mclk_read_HSDIV_DIV_bf(const void *const hw)
 {
-	((Mclk *)hw)->INTFLAG.reg = MCLK_INTFLAG_CKRDY;
+	return (((Mclk *)hw)->HSDIV.reg & MCLK_HSDIV_DIV_Msk) >> MCLK_HSDIV_DIV_Pos;
 }
 
-static inline bool hri_mclk_get_interrupt_CKRDY_bit(const void *const hw)
-{
-	return (((Mclk *)hw)->INTFLAG.reg & MCLK_INTFLAG_CKRDY) >> MCLK_INTFLAG_CKRDY_Pos;
-}
-
-static inline void hri_mclk_clear_interrupt_CKRDY_bit(const void *const hw)
-{
-	((Mclk *)hw)->INTFLAG.reg = MCLK_INTFLAG_CKRDY;
-}
-
-static inline hri_mclk_intflag_reg_t hri_mclk_get_INTFLAG_reg(const void *const hw, hri_mclk_intflag_reg_t mask)
+static inline hri_mclk_hsdiv_reg_t hri_mclk_get_HSDIV_reg(const void *const hw, hri_mclk_hsdiv_reg_t mask)
 {
 	uint8_t tmp;
-	tmp = ((Mclk *)hw)->INTFLAG.reg;
+	tmp = ((Mclk *)hw)->HSDIV.reg;
 	tmp &= mask;
 	return tmp;
 }
 
-static inline hri_mclk_intflag_reg_t hri_mclk_read_INTFLAG_reg(const void *const hw)
+static inline hri_mclk_hsdiv_reg_t hri_mclk_read_HSDIV_reg(const void *const hw)
 {
-	return ((Mclk *)hw)->INTFLAG.reg;
-}
-
-static inline void hri_mclk_clear_INTFLAG_reg(const void *const hw, hri_mclk_intflag_reg_t mask)
-{
-	((Mclk *)hw)->INTFLAG.reg = mask;
+	return ((Mclk *)hw)->HSDIV.reg;
 }
 
 static inline void hri_mclk_set_CPUDIV_DIV_bf(const void *const hw, hri_mclk_cpudiv_reg_t mask)
@@ -2321,46 +2345,6 @@ static inline void hri_mclk_toggle_APBBMASK_TC3_bit(const void *const hw)
 	MCLK_CRITICAL_SECTION_LEAVE();
 }
 
-static inline void hri_mclk_set_APBBMASK_TAL_bit(const void *const hw)
-{
-	MCLK_CRITICAL_SECTION_ENTER();
-	((Mclk *)hw)->APBBMASK.reg |= MCLK_APBBMASK_TAL;
-	MCLK_CRITICAL_SECTION_LEAVE();
-}
-
-static inline bool hri_mclk_get_APBBMASK_TAL_bit(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Mclk *)hw)->APBBMASK.reg;
-	tmp = (tmp & MCLK_APBBMASK_TAL) >> MCLK_APBBMASK_TAL_Pos;
-	return (bool)tmp;
-}
-
-static inline void hri_mclk_write_APBBMASK_TAL_bit(const void *const hw, bool value)
-{
-	uint32_t tmp;
-	MCLK_CRITICAL_SECTION_ENTER();
-	tmp = ((Mclk *)hw)->APBBMASK.reg;
-	tmp &= ~MCLK_APBBMASK_TAL;
-	tmp |= value << MCLK_APBBMASK_TAL_Pos;
-	((Mclk *)hw)->APBBMASK.reg = tmp;
-	MCLK_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_mclk_clear_APBBMASK_TAL_bit(const void *const hw)
-{
-	MCLK_CRITICAL_SECTION_ENTER();
-	((Mclk *)hw)->APBBMASK.reg &= ~MCLK_APBBMASK_TAL;
-	MCLK_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_mclk_toggle_APBBMASK_TAL_bit(const void *const hw)
-{
-	MCLK_CRITICAL_SECTION_ENTER();
-	((Mclk *)hw)->APBBMASK.reg ^= MCLK_APBBMASK_TAL;
-	MCLK_CRITICAL_SECTION_LEAVE();
-}
-
 static inline void hri_mclk_set_APBBMASK_RAMECC_bit(const void *const hw)
 {
 	MCLK_CRITICAL_SECTION_ENTER();
@@ -3442,29 +3426,6 @@ static inline void hri_mclk_toggle_APBDMASK_reg(const void *const hw, hri_mclk_a
 static inline hri_mclk_apbdmask_reg_t hri_mclk_read_APBDMASK_reg(const void *const hw)
 {
 	return ((Mclk *)hw)->APBDMASK.reg;
-}
-
-static inline hri_mclk_hsdiv_reg_t hri_mclk_get_HSDIV_DIV_bf(const void *const hw, hri_mclk_hsdiv_reg_t mask)
-{
-	return (((Mclk *)hw)->HSDIV.reg & MCLK_HSDIV_DIV(mask)) >> MCLK_HSDIV_DIV_Pos;
-}
-
-static inline hri_mclk_hsdiv_reg_t hri_mclk_read_HSDIV_DIV_bf(const void *const hw)
-{
-	return (((Mclk *)hw)->HSDIV.reg & MCLK_HSDIV_DIV_Msk) >> MCLK_HSDIV_DIV_Pos;
-}
-
-static inline hri_mclk_hsdiv_reg_t hri_mclk_get_HSDIV_reg(const void *const hw, hri_mclk_hsdiv_reg_t mask)
-{
-	uint8_t tmp;
-	tmp = ((Mclk *)hw)->HSDIV.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline hri_mclk_hsdiv_reg_t hri_mclk_read_HSDIV_reg(const void *const hw)
-{
-	return ((Mclk *)hw)->HSDIV.reg;
 }
 
 #ifdef __cplusplus

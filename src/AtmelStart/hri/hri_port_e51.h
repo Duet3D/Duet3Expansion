@@ -28,6 +28,7 @@
  * THAT YOU HAVE PAID DIRECTLY TO MICROCHIP FOR THIS SOFTWARE.
  *
  * \asf_license_stop
+ *
  */
 
 #ifdef _SAME51_PORT_COMPONENT_
@@ -208,11 +209,27 @@ static inline void hri_portgroup_toggle_OUT_reg(const void *const hw, hri_port_o
 	((PortGroup *)hw)->OUTTGL.reg = mask;
 }
 
-static inline void hri_portgroup_write_WRCONFIG_reg(const void *const hw, hri_port_wrconfig_reg_t data)
+static inline hri_port_in_reg_t hri_portgroup_get_IN_IN_bf(const void *const hw, hri_port_in_reg_t mask)
 {
-	PORT_CRITICAL_SECTION_ENTER();
-	((PortGroup *)hw)->WRCONFIG.reg = data;
-	PORT_CRITICAL_SECTION_LEAVE();
+	return (((PortGroup *)hw)->IN.reg & PORT_IN_IN(mask)) >> PORT_IN_IN_Pos;
+}
+
+static inline hri_port_in_reg_t hri_portgroup_read_IN_IN_bf(const void *const hw)
+{
+	return (((PortGroup *)hw)->IN.reg & PORT_IN_IN_Msk) >> PORT_IN_IN_Pos;
+}
+
+static inline hri_port_in_reg_t hri_portgroup_get_IN_reg(const void *const hw, hri_port_in_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((PortGroup *)hw)->IN.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline hri_port_in_reg_t hri_portgroup_read_IN_reg(const void *const hw)
+{
+	return ((PortGroup *)hw)->IN.reg;
 }
 
 static inline void hri_portgroup_set_CTRL_SAMPLING_bf(const void *const hw, hri_port_ctrl_reg_t mask)
@@ -1231,27 +1248,11 @@ static inline hri_port_pincfg_reg_t hri_portgroup_read_PINCFG_reg(const void *co
 	return ((PortGroup *)hw)->PINCFG[index].reg;
 }
 
-static inline hri_port_in_reg_t hri_portgroup_get_IN_IN_bf(const void *const hw, hri_port_in_reg_t mask)
+static inline void hri_portgroup_write_WRCONFIG_reg(const void *const hw, hri_port_wrconfig_reg_t data)
 {
-	return (((PortGroup *)hw)->IN.reg & PORT_IN_IN(mask)) >> PORT_IN_IN_Pos;
-}
-
-static inline hri_port_in_reg_t hri_portgroup_read_IN_IN_bf(const void *const hw)
-{
-	return (((PortGroup *)hw)->IN.reg & PORT_IN_IN_Msk) >> PORT_IN_IN_Pos;
-}
-
-static inline hri_port_in_reg_t hri_portgroup_get_IN_reg(const void *const hw, hri_port_in_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((PortGroup *)hw)->IN.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline hri_port_in_reg_t hri_portgroup_read_IN_reg(const void *const hw)
-{
-	return ((PortGroup *)hw)->IN.reg;
+	PORT_CRITICAL_SECTION_ENTER();
+	((PortGroup *)hw)->WRCONFIG.reg = data;
+	PORT_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_port_set_DIR_DIR_bf(const void *const hw, uint8_t submodule_index, hri_port_dir_reg_t mask)
@@ -1400,12 +1401,29 @@ static inline void hri_port_toggle_OUT_reg(const void *const hw, uint8_t submodu
 	((Port *)hw)->Group[submodule_index].OUTTGL.reg = mask;
 }
 
-static inline void hri_port_write_WRCONFIG_reg(const void *const hw, uint8_t submodule_index,
-                                               hri_port_wrconfig_reg_t data)
+static inline hri_port_in_reg_t hri_port_get_IN_IN_bf(const void *const hw, uint8_t submodule_index,
+                                                      hri_port_in_reg_t mask)
 {
-	PORT_CRITICAL_SECTION_ENTER();
-	((Port *)hw)->Group[submodule_index].WRCONFIG.reg = data;
-	PORT_CRITICAL_SECTION_LEAVE();
+	return (((Port *)hw)->Group[submodule_index].IN.reg & PORT_IN_IN(mask)) >> PORT_IN_IN_Pos;
+}
+
+static inline hri_port_in_reg_t hri_port_read_IN_IN_bf(const void *const hw, uint8_t submodule_index)
+{
+	return (((Port *)hw)->Group[submodule_index].IN.reg & PORT_IN_IN_Msk) >> PORT_IN_IN_Pos;
+}
+
+static inline hri_port_in_reg_t hri_port_get_IN_reg(const void *const hw, uint8_t submodule_index,
+                                                    hri_port_in_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Port *)hw)->Group[submodule_index].IN.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline hri_port_in_reg_t hri_port_read_IN_reg(const void *const hw, uint8_t submodule_index)
+{
+	return ((Port *)hw)->Group[submodule_index].IN.reg;
 }
 
 static inline void hri_port_set_CTRL_SAMPLING_bf(const void *const hw, uint8_t submodule_index,
@@ -2494,29 +2512,12 @@ static inline hri_port_pincfg_reg_t hri_port_read_PINCFG_reg(const void *const h
 	return ((Port *)hw)->Group[submodule_index].PINCFG[index].reg;
 }
 
-static inline hri_port_in_reg_t hri_port_get_IN_IN_bf(const void *const hw, uint8_t submodule_index,
-                                                      hri_port_in_reg_t mask)
+static inline void hri_port_write_WRCONFIG_reg(const void *const hw, uint8_t submodule_index,
+                                               hri_port_wrconfig_reg_t data)
 {
-	return (((Port *)hw)->Group[submodule_index].IN.reg & PORT_IN_IN(mask)) >> PORT_IN_IN_Pos;
-}
-
-static inline hri_port_in_reg_t hri_port_read_IN_IN_bf(const void *const hw, uint8_t submodule_index)
-{
-	return (((Port *)hw)->Group[submodule_index].IN.reg & PORT_IN_IN_Msk) >> PORT_IN_IN_Pos;
-}
-
-static inline hri_port_in_reg_t hri_port_get_IN_reg(const void *const hw, uint8_t submodule_index,
-                                                    hri_port_in_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Port *)hw)->Group[submodule_index].IN.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline hri_port_in_reg_t hri_port_read_IN_reg(const void *const hw, uint8_t submodule_index)
-{
-	return ((Port *)hw)->Group[submodule_index].IN.reg;
+	PORT_CRITICAL_SECTION_ENTER();
+	((Port *)hw)->Group[submodule_index].WRCONFIG.reg = data;
+	PORT_CRITICAL_SECTION_LEAVE();
 }
 
 #ifdef __cplusplus

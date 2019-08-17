@@ -34,6 +34,7 @@
 #include <compiler.h>
 #include <hpl_gpio.h>
 #include <utils_assert.h>
+#include <hpl_port_config.h>
 
 /**
  * \brief Set direction on port with mask
@@ -160,4 +161,11 @@ static inline void _gpio_set_pin_function(const uint32_t gpio, const uint32_t fu
 			hri_port_write_PMUX_PMUXE_bf(PORT, port, pin >> 1, function & 0xffff);
 		}
 	}
+}
+
+static inline void _port_event_init()
+{
+	hri_port_set_EVCTRL_reg(PORT, 0, CONF_PORTA_EVCTRL);
+	hri_port_set_EVCTRL_reg(PORT, 1, CONF_PORTB_EVCTRL);
+	hri_port_set_EVCTRL_reg(PORT, 2, CONF_PORTC_EVCTRL);
 }

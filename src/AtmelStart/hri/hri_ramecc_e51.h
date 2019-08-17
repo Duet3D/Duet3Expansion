@@ -28,6 +28,7 @@
  * THAT YOU HAVE PAID DIRECTLY TO MICROCHIP FOR THIS SOFTWARE.
  *
  * \asf_license_stop
+ *
  */
 
 #ifdef _SAME51_RAMECC_COMPONENT_
@@ -54,6 +55,64 @@ typedef uint8_t  hri_ramecc_dbgctrl_reg_t;
 typedef uint8_t  hri_ramecc_intenset_reg_t;
 typedef uint8_t  hri_ramecc_intflag_reg_t;
 typedef uint8_t  hri_ramecc_status_reg_t;
+
+static inline bool hri_ramecc_get_INTFLAG_SINGLEE_bit(const void *const hw)
+{
+	return (((Ramecc *)hw)->INTFLAG.reg & RAMECC_INTFLAG_SINGLEE) >> RAMECC_INTFLAG_SINGLEE_Pos;
+}
+
+static inline void hri_ramecc_clear_INTFLAG_SINGLEE_bit(const void *const hw)
+{
+	((Ramecc *)hw)->INTFLAG.reg = RAMECC_INTFLAG_SINGLEE;
+}
+
+static inline bool hri_ramecc_get_INTFLAG_DUALE_bit(const void *const hw)
+{
+	return (((Ramecc *)hw)->INTFLAG.reg & RAMECC_INTFLAG_DUALE) >> RAMECC_INTFLAG_DUALE_Pos;
+}
+
+static inline void hri_ramecc_clear_INTFLAG_DUALE_bit(const void *const hw)
+{
+	((Ramecc *)hw)->INTFLAG.reg = RAMECC_INTFLAG_DUALE;
+}
+
+static inline bool hri_ramecc_get_interrupt_SINGLEE_bit(const void *const hw)
+{
+	return (((Ramecc *)hw)->INTFLAG.reg & RAMECC_INTFLAG_SINGLEE) >> RAMECC_INTFLAG_SINGLEE_Pos;
+}
+
+static inline void hri_ramecc_clear_interrupt_SINGLEE_bit(const void *const hw)
+{
+	((Ramecc *)hw)->INTFLAG.reg = RAMECC_INTFLAG_SINGLEE;
+}
+
+static inline bool hri_ramecc_get_interrupt_DUALE_bit(const void *const hw)
+{
+	return (((Ramecc *)hw)->INTFLAG.reg & RAMECC_INTFLAG_DUALE) >> RAMECC_INTFLAG_DUALE_Pos;
+}
+
+static inline void hri_ramecc_clear_interrupt_DUALE_bit(const void *const hw)
+{
+	((Ramecc *)hw)->INTFLAG.reg = RAMECC_INTFLAG_DUALE;
+}
+
+static inline hri_ramecc_intflag_reg_t hri_ramecc_get_INTFLAG_reg(const void *const hw, hri_ramecc_intflag_reg_t mask)
+{
+	uint8_t tmp;
+	tmp = ((Ramecc *)hw)->INTFLAG.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline hri_ramecc_intflag_reg_t hri_ramecc_read_INTFLAG_reg(const void *const hw)
+{
+	return ((Ramecc *)hw)->INTFLAG.reg;
+}
+
+static inline void hri_ramecc_clear_INTFLAG_reg(const void *const hw, hri_ramecc_intflag_reg_t mask)
+{
+	((Ramecc *)hw)->INTFLAG.reg = mask;
+}
 
 static inline void hri_ramecc_set_INTEN_SINGLEE_bit(const void *const hw)
 {
@@ -132,62 +191,46 @@ static inline void hri_ramecc_clear_INTEN_reg(const void *const hw, hri_ramecc_i
 	((Ramecc *)hw)->INTENCLR.reg = mask;
 }
 
-static inline bool hri_ramecc_get_INTFLAG_SINGLEE_bit(const void *const hw)
+static inline bool hri_ramecc_get_STATUS_ECCDIS_bit(const void *const hw)
 {
-	return (((Ramecc *)hw)->INTFLAG.reg & RAMECC_INTFLAG_SINGLEE) >> RAMECC_INTFLAG_SINGLEE_Pos;
+	return (((Ramecc *)hw)->STATUS.reg & RAMECC_STATUS_ECCDIS) >> RAMECC_STATUS_ECCDIS_Pos;
 }
 
-static inline void hri_ramecc_clear_INTFLAG_SINGLEE_bit(const void *const hw)
-{
-	((Ramecc *)hw)->INTFLAG.reg = RAMECC_INTFLAG_SINGLEE;
-}
-
-static inline bool hri_ramecc_get_INTFLAG_DUALE_bit(const void *const hw)
-{
-	return (((Ramecc *)hw)->INTFLAG.reg & RAMECC_INTFLAG_DUALE) >> RAMECC_INTFLAG_DUALE_Pos;
-}
-
-static inline void hri_ramecc_clear_INTFLAG_DUALE_bit(const void *const hw)
-{
-	((Ramecc *)hw)->INTFLAG.reg = RAMECC_INTFLAG_DUALE;
-}
-
-static inline bool hri_ramecc_get_interrupt_SINGLEE_bit(const void *const hw)
-{
-	return (((Ramecc *)hw)->INTFLAG.reg & RAMECC_INTFLAG_SINGLEE) >> RAMECC_INTFLAG_SINGLEE_Pos;
-}
-
-static inline void hri_ramecc_clear_interrupt_SINGLEE_bit(const void *const hw)
-{
-	((Ramecc *)hw)->INTFLAG.reg = RAMECC_INTFLAG_SINGLEE;
-}
-
-static inline bool hri_ramecc_get_interrupt_DUALE_bit(const void *const hw)
-{
-	return (((Ramecc *)hw)->INTFLAG.reg & RAMECC_INTFLAG_DUALE) >> RAMECC_INTFLAG_DUALE_Pos;
-}
-
-static inline void hri_ramecc_clear_interrupt_DUALE_bit(const void *const hw)
-{
-	((Ramecc *)hw)->INTFLAG.reg = RAMECC_INTFLAG_DUALE;
-}
-
-static inline hri_ramecc_intflag_reg_t hri_ramecc_get_INTFLAG_reg(const void *const hw, hri_ramecc_intflag_reg_t mask)
+static inline hri_ramecc_status_reg_t hri_ramecc_get_STATUS_reg(const void *const hw, hri_ramecc_status_reg_t mask)
 {
 	uint8_t tmp;
-	tmp = ((Ramecc *)hw)->INTFLAG.reg;
+	tmp = ((Ramecc *)hw)->STATUS.reg;
 	tmp &= mask;
 	return tmp;
 }
 
-static inline hri_ramecc_intflag_reg_t hri_ramecc_read_INTFLAG_reg(const void *const hw)
+static inline hri_ramecc_status_reg_t hri_ramecc_read_STATUS_reg(const void *const hw)
 {
-	return ((Ramecc *)hw)->INTFLAG.reg;
+	return ((Ramecc *)hw)->STATUS.reg;
 }
 
-static inline void hri_ramecc_clear_INTFLAG_reg(const void *const hw, hri_ramecc_intflag_reg_t mask)
+static inline hri_ramecc_erraddr_reg_t hri_ramecc_get_ERRADDR_ERRADDR_bf(const void *const        hw,
+                                                                         hri_ramecc_erraddr_reg_t mask)
 {
-	((Ramecc *)hw)->INTFLAG.reg = mask;
+	return (((Ramecc *)hw)->ERRADDR.reg & RAMECC_ERRADDR_ERRADDR(mask)) >> RAMECC_ERRADDR_ERRADDR_Pos;
+}
+
+static inline hri_ramecc_erraddr_reg_t hri_ramecc_read_ERRADDR_ERRADDR_bf(const void *const hw)
+{
+	return (((Ramecc *)hw)->ERRADDR.reg & RAMECC_ERRADDR_ERRADDR_Msk) >> RAMECC_ERRADDR_ERRADDR_Pos;
+}
+
+static inline hri_ramecc_erraddr_reg_t hri_ramecc_get_ERRADDR_reg(const void *const hw, hri_ramecc_erraddr_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Ramecc *)hw)->ERRADDR.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline hri_ramecc_erraddr_reg_t hri_ramecc_read_ERRADDR_reg(const void *const hw)
+{
+	return ((Ramecc *)hw)->ERRADDR.reg;
 }
 
 static inline void hri_ramecc_set_DBGCTRL_ECCDIS_bit(const void *const hw)
@@ -309,48 +352,6 @@ static inline void hri_ramecc_toggle_DBGCTRL_reg(const void *const hw, hri_ramec
 static inline hri_ramecc_dbgctrl_reg_t hri_ramecc_read_DBGCTRL_reg(const void *const hw)
 {
 	return ((Ramecc *)hw)->DBGCTRL.reg;
-}
-
-static inline bool hri_ramecc_get_STATUS_ECCDIS_bit(const void *const hw)
-{
-	return (((Ramecc *)hw)->STATUS.reg & RAMECC_STATUS_ECCDIS) >> RAMECC_STATUS_ECCDIS_Pos;
-}
-
-static inline hri_ramecc_status_reg_t hri_ramecc_get_STATUS_reg(const void *const hw, hri_ramecc_status_reg_t mask)
-{
-	uint8_t tmp;
-	tmp = ((Ramecc *)hw)->STATUS.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline hri_ramecc_status_reg_t hri_ramecc_read_STATUS_reg(const void *const hw)
-{
-	return ((Ramecc *)hw)->STATUS.reg;
-}
-
-static inline hri_ramecc_erraddr_reg_t hri_ramecc_get_ERRADDR_ERRADDR_bf(const void *const        hw,
-                                                                         hri_ramecc_erraddr_reg_t mask)
-{
-	return (((Ramecc *)hw)->ERRADDR.reg & RAMECC_ERRADDR_ERRADDR(mask)) >> RAMECC_ERRADDR_ERRADDR_Pos;
-}
-
-static inline hri_ramecc_erraddr_reg_t hri_ramecc_read_ERRADDR_ERRADDR_bf(const void *const hw)
-{
-	return (((Ramecc *)hw)->ERRADDR.reg & RAMECC_ERRADDR_ERRADDR_Msk) >> RAMECC_ERRADDR_ERRADDR_Pos;
-}
-
-static inline hri_ramecc_erraddr_reg_t hri_ramecc_get_ERRADDR_reg(const void *const hw, hri_ramecc_erraddr_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Ramecc *)hw)->ERRADDR.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline hri_ramecc_erraddr_reg_t hri_ramecc_read_ERRADDR_reg(const void *const hw)
-{
-	return ((Ramecc *)hw)->ERRADDR.reg;
 }
 
 #ifdef __cplusplus

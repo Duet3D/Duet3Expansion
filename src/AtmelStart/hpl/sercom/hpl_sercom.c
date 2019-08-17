@@ -4,7 +4,7 @@
  *
  * \brief SAM Serial Communication Interface
  *
- * Copyright (c) 2014-2018 Microchip Technology Inc. and its subsidiaries.
+ * Copyright (c) 2014-2019 Microchip Technology Inc. and its subsidiaries.
  *
  * \asf_license_start
  *
@@ -915,8 +915,8 @@ struct i2cm_configuration {
 	uint32_t                     clk; /* SERCOM peripheral clock frequency */
 };
 
-static inline void _i2c_m_enable_implementation(void *hw);
-static int32_t     _i2c_m_sync_init_impl(struct _i2c_m_service *const service, void *const hw);
+static inline int32_t _i2c_m_enable_implementation(void *hw);
+static int32_t        _i2c_m_sync_init_impl(struct _i2c_m_service *const service, void *const hw);
 
 #if SERCOM_I2CM_AMOUNT < 1
 /** Dummy array to pass compiling. */
@@ -1051,6 +1051,7 @@ static inline int32_t _sercom_i2c_sync_analyse_flags(void *const hw, uint32_t fl
 
 			if (msg->len == 0) {
 				if (msg->flags & I2C_M_STOP) {
+					hri_sercomi2cm_clear_CTRLB_SMEN_bit(hw);
 					_sercom_i2c_send_stop(hw);
 				}
 
@@ -1082,9 +1083,7 @@ int32_t _i2c_m_async_enable(struct _i2c_m_async_device *const i2c_dev)
 {
 	ASSERT(i2c_dev);
 
-	_i2c_m_enable_implementation(i2c_dev->hw);
-
-	return ERR_NONE;
+	return _i2c_m_enable_implementation(i2c_dev->hw);
 }
 
 /**
@@ -1260,6 +1259,7 @@ int32_t _i2c_m_async_transfer(struct _i2c_m_async_device *i2c_dev, struct _i2c_m
 
 	msg->flags |= I2C_M_BUSY;
 	i2c_dev->service.msg = *msg;
+	hri_sercomi2cm_set_CTRLB_SMEN_bit(i2c_dev->hw);
 
 	ret = _sercom_i2c_send_address(i2c_dev);
 
@@ -1372,9 +1372,7 @@ int32_t _i2c_m_sync_enable(struct _i2c_m_sync_device *const i2c_dev)
 {
 	ASSERT(i2c_dev);
 
-	_i2c_m_enable_implementation(i2c_dev->hw);
-
-	return ERR_NONE;
+	return _i2c_m_enable_implementation(i2c_dev->hw);
 }
 
 /**
@@ -1537,6 +1535,7 @@ int32_t _i2c_m_sync_transfer(struct _i2c_m_sync_device *const i2c_dev, struct _i
 
 	msg->flags |= I2C_M_BUSY;
 	i2c_dev->service.msg = *msg;
+	hri_sercomi2cm_set_CTRLB_SMEN_bit(hw);
 
 	ret = _sercom_i2c_sync_send_address(i2c_dev);
 
@@ -1574,9 +1573,10 @@ int32_t _i2c_m_sync_send_stop(struct _i2c_m_sync_device *const i2c_dev)
 	return I2C_OK;
 }
 
-static inline void _i2c_m_enable_implementation(void *const hw)
+static inline int32_t _i2c_m_enable_implementation(void *const hw)
 {
-	int timeout = 65535;
+	int timeout         = 65535;
+	int timeout_attempt = 4;
 
 	ASSERT(hw);
 
@@ -1587,9 +1587,14 @@ static inline void _i2c_m_enable_implementation(void *const hw)
 		timeout--;
 
 		if (timeout <= 0) {
+			if (--timeout_attempt)
+				timeout = 65535;
+			else
+				return I2C_ERR_BUSY;
 			hri_sercomi2cm_clear_STATUS_reg(hw, SERCOM_I2CM_STATUS_BUSSTATE(I2C_IDLE));
 		}
 	}
+	return ERR_NONE;
 }
 
 static int32_t _i2c_m_sync_init_impl(struct _i2c_m_service *const service, void *const hw)
@@ -1908,6 +1913,16 @@ i2c_s_status_t _i2c_s_sync_get_status(const struct _i2c_s_sync_device *const dev
 }
 
 /**
+ * \brief Clear the Data Ready interrupt flag
+ */
+int32_t _i2c_s_sync_clear_data_ready_flag(const struct _i2c_s_sync_device *const device)
+{
+	hri_sercomi2cs_clear_INTFLAG_DRDY_bit(device->hw);
+
+	return ERR_NONE;
+}
+
+/**
  * \brief Retrieve I2C slave status
  */
 i2c_s_status_t _i2c_s_async_get_status(const struct _i2c_s_async_device *const device)
@@ -2057,7 +2072,8 @@ COMPILER_PACK_RESET()
 /** Build configuration from header macros. */
 #define SERCOMSPI_REGS(n)                                                                                              \
 	{                                                                                                                  \
-		((CONF_SERCOM_##n##_SPI_DORD) | (CONF_SERCOM_##n##_SPI_CPOL << SERCOM_SPI_CTRLA_CPOL_Pos)                      \
+		(((CONF_SERCOM_##n##_SPI_DORD) << SERCOM_SPI_CTRLA_DORD_Pos)                                                   \
+		 | (CONF_SERCOM_##n##_SPI_CPOL << SERCOM_SPI_CTRLA_CPOL_Pos)                                                   \
 		 | (CONF_SERCOM_##n##_SPI_CPHA << SERCOM_SPI_CTRLA_CPHA_Pos)                                                   \
 		 | (CONF_SERCOM_##n##_SPI_AMODE_EN ? SERCOM_SPI_CTRLA_FORM(2) : SERCOM_SPI_CTRLA_FORM(0))                      \
 		 | SERCOM_SPI_CTRLA_DOPO(CONF_SERCOM_##n##_SPI_TXPO) | SERCOM_SPI_CTRLA_DIPO(CONF_SERCOM_##n##_SPI_RXPO)       \

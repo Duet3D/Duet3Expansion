@@ -28,6 +28,7 @@
  * THAT YOU HAVE PAID DIRECTLY TO MICROCHIP FOR THIS SOFTWARE.
  *
  * \asf_license_stop
+ *
  */
 
 #ifdef _SAME51_TCC_COMPONENT_
@@ -81,2379 +82,342 @@ static inline bool hri_tcc_is_syncing(const void *const hw, hri_tcc_syncbusy_reg
 	return ((Tcc *)hw)->SYNCBUSY.reg & reg;
 }
 
-static inline void hri_tcc_set_COUNT_DITH4_COUNT_bf(const void *const hw, hri_tcc_count_reg_t mask)
+static inline bool hri_tcc_get_INTFLAG_OVF_bit(const void *const hw)
 {
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->COUNT.reg |= TCC_COUNT_DITH4_COUNT(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
+	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_OVF) >> TCC_INTFLAG_OVF_Pos;
 }
 
-static inline hri_tcc_count_reg_t hri_tcc_get_COUNT_DITH4_COUNT_bf(const void *const hw, hri_tcc_count_reg_t mask)
+static inline void hri_tcc_clear_INTFLAG_OVF_bit(const void *const hw)
+{
+	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_OVF;
+}
+
+static inline bool hri_tcc_get_INTFLAG_TRG_bit(const void *const hw)
+{
+	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_TRG) >> TCC_INTFLAG_TRG_Pos;
+}
+
+static inline void hri_tcc_clear_INTFLAG_TRG_bit(const void *const hw)
+{
+	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_TRG;
+}
+
+static inline bool hri_tcc_get_INTFLAG_CNT_bit(const void *const hw)
+{
+	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_CNT) >> TCC_INTFLAG_CNT_Pos;
+}
+
+static inline void hri_tcc_clear_INTFLAG_CNT_bit(const void *const hw)
+{
+	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_CNT;
+}
+
+static inline bool hri_tcc_get_INTFLAG_ERR_bit(const void *const hw)
+{
+	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_ERR) >> TCC_INTFLAG_ERR_Pos;
+}
+
+static inline void hri_tcc_clear_INTFLAG_ERR_bit(const void *const hw)
+{
+	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_ERR;
+}
+
+static inline bool hri_tcc_get_INTFLAG_UFS_bit(const void *const hw)
+{
+	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_UFS) >> TCC_INTFLAG_UFS_Pos;
+}
+
+static inline void hri_tcc_clear_INTFLAG_UFS_bit(const void *const hw)
+{
+	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_UFS;
+}
+
+static inline bool hri_tcc_get_INTFLAG_DFS_bit(const void *const hw)
+{
+	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_DFS) >> TCC_INTFLAG_DFS_Pos;
+}
+
+static inline void hri_tcc_clear_INTFLAG_DFS_bit(const void *const hw)
+{
+	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_DFS;
+}
+
+static inline bool hri_tcc_get_INTFLAG_FAULTA_bit(const void *const hw)
+{
+	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_FAULTA) >> TCC_INTFLAG_FAULTA_Pos;
+}
+
+static inline void hri_tcc_clear_INTFLAG_FAULTA_bit(const void *const hw)
+{
+	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_FAULTA;
+}
+
+static inline bool hri_tcc_get_INTFLAG_FAULTB_bit(const void *const hw)
+{
+	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_FAULTB) >> TCC_INTFLAG_FAULTB_Pos;
+}
+
+static inline void hri_tcc_clear_INTFLAG_FAULTB_bit(const void *const hw)
+{
+	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_FAULTB;
+}
+
+static inline bool hri_tcc_get_INTFLAG_FAULT0_bit(const void *const hw)
+{
+	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_FAULT0) >> TCC_INTFLAG_FAULT0_Pos;
+}
+
+static inline void hri_tcc_clear_INTFLAG_FAULT0_bit(const void *const hw)
+{
+	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_FAULT0;
+}
+
+static inline bool hri_tcc_get_INTFLAG_FAULT1_bit(const void *const hw)
+{
+	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_FAULT1) >> TCC_INTFLAG_FAULT1_Pos;
+}
+
+static inline void hri_tcc_clear_INTFLAG_FAULT1_bit(const void *const hw)
+{
+	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_FAULT1;
+}
+
+static inline bool hri_tcc_get_INTFLAG_MC0_bit(const void *const hw)
+{
+	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_MC0) >> TCC_INTFLAG_MC0_Pos;
+}
+
+static inline void hri_tcc_clear_INTFLAG_MC0_bit(const void *const hw)
+{
+	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_MC0;
+}
+
+static inline bool hri_tcc_get_INTFLAG_MC1_bit(const void *const hw)
+{
+	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_MC1) >> TCC_INTFLAG_MC1_Pos;
+}
+
+static inline void hri_tcc_clear_INTFLAG_MC1_bit(const void *const hw)
+{
+	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_MC1;
+}
+
+static inline bool hri_tcc_get_INTFLAG_MC2_bit(const void *const hw)
+{
+	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_MC2) >> TCC_INTFLAG_MC2_Pos;
+}
+
+static inline void hri_tcc_clear_INTFLAG_MC2_bit(const void *const hw)
+{
+	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_MC2;
+}
+
+static inline bool hri_tcc_get_INTFLAG_MC3_bit(const void *const hw)
+{
+	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_MC3) >> TCC_INTFLAG_MC3_Pos;
+}
+
+static inline void hri_tcc_clear_INTFLAG_MC3_bit(const void *const hw)
+{
+	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_MC3;
+}
+
+static inline bool hri_tcc_get_INTFLAG_MC4_bit(const void *const hw)
+{
+	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_MC4) >> TCC_INTFLAG_MC4_Pos;
+}
+
+static inline void hri_tcc_clear_INTFLAG_MC4_bit(const void *const hw)
+{
+	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_MC4;
+}
+
+static inline bool hri_tcc_get_INTFLAG_MC5_bit(const void *const hw)
+{
+	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_MC5) >> TCC_INTFLAG_MC5_Pos;
+}
+
+static inline void hri_tcc_clear_INTFLAG_MC5_bit(const void *const hw)
+{
+	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_MC5;
+}
+
+static inline bool hri_tcc_get_interrupt_OVF_bit(const void *const hw)
+{
+	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_OVF) >> TCC_INTFLAG_OVF_Pos;
+}
+
+static inline void hri_tcc_clear_interrupt_OVF_bit(const void *const hw)
+{
+	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_OVF;
+}
+
+static inline bool hri_tcc_get_interrupt_TRG_bit(const void *const hw)
+{
+	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_TRG) >> TCC_INTFLAG_TRG_Pos;
+}
+
+static inline void hri_tcc_clear_interrupt_TRG_bit(const void *const hw)
+{
+	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_TRG;
+}
+
+static inline bool hri_tcc_get_interrupt_CNT_bit(const void *const hw)
+{
+	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_CNT) >> TCC_INTFLAG_CNT_Pos;
+}
+
+static inline void hri_tcc_clear_interrupt_CNT_bit(const void *const hw)
+{
+	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_CNT;
+}
+
+static inline bool hri_tcc_get_interrupt_ERR_bit(const void *const hw)
+{
+	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_ERR) >> TCC_INTFLAG_ERR_Pos;
+}
+
+static inline void hri_tcc_clear_interrupt_ERR_bit(const void *const hw)
+{
+	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_ERR;
+}
+
+static inline bool hri_tcc_get_interrupt_UFS_bit(const void *const hw)
+{
+	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_UFS) >> TCC_INTFLAG_UFS_Pos;
+}
+
+static inline void hri_tcc_clear_interrupt_UFS_bit(const void *const hw)
+{
+	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_UFS;
+}
+
+static inline bool hri_tcc_get_interrupt_DFS_bit(const void *const hw)
+{
+	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_DFS) >> TCC_INTFLAG_DFS_Pos;
+}
+
+static inline void hri_tcc_clear_interrupt_DFS_bit(const void *const hw)
+{
+	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_DFS;
+}
+
+static inline bool hri_tcc_get_interrupt_FAULTA_bit(const void *const hw)
+{
+	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_FAULTA) >> TCC_INTFLAG_FAULTA_Pos;
+}
+
+static inline void hri_tcc_clear_interrupt_FAULTA_bit(const void *const hw)
+{
+	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_FAULTA;
+}
+
+static inline bool hri_tcc_get_interrupt_FAULTB_bit(const void *const hw)
+{
+	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_FAULTB) >> TCC_INTFLAG_FAULTB_Pos;
+}
+
+static inline void hri_tcc_clear_interrupt_FAULTB_bit(const void *const hw)
+{
+	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_FAULTB;
+}
+
+static inline bool hri_tcc_get_interrupt_FAULT0_bit(const void *const hw)
+{
+	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_FAULT0) >> TCC_INTFLAG_FAULT0_Pos;
+}
+
+static inline void hri_tcc_clear_interrupt_FAULT0_bit(const void *const hw)
+{
+	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_FAULT0;
+}
+
+static inline bool hri_tcc_get_interrupt_FAULT1_bit(const void *const hw)
+{
+	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_FAULT1) >> TCC_INTFLAG_FAULT1_Pos;
+}
+
+static inline void hri_tcc_clear_interrupt_FAULT1_bit(const void *const hw)
+{
+	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_FAULT1;
+}
+
+static inline bool hri_tcc_get_interrupt_MC0_bit(const void *const hw)
+{
+	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_MC0) >> TCC_INTFLAG_MC0_Pos;
+}
+
+static inline void hri_tcc_clear_interrupt_MC0_bit(const void *const hw)
+{
+	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_MC0;
+}
+
+static inline bool hri_tcc_get_interrupt_MC1_bit(const void *const hw)
+{
+	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_MC1) >> TCC_INTFLAG_MC1_Pos;
+}
+
+static inline void hri_tcc_clear_interrupt_MC1_bit(const void *const hw)
+{
+	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_MC1;
+}
+
+static inline bool hri_tcc_get_interrupt_MC2_bit(const void *const hw)
+{
+	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_MC2) >> TCC_INTFLAG_MC2_Pos;
+}
+
+static inline void hri_tcc_clear_interrupt_MC2_bit(const void *const hw)
+{
+	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_MC2;
+}
+
+static inline bool hri_tcc_get_interrupt_MC3_bit(const void *const hw)
+{
+	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_MC3) >> TCC_INTFLAG_MC3_Pos;
+}
+
+static inline void hri_tcc_clear_interrupt_MC3_bit(const void *const hw)
+{
+	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_MC3;
+}
+
+static inline bool hri_tcc_get_interrupt_MC4_bit(const void *const hw)
+{
+	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_MC4) >> TCC_INTFLAG_MC4_Pos;
+}
+
+static inline void hri_tcc_clear_interrupt_MC4_bit(const void *const hw)
+{
+	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_MC4;
+}
+
+static inline bool hri_tcc_get_interrupt_MC5_bit(const void *const hw)
+{
+	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_MC5) >> TCC_INTFLAG_MC5_Pos;
+}
+
+static inline void hri_tcc_clear_interrupt_MC5_bit(const void *const hw)
+{
+	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_MC5;
+}
+
+static inline hri_tcc_intflag_reg_t hri_tcc_get_INTFLAG_reg(const void *const hw, hri_tcc_intflag_reg_t mask)
 {
 	uint32_t tmp;
-	tmp = ((Tcc *)hw)->COUNT.reg;
-	tmp = (tmp & TCC_COUNT_DITH4_COUNT(mask)) >> TCC_COUNT_DITH4_COUNT_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_write_COUNT_DITH4_COUNT_bf(const void *const hw, hri_tcc_count_reg_t data)
-{
-	uint32_t tmp;
-	TCC_CRITICAL_SECTION_ENTER();
-	tmp = ((Tcc *)hw)->COUNT.reg;
-	tmp &= ~TCC_COUNT_DITH4_COUNT_Msk;
-	tmp |= TCC_COUNT_DITH4_COUNT(data);
-	((Tcc *)hw)->COUNT.reg = tmp;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_clear_COUNT_DITH4_COUNT_bf(const void *const hw, hri_tcc_count_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->COUNT.reg &= ~TCC_COUNT_DITH4_COUNT(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_toggle_COUNT_DITH4_COUNT_bf(const void *const hw, hri_tcc_count_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->COUNT.reg ^= TCC_COUNT_DITH4_COUNT(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_count_reg_t hri_tcc_read_COUNT_DITH4_COUNT_bf(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->COUNT.reg;
-	tmp = (tmp & TCC_COUNT_DITH4_COUNT_Msk) >> TCC_COUNT_DITH4_COUNT_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_set_COUNT_DITH5_COUNT_bf(const void *const hw, hri_tcc_count_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->COUNT.reg |= TCC_COUNT_DITH5_COUNT(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_count_reg_t hri_tcc_get_COUNT_DITH5_COUNT_bf(const void *const hw, hri_tcc_count_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->COUNT.reg;
-	tmp = (tmp & TCC_COUNT_DITH5_COUNT(mask)) >> TCC_COUNT_DITH5_COUNT_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_write_COUNT_DITH5_COUNT_bf(const void *const hw, hri_tcc_count_reg_t data)
-{
-	uint32_t tmp;
-	TCC_CRITICAL_SECTION_ENTER();
-	tmp = ((Tcc *)hw)->COUNT.reg;
-	tmp &= ~TCC_COUNT_DITH5_COUNT_Msk;
-	tmp |= TCC_COUNT_DITH5_COUNT(data);
-	((Tcc *)hw)->COUNT.reg = tmp;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_clear_COUNT_DITH5_COUNT_bf(const void *const hw, hri_tcc_count_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->COUNT.reg &= ~TCC_COUNT_DITH5_COUNT(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_toggle_COUNT_DITH5_COUNT_bf(const void *const hw, hri_tcc_count_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->COUNT.reg ^= TCC_COUNT_DITH5_COUNT(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_count_reg_t hri_tcc_read_COUNT_DITH5_COUNT_bf(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->COUNT.reg;
-	tmp = (tmp & TCC_COUNT_DITH5_COUNT_Msk) >> TCC_COUNT_DITH5_COUNT_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_set_COUNT_DITH6_COUNT_bf(const void *const hw, hri_tcc_count_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->COUNT.reg |= TCC_COUNT_DITH6_COUNT(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_count_reg_t hri_tcc_get_COUNT_DITH6_COUNT_bf(const void *const hw, hri_tcc_count_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->COUNT.reg;
-	tmp = (tmp & TCC_COUNT_DITH6_COUNT(mask)) >> TCC_COUNT_DITH6_COUNT_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_write_COUNT_DITH6_COUNT_bf(const void *const hw, hri_tcc_count_reg_t data)
-{
-	uint32_t tmp;
-	TCC_CRITICAL_SECTION_ENTER();
-	tmp = ((Tcc *)hw)->COUNT.reg;
-	tmp &= ~TCC_COUNT_DITH6_COUNT_Msk;
-	tmp |= TCC_COUNT_DITH6_COUNT(data);
-	((Tcc *)hw)->COUNT.reg = tmp;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_clear_COUNT_DITH6_COUNT_bf(const void *const hw, hri_tcc_count_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->COUNT.reg &= ~TCC_COUNT_DITH6_COUNT(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_toggle_COUNT_DITH6_COUNT_bf(const void *const hw, hri_tcc_count_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->COUNT.reg ^= TCC_COUNT_DITH6_COUNT(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_count_reg_t hri_tcc_read_COUNT_DITH6_COUNT_bf(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->COUNT.reg;
-	tmp = (tmp & TCC_COUNT_DITH6_COUNT_Msk) >> TCC_COUNT_DITH6_COUNT_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_set_COUNT_COUNT_bf(const void *const hw, hri_tcc_count_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->COUNT.reg |= TCC_COUNT_COUNT(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_count_reg_t hri_tcc_get_COUNT_COUNT_bf(const void *const hw, hri_tcc_count_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->COUNT.reg;
-	tmp = (tmp & TCC_COUNT_COUNT(mask)) >> TCC_COUNT_COUNT_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_write_COUNT_COUNT_bf(const void *const hw, hri_tcc_count_reg_t data)
-{
-	uint32_t tmp;
-	TCC_CRITICAL_SECTION_ENTER();
-	tmp = ((Tcc *)hw)->COUNT.reg;
-	tmp &= ~TCC_COUNT_COUNT_Msk;
-	tmp |= TCC_COUNT_COUNT(data);
-	((Tcc *)hw)->COUNT.reg = tmp;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_clear_COUNT_COUNT_bf(const void *const hw, hri_tcc_count_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->COUNT.reg &= ~TCC_COUNT_COUNT(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_toggle_COUNT_COUNT_bf(const void *const hw, hri_tcc_count_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->COUNT.reg ^= TCC_COUNT_COUNT(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_count_reg_t hri_tcc_read_COUNT_COUNT_bf(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->COUNT.reg;
-	tmp = (tmp & TCC_COUNT_COUNT_Msk) >> TCC_COUNT_COUNT_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_set_COUNT_DITH4_reg(const void *const hw, hri_tcc_count_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->COUNT.reg |= mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_count_reg_t hri_tcc_get_COUNT_DITH4_reg(const void *const hw, hri_tcc_count_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->COUNT.reg;
+	tmp = ((Tcc *)hw)->INTFLAG.reg;
 	tmp &= mask;
 	return tmp;
 }
 
-static inline void hri_tcc_write_COUNT_DITH4_reg(const void *const hw, hri_tcc_count_reg_t data)
+static inline hri_tcc_intflag_reg_t hri_tcc_read_INTFLAG_reg(const void *const hw)
 {
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->COUNT.reg = data;
-	TCC_CRITICAL_SECTION_LEAVE();
+	return ((Tcc *)hw)->INTFLAG.reg;
 }
 
-static inline void hri_tcc_clear_COUNT_DITH4_reg(const void *const hw, hri_tcc_count_reg_t mask)
+static inline void hri_tcc_clear_INTFLAG_reg(const void *const hw, hri_tcc_intflag_reg_t mask)
 {
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->COUNT.reg &= ~mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_toggle_COUNT_DITH4_reg(const void *const hw, hri_tcc_count_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->COUNT.reg ^= mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_count_reg_t hri_tcc_read_COUNT_DITH4_reg(const void *const hw)
-{
-	return ((Tcc *)hw)->COUNT.reg;
-}
-
-static inline void hri_tcc_set_COUNT_DITH5_reg(const void *const hw, hri_tcc_count_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->COUNT.reg |= mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_count_reg_t hri_tcc_get_COUNT_DITH5_reg(const void *const hw, hri_tcc_count_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->COUNT.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline void hri_tcc_write_COUNT_DITH5_reg(const void *const hw, hri_tcc_count_reg_t data)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->COUNT.reg = data;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_clear_COUNT_DITH5_reg(const void *const hw, hri_tcc_count_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->COUNT.reg &= ~mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_toggle_COUNT_DITH5_reg(const void *const hw, hri_tcc_count_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->COUNT.reg ^= mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_count_reg_t hri_tcc_read_COUNT_DITH5_reg(const void *const hw)
-{
-	return ((Tcc *)hw)->COUNT.reg;
-}
-
-static inline void hri_tcc_set_COUNT_DITH6_reg(const void *const hw, hri_tcc_count_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->COUNT.reg |= mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_count_reg_t hri_tcc_get_COUNT_DITH6_reg(const void *const hw, hri_tcc_count_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->COUNT.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline void hri_tcc_write_COUNT_DITH6_reg(const void *const hw, hri_tcc_count_reg_t data)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->COUNT.reg = data;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_clear_COUNT_DITH6_reg(const void *const hw, hri_tcc_count_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->COUNT.reg &= ~mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_toggle_COUNT_DITH6_reg(const void *const hw, hri_tcc_count_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->COUNT.reg ^= mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_count_reg_t hri_tcc_read_COUNT_DITH6_reg(const void *const hw)
-{
-	return ((Tcc *)hw)->COUNT.reg;
-}
-
-static inline void hri_tcc_set_COUNT_reg(const void *const hw, hri_tcc_count_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->COUNT.reg |= mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_count_reg_t hri_tcc_get_COUNT_reg(const void *const hw, hri_tcc_count_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->COUNT.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline void hri_tcc_write_COUNT_reg(const void *const hw, hri_tcc_count_reg_t data)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->COUNT.reg = data;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_clear_COUNT_reg(const void *const hw, hri_tcc_count_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->COUNT.reg &= ~mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_toggle_COUNT_reg(const void *const hw, hri_tcc_count_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->COUNT.reg ^= mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_count_reg_t hri_tcc_read_COUNT_reg(const void *const hw)
-{
-	return ((Tcc *)hw)->COUNT.reg;
-}
-
-static inline void hri_tcc_set_PER_DITH4_DITHER_bf(const void *const hw, hri_tcc_per_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PER.reg |= TCC_PER_DITH4_DITHER(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_per_reg_t hri_tcc_get_PER_DITH4_DITHER_bf(const void *const hw, hri_tcc_per_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->PER.reg;
-	tmp = (tmp & TCC_PER_DITH4_DITHER(mask)) >> TCC_PER_DITH4_DITHER_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_write_PER_DITH4_DITHER_bf(const void *const hw, hri_tcc_per_reg_t data)
-{
-	uint32_t tmp;
-	TCC_CRITICAL_SECTION_ENTER();
-	tmp = ((Tcc *)hw)->PER.reg;
-	tmp &= ~TCC_PER_DITH4_DITHER_Msk;
-	tmp |= TCC_PER_DITH4_DITHER(data);
-	((Tcc *)hw)->PER.reg = tmp;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_clear_PER_DITH4_DITHER_bf(const void *const hw, hri_tcc_per_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PER.reg &= ~TCC_PER_DITH4_DITHER(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_toggle_PER_DITH4_DITHER_bf(const void *const hw, hri_tcc_per_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PER.reg ^= TCC_PER_DITH4_DITHER(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_per_reg_t hri_tcc_read_PER_DITH4_DITHER_bf(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->PER.reg;
-	tmp = (tmp & TCC_PER_DITH4_DITHER_Msk) >> TCC_PER_DITH4_DITHER_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_set_PER_DITH4_PER_bf(const void *const hw, hri_tcc_per_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PER.reg |= TCC_PER_DITH4_PER(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_per_reg_t hri_tcc_get_PER_DITH4_PER_bf(const void *const hw, hri_tcc_per_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->PER.reg;
-	tmp = (tmp & TCC_PER_DITH4_PER(mask)) >> TCC_PER_DITH4_PER_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_write_PER_DITH4_PER_bf(const void *const hw, hri_tcc_per_reg_t data)
-{
-	uint32_t tmp;
-	TCC_CRITICAL_SECTION_ENTER();
-	tmp = ((Tcc *)hw)->PER.reg;
-	tmp &= ~TCC_PER_DITH4_PER_Msk;
-	tmp |= TCC_PER_DITH4_PER(data);
-	((Tcc *)hw)->PER.reg = tmp;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_clear_PER_DITH4_PER_bf(const void *const hw, hri_tcc_per_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PER.reg &= ~TCC_PER_DITH4_PER(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_toggle_PER_DITH4_PER_bf(const void *const hw, hri_tcc_per_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PER.reg ^= TCC_PER_DITH4_PER(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_per_reg_t hri_tcc_read_PER_DITH4_PER_bf(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->PER.reg;
-	tmp = (tmp & TCC_PER_DITH4_PER_Msk) >> TCC_PER_DITH4_PER_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_set_PER_DITH5_DITHER_bf(const void *const hw, hri_tcc_per_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PER.reg |= TCC_PER_DITH5_DITHER(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_per_reg_t hri_tcc_get_PER_DITH5_DITHER_bf(const void *const hw, hri_tcc_per_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->PER.reg;
-	tmp = (tmp & TCC_PER_DITH5_DITHER(mask)) >> TCC_PER_DITH5_DITHER_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_write_PER_DITH5_DITHER_bf(const void *const hw, hri_tcc_per_reg_t data)
-{
-	uint32_t tmp;
-	TCC_CRITICAL_SECTION_ENTER();
-	tmp = ((Tcc *)hw)->PER.reg;
-	tmp &= ~TCC_PER_DITH5_DITHER_Msk;
-	tmp |= TCC_PER_DITH5_DITHER(data);
-	((Tcc *)hw)->PER.reg = tmp;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_clear_PER_DITH5_DITHER_bf(const void *const hw, hri_tcc_per_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PER.reg &= ~TCC_PER_DITH5_DITHER(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_toggle_PER_DITH5_DITHER_bf(const void *const hw, hri_tcc_per_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PER.reg ^= TCC_PER_DITH5_DITHER(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_per_reg_t hri_tcc_read_PER_DITH5_DITHER_bf(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->PER.reg;
-	tmp = (tmp & TCC_PER_DITH5_DITHER_Msk) >> TCC_PER_DITH5_DITHER_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_set_PER_DITH5_PER_bf(const void *const hw, hri_tcc_per_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PER.reg |= TCC_PER_DITH5_PER(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_per_reg_t hri_tcc_get_PER_DITH5_PER_bf(const void *const hw, hri_tcc_per_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->PER.reg;
-	tmp = (tmp & TCC_PER_DITH5_PER(mask)) >> TCC_PER_DITH5_PER_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_write_PER_DITH5_PER_bf(const void *const hw, hri_tcc_per_reg_t data)
-{
-	uint32_t tmp;
-	TCC_CRITICAL_SECTION_ENTER();
-	tmp = ((Tcc *)hw)->PER.reg;
-	tmp &= ~TCC_PER_DITH5_PER_Msk;
-	tmp |= TCC_PER_DITH5_PER(data);
-	((Tcc *)hw)->PER.reg = tmp;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_clear_PER_DITH5_PER_bf(const void *const hw, hri_tcc_per_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PER.reg &= ~TCC_PER_DITH5_PER(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_toggle_PER_DITH5_PER_bf(const void *const hw, hri_tcc_per_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PER.reg ^= TCC_PER_DITH5_PER(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_per_reg_t hri_tcc_read_PER_DITH5_PER_bf(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->PER.reg;
-	tmp = (tmp & TCC_PER_DITH5_PER_Msk) >> TCC_PER_DITH5_PER_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_set_PER_DITH6_DITHER_bf(const void *const hw, hri_tcc_per_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PER.reg |= TCC_PER_DITH6_DITHER(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_per_reg_t hri_tcc_get_PER_DITH6_DITHER_bf(const void *const hw, hri_tcc_per_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->PER.reg;
-	tmp = (tmp & TCC_PER_DITH6_DITHER(mask)) >> TCC_PER_DITH6_DITHER_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_write_PER_DITH6_DITHER_bf(const void *const hw, hri_tcc_per_reg_t data)
-{
-	uint32_t tmp;
-	TCC_CRITICAL_SECTION_ENTER();
-	tmp = ((Tcc *)hw)->PER.reg;
-	tmp &= ~TCC_PER_DITH6_DITHER_Msk;
-	tmp |= TCC_PER_DITH6_DITHER(data);
-	((Tcc *)hw)->PER.reg = tmp;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_clear_PER_DITH6_DITHER_bf(const void *const hw, hri_tcc_per_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PER.reg &= ~TCC_PER_DITH6_DITHER(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_toggle_PER_DITH6_DITHER_bf(const void *const hw, hri_tcc_per_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PER.reg ^= TCC_PER_DITH6_DITHER(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_per_reg_t hri_tcc_read_PER_DITH6_DITHER_bf(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->PER.reg;
-	tmp = (tmp & TCC_PER_DITH6_DITHER_Msk) >> TCC_PER_DITH6_DITHER_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_set_PER_DITH6_PER_bf(const void *const hw, hri_tcc_per_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PER.reg |= TCC_PER_DITH6_PER(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_per_reg_t hri_tcc_get_PER_DITH6_PER_bf(const void *const hw, hri_tcc_per_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->PER.reg;
-	tmp = (tmp & TCC_PER_DITH6_PER(mask)) >> TCC_PER_DITH6_PER_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_write_PER_DITH6_PER_bf(const void *const hw, hri_tcc_per_reg_t data)
-{
-	uint32_t tmp;
-	TCC_CRITICAL_SECTION_ENTER();
-	tmp = ((Tcc *)hw)->PER.reg;
-	tmp &= ~TCC_PER_DITH6_PER_Msk;
-	tmp |= TCC_PER_DITH6_PER(data);
-	((Tcc *)hw)->PER.reg = tmp;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_clear_PER_DITH6_PER_bf(const void *const hw, hri_tcc_per_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PER.reg &= ~TCC_PER_DITH6_PER(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_toggle_PER_DITH6_PER_bf(const void *const hw, hri_tcc_per_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PER.reg ^= TCC_PER_DITH6_PER(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_per_reg_t hri_tcc_read_PER_DITH6_PER_bf(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->PER.reg;
-	tmp = (tmp & TCC_PER_DITH6_PER_Msk) >> TCC_PER_DITH6_PER_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_set_PER_PER_bf(const void *const hw, hri_tcc_per_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PER.reg |= TCC_PER_PER(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_per_reg_t hri_tcc_get_PER_PER_bf(const void *const hw, hri_tcc_per_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->PER.reg;
-	tmp = (tmp & TCC_PER_PER(mask)) >> TCC_PER_PER_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_write_PER_PER_bf(const void *const hw, hri_tcc_per_reg_t data)
-{
-	uint32_t tmp;
-	TCC_CRITICAL_SECTION_ENTER();
-	tmp = ((Tcc *)hw)->PER.reg;
-	tmp &= ~TCC_PER_PER_Msk;
-	tmp |= TCC_PER_PER(data);
-	((Tcc *)hw)->PER.reg = tmp;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_clear_PER_PER_bf(const void *const hw, hri_tcc_per_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PER.reg &= ~TCC_PER_PER(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_toggle_PER_PER_bf(const void *const hw, hri_tcc_per_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PER.reg ^= TCC_PER_PER(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_per_reg_t hri_tcc_read_PER_PER_bf(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->PER.reg;
-	tmp = (tmp & TCC_PER_PER_Msk) >> TCC_PER_PER_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_set_PER_DITH4_reg(const void *const hw, hri_tcc_per_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PER.reg |= mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_per_reg_t hri_tcc_get_PER_DITH4_reg(const void *const hw, hri_tcc_per_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->PER.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline void hri_tcc_write_PER_DITH4_reg(const void *const hw, hri_tcc_per_reg_t data)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PER.reg = data;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_clear_PER_DITH4_reg(const void *const hw, hri_tcc_per_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PER.reg &= ~mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_toggle_PER_DITH4_reg(const void *const hw, hri_tcc_per_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PER.reg ^= mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_per_reg_t hri_tcc_read_PER_DITH4_reg(const void *const hw)
-{
-	return ((Tcc *)hw)->PER.reg;
-}
-
-static inline void hri_tcc_set_PER_DITH5_reg(const void *const hw, hri_tcc_per_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PER.reg |= mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_per_reg_t hri_tcc_get_PER_DITH5_reg(const void *const hw, hri_tcc_per_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->PER.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline void hri_tcc_write_PER_DITH5_reg(const void *const hw, hri_tcc_per_reg_t data)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PER.reg = data;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_clear_PER_DITH5_reg(const void *const hw, hri_tcc_per_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PER.reg &= ~mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_toggle_PER_DITH5_reg(const void *const hw, hri_tcc_per_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PER.reg ^= mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_per_reg_t hri_tcc_read_PER_DITH5_reg(const void *const hw)
-{
-	return ((Tcc *)hw)->PER.reg;
-}
-
-static inline void hri_tcc_set_PER_DITH6_reg(const void *const hw, hri_tcc_per_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PER.reg |= mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_per_reg_t hri_tcc_get_PER_DITH6_reg(const void *const hw, hri_tcc_per_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->PER.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline void hri_tcc_write_PER_DITH6_reg(const void *const hw, hri_tcc_per_reg_t data)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PER.reg = data;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_clear_PER_DITH6_reg(const void *const hw, hri_tcc_per_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PER.reg &= ~mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_toggle_PER_DITH6_reg(const void *const hw, hri_tcc_per_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PER.reg ^= mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_per_reg_t hri_tcc_read_PER_DITH6_reg(const void *const hw)
-{
-	return ((Tcc *)hw)->PER.reg;
-}
-
-static inline void hri_tcc_set_PER_reg(const void *const hw, hri_tcc_per_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PER.reg |= mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_per_reg_t hri_tcc_get_PER_reg(const void *const hw, hri_tcc_per_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->PER.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline void hri_tcc_write_PER_reg(const void *const hw, hri_tcc_per_reg_t data)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PER.reg = data;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_clear_PER_reg(const void *const hw, hri_tcc_per_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PER.reg &= ~mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_toggle_PER_reg(const void *const hw, hri_tcc_per_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PER.reg ^= mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_per_reg_t hri_tcc_read_PER_reg(const void *const hw)
-{
-	return ((Tcc *)hw)->PER.reg;
-}
-
-static inline void hri_tcc_set_CC_DITH4_DITHER_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CC[index].reg |= TCC_CC_DITH4_DITHER(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_cc_reg_t hri_tcc_get_CC_DITH4_DITHER_bf(const void *const hw, uint8_t index,
-                                                              hri_tcc_cc_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->CC[index].reg;
-	tmp = (tmp & TCC_CC_DITH4_DITHER(mask)) >> TCC_CC_DITH4_DITHER_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_write_CC_DITH4_DITHER_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t data)
-{
-	uint32_t tmp;
-	TCC_CRITICAL_SECTION_ENTER();
-	tmp = ((Tcc *)hw)->CC[index].reg;
-	tmp &= ~TCC_CC_DITH4_DITHER_Msk;
-	tmp |= TCC_CC_DITH4_DITHER(data);
-	((Tcc *)hw)->CC[index].reg = tmp;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_clear_CC_DITH4_DITHER_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CC[index].reg &= ~TCC_CC_DITH4_DITHER(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_toggle_CC_DITH4_DITHER_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CC[index].reg ^= TCC_CC_DITH4_DITHER(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_cc_reg_t hri_tcc_read_CC_DITH4_DITHER_bf(const void *const hw, uint8_t index)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->CC[index].reg;
-	tmp = (tmp & TCC_CC_DITH4_DITHER_Msk) >> TCC_CC_DITH4_DITHER_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_set_CC_DITH4_CC_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CC[index].reg |= TCC_CC_DITH4_CC(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_cc_reg_t hri_tcc_get_CC_DITH4_CC_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->CC[index].reg;
-	tmp = (tmp & TCC_CC_DITH4_CC(mask)) >> TCC_CC_DITH4_CC_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_write_CC_DITH4_CC_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t data)
-{
-	uint32_t tmp;
-	TCC_CRITICAL_SECTION_ENTER();
-	tmp = ((Tcc *)hw)->CC[index].reg;
-	tmp &= ~TCC_CC_DITH4_CC_Msk;
-	tmp |= TCC_CC_DITH4_CC(data);
-	((Tcc *)hw)->CC[index].reg = tmp;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_clear_CC_DITH4_CC_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CC[index].reg &= ~TCC_CC_DITH4_CC(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_toggle_CC_DITH4_CC_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CC[index].reg ^= TCC_CC_DITH4_CC(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_cc_reg_t hri_tcc_read_CC_DITH4_CC_bf(const void *const hw, uint8_t index)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->CC[index].reg;
-	tmp = (tmp & TCC_CC_DITH4_CC_Msk) >> TCC_CC_DITH4_CC_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_set_CC_DITH5_DITHER_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CC[index].reg |= TCC_CC_DITH5_DITHER(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_cc_reg_t hri_tcc_get_CC_DITH5_DITHER_bf(const void *const hw, uint8_t index,
-                                                              hri_tcc_cc_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->CC[index].reg;
-	tmp = (tmp & TCC_CC_DITH5_DITHER(mask)) >> TCC_CC_DITH5_DITHER_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_write_CC_DITH5_DITHER_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t data)
-{
-	uint32_t tmp;
-	TCC_CRITICAL_SECTION_ENTER();
-	tmp = ((Tcc *)hw)->CC[index].reg;
-	tmp &= ~TCC_CC_DITH5_DITHER_Msk;
-	tmp |= TCC_CC_DITH5_DITHER(data);
-	((Tcc *)hw)->CC[index].reg = tmp;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_clear_CC_DITH5_DITHER_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CC[index].reg &= ~TCC_CC_DITH5_DITHER(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_toggle_CC_DITH5_DITHER_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CC[index].reg ^= TCC_CC_DITH5_DITHER(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_cc_reg_t hri_tcc_read_CC_DITH5_DITHER_bf(const void *const hw, uint8_t index)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->CC[index].reg;
-	tmp = (tmp & TCC_CC_DITH5_DITHER_Msk) >> TCC_CC_DITH5_DITHER_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_set_CC_DITH5_CC_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CC[index].reg |= TCC_CC_DITH5_CC(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_cc_reg_t hri_tcc_get_CC_DITH5_CC_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->CC[index].reg;
-	tmp = (tmp & TCC_CC_DITH5_CC(mask)) >> TCC_CC_DITH5_CC_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_write_CC_DITH5_CC_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t data)
-{
-	uint32_t tmp;
-	TCC_CRITICAL_SECTION_ENTER();
-	tmp = ((Tcc *)hw)->CC[index].reg;
-	tmp &= ~TCC_CC_DITH5_CC_Msk;
-	tmp |= TCC_CC_DITH5_CC(data);
-	((Tcc *)hw)->CC[index].reg = tmp;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_clear_CC_DITH5_CC_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CC[index].reg &= ~TCC_CC_DITH5_CC(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_toggle_CC_DITH5_CC_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CC[index].reg ^= TCC_CC_DITH5_CC(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_cc_reg_t hri_tcc_read_CC_DITH5_CC_bf(const void *const hw, uint8_t index)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->CC[index].reg;
-	tmp = (tmp & TCC_CC_DITH5_CC_Msk) >> TCC_CC_DITH5_CC_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_set_CC_DITH6_DITHER_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CC[index].reg |= TCC_CC_DITH6_DITHER(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_cc_reg_t hri_tcc_get_CC_DITH6_DITHER_bf(const void *const hw, uint8_t index,
-                                                              hri_tcc_cc_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->CC[index].reg;
-	tmp = (tmp & TCC_CC_DITH6_DITHER(mask)) >> TCC_CC_DITH6_DITHER_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_write_CC_DITH6_DITHER_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t data)
-{
-	uint32_t tmp;
-	TCC_CRITICAL_SECTION_ENTER();
-	tmp = ((Tcc *)hw)->CC[index].reg;
-	tmp &= ~TCC_CC_DITH6_DITHER_Msk;
-	tmp |= TCC_CC_DITH6_DITHER(data);
-	((Tcc *)hw)->CC[index].reg = tmp;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_clear_CC_DITH6_DITHER_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CC[index].reg &= ~TCC_CC_DITH6_DITHER(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_toggle_CC_DITH6_DITHER_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CC[index].reg ^= TCC_CC_DITH6_DITHER(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_cc_reg_t hri_tcc_read_CC_DITH6_DITHER_bf(const void *const hw, uint8_t index)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->CC[index].reg;
-	tmp = (tmp & TCC_CC_DITH6_DITHER_Msk) >> TCC_CC_DITH6_DITHER_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_set_CC_DITH6_CC_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CC[index].reg |= TCC_CC_DITH6_CC(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_cc_reg_t hri_tcc_get_CC_DITH6_CC_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->CC[index].reg;
-	tmp = (tmp & TCC_CC_DITH6_CC(mask)) >> TCC_CC_DITH6_CC_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_write_CC_DITH6_CC_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t data)
-{
-	uint32_t tmp;
-	TCC_CRITICAL_SECTION_ENTER();
-	tmp = ((Tcc *)hw)->CC[index].reg;
-	tmp &= ~TCC_CC_DITH6_CC_Msk;
-	tmp |= TCC_CC_DITH6_CC(data);
-	((Tcc *)hw)->CC[index].reg = tmp;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_clear_CC_DITH6_CC_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CC[index].reg &= ~TCC_CC_DITH6_CC(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_toggle_CC_DITH6_CC_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CC[index].reg ^= TCC_CC_DITH6_CC(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_cc_reg_t hri_tcc_read_CC_DITH6_CC_bf(const void *const hw, uint8_t index)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->CC[index].reg;
-	tmp = (tmp & TCC_CC_DITH6_CC_Msk) >> TCC_CC_DITH6_CC_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_set_CC_CC_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CC[index].reg |= TCC_CC_CC(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_cc_reg_t hri_tcc_get_CC_CC_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->CC[index].reg;
-	tmp = (tmp & TCC_CC_CC(mask)) >> TCC_CC_CC_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_write_CC_CC_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t data)
-{
-	uint32_t tmp;
-	TCC_CRITICAL_SECTION_ENTER();
-	tmp = ((Tcc *)hw)->CC[index].reg;
-	tmp &= ~TCC_CC_CC_Msk;
-	tmp |= TCC_CC_CC(data);
-	((Tcc *)hw)->CC[index].reg = tmp;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_clear_CC_CC_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CC[index].reg &= ~TCC_CC_CC(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_toggle_CC_CC_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CC[index].reg ^= TCC_CC_CC(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_cc_reg_t hri_tcc_read_CC_CC_bf(const void *const hw, uint8_t index)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->CC[index].reg;
-	tmp = (tmp & TCC_CC_CC_Msk) >> TCC_CC_CC_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_set_CC_DITH4_reg(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CC[index].reg |= mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_cc_reg_t hri_tcc_get_CC_DITH4_reg(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->CC[index].reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline void hri_tcc_write_CC_DITH4_reg(const void *const hw, uint8_t index, hri_tcc_cc_reg_t data)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CC[index].reg = data;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_clear_CC_DITH4_reg(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CC[index].reg &= ~mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_toggle_CC_DITH4_reg(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CC[index].reg ^= mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_cc_reg_t hri_tcc_read_CC_DITH4_reg(const void *const hw, uint8_t index)
-{
-	return ((Tcc *)hw)->CC[index].reg;
-}
-
-static inline void hri_tcc_set_CC_DITH5_reg(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CC[index].reg |= mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_cc_reg_t hri_tcc_get_CC_DITH5_reg(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->CC[index].reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline void hri_tcc_write_CC_DITH5_reg(const void *const hw, uint8_t index, hri_tcc_cc_reg_t data)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CC[index].reg = data;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_clear_CC_DITH5_reg(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CC[index].reg &= ~mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_toggle_CC_DITH5_reg(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CC[index].reg ^= mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_cc_reg_t hri_tcc_read_CC_DITH5_reg(const void *const hw, uint8_t index)
-{
-	return ((Tcc *)hw)->CC[index].reg;
-}
-
-static inline void hri_tcc_set_CC_DITH6_reg(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CC[index].reg |= mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_cc_reg_t hri_tcc_get_CC_DITH6_reg(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->CC[index].reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline void hri_tcc_write_CC_DITH6_reg(const void *const hw, uint8_t index, hri_tcc_cc_reg_t data)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CC[index].reg = data;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_clear_CC_DITH6_reg(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CC[index].reg &= ~mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_toggle_CC_DITH6_reg(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CC[index].reg ^= mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_cc_reg_t hri_tcc_read_CC_DITH6_reg(const void *const hw, uint8_t index)
-{
-	return ((Tcc *)hw)->CC[index].reg;
-}
-
-static inline void hri_tcc_set_CC_reg(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CC[index].reg |= mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_cc_reg_t hri_tcc_get_CC_reg(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->CC[index].reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline void hri_tcc_write_CC_reg(const void *const hw, uint8_t index, hri_tcc_cc_reg_t data)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CC[index].reg = data;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_clear_CC_reg(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CC[index].reg &= ~mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_toggle_CC_reg(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CC[index].reg ^= mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_cc_reg_t hri_tcc_read_CC_reg(const void *const hw, uint8_t index)
-{
-	return ((Tcc *)hw)->CC[index].reg;
-}
-
-static inline void hri_tcc_set_PERBUF_DITH4_DITHERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PERBUF.reg |= TCC_PERBUF_DITH4_DITHERBUF(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_perbuf_reg_t hri_tcc_get_PERBUF_DITH4_DITHERBUF_bf(const void *const    hw,
-                                                                         hri_tcc_perbuf_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->PERBUF.reg;
-	tmp = (tmp & TCC_PERBUF_DITH4_DITHERBUF(mask)) >> TCC_PERBUF_DITH4_DITHERBUF_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_write_PERBUF_DITH4_DITHERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t data)
-{
-	uint32_t tmp;
-	TCC_CRITICAL_SECTION_ENTER();
-	tmp = ((Tcc *)hw)->PERBUF.reg;
-	tmp &= ~TCC_PERBUF_DITH4_DITHERBUF_Msk;
-	tmp |= TCC_PERBUF_DITH4_DITHERBUF(data);
-	((Tcc *)hw)->PERBUF.reg = tmp;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_clear_PERBUF_DITH4_DITHERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PERBUF.reg &= ~TCC_PERBUF_DITH4_DITHERBUF(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_toggle_PERBUF_DITH4_DITHERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PERBUF.reg ^= TCC_PERBUF_DITH4_DITHERBUF(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_perbuf_reg_t hri_tcc_read_PERBUF_DITH4_DITHERBUF_bf(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->PERBUF.reg;
-	tmp = (tmp & TCC_PERBUF_DITH4_DITHERBUF_Msk) >> TCC_PERBUF_DITH4_DITHERBUF_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_set_PERBUF_DITH4_PERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PERBUF.reg |= TCC_PERBUF_DITH4_PERBUF(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_perbuf_reg_t hri_tcc_get_PERBUF_DITH4_PERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->PERBUF.reg;
-	tmp = (tmp & TCC_PERBUF_DITH4_PERBUF(mask)) >> TCC_PERBUF_DITH4_PERBUF_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_write_PERBUF_DITH4_PERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t data)
-{
-	uint32_t tmp;
-	TCC_CRITICAL_SECTION_ENTER();
-	tmp = ((Tcc *)hw)->PERBUF.reg;
-	tmp &= ~TCC_PERBUF_DITH4_PERBUF_Msk;
-	tmp |= TCC_PERBUF_DITH4_PERBUF(data);
-	((Tcc *)hw)->PERBUF.reg = tmp;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_clear_PERBUF_DITH4_PERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PERBUF.reg &= ~TCC_PERBUF_DITH4_PERBUF(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_toggle_PERBUF_DITH4_PERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PERBUF.reg ^= TCC_PERBUF_DITH4_PERBUF(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_perbuf_reg_t hri_tcc_read_PERBUF_DITH4_PERBUF_bf(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->PERBUF.reg;
-	tmp = (tmp & TCC_PERBUF_DITH4_PERBUF_Msk) >> TCC_PERBUF_DITH4_PERBUF_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_set_PERBUF_DITH5_DITHERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PERBUF.reg |= TCC_PERBUF_DITH5_DITHERBUF(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_perbuf_reg_t hri_tcc_get_PERBUF_DITH5_DITHERBUF_bf(const void *const    hw,
-                                                                         hri_tcc_perbuf_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->PERBUF.reg;
-	tmp = (tmp & TCC_PERBUF_DITH5_DITHERBUF(mask)) >> TCC_PERBUF_DITH5_DITHERBUF_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_write_PERBUF_DITH5_DITHERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t data)
-{
-	uint32_t tmp;
-	TCC_CRITICAL_SECTION_ENTER();
-	tmp = ((Tcc *)hw)->PERBUF.reg;
-	tmp &= ~TCC_PERBUF_DITH5_DITHERBUF_Msk;
-	tmp |= TCC_PERBUF_DITH5_DITHERBUF(data);
-	((Tcc *)hw)->PERBUF.reg = tmp;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_clear_PERBUF_DITH5_DITHERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PERBUF.reg &= ~TCC_PERBUF_DITH5_DITHERBUF(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_toggle_PERBUF_DITH5_DITHERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PERBUF.reg ^= TCC_PERBUF_DITH5_DITHERBUF(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_perbuf_reg_t hri_tcc_read_PERBUF_DITH5_DITHERBUF_bf(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->PERBUF.reg;
-	tmp = (tmp & TCC_PERBUF_DITH5_DITHERBUF_Msk) >> TCC_PERBUF_DITH5_DITHERBUF_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_set_PERBUF_DITH5_PERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PERBUF.reg |= TCC_PERBUF_DITH5_PERBUF(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_perbuf_reg_t hri_tcc_get_PERBUF_DITH5_PERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->PERBUF.reg;
-	tmp = (tmp & TCC_PERBUF_DITH5_PERBUF(mask)) >> TCC_PERBUF_DITH5_PERBUF_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_write_PERBUF_DITH5_PERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t data)
-{
-	uint32_t tmp;
-	TCC_CRITICAL_SECTION_ENTER();
-	tmp = ((Tcc *)hw)->PERBUF.reg;
-	tmp &= ~TCC_PERBUF_DITH5_PERBUF_Msk;
-	tmp |= TCC_PERBUF_DITH5_PERBUF(data);
-	((Tcc *)hw)->PERBUF.reg = tmp;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_clear_PERBUF_DITH5_PERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PERBUF.reg &= ~TCC_PERBUF_DITH5_PERBUF(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_toggle_PERBUF_DITH5_PERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PERBUF.reg ^= TCC_PERBUF_DITH5_PERBUF(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_perbuf_reg_t hri_tcc_read_PERBUF_DITH5_PERBUF_bf(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->PERBUF.reg;
-	tmp = (tmp & TCC_PERBUF_DITH5_PERBUF_Msk) >> TCC_PERBUF_DITH5_PERBUF_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_set_PERBUF_DITH6_DITHERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PERBUF.reg |= TCC_PERBUF_DITH6_DITHERBUF(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_perbuf_reg_t hri_tcc_get_PERBUF_DITH6_DITHERBUF_bf(const void *const    hw,
-                                                                         hri_tcc_perbuf_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->PERBUF.reg;
-	tmp = (tmp & TCC_PERBUF_DITH6_DITHERBUF(mask)) >> TCC_PERBUF_DITH6_DITHERBUF_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_write_PERBUF_DITH6_DITHERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t data)
-{
-	uint32_t tmp;
-	TCC_CRITICAL_SECTION_ENTER();
-	tmp = ((Tcc *)hw)->PERBUF.reg;
-	tmp &= ~TCC_PERBUF_DITH6_DITHERBUF_Msk;
-	tmp |= TCC_PERBUF_DITH6_DITHERBUF(data);
-	((Tcc *)hw)->PERBUF.reg = tmp;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_clear_PERBUF_DITH6_DITHERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PERBUF.reg &= ~TCC_PERBUF_DITH6_DITHERBUF(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_toggle_PERBUF_DITH6_DITHERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PERBUF.reg ^= TCC_PERBUF_DITH6_DITHERBUF(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_perbuf_reg_t hri_tcc_read_PERBUF_DITH6_DITHERBUF_bf(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->PERBUF.reg;
-	tmp = (tmp & TCC_PERBUF_DITH6_DITHERBUF_Msk) >> TCC_PERBUF_DITH6_DITHERBUF_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_set_PERBUF_DITH6_PERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PERBUF.reg |= TCC_PERBUF_DITH6_PERBUF(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_perbuf_reg_t hri_tcc_get_PERBUF_DITH6_PERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->PERBUF.reg;
-	tmp = (tmp & TCC_PERBUF_DITH6_PERBUF(mask)) >> TCC_PERBUF_DITH6_PERBUF_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_write_PERBUF_DITH6_PERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t data)
-{
-	uint32_t tmp;
-	TCC_CRITICAL_SECTION_ENTER();
-	tmp = ((Tcc *)hw)->PERBUF.reg;
-	tmp &= ~TCC_PERBUF_DITH6_PERBUF_Msk;
-	tmp |= TCC_PERBUF_DITH6_PERBUF(data);
-	((Tcc *)hw)->PERBUF.reg = tmp;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_clear_PERBUF_DITH6_PERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PERBUF.reg &= ~TCC_PERBUF_DITH6_PERBUF(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_toggle_PERBUF_DITH6_PERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PERBUF.reg ^= TCC_PERBUF_DITH6_PERBUF(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_perbuf_reg_t hri_tcc_read_PERBUF_DITH6_PERBUF_bf(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->PERBUF.reg;
-	tmp = (tmp & TCC_PERBUF_DITH6_PERBUF_Msk) >> TCC_PERBUF_DITH6_PERBUF_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_set_PERBUF_PERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PERBUF.reg |= TCC_PERBUF_PERBUF(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_perbuf_reg_t hri_tcc_get_PERBUF_PERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->PERBUF.reg;
-	tmp = (tmp & TCC_PERBUF_PERBUF(mask)) >> TCC_PERBUF_PERBUF_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_write_PERBUF_PERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t data)
-{
-	uint32_t tmp;
-	TCC_CRITICAL_SECTION_ENTER();
-	tmp = ((Tcc *)hw)->PERBUF.reg;
-	tmp &= ~TCC_PERBUF_PERBUF_Msk;
-	tmp |= TCC_PERBUF_PERBUF(data);
-	((Tcc *)hw)->PERBUF.reg = tmp;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_clear_PERBUF_PERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PERBUF.reg &= ~TCC_PERBUF_PERBUF(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_toggle_PERBUF_PERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PERBUF.reg ^= TCC_PERBUF_PERBUF(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_perbuf_reg_t hri_tcc_read_PERBUF_PERBUF_bf(const void *const hw)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->PERBUF.reg;
-	tmp = (tmp & TCC_PERBUF_PERBUF_Msk) >> TCC_PERBUF_PERBUF_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_set_PERBUF_DITH4_reg(const void *const hw, hri_tcc_perbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PERBUF.reg |= mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_perbuf_reg_t hri_tcc_get_PERBUF_DITH4_reg(const void *const hw, hri_tcc_perbuf_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->PERBUF.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline void hri_tcc_write_PERBUF_DITH4_reg(const void *const hw, hri_tcc_perbuf_reg_t data)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PERBUF.reg = data;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_clear_PERBUF_DITH4_reg(const void *const hw, hri_tcc_perbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PERBUF.reg &= ~mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_toggle_PERBUF_DITH4_reg(const void *const hw, hri_tcc_perbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PERBUF.reg ^= mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_perbuf_reg_t hri_tcc_read_PERBUF_DITH4_reg(const void *const hw)
-{
-	return ((Tcc *)hw)->PERBUF.reg;
-}
-
-static inline void hri_tcc_set_PERBUF_DITH5_reg(const void *const hw, hri_tcc_perbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PERBUF.reg |= mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_perbuf_reg_t hri_tcc_get_PERBUF_DITH5_reg(const void *const hw, hri_tcc_perbuf_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->PERBUF.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline void hri_tcc_write_PERBUF_DITH5_reg(const void *const hw, hri_tcc_perbuf_reg_t data)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PERBUF.reg = data;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_clear_PERBUF_DITH5_reg(const void *const hw, hri_tcc_perbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PERBUF.reg &= ~mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_toggle_PERBUF_DITH5_reg(const void *const hw, hri_tcc_perbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PERBUF.reg ^= mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_perbuf_reg_t hri_tcc_read_PERBUF_DITH5_reg(const void *const hw)
-{
-	return ((Tcc *)hw)->PERBUF.reg;
-}
-
-static inline void hri_tcc_set_PERBUF_DITH6_reg(const void *const hw, hri_tcc_perbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PERBUF.reg |= mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_perbuf_reg_t hri_tcc_get_PERBUF_DITH6_reg(const void *const hw, hri_tcc_perbuf_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->PERBUF.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline void hri_tcc_write_PERBUF_DITH6_reg(const void *const hw, hri_tcc_perbuf_reg_t data)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PERBUF.reg = data;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_clear_PERBUF_DITH6_reg(const void *const hw, hri_tcc_perbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PERBUF.reg &= ~mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_toggle_PERBUF_DITH6_reg(const void *const hw, hri_tcc_perbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PERBUF.reg ^= mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_perbuf_reg_t hri_tcc_read_PERBUF_DITH6_reg(const void *const hw)
-{
-	return ((Tcc *)hw)->PERBUF.reg;
-}
-
-static inline void hri_tcc_set_PERBUF_reg(const void *const hw, hri_tcc_perbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PERBUF.reg |= mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_perbuf_reg_t hri_tcc_get_PERBUF_reg(const void *const hw, hri_tcc_perbuf_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->PERBUF.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline void hri_tcc_write_PERBUF_reg(const void *const hw, hri_tcc_perbuf_reg_t data)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PERBUF.reg = data;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_clear_PERBUF_reg(const void *const hw, hri_tcc_perbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PERBUF.reg &= ~mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_toggle_PERBUF_reg(const void *const hw, hri_tcc_perbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->PERBUF.reg ^= mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_perbuf_reg_t hri_tcc_read_PERBUF_reg(const void *const hw)
-{
-	return ((Tcc *)hw)->PERBUF.reg;
-}
-
-static inline void hri_tcc_set_CCBUF_DITH4_CCBUF_bf(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CCBUF[index].reg |= TCC_CCBUF_DITH4_CCBUF(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_ccbuf_reg_t hri_tcc_get_CCBUF_DITH4_CCBUF_bf(const void *const hw, uint8_t index,
-                                                                   hri_tcc_ccbuf_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->CCBUF[index].reg;
-	tmp = (tmp & TCC_CCBUF_DITH4_CCBUF(mask)) >> TCC_CCBUF_DITH4_CCBUF_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_write_CCBUF_DITH4_CCBUF_bf(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t data)
-{
-	uint32_t tmp;
-	TCC_CRITICAL_SECTION_ENTER();
-	tmp = ((Tcc *)hw)->CCBUF[index].reg;
-	tmp &= ~TCC_CCBUF_DITH4_CCBUF_Msk;
-	tmp |= TCC_CCBUF_DITH4_CCBUF(data);
-	((Tcc *)hw)->CCBUF[index].reg = tmp;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_clear_CCBUF_DITH4_CCBUF_bf(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CCBUF[index].reg &= ~TCC_CCBUF_DITH4_CCBUF(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_toggle_CCBUF_DITH4_CCBUF_bf(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CCBUF[index].reg ^= TCC_CCBUF_DITH4_CCBUF(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_ccbuf_reg_t hri_tcc_read_CCBUF_DITH4_CCBUF_bf(const void *const hw, uint8_t index)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->CCBUF[index].reg;
-	tmp = (tmp & TCC_CCBUF_DITH4_CCBUF_Msk) >> TCC_CCBUF_DITH4_CCBUF_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_set_CCBUF_DITH4_DITHERBUF_bf(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CCBUF[index].reg |= TCC_CCBUF_DITH4_DITHERBUF(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_ccbuf_reg_t hri_tcc_get_CCBUF_DITH4_DITHERBUF_bf(const void *const hw, uint8_t index,
-                                                                       hri_tcc_ccbuf_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->CCBUF[index].reg;
-	tmp = (tmp & TCC_CCBUF_DITH4_DITHERBUF(mask)) >> TCC_CCBUF_DITH4_DITHERBUF_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_write_CCBUF_DITH4_DITHERBUF_bf(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t data)
-{
-	uint32_t tmp;
-	TCC_CRITICAL_SECTION_ENTER();
-	tmp = ((Tcc *)hw)->CCBUF[index].reg;
-	tmp &= ~TCC_CCBUF_DITH4_DITHERBUF_Msk;
-	tmp |= TCC_CCBUF_DITH4_DITHERBUF(data);
-	((Tcc *)hw)->CCBUF[index].reg = tmp;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_clear_CCBUF_DITH4_DITHERBUF_bf(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CCBUF[index].reg &= ~TCC_CCBUF_DITH4_DITHERBUF(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_toggle_CCBUF_DITH4_DITHERBUF_bf(const void *const hw, uint8_t index,
-                                                           hri_tcc_ccbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CCBUF[index].reg ^= TCC_CCBUF_DITH4_DITHERBUF(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_ccbuf_reg_t hri_tcc_read_CCBUF_DITH4_DITHERBUF_bf(const void *const hw, uint8_t index)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->CCBUF[index].reg;
-	tmp = (tmp & TCC_CCBUF_DITH4_DITHERBUF_Msk) >> TCC_CCBUF_DITH4_DITHERBUF_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_set_CCBUF_DITH5_DITHERBUF_bf(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CCBUF[index].reg |= TCC_CCBUF_DITH5_DITHERBUF(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_ccbuf_reg_t hri_tcc_get_CCBUF_DITH5_DITHERBUF_bf(const void *const hw, uint8_t index,
-                                                                       hri_tcc_ccbuf_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->CCBUF[index].reg;
-	tmp = (tmp & TCC_CCBUF_DITH5_DITHERBUF(mask)) >> TCC_CCBUF_DITH5_DITHERBUF_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_write_CCBUF_DITH5_DITHERBUF_bf(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t data)
-{
-	uint32_t tmp;
-	TCC_CRITICAL_SECTION_ENTER();
-	tmp = ((Tcc *)hw)->CCBUF[index].reg;
-	tmp &= ~TCC_CCBUF_DITH5_DITHERBUF_Msk;
-	tmp |= TCC_CCBUF_DITH5_DITHERBUF(data);
-	((Tcc *)hw)->CCBUF[index].reg = tmp;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_clear_CCBUF_DITH5_DITHERBUF_bf(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CCBUF[index].reg &= ~TCC_CCBUF_DITH5_DITHERBUF(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_toggle_CCBUF_DITH5_DITHERBUF_bf(const void *const hw, uint8_t index,
-                                                           hri_tcc_ccbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CCBUF[index].reg ^= TCC_CCBUF_DITH5_DITHERBUF(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_ccbuf_reg_t hri_tcc_read_CCBUF_DITH5_DITHERBUF_bf(const void *const hw, uint8_t index)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->CCBUF[index].reg;
-	tmp = (tmp & TCC_CCBUF_DITH5_DITHERBUF_Msk) >> TCC_CCBUF_DITH5_DITHERBUF_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_set_CCBUF_DITH5_CCBUF_bf(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CCBUF[index].reg |= TCC_CCBUF_DITH5_CCBUF(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_ccbuf_reg_t hri_tcc_get_CCBUF_DITH5_CCBUF_bf(const void *const hw, uint8_t index,
-                                                                   hri_tcc_ccbuf_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->CCBUF[index].reg;
-	tmp = (tmp & TCC_CCBUF_DITH5_CCBUF(mask)) >> TCC_CCBUF_DITH5_CCBUF_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_write_CCBUF_DITH5_CCBUF_bf(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t data)
-{
-	uint32_t tmp;
-	TCC_CRITICAL_SECTION_ENTER();
-	tmp = ((Tcc *)hw)->CCBUF[index].reg;
-	tmp &= ~TCC_CCBUF_DITH5_CCBUF_Msk;
-	tmp |= TCC_CCBUF_DITH5_CCBUF(data);
-	((Tcc *)hw)->CCBUF[index].reg = tmp;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_clear_CCBUF_DITH5_CCBUF_bf(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CCBUF[index].reg &= ~TCC_CCBUF_DITH5_CCBUF(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_toggle_CCBUF_DITH5_CCBUF_bf(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CCBUF[index].reg ^= TCC_CCBUF_DITH5_CCBUF(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_ccbuf_reg_t hri_tcc_read_CCBUF_DITH5_CCBUF_bf(const void *const hw, uint8_t index)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->CCBUF[index].reg;
-	tmp = (tmp & TCC_CCBUF_DITH5_CCBUF_Msk) >> TCC_CCBUF_DITH5_CCBUF_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_set_CCBUF_DITH6_DITHERBUF_bf(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CCBUF[index].reg |= TCC_CCBUF_DITH6_DITHERBUF(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_ccbuf_reg_t hri_tcc_get_CCBUF_DITH6_DITHERBUF_bf(const void *const hw, uint8_t index,
-                                                                       hri_tcc_ccbuf_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->CCBUF[index].reg;
-	tmp = (tmp & TCC_CCBUF_DITH6_DITHERBUF(mask)) >> TCC_CCBUF_DITH6_DITHERBUF_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_write_CCBUF_DITH6_DITHERBUF_bf(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t data)
-{
-	uint32_t tmp;
-	TCC_CRITICAL_SECTION_ENTER();
-	tmp = ((Tcc *)hw)->CCBUF[index].reg;
-	tmp &= ~TCC_CCBUF_DITH6_DITHERBUF_Msk;
-	tmp |= TCC_CCBUF_DITH6_DITHERBUF(data);
-	((Tcc *)hw)->CCBUF[index].reg = tmp;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_clear_CCBUF_DITH6_DITHERBUF_bf(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CCBUF[index].reg &= ~TCC_CCBUF_DITH6_DITHERBUF(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_toggle_CCBUF_DITH6_DITHERBUF_bf(const void *const hw, uint8_t index,
-                                                           hri_tcc_ccbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CCBUF[index].reg ^= TCC_CCBUF_DITH6_DITHERBUF(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_ccbuf_reg_t hri_tcc_read_CCBUF_DITH6_DITHERBUF_bf(const void *const hw, uint8_t index)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->CCBUF[index].reg;
-	tmp = (tmp & TCC_CCBUF_DITH6_DITHERBUF_Msk) >> TCC_CCBUF_DITH6_DITHERBUF_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_set_CCBUF_DITH6_CCBUF_bf(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CCBUF[index].reg |= TCC_CCBUF_DITH6_CCBUF(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_ccbuf_reg_t hri_tcc_get_CCBUF_DITH6_CCBUF_bf(const void *const hw, uint8_t index,
-                                                                   hri_tcc_ccbuf_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->CCBUF[index].reg;
-	tmp = (tmp & TCC_CCBUF_DITH6_CCBUF(mask)) >> TCC_CCBUF_DITH6_CCBUF_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_write_CCBUF_DITH6_CCBUF_bf(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t data)
-{
-	uint32_t tmp;
-	TCC_CRITICAL_SECTION_ENTER();
-	tmp = ((Tcc *)hw)->CCBUF[index].reg;
-	tmp &= ~TCC_CCBUF_DITH6_CCBUF_Msk;
-	tmp |= TCC_CCBUF_DITH6_CCBUF(data);
-	((Tcc *)hw)->CCBUF[index].reg = tmp;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_clear_CCBUF_DITH6_CCBUF_bf(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CCBUF[index].reg &= ~TCC_CCBUF_DITH6_CCBUF(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_toggle_CCBUF_DITH6_CCBUF_bf(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CCBUF[index].reg ^= TCC_CCBUF_DITH6_CCBUF(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_ccbuf_reg_t hri_tcc_read_CCBUF_DITH6_CCBUF_bf(const void *const hw, uint8_t index)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->CCBUF[index].reg;
-	tmp = (tmp & TCC_CCBUF_DITH6_CCBUF_Msk) >> TCC_CCBUF_DITH6_CCBUF_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_set_CCBUF_CCBUF_bf(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CCBUF[index].reg |= TCC_CCBUF_CCBUF(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_ccbuf_reg_t hri_tcc_get_CCBUF_CCBUF_bf(const void *const hw, uint8_t index,
-                                                             hri_tcc_ccbuf_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->CCBUF[index].reg;
-	tmp = (tmp & TCC_CCBUF_CCBUF(mask)) >> TCC_CCBUF_CCBUF_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_write_CCBUF_CCBUF_bf(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t data)
-{
-	uint32_t tmp;
-	TCC_CRITICAL_SECTION_ENTER();
-	tmp = ((Tcc *)hw)->CCBUF[index].reg;
-	tmp &= ~TCC_CCBUF_CCBUF_Msk;
-	tmp |= TCC_CCBUF_CCBUF(data);
-	((Tcc *)hw)->CCBUF[index].reg = tmp;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_clear_CCBUF_CCBUF_bf(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CCBUF[index].reg &= ~TCC_CCBUF_CCBUF(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_toggle_CCBUF_CCBUF_bf(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CCBUF[index].reg ^= TCC_CCBUF_CCBUF(mask);
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_ccbuf_reg_t hri_tcc_read_CCBUF_CCBUF_bf(const void *const hw, uint8_t index)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->CCBUF[index].reg;
-	tmp = (tmp & TCC_CCBUF_CCBUF_Msk) >> TCC_CCBUF_CCBUF_Pos;
-	return tmp;
-}
-
-static inline void hri_tcc_set_CCBUF_DITH4_reg(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CCBUF[index].reg |= mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_ccbuf_reg_t hri_tcc_get_CCBUF_DITH4_reg(const void *const hw, uint8_t index,
-                                                              hri_tcc_ccbuf_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->CCBUF[index].reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline void hri_tcc_write_CCBUF_DITH4_reg(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t data)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CCBUF[index].reg = data;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_clear_CCBUF_DITH4_reg(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CCBUF[index].reg &= ~mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_toggle_CCBUF_DITH4_reg(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CCBUF[index].reg ^= mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_ccbuf_reg_t hri_tcc_read_CCBUF_DITH4_reg(const void *const hw, uint8_t index)
-{
-	return ((Tcc *)hw)->CCBUF[index].reg;
-}
-
-static inline void hri_tcc_set_CCBUF_DITH5_reg(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CCBUF[index].reg |= mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_ccbuf_reg_t hri_tcc_get_CCBUF_DITH5_reg(const void *const hw, uint8_t index,
-                                                              hri_tcc_ccbuf_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->CCBUF[index].reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline void hri_tcc_write_CCBUF_DITH5_reg(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t data)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CCBUF[index].reg = data;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_clear_CCBUF_DITH5_reg(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CCBUF[index].reg &= ~mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_toggle_CCBUF_DITH5_reg(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CCBUF[index].reg ^= mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_ccbuf_reg_t hri_tcc_read_CCBUF_DITH5_reg(const void *const hw, uint8_t index)
-{
-	return ((Tcc *)hw)->CCBUF[index].reg;
-}
-
-static inline void hri_tcc_set_CCBUF_DITH6_reg(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CCBUF[index].reg |= mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_ccbuf_reg_t hri_tcc_get_CCBUF_DITH6_reg(const void *const hw, uint8_t index,
-                                                              hri_tcc_ccbuf_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->CCBUF[index].reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline void hri_tcc_write_CCBUF_DITH6_reg(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t data)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CCBUF[index].reg = data;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_clear_CCBUF_DITH6_reg(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CCBUF[index].reg &= ~mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_toggle_CCBUF_DITH6_reg(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CCBUF[index].reg ^= mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_ccbuf_reg_t hri_tcc_read_CCBUF_DITH6_reg(const void *const hw, uint8_t index)
-{
-	return ((Tcc *)hw)->CCBUF[index].reg;
-}
-
-static inline void hri_tcc_set_CCBUF_reg(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CCBUF[index].reg |= mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_ccbuf_reg_t hri_tcc_get_CCBUF_reg(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Tcc *)hw)->CCBUF[index].reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline void hri_tcc_write_CCBUF_reg(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t data)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CCBUF[index].reg = data;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_clear_CCBUF_reg(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CCBUF[index].reg &= ~mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline void hri_tcc_toggle_CCBUF_reg(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t mask)
-{
-	TCC_CRITICAL_SECTION_ENTER();
-	((Tcc *)hw)->CCBUF[index].reg ^= mask;
-	TCC_CRITICAL_SECTION_LEAVE();
-}
-
-static inline hri_tcc_ccbuf_reg_t hri_tcc_read_CCBUF_reg(const void *const hw, uint8_t index)
-{
-	return ((Tcc *)hw)->CCBUF[index].reg;
+	((Tcc *)hw)->INTFLAG.reg = mask;
 }
 
 static inline void hri_tcc_set_CTRLB_DIR_bit(const void *const hw)
@@ -3034,349 +998,94 @@ static inline void hri_tcc_clear_INTEN_reg(const void *const hw, hri_tcc_intense
 	((Tcc *)hw)->INTENCLR.reg = mask;
 }
 
-static inline bool hri_tcc_get_INTFLAG_OVF_bit(const void *const hw)
+static inline bool hri_tcc_get_SYNCBUSY_SWRST_bit(const void *const hw)
 {
-	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_OVF) >> TCC_INTFLAG_OVF_Pos;
+	return (((Tcc *)hw)->SYNCBUSY.reg & TCC_SYNCBUSY_SWRST) >> TCC_SYNCBUSY_SWRST_Pos;
 }
 
-static inline void hri_tcc_clear_INTFLAG_OVF_bit(const void *const hw)
+static inline bool hri_tcc_get_SYNCBUSY_ENABLE_bit(const void *const hw)
 {
-	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_OVF;
+	return (((Tcc *)hw)->SYNCBUSY.reg & TCC_SYNCBUSY_ENABLE) >> TCC_SYNCBUSY_ENABLE_Pos;
 }
 
-static inline bool hri_tcc_get_INTFLAG_TRG_bit(const void *const hw)
+static inline bool hri_tcc_get_SYNCBUSY_CTRLB_bit(const void *const hw)
 {
-	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_TRG) >> TCC_INTFLAG_TRG_Pos;
+	return (((Tcc *)hw)->SYNCBUSY.reg & TCC_SYNCBUSY_CTRLB) >> TCC_SYNCBUSY_CTRLB_Pos;
 }
 
-static inline void hri_tcc_clear_INTFLAG_TRG_bit(const void *const hw)
+static inline bool hri_tcc_get_SYNCBUSY_STATUS_bit(const void *const hw)
 {
-	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_TRG;
+	return (((Tcc *)hw)->SYNCBUSY.reg & TCC_SYNCBUSY_STATUS) >> TCC_SYNCBUSY_STATUS_Pos;
 }
 
-static inline bool hri_tcc_get_INTFLAG_CNT_bit(const void *const hw)
+static inline bool hri_tcc_get_SYNCBUSY_COUNT_bit(const void *const hw)
 {
-	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_CNT) >> TCC_INTFLAG_CNT_Pos;
+	return (((Tcc *)hw)->SYNCBUSY.reg & TCC_SYNCBUSY_COUNT) >> TCC_SYNCBUSY_COUNT_Pos;
 }
 
-static inline void hri_tcc_clear_INTFLAG_CNT_bit(const void *const hw)
+static inline bool hri_tcc_get_SYNCBUSY_PATT_bit(const void *const hw)
 {
-	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_CNT;
+	return (((Tcc *)hw)->SYNCBUSY.reg & TCC_SYNCBUSY_PATT) >> TCC_SYNCBUSY_PATT_Pos;
 }
 
-static inline bool hri_tcc_get_INTFLAG_ERR_bit(const void *const hw)
+static inline bool hri_tcc_get_SYNCBUSY_WAVE_bit(const void *const hw)
 {
-	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_ERR) >> TCC_INTFLAG_ERR_Pos;
+	return (((Tcc *)hw)->SYNCBUSY.reg & TCC_SYNCBUSY_WAVE) >> TCC_SYNCBUSY_WAVE_Pos;
 }
 
-static inline void hri_tcc_clear_INTFLAG_ERR_bit(const void *const hw)
+static inline bool hri_tcc_get_SYNCBUSY_PER_bit(const void *const hw)
 {
-	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_ERR;
+	return (((Tcc *)hw)->SYNCBUSY.reg & TCC_SYNCBUSY_PER) >> TCC_SYNCBUSY_PER_Pos;
 }
 
-static inline bool hri_tcc_get_INTFLAG_UFS_bit(const void *const hw)
+static inline bool hri_tcc_get_SYNCBUSY_CC0_bit(const void *const hw)
 {
-	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_UFS) >> TCC_INTFLAG_UFS_Pos;
+	return (((Tcc *)hw)->SYNCBUSY.reg & TCC_SYNCBUSY_CC0) >> TCC_SYNCBUSY_CC0_Pos;
 }
 
-static inline void hri_tcc_clear_INTFLAG_UFS_bit(const void *const hw)
+static inline bool hri_tcc_get_SYNCBUSY_CC1_bit(const void *const hw)
 {
-	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_UFS;
+	return (((Tcc *)hw)->SYNCBUSY.reg & TCC_SYNCBUSY_CC1) >> TCC_SYNCBUSY_CC1_Pos;
 }
 
-static inline bool hri_tcc_get_INTFLAG_DFS_bit(const void *const hw)
+static inline bool hri_tcc_get_SYNCBUSY_CC2_bit(const void *const hw)
 {
-	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_DFS) >> TCC_INTFLAG_DFS_Pos;
+	return (((Tcc *)hw)->SYNCBUSY.reg & TCC_SYNCBUSY_CC2) >> TCC_SYNCBUSY_CC2_Pos;
 }
 
-static inline void hri_tcc_clear_INTFLAG_DFS_bit(const void *const hw)
+static inline bool hri_tcc_get_SYNCBUSY_CC3_bit(const void *const hw)
 {
-	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_DFS;
+	return (((Tcc *)hw)->SYNCBUSY.reg & TCC_SYNCBUSY_CC3) >> TCC_SYNCBUSY_CC3_Pos;
 }
 
-static inline bool hri_tcc_get_INTFLAG_FAULTA_bit(const void *const hw)
+static inline bool hri_tcc_get_SYNCBUSY_CC4_bit(const void *const hw)
 {
-	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_FAULTA) >> TCC_INTFLAG_FAULTA_Pos;
+	return (((Tcc *)hw)->SYNCBUSY.reg & TCC_SYNCBUSY_CC4) >> TCC_SYNCBUSY_CC4_Pos;
 }
 
-static inline void hri_tcc_clear_INTFLAG_FAULTA_bit(const void *const hw)
+static inline bool hri_tcc_get_SYNCBUSY_CC5_bit(const void *const hw)
 {
-	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_FAULTA;
+	return (((Tcc *)hw)->SYNCBUSY.reg & TCC_SYNCBUSY_CC5) >> TCC_SYNCBUSY_CC5_Pos;
 }
 
-static inline bool hri_tcc_get_INTFLAG_FAULTB_bit(const void *const hw)
-{
-	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_FAULTB) >> TCC_INTFLAG_FAULTB_Pos;
-}
-
-static inline void hri_tcc_clear_INTFLAG_FAULTB_bit(const void *const hw)
-{
-	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_FAULTB;
-}
-
-static inline bool hri_tcc_get_INTFLAG_FAULT0_bit(const void *const hw)
-{
-	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_FAULT0) >> TCC_INTFLAG_FAULT0_Pos;
-}
-
-static inline void hri_tcc_clear_INTFLAG_FAULT0_bit(const void *const hw)
-{
-	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_FAULT0;
-}
-
-static inline bool hri_tcc_get_INTFLAG_FAULT1_bit(const void *const hw)
-{
-	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_FAULT1) >> TCC_INTFLAG_FAULT1_Pos;
-}
-
-static inline void hri_tcc_clear_INTFLAG_FAULT1_bit(const void *const hw)
-{
-	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_FAULT1;
-}
-
-static inline bool hri_tcc_get_INTFLAG_MC0_bit(const void *const hw)
-{
-	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_MC0) >> TCC_INTFLAG_MC0_Pos;
-}
-
-static inline void hri_tcc_clear_INTFLAG_MC0_bit(const void *const hw)
-{
-	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_MC0;
-}
-
-static inline bool hri_tcc_get_INTFLAG_MC1_bit(const void *const hw)
-{
-	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_MC1) >> TCC_INTFLAG_MC1_Pos;
-}
-
-static inline void hri_tcc_clear_INTFLAG_MC1_bit(const void *const hw)
-{
-	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_MC1;
-}
-
-static inline bool hri_tcc_get_INTFLAG_MC2_bit(const void *const hw)
-{
-	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_MC2) >> TCC_INTFLAG_MC2_Pos;
-}
-
-static inline void hri_tcc_clear_INTFLAG_MC2_bit(const void *const hw)
-{
-	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_MC2;
-}
-
-static inline bool hri_tcc_get_INTFLAG_MC3_bit(const void *const hw)
-{
-	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_MC3) >> TCC_INTFLAG_MC3_Pos;
-}
-
-static inline void hri_tcc_clear_INTFLAG_MC3_bit(const void *const hw)
-{
-	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_MC3;
-}
-
-static inline bool hri_tcc_get_INTFLAG_MC4_bit(const void *const hw)
-{
-	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_MC4) >> TCC_INTFLAG_MC4_Pos;
-}
-
-static inline void hri_tcc_clear_INTFLAG_MC4_bit(const void *const hw)
-{
-	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_MC4;
-}
-
-static inline bool hri_tcc_get_INTFLAG_MC5_bit(const void *const hw)
-{
-	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_MC5) >> TCC_INTFLAG_MC5_Pos;
-}
-
-static inline void hri_tcc_clear_INTFLAG_MC5_bit(const void *const hw)
-{
-	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_MC5;
-}
-
-static inline bool hri_tcc_get_interrupt_OVF_bit(const void *const hw)
-{
-	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_OVF) >> TCC_INTFLAG_OVF_Pos;
-}
-
-static inline void hri_tcc_clear_interrupt_OVF_bit(const void *const hw)
-{
-	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_OVF;
-}
-
-static inline bool hri_tcc_get_interrupt_TRG_bit(const void *const hw)
-{
-	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_TRG) >> TCC_INTFLAG_TRG_Pos;
-}
-
-static inline void hri_tcc_clear_interrupt_TRG_bit(const void *const hw)
-{
-	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_TRG;
-}
-
-static inline bool hri_tcc_get_interrupt_CNT_bit(const void *const hw)
-{
-	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_CNT) >> TCC_INTFLAG_CNT_Pos;
-}
-
-static inline void hri_tcc_clear_interrupt_CNT_bit(const void *const hw)
-{
-	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_CNT;
-}
-
-static inline bool hri_tcc_get_interrupt_ERR_bit(const void *const hw)
-{
-	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_ERR) >> TCC_INTFLAG_ERR_Pos;
-}
-
-static inline void hri_tcc_clear_interrupt_ERR_bit(const void *const hw)
-{
-	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_ERR;
-}
-
-static inline bool hri_tcc_get_interrupt_UFS_bit(const void *const hw)
-{
-	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_UFS) >> TCC_INTFLAG_UFS_Pos;
-}
-
-static inline void hri_tcc_clear_interrupt_UFS_bit(const void *const hw)
-{
-	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_UFS;
-}
-
-static inline bool hri_tcc_get_interrupt_DFS_bit(const void *const hw)
-{
-	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_DFS) >> TCC_INTFLAG_DFS_Pos;
-}
-
-static inline void hri_tcc_clear_interrupt_DFS_bit(const void *const hw)
-{
-	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_DFS;
-}
-
-static inline bool hri_tcc_get_interrupt_FAULTA_bit(const void *const hw)
-{
-	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_FAULTA) >> TCC_INTFLAG_FAULTA_Pos;
-}
-
-static inline void hri_tcc_clear_interrupt_FAULTA_bit(const void *const hw)
-{
-	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_FAULTA;
-}
-
-static inline bool hri_tcc_get_interrupt_FAULTB_bit(const void *const hw)
-{
-	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_FAULTB) >> TCC_INTFLAG_FAULTB_Pos;
-}
-
-static inline void hri_tcc_clear_interrupt_FAULTB_bit(const void *const hw)
-{
-	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_FAULTB;
-}
-
-static inline bool hri_tcc_get_interrupt_FAULT0_bit(const void *const hw)
-{
-	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_FAULT0) >> TCC_INTFLAG_FAULT0_Pos;
-}
-
-static inline void hri_tcc_clear_interrupt_FAULT0_bit(const void *const hw)
-{
-	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_FAULT0;
-}
-
-static inline bool hri_tcc_get_interrupt_FAULT1_bit(const void *const hw)
-{
-	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_FAULT1) >> TCC_INTFLAG_FAULT1_Pos;
-}
-
-static inline void hri_tcc_clear_interrupt_FAULT1_bit(const void *const hw)
-{
-	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_FAULT1;
-}
-
-static inline bool hri_tcc_get_interrupt_MC0_bit(const void *const hw)
-{
-	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_MC0) >> TCC_INTFLAG_MC0_Pos;
-}
-
-static inline void hri_tcc_clear_interrupt_MC0_bit(const void *const hw)
-{
-	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_MC0;
-}
-
-static inline bool hri_tcc_get_interrupt_MC1_bit(const void *const hw)
-{
-	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_MC1) >> TCC_INTFLAG_MC1_Pos;
-}
-
-static inline void hri_tcc_clear_interrupt_MC1_bit(const void *const hw)
-{
-	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_MC1;
-}
-
-static inline bool hri_tcc_get_interrupt_MC2_bit(const void *const hw)
-{
-	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_MC2) >> TCC_INTFLAG_MC2_Pos;
-}
-
-static inline void hri_tcc_clear_interrupt_MC2_bit(const void *const hw)
-{
-	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_MC2;
-}
-
-static inline bool hri_tcc_get_interrupt_MC3_bit(const void *const hw)
-{
-	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_MC3) >> TCC_INTFLAG_MC3_Pos;
-}
-
-static inline void hri_tcc_clear_interrupt_MC3_bit(const void *const hw)
-{
-	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_MC3;
-}
-
-static inline bool hri_tcc_get_interrupt_MC4_bit(const void *const hw)
-{
-	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_MC4) >> TCC_INTFLAG_MC4_Pos;
-}
-
-static inline void hri_tcc_clear_interrupt_MC4_bit(const void *const hw)
-{
-	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_MC4;
-}
-
-static inline bool hri_tcc_get_interrupt_MC5_bit(const void *const hw)
-{
-	return (((Tcc *)hw)->INTFLAG.reg & TCC_INTFLAG_MC5) >> TCC_INTFLAG_MC5_Pos;
-}
-
-static inline void hri_tcc_clear_interrupt_MC5_bit(const void *const hw)
-{
-	((Tcc *)hw)->INTFLAG.reg = TCC_INTFLAG_MC5;
-}
-
-static inline hri_tcc_intflag_reg_t hri_tcc_get_INTFLAG_reg(const void *const hw, hri_tcc_intflag_reg_t mask)
+static inline hri_tcc_syncbusy_reg_t hri_tcc_get_SYNCBUSY_reg(const void *const hw, hri_tcc_syncbusy_reg_t mask)
 {
 	uint32_t tmp;
-	tmp = ((Tcc *)hw)->INTFLAG.reg;
+	tmp = ((Tcc *)hw)->SYNCBUSY.reg;
 	tmp &= mask;
 	return tmp;
 }
 
-static inline hri_tcc_intflag_reg_t hri_tcc_read_INTFLAG_reg(const void *const hw)
+static inline hri_tcc_syncbusy_reg_t hri_tcc_read_SYNCBUSY_reg(const void *const hw)
 {
-	return ((Tcc *)hw)->INTFLAG.reg;
-}
-
-static inline void hri_tcc_clear_INTFLAG_reg(const void *const hw, hri_tcc_intflag_reg_t mask)
-{
-	((Tcc *)hw)->INTFLAG.reg = mask;
+	return ((Tcc *)hw)->SYNCBUSY.reg;
 }
 
 static inline void hri_tcc_set_CTRLA_SWRST_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_SWRST);
 	((Tcc *)hw)->CTRLA.reg |= TCC_CTRLA_SWRST;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_SWRST);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -3392,8 +1101,8 @@ static inline bool hri_tcc_get_CTRLA_SWRST_bit(const void *const hw)
 static inline void hri_tcc_set_CTRLA_ENABLE_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_SWRST | TCC_SYNCBUSY_ENABLE);
 	((Tcc *)hw)->CTRLA.reg |= TCC_CTRLA_ENABLE;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_SWRST | TCC_SYNCBUSY_ENABLE);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -3410,35 +1119,35 @@ static inline void hri_tcc_write_CTRLA_ENABLE_bit(const void *const hw, bool val
 {
 	uint32_t tmp;
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_SWRST | TCC_SYNCBUSY_ENABLE);
 	tmp = ((Tcc *)hw)->CTRLA.reg;
 	tmp &= ~TCC_CTRLA_ENABLE;
 	tmp |= value << TCC_CTRLA_ENABLE_Pos;
 	((Tcc *)hw)->CTRLA.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_SWRST | TCC_SYNCBUSY_ENABLE);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_clear_CTRLA_ENABLE_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_SWRST | TCC_SYNCBUSY_ENABLE);
 	((Tcc *)hw)->CTRLA.reg &= ~TCC_CTRLA_ENABLE;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_SWRST | TCC_SYNCBUSY_ENABLE);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_toggle_CTRLA_ENABLE_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_SWRST | TCC_SYNCBUSY_ENABLE);
 	((Tcc *)hw)->CTRLA.reg ^= TCC_CTRLA_ENABLE;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_SWRST | TCC_SYNCBUSY_ENABLE);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_set_CTRLA_RUNSTDBY_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->CTRLA.reg |= TCC_CTRLA_RUNSTDBY;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -3454,35 +1163,35 @@ static inline void hri_tcc_write_CTRLA_RUNSTDBY_bit(const void *const hw, bool v
 {
 	uint32_t tmp;
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	tmp = ((Tcc *)hw)->CTRLA.reg;
 	tmp &= ~TCC_CTRLA_RUNSTDBY;
 	tmp |= value << TCC_CTRLA_RUNSTDBY_Pos;
 	((Tcc *)hw)->CTRLA.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_clear_CTRLA_RUNSTDBY_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->CTRLA.reg &= ~TCC_CTRLA_RUNSTDBY;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_toggle_CTRLA_RUNSTDBY_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->CTRLA.reg ^= TCC_CTRLA_RUNSTDBY;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_set_CTRLA_ALOCK_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->CTRLA.reg |= TCC_CTRLA_ALOCK;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -3498,35 +1207,35 @@ static inline void hri_tcc_write_CTRLA_ALOCK_bit(const void *const hw, bool valu
 {
 	uint32_t tmp;
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	tmp = ((Tcc *)hw)->CTRLA.reg;
 	tmp &= ~TCC_CTRLA_ALOCK;
 	tmp |= value << TCC_CTRLA_ALOCK_Pos;
 	((Tcc *)hw)->CTRLA.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_clear_CTRLA_ALOCK_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->CTRLA.reg &= ~TCC_CTRLA_ALOCK;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_toggle_CTRLA_ALOCK_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->CTRLA.reg ^= TCC_CTRLA_ALOCK;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_set_CTRLA_MSYNC_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->CTRLA.reg |= TCC_CTRLA_MSYNC;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -3542,35 +1251,35 @@ static inline void hri_tcc_write_CTRLA_MSYNC_bit(const void *const hw, bool valu
 {
 	uint32_t tmp;
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	tmp = ((Tcc *)hw)->CTRLA.reg;
 	tmp &= ~TCC_CTRLA_MSYNC;
 	tmp |= value << TCC_CTRLA_MSYNC_Pos;
 	((Tcc *)hw)->CTRLA.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_clear_CTRLA_MSYNC_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->CTRLA.reg &= ~TCC_CTRLA_MSYNC;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_toggle_CTRLA_MSYNC_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->CTRLA.reg ^= TCC_CTRLA_MSYNC;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_set_CTRLA_DMAOS_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->CTRLA.reg |= TCC_CTRLA_DMAOS;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -3586,35 +1295,35 @@ static inline void hri_tcc_write_CTRLA_DMAOS_bit(const void *const hw, bool valu
 {
 	uint32_t tmp;
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	tmp = ((Tcc *)hw)->CTRLA.reg;
 	tmp &= ~TCC_CTRLA_DMAOS;
 	tmp |= value << TCC_CTRLA_DMAOS_Pos;
 	((Tcc *)hw)->CTRLA.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_clear_CTRLA_DMAOS_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->CTRLA.reg &= ~TCC_CTRLA_DMAOS;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_toggle_CTRLA_DMAOS_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->CTRLA.reg ^= TCC_CTRLA_DMAOS;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_set_CTRLA_CPTEN0_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->CTRLA.reg |= TCC_CTRLA_CPTEN0;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -3630,35 +1339,35 @@ static inline void hri_tcc_write_CTRLA_CPTEN0_bit(const void *const hw, bool val
 {
 	uint32_t tmp;
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	tmp = ((Tcc *)hw)->CTRLA.reg;
 	tmp &= ~TCC_CTRLA_CPTEN0;
 	tmp |= value << TCC_CTRLA_CPTEN0_Pos;
 	((Tcc *)hw)->CTRLA.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_clear_CTRLA_CPTEN0_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->CTRLA.reg &= ~TCC_CTRLA_CPTEN0;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_toggle_CTRLA_CPTEN0_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->CTRLA.reg ^= TCC_CTRLA_CPTEN0;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_set_CTRLA_CPTEN1_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->CTRLA.reg |= TCC_CTRLA_CPTEN1;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -3674,35 +1383,35 @@ static inline void hri_tcc_write_CTRLA_CPTEN1_bit(const void *const hw, bool val
 {
 	uint32_t tmp;
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	tmp = ((Tcc *)hw)->CTRLA.reg;
 	tmp &= ~TCC_CTRLA_CPTEN1;
 	tmp |= value << TCC_CTRLA_CPTEN1_Pos;
 	((Tcc *)hw)->CTRLA.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_clear_CTRLA_CPTEN1_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->CTRLA.reg &= ~TCC_CTRLA_CPTEN1;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_toggle_CTRLA_CPTEN1_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->CTRLA.reg ^= TCC_CTRLA_CPTEN1;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_set_CTRLA_CPTEN2_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->CTRLA.reg |= TCC_CTRLA_CPTEN2;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -3718,35 +1427,35 @@ static inline void hri_tcc_write_CTRLA_CPTEN2_bit(const void *const hw, bool val
 {
 	uint32_t tmp;
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	tmp = ((Tcc *)hw)->CTRLA.reg;
 	tmp &= ~TCC_CTRLA_CPTEN2;
 	tmp |= value << TCC_CTRLA_CPTEN2_Pos;
 	((Tcc *)hw)->CTRLA.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_clear_CTRLA_CPTEN2_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->CTRLA.reg &= ~TCC_CTRLA_CPTEN2;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_toggle_CTRLA_CPTEN2_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->CTRLA.reg ^= TCC_CTRLA_CPTEN2;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_set_CTRLA_CPTEN3_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->CTRLA.reg |= TCC_CTRLA_CPTEN3;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -3762,35 +1471,35 @@ static inline void hri_tcc_write_CTRLA_CPTEN3_bit(const void *const hw, bool val
 {
 	uint32_t tmp;
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	tmp = ((Tcc *)hw)->CTRLA.reg;
 	tmp &= ~TCC_CTRLA_CPTEN3;
 	tmp |= value << TCC_CTRLA_CPTEN3_Pos;
 	((Tcc *)hw)->CTRLA.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_clear_CTRLA_CPTEN3_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->CTRLA.reg &= ~TCC_CTRLA_CPTEN3;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_toggle_CTRLA_CPTEN3_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->CTRLA.reg ^= TCC_CTRLA_CPTEN3;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_set_CTRLA_CPTEN4_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->CTRLA.reg |= TCC_CTRLA_CPTEN4;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -3806,35 +1515,35 @@ static inline void hri_tcc_write_CTRLA_CPTEN4_bit(const void *const hw, bool val
 {
 	uint32_t tmp;
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	tmp = ((Tcc *)hw)->CTRLA.reg;
 	tmp &= ~TCC_CTRLA_CPTEN4;
 	tmp |= value << TCC_CTRLA_CPTEN4_Pos;
 	((Tcc *)hw)->CTRLA.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_clear_CTRLA_CPTEN4_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->CTRLA.reg &= ~TCC_CTRLA_CPTEN4;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_toggle_CTRLA_CPTEN4_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->CTRLA.reg ^= TCC_CTRLA_CPTEN4;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_set_CTRLA_CPTEN5_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->CTRLA.reg |= TCC_CTRLA_CPTEN5;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -3850,35 +1559,35 @@ static inline void hri_tcc_write_CTRLA_CPTEN5_bit(const void *const hw, bool val
 {
 	uint32_t tmp;
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	tmp = ((Tcc *)hw)->CTRLA.reg;
 	tmp &= ~TCC_CTRLA_CPTEN5;
 	tmp |= value << TCC_CTRLA_CPTEN5_Pos;
 	((Tcc *)hw)->CTRLA.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_clear_CTRLA_CPTEN5_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->CTRLA.reg &= ~TCC_CTRLA_CPTEN5;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_toggle_CTRLA_CPTEN5_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->CTRLA.reg ^= TCC_CTRLA_CPTEN5;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_set_CTRLA_RESOLUTION_bf(const void *const hw, hri_tcc_ctrla_reg_t mask)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->CTRLA.reg |= TCC_CTRLA_RESOLUTION(mask);
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -3894,27 +1603,27 @@ static inline void hri_tcc_write_CTRLA_RESOLUTION_bf(const void *const hw, hri_t
 {
 	uint32_t tmp;
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	tmp = ((Tcc *)hw)->CTRLA.reg;
 	tmp &= ~TCC_CTRLA_RESOLUTION_Msk;
 	tmp |= TCC_CTRLA_RESOLUTION(data);
 	((Tcc *)hw)->CTRLA.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_clear_CTRLA_RESOLUTION_bf(const void *const hw, hri_tcc_ctrla_reg_t mask)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->CTRLA.reg &= ~TCC_CTRLA_RESOLUTION(mask);
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_toggle_CTRLA_RESOLUTION_bf(const void *const hw, hri_tcc_ctrla_reg_t mask)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->CTRLA.reg ^= TCC_CTRLA_RESOLUTION(mask);
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -3929,8 +1638,8 @@ static inline hri_tcc_ctrla_reg_t hri_tcc_read_CTRLA_RESOLUTION_bf(const void *c
 static inline void hri_tcc_set_CTRLA_PRESCALER_bf(const void *const hw, hri_tcc_ctrla_reg_t mask)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->CTRLA.reg |= TCC_CTRLA_PRESCALER(mask);
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -3946,27 +1655,27 @@ static inline void hri_tcc_write_CTRLA_PRESCALER_bf(const void *const hw, hri_tc
 {
 	uint32_t tmp;
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	tmp = ((Tcc *)hw)->CTRLA.reg;
 	tmp &= ~TCC_CTRLA_PRESCALER_Msk;
 	tmp |= TCC_CTRLA_PRESCALER(data);
 	((Tcc *)hw)->CTRLA.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_clear_CTRLA_PRESCALER_bf(const void *const hw, hri_tcc_ctrla_reg_t mask)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->CTRLA.reg &= ~TCC_CTRLA_PRESCALER(mask);
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_toggle_CTRLA_PRESCALER_bf(const void *const hw, hri_tcc_ctrla_reg_t mask)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->CTRLA.reg ^= TCC_CTRLA_PRESCALER(mask);
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -3981,8 +1690,8 @@ static inline hri_tcc_ctrla_reg_t hri_tcc_read_CTRLA_PRESCALER_bf(const void *co
 static inline void hri_tcc_set_CTRLA_PRESCSYNC_bf(const void *const hw, hri_tcc_ctrla_reg_t mask)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->CTRLA.reg |= TCC_CTRLA_PRESCSYNC(mask);
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -3998,27 +1707,27 @@ static inline void hri_tcc_write_CTRLA_PRESCSYNC_bf(const void *const hw, hri_tc
 {
 	uint32_t tmp;
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	tmp = ((Tcc *)hw)->CTRLA.reg;
 	tmp &= ~TCC_CTRLA_PRESCSYNC_Msk;
 	tmp |= TCC_CTRLA_PRESCSYNC(data);
 	((Tcc *)hw)->CTRLA.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_clear_CTRLA_PRESCSYNC_bf(const void *const hw, hri_tcc_ctrla_reg_t mask)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->CTRLA.reg &= ~TCC_CTRLA_PRESCSYNC(mask);
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_toggle_CTRLA_PRESCSYNC_bf(const void *const hw, hri_tcc_ctrla_reg_t mask)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->CTRLA.reg ^= TCC_CTRLA_PRESCSYNC(mask);
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -4034,12 +1743,14 @@ static inline void hri_tcc_set_CTRLA_reg(const void *const hw, hri_tcc_ctrla_reg
 {
 	TCC_CRITICAL_SECTION_ENTER();
 	((Tcc *)hw)->CTRLA.reg |= mask;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_SWRST | TCC_SYNCBUSY_ENABLE);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline hri_tcc_ctrla_reg_t hri_tcc_get_CTRLA_reg(const void *const hw, hri_tcc_ctrla_reg_t mask)
 {
 	uint32_t tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_SWRST | TCC_SYNCBUSY_ENABLE);
 	tmp = ((Tcc *)hw)->CTRLA.reg;
 	tmp &= mask;
 	return tmp;
@@ -4049,6 +1760,7 @@ static inline void hri_tcc_write_CTRLA_reg(const void *const hw, hri_tcc_ctrla_r
 {
 	TCC_CRITICAL_SECTION_ENTER();
 	((Tcc *)hw)->CTRLA.reg = data;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_SWRST | TCC_SYNCBUSY_ENABLE);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -4056,6 +1768,7 @@ static inline void hri_tcc_clear_CTRLA_reg(const void *const hw, hri_tcc_ctrla_r
 {
 	TCC_CRITICAL_SECTION_ENTER();
 	((Tcc *)hw)->CTRLA.reg &= ~mask;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_SWRST | TCC_SYNCBUSY_ENABLE);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -4063,11 +1776,13 @@ static inline void hri_tcc_toggle_CTRLA_reg(const void *const hw, hri_tcc_ctrla_
 {
 	TCC_CRITICAL_SECTION_ENTER();
 	((Tcc *)hw)->CTRLA.reg ^= mask;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_SWRST | TCC_SYNCBUSY_ENABLE);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline hri_tcc_ctrla_reg_t hri_tcc_read_CTRLA_reg(const void *const hw)
 {
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_SWRST | TCC_SYNCBUSY_ENABLE);
 	return ((Tcc *)hw)->CTRLA.reg;
 }
 
@@ -7653,11 +5368,274 @@ static inline hri_tcc_evctrl_reg_t hri_tcc_read_EVCTRL_reg(const void *const hw)
 	return ((Tcc *)hw)->EVCTRL.reg;
 }
 
+static inline void hri_tcc_set_COUNT_DITH6_COUNT_bf(const void *const hw, hri_tcc_count_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->COUNT.reg |= TCC_COUNT_COUNT(mask);
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_COUNT);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_count_reg_t hri_tcc_get_COUNT_DITH6_COUNT_bf(const void *const hw, hri_tcc_count_reg_t mask)
+{
+	uint32_t tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_COUNT);
+	tmp = ((Tcc *)hw)->COUNT.reg;
+	tmp = (tmp & TCC_COUNT_COUNT(mask)) >> TCC_COUNT_COUNT_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_write_COUNT_DITH6_COUNT_bf(const void *const hw, hri_tcc_count_reg_t data)
+{
+	uint32_t tmp;
+	TCC_CRITICAL_SECTION_ENTER();
+	tmp = ((Tcc *)hw)->COUNT.reg;
+	tmp &= ~TCC_COUNT_COUNT_Msk;
+	tmp |= TCC_COUNT_COUNT(data);
+	((Tcc *)hw)->COUNT.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_COUNT);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_clear_COUNT_DITH6_COUNT_bf(const void *const hw, hri_tcc_count_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->COUNT.reg &= ~TCC_COUNT_COUNT(mask);
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_COUNT);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_toggle_COUNT_DITH6_COUNT_bf(const void *const hw, hri_tcc_count_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->COUNT.reg ^= TCC_COUNT_COUNT(mask);
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_COUNT);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_count_reg_t hri_tcc_read_COUNT_DITH6_COUNT_bf(const void *const hw)
+{
+	uint32_t tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_COUNT);
+	tmp = ((Tcc *)hw)->COUNT.reg;
+	tmp = (tmp & TCC_COUNT_COUNT_Msk) >> TCC_COUNT_COUNT_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_set_COUNT_DITH5_COUNT_bf(const void *const hw, hri_tcc_count_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->COUNT.reg |= TCC_COUNT_COUNT(mask);
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_COUNT);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_count_reg_t hri_tcc_get_COUNT_DITH5_COUNT_bf(const void *const hw, hri_tcc_count_reg_t mask)
+{
+	uint32_t tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_COUNT);
+	tmp = ((Tcc *)hw)->COUNT.reg;
+	tmp = (tmp & TCC_COUNT_COUNT(mask)) >> TCC_COUNT_COUNT_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_write_COUNT_DITH5_COUNT_bf(const void *const hw, hri_tcc_count_reg_t data)
+{
+	uint32_t tmp;
+	TCC_CRITICAL_SECTION_ENTER();
+	tmp = ((Tcc *)hw)->COUNT.reg;
+	tmp &= ~TCC_COUNT_COUNT_Msk;
+	tmp |= TCC_COUNT_COUNT(data);
+	((Tcc *)hw)->COUNT.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_COUNT);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_clear_COUNT_DITH5_COUNT_bf(const void *const hw, hri_tcc_count_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->COUNT.reg &= ~TCC_COUNT_COUNT(mask);
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_COUNT);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_toggle_COUNT_DITH5_COUNT_bf(const void *const hw, hri_tcc_count_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->COUNT.reg ^= TCC_COUNT_COUNT(mask);
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_COUNT);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_count_reg_t hri_tcc_read_COUNT_DITH5_COUNT_bf(const void *const hw)
+{
+	uint32_t tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_COUNT);
+	tmp = ((Tcc *)hw)->COUNT.reg;
+	tmp = (tmp & TCC_COUNT_COUNT_Msk) >> TCC_COUNT_COUNT_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_set_COUNT_DITH4_COUNT_bf(const void *const hw, hri_tcc_count_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->COUNT.reg |= TCC_COUNT_COUNT(mask);
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_COUNT);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_count_reg_t hri_tcc_get_COUNT_DITH4_COUNT_bf(const void *const hw, hri_tcc_count_reg_t mask)
+{
+	uint32_t tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_COUNT);
+	tmp = ((Tcc *)hw)->COUNT.reg;
+	tmp = (tmp & TCC_COUNT_COUNT(mask)) >> TCC_COUNT_COUNT_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_write_COUNT_DITH4_COUNT_bf(const void *const hw, hri_tcc_count_reg_t data)
+{
+	uint32_t tmp;
+	TCC_CRITICAL_SECTION_ENTER();
+	tmp = ((Tcc *)hw)->COUNT.reg;
+	tmp &= ~TCC_COUNT_COUNT_Msk;
+	tmp |= TCC_COUNT_COUNT(data);
+	((Tcc *)hw)->COUNT.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_COUNT);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_clear_COUNT_DITH4_COUNT_bf(const void *const hw, hri_tcc_count_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->COUNT.reg &= ~TCC_COUNT_COUNT(mask);
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_COUNT);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_toggle_COUNT_DITH4_COUNT_bf(const void *const hw, hri_tcc_count_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->COUNT.reg ^= TCC_COUNT_COUNT(mask);
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_COUNT);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_count_reg_t hri_tcc_read_COUNT_DITH4_COUNT_bf(const void *const hw)
+{
+	uint32_t tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_COUNT);
+	tmp = ((Tcc *)hw)->COUNT.reg;
+	tmp = (tmp & TCC_COUNT_COUNT_Msk) >> TCC_COUNT_COUNT_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_set_COUNT_COUNT_bf(const void *const hw, hri_tcc_count_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->COUNT.reg |= TCC_COUNT_COUNT(mask);
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_COUNT);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_count_reg_t hri_tcc_get_COUNT_COUNT_bf(const void *const hw, hri_tcc_count_reg_t mask)
+{
+	uint32_t tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_COUNT);
+	tmp = ((Tcc *)hw)->COUNT.reg;
+	tmp = (tmp & TCC_COUNT_COUNT(mask)) >> TCC_COUNT_COUNT_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_write_COUNT_COUNT_bf(const void *const hw, hri_tcc_count_reg_t data)
+{
+	uint32_t tmp;
+	TCC_CRITICAL_SECTION_ENTER();
+	tmp = ((Tcc *)hw)->COUNT.reg;
+	tmp &= ~TCC_COUNT_COUNT_Msk;
+	tmp |= TCC_COUNT_COUNT(data);
+	((Tcc *)hw)->COUNT.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_COUNT);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_clear_COUNT_COUNT_bf(const void *const hw, hri_tcc_count_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->COUNT.reg &= ~TCC_COUNT_COUNT(mask);
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_COUNT);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_toggle_COUNT_COUNT_bf(const void *const hw, hri_tcc_count_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->COUNT.reg ^= TCC_COUNT_COUNT(mask);
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_COUNT);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_count_reg_t hri_tcc_read_COUNT_COUNT_bf(const void *const hw)
+{
+	uint32_t tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_COUNT);
+	tmp = ((Tcc *)hw)->COUNT.reg;
+	tmp = (tmp & TCC_COUNT_COUNT_Msk) >> TCC_COUNT_COUNT_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_set_COUNT_reg(const void *const hw, hri_tcc_count_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->COUNT.reg |= mask;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_COUNT);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_count_reg_t hri_tcc_get_COUNT_reg(const void *const hw, hri_tcc_count_reg_t mask)
+{
+	uint32_t tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_COUNT);
+	tmp = ((Tcc *)hw)->COUNT.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline void hri_tcc_write_COUNT_reg(const void *const hw, hri_tcc_count_reg_t data)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->COUNT.reg = data;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_COUNT);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_clear_COUNT_reg(const void *const hw, hri_tcc_count_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->COUNT.reg &= ~mask;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_COUNT);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_toggle_COUNT_reg(const void *const hw, hri_tcc_count_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->COUNT.reg ^= mask;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_COUNT);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_count_reg_t hri_tcc_read_COUNT_reg(const void *const hw)
+{
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_COUNT);
+	return ((Tcc *)hw)->COUNT.reg;
+}
+
 static inline void hri_tcc_set_PATT_PGE0_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->PATT.reg |= TCC_PATT_PGE0;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -7673,35 +5651,35 @@ static inline void hri_tcc_write_PATT_PGE0_bit(const void *const hw, bool value)
 {
 	uint16_t tmp;
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	tmp = ((Tcc *)hw)->PATT.reg;
 	tmp &= ~TCC_PATT_PGE0;
 	tmp |= value << TCC_PATT_PGE0_Pos;
 	((Tcc *)hw)->PATT.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_clear_PATT_PGE0_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->PATT.reg &= ~TCC_PATT_PGE0;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_toggle_PATT_PGE0_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->PATT.reg ^= TCC_PATT_PGE0;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_set_PATT_PGE1_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->PATT.reg |= TCC_PATT_PGE1;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -7717,35 +5695,35 @@ static inline void hri_tcc_write_PATT_PGE1_bit(const void *const hw, bool value)
 {
 	uint16_t tmp;
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	tmp = ((Tcc *)hw)->PATT.reg;
 	tmp &= ~TCC_PATT_PGE1;
 	tmp |= value << TCC_PATT_PGE1_Pos;
 	((Tcc *)hw)->PATT.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_clear_PATT_PGE1_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->PATT.reg &= ~TCC_PATT_PGE1;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_toggle_PATT_PGE1_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->PATT.reg ^= TCC_PATT_PGE1;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_set_PATT_PGE2_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->PATT.reg |= TCC_PATT_PGE2;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -7761,35 +5739,35 @@ static inline void hri_tcc_write_PATT_PGE2_bit(const void *const hw, bool value)
 {
 	uint16_t tmp;
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	tmp = ((Tcc *)hw)->PATT.reg;
 	tmp &= ~TCC_PATT_PGE2;
 	tmp |= value << TCC_PATT_PGE2_Pos;
 	((Tcc *)hw)->PATT.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_clear_PATT_PGE2_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->PATT.reg &= ~TCC_PATT_PGE2;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_toggle_PATT_PGE2_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->PATT.reg ^= TCC_PATT_PGE2;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_set_PATT_PGE3_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->PATT.reg |= TCC_PATT_PGE3;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -7805,35 +5783,35 @@ static inline void hri_tcc_write_PATT_PGE3_bit(const void *const hw, bool value)
 {
 	uint16_t tmp;
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	tmp = ((Tcc *)hw)->PATT.reg;
 	tmp &= ~TCC_PATT_PGE3;
 	tmp |= value << TCC_PATT_PGE3_Pos;
 	((Tcc *)hw)->PATT.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_clear_PATT_PGE3_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->PATT.reg &= ~TCC_PATT_PGE3;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_toggle_PATT_PGE3_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->PATT.reg ^= TCC_PATT_PGE3;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_set_PATT_PGE4_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->PATT.reg |= TCC_PATT_PGE4;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -7849,35 +5827,35 @@ static inline void hri_tcc_write_PATT_PGE4_bit(const void *const hw, bool value)
 {
 	uint16_t tmp;
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	tmp = ((Tcc *)hw)->PATT.reg;
 	tmp &= ~TCC_PATT_PGE4;
 	tmp |= value << TCC_PATT_PGE4_Pos;
 	((Tcc *)hw)->PATT.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_clear_PATT_PGE4_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->PATT.reg &= ~TCC_PATT_PGE4;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_toggle_PATT_PGE4_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->PATT.reg ^= TCC_PATT_PGE4;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_set_PATT_PGE5_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->PATT.reg |= TCC_PATT_PGE5;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -7893,35 +5871,35 @@ static inline void hri_tcc_write_PATT_PGE5_bit(const void *const hw, bool value)
 {
 	uint16_t tmp;
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	tmp = ((Tcc *)hw)->PATT.reg;
 	tmp &= ~TCC_PATT_PGE5;
 	tmp |= value << TCC_PATT_PGE5_Pos;
 	((Tcc *)hw)->PATT.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_clear_PATT_PGE5_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->PATT.reg &= ~TCC_PATT_PGE5;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_toggle_PATT_PGE5_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->PATT.reg ^= TCC_PATT_PGE5;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_set_PATT_PGE6_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->PATT.reg |= TCC_PATT_PGE6;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -7937,35 +5915,35 @@ static inline void hri_tcc_write_PATT_PGE6_bit(const void *const hw, bool value)
 {
 	uint16_t tmp;
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	tmp = ((Tcc *)hw)->PATT.reg;
 	tmp &= ~TCC_PATT_PGE6;
 	tmp |= value << TCC_PATT_PGE6_Pos;
 	((Tcc *)hw)->PATT.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_clear_PATT_PGE6_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->PATT.reg &= ~TCC_PATT_PGE6;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_toggle_PATT_PGE6_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->PATT.reg ^= TCC_PATT_PGE6;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_set_PATT_PGE7_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->PATT.reg |= TCC_PATT_PGE7;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -7981,35 +5959,35 @@ static inline void hri_tcc_write_PATT_PGE7_bit(const void *const hw, bool value)
 {
 	uint16_t tmp;
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	tmp = ((Tcc *)hw)->PATT.reg;
 	tmp &= ~TCC_PATT_PGE7;
 	tmp |= value << TCC_PATT_PGE7_Pos;
 	((Tcc *)hw)->PATT.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_clear_PATT_PGE7_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->PATT.reg &= ~TCC_PATT_PGE7;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_toggle_PATT_PGE7_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->PATT.reg ^= TCC_PATT_PGE7;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_set_PATT_PGV0_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->PATT.reg |= TCC_PATT_PGV0;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -8025,35 +6003,35 @@ static inline void hri_tcc_write_PATT_PGV0_bit(const void *const hw, bool value)
 {
 	uint16_t tmp;
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	tmp = ((Tcc *)hw)->PATT.reg;
 	tmp &= ~TCC_PATT_PGV0;
 	tmp |= value << TCC_PATT_PGV0_Pos;
 	((Tcc *)hw)->PATT.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_clear_PATT_PGV0_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->PATT.reg &= ~TCC_PATT_PGV0;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_toggle_PATT_PGV0_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->PATT.reg ^= TCC_PATT_PGV0;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_set_PATT_PGV1_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->PATT.reg |= TCC_PATT_PGV1;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -8069,35 +6047,35 @@ static inline void hri_tcc_write_PATT_PGV1_bit(const void *const hw, bool value)
 {
 	uint16_t tmp;
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	tmp = ((Tcc *)hw)->PATT.reg;
 	tmp &= ~TCC_PATT_PGV1;
 	tmp |= value << TCC_PATT_PGV1_Pos;
 	((Tcc *)hw)->PATT.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_clear_PATT_PGV1_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->PATT.reg &= ~TCC_PATT_PGV1;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_toggle_PATT_PGV1_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->PATT.reg ^= TCC_PATT_PGV1;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_set_PATT_PGV2_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->PATT.reg |= TCC_PATT_PGV2;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -8113,35 +6091,35 @@ static inline void hri_tcc_write_PATT_PGV2_bit(const void *const hw, bool value)
 {
 	uint16_t tmp;
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	tmp = ((Tcc *)hw)->PATT.reg;
 	tmp &= ~TCC_PATT_PGV2;
 	tmp |= value << TCC_PATT_PGV2_Pos;
 	((Tcc *)hw)->PATT.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_clear_PATT_PGV2_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->PATT.reg &= ~TCC_PATT_PGV2;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_toggle_PATT_PGV2_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->PATT.reg ^= TCC_PATT_PGV2;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_set_PATT_PGV3_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->PATT.reg |= TCC_PATT_PGV3;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -8157,35 +6135,35 @@ static inline void hri_tcc_write_PATT_PGV3_bit(const void *const hw, bool value)
 {
 	uint16_t tmp;
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	tmp = ((Tcc *)hw)->PATT.reg;
 	tmp &= ~TCC_PATT_PGV3;
 	tmp |= value << TCC_PATT_PGV3_Pos;
 	((Tcc *)hw)->PATT.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_clear_PATT_PGV3_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->PATT.reg &= ~TCC_PATT_PGV3;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_toggle_PATT_PGV3_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->PATT.reg ^= TCC_PATT_PGV3;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_set_PATT_PGV4_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->PATT.reg |= TCC_PATT_PGV4;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -8201,35 +6179,35 @@ static inline void hri_tcc_write_PATT_PGV4_bit(const void *const hw, bool value)
 {
 	uint16_t tmp;
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	tmp = ((Tcc *)hw)->PATT.reg;
 	tmp &= ~TCC_PATT_PGV4;
 	tmp |= value << TCC_PATT_PGV4_Pos;
 	((Tcc *)hw)->PATT.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_clear_PATT_PGV4_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->PATT.reg &= ~TCC_PATT_PGV4;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_toggle_PATT_PGV4_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->PATT.reg ^= TCC_PATT_PGV4;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_set_PATT_PGV5_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->PATT.reg |= TCC_PATT_PGV5;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -8245,35 +6223,35 @@ static inline void hri_tcc_write_PATT_PGV5_bit(const void *const hw, bool value)
 {
 	uint16_t tmp;
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	tmp = ((Tcc *)hw)->PATT.reg;
 	tmp &= ~TCC_PATT_PGV5;
 	tmp |= value << TCC_PATT_PGV5_Pos;
 	((Tcc *)hw)->PATT.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_clear_PATT_PGV5_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->PATT.reg &= ~TCC_PATT_PGV5;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_toggle_PATT_PGV5_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->PATT.reg ^= TCC_PATT_PGV5;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_set_PATT_PGV6_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->PATT.reg |= TCC_PATT_PGV6;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -8289,35 +6267,35 @@ static inline void hri_tcc_write_PATT_PGV6_bit(const void *const hw, bool value)
 {
 	uint16_t tmp;
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	tmp = ((Tcc *)hw)->PATT.reg;
 	tmp &= ~TCC_PATT_PGV6;
 	tmp |= value << TCC_PATT_PGV6_Pos;
 	((Tcc *)hw)->PATT.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_clear_PATT_PGV6_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->PATT.reg &= ~TCC_PATT_PGV6;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_toggle_PATT_PGV6_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->PATT.reg ^= TCC_PATT_PGV6;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_set_PATT_PGV7_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->PATT.reg |= TCC_PATT_PGV7;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -8333,27 +6311,27 @@ static inline void hri_tcc_write_PATT_PGV7_bit(const void *const hw, bool value)
 {
 	uint16_t tmp;
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	tmp = ((Tcc *)hw)->PATT.reg;
 	tmp &= ~TCC_PATT_PGV7;
 	tmp |= value << TCC_PATT_PGV7_Pos;
 	((Tcc *)hw)->PATT.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_clear_PATT_PGV7_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->PATT.reg &= ~TCC_PATT_PGV7;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_toggle_PATT_PGV7_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->PATT.reg ^= TCC_PATT_PGV7;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -8361,12 +6339,14 @@ static inline void hri_tcc_set_PATT_reg(const void *const hw, hri_tcc_patt_reg_t
 {
 	TCC_CRITICAL_SECTION_ENTER();
 	((Tcc *)hw)->PATT.reg |= mask;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline hri_tcc_patt_reg_t hri_tcc_get_PATT_reg(const void *const hw, hri_tcc_patt_reg_t mask)
 {
 	uint16_t tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	tmp = ((Tcc *)hw)->PATT.reg;
 	tmp &= mask;
 	return tmp;
@@ -8376,6 +6356,7 @@ static inline void hri_tcc_write_PATT_reg(const void *const hw, hri_tcc_patt_reg
 {
 	TCC_CRITICAL_SECTION_ENTER();
 	((Tcc *)hw)->PATT.reg = data;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -8383,6 +6364,7 @@ static inline void hri_tcc_clear_PATT_reg(const void *const hw, hri_tcc_patt_reg
 {
 	TCC_CRITICAL_SECTION_ENTER();
 	((Tcc *)hw)->PATT.reg &= ~mask;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -8390,19 +6372,21 @@ static inline void hri_tcc_toggle_PATT_reg(const void *const hw, hri_tcc_patt_re
 {
 	TCC_CRITICAL_SECTION_ENTER();
 	((Tcc *)hw)->PATT.reg ^= mask;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline hri_tcc_patt_reg_t hri_tcc_read_PATT_reg(const void *const hw)
 {
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	return ((Tcc *)hw)->PATT.reg;
 }
 
 static inline void hri_tcc_set_WAVE_CIPEREN_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->WAVE.reg |= TCC_WAVE_CIPEREN;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -8418,35 +6402,35 @@ static inline void hri_tcc_write_WAVE_CIPEREN_bit(const void *const hw, bool val
 {
 	uint32_t tmp;
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	tmp = ((Tcc *)hw)->WAVE.reg;
 	tmp &= ~TCC_WAVE_CIPEREN;
 	tmp |= value << TCC_WAVE_CIPEREN_Pos;
 	((Tcc *)hw)->WAVE.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_clear_WAVE_CIPEREN_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->WAVE.reg &= ~TCC_WAVE_CIPEREN;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_toggle_WAVE_CIPEREN_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->WAVE.reg ^= TCC_WAVE_CIPEREN;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_set_WAVE_CICCEN0_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->WAVE.reg |= TCC_WAVE_CICCEN0;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -8462,35 +6446,35 @@ static inline void hri_tcc_write_WAVE_CICCEN0_bit(const void *const hw, bool val
 {
 	uint32_t tmp;
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	tmp = ((Tcc *)hw)->WAVE.reg;
 	tmp &= ~TCC_WAVE_CICCEN0;
 	tmp |= value << TCC_WAVE_CICCEN0_Pos;
 	((Tcc *)hw)->WAVE.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_clear_WAVE_CICCEN0_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->WAVE.reg &= ~TCC_WAVE_CICCEN0;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_toggle_WAVE_CICCEN0_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->WAVE.reg ^= TCC_WAVE_CICCEN0;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_set_WAVE_CICCEN1_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->WAVE.reg |= TCC_WAVE_CICCEN1;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -8506,35 +6490,35 @@ static inline void hri_tcc_write_WAVE_CICCEN1_bit(const void *const hw, bool val
 {
 	uint32_t tmp;
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	tmp = ((Tcc *)hw)->WAVE.reg;
 	tmp &= ~TCC_WAVE_CICCEN1;
 	tmp |= value << TCC_WAVE_CICCEN1_Pos;
 	((Tcc *)hw)->WAVE.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_clear_WAVE_CICCEN1_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->WAVE.reg &= ~TCC_WAVE_CICCEN1;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_toggle_WAVE_CICCEN1_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->WAVE.reg ^= TCC_WAVE_CICCEN1;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_set_WAVE_CICCEN2_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->WAVE.reg |= TCC_WAVE_CICCEN2;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -8550,35 +6534,35 @@ static inline void hri_tcc_write_WAVE_CICCEN2_bit(const void *const hw, bool val
 {
 	uint32_t tmp;
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	tmp = ((Tcc *)hw)->WAVE.reg;
 	tmp &= ~TCC_WAVE_CICCEN2;
 	tmp |= value << TCC_WAVE_CICCEN2_Pos;
 	((Tcc *)hw)->WAVE.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_clear_WAVE_CICCEN2_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->WAVE.reg &= ~TCC_WAVE_CICCEN2;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_toggle_WAVE_CICCEN2_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->WAVE.reg ^= TCC_WAVE_CICCEN2;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_set_WAVE_CICCEN3_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->WAVE.reg |= TCC_WAVE_CICCEN3;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -8594,35 +6578,35 @@ static inline void hri_tcc_write_WAVE_CICCEN3_bit(const void *const hw, bool val
 {
 	uint32_t tmp;
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	tmp = ((Tcc *)hw)->WAVE.reg;
 	tmp &= ~TCC_WAVE_CICCEN3;
 	tmp |= value << TCC_WAVE_CICCEN3_Pos;
 	((Tcc *)hw)->WAVE.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_clear_WAVE_CICCEN3_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->WAVE.reg &= ~TCC_WAVE_CICCEN3;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_toggle_WAVE_CICCEN3_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->WAVE.reg ^= TCC_WAVE_CICCEN3;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_set_WAVE_POL0_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->WAVE.reg |= TCC_WAVE_POL0;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -8638,35 +6622,35 @@ static inline void hri_tcc_write_WAVE_POL0_bit(const void *const hw, bool value)
 {
 	uint32_t tmp;
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	tmp = ((Tcc *)hw)->WAVE.reg;
 	tmp &= ~TCC_WAVE_POL0;
 	tmp |= value << TCC_WAVE_POL0_Pos;
 	((Tcc *)hw)->WAVE.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_clear_WAVE_POL0_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->WAVE.reg &= ~TCC_WAVE_POL0;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_toggle_WAVE_POL0_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->WAVE.reg ^= TCC_WAVE_POL0;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_set_WAVE_POL1_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->WAVE.reg |= TCC_WAVE_POL1;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -8682,35 +6666,35 @@ static inline void hri_tcc_write_WAVE_POL1_bit(const void *const hw, bool value)
 {
 	uint32_t tmp;
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	tmp = ((Tcc *)hw)->WAVE.reg;
 	tmp &= ~TCC_WAVE_POL1;
 	tmp |= value << TCC_WAVE_POL1_Pos;
 	((Tcc *)hw)->WAVE.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_clear_WAVE_POL1_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->WAVE.reg &= ~TCC_WAVE_POL1;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_toggle_WAVE_POL1_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->WAVE.reg ^= TCC_WAVE_POL1;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_set_WAVE_POL2_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->WAVE.reg |= TCC_WAVE_POL2;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -8726,35 +6710,35 @@ static inline void hri_tcc_write_WAVE_POL2_bit(const void *const hw, bool value)
 {
 	uint32_t tmp;
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	tmp = ((Tcc *)hw)->WAVE.reg;
 	tmp &= ~TCC_WAVE_POL2;
 	tmp |= value << TCC_WAVE_POL2_Pos;
 	((Tcc *)hw)->WAVE.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_clear_WAVE_POL2_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->WAVE.reg &= ~TCC_WAVE_POL2;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_toggle_WAVE_POL2_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->WAVE.reg ^= TCC_WAVE_POL2;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_set_WAVE_POL3_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->WAVE.reg |= TCC_WAVE_POL3;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -8770,35 +6754,35 @@ static inline void hri_tcc_write_WAVE_POL3_bit(const void *const hw, bool value)
 {
 	uint32_t tmp;
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	tmp = ((Tcc *)hw)->WAVE.reg;
 	tmp &= ~TCC_WAVE_POL3;
 	tmp |= value << TCC_WAVE_POL3_Pos;
 	((Tcc *)hw)->WAVE.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_clear_WAVE_POL3_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->WAVE.reg &= ~TCC_WAVE_POL3;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_toggle_WAVE_POL3_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->WAVE.reg ^= TCC_WAVE_POL3;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_set_WAVE_POL4_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->WAVE.reg |= TCC_WAVE_POL4;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -8814,35 +6798,35 @@ static inline void hri_tcc_write_WAVE_POL4_bit(const void *const hw, bool value)
 {
 	uint32_t tmp;
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	tmp = ((Tcc *)hw)->WAVE.reg;
 	tmp &= ~TCC_WAVE_POL4;
 	tmp |= value << TCC_WAVE_POL4_Pos;
 	((Tcc *)hw)->WAVE.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_clear_WAVE_POL4_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->WAVE.reg &= ~TCC_WAVE_POL4;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_toggle_WAVE_POL4_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->WAVE.reg ^= TCC_WAVE_POL4;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_set_WAVE_POL5_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->WAVE.reg |= TCC_WAVE_POL5;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -8858,35 +6842,35 @@ static inline void hri_tcc_write_WAVE_POL5_bit(const void *const hw, bool value)
 {
 	uint32_t tmp;
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	tmp = ((Tcc *)hw)->WAVE.reg;
 	tmp &= ~TCC_WAVE_POL5;
 	tmp |= value << TCC_WAVE_POL5_Pos;
 	((Tcc *)hw)->WAVE.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_clear_WAVE_POL5_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->WAVE.reg &= ~TCC_WAVE_POL5;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_toggle_WAVE_POL5_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->WAVE.reg ^= TCC_WAVE_POL5;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_set_WAVE_SWAP0_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->WAVE.reg |= TCC_WAVE_SWAP0;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -8902,35 +6886,35 @@ static inline void hri_tcc_write_WAVE_SWAP0_bit(const void *const hw, bool value
 {
 	uint32_t tmp;
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	tmp = ((Tcc *)hw)->WAVE.reg;
 	tmp &= ~TCC_WAVE_SWAP0;
 	tmp |= value << TCC_WAVE_SWAP0_Pos;
 	((Tcc *)hw)->WAVE.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_clear_WAVE_SWAP0_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->WAVE.reg &= ~TCC_WAVE_SWAP0;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_toggle_WAVE_SWAP0_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->WAVE.reg ^= TCC_WAVE_SWAP0;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_set_WAVE_SWAP1_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->WAVE.reg |= TCC_WAVE_SWAP1;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -8946,35 +6930,35 @@ static inline void hri_tcc_write_WAVE_SWAP1_bit(const void *const hw, bool value
 {
 	uint32_t tmp;
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	tmp = ((Tcc *)hw)->WAVE.reg;
 	tmp &= ~TCC_WAVE_SWAP1;
 	tmp |= value << TCC_WAVE_SWAP1_Pos;
 	((Tcc *)hw)->WAVE.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_clear_WAVE_SWAP1_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->WAVE.reg &= ~TCC_WAVE_SWAP1;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_toggle_WAVE_SWAP1_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->WAVE.reg ^= TCC_WAVE_SWAP1;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_set_WAVE_SWAP2_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->WAVE.reg |= TCC_WAVE_SWAP2;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -8990,35 +6974,35 @@ static inline void hri_tcc_write_WAVE_SWAP2_bit(const void *const hw, bool value
 {
 	uint32_t tmp;
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	tmp = ((Tcc *)hw)->WAVE.reg;
 	tmp &= ~TCC_WAVE_SWAP2;
 	tmp |= value << TCC_WAVE_SWAP2_Pos;
 	((Tcc *)hw)->WAVE.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_clear_WAVE_SWAP2_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->WAVE.reg &= ~TCC_WAVE_SWAP2;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_toggle_WAVE_SWAP2_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->WAVE.reg ^= TCC_WAVE_SWAP2;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_set_WAVE_SWAP3_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->WAVE.reg |= TCC_WAVE_SWAP3;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -9034,35 +7018,35 @@ static inline void hri_tcc_write_WAVE_SWAP3_bit(const void *const hw, bool value
 {
 	uint32_t tmp;
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	tmp = ((Tcc *)hw)->WAVE.reg;
 	tmp &= ~TCC_WAVE_SWAP3;
 	tmp |= value << TCC_WAVE_SWAP3_Pos;
 	((Tcc *)hw)->WAVE.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_clear_WAVE_SWAP3_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->WAVE.reg &= ~TCC_WAVE_SWAP3;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_toggle_WAVE_SWAP3_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->WAVE.reg ^= TCC_WAVE_SWAP3;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_set_WAVE_WAVEGEN_bf(const void *const hw, hri_tcc_wave_reg_t mask)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->WAVE.reg |= TCC_WAVE_WAVEGEN(mask);
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -9078,27 +7062,27 @@ static inline void hri_tcc_write_WAVE_WAVEGEN_bf(const void *const hw, hri_tcc_w
 {
 	uint32_t tmp;
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	tmp = ((Tcc *)hw)->WAVE.reg;
 	tmp &= ~TCC_WAVE_WAVEGEN_Msk;
 	tmp |= TCC_WAVE_WAVEGEN(data);
 	((Tcc *)hw)->WAVE.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_clear_WAVE_WAVEGEN_bf(const void *const hw, hri_tcc_wave_reg_t mask)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->WAVE.reg &= ~TCC_WAVE_WAVEGEN(mask);
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_toggle_WAVE_WAVEGEN_bf(const void *const hw, hri_tcc_wave_reg_t mask)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->WAVE.reg ^= TCC_WAVE_WAVEGEN(mask);
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -9113,8 +7097,8 @@ static inline hri_tcc_wave_reg_t hri_tcc_read_WAVE_WAVEGEN_bf(const void *const 
 static inline void hri_tcc_set_WAVE_RAMP_bf(const void *const hw, hri_tcc_wave_reg_t mask)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->WAVE.reg |= TCC_WAVE_RAMP(mask);
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -9130,27 +7114,27 @@ static inline void hri_tcc_write_WAVE_RAMP_bf(const void *const hw, hri_tcc_wave
 {
 	uint32_t tmp;
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	tmp = ((Tcc *)hw)->WAVE.reg;
 	tmp &= ~TCC_WAVE_RAMP_Msk;
 	tmp |= TCC_WAVE_RAMP(data);
 	((Tcc *)hw)->WAVE.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_clear_WAVE_RAMP_bf(const void *const hw, hri_tcc_wave_reg_t mask)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->WAVE.reg &= ~TCC_WAVE_RAMP(mask);
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_tcc_toggle_WAVE_RAMP_bf(const void *const hw, hri_tcc_wave_reg_t mask)
 {
 	TCC_CRITICAL_SECTION_ENTER();
-	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	((Tcc *)hw)->WAVE.reg ^= TCC_WAVE_RAMP(mask);
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -9166,12 +7150,14 @@ static inline void hri_tcc_set_WAVE_reg(const void *const hw, hri_tcc_wave_reg_t
 {
 	TCC_CRITICAL_SECTION_ENTER();
 	((Tcc *)hw)->WAVE.reg |= mask;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline hri_tcc_wave_reg_t hri_tcc_get_WAVE_reg(const void *const hw, hri_tcc_wave_reg_t mask)
 {
 	uint32_t tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	tmp = ((Tcc *)hw)->WAVE.reg;
 	tmp &= mask;
 	return tmp;
@@ -9181,6 +7167,7 @@ static inline void hri_tcc_write_WAVE_reg(const void *const hw, hri_tcc_wave_reg
 {
 	TCC_CRITICAL_SECTION_ENTER();
 	((Tcc *)hw)->WAVE.reg = data;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -9188,6 +7175,7 @@ static inline void hri_tcc_clear_WAVE_reg(const void *const hw, hri_tcc_wave_reg
 {
 	TCC_CRITICAL_SECTION_ENTER();
 	((Tcc *)hw)->WAVE.reg &= ~mask;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -9195,12 +7183,891 @@ static inline void hri_tcc_toggle_WAVE_reg(const void *const hw, hri_tcc_wave_re
 {
 	TCC_CRITICAL_SECTION_ENTER();
 	((Tcc *)hw)->WAVE.reg ^= mask;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline hri_tcc_wave_reg_t hri_tcc_read_WAVE_reg(const void *const hw)
 {
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	return ((Tcc *)hw)->WAVE.reg;
+}
+
+static inline void hri_tcc_set_PER_DITH4_DITHER_bf(const void *const hw, hri_tcc_per_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->PER.reg |= TCC_PER_DITH4_DITHER(mask);
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_per_reg_t hri_tcc_get_PER_DITH4_DITHER_bf(const void *const hw, hri_tcc_per_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Tcc *)hw)->PER.reg;
+	tmp = (tmp & TCC_PER_DITH4_DITHER(mask)) >> TCC_PER_DITH4_DITHER_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_write_PER_DITH4_DITHER_bf(const void *const hw, hri_tcc_per_reg_t data)
+{
+	uint32_t tmp;
+	TCC_CRITICAL_SECTION_ENTER();
+	tmp = ((Tcc *)hw)->PER.reg;
+	tmp &= ~TCC_PER_DITH4_DITHER_Msk;
+	tmp |= TCC_PER_DITH4_DITHER(data);
+	((Tcc *)hw)->PER.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_clear_PER_DITH4_DITHER_bf(const void *const hw, hri_tcc_per_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->PER.reg &= ~TCC_PER_DITH4_DITHER(mask);
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_toggle_PER_DITH4_DITHER_bf(const void *const hw, hri_tcc_per_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->PER.reg ^= TCC_PER_DITH4_DITHER(mask);
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_per_reg_t hri_tcc_read_PER_DITH4_DITHER_bf(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Tcc *)hw)->PER.reg;
+	tmp = (tmp & TCC_PER_DITH4_DITHER_Msk) >> TCC_PER_DITH4_DITHER_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_set_PER_DITH5_DITHER_bf(const void *const hw, hri_tcc_per_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->PER.reg |= TCC_PER_DITH5_DITHER(mask);
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_per_reg_t hri_tcc_get_PER_DITH5_DITHER_bf(const void *const hw, hri_tcc_per_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Tcc *)hw)->PER.reg;
+	tmp = (tmp & TCC_PER_DITH5_DITHER(mask)) >> TCC_PER_DITH5_DITHER_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_write_PER_DITH5_DITHER_bf(const void *const hw, hri_tcc_per_reg_t data)
+{
+	uint32_t tmp;
+	TCC_CRITICAL_SECTION_ENTER();
+	tmp = ((Tcc *)hw)->PER.reg;
+	tmp &= ~TCC_PER_DITH5_DITHER_Msk;
+	tmp |= TCC_PER_DITH5_DITHER(data);
+	((Tcc *)hw)->PER.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_clear_PER_DITH5_DITHER_bf(const void *const hw, hri_tcc_per_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->PER.reg &= ~TCC_PER_DITH5_DITHER(mask);
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_toggle_PER_DITH5_DITHER_bf(const void *const hw, hri_tcc_per_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->PER.reg ^= TCC_PER_DITH5_DITHER(mask);
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_per_reg_t hri_tcc_read_PER_DITH5_DITHER_bf(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Tcc *)hw)->PER.reg;
+	tmp = (tmp & TCC_PER_DITH5_DITHER_Msk) >> TCC_PER_DITH5_DITHER_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_set_PER_DITH6_DITHER_bf(const void *const hw, hri_tcc_per_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->PER.reg |= TCC_PER_DITH6_DITHER(mask);
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_per_reg_t hri_tcc_get_PER_DITH6_DITHER_bf(const void *const hw, hri_tcc_per_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Tcc *)hw)->PER.reg;
+	tmp = (tmp & TCC_PER_DITH6_DITHER(mask)) >> TCC_PER_DITH6_DITHER_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_write_PER_DITH6_DITHER_bf(const void *const hw, hri_tcc_per_reg_t data)
+{
+	uint32_t tmp;
+	TCC_CRITICAL_SECTION_ENTER();
+	tmp = ((Tcc *)hw)->PER.reg;
+	tmp &= ~TCC_PER_DITH6_DITHER_Msk;
+	tmp |= TCC_PER_DITH6_DITHER(data);
+	((Tcc *)hw)->PER.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_clear_PER_DITH6_DITHER_bf(const void *const hw, hri_tcc_per_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->PER.reg &= ~TCC_PER_DITH6_DITHER(mask);
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_toggle_PER_DITH6_DITHER_bf(const void *const hw, hri_tcc_per_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->PER.reg ^= TCC_PER_DITH6_DITHER(mask);
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_per_reg_t hri_tcc_read_PER_DITH6_DITHER_bf(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Tcc *)hw)->PER.reg;
+	tmp = (tmp & TCC_PER_DITH6_DITHER_Msk) >> TCC_PER_DITH6_DITHER_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_set_PER_DITH6_PER_bf(const void *const hw, hri_tcc_per_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->PER.reg |= TCC_PER_PER(mask);
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_PER);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_per_reg_t hri_tcc_get_PER_DITH6_PER_bf(const void *const hw, hri_tcc_per_reg_t mask)
+{
+	uint32_t tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_PER);
+	tmp = ((Tcc *)hw)->PER.reg;
+	tmp = (tmp & TCC_PER_PER(mask)) >> TCC_PER_PER_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_write_PER_DITH6_PER_bf(const void *const hw, hri_tcc_per_reg_t data)
+{
+	uint32_t tmp;
+	TCC_CRITICAL_SECTION_ENTER();
+	tmp = ((Tcc *)hw)->PER.reg;
+	tmp &= ~TCC_PER_PER_Msk;
+	tmp |= TCC_PER_PER(data);
+	((Tcc *)hw)->PER.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_PER);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_clear_PER_DITH6_PER_bf(const void *const hw, hri_tcc_per_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->PER.reg &= ~TCC_PER_PER(mask);
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_PER);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_toggle_PER_DITH6_PER_bf(const void *const hw, hri_tcc_per_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->PER.reg ^= TCC_PER_PER(mask);
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_PER);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_per_reg_t hri_tcc_read_PER_DITH6_PER_bf(const void *const hw)
+{
+	uint32_t tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_PER);
+	tmp = ((Tcc *)hw)->PER.reg;
+	tmp = (tmp & TCC_PER_PER_Msk) >> TCC_PER_PER_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_set_PER_DITH5_PER_bf(const void *const hw, hri_tcc_per_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->PER.reg |= TCC_PER_PER(mask);
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_PER);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_per_reg_t hri_tcc_get_PER_DITH5_PER_bf(const void *const hw, hri_tcc_per_reg_t mask)
+{
+	uint32_t tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_PER);
+	tmp = ((Tcc *)hw)->PER.reg;
+	tmp = (tmp & TCC_PER_PER(mask)) >> TCC_PER_PER_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_write_PER_DITH5_PER_bf(const void *const hw, hri_tcc_per_reg_t data)
+{
+	uint32_t tmp;
+	TCC_CRITICAL_SECTION_ENTER();
+	tmp = ((Tcc *)hw)->PER.reg;
+	tmp &= ~TCC_PER_PER_Msk;
+	tmp |= TCC_PER_PER(data);
+	((Tcc *)hw)->PER.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_PER);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_clear_PER_DITH5_PER_bf(const void *const hw, hri_tcc_per_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->PER.reg &= ~TCC_PER_PER(mask);
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_PER);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_toggle_PER_DITH5_PER_bf(const void *const hw, hri_tcc_per_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->PER.reg ^= TCC_PER_PER(mask);
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_PER);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_per_reg_t hri_tcc_read_PER_DITH5_PER_bf(const void *const hw)
+{
+	uint32_t tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_PER);
+	tmp = ((Tcc *)hw)->PER.reg;
+	tmp = (tmp & TCC_PER_PER_Msk) >> TCC_PER_PER_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_set_PER_DITH4_PER_bf(const void *const hw, hri_tcc_per_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->PER.reg |= TCC_PER_PER(mask);
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_PER);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_per_reg_t hri_tcc_get_PER_DITH4_PER_bf(const void *const hw, hri_tcc_per_reg_t mask)
+{
+	uint32_t tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_PER);
+	tmp = ((Tcc *)hw)->PER.reg;
+	tmp = (tmp & TCC_PER_PER(mask)) >> TCC_PER_PER_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_write_PER_DITH4_PER_bf(const void *const hw, hri_tcc_per_reg_t data)
+{
+	uint32_t tmp;
+	TCC_CRITICAL_SECTION_ENTER();
+	tmp = ((Tcc *)hw)->PER.reg;
+	tmp &= ~TCC_PER_PER_Msk;
+	tmp |= TCC_PER_PER(data);
+	((Tcc *)hw)->PER.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_PER);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_clear_PER_DITH4_PER_bf(const void *const hw, hri_tcc_per_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->PER.reg &= ~TCC_PER_PER(mask);
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_PER);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_toggle_PER_DITH4_PER_bf(const void *const hw, hri_tcc_per_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->PER.reg ^= TCC_PER_PER(mask);
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_PER);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_per_reg_t hri_tcc_read_PER_DITH4_PER_bf(const void *const hw)
+{
+	uint32_t tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_PER);
+	tmp = ((Tcc *)hw)->PER.reg;
+	tmp = (tmp & TCC_PER_PER_Msk) >> TCC_PER_PER_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_set_PER_PER_bf(const void *const hw, hri_tcc_per_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->PER.reg |= TCC_PER_PER(mask);
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_PER);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_per_reg_t hri_tcc_get_PER_PER_bf(const void *const hw, hri_tcc_per_reg_t mask)
+{
+	uint32_t tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_PER);
+	tmp = ((Tcc *)hw)->PER.reg;
+	tmp = (tmp & TCC_PER_PER(mask)) >> TCC_PER_PER_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_write_PER_PER_bf(const void *const hw, hri_tcc_per_reg_t data)
+{
+	uint32_t tmp;
+	TCC_CRITICAL_SECTION_ENTER();
+	tmp = ((Tcc *)hw)->PER.reg;
+	tmp &= ~TCC_PER_PER_Msk;
+	tmp |= TCC_PER_PER(data);
+	((Tcc *)hw)->PER.reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_PER);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_clear_PER_PER_bf(const void *const hw, hri_tcc_per_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->PER.reg &= ~TCC_PER_PER(mask);
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_PER);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_toggle_PER_PER_bf(const void *const hw, hri_tcc_per_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->PER.reg ^= TCC_PER_PER(mask);
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_PER);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_per_reg_t hri_tcc_read_PER_PER_bf(const void *const hw)
+{
+	uint32_t tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_PER);
+	tmp = ((Tcc *)hw)->PER.reg;
+	tmp = (tmp & TCC_PER_PER_Msk) >> TCC_PER_PER_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_set_PER_reg(const void *const hw, hri_tcc_per_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->PER.reg |= mask;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_PER);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_per_reg_t hri_tcc_get_PER_reg(const void *const hw, hri_tcc_per_reg_t mask)
+{
+	uint32_t tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_PER);
+	tmp = ((Tcc *)hw)->PER.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline void hri_tcc_write_PER_reg(const void *const hw, hri_tcc_per_reg_t data)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->PER.reg = data;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_PER);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_clear_PER_reg(const void *const hw, hri_tcc_per_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->PER.reg &= ~mask;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_PER);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_toggle_PER_reg(const void *const hw, hri_tcc_per_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->PER.reg ^= mask;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_PER);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_per_reg_t hri_tcc_read_PER_reg(const void *const hw)
+{
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_PER);
+	return ((Tcc *)hw)->PER.reg;
+}
+
+static inline void hri_tcc_set_CC_DITH4_DITHER_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->CC[index].reg |= TCC_CC_DITH4_DITHER(mask);
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_cc_reg_t hri_tcc_get_CC_DITH4_DITHER_bf(const void *const hw, uint8_t index,
+                                                              hri_tcc_cc_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Tcc *)hw)->CC[index].reg;
+	tmp = (tmp & TCC_CC_DITH4_DITHER(mask)) >> TCC_CC_DITH4_DITHER_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_write_CC_DITH4_DITHER_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t data)
+{
+	uint32_t tmp;
+	TCC_CRITICAL_SECTION_ENTER();
+	tmp = ((Tcc *)hw)->CC[index].reg;
+	tmp &= ~TCC_CC_DITH4_DITHER_Msk;
+	tmp |= TCC_CC_DITH4_DITHER(data);
+	((Tcc *)hw)->CC[index].reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_clear_CC_DITH4_DITHER_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->CC[index].reg &= ~TCC_CC_DITH4_DITHER(mask);
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_toggle_CC_DITH4_DITHER_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->CC[index].reg ^= TCC_CC_DITH4_DITHER(mask);
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_cc_reg_t hri_tcc_read_CC_DITH4_DITHER_bf(const void *const hw, uint8_t index)
+{
+	uint32_t tmp;
+	tmp = ((Tcc *)hw)->CC[index].reg;
+	tmp = (tmp & TCC_CC_DITH4_DITHER_Msk) >> TCC_CC_DITH4_DITHER_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_set_CC_DITH5_DITHER_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->CC[index].reg |= TCC_CC_DITH5_DITHER(mask);
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_cc_reg_t hri_tcc_get_CC_DITH5_DITHER_bf(const void *const hw, uint8_t index,
+                                                              hri_tcc_cc_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Tcc *)hw)->CC[index].reg;
+	tmp = (tmp & TCC_CC_DITH5_DITHER(mask)) >> TCC_CC_DITH5_DITHER_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_write_CC_DITH5_DITHER_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t data)
+{
+	uint32_t tmp;
+	TCC_CRITICAL_SECTION_ENTER();
+	tmp = ((Tcc *)hw)->CC[index].reg;
+	tmp &= ~TCC_CC_DITH5_DITHER_Msk;
+	tmp |= TCC_CC_DITH5_DITHER(data);
+	((Tcc *)hw)->CC[index].reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_clear_CC_DITH5_DITHER_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->CC[index].reg &= ~TCC_CC_DITH5_DITHER(mask);
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_toggle_CC_DITH5_DITHER_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->CC[index].reg ^= TCC_CC_DITH5_DITHER(mask);
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_cc_reg_t hri_tcc_read_CC_DITH5_DITHER_bf(const void *const hw, uint8_t index)
+{
+	uint32_t tmp;
+	tmp = ((Tcc *)hw)->CC[index].reg;
+	tmp = (tmp & TCC_CC_DITH5_DITHER_Msk) >> TCC_CC_DITH5_DITHER_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_set_CC_DITH6_DITHER_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->CC[index].reg |= TCC_CC_DITH6_DITHER(mask);
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_cc_reg_t hri_tcc_get_CC_DITH6_DITHER_bf(const void *const hw, uint8_t index,
+                                                              hri_tcc_cc_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Tcc *)hw)->CC[index].reg;
+	tmp = (tmp & TCC_CC_DITH6_DITHER(mask)) >> TCC_CC_DITH6_DITHER_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_write_CC_DITH6_DITHER_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t data)
+{
+	uint32_t tmp;
+	TCC_CRITICAL_SECTION_ENTER();
+	tmp = ((Tcc *)hw)->CC[index].reg;
+	tmp &= ~TCC_CC_DITH6_DITHER_Msk;
+	tmp |= TCC_CC_DITH6_DITHER(data);
+	((Tcc *)hw)->CC[index].reg = tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_clear_CC_DITH6_DITHER_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->CC[index].reg &= ~TCC_CC_DITH6_DITHER(mask);
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_toggle_CC_DITH6_DITHER_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->CC[index].reg ^= TCC_CC_DITH6_DITHER(mask);
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_cc_reg_t hri_tcc_read_CC_DITH6_DITHER_bf(const void *const hw, uint8_t index)
+{
+	uint32_t tmp;
+	tmp = ((Tcc *)hw)->CC[index].reg;
+	tmp = (tmp & TCC_CC_DITH6_DITHER_Msk) >> TCC_CC_DITH6_DITHER_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_set_CC_DITH6_CC_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->CC[index].reg |= TCC_CC_CC(mask);
+	hri_tcc_wait_for_sync(hw,
+	                      TCC_SYNCBUSY_CC0 | TCC_SYNCBUSY_CC1 | TCC_SYNCBUSY_CC2 | TCC_SYNCBUSY_CC3 | TCC_SYNCBUSY_CC4
+	                          | TCC_SYNCBUSY_CC5);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_cc_reg_t hri_tcc_get_CC_DITH6_CC_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Tcc *)hw)->CC[index].reg;
+	tmp = (tmp & TCC_CC_CC(mask)) >> TCC_CC_CC_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_write_CC_DITH6_CC_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t data)
+{
+	uint32_t tmp;
+	TCC_CRITICAL_SECTION_ENTER();
+	tmp = ((Tcc *)hw)->CC[index].reg;
+	tmp &= ~TCC_CC_CC_Msk;
+	tmp |= TCC_CC_CC(data);
+	((Tcc *)hw)->CC[index].reg = tmp;
+	hri_tcc_wait_for_sync(hw,
+	                      TCC_SYNCBUSY_CC0 | TCC_SYNCBUSY_CC1 | TCC_SYNCBUSY_CC2 | TCC_SYNCBUSY_CC3 | TCC_SYNCBUSY_CC4
+	                          | TCC_SYNCBUSY_CC5);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_clear_CC_DITH6_CC_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->CC[index].reg &= ~TCC_CC_CC(mask);
+	hri_tcc_wait_for_sync(hw,
+	                      TCC_SYNCBUSY_CC0 | TCC_SYNCBUSY_CC1 | TCC_SYNCBUSY_CC2 | TCC_SYNCBUSY_CC3 | TCC_SYNCBUSY_CC4
+	                          | TCC_SYNCBUSY_CC5);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_toggle_CC_DITH6_CC_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->CC[index].reg ^= TCC_CC_CC(mask);
+	hri_tcc_wait_for_sync(hw,
+	                      TCC_SYNCBUSY_CC0 | TCC_SYNCBUSY_CC1 | TCC_SYNCBUSY_CC2 | TCC_SYNCBUSY_CC3 | TCC_SYNCBUSY_CC4
+	                          | TCC_SYNCBUSY_CC5);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_cc_reg_t hri_tcc_read_CC_DITH6_CC_bf(const void *const hw, uint8_t index)
+{
+	uint32_t tmp;
+	tmp = ((Tcc *)hw)->CC[index].reg;
+	tmp = (tmp & TCC_CC_CC_Msk) >> TCC_CC_CC_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_set_CC_DITH5_CC_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->CC[index].reg |= TCC_CC_CC(mask);
+	hri_tcc_wait_for_sync(hw,
+	                      TCC_SYNCBUSY_CC0 | TCC_SYNCBUSY_CC1 | TCC_SYNCBUSY_CC2 | TCC_SYNCBUSY_CC3 | TCC_SYNCBUSY_CC4
+	                          | TCC_SYNCBUSY_CC5);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_cc_reg_t hri_tcc_get_CC_DITH5_CC_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Tcc *)hw)->CC[index].reg;
+	tmp = (tmp & TCC_CC_CC(mask)) >> TCC_CC_CC_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_write_CC_DITH5_CC_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t data)
+{
+	uint32_t tmp;
+	TCC_CRITICAL_SECTION_ENTER();
+	tmp = ((Tcc *)hw)->CC[index].reg;
+	tmp &= ~TCC_CC_CC_Msk;
+	tmp |= TCC_CC_CC(data);
+	((Tcc *)hw)->CC[index].reg = tmp;
+	hri_tcc_wait_for_sync(hw,
+	                      TCC_SYNCBUSY_CC0 | TCC_SYNCBUSY_CC1 | TCC_SYNCBUSY_CC2 | TCC_SYNCBUSY_CC3 | TCC_SYNCBUSY_CC4
+	                          | TCC_SYNCBUSY_CC5);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_clear_CC_DITH5_CC_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->CC[index].reg &= ~TCC_CC_CC(mask);
+	hri_tcc_wait_for_sync(hw,
+	                      TCC_SYNCBUSY_CC0 | TCC_SYNCBUSY_CC1 | TCC_SYNCBUSY_CC2 | TCC_SYNCBUSY_CC3 | TCC_SYNCBUSY_CC4
+	                          | TCC_SYNCBUSY_CC5);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_toggle_CC_DITH5_CC_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->CC[index].reg ^= TCC_CC_CC(mask);
+	hri_tcc_wait_for_sync(hw,
+	                      TCC_SYNCBUSY_CC0 | TCC_SYNCBUSY_CC1 | TCC_SYNCBUSY_CC2 | TCC_SYNCBUSY_CC3 | TCC_SYNCBUSY_CC4
+	                          | TCC_SYNCBUSY_CC5);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_cc_reg_t hri_tcc_read_CC_DITH5_CC_bf(const void *const hw, uint8_t index)
+{
+	uint32_t tmp;
+	tmp = ((Tcc *)hw)->CC[index].reg;
+	tmp = (tmp & TCC_CC_CC_Msk) >> TCC_CC_CC_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_set_CC_DITH4_CC_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->CC[index].reg |= TCC_CC_CC(mask);
+	hri_tcc_wait_for_sync(hw,
+	                      TCC_SYNCBUSY_CC0 | TCC_SYNCBUSY_CC1 | TCC_SYNCBUSY_CC2 | TCC_SYNCBUSY_CC3 | TCC_SYNCBUSY_CC4
+	                          | TCC_SYNCBUSY_CC5);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_cc_reg_t hri_tcc_get_CC_DITH4_CC_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Tcc *)hw)->CC[index].reg;
+	tmp = (tmp & TCC_CC_CC(mask)) >> TCC_CC_CC_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_write_CC_DITH4_CC_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t data)
+{
+	uint32_t tmp;
+	TCC_CRITICAL_SECTION_ENTER();
+	tmp = ((Tcc *)hw)->CC[index].reg;
+	tmp &= ~TCC_CC_CC_Msk;
+	tmp |= TCC_CC_CC(data);
+	((Tcc *)hw)->CC[index].reg = tmp;
+	hri_tcc_wait_for_sync(hw,
+	                      TCC_SYNCBUSY_CC0 | TCC_SYNCBUSY_CC1 | TCC_SYNCBUSY_CC2 | TCC_SYNCBUSY_CC3 | TCC_SYNCBUSY_CC4
+	                          | TCC_SYNCBUSY_CC5);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_clear_CC_DITH4_CC_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->CC[index].reg &= ~TCC_CC_CC(mask);
+	hri_tcc_wait_for_sync(hw,
+	                      TCC_SYNCBUSY_CC0 | TCC_SYNCBUSY_CC1 | TCC_SYNCBUSY_CC2 | TCC_SYNCBUSY_CC3 | TCC_SYNCBUSY_CC4
+	                          | TCC_SYNCBUSY_CC5);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_toggle_CC_DITH4_CC_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->CC[index].reg ^= TCC_CC_CC(mask);
+	hri_tcc_wait_for_sync(hw,
+	                      TCC_SYNCBUSY_CC0 | TCC_SYNCBUSY_CC1 | TCC_SYNCBUSY_CC2 | TCC_SYNCBUSY_CC3 | TCC_SYNCBUSY_CC4
+	                          | TCC_SYNCBUSY_CC5);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_cc_reg_t hri_tcc_read_CC_DITH4_CC_bf(const void *const hw, uint8_t index)
+{
+	uint32_t tmp;
+	tmp = ((Tcc *)hw)->CC[index].reg;
+	tmp = (tmp & TCC_CC_CC_Msk) >> TCC_CC_CC_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_set_CC_CC_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->CC[index].reg |= TCC_CC_CC(mask);
+	hri_tcc_wait_for_sync(hw,
+	                      TCC_SYNCBUSY_CC0 | TCC_SYNCBUSY_CC1 | TCC_SYNCBUSY_CC2 | TCC_SYNCBUSY_CC3 | TCC_SYNCBUSY_CC4
+	                          | TCC_SYNCBUSY_CC5);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_cc_reg_t hri_tcc_get_CC_CC_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Tcc *)hw)->CC[index].reg;
+	tmp = (tmp & TCC_CC_CC(mask)) >> TCC_CC_CC_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_write_CC_CC_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t data)
+{
+	uint32_t tmp;
+	TCC_CRITICAL_SECTION_ENTER();
+	tmp = ((Tcc *)hw)->CC[index].reg;
+	tmp &= ~TCC_CC_CC_Msk;
+	tmp |= TCC_CC_CC(data);
+	((Tcc *)hw)->CC[index].reg = tmp;
+	hri_tcc_wait_for_sync(hw,
+	                      TCC_SYNCBUSY_CC0 | TCC_SYNCBUSY_CC1 | TCC_SYNCBUSY_CC2 | TCC_SYNCBUSY_CC3 | TCC_SYNCBUSY_CC4
+	                          | TCC_SYNCBUSY_CC5);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_clear_CC_CC_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->CC[index].reg &= ~TCC_CC_CC(mask);
+	hri_tcc_wait_for_sync(hw,
+	                      TCC_SYNCBUSY_CC0 | TCC_SYNCBUSY_CC1 | TCC_SYNCBUSY_CC2 | TCC_SYNCBUSY_CC3 | TCC_SYNCBUSY_CC4
+	                          | TCC_SYNCBUSY_CC5);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_toggle_CC_CC_bf(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->CC[index].reg ^= TCC_CC_CC(mask);
+	hri_tcc_wait_for_sync(hw,
+	                      TCC_SYNCBUSY_CC0 | TCC_SYNCBUSY_CC1 | TCC_SYNCBUSY_CC2 | TCC_SYNCBUSY_CC3 | TCC_SYNCBUSY_CC4
+	                          | TCC_SYNCBUSY_CC5);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_cc_reg_t hri_tcc_read_CC_CC_bf(const void *const hw, uint8_t index)
+{
+	uint32_t tmp;
+	tmp = ((Tcc *)hw)->CC[index].reg;
+	tmp = (tmp & TCC_CC_CC_Msk) >> TCC_CC_CC_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_set_CC_reg(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->CC[index].reg |= mask;
+	hri_tcc_wait_for_sync(hw,
+	                      TCC_SYNCBUSY_CC0 | TCC_SYNCBUSY_CC1 | TCC_SYNCBUSY_CC2 | TCC_SYNCBUSY_CC3 | TCC_SYNCBUSY_CC4
+	                          | TCC_SYNCBUSY_CC5);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_cc_reg_t hri_tcc_get_CC_reg(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
+{
+	uint32_t tmp;
+	hri_tcc_wait_for_sync(hw,
+	                      TCC_SYNCBUSY_CC0 | TCC_SYNCBUSY_CC1 | TCC_SYNCBUSY_CC2 | TCC_SYNCBUSY_CC3 | TCC_SYNCBUSY_CC4
+	                          | TCC_SYNCBUSY_CC5);
+	tmp = ((Tcc *)hw)->CC[index].reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline void hri_tcc_write_CC_reg(const void *const hw, uint8_t index, hri_tcc_cc_reg_t data)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->CC[index].reg = data;
+	hri_tcc_wait_for_sync(hw,
+	                      TCC_SYNCBUSY_CC0 | TCC_SYNCBUSY_CC1 | TCC_SYNCBUSY_CC2 | TCC_SYNCBUSY_CC3 | TCC_SYNCBUSY_CC4
+	                          | TCC_SYNCBUSY_CC5);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_clear_CC_reg(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->CC[index].reg &= ~mask;
+	hri_tcc_wait_for_sync(hw,
+	                      TCC_SYNCBUSY_CC0 | TCC_SYNCBUSY_CC1 | TCC_SYNCBUSY_CC2 | TCC_SYNCBUSY_CC3 | TCC_SYNCBUSY_CC4
+	                          | TCC_SYNCBUSY_CC5);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_toggle_CC_reg(const void *const hw, uint8_t index, hri_tcc_cc_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->CC[index].reg ^= mask;
+	hri_tcc_wait_for_sync(hw,
+	                      TCC_SYNCBUSY_CC0 | TCC_SYNCBUSY_CC1 | TCC_SYNCBUSY_CC2 | TCC_SYNCBUSY_CC3 | TCC_SYNCBUSY_CC4
+	                          | TCC_SYNCBUSY_CC5);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_cc_reg_t hri_tcc_read_CC_reg(const void *const hw, uint8_t index)
+{
+	hri_tcc_wait_for_sync(hw,
+	                      TCC_SYNCBUSY_CC0 | TCC_SYNCBUSY_CC1 | TCC_SYNCBUSY_CC2 | TCC_SYNCBUSY_CC3 | TCC_SYNCBUSY_CC4
+	                          | TCC_SYNCBUSY_CC5);
+	return ((Tcc *)hw)->CC[index].reg;
 }
 
 static inline void hri_tcc_set_PATTBUF_PGEB0_bit(const void *const hw)
@@ -9884,87 +8751,771 @@ static inline hri_tcc_pattbuf_reg_t hri_tcc_read_PATTBUF_reg(const void *const h
 	return ((Tcc *)hw)->PATTBUF.reg;
 }
 
-static inline bool hri_tcc_get_SYNCBUSY_SWRST_bit(const void *const hw)
+static inline void hri_tcc_set_PERBUF_DITH4_DITHERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t mask)
 {
-	return (((Tcc *)hw)->SYNCBUSY.reg & TCC_SYNCBUSY_SWRST) >> TCC_SYNCBUSY_SWRST_Pos;
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->PERBUF.reg |= TCC_PERBUF_DITH4_DITHERBUF(mask);
+	TCC_CRITICAL_SECTION_LEAVE();
 }
 
-static inline bool hri_tcc_get_SYNCBUSY_ENABLE_bit(const void *const hw)
-{
-	return (((Tcc *)hw)->SYNCBUSY.reg & TCC_SYNCBUSY_ENABLE) >> TCC_SYNCBUSY_ENABLE_Pos;
-}
-
-static inline bool hri_tcc_get_SYNCBUSY_CTRLB_bit(const void *const hw)
-{
-	return (((Tcc *)hw)->SYNCBUSY.reg & TCC_SYNCBUSY_CTRLB) >> TCC_SYNCBUSY_CTRLB_Pos;
-}
-
-static inline bool hri_tcc_get_SYNCBUSY_STATUS_bit(const void *const hw)
-{
-	return (((Tcc *)hw)->SYNCBUSY.reg & TCC_SYNCBUSY_STATUS) >> TCC_SYNCBUSY_STATUS_Pos;
-}
-
-static inline bool hri_tcc_get_SYNCBUSY_COUNT_bit(const void *const hw)
-{
-	return (((Tcc *)hw)->SYNCBUSY.reg & TCC_SYNCBUSY_COUNT) >> TCC_SYNCBUSY_COUNT_Pos;
-}
-
-static inline bool hri_tcc_get_SYNCBUSY_PATT_bit(const void *const hw)
-{
-	return (((Tcc *)hw)->SYNCBUSY.reg & TCC_SYNCBUSY_PATT) >> TCC_SYNCBUSY_PATT_Pos;
-}
-
-static inline bool hri_tcc_get_SYNCBUSY_WAVE_bit(const void *const hw)
-{
-	return (((Tcc *)hw)->SYNCBUSY.reg & TCC_SYNCBUSY_WAVE) >> TCC_SYNCBUSY_WAVE_Pos;
-}
-
-static inline bool hri_tcc_get_SYNCBUSY_PER_bit(const void *const hw)
-{
-	return (((Tcc *)hw)->SYNCBUSY.reg & TCC_SYNCBUSY_PER) >> TCC_SYNCBUSY_PER_Pos;
-}
-
-static inline bool hri_tcc_get_SYNCBUSY_CC0_bit(const void *const hw)
-{
-	return (((Tcc *)hw)->SYNCBUSY.reg & TCC_SYNCBUSY_CC0) >> TCC_SYNCBUSY_CC0_Pos;
-}
-
-static inline bool hri_tcc_get_SYNCBUSY_CC1_bit(const void *const hw)
-{
-	return (((Tcc *)hw)->SYNCBUSY.reg & TCC_SYNCBUSY_CC1) >> TCC_SYNCBUSY_CC1_Pos;
-}
-
-static inline bool hri_tcc_get_SYNCBUSY_CC2_bit(const void *const hw)
-{
-	return (((Tcc *)hw)->SYNCBUSY.reg & TCC_SYNCBUSY_CC2) >> TCC_SYNCBUSY_CC2_Pos;
-}
-
-static inline bool hri_tcc_get_SYNCBUSY_CC3_bit(const void *const hw)
-{
-	return (((Tcc *)hw)->SYNCBUSY.reg & TCC_SYNCBUSY_CC3) >> TCC_SYNCBUSY_CC3_Pos;
-}
-
-static inline bool hri_tcc_get_SYNCBUSY_CC4_bit(const void *const hw)
-{
-	return (((Tcc *)hw)->SYNCBUSY.reg & TCC_SYNCBUSY_CC4) >> TCC_SYNCBUSY_CC4_Pos;
-}
-
-static inline bool hri_tcc_get_SYNCBUSY_CC5_bit(const void *const hw)
-{
-	return (((Tcc *)hw)->SYNCBUSY.reg & TCC_SYNCBUSY_CC5) >> TCC_SYNCBUSY_CC5_Pos;
-}
-
-static inline hri_tcc_syncbusy_reg_t hri_tcc_get_SYNCBUSY_reg(const void *const hw, hri_tcc_syncbusy_reg_t mask)
+static inline hri_tcc_perbuf_reg_t hri_tcc_get_PERBUF_DITH4_DITHERBUF_bf(const void *const    hw,
+                                                                         hri_tcc_perbuf_reg_t mask)
 {
 	uint32_t tmp;
-	tmp = ((Tcc *)hw)->SYNCBUSY.reg;
+	tmp = ((Tcc *)hw)->PERBUF.reg;
+	tmp = (tmp & TCC_PERBUF_DITH4_DITHERBUF(mask)) >> TCC_PERBUF_DITH4_DITHERBUF_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_write_PERBUF_DITH4_DITHERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t data)
+{
+	uint32_t tmp;
+	TCC_CRITICAL_SECTION_ENTER();
+	tmp = ((Tcc *)hw)->PERBUF.reg;
+	tmp &= ~TCC_PERBUF_DITH4_DITHERBUF_Msk;
+	tmp |= TCC_PERBUF_DITH4_DITHERBUF(data);
+	((Tcc *)hw)->PERBUF.reg = tmp;
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_clear_PERBUF_DITH4_DITHERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->PERBUF.reg &= ~TCC_PERBUF_DITH4_DITHERBUF(mask);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_toggle_PERBUF_DITH4_DITHERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->PERBUF.reg ^= TCC_PERBUF_DITH4_DITHERBUF(mask);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_perbuf_reg_t hri_tcc_read_PERBUF_DITH4_DITHERBUF_bf(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Tcc *)hw)->PERBUF.reg;
+	tmp = (tmp & TCC_PERBUF_DITH4_DITHERBUF_Msk) >> TCC_PERBUF_DITH4_DITHERBUF_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_set_PERBUF_DITH5_DITHERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->PERBUF.reg |= TCC_PERBUF_DITH5_DITHERBUF(mask);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_perbuf_reg_t hri_tcc_get_PERBUF_DITH5_DITHERBUF_bf(const void *const    hw,
+                                                                         hri_tcc_perbuf_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Tcc *)hw)->PERBUF.reg;
+	tmp = (tmp & TCC_PERBUF_DITH5_DITHERBUF(mask)) >> TCC_PERBUF_DITH5_DITHERBUF_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_write_PERBUF_DITH5_DITHERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t data)
+{
+	uint32_t tmp;
+	TCC_CRITICAL_SECTION_ENTER();
+	tmp = ((Tcc *)hw)->PERBUF.reg;
+	tmp &= ~TCC_PERBUF_DITH5_DITHERBUF_Msk;
+	tmp |= TCC_PERBUF_DITH5_DITHERBUF(data);
+	((Tcc *)hw)->PERBUF.reg = tmp;
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_clear_PERBUF_DITH5_DITHERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->PERBUF.reg &= ~TCC_PERBUF_DITH5_DITHERBUF(mask);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_toggle_PERBUF_DITH5_DITHERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->PERBUF.reg ^= TCC_PERBUF_DITH5_DITHERBUF(mask);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_perbuf_reg_t hri_tcc_read_PERBUF_DITH5_DITHERBUF_bf(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Tcc *)hw)->PERBUF.reg;
+	tmp = (tmp & TCC_PERBUF_DITH5_DITHERBUF_Msk) >> TCC_PERBUF_DITH5_DITHERBUF_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_set_PERBUF_DITH6_DITHERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->PERBUF.reg |= TCC_PERBUF_DITH6_DITHERBUF(mask);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_perbuf_reg_t hri_tcc_get_PERBUF_DITH6_DITHERBUF_bf(const void *const    hw,
+                                                                         hri_tcc_perbuf_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Tcc *)hw)->PERBUF.reg;
+	tmp = (tmp & TCC_PERBUF_DITH6_DITHERBUF(mask)) >> TCC_PERBUF_DITH6_DITHERBUF_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_write_PERBUF_DITH6_DITHERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t data)
+{
+	uint32_t tmp;
+	TCC_CRITICAL_SECTION_ENTER();
+	tmp = ((Tcc *)hw)->PERBUF.reg;
+	tmp &= ~TCC_PERBUF_DITH6_DITHERBUF_Msk;
+	tmp |= TCC_PERBUF_DITH6_DITHERBUF(data);
+	((Tcc *)hw)->PERBUF.reg = tmp;
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_clear_PERBUF_DITH6_DITHERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->PERBUF.reg &= ~TCC_PERBUF_DITH6_DITHERBUF(mask);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_toggle_PERBUF_DITH6_DITHERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->PERBUF.reg ^= TCC_PERBUF_DITH6_DITHERBUF(mask);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_perbuf_reg_t hri_tcc_read_PERBUF_DITH6_DITHERBUF_bf(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Tcc *)hw)->PERBUF.reg;
+	tmp = (tmp & TCC_PERBUF_DITH6_DITHERBUF_Msk) >> TCC_PERBUF_DITH6_DITHERBUF_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_set_PERBUF_DITH6_PERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->PERBUF.reg |= TCC_PERBUF_PERBUF(mask);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_perbuf_reg_t hri_tcc_get_PERBUF_DITH6_PERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Tcc *)hw)->PERBUF.reg;
+	tmp = (tmp & TCC_PERBUF_PERBUF(mask)) >> TCC_PERBUF_PERBUF_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_write_PERBUF_DITH6_PERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t data)
+{
+	uint32_t tmp;
+	TCC_CRITICAL_SECTION_ENTER();
+	tmp = ((Tcc *)hw)->PERBUF.reg;
+	tmp &= ~TCC_PERBUF_PERBUF_Msk;
+	tmp |= TCC_PERBUF_PERBUF(data);
+	((Tcc *)hw)->PERBUF.reg = tmp;
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_clear_PERBUF_DITH6_PERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->PERBUF.reg &= ~TCC_PERBUF_PERBUF(mask);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_toggle_PERBUF_DITH6_PERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->PERBUF.reg ^= TCC_PERBUF_PERBUF(mask);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_perbuf_reg_t hri_tcc_read_PERBUF_DITH6_PERBUF_bf(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Tcc *)hw)->PERBUF.reg;
+	tmp = (tmp & TCC_PERBUF_PERBUF_Msk) >> TCC_PERBUF_PERBUF_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_set_PERBUF_DITH5_PERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->PERBUF.reg |= TCC_PERBUF_PERBUF(mask);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_perbuf_reg_t hri_tcc_get_PERBUF_DITH5_PERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Tcc *)hw)->PERBUF.reg;
+	tmp = (tmp & TCC_PERBUF_PERBUF(mask)) >> TCC_PERBUF_PERBUF_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_write_PERBUF_DITH5_PERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t data)
+{
+	uint32_t tmp;
+	TCC_CRITICAL_SECTION_ENTER();
+	tmp = ((Tcc *)hw)->PERBUF.reg;
+	tmp &= ~TCC_PERBUF_PERBUF_Msk;
+	tmp |= TCC_PERBUF_PERBUF(data);
+	((Tcc *)hw)->PERBUF.reg = tmp;
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_clear_PERBUF_DITH5_PERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->PERBUF.reg &= ~TCC_PERBUF_PERBUF(mask);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_toggle_PERBUF_DITH5_PERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->PERBUF.reg ^= TCC_PERBUF_PERBUF(mask);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_perbuf_reg_t hri_tcc_read_PERBUF_DITH5_PERBUF_bf(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Tcc *)hw)->PERBUF.reg;
+	tmp = (tmp & TCC_PERBUF_PERBUF_Msk) >> TCC_PERBUF_PERBUF_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_set_PERBUF_DITH4_PERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->PERBUF.reg |= TCC_PERBUF_PERBUF(mask);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_perbuf_reg_t hri_tcc_get_PERBUF_DITH4_PERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Tcc *)hw)->PERBUF.reg;
+	tmp = (tmp & TCC_PERBUF_PERBUF(mask)) >> TCC_PERBUF_PERBUF_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_write_PERBUF_DITH4_PERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t data)
+{
+	uint32_t tmp;
+	TCC_CRITICAL_SECTION_ENTER();
+	tmp = ((Tcc *)hw)->PERBUF.reg;
+	tmp &= ~TCC_PERBUF_PERBUF_Msk;
+	tmp |= TCC_PERBUF_PERBUF(data);
+	((Tcc *)hw)->PERBUF.reg = tmp;
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_clear_PERBUF_DITH4_PERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->PERBUF.reg &= ~TCC_PERBUF_PERBUF(mask);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_toggle_PERBUF_DITH4_PERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->PERBUF.reg ^= TCC_PERBUF_PERBUF(mask);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_perbuf_reg_t hri_tcc_read_PERBUF_DITH4_PERBUF_bf(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Tcc *)hw)->PERBUF.reg;
+	tmp = (tmp & TCC_PERBUF_PERBUF_Msk) >> TCC_PERBUF_PERBUF_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_set_PERBUF_PERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->PERBUF.reg |= TCC_PERBUF_PERBUF(mask);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_perbuf_reg_t hri_tcc_get_PERBUF_PERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Tcc *)hw)->PERBUF.reg;
+	tmp = (tmp & TCC_PERBUF_PERBUF(mask)) >> TCC_PERBUF_PERBUF_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_write_PERBUF_PERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t data)
+{
+	uint32_t tmp;
+	TCC_CRITICAL_SECTION_ENTER();
+	tmp = ((Tcc *)hw)->PERBUF.reg;
+	tmp &= ~TCC_PERBUF_PERBUF_Msk;
+	tmp |= TCC_PERBUF_PERBUF(data);
+	((Tcc *)hw)->PERBUF.reg = tmp;
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_clear_PERBUF_PERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->PERBUF.reg &= ~TCC_PERBUF_PERBUF(mask);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_toggle_PERBUF_PERBUF_bf(const void *const hw, hri_tcc_perbuf_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->PERBUF.reg ^= TCC_PERBUF_PERBUF(mask);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_perbuf_reg_t hri_tcc_read_PERBUF_PERBUF_bf(const void *const hw)
+{
+	uint32_t tmp;
+	tmp = ((Tcc *)hw)->PERBUF.reg;
+	tmp = (tmp & TCC_PERBUF_PERBUF_Msk) >> TCC_PERBUF_PERBUF_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_set_PERBUF_reg(const void *const hw, hri_tcc_perbuf_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->PERBUF.reg |= mask;
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_perbuf_reg_t hri_tcc_get_PERBUF_reg(const void *const hw, hri_tcc_perbuf_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Tcc *)hw)->PERBUF.reg;
 	tmp &= mask;
 	return tmp;
 }
 
-static inline hri_tcc_syncbusy_reg_t hri_tcc_read_SYNCBUSY_reg(const void *const hw)
+static inline void hri_tcc_write_PERBUF_reg(const void *const hw, hri_tcc_perbuf_reg_t data)
 {
-	return ((Tcc *)hw)->SYNCBUSY.reg;
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->PERBUF.reg = data;
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_clear_PERBUF_reg(const void *const hw, hri_tcc_perbuf_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->PERBUF.reg &= ~mask;
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_toggle_PERBUF_reg(const void *const hw, hri_tcc_perbuf_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->PERBUF.reg ^= mask;
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_perbuf_reg_t hri_tcc_read_PERBUF_reg(const void *const hw)
+{
+	return ((Tcc *)hw)->PERBUF.reg;
+}
+
+static inline void hri_tcc_set_CCBUF_DITH4_CCBUF_bf(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->CCBUF[index].reg |= TCC_CCBUF_CCBUF(mask);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_ccbuf_reg_t hri_tcc_get_CCBUF_DITH4_CCBUF_bf(const void *const hw, uint8_t index,
+                                                                   hri_tcc_ccbuf_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Tcc *)hw)->CCBUF[index].reg;
+	tmp = (tmp & TCC_CCBUF_CCBUF(mask)) >> TCC_CCBUF_CCBUF_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_write_CCBUF_DITH4_CCBUF_bf(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t data)
+{
+	uint32_t tmp;
+	TCC_CRITICAL_SECTION_ENTER();
+	tmp = ((Tcc *)hw)->CCBUF[index].reg;
+	tmp &= ~TCC_CCBUF_CCBUF_Msk;
+	tmp |= TCC_CCBUF_CCBUF(data);
+	((Tcc *)hw)->CCBUF[index].reg = tmp;
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_clear_CCBUF_DITH4_CCBUF_bf(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->CCBUF[index].reg &= ~TCC_CCBUF_CCBUF(mask);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_toggle_CCBUF_DITH4_CCBUF_bf(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->CCBUF[index].reg ^= TCC_CCBUF_CCBUF(mask);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_ccbuf_reg_t hri_tcc_read_CCBUF_DITH4_CCBUF_bf(const void *const hw, uint8_t index)
+{
+	uint32_t tmp;
+	tmp = ((Tcc *)hw)->CCBUF[index].reg;
+	tmp = (tmp & TCC_CCBUF_CCBUF_Msk) >> TCC_CCBUF_CCBUF_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_set_CCBUF_DITH5_DITHERBUF_bf(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->CCBUF[index].reg |= TCC_CCBUF_DITH5_DITHERBUF(mask);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_ccbuf_reg_t hri_tcc_get_CCBUF_DITH5_DITHERBUF_bf(const void *const hw, uint8_t index,
+                                                                       hri_tcc_ccbuf_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Tcc *)hw)->CCBUF[index].reg;
+	tmp = (tmp & TCC_CCBUF_DITH5_DITHERBUF(mask)) >> TCC_CCBUF_DITH5_DITHERBUF_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_write_CCBUF_DITH5_DITHERBUF_bf(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t data)
+{
+	uint32_t tmp;
+	TCC_CRITICAL_SECTION_ENTER();
+	tmp = ((Tcc *)hw)->CCBUF[index].reg;
+	tmp &= ~TCC_CCBUF_DITH5_DITHERBUF_Msk;
+	tmp |= TCC_CCBUF_DITH5_DITHERBUF(data);
+	((Tcc *)hw)->CCBUF[index].reg = tmp;
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_clear_CCBUF_DITH5_DITHERBUF_bf(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->CCBUF[index].reg &= ~TCC_CCBUF_DITH5_DITHERBUF(mask);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_toggle_CCBUF_DITH5_DITHERBUF_bf(const void *const hw, uint8_t index,
+                                                           hri_tcc_ccbuf_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->CCBUF[index].reg ^= TCC_CCBUF_DITH5_DITHERBUF(mask);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_ccbuf_reg_t hri_tcc_read_CCBUF_DITH5_DITHERBUF_bf(const void *const hw, uint8_t index)
+{
+	uint32_t tmp;
+	tmp = ((Tcc *)hw)->CCBUF[index].reg;
+	tmp = (tmp & TCC_CCBUF_DITH5_DITHERBUF_Msk) >> TCC_CCBUF_DITH5_DITHERBUF_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_set_CCBUF_DITH6_DITHERBUF_bf(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->CCBUF[index].reg |= TCC_CCBUF_DITH6_DITHERBUF(mask);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_ccbuf_reg_t hri_tcc_get_CCBUF_DITH6_DITHERBUF_bf(const void *const hw, uint8_t index,
+                                                                       hri_tcc_ccbuf_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Tcc *)hw)->CCBUF[index].reg;
+	tmp = (tmp & TCC_CCBUF_DITH6_DITHERBUF(mask)) >> TCC_CCBUF_DITH6_DITHERBUF_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_write_CCBUF_DITH6_DITHERBUF_bf(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t data)
+{
+	uint32_t tmp;
+	TCC_CRITICAL_SECTION_ENTER();
+	tmp = ((Tcc *)hw)->CCBUF[index].reg;
+	tmp &= ~TCC_CCBUF_DITH6_DITHERBUF_Msk;
+	tmp |= TCC_CCBUF_DITH6_DITHERBUF(data);
+	((Tcc *)hw)->CCBUF[index].reg = tmp;
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_clear_CCBUF_DITH6_DITHERBUF_bf(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->CCBUF[index].reg &= ~TCC_CCBUF_DITH6_DITHERBUF(mask);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_toggle_CCBUF_DITH6_DITHERBUF_bf(const void *const hw, uint8_t index,
+                                                           hri_tcc_ccbuf_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->CCBUF[index].reg ^= TCC_CCBUF_DITH6_DITHERBUF(mask);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_ccbuf_reg_t hri_tcc_read_CCBUF_DITH6_DITHERBUF_bf(const void *const hw, uint8_t index)
+{
+	uint32_t tmp;
+	tmp = ((Tcc *)hw)->CCBUF[index].reg;
+	tmp = (tmp & TCC_CCBUF_DITH6_DITHERBUF_Msk) >> TCC_CCBUF_DITH6_DITHERBUF_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_set_CCBUF_DITH6_CCBUF_bf(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->CCBUF[index].reg |= TCC_CCBUF_CCBUF(mask);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_ccbuf_reg_t hri_tcc_get_CCBUF_DITH6_CCBUF_bf(const void *const hw, uint8_t index,
+                                                                   hri_tcc_ccbuf_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Tcc *)hw)->CCBUF[index].reg;
+	tmp = (tmp & TCC_CCBUF_CCBUF(mask)) >> TCC_CCBUF_CCBUF_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_write_CCBUF_DITH6_CCBUF_bf(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t data)
+{
+	uint32_t tmp;
+	TCC_CRITICAL_SECTION_ENTER();
+	tmp = ((Tcc *)hw)->CCBUF[index].reg;
+	tmp &= ~TCC_CCBUF_CCBUF_Msk;
+	tmp |= TCC_CCBUF_CCBUF(data);
+	((Tcc *)hw)->CCBUF[index].reg = tmp;
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_clear_CCBUF_DITH6_CCBUF_bf(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->CCBUF[index].reg &= ~TCC_CCBUF_CCBUF(mask);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_toggle_CCBUF_DITH6_CCBUF_bf(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->CCBUF[index].reg ^= TCC_CCBUF_CCBUF(mask);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_ccbuf_reg_t hri_tcc_read_CCBUF_DITH6_CCBUF_bf(const void *const hw, uint8_t index)
+{
+	uint32_t tmp;
+	tmp = ((Tcc *)hw)->CCBUF[index].reg;
+	tmp = (tmp & TCC_CCBUF_CCBUF_Msk) >> TCC_CCBUF_CCBUF_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_set_CCBUF_DITH5_CCBUF_bf(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->CCBUF[index].reg |= TCC_CCBUF_CCBUF(mask);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_ccbuf_reg_t hri_tcc_get_CCBUF_DITH5_CCBUF_bf(const void *const hw, uint8_t index,
+                                                                   hri_tcc_ccbuf_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Tcc *)hw)->CCBUF[index].reg;
+	tmp = (tmp & TCC_CCBUF_CCBUF(mask)) >> TCC_CCBUF_CCBUF_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_write_CCBUF_DITH5_CCBUF_bf(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t data)
+{
+	uint32_t tmp;
+	TCC_CRITICAL_SECTION_ENTER();
+	tmp = ((Tcc *)hw)->CCBUF[index].reg;
+	tmp &= ~TCC_CCBUF_CCBUF_Msk;
+	tmp |= TCC_CCBUF_CCBUF(data);
+	((Tcc *)hw)->CCBUF[index].reg = tmp;
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_clear_CCBUF_DITH5_CCBUF_bf(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->CCBUF[index].reg &= ~TCC_CCBUF_CCBUF(mask);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_toggle_CCBUF_DITH5_CCBUF_bf(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->CCBUF[index].reg ^= TCC_CCBUF_CCBUF(mask);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_ccbuf_reg_t hri_tcc_read_CCBUF_DITH5_CCBUF_bf(const void *const hw, uint8_t index)
+{
+	uint32_t tmp;
+	tmp = ((Tcc *)hw)->CCBUF[index].reg;
+	tmp = (tmp & TCC_CCBUF_CCBUF_Msk) >> TCC_CCBUF_CCBUF_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_set_CCBUF_DITH4_DITHERBUF_bf(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->CCBUF[index].reg |= TCC_CCBUF_DITH4_DITHERBUF(mask);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_ccbuf_reg_t hri_tcc_get_CCBUF_DITH4_DITHERBUF_bf(const void *const hw, uint8_t index,
+                                                                       hri_tcc_ccbuf_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Tcc *)hw)->CCBUF[index].reg;
+	tmp = (tmp & TCC_CCBUF_DITH4_DITHERBUF(mask)) >> TCC_CCBUF_DITH4_DITHERBUF_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_write_CCBUF_DITH4_DITHERBUF_bf(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t data)
+{
+	uint32_t tmp;
+	TCC_CRITICAL_SECTION_ENTER();
+	tmp = ((Tcc *)hw)->CCBUF[index].reg;
+	tmp &= ~TCC_CCBUF_DITH4_DITHERBUF_Msk;
+	tmp |= TCC_CCBUF_DITH4_DITHERBUF(data);
+	((Tcc *)hw)->CCBUF[index].reg = tmp;
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_clear_CCBUF_DITH4_DITHERBUF_bf(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->CCBUF[index].reg &= ~TCC_CCBUF_DITH4_DITHERBUF(mask);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_toggle_CCBUF_DITH4_DITHERBUF_bf(const void *const hw, uint8_t index,
+                                                           hri_tcc_ccbuf_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->CCBUF[index].reg ^= TCC_CCBUF_DITH4_DITHERBUF(mask);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_ccbuf_reg_t hri_tcc_read_CCBUF_DITH4_DITHERBUF_bf(const void *const hw, uint8_t index)
+{
+	uint32_t tmp;
+	tmp = ((Tcc *)hw)->CCBUF[index].reg;
+	tmp = (tmp & TCC_CCBUF_DITH4_DITHERBUF_Msk) >> TCC_CCBUF_DITH4_DITHERBUF_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_set_CCBUF_CCBUF_bf(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->CCBUF[index].reg |= TCC_CCBUF_CCBUF(mask);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_ccbuf_reg_t hri_tcc_get_CCBUF_CCBUF_bf(const void *const hw, uint8_t index,
+                                                             hri_tcc_ccbuf_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Tcc *)hw)->CCBUF[index].reg;
+	tmp = (tmp & TCC_CCBUF_CCBUF(mask)) >> TCC_CCBUF_CCBUF_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_write_CCBUF_CCBUF_bf(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t data)
+{
+	uint32_t tmp;
+	TCC_CRITICAL_SECTION_ENTER();
+	tmp = ((Tcc *)hw)->CCBUF[index].reg;
+	tmp &= ~TCC_CCBUF_CCBUF_Msk;
+	tmp |= TCC_CCBUF_CCBUF(data);
+	((Tcc *)hw)->CCBUF[index].reg = tmp;
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_clear_CCBUF_CCBUF_bf(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->CCBUF[index].reg &= ~TCC_CCBUF_CCBUF(mask);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_toggle_CCBUF_CCBUF_bf(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->CCBUF[index].reg ^= TCC_CCBUF_CCBUF(mask);
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_ccbuf_reg_t hri_tcc_read_CCBUF_CCBUF_bf(const void *const hw, uint8_t index)
+{
+	uint32_t tmp;
+	tmp = ((Tcc *)hw)->CCBUF[index].reg;
+	tmp = (tmp & TCC_CCBUF_CCBUF_Msk) >> TCC_CCBUF_CCBUF_Pos;
+	return tmp;
+}
+
+static inline void hri_tcc_set_CCBUF_reg(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->CCBUF[index].reg |= mask;
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_ccbuf_reg_t hri_tcc_get_CCBUF_reg(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t mask)
+{
+	uint32_t tmp;
+	tmp = ((Tcc *)hw)->CCBUF[index].reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline void hri_tcc_write_CCBUF_reg(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t data)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->CCBUF[index].reg = data;
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_clear_CCBUF_reg(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->CCBUF[index].reg &= ~mask;
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline void hri_tcc_toggle_CCBUF_reg(const void *const hw, uint8_t index, hri_tcc_ccbuf_reg_t mask)
+{
+	TCC_CRITICAL_SECTION_ENTER();
+	((Tcc *)hw)->CCBUF[index].reg ^= mask;
+	TCC_CRITICAL_SECTION_LEAVE();
+}
+
+static inline hri_tcc_ccbuf_reg_t hri_tcc_read_CCBUF_reg(const void *const hw, uint8_t index)
+{
+	return ((Tcc *)hw)->CCBUF[index].reg;
 }
 
 static inline bool hri_tcc_get_STATUS_STOP_bit(const void *const hw)
@@ -9976,6 +9527,7 @@ static inline void hri_tcc_clear_STATUS_STOP_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
 	((Tcc *)hw)->STATUS.reg = TCC_STATUS_STOP;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -9988,6 +9540,7 @@ static inline void hri_tcc_clear_STATUS_IDX_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
 	((Tcc *)hw)->STATUS.reg = TCC_STATUS_IDX;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -10000,6 +9553,7 @@ static inline void hri_tcc_clear_STATUS_UFS_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
 	((Tcc *)hw)->STATUS.reg = TCC_STATUS_UFS;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -10012,6 +9566,7 @@ static inline void hri_tcc_clear_STATUS_DFS_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
 	((Tcc *)hw)->STATUS.reg = TCC_STATUS_DFS;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -10024,6 +9579,7 @@ static inline void hri_tcc_clear_STATUS_SLAVE_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
 	((Tcc *)hw)->STATUS.reg = TCC_STATUS_SLAVE;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -10036,6 +9592,7 @@ static inline void hri_tcc_clear_STATUS_PATTBUFV_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
 	((Tcc *)hw)->STATUS.reg = TCC_STATUS_PATTBUFV;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -10048,6 +9605,7 @@ static inline void hri_tcc_clear_STATUS_PERBUFV_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
 	((Tcc *)hw)->STATUS.reg = TCC_STATUS_PERBUFV;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -10060,6 +9618,7 @@ static inline void hri_tcc_clear_STATUS_FAULTAIN_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
 	((Tcc *)hw)->STATUS.reg = TCC_STATUS_FAULTAIN;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -10072,6 +9631,7 @@ static inline void hri_tcc_clear_STATUS_FAULTBIN_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
 	((Tcc *)hw)->STATUS.reg = TCC_STATUS_FAULTBIN;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -10084,6 +9644,7 @@ static inline void hri_tcc_clear_STATUS_FAULT0IN_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
 	((Tcc *)hw)->STATUS.reg = TCC_STATUS_FAULT0IN;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -10096,6 +9657,7 @@ static inline void hri_tcc_clear_STATUS_FAULT1IN_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
 	((Tcc *)hw)->STATUS.reg = TCC_STATUS_FAULT1IN;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -10108,6 +9670,7 @@ static inline void hri_tcc_clear_STATUS_FAULTA_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
 	((Tcc *)hw)->STATUS.reg = TCC_STATUS_FAULTA;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -10120,6 +9683,7 @@ static inline void hri_tcc_clear_STATUS_FAULTB_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
 	((Tcc *)hw)->STATUS.reg = TCC_STATUS_FAULTB;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -10132,6 +9696,7 @@ static inline void hri_tcc_clear_STATUS_FAULT0_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
 	((Tcc *)hw)->STATUS.reg = TCC_STATUS_FAULT0;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -10144,6 +9709,7 @@ static inline void hri_tcc_clear_STATUS_FAULT1_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
 	((Tcc *)hw)->STATUS.reg = TCC_STATUS_FAULT1;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -10156,6 +9722,7 @@ static inline void hri_tcc_clear_STATUS_CCBUFV0_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
 	((Tcc *)hw)->STATUS.reg = TCC_STATUS_CCBUFV0;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -10168,6 +9735,7 @@ static inline void hri_tcc_clear_STATUS_CCBUFV1_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
 	((Tcc *)hw)->STATUS.reg = TCC_STATUS_CCBUFV1;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -10180,6 +9748,7 @@ static inline void hri_tcc_clear_STATUS_CCBUFV2_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
 	((Tcc *)hw)->STATUS.reg = TCC_STATUS_CCBUFV2;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -10192,6 +9761,7 @@ static inline void hri_tcc_clear_STATUS_CCBUFV3_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
 	((Tcc *)hw)->STATUS.reg = TCC_STATUS_CCBUFV3;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -10204,6 +9774,7 @@ static inline void hri_tcc_clear_STATUS_CCBUFV4_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
 	((Tcc *)hw)->STATUS.reg = TCC_STATUS_CCBUFV4;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -10216,6 +9787,7 @@ static inline void hri_tcc_clear_STATUS_CCBUFV5_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
 	((Tcc *)hw)->STATUS.reg = TCC_STATUS_CCBUFV5;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -10228,6 +9800,7 @@ static inline void hri_tcc_clear_STATUS_CMP0_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
 	((Tcc *)hw)->STATUS.reg = TCC_STATUS_CMP0;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -10240,6 +9813,7 @@ static inline void hri_tcc_clear_STATUS_CMP1_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
 	((Tcc *)hw)->STATUS.reg = TCC_STATUS_CMP1;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -10252,6 +9826,7 @@ static inline void hri_tcc_clear_STATUS_CMP2_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
 	((Tcc *)hw)->STATUS.reg = TCC_STATUS_CMP2;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -10264,6 +9839,7 @@ static inline void hri_tcc_clear_STATUS_CMP3_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
 	((Tcc *)hw)->STATUS.reg = TCC_STATUS_CMP3;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -10276,6 +9852,7 @@ static inline void hri_tcc_clear_STATUS_CMP4_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
 	((Tcc *)hw)->STATUS.reg = TCC_STATUS_CMP4;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
@@ -10288,12 +9865,14 @@ static inline void hri_tcc_clear_STATUS_CMP5_bit(const void *const hw)
 {
 	TCC_CRITICAL_SECTION_ENTER();
 	((Tcc *)hw)->STATUS.reg = TCC_STATUS_CMP5;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline hri_tcc_status_reg_t hri_tcc_get_STATUS_reg(const void *const hw, hri_tcc_status_reg_t mask)
 {
 	uint32_t tmp;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	tmp = ((Tcc *)hw)->STATUS.reg;
 	tmp &= mask;
 	return tmp;
@@ -10303,13 +9882,107 @@ static inline void hri_tcc_clear_STATUS_reg(const void *const hw, hri_tcc_status
 {
 	TCC_CRITICAL_SECTION_ENTER();
 	((Tcc *)hw)->STATUS.reg = mask;
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	TCC_CRITICAL_SECTION_LEAVE();
 }
 
 static inline hri_tcc_status_reg_t hri_tcc_read_STATUS_reg(const void *const hw)
 {
+	hri_tcc_wait_for_sync(hw, TCC_SYNCBUSY_MASK);
 	return ((Tcc *)hw)->STATUS.reg;
 }
+
+/* Below section is for legacy hri apis name, not recommended to use below left side apis in application */
+#define hri_tcc_set_COUNT_DITH4_reg(a, b) hri_tcc_set_COUNT_reg(a, b)
+#define hri_tcc_get_COUNT_DITH4_reg(a, b) hri_tcc_get_COUNT_reg(a, b)
+#define hri_tcc_write_COUNT_DITH4_reg(a, b) hri_tcc_write_COUNT_reg(a, b)
+#define hri_tcc_clear_COUNT_DITH4_reg(a, b) hri_tcc_clear_COUNT_reg(a, b)
+#define hri_tcc_toggle_COUNT_DITH4_reg(a, b) hri_tcc_toggle_COUNT_reg(a, b)
+#define hri_tcc_read_COUNT_DITH4_reg(a) hri_tcc_read_COUNT_reg(a)
+#define hri_tcc_set_COUNT_DITH5_reg(a, b) hri_tcc_set_COUNT_reg(a, b)
+#define hri_tcc_get_COUNT_DITH5_reg(a, b) hri_tcc_get_COUNT_reg(a, b)
+#define hri_tcc_write_COUNT_DITH5_reg(a, b) hri_tcc_write_COUNT_reg(a, b)
+#define hri_tcc_clear_COUNT_DITH5_reg(a, b) hri_tcc_clear_COUNT_reg(a, b)
+#define hri_tcc_toggle_COUNT_DITH5_reg(a, b) hri_tcc_toggle_COUNT_reg(a, b)
+#define hri_tcc_read_COUNT_DITH5_reg(a) hri_tcc_read_COUNT_reg(a)
+#define hri_tcc_set_COUNT_DITH6_reg(a, b) hri_tcc_set_COUNT_reg(a, b)
+#define hri_tcc_get_COUNT_DITH6_reg(a, b) hri_tcc_get_COUNT_reg(a, b)
+#define hri_tcc_write_COUNT_DITH6_reg(a, b) hri_tcc_write_COUNT_reg(a, b)
+#define hri_tcc_clear_COUNT_DITH6_reg(a, b) hri_tcc_clear_COUNT_reg(a, b)
+#define hri_tcc_toggle_COUNT_DITH6_reg(a, b) hri_tcc_toggle_COUNT_reg(a, b)
+#define hri_tcc_read_COUNT_DITH6_reg(a) hri_tcc_read_COUNT_reg(a)
+#define hri_tcc_set_PER_DITH4_reg(a, b) hri_tcc_set_PER_reg(a, b)
+#define hri_tcc_get_PER_DITH4_reg(a, b) hri_tcc_get_PER_reg(a, b)
+#define hri_tcc_write_PER_DITH4_reg(a, b) hri_tcc_write_PER_reg(a, b)
+#define hri_tcc_clear_PER_DITH4_reg(a, b) hri_tcc_clear_PER_reg(a, b)
+#define hri_tcc_toggle_PER_DITH4_reg(a, b) hri_tcc_toggle_PER_reg(a, b)
+#define hri_tcc_read_PER_DITH4_reg(a) hri_tcc_read_PER_reg(a)
+#define hri_tcc_set_PER_DITH5_reg(a, b) hri_tcc_set_PER_reg(a, b)
+#define hri_tcc_get_PER_DITH5_reg(a, b) hri_tcc_get_PER_reg(a, b)
+#define hri_tcc_write_PER_DITH5_reg(a, b) hri_tcc_write_PER_reg(a, b)
+#define hri_tcc_clear_PER_DITH5_reg(a, b) hri_tcc_clear_PER_reg(a, b)
+#define hri_tcc_toggle_PER_DITH5_reg(a, b) hri_tcc_toggle_PER_reg(a, b)
+#define hri_tcc_read_PER_DITH5_reg(a) hri_tcc_read_PER_reg(a)
+#define hri_tcc_set_PER_DITH6_reg(a, b) hri_tcc_set_PER_reg(a, b)
+#define hri_tcc_get_PER_DITH6_reg(a, b) hri_tcc_get_PER_reg(a, b)
+#define hri_tcc_write_PER_DITH6_reg(a, b) hri_tcc_write_PER_reg(a, b)
+#define hri_tcc_clear_PER_DITH6_reg(a, b) hri_tcc_clear_PER_reg(a, b)
+#define hri_tcc_toggle_PER_DITH6_reg(a, b) hri_tcc_toggle_PER_reg(a, b)
+#define hri_tcc_read_PER_DITH6_reg(a) hri_tcc_read_PER_reg(a)
+#define hri_tcc_set_CC_DITH4_reg(a, b, c) hri_tcc_set_CC_reg(a, b, c)
+#define hri_tcc_get_CC_DITH4_reg(a, b, c) hri_tcc_get_CC_reg(a, b, c)
+#define hri_tcc_write_CC_DITH4_reg(a, b, c) hri_tcc_write_CC_reg(a, b, c)
+#define hri_tcc_clear_CC_DITH4_reg(a, b, c) hri_tcc_clear_CC_reg(a, b, c)
+#define hri_tcc_toggle_CC_DITH4_reg(a, b, c) hri_tcc_toggle_CC_reg(a, b, c)
+#define hri_tcc_read_CC_DITH4_reg(a, b) hri_tcc_read_CC_reg(a, b)
+#define hri_tcc_set_CC_DITH5_reg(a, b, c) hri_tcc_set_CC_reg(a, b, c)
+#define hri_tcc_get_CC_DITH5_reg(a, b, c) hri_tcc_get_CC_reg(a, b, c)
+#define hri_tcc_write_CC_DITH5_reg(a, b, c) hri_tcc_write_CC_reg(a, b, c)
+#define hri_tcc_clear_CC_DITH5_reg(a, b, c) hri_tcc_clear_CC_reg(a, b, c)
+#define hri_tcc_toggle_CC_DITH5_reg(a, b, c) hri_tcc_toggle_CC_reg(a, b, c)
+#define hri_tcc_read_CC_DITH5_reg(a, b) hri_tcc_read_CC_reg(a, b)
+#define hri_tcc_set_CC_DITH6_reg(a, b, c) hri_tcc_set_CC_reg(a, b, c)
+#define hri_tcc_get_CC_DITH6_reg(a, b, c) hri_tcc_get_CC_reg(a, b, c)
+#define hri_tcc_write_CC_DITH6_reg(a, b, c) hri_tcc_write_CC_reg(a, b, c)
+#define hri_tcc_clear_CC_DITH6_reg(a, b, c) hri_tcc_clear_CC_reg(a, b, c)
+#define hri_tcc_toggle_CC_DITH6_reg(a, b, c) hri_tcc_toggle_CC_reg(a, b, c)
+#define hri_tcc_read_CC_DITH6_reg(a, b) hri_tcc_read_CC_reg(a, b)
+#define hri_tcc_set_PERBUF_DITH4_reg(a, b) hri_tcc_set_PERBUF_reg(a, b)
+#define hri_tcc_get_PERBUF_DITH4_reg(a, b) hri_tcc_get_PERBUF_reg(a, b)
+#define hri_tcc_write_PERBUF_DITH4_reg(a, b) hri_tcc_write_PERBUF_reg(a, b)
+#define hri_tcc_clear_PERBUF_DITH4_reg(a, b) hri_tcc_clear_PERBUF_reg(a, b)
+#define hri_tcc_toggle_PERBUF_DITH4_reg(a, b) hri_tcc_toggle_PERBUF_reg(a, b)
+#define hri_tcc_read_PERBUF_DITH4_reg(a) hri_tcc_read_PERBUF_reg(a)
+#define hri_tcc_set_PERBUF_DITH5_reg(a, b) hri_tcc_set_PERBUF_reg(a, b)
+#define hri_tcc_get_PERBUF_DITH5_reg(a, b) hri_tcc_get_PERBUF_reg(a, b)
+#define hri_tcc_write_PERBUF_DITH5_reg(a, b) hri_tcc_write_PERBUF_reg(a, b)
+#define hri_tcc_clear_PERBUF_DITH5_reg(a, b) hri_tcc_clear_PERBUF_reg(a, b)
+#define hri_tcc_toggle_PERBUF_DITH5_reg(a, b) hri_tcc_toggle_PERBUF_reg(a, b)
+#define hri_tcc_read_PERBUF_DITH5_reg(a) hri_tcc_read_PERBUF_reg(a)
+#define hri_tcc_set_PERBUF_DITH6_reg(a, b) hri_tcc_set_PERBUF_reg(a, b)
+#define hri_tcc_get_PERBUF_DITH6_reg(a, b) hri_tcc_get_PERBUF_reg(a, b)
+#define hri_tcc_write_PERBUF_DITH6_reg(a, b) hri_tcc_write_PERBUF_reg(a, b)
+#define hri_tcc_clear_PERBUF_DITH6_reg(a, b) hri_tcc_clear_PERBUF_reg(a, b)
+#define hri_tcc_toggle_PERBUF_DITH6_reg(a, b) hri_tcc_toggle_PERBUF_reg(a, b)
+#define hri_tcc_read_PERBUF_DITH6_reg(a) hri_tcc_read_PERBUF_reg(a)
+#define hri_tcc_set_CCBUF_DITH4_reg(a, b, c) hri_tcc_set_CCBUF_reg(a, b, c)
+#define hri_tcc_get_CCBUF_DITH4_reg(a, b, c) hri_tcc_get_CCBUF_reg(a, b, c)
+#define hri_tcc_write_CCBUF_DITH4_reg(a, b, c) hri_tcc_write_CCBUF_reg(a, b, c)
+#define hri_tcc_clear_CCBUF_DITH4_reg(a, b, c) hri_tcc_clear_CCBUF_reg(a, b, c)
+#define hri_tcc_toggle_CCBUF_DITH4_reg(a, b, c) hri_tcc_toggle_CCBUF_reg(a, b, c)
+#define hri_tcc_read_CCBUF_DITH4_reg(a, b) hri_tcc_read_CCBUF_reg(a, b)
+#define hri_tcc_set_CCBUF_DITH5_reg(a, b, c) hri_tcc_set_CCBUF_reg(a, b, c)
+#define hri_tcc_get_CCBUF_DITH5_reg(a, b, c) hri_tcc_get_CCBUF_reg(a, b, c)
+#define hri_tcc_write_CCBUF_DITH5_reg(a, b, c) hri_tcc_write_CCBUF_reg(a, b, c)
+#define hri_tcc_clear_CCBUF_DITH5_reg(a, b, c) hri_tcc_clear_CCBUF_reg(a, b, c)
+#define hri_tcc_toggle_CCBUF_DITH5_reg(a, b, c) hri_tcc_toggle_CCBUF_reg(a, b, c)
+#define hri_tcc_read_CCBUF_DITH5_reg(a, b) hri_tcc_read_CCBUF_reg(a, b)
+#define hri_tcc_set_CCBUF_DITH6_reg(a, b, c) hri_tcc_set_CCBUF_reg(a, b, c)
+#define hri_tcc_get_CCBUF_DITH6_reg(a, b, c) hri_tcc_get_CCBUF_reg(a, b, c)
+#define hri_tcc_write_CCBUF_DITH6_reg(a, b, c) hri_tcc_write_CCBUF_reg(a, b, c)
+#define hri_tcc_clear_CCBUF_DITH6_reg(a, b, c) hri_tcc_clear_CCBUF_reg(a, b, c)
+#define hri_tcc_toggle_CCBUF_DITH6_reg(a, b, c) hri_tcc_toggle_CCBUF_reg(a, b, c)
+#define hri_tcc_read_CCBUF_DITH6_reg(a, b) hri_tcc_read_CCBUF_reg(a, b)
 
 #ifdef __cplusplus
 }

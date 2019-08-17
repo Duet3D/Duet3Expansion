@@ -28,6 +28,7 @@
  * THAT YOU HAVE PAID DIRECTLY TO MICROCHIP FOR THIS SOFTWARE.
  *
  * \asf_license_stop
+ *
  */
 
 #ifdef _SAME51_WDT_COMPONENT_
@@ -66,6 +67,44 @@ static inline void hri_wdt_wait_for_sync(const void *const hw, hri_wdt_syncbusy_
 static inline bool hri_wdt_is_syncing(const void *const hw, hri_wdt_syncbusy_reg_t reg)
 {
 	return ((Wdt *)hw)->SYNCBUSY.reg & reg;
+}
+
+static inline bool hri_wdt_get_INTFLAG_EW_bit(const void *const hw)
+{
+	return (((Wdt *)hw)->INTFLAG.reg & WDT_INTFLAG_EW) >> WDT_INTFLAG_EW_Pos;
+}
+
+static inline void hri_wdt_clear_INTFLAG_EW_bit(const void *const hw)
+{
+	((Wdt *)hw)->INTFLAG.reg = WDT_INTFLAG_EW;
+}
+
+static inline bool hri_wdt_get_interrupt_EW_bit(const void *const hw)
+{
+	return (((Wdt *)hw)->INTFLAG.reg & WDT_INTFLAG_EW) >> WDT_INTFLAG_EW_Pos;
+}
+
+static inline void hri_wdt_clear_interrupt_EW_bit(const void *const hw)
+{
+	((Wdt *)hw)->INTFLAG.reg = WDT_INTFLAG_EW;
+}
+
+static inline hri_wdt_intflag_reg_t hri_wdt_get_INTFLAG_reg(const void *const hw, hri_wdt_intflag_reg_t mask)
+{
+	uint8_t tmp;
+	tmp = ((Wdt *)hw)->INTFLAG.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline hri_wdt_intflag_reg_t hri_wdt_read_INTFLAG_reg(const void *const hw)
+{
+	return ((Wdt *)hw)->INTFLAG.reg;
+}
+
+static inline void hri_wdt_clear_INTFLAG_reg(const void *const hw, hri_wdt_intflag_reg_t mask)
+{
+	((Wdt *)hw)->INTFLAG.reg = mask;
 }
 
 static inline void hri_wdt_set_INTEN_EW_bit(const void *const hw)
@@ -121,56 +160,44 @@ static inline void hri_wdt_clear_INTEN_reg(const void *const hw, hri_wdt_intense
 	((Wdt *)hw)->INTENCLR.reg = mask;
 }
 
-static inline bool hri_wdt_get_INTFLAG_EW_bit(const void *const hw)
+static inline bool hri_wdt_get_SYNCBUSY_ENABLE_bit(const void *const hw)
 {
-	return (((Wdt *)hw)->INTFLAG.reg & WDT_INTFLAG_EW) >> WDT_INTFLAG_EW_Pos;
+	return (((Wdt *)hw)->SYNCBUSY.reg & WDT_SYNCBUSY_ENABLE) >> WDT_SYNCBUSY_ENABLE_Pos;
 }
 
-static inline void hri_wdt_clear_INTFLAG_EW_bit(const void *const hw)
+static inline bool hri_wdt_get_SYNCBUSY_WEN_bit(const void *const hw)
 {
-	((Wdt *)hw)->INTFLAG.reg = WDT_INTFLAG_EW;
+	return (((Wdt *)hw)->SYNCBUSY.reg & WDT_SYNCBUSY_WEN) >> WDT_SYNCBUSY_WEN_Pos;
 }
 
-static inline bool hri_wdt_get_interrupt_EW_bit(const void *const hw)
+static inline bool hri_wdt_get_SYNCBUSY_ALWAYSON_bit(const void *const hw)
 {
-	return (((Wdt *)hw)->INTFLAG.reg & WDT_INTFLAG_EW) >> WDT_INTFLAG_EW_Pos;
+	return (((Wdt *)hw)->SYNCBUSY.reg & WDT_SYNCBUSY_ALWAYSON) >> WDT_SYNCBUSY_ALWAYSON_Pos;
 }
 
-static inline void hri_wdt_clear_interrupt_EW_bit(const void *const hw)
+static inline bool hri_wdt_get_SYNCBUSY_CLEAR_bit(const void *const hw)
 {
-	((Wdt *)hw)->INTFLAG.reg = WDT_INTFLAG_EW;
+	return (((Wdt *)hw)->SYNCBUSY.reg & WDT_SYNCBUSY_CLEAR) >> WDT_SYNCBUSY_CLEAR_Pos;
 }
 
-static inline hri_wdt_intflag_reg_t hri_wdt_get_INTFLAG_reg(const void *const hw, hri_wdt_intflag_reg_t mask)
+static inline hri_wdt_syncbusy_reg_t hri_wdt_get_SYNCBUSY_reg(const void *const hw, hri_wdt_syncbusy_reg_t mask)
 {
-	uint8_t tmp;
-	tmp = ((Wdt *)hw)->INTFLAG.reg;
+	uint32_t tmp;
+	tmp = ((Wdt *)hw)->SYNCBUSY.reg;
 	tmp &= mask;
 	return tmp;
 }
 
-static inline hri_wdt_intflag_reg_t hri_wdt_read_INTFLAG_reg(const void *const hw)
+static inline hri_wdt_syncbusy_reg_t hri_wdt_read_SYNCBUSY_reg(const void *const hw)
 {
-	return ((Wdt *)hw)->INTFLAG.reg;
-}
-
-static inline void hri_wdt_clear_INTFLAG_reg(const void *const hw, hri_wdt_intflag_reg_t mask)
-{
-	((Wdt *)hw)->INTFLAG.reg = mask;
-}
-
-static inline void hri_wdt_write_CLEAR_reg(const void *const hw, hri_wdt_clear_reg_t data)
-{
-	WDT_CRITICAL_SECTION_ENTER();
-	((Wdt *)hw)->CLEAR.reg = data;
-	WDT_CRITICAL_SECTION_LEAVE();
+	return ((Wdt *)hw)->SYNCBUSY.reg;
 }
 
 static inline void hri_wdt_set_CTRLA_ENABLE_bit(const void *const hw)
 {
 	WDT_CRITICAL_SECTION_ENTER();
-	hri_wdt_wait_for_sync(hw, WDT_SYNCBUSY_ENABLE | WDT_SYNCBUSY_WEN | WDT_SYNCBUSY_ALWAYSON);
 	((Wdt *)hw)->CTRLA.reg |= WDT_CTRLA_ENABLE;
+	hri_wdt_wait_for_sync(hw, WDT_SYNCBUSY_ENABLE | WDT_SYNCBUSY_WEN | WDT_SYNCBUSY_ALWAYSON);
 	WDT_CRITICAL_SECTION_LEAVE();
 }
 
@@ -187,35 +214,35 @@ static inline void hri_wdt_write_CTRLA_ENABLE_bit(const void *const hw, bool val
 {
 	uint8_t tmp;
 	WDT_CRITICAL_SECTION_ENTER();
-	hri_wdt_wait_for_sync(hw, WDT_SYNCBUSY_ENABLE | WDT_SYNCBUSY_WEN | WDT_SYNCBUSY_ALWAYSON);
 	tmp = ((Wdt *)hw)->CTRLA.reg;
 	tmp &= ~WDT_CTRLA_ENABLE;
 	tmp |= value << WDT_CTRLA_ENABLE_Pos;
 	((Wdt *)hw)->CTRLA.reg = tmp;
+	hri_wdt_wait_for_sync(hw, WDT_SYNCBUSY_ENABLE | WDT_SYNCBUSY_WEN | WDT_SYNCBUSY_ALWAYSON);
 	WDT_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_wdt_clear_CTRLA_ENABLE_bit(const void *const hw)
 {
 	WDT_CRITICAL_SECTION_ENTER();
-	hri_wdt_wait_for_sync(hw, WDT_SYNCBUSY_ENABLE | WDT_SYNCBUSY_WEN | WDT_SYNCBUSY_ALWAYSON);
 	((Wdt *)hw)->CTRLA.reg &= ~WDT_CTRLA_ENABLE;
+	hri_wdt_wait_for_sync(hw, WDT_SYNCBUSY_ENABLE | WDT_SYNCBUSY_WEN | WDT_SYNCBUSY_ALWAYSON);
 	WDT_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_wdt_toggle_CTRLA_ENABLE_bit(const void *const hw)
 {
 	WDT_CRITICAL_SECTION_ENTER();
-	hri_wdt_wait_for_sync(hw, WDT_SYNCBUSY_ENABLE | WDT_SYNCBUSY_WEN | WDT_SYNCBUSY_ALWAYSON);
 	((Wdt *)hw)->CTRLA.reg ^= WDT_CTRLA_ENABLE;
+	hri_wdt_wait_for_sync(hw, WDT_SYNCBUSY_ENABLE | WDT_SYNCBUSY_WEN | WDT_SYNCBUSY_ALWAYSON);
 	WDT_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_wdt_set_CTRLA_WEN_bit(const void *const hw)
 {
 	WDT_CRITICAL_SECTION_ENTER();
-	hri_wdt_wait_for_sync(hw, WDT_SYNCBUSY_ENABLE | WDT_SYNCBUSY_WEN | WDT_SYNCBUSY_ALWAYSON);
 	((Wdt *)hw)->CTRLA.reg |= WDT_CTRLA_WEN;
+	hri_wdt_wait_for_sync(hw, WDT_SYNCBUSY_ENABLE | WDT_SYNCBUSY_WEN | WDT_SYNCBUSY_ALWAYSON);
 	WDT_CRITICAL_SECTION_LEAVE();
 }
 
@@ -232,35 +259,35 @@ static inline void hri_wdt_write_CTRLA_WEN_bit(const void *const hw, bool value)
 {
 	uint8_t tmp;
 	WDT_CRITICAL_SECTION_ENTER();
-	hri_wdt_wait_for_sync(hw, WDT_SYNCBUSY_ENABLE | WDT_SYNCBUSY_WEN | WDT_SYNCBUSY_ALWAYSON);
 	tmp = ((Wdt *)hw)->CTRLA.reg;
 	tmp &= ~WDT_CTRLA_WEN;
 	tmp |= value << WDT_CTRLA_WEN_Pos;
 	((Wdt *)hw)->CTRLA.reg = tmp;
+	hri_wdt_wait_for_sync(hw, WDT_SYNCBUSY_ENABLE | WDT_SYNCBUSY_WEN | WDT_SYNCBUSY_ALWAYSON);
 	WDT_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_wdt_clear_CTRLA_WEN_bit(const void *const hw)
 {
 	WDT_CRITICAL_SECTION_ENTER();
-	hri_wdt_wait_for_sync(hw, WDT_SYNCBUSY_ENABLE | WDT_SYNCBUSY_WEN | WDT_SYNCBUSY_ALWAYSON);
 	((Wdt *)hw)->CTRLA.reg &= ~WDT_CTRLA_WEN;
+	hri_wdt_wait_for_sync(hw, WDT_SYNCBUSY_ENABLE | WDT_SYNCBUSY_WEN | WDT_SYNCBUSY_ALWAYSON);
 	WDT_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_wdt_toggle_CTRLA_WEN_bit(const void *const hw)
 {
 	WDT_CRITICAL_SECTION_ENTER();
-	hri_wdt_wait_for_sync(hw, WDT_SYNCBUSY_ENABLE | WDT_SYNCBUSY_WEN | WDT_SYNCBUSY_ALWAYSON);
 	((Wdt *)hw)->CTRLA.reg ^= WDT_CTRLA_WEN;
+	hri_wdt_wait_for_sync(hw, WDT_SYNCBUSY_ENABLE | WDT_SYNCBUSY_WEN | WDT_SYNCBUSY_ALWAYSON);
 	WDT_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_wdt_set_CTRLA_ALWAYSON_bit(const void *const hw)
 {
 	WDT_CRITICAL_SECTION_ENTER();
-	hri_wdt_wait_for_sync(hw, WDT_SYNCBUSY_ENABLE | WDT_SYNCBUSY_WEN | WDT_SYNCBUSY_ALWAYSON);
 	((Wdt *)hw)->CTRLA.reg |= WDT_CTRLA_ALWAYSON;
+	hri_wdt_wait_for_sync(hw, WDT_SYNCBUSY_ENABLE | WDT_SYNCBUSY_WEN | WDT_SYNCBUSY_ALWAYSON);
 	WDT_CRITICAL_SECTION_LEAVE();
 }
 
@@ -277,27 +304,27 @@ static inline void hri_wdt_write_CTRLA_ALWAYSON_bit(const void *const hw, bool v
 {
 	uint8_t tmp;
 	WDT_CRITICAL_SECTION_ENTER();
-	hri_wdt_wait_for_sync(hw, WDT_SYNCBUSY_ENABLE | WDT_SYNCBUSY_WEN | WDT_SYNCBUSY_ALWAYSON);
 	tmp = ((Wdt *)hw)->CTRLA.reg;
 	tmp &= ~WDT_CTRLA_ALWAYSON;
 	tmp |= value << WDT_CTRLA_ALWAYSON_Pos;
 	((Wdt *)hw)->CTRLA.reg = tmp;
+	hri_wdt_wait_for_sync(hw, WDT_SYNCBUSY_ENABLE | WDT_SYNCBUSY_WEN | WDT_SYNCBUSY_ALWAYSON);
 	WDT_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_wdt_clear_CTRLA_ALWAYSON_bit(const void *const hw)
 {
 	WDT_CRITICAL_SECTION_ENTER();
-	hri_wdt_wait_for_sync(hw, WDT_SYNCBUSY_ENABLE | WDT_SYNCBUSY_WEN | WDT_SYNCBUSY_ALWAYSON);
 	((Wdt *)hw)->CTRLA.reg &= ~WDT_CTRLA_ALWAYSON;
+	hri_wdt_wait_for_sync(hw, WDT_SYNCBUSY_ENABLE | WDT_SYNCBUSY_WEN | WDT_SYNCBUSY_ALWAYSON);
 	WDT_CRITICAL_SECTION_LEAVE();
 }
 
 static inline void hri_wdt_toggle_CTRLA_ALWAYSON_bit(const void *const hw)
 {
 	WDT_CRITICAL_SECTION_ENTER();
-	hri_wdt_wait_for_sync(hw, WDT_SYNCBUSY_ENABLE | WDT_SYNCBUSY_WEN | WDT_SYNCBUSY_ALWAYSON);
 	((Wdt *)hw)->CTRLA.reg ^= WDT_CTRLA_ALWAYSON;
+	hri_wdt_wait_for_sync(hw, WDT_SYNCBUSY_ENABLE | WDT_SYNCBUSY_WEN | WDT_SYNCBUSY_ALWAYSON);
 	WDT_CRITICAL_SECTION_LEAVE();
 }
 
@@ -305,12 +332,14 @@ static inline void hri_wdt_set_CTRLA_reg(const void *const hw, hri_wdt_ctrla_reg
 {
 	WDT_CRITICAL_SECTION_ENTER();
 	((Wdt *)hw)->CTRLA.reg |= mask;
+	hri_wdt_wait_for_sync(hw, WDT_SYNCBUSY_ENABLE | WDT_SYNCBUSY_WEN | WDT_SYNCBUSY_ALWAYSON);
 	WDT_CRITICAL_SECTION_LEAVE();
 }
 
 static inline hri_wdt_ctrla_reg_t hri_wdt_get_CTRLA_reg(const void *const hw, hri_wdt_ctrla_reg_t mask)
 {
 	uint8_t tmp;
+	hri_wdt_wait_for_sync(hw, WDT_SYNCBUSY_ENABLE | WDT_SYNCBUSY_WEN | WDT_SYNCBUSY_ALWAYSON);
 	tmp = ((Wdt *)hw)->CTRLA.reg;
 	tmp &= mask;
 	return tmp;
@@ -320,6 +349,7 @@ static inline void hri_wdt_write_CTRLA_reg(const void *const hw, hri_wdt_ctrla_r
 {
 	WDT_CRITICAL_SECTION_ENTER();
 	((Wdt *)hw)->CTRLA.reg = data;
+	hri_wdt_wait_for_sync(hw, WDT_SYNCBUSY_ENABLE | WDT_SYNCBUSY_WEN | WDT_SYNCBUSY_ALWAYSON);
 	WDT_CRITICAL_SECTION_LEAVE();
 }
 
@@ -327,6 +357,7 @@ static inline void hri_wdt_clear_CTRLA_reg(const void *const hw, hri_wdt_ctrla_r
 {
 	WDT_CRITICAL_SECTION_ENTER();
 	((Wdt *)hw)->CTRLA.reg &= ~mask;
+	hri_wdt_wait_for_sync(hw, WDT_SYNCBUSY_ENABLE | WDT_SYNCBUSY_WEN | WDT_SYNCBUSY_ALWAYSON);
 	WDT_CRITICAL_SECTION_LEAVE();
 }
 
@@ -334,11 +365,13 @@ static inline void hri_wdt_toggle_CTRLA_reg(const void *const hw, hri_wdt_ctrla_
 {
 	WDT_CRITICAL_SECTION_ENTER();
 	((Wdt *)hw)->CTRLA.reg ^= mask;
+	hri_wdt_wait_for_sync(hw, WDT_SYNCBUSY_ENABLE | WDT_SYNCBUSY_WEN | WDT_SYNCBUSY_ALWAYSON);
 	WDT_CRITICAL_SECTION_LEAVE();
 }
 
 static inline hri_wdt_ctrla_reg_t hri_wdt_read_CTRLA_reg(const void *const hw)
 {
+	hri_wdt_wait_for_sync(hw, WDT_SYNCBUSY_ENABLE | WDT_SYNCBUSY_WEN | WDT_SYNCBUSY_ALWAYSON);
 	return ((Wdt *)hw)->CTRLA.reg;
 }
 
@@ -568,37 +601,12 @@ static inline hri_wdt_ewctrl_reg_t hri_wdt_read_EWCTRL_reg(const void *const hw)
 	return ((Wdt *)hw)->EWCTRL.reg;
 }
 
-static inline bool hri_wdt_get_SYNCBUSY_ENABLE_bit(const void *const hw)
+static inline void hri_wdt_write_CLEAR_reg(const void *const hw, hri_wdt_clear_reg_t data)
 {
-	return (((Wdt *)hw)->SYNCBUSY.reg & WDT_SYNCBUSY_ENABLE) >> WDT_SYNCBUSY_ENABLE_Pos;
-}
-
-static inline bool hri_wdt_get_SYNCBUSY_WEN_bit(const void *const hw)
-{
-	return (((Wdt *)hw)->SYNCBUSY.reg & WDT_SYNCBUSY_WEN) >> WDT_SYNCBUSY_WEN_Pos;
-}
-
-static inline bool hri_wdt_get_SYNCBUSY_ALWAYSON_bit(const void *const hw)
-{
-	return (((Wdt *)hw)->SYNCBUSY.reg & WDT_SYNCBUSY_ALWAYSON) >> WDT_SYNCBUSY_ALWAYSON_Pos;
-}
-
-static inline bool hri_wdt_get_SYNCBUSY_CLEAR_bit(const void *const hw)
-{
-	return (((Wdt *)hw)->SYNCBUSY.reg & WDT_SYNCBUSY_CLEAR) >> WDT_SYNCBUSY_CLEAR_Pos;
-}
-
-static inline hri_wdt_syncbusy_reg_t hri_wdt_get_SYNCBUSY_reg(const void *const hw, hri_wdt_syncbusy_reg_t mask)
-{
-	uint32_t tmp;
-	tmp = ((Wdt *)hw)->SYNCBUSY.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline hri_wdt_syncbusy_reg_t hri_wdt_read_SYNCBUSY_reg(const void *const hw)
-{
-	return ((Wdt *)hw)->SYNCBUSY.reg;
+	WDT_CRITICAL_SECTION_ENTER();
+	((Wdt *)hw)->CLEAR.reg = data;
+	hri_wdt_wait_for_sync(hw, WDT_SYNCBUSY_CLEAR);
+	WDT_CRITICAL_SECTION_LEAVE();
 }
 
 #ifdef __cplusplus

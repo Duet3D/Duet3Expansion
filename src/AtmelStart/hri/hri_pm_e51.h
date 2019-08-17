@@ -28,6 +28,7 @@
  * THAT YOU HAVE PAID DIRECTLY TO MICROCHIP FOR THIS SOFTWARE.
  *
  * \asf_license_stop
+ *
  */
 
 #ifdef _SAME51_PM_COMPONENT_
@@ -57,6 +58,44 @@ typedef uint8_t hri_pm_intflag_reg_t;
 typedef uint8_t hri_pm_pwsakdly_reg_t;
 typedef uint8_t hri_pm_sleepcfg_reg_t;
 typedef uint8_t hri_pm_stdbycfg_reg_t;
+
+static inline bool hri_pm_get_INTFLAG_SLEEPRDY_bit(const void *const hw)
+{
+	return (((Pm *)hw)->INTFLAG.reg & PM_INTFLAG_SLEEPRDY) >> PM_INTFLAG_SLEEPRDY_Pos;
+}
+
+static inline void hri_pm_clear_INTFLAG_SLEEPRDY_bit(const void *const hw)
+{
+	((Pm *)hw)->INTFLAG.reg = PM_INTFLAG_SLEEPRDY;
+}
+
+static inline bool hri_pm_get_interrupt_SLEEPRDY_bit(const void *const hw)
+{
+	return (((Pm *)hw)->INTFLAG.reg & PM_INTFLAG_SLEEPRDY) >> PM_INTFLAG_SLEEPRDY_Pos;
+}
+
+static inline void hri_pm_clear_interrupt_SLEEPRDY_bit(const void *const hw)
+{
+	((Pm *)hw)->INTFLAG.reg = PM_INTFLAG_SLEEPRDY;
+}
+
+static inline hri_pm_intflag_reg_t hri_pm_get_INTFLAG_reg(const void *const hw, hri_pm_intflag_reg_t mask)
+{
+	uint8_t tmp;
+	tmp = ((Pm *)hw)->INTFLAG.reg;
+	tmp &= mask;
+	return tmp;
+}
+
+static inline hri_pm_intflag_reg_t hri_pm_read_INTFLAG_reg(const void *const hw)
+{
+	return ((Pm *)hw)->INTFLAG.reg;
+}
+
+static inline void hri_pm_clear_INTFLAG_reg(const void *const hw, hri_pm_intflag_reg_t mask)
+{
+	((Pm *)hw)->INTFLAG.reg = mask;
+}
 
 static inline void hri_pm_set_INTEN_SLEEPRDY_bit(const void *const hw)
 {
@@ -109,44 +148,6 @@ static inline void hri_pm_write_INTEN_reg(const void *const hw, hri_pm_intenset_
 static inline void hri_pm_clear_INTEN_reg(const void *const hw, hri_pm_intenset_reg_t mask)
 {
 	((Pm *)hw)->INTENCLR.reg = mask;
-}
-
-static inline bool hri_pm_get_INTFLAG_SLEEPRDY_bit(const void *const hw)
-{
-	return (((Pm *)hw)->INTFLAG.reg & PM_INTFLAG_SLEEPRDY) >> PM_INTFLAG_SLEEPRDY_Pos;
-}
-
-static inline void hri_pm_clear_INTFLAG_SLEEPRDY_bit(const void *const hw)
-{
-	((Pm *)hw)->INTFLAG.reg = PM_INTFLAG_SLEEPRDY;
-}
-
-static inline bool hri_pm_get_interrupt_SLEEPRDY_bit(const void *const hw)
-{
-	return (((Pm *)hw)->INTFLAG.reg & PM_INTFLAG_SLEEPRDY) >> PM_INTFLAG_SLEEPRDY_Pos;
-}
-
-static inline void hri_pm_clear_interrupt_SLEEPRDY_bit(const void *const hw)
-{
-	((Pm *)hw)->INTFLAG.reg = PM_INTFLAG_SLEEPRDY;
-}
-
-static inline hri_pm_intflag_reg_t hri_pm_get_INTFLAG_reg(const void *const hw, hri_pm_intflag_reg_t mask)
-{
-	uint8_t tmp;
-	tmp = ((Pm *)hw)->INTFLAG.reg;
-	tmp &= mask;
-	return tmp;
-}
-
-static inline hri_pm_intflag_reg_t hri_pm_read_INTFLAG_reg(const void *const hw)
-{
-	return ((Pm *)hw)->INTFLAG.reg;
-}
-
-static inline void hri_pm_clear_INTFLAG_reg(const void *const hw, hri_pm_intflag_reg_t mask)
-{
-	((Pm *)hw)->INTFLAG.reg = mask;
 }
 
 static inline void hri_pm_set_CTRLA_IORET_bit(const void *const hw)

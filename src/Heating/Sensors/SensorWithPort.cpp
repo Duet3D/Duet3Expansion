@@ -38,7 +38,7 @@ bool SensorWithPort::ConfigurePort(const CanMessageGenericParser& parser, const 
 // Copy the basic details to the reply buffer. This hides the version in the base class.
 void SensorWithPort::CopyBasicDetails(const StringRef& reply) const
 {
-	reply.printf("Sensor %u", GetSensorNumber());
+	reply.printf("Sensor %d", GetSensorNumber());
 	reply.catf(" type %s using pin ", GetSensorType());
 	port.AppendPinName(reply);
 	reply.catf(", last error: %s", TemperatureErrorString(GetLastError()));

@@ -310,6 +310,7 @@ void Platform::Init()
 
 	lastPollTime = millis();
 
+#if 0
 	//TEST set up some PWM values
 	static PwmPort out0, out1, out2, out3, out4, out5, out6, out7, out8;
 	String<100> reply;
@@ -350,6 +351,7 @@ void Platform::Init()
 
 	out8.SetFrequency(25000);
 	out8.WriteAnalog(0.9);
+#endif
 }
 
 void Platform::Spin()
@@ -544,11 +546,11 @@ void Platform::Spin()
 
 		static unsigned int nextSensor = 0;
 
-		TemperatureSensor *ts = Heat::GetSensorAtOrAbove(nextSensor);
+		TemperatureSensor * const ts = Heat::GetSensorAtOrAbove(nextSensor);
 		if (ts != nullptr)
 		{
 			float temp;
-			TemperatureError err = ts->GetTemperature(temp);
+			const TemperatureError err = ts->GetLatestTemperature(temp);
 			debugPrintf("Sensor %u err %u temp %.1f", ts->GetSensorNumber(), (unsigned int)err, (double)temp);
 			nextSensor = ts->GetSensorNumber() + 1;
 		}

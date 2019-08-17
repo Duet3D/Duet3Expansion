@@ -26,6 +26,9 @@ const size_t MaxExtraHeaterProtections = 6;
 
 constexpr size_t NumDrivers = 3;
 constexpr size_t MaxSmartDrivers = 3;
+constexpr float MaxTmc5160Current = 6300.0;			// The maximum current we allow the TMC5160/5161 drivers to be set to
+
+constexpr size_t MaxSensorsInSystem = 64;			// Must be the same as on Duet 3 main boards
 
 constexpr size_t MaxAxes = 3;			//TEMP we won't need this
 

@@ -46,9 +46,13 @@
 extern "C" {
 #endif
 
-/** Uses common SPI async device driver. */
+/** Uses common SPI sync device driver. */
 #define _spi_s_sync_dev _spi_sync_dev
 
+/**
+ * \name HPL functions
+ */
+//@{
 /**
  *  \brief Initialize SPI for access without interrupts
  *  It will load default hardware configuration and software struct.
@@ -218,6 +222,7 @@ bool _spi_s_sync_is_ss_deactivated(struct _spi_s_sync_dev *dev);
  * \retval false Error not detected
  */
 bool _spi_s_sync_is_error(struct _spi_s_sync_dev *dev);
+//@}
 
 #ifdef __cplusplus
 }
