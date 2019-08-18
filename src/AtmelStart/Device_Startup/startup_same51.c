@@ -104,8 +104,6 @@ void EVSYS_2_Handler         ( void ) __attribute__ ((weak, alias("Dummy_Handler
 void EVSYS_3_Handler         ( void ) __attribute__ ((weak, alias("Dummy_Handler"))); /* EVSYS_EVD_3, EVSYS_OVR_3 */
 void EVSYS_4_Handler         ( void ) __attribute__ ((weak, alias("Dummy_Handler"))); /* EVSYS_EVD_10, EVSYS_EVD_11, EVSYS_EVD_4, EVSYS_EVD_5, EVSYS_EVD_6, EVSYS_EVD_7, EVSYS_EVD_8, EVSYS_EVD_9, EVSYS_OVR_10, EVSYS_OVR_11, EVSYS_OVR_4, EVSYS_OVR_5, EVSYS_OVR_6, EVSYS_OVR_7, EVSYS_OVR_8, EVSYS_OVR_9 */
 void PAC_Handler             ( void ) __attribute__ ((weak, alias("Dummy_Handler")));
-void TAL_0_Handler           ( void ) __attribute__ ((weak, alias("Dummy_Handler"))); /* TAL_BRK */
-void TAL_1_Handler           ( void ) __attribute__ ((weak, alias("Dummy_Handler"))); /* TAL_IPS_0, TAL_IPS_1 */
 void RAMECC_Handler          ( void ) __attribute__ ((weak, alias("Dummy_Handler")));
 void SERCOM0_0_Handler       ( void ) __attribute__ ((weak, alias("Dummy_Handler"))); /* SERCOM0_0 */
 void SERCOM0_1_Handler       ( void ) __attribute__ ((weak, alias("Dummy_Handler"))); /* SERCOM0_1 */
@@ -245,9 +243,9 @@ const DeviceVectors exception_table = {
         .pvStack                = (void*) (&_estack),
 
         .pfnReset_Handler       = (void*) Reset_Handler,
-        .pfnNMI_Handler         = (void*) NMI_Handler,
+        .pfnNonMaskableInt_Handler = (void*) NMI_Handler,
         .pfnHardFault_Handler   = (void*) HardFault_Handler,
-        .pfnMemManage_Handler   = (void*) MemManage_Handler,
+        .pfnMemManagement_Handler = (void*) MemManage_Handler,
         .pfnBusFault_Handler    = (void*) BusFault_Handler,
         .pfnUsageFault_Handler  = (void*) UsageFault_Handler,
 #if 1
@@ -258,8 +256,8 @@ const DeviceVectors exception_table = {
         .pvReservedM8           = (void*) (0UL), /* Reserved */
         .pvReservedM7           = (void*) (0UL), /* Reserved */
         .pvReservedM6           = (void*) (0UL), /* Reserved */
-        .pfnSVC_Handler         = (void*) SVC_Handler,
-        .pfnDebugMon_Handler    = (void*) DebugMon_Handler,
+        .pfnSVCall_Handler      = (void*) SVC_Handler,
+        .pfnDebugMonitor_Handler = (void*) DebugMon_Handler,
         .pvReservedM3           = (void*) (0UL), /* Reserved */
         .pfnPendSV_Handler      = (void*) PendSV_Handler,
         .pfnSysTick_Handler     = (void*) SysTick_Handler,
@@ -307,8 +305,8 @@ const DeviceVectors exception_table = {
         .pfnEVSYS_3_Handler     = (void*) EVSYS_3_Handler,        /* 39 EVSYS_EVD_3, EVSYS_OVR_3 */
         .pfnEVSYS_4_Handler     = (void*) EVSYS_4_Handler,        /* 40 EVSYS_EVD_10, EVSYS_EVD_11, EVSYS_EVD_4, EVSYS_EVD_5, EVSYS_EVD_6, EVSYS_EVD_7, EVSYS_EVD_8, EVSYS_EVD_9, EVSYS_OVR_10, EVSYS_OVR_11, EVSYS_OVR_4, EVSYS_OVR_5, EVSYS_OVR_6, EVSYS_OVR_7, EVSYS_OVR_8, EVSYS_OVR_9 */
         .pfnPAC_Handler         = (void*) PAC_Handler,            /* 41 Peripheral Access Controller */
-        .pfnTAL_0_Handler       = (void*) TAL_0_Handler,          /* 42 TAL_BRK */
-        .pfnTAL_1_Handler       = (void*) TAL_1_Handler,          /* 43 TAL_IPS_0, TAL_IPS_1 */
+        .pvReserved42           = (void*) (0UL),                  /* 42 Reserved */
+        .pvReserved43           = (void*) (0UL),                  /* 43 Reserved */
         .pvReserved44           = (void*) (0UL),                  /* 44 Reserved */
         .pfnRAMECC_Handler      = (void*) RAMECC_Handler,         /* 45 RAM ECC */
         .pfnSERCOM0_0_Handler   = (void*) SERCOM0_0_Handler,      /* 46 SERCOM0_0 */
