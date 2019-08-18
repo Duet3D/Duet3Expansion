@@ -18,6 +18,12 @@ SensorWithPort::~SensorWithPort()
 	port.Release();
 }
 
+void SensorWithPort::FlagForDeletion()
+{
+	port.Release();
+	TemperatureSensor::FlagForDeletion();
+}
+
 // Try to configure the port. Return true if the port is valid at the end, else return false and set the error message in 'reply'. Set 'seen' if we saw the P parameter.
 bool SensorWithPort::ConfigurePort(const CanMessageGenericParser& parser, const StringRef& reply, PinAccess access, bool& seen)
 {
