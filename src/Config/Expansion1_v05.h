@@ -9,7 +9,7 @@
 #define SRC_CONFIG_EXPANSION1_V05_H_
 
 #include "RepRapFirmware.h"
-#include "Hardware/SAME5X.h"
+#include "Hardware/Peripherals.h"
 
 const size_t MaxHeaters = 6;
 const size_t MaxExtraHeaterProtections = 6;

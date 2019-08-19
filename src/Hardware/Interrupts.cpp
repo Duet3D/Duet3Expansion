@@ -5,8 +5,8 @@
  *      Author: David
  */
 
-#include <Hardware/Interrupts.h>
-#include "SAME5x.h"
+#include "Interrupts.h"
+#include "Peripherals.h"
 
 struct InterruptCallback
 {
@@ -38,7 +38,14 @@ void InitialisePinChangeInterrupts()
 	// Leave event control disabled (hri_eic_write_EVCTRL_reg)
 
 	hri_eic_write_ASYNCH_reg(EIC, 0);					// all channels synchronous (needed to have debouncing or filtering)
+
+#if defined(SAME51)
 	hri_eic_write_DEBOUNCEN_reg(EIC, 0);				// debouncing disabled
+#elif defined(SAMC21)
+	// The datasheet describes the debounce register as for the SAME51, but the register definition in eic.h doesn't include the debounce register
+#else
+# error Undefined processor
+#endif
 
 #if 0
 	hri_eic_write_DPRESCALER_reg(
@@ -99,7 +106,13 @@ bool AttachInterrupt(uint32_t pin, StandardCallbackFunction callback, enum Inter
 
 	// Enable interrupt
 	hri_eic_set_INTEN_reg(EIC, 1ul << exintNumber);
+#if defined(SAME51)
 	NVIC_EnableIRQ((IRQn)(EIC_0_IRQn + exintNumber));
+#elif defined(SAMC21)
+	NVIC_EnableIRQ(EIC_IRQn);
+#else
+# error Undefined processor
+#endif
 
 	return true;
 }
@@ -132,6 +145,8 @@ void DetachInterrupt(Pin pin)
 		}
 	}
 }
+
+#if defined(SAME51)
 
 // Common EXINT handler
 static inline void CommonExintHandler(size_t exintNumber)
@@ -222,5 +237,36 @@ extern "C" void EIC_15_Handler(void)
 {
 	CommonExintHandler(15);
 }
+
+#elif defined(SAMC21)
+
+extern "C" void EIC_Handler(void)
+{
+	uint16_t intflag;
+	while ((intflag = EIC->INTFLAG.reg) != 0)
+	{
+		uint16_t mask = 1;
+		size_t exintNumber = 0;
+		do
+		{
+			if ((intflag & mask) != 0)
+			{
+				const InterruptCallback& cb = exintCallbacks[exintNumber];
+				if (cb.func != nullptr)
+				{
+					cb.func(cb.param);
+				}
+				EIC->INTFLAG.reg = mask;
+				intflag &= ~mask;
+			}
+			++exintNumber;
+			mask <<= 1;
+		} while (intflag != 0);
+	}
+}
+
+#else
+# error Undefined processor
+#endif
 
 // End

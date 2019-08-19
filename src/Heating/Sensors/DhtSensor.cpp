@@ -6,13 +6,14 @@
  */
 
 #include "DhtSensor.h"
-#include "Movement/StepTimer.h"
-#include "Hardware/IoPorts.h"
-#include "Hardware/SAME5x.h"		// for delayMicroseconds
-#include "Hardware/Interrupts.h"
-#include "CanMessageFormats.h"
 
 #if SUPPORT_DHT_SENSOR
+
+#include "Movement/StepTimer.h"
+#include "Hardware/IoPorts.h"
+#include "Hardware/Peripherals.h"		// for delayMicroseconds
+#include "Hardware/Interrupts.h"
+#include "CanMessageFormats.h"
 
 constexpr uint32_t MinimumReadInterval = 2000;		// ms
 constexpr uint32_t MaximumReadTime = 20;			// ms

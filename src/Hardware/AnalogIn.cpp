@@ -166,15 +166,32 @@ bool AdcClass::InternalEnableChannel(unsigned int chan, uint8_t refCtrl, AnalogI
 			DmacSetDestinationAddress(dmaChan, &device->DSEQDATA.reg);
 			DmacSetBtctrl(dmaChan, DMAC_BTCTRL_VALID | DMAC_BTCTRL_EVOSEL_DISABLE | DMAC_BTCTRL_BLOCKACT_INT | DMAC_BTCTRL_BEATSIZE_WORD
 									| DMAC_BTCTRL_SRCINC | DMAC_BTCTRL_STEPSEL_SRC | DMAC_BTCTRL_STEPSIZE_X1);
+#if defined(SAME51)
 			DMAC->Channel[dmaChan].CHCTRLA.reg = DMAC_CHCTRLA_TRIGSRC((uint8_t)trigSrc + 1) | DMAC_CHCTRLA_TRIGACT_BURST
 												| DMAC_CHCTRLA_BURSTLEN_SINGLE | DMAC_CHCTRLA_THRESHOLD_1BEAT;
+#elif defined(SAMC21)
+			DMAC->CHID.reg = dmaChan;
+			DMAC->CHCTRLA.reg = DMAC_CHCTRLA_TRIGSRC((uint8_t)trigSrc + 1) | DMAC_CHCTRLA_TRIGACT_BURST
+												| DMAC_CHCTRLA_BURSTLEN_SINGLE | DMAC_CHCTRLA_THRESHOLD_1BEAT;
+#else
+# error Unsupported processor
+#endif
+
 			// Now the result reader
 			DmacSetSourceAddress(dmaChan + 1, const_cast<uint16_t *>(&device->RESULT.reg));
 			DmacSetInterruptCallbacks(dmaChan + 1, DmaCompleteCallback, nullptr, this);
 			DmacSetBtctrl(dmaChan + 1, DMAC_BTCTRL_VALID | DMAC_BTCTRL_EVOSEL_DISABLE | DMAC_BTCTRL_BLOCKACT_INT | DMAC_BTCTRL_BEATSIZE_HWORD
 										| DMAC_BTCTRL_DSTINC | DMAC_BTCTRL_STEPSEL_DST | DMAC_BTCTRL_STEPSIZE_X1);
+#if defined(SAME51)
 			DMAC->Channel[dmaChan + 1].CHCTRLA.reg = DMAC_CHCTRLA_TRIGSRC((uint8_t)trigSrc) | DMAC_CHCTRLA_TRIGACT_BURST
 													| DMAC_CHCTRLA_BURSTLEN_SINGLE | DMAC_CHCTRLA_THRESHOLD_1BEAT;
+#elif defined(SAMC21)
+			DMAC->CHID.reg = dmaChan + 1;
+			DMAC->CHCTRLA.reg = DMAC_CHCTRLA_TRIGSRC((uint8_t)trigSrc) | DMAC_CHCTRLA_TRIGACT_BURST
+													| DMAC_CHCTRLA_BURSTLEN_SINGLE | DMAC_CHCTRLA_THRESHOLD_1BEAT;
+#else
+# error Unsupported processor
+#endif
 			state = State::starting;
 		}
 
@@ -198,11 +215,11 @@ bool AdcClass::StartConversion(TaskBase *p_taskToWake)
 	DmacSetDestinationAddress(dmaChan + 1, results);
 	DmacSetDataLength(dmaChan + 1, numChannelsEnabled);
 	DmacEnableCompletedInterrupt(dmaChan + 1);
-	DMAC->Channel[dmaChan + 1].CHCTRLA.bit.ENABLE = 1;
+	DmacEnableChannel(dmaChan + 1);
 
 	DmacSetSourceAddress(dmaChan, inputRegisters);
 	DmacSetDataLength(dmaChan, numChannelsEnabled * 2);
-	DMAC->Channel[dmaChan].CHCTRLA.bit.ENABLE = 1;
+	DmacEnableChannel(dmaChan);
 
 	state = State::converting;
 	++conversionsStarted;
@@ -232,7 +249,7 @@ void AdcClass::ResultReadyCallback()
 {
 	state = State::ready;
 	++conversionsCompleted;
-	DMAC->Channel[dmaChan].CHCTRLA.bit.ENABLE = 0;			// disable the sequencer DMA, just in case it is out of sync
+	DmacDisableChannel(dmaChan);			// disable the sequencer DMA, just in case it is out of sync
 	if (taskToWake != nullptr)
 	{
 		taskToWake->GiveFromISR();
@@ -245,18 +262,19 @@ void AdcClass::ResultReadyCallback()
 	static_cast<AdcClass *>(cp.vp)->ResultReadyCallback();
 }
 
-// Device-specific parts
-
-#ifdef __SAME51N19A__
-
 // ADC instances
 static AdcClass Adcs[] =
 {
+#if defined(SAME51)
 	AdcClass(ADC0, ADC0_0_IRQn, Adc0TxDmaChannel, DmaTrigSource::adc0_resrdy),
 	AdcClass(ADC1, ADC1_0_IRQn, Adc1TxDmaChannel, DmaTrigSource::adc1_resrdy)
-};
-
+#elif defined(SAMC21)
+	// We use onoy the first ADC
+	AdcClass(ADC0, ADC0_IRQn, Adc0TxDmaChannel, DmaTrigSource::adc0_resrdy),
+#else
+# error Unsupported processor
 #endif
+};
 
 namespace AnalogIn
 {
@@ -312,10 +330,18 @@ namespace AnalogIn
 void AnalogIn::Init()
 {
 	// Enable ADC clocks
+#if defined(SAME51)
 	hri_mclk_set_APBDMASK_ADC0_bit(MCLK);
 	hri_gclk_write_PCHCTRL_reg(GCLK, ADC0_GCLK_ID, GCLK_PCHCTRL_GEN_GCLK0_Val | (1 << GCLK_PCHCTRL_CHEN_Pos));
 	hri_mclk_set_APBDMASK_ADC1_bit(MCLK);
 	hri_gclk_write_PCHCTRL_reg(GCLK, ADC1_GCLK_ID, GCLK_PCHCTRL_GEN_GCLK0_Val | (1 << GCLK_PCHCTRL_CHEN_Pos));
+#elif defined(SAMC21)
+	// SAMC21 has 2 ADCs but we use only the first one
+	hri_mclk_set_APBCMASK_ADC0_bit(MCLK);
+	hri_gclk_write_PCHCTRL_reg(GCLK, ADC0_GCLK_ID, GCLK_PCHCTRL_GEN_GCLK0_Val | (1 << GCLK_PCHCTRL_CHEN_Pos));
+#else
+# error Unsupported processor
+#endif
 
 #if 0
 	// Set the supply controller to on-demand mode so that we can get at both temperature sensors

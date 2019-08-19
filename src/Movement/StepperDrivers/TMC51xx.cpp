@@ -18,7 +18,7 @@
 # include <Hardware/IoPorts.h>
 # include <Hardware/DmacManager.h>
 # include "peripheral_clk_config.h"
-# include <Hardware/SAME5x.h>
+# include <Hardware/Peripherals.h>
 #elif SAME70
 # include "DmacManager.h"
 #endif

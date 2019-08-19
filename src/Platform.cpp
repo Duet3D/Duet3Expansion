@@ -41,12 +41,13 @@ namespace Platform
 	uint32_t driveDriverBits[NumDrivers];
 	uint32_t allDriverBits = 0;
 
+#if defined(SAME51)		//TODO base this on configuration not processor
 	static float stepsPerMm[NumDrivers] = { 80.0, 80.0, 80.0 };
-	static float axisMinima[MaxAxes] = { 0.0, 0.0, 0.0 };
-	static float axisMaxima[MaxAxes] = { 500.0, 500.0, 500.0 };
-	static float accelerations[NumDrivers] = { 1000.0, 1000.0, 1000.0 };
-	static float feedrates[NumDrivers] = { 100.0, 100.0, 100.0 };			// mm/sec
-	static float instantDVs[NumDrivers] = { 5.0, 5.0, 5.0 };				// mm/sec
+#elif defined(SAMC21)
+	static float stepsPerMm[NumDrivers] = { 80.0 };
+#else
+# error Undefined configuration
+#endif
 
 	static volatile uint16_t currentVin, highestVin, lowestVin;
 #if HAS_12V_MONITOR
@@ -155,6 +156,7 @@ namespace Platform
 		//while (txBusy) { delay(1); }
 	}
 
+#ifdef SAME51
 	// Set a contiguous range of interrupts to the specified priority
 	static void SetInterruptPriority(IRQn base, unsigned int num, uint32_t prio)
 	{
@@ -166,6 +168,7 @@ namespace Platform
 		}
 		while (num != 0);
 	}
+#endif
 
 	static void InitialiseInterrupts()
 	{
@@ -176,8 +179,15 @@ namespace Platform
 		NVIC_SetPriority(CAN1_IRQn, NvicPriorityCan);
 		NVIC_SetPriority(StepTcIRQn, NvicPriorityStep);
 
+#if defined(SAME51)
 		SetInterruptPriority(DMAC_0_IRQn, 5, NvicPriorityDmac);
 		SetInterruptPriority(EIC_0_IRQn, 16, NvicPriorityPins);
+#elif defined(SAMC21)
+		NVIC_SetPriority(DMAC_IRQn, NvicPriorityDmac);
+		NVIC_SetPriority(EIC_IRQn, NvicPriorityPins);
+#else
+# error Undefined processor
+#endif
 
 		StepTimer::Init();										// initialise the step pulse timer
 	}
@@ -227,11 +237,13 @@ void Platform::Init()
 	AnalogOut::Init();
 	ADC_temperature_init();
 
+#ifdef SAME51		//TODO base on configuration not prcessor
 	// Set up the board ID switch inputs
 	for (unsigned int i = 0; i < 4; ++i)
 	{
 		IoPort::SetPinMode(BoardAddressPins[i], INPUT_PULLUP);
 	}
+#endif
 
 	// Set up VIN voltage monitoring
 	currentVin = highestVin = 0;
@@ -689,21 +701,8 @@ float Platform::DriveStepsPerUnit(size_t drive) { return stepsPerMm[drive]; }
 
 const float *Platform::GetDriveStepsPerUnit() { return stepsPerMm; }
 
-float Platform::AxisMaximum(size_t axis) { return axisMaxima[axis]; }
-//	void SetAxisMaximum(size_t axis, float value, bool byProbing);
-float Platform::AxisMinimum(size_t axis) { return axisMinima[axis]; }
-//	void SetAxisMinimum(size_t axis, float value, bool byProbing);
-//	float AxisTotalLength(size_t axis) ;
 float Platform::GetPressureAdvance(size_t extruder) { return 0.4; }
 //	void SetPressureAdvance(size_t extruder, float factor);
-float Platform::Acceleration(size_t axisOrExtruder) { return accelerations[axisOrExtruder]; }
-const float* Platform::Accelerations() { return accelerations; }
-//	void SetAcceleration(size_t axisOrExtruder, float value);
-float Platform::MaxFeedrate(size_t axisOrExtruder) { return feedrates[axisOrExtruder]; }
-const float* Platform::MaxFeedrates() { return feedrates; }
-//	void SetMaxFeedrate(size_t axisOrExtruder, float value);
-float Platform::GetInstantDv(size_t axis) { return instantDVs[axis]; }
-//	void SetInstantDv(size_t axis, float value);
 EndStopHit Platform::Stopped(size_t axisOrExtruder) { return EndStopHit::lowHit; }
 bool Platform::EndStopInputState(size_t axis) { return false; }
 
