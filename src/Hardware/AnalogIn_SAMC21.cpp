@@ -19,6 +19,11 @@
 static uint32_t conversionsStarted = 0;
 static uint32_t conversionsCompleted = 0;
 
+static AnalogInCallbackFunction tempCallbackFn = nullptr;
+static CallbackParameter tempCallbackParam = 0;
+static uint32_t tempTicksPerCall = 1;
+static uint32_t tempTicksAtLastCall = 0;
+
 class AdcClass
 {
 public:
@@ -196,9 +201,10 @@ void AdcClass::ExecuteCallbacks()
 			if (now - ticksAtLastCall[i] >= ticksPerCall[i])
 			{
 				ticksAtLastCall[i] = now;
-				if (callbackFunctions[i] != nullptr)
+				const AnalogInCallbackFunction fn = callbackFunctions[i];
+				if (fn != nullptr)
 				{
-					callbackFunctions[i](callbackParams[i], currentResult);
+					fn(callbackParams[i], currentResult);
 				}
 			}
 		}
@@ -260,6 +266,19 @@ namespace AnalogIn
 
 				default:	// no channels enabled, or conversion in progress
 					break;
+				}
+			}
+
+			// Do the temperature sensor
+			const AnalogInCallbackFunction fn = tempCallbackFn;
+			if (tempCallbackFn != nullptr && TSENS->INTFLAG.bit.RESRDY)
+			{
+				const uint32_t now = millis();
+				if (now - tempTicksAtLastCall >= tempTicksPerCall)
+				{
+					tempTicksAtLastCall = now;
+					fn(tempCallbackParam, TSENS->VALUE.bit.VALUE ^ (1u << 23));		// VALUE is 2's complement, but the filter expects unsigned values
+					TSENS->CTRLB.bit.START = 1;
 				}
 			}
 
@@ -339,7 +358,30 @@ uint16_t AnalogIn::ReadChannel(AdcInput adcin)
 // Enable an on-chip MCU temperature sensor
 void AnalogIn::EnableTemperatureSensor(AnalogInCallbackFunction fn, CallbackParameter param, uint32_t ticksPerCall)
 {
-	qq;		//TODO
+	tempCallbackParam = param;
+	tempCallbackFn = fn;
+	tempTicksPerCall = ticksPerCall;
+
+	hri_mclk_set_APBAMASK_TSENS_bit(MCLK);
+	hri_gclk_write_PCHCTRL_reg(GCLK, TSENS_GCLK_ID, GCLK_PCHCTRL_GEN_GCLK2_Val | (1 << GCLK_PCHCTRL_CHEN_Pos));		// Use thr DFLL as the clock source
+
+	TSENS->CTRLA.bit.SWRST = 1;
+	while (TSENS->CTRLA.bit.SWRST) { }
+	TSENS->CTRLC.reg = 0;
+
+	const uint32_t calGain0 = (*reinterpret_cast<const uint32_t*>(TSENS_FUSES_GAIN_0_ADDR) & TSENS_FUSES_GAIN_0_Msk) >> TSENS_FUSES_GAIN_0_Pos;
+	const uint32_t calGain1 = (*reinterpret_cast<const uint32_t*>(TSENS_FUSES_GAIN_1_ADDR) & TSENS_FUSES_GAIN_1_Msk) >> TSENS_FUSES_GAIN_1_Pos;
+	const uint32_t calOffset = (*reinterpret_cast<const uint32_t*>(TSENS_FUSES_OFFSET_ADDR) & TSENS_FUSES_OFFSET_Msk) >> TSENS_FUSES_OFFSET_Pos;
+	const uint32_t calFcal = (*reinterpret_cast<const uint32_t*>(TSENS_FUSES_FCAL_ADDR) & TSENS_FUSES_FCAL_Msk) >> TSENS_FUSES_FCAL_Pos;
+	const uint32_t calTcal = (*reinterpret_cast<const uint32_t*>(TSENS_FUSES_TCAL_ADDR) & TSENS_FUSES_TCAL_Msk) >> TSENS_FUSES_TCAL_Pos;
+
+	TSENS->GAIN.reg = calGain0 | (calGain1 << 20);
+	TSENS->OFFSET.reg = calOffset;
+	TSENS->CAL.reg = TSENS_CAL_TCAL(calTcal) | TSENS_CAL_FCAL(calFcal);
+
+	TSENS->CTRLA.bit.ENABLE = 1;
+	while (TSENS->SYNCBUSY.bit.ENABLE) { }
+	TSENS->CTRLB.reg = TSENS_CTRLB_START;
 }
 
 void AnalogIn::GetDebugInfo(uint32_t &convsStarted, uint32_t &convsCompleted)

@@ -99,6 +99,7 @@ namespace Platform
 	DriversBitmap stalledDrivers, stalledDriversToLog, stalledDriversToPause, stalledDriversToRehome;
 #endif
 
+#ifdef SAME51
 	static int32_t tempCalF1, tempCalF2, tempCalF3, tempCalF4;		// temperature calibration factors
 
 	static void ADC_temperature_init(void)
@@ -147,6 +148,7 @@ namespace Platform
 		tempCalF3 = (int32_t)temp_cal_vcl - (int32_t)temp_cal_vch;
 		tempCalF4 = (int32_t)temp_cal_vpl - (int32_t)temp_cal_vph;
 	}
+#endif
 
 	// Send the specified message to the specified destinations. The Error and Warning flags have already been handled.
 	void RawMessage(MessageType type, const char *message)
@@ -252,7 +254,10 @@ void Platform::Init()
 	// Initialise the rest of the IO subsystem
 	AnalogIn::Init();
 	AnalogOut::Init();
+
+#ifdef SAME51
 	ADC_temperature_init();
+#endif
 
 #ifdef SAME51		//TODO base on configuration not prcessor
 	// Set up the board ID switch inputs
@@ -575,7 +580,8 @@ void Platform::Spin()
 #elif defined(SAMC21)
 		if (tsensFilter.IsValid())
 		{
-			qq;
+			const int32_t temperatureTimes100 = (int32_t)tsensFilter.GetSum()/tsensFilter.NumAveraged() - (int32_t)(1u << 23);
+			currentMcuTemperature = (float)temperatureTimes100 * 0.01;
 #else
 # error Unsupported processor
 #endif

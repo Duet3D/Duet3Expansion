@@ -167,7 +167,7 @@ enum class DmaTrigSource : uint8_t
 };
 
 #if defined(SAMC21)
-static_assert((uint8_t)DmaTrigSource::tc7_mc1 == 0x3D, "Error in DmaTrigSource enumeration");
+static_assert((uint8_t)DmaTrigSource::ptc_seq == 0x30, "Error in DmaTrigSource enumeration");
 #endif
 
 // The following works for all sercoms on the SAME51 and sercoms 1 to 5 on the SAMC21. We don't support sercoms 6-7 on the SAMC21 because they only exist on the 100-pin version.
