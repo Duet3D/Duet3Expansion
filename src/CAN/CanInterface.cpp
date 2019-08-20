@@ -150,7 +150,7 @@ extern "C" void CanReceiverLoop(void *)
 	can_filter filter;
 
 	// First a filter for our own ID
-	filter.id = (uint32_t)Platform::ReadBoardId() << CanId::DstAddressShift;
+	filter.id = boardAddress << CanId::DstAddressShift;
 	filter.mask = CanId::BoardAddressMask << CanId::DstAddressShift;
 	can_async_set_filter(&CAN_0, 0, CAN_FMT_EXTID, &filter);
 

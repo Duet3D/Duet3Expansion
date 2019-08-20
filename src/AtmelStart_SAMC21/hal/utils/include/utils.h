@@ -350,6 +350,7 @@ typedef void (*FUNC_PTR)(void);
  */
 #define round_up(a, b) (((a)-1) / (b) + 1)
 
+#if 0	// dc42
 /**
  * \brief Get the minimum of x and y
  */
@@ -359,6 +360,7 @@ typedef void (*FUNC_PTR)(void);
  * \brief Get the maximum of x and y
  */
 #define max(x, y) ((x) > (y) ? (x) : (y))
+#endif
 
 /**@}*/
 

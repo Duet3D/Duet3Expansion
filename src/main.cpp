@@ -18,7 +18,7 @@ int main(void)
 	/* Initializes MCU, drivers and middleware */
 	atmel_start_init();
 	SystemCoreClock = CONF_CPU_FREQUENCY;			// FreeRTOS needs this to be set correctly because it uses it to set the systick reload value
-	DmacInit();
+	DmacManager::Init();
 
 	AppMain();
 }

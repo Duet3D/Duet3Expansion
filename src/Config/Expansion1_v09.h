@@ -21,6 +21,8 @@ const size_t MaxExtraHeaterProtections = 6;
 #define HAS_CPU_TEMP_SENSOR	1
 
 #define SUPPORT_TMC51xx		1
+#define SUPPORT_TMC22xx		0
+
 #define SUPPORT_DHT_SENSOR	0	//TEMP!!!
 #define SUPPORT_SPI_SENSORS	1
 
@@ -46,6 +48,14 @@ constexpr Pin GlobalTmc51xxCSPin = PortBPin(22);
 
 #define TMC51xx_USES_SERCOM	1
 Sercom * const SERCOM_TMC51xx = SERCOM0;
+constexpr uint8_t SERCOM_TMC51xx_NUMBER = 0;
+
+constexpr Pin TMC51xxMosiPin = PortBPin(24);
+constexpr uint32_t TMC51xxMosiPinPeriphMode = PINMUX_PB24C_SERCOM0_PAD0;
+constexpr Pin TMC51xxSclkPin = PortBPin(25);
+constexpr uint32_t TMC51xxSclkPinPeriphMode = PINMUX_PB25C_SERCOM0_PAD1;
+constexpr Pin TMC51xxMisoPin = PortCPin(25);
+constexpr uint32_t TMC51xxMisoPinPeriphMode = PINMUX_PC25C_SERCOM0_PAD3;
 
 PortGroup * const StepPio = &(PORT->Group[0]);		// the PIO that all the step pins are on
 constexpr Pin StepPins[NumDrivers] = { PortAPin(25), PortAPin(27), PortAPin(1) };
@@ -69,7 +79,14 @@ constexpr Pin IoInPins[NumIoPorts] = { PortAPin(2), PortCPin(2), PortCPin(0), Po
 constexpr Pin IoOutPins[NumIoPorts] = { PortAPin(16), PortBPin(16), PortBPin(20), PortAPin(5), PortBPin(0), PortAPin(20) };
 
 // Shared SPI
+constexpr uint8_t SERCOM_SSPI_NUMBER = 6;
 Sercom * const SERCOM_SSPI = SERCOM6;
+constexpr Pin SSPIMosiPin = PortCPin(16);
+constexpr uint32_t SSPIMosiPinPeriphMode = PINMUX_PC16C_SERCOM6_PAD0;
+constexpr Pin SSPISclkPin = PortCPin(17);
+constexpr uint32_t SSPISclkPinPeriphMode = PINMUX_PC17C_SERCOM6_PAD1;
+constexpr Pin SSPIMisoPin = PortCPin(19);
+constexpr uint32_t SSPIMisoPinPeriphMode = PINMUX_PC19C_SERCOM6_PAD3;
 
 // Table of pin functions that we are allowed to use
 constexpr uint8_t Nx = 0xFF;

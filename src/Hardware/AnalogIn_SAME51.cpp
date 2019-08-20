@@ -5,6 +5,10 @@
  *      Author: David
  */
 
+#include "Peripherals.h"
+
+#ifdef SAME51
+
 #include "AnalogIn.h"
 #include "RTOSIface/RTOSIface.h"
 #include "Hardware/DmacManager.h"
@@ -29,10 +33,10 @@ public:
 
 	State GetState() const { return state; }
 	bool EnableChannel(unsigned int chan, AnalogInCallbackFunction fn, CallbackParameter param, uint32_t p_ticksPerCall);
-	bool IsChannelEnabled(unsigned int chan);
-	bool EnableTemperatureSensor(unsigned int sensorNumber, AnalogInCallbackFunction fn, CallbackParameter param, uint32_t ticksPerCall);
+	bool IsChannelEnabled(unsigned int chan) const;
 	bool StartConversion(TaskBase *p_taskToWake);
 	uint16_t ReadChannel(unsigned int chan) const { return resultsByChannel[chan]; }
+	bool EnableTemperatureSensor(unsigned int sensorNumber, AnalogInCallbackFunction fn, CallbackParameter param, uint32_t ticksPerCall);
 
 	void ResultReadyCallback();
 	void ExecuteCallbacks();
@@ -62,7 +66,7 @@ private:
 	uint32_t ticksAtLastCall[MaxSequenceLength];
 	uint32_t inputRegisters[MaxSequenceLength * 2];
 	volatile uint16_t results[MaxSequenceLength];
-	volatile uint16_t resultsByChannel[32];		// must be large enough to handle PTAT and CTAT temperature sensor inputs
+	volatile uint16_t resultsByChannel[NumAdcChannels];		// must be large enough to handle PTAT and CTAT temperature sensor inputs
 };
 
 AdcClass::AdcClass(Adc * const p_device, IRQn p_irqn, DmaChannel p_dmaChan, DmaTrigSource p_trigSrc)
@@ -73,7 +77,10 @@ AdcClass::AdcClass(Adc * const p_device, IRQn p_irqn, DmaChannel p_dmaChan, DmaT
 	{
 		callbackFunctions[i] = nullptr;
 		callbackParams[i].u32 = 0;
-		resultsByChannel[i] = 0;
+	}
+	for (volatile uint16_t& r : resultsByChannel)
+	{
+		r = 0;
 	}
 }
 
@@ -82,7 +89,7 @@ AdcClass::AdcClass(Adc * const p_device, IRQn p_irqn, DmaChannel p_dmaChan, DmaT
 // There is no check to avoid adding the same channel twice. If you do that it will be converted twice.
 bool AdcClass::EnableChannel(unsigned int chan, AnalogInCallbackFunction fn, CallbackParameter param, uint32_t p_ticksPerCall)
 {
-	if (numChannelsEnabled == MaxSequenceLength || chan >= MaxSequenceLength)
+	if (numChannelsEnabled == MaxSequenceLength || chan >= NumAdcChannels)
 	{
 		return false;
 	}
@@ -90,7 +97,7 @@ bool AdcClass::EnableChannel(unsigned int chan, AnalogInCallbackFunction fn, Cal
 	return InternalEnableChannel(chan, ADC_REFCTRL_REFSEL_INTVCC1, fn, param, p_ticksPerCall);
 }
 
-bool AdcClass::IsChannelEnabled(unsigned int chan)
+bool AdcClass::IsChannelEnabled(unsigned int chan) const
 {
 	return (channelsEnabled & (1ul << chan)) != 0;
 }
@@ -125,8 +132,7 @@ bool AdcClass::InternalEnableChannel(unsigned int chan, uint8_t refCtrl, AnalogI
 
 		if (numChannelsEnabled == 1)
 		{
-			// First channel is being enabled
-			// Initialise the ADC
+			// First channel is being enabled, so initialise the ADC
 			if (!hri_adc_is_syncing(device, ADC_SYNCBUSY_SWRST))
 			{
 				if (hri_adc_get_CTRLA_reg(device, ADC_CTRLA_ENABLE))
@@ -138,7 +144,7 @@ bool AdcClass::InternalEnableChannel(unsigned int chan, uint8_t refCtrl, AnalogI
 			}
 			hri_adc_wait_for_sync(device, ADC_SYNCBUSY_SWRST);
 
-			hri_adc_write_CTRLA_reg(device, ADC_CTRLA_PRESCALER_DIV32);
+			hri_adc_write_CTRLA_reg(device, ADC_CTRLA_PRESCALER_DIV16);			// GCLK1 is 64MHz, divided by 16 is 4MHz
 			hri_adc_write_CTRLB_reg(device, 0);
 			hri_adc_write_REFCTRL_reg(device,  ADC_REFCTRL_REFSEL_INTVCC1);
 			hri_adc_write_EVCTRL_reg(device, ADC_EVCTRL_RESRDYEO);
@@ -163,35 +169,17 @@ bool AdcClass::InternalEnableChannel(unsigned int chan, uint8_t refCtrl, AnalogI
 			hri_supc_clear_VREF_VREFOE_bit(SUPC);
 
 			// Initialise the DMAC. First the sequencer
-			DmacSetDestinationAddress(dmaChan, &device->DSEQDATA.reg);
-			DmacSetBtctrl(dmaChan, DMAC_BTCTRL_VALID | DMAC_BTCTRL_EVOSEL_DISABLE | DMAC_BTCTRL_BLOCKACT_INT | DMAC_BTCTRL_BEATSIZE_WORD
-									| DMAC_BTCTRL_SRCINC | DMAC_BTCTRL_STEPSEL_SRC | DMAC_BTCTRL_STEPSIZE_X1);
-#if defined(SAME51)
-			DMAC->Channel[dmaChan].CHCTRLA.reg = DMAC_CHCTRLA_TRIGSRC((uint8_t)trigSrc + 1) | DMAC_CHCTRLA_TRIGACT_BURST
-												| DMAC_CHCTRLA_BURSTLEN_SINGLE | DMAC_CHCTRLA_THRESHOLD_1BEAT;
-#elif defined(SAMC21)
-			DMAC->CHID.reg = dmaChan;
-			DMAC->CHCTRLA.reg = DMAC_CHCTRLA_TRIGSRC((uint8_t)trigSrc + 1) | DMAC_CHCTRLA_TRIGACT_BURST
-												| DMAC_CHCTRLA_BURSTLEN_SINGLE | DMAC_CHCTRLA_THRESHOLD_1BEAT;
-#else
-# error Unsupported processor
-#endif
+			DmacManager::SetDestinationAddress(dmaChan, &device->DSEQDATA.reg);
+			DmacManager::SetBtctrl(dmaChan, DMAC_BTCTRL_VALID | DMAC_BTCTRL_EVOSEL_DISABLE | DMAC_BTCTRL_BLOCKACT_INT | DMAC_BTCTRL_BEATSIZE_WORD
+										| DMAC_BTCTRL_SRCINC | DMAC_BTCTRL_STEPSEL_SRC | DMAC_BTCTRL_STEPSIZE_X1);
+			DmacManager::SetTriggerSource(dmaChan, (DmaTrigSource)((uint8_t)trigSrc + 1));
 
 			// Now the result reader
-			DmacSetSourceAddress(dmaChan + 1, const_cast<uint16_t *>(&device->RESULT.reg));
-			DmacSetInterruptCallbacks(dmaChan + 1, DmaCompleteCallback, nullptr, this);
-			DmacSetBtctrl(dmaChan + 1, DMAC_BTCTRL_VALID | DMAC_BTCTRL_EVOSEL_DISABLE | DMAC_BTCTRL_BLOCKACT_INT | DMAC_BTCTRL_BEATSIZE_HWORD
+			DmacManager::SetSourceAddress(dmaChan + 1, const_cast<uint16_t *>(&device->RESULT.reg));
+			DmacManager::SetInterruptCallbacks(dmaChan + 1, DmaCompleteCallback, nullptr, this);
+			DmacManager::SetBtctrl(dmaChan + 1, DMAC_BTCTRL_VALID | DMAC_BTCTRL_EVOSEL_DISABLE | DMAC_BTCTRL_BLOCKACT_INT | DMAC_BTCTRL_BEATSIZE_HWORD
 										| DMAC_BTCTRL_DSTINC | DMAC_BTCTRL_STEPSEL_DST | DMAC_BTCTRL_STEPSIZE_X1);
-#if defined(SAME51)
-			DMAC->Channel[dmaChan + 1].CHCTRLA.reg = DMAC_CHCTRLA_TRIGSRC((uint8_t)trigSrc) | DMAC_CHCTRLA_TRIGACT_BURST
-													| DMAC_CHCTRLA_BURSTLEN_SINGLE | DMAC_CHCTRLA_THRESHOLD_1BEAT;
-#elif defined(SAMC21)
-			DMAC->CHID.reg = dmaChan + 1;
-			DMAC->CHCTRLA.reg = DMAC_CHCTRLA_TRIGSRC((uint8_t)trigSrc) | DMAC_CHCTRLA_TRIGACT_BURST
-													| DMAC_CHCTRLA_BURSTLEN_SINGLE | DMAC_CHCTRLA_THRESHOLD_1BEAT;
-#else
-# error Unsupported processor
-#endif
+			DmacManager::SetTriggerSource(dmaChan + 1, trigSrc);
 			state = State::starting;
 		}
 
@@ -212,14 +200,14 @@ bool AdcClass::StartConversion(TaskBase *p_taskToWake)
 	(void)device->RESULT.reg;			// make sure no result pending (this is necessary to make it work!)
 
 	// Set up DMA to read the results our of the ADC into the results array
-	DmacSetDestinationAddress(dmaChan + 1, results);
-	DmacSetDataLength(dmaChan + 1, numChannelsEnabled);
-	DmacEnableCompletedInterrupt(dmaChan + 1);
-	DmacEnableChannel(dmaChan + 1);
+	DmacManager::SetDestinationAddress(dmaChan + 1, results);
+	DmacManager::SetDataLength(dmaChan + 1, numChannelsEnabled);
+	DmacManager::EnableCompletedInterrupt(dmaChan + 1);
+	DmacManager::EnableChannel(dmaChan + 1);
 
-	DmacSetSourceAddress(dmaChan, inputRegisters);
-	DmacSetDataLength(dmaChan, numChannelsEnabled * 2);
-	DmacEnableChannel(dmaChan);
+	DmacManager::SetSourceAddress(dmaChan, inputRegisters);
+	DmacManager::SetDataLength(dmaChan, numChannelsEnabled * 2);
+	DmacManager::EnableChannel(dmaChan);
 
 	state = State::converting;
 	++conversionsStarted;
@@ -232,13 +220,14 @@ void AdcClass::ExecuteCallbacks()
 	const uint32_t now = millis();
 	for (size_t i = 0; i < numChannelsEnabled; ++i)
 	{
-		resultsByChannel[GetChannel(i)] = results[i];
+		const uint16_t currentResult = results[i];
+		resultsByChannel[GetChannel(i)] = currentResult;
 		if (now - ticksAtLastCall[i] >= ticksPerCall[i])
 		{
 			ticksAtLastCall[i] = now;
 			if (callbackFunctions[i] != nullptr)
 			{
-				callbackFunctions[i](callbackParams[i], results[i]);
+				callbackFunctions[i](callbackParams[i], currentResult);
 			}
 		}
 	}
@@ -249,7 +238,7 @@ void AdcClass::ResultReadyCallback()
 {
 	state = State::ready;
 	++conversionsCompleted;
-	DmacDisableChannel(dmaChan);			// disable the sequencer DMA, just in case it is out of sync
+	DmacManager::DisableChannel(dmaChan);			// disable the sequencer DMA, just in case it is out of sync
 	if (taskToWake != nullptr)
 	{
 		taskToWake->GiveFromISR();
@@ -265,15 +254,8 @@ void AdcClass::ResultReadyCallback()
 // ADC instances
 static AdcClass Adcs[] =
 {
-#if defined(SAME51)
 	AdcClass(ADC0, ADC0_0_IRQn, Adc0TxDmaChannel, DmaTrigSource::adc0_resrdy),
 	AdcClass(ADC1, ADC1_0_IRQn, Adc1TxDmaChannel, DmaTrigSource::adc1_resrdy)
-#elif defined(SAMC21)
-	// We use onoy the first ADC
-	AdcClass(ADC0, ADC0_IRQn, Adc0TxDmaChannel, DmaTrigSource::adc0_resrdy),
-#else
-# error Unsupported processor
-#endif
 };
 
 namespace AnalogIn
@@ -330,18 +312,10 @@ namespace AnalogIn
 void AnalogIn::Init()
 {
 	// Enable ADC clocks
-#if defined(SAME51)
 	hri_mclk_set_APBDMASK_ADC0_bit(MCLK);
-	hri_gclk_write_PCHCTRL_reg(GCLK, ADC0_GCLK_ID, GCLK_PCHCTRL_GEN_GCLK0_Val | (1 << GCLK_PCHCTRL_CHEN_Pos));
+	hri_gclk_write_PCHCTRL_reg(GCLK, ADC0_GCLK_ID, GCLK_PCHCTRL_GEN_GCLK1_Val | (1 << GCLK_PCHCTRL_CHEN_Pos));
 	hri_mclk_set_APBDMASK_ADC1_bit(MCLK);
-	hri_gclk_write_PCHCTRL_reg(GCLK, ADC1_GCLK_ID, GCLK_PCHCTRL_GEN_GCLK0_Val | (1 << GCLK_PCHCTRL_CHEN_Pos));
-#elif defined(SAMC21)
-	// SAMC21 has 2 ADCs but we use only the first one
-	hri_mclk_set_APBCMASK_ADC0_bit(MCLK);
-	hri_gclk_write_PCHCTRL_reg(GCLK, ADC0_GCLK_ID, GCLK_PCHCTRL_GEN_GCLK0_Val | (1 << GCLK_PCHCTRL_CHEN_Pos));
-#else
-# error Unsupported processor
-#endif
+	hri_gclk_write_PCHCTRL_reg(GCLK, ADC1_GCLK_ID, GCLK_PCHCTRL_GEN_GCLK1_Val | (1 << GCLK_PCHCTRL_CHEN_Pos));
 
 #if 0
 	// Set the supply controller to on-demand mode so that we can get at both temperature sensors
@@ -413,5 +387,7 @@ void AnalogIn::GetDebugInfo(uint32_t &convsStarted, uint32_t &convsCompleted)
 	convsStarted = conversionsStarted;
 	convsCompleted = conversionsCompleted;
 }
+
+#endif
 
 // End

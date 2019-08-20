@@ -11,6 +11,7 @@
 
 #include "IoPorts.h"
 #include "DmacManager.h"
+#include "Serial.h"
 #include "peripheral_clk_config.h"
 
 constexpr uint32_t DefaultSharedSpiClockFrequency = 2000000;
@@ -18,15 +19,12 @@ constexpr uint32_t SpiTimeout = 10000;
 
 static void InitSpi()
 {
-	// Enable the clock
-	hri_gclk_write_PCHCTRL_reg(GCLK, SERCOM6_GCLK_ID_CORE, CONF_GCLK_SERCOM6_CORE_SRC | (1 << GCLK_PCHCTRL_CHEN_Pos));
-	hri_gclk_write_PCHCTRL_reg(GCLK, SERCOM6_GCLK_ID_SLOW, CONF_GCLK_SERCOM6_SLOW_SRC | (1 << GCLK_PCHCTRL_CHEN_Pos));
-	hri_mclk_set_APBDMASK_SERCOM6_bit(MCLK);
+	Serial::EnableSercomClock(SERCOM_SSPI_NUMBER);
 
-	// Set the pin functions - temporary fixed pin assignment
-	gpio_set_pin_function(PortCPin(16), PINMUX_PC16C_SERCOM6_PAD0);		// MOSI
-	gpio_set_pin_function(PortCPin(17), PINMUX_PC17C_SERCOM6_PAD1);		// SCLK
-	gpio_set_pin_function(PortCPin(19), PINMUX_PC19C_SERCOM6_PAD3);		// MISO
+	// Set the pin functions
+	gpio_set_pin_function(SSPIMosiPin, SSPIMosiPinPeriphMode);
+	gpio_set_pin_function(SSPISclkPin, SSPISclkPinPeriphMode);
+	gpio_set_pin_function(SSPIMisoPin, SSPIMisoPinPeriphMode);
 
 	// Set up the SERCOM
 	const uint32_t regCtrlA = SERCOM_SPI_CTRLA_MODE(3) | SERCOM_SPI_CTRLA_DIPO(3) | SERCOM_SPI_CTRLA_DOPO(0) | SERCOM_SPI_CTRLA_FORM(0);

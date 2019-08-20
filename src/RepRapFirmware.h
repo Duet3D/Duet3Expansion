@@ -11,6 +11,7 @@
 #include "atmel_start.h"
 #include "ecv.h"
 #undef value			// needed because we include <optional>
+#undef array
 
 #include <cmath>
 #include <cinttypes>
@@ -145,6 +146,23 @@ inline constexpr uint64_t isquare64(int32_t arg)
 inline constexpr uint64_t isquare64(uint32_t arg)
 {
 	return (uint64_t)arg * arg;
+}
+
+// Find the lowest set bit. Returns the lowest set bit number, undefined if no bits are set.
+// GCC provides intrinsics, but unhelpfully they are in terms of int, long and long long instead of uint32_t, uint64_t etc.
+inline unsigned int LowestSetBitNumber(unsigned int val)
+{
+	return (unsigned int)__builtin_ctz(val);
+}
+
+inline unsigned int LowestSetBitNumber(unsigned long val)
+{
+	return (unsigned int)__builtin_ctzl(val);
+}
+
+inline unsigned int LowestSetBitNumber(unsigned long long val)
+{
+	return (unsigned int)__builtin_ctzll(val);
 }
 
 // Note that constrain<float> will return NaN for a NaN input because of the way we define min<float> and max<float>

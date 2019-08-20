@@ -21,8 +21,10 @@ const size_t MaxExtraHeaterProtections = 6;
 #define HAS_CPU_TEMP_SENSOR	1
 
 #define SUPPORT_TMC51xx		1
-#define SUPPORT_DHT_SENSOR	0	//TEMP!!!
-#define SUPPORT_SPI_SENSORS	0	//TEMP!!!
+#define SUPPORT_TMC22xx		0
+
+#define SUPPORT_DHT_SENSOR	0
+#define SUPPORT_SPI_SENSORS	0
 
 constexpr size_t NumDrivers = 3;
 constexpr size_t MaxSmartDrivers = 3;
@@ -46,6 +48,14 @@ constexpr Pin GlobalTmc51xxCSPin = PortBPin(22);
 
 #define TMC51xx_USES_SERCOM	1
 Sercom * const SERCOM_TMC51xx = SERCOM0;
+constexpr uint8_t SERCOM_TMC51xx_NUMBER = 0;
+
+constexpr Pin TMC51xxMosiPin = PortBPin(24);
+constexpr uint32_t TMC51xxMosiPinPeriphMode = PINMUX_PB24C_SERCOM0_PAD0;
+constexpr Pin TMC51xxSclkPin = PortBPin(25);
+constexpr uint32_t TMC51xxSclkPinPeriphMode = PINMUX_PB25C_SERCOM0_PAD1;
+constexpr Pin TMC51xxMisoPin = PortCPin(25);
+constexpr uint32_t TMC51xxMisoPinPeriphMode = PINMUX_PC25C_SERCOM0_PAD3;
 
 PortGroup * const StepPio = &(PORT->Group[0]);		// the PIO that all the step pins are on
 constexpr Pin StepPins[NumDrivers] = { PortAPin(25), PortAPin(27), PortAPin(1) };

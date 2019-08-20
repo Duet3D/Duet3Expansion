@@ -12,6 +12,7 @@
 #include <Hardware/AnalogOut.h>
 #include <Movement/Move.h>
 #include "Movement/StepperDrivers/TMC51xx.h"
+#include "Movement/StepperDrivers/TMC22xx.h"
 #include <atmel_start.h>
 #include <Config/peripheral_clk_config.h>
 #include "AdcAveragingFilter.h"
@@ -71,8 +72,15 @@ namespace Platform
 #if HAS_12V_MONITOR
 	static AdcAveragingFilter<VinReadingsAveraged> v12Filter;
 #endif
+
+#if defined(SAME51)
 	static AdcAveragingFilter<McuTempReadingsAveraged> tpFilter;
 	static AdcAveragingFilter<McuTempReadingsAveraged> tcFilter;
+#elif defined(SAMC21)
+	static AdcAveragingFilter<McuTempReadingsAveraged> tsensFilter;
+#else
+# error Unsupported processor
+#endif
 
 #if HAS_SMART_DRIVERS
 	static DriversBitmap temperatureShutdownDrivers, temperatureWarningDrivers, shortToGroundDrivers;
@@ -172,9 +180,11 @@ namespace Platform
 
 	static void InitialiseInterrupts()
 	{
+#ifdef SAME51
 		// Set UART interrupt priority. Each SERCOM has up to 4 interrupts, numbered sequentially.
 		SetInterruptPriority(Serial0_IRQn, 4, NvicPriorityUart);
 		SetInterruptPriority(Serial1_IRQn, 4, NvicPriorityUart);
+#endif
 
 		NVIC_SetPriority(CAN1_IRQn, NvicPriorityCan);
 		NVIC_SetPriority(StepTcIRQn, NvicPriorityStep);
@@ -223,6 +233,8 @@ void Platform::Init()
 	}
 
 	// Set up the UART to send to PanelDue
+	//TODO finish our own serial driver
+#if defined(SAME51)
 	const uint32_t baudDiv = 65536 - ((65536 * 16.0f * 57600) / CONF_GCLK_SERCOM3_CORE_FREQUENCY);
 	usart_async_set_baud_rate(&USART_0, baudDiv);
 
@@ -231,6 +243,11 @@ void Platform::Init()
 	//usart_async_register_callback(&USART_0, USART_ASYNC_ERROR_CB, err_cb);
 	usart_async_get_io_descriptor(&USART_0, &io);
 	usart_async_enable(&USART_0);
+#elif defined(SAMC21)
+	qq;
+#else
+# error Unsupported processor
+#endif
 
 	// Initialise the rest of the IO subsystem
 	AnalogIn::Init();
@@ -281,10 +298,17 @@ void Platform::Init()
 	lowestMcuTemperature = 999.0;
 	mcuTemperatureAdjust = 0.0;
 
+#if defined(SAME51)
 	tpFilter.Init(0);
 	AnalogIn::EnableTemperatureSensor(0, tpFilter.CallbackFeedIntoFilter, &tpFilter, 1, 0);
 	tcFilter.Init(0);
 	AnalogIn::EnableTemperatureSensor(1, tcFilter.CallbackFeedIntoFilter, &tcFilter, 1, 0);
+#elif defined(SAMC21)
+	tsensFilter.Init(0);
+	AnalogIn::EnableTemperatureSensor(tsensFilter.CallbackFeedIntoFilter, &tsensFilter, 1);
+#else
+# error Unsupported processor
+#endif
 
 	// Initialise stepper drivers
 	SmartDrivers::Init();
@@ -535,10 +559,12 @@ void Platform::Spin()
 			}
 		}
 
-		// Get the chip temperature. From the datasheet:
-		// T = (tl * vph * tc - th * vph * tc - tl * tp *vch + th * tp * vcl)/(tp * vcl - tp * vch - tc * vpl * tc * vph)
+		// Get the chip temperature
+#if defined(SAME51)
 		if (tcFilter.IsValid() && tpFilter.IsValid())
 		{
+			// From the datasheet:
+			// T = (tl * vph * tc - th * vph * tc - tl * tp *vch + th * tp * vcl)/(tp * vcl - tp * vch - tc * vpl * tc * vph)
 			const uint16_t tc_result = tcFilter.GetSum()/tcFilter.NumAveraged();
 			const uint16_t tp_result = tpFilter.GetSum()/tpFilter.NumAveraged();
 
@@ -546,6 +572,13 @@ void Platform::Spin()
 			const int32_t divisor = (tempCalF3 * tp_result - tempCalF4 * tc_result);
 			result = (divisor == 0) ? 0 : result/divisor;
 			currentMcuTemperature = (float)result/16 + mcuTemperatureAdjust;
+#elif defined(SAMC21)
+		if (tsensFilter.IsValid())
+		{
+			qq;
+#else
+# error Unsupported processor
+#endif
 			if (currentMcuTemperature < lowestMcuTemperature)
 			{
 				lowestMcuTemperature = currentMcuTemperature;
@@ -746,6 +779,9 @@ void Platform::EnableDrive(size_t axisOrExtruder)
 
 uint8_t Platform::ReadBoardId()
 {
+#ifdef SAMC21
+	return 10;			//TODO temporary!
+#else
 	uint8_t rslt = 0;
 	for (unsigned int i = 0; i < 4; ++i)
 	{
@@ -755,6 +791,7 @@ uint8_t Platform::ReadBoardId()
 		}
 	}
 	return rslt;
+#endif
 }
 
 // TMC driver temperatures

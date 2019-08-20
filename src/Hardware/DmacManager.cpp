@@ -33,7 +33,7 @@ static StandardCallbackFunction errorCallbacks[NumDmaChannelsUsed];
 static CallbackParameter callbackParams[NumDmaChannelsUsed];
 
 // Initialize the DMA controller
-void DmacInit()
+void DmacManager::Init()
 {
 	hri_dmac_clear_CTRL_DMAENABLE_bit(DMAC);
 	hri_dmac_clear_CRCCTRL_reg(DMAC, DMAC_CRCCTRL_CRCSRC_Msk);
@@ -75,22 +75,22 @@ void DmacInit()
 	hri_dmac_set_CTRL_DMAENABLE_bit(DMAC);
 }
 
-void DmacSetBtctrl(const uint8_t channel, const uint16_t val)
+void DmacManager::SetBtctrl(const uint8_t channel, const uint16_t val)
 {
 	hri_dmacdescriptor_write_BTCTRL_reg(&descriptor_section[channel], val);
 }
 
-void DmacSetDestinationAddress(const uint8_t channel, volatile void *const dst)
+void DmacManager::SetDestinationAddress(const uint8_t channel, volatile void *const dst)
 {
 	hri_dmacdescriptor_write_DSTADDR_reg(&descriptor_section[channel], reinterpret_cast<uint32_t>(dst));
 }
 
-void DmacSetSourceAddress(const uint8_t channel, const volatile void *const src)
+void DmacManager::SetSourceAddress(const uint8_t channel, const volatile void *const src)
 {
 	hri_dmacdescriptor_write_SRCADDR_reg(&descriptor_section[channel], reinterpret_cast<uint32_t>(src));
 }
 
-void DmacSetDataLength(const uint8_t channel, const uint32_t amount)
+void DmacManager::SetDataLength(const uint8_t channel, const uint32_t amount)
 {
 	const uint8_t beat_size = hri_dmacdescriptor_read_BTCTRL_BEATSIZE_bf(&descriptor_section[channel]);
 
@@ -109,7 +109,65 @@ void DmacSetDataLength(const uint8_t channel, const uint32_t amount)
 	hri_dmacdescriptor_write_BTCNT_reg(&descriptor_section[channel], amount);
 }
 
-void DmacEnableChannel(const uint8_t channel)
+void DmacManager::SetTriggerSource(uint8_t channel, DmaTrigSource source)
+{
+#if defined(SAME51)
+	DMAC->Channel[channel].CHCTRLA.reg = DMAC_CHCTRLA_TRIGSRC((uint32_t)source) | DMAC_CHCTRLA_TRIGACT_BURST
+											| DMAC_CHCTRLA_BURSTLEN_SINGLE | DMAC_CHCTRLA_THRESHOLD_1BEAT;
+#elif defined(SAMC21)
+	InterruptCriticalSectionLocker lock;
+	DMAC->CHID.reg = channel;
+	DMAC->CHCTRLB.reg = DMAC_CHCTRLB_TRIGSRC((uint8_t)source) | DMAC_CHCTRLB_TRIGACT_BEAT;
+#else
+# error Unsupported processor
+#endif
+}
+
+void DmacManager::SetTriggerSourceSercomRx(uint8_t channel, uint8_t sercomNumber)
+{
+	const uint32_t source = GetSercomRxTrigSource(sercomNumber);
+#if defined(SAME51)
+	DMAC->Channel[channel].CHCTRLA.reg = DMAC_CHCTRLA_TRIGSRC(source) | DMAC_CHCTRLA_TRIGACT_BURST
+											| DMAC_CHCTRLA_BURSTLEN_SINGLE | DMAC_CHCTRLA_THRESHOLD_1BEAT;
+#elif defined(SAMC21)
+	InterruptCriticalSectionLocker lock;
+	DMAC->CHID.reg = channel;
+	DMAC->CHCTRLB.reg = DMAC_CHCTRLB_TRIGSRC((uint8_t)source) | DMAC_CHCTRLB_TRIGACT_BEAT;
+#else
+# error Unsupported processor
+#endif
+}
+
+// Transmit
+void DmacManager::SetTriggerSourceSercomTx(uint8_t channel, uint8_t sercomNumber)
+{
+	const uint32_t source = GetSercomTxTrigSource(sercomNumber);
+#if defined(SAME51)
+	DMAC->Channel[channel].CHCTRLA.reg = DMAC_CHCTRLA_TRIGSRC(source) | DMAC_CHCTRLA_TRIGACT_BURST
+											| DMAC_CHCTRLA_BURSTLEN_SINGLE | DMAC_CHCTRLA_THRESHOLD_1BEAT;
+#elif defined(SAMC21)
+	InterruptCriticalSectionLocker lock;
+	DMAC->CHID.reg = channel;
+	DMAC->CHCTRLB.reg = DMAC_CHCTRLB_TRIGSRC((uint8_t)source) | DMAC_CHCTRLB_TRIGACT_BEAT;
+#else
+# error Unsupported processor
+#endif
+}
+
+void DmacManager::SetArbitrationLevel(uint8_t channel, uint8_t level)
+{
+#if defined(SAME51)
+	DMAC->Channel[channel].CHPRILVL.reg = level;
+#elif defined(SAMC21)
+	InterruptCriticalSectionLocker lock;
+	DMAC->CHID.reg = channel;
+	DMAC->CHCTRLB.reg = (DMAC->CHCTRLB.reg & ~DMAC_CHCTRLB_LVL_Msk) | (level << DMAC_CHCTRLB_LVL_Pos);
+#else
+# error Unsupported processor
+#endif
+}
+
+void DmacManager::EnableChannel(const uint8_t channel)
 {
 	hri_dmacdescriptor_set_BTCTRL_VALID_bit(&descriptor_section[channel]);
 #if defined(SAME51)
@@ -123,7 +181,7 @@ void DmacEnableChannel(const uint8_t channel)
 #endif
 }
 
-void DmacDisableChannel(const uint8_t channel)
+void DmacManager::DisableChannel(const uint8_t channel)
 {
 #if defined(SAME51)
 	DMAC->Channel[channel].CHCTRLA.bit.ENABLE = 0;
@@ -136,7 +194,7 @@ void DmacDisableChannel(const uint8_t channel)
 #endif
 }
 
-void DmacSetInterruptCallbacks(const uint8_t channel, StandardCallbackFunction tfrEndedFn, StandardCallbackFunction errorFn, CallbackParameter param)
+void DmacManager::SetInterruptCallbacks(const uint8_t channel, StandardCallbackFunction tfrEndedFn, StandardCallbackFunction errorFn, CallbackParameter param)
 {
 	InterruptCriticalSectionLocker lock;
 	errorCallbacks[channel] = errorFn;
@@ -144,7 +202,7 @@ void DmacSetInterruptCallbacks(const uint8_t channel, StandardCallbackFunction t
 	callbackParams[channel] = param;
 }
 
-void DmacEnableCompletedInterrupt(const uint8_t channel)
+void DmacManager::EnableCompletedInterrupt(const uint8_t channel)
 {
 #if defined(SAME51)
 	hri_dmac_set_CHINTEN_TCMPL_bit(DMAC, channel);
@@ -157,7 +215,7 @@ void DmacEnableCompletedInterrupt(const uint8_t channel)
 #endif
 }
 
-void DmacEnableErrorInterrupt(const uint8_t channel)
+void DmacManager::EnableErrorInterrupt(const uint8_t channel)
 {
 #if defined(SAME51)
 	hri_dmac_set_CHINTEN_TERR_bit(DMAC, channel);
@@ -170,7 +228,7 @@ void DmacEnableErrorInterrupt(const uint8_t channel)
 #endif
 }
 
-void DmacDisableCompletedInterrupt(const uint8_t channel)
+void DmacManager::DisableCompletedInterrupt(const uint8_t channel)
 {
 #if defined(SAME51)
 	hri_dmac_clear_CHINTEN_TCMPL_bit(DMAC, channel);
@@ -183,7 +241,7 @@ void DmacDisableCompletedInterrupt(const uint8_t channel)
 #endif
 }
 
-void DmacDisableErrorInterrupt(const uint8_t channel)
+void DmacManager::DisableErrorInterrupt(const uint8_t channel)
 {
 #if defined(SAME51)
 	hri_dmac_clear_CHINTEN_TERR_bit(DMAC, channel);
