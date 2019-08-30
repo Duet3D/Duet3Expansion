@@ -36,7 +36,7 @@
 #include "Move.h"
 #include "StepTimer.h"
 #include "Platform.h"
-#include "CAN/CanSlaveInterface.h"
+#include <CAN/CanInterface.h>
 #include "Hardware/Interrupts.h"
 #include "CanMessageFormats.h"
 
@@ -169,7 +169,7 @@ void Move::Spin()
 	{
 		// OK to add another move. First check if a special move is available.
 		CanMessageMovement move;
-		if (CanSlaveInterface::GetCanMove(move))
+		if (CanInterface::GetCanMove(move))
 		{
 			ddaRingAddPointer->Init(move);
 			ddaRingAddPointer = ddaRingAddPointer->GetNext();

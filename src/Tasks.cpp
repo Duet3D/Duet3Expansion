@@ -58,7 +58,9 @@ void AppMain()
 
 	// Trap integer divide-by-zero.
 	// We could also trap unaligned memory access, if we change the gcc options to not generate code that uses unaligned memory access.
+#ifndef SAMC21		// SAMC21 has no divide unit, so there is no divide-by-zero exception
 	SCB->CCR |= SCB_CCR_DIV_0_TRP_Msk;
+#endif
 
 #if USE_CACHE
 	// Enable the cache
@@ -258,10 +260,20 @@ extern "C"
 	{
 	    __asm volatile
 	    (
+#ifdef SAMC21
+	        " mrs r0, msp												\n"
+	    	" mov r1, lr												\n"
+	    	" movs r2, #4												\n"
+	    	" tst r1, r2												\n"
+	    	" beq skip_hfh												\n"
+	        " mrs r0, psp												\n"
+	    	"skip_hfh:													\n"
+#else
 	        " tst lr, #4                                                \n"		/* test bit 2 of the EXC_RETURN in LR to determine which stack was in use */
 	        " ite eq                                                    \n"		/* load the appropriate stack pointer into R0 */
 	        " mrseq r0, msp                                             \n"
 	        " mrsne r0, psp                                             \n"
+#endif
 	        " ldr r2, handler_hf_address_const                          \n"
 	        " bx r2                                                     \n"
 	        " handler_hf_address_const: .word hardFaultDispatcher       \n"
@@ -279,10 +291,20 @@ extern "C"
 	{
 	    __asm volatile
 	    (
+#ifdef SAMC21
+	        " mrs r0, msp												\n"
+	    	" mov r1, lr												\n"
+	    	" movs r2, #4												\n"
+	    	" tst r1, r2												\n"
+	    	" beq skip_wdt												\n"
+	        " mrs r0, psp												\n"
+	    	"skip_wdt:													\n"
+#else
 	        " tst lr, #4                                                \n"		/* test bit 2 of the EXC_RETURN in LR to determine which stack was in use */
 	        " ite eq                                                    \n"		/* load the appropriate stack pointer into R0 */
 	        " mrseq r0, msp                                             \n"
 	        " mrsne r0, psp                                             \n"
+#endif
 	        " ldr r2, handler_wdt_address_const                         \n"
 	        " bx r2                                                     \n"
 	        " handler_wdt_address_const: .word wdtFaultDispatcher       \n"
@@ -302,10 +324,20 @@ extern "C"
 	{
 	    __asm volatile
 	    (
+#ifdef SAMC21
+	        " mrs r0, msp												\n"
+	    	" mov r1, lr												\n"
+	    	" movs r2, #4												\n"
+	    	" tst r1, r2												\n"
+	    	" beq skip_ofh												\n"
+	        " mrs r0, psp												\n"
+	    	"skip_ofh:													\n"
+#else
 	        " tst lr, #4                                                \n"		/* test bit 2 of the EXC_RETURN in LR to determine which stack was in use */
 	        " ite eq                                                    \n"		/* load the appropriate stack pointer into R0 */
 	        " mrseq r0, msp                                             \n"
 	        " mrsne r0, psp                                             \n"
+#endif
 	        " ldr r2, handler_oflt_address_const                        \n"
 	        " bx r2                                                     \n"
 	        " handler_oflt_address_const: .word otherFaultDispatcher    \n"

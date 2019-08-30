@@ -21,22 +21,23 @@
 
 // Constructor
 TemperatureSensor::TemperatureSensor(unsigned int sensorNum, const char *t)
-	: next(nullptr), sensorNumber(sensorNum), sensorType(t), lastError(TemperatureError::success) {}
+	: next(nullptr), sensorNumber(sensorNum), sensorType(t), whenLastRead(0), lastResult(TemperatureError::notReady), lastRealError(TemperatureError::success) {}
 
 // Virtual destructor
 TemperatureSensor::~TemperatureSensor()
 {
 }
 
-// Try to get a temperature reading
-TemperatureError TemperatureSensor::GetTemperature(float& t)
+// Return the latest temperature reading
+TemperatureError TemperatureSensor::GetLatestTemperature(float& t)
 {
-	const TemperatureError rslt = TryGetTemperature(t);
-	if (rslt != TemperatureError::success)
+	if (millis() - whenLastRead > TemperatureReadingTimeout)
 	{
-		lastError = rslt;
+		lastTemperature = BadErrorTemperature;
+		lastResult = TemperatureError::timeout;
 	}
-	return rslt;
+	t = lastTemperature;
+	return lastResult;
 }
 
 // Default implementation of Configure, for sensors that have no configurable parameters
@@ -53,7 +54,26 @@ GCodeResult TemperatureSensor::Configure(const CanMessageGenericParser& parser, 
 void TemperatureSensor::CopyBasicDetails(const StringRef& reply) const
 {
 	reply.printf("Sensor %u", sensorNumber);
-	reply.catf(" type %s, last error: %s", sensorType, TemperatureErrorString(lastError));
+	reply.catf(" type %s, last error: %s", sensorType, TemperatureErrorString(lastRealError));
+}
+
+void TemperatureSensor::SetResult(float t, TemperatureError rslt)
+{
+	lastResult = rslt;
+	lastTemperature = t;
+	whenLastRead = millis();
+	if (rslt != TemperatureError::success)
+	{
+		lastRealError = rslt;
+	}
+}
+
+// This version is used for unsuccessful readings only
+void TemperatureSensor::SetResult(TemperatureError rslt)
+{
+	lastResult = lastRealError = rslt;
+	lastTemperature = BadErrorTemperature;
+	whenLastRead = millis();
 }
 
 // Factory method

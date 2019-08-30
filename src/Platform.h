@@ -88,21 +88,8 @@ namespace Platform
 	void SetDriversIdle();
 	float DriveStepsPerUnit(size_t drive);
 	const float *GetDriveStepsPerUnit();
-	float AxisMaximum(size_t axis) ;
-//	void SetAxisMaximum(size_t axis, float value, bool byProbing);
-	float AxisMinimum(size_t axis) ;
-//	void SetAxisMinimum(size_t axis, float value, bool byProbing);
-//	float AxisTotalLength(size_t axis) ;
 	float GetPressureAdvance(size_t extruder) ;
 //	void SetPressureAdvance(size_t extruder, float factor);
-	float Acceleration(size_t axisOrExtruder) ;
-	const float* Accelerations() ;
-//	void SetAcceleration(size_t axisOrExtruder, float value);
-	float MaxFeedrate(size_t axisOrExtruder) ;
-	const float* MaxFeedrates() ;
-//	void SetMaxFeedrate(size_t axisOrExtruder, float value);
-	float GetInstantDv(size_t axis) ;
-//	void SetInstantDv(size_t axis, float value);
 	EndStopHit Stopped(size_t axisOrExtruder) ;
 	bool EndStopInputState(size_t axis) ;
 	void StepDriversLow();
@@ -134,7 +121,6 @@ namespace Platform
 
 	void KickHeatTaskWatchdog();
 
-	uint8_t ReadBoardSwitches();
 	uint8_t ReadBoardId();
 
 	void Tick();

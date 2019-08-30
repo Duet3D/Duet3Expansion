@@ -20,8 +20,7 @@ public:
 
 	static constexpr const char *TypeName = "thermocouplemax31855";
 
-protected:
-	TemperatureError TryGetTemperature(float& t) override;
+	void Poll() override;
 };
 
 #endif

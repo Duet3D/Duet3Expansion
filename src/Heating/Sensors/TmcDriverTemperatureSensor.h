@@ -19,8 +19,7 @@ public:
 
 	static constexpr const char *TypeName = "drivertemp";
 
-protected:
-	TemperatureError TryGetTemperature(float& t) override;
+	void Poll() override;
 };
 
 #endif

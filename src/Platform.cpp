@@ -12,11 +12,12 @@
 #include <Hardware/AnalogOut.h>
 #include <Movement/Move.h>
 #include "Movement/StepperDrivers/TMC51xx.h"
+#include "Movement/StepperDrivers/TMC22xx.h"
 #include <atmel_start.h>
 #include <Config/peripheral_clk_config.h>
 #include "AdcAveragingFilter.h"
 #include "Movement/StepTimer.h"
-#include "CAN/CanSlaveInterface.h"
+#include <CAN/CanInterface.h>
 #include "Tasks.h"
 #include "Heating/Heat.h"
 #include "Heating/Sensors/TemperatureSensor.h"
@@ -41,12 +42,13 @@ namespace Platform
 	uint32_t driveDriverBits[NumDrivers];
 	uint32_t allDriverBits = 0;
 
+#if defined(SAME51)		//TODO base this on configuration not processor
 	static float stepsPerMm[NumDrivers] = { 80.0, 80.0, 80.0 };
-	static float axisMinima[MaxAxes] = { 0.0, 0.0, 0.0 };
-	static float axisMaxima[MaxAxes] = { 500.0, 500.0, 500.0 };
-	static float accelerations[NumDrivers] = { 1000.0, 1000.0, 1000.0 };
-	static float feedrates[NumDrivers] = { 100.0, 100.0, 100.0 };			// mm/sec
-	static float instantDVs[NumDrivers] = { 5.0, 5.0, 5.0 };				// mm/sec
+#elif defined(SAMC21)
+	static float stepsPerMm[NumDrivers] = { 80.0 };
+#else
+# error Undefined configuration
+#endif
 
 	static volatile uint16_t currentVin, highestVin, lowestVin;
 #if HAS_12V_MONITOR
@@ -70,8 +72,15 @@ namespace Platform
 #if HAS_12V_MONITOR
 	static AdcAveragingFilter<VinReadingsAveraged> v12Filter;
 #endif
+
+#if defined(SAME51)
 	static AdcAveragingFilter<McuTempReadingsAveraged> tpFilter;
 	static AdcAveragingFilter<McuTempReadingsAveraged> tcFilter;
+#elif defined(SAMC21)
+	static AdcAveragingFilter<McuTempReadingsAveraged> tsensFilter;
+#else
+# error Unsupported processor
+#endif
 
 #if HAS_SMART_DRIVERS
 	static DriversBitmap temperatureShutdownDrivers, temperatureWarningDrivers, shortToGroundDrivers;
@@ -90,6 +99,7 @@ namespace Platform
 	DriversBitmap stalledDrivers, stalledDriversToLog, stalledDriversToPause, stalledDriversToRehome;
 #endif
 
+#ifdef SAME51
 	static int32_t tempCalF1, tempCalF2, tempCalF3, tempCalF4;		// temperature calibration factors
 
 	static void ADC_temperature_init(void)
@@ -112,24 +122,24 @@ namespace Platform
 		constexpr uint32_t NVM_TEMP_CAL_VCH_POS = 76;
 		constexpr uint32_t NVM_TEMP_CAL_VCH_SIZE = 12;
 
-		const uint16_t temp_cal_vpl = (*((uint32_t *)(NVMCTRL_TEMP_LOG_W0) + (NVM_TEMP_CAL_VPL_POS / 32)) >> (NVM_TEMP_CAL_VPL_POS % 32))
+		const uint16_t temp_cal_vpl = (*((uint32_t *)(NVMCTRL_TEMP_LOG) + (NVM_TEMP_CAL_VPL_POS / 32)) >> (NVM_TEMP_CAL_VPL_POS % 32))
 		               & ((1u << NVM_TEMP_CAL_VPL_SIZE) - 1);
-		const uint16_t temp_cal_vph = (*((uint32_t *)(NVMCTRL_TEMP_LOG_W0) + (NVM_TEMP_CAL_VPH_POS / 32)) >> (NVM_TEMP_CAL_VPH_POS % 32))
+		const uint16_t temp_cal_vph = (*((uint32_t *)(NVMCTRL_TEMP_LOG) + (NVM_TEMP_CAL_VPH_POS / 32)) >> (NVM_TEMP_CAL_VPH_POS % 32))
 		               & ((1u << NVM_TEMP_CAL_VPH_SIZE) - 1);
-		const uint16_t temp_cal_vcl = (*((uint32_t *)(NVMCTRL_TEMP_LOG_W0) + (NVM_TEMP_CAL_VCL_POS / 32)) >> (NVM_TEMP_CAL_VCL_POS % 32))
+		const uint16_t temp_cal_vcl = (*((uint32_t *)(NVMCTRL_TEMP_LOG) + (NVM_TEMP_CAL_VCL_POS / 32)) >> (NVM_TEMP_CAL_VCL_POS % 32))
 		               & ((1u << NVM_TEMP_CAL_VCL_SIZE) - 1);
-		const uint16_t temp_cal_vch = (*((uint32_t *)(NVMCTRL_TEMP_LOG_W0) + (NVM_TEMP_CAL_VCH_POS / 32)) >> (NVM_TEMP_CAL_VCH_POS % 32))
+		const uint16_t temp_cal_vch = (*((uint32_t *)(NVMCTRL_TEMP_LOG) + (NVM_TEMP_CAL_VCH_POS / 32)) >> (NVM_TEMP_CAL_VCH_POS % 32))
 		               & ((1u << NVM_TEMP_CAL_VCH_SIZE) - 1);
 
-		const uint8_t temp_cal_tli = (*((uint32_t *)(NVMCTRL_TEMP_LOG_W0) + (NVM_TEMP_CAL_TLI_POS / 32)) >> (NVM_TEMP_CAL_TLI_POS % 32))
+		const uint8_t temp_cal_tli = (*((uint32_t *)(NVMCTRL_TEMP_LOG) + (NVM_TEMP_CAL_TLI_POS / 32)) >> (NVM_TEMP_CAL_TLI_POS % 32))
 		               & ((1u << NVM_TEMP_CAL_TLI_SIZE) - 1);
-		const uint8_t temp_cal_tld = (*((uint32_t *)(NVMCTRL_TEMP_LOG_W0) + (NVM_TEMP_CAL_TLD_POS / 32)) >> (NVM_TEMP_CAL_TLD_POS % 32))
+		const uint8_t temp_cal_tld = (*((uint32_t *)(NVMCTRL_TEMP_LOG) + (NVM_TEMP_CAL_TLD_POS / 32)) >> (NVM_TEMP_CAL_TLD_POS % 32))
 		               & ((1u << NVM_TEMP_CAL_TLD_SIZE) - 1);
 		const uint16_t temp_cal_tl = ((uint16_t)temp_cal_tli) << 4 | ((uint16_t)temp_cal_tld);
 
-		const uint8_t temp_cal_thi = (*((uint32_t *)(NVMCTRL_TEMP_LOG_W0) + (NVM_TEMP_CAL_THI_POS / 32)) >> (NVM_TEMP_CAL_THI_POS % 32))
+		const uint8_t temp_cal_thi = (*((uint32_t *)(NVMCTRL_TEMP_LOG) + (NVM_TEMP_CAL_THI_POS / 32)) >> (NVM_TEMP_CAL_THI_POS % 32))
 		               & ((1u << NVM_TEMP_CAL_THI_SIZE) - 1);
-		const uint8_t temp_cal_thd = (*((uint32_t *)(NVMCTRL_TEMP_LOG_W0) + (NVM_TEMP_CAL_THD_POS / 32)) >> (NVM_TEMP_CAL_THD_POS % 32))
+		const uint8_t temp_cal_thd = (*((uint32_t *)(NVMCTRL_TEMP_LOG) + (NVM_TEMP_CAL_THD_POS / 32)) >> (NVM_TEMP_CAL_THD_POS % 32))
 		               & ((1u << NVM_TEMP_CAL_THD_SIZE) - 1);
 		const uint16_t temp_cal_th = ((uint16_t)temp_cal_thi) << 4 | ((uint16_t)temp_cal_thd);
 
@@ -138,6 +148,7 @@ namespace Platform
 		tempCalF3 = (int32_t)temp_cal_vcl - (int32_t)temp_cal_vch;
 		tempCalF4 = (int32_t)temp_cal_vpl - (int32_t)temp_cal_vph;
 	}
+#endif
 
 	// Send the specified message to the specified destinations. The Error and Warning flags have already been handled.
 	void RawMessage(MessageType type, const char *message)
@@ -155,6 +166,7 @@ namespace Platform
 		//while (txBusy) { delay(1); }
 	}
 
+#ifdef SAME51
 	// Set a contiguous range of interrupts to the specified priority
 	static void SetInterruptPriority(IRQn base, unsigned int num, uint32_t prio)
 	{
@@ -166,18 +178,28 @@ namespace Platform
 		}
 		while (num != 0);
 	}
+#endif
 
 	static void InitialiseInterrupts()
 	{
+#ifdef SAME51
 		// Set UART interrupt priority. Each SERCOM has up to 4 interrupts, numbered sequentially.
 		SetInterruptPriority(Serial0_IRQn, 4, NvicPriorityUart);
 		SetInterruptPriority(Serial1_IRQn, 4, NvicPriorityUart);
+#endif
 
 		NVIC_SetPriority(CAN1_IRQn, NvicPriorityCan);
 		NVIC_SetPriority(StepTcIRQn, NvicPriorityStep);
 
+#if defined(SAME51)
 		SetInterruptPriority(DMAC_0_IRQn, 5, NvicPriorityDmac);
 		SetInterruptPriority(EIC_0_IRQn, 16, NvicPriorityPins);
+#elif defined(SAMC21)
+		NVIC_SetPriority(DMAC_IRQn, NvicPriorityDmac);
+		NVIC_SetPriority(EIC_IRQn, NvicPriorityPins);
+#else
+# error Undefined processor
+#endif
 
 		StepTimer::Init();										// initialise the step pulse timer
 	}
@@ -213,6 +235,8 @@ void Platform::Init()
 	}
 
 	// Set up the UART to send to PanelDue
+	//TODO finish our own serial driver
+#if defined(SAME51)
 	const uint32_t baudDiv = 65536 - ((65536 * 16.0f * 57600) / CONF_GCLK_SERCOM3_CORE_FREQUENCY);
 	usart_async_set_baud_rate(&USART_0, baudDiv);
 
@@ -221,17 +245,27 @@ void Platform::Init()
 	//usart_async_register_callback(&USART_0, USART_ASYNC_ERROR_CB, err_cb);
 	usart_async_get_io_descriptor(&USART_0, &io);
 	usart_async_enable(&USART_0);
+#elif defined(SAMC21)
+	qq;
+#else
+# error Unsupported processor
+#endif
 
 	// Initialise the rest of the IO subsystem
 	AnalogIn::Init();
 	AnalogOut::Init();
-	ADC_temperature_init();
 
+#ifdef SAME51
+	ADC_temperature_init();
+#endif
+
+#ifdef SAME51		//TODO base on configuration not prcessor
 	// Set up the board ID switch inputs
 	for (unsigned int i = 0; i < 4; ++i)
 	{
 		IoPort::SetPinMode(BoardAddressPins[i], INPUT_PULLUP);
 	}
+#endif
 
 	// Set up VIN voltage monitoring
 	currentVin = highestVin = 0;
@@ -269,10 +303,17 @@ void Platform::Init()
 	lowestMcuTemperature = 999.0;
 	mcuTemperatureAdjust = 0.0;
 
+#if defined(SAME51)
 	tpFilter.Init(0);
 	AnalogIn::EnableTemperatureSensor(0, tpFilter.CallbackFeedIntoFilter, &tpFilter, 1, 0);
 	tcFilter.Init(0);
 	AnalogIn::EnableTemperatureSensor(1, tcFilter.CallbackFeedIntoFilter, &tcFilter, 1, 0);
+#elif defined(SAMC21)
+	tsensFilter.Init(0);
+	AnalogIn::EnableTemperatureSensor(tsensFilter.CallbackFeedIntoFilter, &tsensFilter, 1);
+#else
+# error Unsupported processor
+#endif
 
 	// Initialise stepper drivers
 	SmartDrivers::Init();
@@ -304,12 +345,13 @@ void Platform::Init()
 	warnDriversNotPowered = false;
 #endif
 
-	CanSlaveInterface::Init();
+	CanInterface::Init(ReadBoardId());
 
 	InitialiseInterrupts();
 
 	lastPollTime = millis();
 
+#if 0
 	//TEST set up some PWM values
 	static PwmPort out0, out1, out2, out3, out4, out5, out6, out7, out8;
 	String<100> reply;
@@ -350,6 +392,7 @@ void Platform::Init()
 
 	out8.SetFrequency(25000);
 	out8.WriteAnalog(0.9);
+#endif
 }
 
 void Platform::Spin()
@@ -510,21 +553,23 @@ void Platform::Spin()
 	{
 		lastPollTime = now;
 
-		const uint8_t addr = ReadBoardSwitches();
+		const uint8_t addr = ReadBoardId();
 		if (addr != oldAddr)
 		{
 			oldAddr = addr;
-			const float current = (addr == 3) ? 3000.0 : (addr == 2) ? 2000.0 : (addr == 1) ? 1000.0 : 500.0;
+			const float current = (addr == 3) ? 6300.0 : (addr == 2) ? 2000.0 : (addr == 1) ? 1000.0 : 500.0;
 			for (size_t i = 0; i < NumDrivers; ++i)
 			{
 				SmartDrivers::SetCurrent(i, current);
 			}
 		}
 
-		// Get the chip temperature. From the datasheet:
-		// T = (tl * vph * tc - th * vph * tc - tl * tp *vch + th * tp * vcl)/(tp * vcl - tp * vch - tc * vpl * tc * vph)
+		// Get the chip temperature
+#if defined(SAME51)
 		if (tcFilter.IsValid() && tpFilter.IsValid())
 		{
+			// From the datasheet:
+			// T = (tl * vph * tc - th * vph * tc - tl * tp *vch + th * tp * vcl)/(tp * vcl - tp * vch - tc * vpl * tc * vph)
 			const uint16_t tc_result = tcFilter.GetSum()/tcFilter.NumAveraged();
 			const uint16_t tp_result = tpFilter.GetSum()/tpFilter.NumAveraged();
 
@@ -532,6 +577,14 @@ void Platform::Spin()
 			const int32_t divisor = (tempCalF3 * tp_result - tempCalF4 * tc_result);
 			result = (divisor == 0) ? 0 : result/divisor;
 			currentMcuTemperature = (float)result/16 + mcuTemperatureAdjust;
+#elif defined(SAMC21)
+		if (tsensFilter.IsValid())
+		{
+			const int32_t temperatureTimes100 = (int32_t)tsensFilter.GetSum()/tsensFilter.NumAveraged() - (int32_t)(1u << 23);
+			currentMcuTemperature = (float)temperatureTimes100 * 0.01;
+#else
+# error Unsupported processor
+#endif
 			if (currentMcuTemperature < lowestMcuTemperature)
 			{
 				lowestMcuTemperature = currentMcuTemperature;
@@ -544,11 +597,11 @@ void Platform::Spin()
 
 		static unsigned int nextSensor = 0;
 
-		TemperatureSensor *ts = Heat::GetSensorAtOrAbove(nextSensor);
+		TemperatureSensor * const ts = Heat::GetSensorAtOrAbove(nextSensor);
 		if (ts != nullptr)
 		{
 			float temp;
-			TemperatureError err = ts->GetTemperature(temp);
+			const TemperatureError err = ts->GetLatestTemperature(temp);
 			debugPrintf("Sensor %u err %u temp %.1f", ts->GetSensorNumber(), (unsigned int)err, (double)temp);
 			nextSensor = ts->GetSensorNumber() + 1;
 		}
@@ -687,21 +740,8 @@ float Platform::DriveStepsPerUnit(size_t drive) { return stepsPerMm[drive]; }
 
 const float *Platform::GetDriveStepsPerUnit() { return stepsPerMm; }
 
-float Platform::AxisMaximum(size_t axis) { return axisMaxima[axis]; }
-//	void SetAxisMaximum(size_t axis, float value, bool byProbing);
-float Platform::AxisMinimum(size_t axis) { return axisMinima[axis]; }
-//	void SetAxisMinimum(size_t axis, float value, bool byProbing);
-//	float AxisTotalLength(size_t axis) ;
 float Platform::GetPressureAdvance(size_t extruder) { return 0.4; }
 //	void SetPressureAdvance(size_t extruder, float factor);
-float Platform::Acceleration(size_t axisOrExtruder) { return accelerations[axisOrExtruder]; }
-const float* Platform::Accelerations() { return accelerations; }
-//	void SetAcceleration(size_t axisOrExtruder, float value);
-float Platform::MaxFeedrate(size_t axisOrExtruder) { return feedrates[axisOrExtruder]; }
-const float* Platform::MaxFeedrates() { return feedrates; }
-//	void SetMaxFeedrate(size_t axisOrExtruder, float value);
-float Platform::GetInstantDv(size_t axis) { return instantDVs[axis]; }
-//	void SetInstantDv(size_t axis, float value);
 EndStopHit Platform::Stopped(size_t axisOrExtruder) { return EndStopHit::lowHit; }
 bool Platform::EndStopInputState(size_t axis) { return false; }
 
@@ -743,8 +783,11 @@ void Platform::EnableDrive(size_t axisOrExtruder)
 //	void Platform::DisableAllDrives();
 //	void Platform::SetDriversIdle();
 
-uint8_t Platform::ReadBoardSwitches()
+uint8_t Platform::ReadBoardId()
 {
+#ifdef SAMC21
+	return 10;			//TODO temporary!
+#else
 	uint8_t rslt = 0;
 	for (unsigned int i = 0; i < 4; ++i)
 	{
@@ -754,12 +797,7 @@ uint8_t Platform::ReadBoardSwitches()
 		}
 	}
 	return rslt;
-}
-
-uint8_t Platform::ReadBoardId()
-{
-	const uint8_t addr = ReadBoardSwitches() & 3;		// currently the top 2 bits are used to set motor current
-	return (addr == 0) ? 4 : addr;
+#endif
 }
 
 // TMC driver temperatures

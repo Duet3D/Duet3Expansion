@@ -11,14 +11,11 @@
 #include "atmel_start.h"
 #include "ecv.h"
 #undef value			// needed because we include <optional>
+#undef array
 
 #include <cmath>
 #include <cinttypes>
 #include <climits>		// for CHAR_BIT
-
-#ifdef __SAME51N19A__
-# define SAME51		1
-#endif
 
 typedef uint16_t PwmFrequency;		// type used to represent a PWM frequency. 0 sometimes means "default".
 typedef double floatc_t;
@@ -47,6 +44,8 @@ extern "C" void debugPrintf(const char* fmt, ...) __attribute__ ((format (printf
 #define DEBUG_HERE do { } while (false)
 //#define DEBUG_HERE do { debugPrintf("At " __FILE__ " line %d\n", __LINE__); delay(50); } while (false)
 
+#ifdef SAME51
+
 // Functions to change the base priority, to shut out interrupts up to a priority level
 
 // Get the base priority and shut out interrupts lower than or equal to a specified priority
@@ -68,6 +67,8 @@ inline void SetBasePriority(uint32_t prio)
 {
 	__set_BASEPRI(prio << (8 - __NVIC_PRIO_BITS));
 }
+
+#endif
 
 // Classes to facilitate range-based for loops that iterate from 0 up to just below a limit
 template<class T> class SimpleRangeIterator
@@ -145,6 +146,23 @@ inline constexpr uint64_t isquare64(int32_t arg)
 inline constexpr uint64_t isquare64(uint32_t arg)
 {
 	return (uint64_t)arg * arg;
+}
+
+// Find the lowest set bit. Returns the lowest set bit number, undefined if no bits are set.
+// GCC provides intrinsics, but unhelpfully they are in terms of int, long and long long instead of uint32_t, uint64_t etc.
+inline unsigned int LowestSetBitNumber(unsigned int val)
+{
+	return (unsigned int)__builtin_ctz(val);
+}
+
+inline unsigned int LowestSetBitNumber(unsigned long val)
+{
+	return (unsigned int)__builtin_ctzl(val);
+}
+
+inline unsigned int LowestSetBitNumber(unsigned long long val)
+{
+	return (unsigned int)__builtin_ctzll(val);
 }
 
 // Note that constrain<float> will return NaN for a NaN input because of the way we define min<float> and max<float>
@@ -245,10 +263,6 @@ namespace RepRap
 	void Spin();
 	void Tick();
 }
-
-#ifdef __SAME51N19A__
-# define SAME51		1
-#endif
 
 // Module numbers and names, used for diagnostics and debug
 enum Module : uint8_t
