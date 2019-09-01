@@ -94,22 +94,28 @@ namespace Platform
 	bool EndStopInputState(size_t axis) ;
 	void StepDriversLow();
 	void StepDriversHigh(uint32_t driverMap);
-//	uint32_t CalcDriverBitmap(size_t driver);
-	uint32_t GetDriversBitmap(size_t axisOrExtruder); 	// get the bitmap of driver step bits for this axis or extruder
+	uint32_t GetDriversBitmap(size_t driver); 	// get the bitmap of driver step bits for this driver
 
+	inline bool IsSlowDriver(size_t drive) { return IsBitSet(slowDriversBitmap, drive); }
 	inline uint32_t GetSlowDriversBitmap() { return slowDriversBitmap; }
 	inline uint32_t GetSlowDriverStepHighClocks() { return slowDriverStepTimingClocks[0]; }
 	inline uint32_t GetSlowDriverStepLowClocks() { return slowDriverStepTimingClocks[1]; }
 	inline uint32_t GetSlowDriverDirSetupClocks() { return slowDriverStepTimingClocks[2]; }
 	inline uint32_t GetSlowDriverDirHoldClocks() { return slowDriverStepTimingClocks[3]; }
+	void SetDriverStepTiming(size_t drive, const float timings[4]);
 
 	inline unsigned int GetProhibitedExtruderMovements(unsigned int extrusions, unsigned int retractions) { return 0; }
-	void SetDirection(size_t axisOrExtruder, bool direction);
-	EndStopHit GetZProbeResult() ;
+	void SetDirection(size_t driver, bool direction);
+	void SetDirectionValue(size_t driver, bool dVal);
+	bool GetDirectionValue(size_t driver);
+	void SetEnableValue(size_t driver, int8_t eVal);
+	bool GetEnableValue(size_t driver);
 	void EnableDrive(size_t axisOrExtruder);
 	void DisableDrive(size_t axisOrExtruder);
 	void DisableAllDrives();
 	void SetDriversIdle();
+
+	EndStopHit GetZProbeResult() ;
 
 	int GetAveragingFilterIndex(const IoPort&);
 	ThermistorAveragingFilter& GetAdcFilter(unsigned int filterNumber);

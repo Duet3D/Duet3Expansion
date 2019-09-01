@@ -48,6 +48,7 @@ public:
 	bool ArePidParametersOverridden() const { return pidParametersOverridden; }
 	M301PidParameters GetM301PidParameters(bool forLoadChange) const;
 	void SetM301PidParameters(const M301PidParameters& params);
+	void SetRawPidParameters(float p_kP, float p_recipTi, float p_tD);
 
 	const PidParameters& GetPidParameters(bool forLoadChange) const
 	{

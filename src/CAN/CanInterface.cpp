@@ -250,13 +250,6 @@ void CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf)
 		PendingMoves.AddMessage(buf);
 		break;
 
-//	case CanMessageType::m307:
-	case CanMessageType::m308:
-//	case CanMessageType::m906:
-	case CanMessageType::m950:
-		PendingCommands.AddMessage(buf);
-		break;
-
 	case CanMessageType::startup:
 	case CanMessageType::controlledStop:
 	case CanMessageType::emergencyStop:
@@ -265,8 +258,14 @@ void CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf)
 		break;
 
 	default:
-		debugPrintf("Unknown CAN message type %u\n", (unsigned int)(buf->id.MsgType()));
-		CanMessageBuffer::Free(buf);
+		if (buf->id.Dst() == GetCanAddress() && buf->id.IsRequest())
+		{
+			PendingCommands.AddMessage(buf);	// it's addressed to us, so queue it for processing
+		}
+		else
+		{
+			CanMessageBuffer::Free(buf);		// it's a broadcast message that we don't want, or a response, so throw it away
+		}
 		break;
 	}
 }

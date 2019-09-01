@@ -69,6 +69,9 @@ public:
 	void SetM301PidParameters(const M301PidParameters& params)
 		{ model.SetM301PidParameters(params); }
 
+	void SetRawPidParameters(float p_kP, float p_recipTi, float p_tD)
+		{ model.SetRawPidParameters(p_kP, p_recipTi, p_tD); }
+
 	TemperatureSensor *GetSensor() const;
 	bool CheckGood() const;
 

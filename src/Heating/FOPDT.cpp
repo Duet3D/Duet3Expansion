@@ -64,6 +64,14 @@ void FopDt::SetM301PidParameters(const M301PidParameters& pp)
 	pidParametersOverridden = true;
 }
 
+void FopDt::SetRawPidParameters(float p_kP, float p_recipTi, float p_tD)
+{
+	loadChangeParams.kP = setpointChangeParams.kP = p_kP;
+	loadChangeParams.recipTi = setpointChangeParams.recipTi = p_recipTi;
+	loadChangeParams.tD = setpointChangeParams.tD = p_tD;
+	pidParametersOverridden = true;
+}
+
 /* Re-calculate the PID parameters.
  * For some possible formulas, see "Comparison of some well-known PID tuning formulas", Computers and Chemical Engineering 30 (2006) 1416–1423,
  * available at http://www.ece.ualberta.ca/~marquez/journal_publications_files/papers/tan_cce_06.pdf

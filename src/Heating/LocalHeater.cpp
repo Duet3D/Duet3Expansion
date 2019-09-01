@@ -196,55 +196,55 @@ GCodeResult LocalHeater::UpdateModel(const StringRef& reply)
 // This is the main heater control loop function
 void LocalHeater::Spin()
 {
-	if (GetModel().IsEnabled())
+	// Read the temperature even if the heater is suspended or the model is not enabled
+	const TemperatureError err = ReadTemperature();
+
+	// Handle any temperature reading error and calculate the temperature rate of change, if possible
+	if (err != TemperatureError::success)
 	{
-		// Read the temperature even if the heater is suspended
-		const TemperatureError err = ReadTemperature();
-
-		// Handle any temperature reading error and calculate the temperature rate of change, if possible
-		if (err != TemperatureError::success)
+		previousTemperaturesGood <<= 1;				// this reading isn't a good one
+		if (mode > HeaterMode::suspended)			// don't worry about errors when reading heaters that are switched off or flagged as having faults
 		{
-			previousTemperaturesGood <<= 1;				// this reading isn't a good one
-			if (mode > HeaterMode::suspended)			// don't worry about errors when reading heaters that are switched off or flagged as having faults
+			// Error may be a temporary error and may correct itself after a few additional reads
+			badTemperatureCount++;
+			if (badTemperatureCount > MaxBadTemperatureCount)
 			{
-				// Error may be a temporary error and may correct itself after a few additional reads
-				badTemperatureCount++;
-				if (badTemperatureCount > MaxBadTemperatureCount)
+				lastPwm = 0.0;
+				SetHeater(0.0);						// do this here just to be sure, in case the call to platform.Message causes a delay
+				if (mode >= HeaterMode::tuning0)
 				{
-					lastPwm = 0.0;
-					SetHeater(0.0);						// do this here just to be sure, in case the call to platform.Message causes a delay
-					if (mode >= HeaterMode::tuning0)
-					{
-						delete tuningTempReadings;
-						tuningTempReadings = nullptr;
-					}
-					mode = HeaterMode::fault;
-					Platform::HandleHeaterFault(GetHeaterNumber());
-					Platform::MessageF(ErrorMessage, "Temperature reading fault on heater %u: %s\n", GetHeaterNumber(), TemperatureErrorString(err));
+					delete tuningTempReadings;
+					tuningTempReadings = nullptr;
 				}
+				mode = HeaterMode::fault;
+				Platform::HandleHeaterFault(GetHeaterNumber());
+				Platform::MessageF(ErrorMessage, "Temperature reading fault on heater %u: %s\n", GetHeaterNumber(), TemperatureErrorString(err));
 			}
-			// We leave lastPWM alone if we have a temporary temperature reading error
 		}
-		else
+		// We leave lastPWM alone if we have a temporary temperature reading error
+	}
+	else
+	{
+		// We have an apparently-good temperature reading. Calculate the derivative, if possible.
+		float derivative = 0.0;
+		bool gotDerivative = false;
+		badTemperatureCount = 0;
+		if ((previousTemperaturesGood & (1 << (NumPreviousTemperatures - 1))) != 0)
 		{
-			// We have an apparently-good temperature reading. Calculate the derivative, if possible.
-			float derivative = 0.0;
-			bool gotDerivative = false;
-			badTemperatureCount = 0;
-			if ((previousTemperaturesGood & (1 << (NumPreviousTemperatures - 1))) != 0)
+			const float tentativeDerivative = ((float)SecondsToMillis/HeatSampleIntervalMillis) * (temperature - previousTemperatures[previousTemperatureIndex])
+							/ (float)(NumPreviousTemperatures);
+			// Some sensors give occasional temperature spikes. We don't expect the temperature to increase by more than 10C/second.
+			if (fabsf(tentativeDerivative) <= 10.0)
 			{
-				const float tentativeDerivative = ((float)SecondsToMillis/HeatSampleIntervalMillis) * (temperature - previousTemperatures[previousTemperatureIndex])
-								/ (float)(NumPreviousTemperatures);
-				// Some sensors give occasional temperature spikes. We don't expect the temperature to increase by more than 10C/second.
-				if (fabsf(tentativeDerivative) <= 10.0)
-				{
-					derivative = tentativeDerivative;
-					gotDerivative = true;
-				}
+				derivative = tentativeDerivative;
+				gotDerivative = true;
 			}
-			previousTemperatures[previousTemperatureIndex] = temperature;
-			previousTemperaturesGood = (previousTemperaturesGood << 1) | 1;
+		}
+		previousTemperatures[previousTemperatureIndex] = temperature;
+		previousTemperaturesGood = (previousTemperaturesGood << 1) | 1;
 
+		if (GetModel().IsEnabled())
+		{
 			// Get the target temperature and the error
 			const float targetTemperature = GetTargetTemperature();
 			const float error = targetTemperature - temperature;
@@ -419,6 +419,10 @@ void LocalHeater::Spin()
 			{
 				DoTuningStep();
 			}
+		}
+		else
+		{
+			lastPwm = 0.0;
 		}
 
 		// Set the heater power and update the average PWM

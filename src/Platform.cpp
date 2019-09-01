@@ -31,6 +31,8 @@ extern "C" void tx_cb_USART_0(const struct usart_async_descriptor *const io_desc
 
 namespace Platform
 {
+	static constexpr float DefaultStepsPerMm = 80.0;
+
 	Mutex messageMutex;
 
 	static struct io_descriptor *io;
@@ -42,13 +44,8 @@ namespace Platform
 	uint32_t driveDriverBits[NumDrivers];
 	uint32_t allDriverBits = 0;
 
-#if defined(SAME51)		//TODO base this on configuration not processor
-	static float stepsPerMm[NumDrivers] = { 80.0, 80.0, 80.0 };
-#elif defined(SAMC21)
-	static float stepsPerMm[NumDrivers] = { 80.0 };
-#else
-# error Undefined configuration
-#endif
+	static bool directions[NumDrivers];
+	static float stepsPerMm[NumDrivers];
 
 	static volatile uint16_t currentVin, highestVin, lowestVin;
 #if HAS_12V_MONITOR
@@ -259,7 +256,7 @@ void Platform::Init()
 	ADC_temperature_init();
 #endif
 
-#ifdef SAME51		//TODO base on configuration not prcessor
+#ifdef SAME51		//TODO base on configuration not processor
 	// Set up the board ID switch inputs
 	for (unsigned int i = 0; i < 4; ++i)
 	{
@@ -326,6 +323,8 @@ void Platform::Init()
 		const uint32_t driverBit = 1u << (StepPins[i] & 31);
 		driveDriverBits[i] = driverBit;
 		allDriverBits |= driverBit;
+		stepsPerMm[i] = DefaultStepsPerMm;
+		directions[i] = true;
 
 		SmartDrivers::SetMicrostepping(i, 16, true);
 	}
@@ -397,7 +396,6 @@ void Platform::Init()
 
 void Platform::Spin()
 {
-	static uint8_t oldAddr = 0;
 	static bool powered = false;
 
 	// Get the VIN voltage
@@ -553,6 +551,8 @@ void Platform::Spin()
 	{
 		lastPollTime = now;
 
+#if 0
+		static uint8_t oldAddr = 0xFF;
 		const uint8_t addr = ReadBoardId();
 		if (addr != oldAddr)
 		{
@@ -563,6 +563,7 @@ void Platform::Spin()
 				SmartDrivers::SetCurrent(i, current);
 			}
 		}
+#endif
 
 		// Get the chip temperature
 #if defined(SAME51)
@@ -632,7 +633,7 @@ void Platform::Spin()
 						", stat %08" PRIx32 " %08" PRIx32 " %08" PRIx32,
 //							(unsigned int)conversionsStarted, (unsigned int)conversionsCompleted,
 //							StepTimer::GetInterruptClocks(),
-						(unsigned int)addr,
+						(unsigned int)CanInterface::GetCanAddress(),
 #if HAS_12V_MONITOR
 						(double)voltsVin, (double)volts12,
 #else
@@ -740,6 +741,17 @@ float Platform::DriveStepsPerUnit(size_t drive) { return stepsPerMm[drive]; }
 
 const float *Platform::GetDriveStepsPerUnit() { return stepsPerMm; }
 
+void Platform::SetDriverStepTiming(size_t drive, const float timings[4])
+{
+	for (size_t i = 0; i < 4; ++i)
+	{
+		if (slowDriverStepTimingClocks[i] < timings[i])
+		{
+			slowDriverStepTimingClocks[i] = min<float>(timings[i], 50.0);
+		}
+	}
+}
+
 float Platform::GetPressureAdvance(size_t extruder) { return 0.4; }
 //	void SetPressureAdvance(size_t extruder, float factor);
 EndStopHit Platform::Stopped(size_t axisOrExtruder) { return EndStopHit::lowHit; }
@@ -764,10 +776,40 @@ uint32_t Platform::GetDriversBitmap(size_t axisOrExtruder) 	// get the bitmap of
 
 //	unsigned int GetProhibitedExtruderMovements(unsigned int extrusions, unsigned int retractions);
 
-void Platform::SetDirection(size_t axisOrExtruder, bool direction)
+void Platform::SetDirectionValue(size_t drive, bool dVal)
 {
-	digitalWrite(DirectionPins[axisOrExtruder], direction);
+	if (drive < NumDrivers)
+	{
+		directions[drive] = dVal;
+	}
 }
+
+bool Platform::GetDirectionValue(size_t driver)
+{
+	return (driver < NumDrivers) && directions[driver];
+}
+
+void Platform::SetDirection(size_t driver, bool direction)
+{
+	if (driver < NumDrivers)
+	{
+		const bool d = (direction) ? directions[driver] : !directions[driver];
+		const bool isSlowDriver = IsBitSet(slowDriversBitmap, driver);
+		if (isSlowDriver)
+		{
+			while (StepTimer::GetInterruptClocks() - DDA::lastStepLowTime < GetSlowDriverDirHoldClocks()) { }
+		}
+		digitalWrite(DirectionPins[driver], d);
+		if (isSlowDriver)
+		{
+			DDA::lastDirChangeTime = StepTimer::GetInterruptClocks();
+		}
+	}
+}
+
+// The following don't do anything yet
+void Platform::SetEnableValue(size_t driver, int8_t eVal) { }
+bool Platform::GetEnableValue(size_t driver) { return false; }
 
 EndStopHit Platform::GetZProbeResult()
 {

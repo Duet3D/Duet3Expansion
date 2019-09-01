@@ -28,6 +28,7 @@
 #define TMC_TYPE	5160
 
 constexpr float MinimumMotorCurrent = 50.0;
+constexpr float MinimumOpenLoadMotorCurrent = 300;			// minimum current in mA for the open load status to be taken seriously
 constexpr uint32_t DefaultMicrosteppingShift = 4;			// x16 microstepping
 constexpr bool DefaultInterpolation = true;					// interpolation enabled
 constexpr uint32_t DefaultTpwmthrsReg = 2000;				// low values (high changeover speed) give horrible jerk at the changeover from stealthChop to spreadCycle
@@ -223,7 +224,7 @@ constexpr uint32_t DefaultChopConfReg = (1 << CHOPCONF_TBL_SHIFT) | (3 << CHOPCO
 constexpr uint8_t REGNUM_COOLCONF = 0x6D;
 constexpr uint32_t COOLCONF_SGFILT = 1 << 24;				// set to update stallGuard status every 4 full steps instead of every full step
 constexpr uint32_t COOLCONF_SGT_SHIFT = 16;
-constexpr uint32_t COOLCONF_SGT_MASK = 128 << COOLCONF_SGT_SHIFT;	// stallguard threshold (signed)
+constexpr uint32_t COOLCONF_SGT_MASK = 127 << COOLCONF_SGT_SHIFT;	// stallguard threshold (signed)
 
 constexpr uint32_t DefaultCoolConfReg = 0;
 
@@ -673,7 +674,7 @@ void TmcDriverState::Enable(bool en)
 // Read the status
 uint32_t TmcDriverState::ReadLiveStatus() const
 {
-	return readRegisters[ReadDrvStat] & (TMC_RR_OT | TMC_RR_OTPW | TMC_RR_S2G | TMC_RR_OLA | TMC_RR_OLB | TMC_RR_STST);
+	return readRegisters[ReadDrvStat] & (TMC_RR_SG | TMC_RR_OT | TMC_RR_OTPW | TMC_RR_S2G | TMC_RR_OLA | TMC_RR_OLB | TMC_RR_STST);
 }
 
 // Read the status
@@ -682,7 +683,7 @@ uint32_t TmcDriverState::ReadAccumulatedStatus(uint32_t bitsToKeep)
 	TaskCriticalSectionLocker lock;
 	const uint32_t status = accumulatedReadRegisters[ReadDrvStat];
 	accumulatedReadRegisters[ReadDrvStat] = (status & bitsToKeep) | readRegisters[ReadDrvStat];		// so that the next call to ReadAccumulatedStatus isn't missing some bits
-	return status & (TMC_RR_OT | TMC_RR_OTPW | TMC_RR_S2G | TMC_RR_OLA | TMC_RR_OLB | TMC_RR_STST);
+	return status & (TMC_RR_SG | TMC_RR_OT | TMC_RR_OTPW | TMC_RR_S2G | TMC_RR_OLA | TMC_RR_OLB | TMC_RR_STST);
 }
 
 // Append the driver status to a string, and reset the min/max load values
@@ -821,6 +822,14 @@ void TmcDriverState::TransferSucceeded(const uint8_t *rcvDataBlock)
 		++numWrites;
 	}
 
+	// Get the full step interval, we will need it later
+	const uint32_t interval =
+#if SAME51 || SAMC21
+								moveInstance->GetStepInterval(axisNumber, microstepShiftFactor);		// get the full step interval
+#else
+								reprap.GetMove().GetStepInterval(axisNumber, microstepShiftFactor);		// get the full step interval
+#endif
+
 	// If we read a register, update our copy
 	if (previousRegIndexRequested < NumReadRegisters)
 	{
@@ -829,26 +838,36 @@ void TmcDriverState::TransferSucceeded(const uint8_t *rcvDataBlock)
 		if (previousRegIndexRequested == ReadDrvStat)
 		{
 			// We treat the DRV_STATUS register separately
+			if ((regVal & TMC_RR_STST) == 0)							// in standstill, SG_RESULT returns the chopper on-time instead
+			{
+				const uint32_t sgResult = regVal & TMC_RR_SGRESULT;
+				if (sgResult < minSgLoadRegister)
+				{
+					minSgLoadRegister = sgResult;
+				}
+				if (sgResult > maxSgLoadRegister)
+				{
+					maxSgLoadRegister = sgResult;
+				}
+			}
+
 			if ((regVal & (TMC_RR_OLA | TMC_RR_OLB)) != 0)
 			{
-				uint32_t interval;
 				if (   (regVal & TMC_RR_STST) != 0
-#ifdef SAME51
-					|| (interval = moveInstance->GetStepInterval(axisNumber, microstepShiftFactor)) == 0		// get the full step interval
-#else
-					|| (interval = reprap.GetMove().GetStepInterval(axisNumber, microstepShiftFactor)) == 0		// get the full step interval
-#endif
+					|| interval == 0		// get the full step interval
 					|| interval > StepTimer::StepClockRate/MinimumOpenLoadFullStepsPerSec
+					|| motorCurrent < MinimumOpenLoadMotorCurrent
 				   )
 				{
 					regVal &= ~(TMC_RR_OLA | TMC_RR_OLB);				// open load bits are unreliable at standstill and low speeds
 				}
 			}
+
 			// Only add bits to the accumulator if they appear in 2 successive samples. This is to avoid seeing transient S2G, S2VS, STST and open load errors.
-			const uint32_t oldDrvStat = accumulatedReadRegisters[previousRegIndexRequested];
-			readRegisters[previousRegIndexRequested] = regVal;
+			const uint32_t oldDrvStat = readRegisters[ReadDrvStat];
+			readRegisters[ReadDrvStat] = regVal;
 			regVal &= oldDrvStat;
-			accumulatedReadRegisters[previousRegIndexRequested] |= regVal;
+			accumulatedReadRegisters[ReadDrvStat] |= regVal;
 		}
 		else
 		{
@@ -857,14 +876,19 @@ void TmcDriverState::TransferSucceeded(const uint8_t *rcvDataBlock)
 		}
 	}
 
-	if ((rcvDataBlock[0] & (1u << 2)) != 0)							// check the stall status
+	if (   (rcvDataBlock[0] & (1u << 2)) != 0							// if the status indicates stalled
+		&& interval != 0
+		&& interval <= maxStallStepInterval								// if the motor speed is high enough to get a reliable stall indication
+	   )
 	{
 		readRegisters[ReadDrvStat] |= TMC_RR_SG;
+		accumulatedReadRegisters[ReadDrvStat] |= TMC_RR_SG;
 	}
 	else
 	{
 		readRegisters[ReadDrvStat] &= ~TMC_RR_SG;
 	}
+
 	previousRegIndexRequested = regIndexRequested;
 }
 

@@ -6,9 +6,10 @@
  */
 
 #include "IoPorts.h"
-#include <Hardware/AnalogIn.h>
-#include <Hardware/AnalogOut.h>
-#include <Hardware/Interrupts.h>
+#include "AnalogIn.h"
+#include "AnalogOut.h"
+#include "Interrupts.h"
+#include <CAN/CanInterface.h>
 
 // Members of class IoPort
 
@@ -260,7 +261,11 @@ void IoPort::AppendPinName(const StringRef& str) const
 			else
 			{
 				// Include this one
-				if (numPrinted != 0)
+				if (numPrinted == 0)
+				{
+					str.catf("%u.", CanInterface::GetCanAddress());
+				}
+				else
 				{
 					str.cat(',');
 				}

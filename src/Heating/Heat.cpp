@@ -50,8 +50,6 @@ namespace Heat
 	static TemperatureSensor *newSensors = nullptr;				// New sensors waiting to be linked into the main list
 	HeaterProtection *heaterProtections[MaxHeaters + MaxExtraHeaterProtections];	// Heater protection instances to guarantee legal heater temperature ranges
 
-	static uint32_t lastWakeTime;
-
 	static float extrusionMinTemp;								// Minimum temperature to allow regular extrusion
 	static float retractionMinTemp;								// Minimum temperature to allow regular retraction
 	static bool coldExtrude;									// Is cold extrusion allowed?
@@ -130,7 +128,7 @@ void Heat::Exit()
 
 [[noreturn]] void Heat::Task()
 {
-	lastWakeTime = xTaskGetTickCount();
+	uint32_t lastWakeTime = xTaskGetTickCount();
 	for (;;)
 	{
 		// Walk the sensor list and poll all sensors except those flagged for deletion. Don'y mess with the list during this pass because polling may need to acquire mutexes.
@@ -253,7 +251,7 @@ void Heat::Exit()
 					msg->temperatureReports[sensorsFound].errorCode = (uint8_t)sensor->GetLatestTemperature(temperature);
 					msg->temperatureReports[sensorsFound].temperature = temperature;
 					++sensorsFound;
-					currentSensorNumber = sn + 1;
+					currentSensorNumber = (unsigned int)sn + 1u;
 				}
 			}
 			if (sensorsFound == 0)
@@ -271,6 +269,23 @@ void Heat::Exit()
 		// Delay until it is time again
 		vTaskDelayUntil(&lastWakeTime, HeatSampleIntervalMillis);
 	}
+}
+
+GCodeResult Heat::ProcessM307(const CanMessageUpdateHeaterModel& msg, const StringRef& reply)
+{
+	Heater * const h = FindHeater(msg.heater);
+	if (h == nullptr)
+	{
+		reply.printf("Unknown heater %u", msg.heater);
+		return GCodeResult::error;
+	}
+
+	const GCodeResult rslt = h->SetModel(msg.gain, msg.timeConstant, msg.deadTime, msg.maxPwm, msg.standardVoltage, msg.usePid, msg.inverted, reply);
+	if (msg.pidParametersOverridden && (rslt == GCodeResult::ok || rslt == GCodeResult::warning))
+	{
+		h->SetRawPidParameters(msg.kP, msg.recipTi, msg.tD);
+	}
+	return rslt;
 }
 
 GCodeResult Heat::ProcessM308(const CanMessageGeneric& msg, const StringRef& reply)
