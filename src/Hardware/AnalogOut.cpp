@@ -230,10 +230,20 @@ namespace AnalogOut
 					hri_tcc_set_CTRLA_PRESCALER_bf(tccdev, prescaler);
 					hri_tcc_write_WAVE_WAVEGEN_bf(tccdev, TCC_WAVE_WAVEGEN_NPWM_Val);
 					hri_tcc_write_PERBUF_PERBUF_bf(tccdev, tccTop[device]);
-					hri_tcc_write_PER_PER_bf(tccdev, tccTop[device]);
-					hri_tcc_write_CCBUF_CCBUF_bf(tccdev, output, cc);
-					hri_tcc_write_CC_CC_bf(tccdev, output, cc);
 
+#if 1
+					// hri_tcc_write_PER_PER_bf sometimes hangs here waiting for the syncbusy PER bit to clear, so don't call it
+					tccdev->PER.reg = (tccdev->PER.reg & ~TCC_PER_PER_Msk) | TCC_PER_PER(tccTop[device]);
+#else
+					hri_tcc_write_PER_PER_bf(tccdev, tccTop[device]);
+#endif
+					hri_tcc_write_CCBUF_CCBUF_bf(tccdev, output, cc);
+#if 1
+					// hri_tcc_write_CC_CC_bf sometimes hangs here waiting for the syncbusy CC bits to clear, so don't call it
+					tccdev->CC[output].reg = (tccdev->CC[output].reg & ~TCC_CC_CC_Msk) | TCC_CC_CC(cc);
+#else
+					hri_tcc_write_CC_CC_bf(tccdev, output, cc);
+#endif
 					hri_tcc_set_CTRLA_ENABLE_bit(tccdev);
 					hri_tcc_wait_for_sync(tccdev, TCC_SYNCBUSY_MASK);
 					hri_tcc_write_COUNT_reg(tccdev, 0);							// if we don't do this then there may be a 5 second delay before PWM starts

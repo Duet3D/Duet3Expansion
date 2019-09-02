@@ -271,6 +271,29 @@ void Heat::Exit()
 	}
 }
 
+GCodeResult Heat::ConfigureHeater(CanMessageGenericParser& parser, const StringRef& reply)
+{
+	uint16_t heater;
+	if (!parser.GetUintParam('H', heater))
+	{
+		return GCodeResult::remoteInternalError;
+	}
+
+	if (heater < MaxHeaters)
+	{
+		Heater *oldHeater = heaters[heater];
+
+		if (oldHeater == nullptr)
+		{
+			heaters[heater] = new LocalHeater(heater);
+		}
+		return heaters[heater]->ConfigurePortAndSensor(parser, reply);
+	}
+
+	reply.copy("Heater number out of range");
+	return GCodeResult::error;
+}
+
 GCodeResult Heat::ProcessM307(const CanMessageUpdateHeaterModel& msg, const StringRef& reply)
 {
 	Heater * const h = FindHeater(msg.heater);

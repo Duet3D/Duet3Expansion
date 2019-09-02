@@ -33,9 +33,7 @@ static GCodeResult ProcessM950(const CanMessageGeneric& msg, const StringRef& re
 	}
 	if (parser.GetUintParam('H', deviceNumber))
 	{
-		//TODO configure servo
-		reply.copy("heater configuration not implemented");
-		return GCodeResult::error;
+		return Heat::ConfigureHeater(parser, reply);
 	}
 	if (parser.GetUintParam('P', deviceNumber))
 	{

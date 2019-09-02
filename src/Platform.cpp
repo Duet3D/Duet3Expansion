@@ -781,6 +781,11 @@ void Platform::KickHeatTaskWatchdog()
 	heatTaskIdleTicks = 0;
 }
 
+void Platform::HandleHeaterFault(unsigned int heater)
+{
+	//TODO report the heater fault to the main board
+}
+
 void Platform::MessageF(MessageType type, const char *fmt, va_list vargs)
 {
 	String<FormatStringLength> formatString;

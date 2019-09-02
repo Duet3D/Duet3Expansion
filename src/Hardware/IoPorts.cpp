@@ -206,7 +206,7 @@ void IoPort::ToggleInvert(bool pInvert)
 	}
 }
 
-void IoPort::AppendDetails(const StringRef& str)
+void IoPort::AppendDetails(const StringRef& str) const
 {
 	if (IsValid())
 	{
@@ -223,7 +223,7 @@ void IoPort::AppendDetails(const StringRef& str)
 	}
 	else
 	{
-		str.cat(" is not assigned to a pin");
+		str.cat(" has no pin");
 	}
 }
 
@@ -451,9 +451,13 @@ PwmPort::PwmPort()
 	frequency = DefaultPinWritePwmFreq;
 }
 
-void PwmPort::SetFrequency(float freq)
+void PwmPort::AppendDetails(const StringRef& str) const
 {
-	frequency = (uint16_t)constrain<float>(freq, 1.0, 65535);
+	IoPort::AppendDetails(str);
+	if (IsValid())
+	{
+		str.catf(" frequency %uHz", frequency);
+	}
 }
 
 void PwmPort::WriteAnalog(float pwm) const

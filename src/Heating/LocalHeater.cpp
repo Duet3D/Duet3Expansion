@@ -122,12 +122,21 @@ GCodeResult LocalHeater::ConfigurePortAndSensor(CanMessageGenericParser &parser,
 		{
 			SetSensorNumber(-1);
 			reply.printf("Sensor number %d has not been defined", sn);
+			return GCodeResult::warning;
 		}
 	}
 	else if (!seenPin && !seenFreq)
 	{
 		reply.printf("Heater %u", GetHeaterNumber());
 		port.AppendDetails(reply);
+		if (GetSensorNumber() >= 0)
+		{
+			reply.catf(", sensor %d", GetSensorNumber());
+		}
+		else
+		{
+			reply.cat(", no sensor");
+		}
 	}
 	return GCodeResult::ok;
 }

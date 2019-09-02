@@ -122,7 +122,6 @@ namespace Platform
 	void GetMcuTemperatures(float& minTemp, float& currentTemp, float& maxTemp);
 	float GetTmcDriversTemperature();
 
-	void SetHeater(unsigned int heater, float pwm);
 	void HandleHeaterFault(unsigned int heater);
 
 	void KickHeatTaskWatchdog();

@@ -65,7 +65,7 @@ public:
 	IoPort();
 	bool SetMode(PinAccess access);
 	void Release();
-	void AppendDetails(const StringRef& str);
+	void AppendDetails(const StringRef& str) const;
 
 	Pin GetPin() const { return pin; }
 
@@ -123,8 +123,8 @@ class PwmPort : public IoPort
 public:
 	PwmPort();
 
-	void SetFrequency(float freq);
-//	float GetFrequency() const { return (float)frequency; }
+	void AppendDetails(const StringRef& str) const;			// hides the version in IoPort
+	void SetFrequency(PwmFrequency freq) { frequency = freq; }
 	void WriteAnalog(float pwm) const;
 
 private:
@@ -139,7 +139,6 @@ inline bool digitalRead(Pin p)
 inline void digitalWrite(Pin p, bool high)
 {
 	gpio_set_pin_level(p, high);
-
 }
 
 inline void fastDigitalWriteHigh(Pin p)
