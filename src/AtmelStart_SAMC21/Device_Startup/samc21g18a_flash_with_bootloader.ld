@@ -33,9 +33,10 @@ OUTPUT_ARCH(arm)
 SEARCH_DIR(.)
 
 /* Memory Spaces Definitions */
+/* Modified to provide for a 16kb bootloader at the start of flash memory. We choose 16K because that is the largest flash block size on the SAMC21 processors. */
 MEMORY
 {
-  rom      (rx)  : ORIGIN = 0x00000000, LENGTH = 0x00040000
+  rom      (rx)  : ORIGIN = 0x00004000, LENGTH = 0x0003C000
   ram      (rwx) : ORIGIN = 0x20000000, LENGTH = 0x00008000
 }
 

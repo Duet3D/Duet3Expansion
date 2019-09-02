@@ -22,7 +22,24 @@
 #include "Heating/Heat.h"
 #include "Heating/Sensors/TemperatureSensor.h"
 
+#if defined(SAME51)
+
+# include <hri_nvmctrl_e51.h>
+constexpr uint32_t FlashBlockSize = 0x00010000;							// the block size we assume for flash
+constexpr uint32_t FirmwareFlashStart = FLASH_ADDR + FlashBlockSize;	// we reserve 64K for the bootloader
+
+#elif defined(SAMC21)
+
+# include <hri_nvmctrl_c21.h>
+constexpr uint32_t FlashBlockSize = 0x00004000;							// the block size we assume for flash
+constexpr uint32_t FirmwareFlashStart = FLASH_ADDR + FlashBlockSize;	// we reserve 16K for the bootloader
+
+#else
+# error Unsupported processor
+#endif
+
 static bool txBusy = false;
+static bool doFirmwareUpdate = false;
 
 extern "C" void tx_cb_USART_0(const struct usart_async_descriptor *const io_descr)
 {
@@ -201,6 +218,84 @@ namespace Platform
 		StepTimer::Init();										// initialise the step pulse timer
 	}
 
+	[[noreturn]] RAMFUNC static void EraseAndReset()
+	{
+#if defined(SAME51)
+		while (!hri_nvmctrl_get_STATUS_READY_bit(NVMCTRL)) { }
+
+		// Unlock the block of flash
+		hri_nvmctrl_write_ADDR_reg(NVMCTRL, FirmwareFlashStart);
+		hri_nvmctrl_write_CTRLB_reg(NVMCTRL, NVMCTRL_CTRLB_CMD_UR | NVMCTRL_CTRLB_CMDEX_KEY);
+
+		while (!hri_nvmctrl_get_STATUS_READY_bit(NVMCTRL)) { }
+
+		// Set address and command
+		hri_nvmctrl_write_ADDR_reg(NVMCTRL, FirmwareFlashStart);
+		hri_nvmctrl_write_CTRLB_reg(NVMCTRL, NVMCTRL_CTRLB_CMD_EB | NVMCTRL_CTRLB_CMDEX_KEY);
+
+		while (!hri_nvmctrl_get_STATUS_READY_bit(NVMCTRL)) { }
+#elif defined(SAMC21)
+		while (!hri_nvmctrl_get_interrupt_READY_bit(NVMCTRL)) { }
+		hri_nvmctrl_clear_STATUS_reg(NVMCTRL, NVMCTRL_STATUS_MASK);
+
+		// Unlock the block of flash
+		hri_nvmctrl_write_ADDR_reg(NVMCTRL, FirmwareFlashStart / 2);		// note the /2 because the command takes the address in 16-bit words
+		hri_nvmctrl_write_CTRLA_reg(NVMCTRL, NVMCTRL_CTRLA_CMD_UR | NVMCTRL_CTRLA_CMDEX_KEY);
+
+		while (!hri_nvmctrl_get_interrupt_READY_bit(NVMCTRL)) { }
+		hri_nvmctrl_clear_STATUS_reg(NVMCTRL, NVMCTRL_STATUS_MASK);
+
+		// Set address and command
+		hri_nvmctrl_write_ADDR_reg(NVMCTRL, FirmwareFlashStart / 2);		// note the /2 because the command takes the address in 16-bit words
+		hri_nvmctrl_write_CTRLA_reg(NVMCTRL, NVMCTRL_CTRLA_CMD_ER | NVMCTRL_CTRLA_CMDEX_KEY);
+
+		while (!hri_nvmctrl_get_interrupt_READY_bit(NVMCTRL)) { }
+		hri_nvmctrl_clear_STATUS_reg(NVMCTRL, NVMCTRL_STATUS_MASK);
+#else
+# error Unsupported processor
+#endif
+
+		SCB->AIRCR = (0x5FA << 16) | (1u << 2);			// reset the processor
+		for (;;) { }
+	}
+
+	[[noreturn]] static void DoFirmwareUpdate()
+	{
+		CanInterface::Shutdown();
+		DisableAllDrives();
+		delay(10);										// allow existing processing to complete, drivers to be turned off and CAN replies to be sent
+		Heat::SwitchOffAll();
+#ifdef SAME51
+		IoPort::WriteDigital(GlobalTmc51xxEnablePin, true);
+#endif
+#ifdef SAMC21
+		IoPort::WriteDigital(GlobalTmc22xxEnablePin, true);
+#endif
+
+//		DisableCache();
+
+		// Disable all IRQs
+		__disable_irq();
+		SysTick->CTRL = (1 << SysTick_CTRL_CLKSOURCE_Pos);	// disable the system tick exception
+
+#if defined(SAME51)
+		for (size_t i = 0; i < 8; i++)
+		{
+			NVIC->ICER[i] = 0xFFFFFFFF;					// Disable IRQs
+			NVIC->ICPR[i] = 0xFFFFFFFF;					// Clear pending IRQs
+		}
+#elif defined(SAMC21)
+		NVIC->ICER[0] = 0xFFFFFFFF;						// Disable IRQs
+		NVIC->ICPR[0] = 0xFFFFFFFF;						// Clear pending IRQs
+#else
+# error Unsupported processor
+#endif
+
+		digitalWrite(DiagLedPin, false);					// turn the DIAG LED off
+
+		EraseAndReset();
+	}
+
 }	// end namespace Platform
 
 void Platform::Init()
@@ -243,7 +338,7 @@ void Platform::Init()
 	usart_async_get_io_descriptor(&USART_0, &io);
 	usart_async_enable(&USART_0);
 #elif defined(SAMC21)
-	qq;
+	//TODO
 #else
 # error Unsupported processor
 #endif
@@ -397,6 +492,11 @@ void Platform::Init()
 void Platform::Spin()
 {
 	static bool powered = false;
+
+	if (doFirmwareUpdate)
+	{
+		DoFirmwareUpdate();
+	}
 
 	// Get the VIN voltage
 	const float voltsVin = (vinFilter.GetSum() * (3.3 * VinDividerRatio))/(4096 * vinFilter.NumAveraged());
@@ -816,9 +916,22 @@ EndStopHit Platform::GetZProbeResult()
 	return EndStopHit::lowHit;
 }
 
-void Platform::EnableDrive(size_t axisOrExtruder)
+void Platform::EnableDrive(size_t driver)
 {
-	SmartDrivers::EnableDrive(axisOrExtruder, true);
+	SmartDrivers::EnableDrive(driver, true);
+}
+
+void Platform::DisableDrive(size_t driver)
+{
+	SmartDrivers::EnableDrive(driver, false);
+}
+
+void Platform::DisableAllDrives()
+{
+	for (size_t driver = 0; driver < NumDrivers; ++driver)
+	{
+		SmartDrivers::EnableDrive(driver, false);
+	}
 }
 
 //	void Platform::DisableDrive(size_t axisOrExtruder);
@@ -854,6 +967,11 @@ float Platform::GetTmcDriversTemperature()
 void Platform::Tick()
 {
 	//TODO
+}
+
+void Platform::StartFirmwareUpdate()
+{
+	doFirmwareUpdate = true;
 }
 
 // End

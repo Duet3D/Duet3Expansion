@@ -110,8 +110,8 @@ namespace Platform
 	bool GetDirectionValue(size_t driver);
 	void SetEnableValue(size_t driver, int8_t eVal);
 	bool GetEnableValue(size_t driver);
-	void EnableDrive(size_t axisOrExtruder);
-	void DisableDrive(size_t axisOrExtruder);
+	void EnableDrive(size_t driver);
+	void DisableDrive(size_t driver);
 	void DisableAllDrives();
 	void SetDriversIdle();
 
@@ -130,6 +130,8 @@ namespace Platform
 	uint8_t ReadBoardId();
 
 	void Tick();
+
+	void StartFirmwareUpdate();
 }
 
 #endif /* SRC_PLATFORM_H_ */

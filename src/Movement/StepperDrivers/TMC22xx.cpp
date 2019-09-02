@@ -411,6 +411,8 @@ private:
 #if TMC22xx_HAS_MUX || TMC22xx_SINGLE_DRIVER
 # if TMC22xx_USES_SERCOM
 Sercom * const TmcDriverState::sercom = SERCOM_TMC22xx;
+uint8_t const TmcDriverState::sercomNumber = TMC22xxSercomNumber;
+
 # else
 Uart * const TmcDriverState::uart = UART_TMC22xx;
 # endif

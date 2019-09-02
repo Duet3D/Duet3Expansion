@@ -15,6 +15,7 @@
 const unsigned int NumCanBuffers = 40;
 
 static CanAddress boardAddress;
+static bool enabled = false;
 
 // CanReceiver management task
 constexpr size_t CanReceiverTaskStackWords = 400;		// need quite a large stack to allow for calls to debugPrint, 400 is not enough
@@ -170,7 +171,11 @@ extern "C" void CanReceiverLoop(void *)
 			can_message msg;										// descriptor for the message
 			msg.data = reinterpret_cast<uint8_t*>(&(buf->msg));		// set up where we want the message data to be stored
 			const int32_t rslt = can_async_read(&CAN_0, &msg);		// fetch the message
-			if (rslt == ERR_NONE)
+			if (!enabled)
+			{
+				CanMessageBuffer::Free(buf);
+			}
+			else if (rslt == ERR_NONE)
 			{
 				buf->dataLength = msg.len;
 				buf->id.SetReceivedId(msg.id);
@@ -193,8 +198,17 @@ void CanInterface::Init(CanAddress pBoardAddress)
 	can_async_register_callback(&CAN_0, CAN_ASYNC_RX_CB, (FUNC_PTR)CAN_0_rx_callback);
 	can_async_register_callback(&CAN_0, CAN_ASYNC_TX_CB, (FUNC_PTR)CAN_0_tx_callback);
 
-	// Create the task that sends CAN messages
-	canReceiverTask.Create(CanReceiverLoop, "CanSender", nullptr, TaskPriority::CanReceiverPriority);
+	enabled = true;
+
+	// Create the task that receives CAN messages
+	canReceiverTask.Create(CanReceiverLoop, "CanRecv", nullptr, TaskPriority::CanReceiverPriority);
+}
+
+// Shutdown is called when we are asked to update the firmware.
+// We must allow the response to be sent, but we stop processing further messages.
+void CanInterface::Shutdown()
+{
+	enabled = false;
 }
 
 CanAddress CanInterface::GetCanAddress()

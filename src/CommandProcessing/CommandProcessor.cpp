@@ -305,6 +305,18 @@ static GCodeResult ProcessM569(const CanMessageGeneric& msg, const StringRef& re
 	return GCodeResult::ok;
 }
 
+static GCodeResult InitiateFirmwareUpdate(const CanMessageUpdateYourFirmware& msg, const StringRef& reply)
+{
+	if (msg.boardId != CanInterface::GetCanAddress() || msg.invertedBoardId != (uint8_t)~CanInterface::GetCanAddress())
+	{
+		reply.printf("Invalid firmware update command received");
+		return GCodeResult::error;
+	}
+	reply.printf("Board %u about to start firmware update", CanInterface::GetCanAddress());
+	Platform::StartFirmwareUpdate();
+	return GCodeResult::ok;
+}
+
 void CommandProcessor::Spin()
 {
 	CanMessageBuffer *buf = CanInterface::GetCanCommand();
@@ -348,6 +360,10 @@ void CommandProcessor::Spin()
 
 		case CanMessageType::setMicrostepping:
 			rslt = SetMicrostepping(buf->msg.multipleDrivesRequest, replyRef);
+			break;
+
+		case CanMessageType::updateFirmware:
+			rslt = InitiateFirmwareUpdate(buf->msg.updateYourFirmware, replyRef);
 			break;
 
 		case CanMessageType::m106:
