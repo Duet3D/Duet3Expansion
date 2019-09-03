@@ -104,7 +104,7 @@ bool IoPort::Read() const
 }
 
 // Attach an interrupt to the pin. Nor permitted if we allocated the pin in shared input mode.
-bool IoPort::AttachInterrupt(StandardCallbackFunction callback, enum InterruptMode mode, CallbackParameter param) const
+bool IoPort::AttachInterrupt(StandardCallbackFunction callback, InterruptMode mode, CallbackParameter param) const
 {
 	return IsValid() && !isSharedInput && ::AttachInterrupt(pin, callback, mode, param);
 }
@@ -115,6 +115,47 @@ void IoPort::DetachInterrupt() const
 	{
 		::DetachInterrupt(pin);
 	}
+}
+
+// Try to assign ports, returning the number of ports successfully assigned
+/*static*/ size_t IoPort::AssignPorts(const char* pinNames, const StringRef& reply, PinUsedBy neededFor, size_t numPorts, IoPort* const ports[], const PinAccess access[])
+{
+	// Release any existing assignments
+	for (size_t i = 0; i < numPorts; ++i)
+	{
+		ports[i]->Release();
+	}
+
+	// Parse the string into individual port names
+	size_t index = 0;
+	for (size_t i = 0; i < numPorts; ++i)
+	{
+		// Get the next port name
+		String<StringLength20> pn;
+		char c;
+		while ((c = pinNames[index]) != 0 && c != '+')
+		{
+			pn.cat(c);
+			++index;
+		}
+
+		// Try to allocate the port
+		if (!ports[i]->Allocate(pn.c_str(), reply, neededFor, access[i]))
+		{
+			for (size_t j = 0; j < i; ++j)
+			{
+				ports[j]->Release();
+			}
+			return 0;
+		}
+
+		if (c != '+')
+		{
+			return i + 1;
+		}
+		++index;					// skip the "+"
+	}
+	return numPorts;
 }
 
 // Allocate the specified logical pin, returning true if successful

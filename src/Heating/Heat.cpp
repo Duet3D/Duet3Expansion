@@ -271,8 +271,9 @@ void Heat::Exit()
 	}
 }
 
-GCodeResult Heat::ConfigureHeater(CanMessageGenericParser& parser, const StringRef& reply)
+GCodeResult Heat::ConfigureHeater(const CanMessageGeneric& msg, const StringRef& reply)
 {
+	CanMessageGenericParser parser(msg, M950HeaterParams);
 	uint16_t heater;
 	if (!parser.GetUintParam('H', heater))
 	{

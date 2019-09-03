@@ -26,4 +26,12 @@ constexpr float DefaultThermistorC = 0.0;
 
 #define SUPPORT_CAN_EXPANSION	1
 
+constexpr size_t MaxSensorsInSystem = 64;
+typedef uint64_t SensorsBitmap;
+
+// Fan defaults
+constexpr size_t NumTotalFans = 12;
+constexpr float DefaultMinFanPwm = 0.1;					// minimum fan PWM
+constexpr uint32_t DefaultFanBlipTime = 100;			// fan blip time in milliseconds
+
 #endif /* SRC_CONFIG_BOARDDEF_H_ */

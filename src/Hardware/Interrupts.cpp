@@ -62,7 +62,7 @@ void InitialisePinChangeInterrupts()
 }
 
 // Attach an interrupt to the specified pin returning true if successful
-bool AttachInterrupt(uint32_t pin, StandardCallbackFunction callback, enum InterruptMode mode, CallbackParameter param)
+bool AttachInterrupt(Pin pin, StandardCallbackFunction callback, InterruptMode mode, CallbackParameter param)
 {
 	if (pin >= ARRAY_SIZE(PinTable))
 	{

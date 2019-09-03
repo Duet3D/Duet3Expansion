@@ -10,6 +10,7 @@
 #include "CanMessageBuffer.h"
 #include "GCodes/GCodeResult.h"
 #include "Heating/Heat.h"
+#include "Fans/FansManager.h"
 #include "CanMessageGenericParser.h"
 #include <Platform.h>
 #include <Version.h>
@@ -20,36 +21,6 @@
 #if SUPPORT_TMC51xx
 # include "Movement/StepperDrivers/TMC51xx.h"
 #endif
-
-static GCodeResult ProcessM950(const CanMessageGeneric& msg, const StringRef& reply)
-{
-	CanMessageGenericParser parser(msg, M950Params);
-	uint16_t deviceNumber;
-	if (parser.GetUintParam('F', deviceNumber))
-	{
-		//TODO configure fan
-		reply.copy("Fan configuration not implemented");
-		return GCodeResult::error;
-	}
-	if (parser.GetUintParam('H', deviceNumber))
-	{
-		return Heat::ConfigureHeater(parser, reply);
-	}
-	if (parser.GetUintParam('P', deviceNumber))
-	{
-		//TODO configure gpio
-		reply.copy("GPIO configuration not implemented");
-		return GCodeResult::error;
-	}
-	if (parser.GetUintParam('S', deviceNumber))
-	{
-		//TODO configure servo
-		reply.copy("GPIO configuration not implemented");
-		return GCodeResult::error;
-	}
-	reply.copy("Missing FPSH parameter");
-	return GCodeResult::error;
-}
 
 static GCodeResult SetMotorCurrents(const CanMessageMultipleDrivesRequest& msg, const StringRef& reply)
 {
@@ -340,8 +311,17 @@ void CommandProcessor::Spin()
 			rslt = Heat::ProcessM308(buf->msg.generic, replyRef);
 			break;
 
-		case CanMessageType::m950:
-			rslt = ProcessM950(buf->msg.generic, replyRef);
+		case CanMessageType::m950Fan:
+			rslt = FansManager::ConfigureFanPort(buf->msg.generic, replyRef);
+			break;
+
+		case CanMessageType::m950Heater:
+			rslt = Heat::ConfigureHeater(buf->msg.generic, replyRef);
+			break;
+
+		case CanMessageType::m950Gpio:
+			reply.copy("GPIO configuration not implemented");
+			rslt = GCodeResult::error;
 			break;
 
 		case CanMessageType::setMotorCurrents:
@@ -364,7 +344,14 @@ void CommandProcessor::Spin()
 			rslt = InitiateFirmwareUpdate(buf->msg.updateYourFirmware, replyRef);
 			break;
 
-		case CanMessageType::m106:
+		case CanMessageType::fanParameters:
+			rslt = FansManager::ConfigureFan(buf->msg.fanParameters, replyRef);
+			break;
+
+		case CanMessageType::setFanSpeed:
+			rslt = FansManager::SetFanSpeed(buf->msg.setFanSpeed, replyRef);
+			break;
+
 		case CanMessageType::m915:
 		case CanMessageType::setDriverStates:
 		default:

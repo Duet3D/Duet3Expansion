@@ -132,12 +132,21 @@ namespace AnalogOut
 					else
 					{
 						hri_tc_write_WAVE_WAVEGEN_bf(tcdev, TC_WAVE_WAVEGEN_MPWM_Val);
+#if 1
+						tcdev->COUNT16.CC[0].reg = (tcdev->COUNT16.CC[0].reg &  ~TC_COUNT16_CC_CC_Msk) | TC_COUNT16_CC_CC(tcTop[device]);
+						tcdev->COUNT16.CCBUF[0].reg = (tcdev->COUNT16.CCBUF[0].reg & ~TC_COUNT16_CCBUF_CCBUF_Msk) | TC_COUNT16_CCBUF_CCBUF(tcTop[device]);
+#else
 						hri_tccount16_write_CC_CC_bf(tcdev, 0, tcTop[device]);
 						hri_tccount16_write_CCBUF_CCBUF_bf(tcdev, 0, tcTop[device]);
+#endif
 					}
+#if 1
+					tcdev->COUNT16.CC[output].reg = (tcdev->COUNT16.CC[output].reg &  ~TC_COUNT16_CC_CC_Msk) | TC_COUNT16_CC_CC(cc);
+					tcdev->COUNT16.CCBUF[output].reg = (tcdev->COUNT16.CCBUF[output].reg & ~TC_COUNT16_CCBUF_CCBUF_Msk) | TC_COUNT16_CCBUF_CCBUF(cc);
+#else
 					hri_tccount16_write_CCBUF_CCBUF_bf(tcdev, output, cc);
 					hri_tccount16_write_CC_CC_bf(tcdev, output, cc);
-
+#endif
 					hri_tc_set_CTRLA_ENABLE_bit(tcdev);
 					gpio_set_pin_function(pin, GPIO_PIN_FUNCTION_E);			// TCs are all on peripheral select E
 				}

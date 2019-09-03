@@ -66,8 +66,6 @@ const size_t MaxExtraHeaterProtections = 6;
 
 #define DIAG_SERCOM_NUMBER	4			// which SERCOM device we use for debugging output
 
-constexpr size_t MaxSensorsInSystem = 64;			// Must be the same as on Duet 3 main boards
-
 constexpr size_t MaxAxes = 3;			//TEMP we won't need this
 
 constexpr size_t NumOutputPorts = 3;
