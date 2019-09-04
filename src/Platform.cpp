@@ -21,6 +21,7 @@
 #include "Tasks.h"
 #include "Heating/Heat.h"
 #include "Heating/Sensors/TemperatureSensor.h"
+#include "Fans/FansManager.h"
 
 #if defined(SAME51)
 
@@ -62,6 +63,7 @@ namespace Platform
 	uint32_t allDriverBits = 0;
 
 	static bool directions[NumDrivers];
+	static int8_t enableValues[NumDrivers] = { 0 };
 	static float stepsPerMm[NumDrivers];
 
 	static volatile uint16_t currentVin, highestVin, lowestVin;
@@ -77,6 +79,7 @@ namespace Platform
 	static float mcuTemperatureAdjust = 0.0;
 
 	static uint32_t lastPollTime;
+	static uint32_t lastFanCheckTime = 0;
 	static unsigned int heatTaskIdleTicks = 0;
 
 	// SERCOM3 Rx is on PB21 (OUT_8_TACHO), Tx is on PB20 (OUT_7_TACHO)
@@ -505,30 +508,33 @@ void Platform::Spin()
 	if (!powered && voltsVin >= 10.5 && volts12 >= 10.5)
 	{
 		powered = true;
-		SmartDrivers::Spin(true);
 	}
 	else if (powered && (voltsVin < 10.0 || volts12 < 10.0))
 	{
 		powered = false;
-		SmartDrivers::Spin(false);
 		++numUnderVoltageEvents;
 	}
 #else
 	if (!powered && voltsVin >= 10.5)
 	{
 		powered = true;
-		SmartDrivers::Spin(true);
 	}
 	else if (powered && voltsVin < 10.0)
 	{
 		powered = false;
-		SmartDrivers::Spin(false);
 	}
 #endif
-	else
+
+	SmartDrivers::Spin(powered);
+
+	// Thermostatically-controlled fans (do this after getting TMC driver status)
+	const uint32_t now = millis();
+	if (now - lastFanCheckTime >= FanCheckInterval)
 	{
+		(void)FansManager::CheckFans();
+
 		// Check one TMC driver for temperature warning or temperature shutdown
-		if (true) // (enableValues[nextDriveToPoll] >= 0)				// don't poll driver if it is flagged "no poll"
+		if (enableValues[nextDriveToPoll] >= 0)				// don't poll driver if it is flagged "no poll"
 		{
 			const uint32_t stat = SmartDrivers::GetAccumulatedStatus(nextDriveToPoll, 0);
 			const DriversBitmap mask = MakeBitmap<DriversBitmap>(nextDriveToPoll);
@@ -646,7 +652,6 @@ void Platform::Spin()
 							: (StepTimer::GetInterruptClocks() & (1u << 17)) != 0
 					  );
 
-	const uint32_t now = millis();
 	if (now - lastPollTime > 2000)
 	{
 		lastPollTime = now;
@@ -913,8 +918,18 @@ void Platform::SetDirection(size_t driver, bool direction)
 }
 
 // The following don't do anything yet
-void Platform::SetEnableValue(size_t driver, int8_t eVal) { }
-bool Platform::GetEnableValue(size_t driver) { return false; }
+void Platform::SetEnableValue(size_t driver, int8_t eVal)
+{
+	if (driver < NumDrivers)
+	{
+		enableValues[driver] = eVal;
+	}
+}
+
+int8_t Platform::GetEnableValue(size_t driver)
+{
+	return (driver < NumDrivers) ? enableValues[driver] : 0;
+}
 
 EndStopHit Platform::GetZProbeResult()
 {
