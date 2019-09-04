@@ -32,8 +32,9 @@ LocalFan::~LocalFan()
 	tachoPort.Release();
 }
 
-void LocalFan::AppendPortDetails(const StringRef& str) const
+void LocalFan::ReportPortDetails(const StringRef& str) const
 {
+	str.printf("Fan %u", fanNumber);
 	port.AppendDetails(str);
 	if (tachoPort.IsValid())
 	{

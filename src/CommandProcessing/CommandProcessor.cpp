@@ -292,69 +292,85 @@ void CommandProcessor::Spin()
 	if (buf != nullptr)
 	{
 		String<CanMessageStandardReply::MaxTextLength> reply;
-		GCodeResult rslt;
 		const StringRef& replyRef = reply.GetRef();
-
 		const CanMessageType id = buf->id.MsgType();
+		GCodeResult rslt;
+		CanRequestId requestId;
+
 		switch (id)
 		{
 		case CanMessageType::m122:
+			requestId = buf->msg.diagnostics.requestId;
 			reply.printf("Board %s firmware %s", BoardTypeName, FirmwareVersion);
 			rslt = GCodeResult::ok;
 			break;
 
 		case CanMessageType::updateHeaterModel:
+			requestId = buf->msg.heaterModel.requestId;
 			rslt = Heat::ProcessM307(buf->msg.heaterModel, replyRef);
 			break;
 
 		case CanMessageType::m308:
+			requestId = buf->msg.generic.requestId;
 			rslt = Heat::ProcessM308(buf->msg.generic, replyRef);
 			break;
 
 		case CanMessageType::m950Fan:
+			requestId = buf->msg.generic.requestId;
 			rslt = FansManager::ConfigureFanPort(buf->msg.generic, replyRef);
 			break;
 
 		case CanMessageType::m950Heater:
+			requestId = buf->msg.generic.requestId;
 			rslt = Heat::ConfigureHeater(buf->msg.generic, replyRef);
 			break;
 
 		case CanMessageType::m950Gpio:
+			requestId = buf->msg.generic.requestId;
 			reply.copy("GPIO configuration not implemented");
 			rslt = GCodeResult::error;
 			break;
 
 		case CanMessageType::setMotorCurrents:
+			requestId = buf->msg.multipleDrivesRequest.requestId;
 			rslt = SetMotorCurrents(buf->msg.multipleDrivesRequest, replyRef);
 			break;
 
 		case CanMessageType::m569:
+			requestId = buf->msg.generic.requestId;
+			requestId = buf->msg.generic.requestId;
 			rslt = ProcessM569(buf->msg.generic, replyRef);
 			break;
 
 		case CanMessageType::setStandstillCurrentFactor:
+			requestId = buf->msg.multipleDrivesRequest.requestId;
 			rslt = SetStandstillCurrentFactor(buf->msg.multipleDrivesRequest, replyRef);
 			break;
 
 		case CanMessageType::setMicrostepping:
+			requestId = buf->msg.multipleDrivesRequest.requestId;
 			rslt = SetMicrostepping(buf->msg.multipleDrivesRequest, replyRef);
 			break;
 
 		case CanMessageType::updateFirmware:
+			requestId = buf->msg.updateYourFirmware.requestId;
 			rslt = InitiateFirmwareUpdate(buf->msg.updateYourFirmware, replyRef);
 			break;
 
 		case CanMessageType::fanParameters:
+			requestId = buf->msg.fanParameters.requestId;
 			rslt = FansManager::ConfigureFan(buf->msg.fanParameters, replyRef);
 			break;
 
 		case CanMessageType::setFanSpeed:
+			requestId = buf->msg.setFanSpeed.requestId;
 			rslt = FansManager::SetFanSpeed(buf->msg.setFanSpeed, replyRef);
 			break;
 
 		case CanMessageType::m915:
 		case CanMessageType::setDriverStates:
 		default:
+			requestId = CanRequestIdAcceptAlways;
 			reply.printf("Unknown message type %u", (unsigned int)buf->id.MsgType());
 			rslt = GCodeResult::error;
 			break;
@@ -362,14 +378,14 @@ void CommandProcessor::Spin()
 
 		// Re-use the message buffer to send the reply
 		const CanAddress srcAddress = buf->id.Src();
-		CanMessageStandardReply *msg = buf->SetupResponseMessage<CanMessageStandardReply>(CanInterface::GetCanAddress(), srcAddress);
-		msg->requestId = (uint16_t)id;
+		CanMessageStandardReply *msg = buf->SetupResponseMessage<CanMessageStandardReply>(requestId, CanInterface::GetCanAddress(), srcAddress);
 		msg->resultCode = (uint16_t)rslt;
-		const size_t textLength = min<size_t>(reply.strlen(), CanMessageStandardReply::MaxTextLength);
+		size_t textLength = min<size_t>(reply.strlen(), CanMessageStandardReply::MaxTextLength);
 		memcpy(msg->text, reply.c_str(), textLength);
 		if (textLength < ARRAY_SIZE(msg->text))
 		{
 			msg->text[textLength] = 0;
+			++textLength;
 		}
 		buf->dataLength = msg->GetActualDataLength(textLength);
 		CanInterface::Send(buf);

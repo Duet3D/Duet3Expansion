@@ -208,7 +208,7 @@ bool IoPort::Allocate(const char *pn, const StringRef& reply, PinUsedBy neededFo
 				|| (pm != INPUT && pm != INPUT_PULLUP)
 			   )
 			{
-				reply.printf("Pin '%s' is not free", fullPinName);
+				reply.printf("Pin %u.%s is not free", CanInterface::GetCanAddress(), fullPinName);
 				return false;
 			}
 			doSetMode = false;

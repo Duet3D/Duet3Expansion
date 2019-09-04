@@ -20,7 +20,7 @@ public:
 	bool IsEnabled() const override { return port.IsValid(); }
 	void SetPwmFrequency(PwmFrequency freq) override { port.SetFrequency(freq); }
 	int32_t GetRPM() override;
-	void AppendPortDetails(const StringRef& str) const override;
+	void ReportPortDetails(const StringRef& str) const override;
 
 	bool AssignPorts(const char *pinNames, const StringRef& reply);
 

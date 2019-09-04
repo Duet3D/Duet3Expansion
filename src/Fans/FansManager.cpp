@@ -96,8 +96,7 @@ GCodeResult FansManager::ConfigureFanPort(const CanMessageGeneric& msg, const St
 	}
 	else
 	{
-		reply.printf("Fan %u", fanNum);
-		fans[fanNum]->AppendPortDetails(reply);
+		fans[fanNum]->ReportPortDetails(reply);
 	}
 	return GCodeResult::ok;
 }

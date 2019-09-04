@@ -24,7 +24,7 @@ public:
 	virtual void SetPwmFrequency(PwmFrequency freq) = 0;
 	virtual bool IsEnabled() const = 0;
 	virtual int32_t GetRPM() = 0;
-	virtual void AppendPortDetails(const StringRef& str) const = 0;
+	virtual void ReportPortDetails(const StringRef& str) const = 0;
 	virtual ~Fan() { }
 
 	// Set or report the parameters for this fan
