@@ -70,14 +70,14 @@ GCodeResult FansManager::ConfigureFanPort(const CanMessageGeneric& msg, const St
 		return GCodeResult::error;
 	}
 
-	WriteLocker lock(fansLock);
-
 	PwmFrequency freq = DefaultFanPwmFreq;
 	const bool seenFreq = parser.GetUintParam('Q', freq);
 
 	String<StringLength20> pinNames;
 	if (parser.GetStringParam('C', pinNames.GetRef()))
 	{
+		WriteLocker lock(fansLock);
+
 		Fan *oldFan = nullptr;
 		std::swap(oldFan, fans[fanNum]);
 		delete oldFan;
@@ -85,18 +85,21 @@ GCodeResult FansManager::ConfigureFanPort(const CanMessageGeneric& msg, const St
 		fans[fanNum] = CreateLocalFan(fanNum, pinNames.c_str(), freq, reply);
 		return (fans[fanNum] == nullptr) ? GCodeResult::error : GCodeResult::ok;
 	}
-	else if (fans[fanNum] == nullptr)
+
+	const auto fan = FindFan(fanNum);
+	if (fan.IsNull())
 	{
 		reply.printf("Board %u doesn't have fan %u", CanInterface::GetCanAddress(), fanNum);
 		return GCodeResult::error;
 	}
-	else if (seenFreq)
+
+	if (seenFreq)
 	{
-		fans[fanNum]->SetPwmFrequency(freq);
+		fan->SetPwmFrequency(freq);
 	}
 	else
 	{
-		fans[fanNum]->ReportPortDetails(reply);
+		fan->ReportPortDetails(reply);
 	}
 	return GCodeResult::ok;
 }

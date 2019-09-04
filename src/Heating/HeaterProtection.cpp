@@ -10,6 +10,7 @@
 #include "Platform.h"
 #include "Heat.h"
 
+//TODO this is wrong: we need 1 heater and 1 sensor, not 2 heaters
 HeaterProtection::HeaterProtection(size_t index) : next(nullptr)
 {
 	// By default each heater protection element is mapped to its corresponding heater.
@@ -33,7 +34,7 @@ bool HeaterProtection::Check()
 	if (supervisedHeater >= 0)
 	{
 		TemperatureError err;
-		const float temperature = Heat::GetTemperature(supervisedHeater, err);
+		const float temperature = Heat::GetSensorTemperature(supervisedHeater, err);
 
 		if (err != TemperatureError::success)
 		{

@@ -12,9 +12,9 @@
 #include "Sensors/TemperatureSensor.h"
 
 Heater::Heater(unsigned int num)
-	: heaterNumber(num), sensorNumber(-1), activeTemperature(0.0), standbyTemperature(0.0),
+	: heaterNumber(num), sensorNumber(-1), requestedTemperature(0.0),
 	  maxTempExcursion(DefaultMaxTempExcursion), maxHeatingFaultTime(DefaultMaxHeatingFaultTime),
-	  heaterProtection(nullptr), active(false)
+	  heaterProtection(nullptr)
 {
 }
 
@@ -62,71 +62,47 @@ HeaterStatus Heater::GetStatus() const
 	return (mode == HeaterMode::fault) ? HeaterStatus::fault
 			: (mode == HeaterMode::off) ? HeaterStatus::off
 				: (mode >= HeaterMode::tuning0) ? HeaterStatus::tuning
-					: (active) ? HeaterStatus::active
-						: HeaterStatus::standby;
+					: HeaterStatus::active;		// note, we don't distinguish between active and standby
 }
 
-TemperatureSensor *Heater::GetSensor() const
+GCodeResult Heater::SetTemperature(const CanMessageSetHeaterTemperature& msg, const StringRef& reply)
 {
-	return Heat::GetSensor(sensorNumber);
-}
-
-void Heater::Activate()
-{
-	if (GetMode() != HeaterMode::fault)
+	switch (msg.command)
 	{
-		active = true;
+	case CanMessageSetHeaterTemperature::commandNone:
+		requestedTemperature = msg.setPoint;
+		return GCodeResult::ok;
+
+	case CanMessageSetHeaterTemperature::commandOff:
+		requestedTemperature = msg.setPoint;
+		SwitchOff();
+		return GCodeResult::ok;
+
+	case CanMessageSetHeaterTemperature::commandOn:
+		requestedTemperature = msg.setPoint;
 		SwitchOn();
-	}
-}
+		return GCodeResult::ok;
 
-void Heater::Standby()
-{
-	if (GetMode() != HeaterMode::fault)
-	{
-		active = false;
-		SwitchOn();
-	}
-}
+	case CanMessageSetHeaterTemperature::commandResetFault:
+		requestedTemperature = msg.setPoint;
+		ResetFault();
+		return GCodeResult::ok;
 
-void Heater::SetActiveTemperature(float t)
-{
-	if (t > GetHighestTemperatureLimit())
-	{
-		Platform::MessageF(ErrorMessage, "Temperature %.1f" DEGREE_SYMBOL "C too high for heater %u\n", (double)t, GetHeaterNumber());
-	}
-	else if (t < GetLowestTemperatureLimit())
-	{
-		Platform::MessageF(ErrorMessage, "Temperature %.1f" DEGREE_SYMBOL "C too low for heater %u\n", (double)t, GetHeaterNumber());
-	}
-	else
-	{
-		activeTemperature = t;
-		if (GetMode() > HeaterMode::suspended && active)
-		{
-			SwitchOn();
-		}
-	}
-}
+	case CanMessageSetHeaterTemperature::commandSuspend:
+		Suspend(true);
+		return GCodeResult::ok;
 
-void Heater::SetStandbyTemperature(float t)
-{
-	if (t > GetHighestTemperatureLimit())
-	{
-		Platform::MessageF(ErrorMessage, "Temperature %.1f" DEGREE_SYMBOL "C too high for heater %u\n", (double)t, GetHeaterNumber());
+	case CanMessageSetHeaterTemperature::commandUnsuspend:
+		requestedTemperature = msg.setPoint;
+		Suspend(false);
+		return GCodeResult::ok;
+
+	default:
+		break;
 	}
-	else if (t < GetLowestTemperatureLimit())
-	{
-		Platform::MessageF(ErrorMessage, "Temperature %.1f" DEGREE_SYMBOL "C too low for heater %u\n", (double)t, GetHeaterNumber());
-	}
-	else
-	{
-		standbyTemperature = t;
-		if (GetMode() > HeaterMode::suspended && !active)
-		{
-			SwitchOn();
-		}
-	}
+
+	reply.printf("Unknown command %u to heater %u", msg.command, heaterNumber);
+	return GCodeResult::ok;
 }
 
 // Get the highest temperature limit

@@ -12,22 +12,25 @@
 #include "FOPDT.h"
 #include "GCodes/GCodeResult.h"
 
-#if SUPPORT_CAN_EXPANSION
-# include "CanId.h"
-#endif
+#include "CanId.h"
 
 class HeaterProtection;
 class CanMessageGenericParser;
+class CanMessageSetHeaterTemperature;
 
 // Enumeration to describe the status of a heater. Note that the web interface returns the numerical values, so don't change them.
-// Status 'running' is not returned to the web interface, we return active or standby instead.
-enum class HeaterStatus { off = 0, standby = 1, active = 2, fault = 3, tuning = 4, running = 5 };
+enum class HeaterStatus { off = 0, standby = 1, active = 2, fault = 3, tuning = 4 };
 
 class Heater
 {
 public:
 	Heater(unsigned int num);
 	virtual ~Heater();
+
+	// Configuration methods
+	virtual GCodeResult ConfigurePortAndSensor(const char *portName, PwmFrequency freq, unsigned int sensorNumber, const StringRef& reply) = 0;
+	virtual GCodeResult SetPwmFrequency(PwmFrequency freq, const StringRef& reply) = 0;
+	virtual GCodeResult ReportDetails(const StringRef& reply) const = 0;
 
 	virtual float GetTemperature() const = 0;					// Get the current temperature
 	virtual float GetAveragePWM() const = 0;					// Return the running average PWM to the heater. Answer is a fraction in [0, 1].
@@ -38,16 +41,11 @@ public:
 	virtual void GetAutoTuneStatus(const StringRef& reply) const = 0;	// Get the auto tune status or last result
 	virtual void Suspend(bool sus) = 0;							// Suspend the heater to conserve power or while doing Z probing
 	virtual float GetAccumulator() const = 0;					// get the inertial term accumulator
-	virtual GCodeResult ConfigurePortAndSensor(CanMessageGenericParser& parser, const StringRef& reply) = 0;
+
+	GCodeResult SetTemperature(const CanMessageSetHeaterTemperature& msg, const StringRef& reply);
 
 	unsigned int GetHeaterNumber() const { return heaterNumber; }
 	HeaterStatus GetStatus() const;								// Get the status of the heater
-	void SetActiveTemperature(float t);
-	float GetActiveTemperature() const { return activeTemperature; }
-	void SetStandbyTemperature(float t);
-	float GetStandbyTemperature() const { return standbyTemperature; }
-	void Activate();											// Switch from idle to active
-	void Standby();												// Switch from active to idle
 
 	void GetFaultDetectionParameters(float& pMaxTempExcursion, float& pMaxFaultTime) const
 		{ pMaxTempExcursion = maxTempExcursion; pMaxFaultTime = maxHeatingFaultTime; }
@@ -72,7 +70,6 @@ public:
 	void SetRawPidParameters(float p_kP, float p_recipTi, float p_tD)
 		{ model.SetRawPidParameters(p_kP, p_recipTi, p_tD); }
 
-	TemperatureSensor *GetSensor() const;
 	bool CheckGood() const;
 
 protected:
@@ -103,7 +100,7 @@ protected:
 	void SetSensorNumber(int sn) { sensorNumber = sn; }
 	float GetMaxTemperatureExcursion() const { return maxTempExcursion; }
 	float GetMaxHeatingFaultTime() const { return maxHeatingFaultTime; }
-	float GetTargetTemperature() const { return (active) ? activeTemperature : standbyTemperature; }
+	float GetTargetTemperature() const { return requestedTemperature; }
 	HeaterProtection *GetHeaterProtections() const { return heaterProtection; }
 
 private:
@@ -111,14 +108,12 @@ private:
 
 	unsigned int heaterNumber;
 	int sensorNumber;								// the sensor number used by this heater
-	float activeTemperature;						// The required active temperature
-	float standbyTemperature;						// The required standby temperature
+	float requestedTemperature;						// The required temperature
 	float maxTempExcursion;							// The maximum temperature excursion permitted while maintaining the setpoint
 	float maxHeatingFaultTime;						// How long a heater fault is permitted to persist before a heater fault is raised
 	HeaterProtection *heaterProtection;				// The first element of assigned heater protection items
 
 	FopDt model;
-	bool active;									// Are we active or standby?
 };
 
 #endif /* SRC_HEATING_HEATER_H_ */

@@ -310,6 +310,11 @@ void CommandProcessor::Spin()
 			rslt = Heat::ProcessM307(buf->msg.heaterModel, replyRef);
 			break;
 
+		case CanMessageType::setHeaterTemperature:
+			requestId = buf->msg.setTemp.requestId;
+			rslt = Heat::SetTemperature(buf->msg.setTemp, replyRef);
+			break;
+
 		case CanMessageType::m308:
 			requestId = buf->msg.generic.requestId;
 			rslt = Heat::ProcessM308(buf->msg.generic, replyRef);

@@ -703,8 +703,8 @@ void Platform::Spin()
 
 		static unsigned int nextSensor = 0;
 
-		TemperatureSensor * const ts = Heat::GetSensorAtOrAbove(nextSensor);
-		if (ts != nullptr)
+		const auto ts = Heat::FindSensorAtOrAbove(nextSensor);
+		if (ts.IsNotNull())
 		{
 			float temp;
 			const TemperatureError err = ts->GetLatestTemperature(temp);

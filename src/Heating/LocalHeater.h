@@ -24,10 +24,13 @@ class LocalHeater : public Heater
 
 public:
 	LocalHeater(unsigned int heaterNum);
-	LocalHeater(const Heater& h);
+	~LocalHeater();
+
+	GCodeResult ConfigurePortAndSensor(const char *portName, PwmFrequency freq, unsigned int sensorNumber, const StringRef& reply) override;
+	GCodeResult SetPwmFrequency(PwmFrequency freq, const StringRef& reply) override;
+	GCodeResult ReportDetails(const StringRef& reply) const override;
 
 	void Spin() override;									// Called in a tight loop to keep things running
-	GCodeResult ConfigurePortAndSensor(CanMessageGenericParser& parser, const StringRef& reply) override;
 	void SwitchOff() override;						// Not even standby - all heater power off
 	void ResetFault() override;						// Reset a fault condition - only call this if you know what you are doing
 	float GetTemperature() const override;			// Get the current temperature

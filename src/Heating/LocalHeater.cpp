@@ -48,14 +48,10 @@ LocalHeater::LocalHeater(unsigned int heaterNum) : Heater(heaterNum), mode(Heate
 	lastSampleTime = millis();
 }
 
-LocalHeater::LocalHeater(const Heater& h) : Heater(h), mode(HeaterMode::off)
+LocalHeater::~LocalHeater()
 {
-	ResetHeater();
-	SetHeater(0.0);							// set up the pin even if the heater is not enabled (for PCCB)
-
-	// Time the sensor was last sampled.  During startup, we use the current
-	// time as the initial value so as to not trigger an immediate warning from the Tick ISR.
-	lastSampleTime = millis();
+	SwitchOff();
+	port.Release();
 }
 
 float LocalHeater::GetTemperature() const
@@ -87,56 +83,40 @@ void LocalHeater::ResetHeater()
 }
 
 // Configure the heater port and the sensor number
-GCodeResult LocalHeater::ConfigurePortAndSensor(CanMessageGenericParser &parser, const StringRef& reply)
+GCodeResult LocalHeater::ConfigurePortAndSensor(const char *portName, PwmFrequency freq, unsigned int sensorNumber, const StringRef& reply)
 {
-	PwmFrequency freq;
-	const bool seenFreq = parser.GetUintParam('Q', freq);
-	freq = (seenFreq) ? min<PwmFrequency>(freq, MaxHeaterPwmFrequency)
-								: (Heat::IsBedOrChamberHeater(GetHeaterNumber()))
-								  ? SlowHeaterPwmFreq : NormalHeaterPwmFreq;
-	String<StringLength20> portName;
-	const bool seenPin = parser.GetStringParam('C', portName.GetRef());
-	if (seenPin)
+	if (!port.AssignPort(portName, reply, PinUsedBy::heater, PinAccess::pwm))
 	{
-		SwitchOff();
-		if (!port.AssignPort(portName.c_str(), reply, PinUsedBy::heater, PinAccess::pwm))
-		{
-			return GCodeResult::error;
-		}
-	}
-	if (seenPin || seenFreq)
-	{
-		port.SetFrequency(freq);
+		return GCodeResult::error;
 	}
 
-	int16_t sn;
-	const bool seenSensor = parser.GetIntParam('T', sn);
-	if (seenSensor)
+	port.SetFrequency(freq);
+	SetSensorNumber(sensorNumber);
+	if (Heat::FindSensor(sensorNumber).IsNull())
 	{
-		SwitchOff();
-		if (sn < 0 || Heat::GetSensor(sn) != nullptr)
-		{
-			SetSensorNumber(sn);
-		}
-		else
-		{
-			SetSensorNumber(-1);
-			reply.printf("Sensor number %d has not been defined", sn);
-			return GCodeResult::warning;
-		}
+		reply.printf("Sensor number %u has not been defined", sensorNumber);
+		return GCodeResult::warning;
 	}
-	else if (!seenPin && !seenFreq)
+	return GCodeResult::ok;
+}
+
+GCodeResult LocalHeater::SetPwmFrequency(PwmFrequency freq, const StringRef& reply)
+{
+	port.SetFrequency(freq);
+	return GCodeResult::ok;
+}
+
+GCodeResult LocalHeater::ReportDetails(const StringRef& reply) const
+{
+	reply.printf("Heater %u", GetHeaterNumber());
+	port.AppendDetails(reply);
+	if (GetSensorNumber() >= 0)
 	{
-		reply.printf("Heater %u", GetHeaterNumber());
-		port.AppendDetails(reply);
-		if (GetSensorNumber() >= 0)
-		{
-			reply.catf(", sensor %d", GetSensorNumber());
-		}
-		else
-		{
-			reply.cat(", no sensor");
-		}
+		reply.catf(", sensor %d", GetSensorNumber());
+	}
+	else
+	{
+		reply.cat(", no sensor");
 	}
 	return GCodeResult::ok;
 }

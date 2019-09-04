@@ -17,6 +17,7 @@
 #include "MessageType.h"
 #include "GCodes/GCodeResult.h"
 #include "CanMessageFormats.h"
+#include <RTOSIface/RTOSIface.h>
 
 class TemperatureSensor;
 class HeaterProtection;
@@ -39,19 +40,16 @@ namespace Heat
 	void SwitchOffAll();										// Turn all heaters off
 	void ResetFault(int heater);								// Reset a heater fault - only call this if you know what you are doing
 
+	// Methods that relate to sensors
+	float GetSensorTemperature(int sensorNum, TemperatureError& err); // Result is in degrees Celsius
+
 	// Methods that relate to a particular heater
-	void SetActiveTemperature(int heater, float t);
-	float GetActiveTemperature(int heater);
-	void SetStandbyTemperature(int heater, float t);
-	float GetStandbyTemperature(int heater);
 	float GetHighestTemperatureLimit(int heater);
 	float GetLowestTemperatureLimit(int heater);
-	void Activate(int heater);									// Turn on a heater
-	float GetSensorTemperature(int sensorNum, TemperatureError& err); // Result is in degrees Celsius
-	float GetTargetTemperature(int heater);						// Get the target temperature
 	HeaterStatus GetStatus(int heater);							// Get the off/standby/active status
 	void SwitchOff(int heater);									// Turn off a specific heater
-																// Is a specific heater at temperature within tolerance?
+	GCodeResult SetTemperature(const CanMessageSetHeaterTemperature& msg, const StringRef& reply);
+
 	float GetAveragePWM(size_t heater)							// Return the running average PWM to the heater as a fraction in [0, 1].
 	pre(heater < NumTotalHeaters);
 
@@ -64,15 +62,13 @@ namespace Heat
 	bool SetHeaterChannel(size_t heater, int channel);			// Set the channel used by a heater, returning true if bad heater or channel number
 	const char *GetHeaterSensorName(size_t heater);				// Get the name of the sensor for a heater, or nullptr if it hasn't been named
 
-	float GetTemperature(size_t sensor, TemperatureError& err); // Result is in degrees Celsius
-
 	HeaterProtection& AccessHeaterProtection(size_t index);		// Return the protection parameters of the given index
 	void UpdateHeaterProtection();								// Updates the PIDs and HeaterProtection items when a heater is remapped
 
 	void SuspendHeaters(bool sus);								// Suspend the heaters to conserve power
 
-	TemperatureSensor *GetSensor(int sn);						// Get a pointer to the temperature sensor entry
-	TemperatureSensor *GetSensorAtOrAbove(unsigned int sn);		// Get a pointer to the first temperature sensor with the specified or higher number
+	ReadLockedPointer<TemperatureSensor> FindSensor(int sn);	// Get a pointer to the temperature sensor entry
+	ReadLockedPointer<TemperatureSensor> FindSensorAtOrAbove(unsigned int sn);	// Get a pointer to the first temperature sensor with the specified or higher number
 
 	inline bool IsBedOrChamberHeater(int heater) { return false; }
 };
