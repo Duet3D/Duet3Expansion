@@ -56,15 +56,6 @@ GCodeResult Heater::SetModel(float gain, float tc, float td, float maxPwm, float
 	return GCodeResult::error;
 }
 
-HeaterStatus Heater::GetStatus() const
-{
-	const HeaterMode mode = GetMode();
-	return (mode == HeaterMode::fault) ? HeaterStatus::fault
-			: (mode == HeaterMode::off) ? HeaterStatus::off
-				: (mode >= HeaterMode::tuning0) ? HeaterStatus::tuning
-					: HeaterStatus::active;		// note, we don't distinguish between active and standby
-}
-
 GCodeResult Heater::SetTemperature(const CanMessageSetHeaterTemperature& msg, const StringRef& reply)
 {
 	switch (msg.command)

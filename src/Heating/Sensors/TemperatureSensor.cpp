@@ -19,6 +19,8 @@
 #include "TmcDriverTemperatureSensor.h"
 #endif
 
+#include "CAN/CanInterface.h"
+
 // Constructor
 TemperatureSensor::TemperatureSensor(unsigned int sensorNum, const char *t)
 	: next(nullptr), sensorNumber(sensorNum), sensorType(t), whenLastRead(0), lastResult(TemperatureError::notReady), lastRealError(TemperatureError::success) {}
@@ -74,6 +76,18 @@ void TemperatureSensor::SetResult(TemperatureError rslt)
 	lastResult = lastRealError = rslt;
 	lastTemperature = BadErrorTemperature;
 	whenLastRead = millis();
+}
+
+// Get the expansion board address. Overridden for remote sensors.
+CanAddress TemperatureSensor::GetBoardAddress() const
+{
+	return CanInterface::GetCanAddress();
+}
+
+// Update the temperature, if it is a remote sensor. Overridden in class RemoteSensor.
+void TemperatureSensor::UpdateRemoteTemperature(CanAddress src, const CanTemperatureReport& report)
+{
+	// Nothing to do here. This function is overridden in class RemoteSensor.
 }
 
 // Factory method

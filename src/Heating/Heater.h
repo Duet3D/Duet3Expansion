@@ -18,9 +18,6 @@ class HeaterProtection;
 class CanMessageGenericParser;
 class CanMessageSetHeaterTemperature;
 
-// Enumeration to describe the status of a heater. Note that the web interface returns the numerical values, so don't change them.
-enum class HeaterStatus { off = 0, standby = 1, active = 2, fault = 3, tuning = 4 };
-
 class Heater
 {
 public:
@@ -45,7 +42,6 @@ public:
 	GCodeResult SetTemperature(const CanMessageSetHeaterTemperature& msg, const StringRef& reply);
 
 	unsigned int GetHeaterNumber() const { return heaterNumber; }
-	HeaterStatus GetStatus() const;								// Get the status of the heater
 
 	void GetFaultDetectionParameters(float& pMaxTempExcursion, float& pMaxFaultTime) const
 		{ pMaxTempExcursion = maxTempExcursion; pMaxFaultTime = maxHeatingFaultTime; }
@@ -72,12 +68,16 @@ public:
 
 	bool CheckGood() const;
 
+	bool IsTuning() const { return GetMode() >= HeaterMode::tuning0; }
+	uint8_t GetModeByte() const { return (uint8_t)GetMode(); }
+
 protected:
 	enum class HeaterMode : uint8_t
 	{
 		// The order of these is important because we test "mode > HeatingMode::suspended" to determine whether the heater is active
 		// and "mode >= HeatingMode::off" to determine whether the heater is either active or suspended
 		fault,
+		offline,
 		off,
 		suspended,
 		heating,

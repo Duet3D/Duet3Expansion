@@ -5,8 +5,10 @@
 #include "Heating/TemperatureError.h"		// for result codes
 #include "GCodes/GCodeResult.h"
 #include <Hardware/IoPorts.h>
+#include <CanId.h>
 
 class CanMessageGenericParser;
+class CanTemperatureReport;
 
 class TemperatureSensor
 {
@@ -39,6 +41,12 @@ public:
 	// Get/set the next sensor in the linked list
 	TemperatureSensor *GetNext() const { return next; }
 	void SetNext(TemperatureSensor *n) { next = n; }
+
+	// Get the expansion board address. Overridden for remote sensors.
+	virtual CanAddress GetBoardAddress() const;
+
+	// Update the temperature, if it is a remote sensor. Overridden in class RemoteSensor.
+	virtual void UpdateRemoteTemperature(CanAddress src, const CanTemperatureReport& report);
 
 	// Factory method
 	static TemperatureSensor *Create(unsigned int sensorNum, const char *typeName, const StringRef& reply);

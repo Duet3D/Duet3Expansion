@@ -46,7 +46,6 @@ namespace Heat
 	// Methods that relate to a particular heater
 	float GetHighestTemperatureLimit(int heater);
 	float GetLowestTemperatureLimit(int heater);
-	HeaterStatus GetStatus(int heater);							// Get the off/standby/active status
 	void SwitchOff(int heater);									// Turn off a specific heater
 	GCodeResult SetTemperature(const CanMessageSetHeaterTemperature& msg, const StringRef& reply);
 

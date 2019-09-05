@@ -215,7 +215,7 @@ void Heat::Exit()
 		if (heaterBeingTuned != -1)
 		{
 			const auto h = FindHeater(heaterBeingTuned);
-			if (h.IsNull() || h->GetStatus() != HeaterStatus::tuning)
+			if (h.IsNull() || !h->IsTuning())
 			{
 				lastHeaterTuned = heaterBeingTuned;
 				heaterBeingTuned = -1;
@@ -239,16 +239,16 @@ void Heat::Exit()
 				{
 					break;
 				}
-				const int sn = sensor->GetSensorNumber();
-				if (sn >= 0)
+				const unsigned int sn = sensor->GetSensorNumber();
+				if (sensor->GetBoardAddress() == CanInterface::GetCanAddress())
 				{
-					msg->whichSensors |= (uint64_t)1u << (unsigned int)sn;
+					msg->whichSensors |= (uint64_t)1u << sn;
 					float temperature;
 					msg->temperatureReports[sensorsFound].errorCode = (uint8_t)sensor->GetLatestTemperature(temperature);
 					msg->temperatureReports[sensorsFound].temperature = temperature;
 					++sensorsFound;
-					currentSensorNumber = (unsigned int)sn + 1u;
 				}
+				currentSensorNumber = (unsigned int)sn + 1u;
 			}
 			if (sensorsFound == 0)
 			{
@@ -278,7 +278,7 @@ void Heat::Exit()
 				if (h != nullptr)
 				{
 					msg->whichHeaters |= (uint64_t)1u << heater;
-					msg->reports[heatersFound].state = (uint8_t)h->GetStatus();
+					msg->reports[heatersFound].mode = h->GetModeByte();
 					msg->reports[heatersFound].averagePwm = (uint8_t)(h->GetAveragePWM() * 255.0);
 					msg->reports[heatersFound].temperature = h->GetTemperature();
 					++heatersFound;
@@ -431,12 +431,6 @@ GCodeResult Heat::ProcessM308(const CanMessageGeneric& msg, const StringRef& rep
 
 	reply.copy("Missing sensor number parameter");
 	return GCodeResult::error;
-}
-
-HeaterStatus Heat::GetStatus(int heater)
-{
-	const auto h = FindHeater(heater);
-	return (h.IsNull()) ? HeaterStatus::off : heaters[heater]->GetStatus();
 }
 
 float Heat::GetHighestTemperatureLimit(int heater)
