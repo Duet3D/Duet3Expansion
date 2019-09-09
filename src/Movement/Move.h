@@ -11,10 +11,7 @@
 #include "RepRapFirmware.h"
 #include "MessageType.h"
 #include "DDA.h"								// needed because of our inline functions
-//#include "BedProbing/RandomProbePointSet.h"
-//#include "BedProbing/Grid.h"
 #include "Kinematics/Kinematics.h"
-//#include "GCodes/RestorePoint.h"
 
 // Define the number of DDAs and DMs.
 // A DDA represents a move in the queue.
@@ -65,8 +62,6 @@ public:
 
 	void CurrentMoveCompleted() __attribute__ ((hot));								// Signal that the current move has just been completed
 	bool TryStartNextMove(uint32_t startTime) __attribute__ ((hot));				// Try to start another move, returning true if Step() needs to be called immediately
-	float IdleTimeout() const;														// Returns the idle timeout in seconds
-	void SetIdleTimeout(float timeout);												// Set the idle timeout in seconds
 
 	void PrintCurrentDda() const;													// For debugging
 
@@ -86,14 +81,6 @@ public:
 	static float MotorStepsToMovement(size_t drive, int32_t endpoint);				// Convert number of motor steps to motor position
 
 private:
-	enum class MoveState : uint8_t
-	{
-		idle,			// no moves being executed or in queue, motors are at idle hold
-		collecting,		// no moves currently being executed but we are collecting moves ready to execute them
-		executing,		// we are executing moves
-		timing			// no moves being executed or in queue, motors are at full current
-	};
-
 	bool StartNextMove(uint32_t startTime) __attribute__ ((hot));								// Start the next move, returning true if Step() needs to be called immediately
 
 	bool DDARingAdd();									// Add a processed look-ahead entry to the DDA ring
@@ -106,15 +93,8 @@ private:
 	DDA* ddaRingCheckPointer;
 
 	bool active;										// Are we live and running?
-	MoveState moveState;								// whether the idle timer is active
 
-	unsigned int numLookaheadUnderruns;					// How many times we have run out of moves to adjust during lookahead
-	unsigned int numPrepareUnderruns;					// How many times we wanted a new move but there were only un-prepared moves in the queue
 	unsigned int idleCount;								// The number of times Spin was called and had no new moves to process
-	uint32_t longestGcodeWaitInterval;					// the longest we had to wait for a new GCode
-
-	uint32_t idleTimeout;								// How long we wait with no activity before we reduce motor currents to idle, in milliseconds
-	uint32_t lastStateChangeTime;						// The approximate time at which the state last changed, except we don't record timing->idle
 
 	Kinematics *kinematics;								// What kinematics we are using
 

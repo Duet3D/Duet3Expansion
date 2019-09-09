@@ -433,6 +433,18 @@ GCodeResult Heat::ProcessM308(const CanMessageGeneric& msg, const StringRef& rep
 	return GCodeResult::error;
 }
 
+GCodeResult Heat::SetFaultDetection(const CanMessageSetHeaterFaultDetectionParameters& msg, const StringRef& reply)
+{
+	const auto h = FindHeater(msg.heater);
+	if (h.IsNull())
+	{
+		reply.printf("Unknown heater %u", msg.heater);
+		return GCodeResult::error;
+	}
+
+	return h->SetFaultDetectionParameters(msg.maxTempExcursion, msg.maxFaultTime);
+}
+
 float Heat::GetHighestTemperatureLimit(int heater)
 {
 	float limit = BadErrorTemperature;

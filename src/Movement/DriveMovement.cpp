@@ -176,19 +176,6 @@ void DriveMovement::PrepareExtruder(const DDA& dda, const PrepParams& params, fl
 {
 	isDeltaMovement = false;
 
-#if SUPPORT_NONLINEAR_EXTRUSION
-	if (dda.isPrintingMove)
-	{
-		float a, b, limit;
-		if (reprap.GetPlatform().GetExtrusionCoefficients(extruder, a, b, limit))
-		{
-			const float averageExtrusionSpeed = (dda.totalDistance * dv * StepClockRate)/dda.clocksNeeded;
-			const float factor = 1.0 + min<float>((averageExtrusionSpeed * a) + (averageExtrusionSpeed * averageExtrusionSpeed * b), limit);
-			stepsPerMm *= factor;
-		}
-	}
-#endif
-
 	float pressureAdvanceTime;
 	float accelCompensationDistance;
 	int32_t netSteps;
@@ -204,9 +191,10 @@ void DriveMovement::PrepareExtruder(const DDA& dda, const PrepParams& params, fl
 	const float factor = 1.0 + (speedChange * compensationTime)/dda.totalDistance;
 	stepsPerMm *= factor;
 #endif
+
 	// Recalculate the net total step count to allow for compensation. It may be negative.
 	const float compensationDistance = (dda.endSpeed - dda.startSpeed) * pressureAdvanceTime;
-	netSteps = (int32_t)((1.0 + compensationDistance) * totalSteps);
+	netSteps = lrintf((1.0 + compensationDistance) * totalSteps);
 
 	// Calculate the acceleration phase parameters
 	accelCompensationDistance = pressureAdvanceTime * (dda.topSpeed - dda.startSpeed);

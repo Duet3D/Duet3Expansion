@@ -72,14 +72,9 @@ void Move::Init()
 
 	currentDda = nullptr;
 	stepErrors = 0;
-	numLookaheadUnderruns = numPrepareUnderruns = 0;
 
-	idleTimeout = DefaultIdleTimeout;
-	moveState = MoveState::idle;
-	lastStateChangeTime = millis();
 	idleCount = 0;
 
-	longestGcodeWaitInterval = 0;
 //	numHiccups = 0;
 
 	active = true;
@@ -132,10 +127,7 @@ void Move::Spin()
 		}
 
 		// Now release the DMs and check for underrun
-		if (ddaRingCheckPointer->Free())
-		{
-			++numLookaheadUnderruns;
-		}
+		(void)ddaRingCheckPointer->Free();
 		ddaRingCheckPointer = ddaRingCheckPointer->GetNext();
 	}
 
@@ -175,17 +167,6 @@ void Move::Spin()
 			ddaRingAddPointer = ddaRingAddPointer->GetNext();
 			idleCount = 0;
 			scheduledMoves++;
-			if (moveState == MoveState::idle || moveState == MoveState::timing)
-			{
-				moveState = MoveState::collecting;
-				const uint32_t now = millis();
-				const uint32_t timeWaiting = now - lastStateChangeTime;
-				if (timeWaiting > longestGcodeWaitInterval)
-				{
-					longestGcodeWaitInterval = timeWaiting;
-				}
-				lastStateChangeTime = now;
-			}
 		}
 	}
 
@@ -203,20 +184,6 @@ void Move::Spin()
 				if (StartNextMove(StepTimer::GetInterruptClocks()))	// start the next move
 				{
 					Interrupt();
-				}
-				moveState = MoveState::executing;
-			}
-			else
-			{
-				if (moveState == MoveState::executing && GCodes::IsPaused())
-				{
-					lastStateChangeTime = millis();					// record when we first noticed that the machine was idle
-					moveState = MoveState::timing;
-				}
-				else if (moveState == MoveState::timing && millis() - lastStateChangeTime >= idleTimeout)
-				{
-					Platform::SetDriversIdle();						// put all drives in idle hold
-					moveState = MoveState::idle;
 				}
 			}
 		}
@@ -513,35 +480,12 @@ bool Move::TryStartNextMove(uint32_t startTime)
 	{
 		return StartNextMove(startTime);
 	}
-	else
-	{
-		if (st == DDA::provisional)
-		{
-			// There are more moves available, but they are not prepared yet. Signal an underrun.
-			++numPrepareUnderruns;
-		}
-#if 0
-		reprap.GetPlatform().ExtrudeOff();			// turn off ancillary PWM
-#endif
-		return false;
-	}
+	return false;
 }
 
 /*static*/ float Move::MotorStepsToMovement(size_t drive, int32_t endpoint)
 {
 	return ((float)(endpoint))/Platform::DriveStepsPerUnit(drive);
-}
-
-// Return the idle timeout in seconds
-float Move::IdleTimeout() const
-{
-	return (float)idleTimeout * 0.001;
-}
-
-// Set the idle timeout in seconds
-void Move::SetIdleTimeout(float timeout)
-{
-	idleTimeout = (uint32_t)lrintf(timeout * 1000.0);
 }
 
 // For debugging

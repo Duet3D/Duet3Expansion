@@ -56,6 +56,13 @@ GCodeResult Heater::SetModel(float gain, float tc, float td, float maxPwm, float
 	return GCodeResult::error;
 }
 
+GCodeResult Heater::SetFaultDetectionParameters(float pMaxTempExcursion, float pMaxFaultTime)
+{
+	maxTempExcursion = pMaxTempExcursion;
+	maxHeatingFaultTime = pMaxFaultTime;
+	return GCodeResult::ok;
+}
+
 GCodeResult Heater::SetTemperature(const CanMessageSetHeaterTemperature& msg, const StringRef& reply)
 {
 	switch (msg.command)

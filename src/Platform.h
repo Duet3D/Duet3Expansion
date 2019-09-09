@@ -85,11 +85,10 @@ namespace Platform
 	void LogError(ErrorCode e);
 	bool Debug(Module module);
 
-	void SetDriversIdle();
 	float DriveStepsPerUnit(size_t drive);
 	const float *GetDriveStepsPerUnit();
-	float GetPressureAdvance(size_t extruder) ;
-//	void SetPressureAdvance(size_t extruder, float factor);
+	float GetPressureAdvance(size_t driver) ;
+	void SetPressureAdvance(size_t driver, float advance);
 	EndStopHit Stopped(size_t axisOrExtruder) ;
 	bool EndStopInputState(size_t axis) ;
 	void StepDriversLow();
@@ -113,7 +112,8 @@ namespace Platform
 	void EnableDrive(size_t driver);
 	void DisableDrive(size_t driver);
 	void DisableAllDrives();
-	void SetDriversIdle();
+	void SetDriverIdle(size_t driver);
+	void SetMotorCurrent(size_t driver, float current);		//TODO avoid the int->float->int conversion
 
 	EndStopHit GetZProbeResult() ;
 

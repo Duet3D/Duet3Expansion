@@ -46,8 +46,7 @@ public:
 	void GetFaultDetectionParameters(float& pMaxTempExcursion, float& pMaxFaultTime) const
 		{ pMaxTempExcursion = maxTempExcursion; pMaxFaultTime = maxHeatingFaultTime; }
 
-	void SetFaultDetectionParameters(float pMaxTempExcursion, float pMaxFaultTime)
-		{ maxTempExcursion = pMaxTempExcursion; maxHeatingFaultTime = pMaxFaultTime; }
+	GCodeResult SetFaultDetectionParameters(float pMaxTempExcursion, float pMaxFaultTime);
 
 	float GetHighestTemperatureLimit() const;					// Get the highest temperature limit
 	float GetLowestTemperatureLimit() const;					// Get the lowest temperature limit

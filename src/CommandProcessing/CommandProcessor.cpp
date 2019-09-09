@@ -30,7 +30,7 @@ static GCodeResult SetMotorCurrents(const CanMessageMultipleDrivesRequest& msg, 
 	{
 		if (IsBitSet(msg.driversToUpdate, driver))
 		{
-			SmartDrivers::SetCurrent(driver, (float)*p);		//TODO avoid the int->float->int conversion
+			Platform::SetMotorCurrent(driver, (float)*p);		//TODO avoid the int->float->int conversion
 			++p;
 		}
 	}
@@ -47,6 +47,20 @@ static GCodeResult SetStandstillCurrentFactor(const CanMessageMultipleDrivesRequ
 		{
 			SmartDrivers::SetStandstillCurrentPercent(driver, (float)*p);		//TODO avoid the int->float->int conversion
 			++p;
+		}
+	}
+	return GCodeResult::ok;
+}
+
+static GCodeResult HandlePressureAdvance(const CanMessageMultipleDrivesRequest& msg, const StringRef& reply)
+{
+	//TODO check message is long enough for the number of drivers specified
+	const uint16_t *p = msg.values;
+	for (unsigned int driver = 0; driver < NumDrivers; ++driver)
+	{
+		if (IsBitSet(msg.driversToUpdate, driver))
+		{
+			Platform::SetPressureAdvance(driver, (float)*p * 0.001);
 		}
 	}
 	return GCodeResult::ok;
@@ -274,6 +288,41 @@ static GCodeResult ProcessM569(const CanMessageGeneric& msg, const StringRef& re
 	return GCodeResult::ok;
 }
 
+static GCodeResult HandleSetDriverStates(const CanMessageMultipleDrivesRequest& msg, const StringRef& reply)
+{
+	//TODO check message is long enough for the number of drivers specified
+	const uint16_t *p = msg.values;
+	for (unsigned int driver = 0; driver < NumDrivers; ++driver)
+	{
+		if (IsBitSet(msg.driversToUpdate, driver))
+		{
+			switch (*p)
+			{
+			case CanMessageMultipleDrivesRequest::driverActive:
+				Platform::EnableDrive(driver);
+				break;
+
+			case CanMessageMultipleDrivesRequest::driverIdle:
+				Platform::SetDriverIdle(driver);
+				break;
+
+			case CanMessageMultipleDrivesRequest::driverDisabled:
+			default:
+				Platform::DisableDrive(driver);
+				break;
+			}
+			++p;
+		}
+	}
+	return GCodeResult::ok;
+}
+
+static GCodeResult ProcessM915(const CanMessageGeneric& msg, const StringRef& reply)
+{
+	reply.printf("M915 not yet implemented for remote drivers");
+	return GCodeResult::error;
+}
+
 static GCodeResult InitiateFirmwareUpdate(const CanMessageUpdateYourFirmware& msg, const StringRef& reply)
 {
 	if (msg.boardId != CanInterface::GetCanAddress() || msg.invertedBoardId != (uint8_t)~CanInterface::GetCanAddress())
@@ -283,6 +332,30 @@ static GCodeResult InitiateFirmwareUpdate(const CanMessageUpdateYourFirmware& ms
 	}
 	reply.printf("Board %u about to start firmware update", CanInterface::GetCanAddress());
 	Platform::StartFirmwareUpdate();
+	return GCodeResult::ok;
+}
+
+static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& reply)
+{
+	switch (msg.type)
+	{
+	case CanMessageReturnInfo::typeFirmwareVersion:
+	default:
+		reply.printf("Board %s firmware %s", BoardTypeName, FirmwareVersion);
+		break;
+
+	case CanMessageReturnInfo::typeMemory:
+		reply.copy("Memory data not available");
+		break;
+
+	case CanMessageReturnInfo::typePressureAdvance:
+		reply.copy("Pressure advance:");
+		for (size_t i = 0; i < NumDrivers; ++i)
+		{
+			reply.catf(" %.2f", (double)Platform::GetPressureAdvance(i));
+		}
+		break;
+	}
 	return GCodeResult::ok;
 }
 
@@ -299,10 +372,9 @@ void CommandProcessor::Spin()
 
 		switch (id)
 		{
-		case CanMessageType::m122:
-			requestId = buf->msg.diagnostics.requestId;
-			reply.printf("Board %s firmware %s", BoardTypeName, FirmwareVersion);
-			rslt = GCodeResult::ok;
+		case CanMessageType::returnInfo:
+			requestId = buf->msg.getInfo.requestId;
+			rslt = GetInfo(buf->msg.getInfo, replyRef);
 			break;
 
 		case CanMessageType::updateHeaterModel:
@@ -343,7 +415,6 @@ void CommandProcessor::Spin()
 
 		case CanMessageType::m569:
 			requestId = buf->msg.generic.requestId;
-			requestId = buf->msg.generic.requestId;
 			rslt = ProcessM569(buf->msg.generic, replyRef);
 			break;
 
@@ -372,8 +443,26 @@ void CommandProcessor::Spin()
 			rslt = FansManager::SetFanSpeed(buf->msg.setFanSpeed, replyRef);
 			break;
 
-		case CanMessageType::m915:
+		case CanMessageType::setHeaterFaultDetection:
+			requestId = buf->msg.setHeaterFaultDetection.requestId;
+			rslt = Heat::SetFaultDetection(buf->msg.setHeaterFaultDetection, replyRef);
+			break;
+
 		case CanMessageType::setDriverStates:
+			requestId = buf->msg.multipleDrivesRequest.requestId;
+			rslt = HandleSetDriverStates(buf->msg.multipleDrivesRequest, replyRef);
+			break;
+
+		case CanMessageType::m915:
+			requestId = buf->msg.generic.requestId;
+			rslt = ProcessM915(buf->msg.generic, replyRef);
+			break;
+
+		case CanMessageType::setPressureAdvance:
+			requestId = buf->msg.multipleDrivesRequest.requestId;
+			rslt = HandlePressureAdvance(buf->msg.multipleDrivesRequest, replyRef);
+			break;
+
 		default:
 			requestId = CanRequestIdAcceptAlways;
 			reply.printf("Unknown message type %u", (unsigned int)buf->id.MsgType());

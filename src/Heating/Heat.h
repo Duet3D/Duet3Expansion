@@ -36,6 +36,7 @@ namespace Heat
 	GCodeResult ProcessM308(const CanMessageGeneric& msg, const StringRef& reply);
 	GCodeResult TuneHeater(const CanMessageGeneric& msg, const StringRef& reply);
 	GCodeResult SetPidParameters(const CanMessageGeneric& msg, const StringRef& reply);
+	GCodeResult SetFaultDetection(const CanMessageSetHeaterFaultDetectionParameters& msg, const StringRef& reply);
 
 	void SwitchOffAll();										// Turn all heaters off
 	void ResetFault(int heater);								// Reset a heater fault - only call this if you know what you are doing

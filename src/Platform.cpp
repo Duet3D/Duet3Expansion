@@ -63,8 +63,12 @@ namespace Platform
 	uint32_t allDriverBits = 0;
 
 	static bool directions[NumDrivers];
+	static bool driverAtIdleCurrent[NumDrivers];
 	static int8_t enableValues[NumDrivers] = { 0 };
 	static float stepsPerMm[NumDrivers];
+	static float motorCurrents[NumDrivers];
+	static float pressureAdvance[NumDrivers];
+	static float idleCurrentFactor;
 
 	static volatile uint16_t currentVin, highestVin, lowestVin;
 #if HAS_12V_MONITOR
@@ -115,6 +119,11 @@ namespace Platform
 	DriversBitmap logOnStallDrivers, pauseOnStallDrivers, rehomeOnStallDrivers;
 	DriversBitmap stalledDrivers, stalledDriversToLog, stalledDriversToPause, stalledDriversToRehome;
 #endif
+
+	static void UpdateMotorCurrent(size_t driver)
+	{
+		SmartDrivers::SetCurrent(driver, (driverAtIdleCurrent[driver]) ? motorCurrents[driver] * idleCurrentFactor : motorCurrents[driver]);
+	}
 
 #ifdef SAME51
 	static int32_t tempCalF1, tempCalF2, tempCalF3, tempCalF4;		// temperature calibration factors
@@ -423,9 +432,14 @@ void Platform::Init()
 		allDriverBits |= driverBit;
 		stepsPerMm[i] = DefaultStepsPerMm;
 		directions[i] = true;
+		driverAtIdleCurrent[i] = false;
+		motorCurrents[i] = 0.0;
+		pressureAdvance[i] = 0.0;
 
 		SmartDrivers::SetMicrostepping(i, 16, true);
 	}
+
+	idleCurrentFactor = 0.3;
 
 #if HAS_STALL_DETECT
 	stalledDrivers = 0;
@@ -845,8 +859,6 @@ bool Platform::Debug(Module module)
 	return false;
 }
 
-void Platform::SetDriversIdle() { }
-
 float Platform::DriveStepsPerUnit(size_t drive) { return stepsPerMm[drive]; }
 
 const float *Platform::GetDriveStepsPerUnit() { return stepsPerMm; }
@@ -862,8 +874,16 @@ void Platform::SetDriverStepTiming(size_t drive, const float timings[4])
 	}
 }
 
-float Platform::GetPressureAdvance(size_t extruder) { return 0.4; }
-//	void SetPressureAdvance(size_t extruder, float factor);
+float Platform::GetPressureAdvance(size_t driver)
+{
+	return pressureAdvance[driver];
+}
+
+void Platform::SetPressureAdvance(size_t driver, float advance)
+{
+	pressureAdvance[driver] = advance;
+}
+
 EndStopHit Platform::Stopped(size_t axisOrExtruder) { return EndStopHit::lowHit; }
 bool Platform::EndStopInputState(size_t axis) { return false; }
 
@@ -938,12 +958,30 @@ EndStopHit Platform::GetZProbeResult()
 
 void Platform::EnableDrive(size_t driver)
 {
+	if (driverAtIdleCurrent[driver])
+	{
+		driverAtIdleCurrent[driver] = false;
+		UpdateMotorCurrent(driver);
+	}
 	SmartDrivers::EnableDrive(driver, true);
 }
 
 void Platform::DisableDrive(size_t driver)
 {
 	SmartDrivers::EnableDrive(driver, false);
+}
+
+void Platform::SetDriverIdle(size_t driver)
+{
+	if (idleCurrentFactor == 0.0)
+	{
+		DisableDrive(driver);
+	}
+	else
+	{
+		driverAtIdleCurrent[driver] = true;
+		UpdateMotorCurrent(driver);
+	}
 }
 
 void Platform::DisableAllDrives()
@@ -954,9 +992,11 @@ void Platform::DisableAllDrives()
 	}
 }
 
-//	void Platform::DisableDrive(size_t axisOrExtruder);
-//	void Platform::DisableAllDrives();
-//	void Platform::SetDriversIdle();
+void Platform::SetMotorCurrent(size_t driver, float current)
+{
+	motorCurrents[driver] = current;
+	UpdateMotorCurrent(driver);
+}
 
 uint8_t Platform::ReadBoardId()
 {
