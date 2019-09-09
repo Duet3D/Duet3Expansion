@@ -171,19 +171,15 @@ void DriveMovement::PrepareDeltaAxis(const DDA& dda, const PrepParams& params)
 	}
 }
 
-// Prepare this DM for an extruder move
+// Prepare this DM for an extruder move. The caller has already checked that pressure advance is enabled.
 void DriveMovement::PrepareExtruder(const DDA& dda, const PrepParams& params, float speedChange)
 {
 	isDeltaMovement = false;
 
-	float pressureAdvanceTime;
-	float accelCompensationDistance;
-	int32_t netSteps;
-
 	// Calculate the pressure advance parameters
-	pressureAdvanceTime = Platform::GetPressureAdvance(drive);
-	mp.cart.compensationClocks = roundU32(pressureAdvanceTime * (float)StepTimer::StepClockRate);
-	mp.cart.accelCompensationClocks = roundU32(pressureAdvanceTime * (float)StepTimer::StepClockRate * params.compFactor);
+	const float compensationClocks = Platform::GetPressureAdvance(drive) * (float)StepTimer::StepClockRate;
+	mp.cart.compensationClocks = roundU32(compensationClocks);
+	mp.cart.accelCompensationClocks = roundU32(compensationClocks * params.compFactor);
 
 #ifdef COMPENSATE_SPEED_CHANGES
 	// If there is a speed change at the start of the move, theoretically we should instantly advance or retard the filament by the associated compensation amount.
@@ -193,11 +189,11 @@ void DriveMovement::PrepareExtruder(const DDA& dda, const PrepParams& params, fl
 #endif
 
 	// Recalculate the net total step count to allow for compensation. It may be negative.
-	const float compensationDistance = (dda.endSpeed - dda.startSpeed) * pressureAdvanceTime;
-	netSteps = lrintf((1.0 + compensationDistance) * totalSteps);
+	const float compensationDistance = (dda.endSpeed - dda.startSpeed) * compensationClocks;
+	int32_t netSteps = lrintf((1.0 + compensationDistance) * totalSteps);
 
 	// Calculate the acceleration phase parameters
-	accelCompensationDistance = pressureAdvanceTime * (dda.topSpeed - dda.startSpeed);
+	const float accelCompensationDistance = compensationClocks * (dda.topSpeed - dda.startSpeed);
 	mp.cart.accelStopStep = (uint32_t)((dda.accelDistance + accelCompensationDistance) * totalSteps) + 1;
 
 	mp.cart.twoCsquaredTimesMmPerStepDivA = roundU64((double)2.0/((double)totalSteps * (double)dda.acceleration));
@@ -221,10 +217,10 @@ void DriveMovement::PrepareExtruder(const DDA& dda, const PrepParams& params, fl
 		const int32_t initialDecelSpeedTimesCdivD = (int32_t)params.topSpeedTimesCdivD - (int32_t)mp.cart.compensationClocks;	// signed because it may be negative and we square it
 		const uint64_t initialDecelSpeedTimesCdivDSquared = isquare64(initialDecelSpeedTimesCdivD);
 		twoDistanceToStopTimesCsquaredDivD =
-			initialDecelSpeedTimesCdivDSquared + roundU64(((params.decelStartDistance + accelCompensationDistance) * (float)2.0)/dda.deceleration);
+			initialDecelSpeedTimesCdivDSquared + roundU64(((params.decelStartDistance + accelCompensationDistance) * 2)/dda.deceleration);
 
 		// See whether there is a reverse phase
-		const float compensationSpeedChange = dda.deceleration * pressureAdvanceTime;
+		const float compensationSpeedChange = dda.deceleration * compensationClocks;
 		const uint32_t stepsBeforeReverse = (compensationSpeedChange > dda.topSpeed)
 											? mp.cart.decelStartStep - 1
 											: twoDistanceToStopTimesCsquaredDivD/mp.cart.twoCsquaredTimesMmPerStepDivD;
