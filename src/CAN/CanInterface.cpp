@@ -18,7 +18,7 @@ static CanAddress boardAddress;
 static bool enabled = false;
 
 // CanReceiver management task
-constexpr size_t CanReceiverTaskStackWords = 400;		// need quite a large stack to allow for calls to debugPrint, 400 is not enough
+constexpr size_t CanReceiverTaskStackWords = 300;
 static Task<CanReceiverTaskStackWords> canReceiverTask;
 
 static TaskHandle sendingTaskHandle = nullptr;

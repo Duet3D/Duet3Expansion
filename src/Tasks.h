@@ -15,7 +15,8 @@ void AppMain();
 
 namespace Tasks
 {
-	uint32_t GetNeverUsedRam();
+	void GetMemoryReport(const StringRef& reply);
+	void GetTasksMemoryReport(const StringRef& reply);
 	Mutex* GetSpiMutex();
 }
 

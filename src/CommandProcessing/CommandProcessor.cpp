@@ -13,6 +13,7 @@
 #include "Fans/FansManager.h"
 #include "CanMessageGenericParser.h"
 #include <Platform.h>
+#include <Tasks.h>
 #include <Version.h>
 
 #if SUPPORT_TMC22xx
@@ -345,15 +346,19 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 		break;
 
 	case CanMessageReturnInfo::typeMemory:
-		reply.copy("Memory data not available");
+		Tasks::GetMemoryReport(reply);
 		break;
 
 	case CanMessageReturnInfo::typePressureAdvance:
+#if 1
+		Tasks::GetTasksMemoryReport(reply);
+#else
 		reply.copy("Pressure advance:");
 		for (size_t i = 0; i < NumDrivers; ++i)
 		{
 			reply.catf(" %.2f", (double)Platform::GetPressureAdvance(i));
 		}
+#endif
 		break;
 	}
 	return GCodeResult::ok;

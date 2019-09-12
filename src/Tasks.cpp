@@ -18,8 +18,7 @@ extern "C" char *sbrk(int i);
 //extern char _end;
 
 
-// The main task currently runs GCodes, so it needs to be large enough to hold the matrices used for auto calibration.
-constexpr unsigned int MainTaskStackWords = 2040;
+constexpr unsigned int MainTaskStackWords = 800;
 
 static Task<MainTaskStackWords> mainTask;
 static Mutex spiMutex;
@@ -121,13 +120,7 @@ namespace Tasks
 		// Print memory stats
 		{
 			const char * const ramstart =
-#if SAME70
-				(char *) 0x20400000;
-#elif SAM4E || SAM4S
-				(char *) 0x20000000;
-#elif SAM3XA
-				(char *) 0x20070000;
-#elif defined(_SAME51_)
+#if SAME51 || SAMC21
 				(char *) 0x20000000;
 #else
 # error Unsupported processor
@@ -172,11 +165,25 @@ namespace Tasks
 
 }
 
-uint32_t Tasks::GetNeverUsedRam()
+void Tasks::GetMemoryReport(const StringRef& reply)
 {
-	uint32_t neverUsedRam;
-	GetHandlerStackUsage(nullptr, &neverUsedRam);
-	return neverUsedRam;
+	uint32_t maxStack, neverUsedRam;
+	GetHandlerStackUsage(&maxStack, &neverUsedRam);
+	reply.printf("Never used RAM %.1fKb, max stack %" PRIu32 "b", (double)neverUsedRam/1024, maxStack);
+}
+
+void Tasks::GetTasksMemoryReport(const StringRef& reply)
+{
+	for (const TaskBase *t = TaskBase::GetTaskList(); t != nullptr; t = t->GetNext())
+	{
+		TaskStatus_t taskDetails;
+		vTaskGetInfo(t->GetHandle(), &taskDetails, pdTRUE, eInvalid);
+		if (!reply.IsEmpty())
+		{
+			reply.cat(' ');
+		}
+		reply.catf("%s %u", taskDetails.pcTaskName, (unsigned int)(taskDetails.usStackHighWaterMark * sizeof(StackType_t)));
+	}
 }
 
 Mutex *Tasks::GetSpiMutex()
