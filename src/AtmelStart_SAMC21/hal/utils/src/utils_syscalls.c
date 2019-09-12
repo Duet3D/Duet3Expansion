@@ -41,7 +41,7 @@ extern "C" {
 #endif
 
 #undef errno
-extern int errno;
+//extern int errno;
 extern int _end;
 
 extern caddr_t _sbrk(int incr);

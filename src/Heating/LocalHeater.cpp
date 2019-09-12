@@ -356,9 +356,9 @@ void LocalHeater::Spin()
 					// Scale the PID based on the current voltage vs. the calibration voltage
 					if (lastPwm < 1.0 && GetModel().GetVoltage() >= 10.0)				// if heater is not fully on and we know the voltage we tuned the heater at
 					{
-						if (!reprap.GetHeat().IsBedOrChamberHeater(GetHeaterNumber()))
+						if (!Heat::IsBedOrChamberHeater(GetHeaterNumber()))
 						{
-							const float currentVoltage = reprap.GetPlatform().GetCurrentPowerVoltage();
+							const float currentVoltage = Platform::GetCurrentPowerVoltage();
 							if (currentVoltage >= 10.0)				// if we have a sensible reading
 							{
 								lastPwm = min<float>(lastPwm * fsquare(GetModel().GetVoltage()/currentVoltage), 1.0);	// adjust the PWM by the square of the voltage ratio

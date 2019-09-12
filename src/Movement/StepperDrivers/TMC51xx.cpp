@@ -20,6 +20,7 @@
 # include "peripheral_clk_config.h"
 # include <Hardware/Peripherals.h>
 # include <Hardware/Serial.h>
+# define SAME70		0
 #elif SAME70
 # include "DmacManager.h"
 #endif

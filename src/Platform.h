@@ -131,6 +131,10 @@ namespace Platform
 	void Tick();
 
 	void StartFirmwareUpdate();
+
+#if HAS_VOLTAGE_MONITOR
+	float GetCurrentPowerVoltage();
+#endif
 }
 
 #endif /* SRC_PLATFORM_H_ */

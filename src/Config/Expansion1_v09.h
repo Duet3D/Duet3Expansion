@@ -17,14 +17,20 @@ const size_t MaxExtraHeaterProtections = 6;
 #define HAS_SMART_DRIVERS	1
 #define HAS_STALL_DETECT	1
 #define HAS_VREF_MONITOR	1
+#define HAS_VOLTAGE_MONITOR	1
 #define HAS_12V_MONITOR		1
 #define HAS_CPU_TEMP_SENSOR	1
 
 #define SUPPORT_TMC51xx		1
 #define SUPPORT_TMC22xx		0
+#define SUPPORT_TMC2660		0
 
+#define SUPPORT_IOBITS		0
+#define SUPPORT_LASER		0
 #define SUPPORT_DHT_SENSOR	0	//TEMP!!!
 #define SUPPORT_SPI_SENSORS	1
+
+#define USE_CACHE			0
 
 constexpr size_t NumDrivers = 3;
 constexpr size_t MaxSmartDrivers = 3;
@@ -65,8 +71,12 @@ constexpr Pin BoardTypePins[NumBoardTypeBits] = { PortBPin(18), PortCPin(19), Po
 
 constexpr Pin VinMonitorPin = PortAPin(10);
 constexpr float VinDividerRatio = (60.4 + 4.7)/4.7;
+constexpr float VinMonitorVoltageRange = VinDividerRatio * 3.3;		// We use the 3.3V supply as the voltage reference
+
 constexpr Pin V12MonitorPin = PortBPin(5);
 constexpr float V12DividerRatio = (60.4 + 4.7)/4.7;
+constexpr float V12MonitorVoltageRange = V12DividerRatio * 3.3;		// We use the 3.3V supply as the voltage reference
+
 constexpr Pin VrefPin = PortBPin(4);
 constexpr Pin VssaPin = PortBPin(6);
 

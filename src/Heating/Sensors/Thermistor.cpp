@@ -64,7 +64,7 @@ GCodeResult Thermistor::Configure(const CanMessageGenericParser& parser, const S
 		adcFilterChannel = Platform::GetAveragingFilterIndex(port);
 		if (adcFilterChannel >= 0)
 		{
-			Platform::GetAdcFilter(adcFilterChannel).Init((1 << AdcBits) - 1);
+			Platform::GetAdcFilter(adcFilterChannel).Init((1u << AnalogIn::AdcBits) - 1);
 		}
 	}
 	else

@@ -605,4 +605,9 @@
 
 // <<< end of configuration section >>>
 
+// DC added the following to avoid -Wundef warnings from hpl_gclk.c
+#ifndef CONF_GCLK_GENERATOR_8_CONFIG
+#define CONF_GCLK_GENERATOR_8_CONFIG 0
+#endif
+
 #endif // HPL_GCLK_CONFIG_H

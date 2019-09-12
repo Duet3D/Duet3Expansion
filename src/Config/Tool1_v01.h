@@ -13,6 +13,7 @@
 
 // General features
 #define HAS_VREF_MONITOR				1
+#define HAS_VOLTAGE_MONITOR				1
 #define HAS_12V_MONITOR					0
 #define HAS_CPU_TEMP_SENSOR				1
 
@@ -31,6 +32,8 @@ constexpr size_t MaxSmartDrivers = 1;
 #define TMC22xx_SINGLE_DRIVER			1
 #define TMC22xx_HAS_ENABLE_PINS			0
 #define TMC22xx_VARIABLE_NUM_DRIVERS	0
+
+#define SUPPORT_TMC2660					0
 
 constexpr Pin GlobalTmc22xxEnablePin = PortBPin(2);
 
@@ -61,8 +64,12 @@ constexpr Pin DirectionPins[NumDrivers] = { PortAPin(28) };
 const size_t MaxHeaters = 6;
 const size_t MaxExtraHeaterProtections = 6;
 
+#define SUPPORT_IOBITS		0
+#define SUPPORT_LASER		0
 #define SUPPORT_SPI_SENSORS	0
 #define SUPPORT_DHT_SENSOR	0
+
+#define USE_CACHE			0
 
 #define DIAG_SERCOM_NUMBER	4			// which SERCOM device we use for debugging output
 
@@ -83,6 +90,8 @@ constexpr Pin BoardTypePin = PortAPin(5);
 
 constexpr Pin VinMonitorPin = PortAPin(8);
 constexpr float VinDividerRatio = (60.4 + 4.7)/4.7;
+constexpr float VinMonitorVoltageRange = VinDividerRatio * 3.3;		// We use the 3.3V supply as the voltage reference
+
 constexpr Pin VrefPin = PortAPin(7);
 constexpr Pin VssaPin = PortAPin(6);
 

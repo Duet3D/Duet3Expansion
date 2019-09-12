@@ -1065,7 +1065,7 @@ inline void TmcDriverState::StartTransfer()
 
 inline void TmcDriverState::UartTmcHandler()
 {
-#if !(TMC22xx_USES_MUX || TMC22xx_SINGLE_DRIVER)
+#if !(TMC22xx_HAS_MUX || TMC22xx_SINGLE_DRIVER)
 # if TMC22xx_USES_SERCOM
 	DmacManager::DisableCompletedInterrupt(TmcRxDmaChannel);
 # else

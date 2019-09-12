@@ -8,7 +8,7 @@
 #ifndef SRC_VERSION_H_
 #define SRC_VERSION_H_
 
-constexpr const char* FirmwareVersion = "3.0alpha 2019-09-09b3";
+constexpr const char* FirmwareVersion = "3.0alpha 2019-09-12b1";
 
 #if defined(SAME51)
 constexpr const char* BoardTypeName = "EXP3HC";

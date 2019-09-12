@@ -47,8 +47,12 @@ private:
 	// The following are derived from the configurable parameters
 	float shA, shB;															// derived parameters
 
+#if defined(SAME70) && SAME70
+	static constexpr unsigned int AdcBits = 14;								// We use the SAME70 ADC in x16 oversample mode
+#else
 	static constexpr unsigned int AdcBits = 12;								// the ADCs in the SAM processors are 12-bit
-	static constexpr int32_t AdcRange = 1 << (AdcBits + AdcOversampleBits);	// The readings we pass in should be in range 0..(AdcRange - 1)
+#endif
+	static constexpr int32_t AdcRange = 1u << (AnalogIn::AdcBits + AdcOversampleBits);	// The readings we pass in should be in range 0..(AdcRange - 1)
 };
 
 #endif /* SRC_HEATING_THERMISTOR_H_ */

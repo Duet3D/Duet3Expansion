@@ -181,13 +181,6 @@ void DriveMovement::PrepareExtruder(const DDA& dda, const PrepParams& params, fl
 	mp.cart.compensationClocks = roundU32(compensationClocks);
 	mp.cart.accelCompensationClocks = roundU32(compensationClocks * params.compFactor);
 
-#ifdef COMPENSATE_SPEED_CHANGES
-	// If there is a speed change at the start of the move, theoretically we should instantly advance or retard the filament by the associated compensation amount.
-	// We can't do that, so increase or decrease the extrusion factor instead, so that at least the extrusion will be correct by the end of the move.
-	const float factor = 1.0 + (speedChange * compensationTime)/dda.totalDistance;
-	stepsPerMm *= factor;
-#endif
-
 	// Recalculate the net total step count to allow for compensation. It may be negative.
 	const float compensationDistance = (dda.endSpeed - dda.startSpeed) * compensationClocks;
 	int32_t netSteps = lrintf((1.0 + compensationDistance) * totalSteps);

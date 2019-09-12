@@ -120,6 +120,24 @@ namespace Platform
 	DriversBitmap stalledDrivers, stalledDriversToLog, stalledDriversToPause, stalledDriversToRehome;
 #endif
 
+#if HAS_VOLTAGE_MONITOR
+
+	inline constexpr float AdcReadingToPowerVoltage(uint16_t adcVal)
+	{
+		return adcVal * (VinMonitorVoltageRange/(1u << AnalogIn::AdcBits));
+	}
+
+	inline constexpr uint16_t PowerVoltageToAdcReading(float voltage)
+	{
+		return (uint16_t)(voltage * ((1u << AnalogIn::AdcBits)/VinMonitorVoltageRange));
+	}
+
+	constexpr uint16_t driverPowerOnAdcReading = PowerVoltageToAdcReading(10.0);			// minimum voltage at which we initialise the drivers
+	constexpr uint16_t driverPowerOffAdcReading = PowerVoltageToAdcReading(9.5);			// voltages below this flag the drivers as unusable
+	constexpr uint16_t driverOverVoltageAdcReading = PowerVoltageToAdcReading(29.0);		// voltages above this cause driver shutdown
+	constexpr uint16_t driverNormalVoltageAdcReading = PowerVoltageToAdcReading(27.5);		// voltages at or below this are normal
+
+#endif
 	static void UpdateMotorCurrent(size_t driver)
 	{
 		SmartDrivers::SetCurrent(driver, (driverAtIdleCurrent[driver]) ? motorCurrents[driver] * idleCurrentFactor : motorCurrents[driver]);
@@ -445,11 +463,6 @@ void Platform::Init()
 	stalledDrivers = 0;
 	logOnStallDrivers = pauseOnStallDrivers = rehomeOnStallDrivers = 0;
 	stalledDriversToLog = stalledDriversToPause = stalledDriversToRehome = 0;
-#endif
-
-#if HAS_VOLTAGE_MONITOR
-	autoSaveEnabled = false;
-	autoSaveState = AutoSaveState::starting;
 #endif
 
 #if HAS_SMART_DRIVERS && HAS_VOLTAGE_MONITOR
@@ -1033,5 +1046,14 @@ void Platform::StartFirmwareUpdate()
 {
 	doFirmwareUpdate = true;
 }
+
+#if HAS_VOLTAGE_MONITOR
+
+float Platform::GetCurrentPowerVoltage()
+{
+	return AdcReadingToPowerVoltage(currentVin);
+}
+
+#endif
 
 // End

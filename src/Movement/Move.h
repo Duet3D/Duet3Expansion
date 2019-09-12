@@ -18,14 +18,8 @@
 // Each DDA needs one DM per drive that it moves.
 // However, DM's are large, so we provide fewer than DRIVES * DdaRingLength of them. The planner checks that enough DMs are available before filling in a new DDA.
 
-#if SAM4E || SAM4S || SAME70
-const unsigned int DdaRingLength = 30;
-const unsigned int NumDms = DdaRingLength * 8;						// suitable for e.g. a delta + 5 input hot end
-#else
-// We are more memory-constrained on the SAM3X
 const unsigned int DdaRingLength = 20;
-const unsigned int NumDms = DdaRingLength * 5;						// suitable for e.g. a delta + 2-input hot end
-#endif
+const unsigned int NumDms = DdaRingLength * NumDrivers;
 
 /**
  * This is the master movement class.  It controls all movement in the machine.
