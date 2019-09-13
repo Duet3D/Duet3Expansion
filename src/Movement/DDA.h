@@ -50,8 +50,6 @@ public:
 	DDA* GetNext() const { return next; }
 	DDA* GetPrevious() const { return prev; }
 	int32_t GetTimeLeft() const;
-	const int32_t *DriveCoordinates() const { return endPoint; }	// Get endpoints of a move in machine coordinates
-	void SetDriveCoordinate(int32_t a, size_t drive);				// Force an end point
 	bool IsHomingAxes() const { return (endStopsToCheck & HomeAxes) != 0; }
 
 	int32_t GetStepsTaken(size_t drive) const;
@@ -127,7 +125,6 @@ private:
 
     EndstopChecks endStopsToCheck;			// Which endstops we are checking on this move
 
-	int32_t endPoint[NumDrivers];  				// Machine coordinates of the endpoint
 	float acceleration;						// The acceleration to use
 	float deceleration;						// The deceleration to use
 
@@ -161,12 +158,6 @@ private:
 inline DriveMovement *DDA::FindDM(size_t drive) const
 {
 	return pddm[drive];
-}
-
-// Force an end point
-inline void DDA::SetDriveCoordinate(int32_t a, size_t drive)
-{
-	endPoint[drive] = a;
 }
 
 #if HAS_SMART_DRIVERS

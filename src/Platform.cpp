@@ -10,6 +10,7 @@
 #include <Hardware/IoPorts.h>
 #include <Hardware/AnalogIn.h>
 #include <Hardware/AnalogOut.h>
+#include <Hardware/Serial.h>
 #include <Movement/Move.h>
 #include "Movement/StepperDrivers/TMC51xx.h"
 #include "Movement/StepperDrivers/TMC22xx.h"
@@ -29,31 +30,52 @@
 constexpr uint32_t FlashBlockSize = 0x00010000;							// the block size we assume for flash
 constexpr uint32_t FirmwareFlashStart = FLASH_ADDR + FlashBlockSize;	// we reserve 64K for the bootloader
 
+static Uart uart0(3, SERCOM3_0_IRQn);
+
+extern "C" void SERCOM3_0_Handler()
+{
+	uart0.Interrupt();
+}
+
+extern "C" void SERCOM3_1_Handler()
+{
+	uart0.Interrupt();
+}
+
+extern "C" void SERCOM3_2_Handler()
+{
+	uart0.Interrupt();
+}
+
+extern "C" void SERCOM3_3_Handler()
+{
+	uart0.Interrupt();
+}
+
 #elif defined(SAMC21)
 
 # include <hri_nvmctrl_c21.h>
 constexpr uint32_t FlashBlockSize = 0x00004000;							// the block size we assume for flash
 constexpr uint32_t FirmwareFlashStart = FLASH_ADDR + FlashBlockSize;	// we reserve 16K for the bootloader
 
+static Uart uart0(4, SERCOM4_IRQn);
+
+extern "C" void SERCOM4_Handler()
+{
+	uart0.Interrupt();
+}
+
 #else
 # error Unsupported processor
 #endif
 
-static bool txBusy = false;
 static bool doFirmwareUpdate = false;
-
-extern "C" void tx_cb_USART_0(const struct usart_async_descriptor *const io_descr)
-{
-	txBusy = false;
-}
 
 namespace Platform
 {
 	static constexpr float DefaultStepsPerMm = 80.0;
 
 	Mutex messageMutex;
-
-	static struct io_descriptor *io;
 
 	static uint32_t errorCodeBits = 0;
 	uint32_t slowDriversBitmap = 0;
@@ -197,17 +219,11 @@ namespace Platform
 	// Send the specified message to the specified destinations. The Error and Warning flags have already been handled.
 	void RawMessage(MessageType type, const char *message)
 	{
-		// io_write requires that the message doesn't go out of scope until transmission is complete, so copy it to a static buffer
-		static String<200> buffer;
-
 		MutexLocker lock(messageMutex);
 
-		buffer.copy("{\"message\":\"");
-		buffer.cat(message);		// should do JSON escaping here
-		buffer.cat("\"}\n");
-		txBusy = true;
-		io_write(io, (const unsigned char *)buffer.c_str(), buffer.strlen());
-		//while (txBusy) { delay(1); }
+		uart0.PutString("{\"message\":\"");
+		uart0.PutString(message);		// should do JSON escaping here
+		uart0.PutString("\"}\n");
 	}
 
 #ifdef SAME51
@@ -226,19 +242,17 @@ namespace Platform
 
 	static void InitialiseInterrupts()
 	{
-#ifdef SAME51
-		// Set UART interrupt priority. Each SERCOM has up to 4 interrupts, numbered sequentially.
-		SetInterruptPriority(Serial0_IRQn, 4, NvicPriorityUart);
-		SetInterruptPriority(Serial1_IRQn, 4, NvicPriorityUart);
-#endif
-
 		NVIC_SetPriority(CAN1_IRQn, NvicPriorityCan);
 		NVIC_SetPriority(StepTcIRQn, NvicPriorityStep);
 
 #if defined(SAME51)
+		// Set UART interrupt priority. Each SERCOM has up to 4 interrupts, numbered sequentially.
+		SetInterruptPriority(Serial0_IRQn, 4, NvicPriorityUart);
+		SetInterruptPriority(Serial1_IRQn, 4, NvicPriorityUart);
 		SetInterruptPriority(DMAC_0_IRQn, 5, NvicPriorityDmac);
 		SetInterruptPriority(EIC_0_IRQn, 16, NvicPriorityPins);
 #elif defined(SAMC21)
+		NVIC_SetPriority(Serial0_IRQn, NvicPriorityUart);
 		NVIC_SetPriority(DMAC_IRQn, NvicPriorityDmac);
 		NVIC_SetPriority(EIC_IRQn, NvicPriorityPins);
 #else
@@ -356,22 +370,17 @@ void Platform::Init()
 		}
 	}
 
-	// Set up the UART to send to PanelDue
-	//TODO finish our own serial driver
-#if defined(SAME51)
-	const uint32_t baudDiv = 65536 - ((65536 * 16.0f * 57600) / CONF_GCLK_SERCOM3_CORE_FREQUENCY);
-	usart_async_set_baud_rate(&USART_0, baudDiv);
-
-	usart_async_register_callback(&USART_0, USART_ASYNC_TXC_CB, tx_cb_USART_0);
-	//usart_async_register_callback(&USART_0, USART_ASYNC_RXC_CB, rx_cb);
-	//usart_async_register_callback(&USART_0, USART_ASYNC_ERROR_CB, err_cb);
-	usart_async_get_io_descriptor(&USART_0, &io);
-	usart_async_enable(&USART_0);
+	// Set up the UART to send to PanelDue for debugging
+#ifdef SAME51
+	gpio_set_pin_function(PortBPin(20), PINMUX_PB20C_SERCOM3_PAD0);		// TxD
+# if 0	// we don't use the receiver, but if we did we would need to do this:
+	gpio_set_pin_function(PortBPin(21), PINMUX_PB21C_SERCOM3_PAD1);		// RxD
+# endif
 #elif defined(SAMC21)
-	//TODO
-#else
-# error Unsupported processor
+	gpio_set_pin_function(PortAPin(12), PINMUX_PA12D_SERCOM4_PAD0);		// TxD
 #endif
+
+	uart0.Init(256, 0, 57600);
 
 	// Initialise the rest of the IO subsystem
 	AnalogIn::Init();
@@ -474,49 +483,6 @@ void Platform::Init()
 	InitialiseInterrupts();
 
 	lastPollTime = millis();
-
-#if 0
-	//TEST set up some PWM values
-	static PwmPort out0, out1, out2, out3, out4, out5, out6, out7, out8;
-	String<100> reply;
-
-	out0.AssignPort("out0", reply.GetRef(), PinUsedBy::gpio, PinAccess::pwm);
-	out1.AssignPort("out1", reply.GetRef(), PinUsedBy::gpio, PinAccess::pwm);
-	out2.AssignPort("out2", reply.GetRef(), PinUsedBy::gpio, PinAccess::pwm);
-	out3.AssignPort("out3", reply.GetRef(), PinUsedBy::gpio, PinAccess::pwm);
-	out4.AssignPort("out4", reply.GetRef(), PinUsedBy::gpio, PinAccess::pwm);
-	out5.AssignPort("out5", reply.GetRef(), PinUsedBy::gpio, PinAccess::pwm);
-	out6.AssignPort("out6", reply.GetRef(), PinUsedBy::gpio, PinAccess::pwm);
-	out7.AssignPort("out7", reply.GetRef(), PinUsedBy::gpio, PinAccess::pwm);
-	out8.AssignPort("out8", reply.GetRef(), PinUsedBy::gpio, PinAccess::pwm);
-
-	out0.SetFrequency(100);
-	out0.WriteAnalog(0.1);
-
-	out1.SetFrequency(200);
-	out1.WriteAnalog(0.2);
-
-	out2.SetFrequency(400);
-	out2.WriteAnalog(0.3);
-
-	out3.SetFrequency(500);
-	out3.WriteAnalog(0.4);
-
-	out4.SetFrequency(1000);
-	out4.WriteAnalog(0.5);
-
-	out5.SetFrequency(2000);
-	out5.WriteAnalog(0.6);
-
-	out6.SetFrequency(4000);
-	out6.WriteAnalog(0.7);
-
-	out7.SetFrequency(10000);
-	out7.WriteAnalog(0.8);
-
-	out8.SetFrequency(25000);
-	out8.WriteAnalog(0.9);
-#endif
 }
 
 void Platform::Spin()

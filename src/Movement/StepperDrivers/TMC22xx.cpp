@@ -1154,7 +1154,7 @@ void SmartDrivers::Init()
 	gpio_set_pin_function(TMC22xxSercomTxPin, TMC22xxSercomTxPinPeriphMode);
 	gpio_set_pin_function(TMC22xxSercomRxPin, TMC22xxSercomRxPinPeriphMode);
 
-	Serial::InitUart(SERCOM_TMC22xx, TMC22xxSercomNumber, DriversBaudRate);
+	Serial::InitUart(TMC22xxSercomNumber, DriversBaudRate);
 	NVIC_EnableIRQ(TMC22xxSercomIRQn);
 # else
 	// Set up the single UART that communicates with all TMC22xx drivers

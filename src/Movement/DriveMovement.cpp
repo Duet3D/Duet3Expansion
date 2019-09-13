@@ -88,6 +88,7 @@ void DriveMovement::PrepareCartesianAxis(const DDA& dda, const PrepParams& param
 }
 
 // Prepare this DM for a Delta axis move
+//TODO convert this to normalised coordinates like we did for Cartesdian drives
 void DriveMovement::PrepareDeltaAxis(const DDA& dda, const PrepParams& params)
 {
 	isDeltaMovement = true;

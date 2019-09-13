@@ -25,6 +25,7 @@ constexpr size_t NumDrivers = 1;
 constexpr size_t MaxSmartDrivers = 1;
 
 #define SUPPORT_TMC51xx					0
+#define SUPPORT_TMC2660					0
 
 #define SUPPORT_TMC22xx					1
 #define TMC22xx_USES_SERCOM				1
@@ -32,8 +33,6 @@ constexpr size_t MaxSmartDrivers = 1;
 #define TMC22xx_SINGLE_DRIVER			1
 #define TMC22xx_HAS_ENABLE_PINS			0
 #define TMC22xx_VARIABLE_NUM_DRIVERS	0
-
-#define SUPPORT_TMC2660					0
 
 constexpr Pin GlobalTmc22xxEnablePin = PortBPin(2);
 
@@ -179,7 +178,10 @@ constexpr unsigned int StepTcClockId = TC2_GCLK_ID;
 constexpr Pin DiagLedPin = PortAPin(0);
 constexpr Pin DiagLed1Pin = PortAPin(1);
 
-// DMA channel assignments. Channels 0-3 have individual interrupt vectors, channels 4-31 share an interrupt vector.
+// Available UART ports
+constexpr IRQn Serial0_IRQn = SERCOM4_IRQn;
+
+// DMA channel assignments
 constexpr DmaChannel TmcTxDmaChannel = 0;
 constexpr DmaChannel TmcRxDmaChannel = 1;
 constexpr DmaChannel Adc0TxDmaChannel = 2;
@@ -188,8 +190,8 @@ constexpr DmaChannel Adc0TxDmaChannel = 2;
 constexpr unsigned int NumDmaChannelsUsed = 4;			// must be at least the number of channels used, may be larger. Max 12 on the SAMC21.
 
 // Interrupt priorities, lower means higher priority. 0 can't make RTOS calls.
-const uint32_t NvicPriorityUart = 0;
 const uint32_t NvicPriorityStep = 1;					// step interrupt is next highest, it can preempt most other interrupts
+const uint32_t NvicPriorityUart = 2;					// serial driver makes RTOS calls
 const uint32_t NvicPriorityPins = 2;					// priority for GPIO pin interrupts
 const uint32_t NvicPriorityCan = 3;
 const uint32_t NvicPriorityDmac = 3;					// priority for DMA complete interrupts

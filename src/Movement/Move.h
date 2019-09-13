@@ -41,13 +41,7 @@ public:
 	// Kinematics and related functions
 	Kinematics& GetKinematics() const { return *kinematics; }
 	bool SetKinematics(KinematicsType k);											// Set kinematics, return true if successful
-	bool CartesianToMotorSteps(const float machinePos[MaxAxes], int32_t motorPos[MaxAxes], bool isCoordinated) const;
 																					// Convert Cartesian coordinates to delta motor coordinates, return true if successful
-	void MotorStepsToCartesian(const int32_t motorPos[], size_t numVisibleAxes, size_t numTotalAxes, float machinePos[]) const;
-																					// Convert motor coordinates to machine coordinates
-	void EndPointToMachine(const float coords[], int32_t ep[], size_t numDrives) const;
-	const char* GetGeometryString() const { return kinematics->GetName(true); }
-
 	// Temporary kinematics functions
 	bool IsDeltaMode() const { return kinematics->GetKinematicsType() == KinematicsType::linearDelta; }
 	// End temporary functions
@@ -70,9 +64,6 @@ public:
 #if HAS_SMART_DRIVERS
 	uint32_t GetStepInterval(size_t axis, uint32_t microstepShift) const;			// Get the current step interval for this axis or extruder
 #endif
-
-	static int32_t MotorMovementToSteps(size_t drive, float coord);					// Convert a single motor position to number of steps
-	static float MotorStepsToMovement(size_t drive, int32_t endpoint);				// Convert number of motor steps to motor position
 
 private:
 	bool StartNextMove(uint32_t startTime) __attribute__ ((hot));								// Start the next move, returning true if Step() needs to be called immediately

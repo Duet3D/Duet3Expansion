@@ -23,29 +23,13 @@ extern uint32_t SystemPeripheralClock;		// in system_same51.c
 #include <hal_init.h>
 #include <hal_io.h>
 #include <hal_sleep.h>
-
-#include <hal_adc_async.h>
-
 #include <hal_ext_irq.h>
-
-#include <hal_usart_async.h>
-
 #include <hal_delay.h>
-
 #include <hal_wdt.h>
 #include <hal_can_async.h>
 
-extern struct adc_async_descriptor ADC_0;
-extern struct adc_async_descriptor ADC_1;
-
-extern struct usart_async_descriptor USART_0;
-
 extern struct wdt_descriptor       WDT_0;
 extern struct can_async_descriptor CAN_0;
-
-void USART_0_PORT_init(void);
-void USART_0_CLOCK_init(void);
-void USART_0_init(void);
 
 void delay_driver_init(void);
 

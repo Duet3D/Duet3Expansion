@@ -179,12 +179,6 @@ void DDA::DebugPrintAll() const
 // This is called by Move to initialize all DDAs
 void DDA::Init()
 {
-	// Set the endpoints to zero, because Move asks for them.
-	// They will be wrong if we are on a delta. We take care of that when we process the M665 command in config.g.
-	for (int32_t& ep : endPoint)
-	{
-		ep = 0;
-	}
 	state = empty;
 
 #if SUPPORT_LASER || SUPPORT_IOBITS
@@ -197,13 +191,11 @@ void DDA::Init()
 void DDA::Init(const CanMessageMovement& msg)
 {
 	// 0. Update the endpoints (do we even need them?)
-	const int32_t * const positionNow = prev->DriveCoordinates();
 	bool realMove = false;
 
 	for (size_t drive = 0; drive < NumDrivers; drive++)
 	{
 		int32_t delta = msg.perDrive[drive].steps;
-		endPoint[drive] = positionNow[drive] + delta;
 
 		if (delta != 0)
 		{
@@ -597,7 +589,6 @@ void DDA::StopDrive(size_t drive)
 	if (pdm != nullptr && pdm->state == DMState::moving)
 	{
 		pdm->state = DMState::idle;
-		endPoint[drive] -= pdm->GetNetStepsLeft();
 		RemoveDM(drive);
 		if (firstDM == nullptr)
 		{

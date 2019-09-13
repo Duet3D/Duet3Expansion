@@ -417,53 +417,6 @@ void Move::Diagnostics(MessageType mtype)
 	Platform::MessageF(mtype, "Scheduled moves: %" PRIu32 ", completed moves: %" PRIu32 /*"\n"*/, scheduledMoves, completedMoves);
 }
 
-// This may be called from an ISR, e.g. via Kinematics::OnHomingSwitchTriggered and DDA::SetPositions
-void Move::EndPointToMachine(const float coords[], int32_t ep[], size_t numDrives) const
-{
-	if (CartesianToMotorSteps(coords, ep, true))
-	{
-		const size_t numAxes = GCodes::GetTotalAxes();
-		for (size_t drive = numAxes; drive < numDrives; ++drive)
-		{
-			ep[drive] = MotorMovementToSteps(drive, coords[drive]);
-		}
-	}
-}
-
-// Convert distance to steps for a particular drive
-int32_t Move::MotorMovementToSteps(size_t drive, float coord)
-{
-	return lrintf(coord * Platform::DriveStepsPerUnit(drive));
-}
-
-// Convert motor coordinates to machine coordinates. Used after homing and after individual motor moves.
-// This is computationally expensive on a delta or SCARA machine, so only call it when necessary, and never from the step ISR.
-void Move::MotorStepsToCartesian(const int32_t motorPos[], size_t numVisibleAxes, size_t numTotalAxes, float machinePos[]) const
-{
-	kinematics->MotorStepsToCartesian(motorPos, Platform::GetDriveStepsPerUnit(), numVisibleAxes, numTotalAxes, machinePos);
-}
-
-// Convert Cartesian coordinates to motor steps, axes only, returning true if successful.
-// Used to perform movement and G92 commands.
-// This may be called from an ISR, e.g. via Kinematics::OnHomingSwitchTriggered, DDA::SetPositions and Move::EndPointToMachine
-bool Move::CartesianToMotorSteps(const float machinePos[MaxAxes], int32_t motorPos[MaxAxes], bool isCoordinated) const
-{
-	const bool b = kinematics->CartesianToMotorSteps(machinePos, Platform::GetDriveStepsPerUnit(),
-														GCodes::GetVisibleAxes(), GCodes::GetTotalAxes(), motorPos, isCoordinated);
-	if (!inInterrupt() && Platform::Debug(moduleMove) && Platform::Debug(moduleDda))
-	{
-		if (b)
-		{
-			debugPrintf("Transformed %.2f %.2f %.2f to %" PRIu32 " %" PRIu32 " %" PRIu32 "\n", (double)machinePos[0], (double)machinePos[1], (double)machinePos[2], motorPos[0], motorPos[1], motorPos[2]);
-		}
-		else
-		{
-			debugPrintf("Unable to transform %.2f %.2f %.2f\n", (double)machinePos[0], (double)machinePos[1], (double)machinePos[2]);
-		}
-	}
-	return b;
-}
-
 // This is called from the step ISR when the current move has been completed
 void Move::CurrentMoveCompleted()
 {
@@ -481,11 +434,6 @@ bool Move::TryStartNextMove(uint32_t startTime)
 		return StartNextMove(startTime);
 	}
 	return false;
-}
-
-/*static*/ float Move::MotorStepsToMovement(size_t drive, int32_t endpoint)
-{
-	return ((float)(endpoint))/Platform::DriveStepsPerUnit(drive);
 }
 
 // For debugging
