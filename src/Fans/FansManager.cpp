@@ -73,7 +73,7 @@ GCodeResult FansManager::ConfigureFanPort(const CanMessageGeneric& msg, const St
 	PwmFrequency freq = DefaultFanPwmFreq;
 	const bool seenFreq = parser.GetUintParam('Q', freq);
 
-	String<StringLength20> pinNames;
+	String<StringLength50> pinNames;
 	if (parser.GetStringParam('C', pinNames.GetRef()))
 	{
 		WriteLocker lock(fansLock);

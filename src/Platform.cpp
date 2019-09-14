@@ -385,12 +385,13 @@ void Platform::Init()
 	// Initialise the rest of the IO subsystem
 	AnalogIn::Init();
 	AnalogOut::Init();
+	InitialisePinChangeInterrupts();
 
 #ifdef SAME51
 	ADC_temperature_init();
 #endif
 
-#ifdef SAME51		//TODO base on configuration not processor
+#if HAS_ADDRESS_SWITCHES
 	// Set up the board ID switch inputs
 	for (unsigned int i = 0; i < 4; ++i)
 	{
@@ -446,9 +447,20 @@ void Platform::Init()
 # error Unsupported processor
 #endif
 
+#if HAS_BUTTONS
+	for (size_t i = 0; i < NumButtons; ++i)
+	{
+		IoPort::SetPinMode(ButtonPins[i], PinMode::INPUT_PULLUP);
+	}
+#endif
+
 	// Initialise stepper drivers
 	SmartDrivers::Init();
 	temperatureShutdownDrivers = temperatureWarningDrivers = shortToGroundDrivers = openLoadADrivers = openLoadBDrivers = notOpenLoadADrivers = notOpenLoadBDrivers = 0;
+
+#ifdef TOOL_1_V01
+	IoPort::SetPinMode(Tmc2209DiagPin, INPUT);
+#endif
 
 	for (size_t i = 0; i < NumDrivers; ++i)
 	{
@@ -979,9 +991,7 @@ void Platform::SetMotorCurrent(size_t driver, float current)
 
 uint8_t Platform::ReadBoardId()
 {
-#ifdef SAMC21
-	return 10;			//TODO temporary!
-#else
+#if HAS_ADDRESS_SWITCHES
 	uint8_t rslt = 0;
 	for (unsigned int i = 0; i < 4; ++i)
 	{
@@ -991,6 +1001,8 @@ uint8_t Platform::ReadBoardId()
 		}
 	}
 	return rslt;
+#else
+	return 10;			//TODO temporary!
 #endif
 }
 

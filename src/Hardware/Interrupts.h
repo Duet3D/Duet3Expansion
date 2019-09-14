@@ -78,8 +78,8 @@ enum class InterruptMode : uint8_t
 
 typedef void (*StandardCallbackFunction)(CallbackParameter);
 
+void InitialisePinChangeInterrupts();
 bool AttachInterrupt(Pin pin, StandardCallbackFunction callback, InterruptMode mode, CallbackParameter param);
-
 void DetachInterrupt(Pin pin);
 
 // Return true if we are in any interrupt service routine

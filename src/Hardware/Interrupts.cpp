@@ -42,7 +42,7 @@ void InitialisePinChangeInterrupts()
 #if defined(SAME51)
 	hri_eic_write_DEBOUNCEN_reg(EIC, 0);				// debouncing disabled
 #elif defined(SAMC21)
-	// The datasheet describes the debounce register as for the SAME51, but the register definition in eic.h doesn't include the debounce register
+	// Only the SAMC21N has the debounce register, the SAMC21G that we use doesn't have it
 #else
 # error Undefined processor
 #endif

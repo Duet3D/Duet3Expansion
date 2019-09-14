@@ -107,6 +107,7 @@ constexpr size_t FormatStringLength = 256;
 constexpr size_t MaxMessageLength = 256;
 constexpr size_t MaxTitleLength = 61;
 constexpr size_t StringLength20 = 20;
+constexpr size_t StringLength50 = 50;
 
 constexpr size_t GCODE_LENGTH = 161;					// maximum number of non-comment characters in a line of GCode including the null terminator
 constexpr size_t SHORT_GCODE_LENGTH = 61;				// maximum length of a GCode that we can queue to synchronise it to a move

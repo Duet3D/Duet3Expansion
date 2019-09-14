@@ -14,23 +14,25 @@
 const size_t MaxHeaters = 6;
 const size_t MaxExtraHeaterProtections = 6;
 
-#define HAS_SMART_DRIVERS	1
-#define HAS_STALL_DETECT	1
-#define HAS_VREF_MONITOR	1
-#define HAS_VOLTAGE_MONITOR	1
-#define HAS_12V_MONITOR		1
-#define HAS_CPU_TEMP_SENSOR	1
+#define HAS_SMART_DRIVERS		1
+#define HAS_STALL_DETECT		1
+#define HAS_VREF_MONITOR		1
+#define HAS_VOLTAGE_MONITOR		1
+#define HAS_12V_MONITOR			1
+#define HAS_CPU_TEMP_SENSOR		1
+#define HAS_ADDRESS_SWITCHES	1
+#define HAS_BUTTONS				0
 
-#define SUPPORT_TMC51xx		1
-#define SUPPORT_TMC22xx		0
-#define SUPPORT_TMC2660		0
+#define SUPPORT_TMC51xx			1
+#define SUPPORT_TMC22xx			0
+#define SUPPORT_TMC2660			0
 
-#define SUPPORT_IOBITS		0
-#define SUPPORT_LASER		0
-#define SUPPORT_DHT_SENSOR	0	//TEMP!!!
-#define SUPPORT_SPI_SENSORS	1
+#define SUPPORT_IOBITS			0
+#define SUPPORT_LASER			0
+#define SUPPORT_DHT_SENSOR		0	//TEMP!!!
+#define SUPPORT_SPI_SENSORS		1
 
-#define USE_CACHE			0
+#define USE_CACHE				0
 
 constexpr size_t NumDrivers = 3;
 constexpr size_t MaxSmartDrivers = 3;

@@ -131,7 +131,7 @@ void IoPort::DetachInterrupt() const
 	for (size_t i = 0; i < numPorts; ++i)
 	{
 		// Get the next port name
-		String<StringLength20> pn;
+		String<StringLength50> pn;
 		char c;
 		while ((c = pinNames[index]) != 0 && c != '+')
 		{

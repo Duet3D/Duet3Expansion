@@ -16,6 +16,8 @@
 #define HAS_VOLTAGE_MONITOR				1
 #define HAS_12V_MONITOR					0
 #define HAS_CPU_TEMP_SENSOR				1
+#define HAS_ADDRESS_SWITCHES			0
+#define HAS_BUTTONS						1
 
 // Drivers configuration
 #define HAS_SMART_DRIVERS				1
@@ -35,6 +37,7 @@ constexpr size_t MaxSmartDrivers = 1;
 #define TMC22xx_VARIABLE_NUM_DRIVERS	0
 
 constexpr Pin GlobalTmc22xxEnablePin = PortBPin(2);
+constexpr Pin Tmc2209DiagPin = PortBPin(3);
 
 constexpr uint8_t TMC22xxSercomNumber = 3;
 Sercom * const SERCOM_TMC22xx = SERCOM3;
@@ -98,6 +101,9 @@ constexpr Pin TempSensePins[NumThermistorInputs] = { PortBPin(9), PortAPin(3), P
 constexpr Pin TachoInputPins[NumTachoInputs] = { PortAPin(13), PortBPin(10) };			// tachos are on output connectors 1-2
 constexpr Pin IoInPins[NumIoPorts] = { PortAPin(9), PortAPin(21) };
 constexpr Pin IoOutPins[NumIoPorts] = { PortAPin(12), NoPin };
+
+constexpr size_t NumButtons = 2;
+constexpr Pin ButtonPins[NumButtons] = { PortBPin(22), PortBPin(23) };
 
 // Table of pin functions that we are allowed to use
 constexpr uint8_t Nx = 0xFF;

@@ -145,6 +145,7 @@ constexpr uint32_t IOIN_222x_MS1 = 1 << 6;
 constexpr uint32_t IOIN_220x_STEP = 1 << 7;
 constexpr uint32_t IOIN_222x_MS2 = 1 << 7;
 constexpr uint32_t IOIN_IS_220x = 1 << 8;					// 1 if TMC220x, 0 if TMC222x
+constexpr uint32_t IOIN_2209_SPREAD_EN = 1 << 8;
 constexpr uint32_t IOIN_220x_DIR = 1 << 9;
 constexpr uint32_t IOIN_VERSION_SHIFT = 24;
 constexpr uint32_t IOIN_VERSION_MASK = 0xFF << IOIN_VERSION_SHIFT;
@@ -176,9 +177,14 @@ constexpr uint32_t DefaultIholdIrunReg = (0 << IHOLDIRUN_IHOLD_SHIFT) | (0 << IH
 
 constexpr uint8_t REGNUM_TPOWER_DOWN = 0x11;
 constexpr uint8_t REGNUM_TSTEP = 0x12;
-
 constexpr uint8_t REGNUM_TPWMTHRS = 0x13;
 constexpr uint8_t REGNUM_VACTUAL = 0x22;
+
+// Stallguard registers (TMC2209 only)
+constexpr uint8_t REGNUM_TCOOLTHRS = 0x14;
+constexpr uint8_t REGNUM_SGTHRS = 0x40;
+constexpr uint8_t REGNUM_SG_RESULT = 0x41;
+constexpr uint8_t REGNUM_COOLCONF = 0x42;
 
 // Sequencer registers (read only)
 constexpr uint8_t REGNUM_MSCNT = 0x6A;

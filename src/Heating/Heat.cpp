@@ -319,7 +319,7 @@ GCodeResult Heat::ConfigureHeater(const CanMessageGeneric& msg, const StringRef&
 	PwmFrequency freq = DefaultFanPwmFreq;
 	const bool seenFreq = parser.GetUintParam('Q', freq);
 
-	String<StringLength20> pinName;
+	String<StringLength50> pinName;
 	if (parser.GetStringParam('C', pinName.GetRef()))
 	{
 		uint16_t sensorNumber;
