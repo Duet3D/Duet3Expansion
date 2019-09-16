@@ -169,7 +169,7 @@
 // <i> Number of Tx Buffers used for Tx FIFO
 // <id> can_txbc_tfqs
 #ifndef CONF_CAN1_TXBC_TFQS
-#define CONF_CAN1_TXBC_TFQS 2
+#define CONF_CAN1_TXBC_TFQS 16
 #endif
 
 // <o> Tx Buffer Data Field Size

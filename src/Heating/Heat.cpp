@@ -258,7 +258,7 @@ void Heat::Exit()
 			else
 			{
 				buf->dataLength = msg->GetActualDataLength(sensorsFound);
-				CanInterface::Send(buf);
+				CanInterface::SendAndFree(buf);
 			}
 		}
 
@@ -292,7 +292,7 @@ void Heat::Exit()
 			else
 			{
 				buf->dataLength = msg->GetActualDataLength(heatersFound);
-				CanInterface::Send(buf);
+				CanInterface::SendAndFree(buf);
 			}
 		}
 

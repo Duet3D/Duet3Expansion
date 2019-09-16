@@ -165,13 +165,15 @@ namespace Tasks
 
 }
 
+// Append a memory report to a string
 void Tasks::GetMemoryReport(const StringRef& reply)
 {
 	uint32_t maxStack, neverUsedRam;
 	GetHandlerStackUsage(&maxStack, &neverUsedRam);
-	reply.printf("Never used RAM %.1fKb, max stack %" PRIu32 "b", (double)neverUsedRam/1024, maxStack);
+	reply.catf("Never used RAM %.1fKb, max stack %" PRIu32 "b", (double)neverUsedRam/1024, maxStack);
 }
 
+// Append a task memory report to a string
 void Tasks::GetTasksMemoryReport(const StringRef& reply)
 {
 	for (const TaskBase *t = TaskBase::GetTaskList(); t != nullptr; t = t->GetNext())

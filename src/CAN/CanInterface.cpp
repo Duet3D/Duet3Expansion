@@ -216,7 +216,7 @@ CanAddress CanInterface::GetCanAddress()
 	return boardAddress;
 }
 
-void CanInterface::Send(CanMessageBuffer *buf)
+bool CanInterface::Send(CanMessageBuffer *buf)
 {
 	struct can_message msg;
 	msg.id = buf->id.GetWholeId();
@@ -224,8 +224,22 @@ void CanInterface::Send(CanMessageBuffer *buf)
 	msg.data = buf->msg.raw;
 	msg.len = buf->dataLength;
 	msg.fmt = CAN_FMT_EXTID;
-	can_async_write(&CAN_0, &msg);
+	for (unsigned int tries = 0; tries < 5; ++tries)
+	{
+		if (can_async_write(&CAN_0, &msg) == ERR_NONE)
+		{
+			return true;;
+		}
+		delay(2);
+	}
+	return false;
+}
+
+bool CanInterface::SendAndFree(CanMessageBuffer *buf)
+{
+	const bool ok = Send(buf);
 	CanMessageBuffer::Free(buf);
+	return ok;
 }
 
 bool CanInterface::GetCanMove(CanMessageMovement& msg)

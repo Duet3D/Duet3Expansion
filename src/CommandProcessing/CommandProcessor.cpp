@@ -345,21 +345,31 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 		reply.printf("Board %s firmware %s", BoardTypeName, FirmwareVersion);
 		break;
 
-	case CanMessageReturnInfo::typeMemory:
-		Tasks::GetMemoryReport(reply);
+	case CanMessageReturnInfo::typeBoardName:
+		reply.copy(BoardTypeName);
 		break;
 
-	case CanMessageReturnInfo::typePressureAdvance:
-#if 1
+	case CanMessageReturnInfo::typeDiagnostics:
+		reply.printf("Board %s firmware %s\n", BoardTypeName, FirmwareVersion);
+		Tasks::GetMemoryReport(reply);
+		reply.cat('\n');
 		Tasks::GetTasksMemoryReport(reply);
-#else
+		for (size_t driver = 0; driver < NumDrivers; ++driver)
+		{
+			reply.catf("\nDriver %u ", driver);
+			SmartDrivers::AppendDriverStatus(driver, reply);
+		}
+		break;
+
+#if 1	//debug
+	case CanMessageReturnInfo::typePressureAdvance:
 		reply.copy("Pressure advance:");
 		for (size_t i = 0; i < NumDrivers; ++i)
 		{
 			reply.catf(" %.2f", (double)Platform::GetPressureAdvance(i));
 		}
-#endif
 		break;
+#endif
 	}
 	return GCodeResult::ok;
 }
@@ -369,11 +379,12 @@ void CommandProcessor::Spin()
 	CanMessageBuffer *buf = CanInterface::GetCanCommand();
 	if (buf != nullptr)
 	{
-		String<CanMessageStandardReply::MaxTextLength> reply;
+		String<FormatStringLength> reply;
 		const StringRef& replyRef = reply.GetRef();
 		const CanMessageType id = buf->id.MsgType();
 		GCodeResult rslt;
 		CanRequestId requestId;
+		uint8_t extra = 0;
 
 		switch (id)
 		{
@@ -475,19 +486,36 @@ void CommandProcessor::Spin()
 			break;
 		}
 
-		// Re-use the message buffer to send the reply
+		// Re-use the message buffer to send a standard reply
 		const CanAddress srcAddress = buf->id.Src();
 		CanMessageStandardReply *msg = buf->SetupResponseMessage<CanMessageStandardReply>(requestId, CanInterface::GetCanAddress(), srcAddress);
 		msg->resultCode = (uint16_t)rslt;
-		size_t textLength = min<size_t>(reply.strlen(), CanMessageStandardReply::MaxTextLength);
-		memcpy(msg->text, reply.c_str(), textLength);
-		if (textLength < ARRAY_SIZE(msg->text))
+		msg->extra = extra;
+		const size_t totalLength = reply.strlen();
+		size_t lengthDone = 0;
+		uint8_t fragmentNumber = 0;
+		for (;;)
 		{
-			msg->text[textLength] = 0;
-			++textLength;
+			size_t fragmentLength = min<size_t>(totalLength - lengthDone, CanMessageStandardReply::MaxTextLength);
+			memcpy(msg->text, reply.c_str() + lengthDone, fragmentLength);
+			lengthDone += fragmentLength;
+			if (fragmentLength < ARRAY_SIZE(msg->text))
+			{
+				msg->text[fragmentLength] = 0;
+				++fragmentLength;
+			}
+			buf->dataLength = msg->GetActualDataLength(fragmentLength);
+			msg->fragmentNumber = fragmentNumber;
+			if (lengthDone == totalLength)
+			{
+				msg->moreFollows = false;
+				CanInterface::SendAndFree(buf);
+				break;
+			}
+			msg->moreFollows = true;
+			CanInterface::Send(buf);
+			++fragmentNumber;
 		}
-		buf->dataLength = msg->GetActualDataLength(textLength);
-		CanInterface::Send(buf);
 	}
 }
 

@@ -20,7 +20,8 @@ namespace CanInterface
 	void Shutdown();
 	CanAddress GetCanAddress();
 	bool GetCanMove(CanMessageMovement& move);
-	void Send(CanMessageBuffer *buf);
+	bool Send(CanMessageBuffer *buf);
+	bool SendAndFree(CanMessageBuffer *buf);
 	CanMessageBuffer *GetCanCommand();
 	void MoveStoppedByZProbe();
 }
