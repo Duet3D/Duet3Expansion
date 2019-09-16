@@ -233,14 +233,14 @@
 // <i> Value of LDRFRAC is calculated using Fclk_dpll=Fckr*(LDR+1+LDRFRAC/16)/(2^presc) formula as given in datasheet. This value is directly written in to DPLLRATIO register
 // <id> fdpll96m_ldrfrac
 #ifndef CONF_DPLL_LDRFRAC
-#define CONF_DPLL_LDRFRAC 0x0
+#define CONF_DPLL_LDRFRAC 0
 #endif
 
 // <o> Loop Divider Ratio Integer Part <0x0-0xFFF>
 // <i> Value of LDR is calculated using Fclk_dpll=Fckr*(LDR+1+LDRFRAC/16)/(2^presc) formula as given in datasheet. This value is directly written in to DPLLRATIO register
 // <id> fdpll96m_ldr
 #ifndef CONF_DPLL_LDR
-#define CONF_DPLL_LDR 0x17
+#define CONF_DPLL_LDR 23
 #endif
 
 // <o> Clock Divider <0x0-0x3FF>

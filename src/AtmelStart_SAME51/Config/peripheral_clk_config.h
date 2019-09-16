@@ -431,7 +431,7 @@
 
 // <i> Select the clock source for CAN1.
 #ifndef CONF_GCLK_CAN1_SRC
-#define CONF_GCLK_CAN1_SRC GCLK_PCHCTRL_GEN_GCLK0_Val
+#define CONF_GCLK_CAN1_SRC GCLK_PCHCTRL_GEN_GCLK2_Val
 #endif
 
 /**
@@ -439,7 +439,7 @@
  * \brief CAN1's Clock frequency
  */
 #ifndef CONF_GCLK_CAN1_FREQUENCY
-#define CONF_GCLK_CAN1_FREQUENCY 120000000
+#define CONF_GCLK_CAN1_FREQUENCY 48000000
 #endif
 
 

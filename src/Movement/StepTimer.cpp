@@ -17,18 +17,18 @@ void StepTimer::Init()
 {
 #if defined(SAME51)
 	hri_mclk_set_APBDMASK_TC6_bit(MCLK);			// TODO this is currently hard coded to TC6
-	hri_gclk_write_PCHCTRL_reg(GCLK, TC6_GCLK_ID, GCLK_PCHCTRL_GEN_GCLK1_Val | (1 << GCLK_PCHCTRL_CHEN_Pos));
+	hri_gclk_write_PCHCTRL_reg(GCLK, TC6_GCLK_ID, GCLK_PCHCTRL_GEN_GCLK2_Val | (1 << GCLK_PCHCTRL_CHEN_Pos));
 
 	// We will be using TC7 as a slave, so we must clock that too
 	hri_mclk_set_APBDMASK_TC7_bit(MCLK);			// TODO this is currently hard coded to TC7
-	hri_gclk_write_PCHCTRL_reg(GCLK, TC7_GCLK_ID, GCLK_PCHCTRL_GEN_GCLK1_Val | (1 << GCLK_PCHCTRL_CHEN_Pos));
+	hri_gclk_write_PCHCTRL_reg(GCLK, TC7_GCLK_ID, GCLK_PCHCTRL_GEN_GCLK2_Val | (1 << GCLK_PCHCTRL_CHEN_Pos));
 #elif defined(SAMC21)
 	hri_mclk_set_APBCMASK_TC2_bit(MCLK);			// TODO this is currently hard coded to TC2
-	hri_gclk_write_PCHCTRL_reg(GCLK, TC2_GCLK_ID, GCLK_PCHCTRL_GEN_GCLK1_Val | (1 << GCLK_PCHCTRL_CHEN_Pos));
+	hri_gclk_write_PCHCTRL_reg(GCLK, TC2_GCLK_ID, GCLK_PCHCTRL_GEN_GCLK0_Val | (1 << GCLK_PCHCTRL_CHEN_Pos));
 
 	// We will be using TC3 as a slave, so we must clock that too
-	hri_mclk_set_APBCMASK_TC3_bit(MCLK);			// TODO this is currently hard coded to TC7
-	hri_gclk_write_PCHCTRL_reg(GCLK, TC3_GCLK_ID, GCLK_PCHCTRL_GEN_GCLK1_Val | (1 << GCLK_PCHCTRL_CHEN_Pos));
+	hri_mclk_set_APBCMASK_TC3_bit(MCLK);			// TODO this is currently hard coded to TC3
+	hri_gclk_write_PCHCTRL_reg(GCLK, TC3_GCLK_ID, GCLK_PCHCTRL_GEN_GCLK0_Val | (1 << GCLK_PCHCTRL_CHEN_Pos));
 #else
 # error Unsupported processor
 #endif

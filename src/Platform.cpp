@@ -458,7 +458,7 @@ void Platform::Init()
 	SmartDrivers::Init();
 	temperatureShutdownDrivers = temperatureWarningDrivers = shortToGroundDrivers = openLoadADrivers = openLoadBDrivers = notOpenLoadADrivers = notOpenLoadBDrivers = 0;
 
-#ifdef TOOL_1_V01
+#ifdef TOOL1LC_V04
 	IoPort::SetPinMode(Tmc2209DiagPin, INPUT);
 #endif
 

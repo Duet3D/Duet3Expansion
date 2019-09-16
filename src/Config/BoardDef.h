@@ -12,16 +12,16 @@ constexpr float DefaultThermistorR25 = 100000.0;
 constexpr float DefaultThermistorbeta = 4388.0;
 constexpr float DefaultThermistorC = 0.0;
 
-#ifdef EXPANSION_1_V09
-# include "Expansion1_v09.h"
+#ifdef EXP3HC_V09
+# include "EXP3HC_v09.h"
 #endif
 
-#ifdef EXPANSION_1_V05
-# include "Expansion1_v05.h"
+#ifdef EXP3HC_V05
+# include "EXP3HC_v05.h"
 #endif
 
-#ifdef TOOL_1_V01
-# include "Tool1_v01.h"
+#ifdef TOOL1LC_V04
+# include "TOOL1LC_v04.h"
 #endif
 
 #define SUPPORT_CAN_EXPANSION	1

@@ -51,21 +51,21 @@
 // <i> Baud Rate Prescale
 // <id> can_btp_brp
 #ifndef CONF_CAN1_BTP_BRP
-#define CONF_CAN1_BTP_BRP 3
+#define CONF_CAN1_BTP_BRP 2
 #endif
 
 // <o> time segment before sample point <2-256>
 // <i> time segment before sample point
 // <id> can_btp_tseg1
 #ifndef CONF_CAN1_BTP_TSEG1
-#define CONF_CAN1_BTP_TSEG1 11
+#define CONF_CAN1_BTP_TSEG1 13
 #endif
 
 // <o> time segment after sample point <1-128>
 // <i> time segment after sample point
 // <id> can_btp_tseg2
 #ifndef CONF_CAN1_BTP_TSEG2
-#define CONF_CAN1_BTP_TSEG2 8
+#define CONF_CAN1_BTP_TSEG2 10
 #endif
 
 // <o> Data (Re)Syncronization Jump Width <1-128>
