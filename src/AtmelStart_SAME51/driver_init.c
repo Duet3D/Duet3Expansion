@@ -15,19 +15,6 @@
 struct can_async_descriptor CAN_0;
 struct wdt_descriptor WDT_0;
 
-void EXTERNAL_IRQ_0_init(void)
-{
-	hri_gclk_write_PCHCTRL_reg(GCLK, EIC_GCLK_ID, CONF_GCLK_EIC_SRC | (1 << GCLK_PCHCTRL_CHEN_Pos));
-	hri_mclk_set_APBAMASK_EIC_bit(MCLK);
-
-	ext_irq_init();
-}
-
-void delay_driver_init(void)
-{
-	delay_init(SysTick);
-}
-
 void WDT_0_CLOCK_init(void)
 {
 	hri_mclk_set_APBAMASK_WDT_bit(MCLK);

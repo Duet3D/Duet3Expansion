@@ -287,7 +287,7 @@ int32_t _can_async_write(struct _can_async_device *const dev, struct can_message
 	memcpy(f->data, msg->data, msg->len);
 
 #if 1	//dc42
-	hri_can_write_TXBAR_reg(dev->hw, put_index);
+	hri_can_write_TXBAR_reg(dev->hw, 1 << put_index);
 #else
 	hri_can_write_TXBAR_reg(dev->hw, 1 << hri_can_read_TXFQS_TFQPI_bf(dev->hw));
 #endif

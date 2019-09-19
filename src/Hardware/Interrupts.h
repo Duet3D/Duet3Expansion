@@ -23,7 +23,7 @@
 
 #include "RepRapFirmware.h"
 
-// Functions and macrozs to enable/disable interrupts
+// Functions and macros to enable/disable interrupts
 
 static inline void cpu_irq_enable()
 {

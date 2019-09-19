@@ -83,6 +83,7 @@ public:
 	uint16_t ReadAnalog() const;
 	bool AttachInterrupt(StandardCallbackFunction callback, InterruptMode mode, CallbackParameter param) const;
 	void DetachInterrupt() const;
+	bool SetAnalogCallback(AnalogInCallbackFunction fn, CallbackParameter cbp, uint32_t ticksPerCall);
 
 	// Initialise static data
 	static void Init();

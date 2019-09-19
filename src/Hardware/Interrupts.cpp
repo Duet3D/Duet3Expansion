@@ -23,6 +23,9 @@ static InterruptCallback exintCallbacks[16];
 
 void InitialisePinChangeInterrupts()
 {
+	hri_gclk_write_PCHCTRL_reg(GCLK, EIC_GCLK_ID, GCLK_PCHCTRL_GEN_GCLK0_Val | (1 << GCLK_PCHCTRL_CHEN_Pos));
+	hri_mclk_set_APBAMASK_EIC_bit(MCLK);
+
 	if (!hri_eic_is_syncing(EIC, EIC_SYNCBUSY_SWRST)) {
 		if (hri_eic_get_CTRLA_reg(EIC, EIC_CTRLA_ENABLE)) {
 			hri_eic_clear_CTRLA_ENABLE_bit(EIC);
@@ -75,9 +78,6 @@ bool AttachInterrupt(Pin pin, StandardCallbackFunction callback, InterruptMode m
 		return false;			// no EXINT available on this pin (only occurs for PA8 which is NMI)
 	}
 
-	exintCallbacks[exintNumber].func = callback;
-	exintCallbacks[exintNumber].param = param;
-
 	// Configure the interrupt mode
 	uint32_t modeWord;
 	switch (mode)
@@ -90,11 +90,19 @@ bool AttachInterrupt(Pin pin, StandardCallbackFunction callback, InterruptMode m
 	default:						modeWord = EIC_CONFIG_SENSE0_NONE_Val; break;
 	}
 
+	const irqflags_t flags = cpu_irq_save();
+	exintCallbacks[exintNumber].func = callback;
+	exintCallbacks[exintNumber].param = param;
+
 	// Switch the pin into EIC mode
-	gpio_set_pin_function(pin, ((pin & 31) << 16) | GPIO_PIN_FUNCTION_A);		// EIC is always on peripheral A
+	gpio_set_pin_function(pin, GPIO_PIN_FUNCTION_A);		// EIC is always on peripheral A
 
 	const unsigned int shift = (exintNumber & 7u) << 2u;
 	const uint32_t mask = ~(0x0000000F << shift);
+
+	hri_eic_clear_CTRLA_ENABLE_bit(EIC);
+	hri_eic_wait_for_sync(EIC, EIC_SYNCBUSY_ENABLE);
+
 	if (exintNumber < 8)
 	{
 		EIC->CONFIG[0].reg = (EIC->CONFIG[0].reg & mask) | (modeWord << shift);
@@ -104,8 +112,12 @@ bool AttachInterrupt(Pin pin, StandardCallbackFunction callback, InterruptMode m
 		EIC->CONFIG[1].reg = (EIC->CONFIG[1].reg & mask) | (modeWord << shift);
 	}
 
+	hri_eic_set_CTRLA_ENABLE_bit(EIC);
+
 	// Enable interrupt
 	hri_eic_set_INTEN_reg(EIC, 1ul << exintNumber);
+	cpu_irq_restore(flags);
+
 #if defined(SAME51)
 	NVIC_EnableIRQ((IRQn)(EIC_0_IRQn + exintNumber));
 #elif defined(SAMC21)
@@ -126,6 +138,10 @@ void DetachInterrupt(Pin pin)
 		{
 			const unsigned int shift = (exintNumber & 7u) << 2u;
 			const uint32_t mask = ~(0x0000000F << shift);
+
+			hri_eic_clear_CTRLA_ENABLE_bit(EIC);
+			hri_eic_wait_for_sync(EIC, EIC_SYNCBUSY_ENABLE);
+
 			if (exintNumber < 8)
 			{
 				EIC->CONFIG[0].reg &= mask;
@@ -135,8 +151,11 @@ void DetachInterrupt(Pin pin)
 				EIC->CONFIG[1].reg &= mask;
 			}
 
+			hri_eic_set_CTRLA_ENABLE_bit(EIC);
+
 			// Disable the interrupt
 			hri_eic_clear_INTEN_reg(EIC, 1ul << exintNumber);
+			hri_eic_clear_INTFLAG_reg(EIC, 1ul << exintNumber);
 
 			// Switch the pin out of EIC mode
 			gpio_set_pin_function(pin, GPIO_PIN_FUNCTION_OFF);
@@ -151,6 +170,7 @@ void DetachInterrupt(Pin pin)
 // Common EXINT handler
 static inline void CommonExintHandler(size_t exintNumber)
 {
+	EIC->INTFLAG.reg = 1ul << exintNumber;				// clear the interrupt
 	const InterruptCallback& cb = exintCallbacks[exintNumber];
 	if (cb.func != nullptr)
 	{
@@ -251,12 +271,12 @@ extern "C" void EIC_Handler(void)
 		{
 			if ((intflag & mask) != 0)
 			{
+				EIC->INTFLAG.reg = mask;
 				const InterruptCallback& cb = exintCallbacks[exintNumber];
 				if (cb.func != nullptr)
 				{
 					cb.func(cb.param);
 				}
-				EIC->INTFLAG.reg = mask;
 				intflag &= ~mask;
 			}
 			++exintNumber;

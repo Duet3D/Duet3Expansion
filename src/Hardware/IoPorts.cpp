@@ -135,6 +135,11 @@ void IoPort::DetachInterrupt() const
 	}
 }
 
+bool IoPort::SetAnalogCallback(AnalogInCallbackFunction fn, CallbackParameter cbp, uint32_t ticksPerCall)
+{
+	return AnalogIn::SetCallback(pin, fn, cbp, ticksPerCall);
+}
+
 // Try to assign ports, returning the number of ports successfully assigned
 /*static*/ size_t IoPort::AssignPorts(const char* pinNames, const StringRef& reply, PinUsedBy neededFor, size_t numPorts, IoPort* const ports[], const PinAccess access[])
 {

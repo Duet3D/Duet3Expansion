@@ -26,6 +26,10 @@ namespace AnalogIn
 	// Warning! there is nothing to stop you enabling a channel twice, in which case in the SAME51 configuration, it will be read twice in the sequence.
 	bool EnableChannel(Pin pin, AnalogInCallbackFunction fn, CallbackParameter param, uint32_t ticksPerCall = 1);
 
+	// Readings will be taken and about every 'ticksPerCall' milliseconds the callback function will be called with the specified parameter and ADC reading.
+	// Set ticksPerCall to 0 to get a callback on every reading.
+	bool SetCallback(Pin pin, AnalogInCallbackFunction fn, CallbackParameter param, uint32_t ticksPerCall = 1);
+
 	// Return whether or not the channel is enabled
 	bool IsChannelEnabled(Pin pin);
 

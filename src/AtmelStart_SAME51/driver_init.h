@@ -18,20 +18,15 @@ extern uint32_t SystemCoreClock;			// in system_same51.c
 extern uint32_t SystemPeripheralClock;		// in system_same51.c
 
 #include <hal_atomic.h>
-#include <hal_delay.h>
 #include <hal_gpio.h>
 #include <hal_init.h>
 #include <hal_io.h>
 #include <hal_sleep.h>
-#include <hal_ext_irq.h>
-#include <hal_delay.h>
 #include <hal_wdt.h>
 #include <hal_can_async.h>
 
 extern struct wdt_descriptor       WDT_0;
 extern struct can_async_descriptor CAN_0;
-
-void delay_driver_init(void);
 
 void WDT_0_CLOCK_init(void);
 void WDT_0_init(void);

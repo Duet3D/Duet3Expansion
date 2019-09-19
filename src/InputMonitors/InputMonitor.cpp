@@ -15,12 +15,79 @@ InputMonitor *InputMonitor::monitorsList = nullptr;
 InputMonitor *InputMonitor::freeList = nullptr;
 ReadWriteLock InputMonitor::listLock;
 
-void InputMonitor::Activate()
+bool InputMonitor::Activate()
 {
+	bool ok = true;
+	if (!active)
+	{
+		if (threshold == 0)
+		{
+			// Digital input
+			const irqflags_t flags = cpu_irq_save();
+			ok = port.AttachInterrupt(CommonDigitalPortInterrupt, InterruptMode::change, CallbackParameter(this));
+			state = port.Read();
+			cpu_irq_restore(flags);
+		}
+		else
+		{
+			// Analog port
+			state = port.ReadAnalog() >= threshold;
+			ok = port.SetAnalogCallback(CommonAnalogPortInterrupt, CallbackParameter(this), 1);
+		}
+		active = true;
+		whenLastSent = millis();
+	}
+
+	return ok;
 }
 
 void InputMonitor::Deactivate()
 {
+	//TODO
+	active = false;
+}
+
+void InputMonitor::DigitalInterrupt()
+{
+	const bool newState = port.Read();
+	if (newState != state)
+	{
+		state = newState;
+		if (active)
+		{
+			sendDue = true;
+			CanInterface::WakeAsyncSenderFromIsr();
+		}
+	}
+}
+
+void InputMonitor::AnalogInterrupt(uint16_t reading)
+{
+	const bool newState = reading >= threshold;
+	if (newState != state)
+	{
+		state = newState;
+		if (active)
+		{
+			sendDue = true;
+			CanInterface::WakeAsyncSenderFromIsr();
+		}
+	}
+}
+
+/*static*/ void InputMonitor::Init()
+{
+	// Nothing needed here yet
+}
+
+/*static*/ void InputMonitor::CommonDigitalPortInterrupt(CallbackParameter cbp)
+{
+	static_cast<InputMonitor*>(cbp.vp)->DigitalInterrupt();
+}
+
+/*static*/ void InputMonitor::CommonAnalogPortInterrupt(CallbackParameter cbp, uint16_t reading)
+{
+	static_cast<InputMonitor*>(cbp.vp)->AnalogInterrupt(reading);
 }
 
 // Delete a monitor. Must own the write lock before calling this.
@@ -34,11 +101,11 @@ void InputMonitor::Deactivate()
 			current->Deactivate();
 			if (prev == nullptr)
 			{
-				monitorsList = current;
+				monitorsList = current->next;
 			}
 			else
 			{
-				prev->next = current;
+				prev->next = current->next;
 			}
 			current->next = freeList;
 			freeList = current;
@@ -70,14 +137,24 @@ void InputMonitor::Deactivate()
 	}
 
 	newMonitor->handle = msg.handle.u.all;
+	newMonitor->active = false;
+	newMonitor->state = false;
+	newMonitor->minInterval = msg.minInterval;
+	newMonitor->threshold = msg.threshold;
+	newMonitor->sendDue = false;
 	String<StringLength50> pinName;
 	pinName.copy(msg.pinName, msg.GetMaxPinNameLength(dataLength));
-	if (newMonitor->port.AssignPort(pinName.c_str(), reply, PinUsedBy::endstop, PinAccess::read))
+	if (newMonitor->port.AssignPort(pinName.c_str(), reply, PinUsedBy::endstop, (msg.threshold == 0) ? PinAccess::read : PinAccess::readAnalog))
 	{
 		newMonitor->next = monitorsList;
 		monitorsList = newMonitor;
-		newMonitor->Activate();
+		const bool ok = newMonitor->Activate();
 		extra = (newMonitor->state) ? 1 : 0;
+		if (!ok)
+		{
+			reply.copy("Failed to set pin change interrupt");
+			return GCodeResult::error;
+		}
 		return GCodeResult::ok;
 	}
 
@@ -107,6 +184,39 @@ void InputMonitor::Deactivate()
 	reply.copy("Change input monitor not yet implemented");
 //	extra = (state) ? 1 : 0;
 	return GCodeResult::error;
+}
+
+/*static*/ void InputMonitor::AddStateChanges(CanMessageInputChanged *msg, uint32_t& timeToWait)
+{
+	timeToWait = TaskBase::TimeoutUnlimited;
+	ReadLocker lock(listLock);
+
+	const uint32_t now = millis();
+	for (InputMonitor *p = monitorsList; p != nullptr; p = p->next)
+	{
+		if (p->sendDue)
+		{
+			const uint32_t age = now - p->whenLastSent;
+			if (age >= p->minInterval)
+			{
+				if (!msg->AddEntry(p->handle, p->state))
+				{
+					timeToWait = 0;
+					return;
+				}
+				p->whenLastSent = now;
+				p->sendDue = false;
+			}
+			else
+			{
+				const uint32_t timeLeft = p->minInterval - age;
+				if (timeLeft < timeToWait)
+				{
+					timeToWait = timeLeft;
+				}
+			}
+		}
+	}
 }
 
 // End

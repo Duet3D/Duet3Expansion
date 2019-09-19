@@ -10,6 +10,7 @@
 #include "GCodes/GCodes.h"
 #include "Heating/Heat.h"
 #include "Endstops/EndstopsManager.h"
+#include "InputMonitors/InputMonitor.h"
 #include "Platform.h"
 #include "CommandProcessing/CommandProcessor.h"
 #include "RTOSIface/RTOSIface.h"
@@ -27,6 +28,7 @@ namespace RepRap
 		GCodes::Init();
 		Heat::Init();
 		EndstopsManager::Init();
+		InputMonitor::Init();
 		moveInstance = new Move();
 		moveInstance->Init();
 	}

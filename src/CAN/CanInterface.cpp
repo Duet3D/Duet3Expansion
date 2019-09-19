@@ -11,6 +11,7 @@
 #include "Platform.h"
 #include "Movement/StepTimer.h"
 #include "RTOSIface/RTOSIface.h"
+#include "InputMonitors/InputMonitor.h"
 
 const unsigned int NumCanBuffers = 40;
 
@@ -21,7 +22,13 @@ static bool enabled = false;
 constexpr size_t CanReceiverTaskStackWords = 400;
 static Task<CanReceiverTaskStackWords> canReceiverTask;
 
+// Async sender task
+constexpr size_t CanAsyncSenderTaskStackWords = 400;
+static Task<CanAsyncSenderTaskStackWords> canAsyncSenderTask;
+
 static TaskHandle sendingTaskHandle = nullptr;
+
+static bool asyncSenderRunning = false;
 
 class CanMessageQueue
 {
@@ -96,7 +103,7 @@ extern "C" void CAN_0_rx_callback(struct can_async_descriptor *const descr)
 	canReceiverTask.GiveFromISR();
 }
 
-extern "C" void CanReceiverLoop(void *)
+extern "C" [[noreturn]] void CanReceiverLoop(void *)
 {
 //	int32_t can_async_set_mode(struct can_async_descriptor *const descr, enum can_mode mode);
 
@@ -143,6 +150,38 @@ extern "C" void CanReceiverLoop(void *)
 	}
 }
 
+extern "C" [[noreturn]] void CanAsyncSenderLoop(void *)
+{
+	asyncSenderRunning = true;
+	uint32_t timeToWait = 0;
+	CanMessageBuffer *buf;
+	while ((buf = CanMessageBuffer::Allocate()) == nullptr)
+	{
+		delay(1);
+	}
+
+	for (;;)
+	{
+		// Set up a message ready
+		auto msg = buf->SetupRequestMessage<CanMessageInputChanged>(0, CanInterface::GetCanAddress(), CanId::MasterAddress);
+		msg->states = 0;
+		msg->numHandles = 0;
+
+		// Wait if necessary before looking for changed inputs
+		if (timeToWait != 0)
+		{
+			TaskBase::Take(timeToWait);						// wait until we are woken up because a message is available
+		}
+
+		InputMonitor::AddStateChanges(msg, timeToWait);
+		if (msg->numHandles != 0)
+		{
+			buf->dataLength = msg->GetActualDataLength();
+			CanInterface::SendAsync(buf);					// this doesn't free the buffer, so we can re-use it
+		}
+	}
+}
+
 void CanInterface::Init(CanAddress pBoardAddress)
 {
 	boardAddress = pBoardAddress;
@@ -155,6 +194,9 @@ void CanInterface::Init(CanAddress pBoardAddress)
 
 	// Create the task that receives CAN messages
 	canReceiverTask.Create(CanReceiverLoop, "CanRecv", nullptr, TaskPriority::CanReceiverPriority);
+
+	// Create the task that send endstop etc. updates
+	canAsyncSenderTask.Create(CanAsyncSenderLoop, "CanAsync", nullptr, TaskPriority::CanAsyncSenderPriority);
 }
 
 // Shutdown is called when we are asked to update the firmware.
@@ -189,6 +231,12 @@ bool CanInterface::Send(CanMessageBuffer *buf)
 		delay(2);
 	}
 	return false;
+}
+
+bool CanInterface::SendAsync(CanMessageBuffer *buf)
+{
+	//TODO use a dedicated buffer to send these high-priority messages
+	return Send(buf);
 }
 
 bool CanInterface::SendAndFree(CanMessageBuffer *buf)
@@ -258,6 +306,14 @@ void CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf)
 void CanInterface::MoveStoppedByZProbe()
 {
 	//TODO
+}
+
+void CanInterface::WakeAsyncSenderFromIsr()
+{
+	if (asyncSenderRunning)
+	{
+		canAsyncSenderTask.GiveFromISR();
+	}
 }
 
 // End

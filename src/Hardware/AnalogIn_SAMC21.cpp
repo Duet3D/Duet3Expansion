@@ -40,6 +40,7 @@ public:
 
 	State GetState() const { return state; }
 	bool EnableChannel(unsigned int chan, AnalogInCallbackFunction fn, CallbackParameter param, uint32_t p_ticksPerCall);
+	bool SetCallback(unsigned int chan, AnalogInCallbackFunction fn, CallbackParameter param, uint32_t p_ticksPerCall);
 	bool IsChannelEnabled(unsigned int chan) const;
 	bool StartConversion(TaskBase *p_taskToWake);
 	uint16_t ReadChannel(unsigned int chan) const { return resultsByChannel[chan]; }
@@ -98,6 +99,21 @@ bool AdcClass::EnableChannel(unsigned int chan, AnalogInCallbackFunction fn, Cal
 	}
 
 	return InternalEnableChannel(chan, ADC_REFCTRL_REFSEL_INTVCC1, fn, param, p_ticksPerCall);
+}
+
+bool AdcClass::SetCallback(unsigned int chan, AnalogInCallbackFunction fn, CallbackParameter param, uint32_t p_ticksPerCall)
+{
+	if (IsChannelEnabled(chan))
+	{
+		const irqflags_t flags = cpu_irq_save();
+		callbackFunctions[chan] = fn;
+		callbackParams[chan] = param;
+		ticksPerCall[chan] = p_ticksPerCall;
+		ticksAtLastCall[chan] = millis();
+		cpu_irq_restore(flags);
+		return true;
+	}
+	return false;
 }
 
 bool AdcClass::IsChannelEnabled(unsigned int chan) const
@@ -322,6 +338,22 @@ bool AnalogIn::EnableChannel(Pin pin, AnalogInCallbackFunction fn, CallbackParam
 		{
 			IoPort::SetPinMode(pin, AIN);
 			return Adcs[GetDeviceNumber(adcin)].EnableChannel(GetInputNumber(adcin), fn, param, ticksPerCall);
+		}
+	}
+	return false;
+}
+
+// Readings will be taken and about every 'ticksPerCall' milliseconds the callback function will be called with the specified parameter and ADC reading.
+// Set ticksPerCall to 0 to get a callback on every reading.
+bool AnalogIn::SetCallback(Pin pin, AnalogInCallbackFunction fn, CallbackParameter param, uint32_t ticksPerCall)
+{
+	if (pin < ARRAY_SIZE(PinTable))
+	{
+		const AdcInput adcin = IoPort::PinToAdcInput(pin);
+		if (adcin != AdcInput::none)
+		{
+			IoPort::SetPinMode(pin, AIN);
+			return Adcs[GetDeviceNumber(adcin)].SetCallback(GetInputNumber(adcin), fn, param, ticksPerCall);
 		}
 	}
 	return false;

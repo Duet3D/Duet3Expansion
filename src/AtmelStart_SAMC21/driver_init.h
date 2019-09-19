@@ -15,7 +15,6 @@ extern "C" {
 #endif
 
 #include <hal_atomic.h>
-#include <hal_delay.h>
 #include <hal_gpio.h>
 #include <hal_init.h>
 #include <hal_io.h>

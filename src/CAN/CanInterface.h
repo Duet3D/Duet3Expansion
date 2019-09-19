@@ -21,9 +21,11 @@ namespace CanInterface
 	CanAddress GetCanAddress();
 	bool GetCanMove(CanMessageMovement& move);
 	bool Send(CanMessageBuffer *buf);
+	bool SendAsync(CanMessageBuffer *buf);
 	bool SendAndFree(CanMessageBuffer *buf);
 	CanMessageBuffer *GetCanCommand();
 	void MoveStoppedByZProbe();
+	void WakeAsyncSenderFromIsr();
 }
 
 #endif /* SRC_CAN_CANINTERFACE_H_ */
