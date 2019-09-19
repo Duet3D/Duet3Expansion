@@ -12,7 +12,10 @@
 #include "Heating/Heat.h"
 #include "Fans/FansManager.h"
 #include "CanMessageGenericParser.h"
+#include <Endstops/EndstopsManager.h>
+#include <InputMonitors/InputMonitor.h>
 #include <Platform.h>
+#include <Movement/DDA.h>
 #include <Tasks.h>
 #include <Version.h>
 
@@ -349,16 +352,23 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 		reply.copy(BoardTypeName);
 		break;
 
-	case CanMessageReturnInfo::typeDiagnostics:
+	case CanMessageReturnInfo::typeDiagnosticsPart0:
 		reply.printf("Board %s firmware %s\n", BoardTypeName, FirmwareVersion);
 		Tasks::GetMemoryReport(reply);
 		reply.cat('\n');
 		Tasks::GetTasksMemoryReport(reply);
+		break;
+
+	case CanMessageReturnInfo::typeDiagnosticsPart1:
 		for (size_t driver = 0; driver < NumDrivers; ++driver)
 		{
-			reply.catf("\nDriver %u ", driver);
+			reply.lcatf("Driver %u ", driver);
 			SmartDrivers::AppendDriverStatus(driver, reply);
 		}
+		break;
+
+	case CanMessageReturnInfo::typeDiagnosticsPart2:
+		reply.printf("Move hiccups: %" PRIu32, DDA::GetAndClearHiccups());
 		break;
 
 #if 1	//debug
@@ -479,9 +489,44 @@ void CommandProcessor::Spin()
 			rslt = HandlePressureAdvance(buf->msg.multipleDrivesRequest, replyRef);
 			break;
 
+		case CanMessageType::createZProbe:
+			requestId = buf->msg.createZProbe.requestId;
+			rslt = EndstopsManager::CreateZProbe(buf->msg.createZProbe, buf->dataLength, replyRef);
+			break;
+
+		case CanMessageType::configureZProbe:
+			requestId = buf->msg.configureZProbe.requestId;
+			rslt = EndstopsManager::ConfigureZProbe(buf->msg.configureZProbe, replyRef, extra);
+			break;
+
+		case CanMessageType::getZProbePinNames:
+			requestId = buf->msg.getZProbePinNames.requestId;
+			rslt = EndstopsManager::GetZProbePinNames(buf->msg.getZProbePinNames, replyRef);
+			break;
+
+		case CanMessageType::destroyZProbe:
+			requestId = buf->msg.destroyZProbe.requestId;
+			rslt = EndstopsManager::DestroyZProbe(buf->msg.destroyZProbe, replyRef);
+			break;
+
+		case CanMessageType::setProbing:
+			requestId = buf->msg.setProbing.requestId;
+			rslt = EndstopsManager::SetProbing(buf->msg.setProbing, replyRef);
+			break;
+
+		case CanMessageType::createInputMonitor:
+			requestId = buf->msg.createInputMonitor.requestId;
+			rslt = InputMonitor::Create(buf->msg.createInputMonitor, buf->dataLength, replyRef, extra);
+			break;
+
+		case CanMessageType::changeInputMonitor:
+			requestId = buf->msg.changeInputMonitor.requestId;
+			rslt = InputMonitor::Change(buf->msg.changeInputMonitor, replyRef, extra);
+			break;
+
 		default:
 			requestId = CanRequestIdAcceptAlways;
-			reply.printf("Unknown message type %u", (unsigned int)buf->id.MsgType());
+			reply.printf("Board %u received unknown msg type %u", CanInterface::GetCanAddress(), (unsigned int)buf->id.MsgType());
 			rslt = GCodeResult::error;
 			break;
 		}

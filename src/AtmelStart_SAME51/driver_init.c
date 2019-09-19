@@ -72,10 +72,14 @@ void system_init(void)
 	OSCCTRL->Dpll[0].DPLLCTRLA.bit.ENABLE = 0;
 	while (OSCCTRL->Dpll[0].DPLLSYNCBUSY.bit.ENABLE) { }
 
+	// Also disable DPLL1 because we are going to program it to generate the 48MHz CAN clock
+	OSCCTRL->Dpll[1].DPLLCTRLA.bit.ENABLE = 0;
+	while (OSCCTRL->Dpll[1].DPLLSYNCBUSY.bit.ENABLE) { }
+
 	// Now it's safe to configure the clocks
 	init_mcu();
-	SystemCoreClock = 120000000;
-	SystemPeripheralClock = 60000000;
+	SystemCoreClock = 120000000;			// GCLK0
+	SystemPeripheralClock = 60000000;		// GCLK1
 
 	CAN_0_init();
 

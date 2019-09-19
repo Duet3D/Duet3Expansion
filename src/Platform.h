@@ -39,33 +39,6 @@ enum class ErrorCode : uint32_t
 	HsmciTimeout = 1u << 4
 };
 
-enum class EndStopHit
-{
-  noStop = 0,		// no endstop hit
-  lowHit = 1,		// low switch hit, or Z-probe in use and above threshold
-  highHit = 2,		// high stop hit
-  nearStop = 3		// approaching Z-probe threshold
-};
-
-// The values of the following enumeration must tally with the X,Y,... parameters for the M574 command
-enum class EndStopPosition
-{
-	noEndStop = 0,
-	lowEndStop = 1,
-	highEndStop = 2
-};
-
-// Type of an endstop input - values must tally with the M574 command S parameter
-enum class EndStopInputType : unsigned int
-{
-	activeLow = 0,
-	activeHigh = 1,
-	zProbe = 2,
-	motorStallAny = 3,
-	motorStallIndividual = 4,
-	numInputTypes = 5
-};
-
 class IoPort;
 
 namespace Platform
@@ -87,10 +60,8 @@ namespace Platform
 
 	float DriveStepsPerUnit(size_t drive);
 	const float *GetDriveStepsPerUnit();
-	float GetPressureAdvance(size_t driver) ;
+	float GetPressureAdvance(size_t driver);
 	void SetPressureAdvance(size_t driver, float advance);
-	EndStopHit Stopped(size_t axisOrExtruder) ;
-	bool EndStopInputState(size_t axis) ;
 	void StepDriversLow();
 	void StepDriversHigh(uint32_t driverMap);
 	uint32_t GetDriversBitmap(size_t driver); 	// get the bitmap of driver step bits for this driver
@@ -114,8 +85,6 @@ namespace Platform
 	void DisableAllDrives();
 	void SetDriverIdle(size_t driver);
 	void SetMotorCurrent(size_t driver, float current);		//TODO avoid the int->float->int conversion
-
-	EndStopHit GetZProbeResult() ;
 
 	int GetAveragingFilterIndex(const IoPort&);
 	ThermistorAveragingFilter& GetAdcFilter(unsigned int filterNumber);

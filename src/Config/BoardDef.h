@@ -29,6 +29,9 @@ constexpr float DefaultThermistorC = 0.0;
 constexpr size_t MaxSensorsInSystem = 64;
 typedef uint64_t SensorsBitmap;
 
+constexpr size_t MaxZProbes = 4;
+constexpr size_t MaxZProbeProgramBytes = 8;				// Maximum number of bytes in a Z probe program
+
 // Fan defaults
 constexpr size_t NumTotalFans = 12;
 constexpr float DefaultMinFanPwm = 0.1;					// minimum fan PWM

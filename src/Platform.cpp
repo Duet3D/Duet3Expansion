@@ -875,9 +875,6 @@ void Platform::SetPressureAdvance(size_t driver, float advance)
 	pressureAdvance[driver] = advance;
 }
 
-EndStopHit Platform::Stopped(size_t axisOrExtruder) { return EndStopHit::lowHit; }
-bool Platform::EndStopInputState(size_t axis) { return false; }
-
 void Platform::StepDriversLow()
 {
 	StepPio->OUTCLR.reg = allDriverBits;
@@ -940,11 +937,6 @@ void Platform::SetEnableValue(size_t driver, int8_t eVal)
 int8_t Platform::GetEnableValue(size_t driver)
 {
 	return (driver < NumDrivers) ? enableValues[driver] : 0;
-}
-
-EndStopHit Platform::GetZProbeResult()
-{
-	return EndStopHit::lowHit;
 }
 
 void Platform::EnableDrive(size_t driver)

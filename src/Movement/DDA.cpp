@@ -8,7 +8,7 @@
 #include "DDA.h"
 #include "Platform.h"
 #include "Move.h"
-#include "GCodes/GCodes.h"
+#include "Endstops/EndstopsManager.h"
 #include "Kinematics/LinearDeltaKinematics.h"		// for DELTA_AXES
 #include "CanMessageFormats.h"
 #include <CAN/CanInterface.h>
@@ -217,10 +217,10 @@ void DDA::Init(const CanMessageMovement& msg)
 	afterPrepare.moveStartTime = msg.whenToExecute;
 	clocksNeeded = msg.accelerationClocks + msg.steadyClocks + msg.decelClocks;
 	endStopsToCheck = msg.endStopsToCheck;
-	stopAllDrivesOnEndstopHit = msg.stopAllDrivesOnEndstopHit;
+	flags.stopAllDrivesOnEndstopHit = msg.stopAllDrivesOnEndstopHit;
 
-	hadHiccup = false;
-	goingSlow = false;
+	flags.hadHiccup = false;
+	flags.goingSlow = false;
 
 #if SUPPORT_IOBITS
 	laserPwmOrIoBits = qq;
@@ -343,57 +343,33 @@ void DDA::Prepare(const CanMessageMovement& msg)
 
 void DDA::CheckEndstops()
 {
-	if ((endStopsToCheck & ZProbeActive) != 0)						// if the Z probe is enabled in this move
+	for (;;)
 	{
-		// Check whether the Z probe has been triggered. On a delta at least, this must be done separately from endstop checks,
-		// because we have both a high endstop and a Z probe, and the Z motor is not the same thing as the Z axis.
-		switch (Platform::GetZProbeResult())
+		const EndstopHitDetails hitDetails = EndstopsManager::CheckEndstops(flags.goingSlow);
+		switch (hitDetails.GetAction())
 		{
-		case EndStopHit::lowHit:
+		case EndstopHitAction::stopAll:
 			MoveAborted();											// set the state to completed and recalculate the endpoints
-			CanInterface::MoveStoppedByZProbe();
+			if (hitDetails.isZProbe)
+			{
+//				reprap.GetGCodes().MoveStoppedByZProbe();
+			}
 			return;
 
-		case EndStopHit::nearStop:
-			ReduceHomingSpeed();
+		case EndstopHitAction::stopAxis:
+			StopDrive(hitDetails.axis);								// we must stop the drive before we mess with its coordinates
 			break;
+
+		case EndstopHitAction::stopDriver:
+			StopDrive(hitDetails.driver.localDriver);
+			break;
+
+		case EndstopHitAction::reduceSpeed:
+			ReduceHomingSpeed();									// must be just close
+			return;													// there can't be a higher priority endstop
 
 		default:
-			break;
-		}
-	}
-
-	for (size_t drive = 0; drive < NumDrivers; ++drive)
-	{
-		if (IsBitSet(endStopsToCheck, drive))
-		{
-			const EndStopHit esh = Platform::Stopped(drive);
-			switch (esh)
-			{
-			case EndStopHit::lowHit:
-			case EndStopHit::highHit:
-				ClearBit(endStopsToCheck, drive);					// clear this check so that we can check for more
-				if (stopAllDrivesOnEndstopHit)
-				{
-					MoveAborted();									// no more endstops to check, or this axis uses shared motors, so stop the entire move
-				}
-				else
-				{
-					StopDrive(drive);								// we must stop the drive before we mess with its coordinates
-				}
-				break;
-
-			case EndStopHit::nearStop:
-				// Only reduce homing speed if there are no more axes to be homed. This allows us to home X and Y simultaneously.
-				if (endStopsToCheck == MakeBitmap<AxesBitmap>(drive))
-				{
-					ReduceHomingSpeed();
-				}
-				break;
-
-			default:
-				break;
-			}
+			return;
 		}
 	}
 }
@@ -444,9 +420,16 @@ pre(state == frozen)
 	return StepTimer::ScheduleStepInterrupt(afterPrepare.moveStartTime + clocksNeeded - WakeupTime);		// schedule an interrupt shortly before the end of the move
 }
 
-unsigned int DDA::numHiccups = 0;
+uint32_t DDA::numHiccups = 0;
 uint32_t DDA::lastStepLowTime = 0;
 uint32_t DDA::lastDirChangeTime = 0;
+
+/*static*/ uint32_t DDA::GetAndClearHiccups()
+{
+	const uint32_t nh = numHiccups;
+	numHiccups = 0;
+	return nh;
+}
 
 // This is called by the interrupt service routine to execute steps.
 // It returns true if it needs to be called again on the DDA of the new current move, otherwise false.
@@ -550,7 +533,7 @@ bool DDA::Step()
 			afterPrepare.moveStartTime += delayClocks;
 			nextStepDue += delayClocks;
 			++numHiccups;
-			hadHiccup = true;
+			flags.hadHiccup = true;
 		}
 
 		// 8. Schedule next interrupt, or if it would be too soon, generate more steps immediately
@@ -617,9 +600,9 @@ void DDA::MoveAborted()
 // As this is only called for homing moves and with very low speeds, we assume that we don't need acceleration or deceleration phases.
 void DDA::ReduceHomingSpeed()
 {
-	if (!goingSlow)
+	if (!flags.goingSlow)
 	{
-		goingSlow = true;
+		flags.goingSlow = true;
 
 		topSpeed *= (1.0/ProbingSpeedReductionFactor);
 

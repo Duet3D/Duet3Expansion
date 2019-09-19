@@ -35,6 +35,11 @@ IoPort::IoPort() : pin(NoPin), hardwareInvert(false), totalInvert(false), isShar
 // Set the specified pin mode returning true if successful
 bool IoPort::SetMode(PinAccess access)
 {
+	if (!IsValid())
+	{
+		return false;
+	}
+
 	// Check that the pin mode has been defined suitably
 	PinMode desiredMode;
 	switch (access)
@@ -101,6 +106,19 @@ bool IoPort::Read() const
 		return (totalInvert) ? !b : b;
 	}
 	return false;
+}
+
+uint16_t IoPort::ReadAnalog() const
+{
+	if (IsValid())
+	{
+		AdcInput chan = PinTable[pin].adc;
+		if (chan != AdcInput::none)
+		{
+			return AnalogIn::ReadChannel(chan);
+		}
+	}
+	return 0;
 }
 
 // Attach an interrupt to the pin. Nor permitted if we allocated the pin in shared input mode.

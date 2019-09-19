@@ -80,7 +80,7 @@ public:
 
 	void WriteDigital(bool high) const;
 	bool Read() const;
-	uint16_t ReadAnalog() const { return AnalogIn::ReadChannel(PinTable[pin].adc); }
+	uint16_t ReadAnalog() const;
 	bool AttachInterrupt(StandardCallbackFunction callback, InterruptMode mode, CallbackParameter param) const;
 	void DetachInterrupt() const;
 

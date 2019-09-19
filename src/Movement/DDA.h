@@ -74,6 +74,8 @@ public:
 	void DebugPrint() const;												// print the DDA only
 	void DebugPrintAll() const;												// print the DDA and active DMs
 
+	static uint32_t GetAndClearHiccups();
+
 	// Note on the following constant:
 	// If we calculate the step interval on every clock, we reach a point where the calculation time exceeds the step interval.
 	// The worst case is pure Z movement on a delta. On a Mini Kossel with 80 steps/mm with this firmware running on a Duet (84MHx SAM3X8 processor),
@@ -89,7 +91,7 @@ public:
 
 	static void PrintMoves();										// print saved moves for debugging
 
-	static unsigned int numHiccups;									// how many times we delayed an interrupt to avoid using too much CPU time in interrupts
+	static uint32_t numHiccups;										// how many times we delayed an interrupt to avoid using too much CPU time in interrupts
 	static uint32_t lastStepLowTime;								// when we last completed a step pulse to a slow driver
 	static uint32_t lastDirChangeTime;								// when we last change the DIR signal to a slow driver
 
@@ -115,8 +117,8 @@ private:
 			uint16_t goingSlow : 1,					// True if we have slowed the movement because the Z probe is approaching its threshold
 					 hadHiccup : 1,					// True if we had a hiccup while executing this move
 					 stopAllDrivesOnEndstopHit : 1;	// True if hitting an endstop stops the entire move
-		};
-		uint16_t flags;								// so that we can print all the flags at once for debugging
+		} flags;
+		uint16_t all;								// so that we can print all the flags at once for debugging
 	};
 
 #if SUPPORT_LASER || SUPPORT_IOBITS

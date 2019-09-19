@@ -18,7 +18,7 @@ static CanAddress boardAddress;
 static bool enabled = false;
 
 // CanReceiver management task
-constexpr size_t CanReceiverTaskStackWords = 300;
+constexpr size_t CanReceiverTaskStackWords = 400;
 static Task<CanReceiverTaskStackWords> canReceiverTask;
 
 static TaskHandle sendingTaskHandle = nullptr;
@@ -179,9 +179,12 @@ bool CanInterface::Send(CanMessageBuffer *buf)
 	msg.fmt = CAN_FMT_EXTID;
 	for (unsigned int tries = 0; tries < 5; ++tries)
 	{
-		if (can_async_write(&CAN_0, &msg) == ERR_NONE)
 		{
-			return true;;
+			TaskCriticalSectionLocker lock;
+			if (can_async_write(&CAN_0, &msg) == ERR_NONE)
+			{
+				return true;
+			}
 		}
 		delay(2);
 	}
