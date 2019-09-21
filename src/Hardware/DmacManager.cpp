@@ -36,7 +36,11 @@ static CallbackParameter callbackParams[NumDmaChannelsUsed];
 void DmacManager::Init()
 {
 	hri_dmac_clear_CTRL_DMAENABLE_bit(DMAC);
+#ifdef SAMC21
+	hri_dmac_clear_CTRL_CRCENABLE_bit(DMAC);
+#else
 	hri_dmac_clear_CRCCTRL_reg(DMAC, DMAC_CRCCTRL_CRCSRC_Msk);
+#endif
 	hri_dmac_set_CTRL_SWRST_bit(DMAC);
 	while (hri_dmac_get_CTRL_SWRST_bit(DMAC)) { }
 
@@ -45,6 +49,12 @@ void DmacManager::Init()
 	                            | (CONF_DMAC_LVLEN2 << DMAC_CTRL_LVLEN2_Pos)
 	                            | (CONF_DMAC_LVLEN3 << DMAC_CTRL_LVLEN3_Pos));
 	hri_dmac_write_DBGCTRL_DBGRUN_bit(DMAC, CONF_DMAC_DBGRUN);
+
+#ifdef SAMC21
+	hri_dmac_write_QOSCTRL_reg(DMAC,
+	                           DMAC_QOSCTRL_WRBQOS(CONF_DMAC_WRBQOS) | DMAC_QOSCTRL_FQOS(CONF_DMAC_FQOS)
+	                               | DMAC_QOSCTRL_DQOS(CONF_DMAC_DQOS));
+#endif
 
 	hri_dmac_write_PRICTRL0_reg(
 	    DMAC,

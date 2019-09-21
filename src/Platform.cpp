@@ -242,16 +242,17 @@ namespace Platform
 
 	static void InitialiseInterrupts()
 	{
-		NVIC_SetPriority(CAN1_IRQn, NvicPriorityCan);
 		NVIC_SetPriority(StepTcIRQn, NvicPriorityStep);
 
 #if defined(SAME51)
+		NVIC_SetPriority(CAN1_IRQn, NvicPriorityCan);
 		// Set UART interrupt priority. Each SERCOM has up to 4 interrupts, numbered sequentially.
 		SetInterruptPriority(Serial0_IRQn, 4, NvicPriorityUart);
 		SetInterruptPriority(Serial1_IRQn, 4, NvicPriorityUart);
 		SetInterruptPriority(DMAC_0_IRQn, 5, NvicPriorityDmac);
 		SetInterruptPriority(EIC_0_IRQn, 16, NvicPriorityPins);
 #elif defined(SAMC21)
+		NVIC_SetPriority(CAN0_IRQn, NvicPriorityCan);
 		NVIC_SetPriority(Serial0_IRQn, NvicPriorityUart);
 		NVIC_SetPriority(DMAC_IRQn, NvicPriorityDmac);
 		NVIC_SetPriority(EIC_IRQn, NvicPriorityPins);
@@ -259,7 +260,7 @@ namespace Platform
 # error Undefined processor
 #endif
 
-		StepTimer::Init();										// initialise the step pulse timer
+		StepTimer::Init();										// initialise the step pulse timer CAN1
 	}
 
 	[[noreturn]] RAMFUNC static void EraseAndReset()
@@ -362,6 +363,10 @@ void Platform::Init()
 		      )
 			{
 				IoPort::SetPinMode(pin, OUTPUT_LOW);				// turn off heaters and fans (although this will turn on PWM fans)
+#ifdef SAMC21
+				// Set high driver strength on the output pins because they drive the heater and fan mosfets directly
+				hri_port_set_PINCFG_DRVSTR_bit(PORT, GPIO_PORT(pin), pin & 0x1F);
+#endif
 			}
 			else if (StringStartsWith(p.pinNames, "spi.cs"))
 			{

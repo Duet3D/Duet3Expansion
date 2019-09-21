@@ -436,6 +436,33 @@ bool Move::TryStartNextMove(uint32_t startTime)
 	return false;
 }
 
+void Move::StopDrivers(uint16_t whichDrivers)
+{
+#if defined(SAME51)
+	const uint32_t oldPrio = ChangeBasePriority(NvicPriorityStep);
+#elif defined(SAMC21)
+	const irqflags_t flags = cpu_irq_save();
+#else
+# error Unsupported processor
+#endif
+	DDA *cdda = currentDda;				// capture volatile
+	if (cdda != nullptr)
+	{
+		cdda->StopDrivers(whichDrivers);
+		if (cdda->GetState() == DDA::completed)
+		{
+			CurrentMoveCompleted();					// tell the DDA ring that the current move is complete
+		}
+	}
+#if defined(SAME51)
+	RestoreBasePriority(oldPrio);
+#elif defined(SAMC21)
+	cpu_irq_restore(flags);
+#else
+# error Unsupported processor
+#endif
+}
+
 // For debugging
 void Move::PrintCurrentDda() const
 {

@@ -14,6 +14,9 @@
 extern "C" {
 #endif
 
+extern uint32_t SystemCoreClock;			// in system_same21.c
+extern uint32_t SystemPeripheralClock;		// in system_same21.c
+
 #include <hal_atomic.h>
 #include <hal_gpio.h>
 #include <hal_init.h>

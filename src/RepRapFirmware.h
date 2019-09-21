@@ -44,6 +44,12 @@ extern "C" void debugPrintf(const char* fmt, ...) __attribute__ ((format (printf
 #define DEBUG_HERE do { } while (false)
 //#define DEBUG_HERE do { debugPrintf("At " __FILE__ " line %d\n", __LINE__); delay(50); } while (false)
 
+#if defined(__SAME51N19A__)
+# define SAME51		1
+#elif defined(__SAMC21G18A__)
+# define SAMC21		1
+#endif
+
 #ifdef SAME51
 
 // Functions to change the base priority, to shut out interrupts up to a priority level

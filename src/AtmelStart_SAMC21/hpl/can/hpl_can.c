@@ -393,9 +393,9 @@ int32_t _can_async_set_filter(struct _can_async_device *const dev, uint8_t index
 /*
  * \brief CAN interrupt handler
  */
-void CAN1_Handler(void)
+void CAN0_Handler(void)
 {
-	struct _can_async_device *dev = _can1_dev;
+	struct _can_async_device *dev = _can0_dev;
 	uint32_t                  ir;
 	ir = hri_can_read_IR_reg(dev->hw);
 

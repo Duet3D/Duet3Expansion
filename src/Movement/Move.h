@@ -34,7 +34,8 @@ public:
 
 	void Interrupt() __attribute__ ((hot));							// The hardware's (i.e. platform's)  interrupt should call this.
 	bool AllMovesAreFinished();										// Is the look-ahead ring empty?  Stops more moves being added as well.
-	void DoLookAhead() __attribute__ ((hot));						// Run the look-ahead procedure
+
+	void StopDrivers(uint16_t whichDrivers);
 
 	void Diagnostics(MessageType mtype);							// Report useful stuff
 

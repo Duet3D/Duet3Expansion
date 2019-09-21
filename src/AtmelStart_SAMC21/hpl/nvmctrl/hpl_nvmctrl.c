@@ -222,7 +222,7 @@ void _flash_append(struct _flash_device *const device, const uint32_t dst_addr, 
 
 	if (dst_addr != page_start_addr) {
 		/* Need to write some data to the end of a page */
-#if 1	//DC
+#if 1	//DC42
 		size = (length < NVMCTRL_PAGE_SIZE - (dst_addr - page_start_addr)) ? length : NVMCTRL_PAGE_SIZE - (dst_addr - page_start_addr);
 #else
 		size = min(length, NVMCTRL_PAGE_SIZE - (dst_addr - page_start_addr));
@@ -233,7 +233,7 @@ void _flash_append(struct _flash_device *const device, const uint32_t dst_addr, 
 	}
 
 	while (offset < length) {
-#if 1	//DC
+#if 1	//DC42
 		size = (length - offset < NVMCTRL_PAGE_SIZE) ? length - offset : NVMCTRL_PAGE_SIZE;
 #else
 		size = min(length - offset, NVMCTRL_PAGE_SIZE);

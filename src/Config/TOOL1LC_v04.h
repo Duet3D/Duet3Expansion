@@ -86,8 +86,6 @@ constexpr size_t NumBoardTypeBits = 3;
 
 constexpr float DefaultThermistorSeriesR = 2200.0;
 
-constexpr Pin OutPins[NumOutputPorts] = { PortAPin(11), PortAPin(10), PortBPin(11) };
-
 constexpr Pin BoardTypePin = PortAPin(5);
 
 constexpr Pin VinMonitorPin = PortAPin(8);
@@ -190,8 +188,7 @@ constexpr IRQn Serial0_IRQn = SERCOM4_IRQn;
 // DMA channel assignments
 constexpr DmaChannel TmcTxDmaChannel = 0;
 constexpr DmaChannel TmcRxDmaChannel = 1;
-constexpr DmaChannel Adc0TxDmaChannel = 2;
-// Next channel is used by ADC0 for receive
+constexpr DmaChannel Adc0RxDmaChannel = 2;
 
 constexpr unsigned int NumDmaChannelsUsed = 4;			// must be at least the number of channels used, may be larger. Max 12 on the SAMC21.
 

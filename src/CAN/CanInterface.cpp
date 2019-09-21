@@ -12,6 +12,7 @@
 #include "Movement/StepTimer.h"
 #include "RTOSIface/RTOSIface.h"
 #include "InputMonitors/InputMonitor.h"
+#include "Movement/Move.h"
 
 const unsigned int NumCanBuffers = 40;
 
@@ -280,6 +281,11 @@ void CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf)
 //		buf->msg.move.DebugPrint();
 		buf->msg.move.whenToExecute += StepTimer::GetLocalTimeOffset();
 		PendingMoves.AddMessage(buf);
+		break;
+
+	case CanMessageType::stopMovement:
+		moveInstance->StopDrivers(buf->msg.stopMovement.whichDrives);
+		CanMessageBuffer::Free(buf);
 		break;
 
 	case CanMessageType::startup:

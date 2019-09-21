@@ -173,7 +173,6 @@ bool AdcClass::InternalEnableChannel(unsigned int chan, uint8_t refCtrl, AnalogI
 			state = State::starting;
 		}
 
-		channelsEnabled |= 1ul << chan;
 		return true;
 	}
 
@@ -198,6 +197,7 @@ bool AdcClass::StartConversion(TaskBase *p_taskToWake)
 	DmacManager::EnableChannel(dmaChan);
 
 	state = State::converting;
+	device->SWTRIG.reg = ADC_SWTRIG_START;
 	++conversionsStarted;
 	return true;
 }
@@ -249,7 +249,7 @@ void AdcClass::ResultReadyCallback()
 static AdcClass Adcs[] =
 {
 	// We use only the first ADC
-	AdcClass(ADC0, ADC0_IRQn, Adc0TxDmaChannel, DmaTrigSource::adc0_resrdy),
+	AdcClass(ADC0, ADC0_IRQn, Adc0RxDmaChannel, DmaTrigSource::adc0_resrdy),
 };
 
 namespace AnalogIn

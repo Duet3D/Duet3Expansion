@@ -23,7 +23,11 @@ bool Flash::Unlock(uint32_t start, uint32_t length)
 {
 	// The flash_unlock command only works if the number of pages passed is exactly 1 lock region. So we need to loop calling it.
 	const uint32_t pageSize = flash_get_page_size(&flash);
+#ifdef SAMC21
+	constexpr uint32_t NVMCTRL_REGIONS_NUM = 16;						// from hpl_nvmctrl.c
+#else
 	constexpr uint32_t NVMCTRL_REGIONS_NUM = 32;						// from hpl_nvmctrl.c
+#endif
 	const uint32_t pagesPerRegion = FLASH_SIZE / (NVMCTRL_REGIONS_NUM * pageSize);
 	for (uint32_t lengthDone = 0; lengthDone < length; )
 	{
@@ -50,7 +54,11 @@ bool Flash::Lock(uint32_t start, uint32_t length)
 {
 	// The flash_lock command only works if the number of pages passed is exactly 1 lock region. So we need to loop calling it.
 	const uint32_t pageSize = flash_get_page_size(&flash);
+#ifdef SAMC21
+	constexpr uint32_t NVMCTRL_REGIONS_NUM = 16;						// from hpl_nvmctrl.c
+#else
 	constexpr uint32_t NVMCTRL_REGIONS_NUM = 32;						// from hpl_nvmctrl.c
+#endif
 	const uint32_t pagesPerRegion = FLASH_SIZE / (NVMCTRL_REGIONS_NUM * pageSize);
 	for (uint32_t lengthDone = 0; lengthDone < length; )
 	{

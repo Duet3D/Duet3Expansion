@@ -556,7 +556,7 @@ bool DDA::Step()
 	{
 		// The following finish time is wrong if we aborted the move because of endstop or Z probe checks.
 		// However, following a move that checks endstops or the Z probe, we always wait for the move to complete before we schedule another, so this doesn't matter.
-		const uint32_t finishTime = afterPrepare.moveStartTime + clocksNeeded;	// calculate how long this move should take
+		const uint32_t finishTime = GetMoveFinishTime();			// calculate how long this move should take
 		Move& move = *moveInstance;
 		move.CurrentMoveCompleted();								// tell Move that the current move is complete
 		return move.TryStartNextMove(finishTime);					// schedule the next move
@@ -593,6 +593,20 @@ void DDA::MoveAborted()
 		}
 	}
 	state = completed;
+}
+
+void DDA::StopDrivers(uint16_t whichDrivers)
+{
+	if (state == executing)
+	{
+		for (size_t drive = 0; drive < NumDrivers; ++drive)
+		{
+			if (whichDrivers & (1 << drive))
+			{
+				StopDrive(drive);
+			}
+		}
+	}
 }
 
 // Reduce the speed of this move to the indicated speed.

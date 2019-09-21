@@ -15,7 +15,7 @@
 // <i> Oscillation frequency of the resonator connected to the External Multipurpose Crystal Oscillator.
 // <id> xosc_frequency
 #ifndef CONF_XOSC_FREQUENCY
-#define CONF_XOSC_FREQUENCY 2000000
+#define CONF_XOSC_FREQUENCY 12000000
 #endif
 
 // <h> External Multipurpose Crystal Oscillator Control
@@ -247,7 +247,7 @@
 // <i> This Clock divider is only for XOSC clock input to DPLL
 // <id> fdpll96m_clock_div
 #ifndef CONF_DPLL_DIV
-#define CONF_DPLL_DIV 5
+#define CONF_DPLL_DIV 2
 #endif
 
 // <q> Lock Bypass

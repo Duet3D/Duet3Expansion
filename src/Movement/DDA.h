@@ -55,8 +55,10 @@ public:
 	int32_t GetStepsTaken(size_t drive) const;
 
 	void MoveAborted();
+	void StopDrivers(uint16_t whichDrivers);
 
 	uint32_t GetClocksNeeded() const { return clocksNeeded; }
+	uint32_t GetMoveFinishTime() const { return afterPrepare.moveStartTime + clocksNeeded; }
 
 #if SUPPORT_LASER || SUPPORT_IOBITS
 	LaserPwmOrIoBits GetLaserPwmOrIoBits() const { return laserPwmOrIoBits; }
