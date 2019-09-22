@@ -3,6 +3,9 @@
 	<name>Duet3Expansion</name>
 	<comment></comment>
 	<projects>
+		<project>FreeRTOS</project>
+		<project>RRFLibraries</project>
+		<project>CANlib</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

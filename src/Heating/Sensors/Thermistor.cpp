@@ -106,11 +106,14 @@ void Thermistor::Poll()
 		// Assume a maximum ADC reading offset of 100.
 		constexpr int32_t maxDrop = ((4096 << Thermistor::AdcOversampleBits) * 15)/492 + (100 << Thermistor::AdcOversampleBits);
 
+#ifdef SAME51		// SAMC21 uses 3.3V t feed VRef but we don't have it available to use a a reference voltage, so we use 5V instead
 		if (averagedVrefReading < (4096 << Thermistor::AdcOversampleBits) - maxDrop)
 		{
 			SetResult(TemperatureError::badVref);
 		}
-		else if (averagedVssaReading > maxDrop)
+		else
+#endif
+			if (averagedVssaReading > maxDrop)
 		{
 			SetResult(TemperatureError::badVssa);
 		}

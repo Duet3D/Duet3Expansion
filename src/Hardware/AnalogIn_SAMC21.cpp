@@ -151,7 +151,7 @@ bool AdcClass::InternalEnableChannel(unsigned int chan, uint8_t refCtrl, AnalogI
 			hri_adc_wait_for_sync(device, ADC_SYNCBUSY_SWRST);
 
 			hri_adc_write_CTRLB_reg(device, ADC_CTRLB_PRESCALER_DIV16);			// GCLK0 is 48MHz, divided by 16 is 3MHz
-			hri_adc_write_REFCTRL_reg(device,  ADC_REFCTRL_REFSEL_INTVCC1);
+			hri_adc_write_REFCTRL_reg(device,  ADC_REFCTRL_REFSEL_INTVCC2);
 			hri_adc_write_EVCTRL_reg(device, ADC_EVCTRL_RESRDYEO);
 			hri_adc_write_INPUTCTRL_reg(device, ADC_INPUTCTRL_MUXNEG_GND);
 			hri_adc_write_AVGCTRL_reg(device, 0);
@@ -293,7 +293,7 @@ namespace AnalogIn
 				if (now - tempTicksAtLastCall >= tempTicksPerCall)
 				{
 					tempTicksAtLastCall = now;
-					fn(tempCallbackParam, TSENS->VALUE.bit.VALUE ^ (1u << 23));		// VALUE is 2's complement, but the filter expects unsigned values
+					fn(tempCallbackParam, (TSENS->VALUE.bit.VALUE & 0xFFFF) ^ (1u << 15));		// VALUE is 2's complement, but the filter expects unsigned values
 					TSENS->CTRLB.bit.START = 1;
 				}
 			}

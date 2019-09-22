@@ -41,13 +41,12 @@ constexpr Pin Tmc2209DiagPin = PortBPin(3);
 
 constexpr uint8_t TMC22xxSercomNumber = 3;
 Sercom * const SERCOM_TMC22xx = SERCOM3;
-#define TMC22xx_UART_Handler SERCOM3_Handler
-constexpr IRQn TMC22xxSercomIRQn = SERCOM3_IRQn;
 
 constexpr Pin TMC22xxSercomTxPin = PortAPin(22);
 constexpr uint32_t TMC22xxSercomTxPinPeriphMode = PINMUX_PA22C_SERCOM3_PAD0;
 constexpr Pin TMC22xxSercomRxPin = PortAPin(20);
 constexpr uint32_t TMC22xxSercomRxPinPeriphMode = PINMUX_PA20D_SERCOM3_PAD2;
+constexpr uint8_t TMC22xxSercomRxPad = 2;
 
 // Define the baud rate used to send/receive data to/from the drivers.
 // If we assume a worst case clock frequency of 8MHz then the maximum baud rate is 8MHz/16 = 500kbaud.
@@ -90,7 +89,7 @@ constexpr Pin BoardTypePin = PortAPin(5);
 
 constexpr Pin VinMonitorPin = PortAPin(8);
 constexpr float VinDividerRatio = (60.4 + 4.7)/4.7;
-constexpr float VinMonitorVoltageRange = VinDividerRatio * 3.3;		// We use the 3.3V supply as the voltage reference
+constexpr float VinMonitorVoltageRange = VinDividerRatio * 5.0;		// We use the 5V supply as the voltage reference
 
 constexpr Pin VrefPin = PortAPin(7);
 constexpr Pin VssaPin = PortAPin(6);

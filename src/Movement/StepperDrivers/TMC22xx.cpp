@@ -1098,26 +1098,39 @@ inline void TmcDriverState::UartTmcHandler()
 
 #if TMC22xx_HAS_MUX || TMC22xx_SINGLE_DRIVER
 
-#ifndef TMC22xx_UART_Handler
-# error TMC handler name not defined
-#endif
+# if TMC22xx_USES_SERCOM
 
-// ISR for the single UART
-extern "C" void TMC22xx_UART_Handler() __attribute__ ((hot));
-
-void TMC22xx_UART_Handler()
+// DMA complete callback
+void TransferCompleteCallback(CallbackParameter)
 {
-#if TMC22xx_USES_SERCOM
 	DmacManager::DisableCompletedInterrupt(TmcRxDmaChannel);
-#else
-	UART_TMC22xx->UART_IDR = UART_IDR_ENDRX;				// disable the interrupt
-#endif
 	TmcDriverState * const driver = TmcDriverState::currentDriver;	// capture volatile variable
 	if (driver != nullptr)
 	{
 		driver->UartTmcHandler();
 	}
 }
+
+# else
+
+#  ifndef TMC22xx_UART_Handler
+#  error TMC handler name not defined
+#  endif
+
+// ISR for the single UART
+extern "C" void TMC22xx_UART_Handler() __attribute__ ((hot));
+
+void TMC22xx_UART_Handler()
+{
+	UART_TMC22xx->UART_IDR = UART_IDR_ENDRX;				// disable the interrupt
+	TmcDriverState * const driver = TmcDriverState::currentDriver;	// capture volatile variable
+	if (driver != nullptr)
+	{
+		driver->UartTmcHandler();
+	}
+}
+
+# endif
 
 #else
 
@@ -1160,8 +1173,8 @@ void SmartDrivers::Init()
 	gpio_set_pin_function(TMC22xxSercomTxPin, TMC22xxSercomTxPinPeriphMode);
 	gpio_set_pin_function(TMC22xxSercomRxPin, TMC22xxSercomRxPinPeriphMode);
 
-	Serial::InitUart(TMC22xxSercomNumber, DriversBaudRate);
-	NVIC_EnableIRQ(TMC22xxSercomIRQn);
+	Serial::InitUart(TMC22xxSercomNumber, DriversBaudRate, TMC22xxSercomRxPad);
+	DmacManager::SetInterruptCallbacks(TmcRxDmaChannel, TransferCompleteCallback, nullptr, CallbackParameter(0));
 # else
 	// Set up the single UART that communicates with all TMC22xx drivers
 	ConfigurePin(TMC22xx_UART_PINS);									// the pins are already set up for UART use in the pins table

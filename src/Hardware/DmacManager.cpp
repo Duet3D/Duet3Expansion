@@ -323,7 +323,7 @@ extern "C" void DMAC_4_Handler()
 extern "C" void DMAC_Handler()
 {
 	hri_dmac_intpend_reg_t intPend;
-	while (((intPend = DMAC->INTPEND.reg) & DMAC_INTPEND_PEND) != 0)
+	while (((intPend = DMAC->INTPEND.reg) & (DMAC_INTPEND_SUSP | DMAC_INTPEND_TCMPL | DMAC_INTPEND_TERR)) != 0)
 	{
 		const size_t channel = intPend & DMAC_INTPEND_ID_Msk;
 		DMAC->CHID.reg = channel;
@@ -344,6 +344,10 @@ extern "C" void DMAC_Handler()
 			{
 				fn(callbackParams[channel]);
 			}
+		}
+		if (hri_dmac_get_CHINTFLAG_SUSP_bit(DMAC))
+		{
+			hri_dmac_clear_CHINTFLAG_SUSP_bit(DMAC);
 		}
 	}
 }

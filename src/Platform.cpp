@@ -160,6 +160,7 @@ namespace Platform
 	constexpr uint16_t driverNormalVoltageAdcReading = PowerVoltageToAdcReading(27.5);		// voltages at or below this are normal
 
 #endif
+
 	static void UpdateMotorCurrent(size_t driver)
 	{
 		SmartDrivers::SetCurrent(driver, (driverAtIdleCurrent[driver]) ? motorCurrents[driver] * idleCurrentFactor : motorCurrents[driver]);
@@ -385,7 +386,7 @@ void Platform::Init()
 	gpio_set_pin_function(PortAPin(12), PINMUX_PA12D_SERCOM4_PAD0);		// TxD
 #endif
 
-	uart0.Init(256, 0, 57600);
+	uart0.Init(256, 0, 57600, 3);
 
 	// Initialise the rest of the IO subsystem
 	AnalogIn::Init();
@@ -512,9 +513,11 @@ void Platform::Spin()
 	}
 
 	// Get the VIN voltage
-	const float voltsVin = (vinFilter.GetSum() * (3.3 * VinDividerRatio))/(4096 * vinFilter.NumAveraged());
+	currentVin = vinFilter.GetSum()/vinFilter.NumAveraged();
+	const float voltsVin = (currentVin * VinMonitorVoltageRange)/(1u << AnalogIn::AdcBits);
 #if HAS_12V_MONITOR
-	const float volts12 = (v12Filter.GetSum() * (3.3 * V12DividerRatio))/(4096 * v12Filter.NumAveraged());
+	currentV12 = v12Filter.GetSum()/v12Filter.NumAveraged();
+	const float volts12 = (currentV12 * V12MonitorVoltageRange)/(1u << AnalogIn::AdcBits);
 	if (!powered && voltsVin >= 10.5 && volts12 >= 10.5)
 	{
 		powered = true;
@@ -696,7 +699,7 @@ void Platform::Spin()
 #elif defined(SAMC21)
 		if (tsensFilter.IsValid())
 		{
-			const int32_t temperatureTimes100 = (int32_t)tsensFilter.GetSum()/tsensFilter.NumAveraged() - (int32_t)(1u << 23);
+			const int16_t temperatureTimes100 = (int16_t)((uint16_t)(tsensFilter.GetSum()/tsensFilter.NumAveraged()) ^ (1u << 15));
 			currentMcuTemperature = (float)temperatureTimes100 * 0.01;
 #else
 # error Unsupported processor

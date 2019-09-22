@@ -15,7 +15,7 @@
 // <i> Indicates whether Priority Level 0 is enabled or not
 // <id> dmac_lvlen0
 #ifndef CONF_DMAC_LVLEN0
-#define CONF_DMAC_LVLEN0 0
+#define CONF_DMAC_LVLEN0 1
 #endif
 
 // <o> Level 0 Round-Robin Arbitration

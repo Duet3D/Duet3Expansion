@@ -368,7 +368,12 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 		break;
 
 	case CanMessageReturnInfo::typeDiagnosticsPart2:
-		reply.printf("Move hiccups: %" PRIu32, DDA::GetAndClearHiccups());
+		{
+			float minTemp, currentTemp, maxTemp;
+			Platform::GetMcuTemperatures(minTemp, currentTemp, maxTemp);
+			reply.printf("Move hiccups: %" PRIu32 "\nVIN: %.1fV\nMCU temperature: min %.1fC, current %.1fC, max %.1fC",
+					DDA::GetAndClearHiccups(), (double)Platform::GetCurrentPowerVoltage(), (double)minTemp, (double)currentTemp, (double)maxTemp);
+		}
 		break;
 
 #if 1	//debug

@@ -24,7 +24,7 @@ namespace Serial
 
 	inline Sercom *GetSercom(uint8_t sercomNumber) { return Sercoms[sercomNumber]; }
 	void EnableSercomClock(uint8_t sercomNumber);
-	void InitUart(uint8_t SercomNumber, uint32_t baudRate);
+	void InitUart(uint8_t SercomNumber, uint32_t baudRate, uint8_t rxPad);
 	void Disable(uint8_t sercomNumber);
 }
 
@@ -41,7 +41,7 @@ public:
 	Uart(uint8_t sercomNum, IRQn irqnum);
 
 	// Initialise. numTxSlots and numRxSlots must be power of 2.
-	void Init(size_t numTxSlots, size_t numRxSlots, uint32_t baudRate);
+	void Init(size_t numTxSlots, size_t numRxSlots, uint32_t baudRate, uint8_t rxPad);
 
 	// Non-blocking read, returns 0 if no char available.
 	char GetChar();

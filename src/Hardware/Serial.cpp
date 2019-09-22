@@ -124,7 +124,7 @@ void Serial::EnableSercomClock(uint8_t sercomNumber)
 }
 
 // Initialise the serial port. This does not set up the I/O pins.
-void Serial::InitUart(uint8_t sercomNumber, uint32_t baudRate)
+void Serial::InitUart(uint8_t sercomNumber, uint32_t baudRate, uint8_t rxPad)
 {
 	EnableSercomClock(sercomNumber);
 	Sercom * const sercom = GetSercom(sercomNumber);
@@ -134,7 +134,7 @@ void Serial::InitUart(uint8_t sercomNumber, uint32_t baudRate)
 						 | (0u << SERCOM_USART_CTRLA_CMODE_Pos)				// async mode
 						 | (0u << SERCOM_USART_CTRLA_FORM_Pos)				// usart frame, no parity
 						 | (0u << SERCOM_USART_CTRLA_SAMPA_Pos)				// sample on clocks 7-8-9
-						 | (3u << SERCOM_USART_CTRLA_RXPO_Pos)				// receive data on pad 3
+						 | ((uint32_t)rxPad << SERCOM_USART_CTRLA_RXPO_Pos)	// receive data pad
 						 | (0u << SERCOM_USART_CTRLA_TXPO_Pos)				// transmit on pad 0
 						 | (0u << SERCOM_USART_CTRLA_SAMPR_Pos)				// 16x over sampling, normal baud rate generation
 #ifdef SAME51
@@ -181,11 +181,11 @@ Uart::Uart(uint8_t sercomNum, IRQn irqnum)
 }
 
 // Initialise the UART. numRxSlots may be zero if we don't wish to receive.
-void Uart::Init(size_t numTxSlots, size_t numRxSlots, uint32_t baudRate)
+void Uart::Init(size_t numTxSlots, size_t numRxSlots, uint32_t baudRate, uint8_t rxPad)
 {
 	txBuffer.Init(numTxSlots);
 	rxBuffer.Init(numRxSlots);
-	Serial::InitUart(sercomNumber, baudRate);
+	Serial::InitUart(sercomNumber, baudRate, rxPad);
 	errors.all = 0;
 	sercom->USART.INTENSET.reg = (numRxSlots > 1) ? SERCOM_USART_INTENSET_RXC | SERCOM_USART_INTENSET_ERROR : 0;
 	NVIC_EnableIRQ(irqNumber);
