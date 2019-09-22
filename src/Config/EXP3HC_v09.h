@@ -11,8 +11,7 @@
 #include "RepRapFirmware.h"
 #include "Hardware/Peripherals.h"
 
-const size_t MaxHeaters = 6;
-const size_t MaxExtraHeaterProtections = 6;
+constexpr const char* BoardTypeName = "EXP3HC";
 
 #define HAS_SMART_DRIVERS		1
 #define HAS_STALL_DETECT		1
@@ -33,6 +32,9 @@ const size_t MaxExtraHeaterProtections = 6;
 #define SUPPORT_SPI_SENSORS		1
 
 #define USE_CACHE				0
+
+const size_t MaxHeaters = 6;
+const size_t MaxExtraHeaterProtections = 6;
 
 constexpr size_t NumDrivers = 3;
 constexpr size_t MaxSmartDrivers = 3;

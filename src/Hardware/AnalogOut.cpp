@@ -59,7 +59,11 @@ namespace AnalogOut
 #endif
 		};
 
+#if defined(SAME51)
 		hri_gclk_write_PCHCTRL_reg(GCLK, TcClockIDs[device], GCLK_PCHCTRL_GEN_GCLK1_Val | (1 << GCLK_PCHCTRL_CHEN_Pos));
+#elif defined(SAMC21)
+		hri_gclk_write_PCHCTRL_reg(GCLK, TcClockIDs[device], GCLK_PCHCTRL_GEN_GCLK0_Val | (1 << GCLK_PCHCTRL_CHEN_Pos));
+#endif
 
 		switch (device)
 		{
@@ -182,8 +186,11 @@ namespace AnalogOut
 #endif
 		};
 
+#if defined(SAME51)
 		hri_gclk_write_PCHCTRL_reg(GCLK, TccClockIDs[device], GCLK_PCHCTRL_GEN_GCLK1_Val | (1 << GCLK_PCHCTRL_CHEN_Pos));
-
+#elif defined(SAMC21)
+		hri_gclk_write_PCHCTRL_reg(GCLK, TccClockIDs[device], GCLK_PCHCTRL_GEN_GCLK0_Val | (1 << GCLK_PCHCTRL_CHEN_Pos));
+#endif
 		switch (device)
 		{
 #if defined(SAME51)

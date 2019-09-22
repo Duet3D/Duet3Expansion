@@ -1001,6 +1001,8 @@ uint8_t Platform::ReadBoardId()
 		}
 	}
 	return rslt;
+#elif defined(BOARD_ADDRESS)
+	return BOARD_ADDRESS;
 #else
 	return 10;			//TODO temporary!
 #endif

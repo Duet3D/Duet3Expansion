@@ -11,6 +11,15 @@
 #include "RepRapFirmware.h"
 #include "Hardware/Peripherals.h"
 
+#ifdef BOARD_ADDRESS
+# define Q(x) #x
+# define QUOTE(x) Q(x)
+# define BOARD_ADDRESS_STRING QUOTE(BOARD_ADDRESS)
+constexpr const char* BoardTypeName = "TOOL1LC_" BOARD_ADDRESS_STRING;
+#else
+constexpr const char* BoardTypeName = "TOOL1LC";
+#endif
+
 // General features
 #define HAS_VREF_MONITOR				1
 #define HAS_VOLTAGE_MONITOR				1
@@ -23,13 +32,13 @@
 #define HAS_SMART_DRIVERS				1
 #define HAS_STALL_DETECT				0		//TODO temporary until TMC2209 support added
 
+#define SUPPORT_TMC51xx					0
+#define SUPPORT_TMC2660					0
+#define SUPPORT_TMC22xx					1
+
 constexpr size_t NumDrivers = 1;
 constexpr size_t MaxSmartDrivers = 1;
 
-#define SUPPORT_TMC51xx					0
-#define SUPPORT_TMC2660					0
-
-#define SUPPORT_TMC22xx					1
 #define TMC22xx_USES_SERCOM				1
 #define TMC22xx_HAS_MUX					0
 #define TMC22xx_SINGLE_DRIVER			1

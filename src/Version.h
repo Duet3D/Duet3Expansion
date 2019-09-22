@@ -8,14 +8,6 @@
 #ifndef SRC_VERSION_H_
 #define SRC_VERSION_H_
 
-constexpr const char* FirmwareVersion = "3.0alpha 2019-09-21b2";
-
-#if defined(EXP3HC_V09)
-constexpr const char* BoardTypeName = "EXP3HC";
-#elif defined(TOOL1LC_V04)
-constexpr const char* BoardTypeName = "TOOL1LC";
-#else
-# error Unsupported processor
-#endif
+constexpr const char* FirmwareVersion = "3.0alpha 2019-09-22b1";
 
 #endif /* SRC_VERSION_H_ */
