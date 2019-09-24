@@ -398,6 +398,13 @@ void CAN1_Handler(void)
 {
 	struct _can_async_device *dev = _can1_dev;
 	uint32_t                  ir;
+#if 1	//dc42
+	while (((ir = hri_can_read_IR_reg(dev->hw)) & (CAN_IR_RF0N | CAN_IR_TC | CAN_IR_BO | CAN_IR_EW | CAN_IR_EP |CAN_IR_RF0L ) != 0)
+	{
+		hri_can_write_IR_reg(dev->hw, ir);
+#else
+	ir = hri_can_read_IR_reg(dev->hw);
+#endif
 	ir = hri_can_read_IR_reg(dev->hw);
 
 	if (ir & CAN_IR_RF0N) {
@@ -424,5 +431,9 @@ void CAN1_Handler(void)
 		dev->cb.irq_handler(dev, CAN_IRQ_DO);
 	}
 
+#if 1	//dc42
+	}
+#else
 	hri_can_write_IR_reg(dev->hw, ir);
+#endif
 }
