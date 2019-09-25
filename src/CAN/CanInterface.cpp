@@ -122,31 +122,43 @@ extern "C" [[noreturn]] void CanReceiverLoop(void *)
 	can_async_set_filter(&CAN_0, 1, CAN_FMT_EXTID, &filter);
 
 	can_async_enable(&CAN_0);
-
+	CanMessageBuffer *buf = nullptr;
 	for (;;)
 	{
-		TaskBase::Take();											// wait until we are woken up because a message is available
-		CanMessageBuffer *buf = CanMessageBuffer::Allocate();		// allocate a buffer to receive the message
-		if (buf != nullptr)
+		// Get a buffer
+		if (buf == nullptr)
 		{
-			can_message msg;										// descriptor for the message
-			msg.data = reinterpret_cast<uint8_t*>(&(buf->msg));		// set up where we want the message data to be stored
-			const int32_t rslt = can_async_read(&CAN_0, &msg);		// fetch the message
-			if (!enabled)
+			for (;;)
 			{
-				CanMessageBuffer::Free(buf);
+				buf = CanMessageBuffer::Allocate();
+				if (buf != nullptr)
+				{
+					break;
+				}
+				delay(1);
 			}
-			else if (rslt == ERR_NONE)
+		}
+
+		can_message msg;										// descriptor for the message
+		msg.data = reinterpret_cast<uint8_t*>(&(buf->msg));		// set up where we want the message data to be stored
+		const int32_t rslt = can_async_read(&CAN_0, &msg);	// fetch the message
+		if (rslt == ERR_NOT_FOUND)
+		{
+			TaskBase::Take();											// wait until we are woken up because a message is available
+		}
+		else if (rslt == ERR_NONE)
+		{
+			if (enabled)
 			{
 				buf->dataLength = msg.len;
 				buf->id.SetReceivedId(msg.id);
 				CanInterface::ProcessReceivedMessage(buf);
+				buf = nullptr;
 			}
-			else
-			{
-				debugPrintf("CAN read err %d\n", (int)rslt);
-				CanMessageBuffer::Free(buf);
-			}
+		}
+		else
+		{
+			debugPrintf("CAN read err %d\n", (int)rslt);
 		}
 	}
 }
