@@ -11,14 +11,7 @@
 #include "RepRapFirmware.h"
 #include "Hardware/Peripherals.h"
 
-#ifdef BOARD_ADDRESS
-# define Q(x) #x
-# define QUOTE(x) Q(x)
-# define BOARD_ADDRESS_STRING QUOTE(BOARD_ADDRESS)
-constexpr const char* BoardTypeName = "TOOL1LC_" BOARD_ADDRESS_STRING;
-#else
 constexpr const char* BoardTypeName = "TOOL1LC";
-#endif
 
 // General features
 #define HAS_VREF_MONITOR				1
