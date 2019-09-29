@@ -12,8 +12,7 @@
 #include "AdcAveragingFilter.h"
 
 // Define the number of temperature readings we average for each thermistor. This should be a power of 2 and at least 4 ^ AD_OVERSAMPLE_BITS.
-// Keep THERMISTOR_AVERAGE_READINGS * NUM_HEATERS * 2ms no greater than HEAT_SAMPLE_TIME or the PIDs won't work well.
-constexpr size_t ThermistorReadingsAveraged = 16;
+constexpr size_t ThermistorReadingsAveraged = 64;
 constexpr size_t ZProbeReadingsAveraged = 8;		// We average this number of readings with IR on, and the same number with IR off
 constexpr size_t McuTempReadingsAveraged = 16;
 constexpr size_t VinReadingsAveraged = 8;

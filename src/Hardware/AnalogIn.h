@@ -15,7 +15,11 @@ typedef void (*AnalogInCallbackFunction)(CallbackParameter p, uint16_t reading);
 namespace AnalogIn
 {
 	// The number of bits that the ADCs return
+#ifdef SAMC21
+	constexpr unsigned int AdcBits = 16;
+#else
 	constexpr unsigned int AdcBits = 12;
+#endif
 
 	// Initialise the analog input subsystem. Call this just once.
 	void Init();

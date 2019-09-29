@@ -121,6 +121,12 @@ bool AdcClass::IsChannelEnabled(unsigned int chan) const
 	return (channelsEnabled & (1ul << chan)) != 0;
 }
 
+// A note on ADC timings.
+// The maximum clock frequency of the ADC is 16MHz. We could probably generate this by running the DPLL at 96MHz, but for simplicity we run the ADC at 48MHz/4 = 12MHz.
+// Each conversion takes 17 clocks with comparator offset compensation enabled. That's 1.5167us per conversion.
+// We have a maximum of 6 input channels: 3 temperature, Vref, Vssa, and the Z probe. If we enable all of them, that's 8.5us per set of conversions.
+// If we average 128 readings in hardware, a full set of conversions takes 1.088ms, a little longer than the time between tick interrupts.
+// Averaging 64 readings seems to give us lower noise.
 bool AdcClass::InternalEnableChannel(unsigned int chan, uint8_t refCtrl, AnalogInCallbackFunction fn, CallbackParameter param, uint32_t p_ticksPerCall)
 {
 	if (chan < 32)
@@ -150,12 +156,13 @@ bool AdcClass::InternalEnableChannel(unsigned int chan, uint8_t refCtrl, AnalogI
 			}
 			hri_adc_wait_for_sync(device, ADC_SYNCBUSY_SWRST);
 
-			hri_adc_write_CTRLB_reg(device, ADC_CTRLB_PRESCALER_DIV16);			// GCLK0 is 48MHz, divided by 16 is 3MHz
+			hri_adc_write_CTRLB_reg(device, ADC_CTRLB_PRESCALER_DIV4);			// Max ADC clock is 16MHz. GCLK0 is 48MHz, divided by 4 is 12MHz
+			hri_adc_write_CTRLC_reg(device, ADC_CTRLC_RESSEL_16BIT);			// 16 bit result
 			hri_adc_write_REFCTRL_reg(device,  ADC_REFCTRL_REFSEL_INTVCC2);
 			hri_adc_write_EVCTRL_reg(device, ADC_EVCTRL_RESRDYEO);
 			hri_adc_write_INPUTCTRL_reg(device, ADC_INPUTCTRL_MUXNEG_GND);
-			hri_adc_write_AVGCTRL_reg(device, 0);
-			hri_adc_write_SAMPCTRL_reg(device, ADC_SAMPCTRL_SAMPLEN(10));
+			hri_adc_write_AVGCTRL_reg(device, ADC_AVGCTRL_SAMPLENUM_64);		// average 64 measurements
+			hri_adc_write_SAMPCTRL_reg(device, ADC_SAMPCTRL_OFFCOMP);			// enable comparator offset compensation, sampling time is fixed at 4 ADC clocks
 			hri_adc_write_WINLT_reg(device, 0);
 			hri_adc_write_WINUT_reg(device, 0xFFFF);
 			hri_adc_write_GAINCORR_reg(device, 1u << 11);

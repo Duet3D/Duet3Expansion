@@ -361,12 +361,17 @@ void Platform::Init()
 		{
 			if (   StringStartsWith(p.pinNames, "out")
 				&& strlen(p.pinNames) < 5							// don't set "outN.tach" pins to outputs
-		      )
+		       )
 			{
 				IoPort::SetPinMode(pin, OUTPUT_LOW);				// turn off heaters and fans (although this will turn on PWM fans)
 #ifdef SAMC21
 				// Set high driver strength on the output pins because they drive the heater and fan mosfets directly
 				hri_port_set_PINCFG_DRVSTR_bit(PORT, GPIO_PORT(pin), pin & 0x1F);
+				// OUT2 is intended to drive the hot end fan, so default it to on
+				IoPort::SetPinMode(pin, (StringEqualsIgnoreCase(p.pinNames, "out2")) ? OUTPUT_HIGH : OUTPUT_LOW);
+																	// turn on fan on out2, turn off heaters and other fans
+#else
+				IoPort::SetPinMode(pin, OUTPUT_LOW);				// turn off heaters and fans (although this will turn on PWM fans)
 #endif
 			}
 			else if (StringStartsWith(p.pinNames, "spi.cs"))
@@ -535,6 +540,13 @@ void Platform::Spin()
 	else if (powered && voltsVin < 10.0)
 	{
 		powered = false;
+	}
+#endif
+
+#ifdef SAMC21
+	if (!digitalRead(ButtonPins[0]))
+	{
+		SCB->AIRCR = (0x5FA << 16) | (1u << 2);				// reset the processor
 	}
 #endif
 
