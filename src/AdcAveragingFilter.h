@@ -67,6 +67,14 @@ public:
 		return isValid;
 	}
 
+	// Get the latest reading
+	uint16_t GetLatestReading() const volatile
+	{
+		size_t indexOfLastReading = index;			// capture volatile variable
+		indexOfLastReading =  (indexOfLastReading == 0) ? numAveraged - 1 : indexOfLastReading - 1;
+		return readings[indexOfLastReading];
+	}
+
 	static constexpr size_t NumAveraged() { return numAveraged; }
 
 	// Function used as an ADC callback to feed a result into an averaging filter

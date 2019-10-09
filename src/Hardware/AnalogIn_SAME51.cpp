@@ -15,8 +15,11 @@
 #include "IoPorts.h"
 #include "Interrupts.h"
 
+constexpr uint32_t AdcConversionTimeout = 5;		// milliseconds
+
 static uint32_t conversionsStarted = 0;
 static uint32_t conversionsCompleted = 0;
+static uint32_t conversionTimeouts = 0;
 
 class AdcClass
 {
@@ -49,19 +52,20 @@ private:
 
 	static void DmaCompleteCallback(CallbackParameter cp);
 
-	static constexpr size_t NumAdcChannels = 32;		// number of channels per ADC including temperature sensor inputs etc.
-	static constexpr size_t MaxSequenceLength = 16;		// the maximum length of the read sequence
+	static constexpr size_t NumAdcChannels = 32;			// number of channels per ADC including temperature sensor inputs etc.
+	static constexpr size_t MaxSequenceLength = 16;			// the maximum length of the read sequence
 
 	Adc * const device;
 	const IRQn irqn;
 	const DmaChannel dmaChan;
 	const DmaTrigSource trigSrc;
 
-	size_t numChannelsEnabled;
-	uint32_t channelsEnabled;
-	TaskBase *taskToWake;
-	State state;
-	bool justStarted;
+	volatile size_t numChannelsEnabled;						// volatile because multiple tasks access it
+	size_t numChannelsConverting;
+	volatile uint32_t channelsEnabled;
+	TaskBase * volatile taskToWake;
+	uint32_t whenLastConversionStarted;
+	volatile State state;
 	AnalogInCallbackFunction callbackFunctions[MaxSequenceLength];
 	CallbackParameter callbackParams[MaxSequenceLength];
 	uint32_t ticksPerCall[MaxSequenceLength];
@@ -73,7 +77,7 @@ private:
 
 AdcClass::AdcClass(Adc * const p_device, IRQn p_irqn, DmaChannel p_dmaChan, DmaTrigSource p_trigSrc)
 	: device(p_device), irqn(p_irqn), dmaChan(p_dmaChan), trigSrc(p_trigSrc),
-	  numChannelsEnabled(0), channelsEnabled(0), taskToWake(nullptr), state(State::noChannels)
+	  numChannelsEnabled(0), numChannelsConverting(0), channelsEnabled(0), taskToWake(nullptr), whenLastConversionStarted(0), state(State::noChannels)
 {
 	for (size_t i = 0; i < MaxSequenceLength; ++i)
 	{
@@ -140,17 +144,18 @@ bool AdcClass::InternalEnableChannel(unsigned int chan, uint8_t refCtrl, AnalogI
 		TaskCriticalSectionLocker lock;
 
 		// Set up the ADC
-		callbackFunctions[numChannelsEnabled] = fn;
-		callbackParams[numChannelsEnabled] = param;
-		ticksPerCall[numChannelsEnabled] = p_ticksPerCall;
-		ticksAtLastCall[numChannelsEnabled] = millis();
-		inputRegisters[numChannelsEnabled * 2] = ADC_INPUTCTRL_MUXNEG_GND | (uint32_t)chan;
-		inputRegisters[numChannelsEnabled * 2 + 1] = refCtrl;
+		const size_t newChannelNumber = numChannelsEnabled;
+		callbackFunctions[newChannelNumber] = fn;
+		callbackParams[newChannelNumber] = param;
+		ticksPerCall[newChannelNumber] = p_ticksPerCall;
+		ticksAtLastCall[newChannelNumber] = millis();
+		inputRegisters[newChannelNumber * 2] = ADC_INPUTCTRL_MUXNEG_GND | (uint32_t)chan;
+		inputRegisters[newChannelNumber * 2 + 1] = refCtrl;
 		resultsByChannel[chan] = 0;
-		++numChannelsEnabled;
 		channelsEnabled |= 1ul << chan;
+		numChannelsEnabled = newChannelNumber + 1;
 
-		if (numChannelsEnabled == 1)
+		if (newChannelNumber == 0)
 		{
 			// First channel is being enabled, so initialise the ADC
 			if (!hri_adc_is_syncing(device, ADC_SYNCBUSY_SWRST))
@@ -208,28 +213,46 @@ bool AdcClass::InternalEnableChannel(unsigned int chan, uint8_t refCtrl, AnalogI
 	return false;
 }
 
+// If no conversion is already in progress and there are channels to convert, start a conversion and return true; else return false
 bool AdcClass::StartConversion(TaskBase *p_taskToWake)
 {
-	if (numChannelsEnabled == 0 || state == State::converting)
+	numChannelsConverting = numChannelsEnabled;			// capture volatile variable to ensure we use a consistent value
+	if (numChannelsConverting == 0)
 	{
 		return false;
 	}
 
-	taskToWake = p_taskToWake;
-	(void)device->RESULT.reg;			// make sure no result pending (this is necessary to make it work!)
+	if (state == State::converting)
+	{
+		if (millis() - whenLastConversionStarted < AdcConversionTimeout)
+		{
+			return false;
+		}
+		++conversionTimeouts;
+		//TODO should we reset the ADC here?
+	}
 
-	// Set up DMA to read the results our of the ADC into the results array
+	taskToWake = p_taskToWake;
+
+	// Set up DMA sequencing of the ADC
+	DmacManager::DisableChannel(dmaChan + 1);
+	DmacManager::DisableChannel(dmaChan);
+
+	(void)device->RESULT.reg;							// make sure no result pending (this is necessary to make it work!)
+
 	DmacManager::SetDestinationAddress(dmaChan + 1, results);
-	DmacManager::SetDataLength(dmaChan + 1, numChannelsEnabled);
+	DmacManager::SetDataLength(dmaChan + 1, numChannelsConverting);
 	DmacManager::EnableCompletedInterrupt(dmaChan + 1);
-	DmacManager::EnableChannel(dmaChan + 1);
 
 	DmacManager::SetSourceAddress(dmaChan, inputRegisters);
-	DmacManager::SetDataLength(dmaChan, numChannelsEnabled * 2);
+	DmacManager::SetDataLength(dmaChan, numChannelsConverting * 2);
+
+	DmacManager::EnableChannel(dmaChan + 1);
 	DmacManager::EnableChannel(dmaChan);
 
 	state = State::converting;
 	++conversionsStarted;
+	whenLastConversionStarted = millis();
 	return true;
 }
 
@@ -237,7 +260,7 @@ void AdcClass::ExecuteCallbacks()
 {
 	TaskCriticalSectionLocker lock;
 	const uint32_t now = millis();
-	for (size_t i = 0; i < numChannelsEnabled; ++i)
+	for (size_t i = 0; i < numChannelsConverting; ++i)
 	{
 		const uint16_t currentResult = results[i];
 		resultsByChannel[GetChannel(i)] = currentResult;
@@ -291,22 +314,16 @@ namespace AnalogIn
 		{
 			// Loop through ADCs
 			bool conversionStarted = false;
-			for (size_t i = 0; i < ARRAY_SIZE(Adcs); ++i)
+			for (AdcClass& adc : Adcs)
 			{
-				AdcClass& adc = Adcs[i];
-				switch (adc.GetState())
+				if (adc.GetState() == AdcClass::State::ready)
 				{
-				case AdcClass::State::ready:
 					adc.ExecuteCallbacks();
-					//no break
-				case AdcClass::State::idle:
-				case AdcClass::State::starting:
-					adc.StartConversion(&analogInTask);
-					conversionStarted = true;
-					break;
+				}
 
-				default:	// no channels enabled, or conversion in progress
-					break;
+				if (adc.StartConversion(&analogInTask))
+				{
+					conversionStarted = true;
 				}
 			}
 
@@ -349,11 +366,11 @@ void AnalogIn::Init()
 // Enable analog input on a pin.
 // Readings will be taken and about every 'ticksPerCall' milliseconds the callback function will be called with the specified parameter and ADC reading.
 // Set ticksPerCall to 0 to get a callback on every reading.
-bool AnalogIn::EnableChannel(Pin pin, AnalogInCallbackFunction fn, CallbackParameter param, uint32_t ticksPerCall)
+bool AnalogIn::EnableChannel(Pin pin, AnalogInCallbackFunction fn, CallbackParameter param, uint32_t ticksPerCall, bool useAlternateAdc)
 {
 	if (pin < ARRAY_SIZE(PinTable))
 	{
-		const AdcInput adcin = IoPort::PinToAdcInput(pin);
+		const AdcInput adcin = IoPort::PinToAdcInput(pin, useAlternateAdc);
 		if (adcin != AdcInput::none)
 		{
 			IoPort::SetPinMode(pin, AIN);
@@ -365,11 +382,11 @@ bool AnalogIn::EnableChannel(Pin pin, AnalogInCallbackFunction fn, CallbackParam
 
 // Readings will be taken and about every 'ticksPerCall' milliseconds the callback function will be called with the specified parameter and ADC reading.
 // Set ticksPerCall to 0 to get a callback on every reading.
-bool AnalogIn::SetCallback(Pin pin, AnalogInCallbackFunction fn, CallbackParameter param, uint32_t ticksPerCall)
+bool AnalogIn::SetCallback(Pin pin, AnalogInCallbackFunction fn, CallbackParameter param, uint32_t ticksPerCall, bool useAlternateAdc)
 {
 	if (pin < ARRAY_SIZE(PinTable))
 	{
-		const AdcInput adcin = IoPort::PinToAdcInput(pin);
+		const AdcInput adcin = IoPort::PinToAdcInput(pin, useAlternateAdc);
 		if (adcin != AdcInput::none)
 		{
 			IoPort::SetPinMode(pin, AIN);
@@ -380,11 +397,11 @@ bool AnalogIn::SetCallback(Pin pin, AnalogInCallbackFunction fn, CallbackParamet
 }
 
 // Return whether or not the channel is enabled
-bool AnalogIn::IsChannelEnabled(Pin pin)
+bool AnalogIn::IsChannelEnabled(Pin pin, bool useAlternateAdc)
 {
 	if (pin < ARRAY_SIZE(PinTable))
 	{
-		const AdcInput adcin = IoPort::PinToAdcInput(pin);
+		const AdcInput adcin = IoPort::PinToAdcInput(pin, useAlternateAdc);
 		if (adcin != AdcInput::none)
 		{
 			return Adcs[GetDeviceNumber(adcin)].IsChannelEnabled(GetInputNumber(adcin));
@@ -417,10 +434,12 @@ bool AnalogIn::EnableTemperatureSensor(unsigned int sensorNumber, AnalogInCallba
 	return false;
 }
 
-void AnalogIn::GetDebugInfo(uint32_t &convsStarted, uint32_t &convsCompleted)
+// Return debug information
+void AnalogIn::GetDebugInfo(uint32_t &convsStarted, uint32_t &convsCompleted, uint32_t &convTimeouts)
 {
 	convsStarted = conversionsStarted;
 	convsCompleted = conversionsCompleted;
+	convTimeouts = conversionTimeouts;
 }
 
 #endif

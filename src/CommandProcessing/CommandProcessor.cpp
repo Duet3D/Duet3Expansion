@@ -18,6 +18,7 @@
 #include <Movement/DDA.h>
 #include <Tasks.h>
 #include <Version.h>
+#include <Hardware/AnalogIn.h>
 
 #if SUPPORT_TMC22xx
 # include "Movement/StepperDrivers/TMC22xx.h"
@@ -362,7 +363,7 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 	case CanMessageReturnInfo::typeDiagnosticsPart1:
 		for (size_t driver = 0; driver < NumDrivers; ++driver)
 		{
-			reply.lcatf("Driver %u ", driver);
+			reply.lcatf("Driver %u:", driver);
 			SmartDrivers::AppendDriverStatus(driver, reply);
 		}
 		break;
@@ -373,6 +374,10 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 			Platform::GetMcuTemperatures(minTemp, currentTemp, maxTemp);
 			reply.printf("Move hiccups: %" PRIu32 "\nVIN: %.1fV\nMCU temperature: min %.1fC, current %.1fC, max %.1fC",
 					DDA::GetAndClearHiccups(), (double)Platform::GetCurrentPowerVoltage(), (double)minTemp, (double)currentTemp, (double)maxTemp);
+			uint32_t conversionsStarted, conversionsCompleted, conversionTimeouts;
+			AnalogIn::GetDebugInfo(conversionsStarted, conversionsCompleted, conversionTimeouts);
+			reply.catf("\nTicks since heat task active %" PRIu32 ", ADC conversions started %" PRIu32 ", completed %" PRIu32 ", timed out %" PRIu32,
+						Platform::GetHeatTaskIdleTicks(), conversionsStarted, conversionsCompleted, conversionTimeouts);
 		}
 		break;
 

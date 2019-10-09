@@ -50,7 +50,8 @@ constexpr size_t NumAddressBits = 4;
 constexpr size_t NumBoardTypeBits = 3;
 
 constexpr float DefaultThermistorSeriesR = 2200.0;
-
+constexpr float MinVrefLoadR = (DefaultThermistorSeriesR / 3) * 4700.0/((DefaultThermistorSeriesR / 3) + 4700.0);
+																			// there are 3 temperature sensing channels and a 4K7 load resistor
 constexpr Pin GlobalTmc51xxEnablePin = PortBPin(23);
 constexpr Pin GlobalTmc51xxCSPin = PortBPin(22);
 

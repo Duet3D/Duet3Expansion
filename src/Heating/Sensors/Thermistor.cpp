@@ -41,10 +41,10 @@ GCodeResult Thermistor::Configure(const CanMessageGenericParser& parser, const S
 	seen = parser.GetFloatParam('R', seriesR) || seen;
 	if (!isPT1000)
 	{
-		seen = parser.GetFloatParam('B', beta) || seen;
-		if (seen)
+		if (parser.GetFloatParam('B', beta))
 		{
 			shC = 0.0;						// if user changes B and doesn't define C, assume C=0
+			seen = true;
 		}
 		seen = parser.GetFloatParam('C', shC) || seen;
 		seen = parser.GetFloatParam('T', r25) || seen;
@@ -64,7 +64,7 @@ GCodeResult Thermistor::Configure(const CanMessageGenericParser& parser, const S
 		adcFilterChannel = Platform::GetAveragingFilterIndex(port);
 		if (adcFilterChannel >= 0)
 		{
-			Platform::GetAdcFilter(adcFilterChannel).Init((1u << AnalogIn::AdcBits) - 1);
+			Platform::GetAdcFilter(adcFilterChannel)->Init((1u << AnalogIn::AdcBits) - 1);
 		}
 	}
 	else
@@ -90,24 +90,24 @@ GCodeResult Thermistor::Configure(const CanMessageGenericParser& parser, const S
 // Get the temperature
 void Thermistor::Poll()
 {
-	const volatile ThermistorAveragingFilter& tempFilter = Platform::GetAdcFilter(adcFilterChannel);
+	const volatile ThermistorAveragingFilter* tempFilter = Platform::GetAdcFilter(adcFilterChannel);
 
 #if HAS_VREF_MONITOR
 	// Use the actual VSSA and VREF values read by the ADC
-	const volatile ThermistorAveragingFilter& vrefFilter = Platform::GetAdcFilter(VrefFilterIndex);
-	const volatile ThermistorAveragingFilter& vssaFilter = Platform::GetAdcFilter(VssaFilterIndex);
-	if (tempFilter.IsValid() && vrefFilter.IsValid() && vssaFilter.IsValid())
+	const volatile ThermistorAveragingFilter *vrefFilter = Platform::GetVrefFilter(adcFilterChannel);
+	const volatile ThermistorAveragingFilter *vssaFilter = Platform::GetVssaFilter(adcFilterChannel);			// this one may be null on SAMC21 tool boards
+	if (tempFilter->IsValid() && vrefFilter->IsValid() && (vssaFilter == nullptr || vssaFilter->IsValid()))
 	{
-		const int32_t averagedVssaReading = vssaFilter.GetSum()/(vssaFilter.NumAveraged() >> Thermistor::AdcOversampleBits);
-		const int32_t averagedVrefReading = vrefFilter.GetSum()/(vssaFilter.NumAveraged() >> Thermistor::AdcOversampleBits);
+		const int32_t averagedVssaReading = (vssaFilter == nullptr) ? 0 : vssaFilter->GetSum()/(vssaFilter->NumAveraged() >> Thermistor::AdcOversampleBits);
+		const int32_t averagedVrefReading = vrefFilter->GetSum()/(vrefFilter->NumAveraged() >> Thermistor::AdcOversampleBits);
 
-		// VREF is the measured voltage at VREF less the drop of a 15 ohm resistor. Assume that the maximum load is four 2K2 resistors and one 4K7 resistor to ground = 492 ohms.
+		// VREF is the measured voltage at VREF less the drop of a 15 ohm resistor.
 		// VSSA is the voltage measured across the VSSA fuse. We assume the same maximum load and the same 15 ohms maximum resistance for the fuse.
 		// Assume a maximum ADC reading offset of 100.
-		constexpr int32_t maxDrop = ((4096 << Thermistor::AdcOversampleBits) * 15)/492 + (100 << Thermistor::AdcOversampleBits);
+		constexpr int32_t maxDrop = (OversampledAdcRange * 15)/MinVrefLoadR + (100 << Thermistor::AdcOversampleBits);
 
-#ifdef SAME51		// SAMC21 uses 3.3V t feed VRef but we don't have it available to use a a reference voltage, so we use 5V instead
-		if (averagedVrefReading < (4096 << Thermistor::AdcOversampleBits) - maxDrop)
+#ifdef SAME51		// SAMC21 uses 3.3V to feed VRef but we don't have it available to use a a reference voltage, so we use 5V instead
+		if (averagedVrefReading < OversampledAdcRange - maxDrop)
 		{
 			SetResult(TemperatureError::badVref);
 		}
@@ -124,25 +124,30 @@ void Thermistor::Poll()
 	{
 		{
 #endif
-			const int32_t averagedTempReading = tempFilter.GetSum()/(tempFilter.NumAveraged() >> Thermistor::AdcOversampleBits);
+			const int32_t averagedTempReading = tempFilter->GetSum()/(tempFilter->NumAveraged() >> Thermistor::AdcOversampleBits);
 
 			// Calculate the resistance
 #if HAS_VREF_MONITOR
-			const float denom = (float)(averagedVrefReading - averagedTempReading);
-#else
-			const int32_t averagedVrefReading = AdcRange + 2 * adcHighOffset;		// double the offset because we increased AdcOversampleBits from 1 to 2
-			const float denom = (float)(averagedVrefReading - averagedTempReading) - 0.5;
-#endif
-			if (denom <= 0.0)
+			if (averagedVrefReading <= averagedTempReading)
 			{
-				SetResult(ABS_ZERO, TemperatureError::openCircuit);
+				SetResult((isPT1000) ? BadErrorTemperature : ABS_ZERO, TemperatureError::openCircuit);
+			}
+			else if (averagedTempReading <= averagedVssaReading)
+			{
+				SetResult(BadErrorTemperature, TemperatureError::shortCircuit);
 			}
 			else
 			{
-
-#if HAS_VREF_MONITOR
-				const float resistance = seriesR * (float)(averagedTempReading - averagedVssaReading)/denom;
+				const float resistance = seriesR * (float)(averagedTempReading - averagedVssaReading)/(float)(averagedVrefReading - averagedTempReading);
 #else
+				const int32_t averagedVrefReading = OversampledAdcRange + 2 * adcHighOffset;	// double the offset because we increased AdcOversampleBits from 1 to 2
+				if (averagedVrefReading <= averagedTempReading)
+				{
+					SetResult((isPT1000) ? BadErrorTemperature : ABS_ZERO, TemperatureError::openCircuit);
+				}
+				else
+				{
+				const float denom = (float)(averagedVrefReading - averagedTempReading) - 0.5;
 				const int32_t averagedVssaReading = 2 * adcLowOffset;					// double the offset because we increased AdcOversampleBits from 1 to 2
 				float resistance = seriesR * ((float)(averagedTempReading - averagedVssaReading) + 0.5)/denom;
 # ifdef DUET_NG
@@ -153,7 +158,7 @@ void Thermistor::Poll()
 				if (isPT1000)
 				{
 					// We want 100 * the equivalent PT100 resistance, which is 10 * the actual PT1000 resistance
-					const uint16_t ohmsx100 = (uint16_t)rintf(constrain<float>(resistance * 10, 0.0, 65535.0));
+					const uint16_t ohmsx100 = (uint16_t)lrintf(constrain<float>(resistance * 10, 0.0, 65535.0));
 					float t;
 					const TemperatureError sts = GetPT100Temperature(t, ohmsx100);
 					SetResult(t, sts);
@@ -167,7 +172,7 @@ void Thermistor::Poll()
 
 					if (temp < MinimumConnectedTemperature)
 					{
-						// thermistor is disconnected
+						// Assume thermistor is disconnected
 						SetResult(ABS_ZERO, TemperatureError::openCircuit);
 					}
 					else

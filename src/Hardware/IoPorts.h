@@ -77,10 +77,12 @@ public:
 	bool GetInvert() const;
 	void SetInvert(bool pInvert);
 	void ToggleInvert(bool pInvert);
+	bool UseAlternateConfig() const { return alternateConfig; }
 
 	void WriteDigital(bool high) const;
 	bool Read() const;
 	uint16_t ReadAnalog() const;
+
 	bool AttachInterrupt(StandardCallbackFunction callback, InterruptMode mode, CallbackParameter param) const;
 	void DetachInterrupt() const;
 	bool SetAnalogCallback(AnalogInCallbackFunction fn, CallbackParameter cbp, uint32_t ticksPerCall);
@@ -94,7 +96,7 @@ public:
 	static bool LookupPinName(const char*pn, Pin& pin, bool& hardwareInverted);
 
 	// Find the ADC channel associated with a pin
-	static AdcInput PinToAdcInput(Pin pin) { return (pin < ARRAY_SIZE(PinTable)) ? PinTable[pin].adc : AdcInput::none; }
+	static AdcInput PinToAdcInput(Pin pin, bool useAlternateAdc);
 
 	// Low level port access
 	static void SetPinMode(Pin p, PinMode mode);
@@ -110,7 +112,8 @@ protected:
 	Pin pin;
 	uint8_t hardwareInvert : 1,								// true if the hardware includes inversion
 			totalInvert : 1,								// true if the value should be inverted when reading/writing the pin
-			isSharedInput : 1;								// true if we are using this pin as a shared input
+			isSharedInput : 1,								// true if we are using this pin as a shared input
+			alternateConfig : 1;							// true if we are using the alternate configuration of this pin, e.g. SDADC instyead of ADC
 
 	static PinUsedBy portUsedBy[NumPins];					// the list of what each logical port is used by
 	static int8_t logicalPinModes[NumPins];					// what mode each logical pin is set to - would ideally be class PinMode not int8_t

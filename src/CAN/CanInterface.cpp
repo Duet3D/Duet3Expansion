@@ -176,7 +176,7 @@ extern "C" [[noreturn]] void CanAsyncSenderLoop(void *)
 	for (;;)
 	{
 		// Set up a message ready
-		auto msg = buf->SetupRequestMessage<CanMessageInputChanged>(0, CanInterface::GetCanAddress(), CanId::MasterAddress);
+		auto msg = buf->SetupStatusMessage<CanMessageInputChanged>(CanInterface::GetCanAddress(), CanId::MasterAddress);
 		msg->states = 0;
 		msg->numHandles = 0;
 

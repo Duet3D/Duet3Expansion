@@ -342,6 +342,12 @@ namespace Platform
 		EraseAndReset();
 	}
 
+	static void SetupThermistorFilter(Pin pin, size_t filterIndex, bool useAlternateAdc)
+	{
+		thermistorFilters[filterIndex].Init(0);
+		AnalogIn::EnableChannel(pin, thermistorFilters[filterIndex].CallbackFeedIntoFilter, &thermistorFilters[filterIndex], 1, useAlternateAdc);
+	}
+
 }	// end namespace Platform
 
 void Platform::Init()
@@ -416,28 +422,33 @@ void Platform::Init()
 	numUnderVoltageEvents = previousUnderVoltageEvents = numOverVoltageEvents = previousOverVoltageEvents = 0;
 
 	vinFilter.Init(0);
-	AnalogIn::EnableChannel(VinMonitorPin, vinFilter.CallbackFeedIntoFilter, &vinFilter);
+	AnalogIn::EnableChannel(VinMonitorPin, vinFilter.CallbackFeedIntoFilter, &vinFilter, 1, false);
 
 #if HAS_12V_MONITOR
 	currentV12 = highestV12 = 0;
 	lowestV12 = 9999;
 
 	v12Filter.Init(0);
-	AnalogIn::EnableChannel(V12MonitorPin, v12Filter.CallbackFeedIntoFilter, &v12Filter);
+	AnalogIn::EnableChannel(V12MonitorPin, v12Filter.CallbackFeedIntoFilter, &v12Filter, 1, false);
 #endif
 
 #if HAS_VREF_MONITOR
-	thermistorFilters[VrefFilterIndex].Init(0);
-	AnalogIn::EnableChannel(VrefPin, thermistorFilters[VrefFilterIndex].CallbackFeedIntoFilter, &thermistorFilters[VrefFilterIndex]);
-	thermistorFilters[VssaFilterIndex].Init(0);
-	AnalogIn::EnableChannel(VssaPin, thermistorFilters[VssaFilterIndex].CallbackFeedIntoFilter, &thermistorFilters[VssaFilterIndex]);
+	// Set up the Vref and Vssa filters
+	SetupThermistorFilter(VrefPin, VrefFilterIndex, false);
+	SetupThermistorFilter(VssaPin, VssaFilterIndex, false);
+
+# ifdef SAMC21
+	// Set up the SDADC input filters too (temp0 and Vref)
+	SetupThermistorFilter(TempSensePins[0], SdAdcTemp0FilterIndex, true);
+	SetupThermistorFilter(VrefPin, SdAdcVrefFilterIndex, true);
+# endif
+
 #endif
 
 	// Set up the thermistor filters
 	for (size_t i = 0; i < NumThermistorInputs; ++i)
 	{
-		thermistorFilters[i].Init(0);
-		AnalogIn::EnableChannel(TempSensePins[i], thermistorFilters[i].CallbackFeedIntoFilter, &thermistorFilters[i]);
+		SetupThermistorFilter(TempSensePins[i], i, false);
 	}
 
 	// Set up the MCU temperature sensors
@@ -543,7 +554,7 @@ void Platform::Spin()
 	}
 #endif
 
-#ifdef SAMC21
+#if 0 //ifdef SAMC21
 	if (!digitalRead(ButtonPins[0]))
 	{
 		SCB->AIRCR = (0x5FA << 16) | (1u << 2);				// reset the processor
@@ -787,16 +798,38 @@ int Platform::GetAveragingFilterIndex(const IoPort& port)
 	{
 		if (port.GetPin() == TempSensePins[i])
 		{
+#ifdef SAMC21
+			return (i == 0 && port.UseAlternateConfig()) ? SdAdcTemp0FilterIndex : (int) i;
+#endif
 			return (int)i;
 		}
 	}
 	return -1;
 }
 
-
-ThermistorAveragingFilter& Platform::GetAdcFilter(unsigned int filterNumber)
+ThermistorAveragingFilter *Platform::GetAdcFilter(unsigned int filterNumber)
 {
-	return thermistorFilters[filterNumber];
+	return &thermistorFilters[filterNumber];
+}
+
+ThermistorAveragingFilter *Platform::GetVssaFilter(unsigned int filterNumber)
+{
+#ifdef SAMC21
+	// The SDADC channel has INN connected to VSSA and no separate VSSA monitor
+	return (filterNumber < NumThermistorInputs) ? &thermistorFilters[VssaFilterIndex] : nullptr;
+#else
+	return &thermistorFilters[VssaFilterIndex];
+#endif
+}
+
+ThermistorAveragingFilter *Platform::GetVrefFilter(unsigned int filterNumber)
+{
+#ifdef SAMC21
+	// The SDADC channel has a separate VSSA monitor
+	return (filterNumber == SdAdcTemp0FilterIndex) ? &thermistorFilters[SdAdcVrefFilterIndex] : &thermistorFilters[VrefFilterIndex];
+#else
+	return &thermistorFilters[VrefFilterIndex];
+#endif
 }
 
 void Platform::GetMcuTemperatures(float& minTemp, float& currentTemp, float& maxTemp)
@@ -809,6 +842,11 @@ void Platform::GetMcuTemperatures(float& minTemp, float& currentTemp, float& max
 void Platform::KickHeatTaskWatchdog()
 {
 	heatTaskIdleTicks = 0;
+}
+
+uint32_t Platform::GetHeatTaskIdleTicks()
+{
+	return heatTaskIdleTicks;
 }
 
 void Platform::HandleHeaterFault(unsigned int heater)
@@ -1031,7 +1069,7 @@ float Platform::GetTmcDriversTemperature()
 
 void Platform::Tick()
 {
-	//TODO
+	++heatTaskIdleTicks;
 }
 
 void Platform::StartFirmwareUpdate()

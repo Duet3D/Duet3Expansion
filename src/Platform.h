@@ -21,9 +21,17 @@ typedef AdcAveragingFilter<ThermistorReadingsAveraged> ThermistorAveragingFilter
 typedef AdcAveragingFilter<ZProbeReadingsAveraged> ZProbeAveragingFilter;
 
 #if HAS_VREF_MONITOR
-constexpr size_t NumThermistorFilters = NumThermistorInputs + 2;
 constexpr size_t VssaFilterIndex = NumThermistorInputs;
 constexpr size_t VrefFilterIndex = NumThermistorInputs + 1;
+# ifdef SAMC21
+// On the SAMC21 we have 2 additional filters for the SDADC inputs
+constexpr size_t SdAdcTemp0FilterIndex = NumThermistorInputs + 2;
+constexpr size_t SdAdcVrefFilterIndex = NumThermistorInputs + 3;
+constexpr size_t NumThermistorFilters = NumThermistorInputs + 4;
+# else
+// SAME51
+constexpr size_t NumThermistorFilters = NumThermistorInputs + 2;
+# endif
 #else
 constexpr size_t NumThermistorFilters = NumThermistorInputs;
 #endif
@@ -86,13 +94,17 @@ namespace Platform
 	void SetMotorCurrent(size_t driver, float current);		//TODO avoid the int->float->int conversion
 
 	int GetAveragingFilterIndex(const IoPort&);
-	ThermistorAveragingFilter& GetAdcFilter(unsigned int filterNumber);
+	ThermistorAveragingFilter *GetAdcFilter(unsigned int filterNumber);
+	ThermistorAveragingFilter *GetVssaFilter(unsigned int filterNumber);
+	ThermistorAveragingFilter *GetVrefFilter(unsigned int filterNumber);
+
 	void GetMcuTemperatures(float& minTemp, float& currentTemp, float& maxTemp);
 	float GetTmcDriversTemperature();
 
 	void HandleHeaterFault(unsigned int heater);
 
 	void KickHeatTaskWatchdog();
+	uint32_t GetHeatTaskIdleTicks();
 
 	uint8_t ReadBoardId();
 

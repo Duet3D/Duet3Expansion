@@ -176,15 +176,17 @@ void Tasks::GetMemoryReport(const StringRef& reply)
 // Append a task memory report to a string
 void Tasks::GetTasksMemoryReport(const StringRef& reply)
 {
+	bool printed = false;
 	for (const TaskBase *t = TaskBase::GetTaskList(); t != nullptr; t = t->GetNext())
 	{
 		TaskStatus_t taskDetails;
 		vTaskGetInfo(t->GetHandle(), &taskDetails, pdTRUE, eInvalid);
-		if (!reply.IsEmpty())
+		if (printed)
 		{
 			reply.cat(' ');
 		}
 		reply.catf("%s %u", taskDetails.pcTaskName, (unsigned int)(taskDetails.usStackHighWaterMark * sizeof(StackType_t)));
+		printed = true;
 	}
 }
 

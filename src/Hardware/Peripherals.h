@@ -91,9 +91,13 @@ static inline constexpr unsigned int GetPeriNumber(TccOutput tcc)
 // ADC input identifiers
 enum class AdcInput : uint8_t
 {
-	adc0_0 = 0x00, adc0_1, adc0_2, adc0_3, adc0_4, adc0_5, adc0_6, adc0_7, adc0_8, adc0_9, adc0_10, adc0_11, adc0_12, adc0_13, adc0_14, adc0_15,
+	adc0_0 = 0x00, adc0_1, adc0_2, adc0_3, adc0_4, adc0_5, adc0_6, adc0_7, adc0_8, adc0_9, adc0_10, adc0_11,
+#if defined(SAME51)
+	adc0_12, adc0_13, adc0_14, adc0_15,
 	adc1_0 = 0x10, adc1_1, adc1_2, adc1_3, adc1_4, adc1_5, adc1_6, adc1_7, adc1_8, adc1_9, adc1_10, adc1_11,
-
+#elif defined(SAMC21)
+	sdadc_0 = 0x10, sdadc_1,
+#endif
 	none = 0xFF
 };
 
@@ -129,6 +133,9 @@ struct PinDescription
 	TcOutput tc;
 	TccOutput tcc;
 	AdcInput adc;
+#ifdef SAMC21
+	AdcInput sdadc;
+#endif
 	SercomIo sercomIn;
 	SercomIo sercomOut;
 	uint8_t exintNumber;
@@ -140,15 +147,18 @@ static inline void delayMicroseconds(uint32_t) __attribute__((always_inline, unu
 static inline void delayMicroseconds(uint32_t usec)
 {
     // Based on Paul Stoffregen's implementation for Teensy 3.0 (http://www.pjrc.com/)
-    if (usec == 0) return;
-    uint32_t n = usec * (SystemCoreClock / 3000000);
-    uint32_t one = 1;
-    asm volatile(
-        "L_%=_delayMicroseconds:"       "\n\t"
-        "subs   %0, %1"                 "\n\t"
-        "bne    L_%=_delayMicroseconds" "\n"
-        : "+r" (n) : "r" (one) :
-    );
+    if (usec != 0)
+    {
+		uint32_t n = usec * (SystemCoreClock / 3000000);
+		const uint32_t one = 1;
+		asm volatile
+		(
+			"L_%=_delayMicroseconds:"       "\n\t"
+			"subs   %0, %1"                 "\n\t"
+			"bne    L_%=_delayMicroseconds" "\n"
+			: "+r" (n) : "r" (one) :
+		);
+    }
 }
 
 #endif /* SRC_HARDWARE_SAME5X_H_ */

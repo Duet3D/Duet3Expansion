@@ -16,6 +16,7 @@
 class CanMessageGeneric;
 class CanMessageFanParameters;
 class CanMessageSetFanSpeed;
+class CanMessageFanRpms;
 
 namespace FansManager
 {
@@ -24,6 +25,7 @@ namespace FansManager
 	GCodeResult ConfigureFanPort(const CanMessageGeneric& msg, const StringRef& reply);
 	GCodeResult ConfigureFan(const CanMessageFanParameters& gb, const StringRef& reply);
 	GCodeResult SetFanSpeed(const CanMessageSetFanSpeed& msg, const StringRef& reply);
+	unsigned int PopulateFanRpmsReport(CanMessageFanRpms& msg);
 #if 0
 	void SetFanValue(uint32_t fanNum, float speed);
 #endif

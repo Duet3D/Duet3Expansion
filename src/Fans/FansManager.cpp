@@ -156,4 +156,23 @@ void FansManager::Init()
 	}
 }
 
+// Construct a fan RPM report message. Returns the number of fans reported in it.
+unsigned int FansManager::PopulateFanRpmsReport(CanMessageFanRpms& msg)
+{
+	ReadLocker locker(fansLock);
+
+	msg.whichFans = 0;
+	unsigned int numReported = 0;
+	for (Fan* f : fans)
+	{
+		if (f != nullptr)
+		{
+			msg.fanRpms[numReported] = f->GetRPM();
+			msg.whichFans |= (uint64_t)1 << f->GetNumber();
+			++numReported;
+		}
+	}
+	return numReported;
+}
+
 // End

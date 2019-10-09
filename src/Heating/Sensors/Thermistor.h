@@ -52,7 +52,7 @@ private:
 #else
 	static constexpr unsigned int AdcBits = 12;								// the ADCs in the SAM processors are 12-bit
 #endif
-	static constexpr int32_t AdcRange = 1u << (AnalogIn::AdcBits + AdcOversampleBits);	// The readings we pass in should be in range 0..(AdcRange - 1)
+	static constexpr int32_t OversampledAdcRange = 1u << (AnalogIn::AdcBits + AdcOversampleBits);	// The readings we pass in should be in range 0..(AdcRange - 1)
 };
 
 #endif /* SRC_HEATING_THERMISTOR_H_ */

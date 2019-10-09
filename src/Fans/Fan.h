@@ -27,6 +27,8 @@ public:
 	virtual void ReportPortDetails(const StringRef& str) const = 0;
 	virtual ~Fan() { }
 
+	unsigned int GetNumber() const { return fanNumber; }
+
 	// Set or report the parameters for this fan
 	// If 'mCode' is an M-code used to set parameters (which should only ever be 106 or 107)
 	// then search for parameters used to configure the fan. If any are found, perform appropriate actions and return true.

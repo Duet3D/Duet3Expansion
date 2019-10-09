@@ -47,19 +47,24 @@ bool IoPort::SetMode(PinAccess access)
 	case PinAccess::write0:
 		desiredMode = (totalInvert) ? OUTPUT_HIGH : OUTPUT_LOW;
 		break;
+
 	case PinAccess::write1:
 		desiredMode = (totalInvert) ? OUTPUT_LOW : OUTPUT_HIGH;
 		break;
+
 	case PinAccess::pwm:
 	case PinAccess::servo:
 		desiredMode = (totalInvert) ? OUTPUT_PWM_HIGH : OUTPUT_PWM_LOW;
 		break;
+
 	case PinAccess::readAnalog:
 		desiredMode = AIN;
 		break;
+
 	case PinAccess::readWithPullup:
 		desiredMode = INPUT_PULLUP;
 		break;
+
 	case PinAccess::read:
 	default:
 		desiredMode = INPUT;
@@ -70,7 +75,7 @@ bool IoPort::SetMode(PinAccess access)
 	{
 		if (access == PinAccess::readAnalog && !AnalogIn::IsChannelEnabled(pin))
 		{
-			AnalogIn::EnableChannel(pin, nullptr, CallbackParameter());
+			AnalogIn::EnableChannel(pin, nullptr, CallbackParameter(), 1, false);
 		}
 		IoPort::SetPinMode(pin, desiredMode);
 		logicalPinModes[pin] = (int8_t)desiredMode;
@@ -137,7 +142,7 @@ void IoPort::DetachInterrupt() const
 
 bool IoPort::SetAnalogCallback(AnalogInCallbackFunction fn, CallbackParameter cbp, uint32_t ticksPerCall)
 {
-	return AnalogIn::SetCallback(pin, fn, cbp, ticksPerCall);
+	return AnalogIn::SetCallback(pin, fn, cbp, ticksPerCall, false);
 }
 
 // Try to assign ports, returning the number of ports successfully assigned
@@ -187,6 +192,7 @@ bool IoPort::Allocate(const char *pn, const StringRef& reply, PinUsedBy neededFo
 	Release();
 
 	bool inverted = false;
+	alternateConfig = false;
 	for (;;)
 	{
 		if (*pn == '!')
@@ -199,6 +205,10 @@ bool IoPort::Allocate(const char *pn, const StringRef& reply, PinUsedBy neededFo
 			{
 				access = PinAccess::readWithPullup;
 			}
+		}
+		else if (*pn == '*')
+		{
+			alternateConfig = true;
 		}
 		else
 		{
@@ -444,6 +454,16 @@ void IoPort::AppendPinName(const StringRef& str) const
 }
 
 // Low level pin access functions
+
+// Find the ADC channel associated with a pin
+/*static*/ AdcInput IoPort::PinToAdcInput(Pin pin, bool useAlternateAdc)
+{
+	return (pin >= ARRAY_SIZE(PinTable)) ? AdcInput::none
+#ifdef SAMC21
+			: (useAlternateAdc) ? PinTable[pin].sdadc
+#endif
+				: PinTable[pin].adc;
+}
 
 /*static*/ void IoPort::SetPinMode(Pin pin, PinMode mode)
 {
