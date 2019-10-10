@@ -213,7 +213,26 @@ bool AdcClass::InternalEnableChannel(unsigned int chan, AnalogInCallbackFunction
 				hri_adc_write_OFFSETCORR_reg(device, 0);
 				hri_adc_write_DBGCTRL_reg(device, 0);
 
-				//TODO load CALIB with NVM data calibration results
+				// Load CALIB with NVM data calibration results
+				do
+				{
+					uint32_t biasComp, biasRefbuf;
+					if (device == ADC0)
+					{
+						biasComp = (*reinterpret_cast<const uint32_t*>(ADC0_FUSES_BIASCOMP_ADDR) & ADC0_FUSES_BIASCOMP_Msk) >> ADC0_FUSES_BIASCOMP_Pos;
+						biasRefbuf = (*reinterpret_cast<const uint32_t*>(ADC0_FUSES_BIASREFBUF_ADDR) & ADC0_FUSES_BIASREFBUF_Msk) >> ADC0_FUSES_BIASREFBUF_Pos;
+					}
+					else if (device == ADC1)
+					{
+						biasComp = (*reinterpret_cast<const uint32_t*>(ADC1_FUSES_BIASCOMP_ADDR) & ADC1_FUSES_BIASCOMP_Msk) >> ADC1_FUSES_BIASCOMP_Pos;
+						biasRefbuf = (*reinterpret_cast<const uint32_t*>(ADC1_FUSES_BIASREFBUF_ADDR) & ADC1_FUSES_BIASREFBUF_Msk) >> ADC1_FUSES_BIASREFBUF_Pos;
+					}
+					else
+					{
+						break;
+					}
+					hri_adc_write_CALIB_reg(device, ADC_CALIB_BIASCOMP(biasComp) | ADC_CALIB_BIASREFBUF(biasRefbuf));
+				} while (false);
 
 				hri_adc_set_CTRLA_ENABLE_bit(device);
 

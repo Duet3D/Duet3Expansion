@@ -182,6 +182,29 @@ bool AdcClass::InternalEnableChannel(unsigned int chan, uint8_t refCtrl, AnalogI
 			hri_adc_write_OFFSETCORR_reg(device, 0);
 			hri_adc_write_DBGCTRL_reg(device, 0);
 
+			// Load CALIB with NVM data calibration results
+			do
+			{
+				uint32_t biasComp, biasRefbuf, biasR2R;
+				if (device == ADC0)
+				{
+					biasComp = (*reinterpret_cast<const uint32_t*>(ADC0_FUSES_BIASCOMP_ADDR) & ADC0_FUSES_BIASCOMP_Msk) >> ADC0_FUSES_BIASCOMP_Pos;
+					biasRefbuf = (*reinterpret_cast<const uint32_t*>(ADC0_FUSES_BIASREFBUF_ADDR) & ADC0_FUSES_BIASREFBUF_Msk) >> ADC0_FUSES_BIASREFBUF_Pos;
+					biasR2R = (*reinterpret_cast<const uint32_t*>(ADC0_FUSES_BIASR2R_ADDR) & ADC0_FUSES_BIASR2R_Msk) >> ADC0_FUSES_BIASR2R_Pos;
+				}
+				else if (device == ADC1)
+				{
+					biasComp = (*reinterpret_cast<const uint32_t*>(ADC1_FUSES_BIASCOMP_ADDR) & ADC1_FUSES_BIASCOMP_Msk) >> ADC1_FUSES_BIASCOMP_Pos;
+					biasRefbuf = (*reinterpret_cast<const uint32_t*>(ADC1_FUSES_BIASREFBUF_ADDR) & ADC1_FUSES_BIASREFBUF_Msk) >> ADC1_FUSES_BIASREFBUF_Pos;
+					biasR2R = (*reinterpret_cast<const uint32_t*>(ADC1_FUSES_BIASR2R_ADDR) & ADC1_FUSES_BIASR2R_Msk) >> ADC1_FUSES_BIASR2R_Pos;
+				}
+				else
+				{
+					break;
+				}
+				hri_adc_write_CALIB_reg(device, ADC_CALIB_BIASCOMP(biasComp) | ADC_CALIB_BIASREFBUF(biasRefbuf) | ADC_CALIB_BIASR2R(biasR2R));
+			} while (false);
+
 			// Enable DMA sequencing, updating just the input and reference control registers.
 			// We have to set the AUTOSTART bit too, otherwise the ADC requires one trigger per channel converted.
 			hri_adc_write_DSEQCTRL_reg(device, ADC_DSEQCTRL_INPUTCTRL | ADC_DSEQCTRL_REFCTRL | ADC_DSEQCTRL_AUTOSTART);
