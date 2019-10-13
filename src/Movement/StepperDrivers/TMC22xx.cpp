@@ -42,15 +42,15 @@
 
 // Important note:
 // The TMC2224 does handle a write request immediately followed by a read request.
-// The TMC2224 does _not_ handle back-to-back read requests, it needs some sort of a delay between them.
-// Therefore this driver will only work if there are at least two TMC22xx drivers being driven,
-// so that each one gets an interval while the other one is being polled.
+// The TMC2224 does _not_ handle back-to-back read requests, it needs a short delay between them.
 
-constexpr float MaximumMotorCurrent = 1600.0;
+constexpr float MaximumMotorCurrent = 1600.0;				// we can't go any higher withour switching to the low sensitivity range
+constexpr float MaximumStandstillCurrent = 1400.0;
 constexpr float MinimumOpenLoadMotorCurrent = 300;			// minimum current in mA for the open load status to be taken seriously
 constexpr uint32_t DefaultMicrosteppingShift = 4;			// x16 microstepping
 constexpr bool DefaultInterpolation = true;					// interpolation enabled
 constexpr uint32_t DefaultTpwmthrsReg = 2000;				// low values (high changeover speed) give horrible jerk at the changeover from stealthChop to spreadCycle
+constexpr size_t TmcTaskStackWords = 100;
 
 #if TMC22xx_VARIABLE_NUM_DRIVERS
 
@@ -66,6 +66,7 @@ static inline constexpr size_t GetNumTmcDrivers() { return MaxSmartDrivers; }
 enum class DriversState : uint8_t
 {
 	noPower = 0,
+	notInitialised,
 	initialising,
 	ready
 };
@@ -316,10 +317,9 @@ public:
 	uint32_t ReadAccumulatedStatus(uint32_t bitsToKeep);
 
 	// Variables used by the ISR
-	static TmcDriverState * volatile currentDriver;			// volatile because the ISR changes it
 	static uint32_t transferStartedTime;
 
-	void UartTmcHandler(DmaCallbackReason reason);			// core of the ISR for this driver
+	void UartTmcHandler();									// core of the ISR for this driver
 
 private:
 	bool SetChopConf(uint32_t newVal);
@@ -410,7 +410,6 @@ private:
 	volatile uint8_t writeRegCRCs[NumWriteRegisters];		// CRCs of the messages needed to update the registers
 	static const uint8_t ReadRegCRCs[NumReadRegisters];		// CRCs of the messages needed to read the registers
 	bool enabled;											// true if driver is enabled
-	volatile DmaCallbackReason dmaFinishedReason;
 };
 
 // Static data members of class TmcDriverState
@@ -425,8 +424,10 @@ Uart * const TmcDriverState::uart = UART_TMC22xx;
 # endif
 #endif
 
-TmcDriverState * volatile TmcDriverState::currentDriver = nullptr;	// volatile because the ISR changes it
-uint32_t TmcDriverState::transferStartedTime;
+// TMC22xx management task
+static Task<TmcTaskStackWords> tmcTask;
+
+static DmaCallbackReason dmaFinishedReason;
 
 // To write a register, we send one 8-byte packet to write it, then a 4-byte packet to ask for the IFCOUNT register, then we receive an 8-byte packet containing IFCOUNT.
 // This is the message we send - volatile because we care about when it is written
@@ -826,7 +827,7 @@ void TmcDriverState::UpdateCurrent()
 	// Full scale peak motor current in the high sensitivity range is give by I = 0.18/(R+0.03) = 0.18/0.105 ~= 1.6A
 	// This gives us a range of 50mA to 1.6A in 50mA steps in the high sensitivity range (VSENSE = 1)
 	const uint32_t iRunCsBits = (32 * motorCurrent - 800)/1615;		// formula checked by simulation on a spreadsheet
-	const uint32_t iHoldCurrent = (motorCurrent * standstillCurrentFraction)/256;	// set standstill current
+	const uint32_t iHoldCurrent = min<uint32_t>((motorCurrent * standstillCurrentFraction)/256, (uint32_t)MaximumStandstillCurrent);	// calculate standstill current
 	const uint32_t iHoldCsBits = (32 * iHoldCurrent - 800)/1615;	// formula checked by simulation on a spreadsheet
 	UpdateRegister(WriteIholdIrun,
 					(writeRegisters[WriteIholdIrun] & ~(IHOLDIRUN_IRUN_MASK | IHOLDIRUN_IHOLD_MASK)) | (iRunCsBits << IHOLDIRUN_IRUN_SHIFT) | (iHoldCsBits << IHOLDIRUN_IHOLD_SHIFT));
@@ -1011,8 +1012,6 @@ inline void TmcDriverState::SetUartMux()
 // This is called from the ISR or elsewhere to start a new SPI transfer. Inlined for ISR speed.
 inline void TmcDriverState::StartTransfer()
 {
-	currentDriver = this;
-
 #if TMC22xx_HAS_MUX
 	SetUartMux();
 #endif
@@ -1038,7 +1037,6 @@ inline void TmcDriverState::StartTransfer()
 		uart->UART_IER = UART_IER_ENDRX;				// enable end-of-receive interrupt
 		uart->UART_CR = UART_CR_RXEN | UART_CR_TXEN;	// enable transmitter and receiver
 #endif
-		transferStartedTime = millis();
 		cpu_irq_restore(flags);
 	}
 	else
@@ -1064,16 +1062,14 @@ inline void TmcDriverState::StartTransfer()
 		uart->UART_IER = UART_IER_ENDRX;				// enable end-of-transfer interrupt
 		uart->UART_CR = UART_CR_RXEN | UART_CR_TXEN;	// enable transmitter and receiver
 #endif
-		transferStartedTime = millis();
 		cpu_irq_restore(flags);
 	}
 }
 
 // ISR(s) for the UART(s)
 
-inline void TmcDriverState::UartTmcHandler(DmaCallbackReason reason)
+inline void TmcDriverState::UartTmcHandler()
 {
-	dmaFinishedReason = reason;
 #if !(TMC22xx_HAS_MUX || TMC22xx_SINGLE_DRIVER)
 # if TMC22xx_USES_SERCOM
 	DmacManager::DisableCompletedInterrupt(TmcRxDmaChannel);
@@ -1082,25 +1078,6 @@ inline void TmcDriverState::UartTmcHandler(DmaCallbackReason reason)
 # endif
 #endif
 	TransferDone();										// tidy up after the transfer we just completed
-	if (driversState != DriversState::noPower)
-	{
-		// Power is still good, so send/receive again
-#if TMC22xx_SINGLE_DRIVER
-		StartTransfer();
-#else
-		TmcDriverState *driver = this;
-		++driver;										// advance to the next driver
-		if (driver >= driverStates + GetNumTmcDrivers())
-		{
-			driver = driverStates;
-		}
-		driver->StartTransfer();
-#endif
-	}
-	else
-	{
-		currentDriver = nullptr;						// signal that we are not waiting for an interrupt
-	}
 }
 
 #if TMC22xx_HAS_MUX || TMC22xx_SINGLE_DRIVER
@@ -1110,12 +1087,8 @@ inline void TmcDriverState::UartTmcHandler(DmaCallbackReason reason)
 // DMA complete callback
 void TransferCompleteCallback(CallbackParameter, DmaCallbackReason reason)
 {
-	DmacManager::DisableCompletedInterrupt(TmcRxDmaChannel);
-	TmcDriverState * const driver = TmcDriverState::currentDriver;	// capture volatile variable
-	if (driver != nullptr)
-	{
-		driver->UartTmcHandler(reason);
-	}
+	dmaFinishedReason = reason;
+	tmcTask.GiveFromISR();
 }
 
 # else
@@ -1156,6 +1129,79 @@ void UART_TMC_DRV1_Handler()
 
 #endif
 
+extern "C" [[noreturn]] void TmcLoop(void *)
+{
+	TmcDriverState * currentDriver = nullptr;
+	for (;;)
+	{
+		if (driversState == DriversState::noPower)
+		{
+			currentDriver = 0;
+			TaskBase::Take();
+		}
+		else
+		{
+			if (driversState == DriversState::notInitialised)
+			{
+				for (size_t drive = 0; drive < GetNumTmcDrivers(); ++drive)
+				{
+					driverStates[drive].WriteAll();
+				}
+				driversState = DriversState::initialising;
+			}
+
+			// Do a transaction
+#if TMC22xx_SINGLE_DRIVER
+			currentDriver = driverStates;
+#else
+			currentDriver = (currentDriver == nullptr || currentDriver + 1 == driverStates + GetNumTmcDrivers())
+								? driverStates
+									: currentDriver + 1;
+#endif
+			currentDriver->StartTransfer();
+
+			// Wait for the end-of-transfer interrupt
+			const bool timedOut = (TaskBase::Take(TransferTimeout) == 0);
+			DmacManager::DisableCompletedInterrupt(TmcRxDmaChannel);
+
+			if (!timedOut && dmaFinishedReason == DmaCallbackReason::complete)
+			{
+				currentDriver->UartTmcHandler();
+
+				if (driversState == DriversState::initialising)
+				{
+					// If all drivers that share the global enable have been initialised, set the global enable
+					bool allInitialised = true;
+					for (size_t i = 0; i < GetNumTmcDrivers(); ++i)
+					{
+#if TMC22xx_HAS_ENABLE_PINS
+						if (driverStates[i].UsesGlobalEnable() && driverStates[i].UpdatePending())
+#else
+						if (driverStates[i].UpdatePending())
+#endif
+						{
+							allInitialised = false;
+							break;
+						}
+					}
+
+					if (allInitialised)
+					{
+						fastDigitalWriteLow(GlobalTmc22xxEnablePin);
+						driversState = DriversState::ready;
+					}
+				}
+			}
+			else
+			{
+				currentDriver->TransferTimedOut();
+				currentDriver->AbortTransfer();
+				currentDriver = nullptr;
+			}
+		}
+	}
+}
+
 //--------------------------- Public interface ---------------------------------
 
 // Initialise the driver interface and the drivers, leaving each drive disabled.
@@ -1193,7 +1239,7 @@ void SmartDrivers::Init()
 	UART_TMC22xx->UART_IDR = ~0u;
 	UART_TMC22xx->UART_CR = UART_CR_RSTRX | UART_CR_RSTTX | UART_CR_RXDIS | UART_CR_TXDIS;
 	UART_TMC22xx->UART_MR = UART_MR_CHMODE_NORMAL | UART_MR_PAR_NO;
-	UART_TMC22xx->UART_BRGR = VARIANT_MCK/(16 * DriversBaudRate);		// set baud rate
+	UART_TMC22xx->UART_BRGR = SystemPeripheralClock()/(16 * DriversBaudRate);		// set baud rate
 	UART_TMC22xx->UART_CR = UART_CR_RSTRX | UART_CR_RSTTX | UART_CR_RXDIS | UART_CR_TXDIS | UART_CR_RSTSTA;
 
 	NVIC_EnableIRQ(TMC22xx_UART_IRQn);
@@ -1244,6 +1290,8 @@ void SmartDrivers::Init()
 		driverStates[drive].Init(drive);							// axes are mapped straight through to drivers initially
 #endif
 	}
+
+	tmcTask.Create(TmcLoop, "TMC", nullptr, TaskPriority::TmcPriority);
 }
 
 void SmartDrivers::SetAxisNumber(size_t drive, uint32_t axisNumber)
@@ -1323,85 +1371,24 @@ DriverMode SmartDrivers::GetDriverMode(size_t driver)
 	return (driver < GetNumTmcDrivers()) ? driverStates[driver].GetDriverMode() : DriverMode::unknown;
 }
 
-// Flag that the the drivers have been powered up or down and handle any timeouts
+// Flag that the the drivers have been powered up or down
 // Before the first call to this function with 'powered' true, you must call Init()
 void SmartDrivers::Spin(bool powered)
 {
-	if (driversState == DriversState::noPower)
+	TaskCriticalSectionLocker lock;
+
+	if (powered)
 	{
-		if (powered)
+		if (driversState == DriversState::noPower)
 		{
-			// Power to the drivers has been provided or restored, so we need to enable and re-initialise them
-			for (size_t drive = 0; drive < GetNumTmcDrivers(); ++drive)
-			{
-				driverStates[drive].WriteAll();
-			}
-			driversState = DriversState::initialising;
-		}
-	}
-	else if (powered)
-	{
-		// If no transfer is in progress, kick one off.
-		// If a transfer has timed out, abort it.
-		if (TmcDriverState::currentDriver == nullptr)
-		{
-			// No transfer in progress, so start one
-			if (GetNumTmcDrivers() != 0)
-			{
-				// Kick off the first transfer
-				driverStates[0].StartTransfer();
-			}
-		}
-		else if (millis() - TmcDriverState::transferStartedTime > TransferTimeout)
-		{
-			// A UART transfer was started but has timed out
-			TmcDriverState::currentDriver->TransferTimedOut();
-			TmcDriverState::currentDriver->AbortTransfer();
-			uint8_t driverNum = TmcDriverState::currentDriver->GetDriverNumber();
-			TmcDriverState::currentDriver = nullptr;
-
-			++driverNum;
-			if (driverNum >= GetNumTmcDrivers())
-			{
-				driverNum = 0;
-			}
-			driverStates[driverNum].StartTransfer();
-		}
-
-		if (driversState == DriversState::initialising)
-		{
-			// If all drivers that share the global enable have been initialised, set the global enable
-			bool allInitialised = true;
-			for (size_t i = 0; i < GetNumTmcDrivers(); ++i)
-			{
-#if TMC22xx_HAS_ENABLE_PINS
-				if (driverStates[i].UsesGlobalEnable() && driverStates[i].UpdatePending())
-#else
-					if (driverStates[i].UpdatePending())
-#endif
-				{
-					allInitialised = false;
-					break;
-				}
-			}
-
-			if (allInitialised)
-			{
-				IoPort::WriteDigital(GlobalTmc22xxEnablePin, false);
-				driversState = DriversState::ready;
-			}
+			driversState = DriversState::notInitialised;
+			tmcTask.Give();									// wake up the TMC task because the drivers need to be initialised
 		}
 	}
 	else
 	{
-		// We had power but we lost it
-		digitalWrite(GlobalTmc22xxEnablePin, true);			// disable the drivers
-		if (TmcDriverState::currentDriver == nullptr)
-		{
-			TmcDriverState::currentDriver->AbortTransfer();
-			TmcDriverState::currentDriver = nullptr;
-		}
-		driversState = DriversState::noPower;
+		driversState = DriversState::noPower;				// flag that there is no power to the drivers
+		fastDigitalWriteHigh(GlobalTmc22xxEnablePin);		// disable the drivers
 	}
 }
 
