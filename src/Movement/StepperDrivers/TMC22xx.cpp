@@ -1085,6 +1085,9 @@ inline void TmcDriverState::UartTmcHandler(DmaCallbackReason reason)
 	if (driversState != DriversState::noPower)
 	{
 		// Power is still good, so send/receive again
+#if TMC22xx_SINGLE_DRIVER
+		StartTransfer();
+#else
 		TmcDriverState *driver = this;
 		++driver;										// advance to the next driver
 		if (driver >= driverStates + GetNumTmcDrivers())
@@ -1092,6 +1095,7 @@ inline void TmcDriverState::UartTmcHandler(DmaCallbackReason reason)
 			driver = driverStates;
 		}
 		driver->StartTransfer();
+#endif
 	}
 	else
 	{

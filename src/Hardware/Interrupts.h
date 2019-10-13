@@ -23,47 +23,6 @@
 
 #include "RepRapFirmware.h"
 
-// Functions and macros to enable/disable interrupts
-
-static inline void cpu_irq_enable()
-{
-	__DMB();
-	__enable_irq();
-}
-
-static inline void cpu_irq_disable()
-{
-	__disable_irq();
-	__DMB();
-}
-
-typedef bool irqflags_t;
-
-static inline bool cpu_irq_is_enabled()
-{
-	return __get_PRIMASK() == 0;
-}
-
-static inline irqflags_t cpu_irq_save(void)
-{
-	const irqflags_t flags = cpu_irq_is_enabled();
-	cpu_irq_disable();
-	return flags;
-}
-
-static inline bool cpu_irq_is_enabled_flags(irqflags_t flags)
-{
-	return flags;
-}
-
-static inline void cpu_irq_restore(irqflags_t flags)
-{
-	if (cpu_irq_is_enabled_flags(flags))
-	{
-		cpu_irq_enable();
-	}
-}
-
 // Pin change interrupt support
 
 enum class InterruptMode : uint8_t

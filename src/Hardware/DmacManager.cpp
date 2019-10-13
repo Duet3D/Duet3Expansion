@@ -121,7 +121,7 @@ void DmacManager::SetTriggerSource(uint8_t channel, DmaTrigSource source)
 	DMAC->Channel[channel].CHCTRLA.reg = DMAC_CHCTRLA_TRIGSRC((uint32_t)source) | DMAC_CHCTRLA_TRIGACT_BURST
 											| DMAC_CHCTRLA_BURSTLEN_SINGLE | DMAC_CHCTRLA_THRESHOLD_1BEAT;
 #elif defined(SAMC21)
-	InterruptCriticalSectionLocker lock;
+	AtomicCriticalSectionLocker lock;
 	DMAC->CHID.reg = channel;
 	DMAC->CHCTRLB.reg = DMAC_CHCTRLB_TRIGSRC((uint8_t)source) | DMAC_CHCTRLB_TRIGACT_BEAT;
 #else
@@ -136,7 +136,7 @@ void DmacManager::SetTriggerSourceSercomRx(uint8_t channel, uint8_t sercomNumber
 	DMAC->Channel[channel].CHCTRLA.reg = DMAC_CHCTRLA_TRIGSRC(source) | DMAC_CHCTRLA_TRIGACT_BURST
 											| DMAC_CHCTRLA_BURSTLEN_SINGLE | DMAC_CHCTRLA_THRESHOLD_1BEAT;
 #elif defined(SAMC21)
-	InterruptCriticalSectionLocker lock;
+	AtomicCriticalSectionLocker lock;
 	DMAC->CHID.reg = channel;
 	DMAC->CHCTRLB.reg = DMAC_CHCTRLB_TRIGSRC((uint8_t)source) | DMAC_CHCTRLB_TRIGACT_BEAT;
 #else
@@ -152,7 +152,7 @@ void DmacManager::SetTriggerSourceSercomTx(uint8_t channel, uint8_t sercomNumber
 	DMAC->Channel[channel].CHCTRLA.reg = DMAC_CHCTRLA_TRIGSRC(source) | DMAC_CHCTRLA_TRIGACT_BURST
 											| DMAC_CHCTRLA_BURSTLEN_SINGLE | DMAC_CHCTRLA_THRESHOLD_1BEAT;
 #elif defined(SAMC21)
-	InterruptCriticalSectionLocker lock;
+	AtomicCriticalSectionLocker lock;
 	DMAC->CHID.reg = channel;
 	DMAC->CHCTRLB.reg = DMAC_CHCTRLB_TRIGSRC((uint8_t)source) | DMAC_CHCTRLB_TRIGACT_BEAT;
 #else
@@ -165,7 +165,7 @@ void DmacManager::SetArbitrationLevel(uint8_t channel, uint8_t level)
 #if defined(SAME51)
 	DMAC->Channel[channel].CHPRILVL.reg = level;
 #elif defined(SAMC21)
-	InterruptCriticalSectionLocker lock;
+	AtomicCriticalSectionLocker lock;
 	DMAC->CHID.reg = channel;
 	DMAC->CHCTRLB.reg = (DMAC->CHCTRLB.reg & ~DMAC_CHCTRLB_LVL_Msk) | (level << DMAC_CHCTRLB_LVL_Pos);
 #else
@@ -180,7 +180,7 @@ void DmacManager::EnableChannel(const uint8_t channel, uint8_t priority)
 	DMAC->Channel[channel].CHPRILVL.reg = priority;
 	DMAC->Channel[channel].CHCTRLA.bit.ENABLE = 1;
 #elif defined(SAMC21)
-	InterruptCriticalSectionLocker lock;
+	AtomicCriticalSectionLocker lock;
 	DMAC->CHID.reg = channel;
 	DMAC->CHCTRLB.bit.LVL = priority;
 	DMAC->CHCTRLA.bit.ENABLE = 1;
@@ -195,12 +195,10 @@ void DmacManager::DisableChannel(const uint8_t channel)
 #if defined(SAME51)
 	DMAC->Channel[channel].CHCTRLA.bit.ENABLE = 0;
 	DMAC->Channel[channel].CHINTENCLR.reg = DMAC_CHINTENCLR_TCMPL | DMAC_CHINTENCLR_TERR | DMAC_CHINTENCLR_SUSP;
-	DMAC->Channel[channel].CHINTFLAG.reg = DMAC_CHINTENCLR_TCMPL | DMAC_CHINTENCLR_TERR | DMAC_CHINTENCLR_SUSP;
 #elif defined(SAMC21)
-	InterruptCriticalSectionLocker lock;
+	AtomicCriticalSectionLocker lock;
 	DMAC->CHID.reg = channel;
 	DMAC->CHCTRLA.bit.ENABLE = 0;
-	DMAC->CHINTENCLR.reg = DMAC_CHINTENCLR_TCMPL | DMAC_CHINTENCLR_TERR | DMAC_CHINTENCLR_SUSP;
 	DMAC->CHINTFLAG.reg = DMAC_CHINTENCLR_TCMPL | DMAC_CHINTENCLR_TERR | DMAC_CHINTENCLR_SUSP;
 #else
 # error Unsupported processor
@@ -209,7 +207,7 @@ void DmacManager::DisableChannel(const uint8_t channel)
 
 void DmacManager::SetInterruptCallback(uint8_t channel, DmaCallbackFunction fn, CallbackParameter param)
 {
-	InterruptCriticalSectionLocker lock;
+	AtomicCriticalSectionLocker lock;
 	dmaChannelCallbackFunctions[channel] = fn;
 	callbackParams[channel] = param;
 }
@@ -217,10 +215,12 @@ void DmacManager::SetInterruptCallback(uint8_t channel, DmaCallbackFunction fn, 
 void DmacManager::EnableCompletedInterrupt(const uint8_t channel)
 {
 #if defined(SAME51)
+	DMAC->Channel[channel].CHINTFLAG.reg = DMAC_CHINTENCLR_TCMPL | DMAC_CHINTENCLR_TERR | DMAC_CHINTENCLR_SUSP;
 	DMAC->Channel[channel].CHINTENSET.reg = DMAC_CHINTENSET_TCMPL | DMAC_CHINTENSET_TERR;
 #elif defined(SAMC21)
-	InterruptCriticalSectionLocker lock;
+	AtomicCriticalSectionLocker lock;
 	DMAC->CHID.reg = channel;
+	DMAC->CHINTENCLR.reg = DMAC_CHINTENCLR_TCMPL | DMAC_CHINTENCLR_TERR | DMAC_CHINTENCLR_SUSP;
 	DMAC->CHINTENSET.reg = DMAC_CHINTENSET_TCMPL | DMAC_CHINTENSET_TERR;
 #else
 # error Unsupported processor
@@ -232,7 +232,7 @@ void DmacManager::DisableCompletedInterrupt(const uint8_t channel)
 #if defined(SAME51)
 	DMAC->Channel[channel].CHINTENCLR.reg = DMAC_CHINTENSET_TCMPL | DMAC_CHINTENSET_TERR;
 #elif defined(SAMC21)
-	InterruptCriticalSectionLocker lock;
+	AtomicCriticalSectionLocker lock;
 	DMAC->CHID.reg = channel;
 	DMAC->CHINTENCLR.reg = DMAC_CHINTENSET_TCMPL | DMAC_CHINTENSET_TERR;
 #else
@@ -245,7 +245,7 @@ uint8_t DmacManager::GetChannelStatus(uint8_t channel)
 #if defined(SAME51)
 	return DMAC->Channel[channel].CHINTFLAG.reg;
 #elif defined(SAMC21)
-	InterruptCriticalSectionLocker lock;
+	AtomicCriticalSectionLocker lock;
 	DMAC->CHID.reg = channel;
 	return DMAC->CHINTFLAG.reg;
 #else
@@ -266,13 +266,13 @@ static inline void CommonDmacHandler(uint8_t channel)
 	const uint8_t intflag = DMAC->Channel[channel].CHINTFLAG.reg & DMAC->Channel[channel].CHINTENSET.reg & (DMAC_CHINTFLAG_SUSP | DMAC_CHINTFLAG_TCMPL | DMAC_CHINTFLAG_TERR);
 	if (intflag != 0)					// should always be true
 	{
+		DMAC->Channel[channel].CHINTFLAG.reg = intflag;
 		const DmaCallbackFunction fn = dmaChannelCallbackFunctions[channel];
 		if (fn != nullptr)
 		{
 			fn(callbackParams[channel], (DmaCallbackReason)intflag);
 		}
 	}
-	DMAC->Channel[channel].CHINTENCLR.reg = intflag;
 }
 
 extern "C" void DMAC_0_Handler()
@@ -316,13 +316,13 @@ extern "C" void DMAC_Handler()
 		const uint8_t intflag = DMAC->CHINTFLAG.reg & DMAC->CHINTENSET.reg & (DMAC_CHINTFLAG_SUSP | DMAC_CHINTFLAG_TCMPL | DMAC_CHINTFLAG_TERR);
 		if (intflag != 0)					// should always be true
 		{
+			DMAC->CHINTFLAG.reg = intflag;
 			const DmaCallbackFunction fn = dmaChannelCallbackFunctions[channel];
 			if (fn != nullptr)
 			{
 				fn(callbackParams[channel], (DmaCallbackReason)intflag);
 			}
 		}
-		DMAC->CHINTFLAG.reg = intflag;
 	}
 }
 

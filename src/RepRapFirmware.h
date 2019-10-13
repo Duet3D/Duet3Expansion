@@ -50,6 +50,47 @@ extern "C" void debugPrintf(const char* fmt, ...) __attribute__ ((format (printf
 # define SAMC21		1
 #endif
 
+// Functions and macros to enable/disable interrupts
+
+static inline void cpu_irq_enable()
+{
+	__DMB();
+	__enable_irq();
+}
+
+static inline void cpu_irq_disable()
+{
+	__disable_irq();
+	__DMB();
+}
+
+typedef bool irqflags_t;
+
+static inline bool cpu_irq_is_enabled()
+{
+	return __get_PRIMASK() == 0;
+}
+
+static inline irqflags_t cpu_irq_save(void)
+{
+	const irqflags_t flags = cpu_irq_is_enabled();
+	cpu_irq_disable();
+	return flags;
+}
+
+static inline bool cpu_irq_is_enabled_flags(irqflags_t flags)
+{
+	return flags;
+}
+
+static inline void cpu_irq_restore(irqflags_t flags)
+{
+	if (cpu_irq_is_enabled_flags(flags))
+	{
+		cpu_irq_enable();
+	}
+}
+
 #ifdef SAME51
 
 // Functions to change the base priority, to shut out interrupts up to a priority level
@@ -230,24 +271,21 @@ union CallbackParameter
 
 typedef void (*StandardCallbackFunction)(CallbackParameter);
 
-// Atomic section locker, alternative to InterruptCriticalSectionLocker (may be faster)
+// Atomic section locker, alternative to InterruptCriticalSectionLocker (is safe to call from within an ISR, and may be faster)
 class AtomicCriticalSectionLocker
 {
 public:
-	AtomicCriticalSectionLocker() : basePrio(__get_PRIMASK())
+	AtomicCriticalSectionLocker() : flags(cpu_irq_save())
 	{
-		__disable_irq();
-		__DMB();
 	}
 
 	~AtomicCriticalSectionLocker()
 	{
-		__DMB();
-		__set_PRIMASK(basePrio);
+		cpu_irq_restore(flags);
 	}
 
 private:
-	uint32_t basePrio;
+	irqflags_t flags;
 };
 
 // Macro to give us the number of elements in an array
