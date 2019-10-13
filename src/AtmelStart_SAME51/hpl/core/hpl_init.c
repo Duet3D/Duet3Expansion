@@ -36,8 +36,6 @@
 #include "../gclk/hpl_gclk_base.h"
 #include <hpl_mclk_config.h>
 
-//DC #include <hpl_dma.h>
-#include <hpl_dmac_config.h>
 #include <hpl_cmcc_config.h>
 #include <hal_cache.h>
 
@@ -63,11 +61,6 @@ void _init_chip(void)
 #endif
 	_oscctrl_init_referenced_generators();
 	_gclk_init_generators_by_fref(_GCLK_INIT_LAST);
-
-#if CONF_DMAC_ENABLE
-	hri_mclk_set_AHBMASK_DMAC_bit(MCLK);
-//dc42	_dma_init();
-#endif
 
 #if CONF_CMCC_ENABLE
 	cache_init();

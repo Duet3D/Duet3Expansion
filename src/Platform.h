@@ -113,7 +113,11 @@ namespace Platform
 	void StartFirmwareUpdate();
 
 #if HAS_VOLTAGE_MONITOR
-	float GetCurrentPowerVoltage();
+	float GetCurrentVinVoltage();
+#endif
+
+#if HAS_12V_MONITOR
+	float GetCurrentV12Voltage();
 #endif
 }
 

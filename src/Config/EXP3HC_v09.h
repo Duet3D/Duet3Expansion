@@ -236,7 +236,12 @@ constexpr DmaChannel Adc0TxDmaChannel = 2;
 constexpr DmaChannel Adc1TxDmaChannel = 4;
 // Next channel is used by ADC1 for receive
 
-constexpr unsigned int NumDmaChannelsUsed = 10;			// must be at least the number of channels used, may be larger. Max 32 on the SAME51.
+constexpr unsigned int NumDmaChannelsUsed = 6;			// must be at least the number of channels used, may be larger. Max 32 on the SAME51.
+
+constexpr uint8_t TmcTxDmaPriority = 0;
+constexpr uint8_t TmcRxDmaPriority = 3;
+constexpr uint8_t AdcTxDmaPriority = 0;
+constexpr uint8_t AdcRxDmaPriority = 2;
 
 // Interrupt priorities, lower means higher priority. 0-2 can't make RTOS calls.
 const uint32_t NvicPriorityStep = 2;					// step interrupt is next highest, it can preempt most other interrupts

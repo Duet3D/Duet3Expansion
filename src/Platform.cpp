@@ -1079,9 +1079,18 @@ void Platform::StartFirmwareUpdate()
 
 #if HAS_VOLTAGE_MONITOR
 
-float Platform::GetCurrentPowerVoltage()
+float Platform::GetCurrentVinVoltage()
 {
 	return AdcReadingToPowerVoltage(currentVin);
+}
+
+#endif
+
+#if HAS_12V_MONITOR
+
+float Platform::GetCurrentV12Voltage()
+{
+	return AdcReadingToPowerVoltage(currentV12);
 }
 
 #endif

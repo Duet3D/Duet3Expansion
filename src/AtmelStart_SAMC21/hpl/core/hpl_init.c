@@ -37,9 +37,6 @@
 #include <hpl_div.h>
 #include <hpl_mclk_config.h>
 
-#include <hpl_dma.h>
-#include <hpl_dmac_config.h>
-
 /* Referenced GCLKs (out of 0~7), should be initialized firstly
  */
 #define _GCLK_INIT_1ST 0x00000000
@@ -63,11 +60,6 @@ void _init_chip(void)
 	_gclk_init_generators_by_fref(_GCLK_INIT_LAST);
 
 	_div_init();
-
-#if CONF_DMAC_ENABLE
-	hri_mclk_set_AHBMASK_DMAC_bit(MCLK);
-	_dma_init();
-#endif
 
 #if (CONF_PORT_EVCTRL_PORT_0 | CONF_PORT_EVCTRL_PORT_1 | CONF_PORT_EVCTRL_PORT_2 | CONF_PORT_EVCTRL_PORT_3)
 	_port_event_init();

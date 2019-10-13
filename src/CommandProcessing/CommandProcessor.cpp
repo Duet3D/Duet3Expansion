@@ -372,8 +372,15 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 		{
 			float minTemp, currentTemp, maxTemp;
 			Platform::GetMcuTemperatures(minTemp, currentTemp, maxTemp);
-			reply.printf("Move hiccups: %" PRIu32 "\nVIN: %.1fV\nMCU temperature: min %.1fC, current %.1fC, max %.1fC",
-					DDA::GetAndClearHiccups(), (double)Platform::GetCurrentPowerVoltage(), (double)minTemp, (double)currentTemp, (double)maxTemp);
+			reply.printf("Move hiccups: %" PRIu32, DDA::GetAndClearHiccups());
+#if HAS_VOLTAGE_MONITOR && HAS_12V_MONITOR
+			reply.catf("\nVIN: %.1fV, V12: %.1fV", (double)Platform::GetCurrentVinVoltage(), (double)Platform::GetCurrentV12Voltage());
+#elif HAS_VOLTAGE_MONITOR
+			reply.catf("\nVIN: %.1fV", (double)Platform::GetCurrentVinVoltage());
+#elif HAS_12V_MONITOR
+			reply.catf("\nV12: %.1fV", (double)Platform::GetCurrentV12Voltage());
+#endif
+			reply.catf("\nMCU temperature: min %.1fC, current %.1fC, max %.1fC", (double)minTemp, (double)currentTemp, (double)maxTemp);
 			uint32_t conversionsStarted, conversionsCompleted, conversionTimeouts;
 			AnalogIn::GetDebugInfo(conversionsStarted, conversionsCompleted, conversionTimeouts);
 			reply.catf("\nTicks since heat task active %" PRIu32 ", ADC conversions started %" PRIu32 ", completed %" PRIu32 ", timed out %" PRIu32,

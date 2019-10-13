@@ -358,7 +358,7 @@ void LocalHeater::Spin()
 					{
 						if (!Heat::IsBedOrChamberHeater(GetHeaterNumber()))
 						{
-							const float currentVoltage = Platform::GetCurrentPowerVoltage();
+							const float currentVoltage = Platform::GetCurrentVinVoltage();
 							if (currentVoltage >= 10.0)				// if we have a sensible reading
 							{
 								lastPwm = min<float>(lastPwm * fsquare(GetModel().GetVoltage()/currentVoltage), 1.0);	// adjust the PWM by the square of the voltage ratio
@@ -641,7 +641,7 @@ void LocalHeater::DoTuningStep()
 			}
 
 #if HAS_VOLTAGE_MONITOR
-			tuningVoltageAccumulator += Platform::GetCurrentPowerVoltage();
+			tuningVoltageAccumulator += Platform::GetCurrentVinVoltage();
 			++voltageSamplesTaken;
 #endif
 			if (temperature >= tuningTargetTemp)							// if reached target

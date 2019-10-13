@@ -43,14 +43,14 @@ public:
 	uint16_t ReadChannel(unsigned int chan) const { return resultsByChannel[chan]; }
 	bool EnableTemperatureSensor(unsigned int sensorNumber, AnalogInCallbackFunction fn, CallbackParameter param, uint32_t ticksPerCall);
 
-	void ResultReadyCallback();
+	void ResultReadyCallback(DmaCallbackReason reason);
 	void ExecuteCallbacks();
 
 private:
 	bool InternalEnableChannel(unsigned int chan, uint8_t refCtrl, AnalogInCallbackFunction fn, CallbackParameter param, uint32_t p_ticksPerCall);
 	size_t GetChannel(size_t slot) { return inputRegisters[2 * slot] & 0x1F; }
 
-	static void DmaCompleteCallback(CallbackParameter cp);
+	static void DmaCompleteCallback(CallbackParameter cp, DmaCallbackReason reason);
 
 	static constexpr size_t NumAdcChannels = 32;			// number of channels per ADC including temperature sensor inputs etc.
 	static constexpr size_t MaxSequenceLength = 16;			// the maximum length of the read sequence
@@ -59,7 +59,7 @@ private:
 	const IRQn irqn;
 	const DmaChannel dmaChan;
 	const DmaTrigSource trigSrc;
-
+	volatile DmaCallbackReason dmaFinishedReason;
 	volatile size_t numChannelsEnabled;						// volatile because multiple tasks access it
 	size_t numChannelsConverting;
 	volatile uint32_t channelsEnabled;
@@ -223,7 +223,7 @@ bool AdcClass::InternalEnableChannel(unsigned int chan, uint8_t refCtrl, AnalogI
 
 			// Now the result reader
 			DmacManager::SetSourceAddress(dmaChan + 1, const_cast<uint16_t *>(&device->RESULT.reg));
-			DmacManager::SetInterruptCallbacks(dmaChan + 1, DmaCompleteCallback, nullptr, this);
+			DmacManager::SetInterruptCallback(dmaChan + 1, DmaCompleteCallback, this);
 			DmacManager::SetBtctrl(dmaChan + 1, DMAC_BTCTRL_VALID | DMAC_BTCTRL_EVOSEL_DISABLE | DMAC_BTCTRL_BLOCKACT_INT | DMAC_BTCTRL_BEATSIZE_HWORD
 										| DMAC_BTCTRL_DSTINC | DMAC_BTCTRL_STEPSEL_DST | DMAC_BTCTRL_STEPSIZE_X1);
 			DmacManager::SetTriggerSource(dmaChan + 1, trigSrc);
@@ -265,16 +265,23 @@ bool AdcClass::StartConversion(TaskBase *p_taskToWake)
 
 	DmacManager::SetDestinationAddress(dmaChan + 1, results);
 	DmacManager::SetDataLength(dmaChan + 1, numChannelsConverting);
-	DmacManager::EnableCompletedInterrupt(dmaChan + 1);
 
 	DmacManager::SetSourceAddress(dmaChan, inputRegisters);
 	DmacManager::SetDataLength(dmaChan, numChannelsConverting * 2);
 
-	DmacManager::EnableChannel(dmaChan + 1);
-	DmacManager::EnableChannel(dmaChan);
+	{
+		InterruptCriticalSectionLocker lock;
 
-	state = State::converting;
-	++conversionsStarted;
+		dmaFinishedReason = DmaCallbackReason::none;
+		DmacManager::EnableCompletedInterrupt(dmaChan + 1);
+
+		DmacManager::EnableChannel(dmaChan + 1, AdcRxDmaPriority);
+		DmacManager::EnableChannel(dmaChan, AdcTxDmaPriority);
+
+		state = State::converting;
+		++conversionsStarted;
+	}
+
 	whenLastConversionStarted = millis();
 	return true;
 }
@@ -299,11 +306,13 @@ void AdcClass::ExecuteCallbacks()
 }
 
 // Indirect callback from the DMA controller ISR
-void AdcClass::ResultReadyCallback()
+void AdcClass::ResultReadyCallback(DmaCallbackReason reason)
 {
+	dmaFinishedReason = reason;
 	state = State::ready;
 	++conversionsCompleted;
 	DmacManager::DisableChannel(dmaChan);			// disable the sequencer DMA, just in case it is out of sync
+	DmacManager::DisableChannel(dmaChan + 1);		// disable the reader DMA too
 	if (taskToWake != nullptr)
 	{
 		taskToWake->GiveFromISR();
@@ -311,9 +320,9 @@ void AdcClass::ResultReadyCallback()
 }
 
 // Callback from the DMA controller ISR
-/*static*/ void AdcClass::DmaCompleteCallback(CallbackParameter cp)
+/*static*/ void AdcClass::DmaCompleteCallback(CallbackParameter cp, DmaCallbackReason reason)
 {
-	static_cast<AdcClass *>(cp.vp)->ResultReadyCallback();
+	static_cast<AdcClass *>(cp.vp)->ResultReadyCallback(reason);
 }
 
 // ADC instances

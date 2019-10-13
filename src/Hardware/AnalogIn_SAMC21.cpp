@@ -52,12 +52,12 @@ public:
 
 	void EnableTemperatureSensor();
 
-	void ResultReadyCallback();
+	void ResultReadyCallback(DmaCallbackReason reason);
 
 protected:
 	virtual bool InternalEnableChannel(unsigned int chan, AnalogInCallbackFunction fn, CallbackParameter param, uint32_t p_ticksPerCall) = 0;
 
-	static void DmaCompleteCallback(CallbackParameter cp);
+	static void DmaCompleteCallback(CallbackParameter cp, DmaCallbackReason reason);
 
 	static constexpr size_t NumAdcChannels = 12;		// number of channels per ADC
 	static constexpr size_t MaxSequenceLength = 12;		// the maximum length of the read sequence
@@ -66,6 +66,7 @@ protected:
 	const DmaChannel dmaChan;
 	const DmaTrigSource trigSrc;
 
+	volatile DmaCallbackReason dmaFinishedReason;
 	volatile size_t numChannelsEnabled;
 	volatile uint32_t channelsEnabled;
 	TaskBase * volatile taskToWake;
@@ -126,8 +127,9 @@ bool AdcBase::IsChannelEnabled(unsigned int chan) const
 }
 
 // Indirect callback from the DMA controller ISR
-void AdcBase::ResultReadyCallback()
+void AdcBase::ResultReadyCallback(DmaCallbackReason reason)
 {
+	dmaFinishedReason = reason;
 	state = State::ready;
 	++conversionsCompleted;
 	DmacManager::DisableChannel(dmaChan);			// disable the sequencer DMA, just in case it is out of sync
@@ -138,9 +140,9 @@ void AdcBase::ResultReadyCallback()
 }
 
 // Callback from the DMA controller ISR
-/*static*/ void AdcBase::DmaCompleteCallback(CallbackParameter cp)
+/*static*/ void AdcBase::DmaCompleteCallback(CallbackParameter cp, DmaCallbackReason reason)
 {
-	static_cast<AdcBase *>(cp.vp)->ResultReadyCallback();
+	static_cast<AdcBase *>(cp.vp)->ResultReadyCallback(reason);
 }
 
 class AdcClass : public AdcBase
@@ -239,7 +241,7 @@ bool AdcClass::InternalEnableChannel(unsigned int chan, AnalogInCallbackFunction
 				// Initialise the DMAC to read the result
 				DmacManager::DisableChannel(chan);
 				DmacManager::SetSourceAddress(dmaChan, const_cast<uint16_t *>(&device->RESULT.reg));
-				DmacManager::SetInterruptCallbacks(dmaChan, DmaCompleteCallback, nullptr, this);
+				DmacManager::SetInterruptCallback(dmaChan, DmaCompleteCallback, this);
 				DmacManager::SetBtctrl(dmaChan, DMAC_BTCTRL_VALID | DMAC_BTCTRL_EVOSEL_DISABLE | DMAC_BTCTRL_BLOCKACT_INT | DMAC_BTCTRL_BEATSIZE_HWORD
 											| DMAC_BTCTRL_DSTINC | DMAC_BTCTRL_STEPSEL_DST | DMAC_BTCTRL_STEPSIZE_X1);
 				DmacManager::SetTriggerSource(dmaChan, trigSrc);
@@ -279,8 +281,11 @@ bool AdcClass::StartConversion(TaskBase *p_taskToWake)
 	// Set up DMA to read the results our of the ADC into the results array
 	DmacManager::SetDestinationAddress(dmaChan, results);
 	DmacManager::SetDataLength(dmaChan, numChannelsConverting);
+
+	dmaFinishedReason = DmaCallbackReason::none;
 	DmacManager::EnableCompletedInterrupt(dmaChan);
-	DmacManager::EnableChannel(dmaChan);
+
+	DmacManager::EnableChannel(dmaChan, AdcRxDmaPriority);
 
 	state = State::converting;
 	device->SWTRIG.reg = ADC_SWTRIG_START;
@@ -364,8 +369,11 @@ bool SdAdcClass::StartConversion(TaskBase *p_taskToWake)
 	// Set up DMA to read the results our of the ADC into the results array
 	DmacManager::SetDestinationAddress(dmaChan, results);
 	DmacManager::SetDataLength(dmaChan, numChannelsConverting);
+
+	dmaFinishedReason = DmaCallbackReason::none;
 	DmacManager::EnableCompletedInterrupt(dmaChan);
-	DmacManager::EnableChannel(dmaChan);
+
+	DmacManager::EnableChannel(dmaChan, AdcRxDmaPriority);
 
 	state = State::converting;
 	device->SWTRIG.reg = SDADC_SWTRIG_START;
@@ -448,7 +456,7 @@ bool SdAdcClass::InternalEnableChannel(unsigned int chan, AnalogInCallbackFuncti
 
 				// Initialise the DMAC to read the result. The result register is 32 bits wide but we are only interested in the lowest 16 bits.
 				DmacManager::SetSourceAddress(dmaChan, const_cast<uint16_t *>(reinterpret_cast<volatile uint16_t*>(&device->RESULT.reg)));
-				DmacManager::SetInterruptCallbacks(dmaChan, DmaCompleteCallback, nullptr, this);
+				DmacManager::SetInterruptCallback(dmaChan, DmaCompleteCallback, this);
 				DmacManager::SetBtctrl(dmaChan, DMAC_BTCTRL_VALID | DMAC_BTCTRL_EVOSEL_DISABLE | DMAC_BTCTRL_BLOCKACT_INT | DMAC_BTCTRL_BEATSIZE_HWORD
 											| DMAC_BTCTRL_DSTINC | DMAC_BTCTRL_STEPSEL_DST | DMAC_BTCTRL_STEPSIZE_X1);
 				DmacManager::SetTriggerSource(dmaChan, trigSrc);

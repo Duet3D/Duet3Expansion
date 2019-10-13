@@ -10,6 +10,17 @@
 
 #include "RepRapFirmware.h"
 
+// Status code indicating why a DMAC callback is happening
+enum class DmaCallbackReason : uint8_t
+{
+	none = 0,
+	error = DMAC_CHINTFLAG_TERR,
+	complete = DMAC_CHINTFLAG_TCMPL,
+	completeAndError = DMAC_CHINTFLAG_TERR | DMAC_CHINTFLAG_TCMPL
+};
+
+typedef void (*DmaCallbackFunction)(CallbackParameter cb, DmaCallbackReason reason);
+
 enum class DmaTrigSource : uint8_t
 {
 #if defined(SAME51)
@@ -187,19 +198,19 @@ namespace DmacManager
 	void Init();
 	void SetDestinationAddress(uint8_t channel, volatile void *const dst);
 	void SetSourceAddress(uint8_t channel, const volatile void *const src);
-	void SetDataLength(uint8_t channel, const uint32_t amount);
-	void SetBtctrl(uint8_t channel, const uint16_t val);
+	void SetDataLength(uint8_t channel, uint32_t amount);
+	void SetBtctrl(uint8_t channel, uint16_t val);
 	void SetTriggerSource(uint8_t channel, DmaTrigSource source);
 	void SetTriggerSourceSercomTx(uint8_t channel, uint8_t sercomNumber);
 	void SetTriggerSourceSercomRx(uint8_t channel, uint8_t sercomNumber);
 	void SetArbitrationLevel(uint8_t channel, uint8_t level);
-	void EnableChannel(uint8_t channel);
+	void EnableChannel(uint8_t channel, uint8_t priority);
 	void DisableChannel(uint8_t channel);
-	void SetInterruptCallbacks(uint8_t channel, StandardCallbackFunction tfrEndedFn, StandardCallbackFunction errorFn, CallbackParameter param);
+	void SetInterruptCallback(uint8_t channel, DmaCallbackFunction fn, CallbackParameter param);
 	void EnableCompletedInterrupt(uint8_t channel);
-	void EnableErrorInterrupt(uint8_t channel);
 	void DisableCompletedInterrupt(uint8_t channel);
-	void DisableErrorInterrupt(uint8_t channel);
+	uint8_t GetChannelStatus(uint8_t channel);
+	uint16_t GetBytesTransferred(uint8_t channel);
 }
 
 #endif /* SRC_HARDWARE_DMACMANAGER_H_ */

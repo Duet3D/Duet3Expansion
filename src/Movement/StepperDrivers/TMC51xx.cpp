@@ -792,19 +792,7 @@ void TmcDriverState::GetSpiCommand(uint8_t *sendDataBlock)
 	else
 	{
 		// Write a register
-		size_t regNum = 0;
-		uint32_t mask = 1;
-		do
-		{
-			if ((registersToUpdate & mask) != 0)
-			{
-				break;
-			}
-			++regNum;
-			mask <<= 1;
-		} while (regNum < NumWriteRegisters - 1);
-
-		// Kick off a transfer for that register
+		const size_t regNum = LowestSetBit(registersToUpdate);
 		regIndexBeingUpdated = regNum;
 		sendDataBlock[0] = WriteRegNumbers[regNum] | 0x80;
 		sendDataBlock[1] = (uint8_t)(writeRegisters[regNum] >> 24);
@@ -901,12 +889,23 @@ void TmcDriverState::TransferFailed()
 // State structures for all drivers
 static TmcDriverState driverStates[MaxSmartDrivers];
 
+static uint8_t sendData[5 * MaxSmartDrivers];
+static uint8_t rcvData[5 * MaxSmartDrivers];
+
 // TMC51xx management task
 constexpr size_t TMCTaskStackWords = 200;
 static Task<TMCTaskStackWords> tmcTask;
 
-static uint8_t sendData[5 * MaxSmartDrivers];
-static uint8_t rcvData[5 * MaxSmartDrivers];
+static DmaCallbackReason dmaFinishedReason;
+
+#if 1	//debug
+static uint8_t lastFailureStatus;
+static uint8_t lastFailureTxTransferStatus;
+static uint8_t lastFailureRxTransferStatus;
+static uint16_t lastTxBytesTransferred;
+static uint16_t lastRxBytesTransferred;
+static uint32_t lastFailureDmaActiveStatus;
+#endif
 
 // Set up the PDC or DMAC to send a register and receive the status, but don't enable it yet
 static void SetupDMA()
@@ -995,6 +994,8 @@ static void SetupDMA()
 	}
 
 #elif SAME51
+	DmacManager::DisableChannel(TmcRxDmaChannel);
+	DmacManager::DisableChannel(TmcTxDmaChannel);
 	DmacManager::SetTriggerSourceSercomRx(TmcRxDmaChannel, SERCOM_TMC51xx_NUMBER);
 	DmacManager::SetTriggerSourceSercomTx(TmcTxDmaChannel, SERCOM_TMC51xx_NUMBER);
 #else
@@ -1014,8 +1015,8 @@ static inline void EnableDma()
 	xdmac_channel_enable(XDMAC, DmacChanTmcRx);
 	xdmac_channel_enable(XDMAC, DmacChanTmcTx);
 #elif SAME51
-	DMAC->Channel[TmcRxDmaChannel].CHCTRLA.bit.ENABLE = 1;
-	DMAC->Channel[TmcTxDmaChannel].CHCTRLA.bit.ENABLE = 1;
+	DmacManager::EnableChannel(TmcRxDmaChannel, TmcRxDmaPriority);
+	DmacManager::EnableChannel(TmcTxDmaChannel, TmcTxDmaPriority);
 #else
 	spiPdc->PERIPH_PTCR = (PERIPH_PTCR_RXTEN | PERIPH_PTCR_TXTEN);			// enable the PDC
 #endif
@@ -1027,8 +1028,8 @@ static inline void DisableDma()
 	xdmac_channel_disable(XDMAC, DmacChanTmcTx);
 	xdmac_channel_disable(XDMAC, DmacChanTmcRx);
 #elif SAME51
-	DMAC->Channel[TmcTxDmaChannel].CHCTRLA.bit.ENABLE = 0;
-	DMAC->Channel[TmcRxDmaChannel].CHCTRLA.bit.ENABLE = 0;
+	DmacManager::DisableChannel(TmcTxDmaChannel);
+	DmacManager::DisableChannel(TmcRxDmaChannel);
 #else
 	spiPdc->PERIPH_PTCR = (PERIPH_PTCR_RXTDIS | PERIPH_PTCR_TXTDIS);		// disable the PDC
 #endif
@@ -1037,8 +1038,7 @@ static inline void DisableDma()
 static inline void ResetSpi()
 {
 #if TMC51xx_USES_SERCOM
-	// Don't disable the whole SPI between transmissions because that causes the clock output to go high impedance
-	SERCOM_TMC51xx->SPI.CTRLB.bit.RXEN = 0;
+	hri_sercomspi_clear_CTRLA_ENABLE_bit(SERCOM_TMC51xx);	// warning: this makes SCLK float!
 #elif TMC51xx_USES_USART
 	USART_TMC51xx->US_CR = US_CR_RSTRX | US_CR_RSTTX;	// reset transmitter and receiver
 #else
@@ -1050,7 +1050,8 @@ static inline void ResetSpi()
 static inline void EnableSpi()
 {
 #if TMC51xx_USES_SERCOM
-	SERCOM_TMC51xx->SPI.CTRLB.bit.RXEN = 1;
+	hri_sercomspi_set_CTRLB_RXEN_bit(SERCOM_TMC51xx);
+	hri_sercomspi_set_CTRLA_ENABLE_bit(SERCOM_TMC51xx);
 #elif TMC51xx_USES_USART
 	USART_TMC51xx->US_CR = US_CR_RXEN | US_CR_TXEN;		// enable transmitter and receiver
 #else
@@ -1085,11 +1086,12 @@ static inline void EnableEndOfTransferInterrupt()
 }
 
 // DMA complete callback
-void RxDmaCompleteCallback(CallbackParameter param)
+void RxDmaCompleteCallback(CallbackParameter param, DmaCallbackReason reason)
 {
 #if SAME70
 	xdmac_channel_disable_interrupt(XDMAC, DmacChanTmcRx, 0xFFFFFFFF);
 #endif
+	dmaFinishedReason = reason;
 	fastDigitalWriteHigh(GlobalTmc51xxCSPin);			// set CS high
 	tmcTask.GiveFromISR();
 }
@@ -1152,36 +1154,56 @@ extern "C" void TmcLoop(void *)
 				driverStates[i].GetSpiCommand(writeBufPtr);
 			}
 
-			// Kick off a transfer
+			// Kick off a transfer.
+			// On the SAME51 the only way I have found to get reliable transfers and no timeouts is to disable SPI, enable DMA, and then enable SPI.
+			// Enabling SPI before DMA sometimes results in timeouts.
+			// Unfortunately, when we disable SPI the SCLK line floats. Therefore we disable SPI for as little time as possible.
 			{
 				TaskCriticalSectionLocker lock;
-				ResetSpi();
+
+				SetupDMA();											// set up the PDC or DMAC
+				dmaFinishedReason = DmaCallbackReason::none;
+
+				InterruptCriticalSectionLocker lock2;
 
 				fastDigitalWriteLow(GlobalTmc51xxCSPin);			// set CS low
-
-				// On the SAME51 the order of doing the rest is critical, else we sometimes don't get the end-of-DMA interrupt
-				SetupDMA();											// set up the PDC or DMAC
-
-				// Enable the interrupt
+				xTaskNotifyStateClear(nullptr);
 				EnableEndOfTransferInterrupt();
-
-				// Enable the transfer
-				EnableSpi();
+				ResetSpi();
 				EnableDma();
+				EnableSpi();
 			}
 
 			// Wait for the end-of-transfer interrupt
-			timedOut = TaskBase::Take(TransferTimeout) == 0;
-			if (timedOut)
+			timedOut = (TaskBase::Take(TransferTimeout) == 0);
+			DisableEndOfTransferInterrupt();
+
+#if 1	//debug
+			if (timedOut || dmaFinishedReason != DmaCallbackReason::complete)
 			{
+				lastFailureStatus = (uint8_t)dmaFinishedReason;
+				if (timedOut)
+				{
+					lastFailureStatus |= 0x80;
+				}
+				lastFailureTxTransferStatus = DmacManager::GetChannelStatus(TmcTxDmaChannel);
+				lastFailureRxTransferStatus = DmacManager::GetChannelStatus(TmcRxDmaChannel);
+				lastFailureDmaActiveStatus = DMAC->ACTIVE.reg;
+			}
+#endif
+			DisableDma();
+			if (timedOut || dmaFinishedReason != DmaCallbackReason::complete)
+			{
+#if 1	//debug
+				lastTxBytesTransferred = DmacManager::GetBytesTransferred(TmcTxDmaChannel);
+				lastRxBytesTransferred = DmacManager::GetBytesTransferred(TmcRxDmaChannel);
+#endif
 				TmcDriverState::TransferTimedOut();
 				// If the transfer was interrupted then we will have written dud data to the drivers. So we should re-initialise them all.
 				// Unfortunately registers that we don't normally write to may have changed too.
 				fastDigitalWriteHigh(GlobalTmc51xxEnablePin);
 				fastDigitalWriteHigh(GlobalTmc51xxCSPin);			// set CS high
 				driversState = DriversState::notInitialised;
-				DisableEndOfTransferInterrupt();
-				DisableDma();
 				for (size_t drive = 0; drive < numTmc51xxDrivers; ++drive)
 				{
 					driverStates[drive].TransferFailed();
@@ -1256,7 +1278,7 @@ void SmartDrivers::Init()
 	DmacManager::SetDestinationAddress(TmcTxDmaChannel, &(SERCOM_TMC51xx->SPI.DATA.reg));
 	DmacManager::SetDataLength(TmcTxDmaChannel, ARRAY_SIZE(sendData));
 
-	DmacManager::SetInterruptCallbacks(TmcRxDmaChannel, RxDmaCompleteCallback, nullptr, 0U);
+	DmacManager::SetInterruptCallback(TmcRxDmaChannel, RxDmaCompleteCallback, 0U);
 
 	SERCOM_TMC51xx->SPI.CTRLA.bit.ENABLE = 1;		// keep the SPI enabled all the time so that the SPCLK line is driven
 
@@ -1457,6 +1479,13 @@ void SmartDrivers::AppendDriverStatus(size_t driver, const StringRef& reply)
 	{
 		driverStates[driver].AppendDriverStatus(reply, driver + 1 == numTmc51xxDrivers);
 	}
+#if 1	//debug
+	if (driver == 0)
+	{
+		reply.catf(", ltmo %02x %02x %02x %02x %02x %08" PRIx32,
+			lastFailureStatus, lastFailureTxTransferStatus, lastFailureRxTransferStatus, lastTxBytesTransferred, lastRxBytesTransferred, lastFailureDmaActiveStatus);
+	}
+#endif
 }
 
 float SmartDrivers::GetStandstillCurrentPercent(size_t driver)

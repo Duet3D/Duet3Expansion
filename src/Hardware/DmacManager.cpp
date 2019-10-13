@@ -16,7 +16,6 @@
 # error Unsupported processor
 #endif
 
-#include <hpl_dmac_config.h>
 #include <Hardware/DmacManager.h>
 #include <RTOSIface/RTOSIface.h>
 
@@ -27,45 +26,42 @@ static DmacDescriptor descriptor_section[NumDmaChannelsUsed];
 // Write back descriptors for all used DMAC channels
 static DmacDescriptor write_back_section[NumDmaChannelsUsed];
 
-// Array containing callbacks for DMAC channels. We assume the same callback parameter for both types of callback.
-static StandardCallbackFunction transferCompleteCallbacks[NumDmaChannelsUsed];
-static StandardCallbackFunction errorCallbacks[NumDmaChannelsUsed];
+// Array containing callbacks for DMAC channels
+static DmaCallbackFunction dmaChannelCallbackFunctions[NumDmaChannelsUsed];
 static CallbackParameter callbackParams[NumDmaChannelsUsed];
 
 // Initialize the DMA controller
 void DmacManager::Init()
 {
+	hri_mclk_set_AHBMASK_DMAC_bit(MCLK);
+
 	hri_dmac_clear_CTRL_DMAENABLE_bit(DMAC);
-#ifdef SAMC21
+#if defined(SAME51)
+	hri_dmac_clear_CRCCTRL_reg(DMAC, DMAC_CRCCTRL_CRCSRC_Msk);
+#elif defined(SAMC21)
 	hri_dmac_clear_CTRL_CRCENABLE_bit(DMAC);
 #else
-	hri_dmac_clear_CRCCTRL_reg(DMAC, DMAC_CRCCTRL_CRCSRC_Msk);
+# error Unsupported processor
 #endif
 	hri_dmac_set_CTRL_SWRST_bit(DMAC);
 	while (hri_dmac_get_CTRL_SWRST_bit(DMAC)) { }
 
-	hri_dmac_write_CTRL_reg(DMAC,
-	                        (CONF_DMAC_LVLEN0 << DMAC_CTRL_LVLEN0_Pos) | (CONF_DMAC_LVLEN1 << DMAC_CTRL_LVLEN1_Pos)
-	                            | (CONF_DMAC_LVLEN2 << DMAC_CTRL_LVLEN2_Pos)
-	                            | (CONF_DMAC_LVLEN3 << DMAC_CTRL_LVLEN3_Pos));
-	hri_dmac_write_DBGCTRL_DBGRUN_bit(DMAC, CONF_DMAC_DBGRUN);
+	hri_dmac_write_CTRL_reg(DMAC, DMAC_CTRL_LVLEN0 | DMAC_CTRL_LVLEN1 | DMAC_CTRL_LVLEN2 | DMAC_CTRL_LVLEN3);
+	hri_dmac_write_DBGCTRL_DBGRUN_bit(DMAC, 0);
 
-#ifdef SAMC21
-	hri_dmac_write_QOSCTRL_reg(DMAC,
-	                           DMAC_QOSCTRL_WRBQOS(CONF_DMAC_WRBQOS) | DMAC_QOSCTRL_FQOS(CONF_DMAC_FQOS)
-	                               | DMAC_QOSCTRL_DQOS(CONF_DMAC_DQOS));
+#if defined(SAME51)
+	hri_dmac_write_PRICTRL0_reg(DMAC, DMAC_PRICTRL0_RRLVLEN0 | DMAC_PRICTRL0_RRLVLEN1 | DMAC_PRICTRL0_RRLVLEN2 | DMAC_PRICTRL0_RRLVLEN3
+									| DMAC_PRICTRL0_QOS0(0x02) | DMAC_PRICTRL0_QOS1(0x02)| DMAC_PRICTRL0_QOS2(0x02)| DMAC_PRICTRL0_QOS3(0x02));
+#elif defined(SAMC21)
+	hri_dmac_write_PRICTRL0_reg(DMAC, DMAC_PRICTRL0_RRLVLEN0 | DMAC_PRICTRL0_RRLVLEN1 | DMAC_PRICTRL0_RRLVLEN2 | DMAC_PRICTRL0_RRLVLEN3);
+	hri_dmac_write_QOSCTRL_reg(DMAC, DMAC_QOSCTRL_WRBQOS(0x02) | DMAC_QOSCTRL_FQOS(0x02) | DMAC_QOSCTRL_DQOS(0x02));
 #endif
 
-	hri_dmac_write_PRICTRL0_reg(
-	    DMAC,
-	    DMAC_PRICTRL0_LVLPRI0(CONF_DMAC_LVLPRI0) | DMAC_PRICTRL0_LVLPRI1(CONF_DMAC_LVLPRI1)
-	        | DMAC_PRICTRL0_LVLPRI2(CONF_DMAC_LVLPRI2) | DMAC_PRICTRL0_LVLPRI3(CONF_DMAC_LVLPRI3)
-	        | (CONF_DMAC_RRLVLEN0 << DMAC_PRICTRL0_RRLVLEN0_Pos) | (CONF_DMAC_RRLVLEN1 << DMAC_PRICTRL0_RRLVLEN1_Pos)
-	        | (CONF_DMAC_RRLVLEN2 << DMAC_PRICTRL0_RRLVLEN2_Pos) | (CONF_DMAC_RRLVLEN3 << DMAC_PRICTRL0_RRLVLEN3_Pos));
 	hri_dmac_write_BASEADDR_reg(DMAC, (uint32_t)descriptor_section);
 	hri_dmac_write_WRBADDR_reg(DMAC, (uint32_t)write_back_section);
 
 #if defined(SAME51)
+	// SAME5x DMAC has 5 contiguous IRQ numbers
 	for (unsigned int i = 0; i < 5; i++)
 	{
 		NVIC_DisableIRQ((IRQn)(DMAC_0_IRQn + i));
@@ -177,62 +173,55 @@ void DmacManager::SetArbitrationLevel(uint8_t channel, uint8_t level)
 #endif
 }
 
-void DmacManager::EnableChannel(const uint8_t channel)
+void DmacManager::EnableChannel(const uint8_t channel, uint8_t priority)
 {
 	hri_dmacdescriptor_set_BTCTRL_VALID_bit(&descriptor_section[channel]);
 #if defined(SAME51)
+	DMAC->Channel[channel].CHPRILVL.reg = priority;
 	DMAC->Channel[channel].CHCTRLA.bit.ENABLE = 1;
 #elif defined(SAMC21)
 	InterruptCriticalSectionLocker lock;
 	DMAC->CHID.reg = channel;
+	DMAC->CHCTRLB.bit.LVL = priority;
 	DMAC->CHCTRLA.bit.ENABLE = 1;
 #else
 # error Unsupported processor
 #endif
 }
 
+// Disable a channel. Also clears its status and disables its interrupts.
 void DmacManager::DisableChannel(const uint8_t channel)
 {
 #if defined(SAME51)
 	DMAC->Channel[channel].CHCTRLA.bit.ENABLE = 0;
+	DMAC->Channel[channel].CHINTENCLR.reg = DMAC_CHINTENCLR_TCMPL | DMAC_CHINTENCLR_TERR | DMAC_CHINTENCLR_SUSP;
+	DMAC->Channel[channel].CHINTFLAG.reg = DMAC_CHINTENCLR_TCMPL | DMAC_CHINTENCLR_TERR | DMAC_CHINTENCLR_SUSP;
 #elif defined(SAMC21)
 	InterruptCriticalSectionLocker lock;
 	DMAC->CHID.reg = channel;
 	DMAC->CHCTRLA.bit.ENABLE = 0;
+	DMAC->CHINTENCLR.reg = DMAC_CHINTENCLR_TCMPL | DMAC_CHINTENCLR_TERR | DMAC_CHINTENCLR_SUSP;
+	DMAC->CHINTFLAG.reg = DMAC_CHINTENCLR_TCMPL | DMAC_CHINTENCLR_TERR | DMAC_CHINTENCLR_SUSP;
 #else
 # error Unsupported processor
 #endif
 }
 
-void DmacManager::SetInterruptCallbacks(const uint8_t channel, StandardCallbackFunction tfrEndedFn, StandardCallbackFunction errorFn, CallbackParameter param)
+void DmacManager::SetInterruptCallback(uint8_t channel, DmaCallbackFunction fn, CallbackParameter param)
 {
 	InterruptCriticalSectionLocker lock;
-	errorCallbacks[channel] = errorFn;
-	transferCompleteCallbacks[channel] = tfrEndedFn;
+	dmaChannelCallbackFunctions[channel] = fn;
 	callbackParams[channel] = param;
 }
 
 void DmacManager::EnableCompletedInterrupt(const uint8_t channel)
 {
 #if defined(SAME51)
-	hri_dmac_set_CHINTEN_TCMPL_bit(DMAC, channel);
+	DMAC->Channel[channel].CHINTENSET.reg = DMAC_CHINTENSET_TCMPL | DMAC_CHINTENSET_TERR;
 #elif defined(SAMC21)
 	InterruptCriticalSectionLocker lock;
 	DMAC->CHID.reg = channel;
-	hri_dmac_set_CHINTEN_TCMPL_bit(DMAC);
-#else
-# error Unsupported processor
-#endif
-}
-
-void DmacManager::EnableErrorInterrupt(const uint8_t channel)
-{
-#if defined(SAME51)
-	hri_dmac_set_CHINTEN_TERR_bit(DMAC, channel);
-#elif defined(SAMC21)
-	InterruptCriticalSectionLocker lock;
-	DMAC->CHID.reg = channel;
-	hri_dmac_set_CHINTEN_TERR_bit(DMAC);
+	DMAC->CHINTENSET.reg = DMAC_CHINTENSET_TCMPL | DMAC_CHINTENSET_TERR;
 #else
 # error Unsupported processor
 #endif
@@ -241,27 +230,32 @@ void DmacManager::EnableErrorInterrupt(const uint8_t channel)
 void DmacManager::DisableCompletedInterrupt(const uint8_t channel)
 {
 #if defined(SAME51)
-	hri_dmac_clear_CHINTEN_TCMPL_bit(DMAC, channel);
+	DMAC->Channel[channel].CHINTENCLR.reg = DMAC_CHINTENSET_TCMPL | DMAC_CHINTENSET_TERR;
 #elif defined(SAMC21)
 	InterruptCriticalSectionLocker lock;
 	DMAC->CHID.reg = channel;
-	hri_dmac_clear_CHINTEN_TCMPL_bit(DMAC);
+	DMAC->CHINTENCLR.reg = DMAC_CHINTENSET_TCMPL | DMAC_CHINTENSET_TERR;
 #else
 # error Unsupported processor
 #endif
 }
 
-void DmacManager::DisableErrorInterrupt(const uint8_t channel)
+uint8_t DmacManager::GetChannelStatus(uint8_t channel)
 {
 #if defined(SAME51)
-	hri_dmac_clear_CHINTEN_TERR_bit(DMAC, channel);
+	return DMAC->Channel[channel].CHINTFLAG.reg;
 #elif defined(SAMC21)
 	InterruptCriticalSectionLocker lock;
 	DMAC->CHID.reg = channel;
-	hri_dmac_clear_CHINTEN_TERR_bit(DMAC);
+	return DMAC->CHINTFLAG.reg;
 #else
 # error Unsupported processor
 #endif
+}
+
+uint16_t DmacManager::GetBytesTransferred(uint8_t channel)
+{
+	return descriptor_section[channel].BTCNT.reg - write_back_section[channel].BTCNT.reg;
 }
 
 #if defined(SAME51)
@@ -269,24 +263,16 @@ void DmacManager::DisableErrorInterrupt(const uint8_t channel)
 // Internal DMAC interrupt handler
 static inline void CommonDmacHandler(uint8_t channel)
 {
-	if (hri_dmac_get_CHINTFLAG_TERR_bit(DMAC, channel))
+	const uint8_t intflag = DMAC->Channel[channel].CHINTFLAG.reg & DMAC->Channel[channel].CHINTENSET.reg & (DMAC_CHINTFLAG_SUSP | DMAC_CHINTFLAG_TCMPL | DMAC_CHINTFLAG_TERR);
+	if (intflag != 0)					// should always be true
 	{
-		hri_dmac_clear_CHINTFLAG_TERR_bit(DMAC, channel);
-		const StandardCallbackFunction fn = errorCallbacks[channel];
+		const DmaCallbackFunction fn = dmaChannelCallbackFunctions[channel];
 		if (fn != nullptr)
 		{
-			fn(callbackParams[channel]);
+			fn(callbackParams[channel], (DmaCallbackReason)intflag);
 		}
 	}
-	if (hri_dmac_get_CHINTFLAG_TCMPL_bit(DMAC, channel))
-	{
-		hri_dmac_clear_CHINTFLAG_TCMPL_bit(DMAC, channel);
-		const StandardCallbackFunction fn = transferCompleteCallbacks[channel];
-		if (fn != nullptr)
-		{
-			fn(callbackParams[channel]);
-		}
-	}
+	DMAC->Channel[channel].CHINTENCLR.reg = intflag;
 }
 
 extern "C" void DMAC_0_Handler()
@@ -312,7 +298,7 @@ extern "C" void DMAC_3_Handler()
 extern "C" void DMAC_4_Handler()
 {
 	hri_dmac_intpend_reg_t intPend;
-	while ((intPend = hri_dmac_get_INTPEND_reg(DMAC, DMAC_INTPEND_ID_Msk)) > 3)
+	while ((intPend = DMAC->INTPEND.reg & DMAC_INTPEND_ID_Msk) > 3)
 	{
 		CommonDmacHandler(intPend);
 	}
@@ -322,33 +308,21 @@ extern "C" void DMAC_4_Handler()
 
 extern "C" void DMAC_Handler()
 {
-	hri_dmac_intpend_reg_t intPend;
-	while (((intPend = DMAC->INTPEND.reg) & (DMAC_INTPEND_SUSP | DMAC_INTPEND_TCMPL | DMAC_INTPEND_TERR)) != 0)
+	hri_dmac_intpend_reg_t intpend;
+	while (((intpend = DMAC->INTPEND.reg) & (DMAC_INTPEND_SUSP | DMAC_INTPEND_TCMPL | DMAC_INTPEND_TERR)) != 0)
 	{
-		const size_t channel = intPend & DMAC_INTPEND_ID_Msk;
+		const size_t channel = intpend & DMAC_INTPEND_ID_Msk;
 		DMAC->CHID.reg = channel;
-		if (hri_dmac_get_CHINTFLAG_TERR_bit(DMAC))
+		const uint8_t intflag = DMAC->CHINTFLAG.reg & DMAC->CHINTENSET.reg & (DMAC_CHINTFLAG_SUSP | DMAC_CHINTFLAG_TCMPL | DMAC_CHINTFLAG_TERR);
+		if (intflag != 0)					// should always be true
 		{
-			hri_dmac_clear_CHINTFLAG_TERR_bit(DMAC);
-			const StandardCallbackFunction fn = errorCallbacks[channel];
+			const DmaCallbackFunction fn = dmaChannelCallbackFunctions[channel];
 			if (fn != nullptr)
 			{
-				fn(callbackParams[channel]);
+				fn(callbackParams[channel], (DmaCallbackReason)intflag);
 			}
 		}
-		if (hri_dmac_get_CHINTFLAG_TCMPL_bit(DMAC))
-		{
-			hri_dmac_clear_CHINTFLAG_TCMPL_bit(DMAC);
-			const StandardCallbackFunction fn = transferCompleteCallbacks[channel];
-			if (fn != nullptr)
-			{
-				fn(callbackParams[channel]);
-			}
-		}
-		if (hri_dmac_get_CHINTFLAG_SUSP_bit(DMAC))
-		{
-			hri_dmac_clear_CHINTFLAG_SUSP_bit(DMAC);
-		}
+		DMAC->CHINTENCLR.reg = intflag;
 	}
 }
 
