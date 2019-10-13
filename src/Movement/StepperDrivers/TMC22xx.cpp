@@ -319,7 +319,7 @@ public:
 	static TmcDriverState * volatile currentDriver;			// volatile because the ISR changes it
 	static uint32_t transferStartedTime;
 
-	void UartTmcHandler();									// core of the ISR for this driver
+	void UartTmcHandler(DmaCallbackReason reason);			// core of the ISR for this driver
 
 private:
 	bool SetChopConf(uint32_t newVal);
@@ -410,6 +410,7 @@ private:
 	volatile uint8_t writeRegCRCs[NumWriteRegisters];		// CRCs of the messages needed to update the registers
 	static const uint8_t ReadRegCRCs[NumReadRegisters];		// CRCs of the messages needed to read the registers
 	bool enabled;											// true if driver is enabled
+	volatile DmaCallbackReason dmaFinishedReason;
 };
 
 // Static data members of class TmcDriverState
@@ -505,8 +506,8 @@ inline void TmcDriverState::SetupDMASend(uint8_t regNum, uint32_t regVal, uint8_
 	DmacManager::SetDataLength(TmcRxDmaChannel, 20);
 	DmacManager::SetBtctrl(TmcRxDmaChannel, DMAC_BTCTRL_STEPSIZE_X1 | DMAC_BTCTRL_STEPSEL_DST | DMAC_BTCTRL_DSTINC | DMAC_BTCTRL_BLOCKACT_INT);
 
-	DmacManager::EnableChannel(TmcTxDmaChannel);
-	DmacManager::EnableChannel(TmcRxDmaChannel);
+	DmacManager::EnableChannel(TmcTxDmaChannel, TmcTxDmaPriority);
+	DmacManager::EnableChannel(TmcRxDmaChannel, TmcRxDmaPriority);
 #elif defined(SAM4E) || defined(SAM4S)
 	pdc->PERIPH_TPR = reinterpret_cast<uint32_t>(sendData);
 	pdc->PERIPH_TCR = 12;											// number of bytes to send: 8 bytes send request + 4 bytes read IFCOUNT request
@@ -549,8 +550,8 @@ inline void TmcDriverState::SetupDMAReceive(uint8_t regNum, uint8_t crc)
 	DmacManager::SetDataLength(TmcRxDmaChannel, 12);
 	DmacManager::SetBtctrl(TmcRxDmaChannel, DMAC_BTCTRL_STEPSIZE_X1 | DMAC_BTCTRL_STEPSEL_DST | DMAC_BTCTRL_DSTINC | DMAC_BTCTRL_BLOCKACT_INT);
 
-	DmacManager::EnableChannel(TmcTxDmaChannel);
-	DmacManager::EnableChannel(TmcRxDmaChannel);
+	DmacManager::EnableChannel(TmcTxDmaChannel, TmcTxDmaPriority);
+	DmacManager::EnableChannel(TmcRxDmaChannel, TmcRxDmaPriority);
 #elif defined(SAM4E) || defined(SAM4S)
 	pdc->PERIPH_TPR = reinterpret_cast<uint32_t>(sendData);
 	pdc->PERIPH_TCR = 4;											// send a 4 byte read data request
@@ -1056,6 +1057,7 @@ inline void TmcDriverState::StartTransfer()
 #endif
 		SetupDMASend(WriteRegNumbers[regNum], writeRegisters[regNum], writeRegCRCs[regNum]);	// set up the PDC
 #if TMC22xx_USES_SERCOM
+		dmaFinishedReason = DmaCallbackReason::none;
 		DmacManager::EnableCompletedInterrupt(TmcRxDmaChannel);
 		sercom->USART.CTRLB.reg |= (SERCOM_USART_CTRLB_RXEN | SERCOM_USART_CTRLB_TXEN);	// enable transmitter and receiver
 #else
@@ -1069,8 +1071,9 @@ inline void TmcDriverState::StartTransfer()
 
 // ISR(s) for the UART(s)
 
-inline void TmcDriverState::UartTmcHandler()
+inline void TmcDriverState::UartTmcHandler(DmaCallbackReason reason)
 {
+	dmaFinishedReason = reason;
 #if !(TMC22xx_HAS_MUX || TMC22xx_SINGLE_DRIVER)
 # if TMC22xx_USES_SERCOM
 	DmacManager::DisableCompletedInterrupt(TmcRxDmaChannel);
@@ -1101,13 +1104,13 @@ inline void TmcDriverState::UartTmcHandler()
 # if TMC22xx_USES_SERCOM
 
 // DMA complete callback
-void TransferCompleteCallback(CallbackParameter)
+void TransferCompleteCallback(CallbackParameter, DmaCallbackReason reason)
 {
 	DmacManager::DisableCompletedInterrupt(TmcRxDmaChannel);
 	TmcDriverState * const driver = TmcDriverState::currentDriver;	// capture volatile variable
 	if (driver != nullptr)
 	{
-		driver->UartTmcHandler();
+		driver->UartTmcHandler(reason);
 	}
 }
 
@@ -1174,7 +1177,7 @@ void SmartDrivers::Init()
 	gpio_set_pin_function(TMC22xxSercomRxPin, TMC22xxSercomRxPinPeriphMode);
 
 	Serial::InitUart(TMC22xxSercomNumber, DriversBaudRate, TMC22xxSercomRxPad);
-	DmacManager::SetInterruptCallbacks(TmcRxDmaChannel, TransferCompleteCallback, nullptr, CallbackParameter(0));
+	DmacManager::SetInterruptCallback(TmcRxDmaChannel, TransferCompleteCallback, CallbackParameter(0));
 # else
 	// Set up the single UART that communicates with all TMC22xx drivers
 	ConfigurePin(TMC22xx_UART_PINS);									// the pins are already set up for UART use in the pins table

@@ -308,10 +308,10 @@ extern "C" void DMAC_4_Handler()
 
 extern "C" void DMAC_Handler()
 {
-	hri_dmac_intpend_reg_t intpend;
-	while (((intpend = DMAC->INTPEND.reg) & (DMAC_INTPEND_SUSP | DMAC_INTPEND_TCMPL | DMAC_INTPEND_TERR)) != 0)
+	hri_dmac_intpend_reg_t intPend;
+	while (((intPend = DMAC->INTPEND.reg) & (DMAC_INTPEND_SUSP | DMAC_INTPEND_TCMPL | DMAC_INTPEND_TERR)) != 0)
 	{
-		const size_t channel = intpend & DMAC_INTPEND_ID_Msk;
+		const size_t channel = intPend & DMAC_INTPEND_ID_Msk;
 		DMAC->CHID.reg = channel;
 		const uint8_t intflag = DMAC->CHINTFLAG.reg & DMAC->CHINTENSET.reg & (DMAC_CHINTFLAG_SUSP | DMAC_CHINTFLAG_TCMPL | DMAC_CHINTFLAG_TERR);
 		if (intflag != 0)					// should always be true
@@ -322,7 +322,7 @@ extern "C" void DMAC_Handler()
 				fn(callbackParams[channel], (DmaCallbackReason)intflag);
 			}
 		}
-		DMAC->CHINTENCLR.reg = intflag;
+		DMAC->CHINTFLAG.reg = intflag;
 	}
 }
 
