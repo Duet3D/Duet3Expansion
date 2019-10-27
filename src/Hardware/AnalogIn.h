@@ -18,7 +18,7 @@ namespace AnalogIn
 #ifdef SAMC21
 	constexpr unsigned int AdcBits = 16;
 #else
-	constexpr unsigned int AdcBits = 12;
+	constexpr unsigned int AdcBits = 16;
 #endif
 
 	// Initialise the analog input subsystem. Call this just once.

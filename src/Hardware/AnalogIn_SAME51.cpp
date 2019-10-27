@@ -21,6 +21,21 @@ static uint32_t conversionsStarted = 0;
 static uint32_t conversionsCompleted = 0;
 static uint32_t conversionTimeouts = 0;
 
+// Constants that control the DMA sequencing
+// The SAME5x errata doc from mIcrochip say that order to use averaging, we need to include the AVGCTRL register in the sequence even if it doesn't change,
+// and that the prescaler must be <= 8 when we use DMA sequencing.
+
+// In order to use averaging, we need to include the AVGCTRL register in the sequence even if it doesn't change (see the SAME5x errata doc from Microchip).
+// We have to set the AUTOSTART bit in DmaSeqVal, otherwise the ADC requires one trigger per channel converted.
+constexpr size_t DmaDwordsPerChannel = 2;		// the number of DMA registers we write for each channel that we sample
+constexpr uint32_t DmaSeqVal = ADC_DSEQCTRL_INPUTCTRL | ADC_DSEQCTRL_AVGCTRL | ADC_DSEQCTRL_AUTOSTART;
+
+// Register values we send. These are constant except for INPUTCTRL which changes to select the required ADC channel
+constexpr uint32_t CtrlB = ADC_CTRLB_RESSEL_16BIT;
+constexpr uint32_t RefCtrl = ADC_REFCTRL_REFSEL_INTVCC1;
+constexpr uint32_t AvgCtrl = ADC_AVGCTRL_SAMPLENUM_64;
+constexpr uint32_t SampCtrl = ADC_SAMPCTRL_OFFCOMP;
+
 class AdcClass
 {
 public:
@@ -47,8 +62,8 @@ public:
 	void ExecuteCallbacks();
 
 private:
-	bool InternalEnableChannel(unsigned int chan, uint8_t refCtrl, AnalogInCallbackFunction fn, CallbackParameter param, uint32_t p_ticksPerCall);
-	size_t GetChannel(size_t slot) { return inputRegisters[2 * slot] & 0x1F; }
+	bool InternalEnableChannel(unsigned int chan, uint8_t ctrlB, uint8_t refCtrl, uint8_t avgCtrl, AnalogInCallbackFunction fn, CallbackParameter param, uint32_t p_ticksPerCall);
+	size_t GetChannel(size_t slot) { return inputRegisters[DmaDwordsPerChannel * slot] & 0x1F; }
 
 	static void DmaCompleteCallback(CallbackParameter cp, DmaCallbackReason reason);
 
@@ -70,7 +85,7 @@ private:
 	CallbackParameter callbackParams[MaxSequenceLength];
 	uint32_t ticksPerCall[MaxSequenceLength];
 	uint32_t ticksAtLastCall[MaxSequenceLength];
-	uint32_t inputRegisters[MaxSequenceLength * 2];
+	uint32_t inputRegisters[MaxSequenceLength * DmaDwordsPerChannel];
 	volatile uint16_t results[MaxSequenceLength];
 	volatile uint16_t resultsByChannel[NumAdcChannels];		// must be large enough to handle PTAT and CTAT temperature sensor inputs
 };
@@ -100,7 +115,7 @@ bool AdcClass::EnableChannel(unsigned int chan, AnalogInCallbackFunction fn, Cal
 		return false;
 	}
 
-	return InternalEnableChannel(chan, ADC_REFCTRL_REFSEL_INTVCC1, fn, param, p_ticksPerCall);
+	return InternalEnableChannel(chan, CtrlB, RefCtrl, AvgCtrl, fn, param, p_ticksPerCall);
 }
 
 bool AdcClass::SetCallback(unsigned int chan, AnalogInCallbackFunction fn, CallbackParameter param, uint32_t p_ticksPerCall)
@@ -133,11 +148,10 @@ bool AdcClass::EnableTemperatureSensor(unsigned int sensorNumber, AnalogInCallba
 		return false;
 	}
 
-//	return InternalEnableChannel(sensorNumber + ADC_INPUTCTRL_MUXPOS_PTAT_Val, ADC_REFCTRL_REFSEL_INTREF, fn, param, p_ticksPerCall);
-	return InternalEnableChannel(sensorNumber + ADC_INPUTCTRL_MUXPOS_PTAT_Val, ADC_REFCTRL_REFSEL_INTVCC1, fn, param, p_ticksPerCall);
+	return InternalEnableChannel(sensorNumber + ADC_INPUTCTRL_MUXPOS_PTAT_Val, CtrlB, RefCtrl, AvgCtrl, fn, param, p_ticksPerCall);
 }
 
-bool AdcClass::InternalEnableChannel(unsigned int chan, uint8_t refCtrl, AnalogInCallbackFunction fn, CallbackParameter param, uint32_t p_ticksPerCall)
+bool AdcClass::InternalEnableChannel(unsigned int chan, uint8_t ctrlB, uint8_t refCtrl, uint8_t avgCtrl, AnalogInCallbackFunction fn, CallbackParameter param, uint32_t p_ticksPerCall)
 {
 	if (chan < 32)
 	{
@@ -149,8 +163,11 @@ bool AdcClass::InternalEnableChannel(unsigned int chan, uint8_t refCtrl, AnalogI
 		callbackParams[newChannelNumber] = param;
 		ticksPerCall[newChannelNumber] = p_ticksPerCall;
 		ticksAtLastCall[newChannelNumber] = millis();
-		inputRegisters[newChannelNumber * 2] = ADC_INPUTCTRL_MUXNEG_GND | (uint32_t)chan;
-		inputRegisters[newChannelNumber * 2 + 1] = refCtrl;
+
+		// Set up the input registers in the DMA area
+		inputRegisters[newChannelNumber * DmaDwordsPerChannel] = (ADC_INPUTCTRL_MUXNEG_GND | (uint32_t)chan) | (ctrlB << 16);
+		inputRegisters[newChannelNumber * DmaDwordsPerChannel + 1] = refCtrl | (avgCtrl << 16) | (SampCtrl << 24);
+
 		resultsByChannel[chan] = 0;
 		channelsEnabled |= 1ul << chan;
 		numChannelsEnabled = newChannelNumber + 1;
@@ -169,13 +186,23 @@ bool AdcClass::InternalEnableChannel(unsigned int chan, uint8_t refCtrl, AnalogI
 			}
 			hri_adc_wait_for_sync(device, ADC_SYNCBUSY_SWRST);
 
-			hri_adc_write_CTRLA_reg(device, ADC_CTRLA_PRESCALER_DIV16);			// GCLK1 is 64MHz, divided by 16 is 4MHz
-			hri_adc_write_CTRLB_reg(device, 0);
-			hri_adc_write_REFCTRL_reg(device,  ADC_REFCTRL_REFSEL_INTVCC1);
+			// From the SAME5x errata:
+			// 2.1.4 DMA Sequencing
+			//	ADC DMA Sequencing with prescaler>8 (ADC->CTRLA.bit.PRESCALER>2) does not produce the expected channel sequence.
+			// Workaround
+			//  Keep the prescaler setting to a maximum of 8, and use the GCLK Generator divider if more prescaling is needed.
+			// 2.1.5 DMA Sequencing
+			//  ADC DMA Sequencing with averaging enabled (AVGCTRL.SAMPLENUM>1) without the AVGCTRL bit set (DSEQCTRL.AVGCTRL=0) in the update sequence
+			//  does not produce the expected channel sequence.
+			// Workaround
+			//  Add the AVGCTRL register in the register update list (DSEQCTRL.AVGCTRL=1) and set the desired value in this list.
+			hri_adc_write_CTRLA_reg(device, ADC_CTRLA_PRESCALER_DIV8);			// GCLK1 is 60MHz, divided by 8 is 7.5MHz
+			hri_adc_write_CTRLB_reg(device, ctrlB);
+			hri_adc_write_REFCTRL_reg(device,  refCtrl);
 			hri_adc_write_EVCTRL_reg(device, ADC_EVCTRL_RESRDYEO);
 			hri_adc_write_INPUTCTRL_reg(device, ADC_INPUTCTRL_MUXNEG_GND);
-			hri_adc_write_AVGCTRL_reg(device, 0);
-			hri_adc_write_SAMPCTRL_reg(device, ADC_SAMPCTRL_OFFCOMP);			// this also extends the sample time to 4 ADC clocks
+			hri_adc_write_AVGCTRL_reg(device, avgCtrl);
+			hri_adc_write_SAMPCTRL_reg(device, SampCtrl);						// this also extends the sample time to 4 ADC clocks
 			hri_adc_write_WINLT_reg(device, 0);
 			hri_adc_write_WINUT_reg(device, 0xFFFF);
 			hri_adc_write_GAINCORR_reg(device, 1u << 11);
@@ -205,9 +232,8 @@ bool AdcClass::InternalEnableChannel(unsigned int chan, uint8_t refCtrl, AnalogI
 				hri_adc_write_CALIB_reg(device, ADC_CALIB_BIASCOMP(biasComp) | ADC_CALIB_BIASREFBUF(biasRefbuf) | ADC_CALIB_BIASR2R(biasR2R));
 			} while (false);
 
-			// Enable DMA sequencing, updating just the input and reference control registers.
-			// We have to set the AUTOSTART bit too, otherwise the ADC requires one trigger per channel converted.
-			hri_adc_write_DSEQCTRL_reg(device, ADC_DSEQCTRL_INPUTCTRL | ADC_DSEQCTRL_REFCTRL | ADC_DSEQCTRL_AUTOSTART);
+			// Enable DMA sequencing, updating the input, reference control and average control registers.
+			hri_adc_write_DSEQCTRL_reg(device, DmaSeqVal);
 			hri_adc_set_CTRLA_ENABLE_bit(device);
 
 			// Set the supply controller to on-demand mode so that we can get at both temperature sensors
@@ -267,7 +293,7 @@ bool AdcClass::StartConversion(TaskBase *p_taskToWake)
 	DmacManager::SetDataLength(dmaChan + 1, numChannelsConverting);
 
 	DmacManager::SetSourceAddress(dmaChan, inputRegisters);
-	DmacManager::SetDataLength(dmaChan, numChannelsConverting * 2);
+	DmacManager::SetDataLength(dmaChan, numChannelsConverting * DmaDwordsPerChannel);
 
 	{
 		InterruptCriticalSectionLocker lock;

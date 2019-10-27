@@ -16,7 +16,7 @@
 enum class PinAccess : int
 {
 	read,
-	readWithPullup,
+	readWithPullup_InternalUseOnly,
 	readAnalog,
 	write0,
 	write1,

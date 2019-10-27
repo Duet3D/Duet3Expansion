@@ -156,8 +156,6 @@ namespace Platform
 
 	constexpr uint16_t driverPowerOnAdcReading = PowerVoltageToAdcReading(10.0);			// minimum voltage at which we initialise the drivers
 	constexpr uint16_t driverPowerOffAdcReading = PowerVoltageToAdcReading(9.5);			// voltages below this flag the drivers as unusable
-	constexpr uint16_t driverOverVoltageAdcReading = PowerVoltageToAdcReading(29.0);		// voltages above this cause driver shutdown
-	constexpr uint16_t driverNormalVoltageAdcReading = PowerVoltageToAdcReading(27.5);		// voltages at or below this are normal
 
 #endif
 
@@ -712,8 +710,8 @@ void Platform::Spin()
 		{
 			// From the datasheet:
 			// T = (tl * vph * tc - th * vph * tc - tl * tp *vch + th * tp * vcl)/(tp * vcl - tp * vch - tc * vpl * tc * vph)
-			const uint16_t tc_result = tcFilter.GetSum()/tcFilter.NumAveraged();
-			const uint16_t tp_result = tpFilter.GetSum()/tpFilter.NumAveraged();
+			const uint16_t tc_result = tcFilter.GetSum()/(tcFilter.NumAveraged() << (AnalogIn::AdcBits - 12));
+			const uint16_t tp_result = tpFilter.GetSum()/(tpFilter.NumAveraged() << (AnalogIn::AdcBits - 12));
 
 			int32_t result =  (tempCalF1 * tc_result - tempCalF2 * tp_result);
 			const int32_t divisor = (tempCalF3 * tp_result - tempCalF4 * tc_result);

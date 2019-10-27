@@ -37,7 +37,7 @@ GCodeResult LocalZProbe::Configure(const CanMessageConfigureZProbe& msg, const S
 		break;
 
 	default:
-		access[0] = PinAccess::readWithPullup;
+		access[0] = PinAccess::read;
 		access[1] = PinAccess::write0;
 		break;
 	}

@@ -70,7 +70,7 @@ PortGroup * const StepPio = &(PORT->Group[0]);		// the PIO that all the step pin
 constexpr Pin StepPins[NumDrivers] = { PortAPin(25), PortAPin(27), PortAPin(1) };
 constexpr Pin DirectionPins[NumDrivers] = { PortAPin(23), PortCPin(28), PortAPin(0) };
 
-constexpr Pin BoardTypePins[NumBoardTypeBits] = { PortBPin(18), PortCPin(19), PortCPin(16) };
+constexpr Pin BoardTypePins[NumBoardTypeBits] = { PortBPin(18), PortCPin(18), PortCPin(13) };
 
 constexpr Pin VinMonitorPin = PortAPin(10);
 constexpr float VinDividerRatio = (60.4 + 4.7)/4.7;
