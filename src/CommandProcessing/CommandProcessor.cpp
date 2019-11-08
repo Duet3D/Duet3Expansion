@@ -29,6 +29,7 @@
 
 static GCodeResult SetMotorCurrents(const CanMessageMultipleDrivesRequest& msg, const StringRef& reply)
 {
+#if HAS_SMART_DRIVERS
 	//TODO check message is long enough for the number of drivers specified
 	const uint16_t *p = msg.values;
 	for (unsigned int driver = 0; driver < NumDrivers; ++driver)
@@ -40,10 +41,15 @@ static GCodeResult SetMotorCurrents(const CanMessageMultipleDrivesRequest& msg, 
 		}
 	}
 	return GCodeResult::ok;
+#else
+	reply.copy("Setting not available for external drivers");
+	return GCodeResult::error;
+#endif
 }
 
 static GCodeResult SetStandstillCurrentFactor(const CanMessageMultipleDrivesRequest& msg, const StringRef& reply)
 {
+#if HAS_SMART_DRIVERS
 	//TODO check message is long enough for the number of drivers specified
 	const uint16_t *p = msg.values;
 	for (unsigned int driver = 0; driver < NumDrivers; ++driver)
@@ -55,6 +61,10 @@ static GCodeResult SetStandstillCurrentFactor(const CanMessageMultipleDrivesRequ
 		}
 	}
 	return GCodeResult::ok;
+#else
+	reply.copy("Setting not available for external drivers");
+	return GCodeResult::error;
+#endif
 }
 
 static GCodeResult HandlePressureAdvance(const CanMessageMultipleDrivesRequest& msg, const StringRef& reply)
@@ -73,6 +83,7 @@ static GCodeResult HandlePressureAdvance(const CanMessageMultipleDrivesRequest& 
 
 static GCodeResult SetMicrostepping(const CanMessageMultipleDrivesRequest& msg, const StringRef& reply)
 {
+#if HAS_SMART_DRIVERS
 	//TODO check message is long enough for the number of drivers specified
 	const uint16_t *p = msg.values;
 	GCodeResult rslt = GCodeResult::ok;
@@ -95,6 +106,10 @@ static GCodeResult SetMicrostepping(const CanMessageMultipleDrivesRequest& msg, 
 		}
 	}
 	return rslt;
+#else
+	reply.copy("Setting not available for external drivers");
+	return GCodeResult::error;
+#endif
 }
 
 static GCodeResult ProcessM569(const CanMessageGeneric& msg, const StringRef& reply)
@@ -361,11 +376,13 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 		break;
 
 	case CanMessageReturnInfo::typeDiagnosticsPart1:
+#if HAS_SMART_DRIVERS
 		for (size_t driver = 0; driver < NumDrivers; ++driver)
 		{
 			reply.lcatf("Driver %u:", driver);
 			SmartDrivers::AppendDriverStatus(driver, reply);
 		}
+#endif
 		break;
 
 	case CanMessageReturnInfo::typeDiagnosticsPart2:

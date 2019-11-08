@@ -39,6 +39,7 @@ private:
 	void AnalogInterrupt(uint16_t reading);
 
 	static bool Delete(uint16_t handle);
+	static ReadLockedPointer<InputMonitor> Find(uint16_t handle);
 
 	InputMonitor *next;
 	IoPort port;

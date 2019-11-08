@@ -1,12 +1,12 @@
 /*
- * Tool1_v01.h
+ * TOOL1ED_v04.h
  *
- *  Created on: 18 Aug 2019
+ *  Created on: 7 Nov 2019
  *      Author: David
  */
 
-#ifndef SRC_CONFIG_TOOL1_V01_H_
-#define SRC_CONFIG_TOOL1_V01_H_
+#ifndef SRC_CONFIG_TOOL1ED_V04_H_
+#define SRC_CONFIG_TOOL1ED_V04_H_
 
 #include "RepRapFirmware.h"
 #include "Hardware/Peripherals.h"
@@ -22,47 +22,22 @@ constexpr const char* BoardTypeName = "TOOL1LC";
 #define HAS_BUTTONS				1
 
 // Drivers configuration
-#define HAS_SMART_DRIVERS		1
-#define HAS_STALL_DETECT		0		//TODO temporary until TMC2209 support added
+#define HAS_SMART_DRIVERS		0
+#define HAS_STALL_DETECT		0
 
-#define STEP_POLARITY			1		// 1 = active high, 0 = active low
+// The SAMC21 can sink more current than it can source, therefore we use active low signals to drive external drivers
+#define STEP_POLARITY			0		// 1 = active high, 0 = active low
 #define DIR_POLARITY			0		// 1 = active high, 0 = active low
+#define ENABLE_POLARITY			0		// 1 = active high, 0 = active low
 
 #define SUPPORT_TMC51xx			0
 #define SUPPORT_TMC2660			0
-#define SUPPORT_TMC22xx			1
+#define SUPPORT_TMC22xx			0
 
 constexpr size_t NumDrivers = 1;
-constexpr size_t MaxSmartDrivers = 1;
-
-#define TMC22xx_USES_SERCOM				1
-#define TMC22xx_HAS_MUX					0
-#define TMC22xx_SINGLE_DRIVER			1
-#define TMC22xx_HAS_ENABLE_PINS			0
-#define TMC22xx_VARIABLE_NUM_DRIVERS	0
-
-constexpr Pin GlobalTmc22xxEnablePin = PortBPin(2);
-constexpr Pin Tmc2209DiagPin = PortBPin(3);
-
-constexpr uint8_t TMC22xxSercomNumber = 3;
-Sercom * const SERCOM_TMC22xx = SERCOM3;
-
-constexpr Pin TMC22xxSercomTxPin = PortAPin(22);
-constexpr uint32_t TMC22xxSercomTxPinPeriphMode = PINMUX_PA22C_SERCOM3_PAD0;
-constexpr Pin TMC22xxSercomRxPin = PortAPin(20);
-constexpr uint32_t TMC22xxSercomRxPinPeriphMode = PINMUX_PA20D_SERCOM3_PAD2;
-constexpr uint8_t TMC22xxSercomRxPad = 2;
-
-// Define the baud rate used to send/receive data to/from the drivers.
-// If we assume a worst case clock frequency of 8MHz then the maximum baud rate is 8MHz/16 = 500kbaud.
-// We send data via a 1K series resistor. Even if we assume a 200pF load on the shared UART line, this gives a 200ns time constant, which is much less than the 2us bit time @ 500kbaud.
-// To write a register we need to send 8 bytes. To read a register we send 4 bytes and receive 8 bytes after a programmable delay.
-// So at 500kbaud it takes about 128us to write a register, and 192us+ to read a register.
-// In testing I found that 500kbaud was not reliable on the Duet Maestro, so now using 200kbaud.
-constexpr uint32_t DriversBaudRate = 200000;
-constexpr uint32_t TransferTimeout = 10;			// any transfer should complete within 10 ticks @ 1ms/tick
 
 PortGroup * const StepPio = &(PORT->Group[0]);		// the PIO that all the step pins are on
+constexpr Pin EnablePins[NumDrivers] = { PortBPin(2) };
 constexpr Pin StepPins[NumDrivers] = { PortAPin(27) };
 constexpr Pin DirectionPins[NumDrivers] = { PortAPin(28) };
 
@@ -70,14 +45,14 @@ constexpr Pin DirectionPins[NumDrivers] = { PortAPin(28) };
 const size_t MaxHeaters = 3;
 const size_t MaxExtraHeaterProtections = 3;
 
-#define SUPPORT_IOBITS		0
-#define SUPPORT_LASER		0
-#define SUPPORT_SPI_SENSORS	0
-#define SUPPORT_DHT_SENSOR	0
+#define SUPPORT_IOBITS			0
+#define SUPPORT_LASER			0
+#define SUPPORT_SPI_SENSORS		0
+#define SUPPORT_DHT_SENSOR		0
 
-#define USE_CACHE			0
+#define USE_CACHE				0
 
-#define DIAG_SERCOM_NUMBER	4			// which SERCOM device we use for debugging output
+#define DIAG_SERCOM_NUMBER		4		// which SERCOM device we use for debugging output
 
 constexpr size_t MaxAxes = 3;			//TEMP we won't need this
 
@@ -209,4 +184,4 @@ const uint32_t NvicPriorityPins = 2;					// priority for GPIO pin interrupts
 const uint32_t NvicPriorityCan = 3;
 const uint32_t NvicPriorityDmac = 3;					// priority for DMA complete interrupts
 
-#endif /* SRC_CONFIG_TOOL1_V01_H_ */
+#endif /* SRC_CONFIG_TOOL1ED_V04_H_ */

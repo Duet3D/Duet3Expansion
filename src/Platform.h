@@ -91,7 +91,11 @@ namespace Platform
 	void DisableDrive(size_t driver);
 	void DisableAllDrives();
 	void SetDriverIdle(size_t driver);
+
+#if HAS_SMART_DRIVERS
 	void SetMotorCurrent(size_t driver, float current);		//TODO avoid the int->float->int conversion
+	float GetTmcDriversTemperature();
+#endif
 
 	int GetAveragingFilterIndex(const IoPort&);
 	ThermistorAveragingFilter *GetAdcFilter(unsigned int filterNumber);
@@ -99,7 +103,6 @@ namespace Platform
 	ThermistorAveragingFilter *GetVrefFilter(unsigned int filterNumber);
 
 	void GetMcuTemperatures(float& minTemp, float& currentTemp, float& maxTemp);
-	float GetTmcDriversTemperature();
 
 	void HandleHeaterFault(unsigned int heater);
 

@@ -24,6 +24,10 @@ constexpr float DefaultThermistorC = 0.0;
 # include "TOOL1LC_v04.h"
 #endif
 
+#ifdef TOOL1ED_V04
+# include "TOOL1ED_v04.h"
+#endif
+
 #define SUPPORT_CAN_EXPANSION	1
 
 constexpr size_t MaxSensorsInSystem = 64;

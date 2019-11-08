@@ -90,6 +90,17 @@ void InputMonitor::AnalogInterrupt(uint16_t reading)
 	static_cast<InputMonitor*>(cbp.vp)->AnalogInterrupt(reading);
 }
 
+/*static*/ ReadLockedPointer<InputMonitor> InputMonitor::Find(uint16_t handle)
+{
+	ReadLocker lock(listLock);
+	InputMonitor *current = monitorsList;
+	while (current != nullptr && current->handle != handle)
+	{
+		current = current->next;
+	}
+	return ReadLockedPointer<InputMonitor>(lock, current);
+}
+
 // Delete a monitor. Must own the write lock before calling this.
 /*static*/ bool InputMonitor::Delete(uint16_t handle)
 {
@@ -167,23 +178,59 @@ void InputMonitor::AnalogInterrupt(uint16_t reading)
 {
 	if (msg.action == CanMessageChangeInputMonitor::actionDelete)
 	{
-		{
-			WriteLocker lock(listLock);
+		WriteLocker lock(listLock);
 
-			if (Delete(msg.handle.u.all))
-			{
-				return GCodeResult::ok;
-			}
+		if (Delete(msg.handle.u.all))
+		{
+			return GCodeResult::ok;
 		}
+
 		reply.printf("Board %u does not have input handle %04x", CanInterface::GetCanAddress(), msg.handle.u.all);
 		return GCodeResult::error;
 	}
 
-	ReadLocker lock(listLock);
+	auto m = Find(msg.handle.u.all);
+	if (m.IsNull())
+	{
+		reply.printf("Board %u does not have input handle %04x", CanInterface::GetCanAddress(), msg.handle.u.all);
+		return GCodeResult::error;
+	}
 
-	reply.copy("Change input monitor not yet implemented");
-//	extra = (state) ? 1 : 0;
-	return GCodeResult::error;
+	GCodeResult rslt;
+	switch (msg.action)
+	{
+	case CanMessageChangeInputMonitor::actionDoMonitor:
+		rslt = (m->Activate()) ? GCodeResult::ok : GCodeResult::error;
+		break;
+
+	case CanMessageChangeInputMonitor::actionDontMonitor:
+		m->Deactivate();
+		rslt = GCodeResult::ok;
+		break;
+
+	case CanMessageChangeInputMonitor::actionReturnPinName:
+		m->port.AppendPinName(reply);
+		rslt = GCodeResult::ok;
+		break;
+
+	case CanMessageChangeInputMonitor::actionChangeThreshold:
+		m->threshold = msg.param;
+		rslt = GCodeResult::ok;
+		break;
+
+	case CanMessageChangeInputMonitor::actionChangeMinInterval:
+		m->minInterval = msg.param;
+		rslt = GCodeResult::ok;
+		break;
+
+	default:
+		reply.printf("ChangeInputMonitor action #%u not implemented", msg.action);
+		rslt = GCodeResult::error;
+		break;
+	}
+
+	extra = m->state;
+	return rslt;
 }
 
 /*static*/ void InputMonitor::AddStateChanges(CanMessageInputChanged *msg, uint32_t& timeToWait)

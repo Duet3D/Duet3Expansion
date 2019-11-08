@@ -159,10 +159,12 @@ namespace Platform
 
 #endif
 
+#if HAS_SMART_DRIVERS
 	static void UpdateMotorCurrent(size_t driver)
 	{
 		SmartDrivers::SetCurrent(driver, (driverAtIdleCurrent[driver]) ? motorCurrents[driver] * idleCurrentFactor : motorCurrents[driver]);
 	}
+#endif
 
 #ifdef SAME51
 	static int32_t tempCalF1, tempCalF2, tempCalF3, tempCalF4;		// temperature calibration factors
@@ -309,10 +311,10 @@ namespace Platform
 		DisableAllDrives();
 		delay(10);										// allow existing processing to complete, drivers to be turned off and CAN replies to be sent
 		Heat::SwitchOffAll();
-#ifdef SAME51
+#if SUPPORT_TMC51xx
 		IoPort::WriteDigital(GlobalTmc51xxEnablePin, true);
 #endif
-#ifdef SAMC21
+#if SUPPORT_TMC22xx
 		IoPort::WriteDigital(GlobalTmc22xxEnablePin, true);
 #endif
 
@@ -370,7 +372,8 @@ void Platform::Init()
 				IoPort::SetPinMode(pin, OUTPUT_LOW);				// turn off heaters and fans (although this will turn on PWM fans)
 #ifdef SAMC21
 				// Set high driver strength on the output pins because they drive the heater and fan mosfets directly
-				hri_port_set_PINCFG_DRVSTR_bit(PORT, GPIO_PORT(pin), pin & 0x1F);
+				IoPort::SetHighDriveStrength(pin);
+
 				// OUT2 is intended to drive the hot end fan, so default it to on
 				IoPort::SetPinMode(pin, (StringEqualsIgnoreCase(p.pinNames, "out2")) ? OUTPUT_HIGH : OUTPUT_LOW);
 																	// turn on fan on out2, turn off heaters and other fans
@@ -475,8 +478,10 @@ void Platform::Init()
 #endif
 
 	// Initialise stepper drivers
+#if HAS_SMART_DRIVERS
 	SmartDrivers::Init();
 	temperatureShutdownDrivers = temperatureWarningDrivers = shortToGroundDrivers = openLoadADrivers = openLoadBDrivers = notOpenLoadADrivers = notOpenLoadBDrivers = 0;
+#endif
 
 #ifdef TOOL1LC_V04
 	IoPort::SetPinMode(Tmc2209DiagPin, INPUT);
@@ -484,8 +489,29 @@ void Platform::Init()
 
 	for (size_t i = 0; i < NumDrivers; ++i)
 	{
+#if STEP_POLARITY
 		IoPort::SetPinMode(StepPins[i], OUTPUT_LOW);
+#else
+		IoPort::SetPinMode(StepPins[i], OUTPUT_HIGH);
+#endif
+#if !HAS_SMART_DRIVERS
+		IoPort::SetHighDriveStrength(StepPins[i]);
+#endif
+
+#if DIR_POLARITY
 		IoPort::SetPinMode(DirectionPins[i], OUTPUT_LOW);
+#else
+		IoPort::SetPinMode(DirectionPins[i], OUTPUT_HIGH);
+#endif
+#if !HAS_SMART_DRIVERS
+		IoPort::SetHighDriveStrength(DirectionPins[i]);
+# if ENABLE_POLARITY
+		IoPort::SetPinMode(EnablePins[i], OUTPUT_LOW);
+# else
+		IoPort::SetPinMode(EnablePins[i], OUTPUT_HIGH);
+# endif
+		IoPort::SetHighDriveStrength(EnablePins[i]);
+#endif
 		const uint32_t driverBit = 1u << (StepPins[i] & 31);
 		driveDriverBits[i] = driverBit;
 		allDriverBits |= driverBit;
@@ -495,7 +521,9 @@ void Platform::Init()
 		motorCurrents[i] = 0.0;
 		pressureAdvance[i] = 0.0;
 
+#if HAS_SMART_DRIVERS
 		SmartDrivers::SetMicrostepping(i, 16, true);
+#endif
 	}
 
 	idleCurrentFactor = 0.3;
@@ -559,7 +587,9 @@ void Platform::Spin()
 	}
 #endif
 
+#if HAS_SMART_DRIVERS
 	SmartDrivers::Spin(powered);
+#endif
 
 	// Thermostatically-controlled fans (do this after getting TMC driver status)
 	const uint32_t now = millis();
@@ -567,6 +597,7 @@ void Platform::Spin()
 	{
 		(void)FansManager::CheckFans();
 
+#if HAS_SMART_DRIVERS
 		// Check one TMC driver for temperature warning or temperature shutdown
 		if (enableValues[nextDriveToPoll] >= 0)				// don't poll driver if it is flagged "no poll"
 		{
@@ -672,12 +703,14 @@ void Platform::Spin()
 			}
 		}
 # endif
+
 		// Advance drive number ready for next time
 		++nextDriveToPoll;
 		if (nextDriveToPoll == MaxSmartDrivers)
 		{
 			nextDriveToPoll = 0;
 		}
+#endif
 	}
 
 	// Update the Diag LED. Flash it quickly (8Hz) if we are not synced to the master, else flash in sync with the master (about 2Hz).
@@ -769,7 +802,10 @@ void Platform::Spin()
 						" %.1fC"
 						" %u %u"
 //						", ptat %d, ctat %d"
-						", stat %08" PRIx32 " %08" PRIx32 " %08" PRIx32,
+#if HAS_SMART_DRIVERS
+						", stat %08" PRIx32 " %08" PRIx32 " %08" PRIx32
+#endif
+						,
 //							(unsigned int)conversionsStarted, (unsigned int)conversionsCompleted,
 //							StepTimer::GetInterruptClocks(),
 						(unsigned int)CanInterface::GetCanAddress(),
@@ -781,7 +817,9 @@ void Platform::Spin()
 						(double)currentMcuTemperature
 						, (unsigned int)thermistorFilters[VrefFilterIndex].GetSum(), (unsigned int)thermistorFilters[VssaFilterIndex].GetSum()
 //						, tp_result, tc_result
+#if HAS_SMART_DRIVERS
 						, SmartDrivers::GetAccumulatedStatus(0, 0), SmartDrivers::GetAccumulatedStatus(1, 0), SmartDrivers::GetAccumulatedStatus(2, 0)
+#endif
 //							, SmartDrivers::GetLiveStatus(0), SmartDrivers::GetLiveStatus(1), SmartDrivers::GetLiveStatus(2)
 					   );
 #endif
@@ -933,12 +971,24 @@ void Platform::SetPressureAdvance(size_t driver, float advance)
 
 void Platform::StepDriversLow()
 {
+#if STEP_POLARITY
+	// Active high step output
 	StepPio->OUTCLR.reg = allDriverBits;
+#else
+	// Active low step output
+	StepPio->OUTSET.reg = allDriverBits;
+#endif
 }
 
 void Platform::StepDriversHigh(uint32_t driverMap)
 {
+#if STEP_POLARITY
+	// Active high step output
 	StepPio->OUTSET.reg = driverMap;
+#else
+	// Active low step output
+	StepPio->OUTCLR.reg = driverMap;
+#endif
 }
 
 //	uint32_t CalcDriverBitmap(size_t driver);
@@ -967,7 +1017,13 @@ void Platform::SetDirection(size_t driver, bool direction)
 {
 	if (driver < NumDrivers)
 	{
+#if DIR_POLARITY
+		// Active high direction signal
 		const bool d = (direction) ? directions[driver] : !directions[driver];
+#else
+		// Active low direction signal
+		const bool d = (direction) ? !directions[driver] : directions[driver];
+#endif
 		const bool isSlowDriver = IsBitSet(slowDriversBitmap, driver);
 		if (isSlowDriver)
 		{
@@ -997,17 +1053,25 @@ int8_t Platform::GetEnableValue(size_t driver)
 
 void Platform::EnableDrive(size_t driver)
 {
+#if HAS_SMART_DRIVERS
 	if (driverAtIdleCurrent[driver])
 	{
 		driverAtIdleCurrent[driver] = false;
 		UpdateMotorCurrent(driver);
 	}
 	SmartDrivers::EnableDrive(driver, true);
+#else
+	digitalWrite(EnablePins[driver], false);
+#endif
 }
 
 void Platform::DisableDrive(size_t driver)
 {
+#if HAS_SMART_DRIVERS
 	SmartDrivers::EnableDrive(driver, false);
+#else
+	digitalWrite(EnablePins[driver], true);
+#endif
 }
 
 void Platform::SetDriverIdle(size_t driver)
@@ -1016,26 +1080,36 @@ void Platform::SetDriverIdle(size_t driver)
 	{
 		DisableDrive(driver);
 	}
+#if HAS_SMART_DRIVERS
 	else
 	{
 		driverAtIdleCurrent[driver] = true;
 		UpdateMotorCurrent(driver);
 	}
+#endif
 }
 
 void Platform::DisableAllDrives()
 {
 	for (size_t driver = 0; driver < NumDrivers; ++driver)
 	{
+#if HAS_SMART_DRIVERS
 		SmartDrivers::EnableDrive(driver, false);
+#else
+		DisableDrive(driver);
+#endif
 	}
 }
+
+#if HAS_SMART_DRIVERS
 
 void Platform::SetMotorCurrent(size_t driver, float current)
 {
 	motorCurrents[driver] = current;
 	UpdateMotorCurrent(driver);
 }
+
+#endif
 
 uint8_t Platform::ReadBoardId()
 {
@@ -1056,6 +1130,7 @@ uint8_t Platform::ReadBoardId()
 #endif
 }
 
+#if HAS_SMART_DRIVERS
 // TMC driver temperatures
 float Platform::GetTmcDriversTemperature()
 {
@@ -1064,6 +1139,7 @@ float Platform::GetTmcDriversTemperature()
 			: ((temperatureWarningDrivers & mask) != 0) ? 100.0
 				: 0.0;
 }
+#endif
 
 void Platform::Tick()
 {
