@@ -16,10 +16,6 @@ constexpr float DefaultThermistorC = 0.0;
 # include "EXP3HC_v09.h"
 #endif
 
-#ifdef EXP3HC_V05
-# include "EXP3HC_v05.h"
-#endif
-
 #ifdef TOOL1LC_V04
 # include "TOOL1LC_v04.h"
 #endif
