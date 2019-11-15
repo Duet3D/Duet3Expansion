@@ -15,9 +15,7 @@
 
 struct CanMessageMovement;
 
-/**
- * This defines a single linear movement of the print head
- */
+// This defines a single coordinated movement of one or several motors
 class DDA
 {
 	friend class DriveMovement;
@@ -37,8 +35,10 @@ public:
 
 	void Init(const CanMessageMovement& msg);
 	void Init();													// Set up initial positions for machine startup
-	bool Start(uint32_t tim) __attribute__ ((hot));					// Start executing the DDA, i.e. move the move.
-	bool Step() __attribute__ ((hot));								// Take one step of the DDA, called by timed interrupt.
+	void Start(uint32_t tim) __attribute__ ((hot));					// Start executing the DDA, i.e. move the move.
+	void StepDrivers() __attribute__ ((hot));						// Take one step of the DDA, called by timed interrupt.
+	bool ScheduleNextStepInterrupt(StepTimer& timer) const;			// Schedule the next interrupt, returning true if we can't because it is already due
+
 	void SetNext(DDA *n) { next = n; }
 	void SetPrevious(DDA *p) { prev = p; }
 	void Complete() { state = completed; }
@@ -50,8 +50,9 @@ public:
 	DDA* GetNext() const { return next; }
 	DDA* GetPrevious() const { return prev; }
 	int32_t GetTimeLeft() const;
-	bool IsHomingAxes() const { return (endStopsToCheck & HomeAxes) != 0; }
+	void InsertHiccup(uint32_t delayClocks) { afterPrepare.moveStartTime += delayClocks; }
 
+	// Filament monitor support
 	int32_t GetStepsTaken(size_t drive) const;
 
 	void MoveAborted();
@@ -76,8 +77,6 @@ public:
 	void DebugPrint() const;												// print the DDA only
 	void DebugPrintAll() const;												// print the DDA and active DMs
 
-	static uint32_t GetAndClearHiccups();
-
 	// Note on the following constant:
 	// If we calculate the step interval on every clock, we reach a point where the calculation time exceeds the step interval.
 	// The worst case is pure Z movement on a delta. On a Mini Kossel with 80 steps/mm with this firmware running on a Duet (84MHx SAM3X8 processor),
@@ -87,13 +86,12 @@ public:
 	// The system clock of the SAME70 is running at 150MHz. Use the same defaults as for the SAM4E for now.
 	static constexpr uint32_t MinCalcIntervalDelta = (40 * StepTimer::StepClockRate)/1000000; 		// the smallest sensible interval between calculations (40us) in step timer clocks
 	static constexpr uint32_t MinCalcIntervalCartesian = (40 * StepTimer::StepClockRate)/1000000;	// same as delta for now, but could be lower
-	static constexpr uint32_t MinInterruptInterval = 6;									// about 6us minimum interval between interrupts, in step clocks
-	static constexpr uint32_t MaxStepInterruptTime = 10 * MinInterruptInterval;			// the maximum time we spend looping in the ISR , in step clocks
-	static constexpr uint32_t WakeupTime = StepTimer::StepClockRate/10000;				// stop resting 100us before the move is due to end
+	static constexpr uint32_t HiccupTime = 20;														// how long we hiccup for
+	static constexpr uint32_t MaxStepInterruptTime = 10 * StepTimer::MinInterruptInterval;			// the maximum time we spend looping in the ISR , in step clocks
+	static constexpr uint32_t WakeupTime = (100 * StepTimer::StepClockRate)/1000000;				// stop resting 100us before the move is due to end
 
 	static void PrintMoves();										// print saved moves for debugging
 
-	static uint32_t numHiccups;										// how many times we delayed an interrupt to avoid using too much CPU time in interrupts
 	static uint32_t lastStepLowTime;								// when we last completed a step pulse to a slow driver
 	static uint32_t lastDirChangeTime;								// when we last change the DIR signal to a slow driver
 
@@ -105,7 +103,6 @@ private:
 	void RemoveDM(size_t drive);
 	void ReleaseDMs();
 	void DebugPrintVector(const char *name, const float *vec, size_t len) const;
-	void CheckEndstops();
 
     DDA *next;								// The next one in the ring
 	DDA *prev;								// The previous one in the ring
@@ -154,14 +151,27 @@ private:
 		int32_t cKc;						// The Z movement fraction multiplied by Kc and converted to integer
 	} afterPrepare;
 
-    DriveMovement* firstDM;					// list of contained DMs that need steps, in step time order
-	DriveMovement *pddm[NumDrivers];			// These describe the state of each drive movement
+    DriveMovement* activeDMs;					// list of contained DMs that need steps, in step time order
+	DriveMovement *pddm[NumDrivers];		// These describe the state of each drive movement
 };
 
 // Find the DriveMovement record for a given drive, or return nullptr if there isn't one
 inline DriveMovement *DDA::FindDM(size_t drive) const
 {
 	return pddm[drive];
+}
+
+// Schedule the next interrupt, returning true if we can't because it is already due
+// Base priority must be >= NvicPriorityStep or interrupts disabled when calling this
+inline bool DDA::ScheduleNextStepInterrupt(StepTimer& timer) const
+{
+	if (state == executing)
+	{
+		const uint32_t whenDue = ((activeDMs != nullptr) ? activeDMs->nextStepTime : clocksNeeded - DDA::WakeupTime)
+								+ afterPrepare.moveStartTime;
+		return timer.ScheduleCallbackFromIsr(whenDue);
+	}
+	return false;
 }
 
 #if HAS_SMART_DRIVERS

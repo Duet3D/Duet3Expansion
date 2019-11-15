@@ -10,41 +10,79 @@
 
 #include "RepRapFirmware.h"
 
-// This is a static class instead of a namespace, so that we can have private data and inline functions
+// Class to implement a software timer with a few microseconds resolution
 class StepTimer
 {
 public:
-	static constexpr uint32_t StepClockRate = 48000000/64;						// 48MHz divided by 64
-	static constexpr uint64_t StepClockRateSquared = (uint64_t)StepClockRate * StepClockRate;
-	static constexpr float StepClocksToMillis = 1000.0/(float)StepClockRate;
-	static constexpr uint32_t MinInterruptInterval = 12;						// 12 clocks is about 6us
+	// The callback function returns true if it wants another callback, after setting the requested time via the second parameter
+	typedef uint32_t Ticks;
+	typedef bool (*TimerCallbackFunction)(CallbackParameter, Ticks&);
 
+	StepTimer();
+
+	// Set up the callback function and parameter
+	void SetCallback(TimerCallbackFunction cb, CallbackParameter param);
+
+	// Schedule a callback at a particular tick count, returning true if it was not scheduled because it is already due or imminent
+	bool ScheduleCallback(Ticks when);
+
+	// As ScheduleCallback but base priority >= NvicPriorityStep when called
+	bool ScheduleCallbackFromIsr(Ticks when);
+
+	// Cancel any scheduled callbacks
+	void CancelCallback();
+
+	// As CancelCallback but base priority >= NvicPriorityStep when called
+	void CancelCallbackFromIsr();
+
+	// Initialise the timer system
 	static void Init();
 
-	static inline uint32_t GetInterruptClocks()
-	{
-		StepTc->CTRLBSET.reg = TC_CTRLBSET_CMD_READSYNC;
-		while (StepTc->SYNCBUSY.bit.COUNT) { }
-		return StepTc->COUNT.reg;
-	}
+	// Disable the timer interrupt. Called when we shut down the system.
+	static void DisableTimerInterrupt();
 
-	static bool ScheduleStepInterrupt(uint32_t tim) __attribute__ ((hot));		// Schedule an interrupt at the specified clock count, or return true if it has passed already
-	static void DisableStepInterrupt();											// Make sure we get no step interrupts
-	static bool ScheduleSoftTimerInterrupt(uint32_t tim);						// Schedule an interrupt at the specified clock count, or return true if it has passed already
-	static void DisableSoftTimerInterrupt();									// Make sure we get no software timer interrupts
+	// Get the current tick count
+	static Ticks GetTimerTicks() __attribute__ ((hot));
+
+	// Get the tick rate (can also access it directly as StepClockRate)
+	static uint32_t GetTickRate() { return StepClockRate; }
+
+	// ISR called from StepTimer. May sometimes get called prematurely.
+	static void Interrupt();
 
 	static uint32_t GetLocalTimeOffset() { return localTimeOffset; }
 	static void SetLocalTimeOffset(uint32_t offset) { localTimeOffset = offset; synced = true; }
 	static uint32_t ConvertToLocalTime(uint32_t masterTime) { return masterTime + localTimeOffset; }
 	static uint32_t ConvertToMasterTime(uint32_t localTime) { return localTime - localTimeOffset; }
-	static uint32_t GetMasterTime() { return ConvertToMasterTime(GetInterruptClocks()); }
+	static uint32_t GetMasterTime() { return ConvertToMasterTime(GetTimerTicks()); }
 
 	static void Reset() { localTimeOffset = 0; synced = false; }
 	static bool IsSynced() { return synced; }
 
+	static constexpr uint32_t StepClockRate = 48000000/64;						// 48MHz divided by 64
+	static constexpr uint64_t StepClockRateSquared = (uint64_t)StepClockRate * StepClockRate;
+	static constexpr float StepClocksToMillis = 1000.0/(float)StepClockRate;
+	static constexpr uint32_t MinInterruptInterval = 6;							// about 6us
+
 private:
+	static bool ScheduleTimerInterrupt(uint32_t tim);							// Schedule an interrupt at the specified clock count, or return true if it has passed already
+
+	StepTimer *next;
+	Ticks whenDue;
+	TimerCallbackFunction callback;
+	CallbackParameter cbParam;
+	volatile bool active;
+
+	static StepTimer * volatile pendingList;									// list of pending callbacks, soonest first
 	static uint32_t localTimeOffset;											// local time minus master time
 	static bool synced;
 };
+
+inline StepTimer::Ticks StepTimer::GetTimerTicks()
+{
+	StepTc->CTRLBSET.reg = TC_CTRLBSET_CMD_READSYNC;
+	while (StepTc->SYNCBUSY.bit.COUNT) { }
+	return StepTc->COUNT.reg;
+}
 
 #endif /* SRC_MOVEMENT_STEPTIMER_H_ */

@@ -15,7 +15,7 @@
 #include <Endstops/EndstopsManager.h>
 #include <InputMonitors/InputMonitor.h>
 #include <Platform.h>
-#include <Movement/DDA.h>
+#include <Movement/Move.h>
 #include <Tasks.h>
 #include <Version.h>
 #include <Hardware/AnalogIn.h>
@@ -355,8 +355,9 @@ static GCodeResult InitiateFirmwareUpdate(const CanMessageUpdateYourFirmware& ms
 	return GCodeResult::ok;
 }
 
-static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& reply)
+static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& reply, uint8_t& extra)
 {
+	extra = 2;				// the last diagnostics part is typeDiagnosticsPart0 + 2
 	switch (msg.type)
 	{
 	case CanMessageReturnInfo::typeFirmwareVersion:
@@ -375,21 +376,24 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 		Tasks::GetTasksMemoryReport(reply);
 		break;
 
-	case CanMessageReturnInfo::typeDiagnosticsPart1:
+	case CanMessageReturnInfo::typeDiagnosticsPart0 + 1:
 #if HAS_SMART_DRIVERS
 		for (size_t driver = 0; driver < NumDrivers; ++driver)
 		{
 			reply.lcatf("Driver %u:", driver);
 			SmartDrivers::AppendDriverStatus(driver, reply);
 		}
+#else
+		reply.copy("External motor driver(s)");			// to avoid a blank line in the M122 report
 #endif
 		break;
 
-	case CanMessageReturnInfo::typeDiagnosticsPart2:
+	case CanMessageReturnInfo::typeDiagnosticsPart0 + 2:
 		{
 			float minTemp, currentTemp, maxTemp;
 			Platform::GetMcuTemperatures(minTemp, currentTemp, maxTemp);
-			reply.printf("Move hiccups: %" PRIu32, DDA::GetAndClearHiccups());
+			reply.printf("Moves scheduled %" PRIu32 ", completed %" PRIu32 ", hiccups %" PRIu32,
+							moveInstance->GetScheduledMoves(), moveInstance->GetCompletedMoves(), moveInstance->GetAndClearHiccups());
 #if HAS_VOLTAGE_MONITOR && HAS_12V_MONITOR
 			reply.catf("\nVIN: %.1fV, V12: %.1fV", (double)Platform::GetCurrentVinVoltage(), (double)Platform::GetCurrentV12Voltage());
 #elif HAS_VOLTAGE_MONITOR
@@ -434,7 +438,7 @@ void CommandProcessor::Spin()
 		{
 		case CanMessageType::returnInfo:
 			requestId = buf->msg.getInfo.requestId;
-			rslt = GetInfo(buf->msg.getInfo, replyRef);
+			rslt = GetInfo(buf->msg.getInfo, replyRef, extra);
 			break;
 
 		case CanMessageType::updateHeaterModel:

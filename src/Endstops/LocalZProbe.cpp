@@ -119,11 +119,12 @@ GCodeResult LocalZProbe::SendProgram(const uint32_t zProbeProgram[], size_t len,
 	numBytes = len;
 	bytesSent = 0;
 	bitsSent = 0;
-	bitTime = SoftTimer::GetTickRate()/bitsPerSecond;
+	bitTime = StepTimer::GetTickRate()/bitsPerSecond;
 
 	modulationPort.WriteDigital(false);				// start with 2 bits of zero
-	startTime = SoftTimer::GetTimerTicksNow();
-	timer.ScheduleCallback(startTime + 2 * bitTime, LocalZProbe::TimerInterrupt, static_cast<void*>(this));
+	startTime = StepTimer::GetTimerTicks();
+	timer.SetCallback(LocalZProbe::TimerInterrupt, static_cast<void*>(this));
+	timer.ScheduleCallback(startTime + 2 * bitTime);
 
 	// TODO wait until all bytes sent or some error occurs, but for now we return immediately
 	return GCodeResult::ok;

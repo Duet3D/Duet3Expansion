@@ -34,6 +34,7 @@ constexpr const char* BoardTypeName = "EXP3HC";
 #define SUPPORT_DHT_SENSOR		0	//TEMP!!!
 #define SUPPORT_SPI_SENSORS		1
 
+#define USE_MPU					0
 #define USE_CACHE				0
 
 const size_t MaxHeaters = 6;
@@ -221,7 +222,7 @@ static_assert(NumPins == 96);
 // Timer/counter used to generate step pulses and other sub-millisecond timings
 TcCount32 * const StepTc = &(TC6->COUNT32);
 constexpr IRQn StepTcIRQn = TC6_IRQn;
-constexpr unsigned int StepTcClockId = TC6_GCLK_ID;
+constexpr unsigned int StepTcNumber = 6;
 #define STEP_TC_HANDLER		TC6_Handler
 
 // Diagnostic LED

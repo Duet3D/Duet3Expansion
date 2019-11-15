@@ -41,6 +41,10 @@ enum class TcOutput : uint8_t
 static inline constexpr unsigned int GetDeviceNumber(TcOutput tc) { return (uint8_t)tc >> 1; }
 static inline constexpr unsigned int GetOutputNumber(TcOutput tc) { return (uint8_t)tc & 1; }
 
+// Initialise a TC clock
+void EnableTcClock(unsigned int tcNumber, uint32_t gclkVal);
+void EnableTccClock(unsigned int tccNumber, uint32_t gclkVal);
+
 enum class TccOutput : uint8_t
 {
 #ifdef SAME51

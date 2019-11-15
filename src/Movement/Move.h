@@ -28,16 +28,16 @@ class Move
 {
 public:
 	Move();
-	void Init();													// Start me up
-	void Spin();													// Called in a tight loop to keep the class going
-	void Exit();													// Shut down
+	void Init();																	// Start me up
+	void Spin();																	// Called in a tight loop to keep the class going
+	void Exit();																	// Shut down
 
-	void Interrupt() __attribute__ ((hot));							// The hardware's (i.e. platform's)  interrupt should call this.
-	bool AllMovesAreFinished();										// Is the look-ahead ring empty?  Stops more moves being added as well.
+	void Interrupt() __attribute__ ((hot));											// Timer callback for step generation
+	bool AllMovesAreFinished();														// Is the look-ahead ring empty?  Stops more moves being added as well.
 
 	void StopDrivers(uint16_t whichDrivers);
 
-	void Diagnostics(MessageType mtype);							// Report useful stuff
+	void Diagnostics(MessageType mtype);											// Report useful stuff
 
 	// Kinematics and related functions
 	Kinematics& GetKinematics() const { return *kinematics; }
@@ -49,8 +49,14 @@ public:
 
 	bool IsRawMotorMove(uint8_t moveType) const;									// Return true if this is a raw motor move
 
+	static bool TimerCallback(CallbackParameter cb, StepTimer::Ticks& when)
+	{
+		static_cast<Move*>(cb.vp)->Interrupt();
+		return false;
+	}
+
+	bool ScheduleNextStepInterrupt();												// Schedule the next step interrupt, returning true if we failed because it is due immediately
 	void CurrentMoveCompleted() __attribute__ ((hot));								// Signal that the current move has just been completed
-	bool TryStartNextMove(uint32_t startTime) __attribute__ ((hot));				// Try to start another move, returning true if Step() needs to be called immediately
 
 	void PrintCurrentDda() const;													// For debugging
 
@@ -59,6 +65,7 @@ public:
 	uint32_t GetScheduledMoves() const { return scheduledMoves; }					// How many moves have been scheduled?
 	uint32_t GetCompletedMoves() const { return completedMoves; }					// How many moves have been completed?
 	void ResetMoveCounters() { scheduledMoves = completedMoves = 0; }
+	uint32_t GetAndClearHiccups();
 
 	const DDA *GetCurrentDDA() const { return currentDda; }							// Return the DDA of the currently-executing move
 
@@ -67,18 +74,20 @@ public:
 #endif
 
 private:
-	bool StartNextMove(uint32_t startTime) __attribute__ ((hot));								// Start the next move, returning true if Step() needs to be called immediately
+	void StartNextMove(uint32_t startTime) __attribute__ ((hot));					// Start the next move, returning true if Step() needs to be called immediately
 
 	bool DDARingAdd();									// Add a processed look-ahead entry to the DDA ring
 	DDA* DDARingGet();									// Get the next DDA ring entry to be run
 	bool DDARingEmpty() const;							// Anything there?
 
+	// Variables that are in the DDARing class in RepRapFirmware (we have only one DDARing so they are here)
 	DDA* volatile currentDda;
 	DDA* ddaRingAddPointer;
 	DDA* volatile ddaRingGetPointer;
 	DDA* ddaRingCheckPointer;
 
-	bool active;										// Are we live and running?
+	StepTimer timer;
+	// End DDARing variables
 
 	unsigned int idleCount;								// The number of times Spin was called and had no new moves to process
 
@@ -87,6 +96,9 @@ private:
 	unsigned int stepErrors;							// count of step errors, for diagnostics
 	uint32_t scheduledMoves;							// Move counters for the code queue
 	volatile uint32_t completedMoves;					// This one is modified by an ISR, hence volatile
+	uint32_t numHiccups;								// How many times we delayed an interrupt to avoid using too much CPU time in interrupts
+
+	bool active;										// Are we live and running?
 };
 
 //******************************************************************************************************
@@ -112,23 +124,20 @@ inline bool Move::AllMovesAreFinished()
 
 // Start the next move. Return true if the
 // Must be called with base priority greater than the step interrupt, to avoid a race with the step ISR.
-inline bool Move::StartNextMove(uint32_t startTime)
+inline void Move::StartNextMove(uint32_t startTime)
 pre(ddaRingGetPointer->GetState() == DDA::frozen)
 {
-	currentDda = ddaRingGetPointer;
-	return currentDda->Start(startTime);
+	DDA * const cdda = ddaRingGetPointer;				// capture volatile variable
+	currentDda = cdda;
+	cdda->Start(startTime);
 }
 
-// This is the function that is called by the timer interrupt to step the motors.
-// This may occasionally get called prematurely.
-inline void Move::Interrupt()
+// Schedule the next step interrupt for this DDA ring
+// Base priority must be >= NvicPriorityStep when calling this
+inline bool Move::ScheduleNextStepInterrupt()
 {
-	if (currentDda != nullptr)
-	{
-		do
-		{
-		} while (currentDda->Step());
-	}
+	DDA * const cdda = currentDda;				// capture volatile variable
+	return (cdda != nullptr) && cdda->ScheduleNextStepInterrupt(timer);
 }
 
 #if HAS_SMART_DRIVERS

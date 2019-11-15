@@ -6,7 +6,10 @@
  */
 
 #include <atmel_start.h>
+#include <hpl_user_area.h>
 #include "Tasks.h"
+#include "Platform.h"
+#include "SoftwareReset.h"
 #include <malloc.h>
 
 #include "FreeRTOS.h"
@@ -15,8 +18,6 @@
 const uint8_t memPattern = 0xA5;
 
 extern "C" char *sbrk(int i);
-//extern char _end;
-
 
 constexpr unsigned int MainTaskStackWords = 800;
 
@@ -47,6 +48,25 @@ extern "C" void __malloc_unlock ( struct _reent *_r )
 // Application entry point
 void AppMain()
 {
+#if 0 //#ifndef DEBUG
+	// Check that the bootloader is protected and EEPROM is configured
+# if defined(SAME51)
+	uint64_t nvmUserRow0 = *reinterpret_cast<const uint64_t*>(NVMCTRL_USER);						// we only need values in the first 64 bits of the user area
+	constexpr uint64_t mask =     ((uint64_t)0x0F << 32) | ((uint64_t)0x07 << 36) | (0x0F << 26);	// we just want NVM_BOOT (bits 26-29), SEE.SBLK (bits 32-35) and SEE.PSZ (bits 36:38)
+	constexpr uint64_t reqValue = ((uint64_t)0x01 << 32) | ((uint64_t)0x03 << 36) | (0x07 << 26);	// 4K SMART EEPROM and 64K bootloader (SBLK=1 PSZ=3)
+# elif defined(SAMC21)
+	uint32_t nvmUserRow0 = *reinterpret_cast<const uint32_t*>(NVMCTRL_USER);						// we only need values in the first 32 bits of the user area
+	constexpr uint32_t mask =     (0x07 << 4) | (0x07 << 0);										// we just want BOOTPROT (bits 0-2) and EEPROM (bits 4-6)
+	constexpr uint32_t reqValue = (0x02 << 4) | (0x01 << 0);										// 4K EEPROM and 16K bootloader
+# endif
+	if ((nvmUserRow0 & mask) != reqValue)
+	{
+		nvmUserRow0 = (nvmUserRow0 & ~mask) | reqValue;												// set up the required value
+		_user_area_write(reinterpret_cast<void*>(NVMCTRL_USER), 0, reinterpret_cast<const uint8_t*>(&nvmUserRow0), sizeof(nvmUserRow0));
+		Platform::ResetProcessor();
+	}
+#endif
+
 	// Fill the free memory with a pattern so that we can check for stack usage and memory corruption
 	char* heapend = sbrk(0);
 	register const char * stack_ptr asm ("sp");
@@ -55,9 +75,9 @@ void AppMain()
 		*heapend++ = memPattern;
 	}
 
+#ifndef SAMC21		// SAMC21 has no divide unit, so there is no divide-by-zero exception
 	// Trap integer divide-by-zero.
 	// We could also trap unaligned memory access, if we change the gcc options to not generate code that uses unaligned memory access.
-#ifndef SAMC21		// SAMC21 has no divide unit, so there is no divide-by-zero exception
 	SCB->CCR |= SCB_CCR_DIV_0_TRP_Msk;
 #endif
 
@@ -190,6 +210,13 @@ void Tasks::GetTasksMemoryReport(const StringRef& reply)
 	}
 }
 
+uint32_t Tasks::GetNeverUsedRam()
+{
+	uint32_t maxStack, neverUsedRam;
+	GetHandlerStackUsage(&maxStack, &neverUsedRam);
+	return neverUsedRam;
+}
+
 Mutex *Tasks::GetSpiMutex()
 {
 	return &spiMutex;
@@ -261,8 +288,7 @@ extern "C"
 	// so they escalate to a Hard Fault and we don't need to provide separate exception handlers for them.
 	void hardFaultDispatcher(const uint32_t *pulFaultStackAddress)
 	{
-	    //reprap.GetPlatform().SoftwareReset((uint16_t)SoftwareResetReason::hardFault, pulFaultStackAddress + 5);
-		while (1) {}
+	    Platform::SoftwareReset((uint16_t)SoftwareResetReason::hardFault, pulFaultStackAddress + 5);
 	}
 
 	// The fault handler implementation calls a function called hardFaultDispatcher()
@@ -293,8 +319,7 @@ extern "C"
 
 	void wdtFaultDispatcher(const uint32_t *pulFaultStackAddress)
 	{
-	    //reprap.GetPlatform().SoftwareReset((uint16_t)SoftwareResetReason::wdtFault, pulFaultStackAddress + 5);
-		while (1) {}
+		Platform::SoftwareReset((uint16_t)SoftwareResetReason::wdtFault, pulFaultStackAddress + 5);
 	}
 
 	void WDT_Handler() __attribute__((naked));
@@ -324,8 +349,7 @@ extern "C"
 
 	void otherFaultDispatcher(const uint32_t *pulFaultStackAddress)
 	{
-	    //reprap.GetPlatform().SoftwareReset((uint16_t)SoftwareResetReason::otherFault, pulFaultStackAddress + 5);
-		while (1) {}
+		Platform::SoftwareReset((uint16_t)SoftwareResetReason::otherFault, pulFaultStackAddress + 5);
 	}
 
 	// 2017-05-25: A user is getting 'otherFault' reports, so now we do a stack dump for those too.
@@ -359,14 +383,12 @@ extern "C"
 	// however these exceptions are unlikely to occur, so for now we just report the exception type.
 	void NMI_Handler        ()
 	{
-		//reprap.GetPlatform().SoftwareReset((uint16_t)SoftwareResetReason::NMI);
-		while (1) {}
+		Platform::SoftwareReset((uint16_t)SoftwareResetReason::NMI);
 	}
 
 	void UsageFault_Handler ()
 	{
-		//reprap.GetPlatform().SoftwareReset((uint16_t)SoftwareResetReason::usageFault);
-		while (1) {}
+		Platform::SoftwareReset((uint16_t)SoftwareResetReason::usageFault);
 	}
 
 	void DebugMon_Handler   () __attribute__ ((alias("OtherFault_Handler")));
@@ -374,8 +396,7 @@ extern "C"
 	// FreeRTOS hooks that we need to provide
 	void stackOverflowDispatcher(const uint32_t *pulFaultStackAddress, char* pcTaskName)
 	{
-	    //reprap.GetPlatform().SoftwareReset((uint16_t)SoftwareResetReason::stackOverflow, pulFaultStackAddress);
-		while (1) {}
+		Platform::SoftwareReset((uint16_t)SoftwareResetReason::stackOverflow, pulFaultStackAddress);
 	}
 
 	void vApplicationStackOverflowHook(TaskHandle_t pxTask, char *pcTaskName) __attribute((naked));
@@ -394,8 +415,7 @@ extern "C"
 
 	void assertCalledDispatcher(const uint32_t *pulFaultStackAddress)
 	{
-	    //reprap.GetPlatform().SoftwareReset((uint16_t)SoftwareResetReason::assertCalled, pulFaultStackAddress);
-		while (1) {}
+		Platform::SoftwareReset((uint16_t)SoftwareResetReason::assertCalled, pulFaultStackAddress);
 	}
 
 	void vAssertCalled(uint32_t line, const char *file) __attribute((naked));

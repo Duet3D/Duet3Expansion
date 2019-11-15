@@ -11,7 +11,7 @@
 #include "RepRapFirmware.h"
 #include "Hardware/Peripherals.h"
 
-constexpr const char* BoardTypeName = "TOOL1LC";
+constexpr const char* BoardTypeName = "TOOL1ED";
 
 // General features
 #define HAS_VREF_MONITOR		1
@@ -50,6 +50,7 @@ const size_t MaxExtraHeaterProtections = 3;
 #define SUPPORT_SPI_SENSORS		0
 #define SUPPORT_DHT_SENSOR		0
 
+#define USE_MPU					0
 #define USE_CACHE				0
 
 #define DIAG_SERCOM_NUMBER		4		// which SERCOM device we use for debugging output
@@ -156,6 +157,7 @@ static_assert(NumPins == 32 + 24);		// 32 pins on port A (some missing), 24 on p
 TcCount32 * const StepTc = &(TC2->COUNT32);
 constexpr IRQn StepTcIRQn = TC2_IRQn;
 constexpr unsigned int StepTcClockId = TC2_GCLK_ID;
+constexpr unsigned int StepTcNumber = 2;
 #define STEP_TC_HANDLER		TC2_Handler
 
 // Diagnostic LED

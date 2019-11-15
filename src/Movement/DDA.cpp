@@ -107,7 +107,7 @@ int32_t DDA::GetTimeLeft() const
 pre(state == executing || state == frozen || state == completed)
 {
 	return (state == completed) ? 0
-			: (state == executing) ? (int32_t)(afterPrepare.moveStartTime + clocksNeeded - StepTimer::GetInterruptClocks())
+			: (state == executing) ? (int32_t)(afterPrepare.moveStartTime + clocksNeeded - StepTimer::GetTimerTicks())
 			: (int32_t)clocksNeeded;
 }
 
@@ -116,7 +116,7 @@ pre(state == executing || state == frozen || state == completed)
 // for multiple motors simultaneously, there is no need to preserve round-robin order.
 inline void DDA::InsertDM(DriveMovement *dm)
 {
-	DriveMovement **dmp = &firstDM;
+	DriveMovement **dmp = &activeDMs;
 	while (*dmp != nullptr && (*dmp)->nextStepTime < dm->nextStepTime)
 	{
 		dmp = &((*dmp)->nextDM);
@@ -129,7 +129,7 @@ inline void DDA::InsertDM(DriveMovement *dm)
 // Called from the step ISR only.
 void DDA::RemoveDM(size_t drive)
 {
-	DriveMovement **dmp = &firstDM;
+	DriveMovement **dmp = &activeDMs;
 	while (*dmp != nullptr)
 	{
 		DriveMovement * const dm = *dmp;
@@ -216,7 +216,6 @@ void DDA::Init(const CanMessageMovement& msg)
 	// 3. Store some values
 	afterPrepare.moveStartTime = msg.whenToExecute;
 	clocksNeeded = msg.accelerationClocks + msg.steadyClocks + msg.decelClocks;
-	endStopsToCheck = msg.endStopsToCheck;
 	flags.stopAllDrivesOnEndstopHit = msg.stopAllDrivesOnEndstopHit;
 
 	flags.hadHiccup = false;
@@ -265,7 +264,7 @@ void DDA::Prepare(const CanMessageMovement& msg)
 	afterPrepare.extraAccelerationClocks = msg.accelerationClocks - roundS32(accelDistance/topSpeed);
 	params.compFactor = (topSpeed - startSpeed)/topSpeed;
 
-	firstDM = nullptr;
+	activeDMs = nullptr;
 
 	for (size_t drive = 0; drive < NumDrivers; ++drive)
 	{
@@ -341,45 +340,11 @@ void DDA::Prepare(const CanMessageMovement& msg)
 	state = frozen;					// must do this last so that the ISR doesn't start executing it before we have finished setting it up
 }
 
-void DDA::CheckEndstops()
-{
-	for (;;)
-	{
-		const EndstopHitDetails hitDetails = EndstopsManager::CheckEndstops(flags.goingSlow);
-		switch (hitDetails.GetAction())
-		{
-		case EndstopHitAction::stopAll:
-			MoveAborted();											// set the state to completed and recalculate the endpoints
-			if (hitDetails.isZProbe)
-			{
-//				reprap.GetGCodes().MoveStoppedByZProbe();
-			}
-			return;
-
-		case EndstopHitAction::stopAxis:
-			StopDrive(hitDetails.axis);								// we must stop the drive before we mess with its coordinates
-			break;
-
-		case EndstopHitAction::stopDriver:
-			StopDrive(hitDetails.driver.localDriver);
-			break;
-
-		case EndstopHitAction::reduceSpeed:
-			ReduceHomingSpeed();									// must be just close
-			return;													// there can't be a higher priority endstop
-
-		default:
-			return;
-		}
-	}
-}
-
 // The remaining functions are speed-critical, so use full optimisation
 // The GCC optimize pragma appears to be broken, if we try to force O3 optimisation here then functions are never inlined
 
-// Start executing this move, returning true if Step() needs to be called immediately. Must be called with interrupts disabled, to avoid a race condition.
-// Returns true if the caller needs to call the step ISR immediately.
-bool DDA::Start(uint32_t tim)
+// Start executing this move. Must be called with interrupts disabled, to avoid a race condition.
+void DDA::Start(uint32_t tim)
 pre(state == frozen)
 {
 	if ((int32_t)(afterPrepare.moveStartTime - tim) < 0)
@@ -388,7 +353,7 @@ pre(state == frozen)
 	}
 	state = executing;
 
-	if (firstDM != nullptr)
+	if (activeDMs != nullptr)
 	{
 
 #if SUPPORT_LASER
@@ -409,159 +374,78 @@ pre(state == frozen)
 				Platform::SetDirection(drive, pdm->direction);
 			}
 		}
-
-		if (firstDM != nullptr)
-		{
-			return StepTimer::ScheduleStepInterrupt(firstDM->nextStepTime + afterPrepare.moveStartTime);
-		}
 	}
-
-	// No steps are pending. This can happen if no local drives are involved in the move.
-	return StepTimer::ScheduleStepInterrupt(afterPrepare.moveStartTime + clocksNeeded - WakeupTime);		// schedule an interrupt shortly before the end of the move
 }
 
-uint32_t DDA::numHiccups = 0;
 uint32_t DDA::lastStepLowTime = 0;
 uint32_t DDA::lastDirChangeTime = 0;
-
-/*static*/ uint32_t DDA::GetAndClearHiccups()
-{
-	const uint32_t nh = numHiccups;
-	numHiccups = 0;
-	return nh;
-}
 
 // This is called by the interrupt service routine to execute steps.
 // It returns true if it needs to be called again on the DDA of the new current move, otherwise false.
 // This must be as fast as possible, because it determines the maximum movement speed.
 // This may occasionally get called prematurely, so it must check that a step is actually due before generating one.
-bool DDA::Step()
+void DDA::StepDrivers()
 {
-	uint32_t lastStepPulseTime = lastStepLowTime;
-	bool repeat = false;
-	uint32_t isrStartTime;
-	do
+	// 1. There is no step 1.
+	// 2. Determine which drivers are due for stepping, overdue, or will be due very shortly
+	uint32_t driversStepping = 0;
+	DriveMovement* dm = activeDMs;
+	uint32_t now = StepTimer::GetTimerTicks();
+	const uint32_t elapsedTime = (now - afterPrepare.moveStartTime) + StepTimer::MinInterruptInterval;
+	while (dm != nullptr && elapsedTime >= dm->nextStepTime)		// if the next step is due
 	{
-		// Keep this loop as fast as possible, in the case that there are no endstops to check!
-
-		// 1. Check endstop switches and Z probe if asked. This is not speed critical because fast moves do not use endstops or the Z probe.
-		if (endStopsToCheck != 0)										// if any homing switches or the Z probe is enabled in this move
-		{
-			CheckEndstops();	// Call out to a separate function because this may help cache usage in the more common case where we don't call it
-			if (state == completed)		// we may have completed the move due to triggering an endstop switch or Z probe
-			{
-				break;
-			}
-		}
-
-		// 2. Determine which drivers are due for stepping, overdue, or will be due very shortly
-		const uint32_t iClocks = StepTimer::GetInterruptClocks();
-		if (!repeat)
-		{
-			isrStartTime = iClocks;		// first time through, so make a note of the ISR start time
-		}
-		const uint32_t elapsedTime = (iClocks - afterPrepare.moveStartTime) + MinInterruptInterval;
-		DriveMovement* dm = firstDM;
-		uint32_t driversStepping = 0;
-		while (dm != nullptr && elapsedTime >= dm->nextStepTime)		// if the next step is due
-		{
-			driversStepping |= Platform::GetDriversBitmap(dm->drive);
-			dm = dm->nextDM;
-
-//uint32_t t3 = Platform::GetInterruptClocks() - t2;
-//if (t3 > maxCalcTime) maxCalcTime = t3;
-//if (t3 < minCalcTime) minCalcTime = t3;
-		}
-
-		if ((driversStepping & Platform::GetSlowDriversBitmap()) == 0)	// if not using any external drivers
-		{
-			// 3. Step the drivers
-			Platform::StepDriversHigh(driversStepping);					// generate the steps
-		}
-		else
-		{
-			// 3. Step the drivers
-			uint32_t now;
-			do
-			{
-				now = StepTimer::GetInterruptClocks();
-			}
-			while (now - lastStepPulseTime < Platform::GetSlowDriverStepLowClocks() || now - lastDirChangeTime < Platform::GetSlowDriverDirSetupClocks());
-			Platform::StepDriversHigh(driversStepping);					// generate the steps
-			lastStepPulseTime = StepTimer::GetInterruptClocks();
-
-			// 3a. Reset all step pins low. Do this now because some external drivers don't like the direction pins being changed before the end of the step pulse.
-			while (StepTimer::GetInterruptClocks() - lastStepPulseTime < Platform::GetSlowDriverStepHighClocks()) {}
-			Platform::StepDriversLow();									// set all step pins low
-			lastStepLowTime = lastStepPulseTime = StepTimer::GetInterruptClocks();
-		}
-
-		// 4. Remove those drives from the list, calculate the next step times, update the direction pins where necessary,
-		//    and re-insert them so as to keep the list in step-time order.
-		//    Note that the call to CalcNextStepTime may change the state of Direction pin.
-		DriveMovement *dmToInsert = firstDM;							// head of the chain we need to re-insert
-		firstDM = dm;													// remove the chain from the list
-		while (dmToInsert != dm)										// note that both of these may be nullptr
-		{
-			const bool hasMoreSteps = (dm->IsDeltaMovement())
-					? dmToInsert->CalcNextStepTimeDelta(*this, true)
-					: dmToInsert->CalcNextStepTimeCartesian(*this, true);
-			DriveMovement * const nextToInsert = dmToInsert->nextDM;
-			if (hasMoreSteps)
-			{
-				InsertDM(dmToInsert);
-			}
-			dmToInsert = nextToInsert;
-		}
-
-		// 5. Reset all step pins low. We already did this if we are using any external drivers, but doing it again does no harm.
-		Platform::StepDriversLow();										// set all step pins low
-
-		// 6. Check for move completed
-		if (firstDM == nullptr)
-		{
-			break;
-		}
-
-		// 7. Check whether we have been in this ISR for too long already and need to take a break
-		uint32_t nextStepDue = firstDM->nextStepTime + afterPrepare.moveStartTime;
-		const uint32_t clocksTaken = StepTimer::GetInterruptClocks() - isrStartTime;
-		if (clocksTaken >= DDA::MaxStepInterruptTime && (nextStepDue - isrStartTime) < (clocksTaken + DDA::MinInterruptInterval))
-		{
-			// Force a break by updating the move start time
-			const uint32_t delayClocks = (clocksTaken + DDA::MinInterruptInterval) - (nextStepDue - isrStartTime);
-			afterPrepare.moveStartTime += delayClocks;
-			nextStepDue += delayClocks;
-			++numHiccups;
-			flags.hadHiccup = true;
-		}
-
-		// 8. Schedule next interrupt, or if it would be too soon, generate more steps immediately
-		// If we have already spent too much time in the ISR, delay the interrupt
-		repeat = StepTimer::ScheduleStepInterrupt(nextStepDue);
-	} while (repeat);
-
-	if (state == executing && firstDM == nullptr)
-	{
-		// There are no steps left for this move, but don't say that the move has completed unless the allocated time for it has nearly elapsed,
-		// otherwise we tend to skip moves that use no drivers on this board
-		const uint32_t finishTime = afterPrepare.moveStartTime + clocksNeeded;	// calculate when this move should finish
-		if (StepTimer::ScheduleStepInterrupt(finishTime - WakeupTime))
-		{
-			state = completed;
-		}
+		driversStepping |= Platform::GetDriversBitmap(dm->drive);
+		dm = dm->nextDM;
 	}
 
-	if (state == completed)
+	if ((driversStepping & Platform::GetSlowDriversBitmap()) == 0)	// if not using any external drivers
 	{
-		// The following finish time is wrong if we aborted the move because of endstop or Z probe checks.
-		// However, following a move that checks endstops or the Z probe, we always wait for the move to complete before we schedule another, so this doesn't matter.
-		const uint32_t finishTime = GetMoveFinishTime();			// calculate how long this move should take
-		Move& move = *moveInstance;
-		move.CurrentMoveCompleted();								// tell Move that the current move is complete
-		return move.TryStartNextMove(finishTime);					// schedule the next move
+		// 3. Step the drivers
+		Platform::StepDriversHigh(driversStepping);					// generate the steps
 	}
-	return false;
+	else
+	{
+		// 3. Step the drivers
+		uint32_t lastStepPulseTime = lastStepLowTime;
+		while (now - lastStepPulseTime < Platform::GetSlowDriverStepLowClocks() || now - lastDirChangeTime < Platform::GetSlowDriverDirSetupClocks())
+		{
+			now = StepTimer::GetTimerTicks();
+		}
+		Platform::StepDriversHigh(driversStepping);					// generate the steps
+		lastStepPulseTime = StepTimer::GetTimerTicks();
+
+		// 3a. Reset all step pins low. Do this now because some external drivers don't like the direction pins being changed before the end of the step pulse.
+		while (StepTimer::GetTimerTicks() - lastStepPulseTime < Platform::GetSlowDriverStepHighClocks()) {}
+		Platform::StepDriversLow();									// set all step pins low
+		lastStepLowTime = StepTimer::GetTimerTicks();
+	}
+
+	// 4. Remove those drives from the list, calculate the next step times, update the direction pins where necessary,
+	//    and re-insert them so as to keep the list in step-time order.
+	//    Note that the call to CalcNextStepTime may change the state of Direction pin.
+	DriveMovement *dmToInsert = activeDMs;							// head of the chain we need to re-insert
+	activeDMs = dm;													// remove the chain from the list
+	while (dmToInsert != dm)										// note that both of these may be nullptr
+	{
+		const bool hasMoreSteps = (dm->IsDeltaMovement())
+				? dmToInsert->CalcNextStepTimeDelta(*this, true)
+				: dmToInsert->CalcNextStepTimeCartesian(*this, true);
+		DriveMovement * const nextToInsert = dmToInsert->nextDM;
+		if (hasMoreSteps)
+		{
+			InsertDM(dmToInsert);
+		}
+		dmToInsert = nextToInsert;
+	}
+
+	// 5. Reset all step pins low. We already did this if we are using any external drivers, but doing it again does no harm.
+	Platform::StepDriversLow();										// set all step pins low
+
+	// 6. If there are no more steps to do and the time for the move has nearly expired, flag the move as complete
+	if (activeDMs == nullptr && StepTimer::GetTimerTicks() - afterPrepare.moveStartTime + WakeupTime >= clocksNeeded)
+	{
+		state = completed;
+	}
 }
 
 // Stop a drive and re-calculate the corresponding endpoint.
@@ -573,7 +457,7 @@ void DDA::StopDrive(size_t drive)
 	{
 		pdm->state = DMState::idle;
 		RemoveDM(drive);
-		if (firstDM == nullptr)
+		if (activeDMs == nullptr)
 		{
 			state = completed;
 		}
@@ -621,7 +505,7 @@ void DDA::ReduceHomingSpeed()
 		topSpeed *= (1.0/ProbingSpeedReductionFactor);
 
 		// Adjust extraAccelerationClocks so that step timing will be correct in the steady speed phase at the new speed
-		const uint32_t clocksSoFar = StepTimer::GetInterruptClocks() - afterPrepare.moveStartTime;
+		const uint32_t clocksSoFar = StepTimer::GetTimerTicks() - afterPrepare.moveStartTime;
 		afterPrepare.extraAccelerationClocks = (afterPrepare.extraAccelerationClocks * (int32_t)ProbingSpeedReductionFactor) - ((int32_t)clocksSoFar * (int32_t)(ProbingSpeedReductionFactor - 1));
 
 		// We also need to adjust the total clocks needed, to prevent step errors being recorded

@@ -70,14 +70,15 @@ constexpr Pin DirectionPins[NumDrivers] = { PortAPin(28) };
 const size_t MaxHeaters = 3;
 const size_t MaxExtraHeaterProtections = 3;
 
-#define SUPPORT_IOBITS		0
-#define SUPPORT_LASER		0
-#define SUPPORT_SPI_SENSORS	0
-#define SUPPORT_DHT_SENSOR	0
+#define SUPPORT_IOBITS			0
+#define SUPPORT_LASER			0
+#define SUPPORT_SPI_SENSORS		0
+#define SUPPORT_DHT_SENSOR		0
 
-#define USE_CACHE			0
+#define USE_MPU					0
+#define USE_CACHE				0
 
-#define DIAG_SERCOM_NUMBER	4			// which SERCOM device we use for debugging output
+#define DIAG_SERCOM_NUMBER		4		// which SERCOM device we use for debugging output
 
 constexpr size_t MaxAxes = 3;			//TEMP we won't need this
 
@@ -181,6 +182,7 @@ static_assert(NumPins == 32 + 24);		// 32 pins on port A (some missing), 24 on p
 TcCount32 * const StepTc = &(TC2->COUNT32);
 constexpr IRQn StepTcIRQn = TC2_IRQn;
 constexpr unsigned int StepTcClockId = TC2_GCLK_ID;
+constexpr unsigned int StepTcNumber = 2;
 #define STEP_TC_HANDLER		TC2_Handler
 
 // Diagnostic LED

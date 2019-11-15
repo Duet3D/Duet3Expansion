@@ -115,6 +115,15 @@ namespace Platform
 
 	void StartFirmwareUpdate();
 
+	[[noreturn]]void SoftwareReset(uint16_t reason, const uint32_t *stk = nullptr);
+
+	[[noreturn]]inline void ResetProcessor()
+	{
+		SCB->AIRCR = (0x5FA << 16) | (1u << 2);						// reset the processor
+		for (;;) { }
+//		RSTC->RCAUSE;
+	}
+
 #if HAS_VOLTAGE_MONITOR
 	float GetCurrentVinVoltage();
 #endif

@@ -300,9 +300,7 @@ namespace Platform
 #else
 # error Unsupported processor
 #endif
-
-		SCB->AIRCR = (0x5FA << 16) | (1u << 2);			// reset the processor
-		for (;;) { }
+		ResetProcessor();
 	}
 
 	[[noreturn]] static void DoFirmwareUpdate()
@@ -349,6 +347,18 @@ namespace Platform
 	}
 
 }	// end namespace Platform
+
+void Platform::SoftwareReset(uint16_t reason, const uint32_t *stk)
+{
+#if defined(SAME51)
+//	qq;
+#elif defined(SAMC21)
+//	qq;
+#else
+# error Unsupported processor
+#endif
+	ResetProcessor();
+}
 
 void Platform::Init()
 {
@@ -716,7 +726,7 @@ void Platform::Spin()
 	// Update the Diag LED. Flash it quickly (8Hz) if we are not synced to the master, else flash in sync with the master (about 2Hz).
 	gpio_set_pin_level(DiagLedPin,
 						(StepTimer::IsSynced()) ? (StepTimer::GetMasterTime() & (1u << 19)) != 0
-							: (StepTimer::GetInterruptClocks() & (1u << 17)) != 0
+							: (StepTimer::GetTimerTicks() & (1u << 17)) != 0
 					  );
 
 	if (now - lastPollTime > 2000)
@@ -1027,12 +1037,12 @@ void Platform::SetDirection(size_t driver, bool direction)
 		const bool isSlowDriver = IsBitSet(slowDriversBitmap, driver);
 		if (isSlowDriver)
 		{
-			while (StepTimer::GetInterruptClocks() - DDA::lastStepLowTime < GetSlowDriverDirHoldClocks()) { }
+			while (StepTimer::GetTimerTicks() - DDA::lastStepLowTime < GetSlowDriverDirHoldClocks()) { }
 		}
 		digitalWrite(DirectionPins[driver], d);
 		if (isSlowDriver)
 		{
-			DDA::lastDirChangeTime = StepTimer::GetInterruptClocks();
+			DDA::lastDirChangeTime = StepTimer::GetTimerTicks();
 		}
 	}
 }
@@ -1061,7 +1071,7 @@ void Platform::EnableDrive(size_t driver)
 	}
 	SmartDrivers::EnableDrive(driver, true);
 #else
-	digitalWrite(EnablePins[driver], false);
+	digitalWrite(EnablePins[driver], ENABLE_POLARITY);
 #endif
 }
 
@@ -1070,7 +1080,7 @@ void Platform::DisableDrive(size_t driver)
 #if HAS_SMART_DRIVERS
 	SmartDrivers::EnableDrive(driver, false);
 #else
-	digitalWrite(EnablePins[driver], true);
+	digitalWrite(EnablePins[driver], !ENABLE_POLARITY);
 #endif
 }
 

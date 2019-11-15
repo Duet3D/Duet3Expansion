@@ -283,7 +283,7 @@ void CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf)
 	{
 	case CanMessageType::timeSync:
 		//TODO re-implement this as a PLL and use the CAN time stamps for greater accuracy
-		StepTimer::SetLocalTimeOffset(StepTimer::GetInterruptClocks() - buf->msg.sync.timeSent);
+		StepTimer::SetLocalTimeOffset(StepTimer::GetTimerTicks() - buf->msg.sync.timeSent);
 		CanMessageBuffer::Free(buf);
 		break;
 

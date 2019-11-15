@@ -49,43 +49,6 @@ namespace AnalogOut
 		return ARRAY_SIZE(PrescalerShifts) - 1;
 	}
 
-	static void EnableTcClock(unsigned int device)
-	{
-		static constexpr uint8_t TcClockIDs[] =
-		{
-			TC0_GCLK_ID, TC1_GCLK_ID, TC2_GCLK_ID, TC3_GCLK_ID, TC4_GCLK_ID,
-#ifdef SAME51
-			TC5_GCLK_ID
-#endif
-		};
-
-#if defined(SAME51)
-		hri_gclk_write_PCHCTRL_reg(GCLK, TcClockIDs[device], GCLK_PCHCTRL_GEN_GCLK1_Val | (1 << GCLK_PCHCTRL_CHEN_Pos));
-#elif defined(SAMC21)
-		hri_gclk_write_PCHCTRL_reg(GCLK, TcClockIDs[device], GCLK_PCHCTRL_GEN_GCLK0_Val | (1 << GCLK_PCHCTRL_CHEN_Pos));
-#endif
-
-		switch (device)
-		{
-#if defined(SAME51)
-		case 0:	MCLK->APBAMASK.reg |= MCLK_APBAMASK_TC0; break;
-		case 1:	MCLK->APBAMASK.reg |= MCLK_APBAMASK_TC1; break;
-		case 2:	MCLK->APBBMASK.reg |= MCLK_APBBMASK_TC2; break;
-		case 3:	MCLK->APBBMASK.reg |= MCLK_APBBMASK_TC3; break;
-		case 4:	MCLK->APBCMASK.reg |= MCLK_APBCMASK_TC4; break;
-		case 5:	MCLK->APBCMASK.reg |= MCLK_APBCMASK_TC5; break;
-#elif defined(SAMC21)
-		case 0:	MCLK->APBCMASK.reg |= MCLK_APBCMASK_TC0; break;
-		case 1:	MCLK->APBCMASK.reg |= MCLK_APBCMASK_TC1; break;
-		case 2:	MCLK->APBCMASK.reg |= MCLK_APBCMASK_TC2; break;
-		case 3:	MCLK->APBCMASK.reg |= MCLK_APBCMASK_TC3; break;
-		case 4:	MCLK->APBCMASK.reg |= MCLK_APBCMASK_TC4; break;
-#else
-# error Unsupported processor
-#endif
-		}
-	}
-
 	// Write PWM to the specified TC device. 'output' may be 0 or 1.
 	static bool AnalogWriteTc(Pin pin, unsigned int device, unsigned int output, float val, PwmFrequency freq)
 	{
@@ -122,7 +85,13 @@ namespace AnalogOut
 
 				if (tcFreq[device] == 0)
 				{
-					EnableTcClock(device);
+					EnableTcClock(device,
+#if defined(SAME51)
+						GCLK_PCHCTRL_GEN_GCLK1_Val
+#elif defined(SAMC21)
+						GCLK_PCHCTRL_GEN_GCLK0_Val
+#endif
+						);
 
 					// Initialise the TC
 					hri_tc_clear_CTRLA_ENABLE_bit(tcdev);
@@ -176,39 +145,6 @@ namespace AnalogOut
 		return false;
 	}
 
-	static void EnableTccClock(unsigned int device)
-	{
-		static constexpr uint8_t TccClockIDs[] =
-		{
-			TCC0_GCLK_ID, TCC1_GCLK_ID, TCC2_GCLK_ID,
-#ifdef SAME51
-			TCC3_GCLK_ID, TCC4_GCLK_ID
-#endif
-		};
-
-#if defined(SAME51)
-		hri_gclk_write_PCHCTRL_reg(GCLK, TccClockIDs[device], GCLK_PCHCTRL_GEN_GCLK1_Val | (1 << GCLK_PCHCTRL_CHEN_Pos));
-#elif defined(SAMC21)
-		hri_gclk_write_PCHCTRL_reg(GCLK, TccClockIDs[device], GCLK_PCHCTRL_GEN_GCLK0_Val | (1 << GCLK_PCHCTRL_CHEN_Pos));
-#endif
-		switch (device)
-		{
-#if defined(SAME51)
-		case 0:	MCLK->APBBMASK.reg |= MCLK_APBBMASK_TCC0; break;
-		case 1:	MCLK->APBBMASK.reg |= MCLK_APBBMASK_TCC1; break;
-		case 2:	MCLK->APBCMASK.reg |= MCLK_APBCMASK_TCC2; break;
-		case 3:	MCLK->APBCMASK.reg |= MCLK_APBCMASK_TCC3; break;
-		case 4:	MCLK->APBDMASK.reg |= MCLK_APBDMASK_TCC4; break;
-#elif defined(SAMC21)
-		case 0:	MCLK->APBCMASK.reg |= MCLK_APBCMASK_TCC0; break;
-		case 1:	MCLK->APBCMASK.reg |= MCLK_APBCMASK_TCC1; break;
-		case 2:	MCLK->APBCMASK.reg |= MCLK_APBCMASK_TCC2; break;
-#else
-# error Unsupported processor
-#endif
-		}
-	}
-
 	// Write PWM to the specified TCC device. 'output' may be 0..5.
 	static bool AnalogWriteTcc(Pin pin, unsigned int device, unsigned int output, unsigned int peri, float val, PwmFrequency freq)
 	{
@@ -238,7 +174,13 @@ namespace AnalogOut
 
 				if (tccFreq[device] == 0)
 				{
-					EnableTccClock(device);
+					EnableTccClock(device,
+#if defined(SAME51)
+						GCLK_PCHCTRL_GEN_GCLK1_Val
+#elif defined(SAMC21)
+						GCLK_PCHCTRL_GEN_GCLK0_Val
+#endif
+						);
 
 					// Initialise the TCC
 					hri_tcc_clear_CTRLA_ENABLE_bit(tccdev);

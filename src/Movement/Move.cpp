@@ -40,7 +40,7 @@
 #include "Hardware/Interrupts.h"
 #include "CanMessageFormats.h"
 
-Move::Move() : currentDda(nullptr), active(false), scheduledMoves(0), completedMoves(0)
+Move::Move() : currentDda(nullptr), scheduledMoves(0), completedMoves(0), numHiccups(0), active(false)
 {
 	kinematics = Kinematics::Create(KinematicsType::cartesian);			// default to Cartesian
 
@@ -57,6 +57,7 @@ Move::Move() : currentDda(nullptr), active(false), scheduledMoves(0), completedM
 	dda->SetPrevious(ddaRingAddPointer);
 
 	DriveMovement::InitialAllocate(NumDms);
+	timer.SetCallback(Move::TimerCallback, static_cast<void*>(this));
 }
 
 void Move::Init()
@@ -75,14 +76,12 @@ void Move::Init()
 
 	idleCount = 0;
 
-//	numHiccups = 0;
-
 	active = true;
 }
 
 void Move::Exit()
 {
-	StepTimer::DisableStepInterrupt();
+	StepTimer::DisableTimerInterrupt();
 
 	// Clear the DDA ring so that we don't report any moves as pending
 	currentDda = nullptr;
@@ -143,7 +142,7 @@ void Move::Spin()
 		const DDA *dda = ddaRingAddPointer;
 		uint32_t unPreparedTime = 0;
 		uint32_t prevMoveTime = 0;
-		for(;;)
+		for (;;)
 		{
 			dda = dda->GetPrevious();
 			if (dda->GetState() != DDA::provisional)
@@ -159,7 +158,7 @@ void Move::Spin()
 
 	if (canAddMove)
 	{
-		// OK to add another move. First check if a special move is available.
+		// OK to add another move
 		CanMessageMovement move;
 		if (CanInterface::GetCanMove(move))
 		{
@@ -177,11 +176,12 @@ void Move::Spin()
 		if (!canAddMove || idleCount > 10)							// better to have a few moves in the queue so that we can do lookahead
 		{
 			// Prepare one move and execute it. We assume that we will enter the next if-block before it completes, giving us time to prepare more moves.
-			StepTimer::DisableStepInterrupt();						// should be disabled already because we weren't executing a move, but make sure
-			DDA * const dda = ddaRingGetPointer;					// capture volatile variable
-			if (dda->GetState() == DDA::frozen)
+			if (ddaRingGetPointer->GetState() == DDA::frozen)
 			{
-				if (StartNextMove(StepTimer::GetInterruptClocks()))	// start the next move
+				AtomicCriticalSectionLocker();
+
+				StartNextMove(StepTimer::GetTimerTicks());
+				if (ScheduleNextStepInterrupt())
 				{
 					Interrupt();
 				}
@@ -425,17 +425,6 @@ void Move::CurrentMoveCompleted()
 	completedMoves++;
 }
 
-// Try to start another move. Must be called with interrupts disabled, to avoid a race condition.
-bool Move::TryStartNextMove(uint32_t startTime)
-{
-	const DDA::DDAState st = ddaRingGetPointer->GetState();
-	if (st == DDA::frozen)
-	{
-		return StartNextMove(startTime);
-	}
-	return false;
-}
-
 void Move::StopDrivers(uint16_t whichDrivers)
 {
 #if defined(SAME51)
@@ -469,6 +458,72 @@ void Move::PrintCurrentDda() const
 	if (currentDda != nullptr)
 	{
 		currentDda->DebugPrintAll();
+	}
+}
+
+uint32_t Move::GetAndClearHiccups()
+{
+	const uint32_t nh = numHiccups;
+	numHiccups = 0;
+	return nh;
+}
+
+// This is the function that is called by the timer interrupt to step the motors.
+// This may occasionally get called prematurely.
+void Move::Interrupt()
+{
+	const uint32_t isrStartTime = StepTimer::GetTimerTicks();
+	for (;;)
+	{
+		// Generate a step for the current move
+		DDA* cdda = currentDda;										// capture volatile variable
+		if (cdda == nullptr)
+		{
+			return;													// no current  move, so no steps needed
+		}
+
+		cdda->StepDrivers();
+		if (cdda->GetState() == DDA::completed)
+		{
+			const uint32_t finishTime = cdda->GetMoveFinishTime();	// calculate when this move should finish
+			CurrentMoveCompleted();									// tells the DDA ring that the current move is complete and set currentDda to nullptr
+
+			// Start the next move, if one is ready
+			cdda = ddaRingGetPointer;
+			if (cdda->GetState() != DDA::frozen)
+			{
+				return;
+			}
+
+			currentDda = cdda;
+			cdda->Start(finishTime);
+		}
+
+		// Schedule a callback at the time when the next step is due, and quit unless it is due immediately
+		if (!cdda->ScheduleNextStepInterrupt(timer))
+		{
+			return;
+		}
+
+		// The next step is due immediately. Check whether we have been in this ISR for too long already and need to take a break
+		const uint32_t clocksTaken = StepTimer::GetTimerTicks() - isrStartTime;
+		if (clocksTaken >= DDA::MaxStepInterruptTime)
+		{
+			// Force a break by updating the move start time
+			DDA *nextDda = cdda;
+			do
+			{
+				nextDda->InsertHiccup(DDA::HiccupTime);
+				nextDda = nextDda->GetNext();
+			} while (nextDda->GetState() == DDA::frozen);
+			++numHiccups;
+
+			// Reschedule the next step interrupt. This time it should succeed.
+			if (!cdda->ScheduleNextStepInterrupt(timer))
+			{
+				return;
+			}
+		}
 	}
 }
 

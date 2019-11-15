@@ -9,7 +9,7 @@
 #define SRC_ENDSTOPS_LOCALZPROBE_H_
 
 #include "ZProbe.h"
-#include <SoftTimer.h>
+#include <Movement/StepTimer.h>
 
 class LocalZProbe final : public ZProbe
 {
@@ -35,13 +35,13 @@ private:
 	static bool TimerInterrupt(CallbackParameter param, uint32_t& when);
 	bool Interrupt(uint32_t& when);
 
-	SoftTimer timer;
+	StepTimer timer;
 	uint8_t progBytes[MaxZProbeProgramBytes];
 	size_t numBytes;
 	size_t bytesSent;
 	unsigned int bitsSent;
-	SoftTimer::Ticks bitTime;
-	SoftTimer::Ticks startTime;
+	StepTimer::Ticks bitTime;
+	StepTimer::Ticks startTime;
 
 	static const unsigned int bitsPerSecond = 1000;
 };
