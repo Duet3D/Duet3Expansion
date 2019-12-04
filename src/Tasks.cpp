@@ -48,7 +48,7 @@ extern "C" void __malloc_unlock ( struct _reent *_r )
 // Application entry point
 void AppMain()
 {
-#if 0 //#ifndef DEBUG
+#ifndef DEBUG
 	// Check that the bootloader is protected and EEPROM is configured
 # if defined(SAME51)
 	uint64_t nvmUserRow0 = *reinterpret_cast<const uint64_t*>(NVMCTRL_USER);						// we only need values in the first 64 bits of the user area
@@ -63,6 +63,9 @@ void AppMain()
 	{
 		nvmUserRow0 = (nvmUserRow0 & ~mask) | reqValue;												// set up the required value
 		_user_area_write(reinterpret_cast<void*>(NVMCTRL_USER), 0, reinterpret_cast<const uint8_t*>(&nvmUserRow0), sizeof(nvmUserRow0));
+
+		// If we reset immediately then the user area write doesn't complete and the bits get set to all 1s.
+		delayMicroseconds(10000);
 		Platform::ResetProcessor();
 	}
 #endif

@@ -626,6 +626,12 @@ static int32_t _user_row_write_exec(const uint32_t *_row)
 	/* Restore CTRLA */
 	hri_nvmctrl_write_CTRLA_reg(NVMCTRL, ctrla);
 
+#if 1	// DC42, see Microchip support case 00477475
+	while (!hri_nvmctrl_get_STATUS_READY_bit(hw)) {
+		/* Wait until this module isn't busy */
+	}
+#endif
+
 	return ERR_NONE;
 }
 

@@ -33,7 +33,7 @@ constexpr size_t MaxZProbes = 4;
 constexpr size_t MaxZProbeProgramBytes = 8;				// Maximum number of bytes in a Z probe program
 
 // Fan defaults
-constexpr size_t NumTotalFans = 12;
+constexpr size_t MaxFans = 12;
 constexpr float DefaultMinFanPwm = 0.1;					// minimum fan PWM
 constexpr uint32_t DefaultFanBlipTime = 100;			// fan blip time in milliseconds
 

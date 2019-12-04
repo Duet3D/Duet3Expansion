@@ -81,12 +81,17 @@ namespace Platform
 	uint32_t slowDriversBitmap = 0;
 	uint32_t slowDriverStepTimingClocks[4] = { 0, 0, 0, 0 };
 
+	uint32_t uniqueId[5];
+
 	uint32_t driveDriverBits[NumDrivers];
 	uint32_t allDriverBits = 0;
 
 	static bool directions[NumDrivers];
 	static bool driverAtIdleCurrent[NumDrivers];
 	static int8_t enableValues[NumDrivers] = { 0 };
+#if !HAS_SMART_DRIVERS
+	static bool driverIsEnabled[NumDrivers] = { false };
+#endif
 	static float stepsPerMm[NumDrivers];
 	static float motorCurrents[NumDrivers];
 	static float pressureAdvance[NumDrivers];
@@ -499,7 +504,7 @@ void Platform::Init()
 
 	for (size_t i = 0; i < NumDrivers; ++i)
 	{
-#if STEP_POLARITY
+#if ACTIVE_HIGH_STEP
 		IoPort::SetPinMode(StepPins[i], OUTPUT_LOW);
 #else
 		IoPort::SetPinMode(StepPins[i], OUTPUT_HIGH);
@@ -508,19 +513,22 @@ void Platform::Init()
 		IoPort::SetHighDriveStrength(StepPins[i]);
 #endif
 
-#if DIR_POLARITY
+#if ACTIVE_HIGH_DIR
 		IoPort::SetPinMode(DirectionPins[i], OUTPUT_LOW);
 #else
 		IoPort::SetPinMode(DirectionPins[i], OUTPUT_HIGH);
 #endif
 #if !HAS_SMART_DRIVERS
 		IoPort::SetHighDriveStrength(DirectionPins[i]);
-# if ENABLE_POLARITY
+# if ACTIVE_HIGH_ENABLE
 		IoPort::SetPinMode(EnablePins[i], OUTPUT_LOW);
+		enableValues[i] = 1;
 # else
 		IoPort::SetPinMode(EnablePins[i], OUTPUT_HIGH);
+		enableValues[i] = 0;
 # endif
 		IoPort::SetHighDriveStrength(EnablePins[i]);
+		driverIsEnabled[i] = false;
 #endif
 		const uint32_t driverBit = 1u << (StepPins[i] & 31);
 		driveDriverBits[i] = driverBit;
@@ -551,6 +559,17 @@ void Platform::Init()
 	CanInterface::Init(ReadBoardId());
 
 	InitialiseInterrupts();
+
+	// Read the unique ID
+	for (unsigned int i =0; i < 4; ++i)
+	{
+		uniqueId[i] = *reinterpret_cast<const uint32_t*>(SerialNumberAddresses[i]);
+	}
+
+	// Put the checksum at the end
+	// We only print 30 5-bit characters = 128 data bits + 22 checksum bits. So compress the 32 checksum bits into 22.
+	uniqueId[4] = uniqueId[0] ^ uniqueId[1] ^ uniqueId[2] ^ uniqueId[3];
+	uniqueId[4] ^= (uniqueId[4] >> 10);
 
 	lastPollTime = millis();
 }
@@ -981,7 +1000,7 @@ void Platform::SetPressureAdvance(size_t driver, float advance)
 
 void Platform::StepDriversLow()
 {
-#if STEP_POLARITY
+#if ACTIVE_HIGH_STEP
 	// Active high step output
 	StepPio->OUTCLR.reg = allDriverBits;
 #else
@@ -992,7 +1011,7 @@ void Platform::StepDriversLow()
 
 void Platform::StepDriversHigh(uint32_t driverMap)
 {
-#if STEP_POLARITY
+#if ACTIVE_HIGH_STEP
 	// Active high step output
 	StepPio->OUTSET.reg = driverMap;
 #else
@@ -1027,7 +1046,7 @@ void Platform::SetDirection(size_t driver, bool direction)
 {
 	if (driver < NumDrivers)
 	{
-#if DIR_POLARITY
+#if ACTIVE_HIGH_DIR
 		// Active high direction signal
 		const bool d = (direction) ? directions[driver] : !directions[driver];
 #else
@@ -1053,6 +1072,16 @@ void Platform::SetEnableValue(size_t driver, int8_t eVal)
 	if (driver < NumDrivers)
 	{
 		enableValues[driver] = eVal;
+#if !HAS_SMART_DRIVERS
+		if (driverIsEnabled[driver])
+		{
+			EnableDrive(driver);
+		}
+		else
+		{
+			DisableDrive(driver);
+		}
+#endif
 	}
 }
 
@@ -1071,7 +1100,10 @@ void Platform::EnableDrive(size_t driver)
 	}
 	SmartDrivers::EnableDrive(driver, true);
 #else
-	digitalWrite(EnablePins[driver], ENABLE_POLARITY);
+	if (enableValues[driver] >= 0)
+	{
+		digitalWrite(EnablePins[driver], enableValues[driver] > 0);
+	}
 #endif
 }
 
@@ -1080,7 +1112,10 @@ void Platform::DisableDrive(size_t driver)
 #if HAS_SMART_DRIVERS
 	SmartDrivers::EnableDrive(driver, false);
 #else
-	digitalWrite(EnablePins[driver], !ENABLE_POLARITY);
+	if (enableValues[driver] >= 0)
+	{
+		digitalWrite(EnablePins[driver], enableValues[driver] == 0);
+	}
 #endif
 }
 
@@ -1140,6 +1175,55 @@ uint8_t Platform::ReadBoardId()
 #endif
 }
 
+// Append the unique processor ID to a string as 30 base5 alphanumeric digits with 5 embedded separators
+void Platform::AppendUniqueId(const StringRef& str)
+{
+	for (size_t i = 0; i < 30; ++i)
+	{
+		if ((i % 5) == 0 && i != 0)
+		{
+			str.cat('-');
+		}
+		const size_t index = (i * 5) / 32;
+		const size_t shift = (i * 5) % 32;
+		uint32_t val = uniqueId[index] >> shift;
+		if (shift > 32 - 5)
+		{
+			// We need some bits from the next dword too
+			val |= uniqueId[index + 1] << (32 - shift);
+		}
+		val &= 31;
+		char c;
+		if (val < 10)
+		{
+			c = val + '0';
+		}
+		else
+		{
+			c = val + ('A' - 10);
+			// We have 26 letters in the usual A-Z alphabet and we only need 22 of them plus 0-9.
+			// So avoid using letters C, E, I and O which are easily mistaken for G, F, 1 and 0.
+			if (c >= 'C')
+			{
+				++c;
+			}
+			if (c >= 'E')
+			{
+				++c;
+			}
+			if (c >= 'I')
+			{
+				++c;
+			}
+			if (c >= 'O')
+			{
+				++c;
+			}
+		}
+		str.cat(c);
+	}
+}
+
 #if HAS_SMART_DRIVERS
 // TMC driver temperatures
 float Platform::GetTmcDriversTemperature()
@@ -1163,18 +1247,38 @@ void Platform::StartFirmwareUpdate()
 
 #if HAS_VOLTAGE_MONITOR
 
+float Platform::GetMinVinVoltage()
+{
+	return AdcReadingToPowerVoltage(lowestVin);
+}
+
 float Platform::GetCurrentVinVoltage()
 {
 	return AdcReadingToPowerVoltage(currentVin);
+}
+
+float Platform::GetMaxVinVoltage()
+{
+	return AdcReadingToPowerVoltage(highestVin);
 }
 
 #endif
 
 #if HAS_12V_MONITOR
 
+float Platform::GetMinV12Voltage()
+{
+	return AdcReadingToPowerVoltage(lowestV12);
+}
+
 float Platform::GetCurrentV12Voltage()
 {
 	return AdcReadingToPowerVoltage(currentV12);
+}
+
+float Platform::GetMaxV12Voltage()
+{
+	return AdcReadingToPowerVoltage(highestV12);
 }
 
 #endif

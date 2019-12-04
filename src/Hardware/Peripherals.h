@@ -15,9 +15,15 @@ extern "C" uint32_t SystemCoreClock;			// in system_samxxx.c
 extern "C" uint32_t SystemPeripheralClock;		// in system_samxxx.c
 
 #if defined(__SAME51N19A__)
+
 # define SAME51		1
+constexpr uint32_t SerialNumberAddresses[4] = { 0x008061FC, 0x00806010, 0x00806014, 0x00806018 };
+
 #elif defined(__SAMC21G18A__)
+
 # define SAMC21		1
+constexpr uint32_t SerialNumberAddresses[4] = { 0x0080A00C, 0x0080A040, 0x0080A044, 0x0080A048 };
+
 #endif
 
 // Timer identifiers used in assigning PWM control devices
@@ -154,13 +160,13 @@ static inline void delayMicroseconds(uint32_t usec)
     if (usec != 0)
     {
 		uint32_t n = usec * (SystemCoreClock / 3000000);
-		const uint32_t one = 1;
 		asm volatile
 		(
+			".syntax unified"				"\n\t"
 			"L_%=_delayMicroseconds:"       "\n\t"
-			"subs   %0, %1"                 "\n\t"
+			"subs   %0, #1"   				"\n\t"
 			"bne    L_%=_delayMicroseconds" "\n"
-			: "+r" (n) : "r" (one) :
+			: "+r" (n) :
 		);
     }
 }

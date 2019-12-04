@@ -26,9 +26,9 @@ constexpr const char* BoardTypeName = "TOOL1ED";
 #define HAS_STALL_DETECT		0
 
 // The SAMC21 can sink more current than it can source, therefore we use active low signals to drive external drivers
-#define STEP_POLARITY			0		// 1 = active high, 0 = active low
-#define DIR_POLARITY			0		// 1 = active high, 0 = active low
-#define ENABLE_POLARITY			0		// 1 = active high, 0 = active low
+#define ACTIVE_HIGH_STEP		0		// 1 = active high, 0 = active low
+#define ACTIVE_HIGH_DIR			0		// 1 = active high, 0 = active low
+#define ACTIVE_HIGH_ENABLE		0		// 1 = active high, 0 = active low
 
 #define SUPPORT_TMC51xx			0
 #define SUPPORT_TMC2660			0

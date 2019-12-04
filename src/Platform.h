@@ -110,6 +110,7 @@ namespace Platform
 	uint32_t GetHeatTaskIdleTicks();
 
 	uint8_t ReadBoardId();
+	void AppendUniqueId(const StringRef& str);
 
 	void Tick();
 
@@ -125,11 +126,15 @@ namespace Platform
 	}
 
 #if HAS_VOLTAGE_MONITOR
+	float GetMinVinVoltage();
 	float GetCurrentVinVoltage();
+	float GetMaxVinVoltage();
 #endif
 
 #if HAS_12V_MONITOR
+	float GetMinV12Voltage();
 	float GetCurrentV12Voltage();
+	float GetMaxV12Voltage();
 #endif
 }
 

@@ -617,7 +617,7 @@ void AnalogIn::EnableTemperatureSensor(AnalogInCallbackFunction fn, CallbackPara
 	tempTicksPerCall = ticksPerCall;
 
 	hri_mclk_set_APBAMASK_TSENS_bit(MCLK);
-	hri_gclk_write_PCHCTRL_reg(GCLK, TSENS_GCLK_ID, GCLK_PCHCTRL_GEN_GCLK2_Val | (1 << GCLK_PCHCTRL_CHEN_Pos));		// Use thr DFLL as the clock source
+	hri_gclk_write_PCHCTRL_reg(GCLK, TSENS_GCLK_ID, GCLK_PCHCTRL_GEN_GCLK0_Val | (1 << GCLK_PCHCTRL_CHEN_Pos));		// use the main 48MHz as the clock source, it gives better readings than the DFLL
 
 	TSENS->CTRLA.bit.SWRST = 1;
 	while (TSENS->CTRLA.bit.SWRST) { }

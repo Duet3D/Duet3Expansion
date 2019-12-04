@@ -19,6 +19,8 @@
 #include <Tasks.h>
 #include <Version.h>
 #include <Hardware/AnalogIn.h>
+#include <hpl_user_area.h>
+#include <cctype>				// for tolower()
 
 #if SUPPORT_TMC22xx
 # include "Movement/StepperDrivers/TMC22xx.h"
@@ -26,6 +28,117 @@
 #if SUPPORT_TMC51xx
 # include "Movement/StepperDrivers/TMC51xx.h"
 #endif
+
+constexpr float MinVin = 11.0;
+constexpr float MaxVin = 32.0;
+constexpr float MinV12 = 10.0;
+constexpr float MaxV12 = 13.5;
+constexpr float MinTemp = -20.0;
+constexpr float MaxTemp = 55.0;
+
+static void GenerateTestReport(const StringRef& reply)
+{
+	bool testFailed = false;
+
+#if HAS_CPU_TEMP_SENSOR
+	// Check the MCU temperature
+	{
+		float minMcuTemperature, currentMcuTemperature, maxMcuTemperature;
+		Platform::GetMcuTemperatures(minMcuTemperature, currentMcuTemperature, maxMcuTemperature);
+		if (currentMcuTemperature < MinTemp)
+		{
+			reply.lcatf("MCU temperature %.1fC is lower than expected", (double)currentMcuTemperature);
+			testFailed = true;
+		}
+		else if (currentMcuTemperature > MaxTemp)
+		{
+			reply.lcatf("MCU temperature %.1fC is higher than expected", (double)currentMcuTemperature);
+			testFailed = true;
+		}
+		else
+		{
+			reply.lcatf("MCU temperature reading OK (%.1fC)", (double)currentMcuTemperature);
+		}
+	}
+#endif
+
+#if HAS_VOLTAGE_MONITOR
+	// Check the supply voltage
+	{
+		const float voltage = Platform::GetCurrentVinVoltage();
+		if (voltage < MinVin)
+		{
+			reply.lcatf("VIN voltage reading %.1f is lower than expected", (double)voltage);
+			testFailed = true;
+		}
+		else if (voltage > MaxVin)
+		{
+			reply.lcatf("VIN voltage reading %.1f is higher than expected", (double)voltage);
+			testFailed = true;
+		}
+		else
+		{
+			reply.lcatf("VIN voltage reading OK (%.1fV)", (double)voltage);
+		}
+	}
+#endif
+
+#if HAS_12V_MONITOR
+	// Check the 12V rail voltage
+	{
+		const float voltage = Platform::GetCurrentV12Voltage();
+		if (voltage < MinV12)
+		{
+			reply.lcatf("12V voltage reading %.1f is lower than expected", (double)voltage);
+			testFailed = true;
+		}
+		else if (voltage > MaxV12)
+		{
+			reply.lcatf("12V voltage reading %.1f is higher than expected", (double)voltage);
+			testFailed = true;
+		}
+		else
+		{
+			reply.lcatf("12V voltage reading OK (%.1fV)", (double)voltage);
+		}
+	}
+#endif
+
+#if HAS_SMART_DRIVERS
+	// Check the stepper driver status
+	bool driversOK = true;
+	for (size_t driver = 0; driver < NumDrivers; ++driver)
+	{
+		const uint32_t stat = SmartDrivers::GetAccumulatedStatus(driver, 0xFFFFFFFF);
+		if ((stat & (TMC_RR_OT || TMC_RR_OTPW)) != 0)
+		{
+			reply.lcatf("Driver %u reports over temperature", driver);
+			driversOK = false;
+		}
+		if ((stat & TMC_RR_S2G) != 0)
+		{
+			reply.lcatf("Driver %u reports short-to-ground", driver);
+			driversOK = false;
+		}
+	}
+	if (driversOK)
+	{
+		reply.lcatf("Driver status OK");
+	}
+	else
+	{
+		testFailed = true;
+	}
+#endif
+
+	reply.lcatf((testFailed) ? "***** ONE OR MORE CHECKS FAILED *****" : "All checks passed");
+
+	if (!testFailed)
+	{
+		reply.lcat("Board ID: ");
+		Platform::AppendUniqueId(reply);
+	}
+}
 
 static GCodeResult SetMotorCurrents(const CanMessageMultipleDrivesRequest& msg, const StringRef& reply)
 {
@@ -357,7 +470,8 @@ static GCodeResult InitiateFirmwareUpdate(const CanMessageUpdateYourFirmware& ms
 
 static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& reply, uint8_t& extra)
 {
-	extra = 2;				// the last diagnostics part is typeDiagnosticsPart0 + 2
+	static constexpr uint8_t LastDiagnosticsPart = 3;				// the last diagnostics part is typeDiagnosticsPart0 + 3
+
 	switch (msg.type)
 	{
 	case CanMessageReturnInfo::typeFirmwareVersion:
@@ -369,14 +483,43 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 		reply.copy(BoardTypeName);
 		break;
 
+	case CanMessageReturnInfo::typeM408:
+		// For now we ignore the parameter and always return the same set of info
+		// This command is currently only used by the ATE, which needs the board type and the voltages
+		reply.copy("{\"firmwareElectronics\":\"duet3");
+		for (const char *s = BoardTypeName; *s != 0; ++s)
+		{
+			reply.cat((char)tolower(*s));
+		}
+		reply.cat("\"");
+#if HAS_VOLTAGE_MONITOR
+		reply.catf(",\"vin\":{\"min\":%.1f,\"cur\":%.1f,\"max\":%.1f}",
+					(double)Platform::GetMinVinVoltage(), (double)Platform::GetCurrentVinVoltage(), (double)Platform::GetMaxVinVoltage());
+#endif
+#if HAS_12V_MONITOR
+		reply.catf(",\"v12\":{\"min\":%.1f,\"cur\":%.1f,\"max\":%.1f}",
+					(double)Platform::GetMinV12Voltage(), (double)Platform::GetCurrentV12Voltage(), (double)Platform::GetMaxV12Voltage());
+#endif
+		reply.cat('}');
+		break;
+
 	case CanMessageReturnInfo::typeDiagnosticsPart0:
-		reply.printf("Board %s firmware %s\n", BoardTypeName, FirmwareVersion);
-		Tasks::GetMemoryReport(reply);
-		reply.cat('\n');
-		Tasks::GetTasksMemoryReport(reply);
+		if (msg.param == 1)
+		{
+			GenerateTestReport(reply);
+		}
+		else
+		{
+			extra = LastDiagnosticsPart;
+			reply.printf("Board %s firmware %s\n", BoardTypeName, FirmwareVersion);
+			Tasks::GetMemoryReport(reply);
+			reply.cat('\n');
+			Tasks::GetTasksMemoryReport(reply);
+		}
 		break;
 
 	case CanMessageReturnInfo::typeDiagnosticsPart0 + 1:
+		extra = LastDiagnosticsPart;
 #if HAS_SMART_DRIVERS
 		for (size_t driver = 0; driver < NumDrivers; ++driver)
 		{
@@ -389,6 +532,7 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 		break;
 
 	case CanMessageReturnInfo::typeDiagnosticsPart0 + 2:
+		extra = LastDiagnosticsPart;
 		{
 			float minTemp, currentTemp, maxTemp;
 			Platform::GetMcuTemperatures(minTemp, currentTemp, maxTemp);
@@ -406,6 +550,22 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 			AnalogIn::GetDebugInfo(conversionsStarted, conversionsCompleted, conversionTimeouts);
 			reply.catf("\nTicks since heat task active %" PRIu32 ", ADC conversions started %" PRIu32 ", completed %" PRIu32 ", timed out %" PRIu32,
 						Platform::GetHeatTaskIdleTicks(), conversionsStarted, conversionsCompleted, conversionTimeouts);
+		}
+		break;
+
+	case CanMessageReturnInfo::typeDiagnosticsPart0 + 3:
+		extra = LastDiagnosticsPart;
+		{
+			uint32_t nvmUserRow0 = *reinterpret_cast<const uint32_t*>(NVMCTRL_USER);
+			uint32_t nvmUserRow1 = *reinterpret_cast<const uint32_t*>(NVMCTRL_USER+4);
+			uint32_t nvmUserRow2 = *reinterpret_cast<const uint32_t*>(NVMCTRL_USER+8);
+			uint32_t nvmUserRow3 = *reinterpret_cast<const uint32_t*>(NVMCTRL_USER+12);
+			reply.printf("NVM user row %" PRIx32 " %" PRIx32 " %" PRIx32 " %" PRIx32, nvmUserRow0, nvmUserRow1, nvmUserRow2, nvmUserRow3);
+
+#ifdef SAMC21
+			reply.lcatf("TSENS %06" PRIx32 " GAIN %06" PRIx32 " OFFS %06" PRIx32 " CAL %04" PRIx32,
+						TSENS->VALUE.reg & 0x00FFFFFF, TSENS->GAIN.reg & 0x00FFFFFF, TSENS->OFFSET.reg & 0x00FFFFFF, TSENS->CAL.reg & 0x0000FFFF);
+#endif
 		}
 		break;
 

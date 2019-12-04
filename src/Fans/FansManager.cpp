@@ -15,7 +15,7 @@
 #include <utility>
 
 static ReadWriteLock fansLock;
-static Fan *fans[NumTotalFans] = { 0 };
+static Fan *fans[MaxFans] = { 0 };
 
 // Retrieve the pointer to a fan, or nullptr if it doesn't exist.
 // Lock the fan system before calling this, so that the fan can't be deleted while we are accessing it.
@@ -64,7 +64,7 @@ GCodeResult FansManager::ConfigureFanPort(const CanMessageGeneric& msg, const St
 		return GCodeResult::error;
 	}
 
-	if (fanNum >= NumTotalFans)
+	if (fanNum >= MaxFans)
 	{
 		reply.printf("Fan number %u too high", (unsigned int)fanNum);
 		return GCodeResult::error;

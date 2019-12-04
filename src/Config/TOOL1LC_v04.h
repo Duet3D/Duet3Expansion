@@ -25,8 +25,8 @@ constexpr const char* BoardTypeName = "TOOL1LC";
 #define HAS_SMART_DRIVERS		1
 #define HAS_STALL_DETECT		0		//TODO temporary until TMC2209 support added
 
-#define STEP_POLARITY			1		// 1 = active high, 0 = active low
-#define DIR_POLARITY			0		// 1 = active high, 0 = active low
+#define ACTIVE_HIGH_STEP		1		// 1 = active high, 0 = active low
+#define ACTIVE_HIGH_DIR			0		// 1 = active high, 0 = active low
 
 #define SUPPORT_TMC51xx			0
 #define SUPPORT_TMC2660			0

@@ -22,8 +22,8 @@ constexpr const char* BoardTypeName = "EXP3HC";
 #define HAS_ADDRESS_SWITCHES	1
 #define HAS_BUTTONS				0
 
-#define STEP_POLARITY			1		// 1 = active high, 0 = active low
-#define DIR_POLARITY			1		// 1 = active high, 0 = active low
+#define ACTIVE_HIGH_STEP		1		// 1 = active high, 0 = active low
+#define ACTIVE_HIGH_DIR			1		// 1 = active high, 0 = active low
 
 #define SUPPORT_TMC51xx			1
 #define SUPPORT_TMC22xx			0
