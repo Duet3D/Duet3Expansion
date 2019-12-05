@@ -20,20 +20,22 @@ constexpr float DefaultThermistorC = 0.0;
 # include "TOOL1LC_v04.h"
 #endif
 
-#ifdef TOOL1ED_V04
-# include "TOOL1ED_v04.h"
+#ifdef TOOL1XD_V04
+# include "TOOL1XD_v04.h"
 #endif
 
 #define SUPPORT_CAN_EXPANSION	1
 
-constexpr size_t MaxSensorsInSystem = 64;
+constexpr size_t MaxSensorsInSystem = 64;				// should match the value in RepRapFirmware
 typedef uint64_t SensorsBitmap;
 
 constexpr size_t MaxZProbes = 4;
-constexpr size_t MaxZProbeProgramBytes = 8;				// Maximum number of bytes in a Z probe program
+constexpr size_t MaxZProbeProgramBytes = 8;				// maximum number of bytes in a Z probe program
+
+constexpr size_t MaxGpioPorts = 16;						// should match the value in RepRapFirmware
 
 // Fan defaults
-constexpr size_t MaxFans = 12;
+constexpr size_t MaxFans = 12;							// should match the value in RepRapFirmware
 constexpr float DefaultMinFanPwm = 0.1;					// minimum fan PWM
 constexpr uint32_t DefaultFanBlipTime = 100;			// fan blip time in milliseconds
 

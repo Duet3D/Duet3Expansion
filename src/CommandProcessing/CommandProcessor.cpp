@@ -14,6 +14,7 @@
 #include "CanMessageGenericParser.h"
 #include <Endstops/EndstopsManager.h>
 #include <InputMonitors/InputMonitor.h>
+#include <GPIO/GpioPorts.h>
 #include <Platform.h>
 #include <Movement/Move.h>
 #include <Tasks.h>
@@ -628,8 +629,12 @@ void CommandProcessor::Spin()
 
 		case CanMessageType::m950Gpio:
 			requestId = buf->msg.generic.requestId;
-			reply.copy("GPIO configuration not implemented");
-			rslt = GCodeResult::error;
+			rslt = GpioPorts::HandleM950Gpio(buf->msg.generic, replyRef);
+			break;
+
+		case CanMessageType::writeGpio:
+			requestId = buf->msg.writeGpio.requestId;
+			rslt = GpioPorts::HandleGpioWrite(buf->msg.writeGpio, replyRef);
 			break;
 
 		case CanMessageType::setMotorCurrents:

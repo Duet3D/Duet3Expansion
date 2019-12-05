@@ -11,7 +11,7 @@
 #include "RepRapFirmware.h"
 #include "Hardware/Peripherals.h"
 
-constexpr const char* BoardTypeName = "TOOL1ED";
+constexpr const char* BoardTypeName = "TOOL1XD";
 
 // General features
 #define HAS_VREF_MONITOR		1

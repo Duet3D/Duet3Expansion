@@ -34,14 +34,15 @@ namespace AnalogOut
 	// Choose the most appropriate prescaler for the PWM frequency we want.
 	// Some TCs share a clock selection, so we always use GCLK1 as the clock
 	// 'counterBits' is either 16 or 8
-	static uint32_t ChoosePrescaler(uint16_t freq, unsigned int counterBits, uint16_t& top)
+	// Return the prescaler register value
+	static uint32_t ChoosePrescaler(uint16_t freq, unsigned int counterBits, uint32_t& top)
 	{
 		static const unsigned int PrescalerShifts[] = { 0, 1, 2, 3, 4, 6, 8, 10 };		// available prescalers are 1 2 4 8 16 64 256 1024
 		for (uint32_t i = 0; i < ARRAY_SIZE(PrescalerShifts); ++i)
 		{
 			if ((SystemPeripheralClock >> (PrescalerShifts[i] + counterBits)) <= (uint32_t)freq)
 			{
-				top = (uint16_t)((SystemPeripheralClock >> PrescalerShifts[i])/(uint32_t)freq - 1);
+				top = ((SystemPeripheralClock >> PrescalerShifts[i])/(uint32_t)freq) - 1;
 				return i;
 			}
 		}
@@ -52,7 +53,7 @@ namespace AnalogOut
 	// Write PWM to the specified TC device. 'output' may be 0 or 1.
 	static bool AnalogWriteTc(Pin pin, unsigned int device, unsigned int output, float val, PwmFrequency freq)
 	{
-		static Tc* const TcDevices[] =
+		static volatile Tc* const TcDevices[] =
 		{
 			TC0, TC1, TC2, TC3, TC4,
 #ifdef SAME51
@@ -60,7 +61,7 @@ namespace AnalogOut
 #endif
 		};
 		static uint16_t tcFreq[ARRAY_SIZE(TcDevices)] = { 0 };
-		static uint16_t tcTop[ARRAY_SIZE(TcDevices)] = { 0 };
+		static uint32_t tcTop[ARRAY_SIZE(TcDevices)] = { 0 };
 
 		if (device < ARRAY_SIZE(TcDevices))
 		{
@@ -70,7 +71,7 @@ namespace AnalogOut
 				return false;
 			}
 
-			Tc * const tcdev = TcDevices[device];
+			volatile Tc * const tcdev = TcDevices[device];
 			if (freq != tcFreq[device])
 			{
 				const uint32_t prescaler = ChoosePrescaler(freq, 16, tcTop[device]);
@@ -81,7 +82,7 @@ namespace AnalogOut
 					tcTop[device] = 0xFFFF;
 				}
 
-				const uint16_t cc = ConvertRange(val, (uint32_t)tcTop[device]);
+				const uint32_t cc = ConvertRange(val, tcTop[device]);
 
 				if (tcFreq[device] == 0)
 				{
@@ -96,7 +97,7 @@ namespace AnalogOut
 					// Initialise the TC
 					hri_tc_clear_CTRLA_ENABLE_bit(tcdev);
 					hri_tc_set_CTRLA_SWRST_bit(tcdev);
-					hri_tc_set_CTRLA_PRESCALER_bf(tcdev, prescaler);
+					hri_tc_write_CTRLA_PRESCALER_bf(tcdev, prescaler);
 					hri_tc_set_CTRLA_MODE_bf(tcdev, TC_CTRLA_MODE_COUNT16_Val);
 					if (output == 0)
 					{
@@ -125,19 +126,21 @@ namespace AnalogOut
 				}
 				else
 				{
-					hri_tc_set_CTRLA_PRESCALER_bf(tcdev, prescaler);
+					hri_tc_clear_CTRLA_ENABLE_bit(tcdev);
+					hri_tc_write_CTRLA_PRESCALER_bf(tcdev, prescaler);
 					if (output != 0)
 					{
 						hri_tccount16_write_CCBUF_CCBUF_bf(tcdev, 0, tcTop[device]);
 					}
 					hri_tccount16_write_CCBUF_CCBUF_bf(tcdev, output, cc);
+					hri_tc_set_CTRLA_ENABLE_bit(tcdev);
 				}
 				tcFreq[device] = freq;
 			}
 			else
 			{
 				// Just update the compare register
-				const uint16_t cc = ConvertRange(val, (uint32_t)tcTop[device]);
+				const uint16_t cc = ConvertRange(val, tcTop[device]);
 				hri_tccount16_write_CCBUF_CCBUF_bf(tcdev, output, cc);
 			}
 			return true;
@@ -148,15 +151,22 @@ namespace AnalogOut
 	// Write PWM to the specified TCC device. 'output' may be 0..5.
 	static bool AnalogWriteTcc(Pin pin, unsigned int device, unsigned int output, unsigned int peri, float val, PwmFrequency freq)
 	{
-		static Tcc* const TccDevices[] =
+		static volatile Tcc* const TccDevices[] =
 		{
 			TCC0, TCC1, TCC2,
 #ifdef SAME51
 			TCC3, TCC4
 #endif
 		};
+		static constexpr unsigned int TccCounterBits[ARRAY_SIZE(TccDevices)] =
+		{
+			24, 24, 16,
+#ifdef SAME51
+			16, 16
+#endif
+		};
 		static uint16_t tccFreq[ARRAY_SIZE(TccDevices)] = { 0 };
-		static uint16_t tccTop[ARRAY_SIZE(TccDevices)] = { 0 };
+		static uint32_t tccTop[ARRAY_SIZE(TccDevices)] = { 0 };
 
 		if (device < ARRAY_SIZE(TccDevices))
 		{
@@ -166,11 +176,11 @@ namespace AnalogOut
 				return false;
 			}
 
-			Tcc * const tccdev = TccDevices[device];
+			volatile Tcc * const tccdev = TccDevices[device];
 			if (freq != tccFreq[device])
 			{
-				const uint32_t prescaler = ChoosePrescaler(freq, 16, tccTop[device]);
-				const uint16_t cc = ConvertRange(val, (uint32_t)tccTop[device]);
+				const uint32_t prescaler = ChoosePrescaler(freq, TccCounterBits[device], tccTop[device]);
+				const uint32_t cc = ConvertRange(val, tccTop[device]);
 
 				if (tccFreq[device] == 0)
 				{
@@ -185,35 +195,28 @@ namespace AnalogOut
 					// Initialise the TCC
 					hri_tcc_clear_CTRLA_ENABLE_bit(tccdev);
 					hri_tcc_set_CTRLA_SWRST_bit(tccdev);
-					hri_tcc_set_CTRLA_PRESCALER_bf(tccdev, prescaler);
+					hri_tcc_write_CTRLA_PRESCALER_bf(tccdev, prescaler);
 					hri_tcc_write_WAVE_WAVEGEN_bf(tccdev, TCC_WAVE_WAVEGEN_NPWM_Val);
 					hri_tcc_write_PERBUF_PERBUF_bf(tccdev, tccTop[device]);
 
-#if 1
-					// hri_tcc_write_PER_PER_bf sometimes hangs here waiting for the syncbusy PER bit to clear, so don't call it
+					// hri_tcc_write_PER_PER_bf sometimes hangs here waiting for the syncbusy PER bit to clear, so write direct to tccdev->PER.reg instead
 					tccdev->PER.reg = (tccdev->PER.reg & ~TCC_PER_PER_Msk) | TCC_PER_PER(tccTop[device]);
-#else
-					hri_tcc_write_PER_PER_bf(tccdev, tccTop[device]);
-#endif
 					hri_tcc_write_CCBUF_CCBUF_bf(tccdev, output, cc);
-#if 1
-					// hri_tcc_write_CC_CC_bf sometimes hangs here waiting for the syncbusy CC bits to clear, so don't call it
+					// hri_tcc_write_CC_CC_bf sometimes hangs here waiting for the syncbusy CC bits to clear, so write direct to tccdev->CC[output].reg instead
 					tccdev->CC[output].reg = (tccdev->CC[output].reg & ~TCC_CC_CC_Msk) | TCC_CC_CC(cc);
-#else
-					hri_tcc_write_CC_CC_bf(tccdev, output, cc);
-#endif
 					hri_tcc_set_CTRLA_ENABLE_bit(tccdev);
-					hri_tcc_wait_for_sync(tccdev, TCC_SYNCBUSY_MASK);
 					hri_tcc_write_COUNT_reg(tccdev, 0);							// if we don't do this then there may be a 5 second delay before PWM starts
 					gpio_set_pin_function(pin, peri);
 				}
 				else
 				{
-					hri_tcc_set_CTRLA_PRESCALER_bf(tccdev, prescaler);
+					hri_tcc_clear_CTRLA_ENABLE_bit(tccdev);
+					hri_tcc_write_CTRLA_PRESCALER_bf(tccdev, prescaler);
 					hri_tcc_write_PERBUF_PERBUF_bf(tccdev, tccTop[device]);
-					hri_tcc_write_PER_PER_bf(tccdev, tccTop[device]);
+					tccdev->PER.reg = (tccdev->PER.reg & ~TCC_PER_PER_Msk) | TCC_PER_PER(tccTop[device]);
 					hri_tcc_write_CCBUF_CCBUF_bf(tccdev, output, cc);
-					hri_tcc_write_CC_CC_bf(tccdev, output, cc);
+					tccdev->CC[output].reg = (tccdev->CC[output].reg & ~TCC_CC_CC_Msk) | TCC_CC_CC(cc);
+					hri_tcc_set_CTRLA_ENABLE_bit(tccdev);
 					hri_tcc_write_COUNT_reg(tccdev, 0);
 				}
 				tccFreq[device] = freq;
@@ -221,7 +224,7 @@ namespace AnalogOut
 			else
 			{
 				// Just update the compare register
-				const uint16_t cc = ConvertRange(val, (uint32_t)tccTop[device]);
+				const uint32_t cc = ConvertRange(val, tccTop[device]);
 				hri_tcc_write_CCBUF_CCBUF_bf(tccdev, output, cc);
 			}
 			return true;
