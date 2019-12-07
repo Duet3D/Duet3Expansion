@@ -487,11 +487,8 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 	case CanMessageReturnInfo::typeM408:
 		// For now we ignore the parameter and always return the same set of info
 		// This command is currently only used by the ATE, which needs the board type and the voltages
-		reply.copy("{\"firmwareElectronics\":\"duet3");
-		for (const char *s = BoardTypeName; *s != 0; ++s)
-		{
-			reply.cat((char)tolower(*s));
-		}
+		reply.copy("{\"firmwareElectronics\":\"Duet 3 ");
+		reply.cat(BoardTypeName);
 		reply.cat("\"");
 #if HAS_VOLTAGE_MONITOR
 		reply.catf(",\"vin\":{\"min\":%.1f,\"cur\":%.1f,\"max\":%.1f}",
