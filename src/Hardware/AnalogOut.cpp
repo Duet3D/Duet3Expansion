@@ -97,44 +97,30 @@ namespace AnalogOut
 					// Initialise the TC
 					hri_tc_clear_CTRLA_ENABLE_bit(tcdev);
 					hri_tc_set_CTRLA_SWRST_bit(tcdev);
-					hri_tc_write_CTRLA_PRESCALER_bf(tcdev, prescaler);
-					hri_tc_set_CTRLA_MODE_bf(tcdev, TC_CTRLA_MODE_COUNT16_Val);
+					tcdev->COUNT16.CTRLA.bit.MODE = TC_CTRLA_MODE_COUNT16_Val;
 					if (output == 0)
 					{
-						hri_tc_write_WAVE_WAVEGEN_bf(tcdev, TC_WAVE_WAVEGEN_NPWM_Val);
+						tcdev->COUNT16.WAVE.bit.WAVEGEN = TC_WAVE_WAVEGEN_NPWM_Val;
 					}
 					else
 					{
-						hri_tc_write_WAVE_WAVEGEN_bf(tcdev, TC_WAVE_WAVEGEN_MPWM_Val);
-#if 1
-						tcdev->COUNT16.CC[0].reg = (tcdev->COUNT16.CC[0].reg &  ~TC_COUNT16_CC_CC_Msk) | TC_COUNT16_CC_CC(tcTop[device]);
-						tcdev->COUNT16.CCBUF[0].reg = (tcdev->COUNT16.CCBUF[0].reg & ~TC_COUNT16_CCBUF_CCBUF_Msk) | TC_COUNT16_CCBUF_CCBUF(tcTop[device]);
-#else
-						hri_tccount16_write_CC_CC_bf(tcdev, 0, tcTop[device]);
-						hri_tccount16_write_CCBUF_CCBUF_bf(tcdev, 0, tcTop[device]);
-#endif
+						tcdev->COUNT16.WAVE.bit.WAVEGEN = TC_WAVE_WAVEGEN_MPWM_Val;
 					}
-#if 1
-					tcdev->COUNT16.CC[output].reg = (tcdev->COUNT16.CC[output].reg &  ~TC_COUNT16_CC_CC_Msk) | TC_COUNT16_CC_CC(cc);
-					tcdev->COUNT16.CCBUF[output].reg = (tcdev->COUNT16.CCBUF[output].reg & ~TC_COUNT16_CCBUF_CCBUF_Msk) | TC_COUNT16_CCBUF_CCBUF(cc);
-#else
-					hri_tccount16_write_CCBUF_CCBUF_bf(tcdev, output, cc);
-					hri_tccount16_write_CC_CC_bf(tcdev, output, cc);
-#endif
-					hri_tc_set_CTRLA_ENABLE_bit(tcdev);
-					gpio_set_pin_function(pin, GPIO_PIN_FUNCTION_E);			// TCs are all on peripheral select E
 				}
 				else
 				{
 					hri_tc_clear_CTRLA_ENABLE_bit(tcdev);
-					hri_tc_write_CTRLA_PRESCALER_bf(tcdev, prescaler);
-					if (output != 0)
-					{
-						hri_tccount16_write_CCBUF_CCBUF_bf(tcdev, 0, tcTop[device]);
-					}
-					hri_tccount16_write_CCBUF_CCBUF_bf(tcdev, output, cc);
-					hri_tc_set_CTRLA_ENABLE_bit(tcdev);
 				}
+				tcdev->COUNT16.CTRLA.bit.PRESCALER = prescaler;
+				if (output != 0)
+				{
+					tcdev->COUNT16.CC[0].bit.CC = tcTop[device];
+					tcdev->COUNT16.CCBUF[0].bit.CCBUF = tcTop[device];
+				}
+				tcdev->COUNT16.CC[output].bit.CC = cc;
+				tcdev->COUNT16.CCBUF[output].bit.CCBUF = cc;
+				hri_tc_set_CTRLA_ENABLE_bit(tcdev);
+				hri_tccount16_write_COUNT_COUNT_bf(tcdev, 0);
 				tcFreq[device] = freq;
 			}
 			else
@@ -143,6 +129,8 @@ namespace AnalogOut
 				const uint16_t cc = ConvertRange(val, tcTop[device]);
 				hri_tccount16_write_CCBUF_CCBUF_bf(tcdev, output, cc);
 			}
+
+			gpio_set_pin_function(pin, GPIO_PIN_FUNCTION_E);			// TCs are all on peripheral select E
 			return true;
 		}
 		return false;
@@ -195,30 +183,23 @@ namespace AnalogOut
 					// Initialise the TCC
 					hri_tcc_clear_CTRLA_ENABLE_bit(tccdev);
 					hri_tcc_set_CTRLA_SWRST_bit(tccdev);
-					hri_tcc_write_CTRLA_PRESCALER_bf(tccdev, prescaler);
+					tccdev->CTRLA.bit.PRESCALER = prescaler;
+					tccdev->CTRLA.bit.RESOLUTION = 0;
 					hri_tcc_write_WAVE_WAVEGEN_bf(tccdev, TCC_WAVE_WAVEGEN_NPWM_Val);
-					hri_tcc_write_PERBUF_PERBUF_bf(tccdev, tccTop[device]);
-
-					// hri_tcc_write_PER_PER_bf sometimes hangs here waiting for the syncbusy PER bit to clear, so write direct to tccdev->PER.reg instead
-					tccdev->PER.reg = (tccdev->PER.reg & ~TCC_PER_PER_Msk) | TCC_PER_PER(tccTop[device]);
-					hri_tcc_write_CCBUF_CCBUF_bf(tccdev, output, cc);
-					// hri_tcc_write_CC_CC_bf sometimes hangs here waiting for the syncbusy CC bits to clear, so write direct to tccdev->CC[output].reg instead
-					tccdev->CC[output].reg = (tccdev->CC[output].reg & ~TCC_CC_CC_Msk) | TCC_CC_CC(cc);
-					hri_tcc_set_CTRLA_ENABLE_bit(tccdev);
-					hri_tcc_write_COUNT_reg(tccdev, 0);							// if we don't do this then there may be a 5 second delay before PWM starts
-					gpio_set_pin_function(pin, peri);
 				}
 				else
 				{
 					hri_tcc_clear_CTRLA_ENABLE_bit(tccdev);
 					hri_tcc_write_CTRLA_PRESCALER_bf(tccdev, prescaler);
-					hri_tcc_write_PERBUF_PERBUF_bf(tccdev, tccTop[device]);
-					tccdev->PER.reg = (tccdev->PER.reg & ~TCC_PER_PER_Msk) | TCC_PER_PER(tccTop[device]);
-					hri_tcc_write_CCBUF_CCBUF_bf(tccdev, output, cc);
-					tccdev->CC[output].reg = (tccdev->CC[output].reg & ~TCC_CC_CC_Msk) | TCC_CC_CC(cc);
-					hri_tcc_set_CTRLA_ENABLE_bit(tccdev);
-					hri_tcc_write_COUNT_reg(tccdev, 0);
 				}
+
+				tccdev->PERBUF.bit.PERBUF = tccTop[device];
+				tccdev->PER.bit.PER = tccTop[device];
+				tccdev->CCBUF[output].bit.CCBUF = cc;
+				tccdev->CC[output].bit.CC = cc;
+				hri_tcc_set_CTRLA_ENABLE_bit(tccdev);
+				hri_tcc_write_COUNT_reg(tccdev, 0);
+
 				tccFreq[device] = freq;
 			}
 			else
@@ -227,6 +208,8 @@ namespace AnalogOut
 				const uint32_t cc = ConvertRange(val, tccTop[device]);
 				hri_tcc_write_CCBUF_CCBUF_bf(tccdev, output, cc);
 			}
+
+			gpio_set_pin_function(pin, peri);
 			return true;
 		}
 		return false;
@@ -249,26 +232,28 @@ void AnalogOut::Write(Pin pin, float val, PwmFrequency freq)
 		return;
 	}
 
-	val = constrain<float>(val, 0.0, 1.0);
-
+	// if writing 0 or 1, do plain digital output for faster response
+	if (val > 0.0 && val < 1.0)
 	{
-		const TcOutput tc = PinTable[pin].tc;
-		if (tc != TcOutput::none)
 		{
-			if (AnalogWriteTc(pin, GetDeviceNumber(tc), GetOutputNumber(tc), val, freq))
+			const TcOutput tc = PinTable[pin].tc;
+			if (tc != TcOutput::none)
 			{
-				return;
+				if (AnalogWriteTc(pin, GetDeviceNumber(tc), GetOutputNumber(tc), val, freq))
+				{
+					return;
+				}
 			}
 		}
-	}
 
-	{
-		const TccOutput tcc = PinTable[pin].tcc;
-		if (tcc != TccOutput::none)
 		{
-			if (AnalogWriteTcc(pin, GetDeviceNumber(tcc), GetOutputNumber(tcc), GetPeriNumber(tcc), val, freq))
+			const TccOutput tcc = PinTable[pin].tcc;
+			if (tcc != TccOutput::none)
 			{
-				return;
+				if (AnalogWriteTcc(pin, GetDeviceNumber(tcc), GetOutputNumber(tcc), GetPeriNumber(tcc), val, freq))
+				{
+					return;
+				}
 			}
 		}
 	}
