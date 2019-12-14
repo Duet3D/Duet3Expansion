@@ -56,9 +56,7 @@ inline void EndstopOrZProbe::UpdateStalledDrivers(uint32_t driverMask, bool isSt
 class Endstop : public EndstopOrZProbe
 {
 public:
-	virtual EndStopInputType GetEndstopType() const = 0;
-//	virtual void Prime(const Kinematics& kin, const AxisDriversConfig& axisDrivers) = 0;
-//	virtual void AppendDetails(const StringRef& str) = 0;
+	virtual EndStopType GetEndstopType() const = 0;
 
 	// Process a remote endstop input change that relates to this endstop. Return true if the buffer has been freed.
 	virtual bool HandleRemoteInputChange(CanAddress src, uint8_t handleMinor, bool state, CanMessageBuffer *buf) { return false; }

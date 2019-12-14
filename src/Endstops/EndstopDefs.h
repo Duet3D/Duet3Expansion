@@ -74,7 +74,7 @@ enum class EndStopPosition : unsigned int
 };
 
 // Type of an endstop input - values must tally with the M574 command S parameter
-enum class EndStopInputType : unsigned int
+enum class EndStopType : unsigned int
 {
 	activeLow = 0,
 	activeHigh = 1,

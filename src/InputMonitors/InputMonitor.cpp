@@ -246,16 +246,24 @@ void InputMonitor::AnalogInterrupt(uint16_t reading)
 			const uint32_t age = now - p->whenLastSent;
 			if (age >= p->minInterval)
 			{
-				if (!msg->AddEntry(p->handle, p->state))
+				bool state;
 				{
-					timeToWait = 0;
+					InterruptCriticalSectionLocker lock;
+					p->sendDue = false;
+					state = p->state;
+				}
+
+				if (!msg->AddEntry(p->handle, state))
+				{
+					p->sendDue = true;
+					timeToWait = 1;
 					return;
 				}
 				p->whenLastSent = now;
-				p->sendDue = false;
 			}
 			else
 			{
+				// The state has changed but we've recently sent a state change for this input
 				const uint32_t timeLeft = p->minInterval - age;
 				if (timeLeft < timeToWait)
 				{

@@ -48,8 +48,8 @@ private:
 	uint16_t minInterval;
 	uint16_t threshold;
 	bool active;
-	bool state;
-	bool sendDue;
+	volatile bool state;
+	volatile bool sendDue;
 
 	static InputMonitor *monitorsList;
 	static InputMonitor *freeList;
