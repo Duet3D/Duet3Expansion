@@ -162,10 +162,12 @@ void Move::Spin()
 		CanMessageMovement move;
 		if (CanInterface::GetCanMove(move))
 		{
-			ddaRingAddPointer->Init(move);
-			ddaRingAddPointer = ddaRingAddPointer->GetNext();
-			idleCount = 0;
-			scheduledMoves++;
+			if (ddaRingAddPointer->Init(move))
+			{
+				ddaRingAddPointer = ddaRingAddPointer->GetNext();
+				idleCount = 0;
+				scheduledMoves++;
+			}
 		}
 	}
 

@@ -187,8 +187,8 @@ void DDA::Init()
 }
 
 // Set up a real move. Return true if it represents real movement, else false.
-// Either way, return the amount of extrusion we didn't do in the extruder coordinates of nextMove
-void DDA::Init(const CanMessageMovement& msg)
+// Return true if it is a real move
+bool DDA::Init(const CanMessageMovement& msg)
 {
 	// 0. Update the endpoints (do we even need them?)
 	bool realMove = false;
@@ -210,7 +210,7 @@ void DDA::Init(const CanMessageMovement& msg)
 	// 2. Throw it away if there's no real movement.
 	if (!realMove)
 	{
-		return;
+		return false;
 	}
 
 	// 3. Store some values
@@ -237,6 +237,7 @@ void DDA::Init(const CanMessageMovement& msg)
 
 	state = provisional;
 	Prepare(msg);
+	return true;
 }
 
 // Prepare this DDA for execution.

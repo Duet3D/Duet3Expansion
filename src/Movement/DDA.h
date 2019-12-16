@@ -33,7 +33,7 @@ public:
 
 	DDA(DDA* n);
 
-	void Init(const CanMessageMovement& msg);
+	bool Init(const CanMessageMovement& msg);
 	void Init();													// Set up initial positions for machine startup
 	void Start(uint32_t tim) __attribute__ ((hot));					// Start executing the DDA, i.e. move the move.
 	void StepDrivers() __attribute__ ((hot));						// Take one step of the DDA, called by timed interrupt.
