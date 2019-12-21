@@ -12,19 +12,7 @@
 #include <hal_init.h>
 
 struct can_async_descriptor CAN_0;
-
 struct flash_descriptor FLASH_0;
-
-void FLASH_0_CLOCK_init(void)
-{
-	hri_mclk_set_AHBMASK_NVMCTRL_bit(MCLK);
-}
-
-void FLASH_0_init(void)
-{
-	FLASH_0_CLOCK_init();
-	flash_init(&FLASH_0, NVMCTRL);
-}
 
 void CAN_0_PORT_init(void)
 {
@@ -47,6 +35,14 @@ void CAN_0_init(void)
 
 void system_init(void)
 {
+	// Disable CAN interrupts, because older bootloaders don't.
+	NVIC_DisableIRQ(CAN0_IRQn);
+	NVIC_DisableIRQ(CAN1_IRQn);
+	CAN0->IR.reg = 0xFFFFFFFF;			// clear all interrupt sources for when the device gets enabled by the main firmware
+	CAN0->ILE.reg = 0;
+	CAN1->IR.reg = 0xFFFFFFFF;			// clear all interrupt sources for when the device gets enabled by the main firmware
+	CAN1->ILE.reg = 0;
+
 	// If we have entered via the bootloader then we have already configured the clocks.
 	// We could just leave them alone, but only if we definitely want to use the same clock configuration.
 	// So instead we reset the clock configuration.
@@ -67,7 +63,7 @@ void system_init(void)
 	SystemCoreClock = 48000000;			// GCLK0
 	SystemPeripheralClock = 48000000;	// GCLK0
 
-	CAN_0_init();
+	// We initialise the CAN subsystem later
 
 //	WDT_0_init();
 }

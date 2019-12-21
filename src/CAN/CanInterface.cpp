@@ -5,7 +5,9 @@
  *      Author: David
  */
 
-#include <CAN/CanInterface.h>
+#include "CanInterface.h"
+
+#include <CanSettings.h>
 #include "CanMessageFormats.h"
 #include "CanMessageBuffer.h"
 #include "Platform.h"
@@ -16,6 +18,7 @@
 
 const unsigned int NumCanBuffers = 40;
 
+static CanUserAreaData canConfigData;
 static CanAddress boardAddress;
 static bool enabled = false;
 
@@ -141,10 +144,10 @@ extern "C" [[noreturn]] void CanReceiverLoop(void *)
 
 		can_message msg;										// descriptor for the message
 		msg.data = reinterpret_cast<uint8_t*>(&(buf->msg));		// set up where we want the message data to be stored
-		const int32_t rslt = can_async_read(&CAN_0, &msg);	// fetch the message
+		const int32_t rslt = can_async_read(&CAN_0, &msg);		// fetch the message
 		if (rslt == ERR_NOT_FOUND)
 		{
-			TaskBase::Take();											// wait until we are woken up because a message is available
+			TaskBase::Take();									// wait until we are woken up because a message is available
 		}
 		else if (rslt == ERR_NONE)
 		{
@@ -197,7 +200,22 @@ extern "C" [[noreturn]] void CanAsyncSenderLoop(void *)
 
 void CanInterface::Init(CanAddress pBoardAddress)
 {
-	boardAddress = pBoardAddress;
+	// Read the CAN timing data from the top part of the NVM User Row
+#if defined(SAME51)
+	canConfigData = *reinterpret_cast<const CanUserAreaData*>(NVMCTRL_USER + 512 - sizeof(CanUserAreaData));
+#elif defined(SAMC21)
+	canConfigData = *reinterpret_cast<const CanUserAreaData*>(NVMCTRL_USER + 256 - sizeof(CanUserAreaData));
+#endif
+	CanTiming canTimingData;
+	canConfigData.GetTiming(canTimingData);
+
+	// Initialise the CAN hardware
+	// TODO use the timing data if it was valid
+	(void)canTimingData;
+	CAN_0_init();
+
+	// TODO if no address switches, use the address in the timing data
+	boardAddress = canConfigData.GetCanAddress(pBoardAddress);
 	CanMessageBuffer::Init(NumCanBuffers);
 
 	can_async_register_callback(&CAN_0, CAN_ASYNC_RX_CB, (FUNC_PTR)CAN_0_rx_callback);

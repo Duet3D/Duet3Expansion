@@ -16,6 +16,7 @@ namespace Flash
 
 bool Flash::Init()
 {
+	hri_mclk_set_AHBMASK_NVMCTRL_bit(MCLK);
 	return flash_init(&flash, NVMCTRL) == 0;
 }
 

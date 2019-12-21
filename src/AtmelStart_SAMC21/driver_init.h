@@ -24,22 +24,17 @@ extern uint32_t SystemPeripheralClock;		// in system_same21.c
 #include <hal_sleep.h>
 
 #include <hal_flash.h>
-
 #include <hal_can_async.h>
 
-extern struct flash_descriptor     FLASH_0;
 extern struct can_async_descriptor CAN_0;
 
-void FLASH_0_init(void);
-void FLASH_0_CLOCK_init(void);
+void CAN_0_init();
 
 /**
  * \brief Perform system initialization, initialize pins and clocks for
  * peripherals
  */
 void system_init(void);
-
-void DeviceInit(void);
 
 #ifdef __cplusplus
 }

@@ -30,6 +30,7 @@ extern struct can_async_descriptor CAN_0;
 
 void WDT_0_CLOCK_init(void);
 void WDT_0_init(void);
+void CAN_0_init();
 
 /**
  * \brief Perform system initialization, initialize pins and clocks for

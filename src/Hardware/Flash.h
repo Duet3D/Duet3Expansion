@@ -26,8 +26,6 @@ namespace Flash
 	bool Erase(uint32_t start, uint32_t length);
 	bool Lock(uint32_t start, uint32_t length);
 	bool Write(uint32_t start, uint32_t length, uint8_t *data);
-	bool ReadEEPROM(uint32_t offset, uint32_t length, uint8_t *data);
-	bool WriteEEPROM(uint32_t offset, uint32_t length, uint8_t *data);
 }
 
 #endif /* SRC_HARDWARE_FLASH_H_ */

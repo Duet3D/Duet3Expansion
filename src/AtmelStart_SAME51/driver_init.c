@@ -48,6 +48,13 @@ void CAN_0_init(void)
 
 void system_init(void)
 {
+	NVIC_DisableIRQ(CAN0_IRQn);
+	NVIC_DisableIRQ(CAN1_IRQn);
+	CAN0->IR.reg = 0xFFFFFFFF;			// clear all interrupt sources for when the device gets enabled by the main firmware
+	CAN0->ILE.reg = 0;
+	CAN1->IR.reg = 0xFFFFFFFF;			// clear all interrupt sources for when the device gets enabled by the main firmware
+	CAN1->ILE.reg = 0;
+
 	// If we have entered via the bootloader then we have already configured the clocks.
 	// We could just leave them alone, but only if we definitely want to use the same clock configuration.
 	// So instead we reset the clock configuration.
@@ -68,7 +75,7 @@ void system_init(void)
 	SystemCoreClock = 120000000;			// GCLK0
 	SystemPeripheralClock = 60000000;		// GCLK1
 
-	CAN_0_init();
+	// We initialise CAN later
 
 //	WDT_0_init();
 }
