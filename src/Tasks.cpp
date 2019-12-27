@@ -188,17 +188,26 @@ namespace Tasks
 
 }
 
-// Append a memory report to a string
-void Tasks::GetMemoryReport(const StringRef& reply)
+uint32_t Tasks::GetNeverUsedRam()
 {
 	uint32_t maxStack, neverUsedRam;
 	GetHandlerStackUsage(&maxStack, &neverUsedRam);
-	reply.catf("Never used RAM %.1fKb, max stack %" PRIu32 "b", (double)neverUsedRam/1024, maxStack);
+	return neverUsedRam;
 }
 
-// Append a task memory report to a string
-void Tasks::GetTasksMemoryReport(const StringRef& reply)
+Mutex *Tasks::GetSpiMutex()
 {
+	return &spiMutex;
+}
+
+void Tasks::Diagnostics(const StringRef& reply)
+{
+	// Append a memory report to a string
+	uint32_t maxStack, neverUsedRam;
+	GetHandlerStackUsage(&maxStack, &neverUsedRam);
+	reply.lcatf("Never used RAM %.1fKb, max stack %" PRIu32 "b\n", (double)neverUsedRam/1024, maxStack);
+
+	// Now the per-task memory report
 	bool printed = false;
 	for (const TaskBase *t = TaskBase::GetTaskList(); t != nullptr; t = t->GetNext())
 	{
@@ -211,18 +220,6 @@ void Tasks::GetTasksMemoryReport(const StringRef& reply)
 		reply.catf("%s %u", taskDetails.pcTaskName, (unsigned int)(taskDetails.usStackHighWaterMark * sizeof(StackType_t)));
 		printed = true;
 	}
-}
-
-uint32_t Tasks::GetNeverUsedRam()
-{
-	uint32_t maxStack, neverUsedRam;
-	GetHandlerStackUsage(&maxStack, &neverUsedRam);
-	return neverUsedRam;
-}
-
-Mutex *Tasks::GetSpiMutex()
-{
-	return &spiMutex;
 }
 
 static StaticTask_t xIdleTaskTCB;

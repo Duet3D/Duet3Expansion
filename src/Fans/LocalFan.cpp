@@ -72,7 +72,7 @@ void LocalFan::Refresh()
 	{
 		reqVal = 0.0;
 		const bool bangBangMode = (triggerTemperatures[1] <= triggerTemperatures[0]);
-		for (size_t sensorNum = 0; sensorNum < MaxSensorsInSystem; ++sensorNum)
+		for (size_t sensorNum = 0; sensorNum < MaxSensors; ++sensorNum)
 		{
 			// Check if this sensor is both monitored by this fan and in use
 			if (IsBitSet(sensorsMonitored, sensorNum))

@@ -71,6 +71,8 @@ namespace Heat
 	ReadLockedPointer<TemperatureSensor> FindSensorAtOrAbove(unsigned int sn);	// Get a pointer to the first temperature sensor with the specified or higher number
 
 	inline bool IsBedOrChamberHeater(int heater) { return false; }
+
+	void Diagnostics(const StringRef& reply);
 };
 
 #endif /* SRC_HEATING_HEAT_H_ */

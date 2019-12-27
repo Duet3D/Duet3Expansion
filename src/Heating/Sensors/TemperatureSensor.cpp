@@ -55,8 +55,7 @@ GCodeResult TemperatureSensor::Configure(const CanMessageGenericParser& parser, 
 
 void TemperatureSensor::CopyBasicDetails(const StringRef& reply) const
 {
-	reply.printf("Sensor %u", sensorNumber);
-	reply.catf(" type %s, last error: %s", sensorType, TemperatureErrorString(lastRealError));
+	reply.printf("type %s, reading %.1f, last error: %s", sensorType, (double)GetStoredReading(), TemperatureErrorString(lastRealError));
 }
 
 void TemperatureSensor::SetResult(float t, TemperatureError rslt)

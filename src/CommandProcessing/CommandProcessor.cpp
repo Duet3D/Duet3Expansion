@@ -509,10 +509,8 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 		else
 		{
 			extra = LastDiagnosticsPart;
-			reply.printf("Board %s firmware %s\n", BoardTypeName, FirmwareVersion);
-			Tasks::GetMemoryReport(reply);
-			reply.cat('\n');
-			Tasks::GetTasksMemoryReport(reply);
+			reply.lcatf("Board %s firmware %s", BoardTypeName, FirmwareVersion);
+			Tasks::Diagnostics(reply);
 		}
 		break;
 
@@ -553,12 +551,13 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 
 	case CanMessageReturnInfo::typeDiagnosticsPart0 + 3:
 		extra = LastDiagnosticsPart;
+		Heat::Diagnostics(reply);
 		{
 			uint32_t nvmUserRow0 = *reinterpret_cast<const uint32_t*>(NVMCTRL_USER);
 			uint32_t nvmUserRow1 = *reinterpret_cast<const uint32_t*>(NVMCTRL_USER+4);
 			uint32_t nvmUserRow2 = *reinterpret_cast<const uint32_t*>(NVMCTRL_USER+8);
 			uint32_t nvmUserRow3 = *reinterpret_cast<const uint32_t*>(NVMCTRL_USER+12);
-			reply.printf("NVM user row %" PRIx32 " %" PRIx32 " %" PRIx32 " %" PRIx32, nvmUserRow0, nvmUserRow1, nvmUserRow2, nvmUserRow3);
+			reply.lcatf("NVM user row %" PRIx32 " %" PRIx32 " %" PRIx32 " %" PRIx32, nvmUserRow0, nvmUserRow1, nvmUserRow2, nvmUserRow3);
 
 #ifdef SAMC21
 			reply.lcatf("TSENS %06" PRIx32 " GAIN %06" PRIx32 " OFFS %06" PRIx32 " CAL %04" PRIx32,

@@ -66,10 +66,6 @@ PortGroup * const StepPio = &(PORT->Group[0]);		// the PIO that all the step pin
 constexpr Pin StepPins[NumDrivers] = { PortAPin(27) };
 constexpr Pin DirectionPins[NumDrivers] = { PortAPin(28) };
 
-// Heaters and sensors
-const size_t MaxHeaters = 3;
-const size_t MaxExtraHeaterProtections = 3;
-
 #define SUPPORT_IOBITS			0
 #define SUPPORT_LASER			0
 #define SUPPORT_SPI_SENSORS		0

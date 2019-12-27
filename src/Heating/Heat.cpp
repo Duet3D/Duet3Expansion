@@ -59,6 +59,9 @@ namespace Heat
 	static ReadWriteLock heatersLock;
 	static ReadWriteLock sensorsLock;
 
+	static uint64_t lastSensorsBroadcastWhich = 0;				// for diagnostics
+	static uint32_t lastSensorsBroadcastWhen = 0;				// for diagnostics
+
 	static ReadLockedPointer<Heater> FindHeater(int heater)
 	{
 		ReadLocker locker(heatersLock);
@@ -251,6 +254,8 @@ void Heat::Exit()
 
 				if (sensorsFound != 0)
 				{
+					lastSensorsBroadcastWhich = msg->whichSensors;				// for diagnostics
+					lastSensorsBroadcastWhen = millis();						// for diagnostics
 					buf->dataLength = msg->GetActualDataLength(sensorsFound);
 					CanInterface::Send(buf);
 				}
@@ -314,7 +319,7 @@ GCodeResult Heat::ConfigureHeater(const CanMessageGeneric& msg, const StringRef&
 		return GCodeResult::remoteInternalError;
 	}
 
-	if (heater > MaxHeaters)
+	if (heater >= MaxHeaters)
 	{
 		reply.copy("Heater number out of range");
 		return GCodeResult::error;
@@ -341,7 +346,7 @@ GCodeResult Heat::ConfigureHeater(const CanMessageGeneric& msg, const StringRef&
 
 		Heater *newHeater = new LocalHeater(heater);
 		const GCodeResult rslt = newHeater->ConfigurePortAndSensor(pinName.c_str(), freq, sensorNumber, reply);
-		if (rslt == GCodeResult::ok)
+		if (rslt == GCodeResult::ok || rslt == GCodeResult::warning)
 		{
 			heaters[heater] = newHeater;
 		}
@@ -390,11 +395,10 @@ GCodeResult Heat::ProcessM308(const CanMessageGeneric& msg, const StringRef& rep
 	uint16_t sensorNum;
 	if (parser.GetUintParam('S', sensorNum))
 	{
-		if (sensorNum < MaxSensorsInSystem)
+		if (sensorNum < MaxSensors)
 		{
 			String<StringLength20> sensorTypeName;
-			bool newSensor = parser.GetStringParam('Y', sensorTypeName.GetRef());
-			if (newSensor)
+			if (parser.GetStringParam('Y', sensorTypeName.GetRef()))
 			{
 				WriteLocker lock(sensorsLock);
 
@@ -407,7 +411,7 @@ GCodeResult Heat::ProcessM308(const CanMessageGeneric& msg, const StringRef& rep
 				}
 
 				const GCodeResult rslt = newSensor->Configure(parser, reply);
-				if (rslt == GCodeResult::ok)
+				if (rslt == GCodeResult::ok || rslt == GCodeResult::warning)
 				{
 					InsertSensor(newSensor);
 				}
@@ -428,7 +432,7 @@ GCodeResult Heat::ProcessM308(const CanMessageGeneric& msg, const StringRef& rep
 		}
 		else
 		{
-			reply.copy("Sensor number our of range");
+			reply.copy("Sensor number out of range");
 			return GCodeResult::error;
 		}
 	}
@@ -651,6 +655,11 @@ void Heat::SuspendHeaters(bool sus)
 			h->Suspend(sus);
 		}
 	}
+}
+
+void Heat::Diagnostics(const StringRef& reply)
+{
+	reply.lcatf("Last sensors broadcast %08" PRIu64 ", %" PRIu32 " ticks ago", lastSensorsBroadcastWhich, millis() - lastSensorsBroadcastWhen);
 }
 
 // End

@@ -333,22 +333,28 @@ enum Module : uint8_t
 
 extern const char * const moduleName[];
 
+// The following must be defined before we include BoardDef.h
+typedef uint8_t DmaChannel;
 typedef uint8_t Pin;
 constexpr Pin NoPin = 0xFF;
-
-typedef uint16_t PwmFrequency;
-typedef uint32_t AxesBitmap;				// Type of a bitmap representing a set of axes
-typedef uint32_t DriversBitmap;				// Type of a bitmap representing a set of driver numbers
-typedef uint32_t FansBitmap;				// Type of a bitmap representing a set of fan numbers
 
 #define PortAPin(_n)	(GPIO(GPIO_PORTA, (_n)))
 #define PortBPin(_n)	(GPIO(GPIO_PORTB, (_n)))
 #define PortCPin(_n)	(GPIO(GPIO_PORTC, (_n)))
 #define PortDPin(_n)	(GPIO(GPIO_PORTD, (_n)))
 
-typedef uint8_t DmaChannel;
-
 #include "Config/BoardDef.h"
+
+typedef uint16_t PwmFrequency;
+typedef uint32_t AxesBitmap;				// Type of a bitmap representing a set of axes
+typedef uint32_t DriversBitmap;				// Type of a bitmap representing a set of driver numbers
+typedef uint32_t FansBitmap;				// Type of a bitmap representing a set of fan numbers
+typedef uint64_t SensorsBitmap;				// Type of a bitmap representing sensors
+typedef uint32_t HeatersBitmap;				// Type of a bitmap representing a set of heater numbers
+
+static_assert(MaxFans <= sizeof(FansBitmap) * CHAR_BIT);
+static_assert(MaxHeaters <= sizeof(HeatersBitmap) * CHAR_BIT);
+static_assert(MaxSensors <= sizeof(SensorsBitmap) * CHAR_BIT);
 
 // Task priorities
 namespace TaskPriority
