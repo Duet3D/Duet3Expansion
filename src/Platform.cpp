@@ -561,7 +561,7 @@ void Platform::Init()
 	InitialiseInterrupts();
 
 	// Read the unique ID
-	for (unsigned int i =0; i < 4; ++i)
+	for (unsigned int i = 0; i < 4; ++i)
 	{
 		uniqueId[i] = *reinterpret_cast<const uint32_t*>(SerialNumberAddresses[i]);
 	}

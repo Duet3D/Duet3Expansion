@@ -56,12 +56,13 @@ void CanMessageQueue::AddMessage(CanMessageBuffer *buf)
 
 		if (pendingMessages == nullptr)
 		{
-			pendingMessages = lastPendingMessage = buf;
+			pendingMessages = buf;
 		}
 		else
 		{
 			lastPendingMessage->next = buf;
 		}
+		lastPendingMessage = buf;
 	}
 }
 
@@ -295,6 +296,7 @@ CanMessageBuffer *CanInterface::GetCanCommand()
 	return PendingCommands.GetMessage();
 }
 
+// Process a received message and (eventually) release the buffer that it arrived in
 void CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf)
 {
 	switch (buf->id.MsgType())
@@ -336,6 +338,11 @@ void CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf)
 		}
 		break;
 	}
+}
+
+void CanInterface::Diagnostics(const StringRef& reply)
+{
+	reply.lcatf("Free CAN buffers: %u", CanMessageBuffer::FreeBuffers());
 }
 
 // This is called from the step ISR when the move is stopped by the Z probe

@@ -18,12 +18,15 @@ namespace CanInterface
 {
 	void Init(CanAddress pBoardAddress);
 	void Shutdown();
+	void Diagnostics(const StringRef& reply);
+
 	CanAddress GetCanAddress();
 	bool GetCanMove(CanMessageMovement& move);
 	bool Send(CanMessageBuffer *buf);
 	bool SendAsync(CanMessageBuffer *buf);
 	bool SendAndFree(CanMessageBuffer *buf);
 	CanMessageBuffer *GetCanCommand();
+
 	void MoveStoppedByZProbe();
 	void WakeAsyncSenderFromIsr();
 }

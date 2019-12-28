@@ -552,6 +552,7 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 	case CanMessageReturnInfo::typeDiagnosticsPart0 + 3:
 		extra = LastDiagnosticsPart;
 		Heat::Diagnostics(reply);
+		CanInterface::Diagnostics(reply);
 		{
 			uint32_t nvmUserRow0 = *reinterpret_cast<const uint32_t*>(NVMCTRL_USER);
 			uint32_t nvmUserRow1 = *reinterpret_cast<const uint32_t*>(NVMCTRL_USER+4);
