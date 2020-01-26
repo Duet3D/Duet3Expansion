@@ -29,7 +29,7 @@ GCodeResult Fan::Configure(const CanMessageFanParameters& msg, const StringRef& 
 	val = msg.val;
 	minVal = msg.minVal;
 	maxVal = msg.maxVal;
-	sensorsMonitored.MakeFromRaw(msg.sensorsMonitored);
+	sensorsMonitored.SetFromRaw(msg.sensorsMonitored);
 	isConfigured = true;
 	(void)UpdateFanConfiguration(reply);
 	return GCodeResult::ok;

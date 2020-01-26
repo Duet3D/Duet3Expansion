@@ -146,8 +146,7 @@ static GCodeResult SetMotorCurrents(const CanMessageMultipleDrivesRequest& msg, 
 #if HAS_SMART_DRIVERS
 	//TODO check message is long enough for the number of drivers specified
 	const uint16_t *p = msg.values;
-	DriversBitmap drivers;
-	drivers.MakeFromRaw(msg.driversToUpdate);
+	const auto drivers = DriversBitmap::MakeFromRaw(msg.driversToUpdate);
 	for (unsigned int driver = 0; driver < NumDrivers; ++driver)
 	{
 		if (drivers.IsBitSet(driver))
@@ -168,8 +167,7 @@ static GCodeResult SetStandstillCurrentFactor(const CanMessageMultipleDrivesRequ
 #if HAS_SMART_DRIVERS
 	//TODO check message is long enough for the number of drivers specified
 	const uint16_t *p = msg.values;
-	DriversBitmap drivers;
-	drivers.MakeFromRaw(msg.driversToUpdate);
+	const auto drivers = DriversBitmap::MakeFromRaw(msg.driversToUpdate);
 	for (unsigned int driver = 0; driver < NumDrivers; ++driver)
 	{
 		if (drivers.IsBitSet(driver))
@@ -189,8 +187,7 @@ static GCodeResult HandlePressureAdvance(const CanMessageMultipleDrivesRequest& 
 {
 	//TODO check message is long enough for the number of drivers specified
 	const uint16_t *p = msg.values;
-	DriversBitmap drivers;
-	drivers.MakeFromRaw(msg.driversToUpdate);
+	const auto drivers = DriversBitmap::MakeFromRaw(msg.driversToUpdate);
 	for (unsigned int driver = 0; driver < NumDrivers; ++driver)
 	{
 		if (drivers.IsBitSet(driver))
@@ -206,8 +203,7 @@ static GCodeResult SetMicrostepping(const CanMessageMultipleDrivesRequest& msg, 
 #if HAS_SMART_DRIVERS
 	//TODO check message is long enough for the number of drivers specified
 	const uint16_t *p = msg.values;
-	DriversBitmap drivers;
-	drivers.MakeFromRaw(msg.driversToUpdate);
+	const auto drivers = DriversBitmap::MakeFromRaw(msg.driversToUpdate);
 	GCodeResult rslt = GCodeResult::ok;
 	for (unsigned int driver = 0; driver < NumDrivers; ++driver)
 	{
@@ -434,8 +430,7 @@ static GCodeResult HandleSetDriverStates(const CanMessageMultipleDrivesRequest& 
 {
 	//TODO check message is long enough for the number of drivers specified
 	const uint16_t *p = msg.values;
-	DriversBitmap drivers;
-	drivers.MakeFromRaw(msg.driversToUpdate);
+	const auto drivers = DriversBitmap::MakeFromRaw(msg.driversToUpdate);
 	for (unsigned int driver = 0; driver < NumDrivers; ++driver)
 	{
 		if (drivers.IsBitSet(driver))
