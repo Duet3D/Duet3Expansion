@@ -21,9 +21,9 @@ typedef uint16_t PwmFrequency;		// type used to represent a PWM frequency. 0 som
 typedef double floatc_t;
 
 #include "Configuration.h"
-#include "General/StringRef.h"
-#include "General/StringFunctions.h"
-#include "General/BitMap.h"
+#include <General/String.h>
+#include <General/StringFunctions.h>
+#include <General/Bitmap.h>
 #include "MessageType.h"
 
 // Warn of what's to come, so we can use pointers to classes without including the entire header files
@@ -195,23 +195,6 @@ inline constexpr uint64_t isquare64(uint32_t arg)
 	return (uint64_t)arg * arg;
 }
 
-// Find the lowest set bit. Returns the lowest set bit number, undefined if no bits are set.
-// GCC provides intrinsics, but unhelpfully they are in terms of int, long and long long instead of uint32_t, uint64_t etc.
-inline unsigned int LowestSetBitNumber(unsigned int val)
-{
-	return (unsigned int)__builtin_ctz(val);
-}
-
-inline unsigned int LowestSetBitNumber(unsigned long val)
-{
-	return (unsigned int)__builtin_ctzl(val);
-}
-
-inline unsigned int LowestSetBitNumber(unsigned long long val)
-{
-	return (unsigned int)__builtin_ctzll(val);
-}
-
 // Note that constrain<float> will return NaN for a NaN input because of the way we define min<float> and max<float>
 template<class T> inline constexpr T constrain(T val, T vmin, T vmax)
 {
@@ -346,15 +329,14 @@ constexpr Pin NoPin = 0xFF;
 #include "Config/BoardDef.h"
 
 typedef uint16_t PwmFrequency;
-typedef uint32_t AxesBitmap;				// Type of a bitmap representing a set of axes
-typedef uint32_t DriversBitmap;				// Type of a bitmap representing a set of driver numbers
-typedef uint32_t FansBitmap;				// Type of a bitmap representing a set of fan numbers
-typedef uint64_t SensorsBitmap;				// Type of a bitmap representing sensors
-typedef uint32_t HeatersBitmap;				// Type of a bitmap representing a set of heater numbers
 
-static_assert(MaxFans <= sizeof(FansBitmap) * CHAR_BIT);
-static_assert(MaxHeaters <= sizeof(HeatersBitmap) * CHAR_BIT);
-static_assert(MaxSensors <= sizeof(SensorsBitmap) * CHAR_BIT);
+typedef Bitmap<uint32_t> AxesBitmap;				// Type of a bitmap representing a set of axes
+typedef Bitmap<uint32_t> DriversBitmap;				// Type of a bitmap representing a set of driver numbers
+typedef Bitmap<uint32_t> FansBitmap;				// Type of a bitmap representing a set of fan numbers
+typedef Bitmap<uint64_t> SensorsBitmap;				// Type of a bitmap representing sensors
+
+static_assert(MaxFans <= FansBitmap::MaxBits());
+static_assert(MaxSensors <= SensorsBitmap::MaxBits());
 
 // Task priorities
 namespace TaskPriority

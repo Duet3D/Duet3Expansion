@@ -30,7 +30,7 @@ public:
 	EndstopOrZProbe *GetNext() const { return next; }
 	void SetNext(EndstopOrZProbe *e) { next = e; }
 
-	static void UpdateStalledDrivers(uint32_t driverMask, bool isStalled);
+	static void UpdateStalledDrivers(DriversBitmap drivers, bool isStalled);
 
 protected:
 	static DriversBitmap GetStalledDrivers() { return stalledDrivers; }
@@ -41,15 +41,15 @@ private:
 	static DriversBitmap stalledDrivers;				// used to track which drivers are reported as stalled, for stall detect endstops and stall detect Z probes
 };
 
-inline void EndstopOrZProbe::UpdateStalledDrivers(uint32_t driverMask, bool isStalled)
+inline void EndstopOrZProbe::UpdateStalledDrivers(DriversBitmap drivers, bool isStalled)
 {
 	if (isStalled)
 	{
-		stalledDrivers |= driverMask;
+		stalledDrivers |= drivers;
 	}
 	else
 	{
-		stalledDrivers &= ~driverMask;
+		stalledDrivers &= ~drivers;
 	}
 }
 

@@ -146,9 +146,11 @@ static GCodeResult SetMotorCurrents(const CanMessageMultipleDrivesRequest& msg, 
 #if HAS_SMART_DRIVERS
 	//TODO check message is long enough for the number of drivers specified
 	const uint16_t *p = msg.values;
+	DriversBitmap drivers;
+	drivers.MakeFromRaw(msg.driversToUpdate);
 	for (unsigned int driver = 0; driver < NumDrivers; ++driver)
 	{
-		if (IsBitSet(msg.driversToUpdate, driver))
+		if (drivers.IsBitSet(driver))
 		{
 			Platform::SetMotorCurrent(driver, (float)*p);		//TODO avoid the int->float->int conversion
 			++p;
@@ -166,9 +168,11 @@ static GCodeResult SetStandstillCurrentFactor(const CanMessageMultipleDrivesRequ
 #if HAS_SMART_DRIVERS
 	//TODO check message is long enough for the number of drivers specified
 	const uint16_t *p = msg.values;
+	DriversBitmap drivers;
+	drivers.MakeFromRaw(msg.driversToUpdate);
 	for (unsigned int driver = 0; driver < NumDrivers; ++driver)
 	{
-		if (IsBitSet(msg.driversToUpdate, driver))
+		if (drivers.IsBitSet(driver))
 		{
 			SmartDrivers::SetStandstillCurrentPercent(driver, (float)*p);		//TODO avoid the int->float->int conversion
 			++p;
@@ -185,9 +189,11 @@ static GCodeResult HandlePressureAdvance(const CanMessageMultipleDrivesRequest& 
 {
 	//TODO check message is long enough for the number of drivers specified
 	const uint16_t *p = msg.values;
+	DriversBitmap drivers;
+	drivers.MakeFromRaw(msg.driversToUpdate);
 	for (unsigned int driver = 0; driver < NumDrivers; ++driver)
 	{
-		if (IsBitSet(msg.driversToUpdate, driver))
+		if (drivers.IsBitSet(driver))
 		{
 			Platform::SetPressureAdvance(driver, (float)*p * 0.001);
 		}
@@ -200,10 +206,12 @@ static GCodeResult SetMicrostepping(const CanMessageMultipleDrivesRequest& msg, 
 #if HAS_SMART_DRIVERS
 	//TODO check message is long enough for the number of drivers specified
 	const uint16_t *p = msg.values;
+	DriversBitmap drivers;
+	drivers.MakeFromRaw(msg.driversToUpdate);
 	GCodeResult rslt = GCodeResult::ok;
 	for (unsigned int driver = 0; driver < NumDrivers; ++driver)
 	{
-		if (IsBitSet(msg.driversToUpdate, driver))
+		if (drivers.IsBitSet(driver))
 		{
 			const uint16_t microstepping = *p & 0x03FF;
 			const bool interpolate = (*p & 0x8000) != 0;
@@ -426,9 +434,11 @@ static GCodeResult HandleSetDriverStates(const CanMessageMultipleDrivesRequest& 
 {
 	//TODO check message is long enough for the number of drivers specified
 	const uint16_t *p = msg.values;
+	DriversBitmap drivers;
+	drivers.MakeFromRaw(msg.driversToUpdate);
 	for (unsigned int driver = 0; driver < NumDrivers; ++driver)
 	{
-		if (IsBitSet(msg.driversToUpdate, driver))
+		if (drivers.IsBitSet(driver))
 		{
 			switch (*p)
 			{

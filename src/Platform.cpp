@@ -78,7 +78,7 @@ namespace Platform
 	Mutex messageMutex;
 
 	static uint32_t errorCodeBits = 0;
-	uint32_t slowDriversBitmap = 0;
+	DriversBitmap slowDriversBitmap;
 	uint32_t slowDriverStepTimingClocks[4] = { 0, 0, 0, 0 };
 
 	uint32_t uniqueId[5];
@@ -495,7 +495,13 @@ void Platform::Init()
 	// Initialise stepper drivers
 #if HAS_SMART_DRIVERS
 	SmartDrivers::Init();
-	temperatureShutdownDrivers = temperatureWarningDrivers = shortToGroundDrivers = openLoadADrivers = openLoadBDrivers = notOpenLoadADrivers = notOpenLoadBDrivers = 0;
+	temperatureShutdownDrivers.Clear();
+	temperatureWarningDrivers.Clear();
+	shortToGroundDrivers.Clear();
+	openLoadADrivers.Clear();
+	openLoadBDrivers.Clear();
+	notOpenLoadADrivers.Clear();
+	notOpenLoadBDrivers.Clear();
 #endif
 
 #ifdef TOOL1LC_V04
@@ -547,9 +553,13 @@ void Platform::Init()
 	idleCurrentFactor = 0.3;
 
 #if HAS_STALL_DETECT
-	stalledDrivers = 0;
-	logOnStallDrivers = pauseOnStallDrivers = rehomeOnStallDrivers = 0;
-	stalledDriversToLog = stalledDriversToPause = stalledDriversToRehome = 0;
+	stalledDrivers.Clear();;
+	logOnStallDrivers.Clear();
+	pauseOnStallDrivers.Clear();
+	rehomeOnStallDrivers.Clear();
+	stalledDriversToLog.Clear();
+	stalledDriversToPause.Clear();
+	stalledDriversToRehome.Clear();
 #endif
 
 #if HAS_SMART_DRIVERS && HAS_VOLTAGE_MONITOR
@@ -631,7 +641,7 @@ void Platform::Spin()
 		if (enableValues[nextDriveToPoll] >= 0)				// don't poll driver if it is flagged "no poll"
 		{
 			const uint32_t stat = SmartDrivers::GetAccumulatedStatus(nextDriveToPoll, 0);
-			const DriversBitmap mask = MakeBitmap<DriversBitmap>(nextDriveToPoll);
+			const DriversBitmap mask = DriversBitmap::MakeFromBits(nextDriveToPoll);
 			if (stat & TMC_RR_OT)
 			{
 				temperatureShutdownDrivers |= mask;
@@ -656,14 +666,15 @@ void Platform::Spin()
 				if (!openLoadATimer.IsRunning())
 				{
 					openLoadATimer.Start();
-					openLoadADrivers = notOpenLoadADrivers = 0;
+					openLoadADrivers.Clear();
+					notOpenLoadADrivers.Clear();
 				}
 				openLoadADrivers |= mask;
 			}
 			else if (openLoadATimer.IsRunning())
 			{
 				notOpenLoadADrivers |= mask;
-				if ((openLoadADrivers & ~notOpenLoadADrivers) == 0)
+				if (openLoadADrivers.Disjoint(~notOpenLoadADrivers) )
 				{
 					openLoadATimer.Stop();
 				}
@@ -674,14 +685,15 @@ void Platform::Spin()
 				if (!openLoadBTimer.IsRunning())
 				{
 					openLoadBTimer.Start();
-					openLoadBDrivers = notOpenLoadBDrivers = 0;
+					openLoadBDrivers.Clear();
+					notOpenLoadBDrivers.Clear();
 				}
 				openLoadBDrivers |= mask;
 			}
 			else if (openLoadBTimer.IsRunning())
 			{
 				notOpenLoadBDrivers |= mask;
-				if ((openLoadBDrivers & ~notOpenLoadBDrivers) == 0)
+				if (openLoadBDrivers.Disjoint(~notOpenLoadBDrivers))
 				{
 					openLoadBTimer.Stop();
 				}
@@ -690,18 +702,18 @@ void Platform::Spin()
 # if HAS_STALL_DETECT
 			if ((stat & TMC_RR_SG) != 0)
 			{
-				if ((stalledDrivers & mask) == 0)
+				if (stalledDrivers.Disjoint(mask))
 				{
 					// This stall is new so check whether we need to perform some action in response to the stall
-					if ((rehomeOnStallDrivers & mask) != 0)
+					if (rehomeOnStallDrivers.Intersects(mask))
 					{
 						stalledDriversToRehome |= mask;
 					}
-					else if ((pauseOnStallDrivers & mask) != 0)
+					else if (pauseOnStallDrivers.Intersects(mask))
 					{
 						stalledDriversToPause |= mask;
 					}
-					else if ((logOnStallDrivers & mask) != 0)
+					else if (logOnStallDrivers.Intersects(mask))
 					{
 						stalledDriversToLog |= mask;
 					}
@@ -1053,7 +1065,7 @@ void Platform::SetDirection(size_t driver, bool direction)
 		// Active low direction signal
 		const bool d = (direction) ? !directions[driver] : directions[driver];
 #endif
-		const bool isSlowDriver = IsBitSet(slowDriversBitmap, driver);
+		const bool isSlowDriver = slowDriversBitmap.IsBitSet(driver);
 		if (isSlowDriver)
 		{
 			while (StepTimer::GetTimerTicks() - DDA::lastStepLowTime < GetSlowDriverDirHoldClocks()) { }
@@ -1228,9 +1240,9 @@ void Platform::AppendUniqueId(const StringRef& str)
 // TMC driver temperatures
 float Platform::GetTmcDriversTemperature()
 {
-	const uint16_t mask = (1u << MaxSmartDrivers) - 1;
-	return ((temperatureShutdownDrivers & mask) != 0) ? 150.0
-			: ((temperatureWarningDrivers & mask) != 0) ? 100.0
+	const DriversBitmap mask = DriversBitmap::MakeLowestNBits(MaxSmartDrivers);
+	return (temperatureShutdownDrivers.Intersects(mask)) ? 150.0
+			: (temperatureWarningDrivers.Intersects(mask)) ? 100.0
 				: 0.0;
 }
 #endif

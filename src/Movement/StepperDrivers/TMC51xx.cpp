@@ -355,7 +355,7 @@ private:
 
 	volatile uint32_t newRegistersToUpdate;					// bitmap of register indices whose values need to be sent to the driver chip
 	uint32_t registersToUpdate;								// bitmap of register indices whose values need to be sent to the driver chip
-	uint32_t driverBit;										// 1 << the driver number
+	DriversBitmap driverBit;								// a bitmap containing just this driver number
 	uint32_t axisNumber;									// the axis number of this driver as used to index the DriveMovements in the DDA
 	uint32_t microstepShiftFactor;							// how much we need to shift 1 left by to get the current microstepping
 	uint32_t motorCurrent;									// the configured motor current in mA
@@ -402,7 +402,7 @@ void TmcDriverState::Init(uint32_t p_driverNumber)
 pre(!driversPowered)
 {
 	axisNumber = p_driverNumber;										// axes are mapped straight through to drivers initially
-	driverBit = 1ul << p_driverNumber;
+	driverBit = DriversBitmap::MakeFromBits(p_driverNumber);
 	enabled = false;
 	registersToUpdate = newRegistersToUpdate = 0;
 	motorCurrent = 0;
@@ -473,7 +473,7 @@ float TmcDriverState::GetStandstillCurrentPercent() const
 
 void TmcDriverState::SetStandstillCurrentPercent(float percent)
 {
-	standstillCurrentFraction = (uint8_t)constrain<long>(lrintf((percent * 256)/100), 0, 255);
+	standstillCurrentFraction = (uint8_t)constrain<long>(lrintf((percent * 256)/100.0), 0, 255);
 	UpdateCurrent();
 }
 

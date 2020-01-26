@@ -124,8 +124,6 @@ private:
 	LaserPwmOrIoBits laserPwmOrIoBits;		// laser PWM required or port state required during this move (here because it is currently 16 bits)
 #endif
 
-    EndstopChecks endStopsToCheck;			// Which endstops we are checking on this move
-
 	float acceleration;						// The acceleration to use
 	float deceleration;						// The deceleration to use
 

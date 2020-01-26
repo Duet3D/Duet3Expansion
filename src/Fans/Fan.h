@@ -40,7 +40,7 @@ public:
 	float GetConfiguredPwm() const { return val; }			// returns the configured PWM. Actual PWM may be different, e.g. due to blipping or for thermostatic fans.
 
 	void SetPwm(float speed);
-	bool HasMonitoredSensors() const { return sensorsMonitored != 0; }
+	bool HasMonitoredSensors() const { return !sensorsMonitored.IsEmpty(); }
 
 protected:
 	virtual void Refresh() = 0;

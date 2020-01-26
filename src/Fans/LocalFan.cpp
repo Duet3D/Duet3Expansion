@@ -64,7 +64,7 @@ void LocalFan::Refresh()
 	uint32_t driverChannelsMonitored = 0;
 #endif
 
-	if (sensorsMonitored == 0)
+	if (sensorsMonitored.IsEmpty())
 	{
 		reqVal = val;
 	}
@@ -75,7 +75,7 @@ void LocalFan::Refresh()
 		for (size_t sensorNum = 0; sensorNum < MaxSensors; ++sensorNum)
 		{
 			// Check if this sensor is both monitored by this fan and in use
-			if (IsBitSet(sensorsMonitored, sensorNum))
+			if (sensorsMonitored.IsBitSet(sensorNum))
 			{
 				const auto sensor = Heat::FindSensor(sensorNum);
 				if (sensor.IsNotNull())
@@ -158,13 +158,14 @@ bool LocalFan::UpdateFanConfiguration(const StringRef& reply)
 	return true;
 }
 
+// Update the fan if necessary. Return true if it is a thermostatic fan and is running.
 bool LocalFan::Check()
 {
-	if (sensorsMonitored != 0 || blipping)
+	if (!sensorsMonitored.IsEmpty() || blipping)
 	{
 		Refresh();
 	}
-	return sensorsMonitored != 0 && lastVal != 0.0;
+	return !sensorsMonitored.IsEmpty() && lastVal != 0.0;
 }
 
 bool LocalFan::AssignPorts(const char *pinNames, const StringRef& reply)

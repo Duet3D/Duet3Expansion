@@ -1042,7 +1042,7 @@ inline void TmcDriverState::StartTransfer()
 	else
 	{
 		// Pick a register to write
-		const size_t regNum = LowestSetBitNumber(registersToUpdate);
+		const size_t regNum = LowestSetBit(registersToUpdate);
 
 		// Kick off a transfer for that register
 		const irqflags_t flags = cpu_irq_save();		// avoid race condition

@@ -51,7 +51,7 @@ class IoPort;
 namespace Platform
 {
 	// These would ideally be private
-	extern uint32_t slowDriversBitmap;
+	extern DriversBitmap slowDriversBitmap;
 	extern uint32_t slowDriverStepTimingClocks[4];
 
 	void Init();
@@ -73,8 +73,8 @@ namespace Platform
 	void StepDriversHigh(uint32_t driverMap);
 	uint32_t GetDriversBitmap(size_t driver); 	// get the bitmap of driver step bits for this driver
 
-	inline bool IsSlowDriver(size_t drive) { return IsBitSet(slowDriversBitmap, drive); }
-	inline uint32_t GetSlowDriversBitmap() { return slowDriversBitmap; }
+	inline bool IsSlowDriver(size_t drive) { return slowDriversBitmap.IsBitSet(drive); }
+	inline DriversBitmap GetSlowDriversBitmap() { return slowDriversBitmap; }
 	inline uint32_t GetSlowDriverStepHighClocks() { return slowDriverStepTimingClocks[0]; }
 	inline uint32_t GetSlowDriverStepLowClocks() { return slowDriverStepTimingClocks[1]; }
 	inline uint32_t GetSlowDriverDirSetupClocks() { return slowDriverStepTimingClocks[2]; }

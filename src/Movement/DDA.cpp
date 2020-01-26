@@ -399,7 +399,7 @@ void DDA::StepDrivers()
 		dm = dm->nextDM;
 	}
 
-	if ((driversStepping & Platform::GetSlowDriversBitmap()) == 0)	// if not using any external drivers
+	if ((driversStepping & Platform::GetSlowDriversBitmap().GetRaw()) == 0)	// if not using any external drivers
 	{
 		// 3. Step the drivers
 		Platform::StepDriversHigh(driversStepping);					// generate the steps
