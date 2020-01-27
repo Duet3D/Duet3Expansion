@@ -22,6 +22,10 @@ constexpr float DefaultThermistorC = 0.0;
 # include "TOOL1LC_v04.h"
 #endif
 
+#ifdef TOOL1LC_V06
+# include "TOOL1LC_v06.h"
+#endif
+
 #ifdef TOOL1XD_V04
 # include "TOOL1XD_v04.h"
 #endif

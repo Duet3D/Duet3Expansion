@@ -145,8 +145,8 @@ static GCodeResult SetMotorCurrents(const CanMessageMultipleDrivesRequest& msg, 
 {
 #if HAS_SMART_DRIVERS
 	//TODO check message is long enough for the number of drivers specified
-	const uint16_t *p = msg.values;
 	const auto drivers = DriversBitmap::MakeFromRaw(msg.driversToUpdate);
+	const uint16_t *p = msg.values;
 	for (unsigned int driver = 0; driver < NumDrivers; ++driver)
 	{
 		if (drivers.IsBitSet(driver))

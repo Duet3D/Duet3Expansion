@@ -504,7 +504,7 @@ void Platform::Init()
 	notOpenLoadBDrivers.Clear();
 #endif
 
-#ifdef TOOL1LC_V04
+#if defined(TOOL1LC_V04) || defined(TOOL1LC_V06)
 	IoPort::SetPinMode(Tmc2209DiagPin, INPUT);
 #endif
 

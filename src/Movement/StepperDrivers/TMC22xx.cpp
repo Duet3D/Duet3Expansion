@@ -1161,7 +1161,7 @@ extern "C" [[noreturn]] void TmcLoop(void *)
 			currentDriver->StartTransfer();
 
 			// Wait for the end-of-transfer interrupt
-			const bool timedOut = (TaskBase::Take(TransferTimeout) == 0);
+			const bool timedOut = TaskBase::Take(TransferTimeout);
 			DmacManager::DisableCompletedInterrupt(TmcRxDmaChannel);
 
 			if (!timedOut && dmaFinishedReason == DmaCallbackReason::complete)
