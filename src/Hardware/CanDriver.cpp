@@ -30,22 +30,24 @@
  * \asf_license_stop
  *
  */
-#include <hpl_can_async.h>
-#include <hpl/can/hpl_can_base.h>
-#include <hpl_can_config.h>
-#include <string.h>
 
+#include "CanDriver.h"
+
+#include <hpl_can_config.h>
+#include <cstring>
+
+/**
+ * \brief Retrieve pointer to parent structure
+ */
+#define CONTAINER_OF(ptr, type, field_name) ((type *)(((uint8_t *)ptr) - offsetof(type, field_name)))
+
+// DC: these buffers must be within the first 64kB of RAM. So we now declare them all "static". Otherwise they end up in the COMMON segment at the end of RAM.
 #ifdef CONF_CAN0_ENABLED
-COMPILER_ALIGNED(4)
-uint8_t can0_rx_fifo[CONF_CAN0_F0DS * CONF_CAN0_RXF0C_F0S];
-COMPILER_ALIGNED(4)
-uint8_t can0_tx_fifo[CONF_CAN0_TBDS * CONF_CAN0_TXBC_TFQS];
-COMPILER_ALIGNED(4)
-static struct _can_tx_event_entry can0_tx_event_fifo[CONF_CAN0_TXEFC_EFS];
-COMPILER_ALIGNED(4)
-static struct _can_standard_message_filter_element can0_rx_std_filter[CONF_CAN0_SIDFC_LSS];
-COMPILER_ALIGNED(4)
-static struct _can_extended_message_filter_element can0_rx_ext_filter[CONF_CAN0_XIDFC_LSS];
+alignas(4)  static uint8_t can0_rx_fifo[CONF_CAN0_F0DS * CONF_CAN0_RXF0C_F0S];
+alignas(4)  static uint8_t can0_tx_fifo[CONF_CAN0_TBDS * CONF_CAN0_TXBC_TFQS];
+alignas(4)  static struct _can_tx_event_entry can0_tx_event_fifo[CONF_CAN0_TXEFC_EFS];
+alignas(4)  static struct _can_standard_message_filter_element can0_rx_std_filter[CONF_CAN0_SIDFC_LSS];
+alignas(4)  static struct _can_extended_message_filter_element can0_rx_ext_filter[CONF_CAN0_XIDFC_LSS];
 
 struct _can_context              _can0_context = {.rx_fifo       = can0_rx_fifo,
                                      .tx_fifo       = can0_tx_fifo,
@@ -57,16 +59,11 @@ static struct _can_async_device *_can0_dev     = NULL; /*!< Pointer to hpl devic
 #endif /* CONF_CAN0_ENABLED */
 
 #ifdef CONF_CAN1_ENABLED
-COMPILER_ALIGNED(4)
-uint8_t can1_rx_fifo[CONF_CAN1_F0DS * CONF_CAN1_RXF0C_F0S];
-COMPILER_ALIGNED(4)
-uint8_t can1_tx_fifo[CONF_CAN1_TBDS * CONF_CAN1_TXBC_TFQS];
-COMPILER_ALIGNED(4)
-static struct _can_tx_event_entry can1_tx_event_fifo[CONF_CAN1_TXEFC_EFS];
-COMPILER_ALIGNED(4)
-static struct _can_standard_message_filter_element can1_rx_std_filter[CONF_CAN1_SIDFC_LSS];
-COMPILER_ALIGNED(4)
-static struct _can_extended_message_filter_element can1_rx_ext_filter[CONF_CAN1_XIDFC_LSS];
+alignas(4) static uint8_t can1_rx_fifo[CONF_CAN1_F0DS * CONF_CAN1_RXF0C_F0S];
+alignas(4) static uint8_t can1_tx_fifo[CONF_CAN1_TBDS * CONF_CAN1_TXBC_TFQS];
+alignas(4) static struct _can_tx_event_entry can1_tx_event_fifo[CONF_CAN1_TXEFC_EFS];
+alignas(4) static struct _can_standard_message_filter_element can1_rx_std_filter[CONF_CAN1_SIDFC_LSS];
+alignas(4) static struct _can_extended_message_filter_element can1_rx_ext_filter[CONF_CAN1_XIDFC_LSS];
 
 struct _can_context              _can1_context = {.rx_fifo       = can1_rx_fifo,
                                      .tx_fifo       = can1_tx_fifo,
@@ -80,7 +77,7 @@ static struct _can_async_device *_can1_dev     = NULL; /*!< Pointer to hpl devic
 /**
  * \brief Initialize CAN.
  */
-int32_t _can_async_init(struct _can_async_device *const dev, void *const hw)
+int32_t _can_async_init(struct _can_async_device *const dev, Can *const hw)
 {
 	dev->hw = hw;
 	hri_can_set_CCCR_INIT_bit(dev->hw);
@@ -141,8 +138,7 @@ int32_t _can_async_init(struct _can_async_device *const dev, void *const hw)
 	/* Disable CCE to prevent Configuration Change */
 	hri_can_clear_CCCR_CCE_bit(dev->hw);
 	hri_can_clear_CCCR_INIT_bit(dev->hw);
-	while (hri_can_get_CCCR_INIT_bit(dev->hw)) {
-	};
+	while (hri_can_get_CCCR_INIT_bit(dev->hw)) { }
 
 	return ERR_NONE;
 }
@@ -217,7 +213,7 @@ int32_t _can_async_read(struct _can_async_device *const dev, struct can_message 
 		msg->type = CAN_TYPE_REMOTE;
 	}
 
-	const uint8_t dlc2len[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 12, 16, 20, 24, 32, 48, 64};
+	static constexpr uint8_t dlc2len[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 12, 16, 20, 24, 32, 48, 64};
 	msg->len                = dlc2len[f->R1.bit.DLC];
 
 	memcpy(msg->data, f->data, msg->len);
@@ -299,19 +295,15 @@ int32_t _can_async_write(struct _can_async_device *const dev, struct can_message
  */
 void _can_async_set_irq_state(struct _can_async_device *const dev, enum can_async_callback_type type, bool state)
 {
-	uint32_t ie;
-
 	if (type == CAN_ASYNC_RX_CB) {
 		hri_can_write_IE_RF0NE_bit(dev->hw, state);
 	} else if (type == CAN_ASYNC_TX_CB) {
 		hri_can_write_IE_TCE_bit(dev->hw, state);
 		hri_can_write_TXBTIE_reg(dev->hw, CAN_TXBTIE_MASK);
 	} else if (type == CAN_ASYNC_IRQ_CB) {
-		ie = hri_can_get_IE_reg(dev->hw, CAN_IE_RF0NE | CAN_IE_TCE);
+		const uint32_t ie = hri_can_get_IE_reg(dev->hw, CAN_IE_RF0NE | CAN_IE_TCE);
 		hri_can_write_IE_reg(dev->hw, ie | CONF_CAN0_IE_REG);
 	}
-
-	return;
 }
 
 /**
@@ -393,6 +385,9 @@ int32_t _can_async_set_filter(struct _can_async_device *const dev, uint8_t index
 /*
  * \brief CAN interrupt handler
  */
+
+#ifdef CONF_CAN0_ENABLED
+
 void CAN0_Handler(void)
 {
 	struct _can_async_device *dev = _can0_dev;
@@ -435,3 +430,235 @@ void CAN0_Handler(void)
 	hri_can_write_IR_reg(dev->hw, ir);
 #endif
 }
+
+#endif
+
+#ifdef CONF_CAN1_ENABLED
+
+void CAN1_Handler(void)
+{
+	struct _can_async_device *dev = _can1_dev;
+	uint32_t                  ir;
+#if 1	//dc42
+	while (((ir = hri_can_read_IR_reg(dev->hw)) & (CAN_IR_RF0N | CAN_IR_TC | CAN_IR_BO | CAN_IR_EW | CAN_IR_EP | CAN_IR_RF0L)) != 0)
+	{
+		hri_can_write_IR_reg(dev->hw, ir);
+#else
+	ir = hri_can_read_IR_reg(dev->hw);
+#endif
+
+	if (ir & CAN_IR_RF0N) {
+		dev->cb.rx_done(dev);
+	}
+
+	if (ir & CAN_IR_TC) {
+		dev->cb.tx_done(dev);
+	}
+
+	if (ir & CAN_IR_BO) {
+		dev->cb.irq_handler(dev, CAN_IRQ_BO);
+	}
+
+	if (ir & CAN_IR_EW) {
+		dev->cb.irq_handler(dev, CAN_IRQ_EW);
+	}
+
+	if (ir & CAN_IR_EP) {
+		dev->cb.irq_handler(dev, hri_can_get_PSR_EP_bit(dev->hw) ? CAN_IRQ_EP : CAN_IRQ_EA);
+	}
+
+	if (ir & CAN_IR_RF0L) {
+		dev->cb.irq_handler(dev, CAN_IRQ_DO);
+	}
+
+#if 1	//dc42
+	}
+#else
+	hri_can_write_IR_reg(dev->hw, ir);
+#endif
+}
+
+#endif
+
+#define DRIVER_VERSION 0x00000001u
+
+/**
+ * \internal Callback of CAN Message Write finished
+ *
+ * \param[in] dev The pointer to CAN device structure
+ */
+static void can_tx_done(struct _can_async_device *dev);
+/**
+ * \internal Callback of CAN Message Read finished
+ *
+ * \param[in] dev The pointer to CAN device structure
+ */
+static void can_rx_done(struct _can_async_device *dev);
+/**
+ * \internal Callback of CAN Interrupt
+ *
+ * \param[in] dev  The pointer to CAN device structure
+ * \param[in] type Interrupt source type
+ */
+static void can_irq_handler(struct _can_async_device *dev, enum can_async_interrupt_type type);
+
+/**
+ * \brief Initialize CAN.
+ */
+int32_t can_async_init(struct can_async_descriptor *const descr, Can *const hw)
+{
+	int32_t rc;
+
+	rc = _can_async_init(&descr->dev, hw);
+	if (rc) {
+		return rc;
+	}
+	descr->dev.cb.tx_done     = can_tx_done;
+	descr->dev.cb.rx_done     = can_rx_done;
+	descr->dev.cb.irq_handler = can_irq_handler;
+
+	return ERR_NONE;
+}
+
+/**
+ * \brief Deinitialize CAN.
+ */
+int32_t can_async_deinit(struct can_async_descriptor *const descr)
+{
+	return _can_async_deinit(&descr->dev);
+}
+
+/**
+ * \brief Enable CAN
+ */
+int32_t can_async_enable(struct can_async_descriptor *const descr)
+{
+	return _can_async_enable(&descr->dev);
+}
+
+/**
+ * \brief Disable CAN
+ */
+int32_t can_async_disable(struct can_async_descriptor *const descr)
+{
+	return _can_async_disable(&descr->dev);
+}
+
+/**
+ * \brief Read a CAN message
+ */
+int32_t can_async_read(struct can_async_descriptor *const descr, struct can_message *msg)
+{
+	return _can_async_read(&descr->dev, msg);
+}
+
+/**
+ * \brief Write a CAN message
+ */
+int32_t can_async_write(struct can_async_descriptor *const descr, struct can_message *msg)
+{
+	return _can_async_write(&descr->dev, msg);
+}
+
+/**
+ * \brief Register CAN callback function to interrupt
+ */
+int32_t can_async_register_callback(struct can_async_descriptor *const descr, enum can_async_callback_type type, FUNC_PTR cb)
+{
+	switch (type) {
+	case CAN_ASYNC_RX_CB:
+		descr->cb.rx_done = (cb != NULL) ? (can_cb_t)cb : NULL;
+		break;
+	case CAN_ASYNC_TX_CB:
+		descr->cb.tx_done = (cb != NULL) ? (can_cb_t)cb : NULL;
+		break;
+	case CAN_ASYNC_IRQ_CB:
+		descr->cb.irq_handler
+		    = (cb != NULL) ? (void (*)(struct can_async_descriptor *const, enum can_async_interrupt_type))cb : NULL;
+		break;
+	default:
+		return ERR_INVALID_ARG;
+	}
+
+	_can_async_set_irq_state(&descr->dev, type, NULL != cb);
+
+	return ERR_NONE;
+}
+
+/**
+ * \brief Return number of read errors
+ */
+uint8_t can_async_get_rxerr(struct can_async_descriptor *const descr)
+{
+	return _can_async_get_rxerr(&descr->dev);
+}
+
+/**
+ * \brief Return number of write errors
+ */
+uint8_t can_async_get_txerr(struct can_async_descriptor *const descr)
+{
+	return _can_async_get_txerr(&descr->dev);
+}
+
+/**
+ * \brief Set CAN to the specified mode
+ */
+int32_t can_async_set_mode(struct can_async_descriptor *const descr, enum can_mode mode)
+{
+	return _can_async_set_mode(&descr->dev, mode);
+}
+
+/**
+ * \brief Set CAN filter
+ */
+int32_t can_async_set_filter(struct can_async_descriptor *const descr, uint8_t index, enum can_format fmt, struct can_filter *filter)
+{
+	return _can_async_set_filter(&descr->dev, index, fmt, filter);
+}
+
+/**
+ * \brief Retrieve the current driver version
+ */
+uint32_t can_async_get_version(void)
+{
+	return DRIVER_VERSION;
+}
+
+/**
+ * \internal Callback of CAN Message Write finished
+ */
+static void can_tx_done(struct _can_async_device *dev)
+{
+	struct can_async_descriptor *const descr = CONTAINER_OF(dev, struct can_async_descriptor, dev);
+
+	if (descr->cb.tx_done) {
+		descr->cb.tx_done(descr);
+	}
+}
+
+/**
+ * \internal Callback of CAN Message Read finished
+ */
+static void can_rx_done(struct _can_async_device *dev)
+{
+	struct can_async_descriptor *const descr = CONTAINER_OF(dev, struct can_async_descriptor, dev);
+
+	if (descr->cb.rx_done) {
+		descr->cb.rx_done(descr);
+	}
+}
+
+/**
+ * \internal Callback of CAN Interrupt
+ */
+static void can_irq_handler(struct _can_async_device *dev, enum can_async_interrupt_type type)
+{
+	struct can_async_descriptor *const descr = CONTAINER_OF(dev, struct can_async_descriptor, dev);
+
+	if (descr->cb.irq_handler) {
+		descr->cb.irq_handler(descr, type);
+	}
+}
+
+// End

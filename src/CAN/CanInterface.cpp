@@ -8,13 +8,15 @@
 #include "CanInterface.h"
 
 #include <CanSettings.h>
-#include "CanMessageFormats.h"
-#include "CanMessageBuffer.h"
-#include "Platform.h"
-#include "Movement/StepTimer.h"
-#include "RTOSIface/RTOSIface.h"
-#include "InputMonitors/InputMonitor.h"
-#include "Movement/Move.h"
+#include <CanMessageFormats.h>
+#include <CanMessageBuffer.h>
+#include <Platform.h>
+#include <Movement/StepTimer.h>
+#include <RTOSIface/RTOSIface.h>
+#include <InputMonitors/InputMonitor.h>
+#include <Movement/Move.h>
+#include <Hardware/CanDriver.h>
+#include <peripheral_clk_config.h>
 
 const unsigned int NumCanBuffers = 40;
 
@@ -85,12 +87,48 @@ CanMessageBuffer *CanMessageQueue::GetMessage()
 static CanMessageQueue PendingMoves;
 static CanMessageQueue PendingCommands;
 
+static struct can_async_descriptor CAN_0;
+
+#ifdef SAME51
+
+/**
+ * \brief CAN initialization function
+ *
+ * Enables CAN peripheral, clocks and initializes CAN driver
+ */
+static void CAN_0_init()
+{
+	hri_mclk_set_AHBMASK_CAN1_bit(MCLK);
+	hri_gclk_write_PCHCTRL_reg(GCLK, CAN1_GCLK_ID, CONF_GCLK_CAN1_SRC | (1 << GCLK_PCHCTRL_CHEN_Pos));
+	can_async_init(&CAN_0, CAN1);
+	gpio_set_pin_function(PB13, PINMUX_PB13H_CAN1_RX);
+	gpio_set_pin_function(PB12, PINMUX_PB12H_CAN1_TX);
+}
+
+#endif
+
+#ifdef SAMC21
+
+/**
+ * \brief CAN initialization function
+ *
+ * Enables CAN peripheral, clocks and initializes CAN driver
+ */
+static void CAN_0_init()
+{
+	hri_mclk_set_AHBMASK_CAN0_bit(MCLK);
+	hri_gclk_write_PCHCTRL_reg(GCLK, CAN0_GCLK_ID, CONF_GCLK_CAN0_SRC | (1 << GCLK_PCHCTRL_CHEN_Pos));
+	can_async_init(&CAN_0, CAN0);
+	gpio_set_pin_function(PA25, PINMUX_PA25G_CAN0_RX);
+	gpio_set_pin_function(PA24, PINMUX_PA24G_CAN0_TX);
+}
+
+#endif
+
 namespace CanInterface
 {
 	void ProcessReceivedMessage(CanMessageBuffer *buf);
 }
-
-extern "C" struct can_async_descriptor CAN_0;
 
 extern "C" void CAN_0_tx_callback(struct can_async_descriptor *const descr)
 {

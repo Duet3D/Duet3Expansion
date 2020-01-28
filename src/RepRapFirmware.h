@@ -50,6 +50,8 @@ extern "C" void debugPrintf(const char* fmt, ...) __attribute__ ((format (printf
 # define SAMC21		1
 #endif
 
+#define RAMFUNC __attribute__((section(".ramfunc")))
+
 // Functions and macros to enable/disable interrupts
 
 static inline void cpu_irq_enable()

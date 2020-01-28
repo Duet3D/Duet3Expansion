@@ -15,9 +15,17 @@ extern "C" void __cxa_pure_virtual() { while (1); }
 
 int main(void)
 {
-	/* Initializes MCU, drivers and middleware */
-	atmel_start_init();
+	atmel_start_init();								// Initialize MCU, drivers and middleware
+
 	SystemCoreClock = CONF_CPU_FREQUENCY;			// FreeRTOS needs this to be set correctly because it uses it to set the systick reload value
+#if defined(SAME51)
+	SystemPeripheralClock = CONF_CPU_FREQUENCY/2;
+#elif defined(SAMC21)
+	SystemPeripheralClock = CONF_CPU_FREQUENCY;
+#else
+# error Unknown processor
+#endif
+
 	DmacManager::Init();
 
 	AppMain();

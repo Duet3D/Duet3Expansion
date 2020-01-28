@@ -11,27 +11,7 @@
 #include <utils.h>
 #include <hal_init.h>
 
-struct can_async_descriptor CAN_0;
 struct flash_descriptor FLASH_0;
-
-void CAN_0_PORT_init(void)
-{
-	gpio_set_pin_function(PA25, PINMUX_PA25G_CAN0_RX);
-	gpio_set_pin_function(PA24, PINMUX_PA24G_CAN0_TX);
-}
-
-/**
- * \brief CAN initialization function
- *
- * Enables CAN peripheral, clocks and initializes CAN driver
- */
-void CAN_0_init(void)
-{
-	hri_mclk_set_AHBMASK_CAN0_bit(MCLK);
-	hri_gclk_write_PCHCTRL_reg(GCLK, CAN0_GCLK_ID, CONF_GCLK_CAN0_SRC | (1 << GCLK_PCHCTRL_CHEN_Pos));
-	can_async_init(&CAN_0, CAN0);
-	CAN_0_PORT_init();
-}
 
 void system_init(void)
 {

@@ -23,14 +23,11 @@ extern uint32_t SystemPeripheralClock;		// in system_same51.c
 #include <hal_io.h>
 #include <hal_sleep.h>
 #include <hal_wdt.h>
-#include <hal_can_async.h>
 
 extern struct wdt_descriptor       WDT_0;
-extern struct can_async_descriptor CAN_0;
 
 void WDT_0_CLOCK_init(void);
 void WDT_0_init(void);
-void CAN_0_init();
 
 /**
  * \brief Perform system initialization, initialize pins and clocks for
