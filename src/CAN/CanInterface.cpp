@@ -17,12 +17,19 @@
 #include <Movement/Move.h>
 #include <Hardware/CanDriver.h>
 #include <peripheral_clk_config.h>
+#include <hpl_user_area.h>
 
 const unsigned int NumCanBuffers = 40;
 
 static CanUserAreaData canConfigData;
 static CanAddress boardAddress;
 static bool enabled = false;
+
+#if defined(SAME51)
+constexpr uint32_t CanUserAreaDataOffset = 512 - sizeof(CanUserAreaData);
+#elif defined(SAMC21)
+constexpr uint32_t CanUserAreaDataOffset = 256 - sizeof(CanUserAreaData);
+#endif
 
 // CanReceiver management task
 constexpr size_t CanReceiverTaskStackWords = 400;
@@ -87,7 +94,7 @@ CanMessageBuffer *CanMessageQueue::GetMessage()
 static CanMessageQueue PendingMoves;
 static CanMessageQueue PendingCommands;
 
-static struct can_async_descriptor CAN_0;
+static can_async_descriptor CAN_0;
 
 #ifdef SAME51
 
@@ -96,11 +103,11 @@ static struct can_async_descriptor CAN_0;
  *
  * Enables CAN peripheral, clocks and initializes CAN driver
  */
-static void CAN_0_init()
+static void CAN_0_init(const CanTiming& timing)
 {
 	hri_mclk_set_AHBMASK_CAN1_bit(MCLK);
 	hri_gclk_write_PCHCTRL_reg(GCLK, CAN1_GCLK_ID, CONF_GCLK_CAN1_SRC | (1 << GCLK_PCHCTRL_CHEN_Pos));
-	can_async_init(&CAN_0, CAN1);
+	can_async_init(&CAN_0, CAN1, timing);
 	gpio_set_pin_function(PB13, PINMUX_PB13H_CAN1_RX);
 	gpio_set_pin_function(PB12, PINMUX_PB12H_CAN1_TX);
 }
@@ -114,11 +121,11 @@ static void CAN_0_init()
  *
  * Enables CAN peripheral, clocks and initializes CAN driver
  */
-static void CAN_0_init()
+static void CAN_0_init(const CanTiming& timing)
 {
 	hri_mclk_set_AHBMASK_CAN0_bit(MCLK);
 	hri_gclk_write_PCHCTRL_reg(GCLK, CAN0_GCLK_ID, CONF_GCLK_CAN0_SRC | (1 << GCLK_PCHCTRL_CHEN_Pos));
-	can_async_init(&CAN_0, CAN0);
+	can_async_init(&CAN_0, CAN0, timing);
 	gpio_set_pin_function(PA25, PINMUX_PA25G_CAN0_RX);
 	gpio_set_pin_function(PA24, PINMUX_PA24G_CAN0_TX);
 }
@@ -237,24 +244,18 @@ extern "C" [[noreturn]] void CanAsyncSenderLoop(void *)
 	}
 }
 
-void CanInterface::Init(CanAddress pBoardAddress)
+void CanInterface::Init(CanAddress defaultBoardAddress)
 {
 	// Read the CAN timing data from the top part of the NVM User Row
-#if defined(SAME51)
-	canConfigData = *reinterpret_cast<const CanUserAreaData*>(NVMCTRL_USER + 512 - sizeof(CanUserAreaData));
-#elif defined(SAMC21)
-	canConfigData = *reinterpret_cast<const CanUserAreaData*>(NVMCTRL_USER + 256 - sizeof(CanUserAreaData));
-#endif
-	CanTiming canTimingData;
-	canConfigData.GetTiming(canTimingData);
+	canConfigData = *reinterpret_cast<CanUserAreaData*>(NVMCTRL_USER + CanUserAreaDataOffset);
 
-	// Initialise the CAN hardware
-	// TODO use the timing data if it was valid
-	(void)canTimingData;
-	CAN_0_init();
+	CanTiming timing;
+	canConfigData.GetTiming(timing);
 
-	// TODO if no address switches, use the address in the timing data
-	boardAddress = canConfigData.GetCanAddress(pBoardAddress);
+	// Initialise the CAN hardware, using the timing data if it was valid
+	CAN_0_init(timing);
+
+	boardAddress = canConfigData.GetCanAddress(defaultBoardAddress);
 	CanMessageBuffer::Init(NumCanBuffers);
 
 	can_async_register_callback(&CAN_0, CAN_ASYNC_RX_CB, (FUNC_PTR)CAN_0_rx_callback);
@@ -395,6 +396,51 @@ void CanInterface::WakeAsyncSenderFromIsr()
 	{
 		canAsyncSenderTask.GiveFromISR();
 	}
+}
+
+GCodeResult CanInterface::ChangeAddressAndDataRate(const CanMessageSetAddressAndNormalTiming &msg, const StringRef &reply)
+{
+	if (msg.oldAddress == boardAddress)
+	{
+		bool seen = false;
+
+		// Check whether we are setting the address
+		if (msg.newAddress != 0 && msg.newAddress <= CanId::MaxCanAddress && msg.newAddress == (uint8_t)~msg.newAddressInverted)
+		{
+			seen = true;
+			canConfigData.SetCanAddress(msg.newAddress);
+		}
+
+		// Check whether we are changing the timing
+		if (msg.DoSetTimingNo == CanMessageSetAddressAndNormalTiming::DoSetTimingYes)
+		{
+			seen = true;
+			canConfigData.SetTiming(msg.normalTiming);
+		}
+
+		if (seen)
+		{
+			const int32_t rc = _user_area_write(reinterpret_cast<void*>(NVMCTRL_USER), CanUserAreaDataOffset, reinterpret_cast<const uint8_t*>(&canConfigData), sizeof(canConfigData));
+			if (rc != 0)
+			{
+				reply.printf("Failed to write NVM user area, code %" PRIi32, rc);
+				return GCodeResult::error;
+			}
+		}
+		else
+		{
+			CanTiming timing;
+			GetLocalCanTiming(&CAN_0, timing);
+			reply.printf("CAN bus speed %.1fkbps, tseg1 %.2f, jump width %.2f",
+							(double)((float)CanTiming::ClockFrequency/(1000 * timing.period)),
+							(double)((float)timing.tseg1/(float)timing.period),
+							(double)((float)timing.jumpWidth/(float)timing.period));
+		}
+		return GCodeResult::ok;
+	}
+
+	reply.copy("Received ChangeAddress message for wrong board");
+	return GCodeResult::error;
 }
 
 // End

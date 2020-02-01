@@ -566,7 +566,18 @@ void Platform::Init()
 	warnDriversNotPowered = false;
 #endif
 
-	CanInterface::Init(ReadBoardId());
+#if defined(SAME51)
+
+	// Check whether address switches are set to zero. If so then reset and load new firmware
+	const CanAddress switches = ReadBoardAddress();
+	const CanAddress defaultAddress = (switches == 0) ? CanId::ExpansionBoardFirmwareUpdateAddress : switches;
+
+#elif defined(SAMC21)
+
+	constexpr CanAddress defaultAddress = CanId::ToolBoardDefaultAddress;
+
+#endif
+	CanInterface::Init(defaultAddress);
 
 	InitialiseInterrupts();
 
@@ -1168,9 +1179,10 @@ void Platform::SetMotorCurrent(size_t driver, float current)
 
 #endif
 
-uint8_t Platform::ReadBoardId()
-{
 #if HAS_ADDRESS_SWITCHES
+
+uint8_t Platform::ReadBoardAddress()
+{
 	uint8_t rslt = 0;
 	for (unsigned int i = 0; i < 4; ++i)
 	{
@@ -1180,12 +1192,9 @@ uint8_t Platform::ReadBoardId()
 		}
 	}
 	return rslt;
-#elif defined(BOARD_ADDRESS)
-	return BOARD_ADDRESS;
-#else
-	return 10;			//TODO temporary!
-#endif
 }
+
+#endif
 
 // Append the unique processor ID to a string as 30 base5 alphanumeric digits with 5 embedded separators
 void Platform::AppendUniqueId(const StringRef& str)

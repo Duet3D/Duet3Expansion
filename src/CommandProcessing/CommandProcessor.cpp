@@ -729,6 +729,18 @@ void CommandProcessor::Spin()
 			rslt = InputMonitor::Change(buf->msg.changeInputMonitor, replyRef, extra);
 			break;
 
+		case CanMessageType::setAddressAndNormalTiming:
+			requestId = buf->msg.setAddressAndNormalTiming.requestId;
+			rslt = CanInterface::ChangeAddressAndDataRate(buf->msg.setAddressAndNormalTiming, replyRef);
+			break;
+
+#if 0
+		case CanMessageType::setFastTiming:
+			requestId = buf->msg.setFastTiming.requestId;
+			rslt = CanInterface::SetFastTiming(buf->msg.setFastTiming, replyRef);
+			break;
+#endif
+
 		default:
 			requestId = CanRequestIdAcceptAlways;
 			reply.printf("Board %u received unknown msg type %u", CanInterface::GetCanAddress(), (unsigned int)buf->id.MsgType());

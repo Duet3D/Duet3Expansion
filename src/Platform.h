@@ -109,7 +109,10 @@ namespace Platform
 	void KickHeatTaskWatchdog();
 	uint32_t GetHeatTaskIdleTicks();
 
-	uint8_t ReadBoardId();
+#if HAS_ADDRESS_SWITCHES
+	uint8_t ReadBoardAddress();
+#endif
+
 	void AppendUniqueId(const StringRef& str);
 
 	void Tick();

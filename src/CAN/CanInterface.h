@@ -8,19 +8,22 @@
 #ifndef SRC_CAN_CANINTERFACE_H_
 #define SRC_CAN_CANINTERFACE_H_
 
-#include "RepRapFirmware.h"
+#include <RepRapFirmware.h>
 #include <CanId.h>
+#include <CanMessageFormats.h>
+#include <GCodes/GCodeResult.h>
 
 struct CanMessageMovement;
 class CanMessageBuffer;
 
 namespace CanInterface
 {
-	void Init(CanAddress pBoardAddress);
+	void Init(CanAddress defaultBoardAddress);
 	void Shutdown();
 	void Diagnostics(const StringRef& reply);
 
 	CanAddress GetCanAddress();
+	GCodeResult ChangeAddressAndDataRate(const CanMessageSetAddressAndNormalTiming& msg, const StringRef& reply);
 	bool GetCanMove(CanMessageMovement& move);
 	bool Send(CanMessageBuffer *buf);
 	bool SendAsync(CanMessageBuffer *buf);

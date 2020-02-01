@@ -461,7 +461,11 @@ The NVM User Row can be read at address 0x804000.
 #ifndef _NVM_USER_ROW_BASE
 #define _NVM_USER_ROW_BASE 0x804000
 #endif
+#if 1	//dc42 user row is 256 bytes
+#define _NVM_USER_ROW_N_BITS 2048
+#else
 #define _NVM_USER_ROW_N_BITS 64
+#endif
 #define _NVM_USER_ROW_N_BYTES (_NVM_USER_ROW_N_BITS / 8)
 #define _NVM_USER_ROW_END (((uint8_t *)_NVM_USER_ROW_BASE) + _NVM_USER_ROW_N_BYTES - 1)
 #define _IS_NVM_USER_ROW(b)                                                                                            \
@@ -597,11 +601,33 @@ static int32_t _user_row_write_exec(const uint32_t *_row)
 		/* Wait until this module isn't busy */
 	}
 
+#if 1	//DC42 write entire row
+	for (unsigned int i = 0; i < 16; i++) 	/* 16 Quad words for User row: 32 * (4 bytes * 4) = 512 bytes */
+	{
+		/* - Page buffer clear & write. */
+		hri_nvmctrl_write_CTRLB_reg(hw, NVMCTRL_CTRLA_CMD_PBC | NVMCTRL_CTRLA_CMDEX_KEY);
+		while (!hri_nvmctrl_get_INTFLAG_reg(hw, NVMCTRL_INTFLAG_READY)) {
+			/* Wait until this module isn't busy */
+		}
+		*(((uint32_t *)NVMCTRL_USER) + i * 4)     = _row[i * 4];
+		*(((uint32_t *)NVMCTRL_USER) + i * 4 + 1) = _row[i * 4 + 1];
+		*(((uint32_t *)NVMCTRL_USER) + i * 4 + 2) = _row[i * 4 + 2];
+		*(((uint32_t *)NVMCTRL_USER) + i * 4 + 3) = _row[i * 4 + 3];
+
+		/* - Write AUX row. */
+		hri_nvmctrl_write_ADDR_reg(hw, (hri_nvmctrl_addr_reg_t)(_NVM_USER_ROW_BASE + i * 16));
+		hri_nvmctrl_write_CTRLB_reg(hw, NVMCTRL_CTRLA_CMD_WAP | NVMCTRL_CTRLA_CMDEX_KEY);
+		while (!hri_nvmctrl_get_INTFLAG_reg(hw, NVMCTRL_INTFLAG_READY)) {
+			/* Wait until this module isn't busy */
+		}
+	}
+#else
 	/* - Page buffer clear & write. */
 	hri_nvmctrl_write_CTRLA_reg(hw, NVMCTRL_CTRLA_CMD_PBC | NVMCTRL_CTRLA_CMDEX_KEY);
 	while (!hri_nvmctrl_get_INTFLAG_reg(hw, NVMCTRL_INTFLAG_READY)) {
 		/* Wait until this module isn't busy */
 	}
+
 	*((uint32_t *)NVMCTRL_AUX0_ADDRESS)       = _row[0];
 	*(((uint32_t *)NVMCTRL_AUX0_ADDRESS) + 1) = _row[1];
 
@@ -611,6 +637,7 @@ static int32_t _user_row_write_exec(const uint32_t *_row)
 	while (!hri_nvmctrl_get_INTFLAG_reg(hw, NVMCTRL_INTFLAG_READY)) {
 		/* Wait until this module isn't busy */
 	}
+#endif
 
 	/* Restore CTRLB */
 	hri_nvmctrl_write_CTRLB_reg(NVMCTRL, ctrlb);
@@ -620,7 +647,11 @@ static int32_t _user_row_write_exec(const uint32_t *_row)
 
 int32_t _user_area_write(void *base, const uint32_t offset, const uint8_t *buf, const uint32_t size)
 {
+#if 1	//dc42
+	uint32_t _row[NVMCTRL_PAGE_SIZE / 4]; /* Copy of user row. */
+#else
 	uint32_t _row[2]; /* Copy of user row. */
+#endif
 
 	/** Parameter check. */
 	if (_IS_NVM_USER_ROW(base)) {

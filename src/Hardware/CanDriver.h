@@ -34,7 +34,7 @@
 #ifndef SRC_CAN_CANDRIVER_H_
 #define SRC_CAN_CANDRIVER_H_
 
-//#include <utils.h>
+#include <CanSettings.h>
 #include <hpl_irq.h>
 
 typedef void (*FUNC_PTR)(void);
@@ -316,131 +316,6 @@ struct _can_async_device {
 };
 
 /**
- * \brief Initialize CAN.
- *
- * This function initializes the given CAN device descriptor.
- *
- * \param[in, out] dev   A CAN device descriptor to initialize
- * \param[in]      hw    The pointer to hardware instance
- *
- * \return Initialization status.
- */
-int32_t _can_async_init(struct _can_async_device *const dev, Can *const hw);
-
-/**
- * \brief Deinitialize CAN.
- *
- * This function deinitializes the given can device descriptor.
- *
- * \param[in] dev The CAN device descriptor to deinitialize
- *
- * \return De-initialization status.
- */
-int32_t _can_async_deinit(struct _can_async_device *const dev);
-
-/**
- * \brief Enable CAN
- *
- * This function enable CAN by the given can device descriptor.
- *
- * \param[in] dev The CAN device descriptor to enable
- *
- * \return Enabling status.
- */
-int32_t _can_async_enable(struct _can_async_device *const dev);
-
-/**
- * \brief Disable CAN
- *
- * This function disable CAN by the given can device descriptor.
- *
- * \param[in] dev The CAN descriptor to disable
- *
- * \return Disabling status.
- */
-int32_t _can_async_disable(struct _can_async_device *const dev);
-
-/**
- * \brief Read a CAN message
- *
- * \param[in] dev   The CAN device descriptor to read message.
- * \param[in] msg   The CAN message to read to.
- *
- * \return The status of read message.
- */
-int32_t _can_async_read(struct _can_async_device *const dev, struct can_message *msg);
-
-/**
- * \brief Write a CAN message
- *
- * \param[in] dev   The CAN device descriptor to write message.
- * \param[in] msg   The CAN message to write.
- *
- * \return The status of write message.
- */
-int32_t _can_async_write(struct _can_async_device *const dev, struct can_message *msg);
-
-/**
- * \brief Set CAN Interrupt State
- *
- * \param[in] dev   The CAN device descriptor
- * \param[in] type  Callback type
- * \param[in] state ture for enable or false for disable
- *
- */
-void _can_async_set_irq_state(struct _can_async_device *const dev, enum can_async_callback_type type, bool state);
-
-/**
- * \brief Return number of read errors
- *
- * This function return number of read errors
- *
- * \param[in] dev The CAN device descriptor pointer
- *
- * \return Number of read errors.
- */
-uint8_t _can_async_get_rxerr(struct _can_async_device *const dev);
-
-/**
- * \brief Return number of write errors
- *
- * This function return number of write errors
- *
- * \param[in] dev The CAN device descriptor pointer
- *
- * \return Number of write errors.
- */
-uint8_t _can_async_get_txerr(struct _can_async_device *const dev);
-
-/**
- * \brief Set CAN to the specified mode
- *
- * This function set CAN to a specified mode
- *
- * \param[in] dev The CAN device descriptor pointer
- * \param[in] mode  CAN operation mode
- *
- * \return Status of the operation
- */
-int32_t _can_async_set_mode(struct _can_async_device *const dev, enum can_mode mode);
-
-/**
- * \brief Set CAN to the specified mode
- *
- * This function set CAN to a specified mode
- *
- * \param[in] dev The CAN device descriptor pointer
- * \param[in] index   Index of Filter list
- * \param[in] filter  CAN Filter struct, NULL for clear filter
- *
- * \return Status of the operation
- */
-int32_t _can_async_set_filter(struct _can_async_device *const dev, uint8_t index, enum can_format fmt,
-                              struct can_filter *filter);
-
-/**@}*/
-
-/**
  * \brief CAN Asynchronous descriptor
  *
  * The CAN descriptor forward declaration.
@@ -450,7 +325,7 @@ struct can_async_descriptor;
 /**
  * Callback for CAN interrupt
  */
-typedef void (*can_cb_t)(struct can_async_descriptor *const descr);
+typedef void (*can_cb_t)(can_async_descriptor *const descr);
 
 /**
  * \brief CAN callbacks
@@ -458,7 +333,7 @@ typedef void (*can_cb_t)(struct can_async_descriptor *const descr);
 struct can_callbacks {
 	can_cb_t tx_done;
 	can_cb_t rx_done;
-	void (*irq_handler)(struct can_async_descriptor *const descr, enum can_async_interrupt_type type);
+	void (*irq_handler)(can_async_descriptor *const descr, enum can_async_interrupt_type type);
 };
 
 /**
@@ -479,7 +354,7 @@ struct can_async_descriptor {
  *
  * \return Initialization status.
  */
-int32_t can_async_init(struct can_async_descriptor *const descr, Can *const hw);
+int32_t can_async_init(can_async_descriptor *const descr, Can *const hw, const CanTiming& timing);
 
 /**
  * \brief Deinitialize CAN.
@@ -490,7 +365,7 @@ int32_t can_async_init(struct can_async_descriptor *const descr, Can *const hw);
  *
  * \return De-initialization status.
  */
-int32_t can_async_deinit(struct can_async_descriptor *const descr);
+int32_t can_async_deinit(can_async_descriptor *const descr);
 
 /**
  * \brief Enable CAN
@@ -501,7 +376,7 @@ int32_t can_async_deinit(struct can_async_descriptor *const descr);
  *
  * \return Enabling status.
  */
-int32_t can_async_enable(struct can_async_descriptor *const descr);
+int32_t can_async_enable(can_async_descriptor *const descr);
 
 /**
  * \brief Disable CAN
@@ -512,7 +387,7 @@ int32_t can_async_enable(struct can_async_descriptor *const descr);
  *
  * \return Disabling status.
  */
-int32_t can_async_disable(struct can_async_descriptor *const descr);
+int32_t can_async_disable(can_async_descriptor *const descr);
 
 /**
  * \brief Read a CAN message
@@ -522,7 +397,7 @@ int32_t can_async_disable(struct can_async_descriptor *const descr);
  *
  * \return The status of read message.
  */
-int32_t can_async_read(struct can_async_descriptor *const descr, struct can_message *msg);
+int32_t can_async_read(can_async_descriptor *const descr, struct can_message *msg);
 
 /**
  * \brief Write a CAN message
@@ -532,7 +407,7 @@ int32_t can_async_read(struct can_async_descriptor *const descr, struct can_mess
  *
  * \return The status of write message.
  */
-int32_t can_async_write(struct can_async_descriptor *const descr, struct can_message *msg);
+int32_t can_async_write(can_async_descriptor *const descr, struct can_message *msg);
 
 /**
  * \brief Register CAN callback function to interrupt
@@ -544,8 +419,7 @@ int32_t can_async_write(struct can_async_descriptor *const descr, struct can_mes
  *
  * \return The status of callback assignment.
  */
-int32_t can_async_register_callback(struct can_async_descriptor *const descr, enum can_async_callback_type type,
-                                    FUNC_PTR cb);
+int32_t can_async_register_callback(can_async_descriptor *const descr, enum can_async_callback_type type, FUNC_PTR cb);
 
 /**
  * \brief Return number of read errors
@@ -556,7 +430,7 @@ int32_t can_async_register_callback(struct can_async_descriptor *const descr, en
  *
  * \return The number of read errors.
  */
-uint8_t can_async_get_rxerr(struct can_async_descriptor *const descr);
+uint8_t can_async_get_rxerr(can_async_descriptor *const descr);
 
 /**
  * \brief Return number of write errors
@@ -567,7 +441,7 @@ uint8_t can_async_get_rxerr(struct can_async_descriptor *const descr);
  *
  * \return The number of write errors.
  */
-uint8_t can_async_get_txerr(struct can_async_descriptor *const descr);
+uint8_t can_async_get_txerr(can_async_descriptor *const descr);
 
 /**
  * \brief Set CAN to the specified mode
@@ -579,7 +453,7 @@ uint8_t can_async_get_txerr(struct can_async_descriptor *const descr);
  *
  * \return Status of the operation.
  */
-int32_t can_async_set_mode(struct can_async_descriptor *const descr, enum can_mode mode);
+int32_t can_async_set_mode(can_async_descriptor *const descr, enum can_mode mode);
 
 /**
  * \brief Set CAN Filter
@@ -593,8 +467,7 @@ int32_t can_async_set_mode(struct can_async_descriptor *const descr, enum can_mo
  *
  * \return Status of the operation.
  */
-int32_t can_async_set_filter(struct can_async_descriptor *const descr, uint8_t index, enum can_format fmt,
-                             struct can_filter *filter);
+int32_t can_async_set_filter(can_async_descriptor *const descr, uint8_t index, enum can_format fmt, struct can_filter *filter);
 
 /**
  * \brief Retrieve the current driver version
@@ -602,5 +475,7 @@ int32_t can_async_set_filter(struct can_async_descriptor *const descr, uint8_t i
  * \return The current driver version.
  */
 uint32_t can_async_get_version(void);
+
+void GetLocalCanTiming(const can_async_descriptor *descr, CanTiming& timing);
 
 #endif /* SRC_CAN_CANDRIVER_H_ */
