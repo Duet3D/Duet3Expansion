@@ -359,9 +359,12 @@ void CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf)
 		CanMessageBuffer::Free(buf);
 		break;
 
+	case CanMessageType::emergencyStop:
+		Platform::EmergencyStop();
+		break;
+
 	case CanMessageType::startup:
 	case CanMessageType::controlledStop:
-	case CanMessageType::emergencyStop:
 		debugPrintf("Unsupported CAN message type %u\n", (unsigned int)(buf->id.MsgType()));
 		CanMessageBuffer::Free(buf);
 		break;

@@ -118,6 +118,8 @@ namespace Platform
 	void Tick();
 
 	void StartFirmwareUpdate();
+	void StartReset();
+	void EmergencyStop();
 
 	[[noreturn]]void SoftwareReset(uint16_t reason, const uint32_t *stk = nullptr);
 

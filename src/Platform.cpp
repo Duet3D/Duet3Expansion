@@ -69,7 +69,15 @@ extern "C" void SERCOM4_Handler()
 # error Unsupported processor
 #endif
 
-static bool doFirmwareUpdate = false;
+enum class DeferredCommand : uint8_t
+{
+	none = 0,
+	firmwareUpdate,
+	reset
+};
+
+static volatile DeferredCommand deferredCommand = DeferredCommand::none;
+static volatile uint32_t whenDeferredCommandRequested;
 
 namespace Platform
 {
@@ -308,18 +316,30 @@ namespace Platform
 		ResetProcessor();
 	}
 
-	[[noreturn]] static void DoFirmwareUpdate()
+	static void ShutdownAll()
 	{
-		CanInterface::Shutdown();
-		DisableAllDrives();
-		delay(10);										// allow existing processing to complete, drivers to be turned off and CAN replies to be sent
-		Heat::SwitchOffAll();
 #if SUPPORT_TMC51xx
 		IoPort::WriteDigital(GlobalTmc51xxEnablePin, true);
 #endif
 #if SUPPORT_TMC22xx
 		IoPort::WriteDigital(GlobalTmc22xxEnablePin, true);
 #endif
+		Heat::SwitchOffAll();
+		DisableAllDrives();
+		delay(10);										// allow existing processing to complete, drivers to be turned off and CAN replies to be sent
+		CanInterface::Shutdown();
+		digitalWrite(DiagLedPin, false);				// turn the DIAG LED off
+	}
+
+	[[noreturn]] static void ShutdownAndReset()
+	{
+		ShutdownAll();
+		ResetProcessor();
+	}
+
+	[[noreturn]] static void DoFirmwareUpdate()
+	{
+		ShutdownAll();
 
 //		DisableCache();
 
@@ -339,8 +359,6 @@ namespace Platform
 #else
 # error Unsupported processor
 #endif
-
-		digitalWrite(DiagLedPin, false);					// turn the DIAG LED off
 
 		EraseAndReset();
 	}
@@ -599,9 +617,21 @@ void Platform::Spin()
 {
 	static bool powered = false;
 
-	if (doFirmwareUpdate)
+	if (deferredCommand != DeferredCommand::none && millis() - whenDeferredCommandRequested > 200)
 	{
-		DoFirmwareUpdate();
+		switch (deferredCommand)
+		{
+		case DeferredCommand::firmwareUpdate:
+			DoFirmwareUpdate();
+			break;
+
+		case DeferredCommand::reset:
+			ShutdownAndReset();
+			break;
+
+		default:
+			break;
+		}
 	}
 
 	// Get the VIN voltage
@@ -1263,7 +1293,19 @@ void Platform::Tick()
 
 void Platform::StartFirmwareUpdate()
 {
-	doFirmwareUpdate = true;
+	whenDeferredCommandRequested = millis();
+	deferredCommand = DeferredCommand::firmwareUpdate;
+}
+
+void Platform::StartReset()
+{
+	whenDeferredCommandRequested = millis();
+	deferredCommand = DeferredCommand::reset;
+}
+
+void Platform::EmergencyStop()
+{
+	ShutdownAndReset();
 }
 
 #if HAS_VOLTAGE_MONITOR

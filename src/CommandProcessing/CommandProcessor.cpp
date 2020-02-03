@@ -469,8 +469,15 @@ static GCodeResult InitiateFirmwareUpdate(const CanMessageUpdateYourFirmware& ms
 		reply.printf("Invalid firmware update command received");
 		return GCodeResult::error;
 	}
-	reply.printf("Board %u about to start firmware update", CanInterface::GetCanAddress());
+	reply.printf("Board %u starting firmware update", CanInterface::GetCanAddress());
 	Platform::StartFirmwareUpdate();
+	return GCodeResult::ok;
+}
+
+static GCodeResult InitiateReset(const CanMessageReset& msg, const StringRef& reply)
+{
+	reply.printf("Board %u resetting", CanInterface::GetCanAddress());
+	Platform::StartReset();
 	return GCodeResult::ok;
 }
 
@@ -662,6 +669,11 @@ void CommandProcessor::Spin()
 		case CanMessageType::updateFirmware:
 			requestId = buf->msg.updateYourFirmware.requestId;
 			rslt = InitiateFirmwareUpdate(buf->msg.updateYourFirmware, replyRef);
+			break;
+
+		case CanMessageType::reset:
+			requestId = buf->msg.reset.requestId;
+			rslt = InitiateReset(buf->msg.reset, replyRef);
 			break;
 
 		case CanMessageType::fanParameters:
