@@ -30,6 +30,8 @@ namespace CanInterface
 	bool SendAndFree(CanMessageBuffer *buf);
 	CanMessageBuffer *GetCanCommand();
 
+	void SendAnnounce(CanMessageBuffer *buf);
+
 	void MoveStoppedByZProbe();
 	void WakeAsyncSenderFromIsr();
 }

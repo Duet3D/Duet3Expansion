@@ -1303,7 +1303,7 @@ void Platform::StartReset()
 	deferredCommand = DeferredCommand::reset;
 }
 
-void Platform::EmergencyStop()
+[[noreturn]] void Platform::EmergencyStop()
 {
 	ShutdownAndReset();
 }

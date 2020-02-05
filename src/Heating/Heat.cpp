@@ -239,6 +239,9 @@ void Heat::Exit()
 				}
 			}
 
+			// Announce ourselves to the main board
+			CanInterface::SendAnnounce(buf);
+
 			// See if we have finished tuning a PID
 			if (heaterBeingTuned != -1)
 			{

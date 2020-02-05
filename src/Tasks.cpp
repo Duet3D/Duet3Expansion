@@ -46,7 +46,7 @@ extern "C" void __malloc_unlock ( struct _reent *_r )
 }
 
 // Application entry point
-void AppMain()
+[[noreturn]]void AppMain()
 {
 #ifndef DEBUG
 	// Check that the bootloader is protected and EEPROM is configured
@@ -95,6 +95,7 @@ void AppMain()
 	// Create the startup task
 	mainTask.Create(MainTask, "MAIN", nullptr, TaskPriority::SpinPriority);
 	vTaskStartScheduler();			// doesn't return
+	while (true) { }
 }
 
 void delay(uint32_t ms)

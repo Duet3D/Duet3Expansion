@@ -16,6 +16,7 @@
 #include <InputMonitors/InputMonitor.h>
 #include <Movement/Move.h>
 #include <Hardware/CanDriver.h>
+#include <Version.h>
 #include <peripheral_clk_config.h>
 #include <hpl_user_area.h>
 
@@ -42,6 +43,8 @@ static Task<CanAsyncSenderTaskStackWords> canAsyncSenderTask;
 static TaskHandle sendingTaskHandle = nullptr;
 
 static bool asyncSenderRunning = false;
+static bool mainBoardAcknowledgedAnnounce = false;	// true after the main board has acknowledged our announcement
+static bool isProgrammed = false;					// true after the main board has sent us any configuration commands
 
 class CanMessageQueue
 {
@@ -282,6 +285,7 @@ CanAddress CanInterface::GetCanAddress()
 	return boardAddress;
 }
 
+// Send a message. On return the buffer is available to the caller to re-use or free.
 bool CanInterface::Send(CanMessageBuffer *buf)
 {
 	struct can_message msg;
@@ -360,10 +364,25 @@ void CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf)
 		break;
 
 	case CanMessageType::emergencyStop:
-		Platform::EmergencyStop();
+		Platform::EmergencyStop();					// doesn't return
+		break;
+
+	case CanMessageType::acknowledgeAnnounce:
+		if (buf->id.Src() == CanId::MasterAddress)
+		{
+			mainBoardAcknowledgedAnnounce = true;
+		}
+		CanMessageBuffer::Free(buf);
 		break;
 
 	case CanMessageType::startup:
+		if (millis() > 1000 || isProgrammed)		// if we've only just powered up and the main board hasn't programmed us yet, no need to start up again
+		{
+			Platform::EmergencyStop();
+		}
+		CanMessageBuffer::Free(buf);
+		break;
+
 	case CanMessageType::controlledStop:
 		debugPrintf("Unsupported CAN message type %u\n", (unsigned int)(buf->id.MsgType()));
 		CanMessageBuffer::Free(buf);
@@ -372,6 +391,10 @@ void CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf)
 	default:
 		if (buf->id.Dst() == GetCanAddress() && buf->id.IsRequest())
 		{
+			if (buf->id.Src() == CanId::MasterAddress)
+			{
+				isProgrammed = true;			// record that we've had a communication from the master since we started up
+			}
 			PendingCommands.AddMessage(buf);	// it's addressed to us, so queue it for processing
 		}
 		else
@@ -385,6 +408,24 @@ void CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf)
 void CanInterface::Diagnostics(const StringRef& reply)
 {
 	reply.lcatf("Free CAN buffers: %u", CanMessageBuffer::FreeBuffers());
+}
+
+// Send an announcement message if we haven't had an announce acknowledgement form the main board. On return the buffer is available to use again.
+void CanInterface::SendAnnounce(CanMessageBuffer *buf)
+{
+	if (!mainBoardAcknowledgedAnnounce)
+	{
+		auto msg = buf->SetupRequestMessage<CanMessageAnnounce>(0, boardAddress, CanId::MasterAddress);
+		msg->timeSinceStarted = millis();
+		msg->numDrivers = NumDrivers;
+		msg->spare = 0;
+		constexpr size_t BoardTypeLength = strlen(BoardTypeName);
+		memcpy(msg->boardTypeAndFirmwareVersion, BoardTypeName, BoardTypeLength);
+		msg->boardTypeAndFirmwareVersion[BoardTypeLength] = '|';
+		strncpy(msg->boardTypeAndFirmwareVersion + BoardTypeLength + 1, FirmwareVersion, ARRAY_SIZE(msg->boardTypeAndFirmwareVersion) - BoardTypeLength - 1);
+		buf->dataLength = msg->GetActualDataLength();
+		Send(buf);
+	}
 }
 
 // This is called from the step ISR when the move is stopped by the Z probe
@@ -415,7 +456,7 @@ GCodeResult CanInterface::ChangeAddressAndDataRate(const CanMessageSetAddressAnd
 		}
 
 		// Check whether we are changing the timing
-		if (msg.DoSetTimingNo == CanMessageSetAddressAndNormalTiming::DoSetTimingYes)
+		if (msg.doSetTiming == CanMessageSetAddressAndNormalTiming::DoSetTimingYes)
 		{
 			seen = true;
 			canConfigData.SetTiming(msg.normalTiming);
