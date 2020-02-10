@@ -52,6 +52,11 @@ constexpr bool DefaultInterpolation = true;					// interpolation enabled
 constexpr uint32_t DefaultTpwmthrsReg = 2000;				// low values (high changeover speed) give horrible jerk at the changeover from stealthChop to spreadCycle
 constexpr size_t TmcTaskStackWords = 100;
 
+#if HAS_STALL_DETECT
+const int DefaultStallDetectThreshold = 1;
+const unsigned int DefaultMinimumStepsPerSecond = 200;		// for stall detection: 1 rev per second assuming 1.8deg/step, as per the TMC5160 datasheet
+#endif
+
 #if TMC22xx_VARIABLE_NUM_DRIVERS
 
 static size_t numTmc22xxDrivers;
@@ -151,6 +156,9 @@ constexpr uint32_t IOIN_220x_DIR = 1 << 9;
 constexpr uint32_t IOIN_VERSION_SHIFT = 24;
 constexpr uint32_t IOIN_VERSION_MASK = 0xFF << IOIN_VERSION_SHIFT;
 
+constexpr uint32_t IOIN_VERSION_2208_2224 = 0x20;			// version for TMC2208/2224
+constexpr uint32_t IOIN_VERSION_2209 = 0x21;				// version for TMC2209
+
 // FACTORY_CONF register (0x07, RW)
 constexpr uint8_t REGNUM_FACTORY_CONF = 0x07;
 constexpr uint32_t FACTORY_CONF_FCLKTRIM_SHIFT = 0;
@@ -176,16 +184,34 @@ constexpr uint32_t IHOLDIRUN_IHOLDDELAY_MASK = 0x0F << IHOLDIRUN_IHOLDDELAY_SHIF
 constexpr uint32_t DefaultIholdIrunReg = (0 << IHOLDIRUN_IHOLD_SHIFT) | (0 << IHOLDIRUN_IRUN_SHIFT) | (2 << IHOLDIRUN_IHOLDDELAY_SHIFT);
 															// approx. 0.5 sec motor current reduction to low power
 
-constexpr uint8_t REGNUM_TPOWER_DOWN = 0x11;
-constexpr uint8_t REGNUM_TSTEP = 0x12;
-constexpr uint8_t REGNUM_TPWMTHRS = 0x13;
-constexpr uint8_t REGNUM_VACTUAL = 0x22;
+constexpr uint8_t REGNUM_TPOWER_DOWN = 0x11;	// wo, 8 bits, sets delay from standstill detection to motor current reduction
+constexpr uint8_t REGNUM_TSTEP = 0x12;			// ro, 20 bits, measured time between two 1/256 microsteps, in clocks
+constexpr uint8_t REGNUM_TPWMTHRS = 0x13;		// wo, 20 bits, upper velocity for StealthChop mode
+constexpr uint8_t REGNUM_VACTUAL = 0x22;		// wo, 24 bits signed, sets motor velocity for continuous rotation
 
 // Stallguard registers (TMC2209 only)
-constexpr uint8_t REGNUM_TCOOLTHRS = 0x14;
-constexpr uint8_t REGNUM_SGTHRS = 0x40;
-constexpr uint8_t REGNUM_SG_RESULT = 0x41;
-constexpr uint8_t REGNUM_COOLCONF = 0x42;
+constexpr uint8_t REGNUM_TCOOLTHRS = 0x14;		// wo, 20-bit lower threshold velocity. CoolStep and the StallGuard DIAG output are enabled above this speed.
+constexpr uint8_t REGNUM_SGTHRS = 0x40;			// w0, 8-bit stall detection threshold. Stall is signalled when SG_RESULT <= SGTHRS * 2.
+constexpr uint8_t REGNUM_SG_RESULT = 0x41;		// 10-bit StallGard result, read-only. Bits 0 and 9 are always 0.
+constexpr uint8_t REGNUM_COOLCONF = 0x42;		// 16-bit CoolStep control
+
+constexpr uint32_t SG_RESULT_MASK = 1023;
+
+// Minimum StallGuard value. Current is increased if SGRESULT < SEMIN * 32.
+constexpr unsigned int COOLCONF_SEMIN_SHIFT = 0;
+constexpr uint32_t COOLCONF_SEMIN_MASK = 0x000F << COOLCONF_SEMIN_SHIFT;
+// Current increment steps per measured SG_RESULT value: 1,2,4,8
+constexpr unsigned int COOLCONF_SEUP_SHIFT = 5;
+constexpr uint32_t COOLCONF_SEMUP_MASK = 0x0003 << COOLCONF_SEUP_SHIFT;
+// Hysteresis value for smart current control. Motor current is reduced if SG_RESULT >= (SEMIN+SEMAX+1)*32.
+constexpr unsigned int COOLCONF_SEMAX_SHIFT = 8;
+constexpr uint32_t COOLCONF_SEMAX_MASK = 0x000F << COOLCONF_SEMAX_SHIFT;
+// Current down step speed. For each {32,8,2,1} SG_RESULT value, decrease by one
+constexpr unsigned int COOLCONF_SEDN_SHIFT = 13;
+constexpr uint32_t COOLCONF_SEDN_MASK = 0x0003 << COOLCONF_SEDN_SHIFT;
+// Minimum current for smart current control, 0 = half of IRUN, 1 = 1/4 of IRUN
+constexpr unsigned int COOLCONF_SEIMIN_SHIFT = 15;
+constexpr uint32_t COOLCONF_SEIMIN_MASK = 0x0001 << COOLCONF_SEIMIN_SHIFT;
 
 // Sequencer registers (read only)
 constexpr uint8_t REGNUM_MSCNT = 0x6A;
@@ -280,11 +306,14 @@ static constexpr uint8_t ReadIfcountCRC = CRCAddByte(InitialSendCRC, REGNUM_IFCO
 class TmcDriverState
 {
 public:
+	void Init(uint32_t p_driverNumber
 #if TMC22xx_HAS_ENABLE_PINS
-	void Init(uint32_t p_driverNumber, Pin p_pin);
-#else
-	void Init(uint32_t p_driverNumber);
+							, Pin p_enablePin
 #endif
+#if HAS_STALL_DETECT
+							, Pin p_diagPin
+#endif
+			 );
 	void SetAxisNumber(size_t p_axisNumber);
 	uint32_t GetAxisNumber() const { return axisNumber; }
 	void WriteAll();
@@ -294,6 +323,11 @@ public:
 	DriverMode GetDriverMode() const;
 	void SetCurrent(float current);
 	void Enable(bool en);
+#if HAS_STALL_DETECT
+	void SetStallDetectThreshold(int sgThreshold);
+	void SetStallMinimumStepsPerSecond(unsigned int stepsPerSecond);
+	void AppendStallConfig(const StringRef& reply) const;
+#endif
 	void AppendDriverStatus(const StringRef& reply);
 	uint8_t GetDriverNumber() const { return driverNumber; }
 	bool UpdatePending() const { return registersToUpdate != 0; }
@@ -327,6 +361,14 @@ private:
 	void UpdateChopConfRegister();							// calculate the chopper control register and flag it for sending
 	void UpdateCurrent();
 	void UpdateMaxOpenLoadStepInterval();
+#if HAS_STALL_DETECT
+	bool IsTmc2209() const noexcept { return (readRegisters[ReadIoIn] & IOIN_VERSION_MASK) != (IOIN_VERSION_2209 << IOIN_VERSION_SHIFT); }
+	void ResetLoadRegisters() noexcept
+	{
+		minSgLoadRegister = 1023;
+		maxSgLoadRegister = 0;
+	}
+#endif
 
 #if TMC22xx_HAS_MUX
 	void SetUartMux();
@@ -339,7 +381,12 @@ private:
 	void SetupDMAReceive(uint8_t regnum, uint8_t crc) __attribute__ ((hot));						// set up the PDC to receive a register
 #endif
 
-	static constexpr unsigned int NumWriteRegisters = 6;	// the number of registers that we write to
+#if HAS_STALL_DETECT
+	static constexpr unsigned int NumWriteRegisters = 9;	// the number of registers that we write to on a TMC2209
+	static constexpr unsigned int NumWriteRegistersNon09 = 6;	// the number of registers that we write to on a TMC2208/2224
+#else
+	static constexpr unsigned int NumWriteRegisters = 6;	// the number of registers that we write to on a TMC2208/2224
+#endif
 	static const uint8_t WriteRegNumbers[NumWriteRegisters];	// the register numbers that we write to
 
 	// Write register numbers are in priority order, most urgent first, in same order as WriteRegNumbers
@@ -349,15 +396,27 @@ private:
 	static constexpr unsigned int WriteIholdIrun = 3;		// current setting
 	static constexpr unsigned int WritePwmConf = 4;			// read register select, sense voltage high/low sensitivity
 	static constexpr unsigned int WriteTpwmthrs = 5;		// upper step rate limit for stealthchop
+	static constexpr unsigned int WriteTcoolthrs = 6;		// coolstep and stall DIAG output lower speed threshold
+	static constexpr unsigned int WriteSgthrs = 7;			// stallguard threshold
+	static constexpr unsigned int WriteCoolconf = 8;		// coolstep configuration
 
-	static constexpr unsigned int NumReadRegisters = 4;		// the number of registers that we read from
+#if HAS_STALL_DETECT
+	static constexpr unsigned int NumReadRegisters = 6;		// the number of registers that we read from on a TMC2209
+	static constexpr unsigned int NumReadRegistersNon09 = 5;	// the number of registers that we read from on a TMC2208/2224
+#else
+	static constexpr unsigned int NumReadRegisters = 5;		// the number of registers that we read from on a TMC2208/2224
+#endif
 	static const uint8_t ReadRegNumbers[NumReadRegisters];	// the register numbers that we read from
 
 	// Read register numbers, in same order as ReadRegNumbers
-	static constexpr unsigned int ReadGStat = 0;
-	static constexpr unsigned int ReadDrvStat = 1;
-	static constexpr unsigned int ReadMsCnt = 2;
-	static constexpr unsigned int ReadPwmScale = 3;
+	static constexpr unsigned int ReadIoIn = 0;				// includes the version which we use to distinguish TMC2209 from 2208/2224
+	static constexpr unsigned int ReadGStat = 1;			// global status
+	static constexpr unsigned int ReadDrvStat = 2;			// drive status
+	static constexpr unsigned int ReadMsCnt = 3;			// microstep counter
+	static constexpr unsigned int ReadPwmScale = 4;			// PWM scaling
+#if HAS_STALL_DETECT
+	static constexpr unsigned int ReadSgResult = 5;			// stallguard result, TMC2209 only
+#endif
 
 	volatile uint32_t writeRegisters[NumWriteRegisters];	// the values we want the TMC22xx writable registers to have
 	volatile uint32_t readRegisters[NumReadRegisters];		// the last values read from the TMC22xx readable registers
@@ -371,6 +430,11 @@ private:
 	uint32_t microstepShiftFactor;							// how much we need to shift 1 left by to get the current microstepping
 	uint32_t motorCurrent;									// the configured motor current
 	uint32_t maxOpenLoadStepInterval;						// the maximum step pulse interval for which we consider open load detection to be reliable
+
+#if HAS_STALL_DETECT
+	uint32_t minSgLoadRegister;								// the minimum value of the StallGuard bits we read
+	uint32_t maxSgLoadRegister;								// the maximum value of the StallGuard bits we read
+#endif
 
 #if TMC22xx_HAS_MUX || TMC22xx_SINGLE_DRIVER
 # if TMC22xx_USES_SERCOM
@@ -402,6 +466,9 @@ private:
 
 #if TMC22xx_HAS_ENABLE_PINS
 	Pin enablePin;											// the enable pin of this driver, if it has its own
+#endif
+#if HAS_STALL_DETECT
+	Pin diagPin;
 #endif
 	uint8_t driverNumber;									// the number of this driver as addressed by the UART multiplexer
 	uint8_t standstillCurrentFraction;						// divide this by 256 to get the motor current standstill fraction
@@ -445,30 +512,44 @@ volatile uint8_t TmcDriverState::sendData[12] =
 // Buffer for the message we receive when reading data. The first 4 or 12 bytes bytes are our own transmitted data.
 volatile uint8_t TmcDriverState::receiveData[20];
 
-const uint8_t TmcDriverState::WriteRegNumbers[NumWriteRegisters] =
+constexpr uint8_t TmcDriverState::WriteRegNumbers[NumWriteRegisters] =
 {
 	REGNUM_GCONF,
 	REGNUM_SLAVECONF,
 	REGNUM_CHOPCONF,
 	REGNUM_IHOLDIRUN,
 	REGNUM_PWMCONF,
-	REGNUM_TPWMTHRS
+	REGNUM_TPWMTHRS,
+#if HAS_STALL_DETECT
+	// The rest are on TMC2209 only
+	REGNUM_TCOOLTHRS,
+	REGNUM_SGTHRS,
+	REGNUM_COOLCONF
+#endif
 };
 
-const uint8_t TmcDriverState::ReadRegNumbers[NumReadRegisters] =
+constexpr uint8_t TmcDriverState::ReadRegNumbers[NumReadRegisters] =
 {
+	REGNUM_IOIN,						// tells us whether we have a TMC2208/24 or a TMC2209
 	REGNUM_GSTAT,
 	REGNUM_DRV_STATUS,
 	REGNUM_MSCNT,
-	REGNUM_PWM_SCALE
+	REGNUM_PWM_SCALE,
+#if HAS_STALL_DETECT
+	REGNUM_SG_RESULT					// TMC2209 only
+#endif
 };
 
-const uint8_t TmcDriverState::ReadRegCRCs[NumReadRegisters] =
+constexpr uint8_t TmcDriverState::ReadRegCRCs[NumReadRegisters] =
 {
 	CRCAddByte(InitialSendCRC, ReadRegNumbers[0]),
 	CRCAddByte(InitialSendCRC, ReadRegNumbers[1]),
 	CRCAddByte(InitialSendCRC, ReadRegNumbers[2]),
-	CRCAddByte(InitialSendCRC, ReadRegNumbers[3])
+	CRCAddByte(InitialSendCRC, ReadRegNumbers[3]),
+	CRCAddByte(InitialSendCRC, ReadRegNumbers[4]),
+#if HAS_STALL_DETECT
+	CRCAddByte(InitialSendCRC, ReadRegNumbers[5])
+#endif
 };
 
 // State structures for all drivers
@@ -615,22 +696,26 @@ void TmcDriverState::UpdateChopConfRegister()
 }
 
 // Initialise the state of the driver and its CS pin
+void TmcDriverState::Init(uint32_t p_driverNumber
 #if TMC22xx_HAS_ENABLE_PINS
-void TmcDriverState::Init(uint32_t p_driverNumber, Pin p_pin)
-#else
-void TmcDriverState::Init(uint32_t p_driverNumber)
+							, Pin p_enablePin
 #endif
+#if HAS_STALL_DETECT
+							, Pin p_diagPin
+#endif
+)
 pre(!driversPowered)
 {
 	driverNumber = p_driverNumber;
 	axisNumber = p_driverNumber;										// assume straight-through axis mapping initially
 #if TMC22xx_HAS_ENABLE_PINS
-	enablePin = p_pin;													// this is NoPin for the built-in drivers
+	enablePin = p_enablePin;											// this is NoPin for the built-in drivers
+	IoPort::SetPinMode(p_enablePin, OUTPUT_HIGH);
+#endif
 
-	if (p_pin != NoPin)
-	{
-		IoPort::SetPinMode(p_pin, OUTPUT_HIGH);
-	}
+#if HAS_STALL_DETECT
+	diagPin = p_diagPin;
+	IoPort::SetPinMode(p_diagPin, INPUT_PULLUP);
 #endif
 
 #if !(TMC22xx_HAS_MUX || TMC22xx_SINGLE_DRIVER)
@@ -653,15 +738,43 @@ pre(!driversPowered)
 	UpdateRegister(WriteIholdIrun, DefaultIholdIrunReg);
 	UpdateRegister(WritePwmConf, DefaultPwmConfReg);
 	UpdateRegister(WriteTpwmthrs, DefaultTpwmthrsReg);
+#if HAS_STALL_DETECT
+	SetStallDetectThreshold(DefaultStallDetectThreshold);				// this also updates the CoolConf register
+	SetStallMinimumStepsPerSecond(DefaultMinimumStepsPerSecond);
+#endif
+
 	for (size_t i = 0; i < NumReadRegisters; ++i)
 	{
-		accumulatedReadRegisters[i] = readRegisters[i] = 0;
+		accumulatedReadRegisters[i] = readRegisters[i] = 0;				// clear all read registers so that we don't use dud values, in particular we don't know the driver type yet
 	}
 	registerBeingUpdated = 0;
 	registerToRead = 0;
 	lastIfCount = 0;
 	readErrors = writeErrors = numReads = numTimeouts = 0;
+	ResetLoadRegisters();
 }
+
+#if HAS_STALL_DETECT
+
+void TmcDriverState::SetStallDetectThreshold(int sgThreshold)
+{
+	const uint32_t sgthrs = (uint32_t)(constrain<int>(sgThreshold, -64, 63) + 64);
+	UpdateRegister(WriteSgthrs, sgthrs);
+}
+
+void TmcDriverState::SetStallMinimumStepsPerSecond(unsigned int stepsPerSecond)
+{
+	UpdateRegister(WriteTcoolthrs, (12000000 + (128 * stepsPerSecond))/(256 * stepsPerSecond));
+}
+
+void TmcDriverState::AppendStallConfig(const StringRef& reply) const
+{
+	const int threshold = (int)(writeRegisters[WriteSgthrs] - 64);
+	reply.catf("stall threshold %d, steps/sec %" PRIu32 ", coolstep %" PRIx32,
+				threshold, 12000000 / (256 * writeRegisters[WriteTcoolthrs]), writeRegisters[WriteCoolconf] & 0xFFFF);
+}
+
+#endif
 
 inline void TmcDriverState::SetAxisNumber(size_t p_axisNumber)
 {
@@ -728,8 +841,13 @@ bool TmcDriverState::SetRegister(SmartDriverRegister reg, uint32_t regVal)
 		UpdateRegister(WriteTpwmthrs, regVal & ((1u << 20) - 1));
 		return true;
 
-	case SmartDriverRegister::hdec:
+#if HAS_STALL_DETECT
 	case SmartDriverRegister::coolStep:
+		UpdateRegister(WriteCoolconf, regVal & ((1u << 16) - 1));
+		return true;
+#endif
+
+	case SmartDriverRegister::hdec:
 	default:
 		return false;
 	}
@@ -852,8 +970,18 @@ void TmcDriverState::Enable(bool en)
 // Read the status
 uint32_t TmcDriverState::ReadLiveStatus() const
 {
-	const uint32_t ret = readRegisters[ReadDrvStat] & (TMC_RR_OT | TMC_RR_OTPW | TMC_RR_S2G | TMC_RR_OLA | TMC_RR_OLB | TMC_RR_STST | TMC_RR_TEMPBITS);
-	return (enabled) ? ret : ret & ~(TMC_RR_OLA | TMC_RR_OLB);
+	uint32_t ret = readRegisters[ReadDrvStat] & (TMC_RR_OT | TMC_RR_OTPW | TMC_RR_S2G | TMC_RR_OLA | TMC_RR_OLB | TMC_RR_STST | TMC_RR_TEMPBITS);
+	if (!enabled)
+	{
+		ret &= ~(TMC_RR_OLA | TMC_RR_OLB);
+	}
+#if HAS_STALL_DETECT
+	if (IoPort::ReadPin(diagPin))
+	{
+		ret |= TMC_RR_SG;
+	}
+#endif
+	return ret;
 }
 
 // Read the status
@@ -862,10 +990,17 @@ uint32_t TmcDriverState::ReadAccumulatedStatus(uint32_t bitsToKeep)
 	const uint32_t mask = (enabled) ? 0xFFFFFFFF : ~(TMC_RR_OLA | TMC_RR_OLB);
 	bitsToKeep &= mask;
 	const irqflags_t flags = cpu_irq_save();
-	const uint32_t status = accumulatedReadRegisters[ReadDrvStat];
+	uint32_t status = accumulatedReadRegisters[ReadDrvStat];
 	accumulatedReadRegisters[ReadDrvStat] = (status & bitsToKeep) | readRegisters[ReadDrvStat];		// so that the next call to ReadAccumulatedStatus isn't missing some bits
 	cpu_irq_restore(flags);
-	return status & (TMC_RR_OT | TMC_RR_OTPW | TMC_RR_S2G | TMC_RR_OLA | TMC_RR_OLB | TMC_RR_STST | TMC_RR_TEMPBITS) & mask;
+	status &= (TMC_RR_OT | TMC_RR_OTPW | TMC_RR_S2G | TMC_RR_OLA | TMC_RR_OLB | TMC_RR_STST | TMC_RR_TEMPBITS) & mask;
+#if HAS_STALL_DETECT
+	if (IoPort::ReadPin(diagPin))
+	{
+		status |= TMC_RR_SG;
+	}
+#endif
+	return status;
 }
 
 // Append the driver status to a string, and reset the min/max load values
@@ -903,6 +1038,18 @@ void TmcDriverState::AppendDriverStatus(const StringRef& reply)
 
 	reply.catf(", read errors %u, write errors %u, ifcount %u, reads %u, timeouts %u", readErrors, writeErrors, lastIfCount, numReads, numTimeouts);
 	readErrors = writeErrors = numReads = numTimeouts = 0;
+
+#if HAS_STALL_DETECT
+	if (minSgLoadRegister <= maxSgLoadRegister)
+	{
+		reply.catf(", SG min/max %" PRIu32 "/%" PRIu32, minSgLoadRegister, maxSgLoadRegister);
+	}
+	else
+	{
+		reply.cat(", SG min/max not available");
+	}
+	ResetLoadRegisters();
+#endif
 }
 
 // This is called by the ISR when the SPI transfer has completed
@@ -928,12 +1075,13 @@ inline void TmcDriverState::TransferDone()
 			// We asked to read the scheduled read register, and the sync byte, slave address and register number in the received message match
 			//TODO here we could check the CRC of the received message, but for now we assume that we won't get any corruption in the 32-bit received data
 			uint32_t regVal = ((uint32_t)receiveData[7] << 24) | ((uint32_t)receiveData[8] << 16) | ((uint32_t)receiveData[9] << 8) | receiveData[10];
+
 			if (registerToRead == ReadDrvStat)
 			{
 				uint32_t interval;
 				if (   (regVal & TMC_RR_STST) != 0
 #if defined(SAME51) || defined(SAMC21)
-					|| (interval = moveInstance->GetStepInterval(axisNumber, microstepShiftFactor)) == 0				// get the full step interval
+					|| (interval = moveInstance->GetStepInterval(axisNumber, microstepShiftFactor)) == 0		// get the full step interval
 #else
 					|| (interval = reprap.GetMove().GetStepInterval(axisNumber, microstepShiftFactor)) == 0		// get the full step interval
 #endif
@@ -944,11 +1092,29 @@ inline void TmcDriverState::TransferDone()
 					regVal &= ~(TMC_RR_OLA | TMC_RR_OLB);				// open load bits are unreliable at standstill and low speeds
 				}
 			}
+#if HAS_STALL_DETECT
+			else if (registerToRead == ReadSgResult)
+			{
+				const uint32_t sgResult = regVal & SG_RESULT_MASK;
+				if (sgResult < minSgLoadRegister)
+				{
+					minSgLoadRegister = sgResult;
+				}
+				if (sgResult > maxSgLoadRegister)
+				{
+					maxSgLoadRegister = sgResult;
+				}
+			}
+#endif
 			readRegisters[registerToRead] = regVal;
 			accumulatedReadRegisters[registerToRead] |= regVal;
 
 			++registerToRead;
-			if (registerToRead == NumReadRegisters)
+			if (   registerToRead == NumReadRegisters
+#if HAS_STALL_DETECT
+				|| (registerToRead == NumReadRegistersNon09 && !IsTmc2209())
+#endif
+			   )
 			{
 				registerToRead = 0;
 			}
@@ -1017,7 +1183,12 @@ inline void TmcDriverState::StartTransfer()
 #endif
 
 	// Find which register to send. The common case is when no registers need to be updated.
+#if HAS_STALL_DETECT
+	size_t regNum;
+	if (registersToUpdate == 0 || ((regNum = LowestSetBit(registersToUpdate)) >= NumWriteRegistersNon09 && !IsTmc2209()))
+#else
 	if (registersToUpdate == 0)
+#endif
 	{
 		registerBeingUpdated = 0;
 
@@ -1041,10 +1212,10 @@ inline void TmcDriverState::StartTransfer()
 	}
 	else
 	{
-		// Pick a register to write
+#if !HAS_STALL_DETECT
 		const size_t regNum = LowestSetBit(registersToUpdate);
-
-		// Kick off a transfer for that register
+#endif
+		// Kick off a transfer for the register to write
 		const irqflags_t flags = cpu_irq_save();		// avoid race condition
 		registerBeingUpdated = 1u << regNum;
 #if TMC22xx_USES_SERCOM
@@ -1284,11 +1455,14 @@ void SmartDrivers::Init()
 # endif
 #endif
 
+		driverStates[drive].Init(drive
 #if TMC22xx_HAS_ENABLE_PINS
-		driverStates[drive].Init(drive, driverSelectPins[drive]);	// axes are mapped straight through to drivers initially
-#else
-		driverStates[drive].Init(drive);							// axes are mapped straight through to drivers initially
+								, DriverSelectPins[drive]
 #endif
+#if HAS_STALL_DETECT
+								, DriverDiagPins[drive]
+#endif
+								);
 	}
 
 	tmcTask.Create(TmcLoop, "TMC", nullptr, TaskPriority::TmcPriority);
@@ -1397,6 +1571,45 @@ void SmartDrivers::TurnDriversOff()
 {
 	// When using TMC2660 drivers, this is called when an over-voltage event occurs, so that we can try to protect the drivers by disabling them.
 	// We don't use it with TMC22xx drivers.
+}
+
+void SmartDrivers::SetStallThreshold(size_t driver, int sgThreshold)
+{
+#if HAS_STALL_DETECT
+	if (driver < GetNumTmcDrivers())
+	{
+		driverStates[driver].SetStallDetectThreshold(sgThreshold);
+	}
+#endif
+}
+
+void SmartDrivers::SetStallFilter(size_t driver, bool sgFilter)
+{
+	// Not a supported on TMC2209
+}
+
+void SmartDrivers::SetStallMinimumStepsPerSecond(size_t driver, unsigned int stepsPerSecond)
+{
+#if HAS_STALL_DETECT
+	if (driver < GetNumTmcDrivers())
+	{
+		driverStates[driver].SetStallMinimumStepsPerSecond(stepsPerSecond);
+	}
+#endif
+}
+
+void SmartDrivers::AppendStallConfig(size_t driver, const StringRef& reply)
+{
+#if HAS_STALL_DETECT
+	if (driver < GetNumTmcDrivers())
+	{
+		driverStates[driver].AppendStallConfig(reply);
+	}
+	else
+	{
+		reply.cat("no such driver");
+	}
+#endif
 }
 
 void SmartDrivers::AppendDriverStatus(size_t drive, const StringRef& reply)

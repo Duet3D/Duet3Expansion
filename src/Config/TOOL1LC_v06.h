@@ -23,7 +23,7 @@ constexpr const char* BoardTypeName = "TOOL1LC";
 
 // Drivers configuration
 #define HAS_SMART_DRIVERS		1
-#define HAS_STALL_DETECT		0		//TODO temporary until TMC2209 support added
+#define HAS_STALL_DETECT		1
 
 #define ACTIVE_HIGH_STEP		1		// 1 = active high, 0 = active low
 #define ACTIVE_HIGH_DIR			0		// 1 = active high, 0 = active low
@@ -42,7 +42,6 @@ constexpr size_t MaxSmartDrivers = 1;
 #define TMC22xx_VARIABLE_NUM_DRIVERS	0
 
 constexpr Pin GlobalTmc22xxEnablePin = PortBPin(2);
-constexpr Pin Tmc2209DiagPin = PortBPin(3);
 
 constexpr uint8_t TMC22xxSercomNumber = 3;
 Sercom * const SERCOM_TMC22xx = SERCOM3;
@@ -65,6 +64,7 @@ constexpr uint32_t TransferTimeout = 10;			// any transfer should complete withi
 PortGroup * const StepPio = &(PORT->Group[0]);		// the PIO that all the step pins are on
 constexpr Pin StepPins[NumDrivers] = { PortAPin(27) };
 constexpr Pin DirectionPins[NumDrivers] = { PortAPin(28) };
+constexpr Pin DriverDiagPins[NumDrivers] = { PortBPin(3) };
 
 #define SUPPORT_IOBITS			0
 #define SUPPORT_LASER			0
@@ -106,10 +106,11 @@ constexpr size_t NumButtons = 2;
 constexpr Pin ButtonPins[NumButtons] = { PortBPin(22), PortBPin(23) };
 
 // Table of pin functions that we are allowed to use
-constexpr uint8_t Nx = 0xFF;
+constexpr uint8_t Nx = 0xFF;	// this means no EXINT usable
 
 constexpr PinDescription PinTable[] =
 {
+	//	TC					TCC					ADC					SDADC				SERCOM in			SERCOM out	  Exint PinName
 	// Port A
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PA00 LED0
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PA01 LED1

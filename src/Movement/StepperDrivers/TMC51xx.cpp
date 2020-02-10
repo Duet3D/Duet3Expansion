@@ -236,8 +236,6 @@ constexpr uint32_t COOLCONF_SGFILT = 1 << 24;				// set to update stallGuard sta
 constexpr uint32_t COOLCONF_SGT_SHIFT = 16;
 constexpr uint32_t COOLCONF_SGT_MASK = 127 << COOLCONF_SGT_SHIFT;	// stallguard threshold (signed)
 
-constexpr uint32_t DefaultCoolConfReg = 0;
-
 // DRV_STATUS register. See the .h file for the bit definitions.
 constexpr uint8_t REGNUM_DRV_STATUS = 0x6F;
 
@@ -349,7 +347,6 @@ private:
 	volatile uint32_t accumulatedReadRegisters[NumReadRegisters];
 
 	uint32_t configuredChopConfReg;							// the configured chopper control register, in the Enabled state, without the microstepping bits
-	uint32_t maxStallStepInterval;							// maximum interval between full steps to take any notice of stall detection
 	uint32_t minSgLoadRegister;								// the minimum value of the StallGuard bits we read
 	uint32_t maxSgLoadRegister;								// the maximum value of the StallGuard bits we read
 
@@ -417,11 +414,9 @@ pre(!driversPowered)
 #endif
 	UpdateRegister(WriteIholdIrun, DefaultIholdIrunReg);
 	UpdateRegister(WriteTpwmthrs, DefaultTpwmthrsReg);
-	UpdateRegister(WriteTcoolthrs, DefaultTcoolthrsReg);
 	UpdateRegister(WriteThigh, DefaultThighReg);
 	configuredChopConfReg = DefaultChopConfReg;
 	SetMicrostepping(DefaultMicrosteppingShift, DefaultInterpolation);	// this also updates the chopper control register
-	writeRegisters[WriteCoolConf] = DefaultCoolConfReg;
 	SetStallDetectThreshold(DefaultStallDetectThreshold);				// this also updates the CoolConf register
 	SetStallMinimumStepsPerSecond(DefaultMinimumStepsPerSecond);
 	UpdateRegister(WritePwmConf, DefaultPwmConfReg);
@@ -776,8 +771,7 @@ void TmcDriverState::SetStallDetectFilter(bool sgFilter)
 
 void TmcDriverState::SetStallMinimumStepsPerSecond(unsigned int stepsPerSecond)
 {
-	//TODO use hardware facility instead
-	maxStallStepInterval = StepTimer::StepClockRate/max<unsigned int>(stepsPerSecond, 1);
+	UpdateRegister(WriteTcoolthrs, (12000000 + (128 * stepsPerSecond))/(256 * stepsPerSecond));
 }
 
 void TmcDriverState::AppendStallConfig(const StringRef& reply) const
@@ -789,7 +783,7 @@ void TmcDriverState::AppendStallConfig(const StringRef& reply) const
 		threshold -= 128;
 	}
 	reply.catf("stall threshold %d, filter %s, steps/sec %" PRIu32 ", coolstep %" PRIx32,
-				threshold, ((filtered) ? "on" : "off"), StepTimer::StepClockRate/maxStallStepInterval, writeRegisters[WriteCoolConf] & 0xFFFF);
+				threshold, ((filtered) ? "on" : "off"), 12000000 / (256 * writeRegisters[WriteTcoolthrs]), writeRegisters[WriteCoolConf] & 0xFFFF);
 }
 
 void TmcDriverState::GetSpiCommand(uint8_t *sendDataBlock)
@@ -883,7 +877,6 @@ void TmcDriverState::TransferSucceeded(const uint8_t *rcvDataBlock)
 	// Deal with the stall status
 	if (   (rcvDataBlock[0] & (1u << 2)) != 0							// if the status indicates stalled
 		&& interval != 0
-		&& interval <= maxStallStepInterval								// if the motor speed is high enough to get a reliable stall indication
 	   )
 	{
 		readRegisters[ReadDrvStat] |= TMC_RR_SG;
@@ -1485,6 +1478,10 @@ void SmartDrivers::AppendStallConfig(size_t driver, const StringRef& reply)
 	if (driver < numTmc51xxDrivers)
 	{
 		driverStates[driver].AppendStallConfig(reply);
+	}
+	else
+	{
+		reply.cat("no such driver");
 	}
 }
 

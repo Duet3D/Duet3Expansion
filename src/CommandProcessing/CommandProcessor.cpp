@@ -458,8 +458,55 @@ static GCodeResult HandleSetDriverStates(const CanMessageMultipleDrivesRequest& 
 
 static GCodeResult ProcessM915(const CanMessageGeneric& msg, const StringRef& reply)
 {
-	reply.printf("M915 not yet implemented for remote drivers");
-	return GCodeResult::error;
+	CanMessageGenericParser parser(msg, M915Params);
+	uint16_t driverBits;
+	if (!parser.GetUintParam('d', driverBits))
+	{
+		reply.copy("missing parameter in M915 message");
+		return GCodeResult::error;
+	}
+
+	const auto drivers = DriversBitmap::MakeFromRaw(driverBits);
+
+	bool seen = false;
+	{
+		int8_t sgThreshold;
+		if (parser.GetIntParam('S', sgThreshold))
+		{
+			seen = true;
+			drivers.Iterate([sgThreshold](unsigned int drive, bool) noexcept { SmartDrivers::SetStallThreshold(drive, sgThreshold); });
+		}
+	}
+
+	{
+		uint16_t stepsPerSecond;
+		if (parser.GetUintParam('H', stepsPerSecond))
+		{
+			seen = true;
+			drivers.Iterate([stepsPerSecond](unsigned int drive, bool) noexcept { SmartDrivers::SetStallMinimumStepsPerSecond(drive, stepsPerSecond); });
+		}
+	}
+
+	{
+		uint16_t coolStepConfig;
+		if (parser.GetUintParam('T', coolStepConfig))
+		{
+			seen = true;
+			drivers.Iterate([coolStepConfig](unsigned int drive, bool) noexcept { SmartDrivers::SetRegister(drive, SmartDriverRegister::coolStep, coolStepConfig); } );
+		}
+	}
+
+	if (!seen)
+	{
+		drivers.Iterate([&reply](unsigned int drive, bool) noexcept
+									{
+										reply.lcatf("Driver %u.%u: ", CanInterface::GetCanAddress(), drive);
+										SmartDrivers::AppendStallConfig(drive, reply);
+									}
+					   );
+	}
+
+	return GCodeResult::ok;
 }
 
 static GCodeResult InitiateFirmwareUpdate(const CanMessageUpdateYourFirmware& msg, const StringRef& reply)

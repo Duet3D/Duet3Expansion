@@ -81,10 +81,11 @@ constexpr size_t NumButtons = 2;
 constexpr Pin ButtonPins[NumButtons] = { PortBPin(22), PortBPin(23) };
 
 // Table of pin functions that we are allowed to use
-constexpr uint8_t Nx = 0xFF;
+constexpr uint8_t Nx = 0xFF;	// this means no EXINT usable
 
 constexpr PinDescription PinTable[] =
 {
+	//	TC					TCC					ADC					SDADC				SERCOM in			SERCOM out	  Exint PinName
 	// Port A
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PA00 LED0
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PA01 LED1

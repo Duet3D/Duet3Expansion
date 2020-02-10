@@ -522,10 +522,6 @@ void Platform::Init()
 	notOpenLoadBDrivers.Clear();
 #endif
 
-#if defined(TOOL1LC_V04) || defined(TOOL1LC_V06)
-	IoPort::SetPinMode(Tmc2209DiagPin, INPUT);
-#endif
-
 	for (size_t i = 0; i < NumDrivers; ++i)
 	{
 #if ACTIVE_HIGH_STEP
