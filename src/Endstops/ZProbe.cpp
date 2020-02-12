@@ -10,13 +10,12 @@
 #include "GCodes/GCodes.h"
 #include "Heating/Heat.h"
 
-ZProbe::ZProbe(unsigned int num, ZProbeType p_type) : EndstopOrZProbe(), number(num), type(p_type), adcValue(500), invertReading(false)
+ZProbe::ZProbe(unsigned int num, ZProbeType p_type) : EndstopOrZProbe(), number(num), type(p_type), adcValue(500)
 {
 }
 
 GCodeResult ZProbe::Configure(const CanMessageConfigureZProbe& msg, const StringRef& reply, uint8_t& extra)
 {
-	invertReading = msg.invertReading;
 	adcValue = msg.adcValue;
 	type = (ZProbeType)msg.type;
 	extra = 0;							// set a default value, which the overriding function should replace
@@ -25,8 +24,7 @@ GCodeResult ZProbe::Configure(const CanMessageConfigureZProbe& msg, const String
 
 int ZProbe::GetReading() const
 {
-	const int zProbeVal = GetRawReading()/4;
-	return (invertReading) ? 1000 - zProbeVal : zProbeVal;
+	return GetRawReading()/4;
 }
 
 // Test whether we are at or near the stop

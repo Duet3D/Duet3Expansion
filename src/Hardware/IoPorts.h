@@ -34,7 +34,8 @@ enum class PinUsedBy : uint8_t
 	tacho,
 	spindle,
 	laser,
-	gpio,
+	gpin,
+	gpout,
 	filamentMonitor,
 	temporaryInput,
 	sensor

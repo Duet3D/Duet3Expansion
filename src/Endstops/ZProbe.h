@@ -43,7 +43,6 @@ protected:
 	ZProbeType type;
 	int8_t sensor;					// the sensor number used for temperature calibration
 	int16_t adcValue;				// the target ADC value, after inversion if enabled
-	bool invertReading;
 };
 
 // MotorStall Z probes have no port, also in a CAN environment the local and remote proxy versions are the same

@@ -9,7 +9,7 @@
 #include <CAN/CanInterface.h>
 #include <CanMessageGenericParser.h>
 
-static PwmPort ports[MaxGpioPorts];
+static PwmPort ports[MaxGpOutPorts];
 
 GCodeResult GpioPorts::HandleM950Gpio(const CanMessageGeneric &msg, const StringRef &reply)
 {
@@ -21,7 +21,7 @@ GCodeResult GpioPorts::HandleM950Gpio(const CanMessageGeneric &msg, const String
 		reply.copy("Missing port number parameter in M950Gpio message");
 		return GCodeResult::error;
 	}
-	if (gpioNumber >= MaxGpioPorts)
+	if (gpioNumber >= MaxGpOutPorts)
 	{
 		reply.printf("GPIO port number %u is too high for expansion board %u", gpioNumber, CanInterface::GetCanAddress());
 		return GCodeResult::error;
@@ -45,7 +45,7 @@ GCodeResult GpioPorts::HandleM950Gpio(const CanMessageGeneric &msg, const String
 	if (parser.GetStringParam('C', pinName.GetRef()))
 	{
 		// Creating or destroying a port
-		const bool ok = port.AssignPort(pinName.c_str(), reply, PinUsedBy::gpio, (isServo) ? PinAccess::servo : PinAccess::pwm);
+		const bool ok = port.AssignPort(pinName.c_str(), reply, PinUsedBy::gpout, (isServo) ? PinAccess::servo : PinAccess::pwm);
 		if (ok && port.IsValid())
 		{
 			port.SetFrequency(freq);
@@ -76,7 +76,7 @@ GCodeResult GpioPorts::HandleM950Gpio(const CanMessageGeneric &msg, const String
 
 GCodeResult GpioPorts::HandleGpioWrite(const CanMessageWriteGpio &msg, const StringRef &reply)
 {
-	if (msg.portNumber >= MaxGpioPorts)
+	if (msg.portNumber >= MaxGpOutPorts)
 	{
 		reply.printf("GPIO port# %u is too high for this expansion board", msg.portNumber);
 		return GCodeResult::error;
