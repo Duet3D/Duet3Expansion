@@ -8,13 +8,11 @@
 #include "Heater.h"
 #include "Platform.h"
 #include "Heat.h"
-#include "HeaterProtection.h"
 #include "Sensors/TemperatureSensor.h"
 
 Heater::Heater(unsigned int num)
 	: heaterNumber(num), sensorNumber(-1), requestedTemperature(0.0),
-	  maxTempExcursion(DefaultMaxTempExcursion), maxHeatingFaultTime(DefaultMaxHeatingFaultTime),
-	  heaterProtection(nullptr)
+	  maxTempExcursion(DefaultMaxTempExcursion), maxHeatingFaultTime(DefaultMaxHeatingFaultTime)
 {
 }
 
@@ -63,6 +61,25 @@ GCodeResult Heater::SetFaultDetectionParameters(float pMaxTempExcursion, float p
 	return GCodeResult::ok;
 }
 
+GCodeResult Heater::SetHeaterMonitors(const CanMessageSetHeaterMonitors& msg, const StringRef& reply)
+{
+	for (size_t i = 0; i < min<size_t>(msg.numMonitors, MaxMonitorsPerHeater); ++i)
+	{
+		monitors[i].Set(msg.monitors[i].sensor, msg.monitors[i].limit, (HeaterMonitorAction)msg.monitors[i].action, (HeaterMonitorTrigger)msg.monitors[i].trigger);
+	}
+	return GCodeResult::ok;
+}
+
+GCodeResult Heater::SetOrReportModel(unsigned int heater, const CanMessageUpdateHeaterModel& msg, const StringRef& reply) noexcept
+{
+	const GCodeResult rslt = SetModel(msg.gain, msg.timeConstant, msg.deadTime, msg.maxPwm, msg.standardVoltage, msg.usePid, msg.inverted, reply);
+	if (msg.pidParametersOverridden && (rslt == GCodeResult::ok || rslt == GCodeResult::warning))
+	{
+		SetRawPidParameters(msg.kP, msg.recipTi, msg.tD);
+	}
+	return rslt;
+}
+
 GCodeResult Heater::SetTemperature(const CanMessageSetHeaterTemperature& msg, const StringRef& reply)
 {
 	switch (msg.command)
@@ -103,40 +120,43 @@ GCodeResult Heater::SetTemperature(const CanMessageSetHeaterTemperature& msg, co
 	return GCodeResult::ok;
 }
 
-// Get the highest temperature limit
-float Heater::GetHighestTemperatureLimit() const
+float Heater::GetHighestTemperatureLimit() const noexcept
 {
-	return Heat::GetHighestTemperatureLimit(GetHeaterNumber());
-}
-
-// Get the lowest temperature limit
-float Heater::GetLowestTemperatureLimit() const
-{
-	return Heat::GetLowestTemperatureLimit(GetHeaterNumber());
-}
-
-void Heater::SetHeaterProtection(HeaterProtection *h)
-{
-	heaterProtection = h;
-}
-
-// Check heater protection elements and return true if everything is good
-bool Heater::CheckProtection() const
-{
-	for (HeaterProtection *prot = heaterProtection; prot != nullptr; prot = prot->Next())
+	float limit = BadErrorTemperature;
+	for (const HeaterMonitor& prot : monitors)
 	{
-		if (!prot->Check())
+		if (prot.GetTrigger() == HeaterMonitorTrigger::TemperatureExceeded)
 		{
-			// Something is not right
-			return false;
+			const float t = prot.GetTemperatureLimit();
+			if (limit == BadErrorTemperature || t > limit)
+			{
+				limit = t;
+			}
 		}
 	}
-	return true;
+	return limit;
 }
 
-bool Heater::CheckGood() const
+float Heater::GetLowestTemperatureLimit() const noexcept
 {
-	return GetMode() == HeaterMode::fault && CheckProtection();
+	float limit = ABS_ZERO;
+	for (const HeaterMonitor& prot : monitors)
+	{
+		if (prot.GetTrigger() == HeaterMonitorTrigger::TemperatureTooLow)
+		{
+			const float t = prot.GetTemperatureLimit();
+			if (limit == ABS_ZERO || t < limit)
+			{
+				limit = t;
+			}
+		}
+	}
+	return limit;
+}
+
+void Heater::SetModelDefaults() noexcept
+{
+	model.SetParameters(DefaultHotEndHeaterGain, DefaultHotEndHeaterTimeConstant, DefaultHotEndHeaterDeadTime, 1.0, DefaultHotEndTemperatureLimit, 0.0, true, false);
 }
 
 // End

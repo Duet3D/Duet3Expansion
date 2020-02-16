@@ -41,10 +41,10 @@ public:
 	void Suspend(bool sus) override;				// Suspend the heater to conserve power or while doing Z probing
 
 protected:
-	void ResetHeater() override;
-	HeaterMode GetMode() const override { return mode; }
-	void SwitchOn() override;						// Turn the heater on and set the mode
-	GCodeResult UpdateModel(const StringRef& reply) override;	// Called when the heater model has been changed
+	void ResetHeater() noexcept override;
+	HeaterMode GetMode() const noexcept override { return mode; }
+	void SwitchOn() noexcept override;				// Turn the heater on and set the mode
+	GCodeResult UpdateModel(const StringRef& reply) noexcept override;	// Called when the heater model has been changed
 
 private:
 	void SetHeater(float power) const;				// Power is a fraction in [0,1]

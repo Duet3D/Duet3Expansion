@@ -7,7 +7,6 @@
 
 #include "LocalHeater.h"
 #include "Heat.h"
-#include "HeaterProtection.h"
 #include "Platform.h"
 #include "CanMessageGenericParser.h"
 
@@ -96,6 +95,12 @@ GCodeResult LocalHeater::ConfigurePortAndSensor(const char *portName, PwmFrequen
 	{
 		reply.printf("Sensor number %u has not been defined", sensorNumber);
 		return GCodeResult::warning;
+	}
+
+	if (monitors[0].GetTrigger() == HeaterMonitorTrigger::Disabled)
+	{
+		// Set up a default monitor
+		monitors[0].Set(sensorNumber, DefaultHotEndTemperatureLimit, HeaterMonitorAction::GenerateFault, HeaterMonitorTrigger::TemperatureExceeded);
 	}
 	return GCodeResult::ok;
 }
@@ -380,24 +385,24 @@ void LocalHeater::Spin()
 				}
 
 				// Verify that everything is operating in the required temperature range
-				for (HeaterProtection *prot = GetHeaterProtections(); prot != nullptr; prot = prot->Next())
+				for (HeaterMonitor& prot : monitors)
 				{
-					if (!prot->Check())
+					if (!prot.Check())
 					{
 						lastPwm = 0.0;
-						switch (prot->GetAction())
+						switch (prot.GetAction())
 						{
-						case HeaterProtectionAction::GenerateFault:
+						case HeaterMonitorAction::GenerateFault:
 							mode = HeaterMode::fault;
 							Platform::HandleHeaterFault(GetHeaterNumber());
 							Platform::MessageF(ErrorMessage, "Heating fault on heater %u\n", GetHeaterNumber());
 							break;
 
-						case HeaterProtectionAction::TemporarySwitchOff:
+						case HeaterMonitorAction::TemporarySwitchOff:
 							// Do nothing, the PWM value has already been set above
 							break;
 
-						case HeaterProtectionAction::PermanentSwitchOff:
+						case HeaterMonitorAction::PermanentSwitchOff:
 							SwitchOff();
 							break;
 						}

@@ -20,7 +20,6 @@ Licence: GPL
 
 #include "Heat.h"
 #include "Heater.h"
-#include "HeaterProtection.h"
 #include "Platform.h"
 #include "Sensors/TemperatureSensor.h"
 #include "CanMessageGenericParser.h"
@@ -48,7 +47,6 @@ namespace Heat
 	static Heater* heaters[MaxHeaters];							// A PID controller for each heater
 
 	static TemperatureSensor *sensorsRoot = nullptr;			// The sensor list. Only the Heat task is allowed to modify the linkeage.
-	HeaterProtection *heaterProtections[MaxHeaters + MaxExtraHeaterProtections];	// Heater protection instances to guarantee legal heater temperature ranges
 
 	static float extrusionMinTemp;								// Minimum temperature to allow regular extrusion
 	static float retractionMinTemp;								// Minimum temperature to allow regular retraction
@@ -122,6 +120,12 @@ namespace Heat
 			ts = ts->GetNext();
 		}
 	}
+
+	static GCodeResult UnknownHeater(unsigned int heater, const StringRef& reply) noexcept
+	{
+		reply.printf("Board %u does not have heater %u", CanInterface::GetCanAddress(), heater);
+		return GCodeResult::error;
+	}
 }
 
 // Is the heater enabled?
@@ -138,8 +142,7 @@ void Heat::ResetHeaterModels()
 	{
 		if (h != nullptr && h->IsHeaterEnabled())
 		{
-			String<1> dummy;
-			h->SetModel(DefaultHotEndHeaterGain, DefaultHotEndHeaterTimeConstant, DefaultHotEndHeaterDeadTime, 1.0, 0.0, true, false, dummy.GetRef());
+			h->SetModelDefaults();
 		}
 	}
 }
@@ -149,11 +152,6 @@ void Heat::Init()
 	coldExtrude = false;
 	heaterBeingTuned = -1;
 	lastHeaterTuned = -1;
-
-	for (size_t index : ARRAY_INDICES(heaterProtections))
-	{
-		heaterProtections[index] = new HeaterProtection(index);
-	}
 
 	for (Heater *& h : heaters)
 	{
@@ -362,8 +360,7 @@ GCodeResult Heat::ConfigureHeater(const CanMessageGeneric& msg, const StringRef&
 	const auto h = FindHeater(heater);
 	if (h.IsNull())
 	{
-		reply.printf("No heater %u on board %u", (unsigned int)heater, CanInterface::GetCanAddress());
-		return GCodeResult::error;
+		return UnknownHeater(heater, reply);
 	}
 
 	if (seenFreq)
@@ -377,18 +374,7 @@ GCodeResult Heat::ConfigureHeater(const CanMessageGeneric& msg, const StringRef&
 GCodeResult Heat::ProcessM307(const CanMessageUpdateHeaterModel& msg, const StringRef& reply)
 {
 	const auto h = FindHeater(msg.heater);
-	if (h.IsNull())
-	{
-		reply.printf("Unknown heater %u", msg.heater);
-		return GCodeResult::error;
-	}
-
-	const GCodeResult rslt = h->SetModel(msg.gain, msg.timeConstant, msg.deadTime, msg.maxPwm, msg.standardVoltage, msg.usePid, msg.inverted, reply);
-	if (msg.pidParametersOverridden && (rslt == GCodeResult::ok || rslt == GCodeResult::warning))
-	{
-		h->SetRawPidParameters(msg.kP, msg.recipTi, msg.tD);
-	}
-	return rslt;
+	return (h.IsNotNull()) ? h->SetOrReportModel(msg.heater, msg, reply) : UnknownHeater(msg.heater, reply);
 }
 
 GCodeResult Heat::ProcessM308(const CanMessageGeneric& msg, const StringRef& reply)
@@ -446,93 +432,27 @@ GCodeResult Heat::ProcessM308(const CanMessageGeneric& msg, const StringRef& rep
 GCodeResult Heat::SetFaultDetection(const CanMessageSetHeaterFaultDetectionParameters& msg, const StringRef& reply)
 {
 	const auto h = FindHeater(msg.heater);
-	if (h.IsNull())
-	{
-		reply.printf("Unknown heater %u", msg.heater);
-		return GCodeResult::error;
-	}
-
-	return h->SetFaultDetectionParameters(msg.maxTempExcursion, msg.maxFaultTime);
+	return (h.IsNotNull())
+			? h->SetFaultDetectionParameters(msg.maxTempExcursion, msg.maxFaultTime)
+				: UnknownHeater(msg.heater, reply);
 }
 
-float Heat::GetHighestTemperatureLimit(int heater)
+GCodeResult Heat::SetHeaterMonitors(const CanMessageSetHeaterMonitors& msg, const StringRef& reply)
 {
-	float limit = BadErrorTemperature;
-	if (heater >= 0 && heater < (int)MaxHeaters)
-	{
-		for (const HeaterProtection *prot : heaterProtections)
-		{
-			if (prot->GetSupervisedHeater() == heater && prot->GetTrigger() == HeaterProtectionTrigger::TemperatureExceeded)
-			{
-				const float t = prot->GetTemperatureLimit();
-				if (limit == BadErrorTemperature || t > limit)
-				{
-					limit = t;
-				}
-			}
-		}
-	}
-	return limit;
+	const auto h = FindHeater(msg.heater);
+	return (h.IsNotNull()) ? h->SetHeaterMonitors(msg, reply) : UnknownHeater(msg.heater, reply);
 }
 
-float Heat::GetLowestTemperatureLimit(int heater)
+float Heat::GetHighestTemperatureLimit(int heater) noexcept
 {
-	float limit = ABS_ZERO;
-	if (heater >= 0 && heater < (int)MaxHeaters)
-	{
-		for (const HeaterProtection *prot : heaterProtections)
-		{
-			if (prot->GetSupervisedHeater() == heater && prot->GetTrigger() == HeaterProtectionTrigger::TemperatureTooLow)
-			{
-				const float t = prot->GetTemperatureLimit();
-				if (limit == ABS_ZERO || t < limit)
-				{
-					limit = t;
-				}
-			}
-		}
-	}
-	return limit;
+	const auto h = FindHeater(heater);
+	return (h.IsNull()) ? BadErrorTemperature : h->GetHighestTemperatureLimit();
 }
 
-// Updates the PIDs and HeaterProtection items after a heater change
-void Heat::UpdateHeaterProtection()
+float Heat::GetLowestTemperatureLimit(int heater) noexcept
 {
-	// Reassign the first mapped heater protection item of each PID where applicable
-	// and rebuild the linked list of heater protection elements per heater
-	for (size_t heater : ARRAY_INDICES(heaters))
-	{
-		// Rebuild linked lists
-		HeaterProtection *firstProtectionItem = nullptr;
-		HeaterProtection *lastElementInList = nullptr;
-		for (HeaterProtection *prot : heaterProtections)
-		{
-			if (prot->GetHeater() == (int)heater)
-			{
-				if (firstProtectionItem == nullptr)
-				{
-					firstProtectionItem = prot;
-					prot->SetNext(nullptr);
-				}
-				else if (lastElementInList == nullptr)
-				{
-					firstProtectionItem->SetNext(prot);
-					lastElementInList = prot;
-				}
-				else
-				{
-					lastElementInList->SetNext(prot);
-					lastElementInList = prot;
-				}
-			}
-		}
-
-		// Update reference to the first item so that we can achieve better performance
-		if (heaters[heater] != nullptr)
-		{
-			heaters[heater]->SetHeaterProtection(firstProtectionItem);
-		}
-	}
+	const auto h = FindHeater(heater);
+	return (h.IsNull()) ? ABS_ZERO : h->GetLowestTemperatureLimit();
 }
 
 // Get the temperature of a sensor
@@ -585,36 +505,13 @@ void Heat::ResetFault(int heater)
 GCodeResult Heat::SetTemperature(const CanMessageSetHeaterTemperature& msg, const StringRef& reply)
 {
 	const auto h = FindHeater(msg.heaterNumber);
-	if (h.IsNotNull())
-	{
-		return h->SetTemperature(msg, reply);
-	}
-	reply.printf("No heater %u on board %u", msg.heaterNumber, CanInterface::GetCanAddress());
-	return GCodeResult::error;
+	return (h.IsNotNull()) ? h->SetTemperature(msg, reply) : UnknownHeater(msg.heaterNumber, reply);
 }
 
 float Heat::GetAveragePWM(size_t heater)
 {
 	const auto h = FindHeater(heater);
 	return (h.IsNull()) ? 0.0 : h->GetAveragePWM();
-}
-
-// Get the highest temperature limit of any heater
-float Heat::GetHighestTemperatureLimit()
-{
-	float limit = ABS_ZERO;
-	for (HeaterProtection *prot : heaterProtections)
-	{
-		if (prot->GetHeater() >= 0 && prot->GetTrigger() == HeaterProtectionTrigger::TemperatureExceeded)
-		{
-			const float t = prot->GetTemperatureLimit();
-			if (t > limit)
-			{
-				limit = t;
-			}
-		}
-	}
-	return limit;
 }
 
 // Get a pointer to the temperature sensor entry, or nullptr if the heater number is bad

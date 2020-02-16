@@ -20,7 +20,6 @@
 #include <RTOSIface/RTOSIface.h>
 
 class TemperatureSensor;
-class HeaterProtection;
 class FopDt;
 
 namespace Heat
@@ -37,6 +36,7 @@ namespace Heat
 	GCodeResult TuneHeater(const CanMessageGeneric& msg, const StringRef& reply);
 	GCodeResult SetPidParameters(const CanMessageGeneric& msg, const StringRef& reply);
 	GCodeResult SetFaultDetection(const CanMessageSetHeaterFaultDetectionParameters& msg, const StringRef& reply);
+	GCodeResult SetHeaterMonitors(const CanMessageSetHeaterMonitors& msg, const StringRef& reply);
 
 	void SwitchOffAll();										// Turn all heaters off
 	void ResetFault(int heater);								// Reset a heater fault - only call this if you know what you are doing
@@ -45,8 +45,8 @@ namespace Heat
 	float GetSensorTemperature(int sensorNum, TemperatureError& err); // Result is in degrees Celsius
 
 	// Methods that relate to a particular heater
-	float GetHighestTemperatureLimit(int heater);
-	float GetLowestTemperatureLimit(int heater);
+	float GetHighestTemperatureLimit(int heater) noexcept;
+	float GetLowestTemperatureLimit(int heater) noexcept;
 	void SwitchOff(int heater);									// Turn off a specific heater
 	GCodeResult SetTemperature(const CanMessageSetHeaterTemperature& msg, const StringRef& reply);
 
@@ -56,14 +56,9 @@ namespace Heat
 	bool IsHeaterEnabled(size_t heater)							// Is this heater enabled?
 	pre(heater < NumTotalHeaters);
 
-	float GetHighestTemperatureLimit();							// Get the highest temperature limit of any heater
-
 	int GetHeaterChannel(size_t heater);						// Return the channel used by a particular heater, or -1 if not configured
 	bool SetHeaterChannel(size_t heater, int channel);			// Set the channel used by a heater, returning true if bad heater or channel number
 	const char *GetHeaterSensorName(size_t heater);				// Get the name of the sensor for a heater, or nullptr if it hasn't been named
-
-	HeaterProtection& AccessHeaterProtection(size_t index);		// Return the protection parameters of the given index
-	void UpdateHeaterProtection();								// Updates the PIDs and HeaterProtection items when a heater is remapped
 
 	void SuspendHeaters(bool sus);								// Suspend the heaters to conserve power
 

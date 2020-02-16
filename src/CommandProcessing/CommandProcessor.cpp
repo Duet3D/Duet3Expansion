@@ -738,6 +738,11 @@ void CommandProcessor::Spin()
 			rslt = Heat::SetFaultDetection(buf->msg.setHeaterFaultDetection, replyRef);
 			break;
 
+		case CanMessageType::setHeaterMonitors:
+			requestId = buf->msg.setHeaterMonitors.requestId;
+			rslt = Heat::SetHeaterMonitors(buf->msg.setHeaterMonitors, replyRef);
+			break;
+
 		case CanMessageType::setDriverStates:
 			requestId = buf->msg.multipleDrivesRequest.requestId;
 			rslt = HandleSetDriverStates(buf->msg.multipleDrivesRequest, replyRef);

@@ -9,14 +9,17 @@
 #define SRC_HEATING_HEATER_H_
 
 #include "RepRapFirmware.h"
+#include "HeaterMonitor.h"
 #include "FOPDT.h"
-#include "GCodes/GCodeResult.h"
+#include <GCodes/GCodeResult.h>
 
-#include "CanId.h"
+#include <CanId.h>
 
-class HeaterProtection;
+class HeaterMonitor;
 class CanMessageGenericParser;
 class CanMessageSetHeaterTemperature;
+class CanMessageUpdateHeaterModel;
+class CanMessageSetHeaterMonitors;
 
 class Heater
 {
@@ -47,25 +50,21 @@ public:
 		{ pMaxTempExcursion = maxTempExcursion; pMaxFaultTime = maxHeatingFaultTime; }
 
 	GCodeResult SetFaultDetectionParameters(float pMaxTempExcursion, float pMaxFaultTime);
+	GCodeResult SetHeaterMonitors(const CanMessageSetHeaterMonitors& msg, const StringRef& reply);
 
 	float GetHighestTemperatureLimit() const;					// Get the highest temperature limit
 	float GetLowestTemperatureLimit() const;					// Get the lowest temperature limit
-	void SetHeaterProtection(HeaterProtection *h);
+	void SetHeaterMonitoring(HeaterMonitor *h);
 
 	const FopDt& GetModel() const { return model; }				// Get the process model
-
-	GCodeResult SetModel(float gain, float tc, float td, float maxPwm, float voltage, bool usePid, bool inverted, const StringRef& reply);	// Set the process model
+	GCodeResult SetOrReportModel(unsigned int heater, const CanMessageUpdateHeaterModel& msg, const StringRef& reply) noexcept;
+	void SetModelDefaults() noexcept;
 
 	bool IsHeaterEnabled() const								// Is this heater enabled?
 		{ return model.IsEnabled(); }
 
-	void SetM301PidParameters(const M301PidParameters& params)
-		{ model.SetM301PidParameters(params); }
-
 	void SetRawPidParameters(float p_kP, float p_recipTi, float p_tD)
 		{ model.SetRawPidParameters(p_kP, p_recipTi, p_tD); }
-
-	bool CheckGood() const;
 
 	bool IsTuning() const { return GetMode() >= HeaterMode::tuning0; }
 	uint8_t GetModeByte() const { return (uint8_t)GetMode(); }
@@ -90,29 +89,28 @@ protected:
 		lastTuningMode = tuning3
 	};
 
-	virtual void ResetHeater() = 0;
-	virtual HeaterMode GetMode() const = 0;
-	virtual void SwitchOn() = 0;
-	virtual GCodeResult UpdateModel(const StringRef& reply) = 0;
+	virtual void ResetHeater() noexcept = 0;
+	virtual HeaterMode GetMode() const noexcept = 0;
+	virtual void SwitchOn() noexcept = 0;
+	virtual GCodeResult UpdateModel(const StringRef& reply) noexcept = 0;
 
-	int GetSensorNumber() const { return sensorNumber; }
-	void SetSensorNumber(int sn) { sensorNumber = sn; }
-	float GetMaxTemperatureExcursion() const { return maxTempExcursion; }
-	float GetMaxHeatingFaultTime() const { return maxHeatingFaultTime; }
-	float GetTargetTemperature() const { return requestedTemperature; }
-	HeaterProtection *GetHeaterProtections() const { return heaterProtection; }
+	int GetSensorNumber() const noexcept { return sensorNumber; }
+	void SetSensorNumber(int sn) noexcept { sensorNumber = sn; }
+	float GetMaxTemperatureExcursion() const noexcept { return maxTempExcursion; }
+	float GetMaxHeatingFaultTime() const noexcept { return maxHeatingFaultTime; }
+	float GetTargetTemperature() const noexcept { return requestedTemperature; }
+	GCodeResult SetModel(float gain, float tc, float td, float maxPwm, float voltage, bool usePid, bool inverted, const StringRef& reply) noexcept;	// Set the process model
+
+	HeaterMonitor monitors[MaxMonitorsPerHeater];	// embedding them in the Heater uses less memory than dynamic allocation
 
 private:
-	bool CheckProtection() const;					// Check heater protection elements and return true if everything is good
+	FopDt model;
 
 	unsigned int heaterNumber;
 	int sensorNumber;								// the sensor number used by this heater
 	float requestedTemperature;						// The required temperature
 	float maxTempExcursion;							// The maximum temperature excursion permitted while maintaining the setpoint
 	float maxHeatingFaultTime;						// How long a heater fault is permitted to persist before a heater fault is raised
-	HeaterProtection *heaterProtection;				// The first element of assigned heater protection items
-
-	FopDt model;
 };
 
 #endif /* SRC_HEATING_HEATER_H_ */
