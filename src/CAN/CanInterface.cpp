@@ -42,7 +42,6 @@ static Task<CanAsyncSenderTaskStackWords> canAsyncSenderTask;
 
 static TaskHandle sendingTaskHandle = nullptr;
 
-static bool asyncSenderRunning = false;
 static bool mainBoardAcknowledgedAnnounce = false;	// true after the main board has acknowledged our announcement
 static bool isProgrammed = false;					// true after the main board has sent us any configuration commands
 
@@ -217,8 +216,6 @@ extern "C" [[noreturn]] void CanReceiverLoop(void *)
 
 extern "C" [[noreturn]] void CanAsyncSenderLoop(void *)
 {
-	asyncSenderRunning = true;
-	uint32_t timeToWait = 0;
 	CanMessageBuffer *buf;
 	while ((buf = CanMessageBuffer::Allocate()) == nullptr)
 	{
@@ -232,18 +229,13 @@ extern "C" [[noreturn]] void CanAsyncSenderLoop(void *)
 		msg->states = 0;
 		msg->numHandles = 0;
 
-		// Wait if necessary before looking for changed inputs
-		if (timeToWait != 0)
-		{
-			TaskBase::Take(timeToWait);						// wait until we are woken up because a message is available
-		}
-
-		InputMonitor::AddStateChanges(msg, timeToWait);
+		const uint32_t timeToWait = InputMonitor::AddStateChanges(msg);
 		if (msg->numHandles != 0)
 		{
 			buf->dataLength = msg->GetActualDataLength();
 			CanInterface::SendAsync(buf);					// this doesn't free the buffer, so we can re-use it
 		}
+		TaskBase::Take(timeToWait);						// wait until we are woken up because a message is available, or we time out
 	}
 }
 
@@ -436,10 +428,7 @@ void CanInterface::MoveStoppedByZProbe()
 
 void CanInterface::WakeAsyncSenderFromIsr()
 {
-	if (asyncSenderRunning)
-	{
-		canAsyncSenderTask.GiveFromISR();
-	}
+	canAsyncSenderTask.GiveFromISR();
 }
 
 GCodeResult CanInterface::ChangeAddressAndDataRate(const CanMessageSetAddressAndNormalTiming &msg, const StringRef &reply)

@@ -210,6 +210,7 @@ void InputMonitor::AnalogInterrupt(uint16_t reading)
 
 	case CanMessageChangeInputMonitor::actionReturnPinName:
 		m->port.AppendPinName(reply);
+		reply.catf(", min interval %ums", m->minInterval);
 		rslt = GCodeResult::ok;
 		break;
 
@@ -233,9 +234,11 @@ void InputMonitor::AnalogInterrupt(uint16_t reading)
 	return rslt;
 }
 
-/*static*/ void InputMonitor::AddStateChanges(CanMessageInputChanged *msg, uint32_t& timeToWait)
+// Check the input monitors and add any pending ones to the message
+// Return the number of ticks before we should be woken again, or TaskBase::TimeoutUnlimited if we shouldn't be work until an input changes state
+/*static*/ uint32_t InputMonitor::AddStateChanges(CanMessageInputChanged *msg)
 {
-	timeToWait = TaskBase::TimeoutUnlimited;
+	uint32_t timeToWait = TaskBase::TimeoutUnlimited;
 	ReadLocker lock(listLock);
 
 	const uint32_t now = millis();
@@ -253,13 +256,15 @@ void InputMonitor::AnalogInterrupt(uint16_t reading)
 					state = p->state;
 				}
 
-				if (!msg->AddEntry(p->handle, state))
+				if (msg->AddEntry(p->handle, state))
+				{
+					p->whenLastSent = now;
+				}
+				else
 				{
 					p->sendDue = true;
-					timeToWait = 1;
-					return;
+					return 1;
 				}
-				p->whenLastSent = now;
 			}
 			else
 			{
@@ -272,6 +277,7 @@ void InputMonitor::AnalogInterrupt(uint16_t reading)
 			}
 		}
 	}
+	return timeToWait;
 }
 
 // End

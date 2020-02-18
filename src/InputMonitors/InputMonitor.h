@@ -27,7 +27,7 @@ public:
 	static GCodeResult Create(const CanMessageCreateInputMonitor& msg, size_t dataLength, const StringRef& reply, uint8_t& extra);
 	static GCodeResult Change(const CanMessageChangeInputMonitor& msg, const StringRef& reply, uint8_t& extra);
 
-	static void AddStateChanges(CanMessageInputChanged *msg, uint32_t& timeToWait);
+	static uint32_t AddStateChanges(CanMessageInputChanged *msg);
 
 	static void CommonDigitalPortInterrupt(CallbackParameter cbp);
 	static void CommonAnalogPortInterrupt(CallbackParameter cbp, uint16_t reading);

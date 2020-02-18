@@ -220,8 +220,8 @@ bool IoPort::Allocate(const char *pn, const StringRef& reply, PinUsedBy neededFo
 	const char *const fullPinName = pn;			// the full pin name less the inversion and pullup flags
 
 	Pin lp;
-	bool hwInvert;
-	if (!LookupPinName(pn, lp, hwInvert))
+	bool hwInvert, pullupAlways;
+	if (!LookupPinName(pn, lp, hwInvert, pullupAlways))
 	{
 		reply.printf("Unknown pin name '%s'", fullPinName);
 		return false;
@@ -251,6 +251,10 @@ bool IoPort::Allocate(const char *pn, const StringRef& reply, PinUsedBy neededFo
 		isSharedInput = (neededFor == PinUsedBy::temporaryInput);
 		SetInvert(inverted);
 
+		if (pullupAlways && access == PinAccess::read)
+		{
+			access = PinAccess::readWithPullup_InternalUseOnly;
+		}
 		if (doSetMode && !SetMode(access))
 		{
 			reply.printf("Pin '%s' does not support mode %s", fullPinName, TranslatePinAccess(access));
@@ -390,7 +394,7 @@ void IoPort::AppendPinName(const StringRef& str) const
 
 // Function to look up a pin name pass back the corresponding index into the pin table
 // On this platform, the mapping from pin names to pins is fixed, so this is a simple lookup
-/*static*/ bool IoPort::LookupPinName(const char*pn, Pin& pin, bool& hardwareInverted)
+/*static*/ bool IoPort::LookupPinName(const char*pn, Pin& pin, bool& hardwareInverted, bool& pullupAlways)
 {
 	if (StringEqualsIgnoreCase(pn, NoPinName))
 	{
@@ -405,12 +409,24 @@ void IoPort::AppendPinName(const StringRef& str) const
 		while (*q != 0)
 		{
 			// Try the next alias in the list of names for this pin
-			const char *p = pn;
-			bool hwInverted = (*q == '!');
-			if (hwInverted)
+			bool hwInverted = false, pullAlways = false;
+			for (;;)
 			{
+				if (*q == '!')
+				{
+					hwInverted = true;
+				}
+				else if (*q == '^')
+				{
+					pullAlways = true;
+				}
+				else
+				{
+					break;
+				}
 				++q;
 			}
+			const char *p = pn;
 			while (*q != ',' && *q != 0 && *p == *q)
 			{
 				++p;
@@ -421,6 +437,7 @@ void IoPort::AppendPinName(const StringRef& str) const
 				// Found a match
 				pin = (Pin)lp;
 				hardwareInverted = hwInverted;
+				pullupAlways = pullAlways;
 				return true;
 			}
 

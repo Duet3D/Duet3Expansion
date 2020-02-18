@@ -94,7 +94,7 @@ public:
 	static void AppendPinNames(const StringRef& str, size_t numPorts, IoPort * const ports[]);
 
 	// Look up a pin name in the pins table
-	static bool LookupPinName(const char*pn, Pin& pin, bool& hardwareInverted);
+	static bool LookupPinName(const char*pn, Pin& pin, bool& hardwareInverted, bool& pullupAlways);
 
 	// Find the ADC channel associated with a pin
 	static AdcInput PinToAdcInput(Pin pin, bool useAlternateAdc);
