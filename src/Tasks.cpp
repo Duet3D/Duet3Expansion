@@ -221,6 +221,26 @@ void Tasks::Diagnostics(const StringRef& reply)
 		reply.catf("%s %u", taskDetails.pcTaskName, (unsigned int)(taskDetails.usStackHighWaterMark * sizeof(StackType_t)));
 		printed = true;
 	}
+
+	// Show the up time and reason for the last reset
+	const uint32_t now = (uint32_t)(millis64()/1000u);		// get up time in seconds
+	reply.lcatf("Last reset %02d:%02d:%02d ago, cause: ", (unsigned int)(now/3600), (unsigned int)((now % 3600)/60), (unsigned int)(now % 60));
+
+	const uint8_t resetCause = RSTC->RCAUSE.reg;
+	switch (resetCause)
+	{
+	case RSTC_RCAUSE_POR:		reply.cat("power up"); break;
+	case RSTC_RCAUSE_BODCORE:	reply.cat("core brownout"); break;
+	case RSTC_RCAUSE_BODVDD:	reply.cat("VDD brownout"); break;
+	case RSTC_RCAUSE_EXT:		reply.cat("reset button"); break;
+	case RSTC_RCAUSE_WDT:		reply.cat("watchdog"); break;
+	case RSTC_RCAUSE_SYST:		reply.cat("software"); break;
+#ifdef SAME51
+	case RSTC_RCAUSE_NVM:		reply.cat("nvm"); break;
+	case RSTC_RCAUSE_BACKUP:	reply.cat("backup/hibernate"); break;
+#endif
+	default:					reply.catf("%u", resetCause); break;
+	}
 }
 
 static StaticTask_t xIdleTaskTCB;
