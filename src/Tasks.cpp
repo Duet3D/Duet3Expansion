@@ -94,6 +94,15 @@ extern "C" void __malloc_unlock ( struct _reent *_r )
 
 	// Create the startup task
 	mainTask.Create(MainTask, "MAIN", nullptr, TaskPriority::SpinPriority);
+
+	// Initialise watchdog clock
+	hri_mclk_set_APBAMASK_WDT_bit(MCLK);
+	delayMicroseconds(5);
+	hri_wdt_write_CTRLA_reg(WDT, 0);
+	hri_wdt_write_CONFIG_reg(WDT, WDT_CONFIG_PER_CYC256);		// about 0.25 seconds
+	hri_wdt_write_EWCTRL_reg(WDT, 0);							// early warning control not used
+	hri_wdt_write_CTRLA_reg(WDT, WDT_CTRLA_ENABLE);
+
 	vTaskStartScheduler();			// doesn't return
 	while (true) { }
 }
@@ -134,59 +143,6 @@ namespace Tasks
 		if (maxStack != nullptr) { *maxStack = ramend - stack_lwm; }
 		if (neverUsed != nullptr) { *neverUsed = stack_lwm - heapend; }
 	}
-
-#if 0
-	// Write data about the current task (if RTOS) or the system
-	void Diagnostics(MessageType mtype)
-	{
-		Platform& p = reprap.GetPlatform();
-		p.Message(mtype, "=== RTOS ===\n");
-		// Print memory stats
-		{
-			const char * const ramstart =
-#if SAME51 || SAMC21
-				(char *) 0x20000000;
-#else
-# error Unsupported processor
-#endif
-			p.MessageF(mtype, "Static ram: %d\n", &_end - ramstart);
-
-			const struct mallinfo mi = mallinfo();
-			p.MessageF(mtype, "Dynamic ram: %d of which %d recycled\n", mi.uordblks, mi.fordblks);
-
-			uint32_t maxStack, neverUsed;
-			GetHandlerStackUsage(&maxStack, &neverUsed);
-			p.MessageF(mtype, "Exception stack ram used: %" PRIu32 "\n", maxStack);
-			p.MessageF(mtype, "Never used ram: %" PRIu32 "\n", neverUsed);
-		}
-
-		p.Message(mtype, "Tasks:");
-		for (const TaskBase *t = TaskBase::GetTaskList(); t != nullptr; t = t->GetNext())
-		{
-			TaskStatus_t taskDetails;
-			vTaskGetInfo(t->GetHandle(), &taskDetails, pdTRUE, eInvalid);
-			const char* const stateText = (taskDetails.eCurrentState == eRunning) ? "running"
-											: (taskDetails.eCurrentState == eReady) ? "ready"
-												: (taskDetails.eCurrentState == eBlocked) ? "blocked"
-													: (taskDetails.eCurrentState == eSuspended) ? "suspended"
-														: "invalid";
-			p.MessageF(mtype, " %s(%s,%u)",
-				taskDetails.pcTaskName, stateText, (unsigned int)(taskDetails.usStackHighWaterMark * sizeof(StackType_t)));
-		}
-		p.Message(mtype, "\nOwned mutexes:");
-
-		for (const Mutex *m = Mutex::GetMutexList(); m != nullptr; m = m->GetNext())
-		{
-			const TaskHandle holder = m->GetHolder();
-			if (holder != nullptr)
-			{
-				p.MessageF(mtype, " %s(%s)", m->GetName(), pcTaskGetName(holder));
-			}
-		}
-		p.MessageF(mtype, "\n");
-	}
-#endif
-
 }
 
 uint32_t Tasks::GetNeverUsedRam()
@@ -251,8 +207,14 @@ static volatile uint64_t g_ms_ticks = 0;		// Count of 1ms time ticks. */
 extern "C" void vApplicationTickHook(void)
 {
 	g_ms_ticks++;
+
+	// If we kick the watchdog too often, sometimes it resets us. It uses a 1024Hz nominal clock, so presumably it has to be reset less often than that.
+	if ((((uint32_t)g_ms_ticks) & 0x07) == 0)
+	{
+		WDT->CLEAR.reg = 0xA5;
+	}
+
 	RepRap::Tick();
-//	wdt_restart(WDT);							// kick the watchdog
 }
 
 uint32_t millis()
@@ -299,6 +261,12 @@ extern "C" void vApplicationGetTimerTaskMemory( StaticTask_t **ppxTimerTaskTCBBu
 
     /* Pass out the size of the array pointed to by *ppxTimerTaskStackBuffer. */
     *pulTimerTaskStackSize = ARRAY_SIZE(uxTimerTaskStack);
+}
+
+// Helper function to cause a divide by zero error without the compiler noticing we are doing that
+uint32_t Tasks::DoDivide(uint32_t a, uint32_t b)
+{
+	return a/b;
 }
 
 // Exception handlers

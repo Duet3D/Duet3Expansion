@@ -805,6 +805,11 @@ void CommandProcessor::Spin()
 			break;
 #endif
 
+		case CanMessageType::diagnosticTest:
+			requestId = buf->msg.diagnosticTest.requestId;
+			rslt = Platform::DoDiagnosticTest(buf->msg.diagnosticTest, replyRef);
+			break;
+
 		default:
 			requestId = CanRequestIdAcceptAlways;
 			reply.printf("Board %u received unknown msg type %u", CanInterface::GetCanAddress(), (unsigned int)buf->id.MsgType());

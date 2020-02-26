@@ -23,6 +23,7 @@
 #include "Heating/Heat.h"
 #include "Heating/Sensors/TemperatureSensor.h"
 #include "Fans/FansManager.h"
+#include <CanMessageFormats.h>
 
 #if defined(SAME51)
 
@@ -73,11 +74,14 @@ enum class DeferredCommand : uint8_t
 {
 	none = 0,
 	firmwareUpdate,
-	reset
+	reset,
+	testWatchdog,
+	testDivideByZero
 };
 
 static volatile DeferredCommand deferredCommand = DeferredCommand::none;
 static volatile uint32_t whenDeferredCommandRequested;
+static bool deliberateError = false;
 
 namespace Platform
 {
@@ -623,6 +627,16 @@ void Platform::Spin()
 
 		case DeferredCommand::reset:
 			ShutdownAndReset();
+			break;
+
+		case DeferredCommand::testWatchdog:
+			deliberateError = true;
+			SysTick->CTRL &= ~(SysTick_CTRL_TICKINT_Msk);			// disable the system tick interrupt so that we get a watchdog timeout reset
+			break;
+
+		case DeferredCommand::testDivideByZero:
+			deliberateError = true;
+			(void)Tasks::DoDivide(1, 0);
 			break;
 
 		default:
@@ -1303,6 +1317,31 @@ void Platform::StartReset()
 {
 	ShutdownAndReset();
 }
+
+GCodeResult Platform::DoDiagnosticTest(const CanMessageDiagnosticTest& msg, const StringRef& reply)
+{
+	if ((uint16_t)~msg.invertedTestType != msg.testType)
+	{
+		reply.copy("Bad diagnostic test message");
+		return GCodeResult::error;
+	}
+
+	switch (msg.testType)
+	{
+	case 1001:	// test watchdog
+		deferredCommand = DeferredCommand::testWatchdog;
+		return GCodeResult::ok;
+
+	case 1004:
+		deferredCommand = DeferredCommand::testDivideByZero;
+		return GCodeResult::ok;
+
+	default:
+		reply.printf("Unknown test type %u", msg.testType);
+		return GCodeResult::error;
+	}
+}
+
 
 #if HAS_VOLTAGE_MONITOR
 

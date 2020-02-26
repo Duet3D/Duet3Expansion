@@ -10,6 +10,9 @@
 
 #include "RepRapFirmware.h"
 #include "AdcAveragingFilter.h"
+#include "GCodes/GCodeResult.h"
+
+class CanMessageDiagnosticTest;
 
 // Define the number of temperature readings we average for each thermistor. This should be a power of 2 and at least 4 ^ AD_OVERSAMPLE_BITS.
 constexpr size_t ThermistorReadingsAveraged = 64;
@@ -120,6 +123,8 @@ namespace Platform
 	void StartFirmwareUpdate();
 	void StartReset();
 
+	GCodeResult DoDiagnosticTest(const CanMessageDiagnosticTest& msg, const StringRef& reply);
+
 	[[noreturn]]void EmergencyStop();
 	[[noreturn]]void SoftwareReset(uint16_t reason, const uint32_t *stk = nullptr);
 
@@ -127,7 +132,6 @@ namespace Platform
 	{
 		SCB->AIRCR = (0x5FA << 16) | (1u << 2);						// reset the processor
 		for (;;) { }
-//		RSTC->RCAUSE;
 	}
 
 #if HAS_VOLTAGE_MONITOR

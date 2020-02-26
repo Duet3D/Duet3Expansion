@@ -186,7 +186,7 @@ void InputMonitor::AnalogInterrupt(uint16_t reading)
 		}
 
 		reply.printf("Board %u does not have input handle %04x", CanInterface::GetCanAddress(), msg.handle.u.all);
-		return GCodeResult::error;
+		return GCodeResult::warning;					// only a warning when deleting a non-existent handle
 	}
 
 	auto m = Find(msg.handle.u.all);

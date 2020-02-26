@@ -11,19 +11,6 @@
 #include <utils.h>
 #include <hal_init.h>
 
-struct wdt_descriptor WDT_0;
-
-void WDT_0_CLOCK_init(void)
-{
-	hri_mclk_set_APBAMASK_WDT_bit(MCLK);
-}
-
-void WDT_0_init(void)
-{
-	WDT_0_CLOCK_init();
-	wdt_init(&WDT_0, WDT);
-}
-
 void system_init(void)
 {
 	NVIC_DisableIRQ(CAN0_IRQn);
@@ -54,6 +41,4 @@ void system_init(void)
 	SystemPeripheralClock = 60000000;		// GCLK1
 
 	// We initialise CAN later
-
-//	WDT_0_init();
 }
