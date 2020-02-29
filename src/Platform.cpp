@@ -406,7 +406,6 @@ void Platform::Init()
 				&& strlen(p.pinNames) < 5							// don't set "outN.tach" pins to outputs
 		       )
 			{
-				IoPort::SetPinMode(pin, OUTPUT_LOW);				// turn off heaters and fans (although this will turn on PWM fans)
 #ifdef SAMC21
 				// Set high driver strength on the output pins because they drive the heater and fan mosfets directly
 				IoPort::SetHighDriveStrength(pin);
