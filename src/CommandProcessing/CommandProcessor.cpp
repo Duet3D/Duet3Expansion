@@ -12,7 +12,6 @@
 #include "Heating/Heat.h"
 #include "Fans/FansManager.h"
 #include "CanMessageGenericParser.h"
-#include <Endstops/EndstopsManager.h>
 #include <InputMonitors/InputMonitor.h>
 #include <GPIO/GpioPorts.h>
 #include <Platform.h>
@@ -756,31 +755,6 @@ void CommandProcessor::Spin()
 		case CanMessageType::setPressureAdvance:
 			requestId = buf->msg.multipleDrivesRequest.requestId;
 			rslt = HandlePressureAdvance(buf->msg.multipleDrivesRequest, replyRef);
-			break;
-
-		case CanMessageType::createZProbe:
-			requestId = buf->msg.createZProbe.requestId;
-			rslt = EndstopsManager::CreateZProbe(buf->msg.createZProbe, buf->dataLength, replyRef);
-			break;
-
-		case CanMessageType::configureZProbe:
-			requestId = buf->msg.configureZProbe.requestId;
-			rslt = EndstopsManager::ConfigureZProbe(buf->msg.configureZProbe, replyRef, extra);
-			break;
-
-		case CanMessageType::getZProbePinNames:
-			requestId = buf->msg.getZProbePinNames.requestId;
-			rslt = EndstopsManager::GetZProbePinNames(buf->msg.getZProbePinNames, replyRef);
-			break;
-
-		case CanMessageType::destroyZProbe:
-			requestId = buf->msg.destroyZProbe.requestId;
-			rslt = EndstopsManager::DestroyZProbe(buf->msg.destroyZProbe, replyRef);
-			break;
-
-		case CanMessageType::setProbing:
-			requestId = buf->msg.setProbing.requestId;
-			rslt = EndstopsManager::SetProbing(buf->msg.setProbing, replyRef);
 			break;
 
 		case CanMessageType::createInputMonitor:

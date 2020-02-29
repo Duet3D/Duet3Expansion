@@ -9,7 +9,6 @@
 #include "Movement/Move.h"
 #include "GCodes/GCodes.h"
 #include "Heating/Heat.h"
-#include "Endstops/EndstopsManager.h"
 #include "InputMonitors/InputMonitor.h"
 #include "Platform.h"
 #include "CommandProcessing/CommandProcessor.h"
@@ -27,7 +26,6 @@ namespace RepRap
 		Platform::Init();
 		GCodes::Init();
 		Heat::Init();
-		EndstopsManager::Init();
 		InputMonitor::Init();
 		moveInstance = new Move();
 		moveInstance->Init();

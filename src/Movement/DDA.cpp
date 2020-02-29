@@ -8,7 +8,6 @@
 #include "DDA.h"
 #include "Platform.h"
 #include "Move.h"
-#include "Endstops/EndstopsManager.h"
 #include "Kinematics/LinearDeltaKinematics.h"		// for DELTA_AXES
 #include "CanMessageFormats.h"
 #include <CAN/CanInterface.h>
