@@ -41,17 +41,12 @@ constexpr size_t NumDrivers = 3;
 constexpr size_t MaxSmartDrivers = 3;
 constexpr float MaxTmc5160Current = 6300.0;			// The maximum current we allow the TMC5160/5161 drivers to be set to
 
-constexpr size_t MaxAxes = 3;			//TEMP we won't need this
-
-constexpr size_t NumOutputPorts = 9;
-constexpr size_t NumIoPorts = 6;
-constexpr size_t NumTachoInputs = 3;
 constexpr size_t NumThermistorInputs = 3;
 constexpr size_t NumAddressBits = 4;
 constexpr size_t NumBoardTypeBits = 3;
 
 constexpr float DefaultThermistorSeriesR = 2200.0;
-constexpr float MinVrefLoadR = (DefaultThermistorSeriesR / 3) * 4700.0/((DefaultThermistorSeriesR / 3) + 4700.0);
+constexpr float MinVrefLoadR = (DefaultThermistorSeriesR / NumThermistorInputs) * 4700.0/((DefaultThermistorSeriesR / NumThermistorInputs) + 4700.0);
 																			// there are 3 temperature sensing channels and a 4K7 load resistor
 constexpr Pin GlobalTmc51xxEnablePin = PortBPin(23);
 constexpr Pin GlobalTmc51xxCSPin = PortBPin(22);
@@ -86,9 +81,6 @@ constexpr Pin VssaPin = PortBPin(6);
 
 constexpr Pin BoardAddressPins[4] = { PortCPin(11), PortCPin(12), PortCPin(14), PortCPin(15) };
 constexpr Pin TempSensePins[NumThermistorInputs] = { PortCPin(3), PortBPin(8), PortBPin(7) };
-constexpr Pin TachoInputPins[NumTachoInputs] = { PortAPin(13), PortBPin(19), PortCPin(21) };			// tachos are on output connectors 6-8
-constexpr Pin IoInPins[NumIoPorts] = { PortAPin(2), PortCPin(2), PortCPin(0), PortAPin(3), PortCPin(3), PortCPin(1) };
-constexpr Pin IoOutPins[NumIoPorts] = { PortAPin(16), PortBPin(16), PortBPin(20), PortAPin(5), PortBPin(0), PortAPin(20) };
 
 // Shared SPI
 constexpr uint8_t SERCOM_SSPI_NUMBER = 6;

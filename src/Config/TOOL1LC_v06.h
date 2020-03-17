@@ -76,18 +76,11 @@ constexpr Pin DriverDiagPins[NumDrivers] = { PortBPin(3) };
 
 #define DIAG_SERCOM_NUMBER		4		// which SERCOM device we use for debugging output
 
-constexpr size_t MaxAxes = 3;			//TEMP we won't need this
-
-constexpr size_t NumOutputPorts = 3;
-constexpr size_t NumIoPorts = 2;
-constexpr size_t NumTachoInputs = 2;
-constexpr size_t NumThermistorInputs = 3;
-constexpr size_t NumAddressBits = 4;
-constexpr size_t NumBoardTypeBits = 3;
+constexpr size_t NumThermistorInputs = 2;
 
 constexpr float DefaultThermistorSeriesR = 2200.0;
-constexpr float MinVrefLoadR = (DefaultThermistorSeriesR / 3) * 4700.0/((DefaultThermistorSeriesR / 3) + 4700.0);
-																			// there are 3 temperature sensing channels and a 4K7 load resistor
+constexpr float MinVrefLoadR = (DefaultThermistorSeriesR / NumThermistorInputs) * 2200.0/((DefaultThermistorSeriesR / NumThermistorInputs) + 2200.0);
+																			// there are 2 temperature sensing channels and a 2K2 load resistor
 constexpr Pin BoardTypePin = PortAPin(5);
 
 constexpr Pin VinMonitorPin = PortAPin(8);
@@ -97,10 +90,7 @@ constexpr float VinMonitorVoltageRange = VinDividerRatio * 5.0;				// we use the
 constexpr Pin VrefPin = PortAPin(7);
 constexpr Pin VssaPin = PortAPin(6);
 
-constexpr Pin TempSensePins[NumThermistorInputs] = { PortBPin(9), PortAPin(3), PortAPin(2) };
-constexpr Pin TachoInputPins[NumTachoInputs] = { PortAPin(13), PortBPin(10) };			// tachos are on output connectors 1-2
-constexpr Pin IoInPins[NumIoPorts] = { PortAPin(9), PortAPin(21) };
-constexpr Pin IoOutPins[NumIoPorts] = { PortAPin(12), NoPin };
+constexpr Pin TempSensePins[NumThermistorInputs] = { PortBPin(9), PortAPin(2) };
 
 constexpr size_t NumButtons = 2;
 constexpr Pin ButtonPins[NumButtons] = { PortBPin(22), PortBPin(23) };
@@ -130,7 +120,7 @@ constexpr PinDescription PinTable[] =
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PA15 crystal
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::sercom1c,	Nx,	nullptr		},	// PA16 spare, sercom1 pad 0
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::sercom1c,	SercomIo::none,		Nx,	nullptr		},	// PA17 spare, sercom1 pad 1
-	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr 	},	// PA18 spare, sercom1 pad 2
+	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		2,	"io2.in" 	},	// PA18 IO2.in (v1.0 and later boards) and sercom1 pad 2
 	{ TcOutput::tc4_1,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PA19 spare, sercom1 pad 3, also potential PWM output
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PA20 drivers USART Rx (sercom 3.2)
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		5,	"io1.in"	},	// PA21

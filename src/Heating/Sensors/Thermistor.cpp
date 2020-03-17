@@ -101,7 +101,7 @@ void Thermistor::Poll()
 		const int32_t averagedVssaReading = (vssaFilter == nullptr) ? 0 : vssaFilter->GetSum()/(vssaFilter->NumAveraged() >> Thermistor::AdcOversampleBits);
 		const int32_t averagedVrefReading = vrefFilter->GetSum()/(vrefFilter->NumAveraged() >> Thermistor::AdcOversampleBits);
 
-		// VREF is the measured voltage at VREF less the drop of a 15 ohm resistor.
+		// VREF is the measured voltage at VREF less the drop of a 15 ohm (EXP3HC) or 10 ohm (TOOL1LC) resistor.
 		// VSSA is the voltage measured across the VSSA fuse. We assume the same maximum load and the same 15 ohms maximum resistance for the fuse.
 		// Assume a maximum ADC reading offset of 100.
 		constexpr int32_t maxDrop = (OversampledAdcRange * 15)/MinVrefLoadR + (100 << Thermistor::AdcOversampleBits);
