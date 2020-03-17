@@ -39,10 +39,7 @@ private:
 	int adcFilterChannel;
 	float r25, beta, shC, seriesR;											// parameters declared in the M305 command
 	bool isPT1000;															// true if it is a PT1000 sensor, not a thermistor
-
-#if !HAS_VREF_MONITOR
 	int8_t adcLowOffset, adcHighOffset;										// ADC low and high end offsets
-#endif
 
 	// The following are derived from the configurable parameters
 	float shA, shB;															// derived parameters

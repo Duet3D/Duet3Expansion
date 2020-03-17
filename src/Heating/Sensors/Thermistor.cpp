@@ -21,10 +21,8 @@
 // Create an instance with default values
 Thermistor::Thermistor(unsigned int sensorNum, bool p_isPT1000)
 	: SensorWithPort(sensorNum, (p_isPT1000) ? "PT1000" : "Thermistor"), adcFilterChannel(-1),
-	  r25(DefaultR25), beta(DefaultBeta), shC(DefaultShc), seriesR(DefaultThermistorSeriesR), isPT1000(p_isPT1000)
-#if !HAS_VREF_MONITOR
-		, adcLowOffset(0), adcHighOffset(0)
-#endif
+	  r25(DefaultR25), beta(DefaultBeta), shC(DefaultShc), seriesR(DefaultThermistorSeriesR),
+	  isPT1000(p_isPT1000), adcLowOffset(0), adcHighOffset(0)
 {
 	CalcDerivedParameters();
 }
@@ -54,10 +52,8 @@ GCodeResult Thermistor::Configure(const CanMessageGenericParser& parser, const S
 		}
 	}
 
-#if !HAS_VREF_MONITOR
-	seen = parser.GetIntValue('L', adcLowOffset) || seen;
-	seen = parser.GetIntValue('H', adcHighOffset) || seen;
-#endif
+	seen = parser.GetIntParam('L', adcLowOffset) || seen;
+	seen = parser.GetIntParam('H', adcHighOffset) || seen;
 
 	if (seen)
 	{
@@ -79,9 +75,7 @@ GCodeResult Thermistor::Configure(const CanMessageGenericParser& parser, const S
 		{
 			reply.catf(", T:%.1f B:%.1f C:%.2e R:%.1f", (double)r25, (double)beta, (double)shC, (double)seriesR);
 		}
-#if !HAS_VREF_MONITOR
 		reply.catf(" L:%d H:%d", adcLowOffset, adcHighOffset);
-#endif
 	}
 
 	return GCodeResult::ok;
@@ -98,8 +92,10 @@ void Thermistor::Poll()
 	const volatile ThermistorAveragingFilter *vssaFilter = Platform::GetVssaFilter(adcFilterChannel);			// this one may be null on SAMC21 tool boards
 	if (tempFilter->IsValid() && vrefFilter->IsValid() && (vssaFilter == nullptr || vssaFilter->IsValid()))
 	{
-		const int32_t averagedVssaReading = (vssaFilter == nullptr) ? 0 : vssaFilter->GetSum()/(vssaFilter->NumAveraged() >> Thermistor::AdcOversampleBits);
-		const int32_t averagedVrefReading = vrefFilter->GetSum()/(vrefFilter->NumAveraged() >> Thermistor::AdcOversampleBits);
+		const int32_t rawAveragedVssaReading = (vssaFilter == nullptr) ? 0 : vssaFilter->GetSum()/(vssaFilter->NumAveraged() >> Thermistor::AdcOversampleBits);
+		const int32_t rawAveragedVrefReading = vrefFilter->GetSum()/(vrefFilter->NumAveraged() >> Thermistor::AdcOversampleBits);
+		const int32_t averagedVssaReading = rawAveragedVssaReading + (adcLowOffset * (1 << (AnalogIn::AdcBits - 12 + Thermistor::AdcOversampleBits - 1)));
+		const int32_t averagedVrefReading = rawAveragedVrefReading + (adcHighOffset * (1 << (AnalogIn::AdcBits - 12 + Thermistor::AdcOversampleBits - 1)));
 
 		// VREF is the measured voltage at VREF less the drop of a 15 ohm (EXP3HC) or 10 ohm (TOOL1LC) resistor.
 		// VSSA is the voltage measured across the VSSA fuse. We assume the same maximum load and the same 15 ohms maximum resistance for the fuse.
@@ -140,7 +136,7 @@ void Thermistor::Poll()
 			{
 				const float resistance = seriesR * (float)(averagedTempReading - averagedVssaReading)/(float)(averagedVrefReading - averagedTempReading);
 #else
-				const int32_t averagedVrefReading = OversampledAdcRange + 2 * adcHighOffset;	// double the offset because we increased AdcOversampleBits from 1 to 2
+				const int32_t averagedVrefReading = OversampledAdcRange + adcHighOffset;
 				if (averagedVrefReading <= averagedTempReading)
 				{
 					SetResult((isPT1000) ? BadErrorTemperature : ABS_ZERO, TemperatureError::openCircuit);
@@ -148,12 +144,8 @@ void Thermistor::Poll()
 				else
 				{
 				const float denom = (float)(averagedVrefReading - averagedTempReading) - 0.5;
-				const int32_t averagedVssaReading = 2 * adcLowOffset;					// double the offset because we increased AdcOversampleBits from 1 to 2
+				const int32_t averagedVssaReading = adcLowOffset;
 				float resistance = seriesR * ((float)(averagedTempReading - averagedVssaReading) + 0.5)/denom;
-# ifdef DUET_NG
-				// The VSSA PTC fuse on the later Duets has a resistance of a few ohms. I measured 1.0 ohms on two revision 1.04 Duet WiFi boards.
-				resistance -= 1.0;														// assume 1.0 ohms and only one PT1000 sensor
-# endif
 #endif
 				if (isPT1000)
 				{
