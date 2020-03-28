@@ -11,6 +11,7 @@
 
 StepTimer * volatile StepTimer::pendingList = nullptr;
 uint32_t StepTimer::localTimeOffset = 0;
+uint32_t StepTimer::whenLastSynced;
 bool StepTimer::synced = false;
 
 void StepTimer::Init()
@@ -47,6 +48,15 @@ void StepTimer::Init()
 	NVIC_DisableIRQ(StepTcIRQn);
 	NVIC_ClearPendingIRQ(StepTcIRQn);
 	NVIC_EnableIRQ(StepTcIRQn);
+}
+
+/*static*/ bool StepTimer::IsSynced()
+{
+	if (synced && millis() - whenLastSynced > MinSyncInterval)
+	{
+		synced = false;
+	}
+	return synced;
 }
 
 // Schedule an interrupt at the specified clock count, or return true if that time is imminent or has passed already.

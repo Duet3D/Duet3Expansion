@@ -120,7 +120,8 @@ uint16_t IoPort::ReadAnalog() const
 		AdcInput chan = PinTable[pin].adc;
 		if (chan != AdcInput::none)
 		{
-			return AnalogIn::ReadChannel(chan);
+			const uint16_t val = AnalogIn::ReadChannel(chan);
+			return (totalInvert) ? ((1u << AnalogIn::AdcBits) - 1) - val : val;
 		}
 	}
 	return 0;

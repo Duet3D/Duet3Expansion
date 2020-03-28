@@ -643,6 +643,7 @@ void CommandProcessor::Spin()
 	CanMessageBuffer *buf = CanInterface::GetCanCommand();
 	if (buf != nullptr)
 	{
+		Platform::OnProcessingCanMessage();
 		String<FormatStringLength> reply;
 		const StringRef& replyRef = reply.GetRef();
 		const CanMessageType id = buf->id.MsgType();

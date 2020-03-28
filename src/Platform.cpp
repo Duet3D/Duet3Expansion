@@ -124,8 +124,8 @@ namespace Platform
 	static uint32_t lastPollTime;
 	static uint32_t lastFanCheckTime = 0;
 	static unsigned int heatTaskIdleTicks = 0;
-
-	// SERCOM3 Rx is on PB21 (OUT_8_TACHO), Tx is on PB20 (OUT_7_TACHO)
+	constexpr uint32_t GreenLedFlashTime = 100;				// how long the green LED stays on after we process a CAN message
+	static uint32_t whenLastCanMessageProcessed = 0;
 
 	static ThermistorAveragingFilter thermistorFilters[NumThermistorFilters];
 	static AdcAveragingFilter<VinReadingsAveraged> vinFilter;
@@ -333,6 +333,9 @@ namespace Platform
 		delay(10);										// allow existing processing to complete, drivers to be turned off and CAN replies to be sent
 		CanInterface::Shutdown();
 		digitalWrite(DiagLedPin, false);				// turn the DIAG LED off
+#ifdef SAMC21
+		digitalWrite(DiagLed1Pin, false);				// turn the green LED off
+#endif
 	}
 
 	[[noreturn]] static void ShutdownAndReset()
@@ -378,9 +381,11 @@ namespace Platform
 void Platform::SoftwareReset(uint16_t reason, const uint32_t *stk)
 {
 #if defined(SAME51)
-//	qq;
+	//TODO save reset data in NVM
+	//	qq;
 #elif defined(SAMC21)
-//	qq;
+	//TODO save reset data in NVM
+	//	qq;
 #else
 # error Unsupported processor
 #endif
@@ -391,8 +396,11 @@ void Platform::Init()
 {
 	IoPort::Init();
 
-	// Set up the DIAG LED pin
+	// Set up the DIAG LED pins
 	IoPort::SetPinMode(DiagLedPin, OUTPUT_HIGH);
+#ifdef SAMC21
+	IoPort::SetPinMode(DiagLed1Pin, OUTPUT_LOW);
+#endif
 
 	messageMutex.Create("Message");
 
@@ -669,13 +677,6 @@ void Platform::Spin()
 	}
 #endif
 
-#if 0 //ifdef SAMC21
-	if (!digitalRead(ButtonPins[0]))
-	{
-		SCB->AIRCR = (0x5FA << 16) | (1u << 2);				// reset the processor
-	}
-#endif
-
 #if HAS_SMART_DRIVERS
 	SmartDrivers::Spin(powered);
 #endif
@@ -809,24 +810,16 @@ void Platform::Spin()
 						(StepTimer::IsSynced()) ? (StepTimer::GetMasterTime() & (1u << 19)) != 0
 							: (StepTimer::GetTimerTicks() & (1u << 17)) != 0
 					  );
+#ifdef SAMC21
+	if (millis() - whenLastCanMessageProcessed > GreenLedFlashTime)
+	{
+		digitalWrite(DiagLed1Pin, false);
+	}
+#endif
 
 	if (now - lastPollTime > 2000)
 	{
 		lastPollTime = now;
-
-#if 0
-		static uint8_t oldAddr = 0xFF;
-		const uint8_t addr = ReadBoardId();
-		if (addr != oldAddr)
-		{
-			oldAddr = addr;
-			const float current = (addr == 3) ? 6300.0 : (addr == 2) ? 2000.0 : (addr == 1) ? 1000.0 : 500.0;
-			for (size_t i = 0; i < NumDrivers; ++i)
-			{
-				SmartDrivers::SetCurrent(i, current);
-			}
-		}
-#endif
 
 		// Get the chip temperature
 #if defined(SAME51)
@@ -1315,6 +1308,15 @@ void Platform::StartReset()
 [[noreturn]] void Platform::EmergencyStop()
 {
 	ShutdownAndReset();
+}
+
+// This is called when we start processing any CAN message except for regular messages e.g. time sync
+void Platform::OnProcessingCanMessage()
+{
+#ifdef SAMC21
+	whenLastCanMessageProcessed = millis();
+	digitalWrite(DiagLed1Pin, true);				// turn the green LED on
+#endif
 }
 
 GCodeResult Platform::DoDiagnosticTest(const CanMessageDiagnosticTest& msg, const StringRef& reply)

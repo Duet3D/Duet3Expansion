@@ -344,15 +344,15 @@ void CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf)
 
 	case CanMessageType::movement:
 		//TODO if we haven't established time sync yet then we should defer this
-// calling debugPrint here crashes the firmware even if we provide a large stack
-//		buf->msg.move.DebugPrint();
 		buf->msg.move.whenToExecute += StepTimer::GetLocalTimeOffset();
 		PendingMoves.AddMessage(buf);
+		Platform::OnProcessingCanMessage();
 		break;
 
 	case CanMessageType::stopMovement:
 		moveInstance->StopDrivers(buf->msg.stopMovement.whichDrives);
 		CanMessageBuffer::Free(buf);
+		Platform::OnProcessingCanMessage();
 		break;
 
 	case CanMessageType::emergencyStop:
@@ -363,6 +363,7 @@ void CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf)
 		if (buf->id.Src() == CanId::MasterAddress)
 		{
 			mainBoardAcknowledgedAnnounce = true;
+			Platform::OnProcessingCanMessage();
 		}
 		CanMessageBuffer::Free(buf);
 		break;
@@ -373,11 +374,13 @@ void CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf)
 			Platform::EmergencyStop();
 		}
 		CanMessageBuffer::Free(buf);
+		Platform::OnProcessingCanMessage();
 		break;
 
 	case CanMessageType::controlledStop:
 		debugPrintf("Unsupported CAN message type %u\n", (unsigned int)(buf->id.MsgType()));
 		CanMessageBuffer::Free(buf);
+		Platform::OnProcessingCanMessage();
 		break;
 
 	default:

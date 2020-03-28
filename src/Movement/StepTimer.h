@@ -51,18 +51,18 @@ public:
 	static void Interrupt();
 
 	static uint32_t GetLocalTimeOffset() { return localTimeOffset; }
-	static void SetLocalTimeOffset(uint32_t offset) { localTimeOffset = offset; synced = true; }
+	static void SetLocalTimeOffset(uint32_t offset) { localTimeOffset = offset; synced = true; whenLastSynced = millis(); }
 	static uint32_t ConvertToLocalTime(uint32_t masterTime) { return masterTime + localTimeOffset; }
 	static uint32_t ConvertToMasterTime(uint32_t localTime) { return localTime - localTimeOffset; }
 	static uint32_t GetMasterTime() { return ConvertToMasterTime(GetTimerTicks()); }
 
-	static void Reset() { localTimeOffset = 0; synced = false; }
-	static bool IsSynced() { return synced; }
+	static bool IsSynced();
 
 	static constexpr uint32_t StepClockRate = 48000000/64;						// 48MHz divided by 64
 	static constexpr uint64_t StepClockRateSquared = (uint64_t)StepClockRate * StepClockRate;
 	static constexpr float StepClocksToMillis = 1000.0/(float)StepClockRate;
 	static constexpr uint32_t MinInterruptInterval = 6;							// about 6us
+	static constexpr uint32_t MinSyncInterval = 1000;							// maximum interval in milliseconds between sync messages for us to remain synced
 
 private:
 	static bool ScheduleTimerInterrupt(uint32_t tim);							// Schedule an interrupt at the specified clock count, or return true if it has passed already
@@ -75,6 +75,7 @@ private:
 
 	static StepTimer * volatile pendingList;									// list of pending callbacks, soonest first
 	static uint32_t localTimeOffset;											// local time minus master time
+	static uint32_t whenLastSynced;												// the millis tick count when we last synced
 	static bool synced;
 };
 

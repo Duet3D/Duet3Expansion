@@ -198,34 +198,39 @@ static int32_t _can_async_disable(_can_async_device *const dev)
  */
 static int32_t _can_async_read(_can_async_device *const dev, struct can_message *msg)
 {
-	struct _can_rx_fifo_entry *f = NULL;
-	hri_can_rxf0s_reg_t        get_index;
-
-	if (!hri_can_read_RXF0S_F0FL_bf(dev->hw)) {
+	if (!hri_can_read_RXF0S_F0FL_bf(dev->hw))
+	{
 		return ERR_NOT_FOUND;
 	}
 
-	get_index = hri_can_read_RXF0S_F0GI_bf(dev->hw);
+	hri_can_rxf0s_reg_t get_index = hri_can_read_RXF0S_F0GI_bf(dev->hw);
+	struct _can_rx_fifo_entry *f = nullptr;
 
 #ifdef CONF_CAN0_ENABLED
-	if (dev->hw == CAN0) {
+	if (dev->hw == CAN0)
+	{
 		f = (struct _can_rx_fifo_entry *)(can0_rx_fifo + get_index * CONF_CAN0_F0DS);
 	}
 #endif
 #ifdef CONF_CAN1_ENABLED
-	if (dev->hw == CAN1) {
+	if (dev->hw == CAN1)
+	{
 		f = (struct _can_rx_fifo_entry *)(can1_rx_fifo + get_index * CONF_CAN1_F0DS);
 	}
 #endif
 
-	if (f == NULL) {
+	if (f == nullptr)
+	{
 		return ERR_NO_RESOURCE;
 	}
 
-	if (f->R0.bit.XTD == 1) {
+	if (f->R0.bit.XTD == 1)
+	{
 		msg->fmt = CAN_FMT_EXTID;
 		msg->id  = f->R0.bit.ID;
-	} else {
+	}
+	else
+	{
 		msg->fmt = CAN_FMT_STDID;
 		/* A standard identifier is stored into ID[28:18] */
 		msg->id = f->R0.bit.ID >> 18;
@@ -236,7 +241,7 @@ static int32_t _can_async_read(_can_async_device *const dev, struct can_message 
 	}
 
 	static constexpr uint8_t dlc2len[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 12, 16, 20, 24, 32, 48, 64};
-	msg->len                = dlc2len[f->R1.bit.DLC];
+	msg->len = dlc2len[f->R1.bit.DLC];
 
 	memcpy(msg->data, f->data, msg->len);
 
@@ -250,33 +255,38 @@ static int32_t _can_async_read(_can_async_device *const dev, struct can_message 
  */
 static int32_t _can_async_write(_can_async_device *const dev, struct can_message *msg)
 {
-	struct _can_tx_fifo_entry *f = NULL;
-	hri_can_txfqs_reg_t        put_index;
-
-	if (hri_can_get_TXFQS_TFQF_bit(dev->hw)) {
+	if (hri_can_get_TXFQS_TFQF_bit(dev->hw))
+	{
 		return ERR_NO_RESOURCE;
 	}
 
-	put_index = hri_can_read_TXFQS_TFQPI_bf(dev->hw);
+	struct _can_tx_fifo_entry *f = nullptr;
+	hri_can_txfqs_reg_t put_index = hri_can_read_TXFQS_TFQPI_bf(dev->hw);
 
 #ifdef CONF_CAN0_ENABLED
-	if (dev->hw == CAN0) {
+	if (dev->hw == CAN0)
+	{
 		f = (struct _can_tx_fifo_entry *)(can0_tx_fifo + put_index * CONF_CAN0_TBDS);
 	}
 #endif
 #ifdef CONF_CAN1_ENABLED
-	if (dev->hw == CAN1) {
+	if (dev->hw == CAN1)
+	{
 		f = (struct _can_tx_fifo_entry *)(can1_tx_fifo + put_index * CONF_CAN1_TBDS);
 	}
 #endif
-	if (f == NULL) {
+	if (f == nullptr)
+	{
 		return ERR_NO_RESOURCE;
 	}
 
-	if (msg->fmt == CAN_FMT_EXTID) {
+	if (msg->fmt == CAN_FMT_EXTID)
+	{
 		f->T0.val     = msg->id;
 		f->T0.bit.XTD = 1;
-	} else {
+	}
+	else
+	{
 		/* A standard identifier is stored into ID[28:18] */
 		f->T0.val = msg->id << 18;
 	}
@@ -317,12 +327,17 @@ static int32_t _can_async_write(_can_async_device *const dev, struct can_message
  */
 static void _can_async_set_irq_state(_can_async_device *const dev, enum can_async_callback_type type, bool state)
 {
-	if (type == CAN_ASYNC_RX_CB) {
+	if (type == CAN_ASYNC_RX_CB)
+	{
 		hri_can_write_IE_RF0NE_bit(dev->hw, state);
-	} else if (type == CAN_ASYNC_TX_CB) {
+	}
+	else if (type == CAN_ASYNC_TX_CB)
+	{
 		hri_can_write_IE_TCE_bit(dev->hw, state);
 		hri_can_write_TXBTIE_reg(dev->hw, CAN_TXBTIE_MASK);
-	} else if (type == CAN_ASYNC_IRQ_CB) {
+	}
+	else if (type == CAN_ASYNC_IRQ_CB)
+	{
 		const uint32_t ie = hri_can_get_IE_reg(dev->hw, CAN_IE_RF0NE | CAN_IE_TCE);
 		hri_can_write_IE_reg(dev->hw, ie | CONF_CAN0_IE_REG);
 	}
@@ -350,21 +365,22 @@ static uint8_t _can_async_get_txerr(_can_async_device *const dev)
 static int32_t _can_async_set_mode(_can_async_device *const dev, enum can_mode mode)
 {
 	hri_can_set_CCCR_INIT_bit(dev->hw);
-	while (hri_can_get_CCCR_INIT_bit(dev->hw) == 0)
-		;
+	while (hri_can_get_CCCR_INIT_bit(dev->hw) == 0) { }
 	hri_can_set_CCCR_CCE_bit(dev->hw);
 
-	if (mode == CAN_MODE_MONITORING) {
+	if (mode == CAN_MODE_MONITORING)
+	{
 		hri_can_set_CCCR_MON_bit(dev->hw);
-	} else {
+	}
+	else
+	{
 		hri_can_clear_CCCR_MON_bit(dev->hw);
 	}
 
 	/* Disable CCE to prevent Configuration Change */
 	hri_can_clear_CCCR_CCE_bit(dev->hw);
 	hri_can_clear_CCCR_INIT_bit(dev->hw);
-	while (hri_can_get_CCCR_INIT_bit(dev->hw))
-		;
+	while (hri_can_get_CCCR_INIT_bit(dev->hw)) { }
 
 	return ERR_NONE;
 }
@@ -374,14 +390,13 @@ static int32_t _can_async_set_mode(_can_async_device *const dev, enum can_mode m
  */
 static int32_t _can_async_set_filter(_can_async_device *const dev, uint8_t index, enum can_format fmt, struct can_filter *filter)
 {
-	struct _can_standard_message_filter_element *sf;
-	struct _can_extended_message_filter_element *ef;
+	struct _can_standard_message_filter_element *sf = &((struct _can_context *)dev->context)->rx_std_filter[index];
+	struct _can_extended_message_filter_element *ef = &((struct _can_context *)dev->context)->rx_ext_filter[index];
 
-	sf = &((struct _can_context *)dev->context)->rx_std_filter[index];
-	ef = &((struct _can_context *)dev->context)->rx_ext_filter[index];
-
-	if (fmt == CAN_FMT_STDID) {
-		if (filter == NULL) {
+	if (fmt == CAN_FMT_STDID)
+	{
+		if (filter == NULL)
+		{
 			sf->S0.val = 0;
 			return ERR_NONE;
 		}
@@ -389,8 +404,11 @@ static int32_t _can_async_set_filter(_can_async_device *const dev, uint8_t index
 		sf->S0.bit.SFID1 = filter->id;
 		sf->S0.bit.SFT   = _CAN_SFT_CLASSIC;
 		sf->S0.bit.SFEC  = _CAN_SFEC_STF0M;
-	} else if (fmt == CAN_FMT_EXTID) {
-		if (filter == NULL) {
+	}
+	else if (fmt == CAN_FMT_EXTID)
+	{
+		if (filter == NULL)
+		{
 			ef->F0.val = 0;
 			return ERR_NONE;
 		}
@@ -421,29 +439,35 @@ void CAN0_Handler(void)
 	ir = hri_can_read_IR_reg(dev->hw);
 #endif
 
-	if (ir & CAN_IR_RF0N) {
-		dev->cb.rx_done(dev);
-	}
+		if (ir & CAN_IR_RF0N)
+		{
+			dev->cb.rx_done(dev);
+		}
 
-	if (ir & CAN_IR_TC) {
-		dev->cb.tx_done(dev);
-	}
+		if (ir & CAN_IR_TC)
+		{
+			dev->cb.tx_done(dev);
+		}
 
-	if (ir & CAN_IR_BO) {
-		dev->cb.irq_handler(dev, CAN_IRQ_BO);
-	}
+		if (ir & CAN_IR_BO)
+		{
+			dev->cb.irq_handler(dev, CAN_IRQ_BO);
+		}
 
-	if (ir & CAN_IR_EW) {
-		dev->cb.irq_handler(dev, CAN_IRQ_EW);
-	}
+		if (ir & CAN_IR_EW)
+		{
+			dev->cb.irq_handler(dev, CAN_IRQ_EW);
+		}
 
-	if (ir & CAN_IR_EP) {
-		dev->cb.irq_handler(dev, hri_can_get_PSR_EP_bit(dev->hw) ? CAN_IRQ_EP : CAN_IRQ_EA);
-	}
+		if (ir & CAN_IR_EP)
+		{
+			dev->cb.irq_handler(dev, hri_can_get_PSR_EP_bit(dev->hw) ? CAN_IRQ_EP : CAN_IRQ_EA);
+		}
 
-	if (ir & CAN_IR_RF0L) {
-		dev->cb.irq_handler(dev, CAN_IRQ_DO);
-	}
+		if (ir & CAN_IR_RF0L)
+		{
+			dev->cb.irq_handler(dev, CAN_IRQ_DO);
+		}
 
 #if 1	//dc42
 	}

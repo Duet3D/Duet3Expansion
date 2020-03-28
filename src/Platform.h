@@ -123,6 +123,8 @@ namespace Platform
 	void StartFirmwareUpdate();
 	void StartReset();
 
+	void OnProcessingCanMessage();
+
 	GCodeResult DoDiagnosticTest(const CanMessageDiagnosticTest& msg, const StringRef& reply);
 
 	[[noreturn]]void EmergencyStop();
