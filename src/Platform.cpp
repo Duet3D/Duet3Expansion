@@ -124,8 +124,11 @@ namespace Platform
 	static uint32_t lastPollTime;
 	static uint32_t lastFanCheckTime = 0;
 	static unsigned int heatTaskIdleTicks = 0;
+
+#ifdef SAMC21
 	constexpr uint32_t GreenLedFlashTime = 100;				// how long the green LED stays on after we process a CAN message
 	static uint32_t whenLastCanMessageProcessed = 0;
+#endif
 
 	static ThermistorAveragingFilter thermistorFilters[NumThermistorFilters];
 	static AdcAveragingFilter<VinReadingsAveraged> vinFilter;
