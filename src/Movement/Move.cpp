@@ -511,19 +511,23 @@ void Move::Interrupt()
 		const uint32_t clocksTaken = StepTimer::GetTimerTicks() - isrStartTime;
 		if (clocksTaken >= DDA::MaxStepInterruptTime)
 		{
-			// Force a break by updating the move start time
-			DDA *nextDda = cdda;
-			do
-			{
-				nextDda->InsertHiccup(DDA::HiccupTime);
-				nextDda = nextDda->GetNext();
-			} while (nextDda->GetState() == DDA::frozen);
+			// Force a break by updating the move start time.
+			// If the inserted hiccup is too short then it won't help. So we double the hiccup time on each iteration.
 			++numHiccups;
-
-			// Reschedule the next step interrupt. This time it should succeed.
-			if (!cdda->ScheduleNextStepInterrupt(timer))
+			for (uint32_t hiccupTime = DDA::HiccupTime; ; hiccupTime *= 2)
 			{
-				return;
+				DDA *nextDda = cdda;
+				do
+				{
+					nextDda->InsertHiccup(hiccupTime);
+					nextDda = nextDda->GetNext();
+				} while (nextDda->GetState() == DDA::frozen);
+
+				// Reschedule the next step interrupt. This time it should succeed if the hiccup time was long enough.
+				if (!cdda->ScheduleNextStepInterrupt(timer))
+				{
+					return;
+				}
 			}
 		}
 	}
