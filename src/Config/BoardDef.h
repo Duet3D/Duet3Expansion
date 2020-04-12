@@ -30,8 +30,6 @@ constexpr float DefaultThermistorC = 0.0;
 # include "TOOL1XD_v04.h"
 #endif
 
-#define SUPPORT_CAN_EXPANSION	1
-
 constexpr float DefaultMinFanPwm = 0.1;					// minimum fan PWM
 constexpr uint32_t DefaultFanBlipTime = 100;			// fan blip time in milliseconds
 

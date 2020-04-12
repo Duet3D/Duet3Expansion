@@ -179,10 +179,6 @@ void DDA::DebugPrintAll() const
 void DDA::Init()
 {
 	state = empty;
-
-#if SUPPORT_LASER || SUPPORT_IOBITS
-	laserPwmOrIoBits.Clear();
-#endif
 }
 
 // Set up a real move. Return true if it represents real movement, else false.
@@ -219,10 +215,6 @@ bool DDA::Init(const CanMessageMovement& msg)
 
 	flags.hadHiccup = false;
 	flags.goingSlow = false;
-
-#if SUPPORT_IOBITS
-	laserPwmOrIoBits = qq;
-#endif
 
 	topSpeed = 2.0/(2 * msg.steadyClocks + (msg.initialSpeedFraction + 1.0) * msg.accelerationClocks + (msg.finalSpeedFraction + 1.0) * msg.decelClocks);
 	startSpeed = topSpeed * msg.initialSpeedFraction;
@@ -318,9 +310,13 @@ void DDA::Prepare(const CanMessageMovement& msg)
 			pdm->nextStepTime = 0;
 			pdm->stepInterval = 999999;							// initialise to a large value so that we will calculate the time for just one step
 			pdm->stepsTillRecalc = 0;							// so that we don't skip the calculation
+#if SUPPORT_DELTA_MOVEMENT
 			const bool stepsToDo = (pdm->IsDeltaMovement())
 									? pdm->CalcNextStepTimeDelta(*this, false)
 									: pdm->CalcNextStepTimeCartesian(*this, false);
+#else
+			const bool stepsToDo = pdm->CalcNextStepTimeCartesian(*this, false);
+#endif
 			if (stepsToDo)
 			{
 				InsertDM(pdm);
@@ -355,16 +351,6 @@ pre(state == frozen)
 
 	if (activeDMs != nullptr)
 	{
-
-#if SUPPORT_LASER
-		// Deal with laser power
-		if (GCodes::GetMachineType() == MachineType::laser)
-		{
-			// Ideally we should ramp up the laser power as the machine accelerates, but for now we don't.
-			Platform::SetLaserPwm(laserPwmOrIoBits.laserPwm);
-		}
-#endif
-
 		for (size_t i = 0; i < NumDrivers; ++i)
 		{
 			DriveMovement* const pdm = FindDM(i);
@@ -380,17 +366,78 @@ pre(state == frozen)
 uint32_t DDA::lastStepLowTime = 0;
 uint32_t DDA::lastDirChangeTime = 0;
 
+#if SINGLE_DRIVER
+
 // This is called by the interrupt service routine to execute steps.
 // It returns true if it needs to be called again on the DDA of the new current move, otherwise false.
 // This must be as fast as possible, because it determines the maximum movement speed.
 // This may occasionally get called prematurely, so it must check that a step is actually due before generating one.
-void DDA::StepDrivers()
+void DDA::StepDrivers(uint32_t now)
+{
+	// Determine whether the driver is due for stepping, overdue, or will be due very shortly
+	DriveMovement* const dm = activeDMs;
+	if (dm != nullptr && (now - afterPrepare.moveStartTime) + StepTimer::MinInterruptInterval >= dm->nextStepTime)	// if the next step is due
+	{
+		// Step the driver
+#if SUPPORT_SLOW_DRIVERS
+		if (Platform::IsSlowDriver())									// if using a slow driver
+		{
+			uint32_t lastStepPulseTime = lastStepLowTime;
+			while (now - lastStepPulseTime < Platform::GetSlowDriverStepLowClocks() || now - lastDirChangeTime < Platform::GetSlowDriverDirSetupClocks())
+			{
+				now = StepTimer::GetTimerTicks();
+			}
+			Platform::StepDriverHigh();									// generate the step
+			lastStepPulseTime = StepTimer::GetTimerTicks();
+
+			// 3a. Reset all step pins low. Do this now because some external drivers don't like the direction pins being changed before the end of the step pulse.
+			while (StepTimer::GetTimerTicks() - lastStepPulseTime < Platform::GetSlowDriverStepHighClocks()) {}
+			Platform::StepDriverLow();									// set all step pins low
+			lastStepLowTime = StepTimer::GetTimerTicks();
+		}
+		else
+		{
+			Platform::StepDriverHigh();									// generate the step
+		}
+#else
+		Platform::StepDriverHigh();										// generate the step pulse
+#endif
+
+#if SUPPORT_DELTA_MOVEMENT
+		const bool hasMoreSteps = (dm->IsDeltaMovement())
+				? dm->CalcNextStepTimeDelta(*this, true)
+				: dm->CalcNextStepTimeCartesian(*this, true);
+#else
+		const bool hasMoreSteps = dm->CalcNextStepTimeCartesian(*this, true);	// this may change the state of the Direction pin
+#endif
+		if (!hasMoreSteps)
+		{
+			activeDMs = nullptr;
+		}
+
+		// Reset the step pin low. We already did this if we are using any external drivers, but doing it again does no harm.
+		Platform::StepDriverLow();										// set the step pin low
+	}
+
+	// If there are no more steps to do and the time for the move has nearly expired, flag the move as complete
+	if (activeDMs == nullptr && StepTimer::GetTimerTicks() - afterPrepare.moveStartTime + WakeupTime >= clocksNeeded)
+	{
+		state = completed;
+	}
+}
+
+#else
+
+// This is called by the interrupt service routine to execute steps.
+// It returns true if it needs to be called again on the DDA of the new current move, otherwise false.
+// This must be as fast as possible, because it determines the maximum movement speed.
+// This may occasionally get called prematurely, so it must check that a step is actually due before generating one.
+void DDA::StepDrivers(uint32_t now)
 {
 	// 1. There is no step 1.
 	// 2. Determine which drivers are due for stepping, overdue, or will be due very shortly
 	uint32_t driversStepping = 0;
 	DriveMovement* dm = activeDMs;
-	uint32_t now = StepTimer::GetTimerTicks();
 	const uint32_t elapsedTime = (now - afterPrepare.moveStartTime) + StepTimer::MinInterruptInterval;
 	while (dm != nullptr && elapsedTime >= dm->nextStepTime)		// if the next step is due
 	{
@@ -398,14 +445,14 @@ void DDA::StepDrivers()
 		dm = dm->nextDM;
 	}
 
+	// 3. Step the drivers
+#if SUPPORT_SLOW_DRIVERS
 	if ((driversStepping & Platform::GetSlowDriversBitmap().GetRaw()) == 0)	// if not using any external drivers
 	{
-		// 3. Step the drivers
 		Platform::StepDriversHigh(driversStepping);					// generate the steps
 	}
 	else
 	{
-		// 3. Step the drivers
 		uint32_t lastStepPulseTime = lastStepLowTime;
 		while (now - lastStepPulseTime < Platform::GetSlowDriverStepLowClocks() || now - lastDirChangeTime < Platform::GetSlowDriverDirSetupClocks())
 		{
@@ -419,6 +466,9 @@ void DDA::StepDrivers()
 		Platform::StepDriversLow();									// set all step pins low
 		lastStepLowTime = StepTimer::GetTimerTicks();
 	}
+#else
+	Platform::StepDriversHigh(driversStepping);						// generate the steps
+#endif
 
 	// 4. Remove those drives from the list, calculate the next step times, update the direction pins where necessary,
 	//    and re-insert them so as to keep the list in step-time order.
@@ -427,9 +477,13 @@ void DDA::StepDrivers()
 	activeDMs = dm;													// remove the chain from the list
 	while (dmToInsert != dm)										// note that both of these may be nullptr
 	{
-		const bool hasMoreSteps = (dm->IsDeltaMovement())
+#if SUPPORT_DELTA_MOVEMENT
+		const bool hasMoreSteps = (dmToInsert->IsDeltaMovement())
 				? dmToInsert->CalcNextStepTimeDelta(*this, true)
 				: dmToInsert->CalcNextStepTimeCartesian(*this, true);
+#else
+		const bool hasMoreSteps = dmToInsert->CalcNextStepTimeCartesian(*this, true);
+#endif
 		DriveMovement * const nextToInsert = dmToInsert->nextDM;
 		if (hasMoreSteps)
 		{
@@ -447,6 +501,8 @@ void DDA::StepDrivers()
 		state = completed;
 	}
 }
+
+#endif
 
 // Stop a drive and re-calculate the corresponding endpoint.
 // For extruder drivers, we need to be able to calculate how much of the extrusion was completed after calling this.
@@ -488,39 +544,6 @@ void DDA::StopDrivers(uint16_t whichDrivers)
 			if (whichDrivers & (1 << drive))
 			{
 				StopDrive(drive);
-			}
-		}
-	}
-}
-
-// Reduce the speed of this move to the indicated speed.
-// This is called from the ISR, so interrupts are disabled and nothing else can mess with us.
-// As this is only called for homing moves and with very low speeds, we assume that we don't need acceleration or deceleration phases.
-void DDA::ReduceHomingSpeed()
-{
-	if (!flags.goingSlow)
-	{
-		flags.goingSlow = true;
-
-		topSpeed *= (1.0/ProbingSpeedReductionFactor);
-
-		// Adjust extraAccelerationClocks so that step timing will be correct in the steady speed phase at the new speed
-		const uint32_t clocksSoFar = StepTimer::GetTimerTicks() - afterPrepare.moveStartTime;
-		afterPrepare.extraAccelerationClocks = (afterPrepare.extraAccelerationClocks * (int32_t)ProbingSpeedReductionFactor) - ((int32_t)clocksSoFar * (int32_t)(ProbingSpeedReductionFactor - 1));
-
-		// We also need to adjust the total clocks needed, to prevent step errors being recorded
-		if (clocksSoFar < clocksNeeded)
-		{
-			clocksNeeded += (clocksNeeded - clocksSoFar) * (ProbingSpeedReductionFactor - 1u);
-		}
-
-		// Adjust the speed in the DMs
-		for (size_t drive = 0; drive < NumDrivers; ++drive)
-		{
-			DriveMovement* const pdm = FindDM(drive);
-			if (pdm != nullptr && pdm->state == DMState::moving)
-			{
-				pdm->ReduceSpeed(*this, ProbingSpeedReductionFactor);
 			}
 		}
 	}

@@ -36,7 +36,7 @@ public:
 	bool Init(const CanMessageMovement& msg);
 	void Init();													// Set up initial positions for machine startup
 	void Start(uint32_t tim) __attribute__ ((hot));					// Start executing the DDA, i.e. move the move.
-	void StepDrivers() __attribute__ ((hot));						// Take one step of the DDA, called by timed interrupt.
+	void StepDrivers(uint32_t now) __attribute__ ((hot));			// Take one step of the DDA, called by timed interrupt.
 	bool ScheduleNextStepInterrupt(StepTimer& timer) const;			// Schedule the next interrupt, returning true if we can't because it is already due
 
 	void SetNext(DDA *n) { next = n; }
@@ -50,7 +50,7 @@ public:
 	DDA* GetNext() const { return next; }
 	DDA* GetPrevious() const { return prev; }
 	int32_t GetTimeLeft() const;
-	void InsertHiccup(uint32_t delayClocks) { afterPrepare.moveStartTime += delayClocks; }
+	void InsertHiccup(uint32_t now);
 
 	// Filament monitor support
 	int32_t GetStepsTaken(size_t drive) const;
@@ -60,15 +60,6 @@ public:
 
 	uint32_t GetClocksNeeded() const { return clocksNeeded; }
 	uint32_t GetMoveFinishTime() const { return afterPrepare.moveStartTime + clocksNeeded; }
-
-#if SUPPORT_LASER || SUPPORT_IOBITS
-	LaserPwmOrIoBits GetLaserPwmOrIoBits() const { return laserPwmOrIoBits; }
-#endif
-
-#if SUPPORT_IOBITS
-	uint32_t GetMoveStartTime() const { return moveStartTime; }
-	IoBits_t GetIoBits() const { return laserPwmOrIoBits.ioBits; }
-#endif
 
 #if HAS_SMART_DRIVERS
 	uint32_t GetStepInterval(size_t axis, uint32_t microstepShift) const;	// Get the current full step interval for this axis or extruder
@@ -84,10 +75,17 @@ public:
 	// Therefore, where the step interval falls below 60us, we don't calculate on every step.
 	// Note: the above measurements were taken some time ago, before some firmware optimisations.
 	// The system clock of the SAME70 is running at 150MHz. Use the same defaults as for the SAM4E for now.
-	static constexpr uint32_t MinCalcIntervalDelta = (40 * StepTimer::StepClockRate)/1000000; 		// the smallest sensible interval between calculations (40us) in step timer clocks
-	static constexpr uint32_t MinCalcIntervalCartesian = (40 * StepTimer::StepClockRate)/1000000;	// same as delta for now, but could be lower
-	static constexpr uint32_t HiccupTime = 20;														// how long we hiccup for
-	static constexpr uint32_t MaxStepInterruptTime = 10 * StepTimer::MinInterruptInterval;			// the maximum time we spend looping in the ISR , in step clocks
+#ifdef SAMC21
+	static constexpr uint32_t MinCalcIntervalDelta = (50 * StepTimer::StepClockRate)/1000000; 		// the smallest sensible interval between calculations (40us) in step timer clocks
+	static constexpr uint32_t MinCalcIntervalCartesian = (50 * StepTimer::StepClockRate)/1000000;	// same as delta for now, but could be lower
+	static constexpr uint32_t HiccupTime = (40 * StepTimer::StepClockRate)/1000000;					// how long we hiccup for
+	static constexpr uint32_t MaxStepInterruptTime = (80 * StepTimer::StepClockRate)/1000000;		// the maximum time we spend looping in the ISR in step clocks
+#else
+	static constexpr uint32_t MinCalcIntervalDelta = (50 * StepTimer::StepClockRate)/1000000; 		// the smallest sensible interval between calculations (40us) in step timer clocks
+	static constexpr uint32_t MinCalcIntervalCartesian = (50 * StepTimer::StepClockRate)/1000000;	// same as delta for now, but could be lower
+	static constexpr uint32_t HiccupTime = (40 * StepTimer::StepClockRate)/1000000;					// how long we hiccup for
+	static constexpr uint32_t MaxStepInterruptTime = (80 * StepTimer::StepClockRate)/1000000;		// the maximum time we spend looping in the ISR in step clocks
+#endif
 	static constexpr uint32_t WakeupTime = (100 * StepTimer::StepClockRate)/1000000;				// stop resting 100us before the move is due to end
 
 	static void PrintMoves();										// print saved moves for debugging
@@ -97,7 +95,6 @@ public:
 
 private:
 	DriveMovement *FindDM(size_t drive) const;
-	void ReduceHomingSpeed();										// called to reduce homing speed when a near-endstop is triggered
 	void StopDrive(size_t drive);									// stop movement of a drive and recalculate the endpoint
 	void InsertDM(DriveMovement *dm) __attribute__ ((hot));
 	void RemoveDM(size_t drive);
@@ -119,10 +116,6 @@ private:
 		} flags;
 		uint16_t all;								// so that we can print all the flags at once for debugging
 	};
-
-#if SUPPORT_LASER || SUPPORT_IOBITS
-	LaserPwmOrIoBits laserPwmOrIoBits;		// laser PWM required or port state required during this move (here because it is currently 16 bits)
-#endif
 
 	float acceleration;						// The acceleration to use
 	float deceleration;						// The deceleration to use
@@ -149,7 +142,7 @@ private:
 		int32_t cKc;						// The Z movement fraction multiplied by Kc and converted to integer
 	} afterPrepare;
 
-    DriveMovement* activeDMs;					// list of contained DMs that need steps, in step time order
+    DriveMovement* activeDMs;				// list of contained DMs that need steps, in step time order
 	DriveMovement *pddm[NumDrivers];		// These describe the state of each drive movement
 };
 
@@ -170,6 +163,13 @@ inline bool DDA::ScheduleNextStepInterrupt(StepTimer& timer) const
 		return timer.ScheduleCallbackFromIsr(whenDue);
 	}
 	return false;
+}
+
+// Insert a hiccup long enough to guarantee that we will exit the ISR
+inline void DDA::InsertHiccup(uint32_t now)
+{
+	const uint32_t ticksDueAfterStart = (activeDMs != nullptr) ? activeDMs->nextStepTime : clocksNeeded - DDA::WakeupTime;
+	afterPrepare.moveStartTime = now + DDA::HiccupTime - ticksDueAfterStart;
 }
 
 #if HAS_SMART_DRIVERS

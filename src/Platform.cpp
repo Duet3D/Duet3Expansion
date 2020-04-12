@@ -90,13 +90,22 @@ namespace Platform
 	Mutex messageMutex;
 
 	static uint32_t errorCodeBits = 0;
-	DriversBitmap slowDriversBitmap;
-	uint32_t slowDriverStepTimingClocks[4] = { 0, 0, 0, 0 };
 
 	uint32_t uniqueId[5];
 
+#if SUPPORT_SLOW_DRIVERS
+	uint32_t slowDriverStepTimingClocks[4] = { 0, 0, 0, 0 };
+# if SINGLE_DRIVER
+	bool isSlowDriver = false;
+# else
+	DriversBitmap slowDriversBitmap;
+# endif
+#endif
+
+#if !SINGLE_DRIVER
 	uint32_t driveDriverBits[NumDrivers];
 	uint32_t allDriverBits = 0;
+#endif
 
 	static bool directions[NumDrivers];
 	static bool driverAtIdleCurrent[NumDrivers];
@@ -564,9 +573,11 @@ void Platform::Init()
 		IoPort::SetHighDriveStrength(EnablePins[i]);
 		driverIsEnabled[i] = false;
 #endif
+#if !SINGLE_DRIVER
 		const uint32_t driverBit = 1u << (StepPins[i] & 31);
 		driveDriverBits[i] = driverBit;
 		allDriverBits |= driverBit;
+#endif
 		stepsPerMm[i] = DefaultStepsPerMm;
 		directions[i] = true;
 		driverAtIdleCurrent[i] = false;
@@ -1035,6 +1046,8 @@ float Platform::DriveStepsPerUnit(size_t drive) { return stepsPerMm[drive]; }
 
 const float *Platform::GetDriveStepsPerUnit() { return stepsPerMm; }
 
+#if SUPPORT_SLOW_DRIVERS
+
 void Platform::SetDriverStepTiming(size_t drive, const float timings[4])
 {
 	for (size_t i = 0; i < 4; ++i)
@@ -1044,7 +1057,14 @@ void Platform::SetDriverStepTiming(size_t drive, const float timings[4])
 			slowDriverStepTimingClocks[i] = min<float>(timings[i], 50.0);
 		}
 	}
+#if SINGLE_DRIVER
+	isSlowDriver = true;
+#else
+	slowDriversBitmap.SetBit(drive);
+#endif
 }
+
+#endif
 
 float Platform::GetPressureAdvance(size_t driver)
 {
@@ -1055,37 +1075,6 @@ void Platform::SetPressureAdvance(size_t driver, float advance)
 {
 	pressureAdvance[driver] = advance;
 }
-
-void Platform::StepDriversLow()
-{
-#if ACTIVE_HIGH_STEP
-	// Active high step output
-	StepPio->OUTCLR.reg = allDriverBits;
-#else
-	// Active low step output
-	StepPio->OUTSET.reg = allDriverBits;
-#endif
-}
-
-void Platform::StepDriversHigh(uint32_t driverMap)
-{
-#if ACTIVE_HIGH_STEP
-	// Active high step output
-	StepPio->OUTSET.reg = driverMap;
-#else
-	// Active low step output
-	StepPio->OUTCLR.reg = driverMap;
-#endif
-}
-
-//	uint32_t CalcDriverBitmap(size_t driver);
-
-uint32_t Platform::GetDriversBitmap(size_t axisOrExtruder) 	// get the bitmap of driver step bits for this axis or extruder
-{
-	return driveDriverBits[axisOrExtruder];
-}
-
-//	unsigned int GetProhibitedExtruderMovements(unsigned int extrusions, unsigned int retractions);
 
 void Platform::SetDirectionValue(size_t drive, bool dVal)
 {
@@ -1111,16 +1100,23 @@ void Platform::SetDirection(size_t driver, bool direction)
 		// Active low direction signal
 		const bool d = (direction) ? !directions[driver] : directions[driver];
 #endif
+
+#if SUPPORT_SLOW_DRIVERS
+# if !SINGLE_DRIVER
 		const bool isSlowDriver = slowDriversBitmap.IsBitSet(driver);
+# endif
 		if (isSlowDriver)
 		{
 			while (StepTimer::GetTimerTicks() - DDA::lastStepLowTime < GetSlowDriverDirHoldClocks()) { }
 		}
+#endif
 		digitalWrite(DirectionPins[driver], d);
+#if SUPPORT_SLOW_DRIVERS
 		if (isSlowDriver)
 		{
 			DDA::lastDirChangeTime = StepTimer::GetTimerTicks();
 		}
+#endif
 	}
 }
 

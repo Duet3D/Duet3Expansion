@@ -88,35 +88,27 @@ void StepTimer::DisableTimerInterrupt()
 // The guts of the ISR
 /*static*/ inline void StepTimer::Interrupt()
 {
-	for (;;)
+	StepTimer * tmr = pendingList;
+	if (tmr != nullptr)
 	{
-		StepTimer * const tmr = pendingList;
-		if (tmr == nullptr)
+		for (;;)
 		{
-			return;
-		}
+			StepTimer * const nextTimer = tmr->next;
+			pendingList = nextTimer;								// remove it from the pending list
 
-		// On the first iteration, the timer at the head of the list is probably expired. But this isn't necessarily true, especially on platforms that use 16-bit timers.
-		// Try to schedule another interrupt for it, if we get a true return then it has indeed expired and we need to execute the callback.
-		// On subsequent iterations this just sets up the interrupt for the next timer that is due to expire.
-		if (!StepTimer::ScheduleTimerInterrupt(tmr->whenDue))
-		{
-			return;																		// interrupt isn't due yet and a new one has been scheduled
-		}
+			tmr->active = false;
+			tmr->callback(tmr->cbParam);							// execute its callback. This may schedule another callback and hence change the pending list.
 
-		pendingList = tmr->next;														// remove it from the pending list
-		tmr->active = false;
-		if (tmr->callback != nullptr && tmr->callback(tmr->cbParam, tmr->whenDue))		// execute its callback. This may schedule another callback and hence change the pending list.
-		{
-			// Schedule another callback for this timer
-			StepTimer** ppst = const_cast<StepTimer**>(&pendingList);
-			while (*ppst != nullptr && (int32_t)(tmr->whenDue - (*ppst)->whenDue) > 0)
+			tmr = pendingList;
+			if (tmr == nullptr || tmr != nextTimer)
 			{
-				ppst = &((*ppst)->next);
+				break;												// no more timers, or another timer has been inserted and an interrupt scheduled
 			}
-			tmr->next = *ppst;
-			*ppst = tmr;
-			tmr->active = true;
+
+			if (!ScheduleTimerInterrupt(tmr->whenDue))
+			{
+				break;
+			}
 		}
 	}
 }
@@ -126,17 +118,17 @@ extern "C" void STEP_TC_HANDLER() __attribute__ ((hot));
 
 void STEP_TC_HANDLER()
 {
-	uint8_t tcsr = StepTc->INTFLAG.reg;									// read the status register, which clears the status bits
-	tcsr &= StepTc->INTENSET.reg;										// select only enabled interrupts
+	uint8_t tcsr = StepTc->INTFLAG.reg;								// read the status register, which clears the status bits
+	tcsr &= StepTc->INTENSET.reg;									// select only enabled interrupts
 
-	if ((tcsr & TC_INTFLAG_MC0) != 0)									// the step interrupt uses MC0 compare
+	if ((tcsr & TC_INTFLAG_MC0) != 0)								// the step interrupt uses MC0 compare
 	{
-		StepTc->INTENCLR.reg = TC_INTFLAG_MC0;							// disable the interrupt (no need to clear it, we do that before we re-enable it)
+		StepTc->INTENCLR.reg = TC_INTFLAG_MC0;						// disable the interrupt (no need to clear it, we do that before we re-enable it)
 #ifdef TIMER_DEBUG
 		++numInterruptsExecuted;
 		lastInterruptTime = GetInterruptClocks();
 #endif
-		StepTimer::Interrupt();											// this will re-enable the interrupt if necessary
+		StepTimer::Interrupt();										// this will re-enable the interrupt if necessary
 	}
 }
 
@@ -161,27 +153,47 @@ bool StepTimer::ScheduleCallbackFromIsr(Ticks when)
 
 	whenDue = when;
 
-	const Ticks now = GetTimerTicks();
-	const int32_t howSoon = (int32_t)(when - now);
-	StepTimer** ppst = const_cast<StepTimer**>(&pendingList);
-	if (*ppst == nullptr || howSoon < (int32_t)((*ppst)->whenDue - now))
+	StepTimer* pst = pendingList;
+
+	// Optimise the common case of no other timer in the list
+	if (pst == nullptr)
 	{
-		// No other callbacks are scheduled, or this one is due earlier than the first existing one
+		// No other callbacks are scheduled
 		if (ScheduleTimerInterrupt(when))
 		{
 			return true;
 		}
+		next = nullptr;
+		pendingList = this;
 	}
 	else
 	{
-		while (*ppst != nullptr && (int32_t)((*ppst)->whenDue - now) < howSoon)
+		const Ticks now = GetTimerTicks();
+		const int32_t howSoon = (int32_t)(when - now);
+		if (howSoon < (int32_t)(pst->whenDue - now))
 		{
-			ppst = &((*ppst)->next);
+			// This callback is due earlier than the first existing one
+			if (ScheduleTimerInterrupt(when))
+			{
+				return true;
+			}
+			next = pst;
+			pendingList = this;
+		}
+		else
+		{
+			StepTimer *prev;
+			do
+			{
+				prev = pst;
+				pst = pst->next;
+			}
+			while (pst != nullptr && (int32_t)(pst->whenDue - now) <= howSoon);
+			next = pst;
+			prev->next = this;
 		}
 	}
 
-	next = *ppst;
-	*ppst = this;
 	active = true;
 	return false;
 }

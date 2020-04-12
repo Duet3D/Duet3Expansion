@@ -49,13 +49,11 @@ public:
 
 	bool IsRawMotorMove(uint8_t moveType) const;									// Return true if this is a raw motor move
 
-	static bool TimerCallback(CallbackParameter cb, StepTimer::Ticks& when)
+	static void TimerCallback(CallbackParameter cb)
 	{
 		static_cast<Move*>(cb.vp)->Interrupt();
-		return false;
 	}
 
-	bool ScheduleNextStepInterrupt();												// Schedule the next step interrupt, returning true if we failed because it is due immediately
 	void CurrentMoveCompleted() __attribute__ ((hot));								// Signal that the current move has just been completed
 
 	void PrintCurrentDda() const;													// For debugging
@@ -74,8 +72,6 @@ public:
 #endif
 
 private:
-	void StartNextMove(uint32_t startTime) __attribute__ ((hot));					// Start the next move, returning true if Step() needs to be called immediately
-
 	bool DDARingAdd();									// Add a processed look-ahead entry to the DDA ring
 	DDA* DDARingGet();									// Get the next DDA ring entry to be run
 	bool DDARingEmpty() const;							// Anything there?
@@ -120,24 +116,6 @@ inline bool Move::NoLiveMovement() const
 inline bool Move::AllMovesAreFinished()
 {
 	return NoLiveMovement();
-}
-
-// Start the next move. Return true if the
-// Must be called with base priority greater than the step interrupt, to avoid a race with the step ISR.
-inline void Move::StartNextMove(uint32_t startTime)
-pre(ddaRingGetPointer->GetState() == DDA::frozen)
-{
-	DDA * const cdda = ddaRingGetPointer;				// capture volatile variable
-	currentDda = cdda;
-	cdda->Start(startTime);
-}
-
-// Schedule the next step interrupt for this DDA ring
-// Base priority must be >= NvicPriorityStep when calling this
-inline bool Move::ScheduleNextStepInterrupt()
-{
-	DDA * const cdda = currentDda;				// capture volatile variable
-	return (cdda != nullptr) && cdda->ScheduleNextStepInterrupt(timer);
 }
 
 #if HAS_SMART_DRIVERS

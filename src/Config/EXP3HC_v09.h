@@ -29,8 +29,10 @@ constexpr const char* BoardTypeName = "EXP3HC";
 #define SUPPORT_TMC22xx			0
 #define SUPPORT_TMC2660			0
 
-#define SUPPORT_IOBITS			0
-#define SUPPORT_LASER			0
+#define SINGLE_DRIVER			0
+#define SUPPORT_SLOW_DRIVERS	0
+#define SUPPORT_DELTA_MOVEMENT	1
+#define USE_EVEN_STEPS			0
 #define SUPPORT_DHT_SENSOR		0	//TEMP!!!
 #define SUPPORT_SPI_SENSORS		1
 

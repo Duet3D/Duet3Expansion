@@ -16,7 +16,7 @@ class StepTimer
 public:
 	// The callback function returns true if it wants another callback, after setting the requested time via the second parameter
 	typedef uint32_t Ticks;
-	typedef bool (*TimerCallbackFunction)(CallbackParameter, Ticks&);
+	typedef void (*TimerCallbackFunction)(CallbackParameter);
 
 	StepTimer();
 

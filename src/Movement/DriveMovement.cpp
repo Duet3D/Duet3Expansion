@@ -348,7 +348,7 @@ pre(nextStep < totalSteps; stepsTillRecalc == 0)
 	stepInterval = (nextCalcStepTime > nextStepTime)
 					? (nextCalcStepTime - nextStepTime) >> shiftFactor	// calculate the time per step, ready for next time
 					: 0;
-#if EVEN_STEPS
+#if USE_EVEN_STEPS
 	nextStepTime = nextCalcStepTime - (stepsTillRecalc * stepInterval);
 #else
 	nextStepTime = nextCalcStepTime;
@@ -374,6 +374,8 @@ pre(nextStep < totalSteps; stepsTillRecalc == 0)
 	}
 	return true;
 }
+
+#if SUPPORT_DELTA_MOVEMENT
 
 // Calculate the time since the start of the move when the next step for the specified DriveMovement is due
 // Return true if there are more steps to do
@@ -470,7 +472,7 @@ pre(nextStep < totalSteps; stepsTillRecalc == 0)
 	stepInterval = (nextCalcStepTime > nextStepTime)
 					? (nextCalcStepTime - nextStepTime) >> shiftFactor	// calculate the time per step, ready for next time
 					: 0;
-#if EVEN_STEPS
+#if USE_EVEN_STEPS
 	nextStepTime = nextCalcStepTime - (stepsTillRecalc * stepInterval);
 #else
 	nextStepTime = nextCalcStepTime;
@@ -496,6 +498,8 @@ pre(nextStep < totalSteps; stepsTillRecalc == 0)
 	}
 	return true;
 }
+
+#endif
 
 // Reduce the speed of this movement. Called to reduce the homing speed when we detect we are near the endstop for a drive.
 void DriveMovement::ReduceSpeed(const DDA& dda, uint32_t inverseSpeedFactor)

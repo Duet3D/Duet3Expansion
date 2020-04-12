@@ -13,7 +13,6 @@
 class LinearDeltaKinematics;
 class DDA;
 
-#define EVEN_STEPS			(1)			// 1 to generate steps at even intervals when doing double/quad/octal stepping
 #define ROUND_TO_NEAREST	(0)			// 1 for round to nearest (as used in 1.20beta10), 0 for round down (as used prior to 1.20beta10)
 
 // Rounding functions, to improve code clarity. Also allows a quick switch between round-to-nearest and round down in the movement code.
@@ -126,7 +125,9 @@ public:
 	DriveMovement(DriveMovement *next);
 
 	bool CalcNextStepTimeCartesian(const DDA &dda, bool live) __attribute__ ((hot));
+#if SUPPORT_DELTA_MOVEMENT
 	bool CalcNextStepTimeDelta(const DDA &dda, bool live) __attribute__ ((hot));
+#endif
 	void PrepareCartesianAxis(const DDA& dda, const PrepParams& params) __attribute__ ((hot));
 	void PrepareDeltaAxis(const DDA& dda, const PrepParams& params) __attribute__ ((hot));
 	void PrepareExtruder(const DDA& dda, const PrepParams& params, float speedChange) __attribute__ ((hot));
@@ -149,7 +150,9 @@ public:
 
 private:
 	bool CalcNextStepTimeCartesianFull(const DDA &dda, bool live) __attribute__ ((hot));
+#if SUPPORT_DELTA_MOVEMENT
 	bool CalcNextStepTimeDeltaFull(const DDA &dda, bool live) __attribute__ ((hot));
+#endif
 
 	static DriveMovement *freeList;
 	static int numFree;
@@ -230,7 +233,7 @@ inline bool DriveMovement::CalcNextStepTimeCartesian(const DDA &dda, bool live)
 		if (stepsTillRecalc != 0)
 		{
 			--stepsTillRecalc;			// we are doing double/quad/octal stepping
-#if EVEN_STEPS
+#if USE_EVEN_STEPS
 			nextStepTime += stepInterval;
 #endif
 			return true;
@@ -241,6 +244,8 @@ inline bool DriveMovement::CalcNextStepTimeCartesian(const DDA &dda, bool live)
 	state = DMState::idle;
 	return false;
 }
+
+#if SUPPORT_DELTA_MOVEMENT
 
 // Calculate the time since the start of the move when the next step for the specified DriveMovement is due
 // Return true if there are more steps to do. When finished, leave nextStep == totalSteps + 1.
@@ -253,7 +258,7 @@ inline bool DriveMovement::CalcNextStepTimeDelta(const DDA &dda, bool live)
 		if (stepsTillRecalc != 0)
 		{
 			--stepsTillRecalc;			// we are doing double or quad stepping
-#if EVEN_STEPS
+#if USE_EVEN_STEPS
 			nextStepTime += stepInterval;
 #endif
 			return true;
@@ -267,6 +272,8 @@ inline bool DriveMovement::CalcNextStepTimeDelta(const DDA &dda, bool live)
 	state = DMState::idle;
 	return false;
 }
+
+#endif
 
 // Return the number of net steps left for the move in the forwards direction.
 // We have already taken nextSteps - 1 steps, unless nextStep is zero.

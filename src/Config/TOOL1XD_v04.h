@@ -41,8 +41,10 @@ constexpr Pin EnablePins[NumDrivers] = { PortBPin(2) };
 constexpr Pin StepPins[NumDrivers] = { PortAPin(27) };
 constexpr Pin DirectionPins[NumDrivers] = { PortAPin(28) };
 
-#define SUPPORT_IOBITS			0
-#define SUPPORT_LASER			0
+#define SINGLE_DRIVER			1
+#define SUPPORT_SLOW_DRIVERS	1
+#define SUPPORT_DELTA_MOVEMENT	1
+#define USE_EVEN_STEPS			1
 #define SUPPORT_SPI_SENSORS		0
 #define SUPPORT_DHT_SENSOR		0
 

@@ -258,6 +258,8 @@ static GCodeResult ProcessM569(const CanMessageGeneric& msg, const StringRef& re
 		seen = true;
 		Platform::SetEnableValue(drive, rValue);
 	}
+
+#if SUPPORT_SLOW_DRIVERS
 	size_t numTimings;
 	const float *timings;
 	if (parser.GetFloatArrayParam('T', numTimings, timings))
@@ -271,6 +273,7 @@ static GCodeResult ProcessM569(const CanMessageGeneric& msg, const StringRef& re
 		//TODO timings is unaligned, so we should really either copy it or change SetDriverStepTiming to accept a pointer to unaligned data
 		Platform::SetDriverStepTiming(drive, timings);
 	}
+#endif
 
 #if HAS_SMART_DRIVERS
 	{
@@ -361,23 +364,32 @@ static GCodeResult ProcessM569(const CanMessageGeneric& msg, const StringRef& re
 #endif
 	if (!seen)
 	{
-		reply.printf("Drive %u.%u runs %s, active %s enable, step timing ",
+		reply.printf("Driver %u.%u runs %s, active %s enable",
 						CanInterface::GetCanAddress(),
 						drive,
 						(Platform::GetDirectionValue(drive)) ? "forwards" : "in reverse",
 						(Platform::GetEnableValue(drive)) ? "high" : "low");
+
+#if SUPPORT_SLOW_DRIVERS
+# if SINGLE_DRIVER
+		if (Platform::IsSlowDriver())
+# else
 		if (Platform::IsSlowDriver(drive))
+# endif
 		{
-			reply.catf("%.1f:%.1f:%.1f:%.1fus",
-						(double)Platform::GetSlowDriverStepHighClocks(),
-						(double)Platform::GetSlowDriverStepLowClocks(),
-						(double)Platform::GetSlowDriverDirSetupClocks(),
-						(double)Platform::GetSlowDriverDirHoldClocks());
+			constexpr float clocksToMicroseconds = 1000000.0f/(float)StepTimer::StepClockRate;
+			reply.catf(", step timing %.1f:%.1f:%.1f:%.1fus",
+						(double)((float)Platform::GetSlowDriverStepHighClocks() * clocksToMicroseconds),
+						(double)((float)Platform::GetSlowDriverStepLowClocks() * clocksToMicroseconds),
+						(double)((float)Platform::GetSlowDriverDirSetupClocks() * clocksToMicroseconds),
+						(double)((float)Platform::GetSlowDriverDirHoldClocks() * clocksToMicroseconds));
 		}
 		else
 		{
-			reply.cat("fast");
+			reply.cat(", step timing fast");
 		}
+#endif
+
 #if HAS_SMART_DRIVERS
 		reply.catf(", mode %s, ccr 0x%05" PRIx32 ", toff %" PRIu32 ", tblank %" PRIu32 ", hstart/hend/hdec %" PRIu32 "/%" PRIu32 "/%" PRIu32,
 				TranslateDriverMode(SmartDrivers::GetDriverMode(drive)),
@@ -457,6 +469,7 @@ static GCodeResult HandleSetDriverStates(const CanMessageMultipleDrivesRequest& 
 
 static GCodeResult ProcessM915(const CanMessageGeneric& msg, const StringRef& reply)
 {
+#if HAS_SMART_DRIVERS
 	CanMessageGenericParser parser(msg, M915Params);
 	uint16_t driverBits;
 	if (!parser.GetUintParam('d', driverBits))
@@ -506,6 +519,10 @@ static GCodeResult ProcessM915(const CanMessageGeneric& msg, const StringRef& re
 	}
 
 	return GCodeResult::ok;
+#else
+	reply.copy("stall detection not supported by this board");
+	return GCodeResult::error;
+#endif
 }
 
 static GCodeResult InitiateFirmwareUpdate(const CanMessageUpdateYourFirmware& msg, const StringRef& reply)

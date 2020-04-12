@@ -53,16 +53,41 @@ class IoPort;
 
 namespace Platform
 {
-	// These would ideally be private
-	extern DriversBitmap slowDriversBitmap;
+	// The data would ideally be private, but they are used by inline functions so they can't be unless we convert this namespace to a static class
+#if SINGLE_DRIVER
+	constexpr uint32_t DriverBit = 1u << (StepPins[0] & 31);
+#else
+	extern uint32_t driveDriverBits[NumDrivers];
+	extern uint32_t allDriverBits;
+#endif
+
+#if SUPPORT_SLOW_DRIVERS
+	// Support for slow step pulse generation to suit external drivers
 	extern uint32_t slowDriverStepTimingClocks[4];
 
+	inline uint32_t GetSlowDriverStepHighClocks() { return slowDriverStepTimingClocks[0]; }
+	inline uint32_t GetSlowDriverStepLowClocks() { return slowDriverStepTimingClocks[1]; }
+	inline uint32_t GetSlowDriverDirSetupClocks() { return slowDriverStepTimingClocks[2]; }
+	inline uint32_t GetSlowDriverDirHoldClocks() { return slowDriverStepTimingClocks[3]; }
+
+	void SetDriverStepTiming(size_t drive, const float timings[4]);
+
+# if SINGLE_DRIVER
+	extern bool isSlowDriver;
+	inline bool IsSlowDriver() { return isSlowDriver; }
+# else
+	extern DriversBitmap slowDriversBitmap;
+	inline DriversBitmap GetSlowDriversBitmap() { return slowDriversBitmap; }
+	inline bool IsSlowDriver(size_t drive) { return slowDriversBitmap.IsBitSet(drive); }
+# endif
+#endif
+
+	// Public functions
 	void Init();
 	void Spin();
 
 	// Message output (see MessageType for further details)
 	void Message(MessageType type, const char *message);
-	//void Message(MessageType type, OutputBuffer *buffer);
 	void MessageF(MessageType type, const char *fmt, ...) __attribute__ ((format (printf, 2, 3)));
 	void MessageF(MessageType type, const char *fmt, va_list vargs);
 	void LogError(ErrorCode e);
@@ -72,17 +97,48 @@ namespace Platform
 	const float *GetDriveStepsPerUnit();
 	float GetPressureAdvance(size_t driver);
 	void SetPressureAdvance(size_t driver, float advance);
-	void StepDriversLow();
-	void StepDriversHigh(uint32_t driverMap);
-	uint32_t GetDriversBitmap(size_t driver); 	// get the bitmap of driver step bits for this driver
 
-	inline bool IsSlowDriver(size_t drive) { return slowDriversBitmap.IsBitSet(drive); }
-	inline DriversBitmap GetSlowDriversBitmap() { return slowDriversBitmap; }
-	inline uint32_t GetSlowDriverStepHighClocks() { return slowDriverStepTimingClocks[0]; }
-	inline uint32_t GetSlowDriverStepLowClocks() { return slowDriverStepTimingClocks[1]; }
-	inline uint32_t GetSlowDriverDirSetupClocks() { return slowDriverStepTimingClocks[2]; }
-	inline uint32_t GetSlowDriverDirHoldClocks() { return slowDriverStepTimingClocks[3]; }
-	void SetDriverStepTiming(size_t drive, const float timings[4]);
+#if SINGLE_DRIVER
+	inline void StepDriverLow()
+	{
+#if ACTIVE_HIGH_STEP
+		StepPio->OUTCLR.reg = DriverBit;
+#else
+		StepPio->OUTSET.reg = DriverBit;
+#endif
+	}
+
+	inline void StepDriverHigh()
+	{
+#if ACTIVE_HIGH_STEP
+		StepPio->OUTSET.reg = DriverBit;
+#else
+		StepPio->OUTCLR.reg = DriverBit;
+#endif
+	}
+
+#else
+
+	inline void StepDriversLow()
+	{
+#if ACTIVE_HIGH_STEP
+		StepPio->OUTCLR.reg = allDriverBits;
+#else
+		StepPio->OUTSET.reg = allDriverBits;
+#endif
+	}
+
+	inline void StepDriversHigh(uint32_t driverMap)
+	{
+#if ACTIVE_HIGH_STEP
+		StepPio->OUTSET.reg = driverMap;
+#else
+		StepPio->OUTCLR.reg = driverMap;
+#endif
+	}
+
+	inline uint32_t GetDriversBitmap(size_t driver) { return driveDriverBits[driver]; } 		// Get the step bit for this driver
+#endif
 
 	inline unsigned int GetProhibitedExtruderMovements(unsigned int extrusions, unsigned int retractions) { return 0; }
 	void SetDirection(size_t driver, bool direction);

@@ -178,12 +178,14 @@ void Move::Spin()
 		if (!canAddMove || idleCount > 10)							// better to have a few moves in the queue so that we can do lookahead
 		{
 			// Prepare one move and execute it. We assume that we will enter the next if-block before it completes, giving us time to prepare more moves.
-			if (ddaRingGetPointer->GetState() == DDA::frozen)
+			DDA * const cdda = ddaRingGetPointer;					// capture volatile variable
+			if (cdda->GetState() == DDA::frozen)
 			{
 				AtomicCriticalSectionLocker();
 
-				StartNextMove(StepTimer::GetTimerTicks());
-				if (ScheduleNextStepInterrupt())
+				currentDda = cdda;
+				cdda->Start(StepTimer::GetTimerTicks());
+				if (cdda->ScheduleNextStepInterrupt(timer))
 				{
 					Interrupt();
 				}
@@ -475,6 +477,7 @@ uint32_t Move::GetAndClearHiccups()
 void Move::Interrupt()
 {
 	const uint32_t isrStartTime = StepTimer::GetTimerTicks();
+	uint32_t now = isrStartTime;
 	for (;;)
 	{
 		// Generate a step for the current move
@@ -484,11 +487,11 @@ void Move::Interrupt()
 			return;													// no current  move, so no steps needed
 		}
 
-		cdda->StepDrivers();
+		cdda->StepDrivers(now);
 		if (cdda->GetState() == DDA::completed)
 		{
 			const uint32_t finishTime = cdda->GetMoveFinishTime();	// calculate when this move should finish
-			CurrentMoveCompleted();									// tells the DDA ring that the current move is complete and set currentDda to nullptr
+			CurrentMoveCompleted();									// tell the DDA ring that the current move is complete and set currentDda to nullptr
 
 			// Start the next move, if one is ready
 			cdda = ddaRingGetPointer;
@@ -508,26 +511,18 @@ void Move::Interrupt()
 		}
 
 		// The next step is due immediately. Check whether we have been in this ISR for too long already and need to take a break
-		const uint32_t clocksTaken = StepTimer::GetTimerTicks() - isrStartTime;
-		if (clocksTaken >= DDA::MaxStepInterruptTime)
+		now = StepTimer::GetTimerTicks();
+		if (now - isrStartTime >= DDA::MaxStepInterruptTime)
 		{
 			// Force a break by updating the move start time.
 			// If the inserted hiccup is too short then it won't help. So we double the hiccup time on each iteration.
 			++numHiccups;
-			for (uint32_t hiccupTime = DDA::HiccupTime; ; hiccupTime *= 2)
-			{
-				DDA *nextDda = cdda;
-				do
-				{
-					nextDda->InsertHiccup(hiccupTime);
-					nextDda = nextDda->GetNext();
-				} while (nextDda->GetState() == DDA::frozen);
+			cdda->InsertHiccup(now);
 
-				// Reschedule the next step interrupt. This time it should succeed if the hiccup time was long enough.
-				if (!cdda->ScheduleNextStepInterrupt(timer))
-				{
-					return;
-				}
+			// Reschedule the next step interrupt. This time it should succeed if the hiccup time was long enough.
+			if (!cdda->ScheduleNextStepInterrupt(timer))
+			{
+				return;
 			}
 		}
 	}
