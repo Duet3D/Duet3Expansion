@@ -19,7 +19,6 @@ void FanInterrupt(CallbackParameter cb)
 
 LocalFan::LocalFan(unsigned int fanNum)
 	: Fan(fanNum),
-	  lastPwm(-1.0),									// force a refresh
 	  fanInterruptCount(0), fanLastResetTime(0), fanInterval(0),
 	  blipping(false)
 {
@@ -47,17 +46,12 @@ void LocalFan::ReportPortDetails(const StringRef& str) const
 // If you want make sure that the PWM is definitely updated, set lastPWM negative before calling this
 void LocalFan::SetHardwarePwm(float pwmVal)
 {
-	// Only set the PWM if it has changed, to avoid a lot of I2C traffic when we have a DueX5 connected
-	if (pwmVal != lastPwm)
-	{
-		lastPwm = pwmVal;
-		port.WriteAnalog(pwmVal);
-	}
+	port.WriteAnalog(pwmVal);
 }
 
 // Refresh the fan PWM
 // If you want make sure that the PWM is definitely updated, set lastPWM negative before calling this
-void LocalFan::Refresh()
+void LocalFan::Refresh(bool checkSensors)
 {
 	float reqVal;
 #if 0 //TODO HAS_SMART_DRIVERS
@@ -68,14 +62,20 @@ void LocalFan::Refresh()
 	{
 		reqVal = val;
 	}
+	else if (!checkSensors)
+	{
+		reqVal = lastVal;
+	}
 	else
 	{
 		reqVal = 0.0;
 		const bool bangBangMode = (triggerTemperatures[1] <= triggerTemperatures[0]);
-		for (size_t sensorNum = 0; sensorNum < MaxSensors; ++sensorNum)
-		{
-			// Check if this sensor is both monitored by this fan and in use
-			if (sensorsMonitored.IsBitSet(sensorNum))
+		sensorsMonitored.Iterate
+		([&reqVal, bangBangMode, this
+#if 0 // HAS_SMART_DRIVERS
+		  , &driverChannelsMonitored
+#endif
+		 ](unsigned int sensorNum, unsigned int) noexcept
 			{
 				const auto sensor = Heat::FindSensor(sensorNum);
 				if (sensor.IsNotNull())
@@ -92,21 +92,21 @@ void LocalFan::Refresh()
 						// We already know that ht < triggerTemperatures[1], therefore unless we have NaNs it is safe to divide by (triggerTemperatures[1] - triggerTemperatures[0])
 						reqVal = max<float>(reqVal, (ht - triggerTemperatures[0])/(triggerTemperatures[1] - triggerTemperatures[0]));
 					}
-					else if (lastVal != 0.0 && ht + ThermostatHysteresis > triggerTemperatures[0])		// if the fan is on, add a hysteresis before turning it off
+					else if (lastVal > 0.0 && ht + ThermostatHysteresis > triggerTemperatures[0])		// if the fan is on, add a hysteresis before turning it off
 					{
 						const float minFanSpeed = (bangBangMode) ? max<float>(0.5, val) : minVal;
 						reqVal = constrain<float>(reqVal, minFanSpeed, maxVal);
 					}
-#if 0 //TODO HAS_SMART_DRIVERS
+#if 0 //HAS_SMART_DRIVERS
 					const int channel = sensor->GetSmartDriversChannel();
 					if (channel >= 0)
 					{
-						driverChannelsMonitored |= 1 << (unsigned int)channel;
+						driverChannelsMonitored.SetBit((unsigned int)channel);
 					}
 #endif
 				}
 			}
-		}
+		);
 	}
 
 	if (reqVal > 0.0)
@@ -128,43 +128,36 @@ void LocalFan::Refresh()
 				blipStartTime = millis();
 			}
 		}
-
-		if (blipping)
+		else if (blipping && millis() - blipStartTime >= blipTime)
 		{
-			if (millis() - blipStartTime < blipTime)
-			{
-				reqVal = 1.0;
-			}
-			else
-			{
-				blipping = false;
-			}
+			blipping = false;
 		}
 	}
-#if 0 //TODO HAS_SMART_DRIVERS
-	else if (driverChannelsMonitored != 0 && lastVal != 0.0)
+	else
 	{
-		reprap.GetPlatform().DriverCoolingFansOnOff(driverChannelsMonitored, false);	// tell Platform that we have stopped a fan that cools drivers
-	}
+		blipping = false;
+#if 0 //TODO HAS_SMART_DRIVERS
+		if (driverChannelsMonitored != 0 && lastVal != 0.0)
+		{
+			reprap.GetPlatform().DriverCoolingFansOnOff(driverChannelsMonitored, false);	// tell Platform that we have stopped a fan that cools drivers
+		}
 #endif
+	}
 
-	SetHardwarePwm(reqVal);
 	lastVal = reqVal;
+	SetHardwarePwm((blipping) ? 1.0 : reqVal);
 }
 
 bool LocalFan::UpdateFanConfiguration(const StringRef& reply)
 {
-	Refresh();
+	Refresh(true);
 	return true;
 }
 
 // Update the fan if necessary. Return true if it is a thermostatic fan and is running.
-bool LocalFan::Check()
+bool LocalFan::Check(bool checkSensors)
 {
-	if (!sensorsMonitored.IsEmpty() || blipping)
-	{
-		Refresh();
-	}
+	Refresh(checkSensors);
 	return !sensorsMonitored.IsEmpty() && lastVal != 0.0;
 }
 
@@ -187,7 +180,7 @@ bool LocalFan::AssignPorts(const char *pinNames, const StringRef& reply)
 		tachoPort.AttachInterrupt(FanInterrupt, InterruptMode::falling, this);
 	}
 
-	Refresh();
+	Refresh(true);
 	return true;
 }
 

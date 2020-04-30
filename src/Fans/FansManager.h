@@ -16,16 +16,16 @@
 class CanMessageGeneric;
 class CanMessageFanParameters;
 class CanMessageSetFanSpeed;
-class CanMessageFanRpms;
+class CanMessageFansReport;
 
 namespace FansManager
 {
 	void Init();
-	bool CheckFans();
+	bool CheckFans(bool checkSensors);
 	GCodeResult ConfigureFanPort(const CanMessageGeneric& msg, const StringRef& reply);
 	GCodeResult ConfigureFan(const CanMessageFanParameters& gb, const StringRef& reply);
 	GCodeResult SetFanSpeed(const CanMessageSetFanSpeed& msg, const StringRef& reply);
-	unsigned int PopulateFanRpmsReport(CanMessageFanRpms& msg);
+	unsigned int PopulateFansReport(CanMessageFansReport& msg);
 #if 0
 	void SetFanValue(uint32_t fanNum, float speed);
 #endif

@@ -39,7 +39,7 @@ GCodeResult Fan::Configure(const CanMessageFanParameters& msg, const StringRef& 
 void Fan::SetPwm(float speed)
 {
 	val = speed;
-	Refresh();
+	Refresh(true);
 }
 
 // End

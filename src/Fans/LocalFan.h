@@ -16,7 +16,7 @@ public:
 	LocalFan(unsigned int fanNum);
 	~LocalFan();
 
-	bool Check() override;								// update the fan PWM returning true if it is a thermostatic fan that is on
+	bool Check(bool checkSensors) override;					// update the fan PWM returning true if it is a thermostatic fan that is on
 	bool IsEnabled() const override { return port.IsValid(); }
 	void SetPwmFrequency(PwmFrequency freq) override { port.SetFrequency(freq); }
 	int32_t GetRPM() override;
@@ -27,7 +27,7 @@ public:
 	void Interrupt();
 
 protected:
-	void Refresh() override;
+	void Refresh(bool checkSensors) override;
 	bool UpdateFanConfiguration(const StringRef& reply) override;
 
 private:
@@ -35,8 +35,6 @@ private:
 
 	PwmPort port;											// port used to control the fan
 	IoPort tachoPort;										// port used to read the tacho
-
-	float lastPwm;
 
 	// Variables used to read the tacho
 	static constexpr uint32_t fanMaxInterruptCount = 32;	// number of fan interrupts that we average over

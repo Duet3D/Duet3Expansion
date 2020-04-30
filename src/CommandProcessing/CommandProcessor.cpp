@@ -145,15 +145,10 @@ static GCodeResult SetMotorCurrents(const CanMessageMultipleDrivesRequest& msg, 
 #if HAS_SMART_DRIVERS
 	//TODO check message is long enough for the number of drivers specified
 	const auto drivers = DriversBitmap::MakeFromRaw(msg.driversToUpdate);
-	const uint16_t *p = msg.values;
-	for (unsigned int driver = 0; driver < NumDrivers; ++driver)
-	{
-		if (drivers.IsBitSet(driver))
+	drivers.Iterate([msg](unsigned int driver, unsigned int count) -> void
 		{
-			Platform::SetMotorCurrent(driver, (float)*p);		//TODO avoid the int->float->int conversion
-			++p;
-		}
-	}
+			Platform::SetMotorCurrent(driver, (float)msg.values[count]);		//TODO avoid the int->float->int conversion
+		});
 	return GCodeResult::ok;
 #else
 	reply.copy("Setting not available for external drivers");
@@ -165,16 +160,11 @@ static GCodeResult SetStandstillCurrentFactor(const CanMessageMultipleDrivesRequ
 {
 #if HAS_SMART_DRIVERS
 	//TODO check message is long enough for the number of drivers specified
-	const uint16_t *p = msg.values;
 	const auto drivers = DriversBitmap::MakeFromRaw(msg.driversToUpdate);
-	for (unsigned int driver = 0; driver < NumDrivers; ++driver)
-	{
-		if (drivers.IsBitSet(driver))
+	drivers.Iterate([msg](unsigned int driver, unsigned int count) -> void
 		{
-			SmartDrivers::SetStandstillCurrentPercent(driver, (float)*p);		//TODO avoid the int->float->int conversion
-			++p;
-		}
-	}
+			SmartDrivers::SetStandstillCurrentPercent(driver, (float)msg.values[count]);		//TODO avoid the int->float->int conversion
+		});
 	return GCodeResult::ok;
 #else
 	reply.copy("Setting not available for external drivers");
@@ -185,15 +175,11 @@ static GCodeResult SetStandstillCurrentFactor(const CanMessageMultipleDrivesRequ
 static GCodeResult HandlePressureAdvance(const CanMessageMultipleDrivesRequest& msg, const StringRef& reply)
 {
 	//TODO check message is long enough for the number of drivers specified
-	const uint16_t *p = msg.values;
 	const auto drivers = DriversBitmap::MakeFromRaw(msg.driversToUpdate);
-	for (unsigned int driver = 0; driver < NumDrivers; ++driver)
-	{
-		if (drivers.IsBitSet(driver))
+	drivers.Iterate([msg](unsigned int driver, unsigned int count) -> void
 		{
-			Platform::SetPressureAdvance(driver, (float)*p * 0.001);
-		}
-	}
+			Platform::SetPressureAdvance(driver, (float)msg.values[count] * 0.001);
+		});
 	return GCodeResult::ok;
 }
 
@@ -201,15 +187,13 @@ static GCodeResult SetMicrostepping(const CanMessageMultipleDrivesRequest& msg, 
 {
 #if HAS_SMART_DRIVERS
 	//TODO check message is long enough for the number of drivers specified
-	const uint16_t *p = msg.values;
 	const auto drivers = DriversBitmap::MakeFromRaw(msg.driversToUpdate);
 	GCodeResult rslt = GCodeResult::ok;
-	for (unsigned int driver = 0; driver < NumDrivers; ++driver)
-	{
-		if (drivers.IsBitSet(driver))
+	drivers.Iterate([msg, reply, &rslt](unsigned int driver, unsigned int count) -> void
 		{
-			const uint16_t microstepping = *p & 0x03FF;
-			const bool interpolate = (*p & 0x8000) != 0;
+			const uint16_t val = msg.values[count];
+			const uint16_t microstepping = val & 0x03FF;
+			const bool interpolate = (val & 0x8000) != 0;
 			if (!SmartDrivers::SetMicrostepping(driver, microstepping, interpolate))
 			{
 				reply.lcatf("Driver %u.%u does not support x%u microstepping", CanInterface::GetCanAddress(), driver, microstepping);
@@ -219,9 +203,8 @@ static GCodeResult SetMicrostepping(const CanMessageMultipleDrivesRequest& msg, 
 				}
 				rslt = GCodeResult::error;
 			}
-			++p;
 		}
-	}
+	);
 	return rslt;
 #else
 	reply.copy("Setting not available for external drivers");
@@ -440,13 +423,10 @@ static GCodeResult ProcessM569(const CanMessageGeneric& msg, const StringRef& re
 static GCodeResult HandleSetDriverStates(const CanMessageMultipleDrivesRequest& msg, const StringRef& reply)
 {
 	//TODO check message is long enough for the number of drivers specified
-	const uint16_t *p = msg.values;
 	const auto drivers = DriversBitmap::MakeFromRaw(msg.driversToUpdate);
-	for (unsigned int driver = 0; driver < NumDrivers; ++driver)
-	{
-		if (drivers.IsBitSet(driver))
+	drivers.Iterate([msg](unsigned int driver, unsigned int count) -> void
 		{
-			switch (*p)
+			switch (msg.values[count])
 			{
 			case CanMessageMultipleDrivesRequest::driverActive:
 				Platform::EnableDrive(driver);
@@ -461,9 +441,7 @@ static GCodeResult HandleSetDriverStates(const CanMessageMultipleDrivesRequest& 
 				Platform::DisableDrive(driver);
 				break;
 			}
-			++p;
-		}
-	}
+		});
 	return GCodeResult::ok;
 }
 
@@ -486,7 +464,7 @@ static GCodeResult ProcessM915(const CanMessageGeneric& msg, const StringRef& re
 		if (parser.GetIntParam('S', sgThreshold))
 		{
 			seen = true;
-			drivers.Iterate([sgThreshold](unsigned int drive, bool) noexcept { SmartDrivers::SetStallThreshold(drive, sgThreshold); });
+			drivers.Iterate([sgThreshold](unsigned int drive, unsigned int) noexcept { SmartDrivers::SetStallThreshold(drive, sgThreshold); });
 		}
 	}
 
@@ -495,7 +473,7 @@ static GCodeResult ProcessM915(const CanMessageGeneric& msg, const StringRef& re
 		if (parser.GetUintParam('H', stepsPerSecond))
 		{
 			seen = true;
-			drivers.Iterate([stepsPerSecond](unsigned int drive, bool) noexcept { SmartDrivers::SetStallMinimumStepsPerSecond(drive, stepsPerSecond); });
+			drivers.Iterate([stepsPerSecond](unsigned int drive, unsigned int) noexcept { SmartDrivers::SetStallMinimumStepsPerSecond(drive, stepsPerSecond); });
 		}
 	}
 
@@ -504,13 +482,13 @@ static GCodeResult ProcessM915(const CanMessageGeneric& msg, const StringRef& re
 		if (parser.GetUintParam('T', coolStepConfig))
 		{
 			seen = true;
-			drivers.Iterate([coolStepConfig](unsigned int drive, bool) noexcept { SmartDrivers::SetRegister(drive, SmartDriverRegister::coolStep, coolStepConfig); } );
+			drivers.Iterate([coolStepConfig](unsigned int drive, unsigned int) noexcept { SmartDrivers::SetRegister(drive, SmartDriverRegister::coolStep, coolStepConfig); } );
 		}
 	}
 
 	if (!seen)
 	{
-		drivers.Iterate([&reply](unsigned int drive, bool) noexcept
+		drivers.Iterate([&reply](unsigned int drive, unsigned int) noexcept
 									{
 										reply.lcatf("Driver %u.%u: ", CanInterface::GetCanAddress(), drive);
 										SmartDrivers::AppendStallConfig(drive, reply);

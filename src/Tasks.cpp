@@ -380,7 +380,7 @@ extern "C"
 		Platform::SoftwareReset((uint16_t)SoftwareResetReason::usageFault);
 	}
 
-	void DebugMon_Handler   () __attribute__ ((alias("OtherFault_Handler")));
+	void DebugMon_Handler   () __attribute__ ((alias("OtherFault_Handler"), nothrow));
 
 	// FreeRTOS hooks that we need to provide
 	void stackOverflowDispatcher(const uint32_t *pulFaultStackAddress, char* pcTaskName)

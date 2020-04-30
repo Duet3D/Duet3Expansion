@@ -39,13 +39,13 @@ static LocalFan *CreateLocalFan(uint32_t fanNum, const char *pinNames, PwmFreque
 }
 
 // Check and if necessary update all fans. Return true if a thermostatic fan is running.
-bool FansManager::CheckFans()
+bool FansManager::CheckFans(bool checkSensors)
 {
 	ReadLocker lock(fansLock);
 	bool thermostaticFanRunning = false;
 	for (Fan* fan : fans)
 	{
-		if (fan != nullptr && fan->Check())
+		if (fan != nullptr && fan->Check(checkSensors))
 		{
 			thermostaticFanRunning = true;
 		}
@@ -157,7 +157,7 @@ void FansManager::Init()
 }
 
 // Construct a fan RPM report message. Returns the number of fans reported in it.
-unsigned int FansManager::PopulateFanRpmsReport(CanMessageFanRpms& msg)
+unsigned int FansManager::PopulateFansReport(CanMessageFansReport& msg)
 {
 	ReadLocker locker(fansLock);
 
@@ -167,7 +167,8 @@ unsigned int FansManager::PopulateFanRpmsReport(CanMessageFanRpms& msg)
 	{
 		if (f != nullptr)
 		{
-			msg.fanRpms[numReported] = f->GetRPM();
+			msg.fanReports[numReported].actualPwm = (uint16_t)(f->GetLastVal() * 65535);
+			msg.fanReports[numReported].rpm = f->GetRPM();
 			msg.whichFans |= (uint64_t)1 << f->GetNumber();
 			++numReported;
 		}

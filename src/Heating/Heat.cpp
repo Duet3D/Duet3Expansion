@@ -294,8 +294,8 @@ void Heat::Exit()
 
 		// Broadcast our fan RPMs
 		{
-			CanMessageFanRpms * const msg = buf->SetupStatusMessage<CanMessageFanRpms>(CanInterface::GetCanAddress(), CanId::MasterAddress);
-			const unsigned int numReported = FansManager::PopulateFanRpmsReport(*msg);
+			CanMessageFansReport * const msg = buf->SetupStatusMessage<CanMessageFansReport>(CanInterface::GetCanAddress(), CanId::MasterAddress);
+			const unsigned int numReported = FansManager::PopulateFansReport(*msg);
 			if (numReported != 0)
 			{
 				buf->dataLength = msg->GetActualDataLength(numReported);

@@ -20,7 +20,7 @@ class Fan
 public:
 	Fan(unsigned int fanNum);
 
-	virtual bool Check() = 0;								// update the fan PWM returning true if it is a thermostatic fan that is on
+	virtual bool Check(bool checkSensors) = 0;				// update the fan PWM returning true if it is a thermostatic fan that is on
 	virtual void SetPwmFrequency(PwmFrequency freq) = 0;
 	virtual bool IsEnabled() const = 0;
 	virtual int32_t GetRPM() = 0;
@@ -28,6 +28,7 @@ public:
 	virtual ~Fan() { }
 
 	unsigned int GetNumber() const { return fanNumber; }
+	float GetLastVal() const noexcept { return lastVal; }
 
 	// Set or report the parameters for this fan
 	// If 'mCode' is an M-code used to set parameters (which should only ever be 106 or 107)
@@ -43,7 +44,7 @@ public:
 	bool HasMonitoredSensors() const { return !sensorsMonitored.IsEmpty(); }
 
 protected:
-	virtual void Refresh() = 0;
+	virtual void Refresh(bool checkSensors) = 0;
 	virtual bool UpdateFanConfiguration(const StringRef& reply) = 0;
 
 	unsigned int fanNumber;

@@ -697,9 +697,10 @@ void Platform::Spin()
 
 	// Thermostatically-controlled fans (do this after getting TMC driver status)
 	const uint32_t now = millis();
-	if (now - lastFanCheckTime >= FanCheckInterval)
+	const bool checkSensors = (now - lastFanCheckTime >= FanCheckInterval);
+	(void)FansManager::CheckFans(checkSensors);
+	if (checkSensors)
 	{
-		(void)FansManager::CheckFans();
 
 #if HAS_SMART_DRIVERS
 		// Check one TMC driver for temperature warning or temperature shutdown
