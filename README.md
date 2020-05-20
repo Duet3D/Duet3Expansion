@@ -2,8 +2,6 @@
 
 Firmware for Duet 3 expansion and tool boards
 
-Build instructions:
-
 Duet 3 expansion and tool board firmware is built from several Github projects. You need to use compatible branches of these projects. As at 20 May 2020, the latest source code is on these branches:
 
 - Duet3Expansion: master
