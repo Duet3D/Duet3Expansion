@@ -14,20 +14,16 @@ constexpr float DefaultThermistorR25 = 100000.0;
 constexpr float DefaultThermistorbeta = 4388.0;
 constexpr float DefaultThermistorC = 0.0;
 
-#ifdef EXP3HC_V09
-# include "EXP3HC_v09.h"
+#ifdef EXP3HC
+# include "EXP3HC.h"
 #endif
 
-#ifdef TOOL1LC_V04
-# include "TOOL1LC_v04.h"
+#ifdef TOOL1LC
+# include "TOOL1LC.h"
 #endif
 
-#ifdef TOOL1LC_V06
-# include "TOOL1LC_v06.h"
-#endif
-
-#ifdef TOOL1XD_V04
-# include "TOOL1XD_v04.h"
+#ifdef EXP1XD
+# include "EXP1XD.h"
 #endif
 
 constexpr float DefaultMinFanPwm = 0.1;					// minimum fan PWM

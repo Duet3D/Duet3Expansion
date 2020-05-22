@@ -35,11 +35,11 @@
 .settings/language.settings.xml
 
 # Output folders
-/EXP3HC-v0.9/
-/EXP3HC-v0.9-Debug/
-/EXP3HC-v0.9-debug-with-bootloader/
-/EXP3HC-v0.9-release-no-bootloader/
-/TOOL1LC-v0.6/
-/TOOL1LC-v0.6-Debug/
-/TOOL1XD-v0.4/
-/TOOL1XD-v0.4-Debug/
+/EXP3HC/
+/EXP1XD/
+/EXP1XD-Debug/
+/EXP3HC-Debug/
+/EXP3HC-Debug-with-bootloader/
+/EXP3HC-Release-no-bootloader/
+/TOOL1LC/
+/TOOL1LC-Debug/

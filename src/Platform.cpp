@@ -431,7 +431,7 @@ void Platform::Init()
 				IoPort::SetHighDriveStrength(pin);
 #endif
 
-#ifdef TOOL1LC_V06
+#ifdef TOOL1LC
 				// OUT2 is intended to drive the hot end fan, so default it to on
 				IoPort::SetPinMode(pin, (StringEqualsIgnoreCase(p.pinNames, "out2")) ? OUTPUT_HIGH : OUTPUT_LOW);
 																	// turn on fan on out2, turn off heaters and other fans
