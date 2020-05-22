@@ -175,11 +175,12 @@ constexpr unsigned int StepTcClockId = TC2_GCLK_ID;
 constexpr unsigned int StepTcNumber = 2;
 #define STEP_TC_HANDLER		TC2_Handler
 
-// Diagnostic LED
-constexpr Pin DiagLedPin = PortAPin(0);
-constexpr Pin DiagLed1Pin = PortAPin(1);
+// Diagnostic LEDs
+constexpr Pin LedPins[] = { PortAPin(0), PortAPin(1) };
+constexpr bool LedActiveHigh = true;
 
 // Available UART ports
+#define NUM_SERIAL_PORTS		1
 constexpr IRQn Serial0_IRQn = SERCOM4_IRQn;
 
 // DMA channel assignments

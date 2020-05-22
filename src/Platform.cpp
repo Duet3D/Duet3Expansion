@@ -134,10 +134,8 @@ namespace Platform
 	static uint32_t lastFanCheckTime = 0;
 	static unsigned int heatTaskIdleTicks = 0;
 
-#ifdef SAMC21
 	constexpr uint32_t GreenLedFlashTime = 100;				// how long the green LED stays on after we process a CAN message
 	static uint32_t whenLastCanMessageProcessed = 0;
-#endif
 
 	static ThermistorAveragingFilter thermistorFilters[NumThermistorFilters];
 	static AdcAveragingFilter<VinReadingsAveraged> vinFilter;
@@ -170,6 +168,14 @@ namespace Platform
 	DriversBitmap logOnStallDrivers, pauseOnStallDrivers, rehomeOnStallDrivers;
 	DriversBitmap stalledDrivers, stalledDriversToLog, stalledDriversToPause, stalledDriversToRehome;
 #endif
+
+	static inline void WriteLed(uint8_t ledNumber, bool turnOn)
+	{
+		if (ledNumber < ARRAY_SIZE(LedPins))
+		{
+			digitalWrite(LedPins[ledNumber], (LedActiveHigh) ? turnOn : !turnOn);
+		}
+	}
 
 #if HAS_VOLTAGE_MONITOR
 
@@ -277,13 +283,19 @@ namespace Platform
 #if defined(SAME51)
 		NVIC_SetPriority(CAN1_IRQn, NvicPriorityCan);
 		// Set UART interrupt priority. Each SERCOM has up to 4 interrupts, numbered sequentially.
+# if NUM_SERIAL_PORTS >= 1
 		SetInterruptPriority(Serial0_IRQn, 4, NvicPriorityUart);
+#endif
+# if NUM_SERIAL_PORTS >= 2
 		SetInterruptPriority(Serial1_IRQn, 4, NvicPriorityUart);
+# endif
 		SetInterruptPriority(DMAC_0_IRQn, 5, NvicPriorityDmac);
 		SetInterruptPriority(EIC_0_IRQn, 16, NvicPriorityPins);
 #elif defined(SAMC21)
 		NVIC_SetPriority(CAN0_IRQn, NvicPriorityCan);
+# if NUM_SERIAL_PORTS >= 1
 		NVIC_SetPriority(Serial0_IRQn, NvicPriorityUart);
+# endif
 		NVIC_SetPriority(DMAC_IRQn, NvicPriorityDmac);
 		NVIC_SetPriority(EIC_IRQn, NvicPriorityPins);
 #else
@@ -344,10 +356,10 @@ namespace Platform
 		DisableAllDrives();
 		delay(10);										// allow existing processing to complete, drivers to be turned off and CAN replies to be sent
 		CanInterface::Shutdown();
-		digitalWrite(DiagLedPin, false);				// turn the DIAG LED off
-#ifdef SAMC21
-		digitalWrite(DiagLed1Pin, false);				// turn the green LED off
-#endif
+		for (Pin pin : LedPins)
+		{
+			digitalWrite(pin, !LedActiveHigh);			// turn the LED off
+		}
 	}
 
 	[[noreturn]] static void ShutdownAndReset()
@@ -408,11 +420,16 @@ void Platform::Init()
 {
 	IoPort::Init();
 
-	// Set up the DIAG LED pins
-	IoPort::SetPinMode(DiagLedPin, OUTPUT_HIGH);
-#ifdef SAMC21
-	IoPort::SetPinMode(DiagLed1Pin, OUTPUT_LOW);
+#ifdef EXP1HCE
+	IoPort::SetPinMode(AttinyResetPin, OUTPUT_LOW);
 #endif
+
+	// Set up the DIAG LED pins
+	for (Pin pin : LedPins)
+	{
+		IoPort::SetPinMode(pin, (LedActiveHigh) ? OUTPUT_LOW : OUTPUT_HIGH);
+	}
+	digitalWrite(LedPins[0], LedActiveHigh);
 
 	messageMutex.Create("Message");
 
@@ -822,16 +839,16 @@ void Platform::Spin()
 	}
 
 	// Update the Diag LED. Flash it quickly (8Hz) if we are not synced to the master, else flash in sync with the master (about 2Hz).
-	gpio_set_pin_level(DiagLedPin,
-						(StepTimer::IsSynced()) ? (StepTimer::GetMasterTime() & (1u << 19)) != 0
-							: (StepTimer::GetTimerTicks() & (1u << 17)) != 0
-					  );
-#ifdef SAMC21
+	WriteLed(0,
+				(StepTimer::IsSynced())
+					? (StepTimer::GetMasterTime() & (1u << 19)) != 0
+						: (StepTimer::GetTimerTicks() & (1u << 17)) != 0
+		    );
+
 	if (millis() - whenLastCanMessageProcessed > GreenLedFlashTime)
 	{
-		digitalWrite(DiagLed1Pin, false);
+		WriteLed(1, false);
 	}
-#endif
 
 	if (now - lastPollTime > 2000)
 	{
@@ -1322,10 +1339,8 @@ void Platform::StartReset()
 // This is called when we start processing any CAN message except for regular messages e.g. time sync
 void Platform::OnProcessingCanMessage()
 {
-#ifdef SAMC21
 	whenLastCanMessageProcessed = millis();
-	digitalWrite(DiagLed1Pin, true);				// turn the green LED on
-#endif
+	WriteLed(1, true);				// turn the green LED on
 }
 
 GCodeResult Platform::DoDiagnosticTest(const CanMessageDiagnosticTest& msg, const StringRef& reply)

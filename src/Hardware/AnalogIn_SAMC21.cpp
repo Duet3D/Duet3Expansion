@@ -320,6 +320,8 @@ void AdcClass::ExecuteCallbacks()
 	}
 }
 
+#if SUPPORT_SDADC
+
 class SdAdcClass : public AdcBase
 {
 public:
@@ -470,9 +472,10 @@ bool SdAdcClass::InternalEnableChannel(unsigned int chan, AnalogInCallbackFuncti
 	return false;
 }
 
+#endif	// SUPPORT_SDADC
 
 // ADC instances
-static AdcBase *adcs[2];
+static AdcBase *adcs[1 + SUPPORT_SDADC];
 
 namespace AnalogIn
 {
@@ -535,15 +538,19 @@ void AnalogIn::Init()
 {
 	// Create the device instances
 	adcs[0] = new AdcClass(ADC0, ADC0_IRQn, Adc0RxDmaChannel, DmaTrigSource::adc0_resrdy);
+#if SUPPORT_SDADC
 	adcs[1] = new SdAdcClass(SDADC, SDADC_IRQn, SdAdcRxDmaChannel, DmaTrigSource::sdadc_resrdy);
+#endif
 
 	// Enable ADC clocks. SAMC21 has 2 ADCs but we use only the first one
 	hri_mclk_set_APBCMASK_ADC0_bit(MCLK);
 	hri_gclk_write_PCHCTRL_reg(GCLK, ADC0_GCLK_ID, GCLK_PCHCTRL_GEN_GCLK0_Val | (1 << GCLK_PCHCTRL_CHEN_Pos));
 
+#if SUPPORT_SDADC
 	// SAMC21 also has a SDADC
 	hri_mclk_set_APBCMASK_SDADC_bit(MCLK);
 	hri_gclk_write_PCHCTRL_reg(GCLK, SDADC_GCLK_ID, GCLK_PCHCTRL_GEN_GCLK0_Val | (1 << GCLK_PCHCTRL_CHEN_Pos));
+#endif
 
 	analogInTask.Create(AinLoop, "AIN", nullptr, TaskPriority::AinPriority);
 }
@@ -589,7 +596,8 @@ bool AnalogIn::IsChannelEnabled(Pin pin, bool useAlternateAdc)
 		const AdcInput adcin = IoPort::PinToAdcInput(pin, useAlternateAdc);
 		if (adcin != AdcInput::none)
 		{
-			return adcs[GetDeviceNumber(adcin)]->IsChannelEnabled(GetInputNumber(adcin));
+			const unsigned int adcNumber = GetDeviceNumber(adcin);
+			return adcNumber < ARRAY_SIZE(adcs) && adcs[adcNumber]->IsChannelEnabled(GetInputNumber(adcin));
 		}
 	}
 	return false;

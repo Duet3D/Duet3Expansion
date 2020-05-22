@@ -26,6 +26,10 @@ constexpr float DefaultThermistorC = 0.0;
 # include "EXP1XD.h"
 #endif
 
+#ifdef EXP1HCE
+# include "EXP1HCE.h"
+#endif
+
 constexpr float DefaultMinFanPwm = 0.1;					// minimum fan PWM
 constexpr uint32_t DefaultFanBlipTime = 100;			// fan blip time in milliseconds
 

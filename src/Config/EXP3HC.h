@@ -217,10 +217,12 @@ constexpr IRQn StepTcIRQn = TC6_IRQn;
 constexpr unsigned int StepTcNumber = 6;
 #define STEP_TC_HANDLER		TC6_Handler
 
-// Diagnostic LED
-constexpr Pin DiagLedPin = PortCPin(10);
+// Diagnostic LEDs
+constexpr Pin LedPins[] = { PortCPin(10) };
+constexpr bool LedActiveHigh = true;
 
 // Available UART ports
+#define NUM_SERIAL_PORTS		2
 constexpr IRQn Serial0_IRQn = SERCOM3_0_IRQn;
 constexpr IRQn Serial1_IRQn = SERCOM5_0_IRQn;
 
