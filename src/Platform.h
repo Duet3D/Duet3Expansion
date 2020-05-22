@@ -26,17 +26,24 @@ typedef AdcAveragingFilter<ZProbeReadingsAveraged> ZProbeAveragingFilter;
 #if HAS_VREF_MONITOR
 constexpr size_t VssaFilterIndex = NumThermistorInputs;
 constexpr size_t VrefFilterIndex = NumThermistorInputs + 1;
-# ifdef SAMC21
+# if defined(SAMC21) && SUPPORT_SDADC
 // On the SAMC21 we have 2 additional filters for the SDADC inputs
 constexpr size_t SdAdcTemp0FilterIndex = NumThermistorInputs + 2;
 constexpr size_t SdAdcVrefFilterIndex = NumThermistorInputs + 3;
 constexpr size_t NumThermistorFilters = NumThermistorInputs + 4;
 # else
-// SAME51
+// SAME51 or not supporting SDADC
 constexpr size_t NumThermistorFilters = NumThermistorInputs + 2;
 # endif
 #else
+# if defined(SAMC21) && SUPPORT_SDADC
+// On the SAMC21 we have 2 additional filters for the SDADC inputs
+constexpr size_t SdAdcTemp0FilterIndex = NumThermistorInputs;
+constexpr size_t SdAdcVrefFilterIndex = NumThermistorInputs + 1;
+constexpr size_t NumThermistorFilters = NumThermistorInputs + 2;
+# else
 constexpr size_t NumThermistorFilters = NumThermistorInputs;
+# endif
 #endif
 
 // Enumeration of error condition bits
@@ -158,8 +165,11 @@ namespace Platform
 
 	int GetAveragingFilterIndex(const IoPort&);
 	ThermistorAveragingFilter *GetAdcFilter(unsigned int filterNumber);
+
+#if HAS_VREF_MONITOR
 	ThermistorAveragingFilter *GetVssaFilter(unsigned int filterNumber);
 	ThermistorAveragingFilter *GetVrefFilter(unsigned int filterNumber);
+#endif
 
 	void GetMcuTemperatures(float& minTemp, float& currentTemp, float& maxTemp);
 

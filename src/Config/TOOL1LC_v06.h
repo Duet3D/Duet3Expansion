@@ -72,6 +72,7 @@ constexpr Pin DriverDiagPins[NumDrivers] = { PortBPin(3) };
 #define USE_EVEN_STEPS			0
 #define SUPPORT_SPI_SENSORS		0
 #define SUPPORT_DHT_SENSOR		0
+#define SUPPORT_SDADC			1
 
 #define USE_MPU					0
 #define USE_CACHE				0

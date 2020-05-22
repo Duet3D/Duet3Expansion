@@ -429,7 +429,9 @@ void Platform::Init()
 #ifdef SAMC21
 				// Set high driver strength on the output pins because they drive the heater and fan mosfets directly
 				IoPort::SetHighDriveStrength(pin);
+#endif
 
+#ifdef TOOL1LC_V06
 				// OUT2 is intended to drive the hot end fan, so default it to on
 				IoPort::SetPinMode(pin, (StringEqualsIgnoreCase(p.pinNames, "out2")) ? OUTPUT_HIGH : OUTPUT_LOW);
 																	// turn on fan on out2, turn off heaters and other fans
@@ -493,13 +495,12 @@ void Platform::Init()
 	// Set up the Vref and Vssa filters
 	SetupThermistorFilter(VrefPin, VrefFilterIndex, false);
 	SetupThermistorFilter(VssaPin, VssaFilterIndex, false);
+#endif
 
-# ifdef SAMC21
+#if defined(SAMC21) && SUPPORT_SDADC
 	// Set up the SDADC input filters too (temp0 and Vref)
 	SetupThermistorFilter(TempSensePins[0], SdAdcTemp0FilterIndex, true);
 	SetupThermistorFilter(VrefPin, SdAdcVrefFilterIndex, true);
-# endif
-
 #endif
 
 	// Set up the thermistor filters
@@ -899,7 +900,9 @@ void Platform::Spin()
 						" %.1fV"
 #endif
 						" %.1fC"
+#if HAS_VREF_MONITOR
 						" %u %u"
+#endif
 //						", ptat %d, ctat %d"
 #if HAS_SMART_DRIVERS
 						", stat %08" PRIx32 " %08" PRIx32 " %08" PRIx32
@@ -914,7 +917,9 @@ void Platform::Spin()
 						(double)voltsVin,
 #endif
 						(double)currentMcuTemperature
+#if HAS_VREF_MONITOR
 						, (unsigned int)thermistorFilters[VrefFilterIndex].GetSum(), (unsigned int)thermistorFilters[VssaFilterIndex].GetSum()
+#endif
 //						, tp_result, tc_result
 #if HAS_SMART_DRIVERS
 						, SmartDrivers::GetAccumulatedStatus(0, 0), SmartDrivers::GetAccumulatedStatus(1, 0), SmartDrivers::GetAccumulatedStatus(2, 0)
@@ -933,7 +938,7 @@ int Platform::GetAveragingFilterIndex(const IoPort& port)
 	{
 		if (port.GetPin() == TempSensePins[i])
 		{
-#ifdef SAMC21
+#if defined(SAMC21) && SUPPORT_SDADC
 			return (i == 0 && port.UseAlternateConfig()) ? SdAdcTemp0FilterIndex : (int) i;
 #endif
 			return (int)i;
@@ -946,6 +951,8 @@ ThermistorAveragingFilter *Platform::GetAdcFilter(unsigned int filterNumber)
 {
 	return &thermistorFilters[filterNumber];
 }
+
+#if HAS_VREF_MONITOR
 
 ThermistorAveragingFilter *Platform::GetVssaFilter(unsigned int filterNumber)
 {
@@ -966,6 +973,8 @@ ThermistorAveragingFilter *Platform::GetVrefFilter(unsigned int filterNumber)
 	return &thermistorFilters[VrefFilterIndex];
 #endif
 }
+
+#endif
 
 void Platform::GetMcuTemperatures(float& minTemp, float& currentTemp, float& maxTemp)
 {

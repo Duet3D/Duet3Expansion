@@ -116,7 +116,7 @@ void Thermistor::Poll()
 		else
 		{
 #else
-	if (tempFilter.IsValid())
+	if (tempFilter->IsValid())
 	{
 		{
 #endif

@@ -8,6 +8,6 @@
 #ifndef SRC_VERSION_H_
 #define SRC_VERSION_H_
 
-constexpr const char* FirmwareVersion = "3.1.0 (2020-05-15b1)";
+constexpr const char* FirmwareVersion = "3.1.0+ (2020-05-22b1)";
 
 #endif /* SRC_VERSION_H_ */
