@@ -19,7 +19,7 @@ constexpr const char* BoardTypeName = "EXP1XD";
 #define HAS_12V_MONITOR			0
 #define HAS_CPU_TEMP_SENSOR		1
 #define HAS_ADDRESS_SWITCHES	0
-#define HAS_BUTTONS				0
+#define HAS_BUTTONS				1
 
 // Drivers configuration
 #define HAS_SMART_DRIVERS		0
@@ -63,6 +63,8 @@ constexpr float DefaultThermistorSeriesR = 2200.0;
 constexpr Pin TempSensePins[NumThermistorInputs] = { PortAPin(2), PortAPin(3) };
 
 constexpr Pin CanStandbyPin = PortAPin(27);
+
+constexpr Pin ButtonPins[] = { PortBPin(9) };
 
 // Table of pin functions that we are allowed to use
 constexpr uint8_t Nx = 0xFF;	// this means no EXINT usable
@@ -114,7 +116,7 @@ constexpr PinDescription PinTable[] =
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PB06 not on chip
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PB07 not on chip
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		8,	"pb08"		},	// PB08
-	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		9,	"pb09"		},	// PB09
+	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		9,	"!^button0"	},	// PB09 button recognised by bootloader
 };
 
 static constexpr size_t NumPins = ARRAY_SIZE(PinTable);

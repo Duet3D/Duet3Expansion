@@ -561,9 +561,9 @@ void Platform::Init()
 #endif
 
 #if HAS_BUTTONS
-	for (size_t i = 0; i < NumButtons; ++i)
+	for (Pin pin : ButtonPins)
 	{
-		IoPort::SetPinMode(ButtonPins[i], PinMode::INPUT_PULLUP);
+		IoPort::SetPinMode(pin, PinMode::INPUT_PULLUP);
 	}
 #endif
 

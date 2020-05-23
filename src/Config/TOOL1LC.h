@@ -95,8 +95,7 @@ constexpr Pin VssaPin = PortAPin(6);
 
 constexpr Pin TempSensePins[NumThermistorInputs] = { PortBPin(9), PortAPin(2) };
 
-constexpr size_t NumButtons = 2;
-constexpr Pin ButtonPins[NumButtons] = { PortBPin(22), PortBPin(23) };
+constexpr Pin ButtonPins[] = { PortBPin(22), PortBPin(23) };
 
 // Table of pin functions that we are allowed to use
 constexpr uint8_t Nx = 0xFF;	// this means no EXINT usable
