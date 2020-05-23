@@ -62,7 +62,7 @@ constexpr float DefaultThermistorSeriesR = 2200.0;
 
 constexpr Pin TempSensePins[NumThermistorInputs] = { PortAPin(2), PortAPin(3) };
 
-constexpr Pin JumperPin = PortAPin(27);
+constexpr Pin CanStandbyPin = PortAPin(27);
 
 // Table of pin functions that we are allowed to use
 constexpr uint8_t Nx = 0xFF;	// this means no EXINT usable
