@@ -49,6 +49,7 @@ extern "C" void __malloc_unlock ( struct _reent *_r )
 [[noreturn]]void AppMain()
 {
 #ifndef DEBUG
+
 	// Check that the bootloader is protected and EEPROM is configured
 # if defined(SAME51)
 	uint64_t nvmUserRow0 = *reinterpret_cast<const uint64_t*>(NVMCTRL_USER);						// we only need values in the first 64 bits of the user area
@@ -56,9 +57,14 @@ extern "C" void __malloc_unlock ( struct _reent *_r )
 	constexpr uint64_t reqValue = ((uint64_t)0x01 << 32) | ((uint64_t)0x03 << 36) | (0x07 << 26);	// 4K SMART EEPROM and 64K bootloader (SBLK=1 PSZ=3)
 # elif defined(SAMC21)
 	uint32_t nvmUserRow0 = *reinterpret_cast<const uint32_t*>(NVMCTRL_USER);						// we only need values in the first 32 bits of the user area
-	constexpr uint32_t mask =     (0x07 << 4) | (0x07 << 0);										// we just want BOOTPROT (bits 0-2) and EEPROM (bits 4-6)
-	constexpr uint32_t reqValue = (0x02 << 4) | (0x01 << 0);										// 4K EEPROM and 16K bootloader
+	constexpr uint32_t mask =     NVMCTRL_FUSES_EEPROM_SIZE_Msk | NVMCTRL_FUSES_BOOTPROT_Msk;		// we just want BOOTPROT (bits 0-2) and EEPROM (bits 4-6)
+#  ifdef SAMMYC21
+	constexpr uint32_t reqValue = (0x02 << NVMCTRL_FUSES_EEPROM_SIZE_Pos) | (0x03 << NVMCTRL_FUSES_BOOTPROT_Pos);	// 4K EEPROM and 4K bootloader
+#  else
+	constexpr uint32_t reqValue = (0x02 << NVMCTRL_FUSES_EEPROM_SIZE_Pos) | (0x01 << NVMCTRL_FUSES_BOOTPROT_Pos);	// 4K EEPROM and 16K bootloader
+#  endif
 # endif
+
 	if ((nvmUserRow0 & mask) != reqValue)
 	{
 		nvmUserRow0 = (nvmUserRow0 & ~mask) | reqValue;												// set up the required value
