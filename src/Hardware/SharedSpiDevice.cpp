@@ -7,7 +7,7 @@
 
 #include "SharedSpiDevice.h"
 
-#if SUPPORT_SPI_SENSORS
+#if SUPPORT_SPI_SENSORS || SUPPORT_CLOSED_LOOP
 
 #include "IoPorts.h"
 #include "DmacManager.h"

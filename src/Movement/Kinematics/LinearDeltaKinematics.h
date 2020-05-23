@@ -56,15 +56,15 @@ private:
 	size_t numTowers;
 	float diagonals[MaxTowers];							// The diagonal rod lengths
 	float radius;										// The nominal delta radius, before any fine tuning of tower positions
-	float angleCorrections[UsualNumTowers];				// Tower position corrections
+	float angleCorrections[MaxTowers];					// Tower position corrections
 	float endstopAdjustments[MaxTowers];				// How much above or below the ideal position each endstop is
 	float printRadius;
 	float homedHeight;
 	float xTilt, yTilt;									// How much we need to raise Z for each unit of movement in the +X and +Y directions
 
 	// Derived values
-	float towerX[UsualNumTowers];						// The X coordinate of each tower
-	float towerY[UsualNumTowers];						// The Y coordinate of each tower
+	float towerX[MaxTowers];							// The X coordinate of each tower
+	float towerY[MaxTowers];							// The Y coordinate of each tower
 	float printRadiusSquared;
 	float homedCarriageHeights[MaxTowers];
 	float Xbc, Xca, Xab, Ybc, Yca, Yab;

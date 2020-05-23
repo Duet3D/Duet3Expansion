@@ -30,6 +30,14 @@ constexpr float DefaultThermistorC = 0.0;
 # include "EXP1HCE.h"
 #endif
 
+#ifdef SAMMYC21
+# include "SAMMYC21.h"
+#endif
+
+#ifndef SUPPORT_CLOSED_LOOP
+# define SUPPORT_CLOSED_LOOP		0
+#endif
+
 constexpr float DefaultMinFanPwm = 0.1;					// minimum fan PWM
 constexpr uint32_t DefaultFanBlipTime = 100;			// fan blip time in milliseconds
 

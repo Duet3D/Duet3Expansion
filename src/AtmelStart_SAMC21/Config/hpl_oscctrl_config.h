@@ -240,14 +240,18 @@
 // <i> Value of LDR is calculated using Fclk_dpll=Fckr*(LDR+1+LDRFRAC/16)/(2^presc) formula as given in datasheet. This value is directly written in to DPLLRATIO register
 // <id> fdpll96m_ldr
 #ifndef CONF_DPLL_LDR
-#define CONF_DPLL_LDR 23
+#define CONF_DPLL_LDR 23		// multiply 2MHz by 24 to get 48MHz output
 #endif
 
 // <o> Clock Divider <0x0-0x3FF>
 // <i> This Clock divider is only for XOSC clock input to DPLL
 // <id> fdpll96m_clock_div
 #ifndef CONF_DPLL_DIV
-#define CONF_DPLL_DIV 2
+# ifdef SAMMYC21				// if using Sammy-C21 prototyping board from chip45.com
+#  define CONF_DPLL_DIV 3		// division ratio is 2 * (CONF_DPLL_DIV + 1) = 8 to get 2MHz input to DPLL from 16MHz crystal. Maximum allowed is 2MHz.
+# else
+#  define CONF_DPLL_DIV 2		// division ratio is 2 * (CONF_DPLL_DIV + 1) = 6 to get 2MHz input to DPLL from 12MHz crystal. Maximum allowed is 2MHz.
+# endif
 #endif
 
 // <q> Lock Bypass

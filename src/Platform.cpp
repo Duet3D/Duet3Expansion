@@ -25,6 +25,11 @@
 #include "Fans/FansManager.h"
 #include <CanMessageFormats.h>
 
+#if SUPPORT_CLOSED_LOOP
+# include <ClosedLoop/ClockGen.h>
+# include <ClosedLoop/QuadratureDecoder.h>
+#endif
+
 #if defined(SAME51)
 
 # include <hri_nvmctrl_e51.h>
@@ -118,14 +123,18 @@ namespace Platform
 	static float pressureAdvance[NumDrivers];
 	static float idleCurrentFactor;
 
+#if HAS_VOLTAGE_MONITOR
 	static volatile uint16_t currentVin, highestVin, lowestVin;
+#endif
 #if HAS_12V_MONITOR
 	static volatile uint16_t currentV12, highestV12, lowestV12;
 #endif
 
 //	static uint16_t lastUnderVoltageValue, lastOverVoltageValue;
+#if HAS_VOLTAGE_MONITOR
 	static uint32_t numUnderVoltageEvents, previousUnderVoltageEvents;
 	static volatile uint32_t numOverVoltageEvents, previousOverVoltageEvents;
+#endif
 
 	static float currentMcuTemperature, highestMcuTemperature, lowestMcuTemperature;
 	static float mcuTemperatureAdjust = 0.0;
@@ -420,8 +429,9 @@ void Platform::Init()
 {
 	IoPort::Init();
 
-#ifdef EXP1HCE
-	IoPort::SetPinMode(AttinyResetPin, OUTPUT_LOW);
+#if SUPPORT_CLOSED_LOOP
+	ClockGen::Init();
+	QuadratureDecoder::Disable();
 #endif
 
 	// Set up the DIAG LED pins
@@ -493,12 +503,14 @@ void Platform::Init()
 #endif
 
 	// Set up VIN voltage monitoring
+#if HAS_VOLTAGE_MONITOR
 	currentVin = highestVin = 0;
 	lowestVin = 9999;
 	numUnderVoltageEvents = previousUnderVoltageEvents = numOverVoltageEvents = previousOverVoltageEvents = 0;
 
 	vinFilter.Init(0);
 	AnalogIn::EnableChannel(VinMonitorPin, vinFilter.CallbackFeedIntoFilter, &vinFilter, 1, false);
+#endif
 
 #if HAS_12V_MONITOR
 	currentV12 = highestV12 = 0;
@@ -654,7 +666,9 @@ void Platform::Init()
 
 void Platform::Spin()
 {
+#if HAS_VOLTAGE_MONITOR || HAS_12V_MONITOR
 	static bool powered = false;
+#endif
 
 	if (deferredCommand != DeferredCommand::none && millis() - whenDeferredCommandRequested > 200)
 	{
@@ -683,9 +697,13 @@ void Platform::Spin()
 		}
 	}
 
+#if HAS_VOLTAGE_MONITOR
+
 	// Get the VIN voltage
 	currentVin = vinFilter.GetSum()/vinFilter.NumAveraged();
 	const float voltsVin = (currentVin * VinMonitorVoltageRange)/(1u << AnalogIn::AdcBits);
+#endif
+
 #if HAS_12V_MONITOR
 	currentV12 = v12Filter.GetSum()/v12Filter.NumAveraged();
 	const float volts12 = (currentV12 * V12MonitorVoltageRange)/(1u << AnalogIn::AdcBits);
@@ -698,7 +716,8 @@ void Platform::Spin()
 		powered = false;
 		++numUnderVoltageEvents;
 	}
-#else
+#elif HAS_VOLTAGE_MONITOR
+
 	if (!powered && voltsVin >= 10.5)
 	{
 		powered = true;
@@ -913,7 +932,7 @@ void Platform::Spin()
 						"Addr %u"
 #if HAS_12V_MONITOR
 						" %.1fV %.1fV"
-#else
+#elif HAS_VOLTAGE_MONITOR
 						" %.1fV"
 #endif
 						" %.1fC"
@@ -930,7 +949,7 @@ void Platform::Spin()
 						(unsigned int)CanInterface::GetCanAddress(),
 #if HAS_12V_MONITOR
 						(double)voltsVin, (double)volts12,
-#else
+#elif HAS_VOLTAGE_MONITOR
 						(double)voltsVin,
 #endif
 						(double)currentMcuTemperature

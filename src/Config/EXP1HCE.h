@@ -28,17 +28,15 @@ constexpr const char* BoardTypeName = "EXP1HCE";
 // The SAMC21 can sink more current than it can source, therefore we use active low signals to drive external drivers
 #define ACTIVE_HIGH_STEP		1		// 1 = active high, 0 = active low
 #define ACTIVE_HIGH_DIR			1		// 1 = active high, 0 = active low
-#define ACTIVE_HIGH_ENABLE		0		// 1 = active high, 0 = active low
 
 #define SUPPORT_TMC51xx			1
 #define SUPPORT_TMC2660			0
 #define SUPPORT_TMC22xx			0
+#define SUPPORT_CLOSED_LOOP		1
 
 constexpr size_t NumDrivers = 1;
 constexpr size_t MaxSmartDrivers = 1;
 constexpr float MaxTmc5160Current = 6300.0;			// The maximum current we allow the TMC5160/5161 drivers to be set to
-
-//TODO correct the pin and SERCOM etc. allocation, everything after here
 
 constexpr Pin GlobalTmc51xxEnablePin = PortBPin(2);
 constexpr Pin GlobalTmc51xxCSPin = PortAPin(1);
@@ -55,7 +53,6 @@ constexpr Pin TMC51xxMisoPin = PortBPin(10);
 constexpr uint32_t TMC51xxMisoPinPeriphMode = PINMUX_PB10D_SERCOM4_PAD2;
 
 PortGroup * const StepPio = &(PORT->Group[0]);		// the PIO that all the step pins are on
-constexpr Pin EnablePins[NumDrivers] = { PortBPin(2) };
 constexpr Pin StepPins[NumDrivers] = { PortBPin(3) };
 constexpr Pin DirectionPins[NumDrivers] = { PortAPin(23) };
 constexpr Pin DiagPins[NumDrivers] = { PortAPin(28) };
@@ -87,6 +84,21 @@ constexpr float VinMonitorVoltageRange = VinDividerRatio * 5.0;				// we use the
 constexpr Pin TempSensePins[NumThermistorInputs] = { PortAPin(7) };
 
 constexpr Pin AttinyResetPin = PortAPin(0);
+
+// Shared SPI (used for interface to encoders, not for temperature sensors)
+constexpr uint8_t SERCOM_SSPI_NUMBER = 1;
+Sercom * const SERCOM_SSPI = SERCOM1;
+constexpr Pin SSPIMosiPin = PortAPin(16);
+constexpr uint32_t SSPIMosiPinPeriphMode = PINMUX_PA16C_SERCOM1_PAD0;
+constexpr Pin SSPISclkPin = PortAPin(17);
+constexpr uint32_t SSPISclkPinPeriphMode = PINMUX_PA17C_SERCOM1_PAD1;
+constexpr Pin SSPIMisoPin = PortCPin(19);
+constexpr uint32_t SSPIMisoPinPeriphMode = PINMUX_PA19C_SERCOM1_PAD3;
+
+// Clock generator pin for external devices
+constexpr uint8_t ClockGenGclkNumber = 6;
+constexpr Pin ClockGenPin = PortAPin(22);
+constexpr uint32_t ClockGenPinPeriphMode = PINMUX_PA22H_GCLK_IO6;
 
 // Table of pin functions that we are allowed to use
 constexpr uint8_t Nx = 0xFF;	// this means no EXINT usable
@@ -163,7 +175,13 @@ TcCount32 * const StepTc = &(TC2->COUNT32);
 constexpr IRQn StepTcIRQn = TC2_IRQn;
 constexpr unsigned int StepTcClockId = TC2_GCLK_ID;
 constexpr unsigned int StepTcNumber = 2;
-#define STEP_TC_HANDLER		TC2_Handler
+#define STEP_TC_HANDLER			TC2_Handler
+
+// Timer/counter used to accumulate pulses from the quadrature decoder
+Tcc * const QuadratureTcc = TCC2;
+constexpr unsigned int QuadratureTccClockId = TCC2_GCLK_ID;
+constexpr unsigned int QuadratureTccNumber = 2;
+#define QUADRATURE_TCC_HANDLER	TCC2_HANDLER
 
 // Diagnostic LEDs
 constexpr Pin LedPins[] = { PortAPin(30), PortAPin(31) };

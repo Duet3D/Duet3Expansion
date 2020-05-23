@@ -120,12 +120,17 @@ TemperatureError CurrentLoopTemperatureSensor::TryGetLinearAdcTemperature(float&
 		const uint32_t adcVal2 = ((rawVal & 1) << 5) | ((rawVal & 2) << 3) | ((rawVal & 4) << 1) | ((rawVal & 8) >> 1) | ((rawVal & 16) >> 3) | ((rawVal & 32) >> 5);
 		if (adcVal1 >= 4096 || adcVal2 != (adcVal1 & ((1 << 6) - 1)))
 		{
+			t = BadErrorTemperature;
 			rslt = TemperatureError::badResponse;
 		}
 		else
 		{
 			t = minLinearAdcTemp + (linearAdcDegCPerCount * (float)adcVal1);
 		}
+	}
+	else
+	{
+		t = BadErrorTemperature;
 	}
 	return rslt;
 }
