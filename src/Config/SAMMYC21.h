@@ -52,7 +52,7 @@ constexpr Pin DirectionPins[NumDrivers] = { PortAPin(10) };
 #define USE_MPU					0
 #define USE_CACHE				0
 
-#define DIAG_SERCOM_NUMBER		4		// which SERCOM device we use for debugging output
+#define DIAG_SERCOM_NUMBER		5		// which SERCOM device we use for debugging output
 
 constexpr size_t MaxAxes = 3;			//TEMP we won't need this
 
@@ -107,8 +107,8 @@ constexpr PinDescription PinTable[] =
 	// Port B
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PB00 not on chip
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PB01 not on chip
-	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PB02 not on board
-	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PB03 not on board
+	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PB02 USB interface (SERCOM5 pad 0)
+	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PB03 USB interface (SERCOM5 pad 1)
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PB04 not on chip
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PB05 not on chip
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PB06 not on chip
@@ -133,7 +133,7 @@ constexpr bool LedActiveHigh = true;
 
 // Available UART ports
 #define NUM_SERIAL_PORTS		1
-constexpr IRQn Serial0_IRQn = SERCOM4_IRQn;
+constexpr IRQn Serial0_IRQn = SERCOM5_IRQn;
 
 // DMA channel assignments
 constexpr DmaChannel TmcTxDmaChannel = 0;
