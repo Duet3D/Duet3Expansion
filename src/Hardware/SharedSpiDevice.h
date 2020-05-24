@@ -31,7 +31,13 @@ public:
 	bool TransceivePacket(const uint8_t *tx_data, uint8_t *rx_data, size_t len) const;
 	void SetCsPin(Pin p) { csPin = p; }
 
+	static void Disable();
+
 private:
+	static void InitSpi();
+
+	static bool commsInitDone;
+
 	uint32_t clockFrequency;
 	Pin csPin;
 	SpiMode mode;

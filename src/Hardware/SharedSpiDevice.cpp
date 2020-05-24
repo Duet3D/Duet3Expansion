@@ -17,7 +17,9 @@
 constexpr uint32_t DefaultSharedSpiClockFrequency = 2000000;
 constexpr uint32_t SpiTimeout = 10000;
 
-static void InitSpi()
+bool SharedSpiDevice::commsInitDone = false;
+
+/*static*/ void SharedSpiDevice::InitSpi()
 {
 	Serial::EnableSercomClock(SERCOM_SSPI_NUMBER);
 
@@ -68,6 +70,7 @@ static void InitSpi()
 #endif
 
 	SERCOM_SSPI->SPI.CTRLB.bit.RXEN = 1;
+	commsInitDone = true;
 }
 
 static inline void DisableSpi()
@@ -132,14 +135,24 @@ SharedSpiDevice::SharedSpiDevice(uint32_t clockFreq, SpiMode m, bool polarity)
 
 void SharedSpiDevice::InitMaster()
 {
-	static bool commsInitDone = false;
-
 	IoPort::SetPinMode(csPin, (csActivePolarity) ? OUTPUT_LOW : OUTPUT_HIGH);
 
 	if (!commsInitDone)
 	{
 		InitSpi();
-		commsInitDone = true;
+	}
+}
+
+// Disable the shared SPI so that the pins can be used for something else
+/*static*/ void SharedSpiDevice::Disable()
+{
+	if (commsInitDone)
+	{
+		DisableSpi();
+
+		// TODO turn off the SERCOM clock to save power
+
+		commsInitDone = false;
 	}
 }
 
