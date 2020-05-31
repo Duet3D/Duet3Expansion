@@ -323,10 +323,10 @@ typedef uint8_t DmaChannel;
 typedef uint8_t Pin;
 constexpr Pin NoPin = 0xFF;
 
-#define PortAPin(_n)	(GPIO(GPIO_PORTA, (_n)))
-#define PortBPin(_n)	(GPIO(GPIO_PORTB, (_n)))
-#define PortCPin(_n)	(GPIO(GPIO_PORTC, (_n)))
-#define PortDPin(_n)	(GPIO(GPIO_PORTD, (_n)))
+inline constexpr Pin PortAPin(unsigned int n) noexcept { return n; }
+inline constexpr Pin PortBPin(unsigned int n) noexcept { return 32+n; }
+inline constexpr Pin PortCPin(unsigned int n) noexcept { return 64+n; }
+inline constexpr Pin PortDPin(unsigned int n) noexcept { return 96+n; }
 
 #include "Config/BoardDef.h"
 
