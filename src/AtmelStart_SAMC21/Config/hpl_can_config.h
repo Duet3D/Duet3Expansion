@@ -83,7 +83,7 @@
 // <i> Transceiver Delay Compensation Enable
 // <id> can_dbtp_tdc
 #ifndef CONF_CAN0_DBTP_TDC
-#define CONF_CAN0_DBTP_TDC 0
+#define CONF_CAN0_DBTP_TDC 1
 #endif
 
 // <o> Data Baud Rate Prescaler <1-32>

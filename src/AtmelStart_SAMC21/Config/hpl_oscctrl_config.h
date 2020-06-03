@@ -15,7 +15,11 @@
 // <i> Oscillation frequency of the resonator connected to the External Multipurpose Crystal Oscillator.
 // <id> xosc_frequency
 #ifndef CONF_XOSC_FREQUENCY
-#define CONF_XOSC_FREQUENCY 12000000
+# ifdef SAMMYC21
+#  define CONF_XOSC_FREQUENCY 16000000
+# else
+#  define CONF_XOSC_FREQUENCY 12000000
+# endif
 #endif
 
 // <h> External Multipurpose Crystal Oscillator Control

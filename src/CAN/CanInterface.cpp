@@ -16,6 +16,7 @@
 #include <InputMonitors/InputMonitor.h>
 #include <Movement/Move.h>
 #include <Hardware/CanDriver.h>
+#include <Hardware/IoPorts.h>
 #include <Version.h>
 #include <peripheral_clk_config.h>
 #include <hpl_user_area.h>
@@ -128,8 +129,14 @@ static void CAN_0_init(const CanTiming& timing)
 	hri_mclk_set_AHBMASK_CAN0_bit(MCLK);
 	hri_gclk_write_PCHCTRL_reg(GCLK, CAN0_GCLK_ID, CONF_GCLK_CAN0_SRC | (1 << GCLK_PCHCTRL_CHEN_Pos));
 	can_async_init(&CAN_0, CAN0, timing);
+#ifdef SAMMYC21
+	gpio_set_pin_function(PB23, PINMUX_PB23G_CAN0_RX);
+	gpio_set_pin_function(PB22, PINMUX_PB22G_CAN0_TX);
+	IoPort::SetPinMode(CanStandbyPin, OUTPUT_LOW);					// take the CAN drivers out of standby
+#else
 	gpio_set_pin_function(PA25, PINMUX_PA25G_CAN0_RX);
 	gpio_set_pin_function(PA24, PINMUX_PA24G_CAN0_TX);
+#endif
 }
 
 #endif

@@ -115,6 +115,7 @@ static int32_t _can_async_init(_can_async_device *const dev, Can *const hw, cons
 		hri_can_write_MRCFG_reg(dev->hw, CONF_CAN0_MRCFG_REG);
 		hri_can_write_NBTP_reg(dev->hw, nbtp);
 		hri_can_write_DBTP_reg(dev->hw, CONF_CAN0_DBTP_REG);
+		hri_can_write_TDCR_reg(dev->hw, 0);								// use just the measured transceiver delay
 		hri_can_write_RXF0C_reg(dev->hw, CONF_CAN0_RXF0C_REG | CAN_RXF0C_F0SA((uint32_t)can0_rx_fifo));
 		hri_can_write_RXESC_reg(dev->hw, CONF_CAN0_RXESC_REG);
 		hri_can_write_TXESC_reg(dev->hw, CONF_CAN0_TXESC_REG);

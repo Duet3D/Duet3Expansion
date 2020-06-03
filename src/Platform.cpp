@@ -652,10 +652,6 @@ void Platform::Init()
 #endif
 	CanInterface::Init(defaultAddress);
 
-#ifdef SAMMYC21
-	digitalWrite(CanStandbyPin, false);				// take the CAN transceivers out of stannby
-#endif
-
 	InitialiseInterrupts();
 
 	// Read the unique ID
