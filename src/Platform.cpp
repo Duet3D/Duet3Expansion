@@ -647,9 +647,20 @@ void Platform::Init()
 
 #elif defined(SAMC21)
 
+# if defined(TOOL1LC)
 	constexpr CanAddress defaultAddress = CanId::ToolBoardDefaultAddress;
+# elif defined(SAMMYC21)
+	constexpr CanAddress defaultAddress = CanId::SammyC21DefaultAddress;
+# elif defined(EXP1XD)
+	constexpr CanAddress defaultAddress = CanId::Exp1XDBoardDefaultAddress;
+# elif defined(EXP1HCE)
+	constexpr CanAddress defaultAddress = CanId::Exp1HCEBoardDefaultAddress;
+# else
+#  error Unknown board
+# endif
 
 #endif
+
 	CanInterface::Init(defaultAddress);
 
 	InitialiseInterrupts();

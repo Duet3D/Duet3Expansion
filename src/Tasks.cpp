@@ -58,11 +58,7 @@ extern "C" void __malloc_unlock ( struct _reent *_r )
 # elif defined(SAMC21)
 	uint32_t nvmUserRow0 = *reinterpret_cast<const uint32_t*>(NVMCTRL_USER);						// we only need values in the first 32 bits of the user area
 	constexpr uint32_t mask =     NVMCTRL_FUSES_EEPROM_SIZE_Msk | NVMCTRL_FUSES_BOOTPROT_Msk;		// we just want BOOTPROT (bits 0-2) and EEPROM (bits 4-6)
-#  ifdef SAMMYC21
-	constexpr uint32_t reqValue = (0x02 << NVMCTRL_FUSES_EEPROM_SIZE_Pos) | (0x03 << NVMCTRL_FUSES_BOOTPROT_Pos);	// 4K EEPROM and 4K bootloader
-#  else
 	constexpr uint32_t reqValue = (0x02 << NVMCTRL_FUSES_EEPROM_SIZE_Pos) | (0x01 << NVMCTRL_FUSES_BOOTPROT_Pos);	// 4K EEPROM and 16K bootloader
-#  endif
 # endif
 
 	if ((nvmUserRow0 & mask) != reqValue)
