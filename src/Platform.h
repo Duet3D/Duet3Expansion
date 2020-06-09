@@ -12,6 +12,10 @@
 #include "AdcAveragingFilter.h"
 #include "GCodes/GCodeResult.h"
 
+#if SUPPORT_SPI_SENSORS || SUPPORT_CLOSED_LOOP
+# include <Hardware/SharedSpiDevice.h>
+#endif
+
 class CanMessageDiagnosticTest;
 
 // Define the number of temperature readings we average for each thermistor. This should be a power of 2 and at least 4 ^ AD_OVERSAMPLE_BITS.
@@ -90,6 +94,18 @@ namespace Platform
 #endif
 
 	// Public functions
+#if SUPPORT_SPI_SENSORS
+	extern SharedSpiDevice *sharedSpi;
+	inline SharedSpiDevice& GetSharedSpi() noexcept { return *sharedSpi; }
+#endif
+
+#if SUPPORT_CLOSED_LOOP
+	extern SharedSpiDevice *encoderSpi;
+	inline SharedSpiDevice& GetEncoderSpi() noexcept { return *encoderSpi; }
+	void EnableEncoderSpi();
+	void DisableEncoderSpi();
+#endif
+
 	void Init();
 	void Spin();
 

@@ -11,6 +11,7 @@
 
 #include <Hardware/IoPorts.h>
 #include <Hardware/SharedSpiDevice.h>
+#include <Platform.h>
 
 /* The quadrature decoder is an attiny44.
  * At startup it reads the QuadratureErrorOut pin (which is also MOSI on the SPI bus) with the pullup resistor enabled.
@@ -24,7 +25,7 @@ static constexpr uint32_t Attiny44aPageSize = 64;				// flash page size in bytes
 static uint32_t deviceSignature = 0;
 static uint16_t counterLow, counterHigh;
 
-static SharedSpiDevice *spiDev = nullptr;
+static SharedSpiClient *spiClient = nullptr;
 
 //TODO use the attiny watchdog
 static const uint8_t AttinyProgram[] =
@@ -70,7 +71,7 @@ static uint8_t SendSpiQuad(uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4)
 {
 	const uint8_t packet[4] = { b1, b2, b3, b4 };
 	uint8_t reply[4];
-	spiDev->TransceivePacket(packet, reply, 4);
+	spiClient->TransceivePacket(packet, reply, 4);
 	return (b1 == 0xAC && b2 == 0x53) ? reply[2] : reply[3];
 }
 
@@ -78,16 +79,21 @@ static uint8_t SendSpiQuad(uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4)
 static AttinyProgErrorCode SetupForProgramming()
 {
 	IoPort::SetPinMode(EncoderCsPin, OUTPUT_HIGH);					// make sure any attached encoder doesn't respond to SPI commands
-	if (spiDev == nullptr)
+	if (spiClient == nullptr)
 	{
 		// Data is clocked on the rising edge of SCLK nd changed on the falling edge (SPI mode 0)
 		// The SPI clock must be <= 1/6 of the attiny clock frequency if that is >= 12MHz, else <= 1/4 of the attiny clock frequency
 		// The worst case is when the attiny has not been programmed and is running at ~1MHz using the internal oscillator. So we use 125kHz.
-		spiDev = new SharedSpiDevice(125000, SpiMode::mode0, false);
+		spiClient = new SharedSpiClient(Platform::GetEncoderSpi(), 125000, SpiMode::mode0, false);
 	}
-	spiDev->InitMaster();				// this forces SCLK low because we selected mode 0
-	spiDev->Select();					// this sets the mode and baud rate (and would activate CS if we were using one)
-	delayMicroseconds(100);				// let SCLK settle to low
+	Platform::EnableEncoderSpi();
+	spiClient->InitMaster();				// this forces SCLK low because we selected mode 0
+	if (!spiClient->Select(10))				// this sets the mode and baud rate (and would activate CS if we were using one)
+	{
+		return AttinyProgErrorCode::spiBusy;
+	}
+
+	delayMicroseconds(100);					// let SCLK settle to low
 
 	// SCK wasn't forced to zero during power up, so we must pulse RESET
 	bool success = false;
@@ -113,8 +119,8 @@ static AttinyProgErrorCode SetupForProgramming()
 
 static void EndProgramming()
 {
-	spiDev->Deselect();
-	SharedSpiDevice::Disable();
+	spiClient->Deselect();
+	Platform::DisableEncoderSpi();
 	digitalWrite(QuadratureResetPin, true);
 }
 
@@ -135,7 +141,7 @@ static bool WaitUntilAttinyReady()
 // Disable the decoder. Call this during initialisation. Can also be called later if necessary.
 void QuadratureDecoder::Disable()
 {
-	SharedSpiDevice::Disable();
+	Platform::DisableEncoderSpi();
 	IoPort::SetPinMode(EncoderCsPin, OUTPUT_HIGH);				// make sure any attached encoder doesn't respond to data on the SPI bus
 	IoPort::SetPinMode(QuadratureResetPin, OUTPUT_LOW);			// put the attiny in reset
 	IoPort::SetPinMode(QuadratureErrorOutPin, OUTPUT_LOW);		// set the error out pin low
@@ -147,7 +153,7 @@ void QuadratureDecoder::Disable()
 // Enable the decoder and reset the counter to zero. Won't work if the decoder has never been programmed.
 void QuadratureDecoder::Enable()
 {
-	SharedSpiDevice::Disable();
+	Platform::DisableEncoderSpi();
 	IoPort::SetPinMode(EncoderCsPin, OUTPUT_HIGH);				// make sure any attached encoder doesn't respond to data on the SPI bus
 	IoPort::SetPinMode(QuadratureResetPin, OUTPUT_LOW);			// put the attiny in reset
 	IoPort::SetPinMode(QuadratureErrorOutPin, INPUT_PULLUP);	// make the error out pin an input with pullup so that the attiny reads it high

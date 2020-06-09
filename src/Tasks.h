@@ -16,7 +16,6 @@ void AppMain();
 namespace Tasks
 {
 	uint32_t GetNeverUsedRam();
-	Mutex* GetSpiMutex();
 	void Diagnostics(const StringRef& reply);
 	uint32_t DoDivide(uint32_t a, uint32_t b);
 }

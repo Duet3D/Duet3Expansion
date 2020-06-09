@@ -22,7 +22,6 @@ extern "C" char *sbrk(int i);
 constexpr unsigned int MainTaskStackWords = 800;
 
 static Task<MainTaskStackWords> mainTask;
-static Mutex spiMutex;
 static Mutex mallocMutex;
 
 extern "C" void MainTask(void * pvParameters);
@@ -120,7 +119,6 @@ extern void Spin();
 extern "C" void MainTask(void *pvParameters)
 {
 	mallocMutex.Create("Malloc");
-	spiMutex.Create("SPI");
 
 	Init();
 	for (;;)
@@ -152,11 +150,6 @@ uint32_t Tasks::GetNeverUsedRam()
 	uint32_t maxStack, neverUsedRam;
 	GetHandlerStackUsage(&maxStack, &neverUsedRam);
 	return neverUsedRam;
-}
-
-Mutex *Tasks::GetSpiMutex()
-{
-	return &spiMutex;
 }
 
 void Tasks::Diagnostics(const StringRef& reply)

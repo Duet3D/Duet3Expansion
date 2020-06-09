@@ -86,7 +86,6 @@ constexpr Pin TempSensePins[NumThermistorInputs] = { PortCPin(3), PortBPin(8), P
 
 // Shared SPI
 constexpr uint8_t SERCOM_SSPI_NUMBER = 6;
-Sercom * const SERCOM_SSPI = SERCOM6;
 constexpr Pin SSPIMosiPin = PortCPin(16);
 constexpr uint32_t SSPIMosiPinPeriphMode = PINMUX_PC16C_SERCOM6_PAD0;
 constexpr Pin SSPISclkPin = PortCPin(17);

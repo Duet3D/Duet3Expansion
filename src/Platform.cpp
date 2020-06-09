@@ -112,6 +112,14 @@ namespace Platform
 	uint32_t allDriverBits = 0;
 #endif
 
+#if SUPPORT_SPI_SENSORS
+	SharedSpiDevice *sharedSpi;
+#endif
+
+#if SUPPORT_CLOSED_LOOP
+	SharedSpiDevice *encoderSpi;
+#endif
+
 	static bool directions[NumDrivers];
 	static bool driverAtIdleCurrent[NumDrivers];
 	static int8_t enableValues[NumDrivers] = { 0 };
@@ -637,6 +645,26 @@ void Platform::Init()
 
 #if HAS_SMART_DRIVERS && HAS_VOLTAGE_MONITOR
 	warnDriversNotPowered = false;
+#endif
+
+#if SUPPORT_SPI_SENSORS
+
+	// Set the pin functions
+# if defined(SAME51)
+	gpio_set_pin_function(SSPIMosiPin, SSPIMosiPinPeriphMode);
+	gpio_set_pin_function(SSPISclkPin, SSPISclkPinPeriphMode);
+	gpio_set_pin_function(SSPIMisoPin, SSPIMisoPinPeriphMode);
+# elif defined(SAMC21)
+#  error SPI sensors not configured for this device
+# else
+# error Unknown device
+# endif
+
+	sharedSpi = new SharedSpiDevice(SERCOM_SSPI_NUMBER);
+#endif
+
+#if SUPPORT_CLOSED_LOOP
+	encoderSpi = new SharedSpiDevice(ENCODER_SSPI_NUMBER);
 #endif
 
 #if defined(SAME51)
@@ -1436,6 +1464,34 @@ float Platform::GetCurrentV12Voltage()
 float Platform::GetMaxV12Voltage()
 {
 	return AdcReadingToPowerVoltage(highestV12);
+}
+
+#endif
+
+#if SUPPORT_CLOSED_LOOP
+
+// Set up the shared encoder pins for SPI use
+void Platform::EnableEncoderSpi()
+{
+#ifdef EXP1HCE
+	gpio_set_pin_function(EncoderMosiPin, EncoderMosiPinPeriphMode);
+	gpio_set_pin_function(EncoderSclkPin, EncoderSclkPinPeriphMode);
+	gpio_set_pin_function(EncoderMisoPin, EncoderMisoPinPeriphMode);
+#else
+# error Undefined hardware
+#endif
+}
+
+// Set up the shared encoder pins for counting from the attiny
+void Platform::DisableEncoderSpi()
+{
+#ifdef EXP1HCE
+	gpio_set_pin_function(EncoderMosiPin, GPIO_PIN_FUNCTION_OFF);
+	gpio_set_pin_function(EncoderSclkPin, GPIO_PIN_FUNCTION_OFF);
+	gpio_set_pin_function(EncoderMisoPin, GPIO_PIN_FUNCTION_OFF);
+#else
+# error Undefined hardware
+#endif
 }
 
 #endif

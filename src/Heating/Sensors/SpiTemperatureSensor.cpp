@@ -12,7 +12,7 @@
 #include "Tasks.h"
 
 SpiTemperatureSensor::SpiTemperatureSensor(unsigned int sensorNum, const char *name, SpiMode spiMode, uint32_t clockFreq)
-	: SensorWithPort(sensorNum, name), device(clockFreq, spiMode, false)
+	: SensorWithPort(sensorNum, name), device(Platform::GetSharedSpi(), clockFreq, spiMode, false)
 {
 }
 
@@ -31,24 +31,18 @@ void SpiTemperatureSensor::InitSpi()
 // Send and receive 1 to 8 bytes of data and return the result as a single 32-bit word
 TemperatureError SpiTemperatureSensor::DoSpiTransaction(const uint8_t dataOut[], size_t nbytes, uint32_t& rslt) const
 {
-	uint8_t rawBytes[8];
-	bool ok;
+	if (!device.Select(10))
 	{
-		MutexLocker lock(Tasks::GetSpiMutex(), 10);
-		if (!lock)
-		{
-			return TemperatureError::busBusy;
-		}
-
-		device.Select();
-		delayMicroseconds(1);
-
-		ok = device.TransceivePacket(dataOut, rawBytes, nbytes);
-
-		delayMicroseconds(1);
-		device.Deselect();
-		delayMicroseconds(1);
+		return TemperatureError::busBusy;
 	}
+
+	delayMicroseconds(1);
+	uint8_t rawBytes[8];
+	const bool ok = device.TransceivePacket(dataOut, rawBytes, nbytes);
+	delayMicroseconds(1);
+
+	device.Deselect();
+	delayMicroseconds(1);
 
 	if (!ok)
 	{

@@ -15,13 +15,14 @@
 enum class AttinyProgErrorCode : uint8_t
 {
 	success = 0,
-	cantEnterProgrammingMode = 1,
-	badDeviceId = 2,
-	verifyFailed = 3,
-	fuseVerifyFailed = 4,
-	eraseTimeout = 5,
-	writeTimeout = 6,
-	fuseWriteTimeout = 7
+	spiBusy = 1,
+	cantEnterProgrammingMode = 2,
+	badDeviceId = 3,
+	verifyFailed = 4,
+	fuseVerifyFailed = 5,
+	eraseTimeout = 6,
+	writeTimeout = 7,
+	fuseWriteTimeout = 8
 };
 
 namespace QuadratureDecoder

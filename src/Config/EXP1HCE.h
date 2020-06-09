@@ -88,20 +88,19 @@ constexpr Pin QuadratureResetPin = PortAPin(0);
 constexpr Pin EncoderCsPin = PortAPin(18);
 
 // Shared SPI (used for interface to encoders, not for temperature sensors)
-constexpr uint8_t SERCOM_SSPI_NUMBER = 1;
-Sercom * const SERCOM_SSPI = SERCOM1;
+constexpr uint8_t ENCODER_SSPI_NUMBER = 1;
 
-constexpr Pin SSPIMosiPin = PortAPin(16);
-constexpr Pin QuadratureErrorOutPin = SSPIMosiPin;
-constexpr uint32_t SSPIMosiPinPeriphMode = PINMUX_PA16C_SERCOM1_PAD0;
+constexpr Pin EncoderMosiPin = PortAPin(16);
+constexpr Pin QuadratureErrorOutPin = EncoderMosiPin;
+constexpr uint32_t EncoderMosiPinPeriphMode = PINMUX_PA16C_SERCOM1_PAD0;
 
-constexpr Pin SSPISclkPin = PortAPin(17);
-constexpr Pin QuadratureCountUpPin = SSPISclkPin;
-constexpr uint32_t SSPISclkPinPeriphMode = PINMUX_PA17C_SERCOM1_PAD1;
+constexpr Pin EncoderSclkPin = PortAPin(17);
+constexpr Pin QuadratureCountUpPin = EncoderSclkPin;
+constexpr uint32_t EncoderSclkPinPeriphMode = PINMUX_PA17C_SERCOM1_PAD1;
 
-constexpr Pin SSPIMisoPin = PortCPin(19);
-constexpr Pin QuadratureCountDownPin = SSPIMisoPin;
-constexpr uint32_t SSPIMisoPinPeriphMode = PINMUX_PA19C_SERCOM1_PAD3;
+constexpr Pin EncoderMisoPin = PortCPin(19);
+constexpr Pin QuadratureCountDownPin = EncoderMisoPin;
+constexpr uint32_t EncoderMisoPinPeriphMode = PINMUX_PA19C_SERCOM1_PAD3;
 
 // Clock generator pin for external devices
 constexpr uint8_t ClockGenGclkNumber = 6;

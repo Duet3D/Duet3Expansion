@@ -8,10 +8,11 @@
  *  configured in SPI mode a separate object, and have a pointer or reference to it in SharedSpiDevice.
  */
 
-#ifndef SRC_HARDWARE_SHAREDSPIDEVICE_H_
-#define SRC_HARDWARE_SHAREDSPIDEVICE_H_
+#ifndef SRC_HARDWARE_SHAREDSPICLIENT_H_
+#define SRC_HARDWARE_SHAREDSPICLIENT_H_
 
 #include "RepRapFirmware.h"
+#include <RTOSIface/RTOSIface.h>
 
 #if SUPPORT_SPI_SENSORS || SUPPORT_CLOSED_LOOP
 
@@ -23,21 +24,37 @@ enum class SpiMode : uint8_t
 class SharedSpiDevice
 {
 public:
-	SharedSpiDevice(uint32_t clockFreq, SpiMode m, bool polarity);
+	SharedSpiDevice(uint8_t sercomNum);
+
+	void Disable() const;
+	void Enable() const;
+	void SetClockFrequencyAndMode(uint32_t freq, SpiMode mode) const;
+	bool TransceivePacket(const uint8_t *tx_data, uint8_t *rx_data, size_t len) const;
+	bool Take(uint32_t timeout) const { return mutex.Take(timeout); }					// get ownership of this SPI, return true if successful
+	void Release() const { mutex.Release(); }
+
+private:
+	bool waitForTxReady() const;
+	bool waitForTxEmpty() const;
+	bool waitForRxReady() const;
+
+	Sercom * const hardware;
+	Mutex mutex;
+};
+
+class SharedSpiClient
+{
+public:
+	SharedSpiClient(SharedSpiDevice& dev, uint32_t clockFreq, SpiMode m, bool polarity);
 
 	void InitMaster();
-	void Select() const;
+	bool Select(uint32_t timeout) const;												// get SPI ownership and select the device, return true if successful
 	void Deselect() const;
 	bool TransceivePacket(const uint8_t *tx_data, uint8_t *rx_data, size_t len) const;
 	void SetCsPin(Pin p) { csPin = p; }
 
-	static void Disable();
-
 private:
-	static void InitSpi();
-
-	static bool commsInitDone;
-
+	SharedSpiDevice& device;
 	uint32_t clockFrequency;
 	Pin csPin;
 	SpiMode mode;
@@ -46,4 +63,4 @@ private:
 
 #endif
 
-#endif /* SRC_HARDWARE_SHAREDSPIDEVICE_H_ */
+#endif /* SRC_HARDWARE_SHAREDSPICLIENT_H_ */
