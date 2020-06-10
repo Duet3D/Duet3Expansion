@@ -8,7 +8,7 @@
 #ifndef SRC_CONFIG_BOARDDEF_H_
 #define SRC_CONFIG_BOARDDEF_H_
 
-#include <Duet3Limits.h>								// this file is in the CANlib project because both main and expansion boards need it
+#include <Duet3Common.h>								// this file is in the CANlib project because both main and expansion boards need it
 
 constexpr float DefaultThermistorR25 = 100000.0;
 constexpr float DefaultThermistorbeta = 4388.0;

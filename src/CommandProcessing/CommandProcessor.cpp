@@ -28,6 +28,9 @@
 #if SUPPORT_TMC51xx
 # include "Movement/StepperDrivers/TMC51xx.h"
 #endif
+#if SUPPORT_CLOSED_LOOP
+# include <ClosedLoop/ClosedLoop.h>
+#endif
 
 constexpr float MinVin = 11.0;
 constexpr float MaxVin = 32.0;
@@ -702,6 +705,15 @@ void CommandProcessor::Spin()
 		case CanMessageType::m569:
 			requestId = buf->msg.generic.requestId;
 			rslt = ProcessM569(buf->msg.generic, replyRef);
+			break;
+
+		case CanMessageType::m569p1:
+			requestId = buf->msg.generic.requestId;
+#if SUPPORT_CLOSED_LOOP
+			rslt = ClosedLoop::ProcessM569Point1(buf->msg.generic, replyRef);
+#else
+			rslt = GCodeResult::errorNotSupported;
+#endif
 			break;
 
 		case CanMessageType::setStandstillCurrentFactor:
