@@ -203,7 +203,11 @@ bool AdcClass::InternalEnableChannel(unsigned int chan, AnalogInCallbackFunction
 				hri_adc_wait_for_sync(device, ADC_SYNCBUSY_SWRST);
 
 				hri_adc_write_CTRLB_reg(device, ADC_CTRLB_PRESCALER_DIV4);			// Max ADC clock is 16MHz. GCLK0 is 48MHz, divided by 4 is 12MHz
+#if defined(EXP1XD) || defined(EXP1HCE)
+				hri_adc_write_CTRLC_reg(device, ADC_CTRLC_RESSEL_16BIT | ADC_CTRLC_R2R);	// 16 bit result, rail-to-rail input
+#else
 				hri_adc_write_CTRLC_reg(device, ADC_CTRLC_RESSEL_16BIT);			// 16 bit result
+#endif
 				hri_adc_write_REFCTRL_reg(device,  ADC_REFCTRL_REFSEL_INTVCC2);
 				hri_adc_write_EVCTRL_reg(device, ADC_EVCTRL_RESRDYEO);
 				hri_adc_write_INPUTCTRL_reg(device, ADC_INPUTCTRL_MUXNEG_GND);
