@@ -99,9 +99,17 @@ namespace Platform
 	uint32_t uniqueId[5];
 
 #if SUPPORT_SLOW_DRIVERS
-	uint32_t slowDriverStepTimingClocks[4] = { 0, 0, 0, 0 };
+# ifdef EXP1XD
+	uint32_t slowDriverStepTimingClocks[4] = { 1, 1, 2, 1 };		// default to slower timing for external drivers
+# else
+	uint32_t slowDriverStepTimingClocks[4] = { 0, 0, 0, 0 };		// default to fast timing
+# endif
 # if SINGLE_DRIVER
+#  ifdef EXP1XD
+	bool isSlowDriver = true;
+#  else
 	bool isSlowDriver = false;
+#  endif
 # else
 	DriversBitmap slowDriversBitmap;
 # endif

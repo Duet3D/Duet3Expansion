@@ -246,17 +246,20 @@ static GCodeResult ProcessM569(const CanMessageGeneric& msg, const StringRef& re
 	}
 
 #if SUPPORT_SLOW_DRIVERS
-	size_t numTimings;
-	const float *timings;
+	float timings[4];
+	size_t numTimings = 4;
 	if (parser.GetFloatArrayParam('T', numTimings, timings))
 	{
 		seen = true;
-		if (numTimings != 4)
+		if (numTimings == 1)
 		{
-			reply.copy("bad timing parameter");
+			timings[1] = timings[2] = timings[3] = timings[0];
+		}
+		else if (numTimings != 4)
+		{
+			reply.copy("bad timing parameter, expected 1 or 4 values");
 			return GCodeResult::error;
 		}
-		//TODO timings is unaligned, so we should really either copy it or change SetDriverStepTiming to accept a pointer to unaligned data
 		Platform::SetDriverStepTiming(drive, timings);
 	}
 #endif
