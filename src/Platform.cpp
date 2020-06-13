@@ -100,7 +100,7 @@ namespace Platform
 
 #if SUPPORT_SLOW_DRIVERS
 # ifdef EXP1XD
-	uint32_t slowDriverStepTimingClocks[4] = { 1, 1, 2, 1 };		// default to slower timing for external drivers
+	uint32_t slowDriverStepTimingClocks[4] = { 2, 2, 2, 2 };		// default to slower timing for external drivers (2 clocks = 2.7us)
 # else
 	uint32_t slowDriverStepTimingClocks[4] = { 0, 0, 0, 0 };		// default to fast timing
 # endif
@@ -1147,17 +1147,31 @@ const float *Platform::GetDriveStepsPerUnit() { return stepsPerMm; }
 
 void Platform::SetDriverStepTiming(size_t drive, const float timings[4])
 {
+	bool isSlow = false;
 	for (size_t i = 0; i < 4; ++i)
 	{
-		if (slowDriverStepTimingClocks[i] < timings[i])
+		if (timings[i] > 0.2)
 		{
-			slowDriverStepTimingClocks[i] = min<float>(timings[i], 50.0);
+			isSlow = true;
+			const uint32_t clocks = (uint32_t)(((float)StepTimer::StepClockRate * timings[i] * 0.000001) + 0.99);	// convert microseconds to step clocks, rounding up
+#if SINGLE_DRIVER
+			slowDriverStepTimingClocks[i] = clocks;
+#else
+			if (clocks > slowDriverStepTimingClocks[i])
+			{
+				slowDriverStepTimingClocks[i] = clocks;
+			}
+#endif
+		}
+		else
+		{
+			slowDriverStepTimingClocks[i] = 0;
 		}
 	}
 #if SINGLE_DRIVER
-	isSlowDriver = true;
+	isSlowDriver = isSlow;
 #else
-	slowDriversBitmap.SetBit(drive);
+	slowDriversBitmap.SetOrClearBit(drive, isSlow);
 #endif
 }
 
