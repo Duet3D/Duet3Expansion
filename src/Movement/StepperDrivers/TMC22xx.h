@@ -5,8 +5,6 @@
  *      Author: David
  */
 
-// NB - must #include some file that includes Pins.h before including this one, so that SUPPORT_TMC22xx is defined
-
 #ifndef TMC22xx_H_
 #define TMC22xx_H_
 
@@ -39,37 +37,35 @@ const uint32_t TMC_RR_SG = 1u << 12;		// this is a reserved bit, which we use to
 
 namespace SmartDrivers
 {
-#if TMC22xx_HAS_ENABLE_PINS
-	void Init(const Pin driverSelectPins[MaxSmartDrivers], size_t numTmcDrivers)
-	pre(numTmcDrivers <= MaxSmartDrivers);
-#elif TMC22xx_VARIABLE_NUM_DRIVERS
-	void Init(size_t numTmcDrivers)
+#if TMC22xx_VARIABLE_NUM_DRIVERS
+	void Init(size_t numTmcDrivers) noexcept
 	pre(numTmcDrivers <= MaxSmartDrivers);
 #else
-	void Init();
+	void Init() noexcept;
 #endif
 
-	void SetAxisNumber(size_t drive, uint32_t axisNumber);
-	uint32_t GetAxisNumber(size_t drive);
-	void SetCurrent(size_t drive, float current);
-	void EnableDrive(size_t drive, bool en);
-	uint32_t GetLiveStatus(size_t drive);
-	uint32_t GetAccumulatedStatus(size_t drive, uint32_t bitsToKeep);
-	bool SetMicrostepping(size_t drive, unsigned int microsteps, bool interpolation);
-	unsigned int GetMicrostepping(size_t drive, bool& interpolation);
-	bool SetDriverMode(size_t driver, unsigned int mode);
-	DriverMode GetDriverMode(size_t driver);
-	void Spin(bool powered);
-	void TurnDriversOff();
-	void SetStallThreshold(size_t driver, int sgThreshold);
-	void SetStallFilter(size_t driver, bool sgFilter);
-	void SetStallMinimumStepsPerSecond(size_t driver, unsigned int stepsPerSecond);
-	void AppendStallConfig(size_t driver, const StringRef& reply);
-	void AppendDriverStatus(size_t drive, const StringRef& reply);
-	float GetStandstillCurrentPercent(size_t drive);
-	void SetStandstillCurrentPercent(size_t drive, float percent);
-	bool SetRegister(size_t driver, SmartDriverRegister reg, uint32_t regVal);
-	uint32_t GetRegister(size_t driver, SmartDriverRegister reg);
+	void Exit() noexcept;
+	void SetAxisNumber(size_t drive, uint32_t axisNumber) noexcept;
+	uint32_t GetAxisNumber(size_t drive) noexcept;
+	void SetCurrent(size_t drive, float current) noexcept;
+	void EnableDrive(size_t drive, bool en) noexcept;
+	uint32_t GetLiveStatus(size_t drive) noexcept;
+	uint32_t GetAccumulatedStatus(size_t drive, uint32_t bitsToKeep) noexcept;
+	bool SetMicrostepping(size_t drive, unsigned int microsteps, bool interpolation) noexcept;
+	unsigned int GetMicrostepping(size_t drive, bool& interpolation) noexcept;
+	bool SetDriverMode(size_t driver, unsigned int mode) noexcept;
+	DriverMode GetDriverMode(size_t driver) noexcept;
+	void Spin(bool powered) noexcept;
+	void TurnDriversOff() noexcept;
+	void SetStallThreshold(size_t driver, int sgThreshold) noexcept;
+	void SetStallFilter(size_t driver, bool sgFilter) noexcept;
+	void SetStallMinimumStepsPerSecond(size_t driver, unsigned int stepsPerSecond) noexcept;
+	void AppendStallConfig(size_t driver, const StringRef& reply) noexcept;
+	void AppendDriverStatus(size_t drive, const StringRef& reply) noexcept;
+	float GetStandstillCurrentPercent(size_t drive) noexcept;
+	void SetStandstillCurrentPercent(size_t drive, float percent) noexcept;
+	bool SetRegister(size_t driver, SmartDriverRegister reg, uint32_t regVal) noexcept;
+	uint32_t GetRegister(size_t driver, SmartDriverRegister reg) noexcept;
 };
 
 #endif

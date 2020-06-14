@@ -60,6 +60,7 @@ constexpr uint8_t TMC22xxSercomRxPad = 2;
 // In testing I found that 500kbaud was not reliable on the Duet Maestro, so now using 200kbaud.
 constexpr uint32_t DriversBaudRate = 200000;
 constexpr uint32_t TransferTimeout = 10;			// any transfer should complete within 10 ticks @ 1ms/tick
+constexpr uint32_t DefaultStandstillCurrentPercent = 75;
 
 PortGroup * const StepPio = &(PORT->Group[0]);		// the PIO that all the step pins are on
 constexpr Pin StepPins[NumDrivers] = { PortAPin(27) };
