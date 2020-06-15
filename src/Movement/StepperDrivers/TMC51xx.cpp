@@ -1186,7 +1186,7 @@ extern "C" [[noreturn]] void TmcLoop(void *)
 			}
 
 			// Wait for the end-of-transfer interrupt
-			timedOut = TaskBase::Take(TransferTimeout);
+			timedOut = !TaskBase::Take(TransferTimeout);
 			DisableEndOfTransferInterrupt();
 
 #if DEBUG_DRIVER_TIMEOUT

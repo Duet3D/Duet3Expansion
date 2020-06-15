@@ -387,7 +387,7 @@ namespace AnalogIn
 
 			if (conversionStarted)
 			{
-				if (TaskBase::Take(500) == 0)
+				if (!TaskBase::Take(500))
 				{
 					//TODO we had a timeout so record an error
 				}
