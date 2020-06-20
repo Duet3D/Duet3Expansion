@@ -197,7 +197,7 @@ void Tasks::Diagnostics(const StringRef& reply)
 static StaticTask_t xIdleTaskTCB;
 static StackType_t uxIdleTaskStack[configMINIMAL_STACK_SIZE];
 
-static volatile uint64_t g_ms_ticks = 0;		// Count of 1ms time ticks. */
+static volatile uint64_t g_ms_ticks = 0;		// Count of 1ms time ticks
 
 extern "C" void vApplicationTickHook(void)
 {

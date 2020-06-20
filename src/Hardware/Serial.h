@@ -22,7 +22,17 @@ namespace Serial
 #endif
 	};
 
+	static IRQn const SercomIRQns[] =
+	{
+		SERCOM0_0_IRQn, SERCOM1_0_IRQn, SERCOM2_0_IRQn, SERCOM3_0_IRQn, SERCOM4_0_IRQn, SERCOM5_0_IRQn,
+#ifdef SAME51
+		SERCOM6_0_IRQn, SERCOM7_0_IRQn
+#endif
+	};
+
 	inline Sercom *GetSercom(uint8_t sercomNumber) { return Sercoms[sercomNumber]; }
+	inline IRQn GetSercomIRQn(uint8_t sercomNumber) { return SercomIRQns[sercomNumber]; }
+
 	void EnableSercomClock(uint8_t sercomNumber);
 	void InitUart(uint8_t SercomNumber, uint32_t baudRate, uint8_t rxPad);
 	void Disable(uint8_t sercomNumber);

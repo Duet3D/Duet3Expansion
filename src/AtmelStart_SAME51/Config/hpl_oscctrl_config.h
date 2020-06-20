@@ -325,7 +325,7 @@
 // <o> Loop Divider Ratio Integer Part <0x0-0x1FFF>
 // <id> fdpll1_ldr
 #ifndef CONF_FDPLL1_LDR
-#define CONF_FDPLL1_LDR 15
+#define CONF_FDPLL1_LDR 31		// 3 * 32 = 96MHz output
 #endif
 
 // <o> Clock Divider <0x0-0x7FF>
