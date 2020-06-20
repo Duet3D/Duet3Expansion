@@ -274,7 +274,7 @@ void Uart::Interrupt()
 	if (status & SERCOM_USART_INTFLAG_RXC)
 	{
 		const char c = sercom->USART.DATA.reg;
-		if (rxBuffer.PutItem(c))
+		if (!rxBuffer.PutItem(c))
 		{
 			errors.overrun = true;
 		}
