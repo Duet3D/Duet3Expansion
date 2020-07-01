@@ -158,7 +158,9 @@ inline bool DDA::ScheduleNextStepInterrupt(StepTimer& timer) const
 {
 	if (state == executing)
 	{
-		const uint32_t whenDue = ((activeDMs != nullptr) ? activeDMs->nextStepTime : clocksNeeded - DDA::WakeupTime)
+		const uint32_t whenDue = ((activeDMs != nullptr) ? activeDMs->nextStepTime
+									: (clocksNeeded > DDA::WakeupTime) ? clocksNeeded - DDA::WakeupTime
+										: 0)
 								+ afterPrepare.moveStartTime;
 		return timer.ScheduleCallbackFromIsr(whenDue);
 	}
@@ -168,7 +170,9 @@ inline bool DDA::ScheduleNextStepInterrupt(StepTimer& timer) const
 // Insert a hiccup long enough to guarantee that we will exit the ISR
 inline void DDA::InsertHiccup(uint32_t now)
 {
-	const uint32_t ticksDueAfterStart = (activeDMs != nullptr) ? activeDMs->nextStepTime : clocksNeeded - DDA::WakeupTime;
+	const uint32_t ticksDueAfterStart = (activeDMs != nullptr) ? activeDMs->nextStepTime
+										: (clocksNeeded > DDA::WakeupTime) ? clocksNeeded - DDA::WakeupTime
+											: 0;
 	afterPrepare.moveStartTime = now + DDA::HiccupTime - ticksDueAfterStart;
 }
 

@@ -226,25 +226,25 @@ constexpr IRQn Serial0_IRQn = SERCOM3_0_IRQn;
 constexpr IRQn Serial1_IRQn = SERCOM5_0_IRQn;
 
 // DMA channel assignments. Channels 0-3 have individual interrupt vectors, channels 4-31 share an interrupt vector.
-constexpr DmaChannel TmcTxDmaChannel = 0;
-constexpr DmaChannel TmcRxDmaChannel = 1;
-constexpr DmaChannel Adc0TxDmaChannel = 2;
+constexpr DmaChannel DmacChanTmcTx = 0;
+constexpr DmaChannel DmacChanTmcRx = 1;
+constexpr DmaChannel DmacChanAdc0Tx = 2;
 // Next channel is used by ADC0 for receive
-constexpr DmaChannel Adc1TxDmaChannel = 4;
+constexpr DmaChannel DmacChanAdc1Tx = 4;
 // Next channel is used by ADC1 for receive
 
 constexpr unsigned int NumDmaChannelsUsed = 6;			// must be at least the number of channels used, may be larger. Max 32 on the SAME51.
 
-constexpr uint8_t TmcTxDmaPriority = 0;
-constexpr uint8_t TmcRxDmaPriority = 3;
-constexpr uint8_t AdcTxDmaPriority = 0;
-constexpr uint8_t AdcRxDmaPriority = 2;
+constexpr DmaPriority DmacPrioTmcTx = 0;
+constexpr DmaPriority DmacPrioTmcRx = 3;
+constexpr DmaPriority DmacPrioAdcTx = 0;
+constexpr DmaPriority DmacPrioAdcRx = 2;
 
 // Interrupt priorities, lower means higher priority. 0-2 can't make RTOS calls.
-const uint32_t NvicPriorityStep = 2;					// step interrupt is next highest, it can preempt most other interrupts
-const uint32_t NvicPriorityUart = 3;					// serial driver makes RTOS calls
-const uint32_t NvicPriorityPins = 3;					// priority for GPIO pin interrupts
-const uint32_t NvicPriorityCan = 4;
-const uint32_t NvicPriorityDmac = 5;					// priority for DMA complete interrupts
+const NvicPriority NvicPriorityStep = 2;				// step interrupt is next highest, it can preempt most other interrupts
+const NvicPriority NvicPriorityUart = 3;				// serial driver makes RTOS calls
+const NvicPriority NvicPriorityPins = 3;				// priority for GPIO pin interrupts
+const NvicPriority NvicPriorityCan = 4;
+const NvicPriority NvicPriorityDmac = 5;				// priority for DMA complete interrupts
 
 #endif /* SRC_CONFIG_EXPANSION1_V09_H_ */

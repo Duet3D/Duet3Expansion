@@ -22,11 +22,12 @@ namespace Serial
 #endif
 	};
 
-	static IRQn const SercomIRQns[] =
+	static constexpr IRQn SercomIRQns[] =
 	{
-		SERCOM0_0_IRQn, SERCOM1_0_IRQn, SERCOM2_0_IRQn, SERCOM3_0_IRQn, SERCOM4_0_IRQn, SERCOM5_0_IRQn,
-#ifdef SAME51
-		SERCOM6_0_IRQn, SERCOM7_0_IRQn
+#if defined(SAMC21)
+		SERCOM0_IRQn, SERCOM1_IRQn, SERCOM2_IRQn, SERCOM3_IRQn, SERCOM4_IRQn, SERCOM5_IRQn
+#elif defined(SAME51)
+		SERCOM0_0_IRQn, SERCOM1_0_IRQn, SERCOM2_0_IRQn, SERCOM3_0_IRQn, SERCOM4_0_IRQn, SERCOM5_0_IRQn, SERCOM6_0_IRQn, SERCOM7_0_IRQn
 #endif
 	};
 

@@ -242,16 +242,16 @@ bool AdcClass::InternalEnableChannel(unsigned int chan, uint8_t ctrlB, uint8_t r
 			hri_supc_clear_VREF_VREFOE_bit(SUPC);
 
 			// Initialise the DMAC. First the sequencer
-			DmacManager::SetDestinationAddress(dmaChan, &device->DSEQDATA.reg);
 			DmacManager::SetBtctrl(dmaChan, DMAC_BTCTRL_VALID | DMAC_BTCTRL_EVOSEL_DISABLE | DMAC_BTCTRL_BLOCKACT_INT | DMAC_BTCTRL_BEATSIZE_WORD
 										| DMAC_BTCTRL_SRCINC | DMAC_BTCTRL_STEPSEL_SRC | DMAC_BTCTRL_STEPSIZE_X1);
+			DmacManager::SetDestinationAddress(dmaChan, &device->DSEQDATA.reg);
 			DmacManager::SetTriggerSource(dmaChan, (DmaTrigSource)((uint8_t)trigSrc + 1));
 
 			// Now the result reader
-			DmacManager::SetSourceAddress(dmaChan + 1, const_cast<uint16_t *>(&device->RESULT.reg));
-			DmacManager::SetInterruptCallback(dmaChan + 1, DmaCompleteCallback, this);
 			DmacManager::SetBtctrl(dmaChan + 1, DMAC_BTCTRL_VALID | DMAC_BTCTRL_EVOSEL_DISABLE | DMAC_BTCTRL_BLOCKACT_INT | DMAC_BTCTRL_BEATSIZE_HWORD
 										| DMAC_BTCTRL_DSTINC | DMAC_BTCTRL_STEPSEL_DST | DMAC_BTCTRL_STEPSIZE_X1);
+			DmacManager::SetSourceAddress(dmaChan + 1, const_cast<uint16_t *>(&device->RESULT.reg));
+			DmacManager::SetInterruptCallback(dmaChan + 1, DmaCompleteCallback, this);
 			DmacManager::SetTriggerSource(dmaChan + 1, trigSrc);
 			state = State::starting;
 		}
@@ -301,8 +301,8 @@ bool AdcClass::StartConversion(TaskBase *p_taskToWake)
 		dmaFinishedReason = DmaCallbackReason::none;
 		DmacManager::EnableCompletedInterrupt(dmaChan + 1);
 
-		DmacManager::EnableChannel(dmaChan + 1, AdcRxDmaPriority);
-		DmacManager::EnableChannel(dmaChan, AdcTxDmaPriority);
+		DmacManager::EnableChannel(dmaChan + 1, DmacPrioAdcRx);
+		DmacManager::EnableChannel(dmaChan, DmacPrioAdcTx);
 
 		state = State::converting;
 		++conversionsStarted;
@@ -354,8 +354,8 @@ void AdcClass::ResultReadyCallback(DmaCallbackReason reason)
 // ADC instances
 static AdcClass Adcs[] =
 {
-	AdcClass(ADC0, ADC0_0_IRQn, Adc0TxDmaChannel, DmaTrigSource::adc0_resrdy),
-	AdcClass(ADC1, ADC1_0_IRQn, Adc1TxDmaChannel, DmaTrigSource::adc1_resrdy)
+	AdcClass(ADC0, ADC0_0_IRQn, DmacChanAdc0Tx, DmaTrigSource::adc0_resrdy),
+	AdcClass(ADC1, ADC1_0_IRQn, DmacChanAdc1Tx, DmaTrigSource::adc1_resrdy)
 };
 
 namespace AnalogIn

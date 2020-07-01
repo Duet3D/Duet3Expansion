@@ -133,7 +133,7 @@ void Move::Spin()
 	// See if we can add another move to the ring
 	bool canAddMove = (   ddaRingAddPointer->GetState() == DDA::empty
 					   && ddaRingAddPointer->GetNext()->GetState() != DDA::provisional		// function Prepare needs to access the endpoints in the previous move, so don't change them
-					   && DriveMovement::NumFree() >= (int)NumDrivers							// check that we won't run out of DMs
+					   && DriveMovement::NumFree() >= (int)NumDrivers						// check that we won't run out of DMs
 					  );
 	if (canAddMove)
 	{
@@ -406,19 +406,12 @@ bool Move::LowPowerOrStallPause(RestorePoint& rp)
 
 #endif
 
-void Move::Diagnostics(MessageType mtype)
+void Move::Diagnostics(const StringRef& reply)
 {
-#if 0
-	Platform::Message(mtype, "=== Move ===\n");
-	Platform::MessageF(mtype, "Hiccups: %u, StepErrors: %u, LaErrors: %u, FreeDm: %d, MinFreeDm: %d, MaxWait: %" PRIu32 "ms, Underruns: %u, %u\n",
-						DDA::numHiccups, stepErrors, numLookaheadErrors, DriveMovement::NumFree(), DriveMovement::MinFree(), longestGcodeWaitInterval, numLookaheadUnderruns, numPrepareUnderruns);
-	DDA::numHiccups = 0;
-	stepErrors = 0;
-	numLookaheadUnderruns = numPrepareUnderruns = numLookaheadErrors = 0;
-	longestGcodeWaitInterval = 0;
-	DriveMovement::ResetMinFree();
-#endif
-	Platform::MessageF(mtype, "Scheduled moves: %" PRIu32 ", completed moves: %" PRIu32 /*"\n"*/, scheduledMoves, completedMoves);
+	reply.catf("Moves scheduled %" PRIu32 ", completed %" PRIu32 ", in progress %d, hiccups %" PRIu32 "\n",
+					scheduledMoves, completedMoves, (int)(currentDda != nullptr), numHiccups);
+	numHiccups = 0;
+	StepTimer::Diagnostics(reply);
 }
 
 // This is called from the step ISR when the current move has been completed
@@ -463,13 +456,6 @@ void Move::PrintCurrentDda() const
 	{
 		currentDda->DebugPrintAll();
 	}
-}
-
-uint32_t Move::GetAndClearHiccups()
-{
-	const uint32_t nh = numHiccups;
-	numHiccups = 0;
-	return nh;
 }
 
 // This is the function that is called by the timer interrupt to step the motors.

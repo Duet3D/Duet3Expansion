@@ -58,6 +58,8 @@ public:
 
 	static bool IsSynced();
 
+	static void Diagnostics(const StringRef& reply);
+
 	static constexpr uint32_t StepClockRate = 48000000/64;						// 48MHz divided by 64
 	static constexpr uint64_t StepClockRateSquared = (uint64_t)StepClockRate * StepClockRate;
 	static constexpr float StepClocksToMillis = 1000.0/(float)StepClockRate;
@@ -74,14 +76,16 @@ private:
 	volatile bool active;
 
 	static StepTimer * volatile pendingList;									// list of pending callbacks, soonest first
-	static uint32_t localTimeOffset;											// local time minus master time
-	static uint32_t whenLastSynced;												// the millis tick count when we last synced
-	static bool synced;
+	static volatile uint32_t localTimeOffset;									// local time minus master time
+	static volatile uint32_t whenLastSynced;									// the millis tick count when we last synced
+	static volatile bool synced;
 };
 
-inline StepTimer::Ticks StepTimer::GetTimerTicks()
+inline __attribute__((always_inline)) StepTimer::Ticks StepTimer::GetTimerTicks()
 {
 	StepTc->CTRLBSET.reg = TC_CTRLBSET_CMD_READSYNC;
+	// On the EXP3HC board it isn't enough just to wait for SYNCBUSY.COUNT here
+	while (StepTc->CTRLBSET.bit.CMD != 0) { }
 	while (StepTc->SYNCBUSY.bit.COUNT) { }
 	return StepTc->COUNT.reg;
 }

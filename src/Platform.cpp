@@ -229,7 +229,7 @@ namespace Platform
 #ifdef SAME51
 	static int32_t tempCalF1, tempCalF2, tempCalF3, tempCalF4;		// temperature calibration factors
 
-	static void ADC_temperature_init(void)
+	static void ADC_temperature_init()
 	{
 		// Temperature sense stuff
 		constexpr uint32_t NVM_TEMP_CAL_TLI_POS = 0;

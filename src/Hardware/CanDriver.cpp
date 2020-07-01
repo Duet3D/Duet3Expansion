@@ -60,11 +60,11 @@ static _can_async_device *_can0_dev = nullptr; /*!< Pointer to hpl device */
 #endif /* CONF_CAN0_ENABLED */
 
 #ifdef CONF_CAN1_ENABLED
-alignas(4) static uint8_t can1_rx_fifo[CONF_CAN1_F0DS * CONF_CAN1_RXF0C_F0S];
-alignas(4) static uint8_t can1_tx_fifo[CONF_CAN1_TBDS * CONF_CAN1_TXBC_TFQS];
-alignas(4) static struct _can_tx_event_entry can1_tx_event_fifo[CONF_CAN1_TXEFC_EFS];
-alignas(4) static struct _can_standard_message_filter_element can1_rx_std_filter[CONF_CAN1_SIDFC_LSS];
-alignas(4) static struct _can_extended_message_filter_element can1_rx_ext_filter[CONF_CAN1_XIDFC_LSS];
+alignas(4) static volatile uint8_t can1_rx_fifo[CONF_CAN1_F0DS * CONF_CAN1_RXF0C_F0S];
+alignas(4) static volatile uint8_t can1_tx_fifo[CONF_CAN1_TBDS * CONF_CAN1_TXBC_TFQS];
+alignas(4) static volatile _can_tx_event_entry can1_tx_event_fifo[CONF_CAN1_TXEFC_EFS];
+alignas(4) static _can_standard_message_filter_element can1_rx_std_filter[CONF_CAN1_SIDFC_LSS];
+alignas(4) static _can_extended_message_filter_element can1_rx_ext_filter[CONF_CAN1_XIDFC_LSS];
 
 struct _can_context              _can1_context = {.rx_fifo       = can1_rx_fifo,
                                      .tx_fifo       = can1_tx_fifo,
@@ -197,7 +197,7 @@ static int32_t _can_async_disable(_can_async_device *const dev)
 /**
  * \brief Read a CAN message
  */
-static int32_t _can_async_read(_can_async_device *const dev, struct can_message *msg)
+static int32_t _can_async_read(_can_async_device *const dev, can_message *msg)
 {
 	if (!hri_can_read_RXF0S_F0FL_bf(dev->hw))
 	{
@@ -205,18 +205,18 @@ static int32_t _can_async_read(_can_async_device *const dev, struct can_message 
 	}
 
 	hri_can_rxf0s_reg_t get_index = hri_can_read_RXF0S_F0GI_bf(dev->hw);
-	struct _can_rx_fifo_entry *f = nullptr;
+	volatile _can_rx_fifo_entry *f = nullptr;
 
 #ifdef CONF_CAN0_ENABLED
 	if (dev->hw == CAN0)
 	{
-		f = (struct _can_rx_fifo_entry *)(can0_rx_fifo + get_index * CONF_CAN0_F0DS);
+		f = (_can_rx_fifo_entry *)(can0_rx_fifo + get_index * CONF_CAN0_F0DS);
 	}
 #endif
 #ifdef CONF_CAN1_ENABLED
 	if (dev->hw == CAN1)
 	{
-		f = (struct _can_rx_fifo_entry *)(can1_rx_fifo + get_index * CONF_CAN1_F0DS);
+		f = (_can_rx_fifo_entry *)(can1_rx_fifo + get_index * CONF_CAN1_F0DS);
 	}
 #endif
 
@@ -244,7 +244,7 @@ static int32_t _can_async_read(_can_async_device *const dev, struct can_message 
 	static constexpr uint8_t dlc2len[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 12, 16, 20, 24, 32, 48, 64};
 	msg->len = dlc2len[f->R1.bit.DLC];
 
-	memcpy(msg->data, f->data, msg->len);
+	memcpy(msg->data, const_cast<uint8_t*>(f->data), msg->len);
 
 	hri_can_write_RXF0A_F0AI_bf(dev->hw, get_index);
 
@@ -261,7 +261,7 @@ static int32_t _can_async_write(_can_async_device *const dev, struct can_message
 		return ERR_NO_RESOURCE;
 	}
 
-	struct _can_tx_fifo_entry *f = nullptr;
+	volatile _can_tx_fifo_entry *f = nullptr;
 	hri_can_txfqs_reg_t put_index = hri_can_read_TXFQS_TFQPI_bf(dev->hw);
 
 #ifdef CONF_CAN0_ENABLED
@@ -273,7 +273,7 @@ static int32_t _can_async_write(_can_async_device *const dev, struct can_message
 #ifdef CONF_CAN1_ENABLED
 	if (dev->hw == CAN1)
 	{
-		f = (struct _can_tx_fifo_entry *)(can1_tx_fifo + put_index * CONF_CAN1_TBDS);
+		f = (_can_tx_fifo_entry *)(can1_tx_fifo + put_index * CONF_CAN1_TBDS);
 	}
 #endif
 	if (f == nullptr)
@@ -313,13 +313,9 @@ static int32_t _can_async_write(_can_async_device *const dev, struct can_message
 	f->T1.bit.FDF = hri_can_get_CCCR_FDOE_bit(dev->hw);
 	f->T1.bit.BRS = hri_can_get_CCCR_BRSE_bit(dev->hw);
 
-	memcpy(f->data, msg->data, msg->len);
+	memcpy(const_cast<uint8_t*>(f->data), msg->data, msg->len);
 
-#if 1	//dc42
 	hri_can_write_TXBAR_reg(dev->hw, 1 << put_index);
-#else
-	hri_can_write_TXBAR_reg(dev->hw, 1 << hri_can_read_TXFQS_TFQPI_bf(dev->hw));
-#endif
 	return ERR_NONE;
 }
 
@@ -551,7 +547,7 @@ static void can_irq_handler(_can_async_device *dev, enum can_async_interrupt_typ
 /**
  * \brief Initialize CAN.
  */
-int32_t can_async_init(can_async_descriptor *const descr, Can *const hw, const CanTiming& timing)
+int32_t can_async_init(can_async_descriptor *descr, Can *hw, const CanTiming& timing)
 {
 	const int32_t rc = _can_async_init(&descr->dev, hw, timing);
 	if (rc)

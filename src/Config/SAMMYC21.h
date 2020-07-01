@@ -139,21 +139,21 @@ constexpr bool LedActiveHigh = true;
 constexpr IRQn Serial0_IRQn = SERCOM5_IRQn;
 
 // DMA channel assignments
-constexpr DmaChannel TmcTxDmaChannel = 0;
-constexpr DmaChannel TmcRxDmaChannel = 1;
-constexpr DmaChannel Adc0RxDmaChannel = 2;
+constexpr DmaChannel DmacChanTmcTx = 0;
+constexpr DmaChannel DmacChanTmcRx = 1;
+constexpr DmaChannel DmacChanAdc0Rx = 2;
 
 constexpr unsigned int NumDmaChannelsUsed = 4;			// must be at least the number of channels used, may be larger. Max 12 on the SAMC21.
 
-constexpr uint8_t TmcTxDmaPriority = 0;
-constexpr uint8_t TmcRxDmaPriority = 3;
-constexpr uint8_t AdcRxDmaPriority = 2;
+constexpr DmaPriority DmacPrioTmcTx = 0;
+constexpr DmaPriority DmacPrioTmcRx = 3;
+constexpr DmaPriority DmacPrioAdcRx = 2;
 
 // Interrupt priorities, lower means higher priority. 0 can't make RTOS calls.
-const uint32_t NvicPriorityStep = 1;					// step interrupt is next highest, it can preempt most other interrupts
-const uint32_t NvicPriorityUart = 2;					// serial driver makes RTOS calls
-const uint32_t NvicPriorityPins = 2;					// priority for GPIO pin interrupts
-const uint32_t NvicPriorityCan = 3;
-const uint32_t NvicPriorityDmac = 3;					// priority for DMA complete interrupts
+const NvicPriority NvicPriorityStep = 1;				// step interrupt is next highest, it can preempt most other interrupts
+const NvicPriority NvicPriorityUart = 2;				// serial driver makes RTOS calls
+const NvicPriority NvicPriorityPins = 2;				// priority for GPIO pin interrupts
+const NvicPriority NvicPriorityCan = 3;
+const NvicPriority NvicPriorityDmac = 3;				// priority for DMA complete interrupts
 
 #endif /* SRC_CONFIG_SAMMYC21_H_ */

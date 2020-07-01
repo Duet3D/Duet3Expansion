@@ -33,11 +33,10 @@ public:
 	void Exit();																	// Shut down
 
 	void Interrupt() __attribute__ ((hot));											// Timer callback for step generation
-	bool AllMovesAreFinished();														// Is the look-ahead ring empty?  Stops more moves being added as well.
 
 	void StopDrivers(uint16_t whichDrivers);
 
-	void Diagnostics(MessageType mtype);											// Report useful stuff
+	void Diagnostics(const StringRef& reply);										// Report useful stuff
 
 	// Kinematics and related functions
 	Kinematics& GetKinematics() const { return *kinematics; }
@@ -58,14 +57,7 @@ public:
 
 	void PrintCurrentDda() const;													// For debugging
 
-	bool NoLiveMovement() const;													// Is a move running, or are there any queued?
-
-	uint32_t GetScheduledMoves() const { return scheduledMoves; }					// How many moves have been scheduled?
-	uint32_t GetCompletedMoves() const { return completedMoves; }					// How many moves have been completed?
 	void ResetMoveCounters() { scheduledMoves = completedMoves = 0; }
-	uint32_t GetAndClearHiccups();
-
-	const DDA *GetCurrentDDA() const { return currentDda; }							// Return the DDA of the currently-executing move
 
 #if HAS_SMART_DRIVERS
 	uint32_t GetStepInterval(size_t axis, uint32_t microstepShift) const;			// Get the current step interval for this axis or extruder
@@ -74,7 +66,6 @@ public:
 private:
 	bool DDARingAdd();									// Add a processed look-ahead entry to the DDA ring
 	DDA* DDARingGet();									// Get the next DDA ring entry to be run
-	bool DDARingEmpty() const;							// Anything there?
 
 	// Variables that are in the DDARing class in RepRapFirmware (we have only one DDARing so they are here)
 	DDA* volatile currentDda;
@@ -98,25 +89,6 @@ private:
 };
 
 //******************************************************************************************************
-
-inline bool Move::DDARingEmpty() const
-{
-	return ddaRingGetPointer == ddaRingAddPointer		// by itself this means the ring is empty or full
-		&& ddaRingAddPointer->GetState() == DDA::DDAState::empty;
-}
-
-inline bool Move::NoLiveMovement() const
-{
-	return DDARingEmpty() && currentDda == nullptr;		// must test currentDda and DDARingEmpty *in this order* !
-}
-
-// To wait until all the current moves in the buffers are complete, call this function repeatedly and wait for it to return true.
-// Then do whatever you wanted to do after all current moves have finished.
-// Then call ResumeMoving() otherwise nothing more will ever happen.
-inline bool Move::AllMovesAreFinished()
-{
-	return NoLiveMovement();
-}
 
 #if HAS_SMART_DRIVERS
 

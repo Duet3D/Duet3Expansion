@@ -200,13 +200,13 @@
 // <o> Loop Divider Ratio Integer Part <0x0-0x1FFF>
 // <id> fdpll0_ldr
 #ifndef CONF_FDPLL0_LDR
-#define CONF_FDPLL0_LDR 39
+#define CONF_FDPLL0_LDR 59		// 60 * 2MHz = 120MHz
 #endif
 
 // <o> Clock Divider <0x0-0x7FF>
 // <id> fdpll0_clock_div
 #ifndef CONF_FDPLL0_DIV
-#define CONF_FDPLL0_DIV 1
+#define CONF_FDPLL0_DIV 2		// divide 12MHz by 2 * (2 + 1) = 6 to get 2MHz
 #endif
 
 // <q> DCO Filter Enable
@@ -325,13 +325,13 @@
 // <o> Loop Divider Ratio Integer Part <0x0-0x1FFF>
 // <id> fdpll1_ldr
 #ifndef CONF_FDPLL1_LDR
-#define CONF_FDPLL1_LDR 31		// 3 * 32 = 96MHz output
+#define CONF_FDPLL1_LDR 47		// 48 * 2MHz = 96MHz output
 #endif
 
 // <o> Clock Divider <0x0-0x7FF>
 // <id> fdpll1_clock_div
 #ifndef CONF_FDPLL1_DIV
-#define CONF_FDPLL1_DIV 1
+#define CONF_FDPLL1_DIV 2		// divide 12MHz by 2 * (2 + 1) = 6 to get 2MHz
 #endif
 
 // <q> DCO Filter Enable

@@ -10,9 +10,9 @@
 #include "Move.h"
 
 StepTimer * volatile StepTimer::pendingList = nullptr;
-uint32_t StepTimer::localTimeOffset = 0;
-uint32_t StepTimer::whenLastSynced;
-bool StepTimer::synced = false;
+volatile uint32_t StepTimer::localTimeOffset = 0;
+volatile uint32_t StepTimer::whenLastSynced;
+volatile bool StepTimer::synced = false;
 
 void StepTimer::Init()
 {
@@ -222,6 +222,25 @@ void StepTimer::CancelCallback()
 {
 	AtomicCriticalSectionLocker lock;
 	CancelCallbackFromIsr();
+}
+
+/*static*/ void StepTimer::Diagnostics(const StringRef& reply)
+{
+	StepTimer *pst = pendingList;
+	if (pst == nullptr)
+	{
+		reply.cat("No step interrupt scheduled\n");
+	}
+	else
+	{
+		reply.catf("Next step interrupt due in %" PRIu32 " ticks, %s\n",
+					pst->whenDue - GetTimerTicks(),
+					((StepTc->INTENSET.reg & TC_INTFLAG_MC0) == 0) ? "disabled" : "enabled");
+		if (StepTc->CC[0].reg != pst->whenDue)
+		{
+			reply.cat("CC0 mismatch\n");
+		}
+	}
 }
 
 // End

@@ -294,7 +294,7 @@ public:
 	uint32_t ReadLiveStatus() const;
 	uint32_t ReadAccumulatedStatus(uint32_t bitsToKeep);
 
-	void GetSpiCommand(uint8_t *sendDdataBlock);
+	void GetSpiCommand(uint8_t *sendDataBlock);
 	void TransferSucceeded(const uint8_t *rcvDataBlock);
 	void TransferFailed();
 
@@ -904,10 +904,10 @@ static TmcDriverState driverStates[MaxSmartDrivers];
 // TMC51xx management task
 static Task<TmcTaskStackWords> tmcTask;
 
-static uint8_t sendData[5 * MaxSmartDrivers];
-static uint8_t rcvData[5 * MaxSmartDrivers];
+static volatile uint8_t sendData[5 * MaxSmartDrivers];
+static volatile uint8_t rcvData[5 * MaxSmartDrivers];
 
-static DmaCallbackReason dmaFinishedReason;
+static volatile DmaCallbackReason dmaFinishedReason;
 
 #if DEBUG_DRIVER_TIMEOUT
 static uint8_t lastFailureStatus;
@@ -1005,10 +1005,8 @@ static void SetupDMA()
 	}
 
 #elif defined(SAME51) || defined(SAMC21)
-	DmacManager::DisableChannel(TmcRxDmaChannel);
-	DmacManager::DisableChannel(TmcTxDmaChannel);
-	DmacManager::SetTriggerSourceSercomRx(TmcRxDmaChannel, SERCOM_TMC51xx_NUMBER);
-	DmacManager::SetTriggerSourceSercomTx(TmcTxDmaChannel, SERCOM_TMC51xx_NUMBER);
+	DmacManager::DisableChannel(DmacChanTmcRx);
+	DmacManager::DisableChannel(DmacChanTmcTx);
 #else
 	spiPdc->PERIPH_PTCR = (PERIPH_PTCR_RXTDIS | PERIPH_PTCR_TXTDIS);		// disable the PDC
 
@@ -1026,8 +1024,8 @@ static inline void EnableDma()
 	xdmac_channel_enable(XDMAC, DmacChanTmcRx);
 	xdmac_channel_enable(XDMAC, DmacChanTmcTx);
 #elif defined(SAME51) || defined(SAMC21)
-	DmacManager::EnableChannel(TmcRxDmaChannel, TmcRxDmaPriority);
-	DmacManager::EnableChannel(TmcTxDmaChannel, TmcTxDmaPriority);
+	DmacManager::EnableChannel(DmacChanTmcRx, DmacPrioTmcRx);
+	DmacManager::EnableChannel(DmacChanTmcTx, DmacPrioTmcTx);
 #else
 	spiPdc->PERIPH_PTCR = (PERIPH_PTCR_RXTEN | PERIPH_PTCR_TXTEN);			// enable the PDC
 #endif
@@ -1039,8 +1037,8 @@ static inline void DisableDma()
 	xdmac_channel_disable(XDMAC, DmacChanTmcTx);
 	xdmac_channel_disable(XDMAC, DmacChanTmcRx);
 #elif defined(SAME51) || defined(SAMC21)
-	DmacManager::DisableChannel(TmcTxDmaChannel);
-	DmacManager::DisableChannel(TmcRxDmaChannel);
+	DmacManager::DisableChannel(DmacChanTmcTx);
+	DmacManager::DisableChannel(DmacChanTmcRx);
 #else
 	spiPdc->PERIPH_PTCR = (PERIPH_PTCR_RXTDIS | PERIPH_PTCR_TXTDIS);		// disable the PDC
 #endif
@@ -1075,7 +1073,7 @@ static inline void DisableEndOfTransferInterrupt()
 #if SAME70
 	xdmac_channel_disable_interrupt(XDMAC, DmacChanTmcRx, XDMAC_CIE_BIE);
 #elif TMC51xx_USES_SERCOM
-	DmacManager::DisableCompletedInterrupt(TmcRxDmaChannel);
+	DmacManager::DisableCompletedInterrupt(DmacChanTmcRx);
 #elif TMC51xx_USES_USART
 	USART_TMC51xx->US_IDR = US_IDR_ENDRX;				// enable end-of-transfer interrupt
 #else
@@ -1088,7 +1086,7 @@ static inline void EnableEndOfTransferInterrupt()
 #if SAME70
 	xdmac_channel_enable_interrupt(XDMAC, DmacChanTmcRx, XDMAC_CIE_BIE);
 #elif TMC51xx_USES_SERCOM
-	DmacManager::EnableCompletedInterrupt(TmcRxDmaChannel);
+	DmacManager::EnableCompletedInterrupt(DmacChanTmcRx);
 #elif TMC51xx_USES_USART
 	USART_TMC51xx->US_IER = US_IER_ENDRX;				// enable end-of-transfer interrupt
 #else
@@ -1129,11 +1127,11 @@ extern "C" [[noreturn]] void TmcLoop(void *)
 			else if (!timedOut)
 			{
 				// Handle the read response - data comes out of the drivers in reverse driver order
-				const uint8_t *readPtr = rcvData + 5 * numTmc51xxDrivers;
+				const volatile uint8_t *readPtr = rcvData + 5 * numTmc51xxDrivers;
 				for (size_t drive = 0; drive < numTmc51xxDrivers; ++drive)
 				{
 					readPtr -= 5;
-					driverStates[drive].TransferSucceeded(readPtr);
+					driverStates[drive].TransferSucceeded(const_cast<const uint8_t*>(readPtr));
 				}
 
 				if (driversState == DriversState::initialising)
@@ -1158,11 +1156,11 @@ extern "C" [[noreturn]] void TmcLoop(void *)
 			}
 
 			// Set up data to write. Driver 0 is the first in the SPI chain so we must write them in reverse order.
-			uint8_t *writeBufPtr = sendData + 5 * numTmc51xxDrivers;
+			volatile uint8_t *writeBufPtr = sendData + 5 * numTmc51xxDrivers;
 			for (size_t i = 0; i < numTmc51xxDrivers; ++i)
 			{
 				writeBufPtr -= 5;
-				driverStates[i].GetSpiCommand(writeBufPtr);
+				driverStates[i].GetSpiCommand(const_cast<uint8_t*>(writeBufPtr));
 			}
 
 			// Kick off a transfer.
@@ -1197,8 +1195,8 @@ extern "C" [[noreturn]] void TmcLoop(void *)
 				{
 					lastFailureStatus |= 0x80;
 				}
-				lastFailureTxTransferStatus = DmacManager::GetChannelStatus(TmcTxDmaChannel);
-				lastFailureRxTransferStatus = DmacManager::GetChannelStatus(TmcRxDmaChannel);
+				lastFailureTxTransferStatus = DmacManager::GetChannelStatus(DmacChanTmcTx);
+				lastFailureRxTransferStatus = DmacManager::GetChannelStatus(DmacChanTmcRx);
 				lastFailureDmaActiveStatus = DMAC->ACTIVE.reg;
 			}
 #endif
@@ -1206,8 +1204,8 @@ extern "C" [[noreturn]] void TmcLoop(void *)
 			if (timedOut || dmaFinishedReason != DmaCallbackReason::complete)
 			{
 #if DEBUG_DRIVER_TIMEOUT
-				lastTxBytesTransferred = DmacManager::GetBytesTransferred(TmcTxDmaChannel);
-				lastRxBytesTransferred = DmacManager::GetBytesTransferred(TmcRxDmaChannel);
+				lastTxBytesTransferred = DmacManager::GetBytesTransferred(DmacChanTmcTx);
+				lastRxBytesTransferred = DmacManager::GetBytesTransferred(DmacChanTmcRx);
 #endif
 				TmcDriverState::TransferTimedOut();
 				// If the transfer was interrupted then we will have written dud data to the drivers. So we should re-initialise them all.
@@ -1277,19 +1275,21 @@ void SmartDrivers::Init()
 
 	// Set up the DMA descriptors
 	// We use separate write-back descriptors, so we only need to set this up once
-	DmacManager::SetBtctrl(TmcRxDmaChannel, DMAC_BTCTRL_VALID | DMAC_BTCTRL_EVOSEL_DISABLE | DMAC_BTCTRL_BLOCKACT_INT | DMAC_BTCTRL_BEATSIZE_BYTE
+	DmacManager::SetBtctrl(DmacChanTmcRx, DMAC_BTCTRL_VALID | DMAC_BTCTRL_EVOSEL_DISABLE | DMAC_BTCTRL_BLOCKACT_INT | DMAC_BTCTRL_BEATSIZE_BYTE
 								| DMAC_BTCTRL_DSTINC | DMAC_BTCTRL_STEPSEL_DST | DMAC_BTCTRL_STEPSIZE_X1);
-	DmacManager::SetSourceAddress(TmcRxDmaChannel, &(SERCOM_TMC51xx->SPI.DATA.reg));
-	DmacManager::SetDestinationAddress(TmcRxDmaChannel, rcvData);
-	DmacManager::SetDataLength(TmcRxDmaChannel, ARRAY_SIZE(rcvData));
+	DmacManager::SetSourceAddress(DmacChanTmcRx, &(SERCOM_TMC51xx->SPI.DATA.reg));
+	DmacManager::SetDestinationAddress(DmacChanTmcRx, rcvData);
+	DmacManager::SetDataLength(DmacChanTmcRx, ARRAY_SIZE(rcvData));
+	DmacManager::SetTriggerSourceSercomRx(DmacChanTmcRx, SERCOM_TMC51xx_NUMBER);
 
-	DmacManager::SetBtctrl(TmcTxDmaChannel, DMAC_BTCTRL_VALID | DMAC_BTCTRL_EVOSEL_DISABLE | DMAC_BTCTRL_BLOCKACT_INT | DMAC_BTCTRL_BEATSIZE_BYTE
+	DmacManager::SetBtctrl(DmacChanTmcTx, DMAC_BTCTRL_VALID | DMAC_BTCTRL_EVOSEL_DISABLE | DMAC_BTCTRL_BLOCKACT_INT | DMAC_BTCTRL_BEATSIZE_BYTE
 								| DMAC_BTCTRL_SRCINC | DMAC_BTCTRL_STEPSEL_SRC | DMAC_BTCTRL_STEPSIZE_X1);
-	DmacManager::SetSourceAddress(TmcTxDmaChannel, sendData);
-	DmacManager::SetDestinationAddress(TmcTxDmaChannel, &(SERCOM_TMC51xx->SPI.DATA.reg));
-	DmacManager::SetDataLength(TmcTxDmaChannel, ARRAY_SIZE(sendData));
+	DmacManager::SetSourceAddress(DmacChanTmcTx, sendData);
+	DmacManager::SetDestinationAddress(DmacChanTmcTx, &(SERCOM_TMC51xx->SPI.DATA.reg));
+	DmacManager::SetDataLength(DmacChanTmcTx, ARRAY_SIZE(sendData));
+	DmacManager::SetTriggerSourceSercomTx(DmacChanTmcTx, SERCOM_TMC51xx_NUMBER);
 
-	DmacManager::SetInterruptCallback(TmcRxDmaChannel, RxDmaCompleteCallback, 0U);
+	DmacManager::SetInterruptCallback(DmacChanTmcRx, RxDmaCompleteCallback, 0U);
 
 	SERCOM_TMC51xx->SPI.CTRLA.bit.ENABLE = 1;		// keep the SPI enabled all the time so that the SPCLK line is driven
 

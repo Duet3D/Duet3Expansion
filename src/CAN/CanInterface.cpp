@@ -54,8 +54,8 @@ public:
 	CanMessageBuffer *GetMessage();
 
 private:
-	CanMessageBuffer *pendingMessages;
-	CanMessageBuffer *lastPendingMessage;			// only valid when pendingMessages != nullptr
+	CanMessageBuffer * volatile pendingMessages;
+	CanMessageBuffer * volatile lastPendingMessage;		// only valid when pendingMessages != nullptr
 };
 
 CanMessageQueue::CanMessageQueue() : pendingMessages(nullptr) { }

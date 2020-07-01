@@ -196,10 +196,10 @@ static inline uint8_t GetSercomRxTrigSource(uint8_t sercomNumber)
 namespace DmacManager
 {
 	void Init();
-	void SetDestinationAddress(uint8_t channel, volatile void *const dst);
-	void SetSourceAddress(uint8_t channel, const volatile void *const src);
-	void SetDataLength(uint8_t channel, uint32_t amount);
-	void SetBtctrl(uint8_t channel, uint16_t val);
+	void SetBtctrl(uint8_t channel, uint16_t val);								// warning: call SetBtctrl, SetSourceAddress and SetDestinationAddress BEFORE SetDataLength!
+	void SetSourceAddress(uint8_t channel, const volatile void *const src);		// warning: call SetBtctrl, SetSourceAddress and SetDestinationAddress BEFORE SetDataLength!
+	void SetDestinationAddress(uint8_t channel, volatile void *const dst);		// warning: call SetBtctrl, SetSourceAddress and SetDestinationAddress BEFORE SetDataLength!
+	void SetDataLength(uint8_t channel, uint32_t amount);						// warning: call SetBtctrl, SetSourceAddress and SetDestinationAddress BEFORE SetDataLength!
 	void SetTriggerSource(uint8_t channel, DmaTrigSource source);
 	void SetTriggerSourceSercomTx(uint8_t channel, uint8_t sercomNumber);
 	void SetTriggerSourceSercomRx(uint8_t channel, uint8_t sercomNumber);

@@ -595,21 +595,20 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 	case CanMessageReturnInfo::typeDiagnosticsPart0 + 2:
 		extra = LastDiagnosticsPart;
 		{
+			moveInstance->Diagnostics(reply);
+#if HAS_VOLTAGE_MONITOR && HAS_12V_MONITOR
+			reply.catf("VIN: %.1fV, V12: %.1fV\n", (double)Platform::GetCurrentVinVoltage(), (double)Platform::GetCurrentV12Voltage());
+#elif HAS_VOLTAGE_MONITOR
+			reply.catf("VIN: %.1fV\n", (double)Platform::GetCurrentVinVoltage());
+#elif HAS_12V_MONITOR
+			reply.catf("V12: %.1fV\n", (double)Platform::GetCurrentV12Voltage());
+#endif
 			float minTemp, currentTemp, maxTemp;
 			Platform::GetMcuTemperatures(minTemp, currentTemp, maxTemp);
-			reply.printf("Moves scheduled %" PRIu32 ", completed %" PRIu32 ", hiccups %" PRIu32,
-							moveInstance->GetScheduledMoves(), moveInstance->GetCompletedMoves(), moveInstance->GetAndClearHiccups());
-#if HAS_VOLTAGE_MONITOR && HAS_12V_MONITOR
-			reply.catf("\nVIN: %.1fV, V12: %.1fV", (double)Platform::GetCurrentVinVoltage(), (double)Platform::GetCurrentV12Voltage());
-#elif HAS_VOLTAGE_MONITOR
-			reply.catf("\nVIN: %.1fV", (double)Platform::GetCurrentVinVoltage());
-#elif HAS_12V_MONITOR
-			reply.catf("\nV12: %.1fV", (double)Platform::GetCurrentV12Voltage());
-#endif
-			reply.catf("\nMCU temperature: min %.1fC, current %.1fC, max %.1fC", (double)minTemp, (double)currentTemp, (double)maxTemp);
+			reply.catf("MCU temperature: min %.1fC, current %.1fC, max %.1fC\n", (double)minTemp, (double)currentTemp, (double)maxTemp);
 			uint32_t conversionsStarted, conversionsCompleted, conversionTimeouts;
 			AnalogIn::GetDebugInfo(conversionsStarted, conversionsCompleted, conversionTimeouts);
-			reply.catf("\nTicks since heat task active %" PRIu32 ", ADC conversions started %" PRIu32 ", completed %" PRIu32 ", timed out %" PRIu32,
+			reply.catf("Ticks since heat task active %" PRIu32 ", ADC conversions started %" PRIu32 ", completed %" PRIu32 ", timed out %" PRIu32,
 						Platform::GetHeatTaskIdleTicks(), conversionsStarted, conversionsCompleted, conversionTimeouts);
 		}
 		break;

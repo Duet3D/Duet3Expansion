@@ -244,9 +244,9 @@ struct _can_extended_message_filter_element {
 };
 
 struct _can_context {
-	uint8_t *                   rx_fifo;  /*!< receive message fifo */
-	uint8_t *                   tx_fifo;  /*!< transfer message fifo */
-	struct _can_tx_event_entry *tx_event; /*!< transfer event fifo */
+	volatile uint8_t *                   rx_fifo;  /*!< receive message fifo */
+	volatile uint8_t *                   tx_fifo;  /*!< transfer message fifo */
+	volatile struct _can_tx_event_entry *tx_event; /*!< transfer event fifo */
 	/* Standard filter List */
 	struct _can_standard_message_filter_element *rx_std_filter;
 	/* Extended filter List */
@@ -309,7 +309,7 @@ struct _can_async_callback {
  * \brief CAN device descriptor
  */
 struct _can_async_device {
-	Can *                      hw;      /*!< CAN hardware pointer */
+	Can *             hw;				/*!< CAN hardware pointer */
 	struct _can_async_callback cb;      /*!< CAN interrupt handler */
 	struct _irq_descriptor     irq;     /*!< Interrupt descriptor */
 	void *                     context; /*!< CAN hardware context */

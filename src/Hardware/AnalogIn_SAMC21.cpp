@@ -244,10 +244,10 @@ bool AdcClass::InternalEnableChannel(unsigned int chan, AnalogInCallbackFunction
 
 				// Initialise the DMAC to read the result
 				DmacManager::DisableChannel(chan);
-				DmacManager::SetSourceAddress(dmaChan, const_cast<uint16_t *>(&device->RESULT.reg));
-				DmacManager::SetInterruptCallback(dmaChan, DmaCompleteCallback, this);
 				DmacManager::SetBtctrl(dmaChan, DMAC_BTCTRL_VALID | DMAC_BTCTRL_EVOSEL_DISABLE | DMAC_BTCTRL_BLOCKACT_INT | DMAC_BTCTRL_BEATSIZE_HWORD
 											| DMAC_BTCTRL_DSTINC | DMAC_BTCTRL_STEPSEL_DST | DMAC_BTCTRL_STEPSIZE_X1);
+				DmacManager::SetSourceAddress(dmaChan, const_cast<uint16_t *>(&device->RESULT.reg));
+				DmacManager::SetInterruptCallback(dmaChan, DmaCompleteCallback, this);
 				DmacManager::SetTriggerSource(dmaChan, trigSrc);
 				state = State::starting;
 			}
@@ -289,7 +289,7 @@ bool AdcClass::StartConversion(TaskBase *p_taskToWake)
 	dmaFinishedReason = DmaCallbackReason::none;
 	DmacManager::EnableCompletedInterrupt(dmaChan);
 
-	DmacManager::EnableChannel(dmaChan, AdcRxDmaPriority);
+	DmacManager::EnableChannel(dmaChan, DmacPrioAdcRx);
 
 	state = State::converting;
 	device->SWTRIG.reg = ADC_SWTRIG_START;
@@ -379,7 +379,7 @@ bool SdAdcClass::StartConversion(TaskBase *p_taskToWake)
 	dmaFinishedReason = DmaCallbackReason::none;
 	DmacManager::EnableCompletedInterrupt(dmaChan);
 
-	DmacManager::EnableChannel(dmaChan, AdcRxDmaPriority);
+	DmacManager::EnableChannel(dmaChan, DmacPrioAdcRx);
 
 	state = State::converting;
 	device->SWTRIG.reg = SDADC_SWTRIG_START;
@@ -461,10 +461,10 @@ bool SdAdcClass::InternalEnableChannel(unsigned int chan, AnalogInCallbackFuncti
 				hri_sdadc_set_CTRLA_ENABLE_bit(device);
 
 				// Initialise the DMAC to read the result. The result register is 32 bits wide but we are only interested in the lowest 16 bits.
-				DmacManager::SetSourceAddress(dmaChan, const_cast<uint16_t *>(reinterpret_cast<volatile uint16_t*>(&device->RESULT.reg)));
-				DmacManager::SetInterruptCallback(dmaChan, DmaCompleteCallback, this);
 				DmacManager::SetBtctrl(dmaChan, DMAC_BTCTRL_VALID | DMAC_BTCTRL_EVOSEL_DISABLE | DMAC_BTCTRL_BLOCKACT_INT | DMAC_BTCTRL_BEATSIZE_HWORD
 											| DMAC_BTCTRL_DSTINC | DMAC_BTCTRL_STEPSEL_DST | DMAC_BTCTRL_STEPSIZE_X1);
+				DmacManager::SetSourceAddress(dmaChan, const_cast<uint16_t *>(reinterpret_cast<volatile uint16_t*>(&device->RESULT.reg)));
+				DmacManager::SetInterruptCallback(dmaChan, DmaCompleteCallback, this);
 				DmacManager::SetTriggerSource(dmaChan, trigSrc);
 				state = State::starting;
 			}
@@ -541,9 +541,9 @@ namespace AnalogIn
 void AnalogIn::Init()
 {
 	// Create the device instances
-	adcs[0] = new AdcClass(ADC0, ADC0_IRQn, Adc0RxDmaChannel, DmaTrigSource::adc0_resrdy);
+	adcs[0] = new AdcClass(ADC0, ADC0_IRQn, DmacChanAdc0Rx, DmaTrigSource::adc0_resrdy);
 #if SUPPORT_SDADC
-	adcs[1] = new SdAdcClass(SDADC, SDADC_IRQn, SdAdcRxDmaChannel, DmaTrigSource::sdadc_resrdy);
+	adcs[1] = new SdAdcClass(SDADC, SDADC_IRQn, DmacChanSdadcRx, DmaTrigSource::sdadc_resrdy);
 #endif
 
 	// Enable ADC clocks. SAMC21 has 2 ADCs but we use only the first one

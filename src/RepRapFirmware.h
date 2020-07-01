@@ -320,6 +320,9 @@ extern const char * const moduleName[];
 
 // The following must be defined before we include BoardDef.h
 typedef uint8_t DmaChannel;
+typedef uint8_t DmaPriority;
+typedef uint32_t NvicPriority;
+
 typedef uint8_t Pin;
 constexpr Pin NoPin = 0xFF;
 
