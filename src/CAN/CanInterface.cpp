@@ -234,6 +234,7 @@ extern "C" [[noreturn]] void CanAsyncSenderLoop(void *)
 		// Set up a message ready
 		auto msg = buf->SetupStatusMessage<CanMessageInputChanged>(CanInterface::GetCanAddress(), CanId::MasterAddress);
 		msg->states = 0;
+		msg->spare = 0;
 		msg->numHandles = 0;
 
 		const uint32_t timeToWait = InputMonitor::AddStateChanges(msg);
