@@ -424,9 +424,9 @@ void Move::CurrentMoveCompleted()
 
 void Move::StopDrivers(uint16_t whichDrivers)
 {
-#if defined(SAME51)
+#if SAME5x
 	const uint32_t oldPrio = ChangeBasePriority(NvicPriorityStep);
-#elif defined(SAMC21)
+#elif SAMC21
 	const irqflags_t flags = cpu_irq_save();
 #else
 # error Unsupported processor
@@ -440,9 +440,9 @@ void Move::StopDrivers(uint16_t whichDrivers)
 			CurrentMoveCompleted();					// tell the DDA ring that the current move is complete
 		}
 	}
-#if defined(SAME51)
+#if SAME5x
 	RestoreBasePriority(oldPrio);
-#elif defined(SAMC21)
+#elif SAMC21
 	cpu_irq_restore(flags);
 #else
 # error Unsupported processor

@@ -7,7 +7,7 @@
 
 #include "Peripherals.h"
 
-#ifdef SAME51
+#if SAME5x
 
 #include "AnalogIn.h"
 #include "RTOSIface/RTOSIface.h"

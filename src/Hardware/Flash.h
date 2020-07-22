@@ -12,11 +12,11 @@
 
 namespace Flash
 {
-#ifdef SAMC21
+#if SAMC21
 	constexpr size_t FlashPageSize = 64;					// minimum size we can write
 	constexpr size_t FlashRowSize = FlashPageSize * 4;		// minimum size we can erase
 #endif
-#ifdef SAME51
+#if SAME5x
 	constexpr size_t FlashPageSize = 512;					// minimum size we can write
 	constexpr size_t FlashBlockSize = FlashPageSize * 16;	// minimum size we can erase, except in the AUX area
 #endif

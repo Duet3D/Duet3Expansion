@@ -7,7 +7,7 @@
 
 #include "EEPROM.h"
 
-#ifdef SAME51
+#if SAME5x
 
 #include <RepRapFirmware.h>
 

@@ -10,6 +10,7 @@
 #include "Tasks.h"
 #include "Platform.h"
 #include "SoftwareReset.h"
+#include <Hardware/Cache.h>
 #include <malloc.h>
 
 #include "FreeRTOS.h"
@@ -50,11 +51,11 @@ extern "C" void __malloc_unlock ( struct _reent *_r )
 #ifndef DEBUG
 
 	// Check that the bootloader is protected and EEPROM is configured
-# if defined(SAME51)
+# if SAME5x
 	uint64_t nvmUserRow0 = *reinterpret_cast<const uint64_t*>(NVMCTRL_USER);						// we only need values in the first 64 bits of the user area
 	constexpr uint64_t mask =     ((uint64_t)0x0F << 32) | ((uint64_t)0x07 << 36) | (0x0F << 26);	// we just want NVM_BOOT (bits 26-29), SEE.SBLK (bits 32-35) and SEE.PSZ (bits 36:38)
 	constexpr uint64_t reqValue = ((uint64_t)0x01 << 32) | ((uint64_t)0x03 << 36) | (0x07 << 26);	// 4K SMART EEPROM and 64K bootloader (SBLK=1 PSZ=3)
-# elif defined(SAMC21)
+# elif SAMC21
 	uint32_t nvmUserRow0 = *reinterpret_cast<const uint32_t*>(NVMCTRL_USER);						// we only need values in the first 32 bits of the user area
 	constexpr uint32_t mask =     NVMCTRL_FUSES_EEPROM_SIZE_Msk | NVMCTRL_FUSES_BOOTPROT_Msk;		// we just want BOOTPROT (bits 0-2) and EEPROM (bits 4-6)
 	constexpr uint32_t reqValue = (0x02 << NVMCTRL_FUSES_EEPROM_SIZE_Pos) | (0x01 << NVMCTRL_FUSES_BOOTPROT_Pos);	// 4K EEPROM and 16K bootloader
@@ -79,18 +80,15 @@ extern "C" void __malloc_unlock ( struct _reent *_r )
 		*heapend++ = memPattern;
 	}
 
-#ifndef SAMC21		// SAMC21 has no divide unit, so there is no divide-by-zero exception
+#if !SAMC21		// SAMC21 has a DIVAS unit, but that does not have an interrupt
 	// Trap integer divide-by-zero.
 	// We could also trap unaligned memory access, if we change the gcc options to not generate code that uses unaligned memory access.
 	SCB->CCR |= SCB_CCR_DIV_0_TRP_Msk;
 #endif
 
 #if USE_CACHE
-	// Enable the cache
-	struct cmcc_config g_cmcc_cfg;
-	cmcc_get_config_defaults(&g_cmcc_cfg);
-	cmcc_init(CMCC, &g_cmcc_cfg);
-	EnableCache();
+	Cache::Init();
+	Cache::Enable();
 #endif
 
 	// Create the startup task
@@ -186,7 +184,7 @@ void Tasks::Diagnostics(const StringRef& reply)
 	case RSTC_RCAUSE_EXT:		reply.cat("reset button"); break;
 	case RSTC_RCAUSE_WDT:		reply.cat("watchdog"); break;
 	case RSTC_RCAUSE_SYST:		reply.cat("software"); break;
-#ifdef SAME51
+#if SAME5x
 	case RSTC_RCAUSE_NVM:		reply.cat("nvm"); break;
 	case RSTC_RCAUSE_BACKUP:	reply.cat("backup/hibernate"); break;
 #endif
@@ -281,7 +279,7 @@ extern "C"
 	{
 	    __asm volatile
 	    (
-#ifdef SAMC21
+#if SAMC21
 	        " mrs r0, msp												\n"
 	    	" mov r1, lr												\n"
 	    	" movs r2, #4												\n"
@@ -311,7 +309,7 @@ extern "C"
 	{
 	    __asm volatile
 	    (
-#ifdef SAMC21
+#if SAMC21
 	        " mrs r0, msp												\n"
 	    	" mov r1, lr												\n"
 	    	" movs r2, #4												\n"
@@ -343,7 +341,7 @@ extern "C"
 	{
 	    __asm volatile
 	    (
-#ifdef SAMC21
+#if SAMC21
 	        " mrs r0, msp												\n"
 	    	" mov r1, lr												\n"
 	    	" movs r2, #4												\n"

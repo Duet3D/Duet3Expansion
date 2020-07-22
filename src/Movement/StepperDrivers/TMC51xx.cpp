@@ -16,7 +16,7 @@
 #include <Hardware/DmacManager.h>
 #include <General/Portability.h>
 
-#if defined(SAME51) || defined(SAMC21)
+#if SAME5x || SAMC21
 
 # include <Hardware/IoPorts.h>
 # include <Hardware/Peripherals.h>
@@ -1004,7 +1004,7 @@ static void SetupDMA()
 		xdmac_configure_transfer(XDMAC, DmacChanTmcTx, &p_cfg);
 	}
 
-#elif defined(SAME51) || defined(SAMC21)
+#elif SAME5x || SAMC21
 	DmacManager::DisableChannel(DmacChanTmcRx);
 	DmacManager::DisableChannel(DmacChanTmcTx);
 #else
@@ -1023,7 +1023,7 @@ static inline void EnableDma()
 #if SAME70
 	xdmac_channel_enable(XDMAC, DmacChanTmcRx);
 	xdmac_channel_enable(XDMAC, DmacChanTmcTx);
-#elif defined(SAME51) || defined(SAMC21)
+#elif SAME5x || SAMC21
 	DmacManager::EnableChannel(DmacChanTmcRx, DmacPrioTmcRx);
 	DmacManager::EnableChannel(DmacChanTmcTx, DmacPrioTmcTx);
 #else
@@ -1036,7 +1036,7 @@ static inline void DisableDma()
 #if SAME70
 	xdmac_channel_disable(XDMAC, DmacChanTmcTx);
 	xdmac_channel_disable(XDMAC, DmacChanTmcRx);
-#elif defined(SAME51) || defined(SAMC21)
+#elif SAME5x || SAMC21
 	DmacManager::DisableChannel(DmacChanTmcTx);
 	DmacManager::DisableChannel(DmacChanTmcRx);
 #else
@@ -1232,7 +1232,7 @@ void SmartDrivers::Init()
 	IoPort::SetPinMode(GlobalTmc51xxEnablePin, OUTPUT_HIGH);
 	IoPort::SetPinMode(GlobalTmc51xxCSPin, OUTPUT_HIGH);
 
-#if defined(SAME51) || defined(SAMC21)
+#if SAME5x || SAMC21
 	gpio_set_pin_function(TMC51xxMosiPin, TMC51xxMosiPinPeriphMode);
 	gpio_set_pin_function(TMC51xxSclkPin, TMC51xxSclkPinPeriphMode);
 	gpio_set_pin_function(TMC51xxMisoPin, TMC51xxMisoPinPeriphMode);

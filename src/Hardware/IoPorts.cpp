@@ -477,7 +477,7 @@ void IoPort::AppendPinName(const StringRef& str) const
 /*static*/ AdcInput IoPort::PinToAdcInput(Pin pin, bool useAlternateAdc)
 {
 	return (pin >= ARRAY_SIZE(PinTable)) ? AdcInput::none
-#ifdef SAMC21
+#if SAMC21
 			: (useAlternateAdc) ? PinTable[pin].sdadc
 #endif
 				: PinTable[pin].adc;
@@ -553,7 +553,7 @@ void IoPort::AppendPinName(const StringRef& str) const
 	AnalogOut::Write(p, pwm, frequency);
 }
 
-#ifdef SAMC21
+#if SAMC21
 
 // Set high driver strength on an output pin
 /*static*/ void IoPort::SetHighDriveStrength(Pin p)

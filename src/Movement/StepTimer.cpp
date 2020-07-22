@@ -17,10 +17,10 @@ volatile bool StepTimer::synced = false;
 void StepTimer::Init()
 {
 	// We use StepTcNumber+1 as the slave for 32-bit mode so we need to clock that one too
-#if defined(SAME51)
+#if SAME5x
 	EnableTcClock(StepTcNumber, GCLK_PCHCTRL_GEN_GCLK2_Val);
 	EnableTcClock(StepTcNumber + 1, GCLK_PCHCTRL_GEN_GCLK2_Val);
-#elif defined(SAMC21)
+#elif SAMC21
 	EnableTcClock(StepTcNumber, GCLK_PCHCTRL_GEN_GCLK0_Val);
 	EnableTcClock(StepTcNumber + 1, GCLK_PCHCTRL_GEN_GCLK0_Val);
 #else

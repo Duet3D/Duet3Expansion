@@ -25,7 +25,7 @@
 # error TMC22xx_VARIABLE_NUM_DRIVERS not defined
 #endif
 
-#if defined(SAME51) || defined(SAMC21)
+#if SAME5x || SAMC21
 # include "Movement/Move.h"
 # include "Movement/StepTimer.h"
 # include <Hardware/IoPorts.h>
@@ -1110,7 +1110,7 @@ inline void TmcDriverState::TransferDone() noexcept
 			{
 				uint32_t interval;
 				if (   (regVal & TMC_RR_STST) != 0
-#if defined(SAME51) || defined(SAMC21)
+#if SAME5x || SAMC21
 					|| (interval = moveInstance->GetStepInterval(axisNumber, microstepShiftFactor)) == 0		// get the full step interval
 #else
 					|| (interval = reprap.GetMove().GetStepInterval(axisNumber, microstepShiftFactor)) == 0		// get the full step interval

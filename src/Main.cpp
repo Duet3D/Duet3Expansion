@@ -18,9 +18,9 @@ int main(void)
 	atmel_start_init();								// Initialize MCU, drivers and middleware
 
 	SystemCoreClock = CONF_CPU_FREQUENCY;			// FreeRTOS needs this to be set correctly because it uses it to set the systick reload value
-#if defined(SAME51)
+#if SAME5x
 	SystemPeripheralClock = CONF_CPU_FREQUENCY/2;
-#elif defined(SAMC21)
+#elif SAMC21
 	SystemPeripheralClock = CONF_CPU_FREQUENCY;
 #else
 # error Unknown processor

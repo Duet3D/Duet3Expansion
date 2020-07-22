@@ -30,11 +30,9 @@ extern "C" void CacheFlushBeforeDMASend(const volatile void *start, size_t lengt
 
 #if USE_CACHE
 
-# if SAM4E
-
-// The SAM4E cache is write-through, so no need to flush it
-inline void Cache::Flush(const volatile void *start, size_t length) noexcept { }
-
+# if SAME5x
+// The SAME5x cache is write-through, so no need to flush it
+inline void Cache::Flush(const volatile void *start, size_t length) noexcept { __DSB(); }
 # endif
 
 #else
@@ -42,8 +40,8 @@ inline void Cache::Flush(const volatile void *start, size_t length) noexcept { }
 inline void Cache::Init() noexcept {}
 inline void Cache::Enable() noexcept {}
 inline void Cache::Disable() noexcept {}
-inline void Cache::Flush(const volatile void *start, size_t length) noexcept {}
-inline void Cache::Invalidate(const volatile void *start, size_t length) noexcept {}
+inline void Cache::Flush(const volatile void *start, size_t length) noexcept { __DSB(); }
+inline void Cache::Invalidate(const volatile void *start, size_t length) noexcept { __DSB(); }
 
 #endif
 

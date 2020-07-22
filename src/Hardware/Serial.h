@@ -17,16 +17,16 @@ namespace Serial
 	static Sercom * const Sercoms[] =
 	{
 		SERCOM0, SERCOM1, SERCOM2, SERCOM3, SERCOM4, SERCOM5,
-#ifdef SAME51
+#if SAME5x
 		SERCOM6, SERCOM7
 #endif
 	};
 
 	static constexpr IRQn SercomIRQns[] =
 	{
-#if defined(SAMC21)
+#if SAMC21
 		SERCOM0_IRQn, SERCOM1_IRQn, SERCOM2_IRQn, SERCOM3_IRQn, SERCOM4_IRQn, SERCOM5_IRQn
-#elif defined(SAME51)
+#elif SAME5x
 		SERCOM0_0_IRQn, SERCOM1_0_IRQn, SERCOM2_0_IRQn, SERCOM3_0_IRQn, SERCOM4_0_IRQn, SERCOM5_0_IRQn, SERCOM6_0_IRQn, SERCOM7_0_IRQn
 #endif
 	};

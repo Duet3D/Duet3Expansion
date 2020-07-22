@@ -30,7 +30,7 @@ typedef AdcAveragingFilter<ZProbeReadingsAveraged> ZProbeAveragingFilter;
 #if HAS_VREF_MONITOR
 constexpr size_t VssaFilterIndex = NumThermistorInputs;
 constexpr size_t VrefFilterIndex = NumThermistorInputs + 1;
-# if defined(SAMC21) && SUPPORT_SDADC
+# if SAMC21 && SUPPORT_SDADC
 // On the SAMC21 we have 2 additional filters for the SDADC inputs
 constexpr size_t SdAdcTemp0FilterIndex = NumThermistorInputs + 2;
 constexpr size_t SdAdcVrefFilterIndex = NumThermistorInputs + 3;

@@ -57,7 +57,7 @@ void SoftwareResetData::Populate(uint16_t reason, uint32_t time, const uint32_t 
 	neverUsedRam = Tasks::GetNeverUsedRam();
 	icsr = SCB->ICSR;
 
-#ifdef SAMC21
+#if SAMC21
 	// ARM Cortex M0 doesn't have the fault status registers
 	hfsr = 0;
 	cfsr = 0;

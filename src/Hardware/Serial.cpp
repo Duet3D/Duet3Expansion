@@ -12,9 +12,9 @@
 #include <hal_gpio.h>
 #include <atmel_start_pins.h>
 
-#if defined(SAME51)
+#if SAME5x
 # include <hri_sercom_e51.h>
-#elif defined(SAMC21)
+#elif SAMC21
 # include <hri_sercom_c21.h>
 #else
 # error Unsupported processor
@@ -27,7 +27,7 @@ void Serial::EnableSercomClock(uint8_t sercomNumber)
 	switch (sercomNumber)
 	{
 
-#if defined(SAME51)
+#if SAME5x
 
 	case 0:
 		MCLK->APBAMASK.reg |= MCLK_APBAMASK_SERCOM0;
@@ -76,7 +76,7 @@ void Serial::EnableSercomClock(uint8_t sercomNumber)
 		MCLK->APBDMASK.reg |= MCLK_APBDMASK_SERCOM7;
 		break;
 
-#elif defined(SAMC21)
+#elif SAMC21
 
 	case 0:
 		hri_gclk_write_PCHCTRL_reg(GCLK, SERCOM0_GCLK_ID_CORE, GCLK_PCHCTRL_GEN_GCLK0 | GCLK_PCHCTRL_CHEN);
@@ -137,7 +137,7 @@ void Serial::InitUart(uint8_t sercomNumber, uint32_t baudRate, uint8_t rxPad)
 						 | ((uint32_t)rxPad << SERCOM_USART_CTRLA_RXPO_Pos)	// receive data pad
 						 | (0u << SERCOM_USART_CTRLA_TXPO_Pos)				// transmit on pad 0
 						 | (0u << SERCOM_USART_CTRLA_SAMPR_Pos)				// 16x over sampling, normal baud rate generation
-#ifdef SAME51
+#if SAME5x
 						 | (0u << SERCOM_USART_CTRLA_RXINV_Pos)				// don't invert receive data
 						 | (0u << SERCOM_USART_CTRLA_TXINV_Pos)				// don't invert transmitted data
 #endif
@@ -189,7 +189,7 @@ void Uart::Init(size_t numTxSlots, size_t numRxSlots, uint32_t baudRate, uint8_t
 	errors.all = 0;
 	sercom->USART.INTENSET.reg = (numRxSlots > 1) ? SERCOM_USART_INTENSET_RXC | SERCOM_USART_INTENSET_ERROR : 0;
 	NVIC_EnableIRQ(irqNumber);
-#ifdef SAME51
+#if SAME5x
 	NVIC_EnableIRQ((IRQn)(irqNumber + 1));
 	NVIC_EnableIRQ((IRQn)(irqNumber + 2));
 	NVIC_EnableIRQ((IRQn)(irqNumber + 3));

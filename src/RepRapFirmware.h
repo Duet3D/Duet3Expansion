@@ -45,10 +45,16 @@ extern "C" void debugPrintf(const char* fmt, ...) __attribute__ ((format (printf
 //#define DEBUG_HERE do { debugPrintf("At " __FILE__ " line %d\n", __LINE__); delay(50); } while (false)
 
 #if defined(__SAME51N19A__)
-# define SAME51		1
+# define SAME5x		1
+# define SAMC21		0
 #elif defined(__SAMC21G18A__)
 # define SAMC21		1
+# define SAME5x		0
 #endif
+
+#define SAM4E		0
+#define SAM4S		0
+#define SAME70		0
 
 #define RAMFUNC __attribute__((section(".ramfunc")))
 
@@ -93,7 +99,7 @@ static inline void cpu_irq_restore(irqflags_t flags)
 	}
 }
 
-#ifdef SAME51
+#if SAME5x
 
 // Functions to change the base priority, to shut out interrupts up to a priority level
 

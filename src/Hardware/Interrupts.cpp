@@ -42,9 +42,9 @@ void InitialisePinChangeInterrupts()
 
 	hri_eic_write_ASYNCH_reg(EIC, 0);					// all channels synchronous (needed to have debouncing or filtering)
 
-#if defined(SAME51)
+#if SAME5x
 	hri_eic_write_DEBOUNCEN_reg(EIC, 0);				// debouncing disabled
-#elif defined(SAMC21)
+#elif SAMC21
 	// Only the SAMC21N has the debounce register, the SAMC21G that we use doesn't have it
 #else
 # error Undefined processor
@@ -118,9 +118,9 @@ bool AttachInterrupt(Pin pin, StandardCallbackFunction callback, InterruptMode m
 	hri_eic_set_INTEN_reg(EIC, 1ul << exintNumber);
 	cpu_irq_restore(flags);
 
-#if defined(SAME51)
+#if SAME5x
 	NVIC_EnableIRQ((IRQn)(EIC_0_IRQn + exintNumber));
-#elif defined(SAMC21)
+#elif SAMC21
 	NVIC_EnableIRQ(EIC_IRQn);
 #else
 # error Undefined processor
@@ -165,7 +165,7 @@ void DetachInterrupt(Pin pin)
 	}
 }
 
-#if defined(SAME51)
+#if SAME5x
 
 // Common EXINT handler
 static inline void CommonExintHandler(size_t exintNumber)
@@ -258,7 +258,7 @@ extern "C" void EIC_15_Handler(void)
 	CommonExintHandler(15);
 }
 
-#elif defined(SAMC21)
+#elif SAMC21
 
 extern "C" void EIC_Handler(void)
 {

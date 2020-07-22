@@ -23,7 +23,7 @@ typedef void (*DmaCallbackFunction)(CallbackParameter cb, DmaCallbackReason reas
 
 enum class DmaTrigSource : uint8_t
 {
-#if defined(SAME51)
+#if SAME5x
 
 	disable = 0,
 	rtc,
@@ -97,7 +97,7 @@ enum class DmaTrigSource : uint8_t
 	qspi_rx = 0x53,
 	qspi_tx
 
-#elif defined(SAMC21)
+#elif SAMC21
 
 	disable = 0,
 	tsens,
@@ -177,7 +177,7 @@ enum class DmaTrigSource : uint8_t
 #endif
 };
 
-#if defined(SAMC21)
+#if SAMC21
 static_assert((uint8_t)DmaTrigSource::ptc_seq == 0x30, "Error in DmaTrigSource enumeration");
 #endif
 

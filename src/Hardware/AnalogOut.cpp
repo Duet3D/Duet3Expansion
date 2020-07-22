@@ -8,11 +8,11 @@
 #include "AnalogOut.h"
 #include "IoPorts.h"
 
-#if defined(SAME51)
+#if SAME5x
 # include "hri_tc_e51.h"
 # include "hri_tcc_e51.h"
 # include "hri_mclk_e51.h"
-#elif defined(SAMC21)
+#elif SAMC21
 # include "hri_tc_c21.h"
 # include "hri_tcc_c21.h"
 # include "hri_mclk_c21.h"
@@ -56,7 +56,7 @@ namespace AnalogOut
 		static volatile Tc* const TcDevices[] =
 		{
 			TC0, TC1, TC2, TC3, TC4,
-#ifdef SAME51
+#if SAME5x
 			TC5		// TC6 and TC7 exist but are reserved for the step clock
 #endif
 		};
@@ -87,9 +87,9 @@ namespace AnalogOut
 				if (tcFreq[device] == 0)
 				{
 					EnableTcClock(device,
-#if defined(SAME51)
+#if SAME5x
 						GCLK_PCHCTRL_GEN_GCLK1_Val
-#elif defined(SAMC21)
+#elif SAMC21
 						GCLK_PCHCTRL_GEN_GCLK0_Val
 #endif
 						);
@@ -142,14 +142,14 @@ namespace AnalogOut
 		static volatile Tcc* const TccDevices[] =
 		{
 			TCC0, TCC1, TCC2,
-#ifdef SAME51
+#if SAME5x
 			TCC3, TCC4
 #endif
 		};
 		static constexpr unsigned int TccCounterBits[ARRAY_SIZE(TccDevices)] =
 		{
 			24, 24, 16,
-#ifdef SAME51
+#if SAME5x
 			16, 16
 #endif
 		};
@@ -173,9 +173,9 @@ namespace AnalogOut
 				if (tccFreq[device] == 0)
 				{
 					EnableTccClock(device,
-#if defined(SAME51)
+#if SAME5x
 						GCLK_PCHCTRL_GEN_GCLK1_Val
-#elif defined(SAMC21)
+#elif SAMC21
 						GCLK_PCHCTRL_GEN_GCLK0_Val
 #endif
 						);

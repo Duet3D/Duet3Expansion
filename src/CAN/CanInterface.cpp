@@ -27,9 +27,9 @@ static CanUserAreaData canConfigData;
 static CanAddress boardAddress;
 static bool enabled = false;
 
-#if defined(SAME51)
+#if SAME5x
 constexpr uint32_t CanUserAreaDataOffset = 512 - sizeof(CanUserAreaData);
-#elif defined(SAMC21)
+#elif SAMC21
 constexpr uint32_t CanUserAreaDataOffset = 256 - sizeof(CanUserAreaData);
 #endif
 
@@ -99,7 +99,7 @@ static CanMessageQueue PendingCommands;
 
 static can_async_descriptor CAN_0;
 
-#ifdef SAME51
+#if SAME5x
 
 /**
  * \brief CAN initialization function
@@ -117,7 +117,7 @@ static void CAN_0_init(const CanTiming& timing)
 
 #endif
 
-#ifdef SAMC21
+#if SAMC21
 
 /**
  * \brief CAN initialization function

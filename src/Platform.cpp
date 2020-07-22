@@ -30,7 +30,7 @@
 # include <ClosedLoop/QuadratureDecoder.h>
 #endif
 
-#if defined(SAME51)
+#if SAME5x
 
 # include <hri_nvmctrl_e51.h>
 constexpr uint32_t FlashBlockSize = 0x00010000;							// the block size we assume for flash
@@ -58,7 +58,7 @@ extern "C" void SERCOM3_3_Handler()
 	uart0.Interrupt();
 }
 
-#elif defined(SAMC21)
+#elif SAMC21
 
 # include <hri_nvmctrl_c21.h>
 constexpr uint32_t FlashBlockSize = 0x00004000;							// the block size we assume for flash
@@ -168,10 +168,10 @@ namespace Platform
 	static AdcAveragingFilter<VinReadingsAveraged> v12Filter;
 #endif
 
-#if defined(SAME51)
+#if SAME5x
 	static AdcAveragingFilter<McuTempReadingsAveraged> tpFilter;
 	static AdcAveragingFilter<McuTempReadingsAveraged> tcFilter;
-#elif defined(SAMC21)
+#elif SAMC21
 	static AdcAveragingFilter<McuTempReadingsAveraged> tsensFilter;
 #else
 # error Unsupported processor
@@ -226,7 +226,7 @@ namespace Platform
 	}
 #endif
 
-#ifdef SAME51
+#if SAME5x
 	static int32_t tempCalF1, tempCalF2, tempCalF3, tempCalF4;		// temperature calibration factors
 
 	static void ADC_temperature_init()
@@ -287,7 +287,7 @@ namespace Platform
 		uart0.PutString("\"}\n");
 	}
 
-#ifdef SAME51
+#if SAME5x
 	// Set a contiguous range of interrupts to the specified priority
 	static void SetInterruptPriority(IRQn base, unsigned int num, uint32_t prio)
 	{
@@ -305,7 +305,7 @@ namespace Platform
 	{
 		NVIC_SetPriority(StepTcIRQn, NvicPriorityStep);
 
-#if defined(SAME51)
+#if SAME5x
 		NVIC_SetPriority(CAN1_IRQn, NvicPriorityCan);
 		// Set UART interrupt priority. Each SERCOM has up to 4 interrupts, numbered sequentially.
 # if NUM_SERIAL_PORTS >= 1
@@ -316,7 +316,7 @@ namespace Platform
 # endif
 		SetInterruptPriority(DMAC_0_IRQn, 5, NvicPriorityDmac);
 		SetInterruptPriority(EIC_0_IRQn, 16, NvicPriorityPins);
-#elif defined(SAMC21)
+#elif SAMC21
 		NVIC_SetPriority(CAN0_IRQn, NvicPriorityCan);
 # if NUM_SERIAL_PORTS >= 1
 		NVIC_SetPriority(Serial0_IRQn, NvicPriorityUart);
@@ -332,7 +332,7 @@ namespace Platform
 
 	[[noreturn]] RAMFUNC static void EraseAndReset()
 	{
-#if defined(SAME51)
+#if SAME5x
 		while (!hri_nvmctrl_get_STATUS_READY_bit(NVMCTRL)) { }
 
 		// Unlock the block of flash
@@ -346,7 +346,7 @@ namespace Platform
 		hri_nvmctrl_write_CTRLB_reg(NVMCTRL, NVMCTRL_CTRLB_CMD_EB | NVMCTRL_CTRLB_CMDEX_KEY);
 
 		while (!hri_nvmctrl_get_STATUS_READY_bit(NVMCTRL)) { }
-#elif defined(SAMC21)
+#elif SAMC21
 		while (!hri_nvmctrl_get_interrupt_READY_bit(NVMCTRL)) { }
 		hri_nvmctrl_clear_STATUS_reg(NVMCTRL, NVMCTRL_STATUS_MASK);
 
@@ -403,13 +403,13 @@ namespace Platform
 		__disable_irq();
 		SysTick->CTRL = (1 << SysTick_CTRL_CLKSOURCE_Pos);	// disable the system tick exception
 
-#if defined(SAME51)
+#if SAME5x
 		for (size_t i = 0; i < 8; i++)
 		{
 			NVIC->ICER[i] = 0xFFFFFFFF;					// Disable IRQs
 			NVIC->ICPR[i] = 0xFFFFFFFF;					// Clear pending IRQs
 		}
-#elif defined(SAMC21)
+#elif SAMC21
 		NVIC->ICER[0] = 0xFFFFFFFF;						// Disable IRQs
 		NVIC->ICPR[0] = 0xFFFFFFFF;						// Clear pending IRQs
 #else
@@ -429,10 +429,10 @@ namespace Platform
 
 void Platform::SoftwareReset(uint16_t reason, const uint32_t *stk)
 {
-#if defined(SAME51)
+#if SAME5x
 	//TODO save reset data in NVM
 	//	qq;
-#elif defined(SAMC21)
+#elif SAMC21
 	//TODO save reset data in NVM
 	//	qq;
 #else
@@ -469,7 +469,7 @@ void Platform::Init()
 				&& strlen(p.pinNames) < 5							// don't set "outN.tach" pins to outputs
 		       )
 			{
-#ifdef SAMC21
+#if SAMC21
 				// Set high driver strength on the output pins because they drive the heater and fan mosfets directly
 				IoPort::SetHighDriveStrength(pin);
 #endif
@@ -490,12 +490,12 @@ void Platform::Init()
 	}
 
 	// Set up the UART to send to PanelDue for debugging
-#ifdef SAME51
+#if SAME5x
 	gpio_set_pin_function(PortBPin(20), PINMUX_PB20C_SERCOM3_PAD0);		// TxD
 # if 0	// we don't use the receiver, but if we did we would need to do this:
 	gpio_set_pin_function(PortBPin(21), PINMUX_PB21C_SERCOM3_PAD1);		// RxD
 # endif
-#elif defined(SAMC21)
+#elif SAMC21
 # ifdef SAMMYC21
 	gpio_set_pin_function(PortBPin(2), PINMUX_PB02D_SERCOM5_PAD0);		// TxD
 # else
@@ -510,7 +510,7 @@ void Platform::Init()
 	AnalogOut::Init();
 	InitialisePinChangeInterrupts();
 
-#ifdef SAME51
+#if SAME5x
 	ADC_temperature_init();
 #endif
 
@@ -546,7 +546,7 @@ void Platform::Init()
 	SetupThermistorFilter(VssaPin, VssaFilterIndex, false);
 #endif
 
-#if defined(SAMC21) && SUPPORT_SDADC
+#if SAMC21 && SUPPORT_SDADC
 	// Set up the SDADC input filters too (temp0 and Vref)
 	SetupThermistorFilter(TempSensePins[0], SdAdcTemp0FilterIndex, true);
 	SetupThermistorFilter(VrefPin, SdAdcVrefFilterIndex, true);
@@ -564,12 +564,12 @@ void Platform::Init()
 	lowestMcuTemperature = 999.0;
 	mcuTemperatureAdjust = 0.0;
 
-#if defined(SAME51)
+#if SAME5x
 	tpFilter.Init(0);
 	AnalogIn::EnableTemperatureSensor(0, tpFilter.CallbackFeedIntoFilter, &tpFilter, 1, 0);
 	tcFilter.Init(0);
 	AnalogIn::EnableTemperatureSensor(1, tcFilter.CallbackFeedIntoFilter, &tcFilter, 1, 0);
-#elif defined(SAMC21)
+#elif SAMC21
 	tsensFilter.Init(0);
 	AnalogIn::EnableTemperatureSensor(tsensFilter.CallbackFeedIntoFilter, &tsensFilter, 1);
 #else
@@ -658,7 +658,7 @@ void Platform::Init()
 #if SUPPORT_SPI_SENSORS
 
 	// Set the pin functions
-# if defined(SAME51)
+# if SAME5x
 	gpio_set_pin_function(SSPIMosiPin, SSPIMosiPinPeriphMode);
 	gpio_set_pin_function(SSPISclkPin, SSPISclkPinPeriphMode);
 	gpio_set_pin_function(SSPIMisoPin, SSPIMisoPinPeriphMode);
@@ -675,13 +675,13 @@ void Platform::Init()
 	encoderSpi = new SharedSpiDevice(ENCODER_SSPI_NUMBER);
 #endif
 
-#if defined(SAME51)
+#if SAME5x
 
 	// Check whether address switches are set to zero. If so then reset and load new firmware
 	const CanAddress switches = ReadBoardAddress();
 	const CanAddress defaultAddress = (switches == 0) ? CanId::ExpansionBoardFirmwareUpdateAddress : switches;
 
-#elif defined(SAMC21)
+#elif SAMC21
 
 # if defined(TOOL1LC)
 	constexpr CanAddress defaultAddress = CanId::ToolBoardDefaultAddress;
@@ -925,7 +925,7 @@ void Platform::Spin()
 		lastPollTime = now;
 
 		// Get the chip temperature
-#if defined(SAME51)
+#if SAME5x
 		if (tcFilter.IsValid() && tpFilter.IsValid())
 		{
 			// From the datasheet:
@@ -937,7 +937,7 @@ void Platform::Spin()
 			const int32_t divisor = (tempCalF3 * tp_result - tempCalF4 * tc_result);
 			result = (divisor == 0) ? 0 : result/divisor;
 			currentMcuTemperature = (float)result/16 + mcuTemperatureAdjust;
-#elif defined(SAMC21)
+#elif SAMC21
 		if (tsensFilter.IsValid())
 		{
 			const int16_t temperatureTimes100 = (int16_t)((uint16_t)(tsensFilter.GetSum()/tsensFilter.NumAveraged()) ^ (1u << 15));
@@ -1025,7 +1025,7 @@ int Platform::GetAveragingFilterIndex(const IoPort& port)
 	{
 		if (port.GetPin() == TempSensePins[i])
 		{
-#if defined(SAMC21) && SUPPORT_SDADC
+#if SAMC21 && SUPPORT_SDADC
 			return (i == 0 && port.UseAlternateConfig()) ? SdAdcTemp0FilterIndex : (int) i;
 #endif
 			return (int)i;
@@ -1043,7 +1043,7 @@ ThermistorAveragingFilter *Platform::GetAdcFilter(unsigned int filterNumber)
 
 ThermistorAveragingFilter *Platform::GetVssaFilter(unsigned int filterNumber)
 {
-#ifdef SAMC21
+#if SAMC21
 	// The SDADC channel has INN connected to VSSA and no separate VSSA monitor
 	return (filterNumber < NumThermistorInputs) ? &thermistorFilters[VssaFilterIndex] : nullptr;
 #else
@@ -1053,7 +1053,7 @@ ThermistorAveragingFilter *Platform::GetVssaFilter(unsigned int filterNumber)
 
 ThermistorAveragingFilter *Platform::GetVrefFilter(unsigned int filterNumber)
 {
-#ifdef SAMC21
+#if SAMC21
 	// The SDADC channel has a separate VSSA monitor
 	return (filterNumber == SdAdcTemp0FilterIndex) ? &thermistorFilters[SdAdcVrefFilterIndex] : &thermistorFilters[VrefFilterIndex];
 #else

@@ -15,9 +15,9 @@ typedef void (*AnalogInCallbackFunction)(CallbackParameter p, uint16_t reading);
 namespace AnalogIn
 {
 	// The number of bits that the ADCs return
-#ifdef SAMC21
+#if SAMC21
 	constexpr unsigned int AdcBits = 16;
-#else
+#elif SAME5x
 	constexpr unsigned int AdcBits = 16;
 #endif
 
@@ -46,12 +46,12 @@ namespace AnalogIn
 	// Get the number of conversions that were started
 	void GetDebugInfo(uint32_t &convsStarted, uint32_t &convsCompleted, uint32_t &convTimeouts);
 
-#ifdef SAME51
+#if SAME5x
 	// Enable an on-chip MCU temperature sensor. We don't use this on the SAMC21 because that chip has a separate TSENS peripheral.
 	bool EnableTemperatureSensor(unsigned int sensorNumber, AnalogInCallbackFunction fn, CallbackParameter param, uint32_t ticksPerCall, unsigned int adcnum);
 #endif
 
-#ifdef SAMC21
+#if SAMC21
 	void EnableTemperatureSensor(AnalogInCallbackFunction fn, CallbackParameter param, uint32_t ticksPerCall);
 #endif
 }

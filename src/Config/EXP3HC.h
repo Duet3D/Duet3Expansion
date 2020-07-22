@@ -37,7 +37,7 @@ constexpr const char* BoardTypeName = "EXP3HC";
 #define SUPPORT_SPI_SENSORS		1
 
 #define USE_MPU					0
-#define USE_CACHE				0
+#define USE_CACHE				1
 
 constexpr size_t NumDrivers = 3;
 constexpr size_t MaxSmartDrivers = 3;
