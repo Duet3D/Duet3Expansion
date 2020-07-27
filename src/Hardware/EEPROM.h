@@ -8,7 +8,7 @@
 #ifndef SRC_HARDWARE_EEPROM_H_
 #define SRC_HARDWARE_EEPROM_H_
 
-#include "Peripherals.h"
+#include <RepRapFirmware.h>
 
 namespace EEPROM
 {

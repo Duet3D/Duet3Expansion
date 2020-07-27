@@ -8,13 +8,12 @@
 #include "Platform.h"
 
 #include <Hardware/IoPorts.h>
-#include <Hardware/AnalogIn.h>
-#include <Hardware/AnalogOut.h>
-#include <Hardware/Serial.h>
+#include <AnalogIn.h>
+#include <AnalogOut.h>
+#include <UART.h>
 #include <Movement/Move.h>
 #include "Movement/StepperDrivers/TMC51xx.h"
 #include "Movement/StepperDrivers/TMC22xx.h"
-#include <atmel_start.h>
 #include <Config/peripheral_clk_config.h>
 #include "AdcAveragingFilter.h"
 #include "Movement/StepTimer.h"
@@ -32,30 +31,25 @@
 
 #if SAME5x
 
-# include <hri_nvmctrl_e51.h>
+# include <hri_nvmctrl_e54.h>
 constexpr uint32_t FlashBlockSize = 0x00010000;							// the block size we assume for flash
 constexpr uint32_t FirmwareFlashStart = FLASH_ADDR + FlashBlockSize;	// we reserve 64K for the bootloader
 
-static Uart uart0(3, SERCOM3_0_IRQn);
+static Uart uart0(3, 3, 512, 512);
 
 extern "C" void SERCOM3_0_Handler()
 {
-	uart0.Interrupt();
-}
-
-extern "C" void SERCOM3_1_Handler()
-{
-	uart0.Interrupt();
+	uart0.Interrupt0();
 }
 
 extern "C" void SERCOM3_2_Handler()
 {
-	uart0.Interrupt();
+	uart0.Interrupt2();
 }
 
 extern "C" void SERCOM3_3_Handler()
 {
-	uart0.Interrupt();
+	uart0.Interrupt3();
 }
 
 #elif SAMC21
@@ -64,7 +58,7 @@ extern "C" void SERCOM3_3_Handler()
 constexpr uint32_t FlashBlockSize = 0x00004000;							// the block size we assume for flash
 constexpr uint32_t FirmwareFlashStart = FLASH_ADDR + FlashBlockSize;	// we reserve 16K for the bootloader
 
-static Uart uart0(4, SERCOM4_IRQn);
+static Uart uart0(4, 3, 512, 512);
 
 extern "C" void SERCOM4_Handler()
 {
@@ -282,9 +276,9 @@ namespace Platform
 	{
 		MutexLocker lock(messageMutex);
 
-		uart0.PutString("{\"message\":\"");
-		uart0.PutString(message);		// should do JSON escaping here
-		uart0.PutString("\"}\n");
+		uart0.write("{\"message\":\"");
+		uart0.write(message);		// should do JSON escaping here
+		uart0.write("\"}\n");
 	}
 
 #if SAME5x
@@ -422,7 +416,7 @@ namespace Platform
 	static void SetupThermistorFilter(Pin pin, size_t filterIndex, bool useAlternateAdc)
 	{
 		thermistorFilters[filterIndex].Init(0);
-		AnalogIn::EnableChannel(pin, thermistorFilters[filterIndex].CallbackFeedIntoFilter, &thermistorFilters[filterIndex], 1, useAlternateAdc);
+		AnalogIn::EnableChannel(PinToAdcChannel(pin), thermistorFilters[filterIndex].CallbackFeedIntoFilter, &thermistorFilters[filterIndex], 1, useAlternateAdc);
 	}
 
 }	// end namespace Platform
@@ -503,12 +497,15 @@ void Platform::Init()
 # endif
 #endif
 
-	uart0.Init(256, 0, 57600, 3);
+	uart0.begin(57600);
 
 	// Initialise the rest of the IO subsystem
-	AnalogIn::Init();
+#if SAME5x
+	AnalogIn::Init(DmacChanAdc0Tx, DmacPrioAdcTx, DmacPrioAdcRx);
+#elif SAMC21
+	AnalogIn::Init(DmacChanAdc0Rx, DmacPrioAdcRx);
+#endif
 	AnalogOut::Init();
-	InitialisePinChangeInterrupts();
 
 #if SAME5x
 	ADC_temperature_init();
@@ -529,7 +526,7 @@ void Platform::Init()
 	numUnderVoltageEvents = previousUnderVoltageEvents = numOverVoltageEvents = previousOverVoltageEvents = 0;
 
 	vinFilter.Init(0);
-	AnalogIn::EnableChannel(VinMonitorPin, vinFilter.CallbackFeedIntoFilter, &vinFilter, 1, false);
+	AnalogIn::EnableChannel(PinToAdcChannel(VinMonitorPin), vinFilter.CallbackFeedIntoFilter, &vinFilter, 1, false);
 #endif
 
 #if HAS_12V_MONITOR
@@ -537,7 +534,7 @@ void Platform::Init()
 	lowestV12 = 9999;
 
 	v12Filter.Init(0);
-	AnalogIn::EnableChannel(V12MonitorPin, v12Filter.CallbackFeedIntoFilter, &v12Filter, 1, false);
+	AnalogIn::EnableChannel(PinToAdcChannel(V12MonitorPin), v12Filter.CallbackFeedIntoFilter, &v12Filter, 1, false);
 #endif
 
 #if HAS_VREF_MONITOR

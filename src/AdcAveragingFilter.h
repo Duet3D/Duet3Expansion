@@ -16,12 +16,12 @@
 template<size_t numAveraged> class AdcAveragingFilter
 {
 public:
-	AdcAveragingFilter()
+	AdcAveragingFilter() noexcept
 	{
 		Init(0);
 	}
 
-	void Init(uint16_t val) volatile
+	void Init(uint16_t val) volatile noexcept
 	{
 		TaskCriticalSectionLocker lock;
 
@@ -35,7 +35,7 @@ public:
 	}
 
 	// Call this to put a new reading into the filter
-	void ProcessReading(uint16_t r)
+	void ProcessReading(uint16_t r) noexcept
 	{
 		TaskCriticalSectionLocker lock;
 
@@ -50,35 +50,35 @@ public:
 	}
 
 	// Return the raw sum
-	uint32_t GetSum() const volatile
+	uint32_t GetSum() const volatile noexcept
 	{
 		return sum;
 	}
 
 	// Return the last reading
-	uint32_t GetLastReading() const volatile
+	uint32_t GetLastReading() const volatile noexcept
 	{
 		return readings[(index - 1) % numAveraged];
 	}
 
 	// Return true if we have a valid average
-	bool IsValid() const volatile
+	bool IsValid() const volatile noexcept
 	{
 		return isValid;
 	}
 
 	// Get the latest reading
-	uint16_t GetLatestReading() const volatile
+	uint16_t GetLatestReading() const volatile noexcept
 	{
 		size_t indexOfLastReading = index;			// capture volatile variable
 		indexOfLastReading =  (indexOfLastReading == 0) ? numAveraged - 1 : indexOfLastReading - 1;
 		return readings[indexOfLastReading];
 	}
 
-	static constexpr size_t NumAveraged() { return numAveraged; }
+	static constexpr size_t NumAveraged() noexcept { return numAveraged; }
 
 	// Function used as an ADC callback to feed a result into an averaging filter
-	static void CallbackFeedIntoFilter(CallbackParameter cp, uint16_t val);
+	static void CallbackFeedIntoFilter(CallbackParameter cp, uint16_t val) noexcept;
 
 private:
 	uint16_t readings[numAveraged];
@@ -89,7 +89,7 @@ private:
 	//invariant(index < numAveraged)
 };
 
-template<size_t numAveraged> void AdcAveragingFilter<numAveraged>::CallbackFeedIntoFilter(CallbackParameter cp, uint16_t val)
+template<size_t numAveraged> void AdcAveragingFilter<numAveraged>::CallbackFeedIntoFilter(CallbackParameter cp, uint16_t val) noexcept
 {
 	static_cast<AdcAveragingFilter<numAveraged>*>(cp.vp)->ProcessReading(val);
 }

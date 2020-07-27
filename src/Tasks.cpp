@@ -5,16 +5,21 @@
  *      Author: David
  */
 
-#include <atmel_start.h>
 #include <hpl_user_area.h>
 #include "Tasks.h"
 #include "Platform.h"
 #include "SoftwareReset.h"
-#include <Hardware/Cache.h>
+#include <Cache.h>
 #include <malloc.h>
 
 #include "FreeRTOS.h"
 #include "task.h"
+
+#if SAME5x
+# include <hri_wdt_e54.h>
+#elif SAMC21
+# include <hri_wdt_c21.h>
+#endif
 
 const uint8_t memPattern = 0xA5;
 
@@ -106,11 +111,6 @@ extern "C" void __malloc_unlock ( struct _reent *_r )
 	while (true) { }
 }
 
-void delay(uint32_t ms)
-{
-	vTaskDelay(ms);
-}
-
 extern void Init();
 extern void Spin();
 
@@ -195,35 +195,11 @@ void Tasks::Diagnostics(const StringRef& reply)
 static StaticTask_t xIdleTaskTCB;
 static StackType_t uxIdleTaskStack[configMINIMAL_STACK_SIZE];
 
-static volatile uint64_t g_ms_ticks = 0;		// Count of 1ms time ticks
-
 extern "C" void vApplicationTickHook(void)
 {
-	g_ms_ticks++;
-
-	// If we kick the watchdog too often, sometimes it resets us. It uses a 1024Hz nominal clock, so presumably it has to be reset less often than that.
-	if ((((uint32_t)g_ms_ticks) & 0x07) == 0)
-	{
-		WDT->CLEAR.reg = 0xA5;
-	}
-
+	CoreSysTick();
 	RepRap::Tick();
 }
-
-uint32_t millis()
-{
-    return (uint32_t)g_ms_ticks;
-}
-
-uint64_t millis64()
-{
-	hal_atomic_t flags;
-	atomic_enter_critical(&flags);
-	const uint64_t ret = g_ms_ticks;			// take a copy with interrupts disabled to guard against rollover while we read it
-	atomic_leave_critical(&flags);
-	return ret;
-}
-
 
 extern "C" void vApplicationGetIdleTaskMemory( StaticTask_t **ppxIdleTaskTCBBuffer,
                                     StackType_t **ppxIdleTaskStackBuffer,

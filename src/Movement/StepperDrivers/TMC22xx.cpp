@@ -29,9 +29,9 @@
 # include "Movement/Move.h"
 # include "Movement/StepTimer.h"
 # include <Hardware/IoPorts.h>
-# include <Hardware/DmacManager.h>
-# include <Hardware/Serial.h>
-# include <Hardware/Cache.h>
+# include <DmacManager.h>
+# include <Serial.h>
+# include <Cache.h>
 # include <component/sercom.h>
 #else
 # include "RepRap.h"

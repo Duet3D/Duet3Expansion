@@ -13,16 +13,20 @@
 
 #include <RTOSIface/RTOSIface.h>
 #include <Movement/Move.h>
-#include <Hardware/DmacManager.h>
+#include <DmacManager.h>
 #include <General/Portability.h>
 
 #if SAME5x || SAMC21
 
 # include <Hardware/IoPorts.h>
-# include <Hardware/Peripherals.h>
-# include <Hardware/Serial.h>
+# include <Serial.h>
 
-# define SAME70		0
+# if SAME5x
+#  include <hri/hri_sercom_e54.h>
+# elif SAMC21
+#  include <hri_sercom_c21.h>
+# endif
+
 static inline const Move& GetMoveInstance() { return *moveInstance; }
 
 #elif SAME70
@@ -1095,7 +1099,7 @@ static inline void EnableEndOfTransferInterrupt()
 }
 
 // DMA complete callback
-void RxDmaCompleteCallback(CallbackParameter param, DmaCallbackReason reason)
+void RxDmaCompleteCallback(CallbackParameter param, DmaCallbackReason reason) noexcept
 {
 #if SAME70
 	xdmac_channel_disable_interrupt(XDMAC, DmacChanTmcRx, 0xFFFFFFFF);
@@ -1255,23 +1259,23 @@ void SmartDrivers::Init()
 	const uint32_t regCtrlB = 0;											// 8 bits, slave select disabled, receiver disabled for now
 	const uint32_t regCtrlC = 0;											// not 32-bit mode
 
-	if (!hri_sercomusart_is_syncing(SERCOM_TMC51xx, SERCOM_USART_SYNCBUSY_SWRST))
+	if (!hri_sercomspi_is_syncing(SERCOM_TMC51xx, SERCOM_USART_SYNCBUSY_SWRST))
 	{
 		uint32_t mode = regCtrlA & SERCOM_USART_CTRLA_MODE_Msk;
-		if (hri_sercomusart_get_CTRLA_reg(SERCOM_TMC51xx, SERCOM_USART_CTRLA_ENABLE))
+		if (hri_sercomspi_get_CTRLA_reg(SERCOM_TMC51xx, SERCOM_USART_CTRLA_ENABLE))
 		{
-			hri_sercomusart_clear_CTRLA_ENABLE_bit(SERCOM_TMC51xx);
-			hri_sercomusart_wait_for_sync(SERCOM_TMC51xx, SERCOM_USART_SYNCBUSY_ENABLE);
+			hri_sercomspi_clear_CTRLA_ENABLE_bit(SERCOM_TMC51xx);
+			hri_sercomspi_wait_for_sync(SERCOM_TMC51xx, SERCOM_USART_SYNCBUSY_ENABLE);
 		}
-		hri_sercomusart_write_CTRLA_reg(SERCOM_TMC51xx, SERCOM_USART_CTRLA_SWRST | mode);
+		hri_sercomspi_write_CTRLA_reg(SERCOM_TMC51xx, SERCOM_USART_CTRLA_SWRST | mode);
 	}
-	hri_sercomusart_wait_for_sync(SERCOM_TMC51xx, SERCOM_USART_SYNCBUSY_SWRST);
+	hri_sercomspi_wait_for_sync(SERCOM_TMC51xx, SERCOM_USART_SYNCBUSY_SWRST);
 
-	hri_sercomusart_write_CTRLA_reg(SERCOM_TMC51xx, regCtrlA);
-	hri_sercomusart_write_CTRLB_reg(SERCOM_TMC51xx, regCtrlB);
-	hri_sercomusart_write_CTRLC_reg(SERCOM_TMC51xx, regCtrlC);
-	hri_sercomusart_write_BAUD_reg(SERCOM_TMC51xx, SERCOM_SPI_BAUD_BAUD(SystemPeripheralClock/(2 * DriversSpiClockFrequency) - 1));
-	hri_sercomusart_write_DBGCTRL_reg(SERCOM_TMC51xx, SERCOM_I2CM_DBGCTRL_DBGSTOP);			// baud rate generator is stopped when CPU halted by debugger
+	hri_sercomspi_write_CTRLA_reg(SERCOM_TMC51xx, regCtrlA);
+	hri_sercomspi_write_CTRLB_reg(SERCOM_TMC51xx, regCtrlB);
+	hri_sercomspi_write_CTRLC_reg(SERCOM_TMC51xx, regCtrlC);
+	hri_sercomspi_write_BAUD_reg(SERCOM_TMC51xx, SERCOM_SPI_BAUD_BAUD(SystemPeripheralClock/(2 * DriversSpiClockFrequency) - 1));
+	hri_sercomspi_write_DBGCTRL_reg(SERCOM_TMC51xx, SERCOM_I2CM_DBGCTRL_DBGSTOP);			// baud rate generator is stopped when CPU halted by debugger
 
 	// Set up the DMA descriptors
 	// We use separate write-back descriptors, so we only need to set this up once

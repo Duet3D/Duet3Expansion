@@ -8,8 +8,7 @@
 #ifndef SRC_CONFIG_EXPANSION1_V09_H_
 #define SRC_CONFIG_EXPANSION1_V09_H_
 
-#include "RepRapFirmware.h"
-#include "Hardware/Peripherals.h"
+#include <Hardware/PinDescription.h>
 
 constexpr const char* BoardTypeName = "EXP3HC";
 

@@ -15,7 +15,9 @@
 #include <RTOSIface/RTOSIface.h>
 #include <InputMonitors/InputMonitor.h>
 #include <Movement/Move.h>
-#include <Hardware/CanDriver.h>
+
+#define SUPPORT_CAN		1				// needed by CanDriver.h
+#include <CanDriver.h>
 #include <Hardware/IoPorts.h>
 #include <Version.h>
 #include <peripheral_clk_config.h>
@@ -109,7 +111,7 @@ static can_async_descriptor CAN_0;
 static void CAN_0_init(const CanTiming& timing)
 {
 	hri_mclk_set_AHBMASK_CAN1_bit(MCLK);
-	hri_gclk_write_PCHCTRL_reg(GCLK, CAN1_GCLK_ID, CONF_GCLK_CAN1_SRC | (1 << GCLK_PCHCTRL_CHEN_Pos));
+	hri_gclk_write_PCHCTRL_reg(GCLK, CAN1_GCLK_ID, GclkNum48MHz | (1 << GCLK_PCHCTRL_CHEN_Pos));
 	can_async_init(&CAN_0, CAN1, timing);
 	gpio_set_pin_function(PortBPin(13), PINMUX_PB13H_CAN1_RX);
 	gpio_set_pin_function(PortBPin(12), PINMUX_PB12H_CAN1_TX);
@@ -127,7 +129,7 @@ static void CAN_0_init(const CanTiming& timing)
 static void CAN_0_init(const CanTiming& timing)
 {
 	hri_mclk_set_AHBMASK_CAN0_bit(MCLK);
-	hri_gclk_write_PCHCTRL_reg(GCLK, CAN0_GCLK_ID, CONF_GCLK_CAN0_SRC | (1 << GCLK_PCHCTRL_CHEN_Pos));
+	hri_gclk_write_PCHCTRL_reg(GCLK, CAN0_GCLK_ID, GclkNum48MHz | (1 << GCLK_PCHCTRL_CHEN_Pos));
 	can_async_init(&CAN_0, CAN0, timing);
 #ifdef SAMMYC21
 	gpio_set_pin_function(PortBPin(23), PINMUX_PB23G_CAN0_RX);

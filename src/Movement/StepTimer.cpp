@@ -17,15 +17,8 @@ volatile bool StepTimer::synced = false;
 void StepTimer::Init()
 {
 	// We use StepTcNumber+1 as the slave for 32-bit mode so we need to clock that one too
-#if SAME5x
-	EnableTcClock(StepTcNumber, GCLK_PCHCTRL_GEN_GCLK2_Val);
-	EnableTcClock(StepTcNumber + 1, GCLK_PCHCTRL_GEN_GCLK2_Val);
-#elif SAMC21
-	EnableTcClock(StepTcNumber, GCLK_PCHCTRL_GEN_GCLK0_Val);
-	EnableTcClock(StepTcNumber + 1, GCLK_PCHCTRL_GEN_GCLK0_Val);
-#else
-# error Unsupported processor
-#endif
+	EnableTcClock(StepTcNumber, GclkNum48MHz);
+	EnableTcClock(StepTcNumber + 1, GclkNum48MHz);
 
 	if (!hri_tc_is_syncing(StepTc, TC_SYNCBUSY_SWRST))
 	{

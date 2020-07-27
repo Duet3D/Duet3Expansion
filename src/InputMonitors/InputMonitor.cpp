@@ -80,12 +80,12 @@ void InputMonitor::AnalogInterrupt(uint16_t reading)
 	// Nothing needed here yet
 }
 
-/*static*/ void InputMonitor::CommonDigitalPortInterrupt(CallbackParameter cbp)
+/*static*/ void InputMonitor::CommonDigitalPortInterrupt(CallbackParameter cbp) noexcept
 {
 	static_cast<InputMonitor*>(cbp.vp)->DigitalInterrupt();
 }
 
-/*static*/ void InputMonitor::CommonAnalogPortInterrupt(CallbackParameter cbp, uint16_t reading)
+/*static*/ void InputMonitor::CommonAnalogPortInterrupt(CallbackParameter cbp, uint16_t reading) noexcept
 {
 	static_cast<InputMonitor*>(cbp.vp)->AnalogInterrupt(reading);
 }

@@ -8,8 +8,7 @@
 #ifndef SRC_CONFIG_TOOL1_V01_H_
 #define SRC_CONFIG_TOOL1_V01_H_
 
-#include "RepRapFirmware.h"
-#include "Hardware/Peripherals.h"
+#include <Hardware/PinDescription.h>
 
 constexpr const char* BoardTypeName = "TOOL1LC";
 

@@ -6,9 +6,9 @@
  */
 
 #include "IoPorts.h"
-#include "AnalogIn.h"
-#include "AnalogOut.h"
-#include "Interrupts.h"
+#include <AnalogIn.h>
+#include <AnalogOut.h>
+#include <Interrupts.h>
 #include <CAN/CanInterface.h>
 
 // Members of class IoPort
@@ -73,9 +73,24 @@ bool IoPort::SetMode(PinAccess access)
 
 	if (logicalPinModes[pin] != (int8_t)desiredMode)
 	{
-		if (access == PinAccess::readAnalog && !AnalogIn::IsChannelEnabled(pin))
+		const AnalogChannelNumber chan = PinToAdcChannel(pin);
+		if (chan != NO_ADC)
 		{
-			AnalogIn::EnableChannel(pin, nullptr, CallbackParameter(), 1, false);
+			if (access == PinAccess::readAnalog)
+			{
+				IoPort::SetPinMode(pin, AIN);		// SAME70 errata says we must disable the pullup resistor before enabling the AFEC channel
+				AnalogInEnableChannel(chan, true);
+				logicalPinModes[pin] = (int8_t)desiredMode;
+				return true;
+			}
+			else
+			{
+				AnalogInEnableChannel(chan, false);
+			}
+		}
+		else if (access == PinAccess::readAnalog)
+		{
+			return false;
 		}
 		IoPort::SetPinMode(pin, desiredMode);
 		logicalPinModes[pin] = (int8_t)desiredMode;
@@ -87,7 +102,7 @@ void IoPort::Release()
 {
 	if (IsValid() && !isSharedInput)
 	{
-		::DetachInterrupt(pin);
+		detachInterrupt(pin);
 		portUsedBy[pin] = PinUsedBy::unused;
 		logicalPinModes[pin] = PIN_MODE_NOT_CONFIGURED;
 	}
@@ -130,20 +145,20 @@ uint16_t IoPort::ReadAnalog() const
 // Attach an interrupt to the pin. Nor permitted if we allocated the pin in shared input mode.
 bool IoPort::AttachInterrupt(StandardCallbackFunction callback, InterruptMode mode, CallbackParameter param) const
 {
-	return IsValid() && !isSharedInput && ::AttachInterrupt(pin, callback, mode, param);
+	return IsValid() && !isSharedInput && attachInterrupt(pin, callback, mode, param);
 }
 
 void IoPort::DetachInterrupt() const
 {
 	if (IsValid() && !isSharedInput)
 	{
-		::DetachInterrupt(pin);
+		detachInterrupt(pin);
 	}
 }
 
 bool IoPort::SetAnalogCallback(AnalogInCallbackFunction fn, CallbackParameter cbp, uint32_t ticksPerCall)
 {
-	return AnalogIn::SetCallback(pin, fn, cbp, ticksPerCall, false);
+	return AnalogIn::SetCallback(PinToAdcChannel(pin), fn, cbp, ticksPerCall, false);
 }
 
 // Try to assign ports, returning the number of ports successfully assigned
@@ -481,58 +496,6 @@ void IoPort::AppendPinName(const StringRef& str) const
 			: (useAlternateAdc) ? PinTable[pin].sdadc
 #endif
 				: PinTable[pin].adc;
-}
-
-/*static*/ void IoPort::SetPinMode(Pin pin, PinMode mode)
-{
-	if (pin != NoPin)
-	{
-		switch (mode)
-		{
-		case INPUT:
-			gpio_set_pin_function(pin,GPIO_PIN_FUNCTION_OFF);
-			// The direction must be set before the pullup, otherwise setting the pullup doesn't work
-			gpio_set_pin_direction(pin, GPIO_DIRECTION_IN);
-			gpio_set_pin_pull_mode(pin, GPIO_PULL_OFF);
-			break;
-
-		case INPUT_PULLUP:
-			gpio_set_pin_function(pin,GPIO_PIN_FUNCTION_OFF);
-			// The direction must be set before the pullup, otherwise setting the pullup doesn't work
-			gpio_set_pin_direction(pin, GPIO_DIRECTION_IN);
-			gpio_set_pin_pull_mode(pin, GPIO_PULL_UP);
-			break;
-
-		case INPUT_PULLDOWN:
-			gpio_set_pin_function(pin,GPIO_PIN_FUNCTION_OFF);
-			// The direction must be set before the pullup, otherwise setting the pullup doesn't work
-			gpio_set_pin_direction(pin, GPIO_DIRECTION_IN);
-			gpio_set_pin_pull_mode(pin, GPIO_PULL_DOWN);
-			break;
-
-		case OUTPUT_LOW:
-			gpio_set_pin_function(pin,GPIO_PIN_FUNCTION_OFF);
-			gpio_set_pin_level(pin, false);
-			gpio_set_pin_direction(pin, GPIO_DIRECTION_OUT);
-			break;
-
-		case OUTPUT_HIGH:
-			gpio_set_pin_function(pin,GPIO_PIN_FUNCTION_OFF);
-			gpio_set_pin_level(pin, true);
-			gpio_set_pin_direction(pin, GPIO_DIRECTION_OUT);
-			break;
-
-		case AIN:
-			// The SAME70 errata says we must disable the pullup resistor before enabling the AFEC channel
-			gpio_set_pin_pull_mode(pin, GPIO_PULL_OFF);
-			gpio_set_pin_direction(pin, GPIO_DIRECTION_OFF);		// disable the data input buffer
-			gpio_set_pin_function(pin, GPIO_PIN_FUNCTION_B);		// ADC is always on peripheral B
-			break;
-
-		default:
-			break;
-		}
-	}
 }
 
 /*static*/ bool IoPort::ReadPin(Pin pin)

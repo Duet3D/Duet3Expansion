@@ -8,9 +8,9 @@
 #ifndef SRC_IOPORTS_H_
 #define SRC_IOPORTS_H_
 
-#include "RepRapFirmware.h"
-#include "Interrupts.h"
-#include "AnalogIn.h"
+#include <RepRapFirmware.h>
+#include <Interrupts.h>
+#include <AnalogIn.h>
 
 // Enumeration to describe what we want to do with a pin
 enum class PinAccess : int
@@ -39,24 +39,6 @@ enum class PinUsedBy : uint8_t
 	filamentMonitor,
 	temporaryInput,
 	sensor
-};
-
-// Pin mode enumeration. Would ideally be a C++ scoped enum, but we need to use it from C library functions.
-enum PinMode
-{
-	PIN_MODE_NOT_CONFIGURED = -1,	// used in Platform class to record that the mode for a pin has not been set yet
-	INPUT = 0,						// pin is a digital input
-	INPUT_PULLUP,					// pin is a digital input with pullup enabled
-	INPUT_PULLDOWN,					// pin is a digital input with pulldown enabled
-	OUTPUT_LOW,						// pin is an output with initial state LOW
-	OUTPUT_HIGH,					// pin is an output with initial state HIGH
-	AIN,							// pin is an analog input, digital input buffer is disabled if possible
-	SPECIAL,						// pin is used for the special function defined for it in the variant.cpp file
-	OUTPUT_PWM_LOW,					// PWM output mode, initially low
-	OUTPUT_PWM_HIGH,				// PWM output mode, initially high
-	OUTPUT_LOW_OPEN_DRAIN,			// used in SX1509B expansion driver to put the pin in open drain output mode
-	OUTPUT_HIGH_OPEN_DRAIN,			// used in SX1509B expansion driver to put the pin in open drain output mode
-	OUTPUT_PWM_OPEN_DRAIN			// used in SX1509B expansion driver to put the pin in PWM output mode
 };
 
 // Class to represent a port
@@ -100,7 +82,8 @@ public:
 	static AdcInput PinToAdcInput(Pin pin, bool useAlternateAdc);
 
 	// Low level port access
-	static void SetPinMode(Pin p, PinMode mode);
+	static void SetPinMode(Pin p, PinMode mode) noexcept { pinMode(p, mode); }
+
 	static bool ReadPin(Pin p);
 	static void WriteDigital(Pin p, bool high);
 	static void WriteAnalog(Pin p, float pwm, uint16_t frequency);

@@ -29,8 +29,8 @@ public:
 
 	static uint32_t AddStateChanges(CanMessageInputChanged *msg);
 
-	static void CommonDigitalPortInterrupt(CallbackParameter cbp);
-	static void CommonAnalogPortInterrupt(CallbackParameter cbp, uint16_t reading);
+	static void CommonDigitalPortInterrupt(CallbackParameter cbp) noexcept;
+	static void CommonAnalogPortInterrupt(CallbackParameter cbp, uint16_t reading) noexcept;
 
 private:
 	bool Activate();

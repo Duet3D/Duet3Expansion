@@ -37,7 +37,6 @@
 #include "StepTimer.h"
 #include "Platform.h"
 #include <CAN/CanInterface.h>
-#include "Hardware/Interrupts.h"
 #include "CanMessageFormats.h"
 
 Move::Move() : currentDda(nullptr), scheduledMoves(0), completedMoves(0), numHiccups(0), active(false)

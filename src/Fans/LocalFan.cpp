@@ -12,7 +12,7 @@
 #include "Heating/Heat.h"
 #include "Heating/Sensors/TemperatureSensor.h"
 
-void FanInterrupt(CallbackParameter cb)
+void FanInterrupt(CallbackParameter cb) noexcept
 {
 	static_cast<LocalFan *>(cb.vp)->Interrupt();
 }

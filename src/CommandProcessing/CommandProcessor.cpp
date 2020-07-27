@@ -18,7 +18,7 @@
 #include <Movement/Move.h>
 #include <Tasks.h>
 #include <Version.h>
-#include <Hardware/AnalogIn.h>
+#include <AnalogIn.h>
 #include <hpl_user_area.h>
 #include <cctype>				// for tolower()
 
