@@ -54,14 +54,14 @@ static void InitClocks()
 	const uint16_t calib = hri_osc32kctrl_read_OSCULP32K_CALIB_bf(OSC32KCTRL);
 	hri_osc32kctrl_write_OSCULP32K_reg(OSC32KCTRL, OSC32KCTRL_OSCULP32K_CALIB(calib));
 
-	// Initialise XOSC1
-	hri_oscctrl_write_XOSCCTRL_reg(OSCCTRL, 1,
-			  OSCCTRL_XOSCCTRL_CFDPRESC(1)
+	// Initialise XOSC0
+	hri_oscctrl_write_XOSCCTRL_reg(OSCCTRL, 0,
+			  OSCCTRL_XOSCCTRL_CFDPRESC(3)
 			| OSCCTRL_XOSCCTRL_STARTUP(0)
 			| (0 << OSCCTRL_XOSCCTRL_SWBEN_Pos)
 			| (0 << OSCCTRL_XOSCCTRL_CFDEN_Pos)
 			| (0 << OSCCTRL_XOSCCTRL_ENALC_Pos)
-			| OSCCTRL_XOSCCTRL_IMULT(4)						// 12MHz or 16MHz
+			| OSCCTRL_XOSCCTRL_IMULT(4)						// 12MHz
 			| OSCCTRL_XOSCCTRL_IPTAT(3)
 			| (0 << OSCCTRL_XOSCCTRL_LOWBUFGAIN_Pos)
 			| (0 << OSCCTRL_XOSCCTRL_ONDEMAND_Pos)
@@ -69,7 +69,7 @@ static void InitClocks()
 			| (1 << OSCCTRL_XOSCCTRL_XTALEN_Pos)
 			| (1 << OSCCTRL_XOSCCTRL_ENABLE_Pos));
 
-	while (!hri_oscctrl_get_STATUS_XOSCRDY1_bit(OSCCTRL)) { }
+	while (!hri_oscctrl_get_STATUS_XOSCRDY0_bit(OSCCTRL)) { }
 
 	// Initialise MCLK
 	hri_mclk_write_CPUDIV_reg(MCLK, MCLK_CPUDIV_DIV(MCLK_CPUDIV_DIV_DIV1_Val));
@@ -84,7 +84,7 @@ static void InitClocks()
 			| OSCCTRL_DPLLCTRLB_DCOFILTER(0)
 			| (0 << OSCCTRL_DPLLCTRLB_LBYPASS_Pos)
 			| OSCCTRL_DPLLCTRLB_LTIME(0)
-			| OSCCTRL_DPLLCTRLB_REFCLK(3)
+			| OSCCTRL_DPLLCTRLB_REFCLK(2)			// source is XOSC0
 			| (0 << OSCCTRL_DPLLCTRLB_WUF_Pos)
 			| OSCCTRL_DPLLCTRLB_FILTER(0));
 	hri_oscctrl_write_DPLLCTRLA_reg(OSCCTRL, 0,
@@ -104,12 +104,12 @@ static void InitClocks()
 			| (0 << GCLK_GENCTRL_OOV_Pos) | (0 << GCLK_GENCTRL_IDC_Pos)
 			| (1 << GCLK_GENCTRL_GENEN_Pos) | 7);
 
-	// GCLK1: FDPLL0 divided by 366 to give 32786.9Hz
+	// GCLK1: XOSC0 divided by 366 to give 32786.9Hz
 	hri_gclk_write_GENCTRL_reg(GCLK, 1,
 			  GCLK_GENCTRL_DIV(366) | (0 << GCLK_GENCTRL_RUNSTDBY_Pos)
 			| (0 << GCLK_GENCTRL_DIVSEL_Pos) | (0 << GCLK_GENCTRL_OE_Pos)
 			| (0 << GCLK_GENCTRL_OOV_Pos) | (0 << GCLK_GENCTRL_IDC_Pos)
-			| (1 << GCLK_GENCTRL_GENEN_Pos) | 1);
+			| (1 << GCLK_GENCTRL_GENEN_Pos) | 0);
 
 	// Initialise DFLL48M in closed loop mode
 	hri_gclk_write_PCHCTRL_reg(GCLK, OSCCTRL_GCLK_ID_DFLL48, GCLK_PCHCTRL_GEN(1) | GCLK_PCHCTRL_CHEN);		// set GCLK1 as DFLL reference

@@ -67,7 +67,7 @@ static void InitClocks()
 	hri_oscctrl_write_XOSCCTRL_reg(OSCCTRL,
 	    	  OSCCTRL_XOSCCTRL_STARTUP(0)
 			| (0 << OSCCTRL_XOSCCTRL_AMPGC_Pos)
-	        | OSCCTRL_XOSCCTRL_GAIN(3)
+	        | OSCCTRL_XOSCCTRL_GAIN(3)						// 3 is suitable for 12 and 16MHz
 			| (1 << OSCCTRL_XOSCCTRL_RUNSTDBY_Pos)
 	        | (0 << OSCCTRL_XOSCCTRL_SWBEN_Pos)
 			| (0 << OSCCTRL_XOSCCTRL_CFDEN_Pos)
@@ -82,10 +82,14 @@ static void InitClocks()
 	// DPLL
 	hri_oscctrl_write_DPLLRATIO_reg(OSCCTRL, OSCCTRL_DPLLRATIO_LDRFRAC(0) | OSCCTRL_DPLLRATIO_LDR(23));
 	hri_oscctrl_write_DPLLCTRLB_reg(OSCCTRL,
-	    	  OSCCTRL_DPLLCTRLB_DIV(2)
+#ifdef SAMMYC21
+			  OSCCTRL_DPLLCTRLB_DIV(3)						// divide 16MHz by 8 to get 2MHz
+#else
+	    	  OSCCTRL_DPLLCTRLB_DIV(2)						// divide 12MHz by 6 to get 2MHz
+#endif
 			| (0 << OSCCTRL_DPLLCTRLB_LBYPASS_Pos)
 	        | OSCCTRL_DPLLCTRLB_LTIME(0)
-			| OSCCTRL_DPLLCTRLB_REFCLK(1)
+			| OSCCTRL_DPLLCTRLB_REFCLK(1)					// reference clock is XOSC
 	        | (0 << OSCCTRL_DPLLCTRLB_WUF_Pos)
 			| (0 << OSCCTRL_DPLLCTRLB_LPEN_Pos)
 	        | OSCCTRL_DPLLCTRLB_FILTER(0));
