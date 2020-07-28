@@ -8,8 +8,7 @@
 #ifndef SRC_CONFIG_EXP1CL_H_
 #define SRC_CONFIG_EXP1CL_H_
 
-#include "RepRapFirmware.h"
-#include "Hardware/Peripherals.h"
+#include <Hardware/PinDescription.h>
 
 constexpr const char* BoardTypeName = "EXP1HCE";
 
@@ -98,7 +97,7 @@ constexpr Pin EncoderSclkPin = PortAPin(17);
 constexpr Pin QuadratureCountUpPin = EncoderSclkPin;
 constexpr uint32_t EncoderSclkPinPeriphMode = PINMUX_PA17C_SERCOM1_PAD1;
 
-constexpr Pin EncoderMisoPin = PortCPin(19);
+constexpr Pin EncoderMisoPin = PortAPin(19);
 constexpr Pin QuadratureCountDownPin = EncoderMisoPin;
 constexpr uint32_t EncoderMisoPinPeriphMode = PINMUX_PA19C_SERCOM1_PAD3;
 

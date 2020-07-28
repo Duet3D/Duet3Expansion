@@ -112,8 +112,12 @@ static void InitClocks()
 			| (0 << GCLK_GENCTRL_OOV_Pos) | (0 << GCLK_GENCTRL_IDC_Pos)
 			| (1 << GCLK_GENCTRL_GENEN_Pos) | 6);
 
+	// Initialise divide and square root accelerator
 	_div_init();
 }
+
+// Define replacement standard library functions
+#include <syscalls.h>
 
 #endif
 

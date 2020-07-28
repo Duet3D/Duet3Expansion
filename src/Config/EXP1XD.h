@@ -8,8 +8,7 @@
 #ifndef SRC_CONFIG_EXP1XD_H_
 #define SRC_CONFIG_EXP1XD_H_
 
-#include "RepRapFirmware.h"
-#include "Hardware/Peripherals.h"
+#include <Hardware/PinDescription.h>
 
 constexpr const char* BoardTypeName = "EXP1XD";
 

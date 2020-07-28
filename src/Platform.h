@@ -40,7 +40,7 @@ constexpr size_t NumThermistorFilters = NumThermistorInputs + 4;
 constexpr size_t NumThermistorFilters = NumThermistorInputs + 2;
 # endif
 #else
-# if defined(SAMC21) && SUPPORT_SDADC
+# if SAMC21 && SUPPORT_SDADC
 // On the SAMC21 we have 2 additional filters for the SDADC inputs
 constexpr size_t SdAdcTemp0FilterIndex = NumThermistorInputs;
 constexpr size_t SdAdcVrefFilterIndex = NumThermistorInputs + 1;

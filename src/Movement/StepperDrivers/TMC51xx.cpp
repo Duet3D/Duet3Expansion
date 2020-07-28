@@ -1257,7 +1257,9 @@ void SmartDrivers::Init()
 	const uint32_t regCtrlA = SERCOM_SPI_CTRLA_MODE(3) | SERCOM_SPI_CTRLA_DIPO(3) | SERCOM_SPI_CTRLA_DOPO(0) | SERCOM_SPI_CTRLA_FORM(0)
 							| SERCOM_SPI_CTRLA_CPOL | SERCOM_SPI_CTRLA_CPHA;
 	const uint32_t regCtrlB = 0;											// 8 bits, slave select disabled, receiver disabled for now
+#if !SAMC21
 	const uint32_t regCtrlC = 0;											// not 32-bit mode
+#endif
 
 	if (!hri_sercomspi_is_syncing(SERCOM_TMC51xx, SERCOM_USART_SYNCBUSY_SWRST))
 	{
@@ -1273,8 +1275,10 @@ void SmartDrivers::Init()
 
 	hri_sercomspi_write_CTRLA_reg(SERCOM_TMC51xx, regCtrlA);
 	hri_sercomspi_write_CTRLB_reg(SERCOM_TMC51xx, regCtrlB);
+#if !SAMC21
 	hri_sercomspi_write_CTRLC_reg(SERCOM_TMC51xx, regCtrlC);
-	hri_sercomspi_write_BAUD_reg(SERCOM_TMC51xx, SERCOM_SPI_BAUD_BAUD(SystemPeripheralClock/(2 * DriversSpiClockFrequency) - 1));
+#endif
+	hri_sercomspi_write_BAUD_reg(SERCOM_TMC51xx, SERCOM_SPI_BAUD_BAUD(Serial::SercomFastGclkFreq/(2 * DriversSpiClockFrequency) - 1));
 	hri_sercomspi_write_DBGCTRL_reg(SERCOM_TMC51xx, SERCOM_I2CM_DBGCTRL_DBGSTOP);			// baud rate generator is stopped when CPU halted by debugger
 
 	// Set up the DMA descriptors

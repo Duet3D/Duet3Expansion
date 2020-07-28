@@ -62,7 +62,7 @@
 								<option id="gnu.cpp.compiler.option.include.files.390765618" name="Include files (-include)" superClass="gnu.cpp.compiler.option.include.files" useByScannerDiscovery="false"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.compiler.option.include.paths.1252685874" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/SAME5x}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/Hardware/SAME5x}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x/hal/include}&quot;"/>
@@ -81,7 +81,7 @@
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.cross.c.linker.2038810831" name="Cross GCC Linker" superClass="cdt.managedbuild.tool.gnu.cross.c.linker"/>
 							<tool id="cdt.managedbuild.tool.gnu.cross.cpp.linker.1729351730" name="Cross G++ Linker" superClass="cdt.managedbuild.tool.gnu.cross.cpp.linker">
-								<option id="gnu.cpp.link.option.flags.560499087" name="Linker flags" superClass="gnu.cpp.link.option.flags" useByScannerDiscovery="false" value="-Os --specs=nano.specs -Wl,--gc-sections -Wl,--fatal-warnings -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -T&quot;${workspace_loc:/${ProjName}/src/Hardware/SAME5x/same51n19a_flash_with_bootloader.ld}&quot; -Wl,-Map,&quot;${workspace_loc:/${ProjName}/${ConfigName}}/${BuildArtifactFileBaseName}.map&quot;" valueType="string"/>
+								<option id="gnu.cpp.link.option.flags.560499087" name="Linker flags" superClass="gnu.cpp.link.option.flags" useByScannerDiscovery="false" value="-Os --specs=nano.specs -Wl,--gc-sections -Wl,--entry=Reset_Handler -Wl,--fatal-warnings -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -T&quot;${workspace_loc:/${ProjName}/src/Hardware/SAME5x/same51n19a_flash_with_bootloader.ld}&quot; -Wl,-Map,&quot;${workspace_loc:/${ProjName}/${ConfigName}}/${BuildArtifactFileBaseName}.map&quot;" valueType="string"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.libs.1841208264" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" useByScannerDiscovery="false" valueType="libs">
 									<listOptionValue builtIn="false" value="CoreN2G"/>
 									<listOptionValue builtIn="false" value="RRFLibraries"/>
@@ -110,9 +110,6 @@
 							</tool>
 						</toolChain>
 					</folderInfo>
-					<sourceEntries>
-						<entry excluding="src/AtmelStart_SAMC21|src/atmel|src/CMSIS|src/AtmelStart/examples|src/AtmelStart/hpl/dmac|src/AtmelStart/rtos_start.c|src/AtmelStart/hpl/eic" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
-					</sourceEntries>
 				</configuration>
 			</storageModule>
 			<storageModule moduleId="org.eclipse.cdt.core.externalSettings">
@@ -172,16 +169,17 @@
 								<option id="gnu.c.compiler.option.misc.other.1156165933" name="Other flags" superClass="gnu.c.compiler.option.misc.other" useByScannerDiscovery="false" value="-c -mcpu=cortex-m4 -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=hard -ffunction-sections -fdata-sections -nostdlib -Wundef -Wdouble-promotion -Werror=return-type -fsingle-precision-constant &quot;-Wa,-ahl=$*.s&quot;" valueType="string"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.c.compiler.option.include.paths.727916935" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CANlib}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAME51}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAME51/hal/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAME51/hal/utils/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAME51/hri}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAME51/Config}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/atmel/SAME51_DFP/1.1.129/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/SAME5x}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x/hal/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x/hal/utils/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x/hri}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x/Config}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/arm/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/atmel/SAME51_DFP/1.1.139/include}&quot;"/>
 								</option>
 								<option id="gnu.c.compiler.option.misc.pic.1458021353" name="Position Independent Code (-fPIC)" superClass="gnu.c.compiler.option.misc.pic" useByScannerDiscovery="false" value="true" valueType="boolean"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1924331759" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
@@ -201,13 +199,15 @@
 								<option id="gnu.cpp.compiler.option.include.files.118249370" name="Include files (-include)" superClass="gnu.cpp.compiler.option.include.files" useByScannerDiscovery="false"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.compiler.option.include.paths.1486240581" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAME51}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAME51/hal/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAME51/hal/utils/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAME51/hri}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAME51/Config}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/atmel/SAME51_DFP/1.1.129/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/Hardware/SAME5x}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x/hal/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x/hal/utils/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x/hri}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x/Config}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/arm/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/atmel/SAME51_DFP/1.1.139/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CANlib/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS/src/include}&quot;"/>
@@ -218,13 +218,15 @@
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.cross.c.linker.1635936020" name="Cross GCC Linker" superClass="cdt.managedbuild.tool.gnu.cross.c.linker"/>
 							<tool id="cdt.managedbuild.tool.gnu.cross.cpp.linker.903047" name="Cross G++ Linker" superClass="cdt.managedbuild.tool.gnu.cross.cpp.linker">
-								<option id="gnu.cpp.link.option.flags.143085221" name="Linker flags" superClass="gnu.cpp.link.option.flags" useByScannerDiscovery="false" value="-Os --specs=nano.specs -Wl,--gc-sections -Wl,--fatal-warnings -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -T&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAME51/Device_Startup/same51n19a_flash.ld}&quot; -Wl,-Map,&quot;${workspace_loc:/${ProjName}/${ConfigName}}/${BuildArtifactFileBaseName}.map&quot;" valueType="string"/>
+								<option id="gnu.cpp.link.option.flags.143085221" name="Linker flags" superClass="gnu.cpp.link.option.flags" useByScannerDiscovery="false" value="-Os --specs=nano.specs -Wl,--gc-sections -Wl,--fatal-warnings -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -T&quot;${workspace_loc:/${ProjName}/src/Hardware/SAME5x/same51n19a_flash.ld}&quot; -Wl,-Map,&quot;${workspace_loc:/${ProjName}/${ConfigName}}/${BuildArtifactFileBaseName}.map&quot;" valueType="string"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.libs.989389970" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" useByScannerDiscovery="false" valueType="libs">
-									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="RRFLibraries"/>
-									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="FreeRTOS"/>
+									<listOptionValue builtIn="false" value="CoreN2G"/>
+									<listOptionValue builtIn="false" value="RRFLibraries"/>
 									<listOptionValue builtIn="false" value="CANlib"/>
+									<listOptionValue builtIn="false" value="FreeRTOS"/>
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.paths.1154714004" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" useByScannerDiscovery="false" valueType="libPaths">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/SAME5x_CAN_RTOS_Debug}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries/SAME51_RTOS_Debug}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CANlib/SAME51_RTOS_Debug}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS/SAME51_Debug}&quot;"/>
@@ -245,9 +247,6 @@
 							</tool>
 						</toolChain>
 					</folderInfo>
-					<sourceEntries>
-						<entry excluding="src/AtmelStart_SAMC21|src/atmel|src/CMSIS|src/AtmelStart/examples|src/AtmelStart/hpl/dmac|src/AtmelStart/rtos_start.c|src/AtmelStart/hpl/eic" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
-					</sourceEntries>
 				</configuration>
 			</storageModule>
 			<storageModule moduleId="org.eclipse.cdt.core.externalSettings">
@@ -307,16 +306,17 @@
 								<option id="gnu.c.compiler.option.misc.other.559249370" name="Other flags" superClass="gnu.c.compiler.option.misc.other" useByScannerDiscovery="false" value="-c -mcpu=cortex-m4 -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=hard -ffunction-sections -fdata-sections -nostdlib -Wundef -Wdouble-promotion -Werror=return-type -fsingle-precision-constant &quot;-Wa,-ahl=$*.s&quot;" valueType="string"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.c.compiler.option.include.paths.1707659127" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CANlib}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAME51}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAME51/hal/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAME51/hal/utils/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAME51/hri}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAME51/Config}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/atmel/SAME51_DFP/1.1.129/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/SAME5x}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x/hal/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x/hal/utils/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x/hri}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x/Config}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/arm/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/atmel/SAME51_DFP/1.1.139/include}&quot;"/>
 								</option>
 								<option id="gnu.c.compiler.option.misc.pic.1236014878" name="Position Independent Code (-fPIC)" superClass="gnu.c.compiler.option.misc.pic" useByScannerDiscovery="false" value="true" valueType="boolean"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1136861170" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
@@ -336,13 +336,15 @@
 								<option id="gnu.cpp.compiler.option.include.files.1262827868" name="Include files (-include)" superClass="gnu.cpp.compiler.option.include.files" useByScannerDiscovery="false"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.compiler.option.include.paths.1420507339" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAME51}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAME51/hal/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAME51/hal/utils/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAME51/hri}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAME51/Config}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/atmel/SAME51_DFP/1.1.129/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/Hardware/SAME5x}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x/hal/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x/hal/utils/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x/hri}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x/Config}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/arm/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/atmel/SAME51_DFP/1.1.139/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CANlib/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS/src/include}&quot;"/>
@@ -353,13 +355,15 @@
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.cross.c.linker.1051868955" name="Cross GCC Linker" superClass="cdt.managedbuild.tool.gnu.cross.c.linker"/>
 							<tool id="cdt.managedbuild.tool.gnu.cross.cpp.linker.657217877" name="Cross G++ Linker" superClass="cdt.managedbuild.tool.gnu.cross.cpp.linker">
-								<option id="gnu.cpp.link.option.flags.1581366289" name="Linker flags" superClass="gnu.cpp.link.option.flags" useByScannerDiscovery="false" value="-Os --specs=nano.specs -Wl,--gc-sections -Wl,--fatal-warnings -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -T&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAME51/Device_Startup/same51n19a_flash_with_bootloader.ld}&quot; -Wl,-Map,&quot;${workspace_loc:/${ProjName}/${ConfigName}}/${BuildArtifactFileBaseName}.map&quot;" valueType="string"/>
+								<option id="gnu.cpp.link.option.flags.1581366289" name="Linker flags" superClass="gnu.cpp.link.option.flags" useByScannerDiscovery="false" value="-Os --specs=nano.specs -Wl,--gc-sections -Wl,--fatal-warnings -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -T&quot;${workspace_loc:/${ProjName}/src/Hardware/SAME5x/same51n19a_flash_with_bootloader.ld}&quot; -Wl,-Map,&quot;${workspace_loc:/${ProjName}/${ConfigName}}/${BuildArtifactFileBaseName}.map&quot;" valueType="string"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.libs.1164438022" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" useByScannerDiscovery="false" valueType="libs">
-									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="RRFLibraries"/>
-									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="FreeRTOS"/>
+									<listOptionValue builtIn="false" value="CoreN2G"/>
+									<listOptionValue builtIn="false" value="RRFLibraries"/>
 									<listOptionValue builtIn="false" value="CANlib"/>
+									<listOptionValue builtIn="false" value="FreeRTOS"/>
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.paths.442799974" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" useByScannerDiscovery="false" valueType="libPaths">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/SAME5x_CAN_RTOS_DEBUG}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries/SAME51_RTOS_Debug}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CANlib/SAME51_RTOS_Debug}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS/SAME51_Debug}&quot;"/>
@@ -380,9 +384,6 @@
 							</tool>
 						</toolChain>
 					</folderInfo>
-					<sourceEntries>
-						<entry excluding="src/AtmelStart_SAMC21|src/atmel|src/CMSIS|src/AtmelStart/examples|src/AtmelStart/hpl/dmac|src/AtmelStart/rtos_start.c|src/AtmelStart/hpl/eic" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
-					</sourceEntries>
 				</configuration>
 			</storageModule>
 			<storageModule moduleId="org.eclipse.cdt.core.externalSettings">
@@ -443,13 +444,15 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CANlib}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAME51}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAME51/hal/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAME51/hal/utils/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAME51/hri}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAME51/Config}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/atmel/SAME51_DFP/1.1.129/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/SAME5x}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x/hal/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x/hal/utils/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x/hri}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x/Config}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/arm/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/atmel/SAME51_DFP/1.1.139/include}&quot;"/>
 								</option>
 								<option id="gnu.c.compiler.option.misc.pic.1936999632" name="Position Independent Code (-fPIC)" superClass="gnu.c.compiler.option.misc.pic" useByScannerDiscovery="false" value="false" valueType="boolean"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1857573533" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
@@ -468,13 +471,15 @@
 								<option id="gnu.cpp.compiler.option.include.files.1054250742" name="Include files (-include)" superClass="gnu.cpp.compiler.option.include.files" useByScannerDiscovery="false"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.compiler.option.include.paths.419511737" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAME51}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAME51/hal/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAME51/hal/utils/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAME51/hri}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAME51/Config}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/atmel/SAME51_DFP/1.1.129/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/Hardware/SAME5x}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x/hal/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x/hal/utils/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x/hri}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x/Config}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/arm/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/atmel/SAME51_DFP/1.1.139/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CANlib/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS/src/include}&quot;"/>
@@ -485,8 +490,9 @@
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.cross.c.linker.2140631367" name="Cross GCC Linker" superClass="cdt.managedbuild.tool.gnu.cross.c.linker"/>
 							<tool id="cdt.managedbuild.tool.gnu.cross.cpp.linker.2029929833" name="Cross G++ Linker" superClass="cdt.managedbuild.tool.gnu.cross.cpp.linker">
-								<option id="gnu.cpp.link.option.flags.504783986" name="Linker flags" superClass="gnu.cpp.link.option.flags" useByScannerDiscovery="false" value="-Os --specs=nano.specs -Wl,--gc-sections -Wl,--fatal-warnings -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -T&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAME51/Device_Startup/same51n19a_flash.ld}&quot; -Wl,-Map,&quot;${workspace_loc:/${ProjName}/${ConfigName}}/${BuildArtifactFileBaseName}.map&quot;" valueType="string"/>
+								<option id="gnu.cpp.link.option.flags.504783986" name="Linker flags" superClass="gnu.cpp.link.option.flags" useByScannerDiscovery="false" value="-Os --specs=nano.specs -Wl,--gc-sections -Wl,--fatal-warnings -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -T&quot;${workspace_loc:/${ProjName}/src/Hardware/SAME5x/same51n19a_flash.ld}&quot; -Wl,-Map,&quot;${workspace_loc:/${ProjName}/${ConfigName}}/${BuildArtifactFileBaseName}.map&quot;" valueType="string"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.libs.542237489" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" useByScannerDiscovery="false" valueType="libs">
+									<listOptionValue builtIn="false" value="CoreN2G"/>
 									<listOptionValue builtIn="false" value="RRFLibraries"/>
 									<listOptionValue builtIn="false" value="CANlib"/>
 									<listOptionValue builtIn="false" value="FreeRTOS"/>
@@ -513,9 +519,6 @@
 							</tool>
 						</toolChain>
 					</folderInfo>
-					<sourceEntries>
-						<entry excluding="src/AtmelStart_SAMC21|src/atmel|src/CMSIS|src/AtmelStart/examples|src/AtmelStart/hpl/dmac|src/AtmelStart/rtos_start.c|src/AtmelStart/hpl/eic" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
-					</sourceEntries>
 				</configuration>
 			</storageModule>
 			<storageModule moduleId="org.eclipse.cdt.core.externalSettings">
@@ -576,13 +579,14 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/hal/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/hal/utils/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/hri}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/Config}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/atmel/SAMC21_DFP/1.2.176/samc21/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/utils/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hri}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/Config}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/atmel/SAMC21_DFP/1.2.176/samc21/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/arm/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
 								</option>
 								<option id="gnu.c.compiler.option.misc.pic.46288450" name="Position Independent Code (-fPIC)" superClass="gnu.c.compiler.option.misc.pic" useByScannerDiscovery="false" value="true" valueType="boolean"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.2117356235" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
@@ -600,13 +604,15 @@
 								<option id="gnu.cpp.compiler.option.include.files.25232746" name="Include files (-include)" superClass="gnu.cpp.compiler.option.include.files" useByScannerDiscovery="false"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.compiler.option.include.paths.282309128" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/hal/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/hal/utils/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/hri}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/Config}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/atmel/SAMC21_DFP/1.2.176/samc21/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/Hardware/SAMC21}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/utils/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hri}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/Config}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/arm/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/atmel/SAMC21_DFP/1.2.176/samc21/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CANlib/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS/src/include}&quot;"/>
@@ -617,13 +623,15 @@
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.cross.c.linker.1023918790" name="Cross GCC Linker" superClass="cdt.managedbuild.tool.gnu.cross.c.linker"/>
 							<tool id="cdt.managedbuild.tool.gnu.cross.cpp.linker.512558905" name="Cross G++ Linker" superClass="cdt.managedbuild.tool.gnu.cross.cpp.linker">
-								<option id="gnu.cpp.link.option.flags.151090548" name="Linker flags" superClass="gnu.cpp.link.option.flags" useByScannerDiscovery="false" value="-Os --specs=nano.specs -Wl,--gc-sections -Wl,--fatal-warnings -mcpu=cortex-m0plus -T&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/Device_Startup/samc21g18a_flash_with_bootloader.ld}&quot; -Wl,-Map,&quot;${workspace_loc:/${ProjName}/${ConfigName}}/${BuildArtifactFileBaseName}.map&quot;" valueType="string"/>
+								<option id="gnu.cpp.link.option.flags.151090548" name="Linker flags" superClass="gnu.cpp.link.option.flags" useByScannerDiscovery="false" value="-Os --specs=nano.specs -Wl,--gc-sections -Wl,--fatal-warnings -mcpu=cortex-m0plus -T&quot;${workspace_loc:/${ProjName}/src/Hardware/SAMC21/samc21g18a_flash_with_bootloader.ld}&quot; -Wl,-Map,&quot;${workspace_loc:/${ProjName}/${ConfigName}}/${BuildArtifactFileBaseName}.map&quot;" valueType="string"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.libs.1549060929" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" useByScannerDiscovery="false" valueType="libs">
-									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="CANlib"/>
-									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="RRFLibraries"/>
-									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="FreeRTOS"/>
+									<listOptionValue builtIn="false" value="CoreN2G"/>
+									<listOptionValue builtIn="false" value="RRFLibraries"/>
+									<listOptionValue builtIn="false" value="CANlib"/>
+									<listOptionValue builtIn="false" value="FreeRTOS"/>
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.paths.1448929044" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" useByScannerDiscovery="false" valueType="libPaths">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/SAMC21_CAN_RTOS}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries/SAMC21_RTOS}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CANlib/SAMC21_RTOS}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS/SAMC21}&quot;"/>
@@ -644,9 +652,6 @@
 							</tool>
 						</toolChain>
 					</folderInfo>
-					<sourceEntries>
-						<entry excluding="src/AtmelStart_SAME51|src/atmel|src/CMSIS|src/AtmelStart/examples|src/AtmelStart/hpl/dmac|src/AtmelStart/rtos_start.c|src/AtmelStart/hpl/eic" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
-					</sourceEntries>
 				</configuration>
 			</storageModule>
 			<storageModule moduleId="org.eclipse.cdt.core.externalSettings">
@@ -708,13 +713,14 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/hal/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/hal/utils/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/hri}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/Config}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/atmel/SAMC21_DFP/1.2.176/samc21/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/utils/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hri}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/Config}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/atmel/SAMC21_DFP/1.2.176/samc21/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/arm/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
 								</option>
 								<option id="gnu.c.compiler.option.misc.pic.2103797171" name="Position Independent Code (-fPIC)" superClass="gnu.c.compiler.option.misc.pic" useByScannerDiscovery="false" value="true" valueType="boolean"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1920348325" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
@@ -733,13 +739,15 @@
 								<option id="gnu.cpp.compiler.option.include.files.147889884" name="Include files (-include)" superClass="gnu.cpp.compiler.option.include.files" useByScannerDiscovery="false"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.compiler.option.include.paths.160935379" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/hal/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/hal/utils/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/hri}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/Config}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/atmel/SAMC21_DFP/1.2.176/samc21/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/Hardware/SAMC21}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/utils/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hri}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/Config}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/arm/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/atmel/SAMC21_DFP/1.2.176/samc21/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CANlib/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS/src/include}&quot;"/>
@@ -750,13 +758,15 @@
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.cross.c.linker.469316158" name="Cross GCC Linker" superClass="cdt.managedbuild.tool.gnu.cross.c.linker"/>
 							<tool id="cdt.managedbuild.tool.gnu.cross.cpp.linker.365070906" name="Cross G++ Linker" superClass="cdt.managedbuild.tool.gnu.cross.cpp.linker">
-								<option id="gnu.cpp.link.option.flags.1371801510" name="Linker flags" superClass="gnu.cpp.link.option.flags" useByScannerDiscovery="false" value="-Os --specs=nano.specs -Wl,--gc-sections -Wl,--fatal-warnings -mcpu=cortex-m0plus -T&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/Device_Startup/samc21g18a_flash.ld}&quot; -Wl,-Map,&quot;${workspace_loc:/${ProjName}/${ConfigName}}/${BuildArtifactFileBaseName}.map&quot;" valueType="string"/>
+								<option id="gnu.cpp.link.option.flags.1371801510" name="Linker flags" superClass="gnu.cpp.link.option.flags" useByScannerDiscovery="false" value="-Os --specs=nano.specs -Wl,--gc-sections -Wl,--fatal-warnings -mcpu=cortex-m0plus -T&quot;${workspace_loc:/${ProjName}/src/Hardware/SAMC21/samc21g18a_flash.ld}&quot; -Wl,-Map,&quot;${workspace_loc:/${ProjName}/${ConfigName}}/${BuildArtifactFileBaseName}.map&quot;" valueType="string"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.libs.265949901" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" useByScannerDiscovery="false" valueType="libs">
-									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="RRFLibraries"/>
-									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="FreeRTOS"/>
+									<listOptionValue builtIn="false" value="CoreN2G"/>
+									<listOptionValue builtIn="false" value="RRFLibraries"/>
 									<listOptionValue builtIn="false" value="CANlib"/>
+									<listOptionValue builtIn="false" value="FreeRTOS"/>
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.paths.1828652557" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" useByScannerDiscovery="false" valueType="libPaths">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/SAMC21_CAN_RTOS_Debug}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries/SAMC21_RTOS_Debug}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CANlib/SAMC21_RTOS_Debug}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS/SAMC21_Debug}&quot;"/>
@@ -777,9 +787,6 @@
 							</tool>
 						</toolChain>
 					</folderInfo>
-					<sourceEntries>
-						<entry excluding="src/AtmelStart_SAME51|src/atmel|src/CMSIS|src/AtmelStart/examples|src/AtmelStart/hpl/dmac|src/AtmelStart/rtos_start.c|src/AtmelStart/hpl/eic" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
-					</sourceEntries>
 				</configuration>
 			</storageModule>
 			<storageModule moduleId="org.eclipse.cdt.core.externalSettings">
@@ -866,6 +873,7 @@
 								<option id="gnu.cpp.compiler.option.include.files.1852088718" name="Include files (-include)" superClass="gnu.cpp.compiler.option.include.files" useByScannerDiscovery="false"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.compiler.option.include.paths.152307706" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/Hardware/SAMC21}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/include}&quot;"/>
@@ -884,11 +892,11 @@
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.cross.c.linker.2033624884" name="Cross GCC Linker" superClass="cdt.managedbuild.tool.gnu.cross.c.linker"/>
 							<tool id="cdt.managedbuild.tool.gnu.cross.cpp.linker.1769984346" name="Cross G++ Linker" superClass="cdt.managedbuild.tool.gnu.cross.cpp.linker">
-								<option id="gnu.cpp.link.option.flags.349160376" name="Linker flags" superClass="gnu.cpp.link.option.flags" useByScannerDiscovery="false" value="-Os --specs=nano.specs -Wl,--gc-sections -Wl,--fatal-warnings -mcpu=cortex-m0plus -T&quot;${workspace_loc:/${ProjName}/src/Hardware/SAMC21/samc21g18a_flash_with_bootloader.ld}&quot; -Wl,-Map,&quot;${workspace_loc:/${ProjName}/${ConfigName}}/${BuildArtifactFileBaseName}.map&quot;" valueType="string"/>
+								<option id="gnu.cpp.link.option.flags.349160376" name="Linker flags" superClass="gnu.cpp.link.option.flags" useByScannerDiscovery="false" value="-Os --specs=nano.specs -Wl,--gc-sections -Wl,--entry=Reset_Handler -Wl,--fatal-warnings -mcpu=cortex-m0plus -T&quot;${workspace_loc:/${ProjName}/src/Hardware/SAMC21/samc21g18a_flash_with_bootloader.ld}&quot; -Wl,-Map,&quot;${workspace_loc:/${ProjName}/${ConfigName}}/${BuildArtifactFileBaseName}.map&quot;" valueType="string"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.libs.101705773" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" useByScannerDiscovery="false" valueType="libs">
-									<listOptionValue builtIn="false" value="CANlib"/>
 									<listOptionValue builtIn="false" value="CoreN2G"/>
 									<listOptionValue builtIn="false" value="RRFLibraries"/>
+									<listOptionValue builtIn="false" value="CANlib"/>
 									<listOptionValue builtIn="false" value="FreeRTOS"/>
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.paths.1557325032" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" useByScannerDiscovery="false" valueType="libPaths">
@@ -913,9 +921,6 @@
 							</tool>
 						</toolChain>
 					</folderInfo>
-					<sourceEntries>
-						<entry excluding="src/AtmelStart_SAME51|src/atmel|src/CMSIS|src/AtmelStart/examples|src/AtmelStart/hpl/dmac|src/AtmelStart/rtos_start.c|src/AtmelStart/hpl/eic" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
-					</sourceEntries>
 				</configuration>
 			</storageModule>
 			<storageModule moduleId="org.eclipse.cdt.core.externalSettings">
@@ -977,13 +982,14 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/hal/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/hal/utils/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/hri}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/Config}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/atmel/SAMC21_DFP/1.2.176/samc21/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/utils/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hri}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/Config}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/atmel/SAMC21_DFP/1.2.176/samc21/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/arm/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
 								</option>
 								<option id="gnu.c.compiler.option.misc.pic.1416013671" name="Position Independent Code (-fPIC)" superClass="gnu.c.compiler.option.misc.pic" useByScannerDiscovery="false" value="true" valueType="boolean"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1585495996" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
@@ -1002,13 +1008,15 @@
 								<option id="gnu.cpp.compiler.option.include.files.888598492" name="Include files (-include)" superClass="gnu.cpp.compiler.option.include.files" useByScannerDiscovery="false"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.compiler.option.include.paths.279591561" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/hal/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/hal/utils/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/hri}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/Config}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/atmel/SAMC21_DFP/1.2.176/samc21/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/Hardware/SAMC21}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/utils/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hri}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/Config}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/arm/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/atmel/SAMC21_DFP/1.2.176/samc21/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CANlib/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS/src/include}&quot;"/>
@@ -1019,13 +1027,15 @@
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.cross.c.linker.1193365049" name="Cross GCC Linker" superClass="cdt.managedbuild.tool.gnu.cross.c.linker"/>
 							<tool id="cdt.managedbuild.tool.gnu.cross.cpp.linker.2089456145" name="Cross G++ Linker" superClass="cdt.managedbuild.tool.gnu.cross.cpp.linker">
-								<option id="gnu.cpp.link.option.flags.429030561" name="Linker flags" superClass="gnu.cpp.link.option.flags" useByScannerDiscovery="false" value="-Os --specs=nano.specs -Wl,--gc-sections -Wl,--fatal-warnings -mcpu=cortex-m0plus -T&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/Device_Startup/samc21g18a_flash.ld}&quot; -Wl,-Map,&quot;${workspace_loc:/${ProjName}/${ConfigName}}/${BuildArtifactFileBaseName}.map&quot;" valueType="string"/>
+								<option id="gnu.cpp.link.option.flags.429030561" name="Linker flags" superClass="gnu.cpp.link.option.flags" useByScannerDiscovery="false" value="-Os --specs=nano.specs -Wl,--gc-sections -Wl,--fatal-warnings -mcpu=cortex-m0plus -T&quot;${workspace_loc:/${ProjName}/src/Hardware/SAMC21/samc21g18a_flash.ld}&quot; -Wl,-Map,&quot;${workspace_loc:/${ProjName}/${ConfigName}}/${BuildArtifactFileBaseName}.map&quot;" valueType="string"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.libs.1918705244" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" useByScannerDiscovery="false" valueType="libs">
-									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="CANlib"/>
-									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="RRFLibraries"/>
-									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="FreeRTOS"/>
+									<listOptionValue builtIn="false" value="CoreN2G"/>
+									<listOptionValue builtIn="false" value="RRFLibraries"/>
+									<listOptionValue builtIn="false" value="CANlib"/>
+									<listOptionValue builtIn="false" value="FreeRTOS"/>
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.paths.17768924" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" useByScannerDiscovery="false" valueType="libPaths">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/SAMC21_CAN_RTOS}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries/SAMC21_RTOS}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CANlib/SAMC21_RTOS}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS/SAMC21}&quot;"/>
@@ -1046,9 +1056,6 @@
 							</tool>
 						</toolChain>
 					</folderInfo>
-					<sourceEntries>
-						<entry excluding="src/AtmelStart_SAME51|src/atmel|src/CMSIS|src/AtmelStart/examples|src/AtmelStart/hpl/dmac|src/AtmelStart/rtos_start.c|src/AtmelStart/hpl/eic" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
-					</sourceEntries>
 				</configuration>
 			</storageModule>
 			<storageModule moduleId="org.eclipse.cdt.core.externalSettings">
@@ -1109,13 +1116,14 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/hal/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/hal/utils/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/hri}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/Config}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/atmel/SAMC21_DFP/1.2.176/samc21/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/utils/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hri}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/Config}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/atmel/SAMC21_DFP/1.2.176/samc21/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/arm/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
 								</option>
 								<option id="gnu.c.compiler.option.misc.pic.1884255542" name="Position Independent Code (-fPIC)" superClass="gnu.c.compiler.option.misc.pic" useByScannerDiscovery="false" value="true" valueType="boolean"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1502620024" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
@@ -1133,13 +1141,15 @@
 								<option id="gnu.cpp.compiler.option.include.files.76681472" name="Include files (-include)" superClass="gnu.cpp.compiler.option.include.files" useByScannerDiscovery="false"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.compiler.option.include.paths.517560169" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/hal/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/hal/utils/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/hri}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/Config}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/atmel/SAMC21_DFP/1.2.176/samc21/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/Hardware/SAMC21}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/utils/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hri}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/Config}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/arm/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/atmel/SAMC21_DFP/1.2.176/samc21/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CANlib/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS/src/include}&quot;"/>
@@ -1150,13 +1160,15 @@
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.cross.c.linker.1104556852" name="Cross GCC Linker" superClass="cdt.managedbuild.tool.gnu.cross.c.linker"/>
 							<tool id="cdt.managedbuild.tool.gnu.cross.cpp.linker.1933388193" name="Cross G++ Linker" superClass="cdt.managedbuild.tool.gnu.cross.cpp.linker">
-								<option id="gnu.cpp.link.option.flags.1834883443" name="Linker flags" superClass="gnu.cpp.link.option.flags" useByScannerDiscovery="false" value="-Os --specs=nano.specs -Wl,--gc-sections -Wl,--fatal-warnings -mcpu=cortex-m0plus -T&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/Device_Startup/samc21g18a_flash_with_bootloader.ld}&quot; -Wl,-Map,&quot;${workspace_loc:/${ProjName}/${ConfigName}}/${BuildArtifactFileBaseName}.map&quot;" valueType="string"/>
+								<option id="gnu.cpp.link.option.flags.1834883443" name="Linker flags" superClass="gnu.cpp.link.option.flags" useByScannerDiscovery="false" value="-Os --specs=nano.specs -Wl,--gc-sections -Wl,--fatal-warnings -mcpu=cortex-m0plus -T&quot;${workspace_loc:/${ProjName}/src/Hardware/SAMC21/samc21g18a_flash_with_bootloader.ld}&quot; -Wl,-Map,&quot;${workspace_loc:/${ProjName}/${ConfigName}}/${BuildArtifactFileBaseName}.map&quot;" valueType="string"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.libs.1367616751" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" useByScannerDiscovery="false" valueType="libs">
-									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="CANlib"/>
-									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="RRFLibraries"/>
-									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="FreeRTOS"/>
+									<listOptionValue builtIn="false" value="CoreN2G"/>
+									<listOptionValue builtIn="false" value="RRFLibraries"/>
+									<listOptionValue builtIn="false" value="CANlib"/>
+									<listOptionValue builtIn="false" value="FreeRTOS"/>
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.paths.546711067" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" useByScannerDiscovery="false" valueType="libPaths">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/SAMC21_CAN_RTOS}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries/SAMC21_RTOS}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CANlib/SAMC21_RTOS}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS/SAMC21}&quot;"/>
@@ -1177,9 +1189,6 @@
 							</tool>
 						</toolChain>
 					</folderInfo>
-					<sourceEntries>
-						<entry excluding="src/AtmelStart_SAME51|src/atmel|src/CMSIS|src/AtmelStart/examples|src/AtmelStart/hpl/dmac|src/AtmelStart/rtos_start.c|src/AtmelStart/hpl/eic" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
-					</sourceEntries>
 				</configuration>
 			</storageModule>
 			<storageModule moduleId="org.eclipse.cdt.core.externalSettings">
@@ -1241,13 +1250,14 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/hal/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/hal/utils/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/hri}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/Config}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/atmel/SAMC21_DFP/1.2.176/samc21/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/utils/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hri}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/Config}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/atmel/SAMC21_DFP/1.2.176/samc21/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/arm/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
 								</option>
 								<option id="gnu.c.compiler.option.misc.pic.1308855983" name="Position Independent Code (-fPIC)" superClass="gnu.c.compiler.option.misc.pic" useByScannerDiscovery="false" value="true" valueType="boolean"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.2062520859" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
@@ -1266,13 +1276,15 @@
 								<option id="gnu.cpp.compiler.option.include.files.1649547781" name="Include files (-include)" superClass="gnu.cpp.compiler.option.include.files" useByScannerDiscovery="false"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.compiler.option.include.paths.1104040731" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/hal/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/hal/utils/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/hri}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/Config}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/atmel/SAMC21_DFP/1.2.176/samc21/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/Hardware/SAMC21}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/utils/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hri}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/Config}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/arm/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/atmel/SAMC21_DFP/1.2.176/samc21/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CANlib/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS/src/include}&quot;"/>
@@ -1283,13 +1295,15 @@
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.cross.c.linker.2018744960" name="Cross GCC Linker" superClass="cdt.managedbuild.tool.gnu.cross.c.linker"/>
 							<tool id="cdt.managedbuild.tool.gnu.cross.cpp.linker.1827299057" name="Cross G++ Linker" superClass="cdt.managedbuild.tool.gnu.cross.cpp.linker">
-								<option id="gnu.cpp.link.option.flags.1155392262" name="Linker flags" superClass="gnu.cpp.link.option.flags" useByScannerDiscovery="false" value="-Os --specs=nano.specs -Wl,--gc-sections -Wl,--fatal-warnings -mcpu=cortex-m0plus -T&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/Device_Startup/samc21g18a_flash.ld}&quot; -Wl,-Map,&quot;${workspace_loc:/${ProjName}/${ConfigName}}/${BuildArtifactFileBaseName}.map&quot;" valueType="string"/>
+								<option id="gnu.cpp.link.option.flags.1155392262" name="Linker flags" superClass="gnu.cpp.link.option.flags" useByScannerDiscovery="false" value="-Os --specs=nano.specs -Wl,--gc-sections -Wl,--fatal-warnings -mcpu=cortex-m0plus -T&quot;${workspace_loc:/${ProjName}/src/Hardware/SAMC21/samc21g18a_flash.ld}&quot; -Wl,-Map,&quot;${workspace_loc:/${ProjName}/${ConfigName}}/${BuildArtifactFileBaseName}.map&quot;" valueType="string"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.libs.473467296" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" useByScannerDiscovery="false" valueType="libs">
-									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="RRFLibraries"/>
-									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="FreeRTOS"/>
+									<listOptionValue builtIn="false" value="CoreN2G"/>
+									<listOptionValue builtIn="false" value="RRFLibraries"/>
 									<listOptionValue builtIn="false" value="CANlib"/>
+									<listOptionValue builtIn="false" value="FreeRTOS"/>
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.paths.1720867500" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" useByScannerDiscovery="false" valueType="libPaths">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/SAMC21_CAN_RTOS_Debug}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries/SAMC21_RTOS_Debug}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CANlib/SAMC21_RTOS_Debug}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS/SAMC21_Debug}&quot;"/>
@@ -1310,9 +1324,6 @@
 							</tool>
 						</toolChain>
 					</folderInfo>
-					<sourceEntries>
-						<entry excluding="src/AtmelStart_SAME51|src/atmel|src/CMSIS|src/AtmelStart/examples|src/AtmelStart/hpl/dmac|src/AtmelStart/rtos_start.c|src/AtmelStart/hpl/eic" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
-					</sourceEntries>
 				</configuration>
 			</storageModule>
 			<storageModule moduleId="org.eclipse.cdt.core.externalSettings">
@@ -1374,13 +1385,14 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/hal/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/hal/utils/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/hri}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/Config}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/atmel/SAMC21_DFP/1.2.176/samc21/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/utils/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hri}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/Config}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/atmel/SAMC21_DFP/1.2.176/samc21/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/arm/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
 								</option>
 								<option id="gnu.c.compiler.option.misc.pic.519170900" name="Position Independent Code (-fPIC)" superClass="gnu.c.compiler.option.misc.pic" useByScannerDiscovery="false" value="true" valueType="boolean"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.75421810" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
@@ -1398,13 +1410,15 @@
 								<option id="gnu.cpp.compiler.option.include.files.1704508422" name="Include files (-include)" superClass="gnu.cpp.compiler.option.include.files" useByScannerDiscovery="false"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.compiler.option.include.paths.892297969" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/hal/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/hal/utils/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/hri}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/Config}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/atmel/SAMC21_DFP/1.2.176/samc21/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/Hardware/SAMC21}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/utils/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hri}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/Config}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/arm/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/atmel/SAMC21_DFP/1.2.176/samc21/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CANlib/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS/src/include}&quot;"/>
@@ -1415,13 +1429,15 @@
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.cross.c.linker.1176445470" name="Cross GCC Linker" superClass="cdt.managedbuild.tool.gnu.cross.c.linker"/>
 							<tool id="cdt.managedbuild.tool.gnu.cross.cpp.linker.1239657820" name="Cross G++ Linker" superClass="cdt.managedbuild.tool.gnu.cross.cpp.linker">
-								<option id="gnu.cpp.link.option.flags.1281402622" name="Linker flags" superClass="gnu.cpp.link.option.flags" useByScannerDiscovery="false" value="-Os --specs=nano.specs -Wl,--gc-sections -Wl,--fatal-warnings -mcpu=cortex-m0plus -T&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/Device_Startup/samc21g18a_flash_with_bootloader.ld}&quot; -Wl,-Map,&quot;${workspace_loc:/${ProjName}/${ConfigName}}/${BuildArtifactFileBaseName}.map&quot;" valueType="string"/>
+								<option id="gnu.cpp.link.option.flags.1281402622" name="Linker flags" superClass="gnu.cpp.link.option.flags" useByScannerDiscovery="false" value="-Os --specs=nano.specs -Wl,--gc-sections -Wl,--fatal-warnings -mcpu=cortex-m0plus -T&quot;${workspace_loc:/${ProjName}/src/Hardware/SAMC21/samc21g18a_flash_with_bootloader.ld}&quot; -Wl,-Map,&quot;${workspace_loc:/${ProjName}/${ConfigName}}/${BuildArtifactFileBaseName}.map&quot;" valueType="string"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.libs.1331443711" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" useByScannerDiscovery="false" valueType="libs">
-									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="CANlib"/>
-									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="RRFLibraries"/>
-									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="FreeRTOS"/>
+									<listOptionValue builtIn="false" value="CoreN2G"/>
+									<listOptionValue builtIn="false" value="RRFLibraries"/>
+									<listOptionValue builtIn="false" value="CANlib"/>
+									<listOptionValue builtIn="false" value="FreeRTOS"/>
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.paths.244021745" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" useByScannerDiscovery="false" valueType="libPaths">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/SAMC21_CAN_RTOS}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries/SAMC21_RTOS}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CANlib/SAMC21_RTOS}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS/SAMC21}&quot;"/>
@@ -1442,9 +1458,6 @@
 							</tool>
 						</toolChain>
 					</folderInfo>
-					<sourceEntries>
-						<entry excluding="src/AtmelStart_SAME51|src/atmel|src/CMSIS|src/AtmelStart/examples|src/AtmelStart/hpl/dmac|src/AtmelStart/rtos_start.c|src/AtmelStart/hpl/eic" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
-					</sourceEntries>
 				</configuration>
 			</storageModule>
 			<storageModule moduleId="org.eclipse.cdt.core.externalSettings">
@@ -1507,13 +1520,14 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/hal/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/hal/utils/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/hri}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/Config}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/atmel/SAMC21_DFP/1.2.176/samc21/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/utils/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hri}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/Config}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/atmel/SAMC21_DFP/1.2.176/samc21/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/arm/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
 								</option>
 								<option id="gnu.c.compiler.option.misc.pic.294286503" name="Position Independent Code (-fPIC)" superClass="gnu.c.compiler.option.misc.pic" useByScannerDiscovery="false" value="true" valueType="boolean"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1373040648" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
@@ -1532,13 +1546,15 @@
 								<option id="gnu.cpp.compiler.option.include.files.2123744188" name="Include files (-include)" superClass="gnu.cpp.compiler.option.include.files" useByScannerDiscovery="false"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.compiler.option.include.paths.1793129912" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/hal/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/hal/utils/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/hri}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/Config}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/atmel/SAMC21_DFP/1.2.176/samc21/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/Hardware/SAMC21}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/utils/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hri}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/Config}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/arm/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/atmel/SAMC21_DFP/1.2.176/samc21/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CANlib/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS/src/include}&quot;"/>
@@ -1549,13 +1565,15 @@
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.cross.c.linker.462826476" name="Cross GCC Linker" superClass="cdt.managedbuild.tool.gnu.cross.c.linker"/>
 							<tool id="cdt.managedbuild.tool.gnu.cross.cpp.linker.189000951" name="Cross G++ Linker" superClass="cdt.managedbuild.tool.gnu.cross.cpp.linker">
-								<option id="gnu.cpp.link.option.flags.1085925844" name="Linker flags" superClass="gnu.cpp.link.option.flags" useByScannerDiscovery="false" value="-Os --specs=nano.specs -Wl,--gc-sections -Wl,--fatal-warnings -mcpu=cortex-m0plus -T&quot;${workspace_loc:/${ProjName}/src/AtmelStart_SAMC21/Device_Startup/samc21g18a_flash.ld}&quot; -Wl,-Map,&quot;${workspace_loc:/${ProjName}/${ConfigName}}/${BuildArtifactFileBaseName}.map&quot;" valueType="string"/>
+								<option id="gnu.cpp.link.option.flags.1085925844" name="Linker flags" superClass="gnu.cpp.link.option.flags" useByScannerDiscovery="false" value="-Os --specs=nano.specs -Wl,--gc-sections -Wl,--fatal-warnings -mcpu=cortex-m0plus -T&quot;${workspace_loc:/${ProjName}/src/Hardware/SAMC21/samc21g18a_flash.ld}&quot; -Wl,-Map,&quot;${workspace_loc:/${ProjName}/${ConfigName}}/${BuildArtifactFileBaseName}.map&quot;" valueType="string"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.libs.675643039" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" useByScannerDiscovery="false" valueType="libs">
-									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="RRFLibraries"/>
-									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="FreeRTOS"/>
+									<listOptionValue builtIn="false" value="CoreN2G"/>
+									<listOptionValue builtIn="false" value="RRFLibraries"/>
 									<listOptionValue builtIn="false" value="CANlib"/>
+									<listOptionValue builtIn="false" value="FreeRTOS"/>
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.paths.2141152215" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" useByScannerDiscovery="false" valueType="libPaths">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/SAMC21_CAN_RTOS_Debug}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries/SAMC21_RTOS_Debug}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CANlib/SAMC21_RTOS_Debug}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS/SAMC21_Debug}&quot;"/>
@@ -1576,9 +1594,6 @@
 							</tool>
 						</toolChain>
 					</folderInfo>
-					<sourceEntries>
-						<entry excluding="src/AtmelStart_SAME51|src/atmel|src/CMSIS|src/AtmelStart/examples|src/AtmelStart/hpl/dmac|src/AtmelStart/rtos_start.c|src/AtmelStart/hpl/eic" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
-					</sourceEntries>
 				</configuration>
 			</storageModule>
 			<storageModule moduleId="org.eclipse.cdt.core.externalSettings">

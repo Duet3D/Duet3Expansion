@@ -9,6 +9,7 @@
 #include "Tasks.h"
 #include "Platform.h"
 #include "SoftwareReset.h"
+#include <Hardware/Devices.h>
 #include <Cache.h>
 #include <malloc.h>
 
@@ -51,7 +52,7 @@ extern "C" void __malloc_unlock ( struct _reent *_r )
 }
 
 // Application entry point
-[[noreturn]]void AppMain()
+void AppMain()
 {
 #ifndef DEBUG
 
@@ -85,6 +86,9 @@ extern "C" void __malloc_unlock ( struct _reent *_r )
 		*heapend++ = memPattern;
 	}
 
+	CoreInit();
+	DeviceInit();
+
 #if !SAMC21		// SAMC21 has a DIVAS unit, but that does not have an interrupt
 	// Trap integer divide-by-zero.
 	// We could also trap unaligned memory access, if we change the gcc options to not generate code that uses unaligned memory access.
@@ -111,17 +115,14 @@ extern "C" void __malloc_unlock ( struct _reent *_r )
 	while (true) { }
 }
 
-extern void Init();
-extern void Spin();
-
 extern "C" void MainTask(void *pvParameters)
 {
 	mallocMutex.Create("Malloc");
 
-	Init();
+	RepRap::Init();
 	for (;;)
 	{
-		Spin();
+		RepRap::Spin();
 	}
 }
 

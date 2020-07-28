@@ -11,7 +11,7 @@
 #include "RepRapFirmware.h"
 #include "RTOSIface/RTOSIface.h"
 
-void AppMain();
+extern "C" [[noreturn]] void AppMain();
 
 namespace Tasks
 {

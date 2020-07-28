@@ -157,6 +157,9 @@ const PinDescriptionBase *GetPinDescription(Pin p) noexcept
 	return (p < ARRAY_SIZE(PinTable)) ? &PinTable[p] : nullptr;
 }
 
+// Define replacement standard library functions
+#include <syscalls.h>
+
 #endif
 
 // End

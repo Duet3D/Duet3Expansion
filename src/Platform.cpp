@@ -23,6 +23,7 @@
 #include "Heating/Sensors/TemperatureSensor.h"
 #include "Fans/FansManager.h"
 #include <CanMessageFormats.h>
+#include <Hardware/Devices.h>
 
 #if SUPPORT_CLOSED_LOOP
 # include <ClosedLoop/ClockGen.h>
@@ -35,35 +36,11 @@
 constexpr uint32_t FlashBlockSize = 0x00010000;							// the block size we assume for flash
 constexpr uint32_t FirmwareFlashStart = FLASH_ADDR + FlashBlockSize;	// we reserve 64K for the bootloader
 
-static Uart uart0(3, 3, 512, 512);
-
-extern "C" void SERCOM3_0_Handler()
-{
-	uart0.Interrupt0();
-}
-
-extern "C" void SERCOM3_2_Handler()
-{
-	uart0.Interrupt2();
-}
-
-extern "C" void SERCOM3_3_Handler()
-{
-	uart0.Interrupt3();
-}
-
 #elif SAMC21
 
 # include <hri_nvmctrl_c21.h>
 constexpr uint32_t FlashBlockSize = 0x00004000;							// the block size we assume for flash
 constexpr uint32_t FirmwareFlashStart = FLASH_ADDR + FlashBlockSize;	// we reserve 16K for the bootloader
-
-static Uart uart0(4, 3, 512, 512);
-
-extern "C" void SERCOM4_Handler()
-{
-	uart0.Interrupt();
-}
 
 #else
 # error Unsupported processor
@@ -484,29 +461,9 @@ void Platform::Init()
 	}
 
 	// Set up the UART to send to PanelDue for debugging
-#if SAME5x
-	gpio_set_pin_function(PortBPin(20), PINMUX_PB20C_SERCOM3_PAD0);		// TxD
-# if 0	// we don't use the receiver, but if we did we would need to do this:
-	gpio_set_pin_function(PortBPin(21), PINMUX_PB21C_SERCOM3_PAD1);		// RxD
-# endif
-#elif SAMC21
-# ifdef SAMMYC21
-	gpio_set_pin_function(PortBPin(2), PINMUX_PB02D_SERCOM5_PAD0);		// TxD
-# else
-	gpio_set_pin_function(PortAPin(12), PINMUX_PA12D_SERCOM4_PAD0);		// TxD
-# endif
-#endif
-
 	uart0.begin(57600);
 
 	// Initialise the rest of the IO subsystem
-#if SAME5x
-	AnalogIn::Init(DmacChanAdc0Tx, DmacPrioAdcTx, DmacPrioAdcRx);
-#elif SAMC21
-	AnalogIn::Init(DmacChanAdc0Rx, DmacPrioAdcRx);
-#endif
-	AnalogOut::Init();
-
 #if SAME5x
 	ADC_temperature_init();
 #endif
