@@ -6,6 +6,7 @@
 		<project>CANlib</project>
 		<project>FreeRTOS</project>
 		<project>RRFLibraries</project>
+		<project>CoreN2G</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

@@ -120,9 +120,6 @@ static void InitClocks()
 	_div_init();
 }
 
-// Define replacement standard library functions
-#include <syscalls.h>
-
 #endif
 
 // End

@@ -104,12 +104,8 @@ void AppMain()
 	mainTask.Create(MainTask, "MAIN", nullptr, TaskPriority::SpinPriority);
 
 	// Initialise watchdog clock
-	hri_mclk_set_APBAMASK_WDT_bit(MCLK);
-	delayMicroseconds(5);
-	hri_wdt_write_CTRLA_reg(WDT, 0);
-	hri_wdt_write_CONFIG_reg(WDT, WDT_CONFIG_PER_CYC256);		// about 0.25 seconds
-	hri_wdt_write_EWCTRL_reg(WDT, 0);							// early warning control not used
-	hri_wdt_write_CTRLA_reg(WDT, WDT_CTRLA_ENABLE);
+	WatchdogInit();
+	NVIC_EnableIRQ(WDT_IRQn);		// enable the watchdog early warning interrupt
 
 	vTaskStartScheduler();			// doesn't return
 	while (true) { }
@@ -199,6 +195,7 @@ static StackType_t uxIdleTaskStack[configMINIMAL_STACK_SIZE];
 extern "C" void vApplicationTickHook(void)
 {
 	CoreSysTick();
+	watchdogReset();							// kick the watchdog
 	RepRap::Tick();
 }
 

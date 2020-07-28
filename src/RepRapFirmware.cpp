@@ -104,4 +104,13 @@ bool MillisTimer::CheckAndStop(uint32_t timeoutMillis)
 	return ret;
 }
 
+// Return a pointer to the pin description entry. Declared in and called from CoreN2G.
+const PinDescriptionBase *GetPinDescription(Pin p) noexcept
+{
+	return (p < ARRAY_SIZE(PinTable)) ? &PinTable[p] : nullptr;
+}
+
+// Define replacement standard library functions
+#include <syscalls.h>
+
 // End
