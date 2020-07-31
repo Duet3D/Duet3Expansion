@@ -47,7 +47,6 @@ extern "C" void AppInit() noexcept
 	while (OSCCTRL->DPLLSYNCBUSY.bit.ENABLE) { }
 
 	// Now it's safe to configure the clocks
-	// Now it's safe to configure the clocks
 	InitClocks();
 
 	// All done
