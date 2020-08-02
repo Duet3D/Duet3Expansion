@@ -105,6 +105,16 @@ SECTIONS
     . = ALIGN(4);
     _etext = .;
 
+	/* CAN message buffers must be in the first 64K of RAM */
+    .canMessage (NOLOAD) :
+    {
+        . = ALIGN(4);
+        _sCanMessage = . ;
+		*(.CanMessage .CanMessage.*)
+        . = ALIGN(4);
+        _eCanMessage = . ;
+    } > ram
+
     .relocate : AT (_etext)
     {
         . = ALIGN(4);
