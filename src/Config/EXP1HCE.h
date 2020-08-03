@@ -107,8 +107,6 @@ constexpr Pin ClockGenPin = PortAPin(22);
 constexpr uint32_t ClockGenPinPeriphMode = PINMUX_PA22H_GCLK_IO6;
 
 // Table of pin functions that we are allowed to use
-constexpr uint8_t Nx = 0xFF;	// this means no EXINT usable
-
 constexpr PinDescription PinTable[] =
 {
 	//	TC					TCC					ADC					SDADC				SERCOM in			SERCOM out	  Exint PinName

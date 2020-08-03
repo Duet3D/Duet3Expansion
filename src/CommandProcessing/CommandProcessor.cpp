@@ -820,11 +820,6 @@ void CommandProcessor::Spin()
 			size_t fragmentLength = min<size_t>(totalLength - lengthDone, CanMessageStandardReply::MaxTextLength);
 			memcpy(msg->text, reply.c_str() + lengthDone, fragmentLength);
 			lengthDone += fragmentLength;
-			if (fragmentLength < ARRAY_SIZE(msg->text))
-			{
-				msg->text[fragmentLength] = 0;
-				++fragmentLength;
-			}
 			buf->dataLength = msg->GetActualDataLength(fragmentLength);
 			msg->fragmentNumber = fragmentNumber;
 			if (lengthDone == totalLength)

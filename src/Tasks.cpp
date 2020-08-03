@@ -195,7 +195,7 @@ static StackType_t uxIdleTaskStack[configMINIMAL_STACK_SIZE];
 extern "C" void vApplicationTickHook(void)
 {
 	CoreSysTick();
-	watchdogReset();							// kick the watchdog
+	WatchdogReset();							// kick the watchdog
 	RepRap::Tick();
 }
 

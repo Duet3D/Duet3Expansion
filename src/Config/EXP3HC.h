@@ -93,8 +93,6 @@ constexpr Pin SSPIMisoPin = PortCPin(19);
 constexpr uint32_t SSPIMisoPinPeriphMode = PINMUX_PC19C_SERCOM6_PAD3;
 
 // Table of pin functions that we are allowed to use
-constexpr uint8_t Nx = 0xFF;	// this means no EXINT usable
-
 constexpr PinDescription PinTable[] =
 {
 	//	TC					TCC					ADC					SERCOM in			SERCOM out	  Exint PinName
