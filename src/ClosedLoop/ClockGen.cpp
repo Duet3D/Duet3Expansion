@@ -24,11 +24,11 @@ void ClockGen::Init()
 		ClockGenGclkNumber,
 	    	  GCLK_GENCTRL_DIV(3)
 			| (0 << GCLK_GENCTRL_RUNSTDBY_Pos)
-	        | (1 << GCLK_GENCTRL_DIVSEL_Pos)
+	        | (0 << GCLK_GENCTRL_DIVSEL_Pos)
 			| (1 << GCLK_GENCTRL_OE_Pos)
 	        | (0 << GCLK_GENCTRL_OOV_Pos)
 			| (1 << GCLK_GENCTRL_IDC_Pos)
-	        | (1 << GCLK_GENCTRL_GENEN_Pos)
+	        | GCLK_GENCTRL_GENEN
 			| GCLK_GENCTRL_SRC_DPLL96M
 		);
 	gpio_set_pin_function(ClockGenPin, ClockGenPinPeriphMode);

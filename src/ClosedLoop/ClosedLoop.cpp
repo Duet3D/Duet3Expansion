@@ -10,22 +10,54 @@
 #if SUPPORT_CLOSED_LOOP
 
 #include <CanMessageGenericParser.h>
+#include "ClockGen.h"
+#include "SpiEncoder.h"
 
-ClosedLoopDriverMode ClosedLoop::currentMode = ClosedLoopDriverMode::openLoop;
+bool ClosedLoop::closedLoopEnabled = false;
+EncoderType ClosedLoop::encoderType = EncoderType::none;
 
-GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const StringRef &reply)
+void ClosedLoop::Init() noexcept
+{
+	ClockGen::Init();
+	SpiEncoder::Init();
+}
+
+GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const StringRef &reply) noexcept
 {
 	CanMessageGenericParser parser(msg, M569Point1Params);
-	uint8_t newMode;
-	if (parser.GetUintParam('S', newMode))
+	bool seen = false;
+	uint8_t temp;
+
+	// Check closed loop enable/disable
+	if (parser.GetUintParam('S', temp))
 	{
+		seen = true;
 		//TODO
-		return GCodeResult::errorNotSupported;
+		if (temp != 0)
+		{
+			reply.copy("Closed loop mode not supported yet");
+			return GCodeResult::error;
+		}
+	}
+	if (parser.GetUintParam('T', temp))
+	{
+		seen = true;
+		if (temp < EncoderType::NumValues)
+		{
+			encoderType.Assign(temp);
+			//TODO change the encoder type
+		}
+		else
+		{
+			reply.copy("Encoder type out of range");
+			return GCodeResult::error;
+		}
 	}
 
-	static constexpr const char * ModeNames[] = { "open loop", "rotary quadrature", "linear quadrature", "rotary AS5047", "rotary TLI5012" };
-	const unsigned int index = (unsigned int)currentMode;
-	reply.printf("Driver mode is %s", (index < ARRAY_SIZE(ModeNames)) ? ModeNames[index] : "undefined");
+	if (!seen)
+	{
+		reply.printf("Closed loop mode %s, encoder type %s", (closedLoopEnabled) ? "enabled" : "disabled", encoderType.ToString());
+	}
 	return GCodeResult::ok;
 }
 

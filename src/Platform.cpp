@@ -26,8 +26,7 @@
 #include <Hardware/Devices.h>
 
 #if SUPPORT_CLOSED_LOOP
-# include <ClosedLoop/ClockGen.h>
-# include <ClosedLoop/QuadratureDecoder.h>
+# include <ClosedLoop/ClosedLoop.h>
 #endif
 
 #if SAME5x
@@ -93,10 +92,6 @@ namespace Platform
 
 #if SUPPORT_SPI_SENSORS
 	SharedSpiDevice *sharedSpi;
-#endif
-
-#if SUPPORT_CLOSED_LOOP
-	SharedSpiDevice *encoderSpi;
 #endif
 
 	static bool directions[NumDrivers];
@@ -417,8 +412,7 @@ void Platform::Init()
 	IoPort::Init();
 
 #if SUPPORT_CLOSED_LOOP
-	ClockGen::Init();
-	QuadratureDecoder::Disable();
+	ClosedLoop::Init();
 #endif
 
 	// Set up the DIAG LED pins
@@ -625,13 +619,8 @@ void Platform::Init()
 	sharedSpi = new SharedSpiDevice(SERCOM_SSPI_NUMBER);
 #endif
 
-#if SUPPORT_CLOSED_LOOP
-	encoderSpi = new SharedSpiDevice(ENCODER_SSPI_NUMBER);
-#endif
-
 #if SAME5x
 
-	// Check whether address switches are set to zero. If so then reset and load new firmware
 	const CanAddress switches = ReadBoardAddress();
 	const CanAddress defaultAddress = (switches == 0) ? CanId::ExpansionBoardFirmwareUpdateAddress : switches;
 
@@ -1440,34 +1429,6 @@ float Platform::GetCurrentV12Voltage()
 float Platform::GetMaxV12Voltage()
 {
 	return AdcReadingToPowerVoltage(highestV12);
-}
-
-#endif
-
-#if SUPPORT_CLOSED_LOOP
-
-// Set up the shared encoder pins for SPI use
-void Platform::EnableEncoderSpi()
-{
-#ifdef EXP1HCE
-	gpio_set_pin_function(EncoderMosiPin, EncoderMosiPinPeriphMode);
-	gpio_set_pin_function(EncoderSclkPin, EncoderSclkPinPeriphMode);
-	gpio_set_pin_function(EncoderMisoPin, EncoderMisoPinPeriphMode);
-#else
-# error Undefined hardware
-#endif
-}
-
-// Set up the shared encoder pins for counting from the attiny
-void Platform::DisableEncoderSpi()
-{
-#ifdef EXP1HCE
-	gpio_set_pin_function(EncoderMosiPin, GPIO_PIN_FUNCTION_OFF);
-	gpio_set_pin_function(EncoderSclkPin, GPIO_PIN_FUNCTION_OFF);
-	gpio_set_pin_function(EncoderMisoPin, GPIO_PIN_FUNCTION_OFF);
-#else
-# error Undefined hardware
-#endif
 }
 
 #endif

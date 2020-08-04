@@ -22,7 +22,7 @@ constexpr uint16_t AS5047RegAngleCom = 0x3FFF;
 constexpr uint16_t AS5047WriteCommand = 0x4000;
 
 // Adjust the top bit of a word to make it even parity
-static inline constexpr uint16_t AddParityBit(uint16_t w)
+static inline constexpr uint16_t AddParityBit(uint16_t w) noexcept
 {
 	uint16_t p = w ^ (w << 8);
 	p ^= p << 4;
@@ -31,7 +31,7 @@ static inline constexpr uint16_t AddParityBit(uint16_t w)
 	return w ^ (p & 0x8000);
 }
 
-static inline constexpr bool CheckEvenParity(uint16_t w)
+static inline constexpr bool CheckEvenParity(uint16_t w) noexcept
 {
 	w ^= w >> 8;
 	w ^= w >> 4;
@@ -40,27 +40,34 @@ static inline constexpr bool CheckEvenParity(uint16_t w)
 	return (w & 1u) == 0;
 }
 
-AS5047D::AS5047D(SharedSpiDevice& p_spi, Pin p_csPin) : spi(p_spi), csPin(p_csPin)
+AS5047D::AS5047D(Pin p_csPin) noexcept : SpiEncoder(6000000, SpiMode::mode1, false, p_csPin)
 {
 }
 
-void AS5047D::Init()
+void AS5047D::Enable() noexcept
 {
 	IoPort::SetPinMode(csPin, OUTPUT_HIGH);
-	spi.SetClockFrequencyAndMode(6000000, SpiMode::mode1);
+	EnableSpi();
 }
 
-int16_t AS5047D::GetAngle()
+void AS5047D::Disable() noexcept
+{
+	IoPort::SetPinMode(csPin, OUTPUT_HIGH);
+	DisableSpi();
+}
+
+int32_t AS5047D::GetReading() noexcept
 {
 	uint16_t response;
 	DoSpiTransaction(AddParityBit(AS5047RegAngleCom), response);
 	DoSpiTransaction(AddParityBit(AS5047RegNop), response);
 
 	//TODO how to report an error?
-	return (int16_t)(response & 0x3FFF);
+	response &= 0x3FFFF;
+	return (int32_t)((response & 0x2000) ? response | 0xFFFFC000 : response);
 }
 
-void AS5047D::Diagnostics(const StringRef &reply)
+void AS5047D::Diagnostics(const StringRef &reply) noexcept
 {
 	uint16_t response;
 	if (DoSpiTransaction(AddParityBit(AS5047RegDiag), response) && DoSpiTransaction(AddParityBit(AS5047RegNop), response))
@@ -89,7 +96,7 @@ void AS5047D::Diagnostics(const StringRef &reply)
 	}
 }
 
-bool AS5047D::DoSpiTransaction(uint16_t command, uint16_t &response)
+bool AS5047D::DoSpiTransaction(uint16_t command, uint16_t &response) noexcept
 {
 	// We have exclusive access to this SPI so we don't need to get the mutex
 	IoPort::WriteDigital(csPin, false);

@@ -87,7 +87,7 @@ constexpr Pin QuadratureResetPin = PortAPin(0);
 constexpr Pin EncoderCsPin = PortAPin(18);
 
 // Shared SPI (used for interface to encoders, not for temperature sensors)
-constexpr uint8_t ENCODER_SSPI_NUMBER = 1;
+constexpr uint8_t EncoderSspiSercomNumber = 1;
 
 constexpr Pin EncoderMosiPin = PortAPin(16);
 constexpr Pin QuadratureErrorOutPin = EncoderMosiPin;

@@ -8,13 +8,14 @@
  *  configured in SPI mode a separate object, and have a pointer or reference to it in SharedSpiDevice.
  */
 
-#ifndef SRC_HARDWARE_SHAREDSPICLIENT_H_
-#define SRC_HARDWARE_SHAREDSPICLIENT_H_
+#ifndef SRC_HARDWARE_SHAREDSPIDEVICE_H_
+#define SRC_HARDWARE_SHAREDSPIDEVICE_H_
 
 #include "RepRapFirmware.h"
-#include <RTOSIface/RTOSIface.h>
 
 #if SUPPORT_SPI_SENSORS || SUPPORT_CLOSED_LOOP
+
+#include <RTOSIface/RTOSIface.h>
 
 enum class SpiMode : uint8_t
 {
@@ -42,25 +43,6 @@ private:
 	Mutex mutex;
 };
 
-class SharedSpiClient
-{
-public:
-	SharedSpiClient(SharedSpiDevice& dev, uint32_t clockFreq, SpiMode m, bool polarity);
-
-	void InitMaster();
-	bool Select(uint32_t timeout) const;												// get SPI ownership and select the device, return true if successful
-	void Deselect() const;
-	bool TransceivePacket(const uint8_t *tx_data, uint8_t *rx_data, size_t len) const;
-	void SetCsPin(Pin p) { csPin = p; }
-
-private:
-	SharedSpiDevice& device;
-	uint32_t clockFrequency;
-	Pin csPin;
-	SpiMode mode;
-	bool csActivePolarity;
-};
-
 #endif
 
-#endif /* SRC_HARDWARE_SHAREDSPICLIENT_H_ */
+#endif /* SRC_HARDWARE_SHAREDSPIDEVICE_H_ */

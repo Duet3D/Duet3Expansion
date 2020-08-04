@@ -8,26 +8,22 @@
 #ifndef SRC_CLOSEDLOOP_AS5047D_H_
 #define SRC_CLOSEDLOOP_AS5047D_H_
 
-#include "AngleSensor.h"
+#include <ClosedLoop/SpiEncoder.h>
 
 #if SUPPORT_CLOSED_LOOP
 
-#include <Hardware/SharedSpiDevice.h>
-
-class AS5047D : public AngleSensor
+class AS5047D : public SpiEncoder
 {
 public:
-	AS5047D(SharedSpiDevice& p_spi, Pin p_csPin);
+	AS5047D(Pin p_csPin) noexcept;
 
-	void Init() override;
-	int16_t GetAngle() override;
-	void Diagnostics(const StringRef& reply) override;
+	void Enable() noexcept override;
+	void Disable() noexcept override;
+	int32_t GetReading() noexcept override;
+	void Diagnostics(const StringRef& reply) noexcept override;
 
 private:
-	bool DoSpiTransaction(uint16_t command, uint16_t& response);
-
-	SharedSpiDevice& spi;
-	Pin csPin;
+	bool DoSpiTransaction(uint16_t command, uint16_t& response) noexcept;
 };
 
 #endif

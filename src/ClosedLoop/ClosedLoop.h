@@ -14,13 +14,16 @@
 
 #include <GCodes/GCodeResult.h>
 #include <CanMessageFormats.h>
+#include <General/NamedEnum.h>
 
 namespace ClosedLoop
 {
-	extern ClosedLoopDriverMode currentMode;
+	extern bool closedLoopEnabled;
+	extern EncoderType encoderType;
 
-	inline ClosedLoopDriverMode GetCurrentMode() { return currentMode; }
-	GCodeResult ProcessM569Point1(const CanMessageGeneric& msg, const StringRef& reply);
+	void Init() noexcept;
+	inline EncoderType GetEncoderType() noexcept { return encoderType; }
+	GCodeResult ProcessM569Point1(const CanMessageGeneric& msg, const StringRef& reply) noexcept;
 }
 
 #endif

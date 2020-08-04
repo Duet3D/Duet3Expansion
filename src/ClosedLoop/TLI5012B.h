@@ -8,23 +8,24 @@
 #ifndef SRC_CLOSEDLOOP_TLI5012B_H_
 #define SRC_CLOSEDLOOP_TLI5012B_H_
 
-#include "AngleSensor.h"
+#include <ClosedLoop/SpiEncoder.h>
 
 #if SUPPORT_CLOSED_LOOP
 
+#include <ClosedLoop/SpiEncoder.h>
 #include <Hardware/SharedSpiDevice.h>
 
-class TLI5012B : public AngleSensor
+class TLI5012B : public SpiEncoder
 {
 public:
-	TLI5012B(SharedSpiDevice& p_spi);
+	TLI5012B(Pin p_csPin) noexcept;
 
-	void Init() override;
-	int16_t GetAngle() override;
-	void Diagnostics(const StringRef& reply) override;
+	void Enable() noexcept override;
+	void Disable() noexcept override;
+	int32_t GetReading() noexcept override;
+	void Diagnostics(const StringRef& reply) noexcept override;
 
 private:
-	SharedSpiDevice& spi;
 };
 
 #endif

@@ -12,7 +12,7 @@
 #include "AdcAveragingFilter.h"
 #include "GCodes/GCodeResult.h"
 
-#if SUPPORT_SPI_SENSORS || SUPPORT_CLOSED_LOOP
+#if SUPPORT_SPI_SENSORS
 # include <Hardware/SharedSpiDevice.h>
 #endif
 
@@ -97,13 +97,6 @@ namespace Platform
 #if SUPPORT_SPI_SENSORS
 	extern SharedSpiDevice *sharedSpi;
 	inline SharedSpiDevice& GetSharedSpi() noexcept { return *sharedSpi; }
-#endif
-
-#if SUPPORT_CLOSED_LOOP
-	extern SharedSpiDevice *encoderSpi;
-	inline SharedSpiDevice& GetEncoderSpi() noexcept { return *encoderSpi; }
-	void EnableEncoderSpi();
-	void DisableEncoderSpi();
 #endif
 
 	void Init();
