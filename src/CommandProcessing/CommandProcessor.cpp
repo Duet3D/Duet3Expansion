@@ -581,15 +581,14 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 
 	case CanMessageReturnInfo::typeDiagnosticsPart0 + 1:
 		extra = LastDiagnosticsPart;
-#if HAS_SMART_DRIVERS
 		for (size_t driver = 0; driver < NumDrivers; ++driver)
 		{
-			reply.lcatf("Driver %u:", driver);
+			reply.lcatf("Driver %u: position %" PRIi32, driver, moveInstance->GetPosition(driver));
+#if HAS_SMART_DRIVERS
+			reply.cat(", ");
 			SmartDrivers::AppendDriverStatus(driver, reply);
-		}
-#else
-		reply.copy("External motor driver(s)");			// to avoid a blank line in the M122 report
 #endif
+		}
 		break;
 
 	case CanMessageReturnInfo::typeDiagnosticsPart0 + 2:
@@ -817,7 +816,7 @@ void CommandProcessor::Spin()
 		uint8_t fragmentNumber = 0;
 		for (;;)
 		{
-			size_t fragmentLength = min<size_t>(totalLength - lengthDone, CanMessageStandardReply::MaxTextLength);
+			const size_t fragmentLength = min<size_t>(totalLength - lengthDone, CanMessageStandardReply::MaxTextLength);
 			memcpy(msg->text, reply.c_str() + lengthDone, fragmentLength);
 			lengthDone += fragmentLength;
 			buf->dataLength = msg->GetActualDataLength(fragmentLength);

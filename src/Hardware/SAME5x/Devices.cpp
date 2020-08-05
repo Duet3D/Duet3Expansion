@@ -12,6 +12,10 @@
 #include <AnalogIn.h>
 #include <AnalogOut.h>
 
+// Analog input support
+constexpr size_t AnalogInTaskStackWords = 300;
+static Task<AnalogInTaskStackWords> analogInTask;
+
 Uart uart0(3, 3, 512, 512);
 
 extern "C" void SERCOM3_0_Handler()
@@ -38,6 +42,7 @@ void DeviceInit() noexcept
 
 	AnalogIn::Init(DmacChanAdc0Tx, DmacPrioAdcTx, DmacPrioAdcRx);
 	AnalogOut::Init();
+	analogInTask.Create(AnalogIn::TaskLoop, "AIN", nullptr, TaskPriority::AinPriority);
 }
 
 #endif

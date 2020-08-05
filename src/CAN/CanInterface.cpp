@@ -288,6 +288,7 @@ CanAddress CanInterface::GetCanAddress()
 }
 
 // Send a message. On return the buffer is available to the caller to re-use or free.
+// Any extra bytes needed as padding are set to zero by the CAN driver.
 bool CanInterface::Send(CanMessageBuffer *buf)
 {
 	struct can_message msg;

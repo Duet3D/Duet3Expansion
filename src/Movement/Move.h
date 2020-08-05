@@ -59,6 +59,8 @@ public:
 
 	void ResetMoveCounters() { scheduledMoves = completedMoves = 0; }
 
+	int32_t GetPosition(size_t driver) const;
+
 #if HAS_SMART_DRIVERS
 	uint32_t GetStepInterval(size_t axis, uint32_t microstepShift) const;			// Get the current step interval for this axis or extruder
 #endif

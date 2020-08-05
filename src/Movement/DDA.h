@@ -61,6 +61,8 @@ public:
 	uint32_t GetClocksNeeded() const { return clocksNeeded; }
 	uint32_t GetMoveFinishTime() const { return afterPrepare.moveStartTime + clocksNeeded; }
 
+	int32_t GetPosition(size_t driver) const { return endPoint[driver]; }
+
 #if HAS_SMART_DRIVERS
 	uint32_t GetStepInterval(size_t axis, uint32_t microstepShift) const;	// Get the current full step interval for this axis or extruder
 #endif
@@ -116,6 +118,8 @@ private:
 		} flags;
 		uint16_t all;								// so that we can print all the flags at once for debugging
 	};
+
+	int32_t endPoint[NumDrivers];  			// Machine coordinates in steps of the endpoint
 
 	float acceleration;						// The acceleration to use
 	float deceleration;						// The deceleration to use

@@ -86,6 +86,11 @@ DDA::DDA(DDA* n) : next(n), prev(nullptr), state(empty)
 	{
 		p = nullptr;
 	}
+
+	for (int32_t& ep : endPoint)
+	{
+		ep = 0;
+	}
 }
 
 void DDA::ReleaseDMs()
@@ -185,12 +190,13 @@ void DDA::Init()
 // Return true if it is a real move
 bool DDA::Init(const CanMessageMovement& msg)
 {
-	// 0. Update the endpoints (do we even need them?)
+	// 0. Initialise the endpoints, which are used for diagnostic purposes, and set up the DriveMovement objects
 	bool realMove = false;
 
 	for (size_t drive = 0; drive < NumDrivers; drive++)
 	{
-		int32_t delta = msg.perDrive[drive].steps;
+		endPoint[drive] = prev->endPoint[drive];		// the steps for this move will be added later
+		const int32_t delta = msg.perDrive[drive].steps;
 
 		if (delta != 0)
 		{
@@ -200,6 +206,7 @@ bool DDA::Init(const CanMessageMovement& msg)
 			pdm->totalSteps = labs(delta);				// for now this is the number of net steps, but gets adjusted later if there is a reverse in direction
 			pdm->direction = (delta >= 0);				// for now this is the direction of net movement, but gets adjusted later if it is a delta movement
 		}
+
 	}
 
 	// 2. Throw it away if there's no real movement.
@@ -264,7 +271,7 @@ void DDA::Prepare(const CanMessageMovement& msg)
 		if (pdm != nullptr && pdm->state == DMState::moving)
 		{
 			Platform::EnableDrive(drive);
-			if ((msg.deltaDrives & (1u << drive)) != 0)			// for now, additional axes are assumed to be not part of the delta mechanism
+			if ((msg.deltaDrives & (1u << drive)) != 0)
 			{
 				pdm->PrepareDeltaAxis(*this, params);
 
@@ -303,6 +310,16 @@ void DDA::Prepare(const CanMessageMovement& msg)
 				{
 					DebugPrintAll();
 				}
+			}
+
+			const uint32_t netSteps = (pdm->reverseStartStep < pdm->totalSteps) ? (2 * pdm->reverseStartStep) - pdm->totalSteps : pdm->totalSteps;
+			if (pdm->direction)
+			{
+				endPoint[drive] += netSteps;
+			}
+			else
+			{
+				endPoint[drive] -= netSteps;
 			}
 
 			// Prepare for the first step

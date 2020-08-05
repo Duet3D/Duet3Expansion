@@ -421,6 +421,11 @@ void Move::CurrentMoveCompleted()
 	completedMoves++;
 }
 
+int32_t Move::GetPosition(size_t driver) const
+{
+	return ddaRingAddPointer->GetPrevious()->GetPosition(driver);
+}
+
 void Move::StopDrivers(uint16_t whichDrivers)
 {
 #if SAME5x
