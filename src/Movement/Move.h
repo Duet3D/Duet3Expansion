@@ -18,7 +18,7 @@
 // Each DDA needs one DM per drive that it moves.
 // However, DM's are large, so we provide fewer than DRIVES * DdaRingLength of them. The planner checks that enough DMs are available before filling in a new DDA.
 
-const unsigned int DdaRingLength = 20;
+const unsigned int DdaRingLength = 50;
 const unsigned int NumDms = DdaRingLength * NumDrivers;
 
 /**

@@ -48,6 +48,15 @@ static TaskHandle sendingTaskHandle = nullptr;
 static bool mainBoardAcknowledgedAnnounce = false;	// true after the main board has acknowledged our announcement
 static bool isProgrammed = false;					// true after the main board has sent us any configuration commands
 
+static uint32_t lastMotionMessageScheduledTime = 0;
+static uint32_t lastMotionMessageReceivedAt = 0;
+static unsigned int duplicateMotionMessages = 0;
+static unsigned int oosMessages = 0;
+uint8_t expectedSeq = 0xFF;
+
+//DEBUG
+//static int32_t accumulatedMotion = 0;
+
 class CanMessageQueue
 {
 public:
@@ -330,7 +339,7 @@ bool CanInterface::GetCanMove(CanMessageMovement& msg)
 	CanMessageBuffer * buf = PendingMoves.GetMessage();
 	if (buf != nullptr)
 	{
-		msg = buf->msg.move;
+		msg = buf->msg.move;			//TODO avoid copying the message
 		CanMessageBuffer::Free(buf);
 		return true;
 	}
@@ -354,8 +363,30 @@ void CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf)
 		break;
 
 	case CanMessageType::movement:
+		// Check for duplicate and out-of-sequence message
+		{
+			const uint32_t now = millis();
+			if (buf->msg.move.whenToExecute == lastMotionMessageScheduledTime && now - lastMotionMessageReceivedAt < 100)
+			{
+				++duplicateMotionMessages;
+				CanMessageBuffer::Free(buf);
+			}
+			lastMotionMessageScheduledTime = buf->msg.move.whenToExecute;
+			lastMotionMessageReceivedAt = now;
+
+			const int8_t seq = buf->msg.move.seq;
+			if (seq != expectedSeq && expectedSeq != 0xFF)
+			{
+				++oosMessages;
+			}
+			expectedSeq = (seq + 1) & 7;
+		}
+
 		//TODO if we haven't established time sync yet then we should defer this
 		buf->msg.move.whenToExecute += StepTimer::GetLocalTimeOffset();
+		//DEBUG
+		//accumulatedMotion +=buf->msg.move.perDrive[0].steps;
+		//END
 		PendingMoves.AddMessage(buf);
 		Platform::OnProcessingCanMessage();
 		break;
@@ -413,7 +444,13 @@ void CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf)
 
 void CanInterface::Diagnostics(const StringRef& reply)
 {
-	reply.lcatf("Free CAN buffers: %u", CanMessageBuffer::FreeBuffers());
+#if 0	//DEBUG
+	reply.lcatf("Free CAN buffers: %u, messages lost %" PRIu32 ", duplicates %u, motion %" PRIi32 ", oos %u",
+				CanMessageBuffer::FreeBuffers(), GetAndClearCanMessagesLost(), duplicateMotionMessages, accumulatedMotion, oosMessages);
+#else
+	reply.lcatf("Free CAN buffers: %u, messages lost %" PRIu32 ", duplicates %u, oos %u",
+				CanMessageBuffer::FreeBuffers(), GetAndClearCanMessagesLost(), duplicateMotionMessages, oosMessages);
+#endif
 }
 
 // Send an announcement message if we haven't had an announce acknowledgement form the main board. On return the buffer is available to use again.
