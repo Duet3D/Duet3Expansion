@@ -16,14 +16,17 @@
 #include <CanMessageFormats.h>
 #include <General/NamedEnum.h>
 
+class SpiEncoder;
+
 namespace ClosedLoop
 {
 	extern bool closedLoopEnabled;
-	extern EncoderType encoderType;
+	extern SpiEncoder *encoder;
 
 	void Init() noexcept;
-	inline EncoderType GetEncoderType() noexcept { return encoderType; }
+	EncoderType GetEncoderType() noexcept;
 	GCodeResult ProcessM569Point1(const CanMessageGeneric& msg, const StringRef& reply) noexcept;
+	void Diagnostics(const StringRef& reply) noexcept;
 }
 
 #endif

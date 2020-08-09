@@ -19,7 +19,6 @@ SharedSpiDevice *SpiEncoder::encoderSpi = nullptr;
 	{
 		encoderSpi = new SharedSpiDevice(EncoderSspiSercomNumber);
 	}
-	QuadratureEncoder::TurnAttinyOff();
 }
 
 SpiEncoder::SpiEncoder(uint32_t clockFreq, SpiMode m, bool polarity, Pin p_csPin)

@@ -12,14 +12,23 @@
 #include <CanMessageGenericParser.h>
 #include "ClockGen.h"
 #include "SpiEncoder.h"
+#include "AS5047D.h"
+#include "QuadratureEncoder.h"
+#include "TLI5012B.h"
 
 bool ClosedLoop::closedLoopEnabled = false;
-EncoderType ClosedLoop::encoderType = EncoderType::none;
+SpiEncoder *ClosedLoop::encoder = nullptr;
 
 void ClosedLoop::Init() noexcept
 {
 	ClockGen::Init();
+	QuadratureEncoder::InitAttiny();
 	SpiEncoder::Init();
+}
+
+EncoderType ClosedLoop::GetEncoderType() noexcept
+{
+	return (encoder == nullptr) ? EncoderType::none : encoder->GetType();
 }
 
 GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const StringRef &reply) noexcept
@@ -44,8 +53,33 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 		seen = true;
 		if (temp < EncoderType::NumValues)
 		{
-			encoderType.Assign(temp);
-			//TODO change the encoder type
+			if (temp != GetEncoderType().ToBaseType())
+			{
+				//TODO need to get a lock here in case there is any movement
+				delete encoder;
+				switch (temp)
+				{
+				case EncoderType::none:
+				default:
+					break;
+
+				case EncoderType::as5047:
+					encoder = new AS5047D(EncoderCsPin);
+					break;
+
+				case EncoderType::tli5012:
+					encoder = new TLI5012B(EncoderCsPin);
+					break;
+
+				case EncoderType::linearQuadrature:
+					encoder = new QuadratureEncoder(true);
+					break;
+
+				case EncoderType::rotaryQuadrature:
+					encoder = new QuadratureEncoder(false);
+					break;
+				}
+			}
 		}
 		else
 		{
@@ -56,9 +90,19 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 
 	if (!seen)
 	{
-		reply.printf("Closed loop mode %s, encoder type %s", (closedLoopEnabled) ? "enabled" : "disabled", encoderType.ToString());
+		reply.printf("Closed loop mode %s, encoder type %s", (closedLoopEnabled) ? "enabled" : "disabled", GetEncoderType().ToString());
 	}
 	return GCodeResult::ok;
+}
+
+void ClosedLoop::Diagnostics(const StringRef& reply) noexcept
+{
+	reply.printf("Encoder type %s", GetEncoderType().ToString());
+	if (encoder != nullptr)
+	{
+		reply.catf(", position %" PRIi32, encoder->GetReading());
+		encoder->AppendDiagnostics(reply);
+	}
 }
 
 #endif

@@ -18,11 +18,13 @@ class SpiEncoder
 {
 public:
 	SpiEncoder(uint32_t clockFreq, SpiMode m, bool polarity, Pin p_csPin) noexcept;
+	virtual ~SpiEncoder() { }
 
+	virtual EncoderType GetType() const noexcept = 0;
 	virtual void Enable() noexcept = 0;
 	virtual void Disable() noexcept = 0;
-	virtual void Diagnostics(const StringRef& reply) = 0;
 	virtual int32_t GetReading() noexcept = 0;
+	virtual void AppendDiagnostics(const StringRef& reply) noexcept = 0;
 
 	static void Init() noexcept;
 

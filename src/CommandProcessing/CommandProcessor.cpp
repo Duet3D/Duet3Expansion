@@ -581,6 +581,9 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 
 	case CanMessageReturnInfo::typeDiagnosticsPart0 + 1:
 		extra = LastDiagnosticsPart;
+#if SUPPORT_CLOSED_LOOP
+		ClosedLoop::Diagnostics(reply);
+#endif
 		for (size_t driver = 0; driver < NumDrivers; ++driver)
 		{
 			reply.lcatf("Driver %u: position %" PRIi32, driver, moveInstance->GetPosition(driver));

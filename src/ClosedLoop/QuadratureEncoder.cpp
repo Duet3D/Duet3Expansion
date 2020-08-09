@@ -61,10 +61,11 @@ static const uint8_t AttinyFuses[3] =
 	0xFF			// extended fuse: self programming disabled
 };
 
-QuadratureEncoder::QuadratureEncoder() noexcept : SpiEncoder(125000, SpiMode::mode0, false, NoPin)
+QuadratureEncoder::QuadratureEncoder(bool isLinear) noexcept : SpiEncoder(125000, SpiMode::mode0, false, NoPin), linear(isLinear)
 {
-	//TODO
 }
+
+AttinyProgErrorCode QuadratureEncoder::programStatus = AttinyProgErrorCode::notChecked;
 
 // Send a 4-byte command to the attiny and return the last byte received, or the 3rd byte if it is the enter programming mode command
 uint8_t QuadratureEncoder::SendSpiQuad(uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4) noexcept
@@ -107,7 +108,7 @@ AttinyProgErrorCode QuadratureEncoder::SetupForProgramming() noexcept
 	deviceSignature = ((uint32_t)SendSpiQuad(0x30, 0x00, 0x00, 0x00) << 16)
 					| ((uint32_t)SendSpiQuad(0x30, 0x00, 0x01, 0x00) << 8)
 					| SendSpiQuad(0x30, 0x00, 0x02, 0x00);
-	return (deviceSignature == Attiny44aSignature) ? AttinyProgErrorCode::success : AttinyProgErrorCode::badDeviceId;
+	return (deviceSignature == Attiny44aSignature) ? AttinyProgErrorCode::good : AttinyProgErrorCode::badDeviceId;
 }
 
 void QuadratureEncoder::EndProgramming() noexcept
@@ -166,8 +167,8 @@ void QuadratureEncoder::Enable() noexcept
 // Verify the programming of the attiny
 AttinyProgErrorCode QuadratureEncoder::DoVerify() noexcept
 {
-	AttinyProgErrorCode ret = AttinyProgErrorCode::success;
-	for (size_t addr = 0; ret == AttinyProgErrorCode::success && addr < ARRAY_SIZE(AttinyProgram); ++addr)
+	AttinyProgErrorCode ret = AttinyProgErrorCode::good;
+	for (size_t addr = 0; ret == AttinyProgErrorCode::good && addr < ARRAY_SIZE(AttinyProgram); ++addr)
 	{
 		const uint8_t progByte = SendSpiQuad(0x20 | ((addr & 1u) << 3), addr >> 9, addr >> 1, 0);
 		if (progByte != AttinyProgram[addr])
@@ -176,7 +177,7 @@ AttinyProgErrorCode QuadratureEncoder::DoVerify() noexcept
 		}
 	}
 
-	if (ret == AttinyProgErrorCode::success)
+	if (ret == AttinyProgErrorCode::good)
 	{
 		if (   SendSpiQuad(0x50, 0x00, 0x00, 0x00) != AttinyFuses[0]
 			|| SendSpiQuad(0x58, 0x08, 0x00, 0x00) != AttinyFuses[1]
@@ -194,7 +195,7 @@ AttinyProgErrorCode QuadratureEncoder::DoVerify() noexcept
 AttinyProgErrorCode QuadratureEncoder::CheckProgram() noexcept
 {
 	AttinyProgErrorCode ret = SetupForProgramming();
-	if (ret == AttinyProgErrorCode::success)
+	if (ret == AttinyProgErrorCode::good)
 	{
 		ret = DoVerify();
 	}
@@ -203,11 +204,17 @@ AttinyProgErrorCode QuadratureEncoder::CheckProgram() noexcept
 	return ret;
 }
 
+void QuadratureEncoder::InitAttiny()
+{
+	//TODO
+	//qq;
+}
+
 // Update the program, return true if successful
 AttinyProgErrorCode QuadratureEncoder::Program() noexcept
 {
 	AttinyProgErrorCode ret = SetupForProgramming();
-	if (ret == AttinyProgErrorCode::success)
+	if (ret == AttinyProgErrorCode::good)
 	{
 		SendSpiQuad(0xAC, 0x80, 0x00, 0x00);						// send chip erase
 		if (!WaitUntilAttinyReady())
@@ -220,7 +227,7 @@ AttinyProgErrorCode QuadratureEncoder::Program() noexcept
 	bool finished = false;
 	size_t addr = 0;
 	size_t pageStartAddress = 0;
-	while (ret == AttinyProgErrorCode::success && !finished)
+	while (ret == AttinyProgErrorCode::good && !finished)
 	{
 		SendSpiQuad(0x40 | ((addr & 1u) << 3), addr >> 9, addr >> 1, 0);
 		++addr;
@@ -236,7 +243,7 @@ AttinyProgErrorCode QuadratureEncoder::Program() noexcept
 		}
 	}
 
-	if (ret == AttinyProgErrorCode::success)
+	if (ret == AttinyProgErrorCode::good)
 	{
 		ret = DoVerify();
 	}
@@ -275,13 +282,18 @@ int32_t QuadratureEncoder::GetReading() noexcept
 void QuadratureEncoder::SetReading(int32_t pos) noexcept
 {
 	const uint32_t upos = (uint32_t)pos;
-	// In case of pulses arriving from the encoder, we may need to set this more than one
+	// In case of pulses arriving from the encoder, we may need to set this more than once
 	do
 	{
 		counterLow = (uint16_t)upos;
 		counterHigh = (uint16_t)(upos >> 16);
 		QuadratureTcc->COUNT.reg = upos;
 	} while (GetReading() != pos);
+}
+
+void QuadratureEncoder::AppendDiagnostics(const StringRef &reply) noexcept
+{
+	reply.catf(", program status %s", programStatus.ToString());
 }
 
 #endif

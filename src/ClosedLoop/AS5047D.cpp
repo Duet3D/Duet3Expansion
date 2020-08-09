@@ -67,12 +67,12 @@ int32_t AS5047D::GetReading() noexcept
 	return (int32_t)((response & 0x2000) ? response | 0xFFFFC000 : response);
 }
 
-void AS5047D::Diagnostics(const StringRef &reply) noexcept
+void AS5047D::AppendDiagnostics(const StringRef &reply) noexcept
 {
 	uint16_t response;
 	if (DoSpiTransaction(AddParityBit(AS5047RegDiag), response) && DoSpiTransaction(AddParityBit(AS5047RegNop), response))
 	{
-		reply.printf("AS5047 agc %u", response & 0x007F);
+		reply.catf(", AS5047 agc %u", response & 0x007F);
 		if ((response & 0x0100) == 0)
 		{
 			reply.cat(", offset loop not ready");
@@ -92,7 +92,7 @@ void AS5047D::Diagnostics(const StringRef &reply) noexcept
 	}
 	else
 	{
-		reply.copy("Failed to read AS5047 diagnostics");
+		reply.cat(", failed to read AS5047 diagnostics");
 	}
 }
 

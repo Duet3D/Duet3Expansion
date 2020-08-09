@@ -29,10 +29,10 @@ int32_t TLI5012B::GetReading() noexcept
 	return 0;
 }
 
-void TLI5012B::Diagnostics(const StringRef &reply) noexcept
+void TLI5012B::AppendDiagnostics(const StringRef &reply) noexcept
 {
 	//TODO
-	reply.copy("not implemented");
+	reply.cat(", TLI5012B diagnostics not implemented");
 }
 
 #endif

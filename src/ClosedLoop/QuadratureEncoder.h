@@ -8,36 +8,45 @@
 #ifndef SRC_CLOSEDLOOP_QUADRATUREENCODER_H_
 #define SRC_CLOSEDLOOP_QUADRATUREENCODER_H_
 
-#include <RepRapFirmware.h>
+#include <ClosedLoop/SpiEncoder.h>
 
 #if SUPPORT_CLOSED_LOOP
 
-#include "SpiEncoder.h"
+#include <General/FreelistManager.h>
+#include <General/NamedEnum.h>
 
-enum class AttinyProgErrorCode : uint8_t
-{
-	success = 0,
-	spiBusy = 1,
-	cantEnterProgrammingMode = 2,
-	badDeviceId = 3,
-	verifyFailed = 4,
-	fuseVerifyFailed = 5,
-	eraseTimeout = 6,
-	writeTimeout = 7,
-	fuseWriteTimeout = 8
-};
+NamedEnum(AttinyProgErrorCode, uint8_t,
+	notChecked,
+	good,
+	spiBusy ,
+	cantEnterProgrammingMode ,
+	badDeviceId,
+	verifyFailed,
+	fuseVerifyFailed,
+	eraseTimeout,
+	writeTimeout,
+	fuseWriteTimeout
+);
 
 class QuadratureEncoder : public SpiEncoder
 {
 public:
-	QuadratureEncoder() noexcept;
+	void* operator new(size_t sz) noexcept { return FreelistManager::Allocate<QuadratureEncoder>(); }
+	void operator delete(void* p) noexcept { FreelistManager::Release<QuadratureEncoder>(p); }
 
+	QuadratureEncoder(bool linear) noexcept;
+	~QuadratureEncoder() { Disable(); }
+
+	EncoderType GetType() const noexcept override { return (linear) ? EncoderType::linearQuadrature : EncoderType::rotaryQuadrature; }
 	void Enable() noexcept override;				// Enable the decoder and reset the counter to zero. Won't work if the decoder has never been programmed.
 	void Disable() noexcept override;				// Disable the decoder. Call this during initialisation. Can also be called later if necessary.
 	int32_t GetReading() noexcept override;			// Get the 32-bit position
+	void AppendDiagnostics(const StringRef& reply) noexcept override;
+
 	void SetReading(int32_t pos) noexcept;			// Set the position. Call this after homing.
 
 	static void TurnAttinyOff() noexcept;
+	static void InitAttiny() noexcept;
 
 private:
 	AttinyProgErrorCode CheckProgram() noexcept;	// Check that the decoder is running current firmware, return true if yes
@@ -51,6 +60,9 @@ private:
 
 	uint32_t deviceSignature = 0;
 	uint16_t counterLow, counterHigh;
+	bool linear;									// true if linear, false if rotary
+
+	static AttinyProgErrorCode programStatus;
 };
 
 #endif

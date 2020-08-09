@@ -12,18 +12,22 @@
 
 #if SUPPORT_CLOSED_LOOP
 
-#include <ClosedLoop/SpiEncoder.h>
-#include <Hardware/SharedSpiDevice.h>
+#include <General/FreelistManager.h>
 
 class TLI5012B : public SpiEncoder
 {
 public:
-	TLI5012B(Pin p_csPin) noexcept;
+	void* operator new(size_t sz) noexcept { return FreelistManager::Allocate<TLI5012B>(); }
+	void operator delete(void* p) noexcept { FreelistManager::Release<TLI5012B>(p); }
 
+	TLI5012B(Pin p_csPin) noexcept;
+	~TLI5012B() { Disable(); }
+
+	EncoderType GetType() const noexcept override { return EncoderType::tli5012; }
 	void Enable() noexcept override;
 	void Disable() noexcept override;
 	int32_t GetReading() noexcept override;
-	void Diagnostics(const StringRef& reply) noexcept override;
+	void AppendDiagnostics(const StringRef& reply) noexcept override;
 
 private:
 };
