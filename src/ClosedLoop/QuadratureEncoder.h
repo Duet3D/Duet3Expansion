@@ -45,8 +45,10 @@ public:
 
 	void SetReading(int32_t pos) noexcept;			// Set the position. Call this after homing.
 
+	void InitAttiny() noexcept;
+
 	static void TurnAttinyOff() noexcept;
-	static void InitAttiny() noexcept;
+	static AttinyProgErrorCode GetProgramStatus() noexcept { return programStatus; }
 
 private:
 	AttinyProgErrorCode CheckProgram() noexcept;	// Check that the decoder is running current firmware, return true if yes

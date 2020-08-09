@@ -81,7 +81,7 @@ AttinyProgErrorCode QuadratureEncoder::SetupForProgramming() noexcept
 {
 	IoPort::SetPinMode(EncoderCsPin, OUTPUT_HIGH);					// make sure any attached encoder doesn't respond to SPI commands
 	EnableSpi();
-	spi.InitMaster();				// this forces SCLK low because we selected mode 0
+	spi.InitMaster();					// this forces SCLK low because we selected mode 0
 	if (!spi.Select(10))				// this sets the mode and baud rate (and would activate CS if we were using one)
 	{
 		return AttinyProgErrorCode::spiBusy;
@@ -91,9 +91,9 @@ AttinyProgErrorCode QuadratureEncoder::SetupForProgramming() noexcept
 
 	// SCK wasn't forced to zero during power up, so we must pulse RESET
 	bool success = false;
-	for (int i = 0; i < 3 && success; ++i)
+	for (int i = 0; i < 3 && !success; ++i)
 	{
-		digitalWrite(QuadratureResetPin, true);
+		pinMode(QuadratureResetPin, OUTPUT_HIGH);
 		delayMicroseconds(100);
 		digitalWrite(QuadratureResetPin, false);
 		delay(30);							// wait at least 20msec
@@ -206,8 +206,15 @@ AttinyProgErrorCode QuadratureEncoder::CheckProgram() noexcept
 
 void QuadratureEncoder::InitAttiny()
 {
-	//TODO
-	//qq;
+	programStatus = CheckProgram();
+	if (programStatus == AttinyProgErrorCode::verifyFailed || programStatus == AttinyProgErrorCode::fuseVerifyFailed)
+	{
+		programStatus = Program();
+	}
+	if (programStatus == AttinyProgErrorCode::good)
+	{
+		TurnAttinyOff();
+	}
 }
 
 // Update the program, return true if successful
@@ -229,7 +236,7 @@ AttinyProgErrorCode QuadratureEncoder::Program() noexcept
 	size_t pageStartAddress = 0;
 	while (ret == AttinyProgErrorCode::good && !finished)
 	{
-		SendSpiQuad(0x40 | ((addr & 1u) << 3), addr >> 9, addr >> 1, 0);
+		SendSpiQuad(0x40 | ((addr & 1u) << 3), addr >> 9, addr >> 1, AttinyProgram[addr]);
 		++addr;
 		finished = (addr == ARRAY_SIZE(AttinyProgram));
 		if (finished || (addr & (Attiny44aPageSize - 1)) == 0)
@@ -239,6 +246,25 @@ AttinyProgErrorCode QuadratureEncoder::Program() noexcept
 			if (!WaitUntilAttinyReady())
 			{
 				ret = AttinyProgErrorCode::writeTimeout;
+			}
+		}
+	}
+
+	if (ret == AttinyProgErrorCode::good)
+	{
+		// Program the fuses
+		ret = AttinyProgErrorCode::writeTimeout;
+		SendSpiQuad(0xAC, 0xA0, 0, AttinyFuses[0]);
+		if (WaitUntilAttinyReady())
+		{
+			SendSpiQuad(0xAC, 0xA8, 0, AttinyFuses[1]);
+			if (WaitUntilAttinyReady())
+			{
+				SendSpiQuad(0xAC, 0xA4, 0, AttinyFuses[2]);
+				if (WaitUntilAttinyReady())
+				{
+					ret = AttinyProgErrorCode::good;
+				}
 			}
 		}
 	}
@@ -293,7 +319,7 @@ void QuadratureEncoder::SetReading(int32_t pos) noexcept
 
 void QuadratureEncoder::AppendDiagnostics(const StringRef &reply) noexcept
 {
-	reply.catf(", program status %s", programStatus.ToString());
+	// Nothing needed here yet
 }
 
 #endif

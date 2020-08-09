@@ -28,13 +28,13 @@ public:
 	SharedSpiDevice(uint8_t sercomNum);
 
 	void Disable() const;
-	void Enable() const;
 	void SetClockFrequencyAndMode(uint32_t freq, SpiMode mode) const;
 	bool TransceivePacket(const uint8_t *tx_data, uint8_t *rx_data, size_t len) const;
 	bool Take(uint32_t timeout) const { return mutex.Take(timeout); }					// get ownership of this SPI, return true if successful
 	void Release() const { mutex.Release(); }
 
 private:
+	void Enable() const;
 	bool waitForTxReady() const;
 	bool waitForTxEmpty() const;
 	bool waitForRxReady() const;

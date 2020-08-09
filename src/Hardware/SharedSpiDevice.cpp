@@ -71,7 +71,7 @@ SharedSpiDevice::SharedSpiDevice(uint8_t sercomNum) : hardware(Serial::Sercoms[s
 
 // SharedSpiClient members
 
-inline void SharedSpiDevice::Disable() const
+void SharedSpiDevice::Disable() const
 {
 	hardware->SPI.CTRLA.bit.ENABLE = 0;
 	hri_sercomusart_wait_for_sync(hardware, SERCOM_USART_CTRLA_ENABLE);

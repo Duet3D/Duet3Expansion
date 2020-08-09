@@ -21,9 +21,12 @@ SpiEncoder *ClosedLoop::encoder = nullptr;
 
 void ClosedLoop::Init() noexcept
 {
-	ClockGen::Init();
-	QuadratureEncoder::InitAttiny();
+	pinMode(EncoderCsPin, OUTPUT_HIGH);			// make sure that any attached SPI encoder is not selected
 	SpiEncoder::Init();
+	ClockGen::Init();
+	QuadratureEncoder *tempEncoder = new QuadratureEncoder(false);
+	tempEncoder->InitAttiny();
+	delete tempEncoder;
 }
 
 EncoderType ClosedLoop::GetEncoderType() noexcept
@@ -79,6 +82,11 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 					encoder = new QuadratureEncoder(false);
 					break;
 				}
+
+				if (encoder != nullptr)
+				{
+					encoder->Enable();
+				}
 			}
 		}
 		else
@@ -97,7 +105,7 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 
 void ClosedLoop::Diagnostics(const StringRef& reply) noexcept
 {
-	reply.printf("Encoder type %s", GetEncoderType().ToString());
+	reply.printf("Program status %s, encoder type %s", QuadratureEncoder::GetProgramStatus().ToString(), GetEncoderType().ToString());
 	if (encoder != nullptr)
 	{
 		reply.catf(", position %" PRIi32, encoder->GetReading());
