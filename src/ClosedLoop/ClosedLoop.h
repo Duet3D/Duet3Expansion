@@ -13,6 +13,7 @@
 #if SUPPORT_CLOSED_LOOP
 
 #include <GCodes/GCodeResult.h>
+#include <Hardware/SharedSpiDevice.h>
 #include <CanMessageFormats.h>
 #include <General/NamedEnum.h>
 
@@ -20,13 +21,14 @@ class SpiEncoder;
 
 namespace ClosedLoop
 {
-	extern bool closedLoopEnabled;
-	extern SpiEncoder *encoder;
-
 	void Init() noexcept;
 	EncoderType GetEncoderType() noexcept;
 	GCodeResult ProcessM569Point1(const CanMessageGeneric& msg, const StringRef& reply) noexcept;
 	void Diagnostics(const StringRef& reply) noexcept;
+
+	void EnableEncodersSpi() noexcept;
+	void DisableEncodersSpi() noexcept;
+	void TurnAttinyOff() noexcept;
 }
 
 #endif

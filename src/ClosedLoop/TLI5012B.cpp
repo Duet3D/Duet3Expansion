@@ -9,7 +9,7 @@
 
 #if SUPPORT_CLOSED_LOOP
 
-TLI5012B::TLI5012B(Pin p_csPin) noexcept : SpiEncoder(60000, SpiMode::mode1, false, p_csPin)	//TODO use correct frequency and mode
+TLI5012B::TLI5012B(SharedSpiDevice& spiDev, Pin p_csPin) noexcept : SpiEncoder(spiDev, 60000, SpiMode::mode1, false, p_csPin)	//TODO use correct frequency and mode
 {
 }
 

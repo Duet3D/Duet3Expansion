@@ -15,18 +15,47 @@
 #include "AS5047D.h"
 #include "QuadratureEncoder.h"
 #include "TLI5012B.h"
+#include "AttinyProgrammer.h"
 
-bool ClosedLoop::closedLoopEnabled = false;
-SpiEncoder *ClosedLoop::encoder = nullptr;
+static bool closedLoopEnabled = false;
+static Encoder *encoder = nullptr;
+static SharedSpiDevice *encoderSpi = nullptr;
+static AttinyProgrammer *programmer;
+
+void  ClosedLoop::EnableEncodersSpi() noexcept
+{
+#ifdef EXP1HCE
+	gpio_set_pin_function(EncoderMosiPin, EncoderMosiPinPeriphMode);
+	gpio_set_pin_function(EncoderSclkPin, EncoderSclkPinPeriphMode);
+	gpio_set_pin_function(EncoderMisoPin, EncoderMisoPinPeriphMode);
+#else
+# error Undefined hardware
+#endif
+}
+
+void  ClosedLoop::DisableEncodersSpi() noexcept
+{
+#ifdef EXP1HCE
+	gpio_set_pin_function(EncoderMosiPin, GPIO_PIN_FUNCTION_OFF);
+	gpio_set_pin_function(EncoderSclkPin, GPIO_PIN_FUNCTION_OFF);
+	gpio_set_pin_function(EncoderMisoPin, GPIO_PIN_FUNCTION_OFF);
+#else
+# error Undefined hardware
+#endif
+}
 
 void ClosedLoop::Init() noexcept
 {
-	pinMode(EncoderCsPin, OUTPUT_HIGH);			// make sure that any attached SPI encoder is not selected
-	SpiEncoder::Init();
+	pinMode(EncoderCsPin, OUTPUT_HIGH);									// make sure that any attached SPI encoder is not selected
+	encoderSpi = new SharedSpiDevice(EncoderSspiSercomNumber);			// create the encoders SPI device
 	ClockGen::Init();
-	QuadratureEncoder *tempEncoder = new QuadratureEncoder(false);
-	tempEncoder->InitAttiny();
-	delete tempEncoder;
+	programmer = new AttinyProgrammer(*encoderSpi);
+	programmer->InitAttiny();
+}
+
+void  ClosedLoop::TurnAttinyOff() noexcept
+{
+	programmer->TurnAttinyOff();
 }
 
 EncoderType ClosedLoop::GetEncoderType() noexcept
@@ -67,11 +96,11 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 					break;
 
 				case EncoderType::as5047:
-					encoder = new AS5047D(EncoderCsPin);
+					encoder = new AS5047D(*encoderSpi, EncoderCsPin);
 					break;
 
 				case EncoderType::tli5012:
-					encoder = new TLI5012B(EncoderCsPin);
+					encoder = new TLI5012B(*encoderSpi, EncoderCsPin);
 					break;
 
 				case EncoderType::linearQuadrature:
@@ -105,7 +134,7 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 
 void ClosedLoop::Diagnostics(const StringRef& reply) noexcept
 {
-	reply.printf("Program status %s, encoder type %s", QuadratureEncoder::GetProgramStatus().ToString(), GetEncoderType().ToString());
+	reply.printf("Program status %s, encoder type %s", programmer->GetProgramStatus().ToString(), GetEncoderType().ToString());
 	if (encoder != nullptr)
 	{
 		reply.catf(", position %" PRIi32, encoder->GetReading());

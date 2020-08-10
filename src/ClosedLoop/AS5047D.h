@@ -20,7 +20,7 @@ public:
 	void* operator new(size_t sz) noexcept { return FreelistManager::Allocate<AS5047D>(); }
 	void operator delete(void* p) noexcept { FreelistManager::Release<AS5047D>(p); }
 
-	AS5047D(Pin p_csPin) noexcept;
+	AS5047D(SharedSpiDevice& spiDev, Pin p_csPin) noexcept;
 	~AS5047D() { Disable(); }
 
 	EncoderType GetType() const noexcept override { return EncoderType::as5047; }

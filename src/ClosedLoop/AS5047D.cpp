@@ -10,6 +10,7 @@
 #if SUPPORT_CLOSED_LOOP
 
 #include <Hardware/IoPorts.h>
+#include <ClosedLoop/ClosedLoop.h>
 
 constexpr uint16_t AS5047RegNop = 0x0000;
 constexpr uint16_t AS5047RegErrfl = 0x0001;
@@ -40,20 +41,20 @@ static inline constexpr bool CheckEvenParity(uint16_t w) noexcept
 	return (w & 1u) == 0;
 }
 
-AS5047D::AS5047D(Pin p_csPin) noexcept : SpiEncoder(6000000, SpiMode::mode1, false, p_csPin)
+AS5047D::AS5047D(SharedSpiDevice& spiDev, Pin p_csPin) noexcept : SpiEncoder(spiDev, 6000000, SpiMode::mode1, false, p_csPin)
 {
 }
 
 void AS5047D::Enable() noexcept
 {
 	IoPort::SetPinMode(csPin, OUTPUT_HIGH);
-	EnableSpi();
+	ClosedLoop::EnableEncodersSpi();
 }
 
 void AS5047D::Disable() noexcept
 {
 	IoPort::SetPinMode(csPin, OUTPUT_HIGH);
-	DisableSpi();
+	ClosedLoop::DisableEncodersSpi();
 }
 
 int32_t AS5047D::GetReading() noexcept
