@@ -128,9 +128,9 @@ constexpr PinDescription PinTable[] =
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PA14 crystal
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PA15 crystal
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PA16 AS5047/attiny MOSI (SERCOM1.0)
-	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PA17 AS5047/attiny SCK (SERCOM1.1)
+	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		1,	nullptr		},	// PA17 AS5047/attiny SCK (SERCOM1.1)
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr 	},	// PA18 AS5047/attiny CS (SERCOM1.2)
-	{ TcOutput::tc4_1,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PA19 AS5047/attiny MISO (SERCOM1.3)
+	{ TcOutput::tc4_1,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		3,	nullptr		},	// PA19 AS5047/attiny MISO (SERCOM1.3)
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"io1.out"	},	// PA20 (TC3.0 available)
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		5,	"io1.in"	},	// PA21
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PA22 clock out to attiny (GCLK_IO6)
@@ -172,20 +172,19 @@ constexpr PinDescription PinTable[] =
 };
 
 static constexpr size_t NumPins = ARRAY_SIZE(PinTable);
-static_assert(NumPins == 32 + 24);		// 32 pins on port A (some missing), 24 on port BB
+static_assert(NumPins == 32 + 24);		// 32 pins on port A (some missing), 24 on port B
 
 // Timer/counter used to generate step pulses and other sub-millisecond timings
 TcCount32 * const StepTc = &(TC2->COUNT32);
 constexpr IRQn StepTcIRQn = TC2_IRQn;
-constexpr unsigned int StepTcClockId = TC2_GCLK_ID;
 constexpr unsigned int StepTcNumber = 2;
 #define STEP_TC_HANDLER			TC2_Handler
 
 // Timer/counter used to accumulate pulses from the quadrature decoder
 Tcc * const QuadratureTcc = TCC2;
-constexpr unsigned int QuadratureTccClockId = TCC2_GCLK_ID;
 constexpr unsigned int QuadratureTccNumber = 2;
-#define QUADRATURE_TCC_HANDLER	TCC2_HANDLER
+constexpr unsigned int QuadratureCountUpEventUser = 19;			// TCC2 EV0, see datasheet
+constexpr unsigned int QuadratureCountDownEventUser = 20;		// TCC2 EV1, see datasheet
 
 // Diagnostic LEDs
 constexpr Pin LedPins[] = { PortAPin(30), PortAPin(31) };
@@ -211,5 +210,9 @@ const NvicPriority NvicPriorityUart = 2;				// serial driver makes RTOS calls
 const NvicPriority NvicPriorityPins = 2;				// priority for GPIO pin interrupts
 const NvicPriority NvicPriorityCan = 3;
 const NvicPriority NvicPriorityDmac = 3;				// priority for DMA complete interrupts
+
+// Event number allocation (max 12 events)
+constexpr EventNumber CountUpEvent = 0;
+constexpr EventNumber CountDownEvent = 1;
 
 #endif /* SRC_CONFIG_EXP1CL_H_ */

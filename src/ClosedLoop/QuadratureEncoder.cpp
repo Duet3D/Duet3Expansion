@@ -19,6 +19,7 @@ QuadratureEncoder::QuadratureEncoder(bool isLinear) noexcept : Encoder(), linear
 // Enable the decoder and reset the counter to zero. Won't work if the decoder has never been programmed.
 void QuadratureEncoder::Enable() noexcept
 {
+	// Set up the attiny
 	ClosedLoop::DisableEncodersSpi();
 	IoPort::SetPinMode(EncoderCsPin, OUTPUT_HIGH);				// make sure any attached encoder doesn't respond to data on the SPI bus
 	IoPort::SetPinMode(QuadratureResetPin, OUTPUT_LOW);			// put the attiny in reset
@@ -26,9 +27,38 @@ void QuadratureEncoder::Enable() noexcept
 	IoPort::SetPinMode(QuadratureCountUpPin, INPUT_PULLDOWN);
 	IoPort::SetPinMode(QuadratureCountDownPin, INPUT_PULLDOWN);
 	delayMicroseconds(100);										// give the reset enough time
-	SetReading(0);
 	IoPort::SetPinMode(QuadratureResetPin, OUTPUT_HIGH);		// release the reset
 	delayMicroseconds(100);										// give the attiny time to read the error out pin and start running
+
+	// Set up the events on the input pins
+	const ExintNumber upExint = AttachEvent(QuadratureCountUpPin, INTERRUPT_MODE_HIGH, false);
+	const ExintNumber downExint = AttachEvent(QuadratureCountDownPin, INTERRUPT_MODE_HIGH, false);
+	if (upExint != Nx && downExint != Nx)						// should always be true if the pin assignments and pin table are correct
+	{
+		// Enable the event system and TCC clocks
+		MCLK->APBCMASK.reg |= MCLK_APBCMASK_EVSYS;
+		EnableTccClock(QuadratureTccNumber, GclkNum48MHz);		// enable clocks
+
+		// Set up the event system
+		// TCC can only be used with an event channel in async mode (SAMC21 Errata rev E section 1.21.9)
+		static constexpr uint32_t EVSYS_CHANNEL_EVGEN_EIC_EXINT0 = 0x0E;	// see datasheet (this definition is not in the device pack)
+		EVSYS->CHANNEL[CountUpEvent].reg = EVSYS_CHANNEL_EVGEN(EVSYS_CHANNEL_EVGEN_EIC_EXINT0 + upExint) | EVSYS_CHANNEL_PATH_ASYNCHRONOUS;
+		EVSYS->CHANNEL[CountDownEvent].reg = EVSYS_CHANNEL_EVGEN(EVSYS_CHANNEL_EVGEN_EIC_EXINT0 + downExint) | EVSYS_CHANNEL_PATH_ASYNCHRONOUS;
+
+		EVSYS->USER[QuadratureCountUpEventUser].reg = CountUpEvent + 1;
+		EVSYS->USER[QuadratureCountDownEventUser].reg = CountDownEvent + 1;
+
+		// Set up the TCC
+		QuadratureTcc->CTRLA.reg = 0;							// datasheet says disable before reset to avoid undefined behaviour
+		while (QuadratureTcc->SYNCBUSY.bit.ENABLE) { }
+		QuadratureTcc->CTRLA.reg = TCC_CTRLA_SWRST;
+		while (QuadratureTcc->SYNCBUSY.bit.SWRST) { }
+
+		QuadratureTcc->EVCTRL.reg = TCC_EVCTRL_EVACT1_DEC | TCC_EVCTRL_EVACT0_INC | TCC_EVCTRL_TCEI1 | TCC_EVCTRL_TCEI0;
+		SetReading(0);
+
+		QuadratureTcc->CTRLA.reg = TCC_CTRLA_ENABLE;
+	}
 }
 
 // Disable the decoder. Call this during initialisation. Can also be called later if necessary.
