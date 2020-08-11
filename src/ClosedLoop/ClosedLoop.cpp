@@ -10,7 +10,6 @@
 #if SUPPORT_CLOSED_LOOP
 
 #include <CanMessageGenericParser.h>
-#include "ClockGen.h"
 #include "SpiEncoder.h"
 #include "AS5047D.h"
 #include "QuadratureEncoder.h"
@@ -21,6 +20,15 @@ static bool closedLoopEnabled = false;
 static Encoder *encoder = nullptr;
 static SharedSpiDevice *encoderSpi = nullptr;
 static AttinyProgrammer *programmer;
+
+static void GenerateAttinyClock()
+{
+	// Currently we program the DPLL to generate 48MHz output, so to get 16MHz we divide by 3 and set the Improve Duty Cycle bit
+	// We could instead program the DPLL to generate 96MHz and divide it by an extra factor of 2 in the other GCLKs
+	// Or we could divide by 4 and be content with 12MHz.
+	ConfigureGclk(ClockGenGclkNumber, GclkSource::dpll, 3, true);
+	SetPinFunction(ClockGenPin, GpioPinFunction::H);
+}
 
 void  ClosedLoop::EnableEncodersSpi() noexcept
 {
@@ -48,7 +56,7 @@ void ClosedLoop::Init() noexcept
 {
 	pinMode(EncoderCsPin, OUTPUT_HIGH);									// make sure that any attached SPI encoder is not selected
 	encoderSpi = new SharedSpiDevice(EncoderSspiSercomNumber);			// create the encoders SPI device
-	ClockGen::Init();
+	GenerateAttinyClock();
 	programmer = new AttinyProgrammer(*encoderSpi);
 	programmer->InitAttiny();
 }
@@ -140,6 +148,9 @@ void ClosedLoop::Diagnostics(const StringRef& reply) noexcept
 		reply.catf(", position %" PRIi32, encoder->GetReading());
 		encoder->AppendDiagnostics(reply);
 	}
+
+	//DEBUG
+	//reply.catf(", event status 0x%08" PRIx32 ", TCC2 CTRLA 0x%08" PRIx32 ", TCC2 EVCTRL 0x%08" PRIx32, EVSYS->CHSTATUS.reg, QuadratureTcc->CTRLA.reg, QuadratureTcc->EVCTRL.reg);
 }
 
 #endif
