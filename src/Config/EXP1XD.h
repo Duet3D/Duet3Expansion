@@ -24,21 +24,42 @@ constexpr const char* BoardTypeName = "EXP1XD";
 #define HAS_SMART_DRIVERS		0
 #define HAS_STALL_DETECT		0
 
-// The SAMC21 can sink more current than it can source, therefore we use active low signals to drive external drivers
-#define ACTIVE_HIGH_STEP		0		// 1 = active high, 0 = active low
-#define ACTIVE_HIGH_DIR			0		// 1 = active high, 0 = active low
-#define ACTIVE_HIGH_ENABLE		0		// 1 = active high, 0 = active low
-
 #define SUPPORT_TMC51xx			0
 #define SUPPORT_TMC2660			0
 #define SUPPORT_TMC22xx			0
 
 constexpr size_t NumDrivers = 1;
 
+#define USE_CCL		1
+
+#if USE_CCL
+
+PortGroup * const StepPio = &(PORT->Group[1]);		// the PIO that all the step pins are on
+
+constexpr Pin EnablePins[NumDrivers] = { PortAPin(3) };
+constexpr Pin StepPins[NumDrivers] = { PortBPin(10) };
+constexpr Pin InvertedStepPins[NumDrivers] = { PortAPin(11) };
+constexpr Pin DirectionPins[NumDrivers] = { PortAPin(10) };
+
+// The SAMC21 can sink more current than it can source, therefore we use active low signals to drive external drivers
+#define ACTIVE_HIGH_STEP		1		// 1 = active high, 0 = active low
+#define ACTIVE_HIGH_DIR			0		// 1 = active high, 0 = active low
+#define ACTIVE_HIGH_ENABLE		0		// 1 = active high, 0 = active low
+
+#else
+
 PortGroup * const StepPio = &(PORT->Group[0]);		// the PIO that all the step pins are on
+
 constexpr Pin EnablePins[NumDrivers] = { PortAPin(3) };
 constexpr Pin StepPins[NumDrivers] = { PortAPin(11) };
 constexpr Pin DirectionPins[NumDrivers] = { PortAPin(10) };
+
+// The SAMC21 can sink more current than it can source, therefore we use active low signals to drive external drivers
+#define ACTIVE_HIGH_STEP		0		// 1 = active high, 0 = active low
+#define ACTIVE_HIGH_DIR			0		// 1 = active high, 0 = active low
+#define ACTIVE_HIGH_ENABLE		0		// 1 = active high, 0 = active low
+
+#endif
 
 #define SINGLE_DRIVER			1
 #define SUPPORT_SLOW_DRIVERS	1

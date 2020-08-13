@@ -13,6 +13,7 @@
 #if SUPPORT_SPI_SENSORS
 
 #include <Platform.h>
+#include <Hardware/SharedSpiClient.h>
 
 class SpiTemperatureSensor : public SensorWithPort
 {

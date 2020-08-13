@@ -552,6 +552,25 @@ void Platform::Init()
 #endif
 #if !HAS_SMART_DRIVERS
 		IoPort::SetHighDriveStrength(StepPins[i]);
+# if defined (USE_CCL) && USE_CCL
+		IoPort::SetPinMode(InvertedStepPins[i], OUTPUT_HIGH);
+		IoPort::SetHighDriveStrength(InvertedStepPins[i]);
+
+		// Set up the CCL to invert the step output from PB10 to the inverted output on PA11
+		MCLK->APBCMASK.reg |= MCLK_APBCMASK_CCL;
+		SetPinFunction(StepPins[i], GpioPinFunction::I);			// CCL1in5
+		SetPinFunction(InvertedStepPins[i], GpioPinFunction::I);	// CCL1out1
+		CCL->CTRL.reg = 0;											// disable the CCL
+		CCL->SEQCTRL[0].reg = CCL_SEQCTRL_SEQSEL_DISABLE;
+		CCL->LUTCTRL[1].reg &= ~CCL_LUTCTRL_ENABLE;
+		CCL->LUTCTRL[1].reg =
+						  CCL_LUTCTRL_INSEL2(CCL_LUTCTRL_INSEL0_IO_Val)
+						| CCL_LUTCTRL_INSEL0(CCL_LUTCTRL_INSEL0_MASK_Val)
+						| CCL_LUTCTRL_INSEL0(CCL_LUTCTRL_INSEL0_MASK_Val)
+						| CCL_LUTCTRL_TRUTH(0b00001111);
+		CCL->LUTCTRL[1].reg |= CCL_LUTCTRL_ENABLE;
+		CCL->CTRL.reg = CCL_CTRL_ENABLE;
+# endif
 #endif
 
 #if ACTIVE_HIGH_DIR

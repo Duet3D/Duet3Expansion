@@ -517,14 +517,9 @@ static GCodeResult InitiateFirmwareUpdate(const CanMessageUpdateYourFirmware& ms
 		return GCodeResult::error;
 	}
 
-#ifdef SAMMYC21
-	reply.printf("Board %u doesn't support firmware update over CAN", CanInterface::GetCanAddress());
-	return GCodeResult::error;
-#else
 	reply.printf("Board %u starting firmware update", CanInterface::GetCanAddress());
 	Platform::StartFirmwareUpdate();
 	return GCodeResult::ok;
-#endif
 }
 
 static GCodeResult InitiateReset(const CanMessageReset& msg, const StringRef& reply)
