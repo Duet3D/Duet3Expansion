@@ -30,21 +30,20 @@ constexpr const char* BoardTypeName = "EXP1XD";
 
 constexpr size_t NumDrivers = 1;
 
-#define USE_CCL		1
+#define DIFFERENTIAL_STEPPER_OUTPUTS	1
 
-#if USE_CCL
+#if DIFFERENTIAL_STEPPER_OUTPUTS
 
 PortGroup * const StepPio = &(PORT->Group[1]);		// the PIO that all the step pins are on
 
-constexpr Pin EnablePins[NumDrivers] = { PortAPin(3) };
 constexpr Pin StepPins[NumDrivers] = { PortBPin(10) };
 constexpr Pin InvertedStepPins[NumDrivers] = { PortAPin(11) };
-constexpr Pin DirectionPins[NumDrivers] = { PortAPin(10) };
 
-// The SAMC21 can sink more current than it can source, therefore we use active low signals to drive external drivers
-#define ACTIVE_HIGH_STEP		1		// 1 = active high, 0 = active low
-#define ACTIVE_HIGH_DIR			0		// 1 = active high, 0 = active low
-#define ACTIVE_HIGH_ENABLE		0		// 1 = active high, 0 = active low
+constexpr Pin DirectionPins[NumDrivers] = { PortAPin(12) };
+constexpr Pin InvertedDirectionPins[NumDrivers] = { PortAPin(10) };
+
+constexpr Pin EnablePins[NumDrivers] = { PortAPin(3) };
+constexpr Pin InvertedEnablePins[NumDrivers] = { PortBPin(11) };
 
 #else
 

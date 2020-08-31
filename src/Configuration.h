@@ -68,11 +68,6 @@ constexpr float ThermostatHysteresis = 1.0;				// How much hysteresis we use to 
 constexpr float BadErrorTemperature = 2000.0;			// Must exceed any reasonable 5temperature limit including DEFAULT_TEMPERATURE_LIMIT
 constexpr uint32_t DefaultHeaterFaultTimeout = 10 * 60 * 1000;	// How long we wait (in milliseconds) for user intervention after a heater fault before shutting down
 
-// Default thermistor parameters
-constexpr float DefaultR25 = 100000.0;
-constexpr float DefaultBeta = 4388.0;
-constexpr float DefaultShc = 0.0;
-
 // Heating model default parameters. For the chamber heater, we use the same values as for the bed heater.
 // These parameters are about right for an E3Dv6 hot end with 30W heater.
 constexpr float DefaultHotEndHeaterGain = 340.0;

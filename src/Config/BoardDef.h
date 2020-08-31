@@ -10,10 +10,6 @@
 
 #include <Duet3Common.h>								// this file is in the CANlib project because both main and expansion boards need it
 
-constexpr float DefaultThermistorR25 = 100000.0;
-constexpr float DefaultThermistorbeta = 4388.0;
-constexpr float DefaultThermistorC = 0.0;
-
 #ifdef EXP3HC
 # include "EXP3HC.h"
 #endif
@@ -34,11 +30,12 @@ constexpr float DefaultThermistorC = 0.0;
 # include "SAMMYC21.h"
 #endif
 
-#ifndef SUPPORT_CLOSED_LOOP
-# define SUPPORT_CLOSED_LOOP		0
+#ifndef DIFFERENTIAL_STEPPER_OUTPUTS
+# define DIFFERENTIAL_STEPPER_OUTPUTS	0
 #endif
 
-constexpr float DefaultMinFanPwm = 0.1;					// minimum fan PWM
-constexpr uint32_t DefaultFanBlipTime = 100;			// fan blip time in milliseconds
+#ifndef SUPPORT_CLOSED_LOOP
+# define SUPPORT_CLOSED_LOOP			0
+#endif
 
 #endif /* SRC_CONFIG_BOARDDEF_H_ */

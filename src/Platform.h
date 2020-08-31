@@ -117,7 +117,7 @@ namespace Platform
 #if SINGLE_DRIVER
 	inline void StepDriverLow()
 	{
-#if ACTIVE_HIGH_STEP
+#if DIFFERENTIAL_STEPPER_OUTPUTS || ACTIVE_HIGH_STEP
 		StepPio->OUTCLR.reg = DriverBit;
 #else
 		StepPio->OUTSET.reg = DriverBit;
@@ -126,7 +126,7 @@ namespace Platform
 
 	inline void StepDriverHigh()
 	{
-#if ACTIVE_HIGH_STEP
+#if DIFFERENTIAL_STEPPER_OUTPUTS || ACTIVE_HIGH_STEP
 		StepPio->OUTSET.reg = DriverBit;
 #else
 		StepPio->OUTCLR.reg = DriverBit;
@@ -137,7 +137,7 @@ namespace Platform
 
 	inline void StepDriversLow()
 	{
-#if ACTIVE_HIGH_STEP
+#if DIFFERENTIAL_STEPPER_OUTPUTS || ACTIVE_HIGH_STEP
 		StepPio->OUTCLR.reg = allDriverBits;
 #else
 		StepPio->OUTSET.reg = allDriverBits;
@@ -146,7 +146,7 @@ namespace Platform
 
 	inline void StepDriversHigh(uint32_t driverMap)
 	{
-#if ACTIVE_HIGH_STEP
+#if DIFFERENTIAL_STEPPER_OUTPUTS || ACTIVE_HIGH_STEP
 		StepPio->OUTSET.reg = driverMap;
 #else
 		StepPio->OUTCLR.reg = driverMap;

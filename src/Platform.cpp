@@ -545,14 +545,10 @@ void Platform::Init()
 
 	for (size_t i = 0; i < NumDrivers; ++i)
 	{
-#if ACTIVE_HIGH_STEP
+#if DIFFERENTIAL_STEPPER_OUTPUTS
+		// Step pins
 		IoPort::SetPinMode(StepPins[i], OUTPUT_LOW);
-#else
-		IoPort::SetPinMode(StepPins[i], OUTPUT_HIGH);
-#endif
-#if !HAS_SMART_DRIVERS
 		IoPort::SetHighDriveStrength(StepPins[i]);
-# if defined (USE_CCL) && USE_CCL
 		IoPort::SetPinMode(InvertedStepPins[i], OUTPUT_HIGH);
 		IoPort::SetHighDriveStrength(InvertedStepPins[i]);
 
@@ -570,26 +566,55 @@ void Platform::Init()
 						| CCL_LUTCTRL_TRUTH(0b00001111);
 		CCL->LUTCTRL[1].reg |= CCL_LUTCTRL_ENABLE;
 		CCL->CTRL.reg = CCL_CTRL_ENABLE;
+
+		// Direction pins
+		IoPort::SetPinMode(DirectionPins[i], OUTPUT_LOW);
+		IoPort::SetHighDriveStrength(DirectionPins[i]);
+		IoPort::SetPinMode(InvertedDirectionPins[i], OUTPUT_HIGH);
+		IoPort::SetHighDriveStrength(InvertedDirectionPins[i]);
+
+		// Enable pins
+		IoPort::SetPinMode(EnablePins[i], OUTPUT_LOW);
+		IoPort::SetHighDriveStrength(EnablePins[i]);
+		IoPort::SetPinMode(InvertedEnablePins[i], OUTPUT_HIGH);
+		IoPort::SetHighDriveStrength(InvertedEnablePins[i]);
+		enableValues[i] = 1;
+		driverIsEnabled[i] = false;
+#else
+		// Step pins
+# if ACTIVE_HIGH_STEP
+		IoPort::SetPinMode(StepPins[i], OUTPUT_LOW);
+# else
+		IoPort::SetPinMode(StepPins[i], OUTPUT_HIGH);
+# endif
+# if !HAS_SMART_DRIVERS
+		IoPort::SetHighDriveStrength(StepPins[i]);
+# endif
+
+		// Direction pins
+# if ACTIVE_HIGH_DIR
+		IoPort::SetPinMode(DirectionPins[i], OUTPUT_LOW);
+# else
+		IoPort::SetPinMode(DirectionPins[i], OUTPUT_HIGH);
+# endif
+# if !HAS_SMART_DRIVERS
+		IoPort::SetHighDriveStrength(DirectionPins[i]);
+# endif
+
+# if !HAS_SMART_DRIVERS
+		// Enable pins
+#  if ACTIVE_HIGH_ENABLE
+		IoPort::SetPinMode(EnablePins[i], OUTPUT_LOW);
+		enableValues[i] = 1;
+#  else
+		IoPort::SetPinMode(EnablePins[i], OUTPUT_HIGH);
+		enableValues[i] = 0;
+#  endif
+		IoPort::SetHighDriveStrength(EnablePins[i]);
+		driverIsEnabled[i] = false;
 # endif
 #endif
 
-#if ACTIVE_HIGH_DIR
-		IoPort::SetPinMode(DirectionPins[i], OUTPUT_LOW);
-#else
-		IoPort::SetPinMode(DirectionPins[i], OUTPUT_HIGH);
-#endif
-#if !HAS_SMART_DRIVERS
-		IoPort::SetHighDriveStrength(DirectionPins[i]);
-# if ACTIVE_HIGH_ENABLE
-		IoPort::SetPinMode(EnablePins[i], OUTPUT_LOW);
-		enableValues[i] = 1;
-# else
-		IoPort::SetPinMode(EnablePins[i], OUTPUT_HIGH);
-		enableValues[i] = 0;
-# endif
-		IoPort::SetHighDriveStrength(EnablePins[i]);
-		driverIsEnabled[i] = false;
-#endif
 #if !SINGLE_DRIVER
 		const uint32_t driverBit = 1u << (StepPins[i] & 31);
 		driveDriverBits[i] = driverBit;
@@ -1166,7 +1191,7 @@ void Platform::SetDirection(size_t driver, bool direction)
 {
 	if (driver < NumDrivers)
 	{
-#if ACTIVE_HIGH_DIR
+#if DIFFERENTIAL_STEPPER_OUTPUTS || ACTIVE_HIGH_DIR
 		// Active high direction signal
 		const bool d = (direction) ? directions[driver] : !directions[driver];
 #else
@@ -1184,6 +1209,9 @@ void Platform::SetDirection(size_t driver, bool direction)
 		}
 #endif
 		digitalWrite(DirectionPins[driver], d);
+#if DIFFERENTIAL_STEPPER_OUTPUTS
+		digitalWrite(InvertedDirectionPins[driver], !d);
+#endif
 #if SUPPORT_SLOW_DRIVERS
 		if (isSlowDriver)
 		{
@@ -1229,7 +1257,10 @@ void Platform::EnableDrive(size_t driver)
 #else
 	if (enableValues[driver] >= 0)
 	{
-		digitalWrite(EnablePins[driver], enableValues[driver] > 0);
+		digitalWrite(EnablePins[driver], enableValues[driver] != 0);
+#if DIFFERENTIAL_STEPPER_OUTPUTS
+		digitalWrite(InvertedEnablePins[driver], enableValues[driver] == 0);
+#endif
 	}
 #endif
 }
@@ -1242,6 +1273,9 @@ void Platform::DisableDrive(size_t driver)
 	if (enableValues[driver] >= 0)
 	{
 		digitalWrite(EnablePins[driver], enableValues[driver] == 0);
+#if DIFFERENTIAL_STEPPER_OUTPUTS
+		digitalWrite(InvertedEnablePins[driver], enableValues[driver] != 0);
+#endif
 	}
 #endif
 }

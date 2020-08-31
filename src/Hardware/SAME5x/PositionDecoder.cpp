@@ -5,10 +5,11 @@
  *      Author: David
  */
 
+#include <RepRapFirmware.h>
+
+#if SAME5x && SUPPORT_CLOSED_LOOP
+
 #include <PositionDecoder.h>
-
-#if SUPPORT_CLOSED_LOOP
-
 #include <cmath>
 
 PositionDecoder::PositionDecoder() : counterHigh(0), lastCount(0), cpr(0)
