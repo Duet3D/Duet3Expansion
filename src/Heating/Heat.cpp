@@ -219,7 +219,7 @@ void Heat::Exit()
 						sensorTempsMsg->whichSensors |= (uint64_t)1u << currentSensor->GetSensorNumber();
 						float temperature;
 						sensorTempsMsg->temperatureReports[sensorsFound].errorCode = (uint8_t)(currentSensor->GetLatestTemperature(temperature));
-						sensorTempsMsg->temperatureReports[sensorsFound].temperature = temperature;
+						sensorTempsMsg->temperatureReports[sensorsFound].SetTemperature(temperature);
 						++sensorsFound;
 					}
 				}
