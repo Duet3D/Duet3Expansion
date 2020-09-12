@@ -24,6 +24,7 @@
 #include "Fans/FansManager.h"
 #include <CanMessageFormats.h>
 #include <Hardware/Devices.h>
+#include <Math/Isqrt.h>
 
 #if SUPPORT_CLOSED_LOOP
 # include <ClosedLoop/ClosedLoop.h>
@@ -1438,6 +1439,48 @@ GCodeResult Platform::DoDiagnosticTest(const CanMessageDiagnosticTest& msg, cons
 
 	switch (msg.testType)
 	{
+	case 102:		// Show the square root calculation time. Caution: may disable interrupt for several tens of microseconds.
+		{
+			bool ok1 = true;
+			uint32_t tim1 = 0;
+			for (uint32_t i = 0; i < 100; ++i)
+			{
+				const uint32_t num1 = 0x7265ac3d + i;
+				const uint64_t sq = (uint64_t)num1 * num1;
+				cpu_irq_disable();
+				const uint32_t now1 = StepTimer::GetTimerTicks();
+				const uint32_t num1a = isqrt64(sq);
+				tim1 += StepTimer::GetTimerTicks() - now1;
+				cpu_irq_enable();
+				if (num1a != num1)
+				{
+					ok1 = false;
+				}
+			}
+
+			bool ok2 = true;
+			uint32_t tim2 = 0;
+			for (uint32_t i = 0; i < 100; ++i)
+			{
+				const uint32_t num2 = 0x0000a4c5 + i;
+				const uint64_t sq = (uint64_t)num2 * num2;
+				cpu_irq_disable();
+				const uint32_t now2 = StepTimer::GetTimerTicks();
+				const uint32_t num2a = isqrt64(sq);
+				tim2 += StepTimer::GetTimerTicks() - now2;
+				cpu_irq_enable();
+				if (num2a != num2)
+				{
+					ok2 = false;
+				}
+			}
+
+			reply.printf("Square roots: 62-bit %.2fus %s, 32-bit %.2fus %s",
+					(double)(tim1 * 10000)/StepTimer::StepClockRate, (ok1) ? "ok" : "ERROR",
+							(double)(tim2 * 10000)/StepTimer::StepClockRate, (ok2) ? "ok" : "ERROR");
+			return (ok1 && ok2) ? GCodeResult::ok : GCodeResult::error;
+		}
+
 	case 1001:	// test watchdog
 		deferredCommand = DeferredCommand::testWatchdog;
 		return GCodeResult::ok;
