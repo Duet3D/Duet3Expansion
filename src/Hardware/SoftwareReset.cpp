@@ -62,10 +62,14 @@ void SoftwareResetData::Populate(uint16_t reason, const uint32_t *stk) noexcept
 	resetReason = reason | ((extraDebugInfo & 0x07) << 5);
 	when = (uint32_t)Platform::GetDateTime();
 	neverUsedRam = Tasks::GetNeverUsedRam();
+	icsr = SCB->ICSR;
+#if SAMC21
+	// ARM Cortex M0+ doesn't have these registers
+	hfsr = cfsr = bfar = 0;
+# else
 	hfsr = SCB->HFSR;
 	cfsr = SCB->CFSR;
-	icsr = SCB->ICSR;
-#if USE_MPU
+# if USE_MPU
 	if ((reason & (uint16_t)SoftwareResetReason::mainReasonMask) == (uint16_t)SoftwareResetReason::memFault)
 	{
 		bfar = SCB->MMFAR;				// on a memory fault we store the MMFAR instead of the BFAR
@@ -74,9 +78,11 @@ void SoftwareResetData::Populate(uint16_t reason, const uint32_t *stk) noexcept
 	{
 		bfar = SCB->BFAR;
 	}
-#else
+# else
 	bfar = SCB->BFAR;
+# endif
 #endif
+
 	// Get the task name if we can. There may be no task executing, so we must allow for this.
 	const TaskHandle_t currentTask = xTaskGetCurrentTaskHandle();
 	taskName = (currentTask == nullptr) ? 0 : *reinterpret_cast<const uint32_t*>(pcTaskGetName(currentTask));
@@ -114,6 +120,7 @@ void SoftwareResetData::Print(unsigned int slot, const StringRef& reply) const n
 	}
 	scratchString.cat(ReasonText[(resetReason >> 5) & 0x0F]);
 
+#if !SAMC21
 	// If it's a forced hard fault or a memory access fault, provide some more information
 	if ((resetReason & (uint16_t)SoftwareResetReason::mainReasonMask) == (uint16_t)SoftwareResetReason::hardFault && (hfsr & 1u << 30) != 0)
 	{
@@ -129,7 +136,7 @@ void SoftwareResetData::Print(unsigned int slot, const StringRef& reply) const n
 		if (cfsr & (1u << 9)) { scratchString.cat(" precise"); }
 		if (cfsr & (1u << 8)) { scratchString.cat(" ibus"); }
 	}
-#if USE_MPU
+# if USE_MPU
 	else if ((resetReason & (uint16_t)SoftwareResetReason::mainReasonMask) == (uint16_t)SoftwareResetReason::memFault)
 	{
 		if (cfsr & (1u << 7)) { scratchString.cat(" mmarValid"); }
@@ -138,14 +145,22 @@ void SoftwareResetData::Print(unsigned int slot, const StringRef& reply) const n
 		if (cfsr & (1u << 1)) { scratchString.cat(" daccViol"); }
 		if (cfsr & (1u << 0)) { scratchString.cat(" iaccViol"); }
 	}
+# endif
 #endif
+
 	reply.lcatf("%s, available RAM %" PRIu32 ", slot %u", scratchString.c_str(), neverUsedRam, slot);
 
 	// Our format buffer is only 256 characters long, so the next 2 lines must be written separately
 	// The task name may include nulls at the end, so print it as a string
 	const uint32_t taskNameWords[2] = { taskName, 0u };
+#if SAMC21
+	reply.lcatf("Software reset code 0x%04x ICSR 0x%08" PRIx32 " SP 0x%08" PRIx32 " Task %s",
+					resetReason, icsr, sp, (const char *)taskNameWords);
+#else
 	reply.lcatf("Software reset code 0x%04x HFSR 0x%08" PRIx32 " CFSR 0x%08" PRIx32 " ICSR 0x%08" PRIx32 " BFAR 0x%08" PRIx32 " SP 0x%08" PRIx32 " Task %s",
 					resetReason, hfsr, cfsr, icsr, bfar, sp, (const char *)taskNameWords);
+#endif
+
 	if (sp != 0xFFFFFFFF)
 	{
 		// We saved a stack dump, so print it

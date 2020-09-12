@@ -1460,6 +1460,20 @@ GCodeResult Platform::DoDiagnosticTest(const CanMessageDiagnosticTest& msg, cons
 	}
 }
 
+uint32_t Platform::GetDateTime() noexcept
+{
+	return realTime;
+}
+
+void Platform::SetDateTime(uint32_t tim) noexcept
+{
+	realTime = tim;
+}
+
+bool Platform::WasDeliberateError() noexcept
+{
+	return deliberateError;
+}
 
 #if HAS_VOLTAGE_MONITOR
 
@@ -1495,21 +1509,6 @@ float Platform::GetCurrentV12Voltage()
 float Platform::GetMaxV12Voltage()
 {
 	return AdcReadingToPowerVoltage(highestV12);
-}
-
-uint32_t Platform::GetDateTime() noexcept
-{
-	return realTime;
-}
-
-void Platform::SetDateTime(uint32_t tim) noexcept
-{
-	realTime = tim;
-}
-
-bool Platform::WasDeliberateError() noexcept
-{
-	return deliberateError;
 }
 
 #endif

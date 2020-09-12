@@ -11,6 +11,10 @@
 # include <Cache.h>
 # include <flash_efc.h>
 #endif
+#if SAMC21
+# include <Flash.h>
+constexpr uint32_t RWW_ADDR = FLASH_ADDR + 0x00400000;
+#endif
 
 NonVolatileMemory::NonVolatileMemory() noexcept : state(NvmState::notRead)
 {
@@ -29,6 +33,8 @@ void NonVolatileMemory::EnsureRead() noexcept
 		{
 			Cache::Enable();
 		}
+#elif SAMC21
+		memcpy(&buffer, reinterpret_cast<const void *>(RWW_ADDR), sizeof(buffer));
 #else
 # error Unsupported processor
 #endif
@@ -64,6 +70,8 @@ void NonVolatileMemory::EnsureWritten() noexcept
 		// Erase the page
 # if SAM4E || SAM4S || SAME70
 		flash_erase_user_signature();
+# elif SAMC21
+		Flash::Erase(RWW_ADDR, 512);
 # endif
 		state = NvmState::writeNeeded;
 	}
@@ -72,6 +80,8 @@ void NonVolatileMemory::EnsureWritten() noexcept
 	{
 # if SAM4E || SAM4S || SAME70
 		flash_write_user_signature(&buffer, sizeof(buffer)/sizeof(uint32_t));
+# elif SAMC21
+		Flash::Write(RWW_ADDR, 512, (uint8_t*)&buffer);
 # else
 #  error Unsupported processor
 # endif
