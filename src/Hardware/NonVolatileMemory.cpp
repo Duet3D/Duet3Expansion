@@ -71,7 +71,7 @@ void NonVolatileMemory::EnsureWritten() noexcept
 # if SAM4E || SAM4S || SAME70
 		flash_erase_user_signature();
 # elif SAMC21
-		Flash::Erase(RWW_ADDR, 512);
+		Flash::RwwErase(RWW_ADDR, 512);
 # endif
 		state = NvmState::writeNeeded;
 	}
@@ -81,7 +81,7 @@ void NonVolatileMemory::EnsureWritten() noexcept
 # if SAM4E || SAM4S || SAME70
 		flash_write_user_signature(&buffer, sizeof(buffer)/sizeof(uint32_t));
 # elif SAMC21
-		Flash::Write(RWW_ADDR, 512, (uint8_t*)&buffer);
+		Flash::RwwWrite(RWW_ADDR, 512, (uint8_t*)&buffer);
 # else
 #  error Unsupported processor
 # endif
