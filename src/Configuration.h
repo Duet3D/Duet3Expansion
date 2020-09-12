@@ -100,25 +100,13 @@ constexpr PwmFrequency DefaultPinWritePwmFreq = 500;	// default PWM frequency fo
 constexpr PwmFrequency ServoRefreshFrequency = 50;
 
 // String lengths. Keeping the number of distinct lengths small will reduce flash memory usage.
-constexpr size_t FormatStringLength = 256;
-constexpr size_t MaxMessageLength = 256;
-constexpr size_t MaxTitleLength = 61;
 constexpr size_t StringLength20 = 20;
 constexpr size_t StringLength50 = 50;
 constexpr size_t StringLength100 = 50;
-
-constexpr size_t GCODE_LENGTH = 161;					// maximum number of non-comment characters in a line of GCode including the null terminator
-constexpr size_t SHORT_GCODE_LENGTH = 61;				// maximum length of a GCode that we can queue to synchronise it to a move
-
-// Output buffer length and number of buffers
-// When using RTOS, it is best if it is possible to fit an HTTP response header in a single buffer. Our headers are currently about 230 bytes long.
-// A note on reserved buffers: the worst case is when a GCode with a long response is processed. After string the response, there must be enough buffer space
-// for the HTTP responder to return a status response. Otherwise DWC never gets to know that it needs to make a rr_reply call and the system deadlocks.
-constexpr size_t OUTPUT_BUFFER_SIZE = 256;				// How many bytes does each OutputBuffer hold?
-constexpr size_t OUTPUT_BUFFER_COUNT = 20;				// How many OutputBuffer instances do we have?
-constexpr size_t RESERVED_OUTPUT_BUFFERS = 4;			// Number of reserved output buffers after long responses, enough to hold a status response
-
-const size_t maxQueuedCodes = 16;						// How many codes can be queued?
+constexpr size_t StringLength256 = 256;
+constexpr size_t StringLength500 = 500;
+constexpr size_t FormatStringLength = StringLength256;
+constexpr size_t MaxMessageLength = StringLength256;
 
 // Move system
 constexpr float DefaultFeedRate = 3000.0;				// The initial requested feed rate after resetting the printer, in mm/min
@@ -129,21 +117,9 @@ constexpr float MinimumMovementSpeed = 0.5;				// The minimum movement speed (ex
 constexpr uint32_t ProbingSpeedReductionFactor = 3;		// The factor by which we reduce the Z probing speed when we get a 'near' indication
 constexpr float ZProbeMaxAcceleration = 250.0;			// Maximum Z acceleration to use at the start of a probing move
 
-constexpr float DefaultArcSegmentLength = 0.2;			// G2 and G3 arc movement commands get split into segments this long
-
 constexpr uint32_t DefaultIdleTimeout = 30000;			// Milliseconds
 constexpr float DefaultIdleCurrentFactor = 0.3;			// Proportion of normal motor current that we use for idle hold
 
 constexpr float DefaultNonlinearExtrusionLimit = 0.2;	// Maximum additional commanded extrusion to compensate for nonlinearity
-constexpr size_t NumRestorePoints = 4;					// Number of restore points, must be at least 3
-
-// Triggers
-constexpr unsigned int MaxTriggers = 10;				// Must be <= 32 because we store a bitmap of pending triggers in a uint32_t
-
-// Default nozzle and filament values
-constexpr float NOZZLE_DIAMETER = 0.5;					// Millimetres
-constexpr float FILAMENT_WIDTH = 1.75;					// Millimetres
-
-constexpr unsigned int MaxStackDepth = 5;				// Maximum depth of stack
 
 #endif

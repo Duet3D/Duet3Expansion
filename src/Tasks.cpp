@@ -8,7 +8,6 @@
 #include <hpl_user_area.h>
 #include "Tasks.h"
 #include "Platform.h"
-#include "SoftwareReset.h"
 #include <Hardware/Devices.h>
 #include <Cache.h>
 #include <malloc.h>
@@ -24,18 +23,18 @@
 
 const uint8_t memPattern = 0xA5;
 
-extern "C" char *sbrk(int i);
+extern "C" char *sbrk(int i) noexcept;
 
 constexpr unsigned int MainTaskStackWords = 800;
 
 static Task<MainTaskStackWords> mainTask;
 static Mutex mallocMutex;
 
-extern "C" void MainTask(void * pvParameters);
+extern "C" void MainTask(void * pvParameters) noexcept;
 
 // We need to make malloc/free thread safe, else sprintf and related I/O functions are liable to crash.
 // We must use a recursive mutex for it.
-extern "C" void __malloc_lock ( struct _reent *_r )
+extern "C" void __malloc_lock (struct _reent *_r) noexcept
 {
 	if (xTaskGetSchedulerState() == taskSCHEDULER_RUNNING)		// don't take mutex if scheduler not started or suspended
 	{
@@ -43,7 +42,7 @@ extern "C" void __malloc_lock ( struct _reent *_r )
 	}
 }
 
-extern "C" void __malloc_unlock ( struct _reent *_r )
+extern "C" void __malloc_unlock (struct _reent *_r) noexcept
 {
 	if (xTaskGetSchedulerState() == taskSCHEDULER_RUNNING)		// don't release mutex if scheduler not started or suspended
 	{
@@ -52,7 +51,7 @@ extern "C" void __malloc_unlock ( struct _reent *_r )
 }
 
 // Application entry point
-void AppMain()
+void AppMain() noexcept
 {
 #ifndef DEBUG
 
@@ -111,7 +110,7 @@ void AppMain()
 	while (true) { }
 }
 
-extern "C" void MainTask(void *pvParameters)
+extern "C" void MainTask(void *pvParameters) noexcept
 {
 	mallocMutex.Create("Malloc");
 
@@ -126,7 +125,7 @@ extern "C" uint32_t _estack;		// this is defined in the linker script
 
 namespace Tasks
 {
-	static void GetHandlerStackUsage(uint32_t* maxStack, uint32_t* neverUsed)
+	static void GetHandlerStackUsage(uint32_t* maxStack, uint32_t* neverUsed) noexcept
 	{
 		const char * const ramend = (const char *)&_estack;
 		const char * const heapend = sbrk(0);
@@ -140,14 +139,14 @@ namespace Tasks
 	}
 }
 
-uint32_t Tasks::GetNeverUsedRam()
+uint32_t Tasks::GetNeverUsedRam() noexcept
 {
 	uint32_t maxStack, neverUsedRam;
 	GetHandlerStackUsage(&maxStack, &neverUsedRam);
 	return neverUsedRam;
 }
 
-void Tasks::Diagnostics(const StringRef& reply)
+void Tasks::Diagnostics(const StringRef& reply) noexcept
 {
 	// Append a memory report to a string
 	uint32_t maxStack, neverUsedRam;
@@ -164,7 +163,7 @@ void Tasks::Diagnostics(const StringRef& reply)
 		{
 			reply.cat(' ');
 		}
-		reply.catf("%s %u", taskDetails.pcTaskName, (unsigned int)(taskDetails.usStackHighWaterMark * sizeof(StackType_t)));
+		reply.catf("%s %u", taskDetails.pcTaskName, (unsigned int)taskDetails.usStackHighWaterMark);
 		printed = true;
 	}
 
@@ -192,16 +191,16 @@ void Tasks::Diagnostics(const StringRef& reply)
 static StaticTask_t xIdleTaskTCB;
 static StackType_t uxIdleTaskStack[configMINIMAL_STACK_SIZE];
 
-extern "C" void vApplicationTickHook(void)
+extern "C" void vApplicationTickHook(void) noexcept
 {
 	CoreSysTick();
 	WatchdogReset();							// kick the watchdog
 	RepRap::Tick();
 }
 
-extern "C" void vApplicationGetIdleTaskMemory( StaticTask_t **ppxIdleTaskTCBBuffer,
+extern "C" void vApplicationGetIdleTaskMemory(StaticTask_t **ppxIdleTaskTCBBuffer,
                                     StackType_t **ppxIdleTaskStackBuffer,
-                                    uint32_t *pulIdleTaskStackSize )
+                                    uint32_t *pulIdleTaskStackSize) noexcept
 {
     /* Pass out a pointer to the StaticTask_t structure in which the Idle task's state will be stored. */
     *ppxIdleTaskTCBBuffer = &xIdleTaskTCB;
@@ -216,9 +215,9 @@ extern "C" void vApplicationGetIdleTaskMemory( StaticTask_t **ppxIdleTaskTCBBuff
 static StaticTask_t xTimerTaskTCB;
 static StackType_t uxTimerTaskStack[configTIMER_TASK_STACK_DEPTH];
 
-extern "C" void vApplicationGetTimerTaskMemory( StaticTask_t **ppxTimerTaskTCBBuffer,
+extern "C" void vApplicationGetTimerTaskMemory(StaticTask_t **ppxTimerTaskTCBBuffer,
                                      StackType_t **ppxTimerTaskStackBuffer,
-                                     uint32_t *pulTimerTaskStackSize )
+                                     uint32_t *pulTimerTaskStackSize) noexcept
 {
     /* Pass out a pointer to the StaticTask_t structure in which the Timer task's state will be stored. */
     *ppxTimerTaskTCBBuffer = &xTimerTaskTCB;
@@ -231,162 +230,14 @@ extern "C" void vApplicationGetTimerTaskMemory( StaticTask_t **ppxTimerTaskTCBBu
 }
 
 // Helper function to cause a divide by zero error without the compiler noticing we are doing that
-uint32_t Tasks::DoDivide(uint32_t a, uint32_t b)
+uint32_t Tasks::DoDivide(uint32_t a, uint32_t b) noexcept
 {
 	return a/b;
 }
 
-// Exception handlers
-extern "C"
+uint32_t Tasks::DoMemoryRead(const uint32_t* addr) noexcept
 {
-	// Exception handlers
-	// By default the Usage Fault, Bus Fault and Memory Management fault handlers are not enabled,
-	// so they escalate to a Hard Fault and we don't need to provide separate exception handlers for them.
-	void hardFaultDispatcher(const uint32_t *pulFaultStackAddress)
-	{
-	    Platform::SoftwareReset((uint16_t)SoftwareResetReason::hardFault, pulFaultStackAddress + 5);
-	}
-
-	// The fault handler implementation calls a function called hardFaultDispatcher()
-	void HardFault_Handler() __attribute__((naked));
-	void HardFault_Handler()
-	{
-	    __asm volatile
-	    (
-#if SAMC21
-	        " mrs r0, msp												\n"
-	    	" mov r1, lr												\n"
-	    	" movs r2, #4												\n"
-	    	" tst r1, r2												\n"
-	    	" beq skip_hfh												\n"
-	        " mrs r0, psp												\n"
-	    	"skip_hfh:													\n"
-#else
-	        " tst lr, #4                                                \n"		/* test bit 2 of the EXC_RETURN in LR to determine which stack was in use */
-	        " ite eq                                                    \n"		/* load the appropriate stack pointer into R0 */
-	        " mrseq r0, msp                                             \n"
-	        " mrsne r0, psp                                             \n"
-#endif
-	        " ldr r2, handler_hf_address_const                          \n"
-	        " bx r2                                                     \n"
-	        " handler_hf_address_const: .word hardFaultDispatcher       \n"
-	    );
-	}
-
-	void wdtFaultDispatcher(const uint32_t *pulFaultStackAddress)
-	{
-		Platform::SoftwareReset((uint16_t)SoftwareResetReason::wdtFault, pulFaultStackAddress + 5);
-	}
-
-	void WDT_Handler() __attribute__((naked));
-	void WDT_Handler()
-	{
-	    __asm volatile
-	    (
-#if SAMC21
-	        " mrs r0, msp												\n"
-	    	" mov r1, lr												\n"
-	    	" movs r2, #4												\n"
-	    	" tst r1, r2												\n"
-	    	" beq skip_wdt												\n"
-	        " mrs r0, psp												\n"
-	    	"skip_wdt:													\n"
-#else
-	        " tst lr, #4                                                \n"		/* test bit 2 of the EXC_RETURN in LR to determine which stack was in use */
-	        " ite eq                                                    \n"		/* load the appropriate stack pointer into R0 */
-	        " mrseq r0, msp                                             \n"
-	        " mrsne r0, psp                                             \n"
-#endif
-	        " ldr r2, handler_wdt_address_const                         \n"
-	        " bx r2                                                     \n"
-	        " handler_wdt_address_const: .word wdtFaultDispatcher       \n"
-	    );
-	}
-
-	void otherFaultDispatcher(const uint32_t *pulFaultStackAddress)
-	{
-		Platform::SoftwareReset((uint16_t)SoftwareResetReason::otherFault, pulFaultStackAddress + 5);
-	}
-
-	// 2017-05-25: A user is getting 'otherFault' reports, so now we do a stack dump for those too.
-	// The fault handler implementation calls a function called otherFaultDispatcher()
-	void OtherFault_Handler() __attribute__((naked));
-	void OtherFault_Handler()
-	{
-	    __asm volatile
-	    (
-#if SAMC21
-	        " mrs r0, msp												\n"
-	    	" mov r1, lr												\n"
-	    	" movs r2, #4												\n"
-	    	" tst r1, r2												\n"
-	    	" beq skip_ofh												\n"
-	        " mrs r0, psp												\n"
-	    	"skip_ofh:													\n"
-#else
-	        " tst lr, #4                                                \n"		/* test bit 2 of the EXC_RETURN in LR to determine which stack was in use */
-	        " ite eq                                                    \n"		/* load the appropriate stack pointer into R0 */
-	        " mrseq r0, msp                                             \n"
-	        " mrsne r0, psp                                             \n"
-#endif
-	        " ldr r2, handler_oflt_address_const                        \n"
-	        " bx r2                                                     \n"
-	        " handler_oflt_address_const: .word otherFaultDispatcher    \n"
-	    );
-	}
-
-	// We could set up the following fault handlers to retrieve the program counter in the same way as for a Hard Fault,
-	// however these exceptions are unlikely to occur, so for now we just report the exception type.
-	void NMI_Handler        ()
-	{
-		Platform::SoftwareReset((uint16_t)SoftwareResetReason::NMI);
-	}
-
-	void UsageFault_Handler ()
-	{
-		Platform::SoftwareReset((uint16_t)SoftwareResetReason::usageFault);
-	}
-
-	void DebugMon_Handler   () __attribute__ ((alias("OtherFault_Handler"), nothrow));
-
-	// FreeRTOS hooks that we need to provide
-	void stackOverflowDispatcher(const uint32_t *pulFaultStackAddress, char* pcTaskName)
-	{
-		Platform::SoftwareReset((uint16_t)SoftwareResetReason::stackOverflow, pulFaultStackAddress);
-	}
-
-	void vApplicationStackOverflowHook(TaskHandle_t pxTask, char *pcTaskName) __attribute((naked));
-	void vApplicationStackOverflowHook(TaskHandle_t pxTask, char *pcTaskName)
-	{
-		// r0 = pxTask, r1 = pxTaskName
-	    __asm volatile
-	    (
-	    	" push {r0, r1, lr}											\n"		/* save parameters and call address on the stack */
-	    	" mov r0, sp												\n"
-	        " ldr r2, handler_sovf_address_const                        \n"
-	        " bx r2                                                     \n"
-	        " handler_sovf_address_const: .word stackOverflowDispatcher \n"
-	    );
-	}
-
-	void assertCalledDispatcher(const uint32_t *pulFaultStackAddress)
-	{
-		Platform::SoftwareReset((uint16_t)SoftwareResetReason::assertCalled, pulFaultStackAddress);
-	}
-
-	void vAssertCalled(uint32_t line, const char *file) __attribute((naked));
-	void vAssertCalled(uint32_t line, const char *file)
-	{
-	    __asm volatile
-	    (
-	    	" push {r0, r1, lr}											\n"		/* save parameters and call address */
-	    	" mov r0, sp												\n"
-	        " ldr r2, handler_asrt_address_const                        \n"
-	        " bx r2                                                     \n"
-	        " handler_asrt_address_const: .word assertCalledDispatcher  \n"
-	    );
-	}
-
+	return *addr;
 }
 
 // End

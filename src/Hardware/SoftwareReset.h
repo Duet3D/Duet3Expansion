@@ -8,7 +8,12 @@
 #ifndef SRC_SOFTWARERESET_H_
 #define SRC_SOFTWARERESET_H_
 
-#include "RepRapFirmware.h"
+#include <RepRapFirmware.h>
+#include <MessageType.h>
+
+#if SAM3XA
+# include <DueFlashStorage.h>
+#endif
 
 // Enumeration describing the reasons for a software reset.
 // The spin state gets or'ed into this, so keep the lower 5 bits unused.
@@ -26,7 +31,10 @@ enum class SoftwareResetReason : uint16_t
 	stackOverflow = 8u << 5,		// FreeRTOS detected stack overflow
 	assertCalled = 9u << 5,			// FreeRTOS assertion failure
 	heaterWatchdog = 10u << 5,		// the Heat task didn't kick the watchdog often enough
-	memFault = 11u << 5,
+	memFault = 11u << 5,			// the MPU raised a fault
+	terminateCalled = 12u << 5,		// std::terminate was called
+	pureVirtual = 13u << 5,
+	deletedVirtual = 14u << 5,
 
 	mainReasonMask = 0x0F << 5,		// mask to pick out the  main reason in a uint16_t
 
@@ -34,21 +42,14 @@ enum class SoftwareResetReason : uint16_t
 	unusedBit = 0x0200,				// spare bit
 	unused2 = 0x0400,				// spare bit
 	inAuxOutput = 0x0800,			// this bit is or'ed in if we were in aux output at the time
-	inLwipSpin = 0x2000,			// we got stuck in a call to LWIP for too long
+	unused_was_inLwipSpin = 0x2000,	// no longer used
 	inUsbOutput = 0x4000,			// this bit is or'ed in if we were in USB output at the time
 	deliberate = 0x8000				// this but it or'ed in if we deliberately caused a fault
 };
 
 // These are the structures used to hold our non-volatile data.
-// The SAM3X and SAM4E don't have EEPROM so we save the data to flash. This unfortunately means that it gets cleared
-// every time we reprogram the firmware via bossa, but it can be retained when firmware updates are performed
-// via the web interface. That's why it's a good idea to implement versioning here - increase these values
-// whenever the fields of the following structs have changed.
-//
-// The SAM4E has a large page erase size (8K). For this reason we store the software reset data in the 512-byte user signature area
-// instead, which doesn't get cleared when the Erase button is pressed. The SoftareResetData struct must have at least one 32-bit
-// field to guarantee that values of this type will be 32-bit aligned. It must have no virtual members because it is read/written
-// directly from/to flash memory.
+// We store the software reset data in the 512-byte user signature area of the SAM4E, SAM4S and SAME70 processors.
+// It must be a multiple of 4 bytes long.
 struct SoftwareResetData
 {
 	uint16_t magic;								// the magic number, including the version
@@ -61,19 +62,21 @@ struct SoftwareResetData
 	uint32_t sp;								// stack pointer
 	uint32_t when;								// value of the RTC when the software reset occurred
 	uint32_t taskName;							// first 4 bytes of the task name
-	uint32_t stack[23];							// stack when the exception occurred, with the program counter at the bottom
+	uint32_t spare[2];							// unused at present
+	// The stack length is set to 27 words because that is the most we can print in a single message using our 256-byte format buffer
+	uint32_t stack[27];							// stack when the exception occurred, with the link register and program counter at the bottom
 
-	bool isVacant() const;						// return true if this struct can be written without erasing it first
-	void Populate(uint16_t reason, uint32_t time, const uint32_t *stk);
+	bool IsVacant() const noexcept;				// return true if this struct can be written without erasing it first
+	bool IsValid() const noexcept { return magic == magicValue; }
+	void Clear() noexcept;
+	void Populate(uint16_t reason, const uint32_t *stk) noexcept;
+	void Print(unsigned int slot, const StringRef& reply) const noexcept;
 
-	static const uint16_t versionValue = 8;		// increment this whenever this struct changes
-	static const uint16_t magicValue = 0x7D00 | versionValue;	// value we use to recognise that all the flash data has been written
-	static const size_t numberOfSlots = 4;		// number of storage slots used to implement wear levelling - must fit in 512 bytes
+	static constexpr uint16_t versionValue = 9;		// increment this whenever this struct changes
+	static constexpr uint16_t magicValue = 0x7D00 | versionValue;	// value we use to recognise that all the flash data has been written
 
 	static const char *const ReasonText[];
-	static uint8_t extraDebugInfo;				// extra info for debugging can be stored here
+	static uint8_t extraDebugInfo;				// 3 bits of extra info for debugging can be stored here
 };
-
-static_assert(SoftwareResetData::numberOfSlots * sizeof(SoftwareResetData) <= 512, "Can't fit software reset data in user signature area");
 
 #endif /* SRC_SOFTWARERESET_H_ */

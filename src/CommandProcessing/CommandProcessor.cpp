@@ -19,6 +19,7 @@
 #include <Tasks.h>
 #include <Version.h>
 #include <AnalogIn.h>
+#include <Hardware/NonVolatileMemory.h>
 #include <hpl_user_area.h>
 #include <cctype>				// for tolower()
 
@@ -531,7 +532,7 @@ static GCodeResult InitiateReset(const CanMessageReset& msg, const StringRef& re
 
 static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& reply, uint8_t& extra)
 {
-	static constexpr uint8_t LastDiagnosticsPart = 3;				// the last diagnostics part is typeDiagnosticsPart0 + 3
+	static constexpr uint8_t LastDiagnosticsPart = 4;				// the last diagnostics part is typeDiagnosticsPart0 + 4
 
 	switch (msg.type)
 	{
@@ -576,6 +577,23 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 
 	case CanMessageReturnInfo::typeDiagnosticsPart0 + 1:
 		extra = LastDiagnosticsPart;
+		{
+			NonVolatileMemory mem;
+			unsigned int slot;
+			const SoftwareResetData *srd = mem.GetLastWrittenResetData(slot);
+			if (srd == nullptr)
+			{
+				reply.copy("Last software reset data not available");
+			}
+			else
+			{
+				srd->Print(slot, reply);
+			}
+		}
+		break;
+
+	case CanMessageReturnInfo::typeDiagnosticsPart0 + 2:
+		extra = LastDiagnosticsPart;
 #if SUPPORT_CLOSED_LOOP
 		ClosedLoop::Diagnostics(reply);
 #endif
@@ -589,7 +607,7 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 		}
 		break;
 
-	case CanMessageReturnInfo::typeDiagnosticsPart0 + 2:
+	case CanMessageReturnInfo::typeDiagnosticsPart0 + 3:
 		extra = LastDiagnosticsPart;
 		{
 			moveInstance->Diagnostics(reply);
@@ -610,7 +628,7 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 		}
 		break;
 
-	case CanMessageReturnInfo::typeDiagnosticsPart0 + 3:
+	case CanMessageReturnInfo::typeDiagnosticsPart0 + 4:
 		extra = LastDiagnosticsPart;
 		Heat::Diagnostics(reply);
 		CanInterface::Diagnostics(reply);
@@ -647,7 +665,7 @@ void CommandProcessor::Spin()
 	if (buf != nullptr)
 	{
 		Platform::OnProcessingCanMessage();
-		String<FormatStringLength> reply;
+		String<StringLength500> reply;
 		const StringRef& replyRef = reply.GetRef();
 		const CanMessageType id = buf->id.MsgType();
 		GCodeResult rslt;

@@ -203,7 +203,6 @@ namespace Platform
 	GCodeResult DoDiagnosticTest(const CanMessageDiagnosticTest& msg, const StringRef& reply);
 
 	[[noreturn]]void EmergencyStop();
-	[[noreturn]]void SoftwareReset(uint16_t reason, const uint32_t *stk = nullptr);
 
 	[[noreturn]]inline void ResetProcessor()
 	{
@@ -222,6 +221,10 @@ namespace Platform
 	float GetCurrentV12Voltage();
 	float GetMaxV12Voltage();
 #endif
+
+	uint32_t GetDateTime() noexcept;
+	void SetDateTime(uint32_t tim) noexcept;
+	bool WasDeliberateError() noexcept;
 }
 
 #endif /* SRC_PLATFORM_H_ */

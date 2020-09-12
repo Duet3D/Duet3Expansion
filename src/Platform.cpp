@@ -51,11 +51,14 @@ enum class DeferredCommand : uint8_t
 	firmwareUpdate,
 	reset,
 	testWatchdog,
-	testDivideByZero
+	testDivideByZero,
+	testUnalignedMemoryAccess,
+	testBadMemoryAccess
 };
 
 static volatile DeferredCommand deferredCommand = DeferredCommand::none;
 static volatile uint32_t whenDeferredCommandRequested;
+static uint32_t realTime = 0;
 static bool deliberateError = false;
 
 namespace Platform
@@ -393,20 +396,6 @@ namespace Platform
 
 }	// end namespace Platform
 
-void Platform::SoftwareReset(uint16_t reason, const uint32_t *stk)
-{
-#if SAME5x
-	//TODO save reset data in NVM
-	//	qq;
-#elif SAMC21
-	//TODO save reset data in NVM
-	//	qq;
-#else
-# error Unsupported processor
-#endif
-	ResetProcessor();
-}
-
 void Platform::Init()
 {
 	IoPort::Init();
@@ -722,12 +711,28 @@ void Platform::Spin()
 
 		case DeferredCommand::testWatchdog:
 			deliberateError = true;
-			SysTick->CTRL &= ~(SysTick_CTRL_TICKINT_Msk);			// disable the system tick interrupt so that we get a watchdog timeout reset
+			SysTick->CTRL &= ~(SysTick_CTRL_TICKINT_Msk);							// disable the system tick interrupt so that we get a watchdog timeout reset
 			break;
 
 		case DeferredCommand::testDivideByZero:
 			deliberateError = true;
 			(void)Tasks::DoDivide(1, 0);
+			__ISB();
+			deliberateError = false;
+			break;
+
+		case DeferredCommand::testUnalignedMemoryAccess:
+			deliberateError = true;
+			(void)Tasks::DoMemoryRead(reinterpret_cast<const uint32_t*>(HSRAM_ADDR + 1));
+			__ISB();
+			deliberateError = false;
+			break;
+
+		case DeferredCommand::testBadMemoryAccess:
+			deliberateError = true;
+			(void)Tasks::DoMemoryRead(reinterpret_cast<const uint32_t*>(0x30000000));	// 0x30000000 is invalid on both the SAME5x and the SAMC21
+			__ISB();
+			deliberateError = false;
 			break;
 
 		default:
@@ -1441,6 +1446,14 @@ GCodeResult Platform::DoDiagnosticTest(const CanMessageDiagnosticTest& msg, cons
 		deferredCommand = DeferredCommand::testDivideByZero;
 		return GCodeResult::ok;
 
+	case 1005:
+		deferredCommand = DeferredCommand::testUnalignedMemoryAccess;
+		return GCodeResult::ok;
+
+	case 1006:
+		deferredCommand = DeferredCommand::testBadMemoryAccess;
+		return GCodeResult::ok;
+
 	default:
 		reply.printf("Unknown test type %u", msg.testType);
 		return GCodeResult::error;
@@ -1482,6 +1495,21 @@ float Platform::GetCurrentV12Voltage()
 float Platform::GetMaxV12Voltage()
 {
 	return AdcReadingToPowerVoltage(highestV12);
+}
+
+uint32_t Platform::GetDateTime() noexcept
+{
+	return realTime;
+}
+
+void Platform::SetDateTime(uint32_t tim) noexcept
+{
+	realTime = tim;
+}
+
+bool Platform::WasDeliberateError() noexcept
+{
+	return deliberateError;
 }
 
 #endif
