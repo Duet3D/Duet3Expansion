@@ -28,8 +28,10 @@ typedef AdcAveragingFilter<ThermistorReadingsAveraged> ThermistorAveragingFilter
 typedef AdcAveragingFilter<ZProbeReadingsAveraged> ZProbeAveragingFilter;
 
 #if HAS_VREF_MONITOR
+
 constexpr size_t VssaFilterIndex = NumThermistorInputs;
 constexpr size_t VrefFilterIndex = NumThermistorInputs + 1;
+
 # if SAMC21 && SUPPORT_SDADC
 // On the SAMC21 we have 2 additional filters for the SDADC inputs
 constexpr size_t SdAdcTemp0FilterIndex = NumThermistorInputs + 2;
@@ -39,7 +41,10 @@ constexpr size_t NumThermistorFilters = NumThermistorInputs + 4;
 // SAME51 or not supporting SDADC
 constexpr size_t NumThermistorFilters = NumThermistorInputs + 2;
 # endif
+
 #else
+
+// No VREF or VSSA monitor inputs
 # if SAMC21 && SUPPORT_SDADC
 // On the SAMC21 we have 2 additional filters for the SDADC inputs
 constexpr size_t SdAdcTemp0FilterIndex = NumThermistorInputs;
@@ -48,6 +53,7 @@ constexpr size_t NumThermistorFilters = NumThermistorInputs + 2;
 # else
 constexpr size_t NumThermistorFilters = NumThermistorInputs;
 # endif
+
 #endif
 
 // Enumeration of error condition bits

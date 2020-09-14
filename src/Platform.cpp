@@ -392,7 +392,12 @@ namespace Platform
 	static void SetupThermistorFilter(Pin pin, size_t filterIndex, bool useAlternateAdc)
 	{
 		thermistorFilters[filterIndex].Init(0);
-		AnalogIn::EnableChannel(PinToAdcChannel(pin), thermistorFilters[filterIndex].CallbackFeedIntoFilter, &thermistorFilters[filterIndex], 1, useAlternateAdc);
+#if SAMC21
+		const AdcInput adcChan = (useAlternateAdc) ? PinToSdAdcChannel(pin) : PinToAdcChannel(pin);
+#else
+		const AdcInput adcChan = PinToAdcChannel(pin);
+#endif
+		AnalogIn::EnableChannel(adcChan, thermistorFilters[filterIndex].CallbackFeedIntoFilter, &thermistorFilters[filterIndex], 1, useAlternateAdc);
 	}
 
 }	// end namespace Platform
@@ -502,6 +507,7 @@ void Platform::Init()
 	lowestMcuTemperature = 999.0;
 	mcuTemperatureAdjust = 0.0;
 
+	// Set up the MCU temperature sense filters
 #if SAME5x
 	tpFilter.Init(0);
 	AnalogIn::EnableTemperatureSensor(0, tpFilter.CallbackFeedIntoFilter, &tpFilter, 1, 0);
