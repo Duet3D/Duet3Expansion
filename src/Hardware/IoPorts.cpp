@@ -521,7 +521,7 @@ void IoPort::AppendPinName(const StringRef& str) const
 // Set high driver strength on an output pin
 /*static*/ void IoPort::SetHighDriveStrength(Pin p)
 {
-	hri_port_set_PINCFG_DRVSTR_bit(PORT, GPIO_PORT(p), p & 0x1F);
+	PORT->Group[GpioPortNumber(p)].PINCFG[GpioPinNumber(p)].reg |= PORT_PINCFG_DRVSTR;
 }
 
 #endif

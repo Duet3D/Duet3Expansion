@@ -22,7 +22,7 @@
 # include <Serial.h>
 
 # if SAME5x
-#  include <hri/hri_sercom_e54.h>
+#  include <hri_sercom_e54.h>
 # elif SAMC21
 #  include <hri_sercom_c21.h>
 # endif
@@ -1237,9 +1237,9 @@ void SmartDrivers::Init()
 	IoPort::SetPinMode(GlobalTmc51xxCSPin, OUTPUT_HIGH);
 
 #if SAME5x || SAMC21
-	gpio_set_pin_function(TMC51xxMosiPin, TMC51xxMosiPinPeriphMode);
-	gpio_set_pin_function(TMC51xxSclkPin, TMC51xxSclkPinPeriphMode);
-	gpio_set_pin_function(TMC51xxMisoPin, TMC51xxMisoPinPeriphMode);
+	SetPinFunction(TMC51xxMosiPin, TMC51xxMosiPinPeriphMode);
+	SetPinFunction(TMC51xxSclkPin, TMC51xxSclkPinPeriphMode);
+	SetPinFunction(TMC51xxMisoPin, TMC51xxMisoPinPeriphMode);
 
 	Serial::EnableSercomClock(SERCOM_TMC51xx_NUMBER);
 #else

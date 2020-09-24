@@ -9,6 +9,12 @@
 #include <RTOSIface/RTOSIface.h>
 #include "Move.h"
 
+#if SAME5x
+# include <hri_tc_e54.h>
+#elif SAMC21
+# include <hri_tc_c21.h>
+#endif
+
 StepTimer * volatile StepTimer::pendingList = nullptr;
 volatile uint32_t StepTimer::localTimeOffset = 0;
 volatile uint32_t StepTimer::whenLastSynced;

@@ -27,15 +27,15 @@ static void GenerateAttinyClock()
 	// We could instead program the DPLL to generate 96MHz and divide it by an extra factor of 2 in the other GCLKs
 	// Or we could divide by 4 and be content with 12MHz.
 	ConfigureGclk(ClockGenGclkNumber, GclkSource::dpll, 3, true);
-	SetPinFunction(ClockGenPin, GpioPinFunction::H);
+	SetPinFunction(ClockGenPin, ClockGenPinPeriphMode);
 }
 
 void  ClosedLoop::EnableEncodersSpi() noexcept
 {
 #ifdef EXP1HCE
-	gpio_set_pin_function(EncoderMosiPin, EncoderMosiPinPeriphMode);
-	gpio_set_pin_function(EncoderSclkPin, EncoderSclkPinPeriphMode);
-	gpio_set_pin_function(EncoderMisoPin, EncoderMisoPinPeriphMode);
+	SetPinFunction(EncoderMosiPin, EncoderMosiPinPeriphMode);
+	SetPinFunction(EncoderSclkPin, EncoderSclkPinPeriphMode);
+	SetPinFunction(EncoderMisoPin, EncoderMisoPinPeriphMode);
 #else
 # error Undefined hardware
 #endif
@@ -44,9 +44,9 @@ void  ClosedLoop::EnableEncodersSpi() noexcept
 void  ClosedLoop::DisableEncodersSpi() noexcept
 {
 #ifdef EXP1HCE
-	gpio_set_pin_function(EncoderMosiPin, GPIO_PIN_FUNCTION_OFF);
-	gpio_set_pin_function(EncoderSclkPin, GPIO_PIN_FUNCTION_OFF);
-	gpio_set_pin_function(EncoderMisoPin, GPIO_PIN_FUNCTION_OFF);
+	ClearPinFunction(EncoderMosiPin);
+	ClearPinFunction(EncoderSclkPin);
+	ClearPinFunction(EncoderMisoPin);
 #else
 # error Undefined hardware
 #endif

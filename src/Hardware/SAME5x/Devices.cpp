@@ -35,9 +35,9 @@ extern "C" void SERCOM3_3_Handler()
 
 void DeviceInit() noexcept
 {
-	gpio_set_pin_function(PortBPin(20), PINMUX_PB20C_SERCOM3_PAD0);		// TxD
+	SetPinFunction(PortBPin(20), GpioPinFunction::C);		// TxD
 # if 0	// we don't use the receiver, but if we did we would need to do this:
-	gpio_set_pin_function(PortBPin(21), PINMUX_PB21C_SERCOM3_PAD1);		// RxD
+	SetPinFunction(PortBPin(21), GpioPinFunction::C);		// RxD
 # endif
 
 	AnalogIn::Init(DmacChanAdc0Tx, DmacPrioAdcTx, DmacPrioAdcRx);

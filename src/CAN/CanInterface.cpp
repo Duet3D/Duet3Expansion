@@ -20,7 +20,6 @@
 #include <CanDriver.h>
 #include <Hardware/IoPorts.h>
 #include <Version.h>
-#include <peripheral_clk_config.h>
 #include <hpl_user_area.h>
 
 const unsigned int NumCanBuffers = 40;
@@ -122,8 +121,8 @@ static void CAN_0_init(const CanTiming& timing)
 	hri_mclk_set_AHBMASK_CAN1_bit(MCLK);
 	hri_gclk_write_PCHCTRL_reg(GCLK, CAN1_GCLK_ID, GclkNum48MHz | GCLK_PCHCTRL_CHEN);
 	can_async_init(&CAN_0, CAN1, timing);
-	gpio_set_pin_function(PortBPin(13), PINMUX_PB13H_CAN1_RX);
-	gpio_set_pin_function(PortBPin(12), PINMUX_PB12H_CAN1_TX);
+	SetPinFunction(PortBPin(13), GpioPinFunction::H);
+	SetPinFunction(PortBPin(12), GpioPinFunction::H);
 }
 
 #endif
@@ -141,12 +140,12 @@ static void CAN_0_init(const CanTiming& timing)
 	hri_gclk_write_PCHCTRL_reg(GCLK, CAN0_GCLK_ID, GclkNum48MHz | GCLK_PCHCTRL_CHEN);
 	can_async_init(&CAN_0, CAN0, timing);
 #ifdef SAMMYC21
-	gpio_set_pin_function(PortBPin(23), PINMUX_PB23G_CAN0_RX);
-	gpio_set_pin_function(PortBPin(22), PINMUX_PB22G_CAN0_TX);
+	SetPinFunction(PortBPin(23), GpioPinFunction::G);
+	SetPinFunction(PortBPin(22), GpioPinFunction::G);
 	IoPort::SetPinMode(CanStandbyPin, OUTPUT_LOW);					// take the CAN drivers out of standby
 #else
-	gpio_set_pin_function(PortAPin(25), PINMUX_PA25G_CAN0_RX);
-	gpio_set_pin_function(PortAPin(24), PINMUX_PA24G_CAN0_TX);
+	SetPinFunction(PortAPin(25), GpioPinFunction::G);
+	SetPinFunction(PortAPin(24), GpioPinFunction::G);
 #endif
 }
 

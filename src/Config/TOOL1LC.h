@@ -46,9 +46,9 @@ constexpr uint8_t TMC22xxSercomNumber = 3;
 Sercom * const SERCOM_TMC22xx = SERCOM3;
 
 constexpr Pin TMC22xxSercomTxPin = PortAPin(22);
-constexpr uint32_t TMC22xxSercomTxPinPeriphMode = PINMUX_PA22C_SERCOM3_PAD0;
+constexpr GpioPinFunction TMC22xxSercomTxPinPeriphMode = GpioPinFunction::C;
 constexpr Pin TMC22xxSercomRxPin = PortAPin(20);
-constexpr uint32_t TMC22xxSercomRxPinPeriphMode = PINMUX_PA20D_SERCOM3_PAD2;
+constexpr GpioPinFunction TMC22xxSercomRxPinPeriphMode = GpioPinFunction::D;
 constexpr uint8_t TMC22xxSercomRxPad = 2;
 
 // Define the baud rate used to send/receive data to/from the drivers.

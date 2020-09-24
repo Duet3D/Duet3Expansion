@@ -37,11 +37,6 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x/hal/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x/hal/utils/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x/hri}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x/Config}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/arm/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/atmel/SAME51_DFP/1.1.139/include}&quot;"/>
 								</option>
@@ -64,11 +59,10 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/Hardware/SAME5x}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x/hal/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x/hal/utils/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x/hri}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x/Config}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x_C21}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x_C21/SAME5x/hal/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x_C21/SAME5x/hal/utils/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x_C21/SAME5x/hri}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/arm/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/atmel/SAME51_DFP/1.1.139/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries/src}&quot;"/>
@@ -181,11 +175,6 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x/hal/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x/hal/utils/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x/hri}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x/Config}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/arm/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/atmel/SAME51_DFP/1.1.139/include}&quot;"/>
 								</option>
@@ -209,11 +198,10 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/Hardware/SAME5x}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x/hal/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x/hal/utils/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x/hri}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x/Config}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x_C21}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x_C21/SAME5x/hal/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x_C21/SAME5x/hal/utils/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x_C21/SAME5x/hri}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/arm/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/atmel/SAME51_DFP/1.1.139/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries/src}&quot;"/>
@@ -326,11 +314,6 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x/hal/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x/hal/utils/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x/hri}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x/Config}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/arm/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/atmel/SAME51_DFP/1.1.139/include}&quot;"/>
 								</option>
@@ -354,11 +337,10 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/Hardware/SAME5x}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x/hal/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x/hal/utils/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x/hri}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x/Config}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x_C21}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x_C21/SAME5x/hal/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x_C21/SAME5x/hal/utils/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x_C21/SAME5x/hri}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/arm/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/atmel/SAME51_DFP/1.1.139/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries/src}&quot;"/>
@@ -471,11 +453,6 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x/hal/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x/hal/utils/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x/hri}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x/Config}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/arm/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/atmel/SAME51_DFP/1.1.139/include}&quot;"/>
 								</option>
@@ -498,11 +475,10 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/Hardware/SAME5x}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x/hal/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x/hal/utils/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x/hri}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x/Config}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x_C21}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x_C21/SAME5x/hal/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x_C21/SAME5x/hal/utils/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x_C21/SAME5x/hri}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/arm/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/atmel/SAME51_DFP/1.1.139/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries/src}&quot;"/>
@@ -615,11 +591,6 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/utils/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hri}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/Config}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/atmel/SAMC21_DFP/1.2.176/samc21/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/arm/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
 								</option>
@@ -641,11 +612,10 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/Hardware/SAMC21}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/utils/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hri}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/Config}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x_C21}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x_C21/SAMC21/hal/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x_C21/SAMC21/hal/utils/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x_C21/SAMC21/hri}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/arm/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/atmel/SAMC21_DFP/1.2.176/samc21/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries/src}&quot;"/>
@@ -758,11 +728,6 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/utils/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hri}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/Config}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/atmel/SAMC21_DFP/1.2.176/samc21/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/arm/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
 								</option>
@@ -785,11 +750,10 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/Hardware/SAMC21}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/utils/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hri}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/Config}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x_C21}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x_C21/SAMC21/hal/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x_C21/SAMC21/hal/utils/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x_C21/SAMC21/hri}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/arm/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/atmel/SAMC21_DFP/1.2.176/samc21/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries/src}&quot;"/>
@@ -902,11 +866,6 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/utils/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hri}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/Config}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/atmel/SAMC21_DFP/1.2.176/samc21/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/arm/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
 								</option>
@@ -928,11 +887,10 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/Hardware/SAMC21}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/utils/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hri}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/Config}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x_C21}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x_C21/SAMC21/hal/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x_C21/SAMC21/hal/utils/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x_C21/SAMC21/hri}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/arm/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/atmel/SAMC21_DFP/1.2.176/samc21/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries/src}&quot;"/>
@@ -1045,11 +1003,6 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/utils/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hri}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/Config}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/atmel/SAMC21_DFP/1.2.176/samc21/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/arm/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
 								</option>
@@ -1072,11 +1025,10 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/Hardware/SAMC21}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/utils/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hri}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/Config}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x_C21}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x_C21/SAMC21/hal/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x_C21/SAMC21/hal/utils/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x_C21/SAMC21/hri}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/arm/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/atmel/SAMC21_DFP/1.2.176/samc21/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries/src}&quot;"/>
@@ -1189,11 +1141,6 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/utils/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hri}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/Config}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/atmel/SAMC21_DFP/1.2.176/samc21/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/arm/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
 								</option>
@@ -1215,11 +1162,10 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/Hardware/SAMC21}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/utils/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hri}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/Config}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x_C21}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x_C21/SAMC21/hal/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x_C21/SAMC21/hal/utils/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x_C21/SAMC21/hri}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/arm/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/atmel/SAMC21_DFP/1.2.176/samc21/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries/src}&quot;"/>
@@ -1332,11 +1278,6 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/utils/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hri}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/Config}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/atmel/SAMC21_DFP/1.2.176/samc21/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/arm/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
 								</option>
@@ -1359,11 +1300,10 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/Hardware/SAMC21}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/utils/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hri}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/Config}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x_C21}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x_C21/SAMC21/hal/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x_C21/SAMC21/hal/utils/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x_C21/SAMC21/hri}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/arm/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/atmel/SAMC21_DFP/1.2.176/samc21/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries/src}&quot;"/>
@@ -1476,11 +1416,6 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/utils/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hri}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/Config}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/atmel/SAMC21_DFP/1.2.176/samc21/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/arm/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
 								</option>
@@ -1502,11 +1437,10 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/Hardware/SAMC21}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/utils/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hri}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/Config}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x_C21}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x_C21/SAMC21/hal/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x_C21/SAMC21/hal/utils/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x_C21/SAMC21/hri}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/arm/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/atmel/SAMC21_DFP/1.2.176/samc21/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries/src}&quot;"/>
@@ -1620,11 +1554,6 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/utils/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hri}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/Config}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/atmel/SAMC21_DFP/1.2.176/samc21/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/arm/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
 								</option>
@@ -1647,11 +1576,10 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/Hardware/SAMC21}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hal/utils/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/hri}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAMC21/Config}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x_C21}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x_C21/SAMC21/hal/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x_C21/SAMC21/hal/utils/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/SAME5x_C21/SAMC21/hri}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/arm/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/atmel/SAMC21_DFP/1.2.176/samc21/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries/src}&quot;"/>

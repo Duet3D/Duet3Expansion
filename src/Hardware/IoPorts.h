@@ -124,24 +124,4 @@ private:
 	PwmFrequency frequency;
 };
 
-inline bool digitalRead(Pin p)
-{
-	return gpio_get_pin_level(p);
-}
-
-inline void digitalWrite(Pin p, bool high)
-{
-	gpio_set_pin_level(p, high);
-}
-
-inline void fastDigitalWriteHigh(Pin p)
-{
-	gpio_set_pin_level(p, true);
-}
-
-inline void fastDigitalWriteLow(Pin p)
-{
-	gpio_set_pin_level(p, false);
-}
-
 #endif /* SRC_PORT_H_ */

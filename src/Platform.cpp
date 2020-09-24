@@ -14,7 +14,6 @@
 #include <Movement/Move.h>
 #include "Movement/StepperDrivers/TMC51xx.h"
 #include "Movement/StepperDrivers/TMC22xx.h"
-#include <Config/peripheral_clk_config.h>
 #include "AdcAveragingFilter.h"
 #include "Movement/StepTimer.h"
 #include <CAN/CanInterface.h>
@@ -647,9 +646,9 @@ void Platform::Init()
 
 	// Set the pin functions
 # if SAME5x
-	gpio_set_pin_function(SSPIMosiPin, SSPIMosiPinPeriphMode);
-	gpio_set_pin_function(SSPISclkPin, SSPISclkPinPeriphMode);
-	gpio_set_pin_function(SSPIMisoPin, SSPIMisoPinPeriphMode);
+	SetPinFunction(SSPIMosiPin, SSPIMosiPinPeriphMode);
+	SetPinFunction(SSPISclkPin, SSPISclkPinPeriphMode);
+	SetPinFunction(SSPIMisoPin, SSPIMisoPinPeriphMode);
 # elif defined(SAMC21)
 #  error SPI sensors not configured for this device
 # else

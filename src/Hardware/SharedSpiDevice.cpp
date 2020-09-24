@@ -12,7 +12,12 @@
 #include "IoPorts.h"
 #include "DmacManager.h"
 #include "Serial.h"
-#include "peripheral_clk_config.h"
+
+#if SAME5x
+# include <hri_sercom_e54.h>
+#elif SAMC21
+# include <hri_sercom_c21.h>
+#endif
 
 constexpr uint32_t DefaultSharedSpiClockFrequency = 2000000;
 constexpr uint32_t SpiTimeout = 10000;

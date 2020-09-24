@@ -45,11 +45,11 @@ Sercom * const SERCOM_TMC51xx = SERCOM4;
 constexpr uint8_t SERCOM_TMC51xx_NUMBER = 4;
 
 constexpr Pin TMC51xxMosiPin = PortAPin(12);
-constexpr uint32_t TMC51xxMosiPinPeriphMode = PINMUX_PA12D_SERCOM4_PAD0;
+constexpr GpioPinFunction TMC51xxMosiPinPeriphMode = GpioPinFunction::D;
 constexpr Pin TMC51xxSclkPin = PortAPin(13);
-constexpr uint32_t TMC51xxSclkPinPeriphMode = PINMUX_PA13D_SERCOM4_PAD1;
+constexpr GpioPinFunction TMC51xxSclkPinPeriphMode = GpioPinFunction::D;
 constexpr Pin TMC51xxMisoPin = PortBPin(10);
-constexpr uint32_t TMC51xxMisoPinPeriphMode = PINMUX_PB10D_SERCOM4_PAD2;
+constexpr GpioPinFunction TMC51xxMisoPinPeriphMode = GpioPinFunction::D;
 
 PortGroup * const StepPio = &(PORT->Group[0]);		// the PIO that all the step pins are on
 constexpr Pin StepPins[NumDrivers] = { PortBPin(3) };
@@ -91,20 +91,20 @@ constexpr uint8_t EncoderSspiSercomNumber = 1;
 
 constexpr Pin EncoderMosiPin = PortAPin(16);
 constexpr Pin QuadratureErrorOutPin = EncoderMosiPin;
-constexpr uint32_t EncoderMosiPinPeriphMode = PINMUX_PA16C_SERCOM1_PAD0;
+constexpr GpioPinFunction EncoderMosiPinPeriphMode = GpioPinFunction::C;
 
 constexpr Pin EncoderSclkPin = PortAPin(17);
 constexpr Pin QuadratureCountUpPin = EncoderSclkPin;
-constexpr uint32_t EncoderSclkPinPeriphMode = PINMUX_PA17C_SERCOM1_PAD1;
+constexpr GpioPinFunction EncoderSclkPinPeriphMode = GpioPinFunction::C;
 
 constexpr Pin EncoderMisoPin = PortAPin(19);
 constexpr Pin QuadratureCountDownPin = EncoderMisoPin;
-constexpr uint32_t EncoderMisoPinPeriphMode = PINMUX_PA19C_SERCOM1_PAD3;
+constexpr GpioPinFunction EncoderMisoPinPeriphMode = GpioPinFunction::C;
 
 // Clock generator pin for external devices
 constexpr uint8_t ClockGenGclkNumber = 6;
 constexpr Pin ClockGenPin = PortAPin(22);
-constexpr uint32_t ClockGenPinPeriphMode = PINMUX_PA22H_GCLK_IO6;
+constexpr GpioPinFunction ClockGenPinPeriphMode = GpioPinFunction::H;
 
 // Table of pin functions that we are allowed to use
 constexpr PinDescription PinTable[] =

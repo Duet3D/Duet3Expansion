@@ -10,6 +10,7 @@
 #if SAMC21
 
 #include <RepRapFirmware.h>
+#include <hri_nvmctrl_c21.h>
 
 constexpr uint32_t RWWEEEaddess = 0x00400000;
 constexpr uint32_t FlashPagesPerRow = NVMCTRL_ROW_PAGES;								// 4 pages per row on the SAMC21
