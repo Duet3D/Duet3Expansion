@@ -16,7 +16,23 @@
 constexpr size_t AnalogInTaskStackWords = 300;
 static Task<AnalogInTaskStackWords> analogInTask;
 
-Uart uart0(3, 3, 512, 512);
+void SerialPortInit(Uart*) noexcept
+{
+	SetPinFunction(PortBPin(20), GpioPinFunction::C);		// TxD
+# if 0	// we don't use the receiver, but if we did we would need to do this:
+	SetPinFunction(PortBPin(21), GpioPinFunction::C);		// RxD
+# endif
+}
+
+void SerialPortDeinit(Uart*) noexcept
+{
+	pinMode(PortBPin(20), INPUT_PULLUP);
+# if 0	// we don't use the receiver, but if we did we would need to do this:
+	pinMode(PortBPin(21), INPUT_PULLUP);					// RxD
+# endif
+}
+
+Uart uart0(3, 3, 512, 512, SerialPortInit, SerialPortDeinit);
 
 extern "C" void SERCOM3_0_Handler()
 {
@@ -35,11 +51,6 @@ extern "C" void SERCOM3_3_Handler()
 
 void DeviceInit() noexcept
 {
-	SetPinFunction(PortBPin(20), GpioPinFunction::C);		// TxD
-# if 0	// we don't use the receiver, but if we did we would need to do this:
-	SetPinFunction(PortBPin(21), GpioPinFunction::C);		// RxD
-# endif
-
 	AnalogIn::Init(DmacChanAdc0Tx, DmacPrioAdcTx, DmacPrioAdcRx);
 	AnalogOut::Init();
 	analogInTask.Create(AnalogIn::TaskLoop, "AIN", nullptr, TaskPriority::AinPriority);
