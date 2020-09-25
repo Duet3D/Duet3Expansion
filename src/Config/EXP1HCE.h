@@ -211,7 +211,7 @@ const NvicPriority NvicPriorityPins = 2;				// priority for GPIO pin interrupts
 const NvicPriority NvicPriorityCan = 3;
 const NvicPriority NvicPriorityDmac = 3;				// priority for DMA complete interrupts
 
-// Event number allocation (max 12 events)
+// Event channel allocation (max 12 channels on SAMC21)
 constexpr EventNumber CountUpEvent = 0;
 constexpr EventNumber CountDownEvent = 1;
 

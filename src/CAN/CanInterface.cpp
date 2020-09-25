@@ -22,6 +22,13 @@
 #include <Version.h>
 #include <hpl_user_area.h>
 
+#if SAME5x
+# include <hri_mclk_e54.h>
+#elif SAMC21
+# include <hri_mclk_c21.h>
+# include <hri_gclk_c21.h>
+#endif
+
 const unsigned int NumCanBuffers = 40;
 
 static CanUserAreaData canConfigData;
