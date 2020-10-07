@@ -6,6 +6,9 @@
  */
 
 #include "LinearAnalogSensor.h"
+
+#if SUPPORT_THERMISTORS
+
 #include "Platform.h"
 #include "CanMessageGenericParser.h"
 
@@ -76,5 +79,7 @@ void LinearAnalogSensor::CalcDerivedParameters()
 {
 	linearIncreasePerCount = (highTemp - lowTemp)/((filtered) ? FilteredAdcRange : UnfilteredAdcRange);
 }
+
+#endif	//SUPPORT_THERMISTORS
 
 // End

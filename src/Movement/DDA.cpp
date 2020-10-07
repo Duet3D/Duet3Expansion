@@ -6,6 +6,9 @@
  */
 
 #include "DDA.h"
+
+#if SUPPORT_DRIVERS
+
 #include "Platform.h"
 #include "Move.h"
 #include "Kinematics/LinearDeltaKinematics.h"		// for DELTA_AXES
@@ -600,5 +603,7 @@ int32_t DDA::GetStepsTaken(size_t drive) const
 	const DriveMovement * const dmp = FindDM(drive);
 	return (dmp != nullptr) ? dmp->GetNetStepsTaken() : 0;
 }
+
+#endif	// SUPPORT_DRIVERS
 
 // End

@@ -6,6 +6,9 @@
  */
 
 #include "DriveMovement.h"
+
+#if SUPPORT_DRIVERS
+
 #include "DDA.h"
 #include "Move.h"
 #include "Math/Isqrt.h"
@@ -523,5 +526,7 @@ void DriveMovement::ReduceSpeed(const DDA& dda, uint32_t inverseSpeedFactor)
 		mp.cart.mmPerStepTimesCKdivtopSpeed *= inverseSpeedFactor;
 	}
 }
+
+#endif	// SUPPORT_DRIVERS
 
 // End

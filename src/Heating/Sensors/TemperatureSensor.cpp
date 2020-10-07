@@ -93,6 +93,7 @@ void TemperatureSensor::UpdateRemoteTemperature(CanAddress src, const CanTempera
 TemperatureSensor *TemperatureSensor::Create(unsigned int sensorNum, const char *typeName, const StringRef& reply)
 {
 	TemperatureSensor *ts;
+#if SUPPORT_THERMISTORS
 	if (ReducedStringEquals(typeName, Thermistor::TypeNameThermistor))
 	{
 		ts = new Thermistor(sensorNum, false);
@@ -105,8 +106,10 @@ TemperatureSensor *TemperatureSensor::Create(unsigned int sensorNum, const char 
 	{
 		ts = new LinearAnalogSensor(sensorNum);
 	}
+	else
+#endif
 #if SUPPORT_SPI_SENSORS
-	else if (ReducedStringEquals(typeName, ThermocoupleSensor31855::TypeName))
+	if (ReducedStringEquals(typeName, ThermocoupleSensor31855::TypeName))
 	{
 		ts = new ThermocoupleSensor31855(sensorNum);
 	}
@@ -132,20 +135,22 @@ TemperatureSensor *TemperatureSensor::Create(unsigned int sensorNum, const char 
 	{
 		ts = new DhtHumiditySensor(sensorNum);
 	}
+	else
 #endif
 #if HAS_CPU_TEMP_SENSOR
-	else if (ReducedStringEquals(typeName, CpuTemperatureSensor::TypeName))
+	if (ReducedStringEquals(typeName, CpuTemperatureSensor::TypeName))
 	{
 		ts = new CpuTemperatureSensor(sensorNum);
 	}
+	else
 #endif
 #if HAS_SMART_DRIVERS
-	else if (ReducedStringEquals(typeName, TmcDriverTemperatureSensor::TypeName))
+	if (ReducedStringEquals(typeName, TmcDriverTemperatureSensor::TypeName))
 	{
 		ts = new TmcDriverTemperatureSensor(sensorNum);
 	}
-#endif
 	else
+#endif
 	{
 		ts = nullptr;
 		reply.printf("Unknown sensor type name \"%s\"", typeName);

@@ -10,6 +10,8 @@
 
 #include "RepRapFirmware.h"
 
+#if SUPPORT_DRIVERS
+
 class LinearDeltaKinematics;
 class DDA;
 
@@ -331,5 +333,7 @@ inline uint32_t DriveMovement::GetStepInterval(uint32_t microstepShift) const
 }
 
 #endif
+
+#endif	// SUPPORT_DRIVERS
 
 #endif /* DRIVEMOVEMENT_H_ */

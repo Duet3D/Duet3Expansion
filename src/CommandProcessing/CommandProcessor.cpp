@@ -23,22 +23,32 @@
 #include <hpl_user_area.h>
 #include <cctype>				// for tolower()
 
-#if SUPPORT_TMC22xx
-# include "Movement/StepperDrivers/TMC22xx.h"
-#endif
-#if SUPPORT_TMC51xx
-# include "Movement/StepperDrivers/TMC51xx.h"
-#endif
-#if SUPPORT_CLOSED_LOOP
-# include <ClosedLoop/ClosedLoop.h>
+#if SUPPORT_DRIVERS
+# if SUPPORT_TMC22xx
+#  include "Movement/StepperDrivers/TMC22xx.h"
+# endif
+# if SUPPORT_TMC51xx
+#  include "Movement/StepperDrivers/TMC51xx.h"
+ #endif
+# if SUPPORT_CLOSED_LOOP
+#  include <ClosedLoop/ClosedLoop.h>
+# endif
 #endif
 
+#if HAS_VOLTAGE_MONITOR
 constexpr float MinVin = 11.0;
 constexpr float MaxVin = 32.0;
+#endif
+
+#if HAS_12V_MONITOR
 constexpr float MinV12 = 10.0;
 constexpr float MaxV12 = 13.5;
+#endif
+
+#if HAS_CPU_TEMP_SENSOR
 constexpr float MinTemp = -20.0;
 constexpr float MaxTemp = 55.0;
+#endif
 
 static void GenerateTestReport(const StringRef& reply)
 {
@@ -144,9 +154,11 @@ static void GenerateTestReport(const StringRef& reply)
 	}
 }
 
+#if SUPPORT_DRIVERS
+
 static GCodeResult SetMotorCurrents(const CanMessageMultipleDrivesRequest& msg, const StringRef& reply)
 {
-#if HAS_SMART_DRIVERS
+# if HAS_SMART_DRIVERS
 	//TODO check message is long enough for the number of drivers specified
 	const auto drivers = DriversBitmap::MakeFromRaw(msg.driversToUpdate);
 	drivers.Iterate([msg](unsigned int driver, unsigned int count) -> void
@@ -154,15 +166,15 @@ static GCodeResult SetMotorCurrents(const CanMessageMultipleDrivesRequest& msg, 
 			Platform::SetMotorCurrent(driver, (float)msg.values[count]);		//TODO avoid the int->float->int conversion
 		});
 	return GCodeResult::ok;
-#else
+# else
 	reply.copy("Setting not available for external drivers");
 	return GCodeResult::error;
-#endif
+# endif
 }
 
 static GCodeResult SetStandstillCurrentFactor(const CanMessageMultipleDrivesRequest& msg, const StringRef& reply)
 {
-#if HAS_SMART_DRIVERS
+# if HAS_SMART_DRIVERS
 	//TODO check message is long enough for the number of drivers specified
 	const auto drivers = DriversBitmap::MakeFromRaw(msg.driversToUpdate);
 	drivers.Iterate([msg](unsigned int driver, unsigned int count) -> void
@@ -170,10 +182,10 @@ static GCodeResult SetStandstillCurrentFactor(const CanMessageMultipleDrivesRequ
 			SmartDrivers::SetStandstillCurrentPercent(driver, (float)msg.values[count]);		//TODO avoid the int->float->int conversion
 		});
 	return GCodeResult::ok;
-#else
+# else
 	reply.copy("Setting not available for external drivers");
 	return GCodeResult::error;
-#endif
+# endif
 }
 
 static GCodeResult HandlePressureAdvance(const CanMessageMultipleDrivesRequest& msg, const StringRef& reply)
@@ -510,6 +522,8 @@ static GCodeResult ProcessM915(const CanMessageGeneric& msg, const StringRef& re
 #endif
 }
 
+#endif	//SUPPORT_DRIVERS
+
 static GCodeResult InitiateFirmwareUpdate(const CanMessageUpdateYourFirmware& msg, const StringRef& reply)
 {
 	if (msg.boardId != CanInterface::GetCanAddress() || msg.invertedBoardId != (uint8_t)~CanInterface::GetCanAddress())
@@ -594,17 +608,19 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 
 	case CanMessageReturnInfo::typeDiagnosticsPart0 + 2:
 		extra = LastDiagnosticsPart;
-#if SUPPORT_CLOSED_LOOP
+#if SUPPORT_DRIVERS
+# if SUPPORT_CLOSED_LOOP
 		ClosedLoop::Diagnostics(reply);
-#endif
+# endif
 		for (size_t driver = 0; driver < NumDrivers; ++driver)
 		{
 			reply.lcatf("Driver %u: position %" PRIi32, driver, moveInstance->GetPosition(driver));
-#if HAS_SMART_DRIVERS
+# if HAS_SMART_DRIVERS
 			reply.cat(", ");
 			SmartDrivers::AppendDriverStatus(driver, reply);
-#endif
+# endif
 		}
+#endif
 		break;
 
 	case CanMessageReturnInfo::typeDiagnosticsPart0 + 3:
@@ -649,10 +665,12 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 #if 1	//debug
 	case CanMessageReturnInfo::typePressureAdvance:
 		reply.copy("Pressure advance:");
+# if SUPPORT_DRIVERS
 		for (size_t i = 0; i < NumDrivers; ++i)
 		{
 			reply.catf(" %.2f", (double)Platform::GetPressureAdvance(i));
 		}
+# endif
 		break;
 #endif
 	}
@@ -714,6 +732,7 @@ void CommandProcessor::Spin()
 			rslt = GpioPorts::HandleGpioWrite(buf->msg.writeGpio, replyRef);
 			break;
 
+#if SUPPORT_DRIVERS
 		case CanMessageType::setMotorCurrents:
 			requestId = buf->msg.multipleDrivesRequest.requestId;
 			rslt = SetMotorCurrents(buf->msg.multipleDrivesRequest, replyRef);
@@ -726,11 +745,11 @@ void CommandProcessor::Spin()
 
 		case CanMessageType::m569p1:
 			requestId = buf->msg.generic.requestId;
-#if SUPPORT_CLOSED_LOOP
+# if SUPPORT_CLOSED_LOOP
 			rslt = ClosedLoop::ProcessM569Point1(buf->msg.generic, replyRef);
-#else
+# else
 			rslt = GCodeResult::errorNotSupported;
-#endif
+# endif
 			break;
 
 		case CanMessageType::setStandstillCurrentFactor:
@@ -742,6 +761,22 @@ void CommandProcessor::Spin()
 			requestId = buf->msg.multipleDrivesRequest.requestId;
 			rslt = SetMicrostepping(buf->msg.multipleDrivesRequest, replyRef);
 			break;
+
+		case CanMessageType::setDriverStates:
+			requestId = buf->msg.multipleDrivesRequest.requestId;
+			rslt = HandleSetDriverStates(buf->msg.multipleDrivesRequest, replyRef);
+			break;
+
+		case CanMessageType::m915:
+			requestId = buf->msg.generic.requestId;
+			rslt = ProcessM915(buf->msg.generic, replyRef);
+			break;
+
+		case CanMessageType::setPressureAdvance:
+			requestId = buf->msg.multipleDrivesRequest.requestId;
+			rslt = HandlePressureAdvance(buf->msg.multipleDrivesRequest, replyRef);
+			break;
+#endif
 
 		case CanMessageType::updateFirmware:
 			requestId = buf->msg.updateYourFirmware.requestId;
@@ -771,21 +806,6 @@ void CommandProcessor::Spin()
 		case CanMessageType::setHeaterMonitors:
 			requestId = buf->msg.setHeaterMonitors.requestId;
 			rslt = Heat::SetHeaterMonitors(buf->msg.setHeaterMonitors, replyRef);
-			break;
-
-		case CanMessageType::setDriverStates:
-			requestId = buf->msg.multipleDrivesRequest.requestId;
-			rslt = HandleSetDriverStates(buf->msg.multipleDrivesRequest, replyRef);
-			break;
-
-		case CanMessageType::m915:
-			requestId = buf->msg.generic.requestId;
-			rslt = ProcessM915(buf->msg.generic, replyRef);
-			break;
-
-		case CanMessageType::setPressureAdvance:
-			requestId = buf->msg.multipleDrivesRequest.requestId;
-			rslt = HandlePressureAdvance(buf->msg.multipleDrivesRequest, replyRef);
 			break;
 
 		case CanMessageType::createInputMonitor:

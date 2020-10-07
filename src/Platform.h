@@ -18,42 +18,47 @@
 
 class CanMessageDiagnosticTest;
 
+#if HAS_CPU_TEMP_SENSOR
+constexpr size_t McuTempReadingsAveraged = 16;
+#endif
+
+#if SUPPORT_THERMISTORS
 // Define the number of temperature readings we average for each thermistor. This should be a power of 2 and at least 4 ^ AD_OVERSAMPLE_BITS.
 constexpr size_t ThermistorReadingsAveraged = 64;
 constexpr size_t ZProbeReadingsAveraged = 8;		// We average this number of readings with IR on, and the same number with IR off
-constexpr size_t McuTempReadingsAveraged = 16;
 constexpr size_t VinReadingsAveraged = 8;
 
 typedef AdcAveragingFilter<ThermistorReadingsAveraged> ThermistorAveragingFilter;
 typedef AdcAveragingFilter<ZProbeReadingsAveraged> ZProbeAveragingFilter;
 
-#if HAS_VREF_MONITOR
+# if HAS_VREF_MONITOR
 
 constexpr size_t VssaFilterIndex = NumThermistorInputs;
 constexpr size_t VrefFilterIndex = NumThermistorInputs + 1;
 
-# if SAMC21 && SUPPORT_SDADC
+#  if SAMC21 && SUPPORT_SDADC
 // On the SAMC21 we have 2 additional filters for the SDADC inputs
 constexpr size_t SdAdcTemp0FilterIndex = NumThermistorInputs + 2;
 constexpr size_t SdAdcVrefFilterIndex = NumThermistorInputs + 3;
 constexpr size_t NumThermistorFilters = NumThermistorInputs + 4;
-# else
+#  else
 // SAME51 or not supporting SDADC
 constexpr size_t NumThermistorFilters = NumThermistorInputs + 2;
-# endif
+#  endif
 
-#else
+# else
 
 // No VREF or VSSA monitor inputs
-# if SAMC21 && SUPPORT_SDADC
+#  if SAMC21 && SUPPORT_SDADC
 // On the SAMC21 we have 2 additional filters for the SDADC inputs
 constexpr size_t SdAdcTemp0FilterIndex = NumThermistorInputs;
 constexpr size_t SdAdcVrefFilterIndex = NumThermistorInputs + 1;
 constexpr size_t NumThermistorFilters = NumThermistorInputs + 2;
-# else
+#  else
 constexpr size_t NumThermistorFilters = NumThermistorInputs;
-# endif
+#  endif
 
+# endif
 #endif
 
 // Enumeration of error condition bits
@@ -70,15 +75,16 @@ class IoPort;
 
 namespace Platform
 {
+#if SUPPORT_DRIVERS
 	// The data would ideally be private, but they are used by inline functions so they can't be unless we convert this namespace to a static class
-#if SINGLE_DRIVER
+# if SINGLE_DRIVER
 	constexpr uint32_t DriverBit = 1u << (StepPins[0] & 31);
-#else
+# else
 	extern uint32_t driveDriverBits[NumDrivers];
 	extern uint32_t allDriverBits;
-#endif
+# endif
 
-#if SUPPORT_SLOW_DRIVERS
+# if SUPPORT_SLOW_DRIVERS
 	// Support for slow step pulse generation to suit external drivers
 	extern uint32_t slowDriverStepTimingClocks[4];
 
@@ -89,15 +95,16 @@ namespace Platform
 
 	void SetDriverStepTiming(size_t drive, const float timings[4]);
 
-# if SINGLE_DRIVER
+#  if SINGLE_DRIVER
 	extern bool isSlowDriver;
 	inline bool IsSlowDriver() { return isSlowDriver; }
-# else
+#  else
 	extern DriversBitmap slowDriversBitmap;
 	inline DriversBitmap GetSlowDriversBitmap() { return slowDriversBitmap; }
 	inline bool IsSlowDriver(size_t drive) { return slowDriversBitmap.IsBitSet(drive); }
+#  endif
 # endif
-#endif
+#endif	//SUPPORT_DRIVERS
 
 	// Public functions
 #if SUPPORT_SPI_SENSORS
@@ -120,47 +127,48 @@ namespace Platform
 	float GetPressureAdvance(size_t driver);
 	void SetPressureAdvance(size_t driver, float advance);
 
-#if SINGLE_DRIVER
+#if SUPPORT_DRIVERS
+# if SINGLE_DRIVER
 	inline void StepDriverLow()
 	{
-#if DIFFERENTIAL_STEPPER_OUTPUTS || ACTIVE_HIGH_STEP
+#  if DIFFERENTIAL_STEPPER_OUTPUTS || ACTIVE_HIGH_STEP
 		StepPio->OUTCLR.reg = DriverBit;
-#else
+#  else
 		StepPio->OUTSET.reg = DriverBit;
-#endif
+#  endif
 	}
 
 	inline void StepDriverHigh()
 	{
-#if DIFFERENTIAL_STEPPER_OUTPUTS || ACTIVE_HIGH_STEP
+#  if DIFFERENTIAL_STEPPER_OUTPUTS || ACTIVE_HIGH_STEP
 		StepPio->OUTSET.reg = DriverBit;
-#else
+#  else
 		StepPio->OUTCLR.reg = DriverBit;
-#endif
+#  endif
 	}
 
-#else
+# else
 
 	inline void StepDriversLow()
 	{
-#if DIFFERENTIAL_STEPPER_OUTPUTS || ACTIVE_HIGH_STEP
+#  if DIFFERENTIAL_STEPPER_OUTPUTS || ACTIVE_HIGH_STEP
 		StepPio->OUTCLR.reg = allDriverBits;
-#else
+#  else
 		StepPio->OUTSET.reg = allDriverBits;
-#endif
+#  endif
 	}
 
 	inline void StepDriversHigh(uint32_t driverMap)
 	{
-#if DIFFERENTIAL_STEPPER_OUTPUTS || ACTIVE_HIGH_STEP
+#  if DIFFERENTIAL_STEPPER_OUTPUTS || ACTIVE_HIGH_STEP
 		StepPio->OUTSET.reg = driverMap;
-#else
+#  else
 		StepPio->OUTCLR.reg = driverMap;
-#endif
+#  endif
 	}
 
 	inline uint32_t GetDriversBitmap(size_t driver) { return driveDriverBits[driver]; } 		// Get the step bit for this driver
-#endif
+ #endif
 
 	inline unsigned int GetProhibitedExtruderMovements(unsigned int extrusions, unsigned int retractions) { return 0; }
 	void SetDirection(size_t driver, bool direction);
@@ -177,13 +185,16 @@ namespace Platform
 	void SetMotorCurrent(size_t driver, float current);		//TODO avoid the int->float->int conversion
 	float GetTmcDriversTemperature();
 #endif
+#endif	//SUPPORT_DRIVERS
 
+#if SUPPORT_THERMISTORS
 	int GetAveragingFilterIndex(const IoPort&);
 	ThermistorAveragingFilter *GetAdcFilter(unsigned int filterNumber);
 
-#if HAS_VREF_MONITOR
+# if HAS_VREF_MONITOR
 	ThermistorAveragingFilter *GetVssaFilter(unsigned int filterNumber);
 	ThermistorAveragingFilter *GetVrefFilter(unsigned int filterNumber);
+# endif
 #endif
 
 	void GetMcuTemperatures(float& minTemp, float& currentTemp, float& maxTemp);

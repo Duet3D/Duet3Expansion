@@ -63,50 +63,52 @@ static bool deliberateError = false;
 
 namespace Platform
 {
-	static constexpr float DefaultStepsPerMm = 80.0;
-
 	Mutex messageMutex;
 
 	static uint32_t errorCodeBits = 0;
 
 	uint32_t uniqueId[5];
 
-#if SUPPORT_SLOW_DRIVERS
-# ifdef EXP1XD
-	uint32_t slowDriverStepTimingClocks[4] = { 2, 2, 2, 2 };		// default to slower timing for external drivers (2 clocks = 2.7us)
-# else
-	uint32_t slowDriverStepTimingClocks[4] = { 0, 0, 0, 0 };		// default to fast timing
-# endif
-# if SINGLE_DRIVER
-#  ifdef EXP1XD
-	bool isSlowDriver = true;
-#  else
-	bool isSlowDriver = false;
-#  endif
-# else
-	DriversBitmap slowDriversBitmap;
-# endif
-#endif
+#if SUPPORT_DRIVERS
+	static constexpr float DefaultStepsPerMm = 80.0;
 
-#if !SINGLE_DRIVER
+# if SUPPORT_SLOW_DRIVERS
+#  ifdef EXP1XD
+	uint32_t slowDriverStepTimingClocks[4] = { 2, 2, 2, 2 };		// default to slower timing for external drivers (2 clocks = 2.7us)
+#  else
+	uint32_t slowDriverStepTimingClocks[4] = { 0, 0, 0, 0 };		// default to fast timing
+#  endif
+#  if SINGLE_DRIVER
+#   ifdef EXP1XD
+	bool isSlowDriver = true;
+#   else
+	bool isSlowDriver = false;
+#   endif
+#  else
+	DriversBitmap slowDriversBitmap;
+#  endif
+# endif
+
+# if !SINGLE_DRIVER
 	uint32_t driveDriverBits[NumDrivers];
 	uint32_t allDriverBits = 0;
+# endif
+
+	static bool directions[NumDrivers];
+	static bool driverAtIdleCurrent[NumDrivers];
+	static int8_t enableValues[NumDrivers] = { 0 };
+# if !HAS_SMART_DRIVERS
+	static bool driverIsEnabled[NumDrivers] = { false };
+# endif
+	static float stepsPerMm[NumDrivers];
+	static float motorCurrents[NumDrivers];
+	static float pressureAdvance[NumDrivers];
+	static float idleCurrentFactor;
 #endif
 
 #if SUPPORT_SPI_SENSORS
 	SharedSpiDevice *sharedSpi;
 #endif
-
-	static bool directions[NumDrivers];
-	static bool driverAtIdleCurrent[NumDrivers];
-	static int8_t enableValues[NumDrivers] = { 0 };
-#if !HAS_SMART_DRIVERS
-	static bool driverIsEnabled[NumDrivers] = { false };
-#endif
-	static float stepsPerMm[NumDrivers];
-	static float motorCurrents[NumDrivers];
-	static float pressureAdvance[NumDrivers];
-	static float idleCurrentFactor;
 
 #if HAS_VOLTAGE_MONITOR
 	static volatile uint16_t currentVin, highestVin, lowestVin;
@@ -131,8 +133,13 @@ namespace Platform
 	constexpr uint32_t GreenLedFlashTime = 100;				// how long the green LED stays on after we process a CAN message
 	static uint32_t whenLastCanMessageProcessed = 0;
 
+#if SUPPORT_THERMISTORS
 	static ThermistorAveragingFilter thermistorFilters[NumThermistorFilters];
+#endif
+
+#if HAS_VOLTAGE_MONITOR
 	static AdcAveragingFilter<VinReadingsAveraged> vinFilter;
+#endif
 #if HAS_12V_MONITOR
 	static AdcAveragingFilter<VinReadingsAveraged> v12Filter;
 #endif
@@ -146,21 +153,23 @@ namespace Platform
 # error Unsupported processor
 #endif
 
-#if HAS_SMART_DRIVERS
+#if SUPPORT_DRIVERS
+# if HAS_SMART_DRIVERS
 	static DriversBitmap temperatureShutdownDrivers, temperatureWarningDrivers, shortToGroundDrivers;
 	static DriversBitmap openLoadADrivers, openLoadBDrivers, notOpenLoadADrivers, notOpenLoadBDrivers;
 	MillisTimer openLoadATimer, openLoadBTimer;
 	MillisTimer driversFanTimer;		// driver cooling fan timer
 	static uint8_t nextDriveToPoll;
-#endif
+# endif
 
-#if HAS_SMART_DRIVERS && HAS_VOLTAGE_MONITOR
+# if HAS_SMART_DRIVERS && HAS_VOLTAGE_MONITOR
 	bool warnDriversNotPowered;
-#endif
+# endif
 
-#if HAS_STALL_DETECT
+# if HAS_STALL_DETECT
 	DriversBitmap logOnStallDrivers, pauseOnStallDrivers, rehomeOnStallDrivers;
 	DriversBitmap stalledDrivers, stalledDriversToLog, stalledDriversToPause, stalledDriversToRehome;
+# endif
 #endif
 
 	static inline void WriteLed(uint8_t ledNumber, bool turnOn)
@@ -340,14 +349,16 @@ namespace Platform
 
 	static void ShutdownAll()
 	{
-#if SUPPORT_TMC51xx
-		IoPort::WriteDigital(GlobalTmc51xxEnablePin, true);
-#endif
-#if SUPPORT_TMC22xx
-		IoPort::WriteDigital(GlobalTmc22xxEnablePin, true);
-#endif
 		Heat::SwitchOffAll();
+#if SUPPORT_DRIVERS
+# if SUPPORT_TMC51xx
+		IoPort::WriteDigital(GlobalTmc51xxEnablePin, true);
+# endif
+# if SUPPORT_TMC22xx
+		IoPort::WriteDigital(GlobalTmc22xxEnablePin, true);
+# endif
 		DisableAllDrives();
+#endif
 		delay(10);										// allow existing processing to complete, drivers to be turned off and CAN replies to be sent
 		CanInterface::Shutdown();
 		for (Pin pin : LedPins)
@@ -388,6 +399,7 @@ namespace Platform
 		EraseAndReset();
 	}
 
+#if SUPPORT_THERMISTORS
 	static void SetupThermistorFilter(Pin pin, size_t filterIndex, bool useAlternateAdc)
 	{
 		thermistorFilters[filterIndex].Init(0);
@@ -398,6 +410,7 @@ namespace Platform
 #endif
 		AnalogIn::EnableChannel(adcChan, thermistorFilters[filterIndex].CallbackFeedIntoFilter, &thermistorFilters[filterIndex], 1, useAlternateAdc);
 	}
+#endif
 
 }	// end namespace Platform
 
@@ -492,17 +505,19 @@ void Platform::Init()
 	SetupThermistorFilter(VssaPin, VssaFilterIndex, false);
 #endif
 
-#if SAMC21 && SUPPORT_SDADC
+#if SUPPORT_THERMISTORS
+# if SAMC21 && SUPPORT_SDADC
 	// Set up the SDADC input filters too (temp0 and Vref)
 	SetupThermistorFilter(TempSensePins[0], SdAdcTemp0FilterIndex, true);
 	SetupThermistorFilter(VrefPin, SdAdcVrefFilterIndex, true);
-#endif
+# endif
 
 	// Set up the thermistor filters
 	for (size_t i = 0; i < NumThermistorInputs; ++i)
 	{
 		SetupThermistorFilter(TempSensePins[i], i, false);
 	}
+#endif
 
 	// Set up the MCU temperature sensors
 	currentMcuTemperature = 0.0;
@@ -530,8 +545,9 @@ void Platform::Init()
 	}
 #endif
 
+#if SUPPORT_DRIVERS
 	// Initialise stepper drivers
-#if HAS_SMART_DRIVERS
+# if HAS_SMART_DRIVERS
 	SmartDrivers::Init();
 	temperatureShutdownDrivers.Clear();
 	temperatureWarningDrivers.Clear();
@@ -540,11 +556,11 @@ void Platform::Init()
 	openLoadBDrivers.Clear();
 	notOpenLoadADrivers.Clear();
 	notOpenLoadBDrivers.Clear();
-#endif
+# endif
 
 	for (size_t i = 0; i < NumDrivers; ++i)
 	{
-#if DIFFERENTIAL_STEPPER_OUTPUTS
+# if DIFFERENTIAL_STEPPER_OUTPUTS
 		// Step pins
 		IoPort::SetPinMode(StepPins[i], OUTPUT_LOW);
 		IoPort::SetHighDriveStrength(StepPins[i]);
@@ -579,60 +595,60 @@ void Platform::Init()
 		IoPort::SetHighDriveStrength(InvertedEnablePins[i]);
 		enableValues[i] = 1;
 		driverIsEnabled[i] = false;
-#else
-		// Step pins
-# if ACTIVE_HIGH_STEP
-		IoPort::SetPinMode(StepPins[i], OUTPUT_LOW);
 # else
+		// Step pins
+#  if ACTIVE_HIGH_STEP
+		IoPort::SetPinMode(StepPins[i], OUTPUT_LOW);
+#  else
 		IoPort::SetPinMode(StepPins[i], OUTPUT_HIGH);
-# endif
-# if !HAS_SMART_DRIVERS
+#  endif
+#  if !HAS_SMART_DRIVERS
 		IoPort::SetHighDriveStrength(StepPins[i]);
-# endif
+#  endif
 
 		// Direction pins
-# if ACTIVE_HIGH_DIR
+#  if ACTIVE_HIGH_DIR
 		IoPort::SetPinMode(DirectionPins[i], OUTPUT_LOW);
-# else
+#  else
 		IoPort::SetPinMode(DirectionPins[i], OUTPUT_HIGH);
-# endif
-# if !HAS_SMART_DRIVERS
+#  endif
+#  if !HAS_SMART_DRIVERS
 		IoPort::SetHighDriveStrength(DirectionPins[i]);
-# endif
+#  endif
 
-# if !HAS_SMART_DRIVERS
+#  if !HAS_SMART_DRIVERS
 		// Enable pins
-#  if ACTIVE_HIGH_ENABLE
+#   if ACTIVE_HIGH_ENABLE
 		IoPort::SetPinMode(EnablePins[i], OUTPUT_LOW);
 		enableValues[i] = 1;
-#  else
+#   else
 		IoPort::SetPinMode(EnablePins[i], OUTPUT_HIGH);
 		enableValues[i] = 0;
-#  endif
+#   endif
 		IoPort::SetHighDriveStrength(EnablePins[i]);
 		driverIsEnabled[i] = false;
+#  endif
 # endif
-#endif
 
-#if !SINGLE_DRIVER
+# if !SINGLE_DRIVER
 		const uint32_t driverBit = 1u << (StepPins[i] & 31);
 		driveDriverBits[i] = driverBit;
 		allDriverBits |= driverBit;
-#endif
+# endif
 		stepsPerMm[i] = DefaultStepsPerMm;
 		directions[i] = true;
 		driverAtIdleCurrent[i] = false;
 		motorCurrents[i] = 0.0;
 		pressureAdvance[i] = 0.0;
 
-#if HAS_SMART_DRIVERS
+# if HAS_SMART_DRIVERS
 		SmartDrivers::SetMicrostepping(i, 16, true);
-#endif
+# endif
 	}
 
 	idleCurrentFactor = 0.3;
 
-#if HAS_STALL_DETECT
+# if HAS_STALL_DETECT
 	stalledDrivers.Clear();;
 	logOnStallDrivers.Clear();
 	pauseOnStallDrivers.Clear();
@@ -642,9 +658,10 @@ void Platform::Init()
 	stalledDriversToRehome.Clear();
 #endif
 
-#if HAS_SMART_DRIVERS && HAS_VOLTAGE_MONITOR
+# if HAS_SMART_DRIVERS && HAS_VOLTAGE_MONITOR
 	warnDriversNotPowered = false;
-#endif
+# endif
+#endif	//SUPPORT_DRIVERS
 
 #if SUPPORT_SPI_SENSORS
 
@@ -1024,6 +1041,8 @@ void Platform::Spin()
 	}
 }
 
+#if SUPPORT_THERMISTORS
+
 // Get the index of the averaging filter for an analog port
 int Platform::GetAveragingFilterIndex(const IoPort& port)
 {
@@ -1031,9 +1050,9 @@ int Platform::GetAveragingFilterIndex(const IoPort& port)
 	{
 		if (port.GetPin() == TempSensePins[i])
 		{
-#if SAMC21 && SUPPORT_SDADC
+# if SAMC21 && SUPPORT_SDADC
 			return (i == 0 && port.UseAlternateConfig()) ? SdAdcTemp0FilterIndex : (int) i;
-#endif
+# endif
 			return (int)i;
 		}
 	}
@@ -1044,6 +1063,8 @@ ThermistorAveragingFilter *Platform::GetAdcFilter(unsigned int filterNumber)
 {
 	return &thermistorFilters[filterNumber];
 }
+
+#endif
 
 #if HAS_VREF_MONITOR
 
@@ -1145,11 +1166,13 @@ bool Platform::Debug(Module module)
 	return false;
 }
 
+#if SUPPORT_DRIVERS
+
 float Platform::DriveStepsPerUnit(size_t drive) { return stepsPerMm[drive]; }
 
 const float *Platform::GetDriveStepsPerUnit() { return stepsPerMm; }
 
-#if SUPPORT_SLOW_DRIVERS
+# if SUPPORT_SLOW_DRIVERS
 
 void Platform::SetDriverStepTiming(size_t drive, const float timings[4])
 {
@@ -1160,28 +1183,28 @@ void Platform::SetDriverStepTiming(size_t drive, const float timings[4])
 		{
 			isSlow = true;
 			const uint32_t clocks = (uint32_t)(((float)StepTimer::StepClockRate * timings[i] * 0.000001) + 0.99);	// convert microseconds to step clocks, rounding up
-#if SINGLE_DRIVER
+#  if SINGLE_DRIVER
 			slowDriverStepTimingClocks[i] = clocks;
-#else
+#  else
 			if (clocks > slowDriverStepTimingClocks[i])
 			{
 				slowDriverStepTimingClocks[i] = clocks;
 			}
-#endif
+#  endif
 		}
 		else
 		{
 			slowDriverStepTimingClocks[i] = 0;
 		}
 	}
-#if SINGLE_DRIVER
+#  if SINGLE_DRIVER
 	isSlowDriver = isSlow;
-#else
+#  else
 	slowDriversBitmap.SetOrClearBit(drive, isSlow);
-#endif
+#  endif
 }
 
-#endif
+# endif
 
 float Platform::GetPressureAdvance(size_t driver)
 {
@@ -1210,33 +1233,33 @@ void Platform::SetDirection(size_t driver, bool direction)
 {
 	if (driver < NumDrivers)
 	{
-#if DIFFERENTIAL_STEPPER_OUTPUTS || ACTIVE_HIGH_DIR
+# if DIFFERENTIAL_STEPPER_OUTPUTS || ACTIVE_HIGH_DIR
 		// Active high direction signal
 		const bool d = (direction) ? directions[driver] : !directions[driver];
-#else
+# else
 		// Active low direction signal
 		const bool d = (direction) ? !directions[driver] : directions[driver];
-#endif
-
-#if SUPPORT_SLOW_DRIVERS
-# if !SINGLE_DRIVER
-		const bool isSlowDriver = slowDriversBitmap.IsBitSet(driver);
 # endif
+
+# if SUPPORT_SLOW_DRIVERS
+#  if !SINGLE_DRIVER
+		const bool isSlowDriver = slowDriversBitmap.IsBitSet(driver);
+#  endif
 		if (isSlowDriver)
 		{
 			while (StepTimer::GetTimerTicks() - DDA::lastStepLowTime < GetSlowDriverDirHoldClocks()) { }
 		}
-#endif
+# endif
 		digitalWrite(DirectionPins[driver], d);
-#if DIFFERENTIAL_STEPPER_OUTPUTS
+# if DIFFERENTIAL_STEPPER_OUTPUTS
 		digitalWrite(InvertedDirectionPins[driver], !d);
-#endif
-#if SUPPORT_SLOW_DRIVERS
+# endif
+# if SUPPORT_SLOW_DRIVERS
 		if (isSlowDriver)
 		{
 			DDA::lastDirChangeTime = StepTimer::GetTimerTicks();
 		}
-#endif
+# endif
 	}
 }
 
@@ -1246,7 +1269,7 @@ void Platform::SetEnableValue(size_t driver, int8_t eVal)
 	if (driver < NumDrivers)
 	{
 		enableValues[driver] = eVal;
-#if !HAS_SMART_DRIVERS
+# if !HAS_SMART_DRIVERS
 		if (driverIsEnabled[driver])
 		{
 			EnableDrive(driver);
@@ -1255,7 +1278,7 @@ void Platform::SetEnableValue(size_t driver, int8_t eVal)
 		{
 			DisableDrive(driver);
 		}
-#endif
+# endif
 	}
 }
 
@@ -1266,37 +1289,37 @@ int8_t Platform::GetEnableValue(size_t driver)
 
 void Platform::EnableDrive(size_t driver)
 {
-#if HAS_SMART_DRIVERS
+# if HAS_SMART_DRIVERS
 	if (driverAtIdleCurrent[driver])
 	{
 		driverAtIdleCurrent[driver] = false;
 		UpdateMotorCurrent(driver);
 	}
 	SmartDrivers::EnableDrive(driver, true);
-#else
+# else
 	if (enableValues[driver] >= 0)
 	{
 		digitalWrite(EnablePins[driver], enableValues[driver] != 0);
-#if DIFFERENTIAL_STEPPER_OUTPUTS
+#  if DIFFERENTIAL_STEPPER_OUTPUTS
 		digitalWrite(InvertedEnablePins[driver], enableValues[driver] == 0);
-#endif
+#  endif
 	}
-#endif
+# endif
 }
 
 void Platform::DisableDrive(size_t driver)
 {
-#if HAS_SMART_DRIVERS
+# if HAS_SMART_DRIVERS
 	SmartDrivers::EnableDrive(driver, false);
-#else
+# else
 	if (enableValues[driver] >= 0)
 	{
 		digitalWrite(EnablePins[driver], enableValues[driver] == 0);
-#if DIFFERENTIAL_STEPPER_OUTPUTS
+#  if DIFFERENTIAL_STEPPER_OUTPUTS
 		digitalWrite(InvertedEnablePins[driver], enableValues[driver] != 0);
-#endif
+#  endif
 	}
-#endif
+# endif
 }
 
 void Platform::SetDriverIdle(size_t driver)
@@ -1305,28 +1328,28 @@ void Platform::SetDriverIdle(size_t driver)
 	{
 		DisableDrive(driver);
 	}
-#if HAS_SMART_DRIVERS
+# if HAS_SMART_DRIVERS
 	else
 	{
 		driverAtIdleCurrent[driver] = true;
 		UpdateMotorCurrent(driver);
 	}
-#endif
+# endif
 }
 
 void Platform::DisableAllDrives()
 {
 	for (size_t driver = 0; driver < NumDrivers; ++driver)
 	{
-#if HAS_SMART_DRIVERS
+# if HAS_SMART_DRIVERS
 		SmartDrivers::EnableDrive(driver, false);
-#else
+# else
 		DisableDrive(driver);
-#endif
+# endif
 	}
 }
 
-#if HAS_SMART_DRIVERS
+# if HAS_SMART_DRIVERS
 
 void Platform::SetMotorCurrent(size_t driver, float current)
 {
@@ -1334,7 +1357,9 @@ void Platform::SetMotorCurrent(size_t driver, float current)
 	UpdateMotorCurrent(driver);
 }
 
-#endif
+# endif
+
+#endif	//SUPPORT_DRIVERS
 
 #if HAS_ADDRESS_SWITCHES
 

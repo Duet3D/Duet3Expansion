@@ -10,6 +10,8 @@
 
 #include "SensorWithPort.h"
 
+#if SUPPORT_THERMISTORS
+
 // The Steinhart-Hart equation for thermistor resistance is:
 // 1/T = A + B ln(R) + C [ln(R)]^3
 //
@@ -51,5 +53,7 @@ private:
 #endif
 	static constexpr int32_t OversampledAdcRange = 1u << (AnalogIn::AdcBits + AdcOversampleBits);	// The readings we pass in should be in range 0..(AdcRange - 1)
 };
+
+#endif	//SUPPORT_THERMISTORS
 
 #endif /* SRC_HEATING_THERMISTOR_H_ */

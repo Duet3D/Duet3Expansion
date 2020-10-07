@@ -7,6 +7,9 @@
  */
 
 #include "Thermistor.h"
+
+#if SUPPORT_THERMISTORS
+
 #include "Platform.h"
 #include "CanMessageGenericParser.h"
 
@@ -189,5 +192,7 @@ void Thermistor::CalcDerivedParameters()
 	const float lnR25 = logf(r25);
 	shA = 1.0/(25.0 - ABS_ZERO) - shB * lnR25 - shC * lnR25 * lnR25 * lnR25;
 }
+
+#endif	//SUPPORT_THERMISTORS
 
 // End

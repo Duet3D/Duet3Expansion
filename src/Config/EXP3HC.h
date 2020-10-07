@@ -12,14 +12,21 @@
 
 constexpr const char* BoardTypeName = "EXP3HC";
 
-#define HAS_SMART_DRIVERS		1
-#define HAS_STALL_DETECT		1
 #define HAS_VREF_MONITOR		1
 #define HAS_VOLTAGE_MONITOR		1
 #define HAS_12V_MONITOR			1
 #define HAS_CPU_TEMP_SENSOR		1
 #define HAS_ADDRESS_SWITCHES	1
 #define HAS_BUTTONS				0
+
+// Drivers configuration
+#define SUPPORT_DRIVERS			1
+#define HAS_SMART_DRIVERS		1
+#define HAS_STALL_DETECT		1
+#define SINGLE_DRIVER			0
+#define SUPPORT_SLOW_DRIVERS	0
+#define SUPPORT_DELTA_MOVEMENT	1
+#define USE_EVEN_STEPS			0
 
 #define ACTIVE_HIGH_STEP		1		// 1 = active high, 0 = active low
 #define ACTIVE_HIGH_DIR			1		// 1 = active high, 0 = active low
@@ -28,12 +35,9 @@ constexpr const char* BoardTypeName = "EXP3HC";
 #define SUPPORT_TMC22xx			0
 #define SUPPORT_TMC2660			0
 
-#define SINGLE_DRIVER			0
-#define SUPPORT_SLOW_DRIVERS	0
-#define SUPPORT_DELTA_MOVEMENT	1
-#define USE_EVEN_STEPS			0
-#define SUPPORT_DHT_SENSOR		0	//TEMP!!!
+#define SUPPORT_THERMISTORS		1
 #define SUPPORT_SPI_SENSORS		1
+#define SUPPORT_DHT_SENSOR		0	//TEMP!!!
 
 #define USE_MPU					0
 #define USE_CACHE				1

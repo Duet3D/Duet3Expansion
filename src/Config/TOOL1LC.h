@@ -21,8 +21,13 @@ constexpr const char* BoardTypeName = "TOOL1LC";
 #define HAS_BUTTONS				1
 
 // Drivers configuration
+#define SUPPORT_DRIVERS			1
 #define HAS_SMART_DRIVERS		1
 #define HAS_STALL_DETECT		1
+#define SINGLE_DRIVER			1
+#define SUPPORT_SLOW_DRIVERS	0
+#define SUPPORT_DELTA_MOVEMENT	0
+#define USE_EVEN_STEPS			0
 
 #define ACTIVE_HIGH_STEP		1		// 1 = active high, 0 = active low
 #define ACTIVE_HIGH_DIR			0		// 1 = active high, 0 = active low
@@ -66,10 +71,7 @@ constexpr Pin StepPins[NumDrivers] = { PortAPin(27) };
 constexpr Pin DirectionPins[NumDrivers] = { PortAPin(28) };
 constexpr Pin DriverDiagPins[NumDrivers] = { PortBPin(3) };
 
-#define SINGLE_DRIVER			1
-#define SUPPORT_SLOW_DRIVERS	0
-#define SUPPORT_DELTA_MOVEMENT	0
-#define USE_EVEN_STEPS			0
+#define SUPPORT_THERMISTORS		1
 #define SUPPORT_SPI_SENSORS		0
 #define SUPPORT_DHT_SENSOR		0
 #define SUPPORT_SDADC			1

@@ -47,4 +47,12 @@
 # define SUPPORT_CLOSED_LOOP			0
 #endif
 
+#if !SUPPORT_DRIVERS
+# define HAS_SMART_DRIVERS				0
+# define SUPPORT_TMC22xx				0
+# define SUPPORT_TMC51xx				0
+# define SUPPORT_SLOW_DRIVERS			0
+constexpr size_t NumDrivers = 0;
+#endif
+
 #endif /* SRC_CONFIG_BOARDDEF_H_ */

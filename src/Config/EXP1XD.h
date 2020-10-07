@@ -21,8 +21,13 @@ constexpr const char* BoardTypeName = "EXP1XD";
 #define HAS_BUTTONS				0
 
 // Drivers configuration
+#define SUPPORT_DRIVERS			1
 #define HAS_SMART_DRIVERS		0
 #define HAS_STALL_DETECT		0
+#define SINGLE_DRIVER			1
+#define SUPPORT_SLOW_DRIVERS	1
+#define SUPPORT_DELTA_MOVEMENT	1
+#define USE_EVEN_STEPS			1
 
 #define SUPPORT_TMC51xx			0
 #define SUPPORT_TMC2660			0
@@ -60,10 +65,7 @@ constexpr Pin DirectionPins[NumDrivers] = { PortAPin(10) };
 
 #endif
 
-#define SINGLE_DRIVER			1
-#define SUPPORT_SLOW_DRIVERS	1
-#define SUPPORT_DELTA_MOVEMENT	1
-#define USE_EVEN_STEPS			1
+#define SUPPORT_THERMISTORS		1
 #define SUPPORT_SPI_SENSORS		0
 #define SUPPORT_DHT_SENSOR		0
 #define SUPPORT_SDADC			0

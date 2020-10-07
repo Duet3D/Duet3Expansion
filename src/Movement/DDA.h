@@ -9,6 +9,9 @@
 #define DDA_H_
 
 #include "RepRapFirmware.h"
+
+#if SUPPORT_DRIVERS
+
 #include "DriveMovement.h"
 #include "GCodes/GCodes.h"			// for class RawMove, HomeAxes
 #include "StepTimer.h"
@@ -190,5 +193,7 @@ inline uint32_t DDA::GetStepInterval(size_t axis, uint32_t microstepShift) const
 }
 
 #endif
+
+#endif	// SUPPORT_DRIVERS
 
 #endif /* DDA_H_ */

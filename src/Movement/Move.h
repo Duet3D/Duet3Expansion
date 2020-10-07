@@ -10,8 +10,11 @@
 
 #include "RepRapFirmware.h"
 #include "MessageType.h"
+
 #include "DDA.h"								// needed because of our inline functions
 #include "Kinematics/Kinematics.h"
+
+#if SUPPORT_DRIVERS
 
 // Define the number of DDAs and DMs.
 // A DDA represents a move in the queue.
@@ -20,6 +23,8 @@
 
 const unsigned int DdaRingLength = 50;
 const unsigned int NumDms = DdaRingLength * NumDrivers;
+
+#endif	// SUPPORT_DRIVERS
 
 /**
  * This is the master movement class.  It controls all movement in the machine.
@@ -31,12 +36,12 @@ public:
 	void Init();																	// Start me up
 	void Spin();																	// Called in a tight loop to keep the class going
 	void Exit();																	// Shut down
+	void Diagnostics(const StringRef& reply);										// Report useful stuff
 
+#if SUPPORT_DRIVERS
 	void Interrupt() __attribute__ ((hot));											// Timer callback for step generation
 
 	void StopDrivers(uint16_t whichDrivers);
-
-	void Diagnostics(const StringRef& reply);										// Report useful stuff
 
 	// Kinematics and related functions
 	Kinematics& GetKinematics() const { return *kinematics; }
@@ -86,8 +91,10 @@ private:
 	uint32_t scheduledMoves;							// Move counters for the code queue
 	volatile uint32_t completedMoves;					// This one is modified by an ISR, hence volatile
 	uint32_t numHiccups;								// How many times we delayed an interrupt to avoid using too much CPU time in interrupts
-
 	bool active;										// Are we live and running?
+
+#endif	//SUPPORT_DRIVERS
+
 };
 
 //******************************************************************************************************

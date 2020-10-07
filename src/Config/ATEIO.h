@@ -12,65 +12,16 @@
 
 constexpr const char* BoardTypeName = "ATEIO";
 
-//TODO: these were all copied from TOOL1LC, need to fix them
 // General features
-#define HAS_VREF_MONITOR		1
-#define HAS_VOLTAGE_MONITOR		1
+#define HAS_VREF_MONITOR		0
+#define HAS_VOLTAGE_MONITOR		0
 #define HAS_12V_MONITOR			0
 #define HAS_CPU_TEMP_SENSOR		1
 #define HAS_ADDRESS_SWITCHES	0
 #define HAS_BUTTONS				1
 
-// Drivers configuration
-#define HAS_SMART_DRIVERS		1
-#define HAS_STALL_DETECT		1
-
-#define ACTIVE_HIGH_STEP		1		// 1 = active high, 0 = active low
-#define ACTIVE_HIGH_DIR			0		// 1 = active high, 0 = active low
-
-#define SUPPORT_TMC51xx			0
-#define SUPPORT_TMC2660			0
-#define SUPPORT_TMC22xx			1
-
-constexpr size_t NumDrivers = 1;
-constexpr size_t MaxSmartDrivers = 1;
-
-#define TMC22xx_USES_SERCOM				1
-#define TMC22xx_HAS_MUX					0
-#define TMC22xx_SINGLE_DRIVER			1
-#define TMC22xx_HAS_ENABLE_PINS			0
-#define TMC22xx_VARIABLE_NUM_DRIVERS	0
-
-constexpr Pin GlobalTmc22xxEnablePin = PortBPin(2);
-
-constexpr uint8_t TMC22xxSercomNumber = 3;
-Sercom * const SERCOM_TMC22xx = SERCOM3;
-
-constexpr Pin TMC22xxSercomTxPin = PortAPin(22);
-constexpr GpioPinFunction TMC22xxSercomTxPinPeriphMode = GpioPinFunction::C;
-constexpr Pin TMC22xxSercomRxPin = PortAPin(20);
-constexpr GpioPinFunction TMC22xxSercomRxPinPeriphMode = GpioPinFunction::D;
-constexpr uint8_t TMC22xxSercomRxPad = 2;
-
-// Define the baud rate used to send/receive data to/from the drivers.
-// If we assume a worst case clock frequency of 8MHz then the maximum baud rate is 8MHz/16 = 500kbaud.
-// We send data via a 1K series resistor. Even if we assume a 200pF load on the shared UART line, this gives a 200ns time constant, which is much less than the 2us bit time @ 500kbaud.
-// To write a register we need to send 8 bytes. To read a register we send 4 bytes and receive 8 bytes after a programmable delay.
-// So at 500kbaud it takes about 128us to write a register, and 192us+ to read a register.
-// In testing I found that 500kbaud was not reliable on the Duet Maestro, so now using 200kbaud.
-constexpr uint32_t DriversBaudRate = 200000;
-constexpr uint32_t TransferTimeout = 10;			// any transfer should complete within 10 ticks @ 1ms/tick
-constexpr uint32_t DefaultStandstillCurrentPercent = 75;
-
-PortGroup * const StepPio = &(PORT->Group[0]);		// the PIO that all the step pins are on
-constexpr Pin StepPins[NumDrivers] = { PortAPin(27) };
-constexpr Pin DirectionPins[NumDrivers] = { PortAPin(28) };
-constexpr Pin DriverDiagPins[NumDrivers] = { PortBPin(3) };
-
-#define SINGLE_DRIVER			1
-#define SUPPORT_SLOW_DRIVERS	0
-#define SUPPORT_DELTA_MOVEMENT	0
-#define USE_EVEN_STEPS			0
+#define SUPPORT_DRIVERS			0
+#define SUPPORT_THERMISTORS		0
 #define SUPPORT_SPI_SENSORS		0
 #define SUPPORT_DHT_SENSOR		0
 #define SUPPORT_SDADC			1
@@ -80,24 +31,11 @@ constexpr Pin DriverDiagPins[NumDrivers] = { PortBPin(3) };
 
 #define DIAG_SERCOM_NUMBER		4		// which SERCOM device we use for debugging output
 
-constexpr size_t NumThermistorInputs = 2;
+constexpr Pin BoardTypePins[] = { PortAPin(5), PortAPin(4) };
+constexpr Pin RelayPins[] = { PortAPin(27), PortAPin(28), PortBPin(2), PortAPin(0), PortAPin(1), PortBPin(3) };
+constexpr Pin ButtonPins[] = { PortAPin(18) };
 
-constexpr float DefaultThermistorSeriesR = 2200.0;
-constexpr float MinVrefLoadR = (DefaultThermistorSeriesR / NumThermistorInputs) * 2200.0/((DefaultThermistorSeriesR / NumThermistorInputs) + 2200.0);
-																			// there are 2 temperature sensing channels and a 2K2 load resistor
-constexpr Pin BoardTypePin = PortAPin(5);
-
-constexpr Pin VinMonitorPin = PortAPin(8);
-constexpr float VinDividerRatio = (60.4 + 4.7)/4.7;
-constexpr float VinMonitorVoltageRange = VinDividerRatio * 5.0;				// we use the 5V supply as the voltage reference
-
-constexpr Pin VrefPin = PortAPin(7);
-constexpr Pin VssaPin = PortAPin(6);
-
-constexpr Pin TempSensePins[NumThermistorInputs] = { PortBPin(9), PortAPin(2) };
-
-constexpr Pin ButtonPins[] = { PortBPin(22), PortBPin(23) };
-
+//TODO: these were all copied from TOOL1LC, need to fix them
 // Table of pin functions that we are allowed to use
 constexpr PinDescription PinTable[] =
 {

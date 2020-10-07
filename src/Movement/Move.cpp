@@ -39,8 +39,12 @@
 #include <CAN/CanInterface.h>
 #include "CanMessageFormats.h"
 
-Move::Move() : currentDda(nullptr), scheduledMoves(0), completedMoves(0), numHiccups(0), active(false)
+Move::Move()
+#if SUPPORT_DRIVERS
+	: currentDda(nullptr), scheduledMoves(0), completedMoves(0), numHiccups(0), active(false)
+#endif
 {
+#if SUPPORT_DRIVERS
 	kinematics = Kinematics::Create(KinematicsType::cartesian);			// default to Cartesian
 
 	// Build the DDA ring
@@ -57,10 +61,12 @@ Move::Move() : currentDda(nullptr), scheduledMoves(0), completedMoves(0), numHic
 
 	DriveMovement::InitialAllocate(NumDms);
 	timer.SetCallback(Move::TimerCallback, static_cast<void*>(this));
+#endif
 }
 
 void Move::Init()
 {
+#if SUPPORT_DRIVERS
 	// Empty the ring
 	ddaRingGetPointer = ddaRingCheckPointer = ddaRingAddPointer;
 	DDA *dda = ddaRingAddPointer;
@@ -76,12 +82,14 @@ void Move::Init()
 	idleCount = 0;
 
 	active = true;
+#endif
 }
 
 void Move::Exit()
 {
 	StepTimer::DisableTimerInterrupt();
 
+#if SUPPORT_DRIVERS
 	// Clear the DDA ring so that we don't report any moves as pending
 	currentDda = nullptr;
 	while (ddaRingGetPointer != ddaRingAddPointer)
@@ -96,10 +104,12 @@ void Move::Exit()
 		ddaRingCheckPointer = ddaRingCheckPointer->GetNext();
 	}
 	active = false;												// don't accept any more moves
+#endif
 }
 
 void Move::Spin()
 {
+#if SUPPORT_DRIVERS
 	if (!active)
 	{
 		return;
@@ -191,15 +201,28 @@ void Move::Spin()
 			}
 		}
 	}
+#endif
 }
 
-#if 0
+void Move::Diagnostics(const StringRef& reply)
+{
+#if SUPPORT_DRIVERS
+	reply.catf("Moves scheduled %" PRIu32 ", completed %" PRIu32 ", in progress %d, hiccups %" PRIu32 "\n",
+					scheduledMoves, completedMoves, (int)(currentDda != nullptr), numHiccups);
+	numHiccups = 0;
+#endif
+	StepTimer::Diagnostics(reply);
+}
+
+#if SUPPORT_DRIVERS
+
+# if 0
 // Try to push some babystepping through the lookahead queue
 float Move::PushBabyStepping(float amount)
 {
 	return ddaRingAddPointer->AdvanceBabyStepping(amount);
 }
-#endif
+# endif
 
 // Change the kinematics to the specified type if it isn't already
 // If it is already correct leave its parameters alone.
@@ -405,14 +428,6 @@ bool Move::LowPowerOrStallPause(RestorePoint& rp)
 
 #endif
 
-void Move::Diagnostics(const StringRef& reply)
-{
-	reply.catf("Moves scheduled %" PRIu32 ", completed %" PRIu32 ", in progress %d, hiccups %" PRIu32 "\n",
-					scheduledMoves, completedMoves, (int)(currentDda != nullptr), numHiccups);
-	numHiccups = 0;
-	StepTimer::Diagnostics(reply);
-}
-
 // This is called from the step ISR when the current move has been completed
 void Move::CurrentMoveCompleted()
 {
@@ -517,5 +532,7 @@ void Move::Interrupt()
 		}
 	}
 }
+
+#endif	//SUPPORT_DRIVERS
 
 // End

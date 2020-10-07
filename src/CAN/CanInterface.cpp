@@ -54,8 +54,11 @@ static TaskHandle sendingTaskHandle = nullptr;
 static bool mainBoardAcknowledgedAnnounce = false;	// true after the main board has acknowledged our announcement
 static bool isProgrammed = false;					// true after the main board has sent us any configuration commands
 
+#if SUPPORT_DRIVERS
 static uint32_t lastMotionMessageScheduledTime = 0;
 static uint32_t lastMotionMessageReceivedAt = 0;
+#endif
+
 static unsigned int duplicateMotionMessages = 0;
 static unsigned int oosMessages = 0;
 uint8_t expectedSeq = 0xFF;
@@ -372,6 +375,7 @@ void CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf)
 		CanMessageBuffer::Free(buf);
 		break;
 
+#if SUPPORT_DRIVERS
 	case CanMessageType::movement:
 		// Check for duplicate and out-of-sequence message
 		{
@@ -406,6 +410,7 @@ void CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf)
 		CanMessageBuffer::Free(buf);
 		Platform::OnProcessingCanMessage();
 		break;
+#endif
 
 	case CanMessageType::emergencyStop:
 		Platform::EmergencyStop();					// doesn't return
