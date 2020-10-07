@@ -91,6 +91,10 @@ constexpr Pin TempSensePins[NumThermistorInputs] = { PortAPin(6) };
 
 constexpr Pin JumperPin = PortAPin(27);
 
+// Diagnostic LEDs
+constexpr Pin LedPins[] = { PortAPin(19), PortAPin(18) };
+constexpr bool LedActiveHigh = true;
+
 // Table of pin functions that we are allowed to use
 constexpr PinDescription PinTable[] =
 {
@@ -141,10 +145,6 @@ constexpr IRQn StepTcIRQn = TC2_IRQn;
 constexpr unsigned int StepTcClockId = TC2_GCLK_ID;
 constexpr unsigned int StepTcNumber = 2;
 #define STEP_TC_HANDLER		TC2_Handler
-
-// Diagnostic LEDs
-constexpr Pin LedPins[] = { PortAPin(19), PortAPin(18) };
-constexpr bool LedActiveHigh = true;
 
 // Available UART ports
 #define NUM_SERIAL_PORTS		1

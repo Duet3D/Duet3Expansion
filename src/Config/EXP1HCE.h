@@ -73,10 +73,13 @@ constexpr Pin DiagPins[NumDrivers] = { PortAPin(28) };
 constexpr size_t MaxAxes = 3;			//TEMP we won't need this
 
 constexpr size_t NumThermistorInputs = 1;
-
 constexpr float DefaultThermistorSeriesR = 2200.0;
 
 constexpr Pin BoardTypePin = PortAPin(5);
+
+// Diagnostic LEDs
+constexpr Pin LedPins[] = { PortAPin(30), PortAPin(31) };
+constexpr bool LedActiveHigh = false;
 
 constexpr Pin VinMonitorPin = PortAPin(2);
 constexpr float VinDividerRatio = (60.4 + 4.7)/4.7;
@@ -187,10 +190,6 @@ Tcc * const QuadratureTcc = TCC2;
 constexpr unsigned int QuadratureTccNumber = 2;
 constexpr unsigned int QuadratureCountUpEventUser = 19;			// TCC2 EV0, see datasheet
 constexpr unsigned int QuadratureCountDownEventUser = 20;		// TCC2 EV1, see datasheet
-
-// Diagnostic LEDs
-constexpr Pin LedPins[] = { PortAPin(30), PortAPin(31) };
-constexpr bool LedActiveHigh = false;
 
 // Available UART ports
 #define NUM_SERIAL_PORTS		0

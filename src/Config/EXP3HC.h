@@ -73,6 +73,10 @@ constexpr Pin DirectionPins[NumDrivers] = { PortAPin(23), PortCPin(28), PortAPin
 
 constexpr Pin BoardTypePins[NumBoardTypeBits] = { PortBPin(18), PortCPin(18), PortCPin(13) };
 
+// Diagnostic LEDs
+constexpr Pin LedPins[] = { PortCPin(10) };
+constexpr bool LedActiveHigh = true;
+
 constexpr Pin VinMonitorPin = PortAPin(10);
 constexpr float VinDividerRatio = (60.4 + 4.7)/4.7;
 constexpr float VinMonitorVoltageRange = VinDividerRatio * 3.3;		// We use the 3.3V supply as the voltage reference
@@ -216,10 +220,6 @@ TcCount32 * const StepTc = &(TC6->COUNT32);
 constexpr IRQn StepTcIRQn = TC6_IRQn;
 constexpr unsigned int StepTcNumber = 6;
 #define STEP_TC_HANDLER		TC6_Handler
-
-// Diagnostic LEDs
-constexpr Pin LedPins[] = { PortCPin(10) };
-constexpr bool LedActiveHigh = true;
 
 // Available UART ports
 #define NUM_SERIAL_PORTS		2
