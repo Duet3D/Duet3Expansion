@@ -26,7 +26,7 @@ public:
 	LocalHeater(unsigned int heaterNum);
 	~LocalHeater();
 
-	GCodeResult ConfigurePortAndSensor(const char *portName, PwmFrequency freq, unsigned int sensorNumber, const StringRef& reply) override;
+	GCodeResult ConfigurePortAndSensor(const char *portName, PwmFrequency freq, unsigned int sn, const StringRef& reply) override;
 	GCodeResult SetPwmFrequency(PwmFrequency freq, const StringRef& reply) override;
 	GCodeResult ReportDetails(const StringRef& reply) const override;
 

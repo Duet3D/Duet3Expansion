@@ -82,7 +82,7 @@ void LocalHeater::ResetHeater()
 }
 
 // Configure the heater port and the sensor number
-GCodeResult LocalHeater::ConfigurePortAndSensor(const char *portName, PwmFrequency freq, unsigned int sensorNumber, const StringRef& reply)
+GCodeResult LocalHeater::ConfigurePortAndSensor(const char *portName, PwmFrequency freq, unsigned int sn, const StringRef& reply)
 {
 	if (!port.AssignPort(portName, reply, PinUsedBy::heater, PinAccess::pwm))
 	{
@@ -90,17 +90,17 @@ GCodeResult LocalHeater::ConfigurePortAndSensor(const char *portName, PwmFrequen
 	}
 
 	port.SetFrequency(freq);
-	SetSensorNumber(sensorNumber);
-	if (Heat::FindSensor(sensorNumber).IsNull())
+	SetSensorNumber(sn);
+	if (Heat::FindSensor(sn).IsNull())
 	{
-		reply.printf("Sensor number %u has not been defined", sensorNumber);
+		reply.printf("Sensor number %u has not been defined", sn);
 		return GCodeResult::warning;
 	}
 
 	if (monitors[0].GetTrigger() == HeaterMonitorTrigger::Disabled)
 	{
 		// Set up a default monitor
-		monitors[0].Set(sensorNumber, DefaultHotEndTemperatureLimit, HeaterMonitorAction::GenerateFault, HeaterMonitorTrigger::TemperatureExceeded);
+		monitors[0].Set(sn, DefaultHotEndTemperatureLimit, HeaterMonitorAction::GenerateFault, HeaterMonitorTrigger::TemperatureExceeded);
 	}
 	return GCodeResult::ok;
 }
@@ -522,7 +522,7 @@ void LocalHeater::GetAutoTuneStatus(const StringRef& reply) const
 
 /* Notes on the auto tune algorithm
  *
- * Most 3D printer firmwares use the Åström-Hägglund relay tuning method (sometimes called Ziegler-Nichols + relay).
+ * Most 3D printer firmwares use the ï¿½strï¿½m-Hï¿½gglund relay tuning method (sometimes called Ziegler-Nichols + relay).
  * This gives results  of variable quality, but they seem to be generally satisfactory.
  *
  * We use Cohen-Coon tuning instead. This models the heating process as a first-order process (i.e. one that with constant heating
