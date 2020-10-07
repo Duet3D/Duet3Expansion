@@ -30,6 +30,15 @@
 # include "SAMMYC21.h"
 #endif
 
+#ifdef ATECM
+# include "ATECM.h"
+#endif
+
+#ifdef ATEIO
+# include "ATEIO.h"
+#endif
+
+// Default board features
 #ifndef DIFFERENTIAL_STEPPER_OUTPUTS
 # define DIFFERENTIAL_STEPPER_OUTPUTS	0
 #endif

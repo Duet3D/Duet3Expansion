@@ -677,6 +677,10 @@ void Platform::Init()
 	constexpr CanAddress defaultAddress = CanId::Exp1XDBoardDefaultAddress;
 # elif defined(EXP1HCE)
 	constexpr CanAddress defaultAddress = CanId::Exp1HCEBoardDefaultAddress;
+# elif defined(ATECM)
+	constexpr CanAddress defaultAddress = CanId::ATECMBoardDefaultAddress;
+# elif defined(ATEIO)
+	constexpr CanAddress defaultAddress = CanId::ATEIOBoardDefaultAddress;
 # else
 #  error Unknown board
 # endif
