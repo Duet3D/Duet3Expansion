@@ -10,12 +10,13 @@
 #include <CanMessageFormats.h>
 #include <Hardware/IoPorts.h>
 #include <CAN/CanInterface.h>
+#include <CanMessageBuffer.h>
 
 InputMonitor *InputMonitor::monitorsList = nullptr;
 InputMonitor *InputMonitor::freeList = nullptr;
 ReadWriteLock InputMonitor::listLock;
 
-bool InputMonitor::Activate()
+bool InputMonitor::Activate() noexcept
 {
 	bool ok = true;
 	if (!active)
@@ -25,7 +26,7 @@ bool InputMonitor::Activate()
 			// Digital input
 			const irqflags_t flags = cpu_irq_save();
 			ok = port.AttachInterrupt(CommonDigitalPortInterrupt, InterruptMode::change, CallbackParameter(this));
-			state = port.Read();
+			state = port.ReadDigital();
 			cpu_irq_restore(flags);
 		}
 		else
@@ -41,15 +42,23 @@ bool InputMonitor::Activate()
 	return ok;
 }
 
-void InputMonitor::Deactivate()
+void InputMonitor::Deactivate() noexcept
 {
 	//TODO
 	active = false;
 }
 
-void InputMonitor::DigitalInterrupt()
+// Return the analog value of this input
+uint16_t InputMonitor::GetAnalogValue() const noexcept
 {
-	const bool newState = port.Read();
+	return (threshold != 0) ? port.ReadAnalog()
+			: port.ReadDigital() ? 0xFFFF
+				: 0;
+}
+
+void InputMonitor::DigitalInterrupt() noexcept
+{
+	const bool newState = port.ReadDigital();
 	if (newState != state)
 	{
 		state = newState;
@@ -61,7 +70,7 @@ void InputMonitor::DigitalInterrupt()
 	}
 }
 
-void InputMonitor::AnalogInterrupt(uint16_t reading)
+void InputMonitor::AnalogInterrupt(uint16_t reading) noexcept
 {
 	const bool newState = reading >= threshold;
 	if (newState != state)
@@ -75,7 +84,7 @@ void InputMonitor::AnalogInterrupt(uint16_t reading)
 	}
 }
 
-/*static*/ void InputMonitor::Init()
+/*static*/ void InputMonitor::Init() noexcept
 {
 	// Nothing needed here yet
 }
@@ -90,7 +99,7 @@ void InputMonitor::AnalogInterrupt(uint16_t reading)
 	static_cast<InputMonitor*>(cbp.vp)->AnalogInterrupt(reading);
 }
 
-/*static*/ ReadLockedPointer<InputMonitor> InputMonitor::Find(uint16_t handle)
+/*static*/ ReadLockedPointer<InputMonitor> InputMonitor::Find(uint16_t handle) noexcept
 {
 	ReadLocker lock(listLock);
 	InputMonitor *current = monitorsList;
@@ -102,7 +111,7 @@ void InputMonitor::AnalogInterrupt(uint16_t reading)
 }
 
 // Delete a monitor. Must own the write lock before calling this.
-/*static*/ bool InputMonitor::Delete(uint16_t handle)
+/*static*/ bool InputMonitor::Delete(uint16_t handle) noexcept
 {
 	InputMonitor *prev = nullptr, *current = monitorsList;
 	while (current != nullptr)
@@ -129,7 +138,7 @@ void InputMonitor::AnalogInterrupt(uint16_t reading)
 	return false;
 }
 
-/*static*/ GCodeResult InputMonitor::Create(const CanMessageCreateInputMonitor& msg, size_t dataLength, const StringRef& reply, uint8_t& extra)
+/*static*/ GCodeResult InputMonitor::Create(const CanMessageCreateInputMonitor& msg, size_t dataLength, const StringRef& reply, uint8_t& extra) noexcept
 {
 	WriteLocker lock(listLock);
 
@@ -174,7 +183,7 @@ void InputMonitor::AnalogInterrupt(uint16_t reading)
 	return GCodeResult::error;
 }
 
-/*static*/ GCodeResult InputMonitor::Change(const CanMessageChangeInputMonitor& msg, const StringRef& reply, uint8_t& extra)
+/*static*/ GCodeResult InputMonitor::Change(const CanMessageChangeInputMonitor& msg, const StringRef& reply, uint8_t& extra) noexcept
 {
 	if (msg.action == CanMessageChangeInputMonitor::actionDelete)
 	{
@@ -230,13 +239,13 @@ void InputMonitor::AnalogInterrupt(uint16_t reading)
 		break;
 	}
 
-	extra = m->state;
+	extra = (m->state) ? 1 : 0;
 	return rslt;
 }
 
 // Check the input monitors and add any pending ones to the message
 // Return the number of ticks before we should be woken again, or TaskBase::TimeoutUnlimited if we shouldn't be work until an input changes state
-/*static*/ uint32_t InputMonitor::AddStateChanges(CanMessageInputChanged *msg)
+/*static*/ uint32_t InputMonitor::AddStateChanges(CanMessageInputChanged *msg) noexcept
 {
 	uint32_t timeToWait = TaskBase::TimeoutUnlimited;
 	ReadLocker lock(listLock);
@@ -278,6 +287,38 @@ void InputMonitor::AnalogInterrupt(uint16_t reading)
 		}
 	}
 	return timeToWait;
+}
+
+// Read the specified inputs. The incoming message is a CanMessageReadInputsRequest. We return a CanMessageReadInputsReply in the same buffer.
+/*static*/ void InputMonitor::ReadInputs(CanMessageBuffer *buf) noexcept
+{
+	// Extract data before we overwrite the message
+	const CanMessageReadInputsRequest& req = buf->msg.readInputsRequest;
+	const CanAddress srcAddress = buf->id.Src();
+	const uint16_t rid = req.requestId;
+	Bitmap<uint32_t> handlesReq(req.handlesRequested);
+
+	// Construct the new message
+	auto reply = buf->SetupResponseMessage<CanMessageReadInputsReply>(rid, CanInterface::GetCanAddress(), srcAddress);
+	Bitmap<uint32_t> handlesReturned;
+
+	unsigned int count = 0;
+	handlesReq.Iterate([&count, &handlesReturned, &reply](unsigned int hn, unsigned int)
+			{
+				if (count < ARRAY_SIZE(reply->results))
+				{
+					const auto h = Find(hn);
+					if (h.IsNotNull())
+					{
+						handlesReturned.SetBit(hn);
+						reply->results[count] = h->GetAnalogValue();
+						++count;
+					}
+				}
+			}
+		);
+	reply->handlesReported = handlesReturned.GetRaw();
+	buf->dataLength = reply->GetActualDataLength(count);
 }
 
 // End

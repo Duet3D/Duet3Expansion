@@ -118,7 +118,7 @@ void IoPort::WriteDigital(bool high) const
 	}
 }
 
-bool IoPort::Read() const
+bool IoPort::ReadDigital() const
 {
 	if (IsValid())
 	{

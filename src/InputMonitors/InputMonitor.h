@@ -16,30 +16,33 @@
 struct CanMessageCreateInputMonitor;
 struct CanMessageChangeInputMonitor;
 struct CanMessageInputChanged;
+class CanMessageBuffer;
 
 class InputMonitor
 {
 public:
-	InputMonitor() { }
+	InputMonitor() noexcept { }
 
-	static void Init();
+	static void Init() noexcept;
 
-	static GCodeResult Create(const CanMessageCreateInputMonitor& msg, size_t dataLength, const StringRef& reply, uint8_t& extra);
-	static GCodeResult Change(const CanMessageChangeInputMonitor& msg, const StringRef& reply, uint8_t& extra);
+	static GCodeResult Create(const CanMessageCreateInputMonitor& msg, size_t dataLength, const StringRef& reply, uint8_t& extra) noexcept;
+	static GCodeResult Change(const CanMessageChangeInputMonitor& msg, const StringRef& reply, uint8_t& extra) noexcept;
 
-	static uint32_t AddStateChanges(CanMessageInputChanged *msg);
+	static uint32_t AddStateChanges(CanMessageInputChanged *msg) noexcept;
+	static void ReadInputs(CanMessageBuffer *buf) noexcept;
 
 	static void CommonDigitalPortInterrupt(CallbackParameter cbp) noexcept;
 	static void CommonAnalogPortInterrupt(CallbackParameter cbp, uint16_t reading) noexcept;
 
 private:
-	bool Activate();
-	void Deactivate();
-	void DigitalInterrupt();
-	void AnalogInterrupt(uint16_t reading);
+	bool Activate() noexcept;
+	void Deactivate() noexcept;
+	void DigitalInterrupt() noexcept;
+	void AnalogInterrupt(uint16_t reading) noexcept;
+	uint16_t GetAnalogValue() const noexcept;
 
-	static bool Delete(uint16_t handle);
-	static ReadLockedPointer<InputMonitor> Find(uint16_t handle);
+	static bool Delete(uint16_t handle) noexcept;
+	static ReadLockedPointer<InputMonitor> Find(uint16_t handle) noexcept;
 
 	InputMonitor *next;
 	IoPort port;

@@ -818,6 +818,12 @@ void CommandProcessor::Spin()
 			rslt = InputMonitor::Change(buf->msg.changeInputMonitor, replyRef, extra);
 			break;
 
+		case CanMessageType::readInputsRequest:
+			// This one has its own reply message type
+			InputMonitor::ReadInputs(buf);
+			CanInterface::SendAndFree(buf);
+			return;
+
 		case CanMessageType::setAddressAndNormalTiming:
 			requestId = buf->msg.setAddressAndNormalTiming.requestId;
 			rslt = CanInterface::ChangeAddressAndDataRate(buf->msg.setAddressAndNormalTiming, replyRef);

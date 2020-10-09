@@ -63,7 +63,7 @@ public:
 	bool UseAlternateConfig() const { return alternateConfig; }
 
 	void WriteDigital(bool high) const;
-	bool Read() const;
+	bool ReadDigital() const;
 	uint16_t ReadAnalog() const;
 
 	bool AttachInterrupt(StandardCallbackFunction callback, InterruptMode mode, CallbackParameter param) const;
