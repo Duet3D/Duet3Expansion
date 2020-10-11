@@ -18,7 +18,11 @@ class CanMessageBuffer;
 
 namespace CanInterface
 {
-	void Init(CanAddress defaultBoardAddress);
+	void Init(CanAddress defaultBoardAddress
+#if SAMC21
+				, bool useAlternatePins
+#endif
+			);
 	void Shutdown();
 	void Diagnostics(const StringRef& reply);
 

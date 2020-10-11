@@ -81,6 +81,8 @@ constexpr Pin DriverDiagPins[NumDrivers] = { PortBPin(3) };
 
 #define DIAG_SERCOM_NUMBER		4		// which SERCOM device we use for debugging output
 
+constexpr bool UseAlternateCanPins = false;
+
 constexpr size_t NumThermistorInputs = 2;
 
 constexpr float DefaultThermistorSeriesR = 2200.0;

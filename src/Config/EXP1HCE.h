@@ -70,6 +70,8 @@ constexpr Pin DiagPins[NumDrivers] = { PortAPin(28) };
 #define USE_MPU					0
 #define USE_CACHE				0
 
+constexpr bool UseAlternateCanPins = false;
+
 constexpr size_t MaxAxes = 3;			//TEMP we won't need this
 
 constexpr size_t NumThermistorInputs = 1;

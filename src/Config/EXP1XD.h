@@ -75,6 +75,8 @@ constexpr Pin DirectionPins[NumDrivers] = { PortAPin(10) };
 
 #define DIAG_SERCOM_NUMBER		4		// which SERCOM device we use for debugging output
 
+constexpr bool UseAlternateCanPins = false;
+
 constexpr size_t MaxAxes = 3;			//TEMP we won't need this
 
 constexpr size_t NumThermistorInputs = 1;

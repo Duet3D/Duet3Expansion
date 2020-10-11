@@ -144,18 +144,23 @@ static void CAN_0_init(const CanTiming& timing)
  *
  * Enables CAN peripheral, clocks and initializes CAN driver
  */
-static void CAN_0_init(const CanTiming& timing)
+static void CAN_0_init(const CanTiming& timing, bool useAlternatePins)
 {
 	hri_mclk_set_AHBMASK_CAN0_bit(MCLK);
 	hri_gclk_write_PCHCTRL_reg(GCLK, CAN0_GCLK_ID, GclkNum48MHz | GCLK_PCHCTRL_CHEN);
 	can_async_init(&CAN_0, CAN0, timing);
+	if (useAlternatePins)
+	{
+		SetPinFunction(PortBPin(23), GpioPinFunction::G);
+		SetPinFunction(PortBPin(22), GpioPinFunction::G);
+	}
+	else
+	{
+		SetPinFunction(PortAPin(25), GpioPinFunction::G);
+		SetPinFunction(PortAPin(24), GpioPinFunction::G);
+	}
 #ifdef SAMMYC21
-	SetPinFunction(PortBPin(23), GpioPinFunction::G);
-	SetPinFunction(PortBPin(22), GpioPinFunction::G);
-	IoPort::SetPinMode(CanStandbyPin, OUTPUT_LOW);					// take the CAN drivers out of standby
-#else
-	SetPinFunction(PortAPin(25), GpioPinFunction::G);
-	SetPinFunction(PortAPin(24), GpioPinFunction::G);
+	pinMode(CanStandbyPin, OUTPUT_LOW);						// take the CAN drivers out of standby
 #endif
 }
 
@@ -254,7 +259,7 @@ extern "C" [[noreturn]] void CanAsyncSenderLoop(void *)
 		// Set up a message ready
 		auto msg = buf->SetupStatusMessage<CanMessageInputChanged>(CanInterface::GetCanAddress(), CanId::MasterAddress);
 		msg->states = 0;
-		msg->spare = 0;
+		msg->zero = 0;
 		msg->numHandles = 0;
 
 		const uint32_t timeToWait = InputMonitor::AddStateChanges(msg);
@@ -267,7 +272,11 @@ extern "C" [[noreturn]] void CanAsyncSenderLoop(void *)
 	}
 }
 
-void CanInterface::Init(CanAddress defaultBoardAddress)
+void CanInterface::Init(CanAddress defaultBoardAddress
+#if SAMC21
+	, bool useAlternatePins
+#endif
+	)
 {
 	// Read the CAN timing data from the top part of the NVM User Row
 	canConfigData = *reinterpret_cast<CanUserAreaData*>(NVMCTRL_USER + CanUserAreaDataOffset);
@@ -276,7 +285,11 @@ void CanInterface::Init(CanAddress defaultBoardAddress)
 	canConfigData.GetTiming(timing);
 
 	// Initialise the CAN hardware, using the timing data if it was valid
+#if SAME5x
 	CAN_0_init(timing);
+#elif SAMC21
+	CAN_0_init(timing, useAlternatePins);
+#endif
 
 	boardAddress = canConfigData.GetCanAddress(defaultBoardAddress);
 	CanMessageBuffer::Init(NumCanBuffers);
@@ -476,7 +489,7 @@ void CanInterface::SendAnnounce(CanMessageBuffer *buf)
 		auto msg = buf->SetupRequestMessage<CanMessageAnnounce>(0, boardAddress, CanId::MasterAddress);
 		msg->timeSinceStarted = millis();
 		msg->numDrivers = NumDrivers;
-		msg->spare = 0;
+		msg->zero = 0;
 		constexpr size_t BoardTypeLength = strlen(BoardTypeName);
 		memcpy(msg->boardTypeAndFirmwareVersion, BoardTypeName, BoardTypeLength);
 		msg->boardTypeAndFirmwareVersion[BoardTypeLength] = '|';

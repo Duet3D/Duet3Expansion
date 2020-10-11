@@ -31,6 +31,8 @@ constexpr const char* BoardTypeName = "ATEIO";
 
 #define DIAG_SERCOM_NUMBER		1		// which SERCOM device we use for debugging output
 
+constexpr bool UseAlternateCanPins = true;
+
 constexpr Pin BoardTypePins[] = { PortAPin(5), PortAPin(4) };
 constexpr Pin ButtonPins[] = { PortAPin(18) };
 
