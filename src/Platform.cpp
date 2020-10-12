@@ -683,7 +683,6 @@ void Platform::Init()
 
 	const CanAddress switches = ReadBoardAddress();
 	const CanAddress defaultAddress = (switches == 0) ? CanId::ExpansionBoardFirmwareUpdateAddress : switches;
-	CanInterface::Init(defaultAddress);
 
 #elif SAMC21
 
@@ -703,9 +702,9 @@ void Platform::Init()
 #  error Unknown board
 # endif
 
-	CanInterface::Init(defaultAddress, UseAlternateCanPins);
-
 #endif
+
+	CanInterface::Init(defaultAddress, UseAlternateCanPins);
 
 	InitialiseInterrupts();
 

@@ -42,6 +42,8 @@ constexpr const char* BoardTypeName = "EXP3HC";
 #define USE_MPU					0
 #define USE_CACHE				1
 
+constexpr bool UseAlternateCanPins = false;
+
 constexpr size_t NumDrivers = 3;
 constexpr size_t MaxSmartDrivers = 3;
 constexpr float MaxTmc5160Current = 6300.0;			// The maximum current we allow the TMC5160/5161 drivers to be set to

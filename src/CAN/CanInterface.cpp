@@ -126,11 +126,12 @@ static can_async_descriptor CAN_0 = { 0 };
  *
  * Enables CAN peripheral, clocks and initializes CAN driver
  */
-static void CAN_0_init(const CanTiming& timing)
+static void CAN_0_init(const CanTiming& timing, bool useAlternatePins)
 {
 	hri_mclk_set_AHBMASK_CAN1_bit(MCLK);
 	hri_gclk_write_PCHCTRL_reg(GCLK, CAN1_GCLK_ID, GclkNum48MHz | GCLK_PCHCTRL_CHEN);
 	can_async_init(&CAN_0, CAN1, timing);
+	// We don't have any alternate pins yet
 	SetPinFunction(PortBPin(13), GpioPinFunction::H);
 	SetPinFunction(PortBPin(12), GpioPinFunction::H);
 }
@@ -272,11 +273,7 @@ extern "C" [[noreturn]] void CanAsyncSenderLoop(void *)
 	}
 }
 
-void CanInterface::Init(CanAddress defaultBoardAddress
-#if SAMC21
-	, bool useAlternatePins
-#endif
-	)
+void CanInterface::Init(CanAddress defaultBoardAddress, bool useAlternatePins)
 {
 	// Read the CAN timing data from the top part of the NVM User Row
 	canConfigData = *reinterpret_cast<CanUserAreaData*>(NVMCTRL_USER + CanUserAreaDataOffset);
@@ -285,11 +282,7 @@ void CanInterface::Init(CanAddress defaultBoardAddress
 	canConfigData.GetTiming(timing);
 
 	// Initialise the CAN hardware, using the timing data if it was valid
-#if SAME5x
-	CAN_0_init(timing);
-#elif SAMC21
 	CAN_0_init(timing, useAlternatePins);
-#endif
 
 	boardAddress = canConfigData.GetCanAddress(defaultBoardAddress);
 	CanMessageBuffer::Init(NumCanBuffers);
