@@ -17,29 +17,41 @@
 #include <Movement/Move.h>
 
 #define SUPPORT_CAN		1				// needed by CanDriver.h
-#include <CanDriver.h>
+#include <CanDevice.h>
 #include <Hardware/IoPorts.h>
 #include <Version.h>
 #include <hpl_user_area.h>
-
-#if SAME5x
-# include <hri_mclk_e54.h>
-#elif SAMC21
-# include <hri_mclk_c21.h>
-# include <hri_gclk_c21.h>
-#endif
-
-const unsigned int NumCanBuffers = 40;
-
-static CanUserAreaData canConfigData;
-static CanAddress boardAddress;
-static bool enabled = false;
 
 #if SAME5x
 constexpr uint32_t CanUserAreaDataOffset = 512 - sizeof(CanUserAreaData);
 #elif SAMC21
 constexpr uint32_t CanUserAreaDataOffset = 256 - sizeof(CanUserAreaData);
 #endif
+
+constexpr unsigned int NumCanBuffers = 40;
+
+static CanDevice *can0dev = nullptr;
+static CanUserAreaData canConfigData;
+static CanAddress boardAddress;
+static bool enabled = false;
+
+constexpr CanDevice::Config Can0Config =
+{
+	.dataSize = 64,									// must be one of: 8, 12, 16, 20, 24, 32, 48, 64
+	.numTxBuffers = 2,
+	.txFifoSize = 4,
+	.numRxBuffers = 0,
+	.rxFifo0Size = 16,
+	.rxFifo1Size = 16,
+	.numShortFilterElements = 0,
+	.numExtendedFilterElements = 3,
+	.txEventFifoSize = 2
+};
+
+static_assert(Can0Config.IsValid());
+
+// CAN buffer memory must be in the first 64Kb of RAM (SAME5x) or in non-cached RAM (SAME70), so put it in its own segment
+static uint32_t can0Memory[Can0Config.GetMemorySize()] __attribute__ ((section (".CanMessage")));
 
 // CanReceiver management task
 constexpr size_t CanReceiverTaskStackWords = 400;
@@ -48,8 +60,6 @@ static Task<CanReceiverTaskStackWords> canReceiverTask;
 // Async sender task
 constexpr size_t CanAsyncSenderTaskStackWords = 400;
 static Task<CanAsyncSenderTaskStackWords> canAsyncSenderTask;
-
-static TaskHandle sendingTaskHandle = nullptr;
 
 static bool mainBoardAcknowledgedAnnounce = false;	// true after the main board has acknowledged our announcement
 static bool isProgrammed = false;					// true after the main board has sent us any configuration commands
@@ -79,6 +89,9 @@ private:
 };
 
 CanMessageQueue::CanMessageQueue() : pendingMessages(nullptr) { }
+
+static CanMessageQueue PendingMoves;
+static CanMessageQueue PendingCommands;
 
 void CanMessageQueue::AddMessage(CanMessageBuffer *buf)
 {
@@ -114,42 +127,30 @@ CanMessageBuffer *CanMessageQueue::GetMessage()
 	return buf;
 }
 
-static CanMessageQueue PendingMoves;
-static CanMessageQueue PendingCommands;
+extern "C" [[noreturn]] void CanReceiverLoop(void *);
+extern "C" [[noreturn]] void CanAsyncSenderLoop(void *);
 
-static can_async_descriptor CAN_0 = { 0 };
-
-#if SAME5x
-
-/**
- * \brief CAN initialization function
- *
- * Enables CAN peripheral, clocks and initializes CAN driver
- */
-static void CAN_0_init(const CanTiming& timing, bool useAlternatePins)
+namespace CanInterface
 {
-	hri_mclk_set_AHBMASK_CAN1_bit(MCLK);
-	hri_gclk_write_PCHCTRL_reg(GCLK, CAN1_GCLK_ID, GclkNum48MHz | GCLK_PCHCTRL_CHEN);
-	can_async_init(&CAN_0, CAN1, timing);
-	// We don't have any alternate pins yet
-	SetPinFunction(PortBPin(13), GpioPinFunction::H);
-	SetPinFunction(PortBPin(12), GpioPinFunction::H);
+	void ProcessReceivedMessage(CanMessageBuffer *buf);
 }
 
-#endif
-
-#if SAMC21
-
-/**
- * \brief CAN initialization function
- *
- * Enables CAN peripheral, clocks and initializes CAN driver
- */
-static void CAN_0_init(const CanTiming& timing, bool useAlternatePins)
+// Initialise this module and the CAN hardware
+void CanInterface::Init(CanAddress defaultBoardAddress, bool useAlternatePins)
 {
-	hri_mclk_set_AHBMASK_CAN0_bit(MCLK);
-	hri_gclk_write_PCHCTRL_reg(GCLK, CAN0_GCLK_ID, GclkNum48MHz | GCLK_PCHCTRL_CHEN);
-	can_async_init(&CAN_0, CAN0, timing);
+	// Read the CAN timing data from the top part of the NVM User Row
+	canConfigData = *reinterpret_cast<CanUserAreaData*>(NVMCTRL_USER + CanUserAreaDataOffset);
+
+	CanTiming timing;
+	canConfigData.GetTiming(timing);
+
+	// Set up the CAN pins
+#if SAME5x
+	// We don't support alternate pins for the SAME5x yet
+	SetPinFunction(PortBPin(13), GpioPinFunction::H);
+	SetPinFunction(PortBPin(12), GpioPinFunction::H);
+	const unsigned int whichPort = 1;							// we use CAN1 on the SAME5x
+#elif SAMC21
 	if (useAlternatePins)
 	{
 		SetPinFunction(PortBPin(23), GpioPinFunction::G);
@@ -160,135 +161,30 @@ static void CAN_0_init(const CanTiming& timing, bool useAlternatePins)
 		SetPinFunction(PortAPin(25), GpioPinFunction::G);
 		SetPinFunction(PortAPin(24), GpioPinFunction::G);
 	}
-#ifdef SAMMYC21
-	pinMode(CanStandbyPin, OUTPUT_LOW);						// take the CAN drivers out of standby
+	const unsigned int whichPort = 0;							// we use CAN0 on the SAMC21
 #endif
-}
-
-#endif
-
-namespace CanInterface
-{
-	void ProcessReceivedMessage(CanMessageBuffer *buf);
-}
-
-extern "C" void CAN_0_tx_callback(struct can_async_descriptor *const descr)
-{
-	if (sendingTaskHandle != nullptr)
-	{
-		long higherPriorityTaskWoken;
-		vTaskNotifyGiveFromISR(sendingTaskHandle, &higherPriorityTaskWoken);
-		sendingTaskHandle = nullptr;
-		portYIELD_FROM_ISR(higherPriorityTaskWoken);
-	}
-}
-
-extern "C" void CAN_0_rx_callback(struct can_async_descriptor *const descr)
-{
-	canReceiverTask.GiveFromISR();
-}
-
-extern "C" [[noreturn]] void CanReceiverLoop(void *)
-{
-//	int32_t can_async_set_mode(struct can_async_descriptor *const descr, enum can_mode mode);
-
-	// Set up CAN receiver filtering
-	can_filter filter;
-
-	// First a filter for our own ID
-	filter.id = boardAddress << CanId::DstAddressShift;
-	filter.mask = CanId::BoardAddressMask << CanId::DstAddressShift;
-	can_async_set_filter(&CAN_0, 0, CAN_FMT_EXTID, &filter);
-
-	// Now a filter for the broadcast ID
-	filter.id = (uint32_t)CanId::BroadcastAddress << CanId::DstAddressShift;
-	filter.mask = CanId::BoardAddressMask << CanId::DstAddressShift;
-	can_async_set_filter(&CAN_0, 1, CAN_FMT_EXTID, &filter);
-
-	can_async_enable(&CAN_0);
-	CanMessageBuffer *buf = nullptr;
-	for (;;)
-	{
-		// Get a buffer
-		if (buf == nullptr)
-		{
-			for (;;)
-			{
-				buf = CanMessageBuffer::Allocate();
-				if (buf != nullptr)
-				{
-					break;
-				}
-				delay(1);
-			}
-		}
-
-		can_message msg;										// descriptor for the message
-		msg.data = reinterpret_cast<uint8_t*>(&(buf->msg));		// set up where we want the message data to be stored
-		const int32_t rslt = can_async_read(&CAN_0, &msg);		// fetch the message
-		if (rslt == ERR_NOT_FOUND)
-		{
-			TaskBase::Take();									// wait until we are woken up because a message is available
-		}
-		else if (rslt == ERR_NONE)
-		{
-			if (enabled)
-			{
-				buf->dataLength = msg.len;
-				buf->id.SetReceivedId(msg.id);
-				CanInterface::ProcessReceivedMessage(buf);
-				buf = nullptr;
-			}
-		}
-		else
-		{
-			debugPrintf("CAN read err %d\n", (int)rslt);
-		}
-	}
-}
-
-extern "C" [[noreturn]] void CanAsyncSenderLoop(void *)
-{
-	CanMessageBuffer *buf;
-	while ((buf = CanMessageBuffer::Allocate()) == nullptr)
-	{
-		delay(1);
-	}
-
-	for (;;)
-	{
-		// Set up a message ready
-		auto msg = buf->SetupStatusMessage<CanMessageInputChanged>(CanInterface::GetCanAddress(), CanId::MasterAddress);
-		msg->states = 0;
-		msg->zero = 0;
-		msg->numHandles = 0;
-
-		const uint32_t timeToWait = InputMonitor::AddStateChanges(msg);
-		if (msg->numHandles != 0)
-		{
-			buf->dataLength = msg->GetActualDataLength();
-			CanInterface::SendAsync(buf);					// this doesn't free the buffer, so we can re-use it
-		}
-		TaskBase::Take(timeToWait);						// wait until we are woken up because a message is available, or we time out
-	}
-}
-
-void CanInterface::Init(CanAddress defaultBoardAddress, bool useAlternatePins)
-{
-	// Read the CAN timing data from the top part of the NVM User Row
-	canConfigData = *reinterpret_cast<CanUserAreaData*>(NVMCTRL_USER + CanUserAreaDataOffset);
-
-	CanTiming timing;
-	canConfigData.GetTiming(timing);
 
 	// Initialise the CAN hardware, using the timing data if it was valid
-	CAN_0_init(timing, useAlternatePins);
+	can0dev = CanDevice::Init(0, whichPort, Can0Config, can0Memory, timing);
+
+#ifdef SAMMYC21
+	pinMode(CanStandbyPin, OUTPUT_LOW);							// take the CAN drivers out of standby
+#endif
 
 	boardAddress = canConfigData.GetCanAddress(defaultBoardAddress);
 	CanMessageBuffer::Init(NumCanBuffers);
 
-	can_async_register_callback(&CAN_0, CAN_ASYNC_RX_CB, (FUNC_PTR)CAN_0_rx_callback);
-	can_async_register_callback(&CAN_0, CAN_ASYNC_TX_CB, (FUNC_PTR)CAN_0_tx_callback);
+	// Set up CAN receiver filtering
+	// Set up a CAN receive filter to receive all messages addressed to us in FIFO 0
+	can0dev->SetExtendedFilterElement(0, CanDevice::RxBufferNumber::fifo0,
+										(uint32_t)boardAddress << CanId::DstAddressShift,
+										CanId::BoardAddressMask << CanId::DstAddressShift);
+
+	// Now a filter for the broadcast ID
+	can0dev->SetExtendedFilterElement(1, CanDevice::RxBufferNumber::fifo0,
+										(uint32_t)CanId::BroadcastAddress << CanId::DstAddressShift,
+										CanId::BoardAddressMask << CanId::DstAddressShift);
+	can0dev->Enable();
 
 	enabled = true;
 
@@ -304,6 +200,12 @@ void CanInterface::Init(CanAddress defaultBoardAddress, bool useAlternatePins)
 void CanInterface::Shutdown()
 {
 	enabled = false;
+	if (can0dev != nullptr)
+	{
+		can0dev->DeInit();
+	}
+	canReceiverTask.TerminateAndUnlink();
+	canAsyncSenderTask.TerminateAndUnlink();
 }
 
 CanAddress CanInterface::GetCanAddress()
@@ -315,24 +217,10 @@ CanAddress CanInterface::GetCanAddress()
 // Any extra bytes needed as padding are set to zero by the CAN driver.
 bool CanInterface::Send(CanMessageBuffer *buf)
 {
-	struct can_message msg;
-	msg.id = buf->id.GetWholeId();
-	msg.type = CAN_TYPE_DATA;
-	msg.data = buf->msg.raw;
-	msg.len = buf->dataLength;
-	msg.fmt = CAN_FMT_EXTID;
-	for (unsigned int tries = 0; tries < 5; ++tries)
-	{
-		{
-			TaskCriticalSectionLocker lock;
-			if (can_async_write(&CAN_0, &msg) == ERR_NONE)
-			{
-				return true;
-			}
-		}
-		delay(2);
-	}
-	return false;
+	//TODO option to not force sending, and return true only if successful?
+	can0dev->SendMessage(CanDevice::TxBufferNumber::fifo, 1000, buf);
+	return true;
+
 }
 
 bool CanInterface::SendAsync(CanMessageBuffer *buf)
@@ -390,6 +278,7 @@ void CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf)
 			{
 				++duplicateMotionMessages;
 				CanMessageBuffer::Free(buf);
+				break;
 			}
 			lastMotionMessageScheduledTime = buf->msg.move.whenToExecute;
 			lastMotionMessageReceivedAt = now;
@@ -465,13 +354,10 @@ void CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf)
 
 void CanInterface::Diagnostics(const StringRef& reply)
 {
-#if 0	//DEBUG
-	reply.lcatf("Free CAN buffers: %u, messages lost %" PRIu32 ", duplicates %u, motion %" PRIi32 ", oos %u",
-				CanMessageBuffer::FreeBuffers(), GetAndClearCanMessagesLost(), duplicateMotionMessages, accumulatedMotion, oosMessages);
-#else
-	reply.lcatf("Free CAN buffers: %u, messages lost %" PRIu32 ", duplicates %u, oos %u",
-				CanMessageBuffer::FreeBuffers(), GetAndClearCanMessagesLost(), duplicateMotionMessages, oosMessages);
-#endif
+	unsigned int messagesLost, busOffCount;
+	can0dev->GetAndClearErrorCounts(messagesLost, busOffCount);
+	reply.lcatf("Free CAN buffers: %u, messages lost %u, duplicates %u, oos %u, busOff %u",
+				CanMessageBuffer::FreeBuffers(), messagesLost, duplicateMotionMessages, oosMessages, busOffCount);
 }
 
 // Send an announcement message if we haven't had an announce acknowledgement form the main board. On return the buffer is available to use again.
@@ -535,7 +421,7 @@ GCodeResult CanInterface::ChangeAddressAndDataRate(const CanMessageSetAddressAnd
 		else
 		{
 			CanTiming timing;
-			GetLocalCanTiming(&CAN_0, timing);
+			can0dev->GetLocalCanTiming(timing);
 			reply.printf("CAN bus speed %.1fkbps, tseg1 %.2f, jump width %.2f",
 							(double)((float)CanTiming::ClockFrequency/(1000 * timing.period)),
 							(double)((float)timing.tseg1/(float)timing.period),
@@ -546,6 +432,70 @@ GCodeResult CanInterface::ChangeAddressAndDataRate(const CanMessageSetAddressAnd
 
 	reply.copy("Received ChangeAddress message for wrong board");
 	return GCodeResult::error;
+}
+
+extern "C" [[noreturn]] void CanReceiverLoop(void *)
+{
+	CanMessageBuffer *buf = nullptr;
+	for (;;)
+	{
+		if (!enabled)
+		{
+			delay(10);
+		}
+		else
+		{
+			// Get a buffer
+			if (buf == nullptr)
+			{
+				for (;;)
+				{
+					buf = CanMessageBuffer::Allocate();
+					if (buf != nullptr)
+					{
+						break;
+					}
+					delay(1);
+				}
+			}
+
+			if (can0dev->ReceiveMessage(CanDevice::RxBufferNumber::fifo0, TaskBase::TimeoutUnlimited, buf))
+			{
+				CanInterface::ProcessReceivedMessage(buf);
+				buf = nullptr;
+			}
+			else
+			{
+				debugPrintf("CAN read err\n");
+			}
+		}
+	}
+}
+
+extern "C" [[noreturn]] void CanAsyncSenderLoop(void *)
+{
+	CanMessageBuffer *buf;
+	while ((buf = CanMessageBuffer::Allocate()) == nullptr)
+	{
+		delay(1);
+	}
+
+	for (;;)
+	{
+		// Set up a message ready
+		auto msg = buf->SetupStatusMessage<CanMessageInputChanged>(CanInterface::GetCanAddress(), CanId::MasterAddress);
+		msg->states = 0;
+		msg->zero = 0;
+		msg->numHandles = 0;
+
+		const uint32_t timeToWait = InputMonitor::AddStateChanges(msg);
+		if (msg->numHandles != 0)
+		{
+			buf->dataLength = msg->GetActualDataLength();
+			CanInterface::SendAsync(buf);					// this doesn't free the buffer, so we can re-use it
+		}
+		TaskBase::Take(timeToWait);						// wait until we are woken up because a message is available, or we time out
+	}
 }
 
 // End

@@ -60,6 +60,7 @@ namespace Heat
 	static uint64_t lastSensorsBroadcastWhich = 0;				// for diagnostics
 	static uint32_t lastSensorsBroadcastWhen = 0;				// for diagnostics
 	static unsigned int lastSensorsFound = 0;					// for diagnostics
+	static uint32_t heatTaskLoopTime = 0;						// for diagnostics
 
 	static ReadLockedPointer<Heater> FindHeater(int heater)
 	{
@@ -189,20 +190,16 @@ void Heat::Exit()
 [[noreturn]] void Heat::Task()
 {
 	// Get a message buffer. We use the same one all the time and never release it.
-	CanMessageBuffer *buf = nullptr;
-	for (;;)
+	CanMessageBuffer *buf;
+	while ((buf = CanMessageBuffer::Allocate()) == nullptr)
 	{
-		buf = CanMessageBuffer::Allocate();
-		if (buf != nullptr)
-		{
-			break;
-		}
 		delay(5);
 	}
 
 	uint32_t lastWakeTime = xTaskGetTickCount();
 	for (;;)
 	{
+		const uint32_t startTime = millis();
 		{
 			// Walk the sensor list and poll all sensors
 			// Also prepare to broadcast our sensor temperatures
@@ -304,6 +301,8 @@ void Heat::Exit()
 		}
 
 		Platform::KickHeatTaskWatchdog();
+
+		heatTaskLoopTime = millis() - startTime;
 
 		// Delay until it is time again
 		vTaskDelayUntil(&lastWakeTime, HeatSampleIntervalMillis);
@@ -558,7 +557,8 @@ void Heat::SuspendHeaters(bool sus)
 
 void Heat::Diagnostics(const StringRef& reply)
 {
-	reply.lcatf("Last sensors broadcast %08" PRIu64 " found %u %" PRIu32 " ticks ago", lastSensorsBroadcastWhich, lastSensorsFound, millis() - lastSensorsBroadcastWhen);
+	reply.lcatf("Last sensors broadcast 0x%08" PRIx64 " found %u %" PRIu32 " ticks ago, loop time %" PRIu32,
+					lastSensorsBroadcastWhich, lastSensorsFound, millis() - lastSensorsBroadcastWhen, heatTaskLoopTime);
 }
 
 // End

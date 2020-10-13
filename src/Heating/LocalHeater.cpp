@@ -522,7 +522,7 @@ void LocalHeater::GetAutoTuneStatus(const StringRef& reply) const
 
 /* Notes on the auto tune algorithm
  *
- * Most 3D printer firmwares use the �str�m-H�gglund relay tuning method (sometimes called Ziegler-Nichols + relay).
+ * Most 3D printer firmwares use the Åström and Hägglund relay tuning method (sometimes called Ziegler-Nichols + relay).
  * This gives results  of variable quality, but they seem to be generally satisfactory.
  *
  * We use Cohen-Coon tuning instead. This models the heating process as a first-order process (i.e. one that with constant heating
