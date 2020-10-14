@@ -155,10 +155,10 @@ void Tasks::Diagnostics(const StringRef& reply) noexcept
 
 	// Now the per-task memory report
 	bool printed = false;
-	for (const TaskBase *t = TaskBase::GetTaskList(); t != nullptr; t = t->GetNext())
+	for (TaskBase *t = TaskBase::GetTaskList(); t != nullptr; t = t->GetNext())
 	{
 		TaskStatus_t taskDetails;
-		vTaskGetInfo(t->GetHandle(), &taskDetails, pdTRUE, eInvalid);
+		vTaskGetInfo(t->GetFreeRTOSHandle(), &taskDetails, pdTRUE, eInvalid);
 		if (printed)
 		{
 			reply.cat(' ');
