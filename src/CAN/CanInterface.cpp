@@ -308,7 +308,8 @@ void CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf)
 #endif
 
 	case CanMessageType::emergencyStop:
-		Platform::EmergencyStop();					// doesn't return
+		Platform::EmergencyStop();
+		CanMessageBuffer::Free(buf);
 		break;
 
 	case CanMessageType::acknowledgeAnnounce:

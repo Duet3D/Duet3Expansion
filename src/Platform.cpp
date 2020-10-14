@@ -359,7 +359,6 @@ namespace Platform
 # endif
 		DisableAllDrives();
 #endif
-		delay(10);										// allow existing processing to complete, drivers to be turned off and CAN replies to be sent
 		CanInterface::Shutdown();
 		for (Pin pin : LedPins)
 		{
@@ -1455,9 +1454,10 @@ void Platform::StartReset()
 	deferredCommand = DeferredCommand::reset;
 }
 
-[[noreturn]] void Platform::EmergencyStop()
+void Platform::EmergencyStop()
 {
-	ShutdownAndReset();
+	whenDeferredCommandRequested = millis();
+	deferredCommand = DeferredCommand::reset;
 }
 
 // This is called when we start processing any CAN message except for regular messages e.g. time sync

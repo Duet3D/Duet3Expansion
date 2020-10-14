@@ -210,8 +210,8 @@ void Move::Diagnostics(const StringRef& reply)
 	reply.catf("Moves scheduled %" PRIu32 ", completed %" PRIu32 ", in progress %d, hiccups %" PRIu32 "\n",
 					scheduledMoves, completedMoves, (int)(currentDda != nullptr), numHiccups);
 	numHiccups = 0;
-#endif
 	StepTimer::Diagnostics(reply);
+#endif
 }
 
 #if SUPPORT_DRIVERS

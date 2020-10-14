@@ -219,7 +219,7 @@ namespace Platform
 
 	GCodeResult DoDiagnosticTest(const CanMessageDiagnosticTest& msg, const StringRef& reply);
 
-	[[noreturn]]void EmergencyStop();
+	void EmergencyStop();
 
 	[[noreturn]]inline void ResetProcessor()
 	{
