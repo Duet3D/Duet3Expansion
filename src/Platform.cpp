@@ -258,11 +258,13 @@ namespace Platform
 	// Send the specified message to the specified destinations. The Error and Warning flags have already been handled.
 	void RawMessage(MessageType type, const char *message)
 	{
+#ifdef DEBUG		// we don't use the UART in non-debug mode, because it interferes with BLTouch
 		MutexLocker lock(messageMutex);
 
 		uart0.write("{\"message\":\"");
 		uart0.write(message);		// should do JSON escaping here
 		uart0.write("\"}\n");
+#endif
 	}
 
 #if SAME5x
@@ -464,8 +466,11 @@ void Platform::Init()
 		}
 	}
 
+#ifdef DEBUG
 	// Set up the UART to send to PanelDue for debugging
+	// CAUTION! This sends data to pin io0.out, which inteferes with a BLTouchn connected to that pin. So don't do it in normal use.
 	uart0.begin(57600);
+#endif
 
 	// Initialise the rest of the IO subsystem
 #if SAME5x
