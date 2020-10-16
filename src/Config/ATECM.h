@@ -10,7 +10,7 @@
 
 #include <Hardware/PinDescription.h>
 
-constexpr const char* BoardTypeName = "ATECM";
+#define BOARD_TYPE_NAME		"ATECM"
 
 // General features
 #define HAS_VREF_MONITOR		0

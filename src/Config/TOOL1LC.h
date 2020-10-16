@@ -10,7 +10,7 @@
 
 #include <Hardware/PinDescription.h>
 
-constexpr const char* BoardTypeName = "TOOL1LC";
+#define BOARD_TYPE_NAME		"TOOL1LC"
 
 // General features
 #define HAS_VREF_MONITOR		1

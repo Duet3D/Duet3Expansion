@@ -1540,6 +1540,19 @@ GCodeResult Platform::DoDiagnosticTest(const CanMessageDiagnosticTest& msg, cons
 		deferredCommand = DeferredCommand::testBadMemoryAccess;
 		return GCodeResult::ok;
 
+	case 1007:						// read or write memory
+		deliberateError = true;		// in case this causes a crash
+		if (msg.param16 == 1)		// if writing
+		{
+			*reinterpret_cast<uint32_t*>(msg.param32[0]) = msg.param32[1];
+		}
+		else						// reading
+		{
+			reply.printf("Address 0x%08" PRIx32 " value 0x%08" PRIx32, msg.param32[0], *reinterpret_cast<const uint32_t*>(msg.param32[0]));
+		}
+		deliberateError = false;
+		return GCodeResult::ok;
+
 	default:
 		reply.printf("Unknown test type %u", msg.testType);
 		return GCodeResult::error;

@@ -97,7 +97,7 @@ void SoftwareResetData::Populate(uint16_t reason, const uint32_t *stk) noexcept
 	}
 }
 
-void SoftwareResetData::Print(unsigned int slot, const StringRef& reply) const noexcept
+void SoftwareResetData::PrintPart1(unsigned int slot, const StringRef& reply) const noexcept
 {
 	String<StringLength256> scratchString;		// long enough to print 28 stack entries @ 9 bytes each, but not 29
 	scratchString.copy("Last software reset ");
@@ -160,11 +160,14 @@ void SoftwareResetData::Print(unsigned int slot, const StringRef& reply) const n
 	reply.lcatf("Software reset code 0x%04x HFSR 0x%08" PRIx32 " CFSR 0x%08" PRIx32 " ICSR 0x%08" PRIx32 " BFAR 0x%08" PRIx32 " SP 0x%08" PRIx32 " Task %s",
 					resetReason, hfsr, cfsr, icsr, bfar, sp, (const char *)taskNameWords);
 #endif
+}
 
+void SoftwareResetData::PrintPart2(const StringRef& reply) const noexcept
+{
 	if (sp != 0xFFFFFFFF)
 	{
 		// We saved a stack dump, so print it
-		scratchString.Clear();
+		String<StringLength256> scratchString;		// long enough to print 28 stack entries @ 9 bytes each, but not 29
 		for (uint32_t stval : stack)
 		{
 			scratchString.catf(" %08" PRIx32, stval);

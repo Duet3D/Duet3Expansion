@@ -13,6 +13,9 @@
 #include "Platform.h"
 #include "CommandProcessing/CommandProcessor.h"
 #include "RTOSIface/RTOSIface.h"
+#include "Version.h"
+
+extern const char VersionText[] = "Duet " BOARD_TYPE_NAME " firmware version " VERSION;
 
 Move *moveInstance;
 

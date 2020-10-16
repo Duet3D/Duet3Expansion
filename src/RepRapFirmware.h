@@ -9,9 +9,6 @@
 #define SRC_REPRAPFIRMWARE_H_
 
 #include <CoreIO.h>
-//#include <cmath>
-//#include <cinttypes>
-//#include <climits>		// for CHAR_BIT
 
 typedef double floatc_t;
 
@@ -21,6 +18,8 @@ typedef double floatc_t;
 #include <General/Bitmap.h>
 #include <General/SimpleMath.h>
 #include "MessageType.h"
+
+extern const char VersionText[];
 
 // Warn of what's to come, so we can use pointers to classes without including the entire header files
 class Move;

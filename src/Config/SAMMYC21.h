@@ -10,7 +10,7 @@
 
 #include <Hardware/PinDescription.h>
 
-constexpr const char* BoardTypeName = "SAMMYC21";
+#define BOARD_TYPE_NAME		"SAMMYC21"
 
 // General features
 #define HAS_VREF_MONITOR		0

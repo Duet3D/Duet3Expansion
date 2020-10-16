@@ -70,7 +70,8 @@ struct SoftwareResetData
 	bool IsValid() const noexcept { return magic == magicValue; }
 	void Clear() noexcept;
 	void Populate(uint16_t reason, const uint32_t *stk) noexcept;
-	void Print(unsigned int slot, const StringRef& reply) const noexcept;
+	void PrintPart1(unsigned int slot, const StringRef& reply) const noexcept;
+	void PrintPart2(const StringRef& reply) const noexcept;
 
 	static constexpr uint16_t versionValue = 9;		// increment this whenever this struct changes
 	static constexpr uint16_t magicValue = 0x7D00 | versionValue;	// value we use to recognise that all the flash data has been written

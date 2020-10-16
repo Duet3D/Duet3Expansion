@@ -370,10 +370,10 @@ void CanInterface::SendAnnounce(CanMessageBuffer *buf)
 		msg->timeSinceStarted = millis();
 		msg->numDrivers = NumDrivers;
 		msg->zero = 0;
-		constexpr size_t BoardTypeLength = strlen(BoardTypeName);
-		memcpy(msg->boardTypeAndFirmwareVersion, BoardTypeName, BoardTypeLength);
+		constexpr size_t BoardTypeLength = strlen(BOARD_TYPE_NAME);
+		memcpy(msg->boardTypeAndFirmwareVersion, BOARD_TYPE_NAME, BoardTypeLength);
 		msg->boardTypeAndFirmwareVersion[BoardTypeLength] = '|';
-		strncpy(msg->boardTypeAndFirmwareVersion + BoardTypeLength + 1, FirmwareVersion, ARRAY_SIZE(msg->boardTypeAndFirmwareVersion) - BoardTypeLength - 1);
+		strncpy(msg->boardTypeAndFirmwareVersion + BoardTypeLength + 1, VERSION, ARRAY_SIZE(msg->boardTypeAndFirmwareVersion) - BoardTypeLength - 1);
 		buf->dataLength = msg->GetActualDataLength();
 		Send(buf);
 	}

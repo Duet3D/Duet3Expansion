@@ -546,24 +546,24 @@ static GCodeResult InitiateReset(const CanMessageReset& msg, const StringRef& re
 
 static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& reply, uint8_t& extra)
 {
-	static constexpr uint8_t LastDiagnosticsPart = 4;				// the last diagnostics part is typeDiagnosticsPart0 + 4
+	static constexpr uint8_t LastDiagnosticsPart = 6;				// the last diagnostics part is typeDiagnosticsPart0 + 5
 
 	switch (msg.type)
 	{
 	case CanMessageReturnInfo::typeFirmwareVersion:
 	default:
-		reply.printf("Board %s firmware %s", BoardTypeName, FirmwareVersion);
+		reply.copy(VersionText);
 		break;
 
 	case CanMessageReturnInfo::typeBoardName:
-		reply.copy(BoardTypeName);
+		reply.copy(BOARD_TYPE_NAME);
 		break;
 
 	case CanMessageReturnInfo::typeM408:
 		// For now we ignore the parameter and always return the same set of info
 		// This command is currently only used by the ATE, which needs the board type and the voltages
 		reply.copy("{\"firmwareElectronics\":\"Duet 3 ");
-		reply.cat(BoardTypeName);
+		reply.cat(BOARD_TYPE_NAME);
 		reply.cat("\"");
 #if HAS_VOLTAGE_MONITOR
 		reply.catf(",\"vin\":{\"min\":%.1f,\"cur\":%.1f,\"max\":%.1f}",
@@ -584,14 +584,21 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 		else
 		{
 			extra = LastDiagnosticsPart;
-			reply.lcatf("Board %s firmware %s", BoardTypeName, FirmwareVersion);
-			Tasks::Diagnostics(reply);
+			reply.lcat(VersionText);
+			const char *bootloaderVersionText = *reinterpret_cast<const char**>(0x20);		// offset of vectors.pvReservedM8
+			reply.lcatf("Bootloader ID: %s", (bootloaderVersionText == nullptr) ? "not available" : bootloaderVersionText);
 		}
 		break;
 
 	case CanMessageReturnInfo::typeDiagnosticsPart0 + 1:
 		extra = LastDiagnosticsPart;
+		Tasks::Diagnostics(reply);
+		break;
+
+	case CanMessageReturnInfo::typeDiagnosticsPart0 + 2:
+		extra = LastDiagnosticsPart;
 		{
+			// We split the software reset data into two parts, because currently the buffer that the main board uses to receive each fragment isn't big enough to hold it all
 			NonVolatileMemory mem;
 			unsigned int slot;
 			const SoftwareResetData *srd = mem.GetLastWrittenResetData(slot);
@@ -601,12 +608,25 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 			}
 			else
 			{
-				srd->Print(slot, reply);
+				srd->PrintPart1(slot, reply);
 			}
 		}
 		break;
 
-	case CanMessageReturnInfo::typeDiagnosticsPart0 + 2:
+	case CanMessageReturnInfo::typeDiagnosticsPart0 + 3:
+		extra = LastDiagnosticsPart;
+		{
+			NonVolatileMemory mem;
+			unsigned int slot;
+			const SoftwareResetData *srd = mem.GetLastWrittenResetData(slot);
+			if (srd != nullptr)
+			{
+				srd->PrintPart2(reply);
+			}
+		}
+		break;
+
+	case CanMessageReturnInfo::typeDiagnosticsPart0 + 4:
 		extra = LastDiagnosticsPart;
 #if SUPPORT_DRIVERS
 # if SUPPORT_CLOSED_LOOP
@@ -623,7 +643,7 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 #endif
 		break;
 
-	case CanMessageReturnInfo::typeDiagnosticsPart0 + 3:
+	case CanMessageReturnInfo::typeDiagnosticsPart0 + 5:
 		extra = LastDiagnosticsPart;
 		{
 			moveInstance->Diagnostics(reply);
@@ -644,7 +664,7 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 		}
 		break;
 
-	case CanMessageReturnInfo::typeDiagnosticsPart0 + 4:
+	case CanMessageReturnInfo::typeDiagnosticsPart0 + 6:
 		extra = LastDiagnosticsPart;
 		Heat::Diagnostics(reply);
 		CanInterface::Diagnostics(reply);

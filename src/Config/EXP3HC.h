@@ -10,7 +10,7 @@
 
 #include <Hardware/PinDescription.h>
 
-constexpr const char* BoardTypeName = "EXP3HC";
+#define BOARD_TYPE_NAME		"EXP3HC"
 
 #define HAS_VREF_MONITOR		1
 #define HAS_VOLTAGE_MONITOR		1

@@ -10,7 +10,7 @@
 
 #include <Hardware/PinDescription.h>
 
-constexpr const char* BoardTypeName = "EXP1HCE";
+#define BOARD_TYPE_NAME		"EXP1HCE"
 
 // General features
 #define HAS_VREF_MONITOR		0

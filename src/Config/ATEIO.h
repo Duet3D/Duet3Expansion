@@ -10,7 +10,7 @@
 
 #include <Hardware/PinDescription.h>
 
-constexpr const char* BoardTypeName = "ATEIO";
+#define BOARD_TYPE_NAME		"ATEIO"
 
 // General features
 #define HAS_VREF_MONITOR		0
