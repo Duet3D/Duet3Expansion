@@ -113,7 +113,9 @@ namespace Platform
 #endif
 
 	void Init();
+	void InitMinimal();
 	void Spin();
+	void SpinMinimal();
 
 	// Message output (see MessageType for further details)
 	void Message(MessageType type, const char *message);
@@ -121,6 +123,7 @@ namespace Platform
 	void MessageF(MessageType type, const char *fmt, va_list vargs);
 	void LogError(ErrorCode e);
 	bool Debug(Module module);
+	void WriteLed(uint8_t ledNumber, bool turnOn);
 
 	float DriveStepsPerUnit(size_t drive);
 	const float *GetDriveStepsPerUnit();
@@ -213,6 +216,7 @@ namespace Platform
 	void Tick();
 
 	void StartFirmwareUpdate();
+	void StartBootloaderUpdate();
 	void StartReset();
 
 	void OnProcessingCanMessage();

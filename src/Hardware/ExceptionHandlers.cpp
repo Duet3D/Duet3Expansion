@@ -11,8 +11,9 @@
 #include <Cache.h>
 
 // Perform a software reset. 'stk' points to the exception stack (r0 r1 r2 r3 r12 lr pc xPSR) if the cause is an exception, otherwise it is nullptr.
-void SoftwareReset(uint16_t reason, const uint32_t *stk) noexcept
+void SoftwareReset(SoftwareResetReason initialReason, const uint32_t *stk) noexcept
 {
+	uint16_t fullReason = (uint16_t)initialReason;
 	cpu_irq_disable();							// disable interrupts before we call any flash functions. We don't enable them again.
 	WatchdogReset();							// kick the watchdog
 
@@ -20,17 +21,23 @@ void SoftwareReset(uint16_t reason, const uint32_t *stk) noexcept
 
 	if (Platform::WasDeliberateError())
 	{
-		reason |= (uint16_t)SoftwareResetReason::deliberate;
+		fullReason |= (uint16_t)SoftwareResetReason::deliberate;
 	}
 
 	// Record the reason for the software reset
 	NonVolatileMemory mem;
 	SoftwareResetData * const srd = mem.AllocateResetDataSlot();
-	srd->Populate(reason, stk);
+	srd->Populate(fullReason, stk);
 	mem.EnsureWritten();
 
 	Platform::ResetProcessor();
 	for(;;) {}
+}
+
+[[noreturn]] void OutOfMemoryHandler() noexcept
+{
+	register const uint32_t * stack_ptr asm ("sp");
+	SoftwareReset(SoftwareResetReason::outOfMemory, stack_ptr);
 }
 
 // Exception handlers
@@ -39,7 +46,7 @@ void SoftwareReset(uint16_t reason, const uint32_t *stk) noexcept
 	// so they escalate to a Hard Fault and we don't need to provide separate exception handlers for them.
 extern "C" [[noreturn]] void hardFaultDispatcher(const uint32_t *pulFaultStackAddress) noexcept
 {
-	SoftwareReset((uint16_t)SoftwareResetReason::hardFault, pulFaultStackAddress);
+	SoftwareReset(SoftwareResetReason::hardFault, pulFaultStackAddress);
 }
 
 // The fault handler implementation calls a function called hardFaultDispatcher()
@@ -71,7 +78,7 @@ void HardFault_Handler() noexcept
 
 extern "C" [[noreturn]] void wdtFaultDispatcher(const uint32_t *pulFaultStackAddress)
 {
-	SoftwareReset((uint16_t)SoftwareResetReason::wdtFault, pulFaultStackAddress);
+	SoftwareReset(SoftwareResetReason::wdtFault, pulFaultStackAddress);
 }
 
 extern "C" [[noreturn]] void WDT_Handler() noexcept __attribute__((naked));
@@ -101,9 +108,9 @@ void WDT_Handler() noexcept
 }
 
 extern "C" [[noreturn]] void otherFaultDispatcher(const uint32_t *pulFaultStackAddress) noexcept
-	{
-		SoftwareReset((uint16_t)SoftwareResetReason::otherFault, pulFaultStackAddress + 5);
-	}
+{
+	SoftwareReset(SoftwareResetReason::otherFault, pulFaultStackAddress + 5);
+}
 
 	// 2017-05-25: A user is getting 'otherFault' reports, so now we do a stack dump for those too.
 	// The fault handler implementation calls a function called otherFaultDispatcher()
@@ -137,12 +144,12 @@ void OtherFault_Handler() noexcept
 // however these exceptions are unlikely to occur, so for now we just report the exception type.
 extern "C" [[noreturn]] void NMI_Handler() noexcept
 {
-	SoftwareReset((uint16_t)SoftwareResetReason::NMI);
+	SoftwareReset(SoftwareResetReason::NMI);
 }
 
 extern "C" [[noreturn]] void UsageFault_Handler() noexcept
 {
-	SoftwareReset((uint16_t)SoftwareResetReason::usageFault);
+	SoftwareReset(SoftwareResetReason::usageFault);
 }
 
 extern "C" [[noreturn]] void DebugMon_Handler() noexcept __attribute__ ((alias("OtherFault_Handler")));
@@ -150,7 +157,7 @@ extern "C" [[noreturn]] void DebugMon_Handler() noexcept __attribute__ ((alias("
 // FreeRTOS hooks that we need to provide
 extern "C" [[noreturn]] void stackOverflowDispatcher(const uint32_t *pulFaultStackAddress, char* pcTaskName) noexcept
 {
-	SoftwareReset((uint16_t)SoftwareResetReason::stackOverflow, pulFaultStackAddress);
+	SoftwareReset(SoftwareResetReason::stackOverflow, pulFaultStackAddress);
 }
 
 extern "C" [[noreturn]] void vApplicationStackOverflowHook(TaskHandle_t pxTask, char *pcTaskName) noexcept __attribute((naked));
@@ -170,7 +177,7 @@ void vApplicationStackOverflowHook(TaskHandle_t pxTask, char *pcTaskName) noexce
 
 extern "C" [[noreturn]] void assertCalledDispatcher(const uint32_t *pulFaultStackAddress) noexcept
 {
-	SoftwareReset((uint16_t)SoftwareResetReason::assertCalled, pulFaultStackAddress);
+	SoftwareReset(SoftwareResetReason::assertCalled, pulFaultStackAddress);
 }
 
 extern "C" [[noreturn]] void vAssertCalled(uint32_t line, const char *file) noexcept __attribute((naked));

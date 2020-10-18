@@ -136,7 +136,7 @@ namespace CanInterface
 }
 
 // Initialise this module and the CAN hardware
-void CanInterface::Init(CanAddress defaultBoardAddress, bool useAlternatePins)
+void CanInterface::Init(CanAddress defaultBoardAddress, bool useAlternatePins, bool full)
 {
 	// Read the CAN timing data from the top part of the NVM User Row
 	canConfigData = *reinterpret_cast<CanUserAreaData*>(NVMCTRL_USER + CanUserAreaDataOffset);
@@ -180,19 +180,25 @@ void CanInterface::Init(CanAddress defaultBoardAddress, bool useAlternatePins)
 										(uint32_t)boardAddress << CanId::DstAddressShift,
 										CanId::BoardAddressMask << CanId::DstAddressShift);
 
-	// Now a filter for the broadcast ID
-	can0dev->SetExtendedFilterElement(1, CanDevice::RxBufferNumber::fifo0,
-										(uint32_t)CanId::BroadcastAddress << CanId::DstAddressShift,
-										CanId::BoardAddressMask << CanId::DstAddressShift);
+	if (full)
+	{
+		// Now a filter for the broadcast ID
+		can0dev->SetExtendedFilterElement(1, CanDevice::RxBufferNumber::fifo0,
+											(uint32_t)CanId::BroadcastAddress << CanId::DstAddressShift,
+											CanId::BoardAddressMask << CanId::DstAddressShift);
+	}
 	can0dev->Enable();
 
 	enabled = true;
 
-	// Create the task that receives CAN messages
-	canReceiverTask.Create(CanReceiverLoop, "CanRecv", nullptr, TaskPriority::CanReceiverPriority);
+	if (full)
+	{
+		// Create the task that receives CAN messages
+		canReceiverTask.Create(CanReceiverLoop, "CanRecv", nullptr, TaskPriority::CanReceiverPriority);
 
-	// Create the task that send endstop etc. updates
-	canAsyncSenderTask.Create(CanAsyncSenderLoop, "CanAsync", nullptr, TaskPriority::CanAsyncSenderPriority);
+		// Create the task that send endstop etc. updates
+		canAsyncSenderTask.Create(CanAsyncSenderLoop, "CanAsync", nullptr, TaskPriority::CanAsyncSenderPriority);
+	}
 }
 
 // Shutdown is called when we are asked to update the firmware.
@@ -204,6 +210,8 @@ void CanInterface::Shutdown()
 	{
 		can0dev->DeInit();
 	}
+
+	// It's safe to terminate the tasks even if they haven't been created
 	canReceiverTask.TerminateAndUnlink();
 	canAsyncSenderTask.TerminateAndUnlink();
 }
@@ -433,6 +441,12 @@ GCodeResult CanInterface::ChangeAddressAndDataRate(const CanMessageSetAddressAnd
 
 	reply.copy("Received ChangeAddress message for wrong board");
 	return GCodeResult::error;
+}
+
+// Get a message, if there is one
+bool CanInterface::GetCanMessage(CanMessageBuffer *buf)
+{
+	return can0dev->ReceiveMessage(CanDevice::RxBufferNumber::fifo0, 0, buf);
 }
 
 extern "C" [[noreturn]] void CanReceiverLoop(void *)

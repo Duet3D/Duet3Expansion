@@ -5,32 +5,48 @@
  *      Author: David
  */
 
-#include <hpl_user_area.h>
 #include "Tasks.h"
 #include "Platform.h"
+#include "Movement/Move.h"
+#include "GCodes/GCodes.h"
+#include "Heating/Heat.h"
+#include "InputMonitors/InputMonitor.h"
+#include "CommandProcessing/CommandProcessor.h"
 #include <Hardware/Devices.h>
+#include <CanMessageBuffer.h>
+#include <CanMessageFormats.h>
+#include <Duet3Common.h>
+#include <CAN/CanInterface.h>
 #include <Cache.h>
+#include <Flash.h>
+
 #include <malloc.h>
 
 #include "FreeRTOS.h"
 #include "task.h"
 
+#include <hpl_user_area.h>
+
 #if SAME5x
 # include <hri_wdt_e54.h>
+constexpr uint32_t FlashBlockSize = 0x00010000;					// the erase size we assume for flash, and the bootloader size (64K)
 #elif SAMC21
 # include <hri_wdt_c21.h>
+constexpr uint32_t FlashBlockSize = 0x00004000;					// the erase size we assume for flash, and the bootloader size (16K)
 #endif
 
-const uint8_t memPattern = 0xA5;
+constexpr uint32_t BlockReceiveTimeout = 2000;					// bootloader block receive timeout milliseconds
 
-extern "C" char *sbrk(int i) noexcept;
+constexpr uint8_t memPattern = 0xA5;
 
 constexpr unsigned int MainTaskStackWords = 800;
 
 static Task<MainTaskStackWords> mainTask;
 static Mutex mallocMutex;
+static unsigned int heatTaskIdleTicks = 0;
 
-extern "C" void MainTask(void * pvParameters) noexcept;
+extern "C" [[noreturn]] void MainTask(void * pvParameters) noexcept;
+extern "C" [[noreturn]] void UpdateBootloaderTask(void * pvParameters) noexcept;
 
 // We need to make malloc/free thread safe, else sprintf and related I/O functions are liable to crash.
 // We must use a recursive mutex for it.
@@ -56,20 +72,40 @@ void AppMain() noexcept
 #ifndef DEBUG
 
 	// Check that the bootloader is protected and EEPROM is configured
+	union
+	{
+		uint64_t b64[5];
+		uint32_t b32[10];
+	} nvmUserRow;
+
+	memcpy(&nvmUserRow, reinterpret_cast<const void*>(NVMCTRL_USER), sizeof(nvmUserRow));
+
 # if SAME5x
-	uint64_t nvmUserRow0 = *reinterpret_cast<const uint64_t*>(NVMCTRL_USER);						// we only need values in the first 64 bits of the user area
+	uint64_t& nvmUserRow0 = nvmUserRow.b64[0];
 	constexpr uint64_t mask =     ((uint64_t)0x0F << 32) | ((uint64_t)0x07 << 36) | (0x0F << 26);	// we just want NVM_BOOT (bits 26-29), SEE.SBLK (bits 32-35) and SEE.PSZ (bits 36:38)
-	constexpr uint64_t reqValue = ((uint64_t)0x01 << 32) | ((uint64_t)0x03 << 36) | (0x07 << 26);	// 4K SMART EEPROM and 64K bootloader (SBLK=1 PSZ=3)
+	constexpr uint64_t reqValue = ((uint64_t)0x01 << 32) | ((uint64_t)0x03 << 36) | (0x07 << 26);	// 4K SMART EEPROM and 64K bootloader (SBLK=1 PSZ=3 NVM_BOOT=0x07)
+	constexpr uint64_t bootprotMask = (0x0F << 26);													// mask for bootloader protection only
+	constexpr uint64_t reqValueNoBootprot = (0x0F << 26);											// value for no bootloader protection
 # elif SAMC21
-	uint32_t nvmUserRow0 = *reinterpret_cast<const uint32_t*>(NVMCTRL_USER);						// we only need values in the first 32 bits of the user area
+	uint32_t& nvmUserRow0 = nvmUserRow.b32[0];
 	constexpr uint32_t mask =     NVMCTRL_FUSES_EEPROM_SIZE_Msk | NVMCTRL_FUSES_BOOTPROT_Msk;		// we just want BOOTPROT (bits 0-2) and EEPROM (bits 4-6)
 	constexpr uint32_t reqValue = (0x02 << NVMCTRL_FUSES_EEPROM_SIZE_Pos) | (0x01 << NVMCTRL_FUSES_BOOTPROT_Pos);	// 4K EEPROM and 16K bootloader
+	constexpr uint32_t bootprotMask = NVMCTRL_FUSES_BOOTPROT_Msk;									// mask for bootloader protection only
+	constexpr uint32_t reqValueNoBootprot = (0x07 << NVMCTRL_FUSES_BOOTPROT_Pos);					// value for no bootloader protection
 # endif
 
-	if ((nvmUserRow0 & mask) != reqValue)
+	bool updateBootloader = false;
+	if (nvmUserRow.b32[UpdateBootloaderMagicWordIndex] == UpdateBootloaderMagicValue && (nvmUserRow0 & bootprotMask) == reqValueNoBootprot)
+	{
+		// Update the bootloader
+		nvmUserRow.b32[UpdateBootloaderMagicWordIndex] = 0xFFFFFFFF;								// clear the bootloader update flag
+		_user_area_write(reinterpret_cast<void*>(NVMCTRL_USER), 0, reinterpret_cast<const uint8_t*>(&nvmUserRow), sizeof(nvmUserRow));
+		updateBootloader = true;																	// we can't update it until we have started RTOS
+	}
+	else if ((nvmUserRow0 & mask) != reqValue)
 	{
 		nvmUserRow0 = (nvmUserRow0 & ~mask) | reqValue;												// set up the required value
-		_user_area_write(reinterpret_cast<void*>(NVMCTRL_USER), 0, reinterpret_cast<const uint8_t*>(&nvmUserRow0), sizeof(nvmUserRow0));
+		_user_area_write(reinterpret_cast<void*>(NVMCTRL_USER), 0, reinterpret_cast<const uint8_t*>(&nvmUserRow), sizeof(nvmUserRow));
 
 		// If we reset immediately then the user area write doesn't complete and the bits get set to all 1s.
 		delayMicroseconds(10000);
@@ -78,11 +114,11 @@ void AppMain() noexcept
 #endif
 
 	// Fill the free memory with a pattern so that we can check for stack usage and memory corruption
-	char* heapend = sbrk(0);
+	char* p = heapTop;
 	register const char * stack_ptr asm ("sp");
-	while (heapend + 16 < stack_ptr)
+	while (p + 16 < stack_ptr)
 	{
-		*heapend++ = memPattern;
+		*p++ = memPattern;
 	}
 
 	CoreInit();
@@ -99,8 +135,9 @@ void AppMain() noexcept
 	Cache::Enable();
 #endif
 
-	// Create the startup task
-	mainTask.Create(MainTask, "MAIN", nullptr, TaskPriority::SpinPriority);
+	// Create the startup task and memory allocation mutex
+	mainTask.Create((updateBootloader) ? UpdateBootloaderTask : MainTask, "MAIN", nullptr, TaskPriority::SpinPriority);
+	mallocMutex.Create("Malloc");
 
 	// Initialise watchdog clock
 	WatchdogInit();
@@ -110,48 +147,225 @@ void AppMain() noexcept
 	while (true) { }
 }
 
-extern "C" void MainTask(void *pvParameters) noexcept
+// The main task loop that runs during normal operation
+extern "C" [[noreturn]] void MainTask(void *pvParameters) noexcept
 {
-	mallocMutex.Create("Malloc");
+	Platform::Init();
+	GCodes::Init();
+	Heat::Init();
+	InputMonitor::Init();
+	moveInstance = new Move();
+	moveInstance->Init();
 
-	RepRap::Init();
 	for (;;)
 	{
-		RepRap::Spin();
+		Platform::Spin();
+		GCodes::Spin();
+		CommandProcessor::Spin();
+		moveInstance->Spin();
 	}
+}
+
+// Request a block of the bootloader, returning true if successful
+static FirmwareFlashErrorCode RequestBootloaderBlock(uint32_t fileOffset, uint32_t numBytes)
+{
+	CanMessageBuffer *buf = CanMessageBuffer::Allocate();
+	if (buf == nullptr)
+	{
+		return FirmwareFlashErrorCode::noBuffer;
+	}
+
+	CanMessageFirmwareUpdateRequest * const msg = buf->SetupRequestMessage<CanMessageFirmwareUpdateRequest>(0, CanInterface::GetCanAddress(), CanId::MasterAddress);
+	SafeStrncpy(msg->boardType, BOOTLOADER_NAME, sizeof(msg->boardType));
+	msg->boardVersion = 0;
+	msg->bootloaderVersion = CanMessageFirmwareUpdateRequest::BootloaderVersion0;
+	msg->fileWanted = 3;
+	msg->fileOffset = fileOffset;
+	msg->lengthRequested = numBytes;
+	buf->dataLength = msg->GetActualDataLength();
+	CanInterface::SendAndFree(buf);
+	Platform::OnProcessingCanMessage();								// turn the green LED on
+	return FirmwareFlashErrorCode::ok;
+}
+
+// Get a buffer of data from the host, returning true if successful
+static FirmwareFlashErrorCode GetBootloaderBlock(uint8_t *blockBuffer)
+{
+	const FirmwareFlashErrorCode err = RequestBootloaderBlock(0, FlashBlockSize);	// ask for 16K or 64K as a single block
+	if (err != FirmwareFlashErrorCode::ok)
+	{
+		return err;
+	}
+
+	CanMessageBuffer *buf = CanMessageBuffer::Allocate();
+	if (buf == nullptr)
+	{
+		return FirmwareFlashErrorCode::noBuffer;
+	}
+
+	uint32_t whenStartedWaiting = millis();
+	uint32_t bytesReceived = 0;
+	bool done = false;
+	do
+	{
+		Platform::SpinMinimal();									// check if it's time to turn the LED off
+		const bool ok = CanInterface::GetCanMessage(buf);
+		if (ok)
+		{
+			if (buf->id.MsgType() == CanMessageType::firmwareBlockResponse)
+			{
+				const CanMessageFirmwareUpdateResponse& response = buf->msg.firmwareUpdateResponse;
+				switch (response.err)
+				{
+				case CanMessageFirmwareUpdateResponse::ErrNoFile:
+					return FirmwareFlashErrorCode::noFile;
+
+				case CanMessageFirmwareUpdateResponse::ErrBadOffset:
+					return FirmwareFlashErrorCode::badOffset;
+
+				case CanMessageFirmwareUpdateResponse::ErrOther:
+					return FirmwareFlashErrorCode::hostOther;
+
+				case CanMessageFirmwareUpdateResponse::ErrNone:
+					if (response.fileOffset <= bytesReceived)
+					{
+						const uint32_t bufferOffset = response.fileOffset;
+						const uint32_t bytesToCopy = min<uint32_t>(FlashBlockSize - bufferOffset, response.dataLength);
+						memcpy(blockBuffer + bufferOffset, response.data, bytesToCopy);
+						if (response.fileOffset + bytesToCopy > bytesReceived)
+						{
+							bytesReceived = response.fileOffset + bytesToCopy;
+						}
+						if (bytesReceived == FlashBlockSize || bytesReceived >= response.fileLength)
+						{
+							// Reached the end of the file
+							memset(blockBuffer + bytesReceived, 0xFF, FlashBlockSize - bytesReceived);
+							done = true;
+						}
+					}
+					whenStartedWaiting = millis();
+				}
+			}
+		}
+		else if (millis() - whenStartedWaiting > BlockReceiveTimeout)
+		{
+			if (bytesReceived == 0)
+			{
+				return FirmwareFlashErrorCode::blockReceiveTimeout;
+			}
+			RequestBootloaderBlock(bytesReceived, FlashBlockSize - bytesReceived);			// ask for a block from the starting offset
+			whenStartedWaiting = millis();
+		}
+	} while (!done);
+
+	CanMessageBuffer::Free(buf);
+	return FirmwareFlashErrorCode::ok;
+}
+
+static void ReportFlashError(FirmwareFlashErrorCode err)
+{
+	for (unsigned int i = 0; i < (unsigned int)err; ++i)
+	{
+		Platform::WriteLed(0, true);
+		delay(200);
+		Platform::WriteLed(0, false);
+		delay(200);
+	}
+
+	delay(1000);
+}
+
+// The task that runs to update the bootloader
+extern "C" [[noreturn]] void UpdateBootloaderTask(void *pvParameters) noexcept
+{
+	// Allocate a buffer large enough to contain the entire bootloader
+	uint8_t * blockBuffer = nullptr;
+	Platform::InitMinimal();
+	for (;;)
+	{
+		if (blockBuffer == nullptr)
+		{
+			blockBuffer = new uint8_t[FlashBlockSize];
+		}
+
+		if (blockBuffer == nullptr)
+		{
+			ReportFlashError(FirmwareFlashErrorCode::noBuffer);
+		}
+		else
+		{
+			const FirmwareFlashErrorCode err = GetBootloaderBlock(blockBuffer);
+			const uint32_t start = millis();
+			do
+			{
+				Platform::SpinMinimal();														// make sure the currentVin is up to date and the green LED gets turned off
+			} while (millis() - start < 300);
+
+			if (err != FirmwareFlashErrorCode::ok)
+			{
+				ReportFlashError(err);
+			}
+			else if (Platform::GetCurrentVinVoltage() < 10.5)
+			{
+				ReportFlashError(FirmwareFlashErrorCode::vinTooLow);
+			}
+			else if (!Flash::Init())
+			{
+				ReportFlashError(FirmwareFlashErrorCode::flashInitFailed);
+			}
+			else if (!Flash::Unlock(FLASH_ADDR, FlashBlockSize))
+			{
+				ReportFlashError(FirmwareFlashErrorCode::unlockFailed);
+			}
+			else if (!Flash::Erase(FLASH_ADDR, FlashBlockSize))
+			{
+				ReportFlashError(FirmwareFlashErrorCode::eraseFailed);
+			}
+			else if (!Flash::Write(FLASH_ADDR, FlashBlockSize, blockBuffer))
+			{
+				ReportFlashError(FirmwareFlashErrorCode::writeFailed);
+			}
+			else if (!Flash::Lock(FLASH_ADDR, FlashBlockSize))
+			{
+				ReportFlashError(FirmwareFlashErrorCode::lockFailed);
+			}
+			else
+			{
+				break;		// success!
+			}
+		}
+	}
+
+	CanInterface::Shutdown();
+
+	// If we reset immediately then the user area write doesn't complete and the bits get set to all 1s.
+	delayMicroseconds(10000);
+	Platform::ResetProcessor();
 }
 
 extern "C" uint32_t _estack;		// this is defined in the linker script
 
-namespace Tasks
+// Return the amount of free handler stack space. It may be negative if the stack has overflowed into the area reserved for the heap.
+static ptrdiff_t GetHandlerFreeStack() noexcept
 {
-	static void GetHandlerStackUsage(uint32_t* maxStack, uint32_t* neverUsed) noexcept
+	const char * const ramend = (const char *)&_estack;
+	const char * stack_lwm = heapTop;
+	while (stack_lwm < ramend && *stack_lwm == memPattern)
 	{
-		const char * const ramend = (const char *)&_estack;
-		const char * const heapend = sbrk(0);
-		const char * stack_lwm = heapend;
-		while (stack_lwm < ramend && *stack_lwm == memPattern)
-		{
-			++stack_lwm;
-		}
-		if (maxStack != nullptr) { *maxStack = ramend - stack_lwm; }
-		if (neverUsed != nullptr) { *neverUsed = stack_lwm - heapend; }
+		++stack_lwm;
 	}
+	return stack_lwm - heapLimit;
 }
 
-uint32_t Tasks::GetNeverUsedRam() noexcept
+ptrdiff_t Tasks::GetNeverUsedRam() noexcept
 {
-	uint32_t maxStack, neverUsedRam;
-	GetHandlerStackUsage(&maxStack, &neverUsedRam);
-	return neverUsedRam;
+	return heapLimit - heapTop;
 }
 
 void Tasks::Diagnostics(const StringRef& reply) noexcept
 {
 	// Append a memory report to a string
-	uint32_t maxStack, neverUsedRam;
-	GetHandlerStackUsage(&maxStack, &neverUsedRam);
-	reply.lcatf("Never used RAM %.1fKb, max stack %" PRIu32 "b\n", (double)neverUsedRam/1024, maxStack);
+	reply.lcatf("Never used RAM %.1fKb, free system stack %d words\n", (double)GetNeverUsedRam()/1024, GetHandlerFreeStack()/4);
 
 	// Now the per-task memory report
 	bool printed = false;
@@ -195,12 +409,30 @@ extern "C" void vApplicationTickHook(void) noexcept
 {
 	CoreSysTick();
 	WatchdogReset();							// kick the watchdog
-	RepRap::Tick();
+	Platform::Tick();
+	++heatTaskIdleTicks;
+#if 0
+	const bool heatTaskStuck = (heatTaskIdleTicks >= MaxTicksInSpinState);
+	if (heatTaskStuck || ticksInSpinState >= MaxTicksInSpinState)		// if we stall for 20 seconds, save diagnostic data and reset
+	{
+		resetting = true;
+		for (size_t i = 0; i < MaxHeaters; i++)
+		{
+			Platform::SetHeater(i, 0.0);
+		}
+		Platform::DisableAllDrives();
+
+		// We now save the stack when we get stuck in a spin loop
+		__asm volatile("mrs r2, psp");
+		register const uint32_t * stackPtr asm ("r2");					// we want the PSP not the MSP
+		Platform::SoftwareReset(
+			(heatTaskStuck) ? (uint16_t)SoftwareResetReason::heaterWatchdog : (uint16_t)SoftwareResetReason::stuckInSpin,
+			stackPtr + 5);												// discard uninteresting registers, keep LR PC PSR
+	}
+#endif
 }
 
-extern "C" void vApplicationGetIdleTaskMemory(StaticTask_t **ppxIdleTaskTCBBuffer,
-                                    StackType_t **ppxIdleTaskStackBuffer,
-                                    uint32_t *pulIdleTaskStackSize) noexcept
+extern "C" void vApplicationGetIdleTaskMemory(StaticTask_t **ppxIdleTaskTCBBuffer, StackType_t **ppxIdleTaskStackBuffer, uint32_t *pulIdleTaskStackSize) noexcept
 {
     /* Pass out a pointer to the StaticTask_t structure in which the Idle task's state will be stored. */
     *ppxIdleTaskTCBBuffer = &xIdleTaskTCB;

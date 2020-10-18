@@ -18,12 +18,13 @@ class CanMessageBuffer;
 
 namespace CanInterface
 {
-	void Init(CanAddress defaultBoardAddress, bool useAlternatePins);
+	void Init(CanAddress defaultBoardAddress, bool useAlternatePins, bool full);
 	void Shutdown();
 	void Diagnostics(const StringRef& reply);
 
 	CanAddress GetCanAddress();
 	GCodeResult ChangeAddressAndDataRate(const CanMessageSetAddressAndNormalTiming& msg, const StringRef& reply);
+	bool GetCanMessage(CanMessageBuffer *buf);
 	bool GetCanMove(CanMessageMovement& move);
 	bool Send(CanMessageBuffer *buf);
 	bool SendAsync(CanMessageBuffer *buf);

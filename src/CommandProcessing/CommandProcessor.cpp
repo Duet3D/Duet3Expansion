@@ -526,14 +526,26 @@ static GCodeResult ProcessM915(const CanMessageGeneric& msg, const StringRef& re
 
 static GCodeResult InitiateFirmwareUpdate(const CanMessageUpdateYourFirmware& msg, const StringRef& reply)
 {
-	if (msg.boardId != CanInterface::GetCanAddress() || msg.invertedBoardId != (uint8_t)~CanInterface::GetCanAddress())
+	if (msg.boardId != CanInterface::GetCanAddress() || msg.invertedBoardId != (uint8_t)~CanInterface::GetCanAddress() || (msg.module != 0 && msg.module != 3))
 	{
 		reply.printf("Invalid firmware update command received");
 		return GCodeResult::error;
 	}
 
-	reply.printf("Board %u starting firmware update", CanInterface::GetCanAddress());
-	Platform::StartFirmwareUpdate();
+	switch (msg.module)
+	{
+	case 0:		// main firmware
+		reply.printf("Board %u starting firmware update", CanInterface::GetCanAddress());
+		Platform::StartFirmwareUpdate();
+		break;
+
+	case 3:		// bootloader
+#ifndef DEBUG			// debug builds of this firmware normally live at the start of memory and don't use a bootloader
+		reply.printf("Board %u starting bootloader update", CanInterface::GetCanAddress());
+		Platform::StartBootloaderUpdate();
+#endif
+		break;
+	}
 	return GCodeResult::ok;
 }
 
@@ -557,6 +569,10 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 
 	case CanMessageReturnInfo::typeBoardName:
 		reply.copy(BOARD_TYPE_NAME);
+		break;
+
+	case CanMessageReturnInfo::typeBootloaderName:
+		reply.copy(BOOTLOADER_NAME);
 		break;
 
 	case CanMessageReturnInfo::typeM408:
@@ -681,18 +697,6 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 #endif
 		}
 		break;
-
-#if 1	//debug
-	case CanMessageReturnInfo::typePressureAdvance:
-		reply.copy("Pressure advance:");
-# if SUPPORT_DRIVERS
-		for (size_t i = 0; i < NumDrivers; ++i)
-		{
-			reply.catf(" %.2f", (double)Platform::GetPressureAdvance(i));
-		}
-# endif
-		break;
-#endif
 	}
 	return GCodeResult::ok;
 }

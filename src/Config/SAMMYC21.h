@@ -11,6 +11,7 @@
 #include <Hardware/PinDescription.h>
 
 #define BOARD_TYPE_NAME		"SAMMYC21"
+#define BOOTLOADER_NAME		"SAMMYC21"
 
 // General features
 #define HAS_VREF_MONITOR		0

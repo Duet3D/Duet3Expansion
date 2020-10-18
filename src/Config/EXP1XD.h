@@ -11,6 +11,7 @@
 #include <Hardware/PinDescription.h>
 
 #define BOARD_TYPE_NAME		"EXP1XD"
+#define BOOTLOADER_NAME		"SAMC21"
 
 // General features
 #define HAS_VREF_MONITOR		0

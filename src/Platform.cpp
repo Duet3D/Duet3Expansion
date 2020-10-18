@@ -29,6 +29,8 @@
 # include <ClosedLoop/ClosedLoop.h>
 #endif
 
+#include <hpl_user_area.h>
+
 #if SAME5x
 
 # include <hri_nvmctrl_e54.h>
@@ -49,6 +51,7 @@ enum class DeferredCommand : uint8_t
 {
 	none = 0,
 	firmwareUpdate,
+	bootloaderUpdate,
 	reset,
 	testWatchdog,
 	testDivideByZero,
@@ -171,14 +174,6 @@ namespace Platform
 	DriversBitmap stalledDrivers, stalledDriversToLog, stalledDriversToPause, stalledDriversToRehome;
 # endif
 #endif
-
-	static inline void WriteLed(uint8_t ledNumber, bool turnOn)
-	{
-		if (ledNumber < ARRAY_SIZE(LedPins))
-		{
-			digitalWrite(LedPins[ledNumber], (LedActiveHigh) ? turnOn : !turnOn);
-		}
-	}
 
 #if HAS_VOLTAGE_MONITOR
 
@@ -400,6 +395,34 @@ namespace Platform
 		EraseAndReset();
 	}
 
+	[[noreturn]] static void DoBootloadereUpdate()
+	{
+		ShutdownAll();									// turn everything off
+
+		// Remove the bootloader protection and set the bootloader update flag
+		// On the SAME5x the first 8x 32-bit words are reserved. We store the bootloader flag in the 10th word.
+		// On the SAMC21 the first 2x 32-bit words are reserved. We store the bootloader flag in the 10th word.
+		union
+		{
+			uint64_t b64[5];
+			uint32_t b32[10];
+		} nvmUserRow;
+
+		memcpy(&nvmUserRow, reinterpret_cast<const void*>(NVMCTRL_USER), sizeof(nvmUserRow));
+
+# if SAME5x
+		nvmUserRow.b64[0] |= (0x0F << 26);												// clear bootloader protection
+# elif SAMC21
+		nvmUserRow.b32[0] |= (0x07 << NVMCTRL_FUSES_BOOTPROT_Pos);						// clear bootloader protection
+# endif
+		nvmUserRow.b32[UpdateBootloaderMagicWordIndex] = UpdateBootloaderMagicValue;	// set the bootloader update flag
+		_user_area_write(reinterpret_cast<void*>(NVMCTRL_USER), 0, reinterpret_cast<const uint8_t*>(&nvmUserRow), sizeof(nvmUserRow));
+
+		// If we reset immediately then the user area write doesn't complete and the bits get set to all 1s.
+		delayMicroseconds(10000);
+		ResetProcessor();
+	}
+
 #if SUPPORT_THERMISTORS
 	static void SetupThermistorFilter(Pin pin, size_t filterIndex, bool useAlternateAdc)
 	{
@@ -413,22 +436,62 @@ namespace Platform
 	}
 #endif
 
+	static CanAddress GetCanAddress() noexcept
+	{
+#if SAME5x
+		const CanAddress switches = ReadBoardAddress();
+		return (switches == 0) ? CanId::ExpansionBoardFirmwareUpdateAddress : switches;
+#elif SAMC21
+# if defined(TOOL1LC)
+		return CanId::ToolBoardDefaultAddress;
+# elif defined(SAMMYC21)
+		return CanId::SammyC21DefaultAddress;
+# elif defined(EXP1XD)
+		return CanId::Exp1XDBoardDefaultAddress;
+# elif defined(EXP1HCE)
+		return CanId::Exp1HCEBoardDefaultAddress;
+# elif defined(ATECM)
+		return CanId::ATECMBoardDefaultAddress;
+# elif defined(ATEIO)
+		return CanId::ATEIOBoardDefaultAddress;
+# else
+# 	 error Unknown board
+# endif
+#endif
+	}
+
+	static void InitVinMonitor()
+	{
+#if HAS_VOLTAGE_MONITOR
+		currentVin = highestVin = 0;
+		lowestVin = 9999;
+		numUnderVoltageEvents = previousUnderVoltageEvents = numOverVoltageEvents = previousOverVoltageEvents = 0;
+
+		vinFilter.Init(0);
+		AnalogIn::EnableChannel(PinToAdcChannel(VinMonitorPin), vinFilter.CallbackFeedIntoFilter, &vinFilter, 1, false);
+#endif
+	}
+
 }	// end namespace Platform
 
-void Platform::Init()
+static void InitLeds()
 {
-	IoPort::Init();
-
-#if SUPPORT_CLOSED_LOOP
-	ClosedLoop::Init();
-#endif
-
 	// Set up the DIAG LED pins
 	for (Pin pin : LedPins)
 	{
 		IoPort::SetPinMode(pin, (LedActiveHigh) ? OUTPUT_LOW : OUTPUT_HIGH);
 	}
 	digitalWrite(LedPins[0], LedActiveHigh);
+}
+
+void Platform::Init()
+{
+	IoPort::Init();
+	InitLeds();
+
+#if SUPPORT_CLOSED_LOOP
+	ClosedLoop::Init();
+#endif
 
 	messageMutex.Create("Message");
 
@@ -487,12 +550,7 @@ void Platform::Init()
 
 	// Set up VIN voltage monitoring
 #if HAS_VOLTAGE_MONITOR
-	currentVin = highestVin = 0;
-	lowestVin = 9999;
-	numUnderVoltageEvents = previousUnderVoltageEvents = numOverVoltageEvents = previousOverVoltageEvents = 0;
-
-	vinFilter.Init(0);
-	AnalogIn::EnableChannel(PinToAdcChannel(VinMonitorPin), vinFilter.CallbackFeedIntoFilter, &vinFilter, 1, false);
+	InitVinMonitor();
 #endif
 
 #if HAS_12V_MONITOR
@@ -683,35 +741,6 @@ void Platform::Init()
 	sharedSpi = new SharedSpiDevice(SERCOM_SSPI_NUMBER);
 #endif
 
-#if SAME5x
-
-	const CanAddress switches = ReadBoardAddress();
-	const CanAddress defaultAddress = (switches == 0) ? CanId::ExpansionBoardFirmwareUpdateAddress : switches;
-
-#elif SAMC21
-
-# if defined(TOOL1LC)
-	constexpr CanAddress defaultAddress = CanId::ToolBoardDefaultAddress;
-# elif defined(SAMMYC21)
-	constexpr CanAddress defaultAddress = CanId::SammyC21DefaultAddress;
-# elif defined(EXP1XD)
-	constexpr CanAddress defaultAddress = CanId::Exp1XDBoardDefaultAddress;
-# elif defined(EXP1HCE)
-	constexpr CanAddress defaultAddress = CanId::Exp1HCEBoardDefaultAddress;
-# elif defined(ATECM)
-	constexpr CanAddress defaultAddress = CanId::ATECMBoardDefaultAddress;
-# elif defined(ATEIO)
-	constexpr CanAddress defaultAddress = CanId::ATEIOBoardDefaultAddress;
-# else
-#  error Unknown board
-# endif
-
-#endif
-
-	CanInterface::Init(defaultAddress, UseAlternateCanPins);
-
-	InitialiseInterrupts();
-
 	// Read the unique ID
 	for (unsigned int i = 0; i < 4; ++i)
 	{
@@ -723,7 +752,19 @@ void Platform::Init()
 	uniqueId[4] = uniqueId[0] ^ uniqueId[1] ^ uniqueId[2] ^ uniqueId[3];
 	uniqueId[4] ^= (uniqueId[4] >> 10);
 
+	InitialiseInterrupts();
+	CanInterface::Init(GetCanAddress(), UseAlternateCanPins, true);
+
 	lastPollTime = millis();
+}
+
+// Perform minimal initialisation prior to updating the bootloader
+void Platform::InitMinimal()
+{
+	InitLeds();
+	InitVinMonitor();
+	InitialiseInterrupts();
+	CanInterface::Init(GetCanAddress(), UseAlternateCanPins, false);
 }
 
 void Platform::Spin()
@@ -738,6 +779,10 @@ void Platform::Spin()
 		{
 		case DeferredCommand::firmwareUpdate:
 			DoFirmwareUpdate();
+			break;
+
+		case DeferredCommand::bootloaderUpdate:
+			DoBootloadereUpdate();
 			break;
 
 		case DeferredCommand::reset:
@@ -775,11 +820,10 @@ void Platform::Spin()
 		}
 	}
 
-#if HAS_VOLTAGE_MONITOR
+	SpinMinimal();				// update the activity LED and currentVin
 
-	// Get the VIN voltage
-	currentVin = vinFilter.GetSum()/vinFilter.NumAveraged();
-	const float voltsVin = (currentVin * VinMonitorVoltageRange)/(1u << AnalogIn::AdcBits);
+#if HAS_VOLTAGE_MONITOR
+	const float voltsVin = GetCurrentVinVoltage();
 #endif
 
 #if HAS_12V_MONITOR
@@ -942,11 +986,6 @@ void Platform::Spin()
 						: (StepTimer::GetTimerTicks() & (1u << 17)) != 0
 		    );
 
-	if (millis() - whenLastCanMessageProcessed > GreenLedFlashTime)
-	{
-		WriteLed(1, false);
-	}
-
 	if (now - lastPollTime > 2000)
 	{
 		lastPollTime = now;
@@ -1042,6 +1081,27 @@ void Platform::Spin()
 					   );
 #endif
 		}
+	}
+}
+
+void Platform::SpinMinimal()
+{
+	if (millis() - whenLastCanMessageProcessed > GreenLedFlashTime)
+	{
+		WriteLed(1, false);
+	}
+
+#if HAS_VOLTAGE_MONITOR
+	// Get the VIN voltage
+	currentVin = vinFilter.GetSum()/vinFilter.NumAveraged();
+#endif
+}
+
+void Platform::WriteLed(uint8_t ledNumber, bool turnOn)
+{
+	if (ledNumber < ARRAY_SIZE(LedPins))
+	{
+		digitalWrite(LedPins[ledNumber], (LedActiveHigh) ? turnOn : !turnOn);
 	}
 }
 
@@ -1451,6 +1511,12 @@ void Platform::StartFirmwareUpdate()
 {
 	whenDeferredCommandRequested = millis();
 	deferredCommand = DeferredCommand::firmwareUpdate;
+}
+
+void Platform::StartBootloaderUpdate()
+{
+	whenDeferredCommandRequested = millis();
+	deferredCommand = DeferredCommand::bootloaderUpdate;
 }
 
 void Platform::StartReset()

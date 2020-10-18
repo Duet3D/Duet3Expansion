@@ -15,7 +15,7 @@
 
 namespace Tasks
 {
-	uint32_t GetNeverUsedRam() noexcept;
+	ptrdiff_t GetNeverUsedRam() noexcept;
 	void Diagnostics(const StringRef& reply) noexcept;
 	uint32_t DoDivide(uint32_t a, uint32_t b) noexcept;
 	uint32_t DoMemoryRead(const uint32_t* addr) noexcept;

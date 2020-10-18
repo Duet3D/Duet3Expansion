@@ -11,6 +11,7 @@
 #include <Hardware/PinDescription.h>
 
 #define BOARD_TYPE_NAME		"EXP3HC"
+#define BOOTLOADER_NAME		"SAME5x"
 
 #define HAS_VREF_MONITOR		1
 #define HAS_VOLTAGE_MONITOR		1
