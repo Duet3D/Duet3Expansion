@@ -66,13 +66,18 @@ public:
 
 	int32_t GetPosition(size_t driver) const;
 
+	// Filament monitor support
+	int32_t GetAccumulatedExtrusion(size_t driver, bool& isPrinting) noexcept;		// Return and reset the accumulated commanded extrusion amount
+	uint32_t ExtruderPrintingSince() const noexcept { return extrudersPrintingSince; }	// When we started doing normal moves after the most recent extruder-only move
+
 #if HAS_SMART_DRIVERS
 	uint32_t GetStepInterval(size_t axis, uint32_t microstepShift) const;			// Get the current step interval for this axis or extruder
 #endif
 
 private:
-	bool DDARingAdd();									// Add a processed look-ahead entry to the DDA ring
-	DDA* DDARingGet();									// Get the next DDA ring entry to be run
+	bool DDARingAdd();																// Add a processed look-ahead entry to the DDA ring
+	DDA* DDARingGet();																// Get the next DDA ring entry to be run
+	void StartNextMove(DDA *cdda, uint32_t startTime);								// Start a move
 
 	// Variables that are in the DDARing class in RepRapFirmware (we have only one DDARing so they are here)
 	DDA* volatile currentDda;
@@ -81,6 +86,9 @@ private:
 	DDA* ddaRingCheckPointer;
 
 	StepTimer timer;
+	volatile int32_t extrusionAccumulators[NumDrivers]; 							// Accumulated extruder motor steps
+	volatile uint32_t extrudersPrintingSince;										// The milliseconds clock time when extrudersPrinting was set to true
+	volatile bool extrudersPrinting;												// Set whenever an extruder starts a printing move, cleared by a non-printing extruder move
 	// End DDARing variables
 
 	unsigned int idleCount;								// The number of times Spin was called and had no new moves to process

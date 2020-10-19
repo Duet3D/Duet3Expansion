@@ -48,6 +48,7 @@ public:
 	bool Free();
 	void Prepare(const CanMessageMovement& msg) __attribute__ ((hot));	// Calculate all the values and freeze this DDA
 	bool HasStepError() const;
+	bool IsPrintingMove() const { return flags.isPrintingMove; }
 
 	DDAState GetState() const { return state; }
 	DDA* GetNext() const { return next; }
@@ -115,7 +116,8 @@ private:
 	{
 		struct
 		{
-			uint16_t goingSlow : 1,					// True if we have slowed the movement because the Z probe is approaching its threshold
+			uint16_t isPrintingMove : 1,			// True if this is a printing move and any of our extruders is moving
+					 goingSlow : 1,					// True if we have slowed the movement because the Z probe is approaching its threshold
 					 hadHiccup : 1,					// True if we had a hiccup while executing this move
 					 stopAllDrivesOnEndstopHit : 1;	// True if hitting an endstop stops the entire move
 		} flags;

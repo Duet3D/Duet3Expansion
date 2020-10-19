@@ -41,7 +41,7 @@
 
 Move::Move()
 #if SUPPORT_DRIVERS
-	: currentDda(nullptr), scheduledMoves(0), completedMoves(0), numHiccups(0), active(false)
+	: currentDda(nullptr), extrudersPrinting(false), scheduledMoves(0), completedMoves(0), numHiccups(0), active(false)
 #endif
 {
 #if SUPPORT_DRIVERS
@@ -61,6 +61,11 @@ Move::Move()
 
 	DriveMovement::InitialAllocate(NumDms);
 	timer.SetCallback(Move::TimerCallback, static_cast<void*>(this));
+
+	for (size_t i = 0; i < NumDrivers; ++i)
+	{
+		extrusionAccumulators[i] = 0;
+	}
 #endif
 }
 
@@ -105,6 +110,24 @@ void Move::Exit()
 	}
 	active = false;												// don't accept any more moves
 #endif
+}
+
+// Start the next move. Return true if laser or IO bits need to be active
+// Must be called with base priority greater than or equal to the step interrupt, to avoid a race with the step ISR.
+inline void Move::StartNextMove(DDA *cdda, uint32_t startTime)
+pre(ddaRingGetPointer->GetState() == DDA::frozen)
+{
+	if (!cdda->IsPrintingMove())
+	{
+		extrudersPrinting = false;
+	}
+	else if (!extrudersPrinting)
+	{
+		extrudersPrinting = true;
+		extrudersPrintingSince = millis();
+	}
+	currentDda = cdda;
+	cdda->Start(startTime);
 }
 
 void Move::Spin()
@@ -191,9 +214,7 @@ void Move::Spin()
 			if (cdda->GetState() == DDA::frozen)
 			{
 				AtomicCriticalSectionLocker();
-
-				currentDda = cdda;
-				cdda->Start(StepTimer::GetTimerTicks());
+				StartNextMove(cdda, StepTimer::GetTimerTicks());
 				if (cdda->ScheduleNextStepInterrupt(timer))
 				{
 					Interrupt();
@@ -431,6 +452,10 @@ bool Move::LowPowerOrStallPause(RestorePoint& rp)
 // This is called from the step ISR when the current move has been completed
 void Move::CurrentMoveCompleted()
 {
+	for (size_t driver = 0; driver < NumDrivers; ++driver)
+	{
+		extrusionAccumulators[driver] += currentDda->GetStepsTaken(driver);
+	}
 	currentDda = nullptr;
 	ddaRingGetPointer = ddaRingGetPointer->GetNext();
 	completedMoves++;
@@ -466,6 +491,20 @@ void Move::StopDrivers(uint16_t whichDrivers)
 #else
 # error Unsupported processor
 #endif
+}
+
+// Filament monitor support
+// Get the accumulated extruder motor steps taken by an extruder since the last call. Used by the filament monitoring code.
+// Returns the number of motor steps moves since the last call, and isPrinting is true unless we are currently executing an extruding but non-printing move
+int32_t Move::GetAccumulatedExtrusion(size_t driver, bool& isPrinting) noexcept
+{
+	AtomicCriticalSectionLocker lock;
+	const int32_t ret = extrusionAccumulators[driver];
+	const DDA * const cdda = currentDda;						// capture volatile variable
+	const int32_t adjustment = (cdda == nullptr) ? 0 : cdda->GetStepsTaken(driver);
+	extrusionAccumulators[driver] = -adjustment;
+	isPrinting = extrudersPrinting;
+	return ret + adjustment;
 }
 
 // For debugging
@@ -505,8 +544,7 @@ void Move::Interrupt()
 				return;
 			}
 
-			currentDda = cdda;
-			cdda->Start(finishTime);
+			StartNextMove(cdda, finishTime);
 		}
 
 		// Schedule a callback at the time when the next step is due, and quit unless it is due immediately
