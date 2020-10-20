@@ -1234,6 +1234,14 @@ bool Platform::Debug(Module module)
 
 float Platform::DriveStepsPerUnit(size_t drive) { return stepsPerMm[drive]; }
 
+void Platform::SetDriveStepsPerUnit(size_t drive, float val)
+{
+	if (drive < NumDrivers)
+	{
+		stepsPerMm[drive] = val;
+	}
+}
+
 const float *Platform::GetDriveStepsPerUnit() { return stepsPerMm; }
 
 # if SUPPORT_SLOW_DRIVERS

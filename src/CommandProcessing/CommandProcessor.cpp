@@ -11,6 +11,7 @@
 #include "GCodes/GCodeResult.h"
 #include "Heating/Heat.h"
 #include "Fans/FansManager.h"
+#include <FilamentMonitors/FilamentMonitor.h>
 #include "CanMessageGenericParser.h"
 #include <InputMonitors/InputMonitor.h>
 #include <GPIO/GpioPorts.h>
@@ -156,14 +157,14 @@ static void GenerateTestReport(const StringRef& reply)
 
 #if SUPPORT_DRIVERS
 
-static GCodeResult SetMotorCurrents(const CanMessageMultipleDrivesRequest& msg, const StringRef& reply)
+static GCodeResult SetMotorCurrents(const CanMessageMultipleDrivesRequest<float>& msg, const StringRef& reply)
 {
 # if HAS_SMART_DRIVERS
 	//TODO check message is long enough for the number of drivers specified
 	const auto drivers = DriversBitmap::MakeFromRaw(msg.driversToUpdate);
 	drivers.Iterate([msg](unsigned int driver, unsigned int count) -> void
 		{
-			Platform::SetMotorCurrent(driver, (float)msg.values[count]);		//TODO avoid the int->float->int conversion
+			Platform::SetMotorCurrent(driver, msg.values[count]);
 		});
 	return GCodeResult::ok;
 # else
@@ -172,14 +173,14 @@ static GCodeResult SetMotorCurrents(const CanMessageMultipleDrivesRequest& msg, 
 # endif
 }
 
-static GCodeResult SetStandstillCurrentFactor(const CanMessageMultipleDrivesRequest& msg, const StringRef& reply)
+static GCodeResult SetStandstillCurrentFactor(const CanMessageMultipleDrivesRequest<float>& msg, const StringRef& reply)
 {
 # if HAS_SMART_DRIVERS
 	//TODO check message is long enough for the number of drivers specified
 	const auto drivers = DriversBitmap::MakeFromRaw(msg.driversToUpdate);
 	drivers.Iterate([msg](unsigned int driver, unsigned int count) -> void
 		{
-			SmartDrivers::SetStandstillCurrentPercent(driver, (float)msg.values[count]);		//TODO avoid the int->float->int conversion
+			SmartDrivers::SetStandstillCurrentPercent(driver, msg.values[count]);
 		});
 	return GCodeResult::ok;
 # else
@@ -188,18 +189,18 @@ static GCodeResult SetStandstillCurrentFactor(const CanMessageMultipleDrivesRequ
 # endif
 }
 
-static GCodeResult HandlePressureAdvance(const CanMessageMultipleDrivesRequest& msg, const StringRef& reply)
+static GCodeResult HandlePressureAdvance(const CanMessageMultipleDrivesRequest<float>& msg, const StringRef& reply)
 {
 	//TODO check message is long enough for the number of drivers specified
 	const auto drivers = DriversBitmap::MakeFromRaw(msg.driversToUpdate);
 	drivers.Iterate([msg](unsigned int driver, unsigned int count) -> void
 		{
-			Platform::SetPressureAdvance(driver, (float)msg.values[count] * 0.001);
+			Platform::SetPressureAdvance(driver, msg.values[count]);
 		});
 	return GCodeResult::ok;
 }
 
-static GCodeResult SetMicrostepping(const CanMessageMultipleDrivesRequest& msg, const StringRef& reply)
+static GCodeResult SetStepsPerMmAndMicrostepping(const CanMessageMultipleDrivesRequest<StepsPerUnitAndMicrostepping>& msg, const StringRef& reply)
 {
 #if HAS_SMART_DRIVERS
 	//TODO check message is long enough for the number of drivers specified
@@ -207,9 +208,9 @@ static GCodeResult SetMicrostepping(const CanMessageMultipleDrivesRequest& msg, 
 	GCodeResult rslt = GCodeResult::ok;
 	drivers.Iterate([msg, reply, &rslt](unsigned int driver, unsigned int count) -> void
 		{
-			const uint16_t val = msg.values[count];
-			const uint16_t microstepping = val & 0x03FF;
-			const bool interpolate = (val & 0x8000) != 0;
+			const uint16_t microstepping = msg.values[count].GetMicrostepping() & 0x03FF;
+			const bool interpolate = (msg.values[count].GetMicrostepping() & 0x8000) != 0;
+			Platform::SetDriveStepsPerUnit(driver, msg.values[count].GetStepsPerUnit());
 			if (!SmartDrivers::SetMicrostepping(driver, microstepping, interpolate))
 			{
 				reply.lcatf("Driver %u.%u does not support x%u microstepping", CanInterface::GetCanAddress(), driver, microstepping);
@@ -439,7 +440,7 @@ static GCodeResult ProcessM569(const CanMessageGeneric& msg, const StringRef& re
 	return GCodeResult::ok;
 }
 
-static GCodeResult HandleSetDriverStates(const CanMessageMultipleDrivesRequest& msg, const StringRef& reply)
+static GCodeResult HandleSetDriverStates(const CanMessageMultipleDrivesRequest<uint16_t>& msg, const StringRef& reply)
 {
 	//TODO check message is long enough for the number of drivers specified
 	const auto drivers = DriversBitmap::MakeFromRaw(msg.driversToUpdate);
@@ -447,15 +448,15 @@ static GCodeResult HandleSetDriverStates(const CanMessageMultipleDrivesRequest& 
 		{
 			switch (msg.values[count])
 			{
-			case CanMessageMultipleDrivesRequest::driverActive:
+			case CanMessageMultipleDrivesRequest<uint16_t>::driverActive:
 				Platform::EnableDrive(driver);
 				break;
 
-			case CanMessageMultipleDrivesRequest::driverIdle:
+			case CanMessageMultipleDrivesRequest<uint16_t>::driverIdle:
 				Platform::SetDriverIdle(driver);
 				break;
 
-			case CanMessageMultipleDrivesRequest::driverDisabled:
+			case CanMessageMultipleDrivesRequest<uint16_t>::driverDisabled:
 			default:
 				Platform::DisableDrive(driver);
 				break;
@@ -558,7 +559,7 @@ static GCodeResult InitiateReset(const CanMessageReset& msg, const StringRef& re
 
 static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& reply, uint8_t& extra)
 {
-	static constexpr uint8_t LastDiagnosticsPart = 6;				// the last diagnostics part is typeDiagnosticsPart0 + 5
+	static constexpr uint8_t LastDiagnosticsPart = 7;				// the last diagnostics part is typeDiagnosticsPart0 + 7
 
 	switch (msg.type)
 	{
@@ -684,6 +685,7 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 		extra = LastDiagnosticsPart;
 		Heat::Diagnostics(reply);
 		CanInterface::Diagnostics(reply);
+#if 0
 		{
 			uint32_t nvmUserRow0 = *reinterpret_cast<const uint32_t*>(NVMCTRL_USER);
 			uint32_t nvmUserRow1 = *reinterpret_cast<const uint32_t*>(NVMCTRL_USER+4);
@@ -696,6 +698,12 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 						TSENS->VALUE.reg & 0x00FFFFFF, TSENS->GAIN.reg & 0x00FFFFFF, TSENS->OFFSET.reg & 0x00FFFFFF, TSENS->CAL.reg & 0x0000FFFF);
 #endif
 		}
+#endif
+		break;
+
+	case CanMessageReturnInfo::typeDiagnosticsPart0 + 7:
+		extra = LastDiagnosticsPart;
+		FilamentMonitor::Diagnostics(reply);
 		break;
 	}
 	return GCodeResult::ok;
@@ -758,8 +766,8 @@ void CommandProcessor::Spin()
 
 #if SUPPORT_DRIVERS
 		case CanMessageType::setMotorCurrents:
-			requestId = buf->msg.multipleDrivesRequest.requestId;
-			rslt = SetMotorCurrents(buf->msg.multipleDrivesRequest, replyRef);
+			requestId = buf->msg.multipleDrivesRequestFloat.requestId;
+			rslt = SetMotorCurrents(buf->msg.multipleDrivesRequestFloat, replyRef);
 			break;
 
 		case CanMessageType::m569:
@@ -777,18 +785,18 @@ void CommandProcessor::Spin()
 			break;
 
 		case CanMessageType::setStandstillCurrentFactor:
-			requestId = buf->msg.multipleDrivesRequest.requestId;
-			rslt = SetStandstillCurrentFactor(buf->msg.multipleDrivesRequest, replyRef);
+			requestId = buf->msg.multipleDrivesRequestFloat.requestId;
+			rslt = SetStandstillCurrentFactor(buf->msg.multipleDrivesRequestFloat, replyRef);
 			break;
 
-		case CanMessageType::setMicrostepping:
-			requestId = buf->msg.multipleDrivesRequest.requestId;
-			rslt = SetMicrostepping(buf->msg.multipleDrivesRequest, replyRef);
+		case CanMessageType::setStepsPerMmAndMicrostepping:
+			requestId = buf->msg.multipleDrivesStepsPerUnitAndMicrostepping.requestId;
+			rslt = SetStepsPerMmAndMicrostepping(buf->msg.multipleDrivesStepsPerUnitAndMicrostepping, replyRef);
 			break;
 
 		case CanMessageType::setDriverStates:
-			requestId = buf->msg.multipleDrivesRequest.requestId;
-			rslt = HandleSetDriverStates(buf->msg.multipleDrivesRequest, replyRef);
+			requestId = buf->msg.multipleDrivesRequestUint16.requestId;
+			rslt = HandleSetDriverStates(buf->msg.multipleDrivesRequestUint16, replyRef);
 			break;
 
 		case CanMessageType::m915:
@@ -797,8 +805,8 @@ void CommandProcessor::Spin()
 			break;
 
 		case CanMessageType::setPressureAdvance:
-			requestId = buf->msg.multipleDrivesRequest.requestId;
-			rslt = HandlePressureAdvance(buf->msg.multipleDrivesRequest, replyRef);
+			requestId = buf->msg.multipleDrivesRequestFloat.requestId;
+			rslt = HandlePressureAdvance(buf->msg.multipleDrivesRequestFloat, replyRef);
 			break;
 #endif
 

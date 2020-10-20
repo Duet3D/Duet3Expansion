@@ -127,6 +127,7 @@ namespace Platform
 
 	float DriveStepsPerUnit(size_t drive);
 	const float *GetDriveStepsPerUnit();
+	void SetDriveStepsPerUnit(size_t drive, float val);
 	float GetPressureAdvance(size_t driver);
 	void SetPressureAdvance(size_t driver, float advance);
 
