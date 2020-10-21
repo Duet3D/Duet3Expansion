@@ -6,10 +6,10 @@
  */
 
 #include "RotatingMagnetFilamentMonitor.h"
-//#include "GCodes/GCodeBuffer/GCodeBuffer.h"
 #include "Platform.h"
-//#include "RepRap.h"
 #include "Movement/Move.h"
+#include <CanMessageFormats.h>
+#include <CanMessageGenericParser.h>
 
 // Unless we set the option to compare filament on all type of move, we reject readings if the last retract or reprime move wasn't completed
 // well before the start bit was received. This is because those moves have high accelerations and decelerations, so the measurement delay
@@ -60,22 +60,26 @@ float RotatingMagnetFilamentMonitor::MeasuredSensitivity() const noexcept
 	return totalExtrusionCommanded/totalMovementMeasured;
 }
 
-#if 0
 // Configure this sensor, returning true if error and setting 'seen' if we processed any configuration parameters
-GCodeResult RotatingMagnetFilamentMonitor::Configure(GCodeBuffer& gb, const StringRef& reply, bool& seen)
+GCodeResult RotatingMagnetFilamentMonitor::Configure(const CanMessageGenericParser& parser, const StringRef& reply)
 {
-	const GCodeResult rslt = CommonConfigure(gb, reply, INTERRUPT_MODE_CHANGE, seen);
+	bool seen = false;
+	const GCodeResult rslt = CommonConfigure(parser, reply, INTERRUPT_MODE_CHANGE, seen);
 	if (rslt <= GCodeResult::warning)
 	{
-		gb.TryGetFValue('L', mmPerRev, seen);
-		gb.TryGetFValue('E', minimumExtrusionCheckLength, seen);
-
-		if (gb.Seen('R'))
+		if (parser.GetFloatParam('L', mmPerRev))
 		{
 			seen = true;
-			size_t numValues = 2;
-			uint32_t minMax[2];
-			gb.GetUnsignedArray(minMax, numValues, false);
+		}
+		if (parser.GetFloatParam('E', minimumExtrusionCheckLength))
+		{
+			seen = true;
+		}
+
+		uint16_t minMax[2];
+		size_t numValues = 2;
+		if (parser.GetUint16ArrayParam('R', numValues, minMax))
+		{
 			if (numValues > 0)
 			{
 				minMovementAllowed = (float)minMax[0] * 0.01;
@@ -86,22 +90,22 @@ GCodeResult RotatingMagnetFilamentMonitor::Configure(GCodeBuffer& gb, const Stri
 			}
 		}
 
-		if (gb.Seen('S'))
+		int16_t temp;
+		if (parser.GetIntParam('S', temp))
 		{
 			seen = true;
-			comparisonEnabled = (gb.GetIValue() > 0);
+			comparisonEnabled = (temp > 0);
 		}
 
-		if (gb.Seen('A'))
+		if (parser.GetIntParam('A', temp))
 		{
 			seen = true;
-			checkNonPrintingMoves = (gb.GetIValue() > 0);
+			checkNonPrintingMoves = (temp > 0);
 		}
 
 		if (seen)
 		{
 			Init();
-			reprap.SensorsUpdated();
 		}
 		else
 		{
@@ -151,7 +155,6 @@ GCodeResult RotatingMagnetFilamentMonitor::Configure(GCodeBuffer& gb, const Stri
 	}
 	return rslt;
 }
-#endif
 
 // Return the current wheel angle
 float RotatingMagnetFilamentMonitor::GetCurrentPosition() const noexcept

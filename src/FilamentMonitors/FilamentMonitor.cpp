@@ -12,6 +12,9 @@
 #include "PulsedFilamentMonitor.h"
 #include "Platform.h"
 #include "Movement/Move.h"
+#include <CAN/CanInterface.h>
+#include <CanMessageFormats.h>
+#include <CanMessageGenericParser.h>
 
 // Static data
 ReadWriteLock FilamentMonitor::filamentMonitorsLock;
@@ -35,17 +38,17 @@ void FilamentMonitor::Disable() noexcept
 	port.Release();
 }
 
-#if 0
-// Do the configuration that is
+// Do the configuration that is common to all filament monitor types
 // Try to get the pin number from the GCode command in the buffer, setting Seen if a pin number was provided and returning true if error.
 // Also attaches the ISR.
 // For a remote filament monitor, this does the full configuration or query of the remote object instead, and we always return seen true because we don't need to report local status.
-GCodeResult FilamentMonitor::CommonConfigure(GCodeBuffer& gb, const StringRef& reply, InterruptMode interruptMode, bool& seen) noexcept
+GCodeResult FilamentMonitor::CommonConfigure(const CanMessageGenericParser& parser, const StringRef& reply, InterruptMode interruptMode, bool& seen) noexcept
 {
-	if (gb.Seen('C'))
+	String<StringLength20> portName;
+	if (parser.GetStringParam('C', portName.GetRef()))
 	{
 		seen = true;
-		if (!port.AssignPort(gb, reply, PinUsedBy::filamentMonitor, PinAccess::read))
+		if (!port.AssignPort(portName.c_str(), reply, PinUsedBy::filamentMonitor, PinAccess::read))
 		{
 			return GCodeResult::error;
 		}
@@ -59,7 +62,6 @@ GCodeResult FilamentMonitor::CommonConfigure(GCodeBuffer& gb, const StringRef& r
 	}
 	return GCodeResult::ok;
 }
-#endif
 
 // Static initialisation
 /*static*/ void FilamentMonitor::InitStatic() noexcept
@@ -67,72 +69,26 @@ GCodeResult FilamentMonitor::CommonConfigure(GCodeBuffer& gb, const StringRef& r
 	// Nothing needed here yet
 }
 
-#if 0
-// Handle M591
-/*static*/ GCodeResult FilamentMonitor::Configure(GCodeBuffer& gb, const StringRef& reply, unsigned int extruder) THROWS(GCodeException)
+// Create a new filament monitor, or replace an existing one
+/*static*/ GCodeResult FilamentMonitor::Create(const CanMessageCreateFilamentMonitor& msg, const StringRef& reply) noexcept
 {
-	bool seen = false;
-	uint32_t newSensorType;
-	gb.TryGetUIValue('P', newSensorType, seen);
+	const uint8_t p_driver = msg.driver;
+	if (p_driver >= NumDrivers)
+	{
+		reply.copy("Driver number out of range");
+		return GCodeResult::error;
+	}
 
 	WriteLocker lock(filamentMonitorsLock);
-	FilamentMonitor*& sensor = filamentSensors[extruder];
 
-	if (seen)
-	{
-		// Creating a filament monitor. First delete the old one for this extruder.
-		if (sensor != nullptr)
-		{
-			sensor->Disable();
-			sensor = nullptr;
-			std::swap(sensor, filamentSensors[extruder]);
-			delete sensor;
-			reprap.SensorsUpdated();
-		}
+	// Delete any existing filament monitor
+	FilamentMonitor *fm = nullptr;
+	std::swap(fm, filamentSensors[p_driver]);
+	delete fm;
 
-		gb.MustSee('C');														// make sure the port name parameter is present
-		sensor = Create(extruder, newSensorType, reply);						// create the new sensor
-		if (sensor == nullptr)
-		{
-			return GCodeResult::error;
-		}
-
-		try
-		{
-			const GCodeResult rslt = sensor->Configure(gb, reply, seen);		// configure the sensor (may throw)
-			if (rslt <= GCodeResult::warning)
-			{
-				filamentSensors[extruder] = sensor;
-			}
-			else
-			{
-				delete sensor;
-			}
-			return rslt;
-		}
-		catch (const GCodeException&)
-		{
-			delete sensor;
-			throw;
-		}
-	}
-
-	// Here if configuring or reporting on an existing filament monitor
-	if (sensor == nullptr)
-	{
-		reply.printf("Extruder %u has no filament sensor", extruder);
-		return GCodeResult::ok;
-	}
-
-	return sensor->Configure(gb, reply, seen);									// configure or report on the existing sensor (may throw)
-}
-#endif
-
-// Factory function to create a filament monitor
-/*static*/ FilamentMonitor *FilamentMonitor::Create(uint8_t p_driver, unsigned int monitorType, const StringRef& reply) noexcept
-{
-	FilamentMonitor *fm;
-	switch (monitorType)
+	// Create the new one
+	const uint8_t monitorType = msg.type;
+	switch (msg.type)
 	{
 	case 1:		// active high switch
 	case 2:		// active low switch
@@ -155,9 +111,59 @@ GCodeResult FilamentMonitor::CommonConfigure(GCodeBuffer& gb, const StringRef& r
 
 	default:	// no sensor, or unknown sensor
 		reply.printf("Unknown filament monitor type %u", monitorType);
-		return nullptr;
+		return GCodeResult::error;
 	}
-	return fm;
+
+	filamentSensors[p_driver] = fm;
+	return GCodeResult::ok;
+}
+
+// Delete a filament monitor
+/*static*/ GCodeResult FilamentMonitor::Delete(const CanMessageDeleteFilamentMonitor& msg, const StringRef& reply) noexcept
+{
+	const uint8_t p_driver = msg.driver;
+	if (p_driver >= NumDrivers)
+	{
+		reply.copy("Driver number out of range");
+		return GCodeResult::error;
+	}
+
+	WriteLocker lock(filamentMonitorsLock);
+
+	FilamentMonitor *fm = nullptr;
+	std::swap(fm, filamentSensors[p_driver]);
+
+	if (fm == nullptr)
+	{
+		reply.printf("Driver %u.%u has no filament monitor", CanInterface::GetCanAddress(), p_driver);
+		return GCodeResult::warning;
+	}
+
+	delete fm;
+	return GCodeResult::ok;
+}
+
+// Configure a filament monitor
+/*static*/ GCodeResult FilamentMonitor::Configure(const CanMessageGeneric& msg, const StringRef& reply) noexcept
+{
+	CanMessageGenericParser parser(msg, ConfigureFilamentMonitorParams);
+	uint8_t p_driver;
+	if (!parser.GetUintParam('d', p_driver) || p_driver >= NumDrivers)
+	{
+		reply.copy("Bad or missing driver number");
+		return GCodeResult::error;
+	}
+
+	WriteLocker lock(filamentMonitorsLock);
+
+	FilamentMonitor *fm = filamentSensors[p_driver];
+	if (fm == nullptr)
+	{
+		reply.printf("Driver %u.%u has no filament monitor", CanInterface::GetCanAddress(), p_driver);
+		return GCodeResult::error;
+	}
+
+	return fm->Configure(parser, reply);
 }
 
 // Return an error message corresponding to a status code

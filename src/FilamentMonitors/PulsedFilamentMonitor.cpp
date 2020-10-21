@@ -8,6 +8,8 @@
 #include "PulsedFilamentMonitor.h"
 #include "Platform.h"
 #include "Movement/Move.h"
+#include <CanMessageFormats.h>
+#include <CanMessageGenericParser.h>
 
 // Unless we set the option to compare filament on all type of move, we reject readings if the last retract or reprime move wasn't completed
 // well before the start bit was received. This is because those moves have high accelerations and decelerations, so the measurement delay
@@ -55,22 +57,26 @@ float PulsedFilamentMonitor::MeasuredSensitivity() const noexcept
 	return totalExtrusionCommanded/totalMovementMeasured;
 }
 
-#if 0
 // Configure this sensor, returning true if error and setting 'seen' if we processed any configuration parameters
-GCodeResult PulsedFilamentMonitor::Configure(GCodeBuffer& gb, const StringRef& reply, bool& seen)
+GCodeResult PulsedFilamentMonitor::Configure(const CanMessageGenericParser& parser, const StringRef& reply)
 {
-	const GCodeResult rslt = CommonConfigure(gb, reply, INTERRUPT_MODE_RISING, seen);
+	bool seen = false;
+	const GCodeResult rslt = CommonConfigure(parser, reply, INTERRUPT_MODE_RISING, seen);
 	if (rslt <= GCodeResult::warning)
 	{
-		gb.TryGetFValue('L', mmPerPulse, seen);
-		gb.TryGetFValue('E', minimumExtrusionCheckLength, seen);
-
-		if (gb.Seen('R'))
+		if (parser.GetFloatParam('L', mmPerPulse))
 		{
 			seen = true;
-			size_t numValues = 2;
-			uint32_t minMax[2];
-			gb.GetUnsignedArray(minMax, numValues, false);
+		}
+		if (parser.GetFloatParam('E', minimumExtrusionCheckLength))
+		{
+			seen = true;
+		}
+
+		uint16_t minMax[2];
+		size_t numValues = 2;
+		if (parser.GetUint16ArrayParam('R', numValues, minMax))
+		{
 			if (numValues > 0)
 			{
 				minMovementAllowed = (float)minMax[0] * 0.01;
@@ -81,16 +87,16 @@ GCodeResult PulsedFilamentMonitor::Configure(GCodeBuffer& gb, const StringRef& r
 			}
 		}
 
-		if (gb.Seen('S'))
+		int16_t temp;
+		if (parser.GetIntParam('S', temp))
 		{
 			seen = true;
-			comparisonEnabled = (gb.GetIValue() > 0);
+			comparisonEnabled = (temp > 0);
 		}
 
 		if (seen)
 		{
 			Init();
-			reprap.SensorsUpdated();
 		}
 		else
 		{
@@ -123,7 +129,6 @@ GCodeResult PulsedFilamentMonitor::Configure(GCodeBuffer& gb, const StringRef& r
 	}
 	return rslt;
 }
-#endif
 
 // ISR for when the pin state changes. It should return true if the ISR wants the commanded extrusion to be fetched.
 bool PulsedFilamentMonitor::Interrupt() noexcept

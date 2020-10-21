@@ -15,7 +15,7 @@ class RotatingMagnetFilamentMonitor : public Duet3DFilamentMonitor
 public:
 	RotatingMagnetFilamentMonitor(unsigned int extruder, unsigned int monitorType) noexcept;
 
-//	GCodeResult Configure(GCodeBuffer& gb, const StringRef& reply, bool& seen) THROWS(GCodeException) override;
+	GCodeResult Configure(const CanMessageGenericParser& parser, const StringRef& reply) noexcept override;
 	FilamentSensorStatus Check(bool isPrinting, bool fromIsr, uint32_t isrMillis, float filamentConsumed) noexcept override;
 	FilamentSensorStatus Clear() noexcept override;
 	void Diagnostics(const StringRef& reply, unsigned int extruder) noexcept override;

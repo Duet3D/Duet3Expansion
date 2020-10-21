@@ -7,29 +7,32 @@
 
 #include "SimpleFilamentMonitor.h"
 #include "Platform.h"
+#include <CanMessageFormats.h>
+#include <CanMessageGenericParser.h>
 
 SimpleFilamentMonitor::SimpleFilamentMonitor(unsigned int extruder, unsigned int monitorType) noexcept
 	: FilamentMonitor(extruder, monitorType), highWhenNoFilament(monitorType == 2), filamentPresent(false), enabled(false)
 {
 }
 
-#if 0
 // Configure this sensor, returning true if error and setting 'seen' if we processed any configuration parameters
-GCodeResult SimpleFilamentMonitor::Configure(GCodeBuffer& gb, const StringRef& reply, bool& seen)
+GCodeResult SimpleFilamentMonitor::Configure(const CanMessageGenericParser& parser, const StringRef& reply)
 {
-	const GCodeResult rslt = CommonConfigure(gb, reply, INTERRUPT_MODE_NONE, seen);
+	bool seen = false;
+	const GCodeResult rslt = CommonConfigure(parser, reply, INTERRUPT_MODE_NONE, seen);
 	if (rslt <= GCodeResult::warning)
 	{
-		if (gb.Seen('S'))
+		int16_t temp;
+		if (parser.GetIntParam('S', temp))
 		{
 			seen = true;
-			enabled = (gb.GetIValue() > 0);
+			enabled = (temp > 0);
 		}
+
 
 		if (seen)
 		{
 			Check(false, false, 0, 0.0);
-			reprap.SensorsUpdated();
 		}
 		else
 		{
@@ -43,7 +46,6 @@ GCodeResult SimpleFilamentMonitor::Configure(GCodeBuffer& gb, const StringRef& r
 	}
 	return rslt;
 }
-#endif
 
 // ISR for when the pin state changes
 bool SimpleFilamentMonitor::Interrupt() noexcept

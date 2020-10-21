@@ -15,13 +15,19 @@
 #include "RTOSIface/RTOSIface.h"
 #include <Duet3Common.h>
 
+class CanMessageGeneric;
+class CanMessageCreateFilamentMonitor;
+class CanMessageDeleteFilamentMonitor;
+class CanMessageConfigureFilamentMonitor;
+class CanMessageGenericParser;
+
 class FilamentMonitor
 {
 public:
 	FilamentMonitor(const FilamentMonitor&) = delete;
 
-	// Configure this sensor, returning true if error and setting 'seen' if we processed any configuration parameters
-//	virtual GCodeResult Configure(GCodeBuffer& gb, const StringRef& reply, bool& seen) THROWS(GCodeException) = 0;
+	// Configure this sensor, returning an error code and setting 'seen' if we processed any configuration parameters
+	virtual GCodeResult Configure(const CanMessageGenericParser& parser, const StringRef& reply) = 0;
 
 	// Print diagnostic info for this sensor
 	virtual void Diagnostics(const StringRef& reply, unsigned int driver) noexcept = 0;
@@ -50,11 +56,16 @@ public:
 	// Close down the filament monitors, in particular stop them generating interrupts. Called when we are about to update firmware.
 	static void Exit() noexcept;
 
-	// Handle M591
-//	static GCodeResult Configure(GCodeBuffer& gb, const StringRef& reply, unsigned int extruder) THROWS(GCodeException)
-//	pre(extruder < MaxExtruders; extruder < reprap.GetGCodes().GetNumExtruders());
+	// Create a new filament monitor, or replace an existing one
+	static GCodeResult Create(const CanMessageCreateFilamentMonitor& msg, const StringRef& reply) noexcept;
 
-	// Send diagnostics info
+	// Delete a filament monitor
+	static GCodeResult Delete(const CanMessageDeleteFilamentMonitor& msg, const StringRef& reply) noexcept;
+
+	// Configure a filament monitor
+	static GCodeResult Configure(const CanMessageGeneric& msg, const StringRef& reply) noexcept;
+
+	// Generate diagnostics info
 	static void Diagnostics(const StringRef& reply) noexcept;
 
 	// This must be public so that the array descriptor in class RepRap can lock it
@@ -82,7 +93,7 @@ protected:
 	// Clear the measurement state - called when we are not printing a file. Return the present/not present status if available.
 	virtual FilamentSensorStatus Clear() noexcept = 0;
 
-//	GCodeResult CommonConfigure(GCodeBuffer& gb, const StringRef& reply, InterruptMode interruptMode, bool& seen) noexcept;
+	GCodeResult CommonConfigure(const CanMessageGenericParser& parser, const StringRef& reply, InterruptMode interruptMode, bool& seen) noexcept;
 
 	const IoPort& GetPort() const noexcept { return port; }
 	bool HaveIsrStepsCommanded() const noexcept { return haveIsrStepsCommanded; }
@@ -93,9 +104,6 @@ protected:
 	}
 
 private:
-
-	// Create a filament sensor returning null if not a valid sensor type
-	static FilamentMonitor *Create(uint8_t p_driver, unsigned int monitorType, const StringRef& reply) noexcept;
 	static void InterruptEntry(CallbackParameter param) noexcept;
 
 	static FilamentMonitor *filamentSensors[NumDrivers];

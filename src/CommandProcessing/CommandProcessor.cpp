@@ -208,17 +208,25 @@ static GCodeResult SetStepsPerMmAndMicrostepping(const CanMessageMultipleDrivesR
 	GCodeResult rslt = GCodeResult::ok;
 	drivers.Iterate([msg, reply, &rslt](unsigned int driver, unsigned int count) -> void
 		{
-			const uint16_t microstepping = msg.values[count].GetMicrostepping() & 0x03FF;
-			const bool interpolate = (msg.values[count].GetMicrostepping() & 0x8000) != 0;
-			Platform::SetDriveStepsPerUnit(driver, msg.values[count].GetStepsPerUnit());
-			if (!SmartDrivers::SetMicrostepping(driver, microstepping, interpolate))
+			if (driver >= NumDrivers)
 			{
-				reply.lcatf("Driver %u.%u does not support x%u microstepping", CanInterface::GetCanAddress(), driver, microstepping);
-				if (interpolate)
-				{
-					reply.cat(" with interpolation");
-				}
+				reply.lcatf("No such driver %u.%u", CanInterface::GetCanAddress(), driver);
 				rslt = GCodeResult::error;
+			}
+			else
+			{
+				const uint16_t microstepping = msg.values[count].GetMicrostepping() & 0x03FF;
+				const bool interpolate = (msg.values[count].GetMicrostepping() & 0x8000) != 0;
+				Platform::SetDriveStepsPerUnit(driver, msg.values[count].GetStepsPerUnit());
+				if (!SmartDrivers::SetMicrostepping(driver, microstepping, interpolate))
+				{
+					reply.lcatf("Driver %u.%u does not support x%u microstepping", CanInterface::GetCanAddress(), driver, microstepping);
+					if (interpolate)
+					{
+						reply.cat(" with interpolation");
+					}
+					rslt = GCodeResult::error;
+				}
 			}
 		}
 	);
@@ -334,9 +342,9 @@ static GCodeResult ProcessM569(const CanMessageGeneric& msg, const StringRef& re
 #endif
 	}
 
-	size_t numHvalues;
+	size_t numHvalues = 3;
 	const uint8_t *hvalues;
-	if (parser.GetUint8ArrayParam('Y', numHvalues, hvalues))		// set spread cycle hysteresis
+	if (parser.GetArrayParam('Y', ParamDescriptor::ParamType::uint8_array, numHvalues, hvalues))		// set spread cycle hysteresis
 	{
 		seen = true;
 		if (numHvalues == 2 || numHvalues == 3)
@@ -871,6 +879,21 @@ void CommandProcessor::Spin()
 		case CanMessageType::diagnosticTest:
 			requestId = buf->msg.diagnosticTest.requestId;
 			rslt = Platform::DoDiagnosticTest(buf->msg.diagnosticTest, replyRef);
+			break;
+
+		case CanMessageType::createFilamentMonitor:
+			requestId = buf->msg.createFilamentMonitor.requestId;
+			rslt = FilamentMonitor::Create(buf->msg.createFilamentMonitor, replyRef);
+			break;
+
+		case CanMessageType::deleteFilamentMonitor:
+			requestId = buf->msg.deleteFilamentMonitor.requestId;
+			rslt = FilamentMonitor::Delete(buf->msg.deleteFilamentMonitor, replyRef);
+			break;
+
+		case CanMessageType::configureFilamentMonitor:
+			requestId = buf->msg.generic.requestId;
+			rslt = FilamentMonitor::Configure(buf->msg.generic, replyRef);
 			break;
 
 		default:
