@@ -55,6 +55,11 @@ const PinDescriptionBase *AppGetPinDescription(Pin p) noexcept
 }
 
 // Define replacement standard library functions
+
+#if SAMC21
+# define SystemStackSize	(512)
+#endif
+
 #include <syscalls.h>
 
 // End

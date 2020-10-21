@@ -30,7 +30,7 @@ public:
 	virtual GCodeResult Configure(const CanMessageGenericParser& parser, const StringRef& reply) = 0;
 
 	// Print diagnostic info for this sensor
-	virtual void Diagnostics(const StringRef& reply, unsigned int driver) noexcept = 0;
+	virtual void Diagnostics(const StringRef& reply) noexcept = 0;
 
 	// ISR for when the pin state changes. It should return true if the ISR wants the commanded extrusion to be fetched.
 	virtual bool Interrupt() noexcept = 0;
@@ -66,7 +66,7 @@ public:
 	static GCodeResult Configure(const CanMessageGeneric& msg, const StringRef& reply) noexcept;
 
 	// Generate diagnostics info
-	static void Diagnostics(const StringRef& reply) noexcept;
+	static void GetDiagnostics(const StringRef& reply) noexcept;
 
 	// This must be public so that the array descriptor in class RepRap can lock it
 	static ReadWriteLock filamentMonitorsLock;
@@ -95,6 +95,7 @@ protected:
 
 	GCodeResult CommonConfigure(const CanMessageGenericParser& parser, const StringRef& reply, InterruptMode interruptMode, bool& seen) noexcept;
 
+	uint8_t GetDriver() const noexcept { return driver; }
 	const IoPort& GetPort() const noexcept { return port; }
 	bool HaveIsrStepsCommanded() const noexcept { return haveIsrStepsCommanded; }
 
@@ -111,7 +112,6 @@ private:
 
 	int32_t isrExtruderStepsCommanded;
 	uint32_t lastIsrMillis;
-	unsigned int extruderNumber;
 	unsigned int type;
 	IoPort port;
 	uint8_t driver;

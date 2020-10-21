@@ -65,7 +65,8 @@ bool Duet3DFilamentMonitor::Interrupt() noexcept
 				++polarityErrorCount;
 				return false;
 			}
-			now -= 40;												// partial correction for skew caused by debounce filter on older Duet endstop inputs (measured skew = 74)
+			// If we need to do any skew correction, this is the place to do it
+			//now -= 40;											// correction for differences in high and low bit times
 		}
 
 		edgeCaptures[writePointer] = now;							// record the time at which this edge was detected

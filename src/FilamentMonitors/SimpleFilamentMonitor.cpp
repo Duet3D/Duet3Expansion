@@ -78,10 +78,10 @@ FilamentSensorStatus SimpleFilamentMonitor::Clear() noexcept
 }
 
 // Print diagnostic info for this sensor
-void SimpleFilamentMonitor::Diagnostics(const StringRef& reply, unsigned int extruder) noexcept
+void SimpleFilamentMonitor::Diagnostics(const StringRef& reply) noexcept
 {
 	Poll();
-	reply.lcatf("Extruder %u sensor: %s\n", extruder, (filamentPresent) ? "ok" : "no filament");
+	reply.lcatf("Driver %u: %s", GetDriver(), (filamentPresent) ? "ok" : "no filament");
 }
 
 // End

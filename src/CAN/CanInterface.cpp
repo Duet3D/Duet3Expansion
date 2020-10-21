@@ -54,11 +54,11 @@ static_assert(Can0Config.IsValid());
 static uint32_t can0Memory[Can0Config.GetMemorySize()] __attribute__ ((section (".CanMessage")));
 
 // CanReceiver management task
-constexpr size_t CanReceiverTaskStackWords = 400;
+constexpr size_t CanReceiverTaskStackWords = 120;
 static Task<CanReceiverTaskStackWords> canReceiverTask;
 
 // Async sender task
-constexpr size_t CanAsyncSenderTaskStackWords = 400;
+constexpr size_t CanAsyncSenderTaskStackWords = 120;
 static Task<CanAsyncSenderTaskStackWords> canAsyncSenderTask;
 
 static bool mainBoardAcknowledgedAnnounce = false;	// true after the main board has acknowledged our announcement

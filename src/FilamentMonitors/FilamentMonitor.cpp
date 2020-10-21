@@ -35,7 +35,7 @@ FilamentMonitor::~FilamentMonitor() noexcept
 // Call this to disable the interrupt before deleting or re-configuring a local filament monitor
 void FilamentMonitor::Disable() noexcept
 {
-	port.Release();
+	port.Release();				// this also detaches the ISR
 }
 
 // Do the configuration that is common to all filament monitor types
@@ -54,7 +54,7 @@ GCodeResult FilamentMonitor::CommonConfigure(const CanMessageGenericParser& pars
 		}
 
 		haveIsrStepsCommanded = false;
-		if (interruptMode != INTERRUPT_MODE_NONE && !port.AttachInterrupt(InterruptEntry, interruptMode, this))
+		if (interruptMode != InterruptMode::none && !port.AttachInterrupt(InterruptEntry, interruptMode, this))
 		{
 			reply.copy("unsuitable pin");
 			return GCodeResult::error;
@@ -186,7 +186,7 @@ GCodeResult FilamentMonitor::CommonConfigure(const CanMessageGenericParser& pars
 	FilamentMonitor * const fm = static_cast<FilamentMonitor*>(param.vp);
 	if (fm->Interrupt())
 	{
-		fm->isrExtruderStepsCommanded = moveInstance->GetAccumulatedExtrusion(fm->extruderNumber, fm->isrWasPrinting);
+		fm->isrExtruderStepsCommanded = moveInstance->GetAccumulatedExtrusion(fm->driver, fm->isrWasPrinting);
 		fm->haveIsrStepsCommanded = true;
 		fm->lastIsrMillis = millis();
 	}
@@ -276,7 +276,7 @@ GCodeResult FilamentMonitor::CommonConfigure(const CanMessageGenericParser& pars
 }
 
 // Send diagnostics info
-/*static*/ void FilamentMonitor::Diagnostics(const StringRef& reply) noexcept
+/*static*/ void FilamentMonitor::GetDiagnostics(const StringRef& reply) noexcept
 {
 	bool first = true;
 	ReadLocker lock(filamentMonitorsLock);
@@ -291,7 +291,7 @@ GCodeResult FilamentMonitor::CommonConfigure(const CanMessageGenericParser& pars
 				reply.lcat("=== Filament sensors ===");
 				first = false;
 			}
-			fs->Diagnostics(reply, i);
+			fs->Diagnostics(reply);
 		}
 	}
 }

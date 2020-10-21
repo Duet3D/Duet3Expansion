@@ -288,11 +288,11 @@ FilamentSensorStatus PulsedFilamentMonitor::Clear() noexcept
 }
 
 // Print diagnostic info for this sensor
-void PulsedFilamentMonitor::Diagnostics(const StringRef& reply, unsigned int extruder) noexcept
+void PulsedFilamentMonitor::Diagnostics(const StringRef& reply) noexcept
 {
 	Poll();
 	const char* const statusText = (samplesReceived < 2) ? "no data received" : "ok";
-	reply.lcatf("Extruder %u sensor: %s\n", extruder, statusText);
+	reply.lcatf("Driver %u: %s", GetDriver(), statusText);
 }
 
 // End

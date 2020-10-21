@@ -446,18 +446,19 @@ FilamentSensorStatus RotatingMagnetFilamentMonitor::Clear() noexcept
 }
 
 // Print diagnostic info for this sensor
-void RotatingMagnetFilamentMonitor::Diagnostics(const StringRef& reply, unsigned int extruder) noexcept
+void RotatingMagnetFilamentMonitor::Diagnostics(const StringRef& reply) noexcept
 {
-	reply.lcatf("Extruder %u: ", extruder);
+	reply.lcatf("Driver %u: ", GetDriver());
 	if (dataReceived)
 	{
-		reply.catf("pos %.2f, errs: frame %" PRIu32 " parity %" PRIu32 " ovrun %" PRIu32 " pol %" PRIu32 " ovdue %" PRIu32 "\n",
-					(double)GetCurrentPosition(), framingErrorCount, parityErrorCount, overrunErrorCount, polarityErrorCount, overdueCount);
+		reply.catf("pos %.2f", (double)GetCurrentPosition());
 	}
 	else
 	{
-		reply.cat("no data received\n");
+		reply.cat("no data received");
 	}
+	reply.catf(", errs: frame %" PRIu32 " parity %" PRIu32 " ovrun %" PRIu32 " pol %" PRIu32 " ovdue %" PRIu32,
+				framingErrorCount, parityErrorCount, overrunErrorCount, polarityErrorCount, overdueCount);
 }
 
 // End

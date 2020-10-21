@@ -18,7 +18,7 @@ public:
 	GCodeResult Configure(const CanMessageGenericParser& parser, const StringRef& reply) noexcept override;
 	FilamentSensorStatus Check(bool isPrinting, bool fromIsr, uint32_t isrMillis, float filamentConsumed) noexcept override;
 	FilamentSensorStatus Clear() noexcept override;
-	void Diagnostics(const StringRef& reply, unsigned int extruder) noexcept override;
+	void Diagnostics(const StringRef& reply) noexcept override;
 
 private:
 	static constexpr float DefaultMmPerRev = 28.8;
