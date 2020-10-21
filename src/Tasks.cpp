@@ -6,12 +6,13 @@
  */
 
 #include "Tasks.h"
-#include "Platform.h"
-#include "Movement/Move.h"
-#include "GCodes/GCodes.h"
-#include "Heating/Heat.h"
-#include "InputMonitors/InputMonitor.h"
-#include "CommandProcessing/CommandProcessor.h"
+#include <Platform.h>
+#include <Movement/Move.h>
+#include <GCodes/GCodes.h>
+#include <Heating/Heat.h>
+#include <InputMonitors/InputMonitor.h>
+#include <CommandProcessing/CommandProcessor.h>
+#include <FilamentMonitors/FilamentMonitor.h>
 #include <Hardware/Devices.h>
 #include <CanMessageBuffer.h>
 #include <CanMessageFormats.h>
@@ -163,6 +164,7 @@ extern "C" [[noreturn]] void MainTask(void *pvParameters) noexcept
 		GCodes::Spin();
 		CommandProcessor::Spin();
 		moveInstance->Spin();
+		FilamentMonitor::Spin();
 	}
 }
 
