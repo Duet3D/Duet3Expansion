@@ -12,6 +12,8 @@
 
 #include "FilamentMonitor.h"
 
+#if SUPPORT_DRIVERS
+
 class Duet3DFilamentMonitor : public FilamentMonitor
 {
 public:
@@ -62,5 +64,7 @@ private:
 	uint8_t nibblesAssembled;
 	RxdState state;
 };
+
+#endif
 
 #endif /* SRC_FILAMENTSENSORS_DUET3DFILAMENTMONITOR_H_ */

@@ -10,6 +10,8 @@
 
 #include "Duet3DFilamentMonitor.h"
 
+#if SUPPORT_DRIVERS
+
 class RotatingMagnetFilamentMonitor : public Duet3DFilamentMonitor
 {
 public:
@@ -110,5 +112,7 @@ private:
 	};
 	MagneticMonitorState magneticMonitorState;
 };
+
+#endif
 
 #endif /* SRC_FILAMENTSENSORS_ROTATINGMAGNETFILAMENTMONITOR_H_ */

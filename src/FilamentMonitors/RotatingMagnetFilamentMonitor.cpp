@@ -6,6 +6,9 @@
  */
 
 #include "RotatingMagnetFilamentMonitor.h"
+
+#if SUPPORT_DRIVERS
+
 #include "Platform.h"
 #include "Movement/Move.h"
 #include <CanMessageFormats.h>
@@ -460,5 +463,7 @@ void RotatingMagnetFilamentMonitor::Diagnostics(const StringRef& reply) noexcept
 	reply.catf(", errs: frame %" PRIu32 " parity %" PRIu32 " ovrun %" PRIu32 " pol %" PRIu32 " ovdue %" PRIu32,
 				framingErrorCount, parityErrorCount, overrunErrorCount, polarityErrorCount, overdueCount);
 }
+
+#endif	// SUPPORT_DRIVERS
 
 // End

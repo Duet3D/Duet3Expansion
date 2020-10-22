@@ -711,7 +711,9 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 
 	case CanMessageReturnInfo::typeDiagnosticsPart0 + 7:
 		extra = LastDiagnosticsPart;
+#if SUPPORT_DRIVERS
 		FilamentMonitor::GetDiagnostics(reply);
+#endif
 		break;
 	}
 	return GCodeResult::ok;
@@ -881,6 +883,7 @@ void CommandProcessor::Spin()
 			rslt = Platform::DoDiagnosticTest(buf->msg.diagnosticTest, replyRef);
 			break;
 
+#if SUPPORT_DRIVERS
 		case CanMessageType::createFilamentMonitor:
 			requestId = buf->msg.createFilamentMonitor.requestId;
 			rslt = FilamentMonitor::Create(buf->msg.createFilamentMonitor, replyRef);
@@ -895,7 +898,7 @@ void CommandProcessor::Spin()
 			requestId = buf->msg.generic.requestId;
 			rslt = FilamentMonitor::Configure(buf->msg.generic, replyRef);
 			break;
-
+#endif
 		default:
 			requestId = CanRequestIdAcceptAlways;
 			reply.printf("Board %u received unknown msg type %u", CanInterface::GetCanAddress(), (unsigned int)buf->id.MsgType());

@@ -6,6 +6,9 @@
  */
 
 #include "PulsedFilamentMonitor.h"
+
+#if SUPPORT_DRIVERS
+
 #include "Platform.h"
 #include "Movement/Move.h"
 #include <CanMessageFormats.h>
@@ -294,5 +297,7 @@ void PulsedFilamentMonitor::Diagnostics(const StringRef& reply) noexcept
 	const char* const statusText = (samplesReceived < 2) ? "no data received" : "ok";
 	reply.lcatf("Driver %u: %s", GetDriver(), statusText);
 }
+
+#endif	// SUPPORT_DRIVERS
 
 // End

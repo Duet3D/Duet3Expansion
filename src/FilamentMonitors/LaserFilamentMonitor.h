@@ -10,6 +10,8 @@
 
 #include "Duet3DFilamentMonitor.h"
 
+#if SUPPORT_DRIVERS
+
 class LaserFilamentMonitor : public Duet3DFilamentMonitor
 {
 public:
@@ -122,5 +124,7 @@ private:
 	};
 	LaserMonitorState laserMonitorState;
 };
+
+#endif
 
 #endif /* SRC_FILAMENTSENSORS_LASERFILAMENTMONITOR_H_ */

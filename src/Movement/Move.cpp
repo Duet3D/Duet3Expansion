@@ -112,6 +112,8 @@ void Move::Exit()
 #endif
 }
 
+#if SUPPORT_DRIVERS
+
 // Start the next move. Return true if laser or IO bits need to be active
 // Must be called with base priority greater than or equal to the step interrupt, to avoid a race with the step ISR.
 inline void Move::StartNextMove(DDA *cdda, uint32_t startTime)
@@ -129,6 +131,8 @@ pre(ddaRingGetPointer->GetState() == DDA::frozen)
 	currentDda = cdda;
 	cdda->Start(startTime);
 }
+
+#endif
 
 void Move::Spin()
 {

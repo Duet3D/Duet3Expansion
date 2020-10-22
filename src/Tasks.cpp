@@ -164,7 +164,9 @@ extern "C" [[noreturn]] void MainTask(void *pvParameters) noexcept
 		GCodes::Spin();
 		CommandProcessor::Spin();
 		moveInstance->Spin();
+#if SUPPORT_DRIVERS
 		FilamentMonitor::Spin();
+#endif
 	}
 }
 
@@ -307,10 +309,12 @@ extern "C" [[noreturn]] void UpdateBootloaderTask(void *pvParameters) noexcept
 			{
 				ReportFlashError(err);
 			}
+#if HAS_VOLTAGE_MONITOR
 			else if (Platform::GetCurrentVinVoltage() < 10.5)
 			{
 				ReportFlashError(FirmwareFlashErrorCode::vinTooLow);
 			}
+#endif
 			else if (!Flash::Init())
 			{
 				ReportFlashError(FirmwareFlashErrorCode::flashInitFailed);

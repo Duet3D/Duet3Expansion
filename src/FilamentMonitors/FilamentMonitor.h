@@ -9,6 +9,9 @@
 #define SRC_FILAMENTSENSORS_FILAMENTMONITOR_H_
 
 #include "RepRapFirmware.h"
+
+#if SUPPORT_DRIVERS
+
 #include "Hardware/IoPorts.h"
 #include "MessageType.h"
 #include "GCodes/GCodeResult.h"
@@ -120,5 +123,7 @@ private:
 	bool haveIsrStepsCommanded;
 	FilamentSensorStatus lastStatus;
 };
+
+#endif	// SUPPORT_DRIVERS
 
 #endif /* SRC_FILAMENTSENSORS_FILAMENTMONITOR_H_ */

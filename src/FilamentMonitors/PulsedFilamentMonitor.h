@@ -10,6 +10,8 @@
 
 #include "FilamentMonitor.h"
 
+#if SUPPORT_DRIVERS
+
 class PulsedFilamentMonitor : public FilamentMonitor
 {
 public:
@@ -66,5 +68,7 @@ private:
 	bool comparisonStarted;
 	bool calibrationStarted;
 };
+
+#endif
 
 #endif /* SRC_FILAMENTSENSORS_PULSEDFILAMENTMONITOR_H_ */

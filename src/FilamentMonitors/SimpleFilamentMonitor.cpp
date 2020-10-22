@@ -6,6 +6,9 @@
  */
 
 #include "SimpleFilamentMonitor.h"
+
+#if SUPPORT_DRIVERS
+
 #include "Platform.h"
 #include <CanMessageFormats.h>
 #include <CanMessageGenericParser.h>
@@ -83,5 +86,7 @@ void SimpleFilamentMonitor::Diagnostics(const StringRef& reply) noexcept
 	Poll();
 	reply.lcatf("Driver %u: %s", GetDriver(), (filamentPresent) ? "ok" : "no filament");
 }
+
+#endif	// SUPPORT_DRIVERS
 
 // End

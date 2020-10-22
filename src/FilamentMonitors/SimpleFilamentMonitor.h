@@ -10,6 +10,8 @@
 
 #include "FilamentMonitor.h"
 
+#if SUPPORT_DRIVERS
+
 class SimpleFilamentMonitor : public FilamentMonitor
 {
 public:
@@ -28,5 +30,7 @@ private:
 	bool filamentPresent;
 	bool enabled;
 };
+
+#endif
 
 #endif /* SRC_FILAMENTSENSORS_SIMPLEFILAMENTMONITOR_H_ */

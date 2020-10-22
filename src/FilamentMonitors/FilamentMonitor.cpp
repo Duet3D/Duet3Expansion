@@ -6,6 +6,9 @@
  */
 
 #include "FilamentMonitor.h"
+
+#if SUPPORT_DRIVERS
+
 #include "SimpleFilamentMonitor.h"
 #include "RotatingMagnetFilamentMonitor.h"
 #include "LaserFilamentMonitor.h"
@@ -295,5 +298,7 @@ GCodeResult FilamentMonitor::CommonConfigure(const CanMessageGenericParser& pars
 		}
 	}
 }
+
+#endif	// SUPPORT_DRIVERS
 
 // End

@@ -21,6 +21,9 @@
  */
 
 #include "Duet3DFilamentMonitor.h"
+
+#if SUPPORT_DRIVERS
+
 #include "Platform.h"
 #include "Movement/StepTimer.h"
 
@@ -238,5 +241,7 @@ bool Duet3DFilamentMonitor::IsWaitingForStartBit() const noexcept
 {
 	return state == RxdState::waitingForStartBit;
 }
+
+#endif	// SUPPORT_DRIVERS
 
 // End
