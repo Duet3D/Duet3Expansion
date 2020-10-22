@@ -46,6 +46,8 @@ class IoPort
 {
 public:
 	IoPort();
+	~IoPort() { Release(); }
+
 	bool SetMode(PinAccess access);
 	void Release();
 	void AppendDetails(const StringRef& str) const;
