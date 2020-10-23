@@ -349,12 +349,12 @@ extern "C" [[noreturn]] void UpdateBootloaderTask(void *pvParameters) noexcept
 	Platform::ResetProcessor();
 }
 
-extern "C" uint32_t _estack;		// this is defined in the linker script
+extern "C" char _estack;		// this is defined in the linker script
 
 // Return the amount of free handler stack space. It may be negative if the stack has overflowed into the area reserved for the heap.
 static ptrdiff_t GetHandlerFreeStack() noexcept
 {
-	const char * const ramend = (const char *)&_estack;
+	const char * const ramend = &_estack;
 	const char * stack_lwm = heapTop;
 	while (stack_lwm < ramend && *stack_lwm == memPattern)
 	{
@@ -371,7 +371,7 @@ ptrdiff_t Tasks::GetNeverUsedRam() noexcept
 void Tasks::Diagnostics(const StringRef& reply) noexcept
 {
 	// Append a memory report to a string
-	reply.lcatf("Never used RAM %.1fKb, free system stack %d words\n", (double)GetNeverUsedRam()/1024, GetHandlerFreeStack()/4);
+	reply.lcatf("Never used RAM %d, free system stack %d words\n", GetNeverUsedRam(), GetHandlerFreeStack()/4);
 
 	// Now the per-task memory report
 	bool printed = false;

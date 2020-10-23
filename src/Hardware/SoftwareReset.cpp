@@ -148,7 +148,7 @@ void SoftwareResetData::PrintPart1(unsigned int slot, const StringRef& reply) co
 # endif
 #endif
 
-	reply.lcatf("%s, available RAM %" PRIu32 ", slot %u", scratchString.c_str(), neverUsedRam, slot);
+	reply.lcatf("%s, available RAM %" PRIi32 ", slot %u", scratchString.c_str(), neverUsedRam, slot);
 
 	// Our format buffer is only 256 characters long, so the next 2 lines must be written separately
 	// The task name may include nulls at the end, so print it as a string
