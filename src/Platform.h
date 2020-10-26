@@ -17,6 +17,7 @@
 #endif
 
 class CanMessageDiagnosticTest;
+class CanMessageBuffer;
 
 #if HAS_CPU_TEMP_SENSOR
 constexpr size_t McuTempReadingsAveraged = 16;
@@ -125,13 +126,16 @@ namespace Platform
 	bool Debug(Module module);
 	void WriteLed(uint8_t ledNumber, bool turnOn);
 
+#if SUPPORT_DRIVERS
 	float DriveStepsPerUnit(size_t drive);
 	const float *GetDriveStepsPerUnit();
 	void SetDriveStepsPerUnit(size_t drive, float val);
 	float GetPressureAdvance(size_t driver);
 	void SetPressureAdvance(size_t driver, float advance);
+#if 0	// not used yet and may never be
+	void BuildDriverStatusMessage(CanMessageBuffer *buf) noexcept;
+#endif
 
-#if SUPPORT_DRIVERS
 # if SINGLE_DRIVER
 	inline void StepDriverLow()
 	{

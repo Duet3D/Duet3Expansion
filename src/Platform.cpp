@@ -17,6 +17,7 @@
 #include "AdcAveragingFilter.h"
 #include "Movement/StepTimer.h"
 #include <CAN/CanInterface.h>
+#include <CanMessageBuffer.h>
 #include "Tasks.h"
 #include "Heating/Heat.h"
 #include "Heating/Sensors/TemperatureSensor.h"
@@ -1288,6 +1289,27 @@ void Platform::SetPressureAdvance(size_t driver, float advance)
 	pressureAdvance[driver] = advance;
 }
 
+#if 0	// not used yet and may never be
+// Send the status of drivers and filament monitors to the main board
+void Platform::BuildDriverStatusMessage(CanMessageBuffer *buf) noexcept
+{
+	auto msg = buf->SetupStatusMessage<CanMessageDriversStatus>(CanInterface::GetCanAddress(), CanId::MasterAddress);
+	for (size_t drive = 0; drive < NumDrivers; ++drive)
+	{
+		const uint32_t driverStat =
+#if HAS_SMART_DRIVERS
+			SmartDrivers::GetLiveStatus(drive);
+#else
+			0;
+#endif
+		msg->data[drive] = driverStat;
+	}
+	msg->numDriversReported = NumDrivers;
+	msg->zero = 0;
+	buf->dataLength = msg->GetActualDataLength();
+}
+#endif
+
 void Platform::SetDirectionValue(size_t drive, bool dVal)
 {
 	if (drive < NumDrivers)
@@ -1546,6 +1568,22 @@ void Platform::OnProcessingCanMessage()
 	WriteLed(1, true);				// turn the green LED on
 }
 
+// Execute a timed task that takes less than one millisecond
+static uint32_t TimedSqrt(uint64_t arg, uint32_t& timeAcc) noexcept
+{
+	cpu_irq_disable();
+	asm volatile("":::"memory");
+	uint32_t now1 = SysTick->VAL;
+	const uint32_t ret = isqrt64(arg);
+	uint32_t now2 = SysTick->VAL;
+	asm volatile("":::"memory");
+	cpu_irq_enable();
+	now1 &= 0x00FFFFFF;
+	now2 &= 0x00FFFFFF;
+	timeAcc += ((now1 > now2) ? now1 : now1 + (SysTick->LOAD & 0x00FFFFFF) + 1) - now2;
+	return ret;
+}
+
 GCodeResult Platform::DoDiagnosticTest(const CanMessageDiagnosticTest& msg, const StringRef& reply)
 {
 	if ((uint16_t)~msg.invertedTestType != msg.testType)
@@ -1562,13 +1600,9 @@ GCodeResult Platform::DoDiagnosticTest(const CanMessageDiagnosticTest& msg, cons
 			uint32_t tim1 = 0;
 			for (uint32_t i = 0; i < 100; ++i)
 			{
-				const uint32_t num1 = 0x7265ac3d + i;
+				const uint32_t num1 = 0x7fffffff - (67 * i);
 				const uint64_t sq = (uint64_t)num1 * num1;
-				cpu_irq_disable();
-				const uint32_t now1 = StepTimer::GetTimerTicks();
-				const uint32_t num1a = isqrt64(sq);
-				tim1 += StepTimer::GetTimerTicks() - now1;
-				cpu_irq_enable();
+				const uint32_t num1a = TimedSqrt(sq, tim1);
 				if (num1a != num1)
 				{
 					ok1 = false;
@@ -1579,13 +1613,9 @@ GCodeResult Platform::DoDiagnosticTest(const CanMessageDiagnosticTest& msg, cons
 			uint32_t tim2 = 0;
 			for (uint32_t i = 0; i < 100; ++i)
 			{
-				const uint32_t num2 = 0x0000a4c5 + i;
+				const uint32_t num2 = 0x0000ffff - (67 * i);
 				const uint64_t sq = (uint64_t)num2 * num2;
-				cpu_irq_disable();
-				const uint32_t now2 = StepTimer::GetTimerTicks();
-				const uint32_t num2a = isqrt64(sq);
-				tim2 += StepTimer::GetTimerTicks() - now2;
-				cpu_irq_enable();
+				const uint32_t num2a = TimedSqrt(sq, tim2);
 				if (num2a != num2)
 				{
 					ok2 = false;
@@ -1593,8 +1623,8 @@ GCodeResult Platform::DoDiagnosticTest(const CanMessageDiagnosticTest& msg, cons
 			}
 
 			reply.printf("Square roots: 62-bit %.2fus %s, 32-bit %.2fus %s",
-					(double)(tim1 * 10000)/StepTimer::StepClockRate, (ok1) ? "ok" : "ERROR",
-							(double)(tim2 * 10000)/StepTimer::StepClockRate, (ok2) ? "ok" : "ERROR");
+					(double)(tim1 * 10000)/SystemCoreClockFreq, (ok1) ? "ok" : "ERROR",
+							(double)(tim2 * 10000)/SystemCoreClockFreq, (ok2) ? "ok" : "ERROR");
 			return (ok1 && ok2) ? GCodeResult::ok : GCodeResult::error;
 		}
 

@@ -17,16 +17,17 @@
 #include "Movement/Move.h"
 #include <CAN/CanInterface.h>
 #include <CanMessageFormats.h>
+#include <CanMessageBuffer.h>
 #include <CanMessageGenericParser.h>
 
 // Static data
 ReadWriteLock FilamentMonitor::filamentMonitorsLock;
 FilamentMonitor *FilamentMonitor::filamentSensors[NumDrivers] = { 0 };
-bool FilamentMonitor::unreportedFilamentError = false;
+uint32_t FilamentMonitor::whenStatusLastSent = 0;
 
 // Constructor
 FilamentMonitor::FilamentMonitor(uint8_t p_driver, unsigned int t) noexcept
-	: type(t), driver(p_driver), lastStatus(FilamentSensorStatus::ok)
+	: type(t), driver(p_driver), lastStatus(FilamentSensorStatus::noDataReceived)
 {
 }
 
@@ -172,7 +173,7 @@ GCodeResult FilamentMonitor::CommonConfigure(const CanMessageGenericParser& pars
 // Return an error message corresponding to a status code
 /*static*/ const char *FilamentMonitor::GetErrorMessage(FilamentSensorStatus f) noexcept
 {
-	switch(f)
+	switch(f.RawValue())
 	{
 	case FilamentSensorStatus::ok:					return "no error";
 	case FilamentSensorStatus::noFilament:			return "no filament";
@@ -197,63 +198,58 @@ GCodeResult FilamentMonitor::CommonConfigure(const CanMessageGenericParser& pars
 
 /*static*/ void FilamentMonitor::Spin() noexcept
 {
+	CanMessageBuffer buf(nullptr);
+	auto msg = buf.SetupStatusMessage<CanMessageFilamentMonitorsStatus>(CanInterface::GetCanAddress(), CanId::MasterAddress);
+	bool statusChanged = false;
+	bool haveMonitor = false;
 	ReadLocker lock(filamentMonitorsLock);
 
 	for (size_t driver = 0; driver < NumDrivers; ++driver)
 	{
+		FilamentSensorStatus fst(FilamentSensorStatus::noMonitor);
 		if (filamentSensors[driver] != nullptr)
 		{
+			haveMonitor = true;
 			FilamentMonitor& fs = *filamentSensors[driver];
+			bool isPrinting;
+			bool fromIsr;
+			int32_t extruderStepsCommanded;
+			uint32_t locIsrMillis;
+			cpu_irq_disable();
+			if (fs.haveIsrStepsCommanded)
 			{
-				bool isPrinting;
-				bool fromIsr;
-				int32_t extruderStepsCommanded;
-				uint32_t locIsrMillis;
-				cpu_irq_disable();
-				if (fs.haveIsrStepsCommanded)
-				{
-					extruderStepsCommanded = fs.isrExtruderStepsCommanded;
-					isPrinting = fs.isrWasPrinting;
-					locIsrMillis = fs.lastIsrMillis;
-					fs.haveIsrStepsCommanded = false;
-					cpu_irq_enable();
-					fromIsr = true;
-				}
-				else
-				{
-					cpu_irq_enable();
-					extruderStepsCommanded = moveInstance->GetAccumulatedExtrusion(driver, isPrinting);		// get and clear the net extrusion commanded
-					fromIsr = false;
-					locIsrMillis = 0;
-				}
+				extruderStepsCommanded = fs.isrExtruderStepsCommanded;
+				isPrinting = fs.isrWasPrinting;
+				locIsrMillis = fs.lastIsrMillis;
+				fs.haveIsrStepsCommanded = false;
+				cpu_irq_enable();
+				fromIsr = true;
+			}
+			else
+			{
+				cpu_irq_enable();
+				extruderStepsCommanded = moveInstance->GetAccumulatedExtrusion(driver, isPrinting);		// get and clear the net extrusion commanded
+				fromIsr = false;
+				locIsrMillis = 0;
+			}
 
-				//TODO
-				// In the RRF version, the following code is guarded by "if (gCodes.IsReallyPrinting() && !gCodes.IsSimulating())".
-				// We don't need to worry about simulation here, but we ought to take account of whether filament monitoring is enabled or not.
-				if (true)
-				{
-					const float extrusionCommanded = (float)extruderStepsCommanded/Platform::DriveStepsPerUnit(driver);
-					fs.lastStatus = fs.Check(isPrinting, fromIsr, locIsrMillis, extrusionCommanded);
-					if (fs.lastStatus != FilamentSensorStatus::ok)
-					{
-#if 0
-						if (reprap.Debug(moduleFilamentSensors))
-						{
-							debugPrintf("Filament error: extruder %u reports %s\n", extruder, FilamentMonitor::GetErrorMessage(fstat));
-						}
-						else
-#endif
-						{
-							unreportedFilamentError = true;
-						}
-					}
-				}
-				else
-				{
-					fs.lastStatus = fs.Clear();
-				}
+			const float extrusionCommanded = (float)extruderStepsCommanded/Platform::DriveStepsPerUnit(driver);
+			fst = fs.Check(isPrinting, fromIsr, locIsrMillis, extrusionCommanded);
+			if (fst != fs.lastStatus)
+			{
+				statusChanged = true;
+				fs.lastStatus = fst;
 			}
 		}
+		msg->data[driver].Set(fst.ToBaseType());
+	}
+
+	if (statusChanged || (haveMonitor && whenStatusLastSent - millis() >= StatusUpdateInterval))
+	{
+		lock.Release();
+		buf.dataLength = msg->GetActualDataLength();
+		CanInterface::Send(&buf);
+		whenStatusLastSent = millis();
 	}
 }
 

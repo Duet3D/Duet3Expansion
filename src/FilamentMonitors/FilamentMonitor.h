@@ -77,15 +77,6 @@ public:
 	// Return the status of the filament sensor for a drive
 	static FilamentSensorStatus GetFilamentStatus(size_t drive);
 
-	// Check and clear the unreported filament error flag
-	static bool CheckUnreportedError()
-	{
-		TaskCriticalSectionLocker lock;
-		const bool ret = unreportedFilamentError;
-		unreportedFilamentError = false;
-		return ret;
-	}
-
 protected:
 	FilamentMonitor(uint8_t p_driver, unsigned int t) noexcept;
 
@@ -111,7 +102,9 @@ private:
 	static void InterruptEntry(CallbackParameter param) noexcept;
 
 	static FilamentMonitor *filamentSensors[NumDrivers];
-	static bool unreportedFilamentError;
+	static uint32_t whenStatusLastSent;
+
+	static constexpr uint32_t StatusUpdateInterval = 2000;				// how often we send status reports when there isn't a change
 
 	int32_t isrExtruderStepsCommanded;
 	uint32_t lastIsrMillis;
