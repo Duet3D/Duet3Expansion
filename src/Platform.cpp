@@ -10,7 +10,7 @@
 #include <Hardware/IoPorts.h>
 #include <AnalogIn.h>
 #include <AnalogOut.h>
-#include <UART.h>
+#include <Uart.h>
 #include <Movement/Move.h>
 #include "Movement/StepperDrivers/TMC51xx.h"
 #include "Movement/StepperDrivers/TMC22xx.h"
