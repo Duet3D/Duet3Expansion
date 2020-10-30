@@ -12,6 +12,12 @@
 #include "Platform.h"
 #include "CanMessageGenericParser.h"
 
+// ADC resolution
+// For the theory behind ADC oversampling, see http://www.atmel.com/Images/doc8003.pdf
+static constexpr unsigned int AdcOversampleBits = 2;										// we use 2-bit oversampling when using a filtered channel
+static constexpr int32_t UnfilteredAdcRange = 1u << AnalogIn::AdcBits;						// The readings we pass in should be in range 0..(AdcRange - 1)
+static constexpr int32_t FilteredAdcRange = 1u << (AnalogIn::AdcBits + AdcOversampleBits);	// The readings we pass in should be in range 0..(AdcRange - 1)
+
 LinearAnalogSensor::LinearAnalogSensor(unsigned int sensorNum)
 	: SensorWithPort(sensorNum, "Linear analog"), lowTemp(DefaultLowTemp), highTemp(DefaultHighTemp), filtered(true), adcFilterChannel(-1)
 {
