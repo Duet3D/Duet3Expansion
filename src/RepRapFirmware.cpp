@@ -57,7 +57,8 @@ const PinDescriptionBase *AppGetPinDescription(Pin p) noexcept
 // Define replacement standard library functions
 
 #if SAMC21
-# define SystemStackSize	(512)
+// Reduce the size of the system stack below the default 1024 to save memory. When we set it to 512, M122 reported just 12 words unused, so try a higher value.
+# define SystemStackSize	(600)
 #endif
 
 #include <syscalls.h>

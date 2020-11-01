@@ -103,6 +103,8 @@ private:
 
 	static FilamentMonitor *filamentSensors[NumDrivers];
 	static uint32_t whenStatusLastSent;
+	static uint32_t minInterruptTime, maxInterruptTime;
+	static uint32_t minPollTime, maxPollTime;
 
 	static constexpr uint32_t StatusUpdateInterval = 2000;				// how often we send status reports when there isn't a change
 

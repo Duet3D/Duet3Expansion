@@ -99,6 +99,8 @@ constexpr Pin LedPins[] = { PortAPin(19), PortAPin(18) };
 constexpr bool LedActiveHigh = true;
 
 // Table of pin functions that we are allowed to use
+// Sercom0 is also available on pins PA0/PA1 but TX and RX are the wrong way round
+// Sercom0 on PA16/PA17 is left in the pin table in case we decide to add a connector for thie UART in future
 constexpr PinDescription PinTable[] =
 {
 	//	TC					TCC					ADC					SDADC				SERCOM in			SERCOM out	  Exint PinName

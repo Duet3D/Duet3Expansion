@@ -90,8 +90,8 @@ GCodeResult PulsedFilamentMonitor::Configure(const CanMessageGenericParser& pars
 			}
 		}
 
-		int16_t temp;
-		if (parser.GetIntParam('S', temp))
+		uint16_t temp;
+		if (parser.GetUintParam('S', temp))
 		{
 			seen = true;
 			comparisonEnabled = (temp > 0);

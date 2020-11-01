@@ -91,14 +91,14 @@ GCodeResult LaserFilamentMonitor::Configure(const CanMessageGenericParser& parse
 			}
 		}
 
-		int16_t temp;
-		if (parser.GetIntParam('S', temp))
+		uint16_t temp;
+		if (parser.GetUintParam('S', temp))
 		{
 			seen = true;
 			comparisonEnabled = (temp > 0);
 		}
 
-		if (parser.GetIntParam('A', temp))
+		if (parser.GetUintParam('A', temp))
 		{
 			seen = true;
 			checkNonPrintingMoves = (temp > 0);

@@ -39,7 +39,7 @@ constexpr CanDevice::Config Can0Config =
 {
 	.dataSize = 64,									// must be one of: 8, 12, 16, 20, 24, 32, 48, 64
 	.numTxBuffers = 2,
-	.txFifoSize = 4,
+	.txFifoSize = 10,								// enough to send a 512-byte response broken into 60-byte fragments
 	.numRxBuffers = 0,
 	.rxFifo0Size = 16,
 	.rxFifo1Size = 16,

@@ -24,6 +24,8 @@
 ReadWriteLock FilamentMonitor::filamentMonitorsLock;
 FilamentMonitor *FilamentMonitor::filamentSensors[NumDrivers] = { 0 };
 uint32_t FilamentMonitor::whenStatusLastSent = 0;
+uint32_t FilamentMonitor::minInterruptTime = 0xFFFFFFFF, FilamentMonitor::maxInterruptTime = 0;
+uint32_t FilamentMonitor::minPollTime = 0xFFFFFFFF, FilamentMonitor::maxPollTime = 0;
 
 // Constructor
 FilamentMonitor::FilamentMonitor(uint8_t p_driver, unsigned int t) noexcept
@@ -187,12 +189,22 @@ GCodeResult FilamentMonitor::CommonConfigure(const CanMessageGenericParser& pars
 // ISR
 /*static*/ void FilamentMonitor::InterruptEntry(CallbackParameter param) noexcept
 {
+	const uint32_t startTime = StepTimer::GetTimerTicks();
 	FilamentMonitor * const fm = static_cast<FilamentMonitor*>(param.vp);
 	if (fm->Interrupt())
 	{
 		fm->isrExtruderStepsCommanded = moveInstance->GetAccumulatedExtrusion(fm->driver, fm->isrWasPrinting);
 		fm->haveIsrStepsCommanded = true;
 		fm->lastIsrMillis = millis();
+	}
+	const uint32_t elapsedTime = StepTimer::GetTimerTicks() - startTime;
+	if (elapsedTime > maxInterruptTime)
+	{
+		maxInterruptTime = elapsedTime;
+	}
+	if (elapsedTime < minInterruptTime)
+	{
+		minInterruptTime = elapsedTime;
 	}
 }
 
@@ -209,6 +221,7 @@ GCodeResult FilamentMonitor::CommonConfigure(const CanMessageGenericParser& pars
 		FilamentSensorStatus fst(FilamentSensorStatus::noMonitor);
 		if (filamentSensors[driver] != nullptr)
 		{
+			const uint32_t startTime = StepTimer::GetTimerTicks();
 			haveMonitor = true;
 			FilamentMonitor& fs = *filamentSensors[driver];
 			bool isPrinting;
@@ -239,6 +252,15 @@ GCodeResult FilamentMonitor::CommonConfigure(const CanMessageGenericParser& pars
 			{
 				statusChanged = true;
 				fs.lastStatus = fst;
+			}
+			const uint32_t elapsedTime = StepTimer::GetTimerTicks() - startTime;
+			if (elapsedTime > maxPollTime)
+			{
+				maxPollTime = elapsedTime;
+			}
+			if (elapsedTime < minPollTime)
+			{
+				minPollTime = elapsedTime;
 			}
 		}
 		msg->data[driver].Set(fst.ToBaseType());
@@ -287,7 +309,11 @@ GCodeResult FilamentMonitor::CommonConfigure(const CanMessageGenericParser& pars
 		{
 			if (first)
 			{
-				reply.lcat("=== Filament sensors ===");
+				reply.lcatf("=== Filament sensors ===\nInterrupt %" PRIu32 " to %" PRIu32 "us, poll %" PRIu32 " to %" PRIu32 "us",
+								StepTimer::TicksToMicroseconds(minInterruptTime), StepTimer::TicksToMicroseconds(maxInterruptTime),
+								StepTimer::TicksToMicroseconds(minPollTime), StepTimer::TicksToMicroseconds(maxPollTime));
+				minPollTime = minInterruptTime = 0xFFFFFFFF;
+				maxPollTime = maxInterruptTime = 0;
 				first = false;
 			}
 			fs->Diagnostics(reply);

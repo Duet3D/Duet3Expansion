@@ -202,7 +202,6 @@ static GCodeResult HandlePressureAdvance(const CanMessageMultipleDrivesRequest<f
 
 static GCodeResult SetStepsPerMmAndMicrostepping(const CanMessageMultipleDrivesRequest<StepsPerUnitAndMicrostepping>& msg, const StringRef& reply)
 {
-#if HAS_SMART_DRIVERS
 	//TODO check message is long enough for the number of drivers specified
 	const auto drivers = DriversBitmap::MakeFromRaw(msg.driversToUpdate);
 	GCodeResult rslt = GCodeResult::ok;
@@ -215,9 +214,10 @@ static GCodeResult SetStepsPerMmAndMicrostepping(const CanMessageMultipleDrivesR
 			}
 			else
 			{
+				Platform::SetDriveStepsPerUnit(driver, msg.values[count].GetStepsPerUnit());
+#if HAS_SMART_DRIVERS
 				const uint16_t microstepping = msg.values[count].GetMicrostepping() & 0x03FF;
 				const bool interpolate = (msg.values[count].GetMicrostepping() & 0x8000) != 0;
-				Platform::SetDriveStepsPerUnit(driver, msg.values[count].GetStepsPerUnit());
 				if (!SmartDrivers::SetMicrostepping(driver, microstepping, interpolate))
 				{
 					reply.lcatf("Driver %u.%u does not support x%u microstepping", CanInterface::GetCanAddress(), driver, microstepping);
@@ -227,14 +227,11 @@ static GCodeResult SetStepsPerMmAndMicrostepping(const CanMessageMultipleDrivesR
 					}
 					rslt = GCodeResult::error;
 				}
+#endif
 			}
 		}
 	);
 	return rslt;
-#else
-	reply.copy("Setting not available for external drivers");
-	return GCodeResult::error;
-#endif
 }
 
 static GCodeResult ProcessM569(const CanMessageGeneric& msg, const StringRef& reply)
