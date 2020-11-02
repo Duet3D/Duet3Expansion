@@ -246,13 +246,21 @@ GCodeResult FilamentMonitor::CommonConfigure(const CanMessageGenericParser& pars
 				locIsrMillis = 0;
 			}
 
-			const float extrusionCommanded = (float)extruderStepsCommanded/Platform::DriveStepsPerUnit(driver);
-			fst = fs.Check(isPrinting, fromIsr, locIsrMillis, extrusionCommanded);
+			if (Platform::GetFilamentMonitorsEnabled())
+			{
+				const float extrusionCommanded = (float)extruderStepsCommanded/Platform::DriveStepsPerUnit(driver);
+				fst = fs.Check(isPrinting, fromIsr, locIsrMillis, extrusionCommanded);
+			}
+			else
+			{
+				fst = fs.Clear();
+			}
 			if (fst != fs.lastStatus)
 			{
 				statusChanged = true;
 				fs.lastStatus = fst;
 			}
+
 			const uint32_t elapsedTime = StepTimer::GetTimerTicks() - startTime;
 			if (elapsedTime > maxPollTime)
 			{

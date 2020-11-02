@@ -37,7 +37,8 @@
 #include "StepTimer.h"
 #include "Platform.h"
 #include <CAN/CanInterface.h>
-#include "CanMessageFormats.h"
+#include <CanMessageFormats.h>
+#include <CanMessageBuffer.h>
 
 Move::Move()
 #if SUPPORT_DRIVERS
@@ -195,15 +196,18 @@ void Move::Spin()
 	if (canAddMove)
 	{
 		// OK to add another move
-		CanMessageMovement move;
-		if (CanInterface::GetCanMove(move))
+		CanMessageBuffer *buf = CanInterface::GetCanMove();
+		if (buf != nullptr)
 		{
+			const CanMessageMovement& move = buf->msg.move;
+			Platform::SetFilamentMonitorsEnabled(move.filamentMonitorsEnabled);
 			if (ddaRingAddPointer->Init(move))
 			{
 				ddaRingAddPointer = ddaRingAddPointer->GetNext();
 				idleCount = 0;
 				scheduledMoves++;
 			}
+			CanMessageBuffer::Free(buf);
 		}
 	}
 

@@ -174,6 +174,8 @@ namespace Platform
 	DriversBitmap logOnStallDrivers, pauseOnStallDrivers, rehomeOnStallDrivers;
 	DriversBitmap stalledDrivers, stalledDriversToLog, stalledDriversToPause, stalledDriversToRehome;
 # endif
+
+	bool filamentMonitorsEnabled = false;
 #endif
 
 #if HAS_VOLTAGE_MONITOR

@@ -105,6 +105,7 @@ namespace Platform
 	inline bool IsSlowDriver(size_t drive) { return slowDriversBitmap.IsBitSet(drive); }
 #  endif
 # endif
+	extern bool filamentMonitorsEnabled;
 #endif	//SUPPORT_DRIVERS
 
 	// Public functions
@@ -132,6 +133,8 @@ namespace Platform
 	void SetDriveStepsPerUnit(size_t drive, float val);
 	float GetPressureAdvance(size_t driver);
 	void SetPressureAdvance(size_t driver, float advance);
+	inline bool GetFilamentMonitorsEnabled() { return filamentMonitorsEnabled; }
+	inline void SetFilamentMonitorsEnabled(bool b) { filamentMonitorsEnabled = b; }
 #if 0	// not used yet and may never be
 	void BuildDriverStatusMessage(CanMessageBuffer *buf) noexcept;
 #endif

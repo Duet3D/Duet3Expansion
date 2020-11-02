@@ -244,17 +244,10 @@ bool CanInterface::SendAndFree(CanMessageBuffer *buf)
 	return ok;
 }
 
-bool CanInterface::GetCanMove(CanMessageMovement& msg)
+// Return a move message, if there is one. Caller must free the message buffer.
+CanMessageBuffer * CanInterface::GetCanMove()
 {
-	// See if there is a movement message
-	CanMessageBuffer * buf = PendingMoves.GetMessage();
-	if (buf != nullptr)
-	{
-		msg = buf->msg.move;			//TODO avoid copying the message
-		CanMessageBuffer::Free(buf);
-		return true;
-	}
-	return false;
+	return PendingMoves.GetMessage();
 }
 
 CanMessageBuffer *CanInterface::GetCanCommand()

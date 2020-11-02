@@ -85,6 +85,7 @@ GCodeResult RotatingMagnetFilamentMonitor::Configure(const CanMessageGenericPars
 		{
 			if (numValues > 0)
 			{
+				seen = true;
 				minMovementAllowed = (float)minMax[0] * 0.01;
 			}
 			if (numValues > 1)

@@ -222,7 +222,6 @@ bool DDA::Init(const CanMessageMovement& msg)
 	afterPrepare.moveStartTime = msg.whenToExecute;
 	clocksNeeded = msg.accelerationClocks + msg.steadyClocks + msg.decelClocks;
 	flags.isPrintingMove = (msg.pressureAdvanceDrives != 0);
-	flags.stopAllDrivesOnEndstopHit = msg.stopAllDrivesOnEndstopHit;
 	flags.hadHiccup = false;
 	flags.goingSlow = false;
 

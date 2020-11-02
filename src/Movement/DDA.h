@@ -118,8 +118,7 @@ private:
 		{
 			uint16_t isPrintingMove : 1,			// True if this is a printing move and any of our extruders is moving
 					 goingSlow : 1,					// True if we have slowed the movement because the Z probe is approaching its threshold
-					 hadHiccup : 1,					// True if we had a hiccup while executing this move
-					 stopAllDrivesOnEndstopHit : 1;	// True if hitting an endstop stops the entire move
+					 hadHiccup : 1;					// True if we had a hiccup while executing this move
 		} flags;
 		uint16_t all;								// so that we can print all the flags at once for debugging
 	};

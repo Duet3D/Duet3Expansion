@@ -25,7 +25,7 @@ namespace CanInterface
 	CanAddress GetCanAddress();
 	GCodeResult ChangeAddressAndDataRate(const CanMessageSetAddressAndNormalTiming& msg, const StringRef& reply);
 	bool GetCanMessage(CanMessageBuffer *buf);
-	bool GetCanMove(CanMessageMovement& move);
+	CanMessageBuffer *GetCanMove();
 	bool Send(CanMessageBuffer *buf);
 	bool SendAsync(CanMessageBuffer *buf);
 	bool SendAndFree(CanMessageBuffer *buf);
