@@ -172,7 +172,6 @@ void CanInterface::Init(CanAddress defaultBoardAddress, bool useAlternatePins, b
 #endif
 
 	boardAddress = canConfigData.GetCanAddress(defaultBoardAddress);
-	CanMessageBuffer::Init(NumCanBuffers);
 
 	// Set up CAN receiver filtering
 	// Set up a CAN receive filter to receive all messages addressed to us in FIFO 0
@@ -193,6 +192,8 @@ void CanInterface::Init(CanAddress defaultBoardAddress, bool useAlternatePins, b
 
 	if (full)
 	{
+		CanMessageBuffer::Init(NumCanBuffers);
+
 		// Create the task that receives CAN messages
 		canReceiverTask.Create(CanReceiverLoop, "CanRecv", nullptr, TaskPriority::CanReceiverPriority);
 

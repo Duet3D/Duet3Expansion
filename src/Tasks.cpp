@@ -171,23 +171,17 @@ extern "C" [[noreturn]] void MainTask(void *pvParameters) noexcept
 }
 
 // Request a block of the bootloader, returning true if successful
-static FirmwareFlashErrorCode RequestBootloaderBlock(uint32_t fileOffset, uint32_t numBytes)
+static FirmwareFlashErrorCode RequestBootloaderBlock(uint32_t fileOffset, uint32_t numBytes, CanMessageBuffer& buf)
 {
-	CanMessageBuffer *buf = CanMessageBuffer::Allocate();
-	if (buf == nullptr)
-	{
-		return FirmwareFlashErrorCode::noBuffer;
-	}
-
-	CanMessageFirmwareUpdateRequest * const msg = buf->SetupRequestMessage<CanMessageFirmwareUpdateRequest>(0, CanInterface::GetCanAddress(), CanId::MasterAddress);
+	CanMessageFirmwareUpdateRequest * const msg = buf.SetupRequestMessage<CanMessageFirmwareUpdateRequest>(0, CanInterface::GetCanAddress(), CanId::MasterAddress);
 	SafeStrncpy(msg->boardType, BOOTLOADER_NAME, sizeof(msg->boardType));
 	msg->boardVersion = 0;
 	msg->bootloaderVersion = CanMessageFirmwareUpdateRequest::BootloaderVersion0;
 	msg->fileWanted = 3;
 	msg->fileOffset = fileOffset;
 	msg->lengthRequested = numBytes;
-	buf->dataLength = msg->GetActualDataLength();
-	CanInterface::SendAndFree(buf);
+	buf.dataLength = msg->GetActualDataLength();
+	CanInterface::Send(&buf);
 	Platform::OnProcessingCanMessage();								// turn the green LED on
 	return FirmwareFlashErrorCode::ok;
 }
@@ -195,16 +189,11 @@ static FirmwareFlashErrorCode RequestBootloaderBlock(uint32_t fileOffset, uint32
 // Get a buffer of data from the host, returning true if successful
 static FirmwareFlashErrorCode GetBootloaderBlock(uint8_t *blockBuffer)
 {
-	const FirmwareFlashErrorCode err = RequestBootloaderBlock(0, FlashBlockSize);	// ask for 16K or 64K as a single block
+	CanMessageBuffer buf(nullptr);
+	const FirmwareFlashErrorCode err = RequestBootloaderBlock(0, FlashBlockSize, buf);	// ask for 16K or 64K as a single block
 	if (err != FirmwareFlashErrorCode::ok)
 	{
 		return err;
-	}
-
-	CanMessageBuffer *buf = CanMessageBuffer::Allocate();
-	if (buf == nullptr)
-	{
-		return FirmwareFlashErrorCode::noBuffer;
 	}
 
 	uint32_t whenStartedWaiting = millis();
@@ -213,12 +202,12 @@ static FirmwareFlashErrorCode GetBootloaderBlock(uint8_t *blockBuffer)
 	do
 	{
 		Platform::SpinMinimal();									// check if it's time to turn the LED off
-		const bool ok = CanInterface::GetCanMessage(buf);
+		const bool ok = CanInterface::GetCanMessage(&buf);
 		if (ok)
 		{
-			if (buf->id.MsgType() == CanMessageType::firmwareBlockResponse)
+			if (buf.id.MsgType() == CanMessageType::firmwareBlockResponse)
 			{
-				const CanMessageFirmwareUpdateResponse& response = buf->msg.firmwareUpdateResponse;
+				const CanMessageFirmwareUpdateResponse& response = buf.msg.firmwareUpdateResponse;
 				switch (response.err)
 				{
 				case CanMessageFirmwareUpdateResponse::ErrNoFile:
@@ -257,12 +246,11 @@ static FirmwareFlashErrorCode GetBootloaderBlock(uint8_t *blockBuffer)
 			{
 				return FirmwareFlashErrorCode::blockReceiveTimeout;
 			}
-			RequestBootloaderBlock(bytesReceived, FlashBlockSize - bytesReceived);			// ask for a block from the starting offset
+			RequestBootloaderBlock(bytesReceived, FlashBlockSize - bytesReceived, buf);			// ask for a block from the starting offset
 			whenStartedWaiting = millis();
 		}
 	} while (!done);
 
-	CanMessageBuffer::Free(buf);
 	return FirmwareFlashErrorCode::ok;
 }
 
