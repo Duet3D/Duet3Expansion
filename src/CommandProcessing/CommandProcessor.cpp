@@ -656,9 +656,13 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 # endif
 		for (size_t driver = 0; driver < NumDrivers; ++driver)
 		{
-			reply.lcatf("Driver %u: position %" PRIi32, driver, moveInstance->GetPosition(driver));
+
+			reply.lcatf("Driver %u: position %" PRIi32 ", %.1f steps/mm"
 # if HAS_SMART_DRIVERS
-			reply.cat(", ");
+				", "
+# endif
+				, driver, moveInstance->GetPosition(driver), (double)Platform::DriveStepsPerUnit(driver));
+# if HAS_SMART_DRIVERS
 			SmartDrivers::AppendDriverStatus(driver, reply);
 # endif
 		}
