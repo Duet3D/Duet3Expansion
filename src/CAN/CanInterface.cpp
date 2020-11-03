@@ -264,7 +264,7 @@ void CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf)
 	case CanMessageType::timeSync:
 		//TODO re-implement this as a PLL and use the CAN time stamps for greater accuracy
 		StepTimer::SetLocalTimeOffset(StepTimer::GetTimerTicks() - buf->msg.sync.timeSent);
-		Platform::SetFilamentMonitorsEnabled(buf->msg.sync.isPrinting);
+		Platform::SetPrinting(buf->msg.sync.isPrinting);
 
 		if (buf->dataLength >= 16)				// if real time is included
 		{

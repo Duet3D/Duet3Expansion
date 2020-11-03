@@ -246,7 +246,7 @@ GCodeResult FilamentMonitor::CommonConfigure(const CanMessageGenericParser& pars
 				locIsrMillis = 0;
 			}
 
-			if (Platform::GetFilamentMonitorsEnabled())
+			if (Platform::IsPrinting())
 			{
 				const float extrusionCommanded = (float)extruderStepsCommanded/Platform::DriveStepsPerUnit(driver);
 				fst = fs.Check(isPrinting, fromIsr, locIsrMillis, extrusionCommanded);

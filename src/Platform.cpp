@@ -72,6 +72,7 @@ namespace Platform
 	static uint32_t errorCodeBits = 0;
 
 	uint32_t uniqueId[5];
+	bool isPrinting = false;
 
 #if SUPPORT_DRIVERS
 	static constexpr float DefaultStepsPerMm = 80.0;
@@ -174,8 +175,6 @@ namespace Platform
 	DriversBitmap logOnStallDrivers, pauseOnStallDrivers, rehomeOnStallDrivers;
 	DriversBitmap stalledDrivers, stalledDriversToLog, stalledDriversToPause, stalledDriversToRehome;
 # endif
-
-	bool filamentMonitorsEnabled = false;
 #endif
 
 #if HAS_VOLTAGE_MONITOR
