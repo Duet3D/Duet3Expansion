@@ -8,6 +8,6 @@
 #ifndef SRC_VERSION_H_
 #define SRC_VERSION_H_
 
-#define VERSION		"3.2beta1+1 (2020-11-02b2)"
+#define VERSION		"3.2beta1+1 (2020-11-03b2)"
 
 #endif /* SRC_VERSION_H_ */

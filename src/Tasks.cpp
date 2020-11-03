@@ -267,26 +267,66 @@ static void ReportFlashError(FirmwareFlashErrorCode err)
 	delay(1000);
 }
 
+// Compute the CRC32 of a dword-aligned block of memory
+// This assumes the caller has exclusive use of the DMAC
+uint32_t ComputeCRC32(const uint32_t *start, const uint32_t *end)
+{
+#if SAME5x
+	DMAC->CRCCTRL.reg = DMAC_CRCCTRL_CRCBEATSIZE_WORD | DMAC_CRCCTRL_CRCSRC_DISABLE | DMAC_CRCCTRL_CRCPOLY_CRC32;	// disable the CRC unit
+#elif SAMC21
+	DMAC->CTRL.bit.CRCENABLE = 0;
+#else
+# error Unsupported processor
+#endif
+	DMAC->CRCCHKSUM.reg = 0xFFFFFFFF;
+	DMAC->CRCCTRL.reg = DMAC_CRCCTRL_CRCBEATSIZE_WORD | DMAC_CRCCTRL_CRCSRC_IO | DMAC_CRCCTRL_CRCPOLY_CRC32;
+#if SAMC21
+	DMAC->CTRL.bit.CRCENABLE = 1;
+#endif
+	while (start < end)
+	{
+		DMAC->CRCDATAIN.reg = *start++;
+		asm volatile("nop");
+		asm volatile("nop");
+	}
+
+	DMAC->CRCSTATUS.reg = DMAC_CRCSTATUS_CRCBUSY;
+	asm volatile("nop");
+	return DMAC->CRCCHKSUM.reg;
+}
+
+// Check that the bootloader we have been passed has a valid CRC
+bool CheckCRC(uint32_t *blockBuffer) noexcept
+{
+	const uint32_t crcOffset = blockBuffer[7];						// vector M9 gives the offset of the CRC from start of file, in bytes
+	if (crcOffset < 0x2000 || crcOffset > FlashBlockSize - 4)		// if the file is shorter than 8K or longer than the buffer, error
+	{
+		return false;
+	}
+	const uint32_t expectedCRC = blockBuffer[crcOffset/4];
+	return ComputeCRC32(blockBuffer, blockBuffer + crcOffset/4) == expectedCRC;
+}
+
 // The task that runs to update the bootloader
 extern "C" [[noreturn]] void UpdateBootloaderTask(void *pvParameters) noexcept
 {
 	// Allocate a buffer large enough to contain the entire bootloader
-	uint8_t * blockBuffer = nullptr;
+	uint32_t * blockBuffer = nullptr;
 	Platform::InitMinimal();
 	for (;;)
 	{
 		if (blockBuffer == nullptr)
 		{
-			blockBuffer = new uint8_t[FlashBlockSize];
+			blockBuffer = new uint32_t[FlashBlockSize/4];
 		}
 
 		if (blockBuffer == nullptr)
 		{
-			ReportFlashError(FirmwareFlashErrorCode::noBuffer);
+			ReportFlashError(FirmwareFlashErrorCode::noMemory);
 		}
 		else
 		{
-			const FirmwareFlashErrorCode err = GetBootloaderBlock(blockBuffer);
+			const FirmwareFlashErrorCode err = GetBootloaderBlock(reinterpret_cast<uint8_t*>(blockBuffer));
 			const uint32_t start = millis();
 			do
 			{
@@ -296,6 +336,10 @@ extern "C" [[noreturn]] void UpdateBootloaderTask(void *pvParameters) noexcept
 			if (err != FirmwareFlashErrorCode::ok)
 			{
 				ReportFlashError(err);
+			}
+			else if (!CheckCRC(blockBuffer))
+			{
+				ReportFlashError(FirmwareFlashErrorCode::badCRC);
 			}
 #if HAS_VOLTAGE_MONITOR
 			else if (Platform::GetCurrentVinVoltage() < 10.5)
@@ -315,7 +359,7 @@ extern "C" [[noreturn]] void UpdateBootloaderTask(void *pvParameters) noexcept
 			{
 				ReportFlashError(FirmwareFlashErrorCode::eraseFailed);
 			}
-			else if (!Flash::Write(FLASH_ADDR, FlashBlockSize, blockBuffer))
+			else if (!Flash::Write(FLASH_ADDR, FlashBlockSize, reinterpret_cast<uint8_t*>(blockBuffer)))
 			{
 				ReportFlashError(FirmwareFlashErrorCode::writeFailed);
 			}

@@ -199,9 +199,7 @@ void Move::Spin()
 		CanMessageBuffer *buf = CanInterface::GetCanMove();
 		if (buf != nullptr)
 		{
-			const CanMessageMovement& move = buf->msg.move;
-			Platform::SetFilamentMonitorsEnabled(move.filamentMonitorsEnabled);
-			if (ddaRingAddPointer->Init(move))
+			if (ddaRingAddPointer->Init(buf->msg.move))
 			{
 				ddaRingAddPointer = ddaRingAddPointer->GetNext();
 				idleCount = 0;
