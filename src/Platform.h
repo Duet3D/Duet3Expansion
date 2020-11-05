@@ -192,7 +192,7 @@ namespace Platform
 	void EnableDrive(size_t driver);
 	void DisableDrive(size_t driver);
 	void DisableAllDrives();
-	void SetDriverIdle(size_t driver);
+	void SetDriverIdle(size_t driver, uint8_t percent);
 
 #if HAS_SMART_DRIVERS
 	void SetMotorCurrent(size_t driver, float current);		//TODO avoid the int->float->int conversion

@@ -70,6 +70,8 @@ extern "C" void __malloc_unlock (struct _reent *_r) noexcept
 // Application entry point
 void AppMain() noexcept
 {
+	bool updateBootloader = false;
+
 #ifndef DEBUG
 
 	// Check that the bootloader is protected and EEPROM is configured
@@ -95,7 +97,6 @@ void AppMain() noexcept
 	constexpr uint32_t reqValueNoBootprot = (0x07 << NVMCTRL_FUSES_BOOTPROT_Pos);					// value for no bootloader protection
 # endif
 
-	bool updateBootloader = false;
 	if (nvmUserRow.b32[UpdateBootloaderMagicWordIndex] == UpdateBootloaderMagicValue && (nvmUserRow0 & bootprotMask) == reqValueNoBootprot)
 	{
 		// Update the bootloader

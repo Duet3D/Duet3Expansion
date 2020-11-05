@@ -445,23 +445,23 @@ static GCodeResult ProcessM569(const CanMessageGeneric& msg, const StringRef& re
 	return GCodeResult::ok;
 }
 
-static GCodeResult HandleSetDriverStates(const CanMessageMultipleDrivesRequest<uint16_t>& msg, const StringRef& reply)
+static GCodeResult HandleSetDriverStates(const CanMessageMultipleDrivesRequest<DriverStateControl>& msg, const StringRef& reply)
 {
 	//TODO check message is long enough for the number of drivers specified
 	const auto drivers = DriversBitmap::MakeFromRaw(msg.driversToUpdate);
 	drivers.Iterate([msg](unsigned int driver, unsigned int count) -> void
 		{
-			switch (msg.values[count])
+			switch (msg.values[count].mode)
 			{
-			case CanMessageMultipleDrivesRequest<uint16_t>::driverActive:
+			case DriverStateControl::driverActive:
 				Platform::EnableDrive(driver);
 				break;
 
-			case CanMessageMultipleDrivesRequest<uint16_t>::driverIdle:
-				Platform::SetDriverIdle(driver);
+			case DriverStateControl::driverIdle:
+				Platform::SetDriverIdle(driver, msg.values[count].idlePercent);
 				break;
 
-			case CanMessageMultipleDrivesRequest<uint16_t>::driverDisabled:
+			case DriverStateControl::driverDisabled:
 			default:
 				Platform::DisableDrive(driver);
 				break;
@@ -807,7 +807,7 @@ void CommandProcessor::Spin()
 
 		case CanMessageType::setDriverStates:
 			requestId = buf->msg.multipleDrivesRequestUint16.requestId;
-			rslt = HandleSetDriverStates(buf->msg.multipleDrivesRequestUint16, replyRef);
+			rslt = HandleSetDriverStates(buf->msg.multipleDrivesRequestDriverState, replyRef);
 			break;
 
 		case CanMessageType::m915:

@@ -108,7 +108,7 @@ namespace Platform
 	static float stepsPerMm[NumDrivers];
 	static float motorCurrents[NumDrivers];
 	static float pressureAdvance[NumDrivers];
-	static float idleCurrentFactor;
+	static float idleCurrentFactor[NumDrivers];
 #endif
 
 #if SUPPORT_SPI_SENSORS
@@ -197,7 +197,7 @@ namespace Platform
 #if HAS_SMART_DRIVERS
 	static void UpdateMotorCurrent(size_t driver)
 	{
-		SmartDrivers::SetCurrent(driver, (driverAtIdleCurrent[driver]) ? motorCurrents[driver] * idleCurrentFactor : motorCurrents[driver]);
+		SmartDrivers::SetCurrent(driver, (driverAtIdleCurrent[driver]) ? motorCurrents[driver] * idleCurrentFactor[driver] : motorCurrents[driver]);
 	}
 #endif
 
@@ -702,6 +702,7 @@ void Platform::Init()
 		stepsPerMm[i] = DefaultStepsPerMm;
 		directions[i] = true;
 		driverAtIdleCurrent[i] = false;
+		idleCurrentFactor[i] = 0.3;
 		motorCurrents[i] = 0.0;
 		pressureAdvance[i] = 0.0;
 
@@ -709,8 +710,6 @@ void Platform::Init()
 		SmartDrivers::SetMicrostepping(i, 16, true);
 # endif
 	}
-
-	idleCurrentFactor = 0.3;
 
 # if HAS_STALL_DETECT
 	stalledDrivers.Clear();;
@@ -1417,9 +1416,10 @@ void Platform::DisableDrive(size_t driver)
 # endif
 }
 
-void Platform::SetDriverIdle(size_t driver)
+void Platform::SetDriverIdle(size_t driver, uint8_t percent)
 {
-	if (idleCurrentFactor == 0.0)
+	idleCurrentFactor[driver] = (float)percent * 0.01;
+	if (percent == 0)
 	{
 		DisableDrive(driver);
 	}
