@@ -10,6 +10,7 @@
 #include "RTOSIface/RTOSIface.h"
 #include "Version.h"
 
+// Version text, without the build date
 extern const char VersionText[] = "Duet " BOARD_TYPE_NAME " firmware version " VERSION;
 
 Move *moveInstance;

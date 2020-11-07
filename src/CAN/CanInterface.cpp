@@ -15,6 +15,7 @@
 #include <RTOSIface/RTOSIface.h>
 #include <InputMonitors/InputMonitor.h>
 #include <Movement/Move.h>
+#include <General/SafeVsnprintf.h>
 
 #define SUPPORT_CAN		1				// needed by CanDriver.h
 #include <CanDevice.h>
@@ -374,10 +375,7 @@ void CanInterface::SendAnnounce(CanMessageBuffer *buf)
 		msg->timeSinceStarted = millis();
 		msg->numDrivers = NumDrivers;
 		msg->zero = 0;
-		constexpr size_t BoardTypeLength = strlen(BOARD_TYPE_NAME);
-		memcpy(msg->boardTypeAndFirmwareVersion, BOARD_TYPE_NAME, BoardTypeLength);
-		msg->boardTypeAndFirmwareVersion[BoardTypeLength] = '|';
-		strncpy(msg->boardTypeAndFirmwareVersion + BoardTypeLength + 1, VERSION, ARRAY_SIZE(msg->boardTypeAndFirmwareVersion) - BoardTypeLength - 1);
+		SafeSnprintf(msg->boardTypeAndFirmwareVersion, ARRAY_SIZE(msg->boardTypeAndFirmwareVersion), "%s|%s (%s)", BOARD_TYPE_NAME, VERSION, IsoDate);
 		buf->dataLength = msg->GetActualDataLength();
 		Send(buf);
 	}

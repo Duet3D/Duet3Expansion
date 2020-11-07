@@ -8,6 +8,8 @@
 #ifndef SRC_VERSION_H_
 #define SRC_VERSION_H_
 
-#define VERSION		"3.2beta1+1 (2020-11-06b1)"
+#define VERSION		"3.2beta3"
+
+#include <General/IsoDate.h>
 
 #endif /* SRC_VERSION_H_ */

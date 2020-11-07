@@ -570,7 +570,7 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 	{
 	case CanMessageReturnInfo::typeFirmwareVersion:
 	default:
-		reply.copy(VersionText);
+		reply.printf("%s (%s)", VersionText, IsoDate);
 		break;
 
 	case CanMessageReturnInfo::typeBoardName:
@@ -606,7 +606,7 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 		else
 		{
 			extra = LastDiagnosticsPart;
-			reply.lcat(VersionText);
+			reply.lcatf("%s (%s)", VersionText, IsoDate);
 			const char *bootloaderVersionText = *reinterpret_cast<const char**>(0x20);		// offset of vectors.pvReservedM8
 			reply.lcatf("Bootloader ID: %s", (bootloaderVersionText == nullptr) ? "not available" : bootloaderVersionText);
 		}
