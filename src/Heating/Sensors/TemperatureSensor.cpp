@@ -125,6 +125,7 @@ TemperatureSensor *TemperatureSensor::Create(unsigned int sensorNum, const char 
 	{
 		ts = new CurrentLoopTemperatureSensor(sensorNum);
 	}
+	else
 #endif
 #if SUPPORT_DHT_SENSOR
 	else if (ReducedStringEquals(typeName, DhtTemperatureSensor::TypeName))
