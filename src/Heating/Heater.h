@@ -18,7 +18,8 @@
 class HeaterMonitor;
 class CanMessageGenericParser;
 class CanMessageSetHeaterTemperature;
-class CanMessageUpdateHeaterModel;
+class CanMessageUpdateHeaterModelOld;
+class CanMessageUpdateHeaterModelNew;
 class CanMessageSetHeaterMonitors;
 
 class Heater
@@ -57,7 +58,8 @@ public:
 	void SetHeaterMonitoring(HeaterMonitor *h);
 
 	const FopDt& GetModel() const { return model; }				// Get the process model
-	GCodeResult SetOrReportModel(unsigned int heater, const CanMessageUpdateHeaterModel& msg, const StringRef& reply) noexcept;
+	GCodeResult SetOrReportModelOld(unsigned int heater, const CanMessageUpdateHeaterModelOld& msg, const StringRef& reply) noexcept;
+	GCodeResult SetOrReportModelNew(unsigned int heater, const CanMessageUpdateHeaterModelNew& msg, const StringRef& reply) noexcept;
 	void SetModelDefaults() noexcept;
 
 	bool IsHeaterEnabled() const								// Is this heater enabled?
@@ -99,7 +101,7 @@ protected:
 	float GetMaxTemperatureExcursion() const noexcept { return maxTempExcursion; }
 	float GetMaxHeatingFaultTime() const noexcept { return maxHeatingFaultTime; }
 	float GetTargetTemperature() const noexcept { return requestedTemperature; }
-	GCodeResult SetModel(float gain, float tc, float td, float maxPwm, float voltage, bool usePid, bool inverted, const StringRef& reply) noexcept;	// Set the process model
+	GCodeResult SetModel(float phr, float pcr, float pcrChange, float td, float maxPwm, float voltage, bool usePid, bool inverted, const StringRef& reply) noexcept;	// Set the process model
 
 	HeaterMonitor monitors[MaxMonitorsPerHeater];	// embedding them in the Heater uses less memory than dynamic allocation
 

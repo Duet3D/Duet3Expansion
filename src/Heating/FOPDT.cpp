@@ -10,27 +10,30 @@
 // Heater 6 on the Duet 0.8.5 is disabled by default at startup so that we can use fan 2.
 // Set up sensible defaults here in case the user enables the heater without specifying values for all the parameters.
 FopDt::FopDt()
-	: gain(DefaultHotEndHeaterGain), timeConstant(DefaultHotEndHeaterTimeConstant), deadTime(DefaultHotEndHeaterDeadTime), maxPwm(1.0), standardVoltage(0.0),
+	: heatingRate(DefaultHotEndHeaterHeatingRate),
+	  coolingRateFanOff(DefaultHotEndHeaterCoolingRate), coolingRateChangeFanOn(0.0),
+	  deadTime(DefaultHotEndHeaterDeadTime), maxPwm(1.0), standardVoltage(0.0),
 	  enabled(false), usePid(true), inverted(false), pidParametersOverridden(false)
 {
 }
 
 // Check the model parameters are sensible, if they are then save them and return true.
-bool FopDt::SetParameters(float pg, float ptc, float pdt, float pMaxPwm, float temperatureLimit, float pVoltage, bool pUsePid, bool pInverted)
+bool FopDt::SetParameters(float phr, float pcrFanOff, float pcrFanOn, float pdt, float pMaxPwm, float temperatureLimit, float pVoltage, bool pUsePid, bool pInverted)
 {
-	if (pg == -1.0 && ptc == -1.0 && pdt == -1.0)
-	{
-		// Setting all parameters to -1 disables the heater control completely so we can use the pin for other purposes
-		enabled = false;
-		return true;
-	}
-
 	// DC 2017-06-20: allow S down to 0.01 for one of our OEMs (use > 0.0099 because >= 0.01 doesn't work due to rounding error)
-	const float maxGain = max<float>(1500.0, temperatureLimit + 500.0);
-	if (pg > 10.0 && pg <= maxGain && pdt > 0.099 && ptc >= 2 * pdt && pMaxPwm > 0.0099 && pMaxPwm <= 1.0)
+	const float maxTempIncrease = max<float>(1500.0, temperatureLimit + 500.0);
+	if (   phr > 0.1								// minimum 0.1C/sec at room temperature
+		&& phr/pcrFanOff <= maxTempIncrease			// max temperature increase within limits
+		&& pcrFanOn >= pcrFanOff
+		&& pdt > 0.099
+		&& 0.5 >= pdt * pcrFanOn					// dead time less then cooling time constant
+		&& pMaxPwm > 0.0099
+		&& pMaxPwm <= 1.0
+	   )
 	{
-		gain = pg;
-		timeConstant = ptc;
+		heatingRate = phr;
+		coolingRateFanOff = pcrFanOff;
+		coolingRateChangeFanOn = pcrFanOn - pcrFanOff;
 		deadTime = pdt;
 		maxPwm = pMaxPwm;
 		standardVoltage = pVoltage;
@@ -73,7 +76,7 @@ void FopDt::SetRawPidParameters(float p_kP, float p_recipTi, float p_tD)
 }
 
 /* Re-calculate the PID parameters.
- * For some possible formulas, see "Comparison of some well-known PID tuning formulas", Computers and Chemical Engineering 30 (2006) 1416–1423,
+ * For some possible formulas, see "Comparison of some well-known PID tuning formulas", Computers and Chemical Engineering 30 (2006) 1416ï¿½1423,
  * available at http://www.ece.ualberta.ca/~marquez/journal_publications_files/papers/tan_cce_06.pdf
  * Here are some examples, where r = td/tc:
  *    Cohen-Coon (modified to use half the original Kc value):
@@ -104,13 +107,13 @@ void FopDt::SetRawPidParameters(float p_kP, float p_recipTi, float p_tD)
 
 void FopDt::CalcPidConstants()
 {
-	const float timeFrac = deadTime/timeConstant;
-	loadChangeParams.kP = 0.7/(gain * timeFrac);
-	loadChangeParams.recipTi = (1.0/1.14)/(powf(timeConstant, 0.25) * powf(deadTime, 0.75));	// Ti = 1.14 * timeConstant^0.25 * deadTime^0.75 (Ho et al)
+	const float averageCoolingRate = coolingRateFanOff + 0.5 * coolingRateChangeFanOn;
+	loadChangeParams.kP = 0.7/(heatingRate * deadTime);
+	loadChangeParams.recipTi = powf(averageCoolingRate, 0.25)/(1.14 * powf(deadTime, 0.75));	// Ti = 1.14 * timeConstant^0.25 * deadTime^0.75 (Ho et al)
 	loadChangeParams.tD = deadTime * 0.7;
 
-	setpointChangeParams.kP = 0.7/(gain * timeFrac);
-	setpointChangeParams.recipTi = 1.0/(powf(timeConstant, 0.5) * powf(deadTime, 0.5));			// Ti = timeConstant^0.5 * deadTime^0.5
+	setpointChangeParams.kP = 0.7/(heatingRate * deadTime);
+	setpointChangeParams.recipTi = powf(coolingRateFanOff, 0.5)/powf(deadTime, 0.5);			// Ti = timeConstant^0.5 * deadTime^0.5
 	setpointChangeParams.tD = deadTime * 0.7;
 
 	pidParametersOverridden = false;

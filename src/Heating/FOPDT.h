@@ -35,16 +35,24 @@ class FopDt
 public:
 	FopDt();
 
-	bool SetParameters(float pg, float ptc, float pdt, float pMaxPwm, float temperatureLimit, float pVoltage, bool pUsePid, bool pInverted);
+	bool SetParameters(float phr, float pcrFanOff, float pcrFanOn, float pdt, float pMaxPwm, float temperatureLimit, float pVoltage, bool pUsePid, bool pInverted);
 
-	float GetGain() const { return gain; }
-	float GetTimeConstant() const { return timeConstant; }
+	// Stored parameters
+	float GetHeatingRate() const noexcept { return heatingRate; }
+	float GetCoolingRateFanOff() const noexcept { return coolingRateFanOff; }
+	float GetCoolingRateFanOn() const noexcept { return coolingRateFanOff + coolingRateChangeFanOn; }
+	float GetCoolingRateChangeFanOn() const noexcept { return coolingRateChangeFanOn; }
 	float GetDeadTime() const { return deadTime; }
 	float GetMaxPwm() const { return maxPwm; }
 	float GetVoltage() const { return standardVoltage; }
 	bool UsePid() const { return usePid; }
 	bool IsInverted() const { return inverted; }
 	bool IsEnabled() const { return enabled; }
+
+	// Derived parameters
+	float GetGainFanOff() const noexcept { return heatingRate/coolingRateFanOff; }
+	float GetTimeConstantFanOff() const noexcept { return 1.0/coolingRateFanOff; }
+	float GetTimeConstantFanOn() const noexcept { return 1.0/GetCoolingRateFanOn(); }
 	bool ArePidParametersOverridden() const { return pidParametersOverridden; }
 	M301PidParameters GetM301PidParameters(bool forLoadChange) const;
 	void SetM301PidParameters(const M301PidParameters& params);
@@ -58,8 +66,9 @@ public:
 private:
 	void CalcPidConstants();
 
-	float gain;
-	float timeConstant;
+	float heatingRate;
+	float coolingRateFanOff;
+	float coolingRateChangeFanOn;
 	float deadTime;
 	float maxPwm;
 	float standardVoltage;					// power voltage reading at which tuning was done, or 0 if unknown

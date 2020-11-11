@@ -21,26 +21,15 @@ Heater::~Heater()
 }
 
 // Set the process model returning true if successful
-GCodeResult Heater::SetModel(float gain, float tc, float td, float maxPwm, float voltage, bool usePid, bool inverted, const StringRef& reply)
+GCodeResult Heater::SetModel(float phr, float pcr, float pcrChange, float td, float maxPwm, float voltage, bool usePid, bool inverted, const StringRef& reply)
 {
 	const float temperatureLimit = GetHighestTemperatureLimit();
-	const bool rslt = model.SetParameters(gain, tc, td, maxPwm, temperatureLimit, voltage, usePid, inverted);
+	const bool rslt = model.SetParameters(phr, pcr, pcrChange, td, maxPwm, temperatureLimit, voltage, usePid, inverted);
 	if (rslt)
 	{
 		if (model.IsEnabled())
 		{
-			const GCodeResult rslt = UpdateModel(reply);
-			if (rslt != GCodeResult::ok)
-			{
-				return rslt;
-			}
-			const float predictedMaxTemp = gain + NormalAmbientTemperature;
-			const float noWarnTemp = (temperatureLimit - NormalAmbientTemperature) * 1.5 + 50.0;		// allow 50% extra power plus enough for an extra 50C
-			if (predictedMaxTemp > noWarnTemp)
-			{
-				reply.printf("Heater %u appears to be over-powered. If left on at full power, its temperature is predicted to reach %dC", GetHeaterNumber(), (int)predictedMaxTemp);
-				return GCodeResult::warning;
-			}
+			return UpdateModel(reply);
 		}
 		else
 		{
@@ -69,9 +58,21 @@ GCodeResult Heater::SetHeaterMonitors(const CanMessageSetHeaterMonitors& msg, co
 	return GCodeResult::ok;
 }
 
-GCodeResult Heater::SetOrReportModel(unsigned int heater, const CanMessageUpdateHeaterModel& msg, const StringRef& reply) noexcept
+GCodeResult Heater::SetOrReportModelOld(unsigned int heater, const CanMessageUpdateHeaterModelOld& msg, const StringRef& reply) noexcept
 {
-	const GCodeResult rslt = SetModel(msg.gain, msg.timeConstant, msg.deadTime, msg.maxPwm, msg.standardVoltage, msg.usePid, msg.inverted, reply);
+	const float coolingRate = 1.0/msg.timeConstant;
+	const float heatingRate = msg.gain * coolingRate;
+	const GCodeResult rslt = SetModel(heatingRate, coolingRate, 0.0, msg.deadTime, msg.maxPwm, msg.standardVoltage, msg.usePid, msg.inverted, reply);
+	if (msg.pidParametersOverridden && (rslt == GCodeResult::ok || rslt == GCodeResult::warning))
+	{
+		SetRawPidParameters(msg.kP, msg.recipTi, msg.tD);
+	}
+	return rslt;
+}
+
+GCodeResult Heater::SetOrReportModelNew(unsigned int heater, const CanMessageUpdateHeaterModelNew& msg, const StringRef& reply) noexcept
+{
+	const GCodeResult rslt = SetModel(msg.heatingRate, msg.coolingRate, msg.coolingRateChangeFanOn, msg.deadTime, msg.maxPwm, msg.standardVoltage, msg.usePid, msg.inverted, reply);
 	if (msg.pidParametersOverridden && (rslt == GCodeResult::ok || rslt == GCodeResult::warning))
 	{
 		SetRawPidParameters(msg.kP, msg.recipTi, msg.tD);
@@ -155,7 +156,7 @@ float Heater::GetLowestTemperatureLimit() const noexcept
 
 void Heater::SetModelDefaults() noexcept
 {
-	model.SetParameters(DefaultHotEndHeaterGain, DefaultHotEndHeaterTimeConstant, DefaultHotEndHeaterDeadTime, 1.0, DefaultHotEndTemperatureLimit, 0.0, true, false);
+	model.SetParameters(DefaultHotEndHeaterHeatingRate, DefaultHotEndHeaterCoolingRate, 0.0, DefaultHotEndHeaterDeadTime, 1.0, DefaultHotEndTemperatureLimit, 0.0, true, false);
 }
 
 // End

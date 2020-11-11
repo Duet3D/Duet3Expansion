@@ -740,9 +740,14 @@ void CommandProcessor::Spin()
 			rslt = GetInfo(buf->msg.getInfo, replyRef, extra);
 			break;
 
-		case CanMessageType::updateHeaterModel:
-			requestId = buf->msg.heaterModel.requestId;
-			rslt = Heat::ProcessM307(buf->msg.heaterModel, replyRef);
+		case CanMessageType::updateHeaterModelOld:
+			requestId = buf->msg.heaterModelOld.requestId;
+			rslt = Heat::ProcessM307Old(buf->msg.heaterModelOld, replyRef);
+			break;
+
+		case CanMessageType::updateHeaterModelNew:
+			requestId = buf->msg.heaterModelNew.requestId;
+			rslt = Heat::ProcessM307New(buf->msg.heaterModelNew, replyRef);
 			break;
 
 		case CanMessageType::setHeaterTemperature:

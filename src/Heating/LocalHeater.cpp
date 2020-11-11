@@ -14,27 +14,6 @@
 const uint32_t InitialTuningReadingInterval = 250;	// the initial reading interval in milliseconds
 const uint32_t TempSettleTimeout = 20000;	// how long we allow the initial temperature to settle
 
-// Static class variables
-
-float *LocalHeater::tuningTempReadings = nullptr;	// the readings from the heater being tuned
-float LocalHeater::tuningStartTemp;					// the temperature when we turned on the heater
-float LocalHeater::tuningPwm;						// the PWM to use
-float LocalHeater::tuningTargetTemp;				// the maximum temperature we are allowed to reach
-uint32_t LocalHeater::tuningBeginTime;				// when we started the tuning process
-uint32_t LocalHeater::tuningPhaseStartTime;			// when we started the current tuning phase
-uint32_t LocalHeater::tuningReadingInterval;		// how often we are sampling
-size_t LocalHeater::tuningReadingsTaken;			// how many samples we have taken
-
-float LocalHeater::tuningHeaterOffTemp;				// the temperature when we turned the heater off
-float LocalHeater::tuningPeakTemperature;			// the peak temperature reached, averaged over 3 readings (so slightly less than the true peak)
-uint32_t LocalHeater::tuningHeatingTime;			// how long we had the heating on for
-uint32_t LocalHeater::tuningPeakDelay;				// how many milliseconds the temperature continues to rise after turning the heater off
-
-#if HAS_VOLTAGE_MONITOR
-unsigned int voltageSamplesTaken;			// how many readings we accumulated
-float tuningVoltageAccumulator;				// sum of the voltage readings we take during the heating phase
-#endif
-
 // Member functions and constructors
 
 LocalHeater::LocalHeater(unsigned int heaterNum) : Heater(heaterNum), mode(HeaterMode::off)
@@ -169,11 +148,6 @@ void LocalHeater::SwitchOff()
 	if (GetModel().IsEnabled())
 	{
 		SetHeater(0.0);
-		if (mode >= HeaterMode::tuning0)
-		{
-			delete tuningTempReadings;
-			tuningTempReadings = nullptr;
-		}
 		if (mode > HeaterMode::off)
 		{
 			mode = HeaterMode::off;
@@ -205,11 +179,6 @@ void LocalHeater::Spin()
 			{
 				lastPwm = 0.0;
 				SetHeater(0.0);						// do this here just to be sure, in case the call to platform.Message causes a delay
-				if (mode >= HeaterMode::tuning0)
-				{
-					delete tuningTempReadings;
-					tuningTempReadings = nullptr;
-				}
 				mode = HeaterMode::fault;
 				Platform::HandleHeaterFault(GetHeaterNumber());
 				Platform::MessageF(ErrorMessage, "Temperature reading fault on heater %u: %s\n", GetHeaterNumber(), TemperatureErrorString(err));
@@ -335,7 +304,7 @@ void LocalHeater::Spin()
 					// If the P and D terms together demand that the heater is full on or full off, disregard the I term
 					const float errorMinusDterm = error - (params.tD * derivative);
 					const float pPlusD = params.kP * errorMinusDterm;
-					const float expectedPwm = constrain<float>((temperature - NormalAmbientTemperature)/GetModel().GetGain(), 0.0, GetModel().GetMaxPwm());
+					const float expectedPwm = constrain<float>((temperature - NormalAmbientTemperature)/GetModel().GetGainFanOff(), 0.0, GetModel().GetMaxPwm());
 					if (pPlusD + expectedPwm > GetModel().GetMaxPwm())
 					{
 						lastPwm = GetModel().GetMaxPwm();
@@ -455,8 +424,8 @@ float LocalHeater::GetAveragePWM() const
 float LocalHeater::GetExpectedHeatingRate() const
 {
 	// In the following we allow for the gain being only 75% of what we think it should be, to avoid false alarms
-	const float maxTemperatureRise = 0.75 * GetModel().GetGain() * GetAveragePWM();		// this is the highest temperature above ambient we expect the heater can reach at this PWM
-	const float initialHeatingRate = maxTemperatureRise/GetModel().GetTimeConstant();	// this is the expected heating rate at ambient temperature
+	const float maxTemperatureRise = 0.75 * GetModel().GetGainFanOff() * GetAveragePWM();	// this is the highest temperature above ambient we expect the heater can reach at this PWM
+	const float initialHeatingRate = maxTemperatureRise/GetModel().GetTimeConstantFanOn();	// this is the expected heating rate at ambient temperature
 	return (maxTemperatureRise >= 20.0)
 			? (maxTemperatureRise + NormalAmbientTemperature - temperature) * initialHeatingRate/maxTemperatureRise
 			: 0.0;
@@ -465,59 +434,14 @@ float LocalHeater::GetExpectedHeatingRate() const
 // Auto tune this PID
 void LocalHeater::StartAutoTune(float targetTemp, float maxPwm, const StringRef& reply)
 {
-	// Starting an auto tune
-	if (!GetModel().IsEnabled())
-	{
-		reply.printf("Error: heater %u cannot be auto tuned while it is disabled", GetHeaterNumber());
-	}
-	else if (lastPwm > 0.0 || GetAveragePWM() > 0.02)
-	{
-		reply.printf("Error: heater %u must be off and cold before auto tuning it", GetHeaterNumber());
-	}
-	else
-	{
-		const TemperatureError err = ReadTemperature();
-		if (err != TemperatureError::success)
-		{
-			reply.printf("Error: heater %u reported error '%s' at start of auto tuning", GetHeaterNumber(), TemperatureErrorString(err));
-		}
-		else
-		{
-			mode = HeaterMode::tuning0;
-			tuningReadingsTaken = 0;
-			tuned = false;					// assume failure
-
-			// We don't normally allow dynamic memory allocation when running. However, auto tuning is rarely done and it
-			// would be wasteful to allocate a permanent array just in case we are going to run it, so we make an exception here.
-			tuningTempReadings = new float[MaxTuningTempReadings];
-			tuningTempReadings[0] = temperature;
-			tuningReadingInterval = HeatSampleIntervalMillis;
-			tuningPwm = maxPwm;
-			tuningTargetTemp = targetTemp;
-			reply.printf("Auto tuning heater %u using target temperature %.1f" DEGREE_SYMBOL "C and PWM %.2f - do not leave printer unattended",
-							GetHeaterNumber(), (double)targetTemp, (double)maxPwm);
-		}
-	}
+	//TODO
 }
 
 // Get the auto tune status or last result
 void LocalHeater::GetAutoTuneStatus(const StringRef& reply) const
 {
-	if (mode >= HeaterMode::tuning0)
-	{
-		reply.printf("Heater %u is being tuned, phase %u of %u",
-			GetHeaterNumber(),
-						(unsigned int)mode - (unsigned int)HeaterMode::tuning0 + 1,
-						(unsigned int)HeaterMode::lastTuningMode - (unsigned int)HeaterMode::tuning0 + 1);
-	}
-	else if (tuned)
-	{
-		reply.printf("Heater %u tuning succeeded, use M307 H%u to see result", GetHeaterNumber(), GetHeaterNumber());
-	}
-	else
-	{
-		reply.printf("Heater %u tuning failed", GetHeaterNumber());
-	}
+	//TODO
+	reply.printf("Heater %u not implemented", GetHeaterNumber());
 }
 
 /* Notes on the auto tune algorithm
@@ -569,287 +493,10 @@ void LocalHeater::GetAutoTuneStatus(const StringRef& reply) const
 // It must set lastPWM to the required PWM, unless it is the same as last time.
 void LocalHeater::DoTuningStep()
 {
-	// See if another sample is due
-	if (tuningReadingsTaken == 0)
-	{
-		tuningPhaseStartTime = millis();
-		if (mode == HeaterMode::tuning0)
-		{
-			tuningBeginTime = tuningPhaseStartTime;
-		}
-	}
-	else if (millis() - tuningPhaseStartTime < tuningReadingsTaken * tuningReadingInterval)
-	{
-		return;		// not due yet
-	}
-
-	// See if we have room to store the new reading, and if not, double the sample interval
-	if (tuningReadingsTaken == MaxTuningTempReadings)
-	{
-		// Double the sample interval
-		tuningReadingsTaken /= 2;
-		for (size_t i = 1; i < tuningReadingsTaken; ++i)
-		{
-			tuningTempReadings[i] = tuningTempReadings[i * 2];
-		}
-		tuningReadingInterval *= 2;
-	}
-
-	tuningTempReadings[tuningReadingsTaken] = temperature;
-	++tuningReadingsTaken;
-
-	switch(mode)
-	{
-	case HeaterMode::tuning0:
-		// Waiting for initial temperature to settle after any thermostatic fans have turned on
-		if (ReadingsStable(6000/HeatSampleIntervalMillis, 2.0))			// expect temperature to be stable within a 2C band for 6 seconds
-		{
-			// Starting temperature is stable, so move on
-			tuningReadingsTaken = 1;
-#if HAS_VOLTAGE_MONITOR
-			tuningVoltageAccumulator = 0.0;
-			voltageSamplesTaken = 0;
-#endif
-			tuningTempReadings[0] = tuningStartTemp = temperature;
-			timeSetHeating = tuningPhaseStartTime = millis();
-			lastPwm = tuningPwm;										// turn on heater at specified power
-			tuningReadingInterval = HeatSampleIntervalMillis;			// reset sampling interval
-			mode = HeaterMode::tuning1;
-			Platform::Message(GenericMessage, "Auto tune phase 1, heater on\n");
-			return;
-		}
-		if (millis() - tuningPhaseStartTime < 20000)
-		{
-			// Allow up to 20 seconds for starting temperature to settle
-			return;
-		}
-		Platform::Message(GenericMessage, "Auto tune cancelled because starting temperature is not stable\n");
-		break;
-
-	case HeaterMode::tuning1:
-		// Heating up
-		{
-			const bool isBedOrChamberHeater = Heat::IsBedOrChamberHeater(GetHeaterNumber());
-			const uint32_t heatingTime = millis() - tuningPhaseStartTime;
-			const float extraTimeAllowed = (isBedOrChamberHeater) ? 60.0 : 30.0;
-			if (heatingTime > (uint32_t)((GetModel().GetDeadTime() + extraTimeAllowed) * SecondsToMillis) && (temperature - tuningStartTemp) < 3.0)
-			{
-				Platform::Message(GenericMessage, "Auto tune cancelled because temperature is not increasing\n");
-				break;
-			}
-
-			const uint32_t timeoutMinutes = (isBedOrChamberHeater) ? 30 : 7;
-			if (heatingTime >= timeoutMinutes * 60 * (uint32_t)SecondsToMillis)
-			{
-				Platform::Message(GenericMessage, "Auto tune cancelled because target temperature was not reached\n");
-				break;
-			}
-
-#if HAS_VOLTAGE_MONITOR
-			tuningVoltageAccumulator += Platform::GetCurrentVinVoltage();
-			++voltageSamplesTaken;
-#endif
-			if (temperature >= tuningTargetTemp)							// if reached target
-			{
-				tuningHeatingTime = heatingTime;
-
-				// Move on to next phase
-				tuningReadingsTaken = 1;
-				tuningHeaterOffTemp = tuningTempReadings[0] = temperature;
-				tuningPhaseStartTime = millis();
-				tuningReadingInterval = HeatSampleIntervalMillis;			// reset sampling interval
-				mode = HeaterMode::tuning2;
-				lastPwm = 0.0;
-				SetHeater(0.0);
-				Platform::Message(GenericMessage, "Auto tune phase 2, heater off\n");
-			}
-		}
-		return;
-
-	case HeaterMode::tuning2:
-		// Heater turned off, looking for peak temperature
-		{
-			const int peakIndex = GetPeakTempIndex();
-			if (peakIndex < 0)
-			{
-				if (millis() - tuningPhaseStartTime < 60 * 1000)			// allow 1 minute for the bed temperature reach peak temperature
-				{
-					return;			// still waiting for peak temperature
-				}
-				Platform::Message(GenericMessage, "Auto tune cancelled because temperature is not falling\n");
-			}
-			else if (peakIndex == 0)
-			{
-				Platform::Message(GenericMessage, "Auto tune cancelled because temperature peak was not identified\n");
-			}
-			else
-			{
-				tuningPeakTemperature = tuningTempReadings[peakIndex];
-				tuningPeakDelay = peakIndex * tuningReadingInterval;
-
-				// Move on to next phase
-				tuningReadingsTaken = 1;
-				tuningTempReadings[0] = temperature;
-				tuningPhaseStartTime = millis();
-				tuningReadingInterval = HeatSampleIntervalMillis;			// reset sampling interval
-				mode = HeaterMode::tuning3;
-				Platform::MessageF(GenericMessage, "Auto tune phase 3, peak temperature was %.1f\n", (double)tuningPeakTemperature);
-				return;
-			}
-		}
-		break;
-
-	case HeaterMode::tuning3:
-		{
-			// Heater is past the peak temperature and cooling down. Wait until it is part way back to the starting temperature so we can measure the cooling rate.
-			// In the case of a bed that shows a reservoir effect, the choice of how far we wait for it to cool down will effect the result.
-			// If we wait for it to cool down by 50% then we get a short time constant and a low gain, which causes overshoot. So try a bit more.
-			const float coolDownProportion = 0.6;
-			if (temperature > (tuningTempReadings[0] * (1.0 - coolDownProportion)) + (tuningStartTemp * coolDownProportion))
-			{
-				return;
-			}
-			CalculateModel();
-		}
-		break;
-
-	default:
-		// Should not happen, but if it does then quit
-		break;
-	}
+	//TODO
 
 	// If we get here, we have finished
 	SwitchOff();								// sets mode and lastPWM, also deletes tuningTempReadings
-}
-
-// Return true if the last 'numReadings' readings are stable
-/*static*/ bool LocalHeater::ReadingsStable(size_t numReadings, float maxDiff)
-{
-	if (tuningTempReadings == nullptr || tuningReadingsTaken < numReadings)
-	{
-		return false;
-	}
-
-	float minReading = tuningTempReadings[tuningReadingsTaken - numReadings];
-	float maxReading = minReading;
-	for (size_t i = tuningReadingsTaken - numReadings + 1; i < tuningReadingsTaken; ++i)
-	{
-		const float t = tuningTempReadings[i];
-		if (t < minReading) { minReading = t; }
-		if (t > maxReading) { maxReading = t; }
-	}
-
-	return maxReading - minReading <= maxDiff;
-}
-
-// Calculate which reading gave us the peak temperature.
-// Return -1 if peak not identified yet, 0 if we are never going to find a peak, else the index of the peak
-// If the readings show a continuous decrease then we return 1, because zero dead time would lead to infinities
-/*static*/ int LocalHeater::GetPeakTempIndex()
-{
-	// Check we have enough readings to look for the peak
-	if (tuningReadingsTaken < 15)
-	{
-		return -1;							// too few readings
-	}
-
-	// Look for the peak
-	int peakIndex = IdentifyPeak(1);
-	if (peakIndex < 0)
-	{
-		peakIndex = IdentifyPeak(3);
-		if (peakIndex < 0)
-		{
-			peakIndex = IdentifyPeak(5);
-			if (peakIndex < 0)
-			{
-				peakIndex = IdentifyPeak(7);
-				if (peakIndex < 0)
-				{
-					return 0;					// more than one peak
-				}
-			}
-		}
-	}
-
-	// If we have found one peak and it's not too near the end of the readings, return it
-	return ((size_t)peakIndex + 3 < tuningReadingsTaken) ? max<int>(peakIndex, 1) : -1;
-}
-
-// See if there is exactly one peak in the readings.
-// Return -1 if more than one peak, else the index of the peak. The so-called peak may be right at the end, in which case it isn't really a peak.
-// With a well-insulated bed heater the temperature may not start dropping appreciably within the 120 second time limit allowed.
-/*static*/ int LocalHeater::IdentifyPeak(size_t numToAverage)
-{
-	int firstPeakIndex = -1, lastSameIndex = -1;
-	float peakTempTimesN = -999.0;
-	for (size_t i = 0; i + numToAverage <= tuningReadingsTaken; ++i)
-	{
-		float peak = 0.0;
-		for (size_t j = 0; j < numToAverage; ++j)
-		{
-			peak += tuningTempReadings[i + j];
-		}
-		if (peak > peakTempTimesN)
-		{
-			if ((int)i == lastSameIndex + 1)
-			{
-				firstPeakIndex = lastSameIndex = (int)i;	// readings still going up or staying the same, so advance the first peak index
-				peakTempTimesN = peak;
-			}
-			else
-			{
-				return -1;						// error, more than one peak
-			}
-		}
-		else if (peak == peakTempTimesN)		// exact equality can occur because the floating point value is computed from an integral value
-		{
-			lastSameIndex = (int)i;
-		}
-	}
-	return firstPeakIndex + (numToAverage - 1)/2;
-}
-
-// Calculate the heater model from the accumulated heater parameters
-void LocalHeater::CalculateModel()
-{
-	const float tc = (float)((tuningReadingsTaken - 1) * tuningReadingInterval)
-						/(1000.0 * logf((tuningTempReadings[0] - tuningStartTemp)/(tuningTempReadings[tuningReadingsTaken - 1] - tuningStartTemp)));
-	const float heatingTime = (tuningHeatingTime - tuningPeakDelay) * 0.001;
-	const float gain = (tuningHeaterOffTemp - tuningStartTemp)/(1.0 - expf(-heatingTime/tc));
-
-	// There are two ways of calculating the dead time:
-	// 1. Based on the delay to peak temperature after we turned the heater off. Adding 0.5sec and then taking 65% of the result is about right.
-	// 2. Based on the peak temperature compared to the temperature at which we turned the heater off.
-	// Try #2 because it is easier to identify the peak temperature than the delay to peak temperature. It can be slightly to aggressive, so add 30%.
-	//const float td = (float)(tuningPeakDelay + 500) * 0.00065;		// take the dead time as 65% of the delay to peak rounded up to a half second
-	const float td = tc * logf((gain + tuningStartTemp - tuningHeaterOffTemp)/(gain + tuningStartTemp - tuningPeakTemperature)) * 1.3;
-
-	String<1> dummy;
-	const GCodeResult rslt = SetModel(gain, tc, td, tuningPwm,
-#if HAS_VOLTAGE_MONITOR
-										tuningVoltageAccumulator/voltageSamplesTaken,
-#else
-										0.0,
-#endif
-										true, false, dummy.GetRef());
-	if (rslt == GCodeResult::ok || rslt == GCodeResult::warning)
-	{
-		Platform::MessageF(LoggedGenericMessage,
-				"Auto tune heater %u completed in %" PRIu32 " sec\n"
-				"Use M307 H%u to see the result, or M500 to save the result in config-override.g\n",
-				GetHeaterNumber(), (millis() - tuningBeginTime)/(uint32_t)SecondsToMillis, GetHeaterNumber());
-	}
-	else
-	{
-		Platform::MessageF(WarningMessage, "Auto tune of heater %u failed due to bad curve fit (A=%.1f, C=%.1f, D=%.1f)\n",
-			GetHeaterNumber(), (double)gain, (double)tc, (double)td);
-	}
-}
-
-void LocalHeater::DisplayBuffer(const char *intro)
-{
-	// We don't have a way of displaying the buffer
 }
 
 // Suspend the heater, or resume it

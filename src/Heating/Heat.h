@@ -31,7 +31,8 @@ namespace Heat
 	void ResetHeaterModels();									// Reset all active heater models to defaults
 
 	GCodeResult ConfigureHeater(const CanMessageGeneric& msg, const StringRef& reply);
-	GCodeResult ProcessM307(const CanMessageUpdateHeaterModel& msg, const StringRef& reply);
+	GCodeResult ProcessM307Old(const CanMessageUpdateHeaterModelOld& msg, const StringRef& reply);
+	GCodeResult ProcessM307New(const CanMessageUpdateHeaterModelNew& msg, const StringRef& reply);
 	GCodeResult ProcessM308(const CanMessageGeneric& msg, const StringRef& reply);
 	GCodeResult TuneHeater(const CanMessageGeneric& msg, const StringRef& reply);
 	GCodeResult SetPidParameters(const CanMessageGeneric& msg, const StringRef& reply);
