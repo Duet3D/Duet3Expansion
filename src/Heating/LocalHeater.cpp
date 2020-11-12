@@ -181,7 +181,8 @@ void LocalHeater::Spin()
 				SetHeater(0.0);						// do this here just to be sure, in case the call to platform.Message causes a delay
 				mode = HeaterMode::fault;
 				Platform::HandleHeaterFault(GetHeaterNumber());
-				Platform::MessageF(ErrorMessage, "Temperature reading fault on heater %u: %s\n", GetHeaterNumber(), TemperatureErrorString(err));
+				//TODO report the reason for the heater fault to the main board
+				debugPrintf("Temperature reading fault on heater %u: %s\n", GetHeaterNumber(), TemperatureErrorString(err));
 			}
 		}
 		// We leave lastPWM alone if we have a temporary temperature reading error
@@ -234,7 +235,8 @@ void LocalHeater::Spin()
 								SetHeater(0.0);					// do this here just to be sure
 								mode = HeaterMode::fault;
 								Platform::HandleHeaterFault(GetHeaterNumber());
-								Platform::MessageF(ErrorMessage, "Heating fault on heater %d, temperature rising much more slowly than the expected %.1f" DEGREE_SYMBOL "C/sec\n",
+								//TODO report the reason for the heater fault to the main board
+								debugPrintf("Heating fault on heater %d, temperature rising much more slowly than the expected %.1f" DEGREE_SYMBOL "C/sec\n",
 									GetHeaterNumber(), (double)expectedRate);
 							}
 						}
@@ -259,7 +261,8 @@ void LocalHeater::Spin()
 						SetHeater(0.0);					// do this here just to be sure
 						mode = HeaterMode::fault;
 						Platform::HandleHeaterFault(GetHeaterNumber());
-						Platform::MessageF(ErrorMessage, "Heating fault on heater %u, temperature excursion exceeded %.1f" DEGREE_SYMBOL "C\n",
+						//TODO report the reason for the heater fault to the main board
+						debugPrintf("Heating fault on heater %u, temperature excursion exceeded %.1f" DEGREE_SYMBOL "C\n",
 							GetHeaterNumber(), (double)GetMaxTemperatureExcursion());
 					}
 				}
@@ -364,7 +367,8 @@ void LocalHeater::Spin()
 						case HeaterMonitorAction::GenerateFault:
 							mode = HeaterMode::fault;
 							Platform::HandleHeaterFault(GetHeaterNumber());
-							Platform::MessageF(ErrorMessage, "Heating fault on heater %u\n", GetHeaterNumber());
+							//TODO report the reason for the heater fault to the main board
+							debugPrintf("Heating fault on heater %u\n", GetHeaterNumber());
 							break;
 
 						case HeaterMonitorAction::TemporarySwitchOff:

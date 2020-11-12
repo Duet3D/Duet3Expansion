@@ -57,7 +57,8 @@ GCodeResult CurrentLoopTemperatureSensor::Configure(const CanMessageGenericParse
 
 		if (rslt != TemperatureError::success)
 		{
-			Platform::MessageF(ErrorMessage, "Failed to initialise daughter board ADC: %s\n", TemperatureErrorString(rslt));
+			reply.printf("Failed to initialise daughter board ADC: %s", TemperatureErrorString(rslt));
+			return GCodeResult::error;
 		}
 	}
 	else

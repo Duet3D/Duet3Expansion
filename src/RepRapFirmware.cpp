@@ -9,6 +9,7 @@
 #include "Platform.h"
 #include "RTOSIface/RTOSIface.h"
 #include "Version.h"
+#include <General/SafeVsnprintf.h>
 
 // Version text, without the build date
 extern const char VersionText[] = "Duet " BOARD_TYPE_NAME " firmware version " VERSION;
@@ -19,7 +20,7 @@ void debugPrintf(const char* fmt, ...)
 {
 	va_list vargs;
 	va_start(vargs, fmt);
-	Platform::MessageF(DebugMessage, fmt, vargs);
+	vuprintf(Platform::DebugPutc, fmt, vargs);
 	va_end(vargs);
 }
 

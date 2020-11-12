@@ -124,12 +124,10 @@ namespace Platform
 	inline void SetPrinting(bool b) { isPrinting = b; }
 
 	// Message output (see MessageType for further details)
-	void Message(MessageType type, const char *message);
-	void MessageF(MessageType type, const char *fmt, ...) __attribute__ ((format (printf, 2, 3)));
-	void MessageF(MessageType type, const char *fmt, va_list vargs);
 	void LogError(ErrorCode e);
 	bool Debug(Module module);
 	void WriteLed(uint8_t ledNumber, bool turnOn);
+	bool DebugPutc(char c);
 
 #if SUPPORT_DRIVERS
 	float DriveStepsPerUnit(size_t drive);

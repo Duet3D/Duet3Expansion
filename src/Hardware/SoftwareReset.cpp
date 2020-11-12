@@ -8,6 +8,7 @@
 #include "SoftwareReset.h"
 #include <Tasks.h>
 #include <Platform.h>
+#include <General/Portability.h>
 #include <ctime>
 
 extern uint32_t _estack;			// defined in the linker script
@@ -85,7 +86,7 @@ void SoftwareResetData::Populate(uint16_t reason, const uint32_t *stk) noexcept
 
 	// Get the task name if we can. There may be no task executing, so we must allow for this.
 	const TaskHandle_t currentTask = xTaskGetCurrentTaskHandle();
-	taskName = (currentTask == nullptr) ? 0 : *reinterpret_cast<const uint32_t*>(pcTaskGetName(currentTask));
+	taskName = (currentTask == nullptr) ? 0 : LoadLE32(pcTaskGetName(currentTask));
 
 	if (stk != nullptr)
 	{

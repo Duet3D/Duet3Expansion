@@ -28,7 +28,7 @@ bool HeaterMonitor::Check() noexcept
 			badTemperatureCount++;
 			if (badTemperatureCount > MaxBadTemperatureCount)
 			{
-				Platform::MessageF(ErrorMessage, "Temperature reading error on sensor %d\n", sensorNumber);
+				debugPrintf("Temperature reading error on sensor %d\n", sensorNumber);
 				return false;
 			}
 		}

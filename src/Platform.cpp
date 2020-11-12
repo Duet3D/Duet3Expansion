@@ -67,8 +67,6 @@ static bool deliberateError = false;
 
 namespace Platform
 {
-	Mutex messageMutex;
-
 	static uint32_t errorCodeBits = 0;
 
 	uint32_t uniqueId[5];
@@ -251,18 +249,6 @@ namespace Platform
 		tempCalF4 = (int32_t)temp_cal_vpl - (int32_t)temp_cal_vph;
 	}
 #endif
-
-	// Send the specified message to the specified destinations. The Error and Warning flags have already been handled.
-	void RawMessage(MessageType type, const char *message)
-	{
-#ifdef DEBUG		// we don't use the UART in non-debug mode, because it interferes with BLTouch
-		MutexLocker lock(messageMutex);
-
-		uart0.write("{\"message\":\"");
-		uart0.write(message);		// should do JSON escaping here
-		uart0.write("\"}\n");
-#endif
-	}
 
 #if SAME5x
 	// Set a contiguous range of interrupts to the specified priority
@@ -494,8 +480,6 @@ void Platform::Init()
 #if SUPPORT_CLOSED_LOOP
 	ClosedLoop::Init();
 #endif
-
-	messageMutex.Create("Message");
 
 	// Turn all outputs off
 	for (size_t pin = 0; pin < ARRAY_SIZE(PinTable); ++pin)
@@ -1177,48 +1161,13 @@ void Platform::HandleHeaterFault(unsigned int heater)
 	//TODO report the heater fault to the main board
 }
 
-void Platform::MessageF(MessageType type, const char *fmt, va_list vargs)
+// Output a character to the debug channel
+bool Platform::DebugPutc(char c)
 {
-	String<FormatStringLength> formatString;
-	if ((type & ErrorMessageFlag) != 0)
-	{
-		formatString.copy("Error: ");
-		formatString.vcatf(fmt, vargs);
-	}
-	else if ((type & WarningMessageFlag) != 0)
-	{
-		formatString.copy("Warning: ");
-		formatString.vcatf(fmt, vargs);
-	}
-	else
-	{
-		formatString.vprintf(fmt, vargs);
-	}
-
-	RawMessage((MessageType)(type & ~(ErrorMessageFlag | WarningMessageFlag)), formatString.c_str());
-}
-
-void Platform::MessageF(MessageType type, const char *fmt, ...)
-{
-	va_list vargs;
-	va_start(vargs, fmt);
-	MessageF(type, fmt, vargs);
-	va_end(vargs);
-}
-
-void Platform::Message(MessageType type, const char *message)
-{
-	if ((type & (ErrorMessageFlag | WarningMessageFlag)) == 0)
-	{
-		RawMessage(type, message);
-	}
-	else
-	{
-		String<FormatStringLength> formatString;
-		formatString.copy(((type & ErrorMessageFlag) != 0) ? "Error: " : "Warning: ");
-		formatString.cat(message);
-		RawMessage((MessageType)(type & ~(ErrorMessageFlag | WarningMessageFlag)), formatString.c_str());
-	}
+#ifdef DEBUG
+	uart0.write(c);
+#endif
+	return true;
 }
 
 void Platform::LogError(ErrorCode e)

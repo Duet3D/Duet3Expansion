@@ -124,7 +124,8 @@ GCodeResult ThermocoupleSensor31856::Configure(const CanMessageGenericParser& pa
 		else
 		{
 			SetResult(rslt);
-			Platform::MessageF(ErrorMessage, "Failed to initialise thermocouple: %s\n", TemperatureErrorString(rslt));
+			reply.printf("Failed to initialise thermocouple: %s", TemperatureErrorString(rslt));
+			return GCodeResult::error;
 		}
 
 	}

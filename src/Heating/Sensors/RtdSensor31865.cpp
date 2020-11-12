@@ -107,7 +107,8 @@ GCodeResult RtdSensor31865::Configure(const CanMessageGenericParser& parser, con
 
 		if (rslt != TemperatureError::success)
 		{
-			Platform::MessageF(ErrorMessage, "Failed to initialise RTD: %s\n", TemperatureErrorString(rslt));
+			reply.printf("Failed to initialise RTD: %s", TemperatureErrorString(rslt));
+			return GCodeResult::error;
 		}
 
 	}
