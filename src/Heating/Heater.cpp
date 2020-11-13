@@ -154,9 +154,4 @@ float Heater::GetLowestTemperatureLimit() const noexcept
 	return limit;
 }
 
-void Heater::SetModelDefaults() noexcept
-{
-	model.SetParameters(DefaultHotEndHeaterHeatingRate, DefaultHotEndHeaterCoolingRate, 0.0, DefaultHotEndHeaterDeadTime, 1.0, DefaultHotEndTemperatureLimit, 0.0, true, false);
-}
-
 // End

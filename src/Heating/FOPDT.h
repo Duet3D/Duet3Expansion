@@ -35,7 +35,7 @@ class FopDt
 public:
 	FopDt();
 
-	bool SetParameters(float phr, float pcrFanOff, float pcrFanOn, float pdt, float pMaxPwm, float temperatureLimit, float pVoltage, bool pUsePid, bool pInverted);
+	bool SetParameters(float phr, float pcr, float pcrChange, float pdt, float pMaxPwm, float temperatureLimit, float pVoltage, bool pUsePid, bool pInverted);
 
 	// Stored parameters
 	float GetHeatingRate() const noexcept { return heatingRate; }

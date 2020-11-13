@@ -136,18 +136,6 @@ bool Heat::IsHeaterEnabled(size_t heater)
 	return h.IsNotNull() && h->IsHeaterEnabled();
 }
 
-// Reset all heater models to defaults. Called when running M502.
-void Heat::ResetHeaterModels()
-{
-	for (Heater *h : heaters)
-	{
-		if (h != nullptr && h->IsHeaterEnabled())
-		{
-			h->SetModelDefaults();
-		}
-	}
-}
-
 void Heat::Init()
 {
 	coldExtrude = false;

@@ -13,27 +13,28 @@ FopDt::FopDt()
 	: heatingRate(DefaultHotEndHeaterHeatingRate),
 	  coolingRateFanOff(DefaultHotEndHeaterCoolingRate), coolingRateChangeFanOn(0.0),
 	  deadTime(DefaultHotEndHeaterDeadTime), maxPwm(1.0), standardVoltage(0.0),
-	  enabled(false), usePid(true), inverted(false), pidParametersOverridden(false)
+	  enabled(true), usePid(true), inverted(false), pidParametersOverridden(false)
 {
+	CalcPidConstants();
 }
 
 // Check the model parameters are sensible, if they are then save them and return true.
-bool FopDt::SetParameters(float phr, float pcrFanOff, float pcrFanOn, float pdt, float pMaxPwm, float temperatureLimit, float pVoltage, bool pUsePid, bool pInverted)
+bool FopDt::SetParameters(float phr, float pcr, float pcrChange, float pdt, float pMaxPwm, float temperatureLimit, float pVoltage, bool pUsePid, bool pInverted)
 {
 	// DC 2017-06-20: allow S down to 0.01 for one of our OEMs (use > 0.0099 because >= 0.01 doesn't work due to rounding error)
 	const float maxTempIncrease = max<float>(1500.0, temperatureLimit + 500.0);
 	if (   phr > 0.1								// minimum 0.1C/sec at room temperature
-		&& phr/pcrFanOff <= maxTempIncrease			// max temperature increase within limits
-		&& pcrFanOn >= pcrFanOff
+		&& phr/pcr <= maxTempIncrease			// max temperature increase within limits
+		&& pcrChange >= 0.0
 		&& pdt > 0.099
-		&& 0.5 >= pdt * pcrFanOn					// dead time less then cooling time constant
+		&& 0.5 >= pdt * (pcr + pcrChange)					// dead time less then cooling time constant
 		&& pMaxPwm > 0.0099
 		&& pMaxPwm <= 1.0
 	   )
 	{
 		heatingRate = phr;
-		coolingRateFanOff = pcrFanOff;
-		coolingRateChangeFanOn = pcrFanOn - pcrFanOff;
+		coolingRateFanOff = pcr;
+		coolingRateChangeFanOn = pcrChange;
 		deadTime = pdt;
 		maxPwm = pMaxPwm;
 		standardVoltage = pVoltage;

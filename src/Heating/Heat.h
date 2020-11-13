@@ -28,7 +28,6 @@ namespace Heat
 	void Task();
 	void Init();												// Set everything up
 	void Exit();												// Shut everything down
-	void ResetHeaterModels();									// Reset all active heater models to defaults
 
 	GCodeResult ConfigureHeater(const CanMessageGeneric& msg, const StringRef& reply);
 	GCodeResult ProcessM307Old(const CanMessageUpdateHeaterModelOld& msg, const StringRef& reply);
