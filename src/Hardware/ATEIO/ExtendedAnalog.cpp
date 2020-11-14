@@ -6,6 +6,7 @@
  */
 
 #include "ExtendedAnalog.h"
+#include <AnalogIn.h>
 
 #ifdef ATEIO
 
@@ -56,7 +57,8 @@ void ExtendedAnalog::Init()
 uint16_t ExtendedAnalog::AnalogIn(unsigned int chan)
 {
 	(void)AdcTransfer(ControlRegisterValue | ((chan & 7) << 10));		// set channel to sample next
-	return (AdcTransfer(0) & 8191) >> 1;								// reduce 13-bit result to 12 bits
+	static_assert(AnalogIn::AdcBits >= 13);
+	return (AdcTransfer(0) & 8191) << (AnalogIn::AdcBits - 13);			// extend 13-bit result to the required number of bits
 }
 
 #endif

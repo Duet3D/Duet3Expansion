@@ -147,13 +147,12 @@ uint16_t IoPort::ReadAnalog() const
 		const AdcInput chan = PinTable[pin].adc;
 		if (chan != AdcInput::none)
 		{
+			const uint16_t val =
 #ifdef ATEIO
-			if (pin >= NumPhysicalPins)
-			{
-				return ExtendedAnalog::AnalogIn((uint8_t)chan);
-			}
+			(pin >= NumPhysicalPins)
+				? ExtendedAnalog::AnalogIn(GetInputNumber(chan)) :
 #endif
-			const uint16_t val = AnalogIn::ReadChannel(chan);
+				AnalogIn::ReadChannel(chan);
 			return (totalInvert) ? ((1u << AnalogIn::AdcBits) - 1) - val : val;
 		}
 	}
