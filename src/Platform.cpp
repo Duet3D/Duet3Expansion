@@ -109,7 +109,7 @@ namespace Platform
 	static float idleCurrentFactor[NumDrivers];
 #endif
 
-#if SUPPORT_SPI_SENSORS
+#if SUPPORT_SPI_SENSORS || defined(ATEIO)
 	SharedSpiDevice *sharedSpi;
 #endif
 
@@ -710,18 +710,11 @@ void Platform::Init()
 # endif
 #endif	//SUPPORT_DRIVERS
 
-#if SUPPORT_SPI_SENSORS
-
+#if SUPPORT_SPI_SENSORS || defined(ATEIO)
 	// Set the pin functions
-# if SAME5x
 	SetPinFunction(SSPIMosiPin, SSPIMosiPinPeriphMode);
 	SetPinFunction(SSPISclkPin, SSPISclkPinPeriphMode);
 	SetPinFunction(SSPIMisoPin, SSPIMisoPinPeriphMode);
-# elif defined(SAMC21)
-#  error SPI sensors not configured for this device
-# else
-# error Unknown device
-# endif
 
 	sharedSpi = new SharedSpiDevice(SERCOM_SSPI_NUMBER);
 #endif

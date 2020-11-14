@@ -142,7 +142,7 @@ void InputMonitor::AnalogInterrupt(uint16_t reading) noexcept
 {
 	WriteLocker lock(listLock);
 
-	Delete(msg.handle.u.all);						// delete any existing lock with the same handle
+	Delete(msg.handle.u.all);						// delete any existing monitor with the same handle
 
 	// Allocate a new one
 	InputMonitor *newMonitor;

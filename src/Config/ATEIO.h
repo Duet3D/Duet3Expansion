@@ -30,8 +30,6 @@
 #define USE_MPU					0
 #define USE_CACHE				0
 
-#define DIAG_SERCOM_NUMBER		1		// which SERCOM device we use for debugging output
-
 constexpr bool UseAlternateCanPins = true;
 
 constexpr Pin BoardTypePins[] = { PortAPin(5), PortAPin(4) };
@@ -40,6 +38,17 @@ constexpr Pin ButtonPins[] = { PortAPin(18) };
 // Diagnostic LEDs
 constexpr Pin LedPins[] = { PortAPin(30), PortAPin(31) };
 constexpr bool LedActiveHigh = false;
+
+// Shared SPI
+constexpr uint8_t SERCOM_SSPI_NUMBER = 1;
+constexpr Pin SSPIMosiPin = PortAPin(16);
+constexpr GpioPinFunction SSPIMosiPinPeriphMode = GpioPinFunction::C;
+constexpr Pin SSPISclkPin = PortAPin(17);
+constexpr GpioPinFunction SSPISclkPinPeriphMode = GpioPinFunction::C;
+constexpr Pin SSPIMisoPin = PortAPin(19);
+constexpr GpioPinFunction SSPIMisoPinPeriphMode = GpioPinFunction::C;
+
+constexpr Pin ExtendedAdcCsPin = PortAPin(18);
 
 // Table of pin functions that we are allowed to use
 constexpr PinDescription PinTable[] =
@@ -104,10 +113,21 @@ constexpr PinDescription PinTable[] =
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PB21 not on chip
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PB22 CAN0 Tx
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PB23 CAN0 Rx
+
+	// Extended ADC. We can re-use the ADC0 input channel IDs because the code checks whether the pin is a physical pin.
+	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_0,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"xain0"		},	// extended ADC channel 0
+	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_1,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"xain1"		},	// extended ADC channel 1
+	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_2,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"xain2"		},	// extended ADC channel 2
+	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_3,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"xain3"		},	// extended ADC channel 3
+	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_4,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"xain4"		},	// extended ADC channel 4
+	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_5,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"xain5"		},	// extended ADC channel 5
+	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_6,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"xain6"		},	// extended ADC channel 6
+	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_7,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"xain7"		},	// extended ADC channel 7
 };
 
 static constexpr size_t NumPins = ARRAY_SIZE(PinTable);
-static_assert(NumPins == 32 + 24);		// 32 pins on port A (some missing), 24 on port B
+static constexpr size_t NumPhysicalPins = 32 + 24;		// 32 pins on port A (some missing), 24 on port B
+static_assert(NumPins == NumPhysicalPins + 8);			// 8 virtual pins for extended ADC inputs
 
 // Timer/counter used to generate step pulses and other sub-millisecond timings
 TcCount32 * const StepTc = &(TC2->COUNT32);
@@ -120,15 +140,11 @@ constexpr unsigned int StepTcNumber = 2;
 #define NUM_SERIAL_PORTS		0
 
 // DMA channel assignments
-constexpr DmaChannel DmacChanTmcTx = 0;
-constexpr DmaChannel DmacChanTmcRx = 1;
-constexpr DmaChannel DmacChanAdc0Rx = 2;
-constexpr DmaChannel DmacChanSdadcRx = 3;
+constexpr DmaChannel DmacChanAdc0Rx = 0;
+constexpr DmaChannel DmacChanSdadcRx = 1;
 
-constexpr unsigned int NumDmaChannelsUsed = 4;			// must be at least the number of channels used, may be larger. Max 12 on the SAMC21.
+constexpr unsigned int NumDmaChannelsUsed = 2;			// must be at least the number of channels used, may be larger. Max 12 on the SAMC21.
 
-constexpr DmaPriority DmacPrioTmcTx = 0;
-constexpr DmaPriority DmacPrioTmcRx = 3;
 constexpr DmaPriority DmacPrioAdcRx = 2;
 
 // Interrupt priorities, lower means higher priority. 0 can't make RTOS calls.

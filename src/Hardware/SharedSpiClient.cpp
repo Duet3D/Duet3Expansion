@@ -7,7 +7,7 @@
 
 #include "SharedSpiClient.h"
 
-#if SUPPORT_SPI_SENSORS || SUPPORT_CLOSED_LOOP
+#if SUPPORT_SPI_SENSORS || SUPPORT_CLOSED_LOOP || defined(ATEIO)
 
 #include "IoPorts.h"
 

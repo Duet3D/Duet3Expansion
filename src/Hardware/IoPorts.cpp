@@ -11,6 +11,10 @@
 #include <Interrupts.h>
 #include <CAN/CanInterface.h>
 
+#ifdef ATEIO
+# include <Hardware/ATEIO/ExtendedAnalog.h>
+#endif
+
 // Members of class IoPort
 
 PinUsedBy IoPort::portUsedBy[NumPins];
@@ -39,6 +43,14 @@ bool IoPort::SetMode(PinAccess access)
 	{
 		return false;
 	}
+
+#ifdef ATEIO
+	// Check for extended analog pins
+	if (pin >= NumPhysicalPins)
+	{
+		return access == PinAccess::readAnalog;
+	}
+#endif
 
 	// Check that the pin mode has been defined suitably
 	PinMode desiredMode;
@@ -132,9 +144,15 @@ uint16_t IoPort::ReadAnalog() const
 {
 	if (IsValid())
 	{
-		AdcInput chan = PinTable[pin].adc;
+		const AdcInput chan = PinTable[pin].adc;
 		if (chan != AdcInput::none)
 		{
+#ifdef ATEIO
+			if (pin >= NumPhysicalPins)
+			{
+				return ExtendedAnalog::AnalogIn((uint8_t)chan);
+			}
+#endif
 			const uint16_t val = AnalogIn::ReadChannel(chan);
 			return (totalInvert) ? ((1u << AnalogIn::AdcBits) - 1) - val : val;
 		}
