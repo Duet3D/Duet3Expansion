@@ -12,8 +12,8 @@
 #include <CAN/CanInterface.h>
 #include <CanMessageBuffer.h>
 
-InputMonitor *InputMonitor::monitorsList = nullptr;
-InputMonitor *InputMonitor::freeList = nullptr;
+InputMonitor * volatile InputMonitor::monitorsList = nullptr;
+InputMonitor * volatile InputMonitor::freeList = nullptr;
 ReadWriteLock InputMonitor::listLock;
 
 bool InputMonitor::Activate() noexcept
@@ -296,29 +296,28 @@ void InputMonitor::AnalogInterrupt(uint16_t reading) noexcept
 	const CanMessageReadInputsRequest& req = buf->msg.readInputsRequest;
 	const CanAddress srcAddress = buf->id.Src();
 	const uint16_t rid = req.requestId;
-	Bitmap<uint32_t> handlesReq(req.handlesRequested);
+	const uint16_t mask = req.mask.u.all;
+	const uint16_t pattern = req.pattern.u.all & mask;
 
-	// Construct the new message
+	// Construct the new message in the same buffer
 	auto reply = buf->SetupResponseMessage<CanMessageReadInputsReply>(rid, CanInterface::GetCanAddress(), srcAddress);
-	Bitmap<uint32_t> handlesReturned;
 
 	unsigned int count = 0;
-	handlesReq.Iterate([&count, &handlesReturned, &reply](unsigned int hn, unsigned int)
-			{
-				if (count < ARRAY_SIZE(reply->results))
-				{
-					const auto h = Find(hn);
-					if (h.IsNotNull())
-					{
-						handlesReturned.SetBit(hn);
-						reply->results[count] = h->GetAnalogValue();
-						++count;
-					}
-				}
-			}
-		);
-	reply->handlesReported = handlesReturned.GetRaw();
-	buf->dataLength = reply->GetActualDataLength(count);
+	ReadLocker lock(listLock);
+	InputMonitor *h = monitorsList;
+	while (h != nullptr && count < ARRAY_SIZE(reply->results))
+	{
+		if ((h->handle & mask) == pattern)
+		{
+			reply->results[count].handle.Set(h->handle);
+			reply->results[count].value = h->GetAnalogValue();
+			++count;
+		}
+	}
+
+	reply->numReported = count;
+	reply->resultCode = (uint32_t)GCodeResult::ok;
+	buf->dataLength = reply->GetActualDataLength();
 }
 
 // End

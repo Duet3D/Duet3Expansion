@@ -54,8 +54,8 @@ private:
 	volatile bool state;
 	volatile bool sendDue;
 
-	static InputMonitor *monitorsList;
-	static InputMonitor *freeList;
+	static InputMonitor * volatile monitorsList;
+	static InputMonitor * volatile freeList;
 
 	static ReadWriteLock listLock;
 };
