@@ -313,6 +313,7 @@ void InputMonitor::AnalogInterrupt(uint16_t reading) noexcept
 			reply->results[count].value = h->GetAnalogValue();
 			++count;
 		}
+		h = h->next;
 	}
 
 	reply->numReported = count;
