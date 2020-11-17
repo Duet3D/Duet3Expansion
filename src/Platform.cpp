@@ -512,6 +512,13 @@ void Platform::Init()
 			{
 				IoPort::SetPinMode(pin, INPUT_PULLUP);				// ensure SPI CS lines are high so that temp daughter boards don't drive the bus before they are configured
 			}
+#ifdef ATEIO
+			else if (StringStartsWith(p.pinNames, "!rsel") || StringStartsWith(p.pinNames, "!tsel"))
+			{
+				IoPort::SetHighDriveStrength(pin);
+				IoPort::SetPinMode(pin, OUTPUT_HIGH);
+			}
+#endif
 		}
 	}
 
