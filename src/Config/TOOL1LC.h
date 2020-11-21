@@ -45,6 +45,8 @@ constexpr size_t MaxSmartDrivers = 1;
 #define TMC22xx_SINGLE_DRIVER			1
 #define TMC22xx_HAS_ENABLE_PINS			0
 #define TMC22xx_VARIABLE_NUM_DRIVERS	0
+#define TMC22xx_USE_SLAVEADDR			0
+#define TMC22xx_DEFAULT_STEALTHCHOP		0
 
 constexpr Pin GlobalTmc22xxEnablePin = PortBPin(2);
 
@@ -64,7 +66,14 @@ constexpr uint8_t TMC22xxSercomRxPad = 2;
 // So at 500kbaud it takes about 128us to write a register, and 192us+ to read a register.
 // In testing I found that 500kbaud was not reliable on the Duet Maestro, so now using 200kbaud.
 constexpr uint32_t DriversBaudRate = 200000;
-constexpr uint32_t TransferTimeout = 10;			// any transfer should complete within 10 ticks @ 1ms/tick
+constexpr uint32_t TransferTimeout = 10;									// any transfer should complete within 10 ticks @ 1ms/tick
+
+constexpr float DriverSenseResistor = 0.091 + 0.02 + 0.003;					// in ohms. Added the 0.003 to make the max current a round 1600mA.
+constexpr float DriverVRef = 180.0;											// in mV
+constexpr float DriverFullScaleCurrent = DriverVRef/DriverSenseResistor;	// in mA
+constexpr float DriverCsMultiplier = 32.0/DriverFullScaleCurrent;
+constexpr float MaximumMotorCurrent = 1600.0;
+constexpr float MaximumStandstillCurrent = 1200.0;
 constexpr uint32_t DefaultStandstillCurrentPercent = 75;
 
 PortGroup * const StepPio = &(PORT->Group[0]);		// the PIO that all the step pins are on
