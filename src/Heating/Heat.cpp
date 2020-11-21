@@ -20,7 +20,8 @@ Licence: GPL
 
 #include "Heat.h"
 #include "Heater.h"
-#include "Platform.h"
+#include <Platform.h>
+#include <TaskPriorities.h>
 #include "Sensors/TemperatureSensor.h"
 #include "CanMessageGenericParser.h"
 #include <CanMessageBuffer.h>

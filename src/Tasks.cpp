@@ -7,6 +7,7 @@
 
 #include "Tasks.h"
 #include <Platform.h>
+#include <TaskPriorities.h>
 #include <Movement/Move.h>
 #include <GCodes/GCodes.h>
 #include <Heating/Heat.h>

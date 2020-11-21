@@ -150,20 +150,4 @@ typedef Bitmap<uint64_t> SensorsBitmap;				// Type of a bitmap representing sens
 static_assert(MaxFans <= FansBitmap::MaxBits());
 static_assert(MaxSensors <= SensorsBitmap::MaxBits());
 
-// Task priorities
-namespace TaskPriority
-{
-	static constexpr int SpinPriority = 1;							// priority for tasks that rarely block
-	static constexpr int HeatPriority = 2;
-	static constexpr int DhtPriority = 2;
-	static constexpr int TmcPriority = 2;
-	static constexpr int AinPriority = 2;
-	static constexpr int HeightFollowingPriority = 2;
-	static constexpr int DueXPriority = 3;
-	static constexpr int LaserPriority = 3;
-	static constexpr int CanSenderPriority = 3;
-	static constexpr int CanReceiverPriority = 3;
-	static constexpr int CanAsyncSenderPriority = 4;
-}
-
 #endif /* SRC_REPRAPFIRMWARE_H_ */
