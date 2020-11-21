@@ -280,6 +280,7 @@ GCodeResult FilamentMonitor::CommonConfigure(const CanMessageGenericParser& pars
 		buf.dataLength = msg->GetActualDataLength();
 		CanInterface::Send(&buf);
 		whenStatusLastSent = millis();
+		statusChanged = false;
 	}
 }
 
