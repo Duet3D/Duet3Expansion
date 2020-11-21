@@ -361,10 +361,10 @@ void CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf)
 
 void CanInterface::Diagnostics(const StringRef& reply)
 {
-	unsigned int messagesLost, busOffCount;
-	can0dev->GetAndClearErrorCounts(messagesLost, busOffCount);
-	reply.lcatf("Free CAN buffers: %u, messages lost %u, duplicates %u, oos %u, busOff %u",
-				CanMessageBuffer::FreeBuffers(), messagesLost, duplicateMotionMessages, oosMessages, busOffCount);
+	unsigned int messagesQueuedForSending, messagesReceived, txTimeouts, messagesLost, busOffCount;
+	can0dev->GetAndClearStats(messagesQueuedForSending, messagesReceived, txTimeouts, messagesLost, busOffCount);
+	reply.lcatf("CAN messages queued %u, send timeouts %u, received %u, lost %u, free buffers %u\n",
+					messagesQueuedForSending, txTimeouts, messagesReceived, messagesLost, CanMessageBuffer::FreeBuffers());
 }
 
 // Send an announcement message if we haven't had an announce acknowledgement form the main board. On return the buffer is available to use again.
