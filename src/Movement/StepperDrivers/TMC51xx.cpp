@@ -14,6 +14,7 @@
 #include <RTOSIface/RTOSIface.h>
 #include <Movement/Move.h>
 #include <DmacManager.h>
+#include <TaskPriorities.h>
 #include <General/Portability.h>
 
 #if SAME5x || SAMC21

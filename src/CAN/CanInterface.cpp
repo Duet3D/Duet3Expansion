@@ -69,10 +69,10 @@ static bool isProgrammed = false;					// true after the main board has sent us a
 #if SUPPORT_DRIVERS
 static uint32_t lastMotionMessageScheduledTime = 0;
 static uint32_t lastMotionMessageReceivedAt = 0;
-#endif
-
 static unsigned int duplicateMotionMessages = 0;
 static unsigned int oosMessages = 0;
+#endif
+
 uint8_t expectedSeq = 0xFF;
 
 //DEBUG
