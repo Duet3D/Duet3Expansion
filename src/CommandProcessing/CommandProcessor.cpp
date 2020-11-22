@@ -157,80 +157,130 @@ static void GenerateTestReport(const StringRef& reply)
 
 #if SUPPORT_DRIVERS
 
-static GCodeResult SetMotorCurrents(const CanMessageMultipleDrivesRequest<float>& msg, const StringRef& reply)
+static GCodeResult SetMotorCurrents(const CanMessageMultipleDrivesRequest<float>& msg, size_t dataLength, const StringRef& reply)
 {
 # if HAS_SMART_DRIVERS
-	//TODO check message is long enough for the number of drivers specified
-	const auto drivers = DriversBitmap::MakeFromRaw(msg.driversToUpdate);
-	drivers.Iterate([msg](unsigned int driver, unsigned int count) -> void
-		{
-			Platform::SetMotorCurrent(driver, msg.values[count]);
-		});
-	return GCodeResult::ok;
-# else
-	reply.copy("Setting not available for external drivers");
-	return GCodeResult::error;
-# endif
-}
+	const auto drivers = Bitmap<uint16_t>::MakeFromRaw(msg.driversToUpdate);
+	if (dataLength < msg.GetActualDataLength(drivers.CountSetBits()))
+	{
+		reply.copy("bad data length");
+		return GCodeResult::error;
+	}
 
-static GCodeResult SetStandstillCurrentFactor(const CanMessageMultipleDrivesRequest<float>& msg, const StringRef& reply)
-{
-# if HAS_SMART_DRIVERS
-	//TODO check message is long enough for the number of drivers specified
-	const auto drivers = DriversBitmap::MakeFromRaw(msg.driversToUpdate);
-	drivers.Iterate([msg](unsigned int driver, unsigned int count) -> void
-		{
-			SmartDrivers::SetStandstillCurrentPercent(driver, msg.values[count]);
-		});
-	return GCodeResult::ok;
-# else
-	reply.copy("Setting not available for external drivers");
-	return GCodeResult::error;
-# endif
-}
-
-static GCodeResult HandlePressureAdvance(const CanMessageMultipleDrivesRequest<float>& msg, const StringRef& reply)
-{
-	//TODO check message is long enough for the number of drivers specified
-	const auto drivers = DriversBitmap::MakeFromRaw(msg.driversToUpdate);
-	drivers.Iterate([msg](unsigned int driver, unsigned int count) -> void
-		{
-			Platform::SetPressureAdvance(driver, msg.values[count]);
-		});
-	return GCodeResult::ok;
-}
-
-static GCodeResult SetStepsPerMmAndMicrostepping(const CanMessageMultipleDrivesRequest<StepsPerUnitAndMicrostepping>& msg, const StringRef& reply)
-{
-	//TODO check message is long enough for the number of drivers specified
-	const auto drivers = DriversBitmap::MakeFromRaw(msg.driversToUpdate);
 	GCodeResult rslt = GCodeResult::ok;
 	drivers.Iterate([msg, reply, &rslt](unsigned int driver, unsigned int count) -> void
-		{
-			if (driver >= NumDrivers)
-			{
-				reply.lcatf("No such driver %u.%u", CanInterface::GetCanAddress(), driver);
-				rslt = GCodeResult::error;
-			}
-			else
-			{
-				Platform::SetDriveStepsPerUnit(driver, msg.values[count].GetStepsPerUnit());
+						{
+							if (driver >= NumDrivers)
+							{
+								reply.lcatf("No such driver %u.%u", CanInterface::GetCanAddress(), driver);
+								rslt = GCodeResult::error;
+							}
+							else
+							{
+								Platform::SetMotorCurrent(driver, msg.values[count]);
+							}
+						}
+				   );
+	return rslt;
+# else
+	reply.copy("Setting not available for external drivers");
+	return GCodeResult::error;
+# endif
+}
+
+static GCodeResult SetStandstillCurrentFactor(const CanMessageMultipleDrivesRequest<float>& msg, size_t dataLength, const StringRef& reply)
+{
+# if HAS_SMART_DRIVERS
+	const auto drivers = Bitmap<uint16_t>::MakeFromRaw(msg.driversToUpdate);
+	if (dataLength < msg.GetActualDataLength(drivers.CountSetBits()))
+	{
+		reply.copy("bad data length");
+		return GCodeResult::error;
+	}
+
+	GCodeResult rslt = GCodeResult::ok;
+	drivers.Iterate([msg, reply, &rslt](unsigned int driver, unsigned int count) -> void
+						{
+							if (driver >= NumDrivers)
+							{
+								reply.lcatf("No such driver %u.%u", CanInterface::GetCanAddress(), driver);
+								rslt = GCodeResult::error;
+							}
+							else
+							{
+								SmartDrivers::SetStandstillCurrentPercent(driver, msg.values[count]);
+							}
+						}
+				   );
+	return rslt;
+# else
+	reply.copy("Setting not available for external drivers");
+	return GCodeResult::error;
+# endif
+}
+
+static GCodeResult HandlePressureAdvance(const CanMessageMultipleDrivesRequest<float>& msg, size_t dataLength, const StringRef& reply)
+{
+	const auto drivers = Bitmap<uint16_t>::MakeFromRaw(msg.driversToUpdate);
+	if (dataLength < msg.GetActualDataLength(drivers.CountSetBits()))
+	{
+		reply.copy("bad data length");
+		return GCodeResult::error;
+	}
+
+	GCodeResult rslt = GCodeResult::ok;
+	drivers.Iterate([msg, reply, &rslt](unsigned int driver, unsigned int count) -> void
+						{
+							if (driver >= NumDrivers)
+							{
+								reply.lcatf("No such driver %u.%u", CanInterface::GetCanAddress(), driver);
+								rslt = GCodeResult::error;
+							}
+							else
+							{
+								Platform::SetPressureAdvance(driver, msg.values[count]);
+							}
+						}
+				   );
+	return rslt;
+}
+
+static GCodeResult SetStepsPerMmAndMicrostepping(const CanMessageMultipleDrivesRequest<StepsPerUnitAndMicrostepping>& msg, size_t dataLength, const StringRef& reply)
+{
+	const auto drivers = Bitmap<uint16_t>::MakeFromRaw(msg.driversToUpdate);
+	if (dataLength < msg.GetActualDataLength(drivers.CountSetBits()))
+	{
+		reply.copy("bad data length");
+		return GCodeResult::error;
+	}
+
+	GCodeResult rslt = GCodeResult::ok;
+	drivers.Iterate([msg, reply, &rslt](unsigned int driver, unsigned int count) -> void
+						{
+							if (driver >= NumDrivers)
+							{
+								reply.lcatf("No such driver %u.%u", CanInterface::GetCanAddress(), driver);
+								rslt = GCodeResult::error;
+							}
+							else
+							{
+								Platform::SetDriveStepsPerUnit(driver, msg.values[count].GetStepsPerUnit());
 #if HAS_SMART_DRIVERS
-				const uint16_t microstepping = msg.values[count].GetMicrostepping() & 0x03FF;
-				const bool interpolate = (msg.values[count].GetMicrostepping() & 0x8000) != 0;
-				if (!SmartDrivers::SetMicrostepping(driver, microstepping, interpolate))
-				{
-					reply.lcatf("Driver %u.%u does not support x%u microstepping", CanInterface::GetCanAddress(), driver, microstepping);
-					if (interpolate)
-					{
-						reply.cat(" with interpolation");
-					}
-					rslt = GCodeResult::error;
-				}
+								const uint16_t microstepping = msg.values[count].GetMicrostepping() & 0x03FF;
+								const bool interpolate = (msg.values[count].GetMicrostepping() & 0x8000) != 0;
+								if (!SmartDrivers::SetMicrostepping(driver, microstepping, interpolate))
+								{
+									reply.lcatf("Driver %u.%u does not support x%u microstepping", CanInterface::GetCanAddress(), driver, microstepping);
+									if (interpolate)
+									{
+										reply.cat(" with interpolation");
+									}
+									rslt = GCodeResult::error;
+								}
 #endif
-			}
-		}
-	);
+							}
+						}
+					);
 	return rslt;
 }
 
@@ -448,7 +498,7 @@ static GCodeResult ProcessM569(const CanMessageGeneric& msg, const StringRef& re
 static GCodeResult HandleSetDriverStates(const CanMessageMultipleDrivesRequest<DriverStateControl>& msg, const StringRef& reply)
 {
 	//TODO check message is long enough for the number of drivers specified
-	const auto drivers = DriversBitmap::MakeFromRaw(msg.driversToUpdate);
+	const auto drivers = Bitmap<uint16_t>::MakeFromRaw(msg.driversToUpdate);
 	drivers.Iterate([msg](unsigned int driver, unsigned int count) -> void
 		{
 			switch (msg.values[count].mode)
@@ -783,7 +833,7 @@ void CommandProcessor::Spin()
 #if SUPPORT_DRIVERS
 		case CanMessageType::setMotorCurrents:
 			requestId = buf->msg.multipleDrivesRequestFloat.requestId;
-			rslt = SetMotorCurrents(buf->msg.multipleDrivesRequestFloat, replyRef);
+			rslt = SetMotorCurrents(buf->msg.multipleDrivesRequestFloat, buf->dataLength, replyRef);
 			break;
 
 		case CanMessageType::m569:
@@ -802,12 +852,12 @@ void CommandProcessor::Spin()
 
 		case CanMessageType::setStandstillCurrentFactor:
 			requestId = buf->msg.multipleDrivesRequestFloat.requestId;
-			rslt = SetStandstillCurrentFactor(buf->msg.multipleDrivesRequestFloat, replyRef);
+			rslt = SetStandstillCurrentFactor(buf->msg.multipleDrivesRequestFloat, buf->dataLength, replyRef);
 			break;
 
 		case CanMessageType::setStepsPerMmAndMicrostepping:
 			requestId = buf->msg.multipleDrivesStepsPerUnitAndMicrostepping.requestId;
-			rslt = SetStepsPerMmAndMicrostepping(buf->msg.multipleDrivesStepsPerUnitAndMicrostepping, replyRef);
+			rslt = SetStepsPerMmAndMicrostepping(buf->msg.multipleDrivesStepsPerUnitAndMicrostepping, buf->dataLength, replyRef);
 			break;
 
 		case CanMessageType::setDriverStates:
@@ -822,7 +872,7 @@ void CommandProcessor::Spin()
 
 		case CanMessageType::setPressureAdvance:
 			requestId = buf->msg.multipleDrivesRequestFloat.requestId;
-			rslt = HandlePressureAdvance(buf->msg.multipleDrivesRequestFloat, replyRef);
+			rslt = HandlePressureAdvance(buf->msg.multipleDrivesRequestFloat, buf->dataLength, replyRef);
 			break;
 #endif
 

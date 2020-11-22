@@ -1222,7 +1222,9 @@ void TmcDriverState::UpdateCurrent() noexcept
 	const float idealIHoldCs = idealIRunCs * standstillCurrentFraction * (1.0/256.0);
 	const uint32_t iHoldCsBits = constrain<uint32_t>((unsigned int)(idealIHoldCs + 0.2), 1, 32) - 1;
 	UpdateRegister(WriteIholdIrun,
-					(writeRegisters[WriteIholdIrun] & ~(IHOLDIRUN_IRUN_MASK | IHOLDIRUN_IHOLD_MASK)) | (iRunCsBits << IHOLDIRUN_IRUN_SHIFT) | (iHoldCsBits << IHOLDIRUN_IHOLD_SHIFT));
+					  (writeRegisters[WriteIholdIrun] & ~(IHOLDIRUN_IRUN_MASK | IHOLDIRUN_IHOLD_MASK))
+					| (iRunCsBits << IHOLDIRUN_IRUN_SHIFT)
+					| (iHoldCsBits << IHOLDIRUN_IHOLD_SHIFT));
 }
 
 // Enable or disable the driver
