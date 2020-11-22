@@ -84,9 +84,6 @@ void Move::Init()
 
 	currentDda = nullptr;
 	stepErrors = 0;
-
-	idleCount = 0;
-
 	active = true;
 #endif
 }
@@ -117,8 +114,8 @@ void Move::Exit()
 
 // Start the next move. Return true if laser or IO bits need to be active
 // Must be called with base priority greater than or equal to the step interrupt, to avoid a race with the step ISR.
+// startTime is the earliest that we can start the move, but we must not start it before its planned time
 inline void Move::StartNextMove(DDA *cdda, uint32_t startTime)
-pre(ddaRingGetPointer->GetState() == DDA::frozen)
 {
 	if (!cdda->IsPrintingMove())
 	{
@@ -143,11 +140,6 @@ void Move::Spin()
 		return;
 	}
 
-	if (idleCount < 1000)
-	{
-		++idleCount;
-	}
-
 	// Recycle the DDAs for completed moves, checking for DDA errors to print if Move debug is enabled
 	while (ddaRingCheckPointer->GetState() == DDA::completed)
 	{
@@ -168,31 +160,9 @@ void Move::Spin()
 	}
 
 	// See if we can add another move to the ring
-	bool canAddMove = (   ddaRingAddPointer->GetState() == DDA::empty
-					   && ddaRingAddPointer->GetNext()->GetState() != DDA::provisional		// function Prepare needs to access the endpoints in the previous move, so don't change them
-					   && DriveMovement::NumFree() >= (int)NumDrivers						// check that we won't run out of DMs
-					  );
-	if (canAddMove)
-	{
-		// In order to react faster to speed and extrusion rate changes, only add more moves if the total duration of
-		// all un-frozen moves is less than 2 seconds, or the total duration of all but the first un-frozen move is less than 0.5 seconds.
-		const DDA *dda = ddaRingAddPointer;
-		uint32_t unPreparedTime = 0;
-		uint32_t prevMoveTime = 0;
-		for (;;)
-		{
-			dda = dda->GetPrevious();
-			if (dda->GetState() != DDA::provisional)
-			{
-				break;
-			}
-			unPreparedTime += prevMoveTime;
-			prevMoveTime = dda->GetClocksNeeded();
-		}
-
-		canAddMove = (unPreparedTime < StepTimer::StepClockRate/2 || unPreparedTime + prevMoveTime < 2 * StepTimer::StepClockRate);
-	}
-
+	const bool canAddMove = (   ddaRingAddPointer->GetState() == DDA::empty
+							 && DriveMovement::NumFree() >= (int)NumDrivers			// check that we won't run out of DMs
+							);
 	if (canAddMove)
 	{
 		// OK to add another move
@@ -202,7 +172,6 @@ void Move::Spin()
 			if (ddaRingAddPointer->Init(buf->msg.move))
 			{
 				ddaRingAddPointer = ddaRingAddPointer->GetNext();
-				idleCount = 0;
 				scheduledMoves++;
 			}
 			CanMessageBuffer::Free(buf);
@@ -213,18 +182,14 @@ void Move::Spin()
 	if (currentDda == nullptr)
 	{
 		// No DDA is executing, so start executing a new one if possible
-		if (!canAddMove || idleCount > 10)							// better to have a few moves in the queue so that we can do lookahead
+		DDA * const cdda = ddaRingGetPointer;										// capture volatile variable
+		if (cdda->GetState() == DDA::frozen)
 		{
-			// Prepare one move and execute it. We assume that we will enter the next if-block before it completes, giving us time to prepare more moves.
-			DDA * const cdda = ddaRingGetPointer;					// capture volatile variable
-			if (cdda->GetState() == DDA::frozen)
+			AtomicCriticalSectionLocker();
+			StartNextMove(cdda, StepTimer::GetTimerTicks());
+			if (cdda->ScheduleNextStepInterrupt(timer))
 			{
-				AtomicCriticalSectionLocker();
-				StartNextMove(cdda, StepTimer::GetTimerTicks());
-				if (cdda->ScheduleNextStepInterrupt(timer))
-				{
-					Interrupt();
-				}
+				Interrupt();
 			}
 		}
 	}
@@ -269,191 +234,6 @@ bool Move::SetKinematics(KinematicsType k)
 	}
 	return true;
 }
-
-// Return true if this is a raw motor move
-bool Move::IsRawMotorMove(uint8_t moveType) const
-{
-	return moveType == 2 /* || ((moveType == 1 || moveType == 3) && kinematics->GetHomingMode() != Kinematics::HomingMode::homeCartesianAxes)*/ ;
-}
-
-#if 0
-// Pause the print as soon as we can, returning true if we are able to skip any moves and updating 'rp' to the first move we skipped.
-bool Move::PausePrint(RestorePoint& rp)
-{
-	// Find a move we can pause after.
-	// Ideally, we would adjust a move if necessary and possible so that we can pause after it, but for now we don't do that.
-	// There are a few possibilities:
-	// 1. There is no currently executing move and no moves in the queue, and GCodes does not have a move for us.
-	//    Pause immediately. Resume from the current file position.
-	// 2. There is no currently executing move and no moves in the queue, and GCodes has a move for us but that move has not been started.
-	//    Pause immediately. Discard the move that GCodes gas for us, and resume from the start file position of that move.
-	// 3. There is no currently executing move and no moves in the queue, and GCodes has a move for that has not been started.
-	//    We must complete that move and then pause
-	// 5. There is no currently-executing move but there are moves in the queue. Unlikely, but possible.
-	//    If the first move in the queue is the first segment in its move, pause immediately, resume from its start address. Otherwise proceed as in case 5.
-	// 4. There is a currently-executing move, possibly some moves in the queue, and GCodes may have a whole or partial move for us.
-	//    See if we can pause after any of them and before the next. If we can, resume from the start position of the following move.
-	//    If we can't, then the last move in the queue must be part of a multi-segment move and GCodes has the rest. We must finish that move and then pause.
-	//
-	// So on return we need to signal one of the following to GCodes:
-	// 1. We have skipped some moves in the queue. Pass back the file address of the first move we have skipped, the feed rate at the start of that move
-	//    and the iobits at the start of that move, and return true.
-	// 2. All moves in the queue need to be executed. Also any move held by GCodes needs to be completed it is it not the first segment.
-	//    Update the restore point with the coordinates and iobits as at the end of the previous move and return false.
-	//    The extruder position, file position and feed rate are not filled in.
-	//
-	// In general, we can pause after a move if it is the last segment and its end speed is slow enough.
-	// We can pause before a move if it is the first segment in that move.
-	// The caller should set up rp.feedrate to the default feed rate for the file gcode source before calling this.
-
-	const DDA * const savedDdaRingAddPointer = ddaRingAddPointer;
-	bool pauseOkHere;
-
-	cpu_irq_disable();
-	DDA *dda = currentDda;
-	if (dda == nullptr)
-	{
-		pauseOkHere = true;								// no move was executing, so we have already paused here whether it was a good idea or not.
-		dda = ddaRingGetPointer;
-	}
-	else
-	{
-		pauseOkHere = dda->CanPauseAfter();
-		dda = dda->GetNext();
-	}
-
-	while (dda != savedDdaRingAddPointer)
-	{
-		if (pauseOkHere)
-		{
-			// We can pause before executing this move
-			ddaRingAddPointer = dda;
-			break;
-		}
-		pauseOkHere = dda->CanPauseAfter();
-		dda = dda->GetNext();
-	}
-
-	cpu_irq_enable();
-
-	// We may be going to skip some moves. Get the end coordinate of the previous move.
-	DDA * const prevDda = ddaRingAddPointer->GetPrevious();
-	const size_t numVisibleAxes = reprap.GetGCodes().GetVisibleAxes();
-	for (size_t axis = 0; axis < numVisibleAxes; ++axis)
-	{
-		rp.moveCoords[axis] = prevDda->GetEndCoordinate(axis, false);
-	}
-
-	InverseAxisAndBedTransform(rp.moveCoords, prevDda->GetXAxes(), prevDda->GetYAxes());	// we assume that xAxes hasn't changed between the moves
-
-#if SUPPORT_LASER || SUPPORT_IOBITS
-	rp.laserPwmOrIoBits = dda->GetLaserPwmOrIoBits();
-#endif
-
-	if (ddaRingAddPointer == savedDdaRingAddPointer)
-	{
-		return false;									// we can't skip any moves
-	}
-
-	dda = ddaRingAddPointer;
-	rp.proportionDone = dda->GetProportionDone(false);	// get the proportion of the current multi-segment move that has been completed
-	if (dda->UsingStandardFeedrate())
-	{
-		rp.feedRate = dda->GetRequestedSpeed();
-	}
-	rp.virtualExtruderPosition = dda->GetVirtualExtruderPosition();
-	rp.filePos = dda->GetFilePosition();
-
-	// Free the DDAs for the moves we are going to skip
-	do
-	{
-		(void)dda->Free();
-		dda = dda->GetNext();
-		scheduledMoves--;
-	}
-	while (dda != savedDdaRingAddPointer);
-
-	return true;
-}
-#endif
-
-#if 0	//HAS_VOLTAGE_MONITOR || HAS_STALL_DETECT
-
-// Pause the print immediately, returning true if we were able to skip or abort any moves and setting up to the move we aborted
-bool Move::LowPowerOrStallPause(RestorePoint& rp)
-{
-	const DDA * const savedDdaRingAddPointer = ddaRingAddPointer;
-	bool abortedMove = false;
-
-	cpu_irq_disable();
-	DDA *dda = currentDda;
-	if (dda != nullptr && dda->GetFilePosition() != noFilePosition)
-	{
-		// We are executing a move that has a file address, so we can interrupt it
-		Platform::DisableStepInterrupt();
-		dda->MoveAborted();
-		CurrentMoveCompleted();							// updates live endpoints, extrusion, ddaRingGetPointer, currentDda etc.
-		--completedMoves;								// this move wasn't really completed
-		abortedMove = true;
-	}
-	else
-	{
-		if (dda == nullptr)
-		{
-			// No move is being executed
-			dda = ddaRingGetPointer;
-		}
-		while (dda != savedDdaRingAddPointer)
-		{
-			if (dda->GetFilePosition() != noFilePosition)
-			{
-				break;									// we can pause before executing this move
-			}
-			dda = dda->GetNext();
-		}
-	}
-
-	cpu_irq_enable();
-
-	if (dda == savedDdaRingAddPointer)
-	{
-		return false;									// we can't skip any moves
-	}
-
-	// We are going to skip some moves, or part of a move.
-	// Store the parameters of the first move we are going to execute when we resume
-	rp.feedRate = dda->GetRequestedSpeed();
-	rp.virtualExtruderPosition = dda->GetVirtualExtruderPosition();
-	rp.filePos = dda->GetFilePosition();
-	rp.proportionDone = dda->GetProportionDone(abortedMove);	// store how much of the complete multi-segment move's extrusion has been done
-
-#if SUPPORT_LASER || SUPPORT_IOBITS
-	rp.laserPwmOrIoBits = dda->GetLaserPwmOrIoBits();
-#endif
-
-	ddaRingAddPointer = (abortedMove) ? dda->GetNext() : dda;
-
-	// Get the end coordinates of the last move that was or will be completed, or the coordinates of the current move when we aborted it.
-	DDA * const prevDda = ddaRingAddPointer->GetPrevious();
-	const size_t numVisibleAxes = reprap.GetGCodes().GetVisibleAxes();
-	for (size_t axis = 0; axis < numVisibleAxes; ++axis)
-	{
-		rp.moveCoords[axis] = prevDda->GetEndCoordinate(axis, false);
-	}
-
-	InverseAxisAndBedTransform(rp.moveCoords, prevDda->GetXAxes(), prevDda->GetYAxes());	// we assume that xAxes and yAxes have't changed between the moves
-
-	// Free the DDAs for the moves we are going to skip
-	for (dda = ddaRingAddPointer; dda != savedDdaRingAddPointer; dda = dda->GetNext())
-	{
-		(void)dda->Free();
-		scheduledMoves--;
-	}
-
-	return true;
-}
-
-#endif
 
 // This is called from the step ISR when the current move has been completed
 void Move::CurrentMoveCompleted()

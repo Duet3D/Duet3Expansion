@@ -235,7 +235,6 @@ bool DDA::Init(const CanMessageMovement& msg)
 	accelDistance = topSpeed * (1.0 + msg.initialSpeedFraction) * msg.accelerationClocks * 0.5;
 	decelDistance = topSpeed * (1.0 + msg.finalSpeedFraction) * msg.decelClocks * 0.5;
 
-	state = provisional;
 	Prepare(msg);
 	return true;
 }
@@ -359,8 +358,8 @@ void DDA::Prepare(const CanMessageMovement& msg)
 // The GCC optimize pragma appears to be broken, if we try to force O3 optimisation here then functions are never inlined
 
 // Start executing this move. Must be called with interrupts disabled, to avoid a race condition.
+// startTime is the earliest that we can start the move, but we must not start it before its planned time
 void DDA::Start(uint32_t tim)
-pre(state == frozen)
 {
 	if ((int32_t)(afterPrepare.moveStartTime - tim) < 0)
 	{

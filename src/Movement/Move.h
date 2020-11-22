@@ -40,25 +40,17 @@ public:
 
 #if SUPPORT_DRIVERS
 	void Interrupt() __attribute__ ((hot));											// Timer callback for step generation
-
 	void StopDrivers(uint16_t whichDrivers);
+	void CurrentMoveCompleted() __attribute__ ((hot));								// Signal that the current move has just been completed
 
 	// Kinematics and related functions
 	Kinematics& GetKinematics() const { return *kinematics; }
 	bool SetKinematics(KinematicsType k);											// Set kinematics, return true if successful
 																					// Convert Cartesian coordinates to delta motor coordinates, return true if successful
-	// Temporary kinematics functions
-	bool IsDeltaMode() const { return kinematics->GetKinematicsType() == KinematicsType::linearDelta; }
-	// End temporary functions
-
-	bool IsRawMotorMove(uint8_t moveType) const;									// Return true if this is a raw motor move
-
 	static void TimerCallback(CallbackParameter cb)
 	{
 		static_cast<Move*>(cb.vp)->Interrupt();
 	}
-
-	void CurrentMoveCompleted() __attribute__ ((hot));								// Signal that the current move has just been completed
 
 	void PrintCurrentDda() const;													// For debugging
 
@@ -90,8 +82,6 @@ private:
 	volatile uint32_t extrudersPrintingSince;										// The milliseconds clock time when extrudersPrinting was set to true
 	volatile bool extrudersPrinting;												// Set whenever an extruder starts a printing move, cleared by a non-printing extruder move
 	// End DDARing variables
-
-	unsigned int idleCount;								// The number of times Spin was called and had no new moves to process
 
 	Kinematics *kinematics;								// What kinematics we are using
 
