@@ -373,7 +373,7 @@ GCodeResult Heat::ProcessM307New(const CanMessageUpdateHeaterModelNew& msg, cons
 
 GCodeResult Heat::ProcessM308(const CanMessageGeneric& msg, const StringRef& reply)
 {
-	CanMessageGenericParser parser(msg, M308Params);
+	CanMessageGenericParser parser(msg, M308NewParams);
 	uint16_t sensorNum;
 	if (parser.GetUintParam('S', sensorNum))
 	{

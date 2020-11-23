@@ -36,6 +36,7 @@ private:
 	static constexpr unsigned int AdcOversampleBits = 2;					// we use 2-bit oversampling
 
 	void CalcDerivedParameters();											// calculate shA and shB
+	int32_t GetRawReading(bool& valid) const noexcept;						// get the ADC reading
 
 	// The following are configurable parameters
 	int adcFilterChannel;
@@ -46,11 +47,6 @@ private:
 	// The following are derived from the configurable parameters
 	float shA, shB;															// derived parameters
 
-#if defined(SAME70) && SAME70
-	static constexpr unsigned int AdcBits = 14;								// We use the SAME70 ADC in x16 oversample mode
-#else
-	static constexpr unsigned int AdcBits = 12;								// the ADCs in the SAM processors are 12-bit
-#endif
 	static constexpr int32_t OversampledAdcRange = 1u << (AnalogIn::AdcBits + AdcOversampleBits);	// The readings we pass in should be in range 0..(AdcRange - 1)
 };
 
