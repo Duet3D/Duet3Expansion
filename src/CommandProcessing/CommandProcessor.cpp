@@ -449,17 +449,50 @@ static GCodeResult ProcessM569(const CanMessageGeneric& msg, const StringRef& re
 #endif
 
 #if HAS_SMART_DRIVERS
-		reply.catf(", mode %s, ccr 0x%05" PRIx32 ", toff %" PRIu32 ", tblank %" PRIu32 ", hstart/hend/hdec %" PRIu32 "/%" PRIu32 "/%" PRIu32,
+		// It's a smart driver, so print the parameters common to all modes, except for the position
+		reply.catf(", mode %s, ccr 0x%05" PRIx32 ", toff %" PRIu32 ", tblank %" PRIu32,
 				TranslateDriverMode(SmartDrivers::GetDriverMode(drive)),
 				SmartDrivers::GetRegister(drive, SmartDriverRegister::chopperControl),
 				SmartDrivers::GetRegister(drive, SmartDriverRegister::toff),
-				SmartDrivers::GetRegister(drive, SmartDriverRegister::tblank),
-				SmartDrivers::GetRegister(drive, SmartDriverRegister::hstart),
-				SmartDrivers::GetRegister(drive, SmartDriverRegister::hend),
-				SmartDrivers::GetRegister(drive, SmartDriverRegister::hdec)
+				SmartDrivers::GetRegister(drive, SmartDriverRegister::tblank)
 			);
 
-# if SUPPORT_TMC2660
+# if SUPPORT_TMC51xx
+		{
+			const uint32_t thigh = SmartDrivers::GetRegister(drive, SmartDriverRegister::thigh);
+			bool bdummy;
+			const float mmPerSec = (12000000.0 * SmartDrivers::GetMicrostepping(drive, bdummy))/(256 * thigh * Platform::DriveStepsPerUnit(drive));
+			reply.catf(", thigh %" PRIu32 " (%.1f mm/sec)", thigh, (double)mmPerSec);
+		}
+# endif
+
+		// Print the additional parameters that are relevant in the current mode
+		if (SmartDrivers::GetDriverMode(drive) == DriverMode::spreadCycle)
+		{
+			reply.catf(", hstart/hend/hdec %" PRIu32 "/%" PRIu32 "/%" PRIu32,
+						SmartDrivers::GetRegister(drive, SmartDriverRegister::hstart),
+						SmartDrivers::GetRegister(drive, SmartDriverRegister::hend),
+						SmartDrivers::GetRegister(drive, SmartDriverRegister::hdec)
+					  );
+		}
+
+# if SUPPORT_TMC22xx || SUPPORT_TMC51xx
+		if (SmartDrivers::GetDriverMode(drive) == DriverMode::stealthChop)
+		{
+			const uint32_t tpwmthrs = SmartDrivers::GetRegister(drive, SmartDriverRegister::tpwmthrs);
+			bool bdummy;
+			const float mmPerSec = (12000000.0 * SmartDrivers::GetMicrostepping(drive, bdummy))/(256 * tpwmthrs * Platform::DriveStepsPerUnit(drive));
+			const uint32_t pwmScale = SmartDrivers::GetRegister(drive, SmartDriverRegister::pwmScale);
+			const uint32_t pwmAuto = SmartDrivers::GetRegister(drive, SmartDriverRegister::pwmAuto);
+			const unsigned int pwmScaleSum = pwmScale & 0xFF;
+			const int pwmScaleAuto = (int)((((pwmScale >> 16) & 0x01FF) ^ 0x0100) - 0x0100);
+			const unsigned int pwmOfsAuto = pwmAuto & 0xFF;
+			const unsigned int pwmGradAuto = (pwmAuto >> 16) & 0xFF;
+			reply.catf(", tpwmthrs %" PRIu32 " (%.1f mm/sec), pwmScaleSum %u, pwmScaleAuto %d, pwmOfsAuto %u, pwmGradAuto %u",
+						tpwmthrs, (double)mmPerSec, pwmScaleSum, pwmScaleAuto, pwmOfsAuto, pwmGradAuto);
+		}
+# endif
+		// Finally, print the microstep position
 		{
 			const uint32_t mstepPos = SmartDrivers::GetRegister(drive, SmartDriverRegister::mstepPos);
 			if (mstepPos < 1024)
@@ -471,24 +504,6 @@ static GCodeResult ProcessM569(const CanMessageGeneric& msg, const StringRef& re
 				reply.cat(", pos unknown");
 			}
 		}
-# elif SUPPORT_TMC22xx || SUPPORT_TMC51xx
-		{
-			const uint32_t tpwmthrs = SmartDrivers::GetRegister(drive, SmartDriverRegister::tpwmthrs);
-			const uint32_t mstepPos = SmartDrivers::GetRegister(drive, SmartDriverRegister::mstepPos);
-			bool bdummy;
-			const float mmPerSec = (12000000.0 * SmartDrivers::GetMicrostepping(drive, bdummy))/(256 * tpwmthrs * Platform::DriveStepsPerUnit(drive));
-			reply.catf(", pos %" PRIu32", tpwmthrs %" PRIu32 " (%.1f mm/sec)", mstepPos, tpwmthrs, (double)mmPerSec);
-		}
-# endif
-
-# if SUPPORT_TMC51xx
-		{
-			const uint32_t thigh = SmartDrivers::GetRegister(drive, SmartDriverRegister::thigh);
-			bool bdummy;
-			const float mmPerSec = (12000000.0 * SmartDrivers::GetMicrostepping(drive, bdummy))/(256 * thigh * Platform::DriveStepsPerUnit(drive));
-			reply.catf(", thigh %" PRIu32 " (%.1f mm/sec)", thigh, (double)mmPerSec);
-		}
-# endif
 #endif
 
 	}
