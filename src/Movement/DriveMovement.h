@@ -126,13 +126,13 @@ public:
 
 	DriveMovement(DriveMovement *next);
 
-	bool CalcNextStepTimeCartesian(const DDA &dda, bool live) __attribute__ ((hot));
+	bool CalcNextStepTimeCartesian(const DDA &dda, bool live) SPEED_CRITICAL;
 #if SUPPORT_DELTA_MOVEMENT
-	bool CalcNextStepTimeDelta(const DDA &dda, bool live) __attribute__ ((hot));
+	bool CalcNextStepTimeDelta(const DDA &dda, bool live) SPEED_CRITICAL;
 #endif
-	void PrepareCartesianAxis(const DDA& dda, const PrepParams& params) __attribute__ ((hot));
-	void PrepareDeltaAxis(const DDA& dda, const PrepParams& params) __attribute__ ((hot));
-	void PrepareExtruder(const DDA& dda, const PrepParams& params, float speedChange) __attribute__ ((hot));
+	void PrepareCartesianAxis(const DDA& dda, const PrepParams& params) SPEED_CRITICAL;
+	void PrepareDeltaAxis(const DDA& dda, const PrepParams& params) SPEED_CRITICAL;
+	void PrepareExtruder(const DDA& dda, const PrepParams& params, float speedChange) SPEED_CRITICAL;
 	void ReduceSpeed(const DDA& dda, uint32_t inverseSpeedFactor);
 	void DebugPrint(char c) const;
 	int32_t GetNetStepsLeft() const;
@@ -151,9 +151,9 @@ public:
 	static void Release(DriveMovement *item);
 
 private:
-	bool CalcNextStepTimeCartesianFull(const DDA &dda, bool live) __attribute__ ((hot));
+	bool CalcNextStepTimeCartesianFull(const DDA &dda, bool live) SPEED_CRITICAL;
 #if SUPPORT_DELTA_MOVEMENT
-	bool CalcNextStepTimeDeltaFull(const DDA &dda, bool live) __attribute__ ((hot));
+	bool CalcNextStepTimeDeltaFull(const DDA &dda, bool live) SPEED_CRITICAL;
 #endif
 
 	static DriveMovement *freeList;

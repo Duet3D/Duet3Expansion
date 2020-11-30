@@ -38,15 +38,15 @@ public:
 
 	bool Init(const CanMessageMovement& msg);
 	void Init();													// Set up initial positions for machine startup
-	void Start(uint32_t tim) __attribute__ ((hot));					// Start executing the DDA, i.e. move the move.
-	void StepDrivers(uint32_t now) __attribute__ ((hot));			// Take one step of the DDA, called by timed interrupt.
+	void Start(uint32_t tim) SPEED_CRITICAL;					// Start executing the DDA, i.e. move the move.
+	void StepDrivers(uint32_t now) SPEED_CRITICAL;			// Take one step of the DDA, called by timed interrupt.
 	bool ScheduleNextStepInterrupt(StepTimer& timer) const;			// Schedule the next interrupt, returning true if we can't because it is already due
 
 	void SetNext(DDA *n) { next = n; }
 	void SetPrevious(DDA *p) { prev = p; }
 	void Complete() { state = completed; }
 	bool Free();
-	void Prepare(const CanMessageMovement& msg) __attribute__ ((hot));	// Calculate all the values and freeze this DDA
+	void Prepare(const CanMessageMovement& msg) SPEED_CRITICAL;	// Calculate all the values and freeze this DDA
 	bool HasStepError() const;
 	bool IsPrintingMove() const { return flags.isPrintingMove; }
 
@@ -102,7 +102,7 @@ public:
 private:
 	DriveMovement *FindDM(size_t drive) const;
 	void StopDrive(size_t drive);									// stop movement of a drive and recalculate the endpoint
-	void InsertDM(DriveMovement *dm) __attribute__ ((hot));
+	void InsertDM(DriveMovement *dm) SPEED_CRITICAL;
 	void RemoveDM(size_t drive);
 	void ReleaseDMs();
 	void DebugPrintVector(const char *name, const float *vec, size_t len) const;

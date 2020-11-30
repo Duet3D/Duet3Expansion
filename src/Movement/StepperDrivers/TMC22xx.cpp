@@ -462,8 +462,8 @@ public:
 
 	bool DriverAssumedPresent() const noexcept { return numWrites != 0 || numTimeouts < DriverNotPresentTimeouts; }
 
-	void TransferDone() noexcept __attribute__ ((hot));				// called by the ISR when the SPI transfer has completed
-	void StartTransfer() noexcept __attribute__ ((hot));				// called to start a transfer
+	void TransferDone() noexcept SPEED_CRITICAL;				// called by the ISR when the SPI transfer has completed
+	void StartTransfer() noexcept SPEED_CRITICAL;				// called to start a transfer
 	void TransferTimedOut() noexcept
 	{
 		if (DriverAssumedPresent())
@@ -520,11 +520,11 @@ private:
 	void SetUartMux() noexcept;
 #endif
 #if (TMC22xx_HAS_MUX || TMC22xx_SINGLE_DRIVER) && !TMC22xx_USE_SLAVEADDR
-	static void SetupDMASend(uint8_t regnum, uint32_t outVal) noexcept __attribute__ ((hot));	// set up the DMAC to send a register
-	static void SetupDMARead(uint8_t regnum, uint8_t crc) noexcept __attribute__ ((hot));		// set up the DMAC to receive a register
+	static void SetupDMASend(uint8_t regnum, uint32_t outVal) noexcept SPEED_CRITICAL;	// set up the DMAC to send a register
+	static void SetupDMARead(uint8_t regnum, uint8_t crc) noexcept SPEED_CRITICAL;		// set up the DMAC to receive a register
 #else
-	void SetupDMASend(uint8_t regnum, uint32_t outVal) noexcept __attribute__ ((hot));			// set up the DMAC to send a register
-	void SetupDMARead(uint8_t regnum) noexcept __attribute__ ((hot));							// set up the DMAC to receive a register
+	void SetupDMASend(uint8_t regnum, uint32_t outVal) noexcept SPEED_CRITICAL;			// set up the DMAC to send a register
+	void SetupDMARead(uint8_t regnum) noexcept SPEED_CRITICAL;							// set up the DMAC to receive a register
 #endif
 
 #if HAS_STALL_DETECT
@@ -1561,7 +1561,7 @@ void TransferCompleteCallback(CallbackParameter, DmaCallbackReason reason) noexc
 #  endif
 
 // ISR for the single UART
-extern "C" void TMC22xx_UART_Handler() noexcept __attribute__ ((hot));
+extern "C" void TMC22xx_UART_Handler() noexcept SPEED_CRITICAL;
 
 void TMC22xx_UART_Handler() noexcept
 {
@@ -1575,13 +1575,13 @@ void TMC22xx_UART_Handler() noexcept
 #else
 
 // ISRs for the individual UARTs
-extern "C" void UART_TMC_DRV0_Handler() noexcept __attribute__ ((hot));
+extern "C" void UART_TMC_DRV0_Handler() noexcept SPEED_CRITICAL;
 void UART_TMC_DRV0_Handler() noexcept
 {
 	driverStates[0].UartTmcHandler();
 }
 
-extern "C" void UART_TMC_DRV1_Handler() noexcept __attribute__ ((hot));
+extern "C" void UART_TMC_DRV1_Handler() noexcept SPEED_CRITICAL;
 void UART_TMC_DRV1_Handler() noexcept
 {
 	driverStates[1].UartTmcHandler();

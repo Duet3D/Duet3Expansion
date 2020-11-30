@@ -113,7 +113,7 @@ void StepTimer::DisableTimerInterrupt()
 }
 
 // Step pulse timer interrupt
-extern "C" void STEP_TC_HANDLER() __attribute__ ((hot));
+extern "C" void STEP_TC_HANDLER() SPEED_CRITICAL;
 
 void STEP_TC_HANDLER()
 {

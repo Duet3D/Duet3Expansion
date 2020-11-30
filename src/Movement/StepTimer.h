@@ -42,7 +42,7 @@ public:
 	static void DisableTimerInterrupt();
 
 	// Get the current tick count
-	static Ticks GetTimerTicks() __attribute__ ((hot));
+	static Ticks GetTimerTicks() SPEED_CRITICAL;
 
 	// Get the tick rate (can also access it directly as StepClockRate)
 	static uint32_t GetTickRate() { return StepClockRate; }

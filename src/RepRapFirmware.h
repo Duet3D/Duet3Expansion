@@ -36,6 +36,8 @@ extern "C" void debugPrintf(const char* fmt, ...) __attribute__ ((format (printf
 
 #define RAMFUNC __attribute__((section(".ramfunc")))
 
+#define SPEED_CRITICAL	__attribute__((optimize("O2")))
+
 // Classes to facilitate range-based for loops that iterate from 0 up to just below a limit
 template<class T> class SimpleRangeIterator
 {

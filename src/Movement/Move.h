@@ -39,9 +39,9 @@ public:
 	void Diagnostics(const StringRef& reply);										// Report useful stuff
 
 #if SUPPORT_DRIVERS
-	void Interrupt() __attribute__ ((hot));											// Timer callback for step generation
+	void Interrupt() SPEED_CRITICAL;											// Timer callback for step generation
 	void StopDrivers(uint16_t whichDrivers);
-	void CurrentMoveCompleted() __attribute__ ((hot));								// Signal that the current move has just been completed
+	void CurrentMoveCompleted() SPEED_CRITICAL;								// Signal that the current move has just been completed
 
 	// Kinematics and related functions
 	Kinematics& GetKinematics() const { return *kinematics; }
