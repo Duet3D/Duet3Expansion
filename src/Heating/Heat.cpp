@@ -34,7 +34,16 @@ Licence: GPL
 
 #include "Tasks.h"
 
-constexpr uint32_t HeaterTaskStackWords = 120;					// task stack size in dwords, must be large enough for auto tuning when we implement it
+// The task stack size must be large enough for calls to debugPrintf when a heater fault occurs.
+// Currently (2020-12-03) it needs at least 144 words when handling a heater fault, if debugPrintf calls vuprintf but the underlying putchar function throws the character away.
+// We now avoid calling vuprintf from debugPrintf unless this is a debug build
+
+#ifdef DEBUG
+constexpr uint32_t HeaterTaskStackWords = 200;					// task stack size in dwords
+#else
+constexpr uint32_t HeaterTaskStackWords = 130;					// task stack size in dwords
+#endif
+
 static Task<HeaterTaskStackWords> heaterTask;
 
 extern "C" [[noreturn]] void HeaterTask(void * pvParameters)
@@ -47,7 +56,7 @@ namespace Heat
 	// Private members
 	static Heater* heaters[MaxHeaters];							// A PID controller for each heater
 
-	static TemperatureSensor *sensorsRoot = nullptr;			// The sensor list. Only the Heat task is allowed to modify the linkeage.
+	static TemperatureSensor *sensorsRoot = nullptr;			// The sensor list. Only the Heat task is allowed to modify the linkage.
 
 	static float extrusionMinTemp;								// Minimum temperature to allow regular extrusion
 	static float retractionMinTemp;								// Minimum temperature to allow regular retraction
