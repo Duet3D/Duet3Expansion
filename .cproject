@@ -32,6 +32,7 @@
 								</option>
 								<option id="gnu.c.compiler.option.misc.other.2011481472" name="Other flags" superClass="gnu.c.compiler.option.misc.other" useByScannerDiscovery="false" value="-c -mcpu=cortex-m4 -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=hard -ffunction-sections -fdata-sections -nostdlib -Wundef -Wdouble-promotion -Werror=return-type -fsingle-precision-constant &quot;-Wa,-ahl=$*.s&quot;" valueType="string"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.c.compiler.option.include.paths.1789898629" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/arm/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
@@ -53,6 +54,7 @@
 								<option id="gnu.cpp.compiler.option.other.other.1209048113" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" useByScannerDiscovery="false" value="-c -mcpu=cortex-m4 -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=hard -ffunction-sections -fdata-sections -fno-threadsafe-statics -fno-rtti -fno-exceptions -nostdlib -Wundef -Wdouble-promotion -Werror=return-type -fsingle-precision-constant &quot;-Wa,-al=$*.s&quot;" valueType="string"/>
 								<option id="gnu.cpp.compiler.option.include.files.390765618" name="Include files (-include)" superClass="gnu.cpp.compiler.option.include.files" useByScannerDiscovery="false"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.compiler.option.include.paths.1252685874" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/Hardware/SAME5x}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
@@ -92,7 +94,9 @@
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.cross.archiver.194171547" name="Cross GCC Archiver" superClass="cdt.managedbuild.tool.gnu.cross.archiver"/>
 							<tool id="cdt.managedbuild.tool.gnu.cross.assembler.982006552" name="Cross GCC Assembler" superClass="cdt.managedbuild.tool.gnu.cross.assembler">
-								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="true" id="gnu.both.asm.option.include.paths.1341918430" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" valueType="includePath"/>
+								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.both.asm.option.include.paths.1341918430" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G}&quot;"/>
+								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1107963422" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 							</tool>
 						</toolChain>
@@ -120,6 +124,7 @@
 				</externalSettings>
 				<externalSettings containerId="CoreN2G;cdt.managedbuild.config.gnu.cross.lib.release.675522878.1031364120.1670975982.1226901380" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier">
 					<externalSetting>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="includePath" name="/CoreN2G"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/CoreN2G/SAME5x_CAN_RTOS"/>
 						<entry flags="RESOLVED" kind="libraryFile" name="CoreN2G" srcPrefixMapping="" srcRootPath=""/>
 					</externalSetting>
@@ -158,6 +163,7 @@
 								</option>
 								<option id="gnu.c.compiler.option.misc.other.1156165933" name="Other flags" superClass="gnu.c.compiler.option.misc.other" useByScannerDiscovery="false" value="-c -mcpu=cortex-m4 -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=hard -ffunction-sections -fdata-sections -nostdlib -Wundef -Wdouble-promotion -Werror=return-type -fsingle-precision-constant &quot;-Wa,-ahl=$*.s&quot;" valueType="string"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.c.compiler.option.include.paths.727916935" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
@@ -181,6 +187,7 @@
 								<option id="gnu.cpp.compiler.option.other.other.1134369764" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" useByScannerDiscovery="false" value="-c -mcpu=cortex-m4 -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=hard -ffunction-sections -fdata-sections -fno-threadsafe-statics -fno-rtti -fno-exceptions -nostdlib -Wundef -Wdouble-promotion -Werror=return-type -fsingle-precision-constant &quot;-Wa,-ahl=$*.s&quot;" valueType="string"/>
 								<option id="gnu.cpp.compiler.option.include.files.118249370" name="Include files (-include)" superClass="gnu.cpp.compiler.option.include.files" useByScannerDiscovery="false"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.compiler.option.include.paths.1486240581" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/Hardware/SAME5x}&quot;"/>
@@ -222,6 +229,7 @@
 							<tool id="cdt.managedbuild.tool.gnu.cross.archiver.2072164522" name="Cross GCC Archiver" superClass="cdt.managedbuild.tool.gnu.cross.archiver"/>
 							<tool id="cdt.managedbuild.tool.gnu.cross.assembler.915528316" name="Cross GCC Assembler" superClass="cdt.managedbuild.tool.gnu.cross.assembler">
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.both.asm.option.include.paths.953785456" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries}&quot;"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.2054883176" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
@@ -252,6 +260,7 @@
 				</externalSettings>
 				<externalSettings containerId="CoreN2G;cdt.managedbuild.config.gnu.cross.lib.release.675522878.1031364120.1670975982.1226901380.1664018818" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier">
 					<externalSetting>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="includePath" name="/CoreN2G"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/CoreN2G/SAME5x_CAN_RTOS_Debug"/>
 						<entry flags="RESOLVED" kind="libraryFile" name="CoreN2G" srcPrefixMapping="" srcRootPath=""/>
 					</externalSetting>
@@ -290,6 +299,7 @@
 								</option>
 								<option id="gnu.c.compiler.option.misc.other.559249370" name="Other flags" superClass="gnu.c.compiler.option.misc.other" useByScannerDiscovery="false" value="-c -mcpu=cortex-m4 -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=hard -ffunction-sections -fdata-sections -nostdlib -Wundef -Wdouble-promotion -Werror=return-type -fsingle-precision-constant &quot;-Wa,-ahl=$*.s&quot;" valueType="string"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.c.compiler.option.include.paths.1707659127" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
@@ -313,6 +323,7 @@
 								<option id="gnu.cpp.compiler.option.other.other.1456934223" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" useByScannerDiscovery="false" value="-c -mcpu=cortex-m4 -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=hard -ffunction-sections -fdata-sections -fno-threadsafe-statics -fno-rtti -fno-exceptions -nostdlib -Wundef -Wdouble-promotion -Werror=return-type -fsingle-precision-constant &quot;-Wa,-ahl=$*.s&quot;" valueType="string"/>
 								<option id="gnu.cpp.compiler.option.include.files.1262827868" name="Include files (-include)" superClass="gnu.cpp.compiler.option.include.files" useByScannerDiscovery="false"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.compiler.option.include.paths.1420507339" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/Hardware/SAME5x}&quot;"/>
@@ -355,6 +366,7 @@
 							<tool id="cdt.managedbuild.tool.gnu.cross.archiver.2136478742" name="Cross GCC Archiver" superClass="cdt.managedbuild.tool.gnu.cross.archiver"/>
 							<tool id="cdt.managedbuild.tool.gnu.cross.assembler.759004211" name="Cross GCC Assembler" superClass="cdt.managedbuild.tool.gnu.cross.assembler">
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.both.asm.option.include.paths.1489910662" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries}&quot;"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1077953748" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
@@ -385,6 +397,7 @@
 				</externalSettings>
 				<externalSettings containerId="CoreN2G;cdt.managedbuild.config.gnu.cross.lib.release.675522878.1031364120.1670975982.1226901380.1664018818" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier">
 					<externalSetting>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="includePath" name="/CoreN2G"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/CoreN2G/SAME5x_CAN_RTOS_Debug"/>
 						<entry flags="RESOLVED" kind="libraryFile" name="CoreN2G" srcPrefixMapping="" srcRootPath=""/>
 					</externalSetting>
@@ -422,6 +435,7 @@
 								</option>
 								<option id="gnu.c.compiler.option.misc.other.1069627027" name="Other flags" superClass="gnu.c.compiler.option.misc.other" useByScannerDiscovery="false" value="-c -mcpu=cortex-m4 -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=hard -ffunction-sections -fdata-sections -nostdlib -Wundef -Wdouble-promotion -Werror=return-type -fsingle-precision-constant &quot;-Wa,-ahl=$*.s&quot;" valueType="string"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.c.compiler.option.include.paths.921477438" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/arm/CMSIS/5.4.0/CMSIS/Core/Include}&quot;"/>
@@ -443,6 +457,7 @@
 								<option id="gnu.cpp.compiler.option.other.other.2020479444" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" useByScannerDiscovery="false" value="-c -mcpu=cortex-m4 -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=hard -ffunction-sections -fdata-sections -fno-threadsafe-statics -fno-rtti -fno-exceptions -nostdlib -Wundef -Wdouble-promotion -Werror=return-type -fsingle-precision-constant &quot;-Wa,-ahl=$*.s&quot;" valueType="string"/>
 								<option id="gnu.cpp.compiler.option.include.files.1054250742" name="Include files (-include)" superClass="gnu.cpp.compiler.option.include.files" useByScannerDiscovery="false"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.compiler.option.include.paths.419511737" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/Hardware/SAME5x}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
@@ -482,7 +497,9 @@
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.cross.archiver.437250002" name="Cross GCC Archiver" superClass="cdt.managedbuild.tool.gnu.cross.archiver"/>
 							<tool id="cdt.managedbuild.tool.gnu.cross.assembler.80177455" name="Cross GCC Assembler" superClass="cdt.managedbuild.tool.gnu.cross.assembler">
-								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="true" id="gnu.both.asm.option.include.paths.753099229" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" useByScannerDiscovery="false" valueType="includePath"/>
+								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.both.asm.option.include.paths.753099229" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G}&quot;"/>
+								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.295468074" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 							</tool>
 						</toolChain>
@@ -510,6 +527,7 @@
 				</externalSettings>
 				<externalSettings containerId="CoreN2G;cdt.managedbuild.config.gnu.cross.lib.release.675522878.1031364120.1670975982.1226901380" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier">
 					<externalSetting>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="includePath" name="/CoreN2G"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/CoreN2G/SAME5x_CAN_RTOS"/>
 						<entry flags="RESOLVED" kind="libraryFile" name="CoreN2G" srcPrefixMapping="" srcRootPath=""/>
 					</externalSetting>
@@ -546,6 +564,7 @@
 								</option>
 								<option id="gnu.c.compiler.option.misc.other.29877684" name="Other flags" superClass="gnu.c.compiler.option.misc.other" useByScannerDiscovery="false" value="-c -mcpu=cortex-m0plus -mthumb -ffunction-sections -fdata-sections -nostdlib -Wundef -Wdouble-promotion -Werror=return-type -fsingle-precision-constant &quot;-Wa,-ahl=$*.s&quot;" valueType="string"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.c.compiler.option.include.paths.1020747485" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/atmel/SAMC21_DFP/1.2.176/samc21/include}&quot;"/>
@@ -566,6 +585,7 @@
 								<option id="gnu.cpp.compiler.option.other.other.1195146416" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" useByScannerDiscovery="false" value="-c -mcpu=cortex-m0plus -mthumb -ffunction-sections -fdata-sections -fno-threadsafe-statics -fno-rtti -fno-exceptions -nostdlib -Wundef -Wdouble-promotion -Werror=return-type -fsingle-precision-constant &quot;-Wa,-ahl=$*.s&quot;" valueType="string"/>
 								<option id="gnu.cpp.compiler.option.include.files.25232746" name="Include files (-include)" superClass="gnu.cpp.compiler.option.include.files" useByScannerDiscovery="false"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.compiler.option.include.paths.282309128" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/Hardware/SAMC21}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
@@ -605,7 +625,9 @@
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.cross.archiver.570051322" name="Cross GCC Archiver" superClass="cdt.managedbuild.tool.gnu.cross.archiver"/>
 							<tool id="cdt.managedbuild.tool.gnu.cross.assembler.1775489656" name="Cross GCC Assembler" superClass="cdt.managedbuild.tool.gnu.cross.assembler">
-								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="true" id="gnu.both.asm.option.include.paths.2067179959" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" useByScannerDiscovery="false" valueType="includePath"/>
+								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.both.asm.option.include.paths.2067179959" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G}&quot;"/>
+								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.896159113" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 							</tool>
 						</toolChain>
@@ -633,6 +655,7 @@
 				</externalSettings>
 				<externalSettings containerId="CoreN2G;cdt.managedbuild.config.gnu.cross.lib.release.675522878.1894471647" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier">
 					<externalSetting>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="includePath" name="/CoreN2G"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/CoreN2G/SAMC21_CAN_RTOS"/>
 						<entry flags="RESOLVED" kind="libraryFile" name="CoreN2G" srcPrefixMapping="" srcRootPath=""/>
 					</externalSetting>
@@ -670,6 +693,7 @@
 								</option>
 								<option id="gnu.c.compiler.option.misc.other.93169945" name="Other flags" superClass="gnu.c.compiler.option.misc.other" useByScannerDiscovery="false" value="-c -mcpu=cortex-m0plus -mthumb -ffunction-sections -fdata-sections -nostdlib -Wundef -Wdouble-promotion -Werror=return-type -fsingle-precision-constant &quot;-Wa,-ahl=$*.s&quot;" valueType="string"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.c.compiler.option.include.paths.1875187533" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/atmel/SAMC21_DFP/1.2.176/samc21/include}&quot;"/>
@@ -691,6 +715,7 @@
 								<option id="gnu.cpp.compiler.option.other.other.494557665" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" useByScannerDiscovery="false" value="-c -mcpu=cortex-m0plus -mthumb -ffunction-sections -fdata-sections -fno-threadsafe-statics -fno-rtti -fno-exceptions -nostdlib -Wundef -Wdouble-promotion -Werror=return-type -fsingle-precision-constant &quot;-Wa,-ahl=$*.s&quot;" valueType="string"/>
 								<option id="gnu.cpp.compiler.option.include.files.147889884" name="Include files (-include)" superClass="gnu.cpp.compiler.option.include.files" useByScannerDiscovery="false"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.compiler.option.include.paths.160935379" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/Hardware/SAMC21}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
@@ -730,7 +755,9 @@
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.cross.archiver.1943021594" name="Cross GCC Archiver" superClass="cdt.managedbuild.tool.gnu.cross.archiver"/>
 							<tool id="cdt.managedbuild.tool.gnu.cross.assembler.957864259" name="Cross GCC Assembler" superClass="cdt.managedbuild.tool.gnu.cross.assembler">
-								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="true" id="gnu.both.asm.option.include.paths.1442638554" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" useByScannerDiscovery="false" valueType="includePath"/>
+								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.both.asm.option.include.paths.1442638554" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G}&quot;"/>
+								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1745931301" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 							</tool>
 						</toolChain>
@@ -758,6 +785,7 @@
 				</externalSettings>
 				<externalSettings containerId="CoreN2G;cdt.managedbuild.config.gnu.cross.lib.release.675522878.1894471647.167547710" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier">
 					<externalSetting>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="includePath" name="/CoreN2G"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/CoreN2G/SAMC21_CAN_RTOS_Debug"/>
 						<entry flags="RESOLVED" kind="libraryFile" name="CoreN2G" srcPrefixMapping="" srcRootPath=""/>
 					</externalSetting>
@@ -795,6 +823,7 @@
 								</option>
 								<option id="gnu.c.compiler.option.misc.other.373052390" name="Other flags" superClass="gnu.c.compiler.option.misc.other" useByScannerDiscovery="false" value="-c -mcpu=cortex-m0plus -mthumb -ffunction-sections -fdata-sections -nostdlib -Wundef -Wdouble-promotion -Werror=return-type -fsingle-precision-constant &quot;-Wa,-ahl=$*.s&quot;" valueType="string"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.c.compiler.option.include.paths.467092790" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/atmel/SAMC21_DFP/1.2.176/samc21/include}&quot;"/>
@@ -815,6 +844,7 @@
 								<option id="gnu.cpp.compiler.option.other.other.1007027741" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" useByScannerDiscovery="false" value="-c -mcpu=cortex-m0plus -mthumb -ffunction-sections -fdata-sections -fno-threadsafe-statics -fno-rtti -fno-exceptions -nostdlib -Wundef -Wdouble-promotion -Werror=return-type -fsingle-precision-constant &quot;-Wa,-ahl=$*.s&quot;" valueType="string"/>
 								<option id="gnu.cpp.compiler.option.include.files.1852088718" name="Include files (-include)" superClass="gnu.cpp.compiler.option.include.files" useByScannerDiscovery="false"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.compiler.option.include.paths.152307706" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/Hardware/SAMC21}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
@@ -854,7 +884,9 @@
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.cross.archiver.1975508884" name="Cross GCC Archiver" superClass="cdt.managedbuild.tool.gnu.cross.archiver"/>
 							<tool id="cdt.managedbuild.tool.gnu.cross.assembler.851232108" name="Cross GCC Assembler" superClass="cdt.managedbuild.tool.gnu.cross.assembler">
-								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="true" id="gnu.both.asm.option.include.paths.1821425769" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" useByScannerDiscovery="false" valueType="includePath"/>
+								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.both.asm.option.include.paths.1821425769" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G}&quot;"/>
+								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.454206907" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 							</tool>
 						</toolChain>
@@ -882,6 +914,7 @@
 				</externalSettings>
 				<externalSettings containerId="CoreN2G;cdt.managedbuild.config.gnu.cross.lib.release.675522878.1894471647" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier">
 					<externalSetting>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="includePath" name="/CoreN2G"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/CoreN2G/SAMC21_CAN_RTOS"/>
 						<entry flags="RESOLVED" kind="libraryFile" name="CoreN2G" srcPrefixMapping="" srcRootPath=""/>
 					</externalSetting>
@@ -919,6 +952,7 @@
 								</option>
 								<option id="gnu.c.compiler.option.misc.other.800542759" name="Other flags" superClass="gnu.c.compiler.option.misc.other" useByScannerDiscovery="false" value="-c -mcpu=cortex-m0plus -mthumb -ffunction-sections -fdata-sections -nostdlib -Wundef -Wdouble-promotion -Werror=return-type -fsingle-precision-constant &quot;-Wa,-ahl=$*.s&quot;" valueType="string"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.c.compiler.option.include.paths.1276946782" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/atmel/SAMC21_DFP/1.2.176/samc21/include}&quot;"/>
@@ -940,6 +974,7 @@
 								<option id="gnu.cpp.compiler.option.other.other.485758189" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" useByScannerDiscovery="false" value="-c -mcpu=cortex-m0plus -mthumb -ffunction-sections -fdata-sections -fno-threadsafe-statics -fno-rtti -fno-exceptions -nostdlib -Wundef -Wdouble-promotion -Werror=return-type -fsingle-precision-constant &quot;-Wa,-ahl=$*.s&quot;" valueType="string"/>
 								<option id="gnu.cpp.compiler.option.include.files.888598492" name="Include files (-include)" superClass="gnu.cpp.compiler.option.include.files" useByScannerDiscovery="false"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.compiler.option.include.paths.279591561" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/Hardware/SAMC21}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
@@ -980,7 +1015,9 @@
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.cross.archiver.2137273774" name="Cross GCC Archiver" superClass="cdt.managedbuild.tool.gnu.cross.archiver"/>
 							<tool id="cdt.managedbuild.tool.gnu.cross.assembler.1554308688" name="Cross GCC Assembler" superClass="cdt.managedbuild.tool.gnu.cross.assembler">
-								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="true" id="gnu.both.asm.option.include.paths.1670319996" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" useByScannerDiscovery="false" valueType="includePath"/>
+								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.both.asm.option.include.paths.1670319996" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G}&quot;"/>
+								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1040111890" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 							</tool>
 						</toolChain>
@@ -1008,6 +1045,7 @@
 				</externalSettings>
 				<externalSettings containerId="CoreN2G;cdt.managedbuild.config.gnu.cross.lib.release.675522878.1894471647.167547710" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier">
 					<externalSetting>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="includePath" name="/CoreN2G"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/CoreN2G/SAMC21_CAN_RTOS_Debug"/>
 						<entry flags="RESOLVED" kind="libraryFile" name="CoreN2G" srcPrefixMapping="" srcRootPath=""/>
 					</externalSetting>
@@ -1044,6 +1082,7 @@
 								</option>
 								<option id="gnu.c.compiler.option.misc.other.1688834980" name="Other flags" superClass="gnu.c.compiler.option.misc.other" useByScannerDiscovery="false" value="-c -mcpu=cortex-m0plus -mthumb -ffunction-sections -fdata-sections -nostdlib -Wundef -Wdouble-promotion -Werror=return-type -fsingle-precision-constant &quot;-Wa,-ahl=$*.s&quot;" valueType="string"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.c.compiler.option.include.paths.1057268882" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/atmel/SAMC21_DFP/1.2.176/samc21/include}&quot;"/>
@@ -1064,6 +1103,7 @@
 								<option id="gnu.cpp.compiler.option.other.other.5747925" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" useByScannerDiscovery="false" value="-c -mcpu=cortex-m0plus -mthumb -ffunction-sections -fdata-sections -fno-threadsafe-statics -fno-rtti -fno-exceptions -nostdlib -Wundef -Wdouble-promotion -Werror=return-type -fsingle-precision-constant &quot;-Wa,-ahl=$*.s&quot;" valueType="string"/>
 								<option id="gnu.cpp.compiler.option.include.files.76681472" name="Include files (-include)" superClass="gnu.cpp.compiler.option.include.files" useByScannerDiscovery="false"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.compiler.option.include.paths.517560169" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/Hardware/SAMC21}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
@@ -1103,7 +1143,9 @@
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.cross.archiver.890424230" name="Cross GCC Archiver" superClass="cdt.managedbuild.tool.gnu.cross.archiver"/>
 							<tool id="cdt.managedbuild.tool.gnu.cross.assembler.1019066295" name="Cross GCC Assembler" superClass="cdt.managedbuild.tool.gnu.cross.assembler">
-								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="true" id="gnu.both.asm.option.include.paths.1219720869" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" useByScannerDiscovery="false" valueType="includePath"/>
+								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.both.asm.option.include.paths.1219720869" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G}&quot;"/>
+								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.104986989" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 							</tool>
 						</toolChain>
@@ -1131,6 +1173,7 @@
 				</externalSettings>
 				<externalSettings containerId="CoreN2G;cdt.managedbuild.config.gnu.cross.lib.release.675522878.1894471647" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier">
 					<externalSetting>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="includePath" name="/CoreN2G"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/CoreN2G/SAMC21_CAN_RTOS"/>
 						<entry flags="RESOLVED" kind="libraryFile" name="CoreN2G" srcPrefixMapping="" srcRootPath=""/>
 					</externalSetting>
@@ -1168,6 +1211,7 @@
 								</option>
 								<option id="gnu.c.compiler.option.misc.other.334348210" name="Other flags" superClass="gnu.c.compiler.option.misc.other" useByScannerDiscovery="false" value="-c -mcpu=cortex-m0plus -mthumb -ffunction-sections -fdata-sections -nostdlib -Wundef -Wdouble-promotion -Werror=return-type -fsingle-precision-constant &quot;-Wa,-ahl=$*.s&quot;" valueType="string"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.c.compiler.option.include.paths.1487644977" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/atmel/SAMC21_DFP/1.2.176/samc21/include}&quot;"/>
@@ -1189,6 +1233,7 @@
 								<option id="gnu.cpp.compiler.option.other.other.346132259" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" useByScannerDiscovery="false" value="-c -mcpu=cortex-m0plus -mthumb -ffunction-sections -fdata-sections -fno-threadsafe-statics -fno-rtti -fno-exceptions -nostdlib -Wundef -Wdouble-promotion -Werror=return-type -fsingle-precision-constant &quot;-Wa,-ahl=$*.s&quot;" valueType="string"/>
 								<option id="gnu.cpp.compiler.option.include.files.1649547781" name="Include files (-include)" superClass="gnu.cpp.compiler.option.include.files" useByScannerDiscovery="false"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.compiler.option.include.paths.1104040731" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/Hardware/SAMC21}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
@@ -1228,7 +1273,9 @@
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.cross.archiver.737965247" name="Cross GCC Archiver" superClass="cdt.managedbuild.tool.gnu.cross.archiver"/>
 							<tool id="cdt.managedbuild.tool.gnu.cross.assembler.931809933" name="Cross GCC Assembler" superClass="cdt.managedbuild.tool.gnu.cross.assembler">
-								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="true" id="gnu.both.asm.option.include.paths.712519045" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" useByScannerDiscovery="false" valueType="includePath"/>
+								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.both.asm.option.include.paths.712519045" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G}&quot;"/>
+								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.2141048062" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 							</tool>
 						</toolChain>
@@ -1256,6 +1303,7 @@
 				</externalSettings>
 				<externalSettings containerId="CoreN2G;cdt.managedbuild.config.gnu.cross.lib.release.675522878.1894471647.167547710" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier">
 					<externalSetting>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="includePath" name="/CoreN2G"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/CoreN2G/SAMC21_CAN_RTOS_Debug"/>
 						<entry flags="RESOLVED" kind="libraryFile" name="CoreN2G" srcPrefixMapping="" srcRootPath=""/>
 					</externalSetting>
@@ -1293,6 +1341,7 @@
 								</option>
 								<option id="gnu.c.compiler.option.misc.other.985806738" name="Other flags" superClass="gnu.c.compiler.option.misc.other" useByScannerDiscovery="false" value="-c -mcpu=cortex-m0plus -mthumb -ffunction-sections -fdata-sections -nostdlib -Wundef -Wdouble-promotion -Werror=return-type -fsingle-precision-constant &quot;-Wa,-ahl=$*.s&quot;" valueType="string"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.c.compiler.option.include.paths.1181456031" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/atmel/SAMC21_DFP/1.2.176/samc21/include}&quot;"/>
@@ -1313,6 +1362,7 @@
 								<option id="gnu.cpp.compiler.option.other.other.1623976494" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" useByScannerDiscovery="false" value="-c -mcpu=cortex-m0plus -mthumb -ffunction-sections -fdata-sections -fno-threadsafe-statics -fno-rtti -fno-exceptions -nostdlib -Wundef -Wdouble-promotion -Werror=return-type -fsingle-precision-constant &quot;-Wa,-ahl=$*.s&quot;" valueType="string"/>
 								<option id="gnu.cpp.compiler.option.include.files.1704508422" name="Include files (-include)" superClass="gnu.cpp.compiler.option.include.files" useByScannerDiscovery="false"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.compiler.option.include.paths.892297969" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/Hardware/SAMC21}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
@@ -1352,7 +1402,9 @@
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.cross.archiver.1286752100" name="Cross GCC Archiver" superClass="cdt.managedbuild.tool.gnu.cross.archiver"/>
 							<tool id="cdt.managedbuild.tool.gnu.cross.assembler.412920471" name="Cross GCC Assembler" superClass="cdt.managedbuild.tool.gnu.cross.assembler">
-								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="true" id="gnu.both.asm.option.include.paths.826447936" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" useByScannerDiscovery="false" valueType="includePath"/>
+								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.both.asm.option.include.paths.826447936" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G}&quot;"/>
+								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.378753918" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 							</tool>
 						</toolChain>
@@ -1380,6 +1432,7 @@
 				</externalSettings>
 				<externalSettings containerId="CoreN2G;cdt.managedbuild.config.gnu.cross.lib.release.675522878.1894471647" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier">
 					<externalSetting>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="includePath" name="/CoreN2G"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/CoreN2G/SAMC21_CAN_RTOS"/>
 						<entry flags="RESOLVED" kind="libraryFile" name="CoreN2G" srcPrefixMapping="" srcRootPath=""/>
 					</externalSetting>
@@ -1418,6 +1471,7 @@
 								</option>
 								<option id="gnu.c.compiler.option.misc.other.555210697" name="Other flags" superClass="gnu.c.compiler.option.misc.other" useByScannerDiscovery="false" value="-c -mcpu=cortex-m0plus -mthumb -ffunction-sections -fdata-sections -nostdlib -Wundef -Wdouble-promotion -Werror=return-type -fsingle-precision-constant &quot;-Wa,-ahl=$*.s&quot;" valueType="string"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.c.compiler.option.include.paths.384296869" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/atmel/SAMC21_DFP/1.2.176/samc21/include}&quot;"/>
@@ -1439,6 +1493,7 @@
 								<option id="gnu.cpp.compiler.option.other.other.463796253" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" useByScannerDiscovery="false" value="-c -mcpu=cortex-m0plus -mthumb -ffunction-sections -fdata-sections -fno-threadsafe-statics -fno-rtti -fno-exceptions -nostdlib -Wundef -Wdouble-promotion -Werror=return-type -fsingle-precision-constant &quot;-Wa,-ahl=$*.s&quot;" valueType="string"/>
 								<option id="gnu.cpp.compiler.option.include.files.2123744188" name="Include files (-include)" superClass="gnu.cpp.compiler.option.include.files" useByScannerDiscovery="false"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.compiler.option.include.paths.1793129912" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/Hardware/SAMC21}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
@@ -1478,7 +1533,9 @@
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.cross.archiver.332323219" name="Cross GCC Archiver" superClass="cdt.managedbuild.tool.gnu.cross.archiver"/>
 							<tool id="cdt.managedbuild.tool.gnu.cross.assembler.1398115215" name="Cross GCC Assembler" superClass="cdt.managedbuild.tool.gnu.cross.assembler">
-								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="true" id="gnu.both.asm.option.include.paths.1641272170" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" useByScannerDiscovery="false" valueType="includePath"/>
+								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.both.asm.option.include.paths.1641272170" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G}&quot;"/>
+								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1474257510" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 							</tool>
 						</toolChain>
@@ -1506,6 +1563,7 @@
 				</externalSettings>
 				<externalSettings containerId="CoreN2G;cdt.managedbuild.config.gnu.cross.lib.release.675522878.1894471647.167547710" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier">
 					<externalSetting>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="includePath" name="/CoreN2G"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/CoreN2G/SAMC21_CAN_RTOS_Debug"/>
 						<entry flags="RESOLVED" kind="libraryFile" name="CoreN2G" srcPrefixMapping="" srcRootPath=""/>
 					</externalSetting>
@@ -1543,6 +1601,7 @@
 								</option>
 								<option id="gnu.c.compiler.option.misc.other.1289289756" name="Other flags" superClass="gnu.c.compiler.option.misc.other" useByScannerDiscovery="false" value="-c -mcpu=cortex-m0plus -mthumb -ffunction-sections -fdata-sections -nostdlib -Wundef -Wdouble-promotion -Werror=return-type -fsingle-precision-constant &quot;-Wa,-ahl=$*.s&quot;" valueType="string"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.c.compiler.option.include.paths.2666681" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/atmel/SAMC21_DFP/1.2.176/samc21/include}&quot;"/>
@@ -1563,6 +1622,7 @@
 								<option id="gnu.cpp.compiler.option.other.other.1768353132" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" useByScannerDiscovery="false" value="-c -mcpu=cortex-m0plus -mthumb -ffunction-sections -fdata-sections -fno-threadsafe-statics -fno-rtti -fno-exceptions -nostdlib -Wundef -Wdouble-promotion -Werror=return-type -fsingle-precision-constant &quot;-Wa,-ahl=$*.s&quot;" valueType="string"/>
 								<option id="gnu.cpp.compiler.option.include.files.299070981" name="Include files (-include)" superClass="gnu.cpp.compiler.option.include.files" useByScannerDiscovery="false"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.compiler.option.include.paths.2096122243" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/Hardware/SAMC21}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
@@ -1602,7 +1662,9 @@
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.cross.archiver.524561919" name="Cross GCC Archiver" superClass="cdt.managedbuild.tool.gnu.cross.archiver"/>
 							<tool id="cdt.managedbuild.tool.gnu.cross.assembler.1219731351" name="Cross GCC Assembler" superClass="cdt.managedbuild.tool.gnu.cross.assembler">
-								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="true" id="gnu.both.asm.option.include.paths.392009244" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" useByScannerDiscovery="false" valueType="includePath"/>
+								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.both.asm.option.include.paths.392009244" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G}&quot;"/>
+								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1649461592" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 							</tool>
 						</toolChain>
@@ -1630,6 +1692,7 @@
 				</externalSettings>
 				<externalSettings containerId="CoreN2G;cdt.managedbuild.config.gnu.cross.lib.release.675522878.1894471647" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier">
 					<externalSetting>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="includePath" name="/CoreN2G"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/CoreN2G/SAMC21_CAN_RTOS"/>
 						<entry flags="RESOLVED" kind="libraryFile" name="CoreN2G" srcPrefixMapping="" srcRootPath=""/>
 					</externalSetting>
@@ -1667,6 +1730,7 @@
 								</option>
 								<option id="gnu.c.compiler.option.misc.other.1368115191" name="Other flags" superClass="gnu.c.compiler.option.misc.other" useByScannerDiscovery="false" value="-c -mcpu=cortex-m0plus -mthumb -ffunction-sections -fdata-sections -nostdlib -Wundef -Wdouble-promotion -Werror=return-type -fsingle-precision-constant &quot;-Wa,-ahl=$*.s&quot;" valueType="string"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.c.compiler.option.include.paths.134067000" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/atmel/SAMC21_DFP/1.2.176/samc21/include}&quot;"/>
@@ -1687,6 +1751,7 @@
 								<option id="gnu.cpp.compiler.option.other.other.2133347167" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" useByScannerDiscovery="false" value="-c -mcpu=cortex-m0plus -mthumb -ffunction-sections -fdata-sections -fno-threadsafe-statics -fno-rtti -fno-exceptions -nostdlib -Wundef -Wdouble-promotion -Werror=return-type -fsingle-precision-constant &quot;-Wa,-ahl=$*.s&quot;" valueType="string"/>
 								<option id="gnu.cpp.compiler.option.include.files.1245062374" name="Include files (-include)" superClass="gnu.cpp.compiler.option.include.files" useByScannerDiscovery="false"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.compiler.option.include.paths.2044272694" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/Hardware/SAMC21}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
@@ -1726,7 +1791,9 @@
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.cross.archiver.338546298" name="Cross GCC Archiver" superClass="cdt.managedbuild.tool.gnu.cross.archiver"/>
 							<tool id="cdt.managedbuild.tool.gnu.cross.assembler.593785602" name="Cross GCC Assembler" superClass="cdt.managedbuild.tool.gnu.cross.assembler">
-								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="true" id="gnu.both.asm.option.include.paths.2078718409" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" useByScannerDiscovery="false" valueType="includePath"/>
+								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.both.asm.option.include.paths.2078718409" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G}&quot;"/>
+								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.21576501" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 							</tool>
 						</toolChain>
@@ -1754,6 +1821,7 @@
 				</externalSettings>
 				<externalSettings containerId="CoreN2G;cdt.managedbuild.config.gnu.cross.lib.release.675522878.1894471647" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier">
 					<externalSetting>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="includePath" name="/CoreN2G"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/CoreN2G/SAMC21_CAN_RTOS"/>
 						<entry flags="RESOLVED" kind="libraryFile" name="CoreN2G" srcPrefixMapping="" srcRootPath=""/>
 					</externalSetting>
