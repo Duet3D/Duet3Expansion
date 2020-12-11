@@ -17,7 +17,7 @@
 constexpr size_t AnalogInTaskStackWords = 300;
 static Task<AnalogInTaskStackWords> analogInTask;
 
-void SerialPortInit(Uart*) noexcept
+void SerialPortInit(AsyncSerial*) noexcept
 {
 	SetPinFunction(PortBPin(20), GpioPinFunction::C);		// TxD
 # if 0	// we don't use the receiver, but if we did we would need to do this:
@@ -25,7 +25,7 @@ void SerialPortInit(Uart*) noexcept
 # endif
 }
 
-void SerialPortDeinit(Uart*) noexcept
+void SerialPortDeinit(AsyncSerial*) noexcept
 {
 	pinMode(PortBPin(20), INPUT_PULLUP);
 # if 0	// we don't use the receiver, but if we did we would need to do this:
@@ -33,7 +33,7 @@ void SerialPortDeinit(Uart*) noexcept
 # endif
 }
 
-Uart uart0(3, 3, 512, 512, SerialPortInit, SerialPortDeinit);
+AsyncSerial uart0(3, 3, 512, 512, SerialPortInit, SerialPortDeinit);
 
 extern "C" void SERCOM3_0_Handler()
 {

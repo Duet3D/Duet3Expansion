@@ -19,17 +19,17 @@ static Task<AnalogInTaskStackWords> analogInTask;
 
 # ifdef SAMMYC21
 
-void SerialPortInit(Uart*) noexcept
+void SerialPortInit(AsyncSerial*) noexcept
 {
 	SetPinFunction(PortBPin(2), GpioPinFunction::D);		// TxD
 }
 
-void SerialPortDeinit(Uart*) noexcept
+void SerialPortDeinit(AsyncSerial*) noexcept
 {
 	pinMode(PortBPin(2), INPUT_PULLUP);
 }
 
-Uart uart0(5, 3, 512, 512, SerialPortInit, SerialPortDeinit);
+AsyncSerial uart0(5, 3, 512, 512, SerialPortInit, SerialPortDeinit);
 
 extern "C" void SERCOM5_Handler()
 {
@@ -38,17 +38,17 @@ extern "C" void SERCOM5_Handler()
 
 #else
 
-void SerialPortInit(Uart*) noexcept
+void SerialPortInit(AsyncSerial*) noexcept
 {
 	SetPinFunction(PortAPin(12), GpioPinFunction::D);		// TxD
 }
 
-void SerialPortDeinit(Uart*) noexcept
+void SerialPortDeinit(AsyncSerial*) noexcept
 {
 	pinMode(PortAPin(12), INPUT_PULLUP);
 }
 
-Uart uart0(4, 3, 512, 512, SerialPortInit, SerialPortDeinit);
+AsyncSerial uart0(4, 3, 512, 512, SerialPortInit, SerialPortDeinit);
 
 extern "C" void SERCOM4_Handler()
 {

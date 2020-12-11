@@ -9,9 +9,9 @@
 #define SRC_HARDWARE_DEVICES_H_
 
 #include <RepRapFirmware.h>
-#include <Uart.h>
+#include <AsyncSerial.h>
 
-extern Uart uart0;
+extern AsyncSerial uart0;
 
 void DeviceInit() noexcept;
 
