@@ -363,7 +363,7 @@ void CanInterface::Diagnostics(const StringRef& reply)
 {
 	unsigned int messagesQueuedForSending, messagesReceived, txTimeouts, messagesLost, busOffCount;
 	can0dev->GetAndClearStats(messagesQueuedForSending, messagesReceived, txTimeouts, messagesLost, busOffCount);
-	reply.lcatf("CAN messages queued %u, send timeouts %u, received %u, lost %u, free buffers %u\n",
+	reply.lcatf("CAN messages queued %u, send timeouts %u, received %u, lost %u, free buffers %u",
 					messagesQueuedForSending, txTimeouts, messagesReceived, messagesLost, CanMessageBuffer::FreeBuffers());
 }
 

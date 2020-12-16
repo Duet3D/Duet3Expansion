@@ -86,11 +86,21 @@ void SoftwareResetData::Populate(uint16_t reason, const uint32_t *stk) noexcept
 
 	// Get the task name if we can. There may be no task executing, so we must allow for this.
 	const TaskHandle_t currentTask = xTaskGetCurrentTaskHandle();
-	taskName = (currentTask == nullptr) ? 0 : LoadLE32(pcTaskGetName(currentTask));
+	taskName = (currentTask == nullptr) ? 0x656e6f6e : LoadLE32(pcTaskGetName(currentTask));
 
-	if (stk != nullptr)
+	sp = reinterpret_cast<uint32_t>(stk);
+	if (stk == nullptr)
 	{
-		sp = reinterpret_cast<uint32_t>(stk);
+		stackOffset = 0;
+		stackMarkerValid = 0;
+		spare = 0;
+	}
+	else
+	{
+		const char *stackLimit = (currentTask == nullptr) ? sysStackLimit : (const char*)currentTask + sizeof(TaskBase);
+		stackOffset = ((const char*)stk - stackLimit) >> 2;
+		stackMarkerValid = stackLimit[0] == 0xA5 && stackLimit[3] == 0xA5;
+		spare = 0;
 		for (uint32_t& stval : stack)
 		{
 			stval = (stk < &_estack) ? *stk++ : 0xFFFFFFFF;
@@ -155,25 +165,24 @@ void SoftwareResetData::PrintPart1(unsigned int slot, const StringRef& reply) co
 	// The task name may include nulls at the end, so print it as a string
 	const uint32_t taskNameWords[2] = { taskName, 0u };
 #if SAMC21
-	reply.lcatf("Software reset code 0x%04x ICSR 0x%08" PRIx32 " SP 0x%08" PRIx32 " Task %s",
-					resetReason, icsr, sp, (const char *)taskNameWords);
+	reply.lcatf("Software reset code 0x%04x ICSR 0x%08" PRIx32 " SP 0x%08" PRIx32 " Task %s Freestk %u %s",
+				resetReason, icsr, sp, (const char *)taskNameWords, (unsigned int)stackOffset, (sp == 0) ? "n/a" : (stackMarkerValid) ? "ok" : "bad marker");
 #else
-	reply.lcatf("Software reset code 0x%04x HFSR 0x%08" PRIx32 " CFSR 0x%08" PRIx32 " ICSR 0x%08" PRIx32 " BFAR 0x%08" PRIx32 " SP 0x%08" PRIx32 " Task %s",
-					resetReason, hfsr, cfsr, icsr, bfar, sp, (const char *)taskNameWords);
+	reply.lcatf("Software reset code 0x%04x HFSR 0x%08" PRIx32 " CFSR 0x%08" PRIx32 " ICSR 0x%08" PRIx32 " BFAR 0x%08" PRIx32 " SP 0x%08" PRIx32 " Task %s Freestk %u %s",
+				resetReason, hfsr, cfsr, icsr, bfar, sp, (const char *)taskNameWords, (unsigned int)stackOffset, (sp == 0) ? "n/a" : (stackMarkerValid) ? "ok" : "bad marker");
 #endif
 }
 
 void SoftwareResetData::PrintPart2(const StringRef& reply) const noexcept
 {
-	if (sp != 0xFFFFFFFF)
+	if (sp != 0)
 	{
 		// We saved a stack dump, so print it
-		String<StringLength256> scratchString;		// long enough to print 28 stack entries @ 9 bytes each, but not 29
+		reply.lcat("Stack:");
 		for (uint32_t stval : stack)
 		{
-			scratchString.catf(" %08" PRIx32, stval);
+			reply.catf(" %08" PRIx32, stval);
 		}
-		reply.lcatf("Stack:%s", scratchString.c_str());
 	}
 }
 

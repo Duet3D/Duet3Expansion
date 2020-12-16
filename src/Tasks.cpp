@@ -361,7 +361,7 @@ extern "C" [[noreturn]] void UpdateBootloaderTask(void *pvParameters) noexcept
 			{
 				ReportFlashError(FirmwareFlashErrorCode::eraseFailed);
 			}
-			else if (!Flash::Write(FLASH_ADDR, FlashBlockSize, reinterpret_cast<uint8_t*>(blockBuffer)))
+			else if (!Flash::Write(FLASH_ADDR, FlashBlockSize, blockBuffer))
 			{
 				ReportFlashError(FirmwareFlashErrorCode::writeFailed);
 			}
