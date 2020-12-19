@@ -1547,7 +1547,8 @@ GCodeResult Platform::DoDiagnosticTest(const CanMessageDiagnosticTest& msg, cons
 		{
 			bool ok1 = true;
 			uint32_t tim1 = 0;
-			for (uint32_t i = 0; i < 100; ++i)
+			constexpr uint32_t iterations = 100;				// use a value that divides into one million
+			for (uint32_t i = 0; i < iterations; ++i)
 			{
 				const uint32_t num1 = 0x7fffffff - (67 * i);
 				const uint64_t sq = (uint64_t)num1 * num1;
@@ -1560,7 +1561,7 @@ GCodeResult Platform::DoDiagnosticTest(const CanMessageDiagnosticTest& msg, cons
 
 			bool ok2 = true;
 			uint32_t tim2 = 0;
-			for (uint32_t i = 0; i < 100; ++i)
+			for (uint32_t i = 0; i < iterations; ++i)
 			{
 				const uint32_t num2 = 0x0000ffff - (67 * i);
 				const uint64_t sq = (uint64_t)num2 * num2;
@@ -1572,8 +1573,8 @@ GCodeResult Platform::DoDiagnosticTest(const CanMessageDiagnosticTest& msg, cons
 			}
 
 			reply.printf("Square roots: 62-bit %.2fus %s, 32-bit %.2fus %s",
-					(double)(tim1 * 10000)/SystemCoreClockFreq, (ok1) ? "ok" : "ERROR",
-							(double)(tim2 * 10000)/SystemCoreClockFreq, (ok2) ? "ok" : "ERROR");
+						(double)((float)(tim1 * (1'000'000/iterations))/SystemCoreClockFreq), (ok1) ? "ok" : "ERROR",
+							(double)((float)(tim2 * (1'000'000/iterations))/SystemCoreClockFreq), (ok2) ? "ok" : "ERROR");
 			return (ok1 && ok2) ? GCodeResult::ok : GCodeResult::error;
 		}
 
