@@ -836,6 +836,121 @@ void Platform::Spin()
 
 #if HAS_SMART_DRIVERS
 	SmartDrivers::Spin(powered);
+
+	// Check one TMC driver for temperature warning or temperature shutdown
+	if (enableValues[nextDriveToPoll] >= 0)				// don't poll driver if it is flagged "no poll"
+	{
+		const uint32_t stat = SmartDrivers::GetAccumulatedStatus(nextDriveToPoll, 0);
+		const DriversBitmap mask = DriversBitmap::MakeFromBits(nextDriveToPoll);
+		if (stat & TMC_RR_OT)
+		{
+			temperatureShutdownDrivers |= mask;
+		}
+		else if (stat & TMC_RR_OTPW)
+		{
+			temperatureWarningDrivers |= mask;
+		}
+		if (stat & TMC_RR_S2G)
+		{
+			shortToGroundDrivers |= mask;
+		}
+		else
+		{
+			shortToGroundDrivers &= ~mask;
+		}
+
+		// The driver often produces a transient open-load error, especially in stealthchop mode, so we require the condition to persist before we report it.
+		// Also, false open load indications persist when in standstill, if the phase has zero current in that position
+		if ((stat & TMC_RR_OLA) != 0)
+		{
+			if (!openLoadATimer.IsRunning())
+			{
+				openLoadATimer.Start();
+				openLoadADrivers.Clear();
+				notOpenLoadADrivers.Clear();
+			}
+			openLoadADrivers |= mask;
+		}
+		else if (openLoadATimer.IsRunning())
+		{
+			notOpenLoadADrivers |= mask;
+			if (openLoadADrivers.Disjoint(~notOpenLoadADrivers) )
+			{
+				openLoadATimer.Stop();
+			}
+		}
+
+		if ((stat & TMC_RR_OLB) != 0)
+		{
+			if (!openLoadBTimer.IsRunning())
+			{
+				openLoadBTimer.Start();
+				openLoadBDrivers.Clear();
+				notOpenLoadBDrivers.Clear();
+			}
+			openLoadBDrivers |= mask;
+		}
+		else if (openLoadBTimer.IsRunning())
+		{
+			notOpenLoadBDrivers |= mask;
+			if (openLoadBDrivers.Disjoint(~notOpenLoadBDrivers))
+			{
+				openLoadBTimer.Stop();
+			}
+		}
+
+# if HAS_STALL_DETECT
+		if ((stat & TMC_RR_SG) != 0)
+		{
+			if (stalledDrivers.Disjoint(mask))
+			{
+				// This stall is new so check whether we need to perform some action in response to the stall
+				if (rehomeOnStallDrivers.Intersects(mask))
+				{
+					stalledDriversToRehome |= mask;
+				}
+				else if (pauseOnStallDrivers.Intersects(mask))
+				{
+					stalledDriversToPause |= mask;
+				}
+				else if (logOnStallDrivers.Intersects(mask))
+				{
+					stalledDriversToLog |= mask;
+				}
+			}
+			stalledDrivers |= mask;
+		}
+		else
+		{
+			stalledDrivers &= ~mask;
+		}
+# endif
+	}
+
+# if 0 //HAS_STALL_DETECT
+	// Action any pause or rehome actions due to motor stalls. This may have to be done more than once.
+	if (stalledDriversToRehome != 0)
+	{
+		if (reprap.GetGCodes().ReHomeOnStall(stalledDriversToRehome))
+		{
+			stalledDriversToRehome = 0;
+		}
+	}
+	else if (stalledDriversToPause != 0)
+	{
+		if (reprap.GetGCodes().PauseOnStall(stalledDriversToPause))
+		{
+			stalledDriversToPause = 0;
+		}
+	}
+# endif
+
+	// Advance drive number ready for next time
+	++nextDriveToPoll;
+	if (nextDriveToPoll == MaxSmartDrivers)
+	{
+		nextDriveToPoll = 0;
+	}
 #endif
 
 	// Thermostatically-controlled fans (do this after getting TMC driver status)
@@ -844,123 +959,7 @@ void Platform::Spin()
 	(void)FansManager::CheckFans(checkSensors);
 	if (checkSensors)
 	{
-
-#if HAS_SMART_DRIVERS
-		// Check one TMC driver for temperature warning or temperature shutdown
-		if (enableValues[nextDriveToPoll] >= 0)				// don't poll driver if it is flagged "no poll"
-		{
-			const uint32_t stat = SmartDrivers::GetAccumulatedStatus(nextDriveToPoll, 0);
-			const DriversBitmap mask = DriversBitmap::MakeFromBits(nextDriveToPoll);
-			if (stat & TMC_RR_OT)
-			{
-				temperatureShutdownDrivers |= mask;
-			}
-			else if (stat & TMC_RR_OTPW)
-			{
-				temperatureWarningDrivers |= mask;
-			}
-			if (stat & TMC_RR_S2G)
-			{
-				shortToGroundDrivers |= mask;
-			}
-			else
-			{
-				shortToGroundDrivers &= ~mask;
-			}
-
-			// The driver often produces a transient open-load error, especially in stealthchop mode, so we require the condition to persist before we report it.
-			// Also, false open load indications persist when in standstill, if the phase has zero current in that position
-			if ((stat & TMC_RR_OLA) != 0)
-			{
-				if (!openLoadATimer.IsRunning())
-				{
-					openLoadATimer.Start();
-					openLoadADrivers.Clear();
-					notOpenLoadADrivers.Clear();
-				}
-				openLoadADrivers |= mask;
-			}
-			else if (openLoadATimer.IsRunning())
-			{
-				notOpenLoadADrivers |= mask;
-				if (openLoadADrivers.Disjoint(~notOpenLoadADrivers) )
-				{
-					openLoadATimer.Stop();
-				}
-			}
-
-			if ((stat & TMC_RR_OLB) != 0)
-			{
-				if (!openLoadBTimer.IsRunning())
-				{
-					openLoadBTimer.Start();
-					openLoadBDrivers.Clear();
-					notOpenLoadBDrivers.Clear();
-				}
-				openLoadBDrivers |= mask;
-			}
-			else if (openLoadBTimer.IsRunning())
-			{
-				notOpenLoadBDrivers |= mask;
-				if (openLoadBDrivers.Disjoint(~notOpenLoadBDrivers))
-				{
-					openLoadBTimer.Stop();
-				}
-			}
-
-# if HAS_STALL_DETECT
-			if ((stat & TMC_RR_SG) != 0)
-			{
-				if (stalledDrivers.Disjoint(mask))
-				{
-					// This stall is new so check whether we need to perform some action in response to the stall
-					if (rehomeOnStallDrivers.Intersects(mask))
-					{
-						stalledDriversToRehome |= mask;
-					}
-					else if (pauseOnStallDrivers.Intersects(mask))
-					{
-						stalledDriversToPause |= mask;
-					}
-					else if (logOnStallDrivers.Intersects(mask))
-					{
-						stalledDriversToLog |= mask;
-					}
-				}
-				stalledDrivers |= mask;
-			}
-			else
-			{
-				stalledDrivers &= ~mask;
-			}
-# endif
-		}
-
-# if 0 //HAS_STALL_DETECT
-		// Action any pause or rehome actions due to motor stalls. This may have to be done more than once.
-		if (stalledDriversToRehome != 0)
-		{
-			if (reprap.GetGCodes().ReHomeOnStall(stalledDriversToRehome))
-			{
-				stalledDriversToRehome = 0;
-			}
-		}
-		else if (stalledDriversToPause != 0)
-		{
-			if (reprap.GetGCodes().PauseOnStall(stalledDriversToPause))
-			{
-				stalledDriversToPause = 0;
-			}
-		}
-# endif
-
-		// Advance drive number ready for next time
-		++nextDriveToPoll;
-		if (nextDriveToPoll == MaxSmartDrivers)
-		{
-			nextDriveToPoll = 0;
-		}
-#endif
+		lastFanCheckTime = now;
 	}
 
 	// Update the Diag LED. Flash it quickly (8Hz) if we are not synced to the master, else flash in sync with the master (about 2Hz).

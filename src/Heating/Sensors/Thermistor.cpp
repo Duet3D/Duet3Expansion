@@ -277,13 +277,13 @@ void Thermistor::Poll()
 			{
 				const float resistance = seriesR * (float)(averagedTempReading - averagedVssaReading)/(float)(averagedVrefReading - averagedTempReading);
 #else
-				const int32_t averagedVrefReading = OversampledAdcRange + adcHighOffset;
-				if (averagedVrefReading <= averagedTempReading)
-				{
-					SetResult((isPT1000) ? BadErrorTemperature : ABS_ZERO, TemperatureError::openCircuit);
-				}
-				else
-				{
+			const int32_t averagedVrefReading = OversampledAdcRange + adcHighOffset;
+			if (averagedVrefReading <= averagedTempReading)
+			{
+				SetResult((isPT1000) ? BadErrorTemperature : ABS_ZERO, TemperatureError::openCircuit);
+			}
+			else
+			{
 				const float denom = (float)(averagedVrefReading - averagedTempReading) - 0.5;
 				const int32_t averagedVssaReading = adcLowOffset;
 				float resistance = seriesR * ((float)(averagedTempReading - averagedVssaReading) + 0.5)/denom;

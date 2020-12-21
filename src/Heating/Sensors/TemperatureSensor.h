@@ -69,9 +69,9 @@ private:
 	TemperatureSensor *next;
 	unsigned int sensorNumber;					// the number of this sensor
 	const char * const sensorType;
-	float lastTemperature;
-	uint32_t whenLastRead;
-	TemperatureError lastResult, lastRealError;
+	volatile float lastTemperature;
+	volatile uint32_t whenLastRead;
+	volatile TemperatureError lastResult, lastRealError;
 };
 
 #endif // TEMPERATURESENSOR_H
