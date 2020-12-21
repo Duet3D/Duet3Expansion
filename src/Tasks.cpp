@@ -175,7 +175,7 @@ extern "C" [[noreturn]] void MainTask(void *pvParameters) noexcept
 // Request a block of the bootloader, returning true if successful
 static FirmwareFlashErrorCode RequestBootloaderBlock(uint32_t fileOffset, uint32_t numBytes, CanMessageBuffer& buf)
 {
-	CanMessageFirmwareUpdateRequest * const msg = buf.SetupRequestMessage<CanMessageFirmwareUpdateRequest>(0, CanInterface::GetCanAddress(), CanId::MasterAddress);
+	CanMessageFirmwareUpdateRequest * const msg = buf.SetupRequestMessage<CanMessageFirmwareUpdateRequest>(0, CanInterface::GetCanAddress(), CanInterface::GetCurrentMasterAddress());
 	SafeStrncpy(msg->boardType, BOOTLOADER_NAME, sizeof(msg->boardType));
 	msg->boardVersion = 0;
 	msg->bootloaderVersion = CanMessageFirmwareUpdateRequest::BootloaderVersion0;

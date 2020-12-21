@@ -211,7 +211,7 @@ GCodeResult FilamentMonitor::CommonConfigure(const CanMessageGenericParser& pars
 /*static*/ void FilamentMonitor::Spin() noexcept
 {
 	CanMessageBuffer buf(nullptr);
-	auto msg = buf.SetupStatusMessage<CanMessageFilamentMonitorsStatus>(CanInterface::GetCanAddress(), CanId::MasterAddress);
+	auto msg = buf.SetupStatusMessage<CanMessageFilamentMonitorsStatus>(CanInterface::GetCanAddress(), CanInterface::GetCurrentMasterAddress());
 	bool statusChanged = false;
 	bool haveMonitor = false;
 	ReadLocker lock(filamentMonitorsLock);

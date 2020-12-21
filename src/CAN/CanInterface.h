@@ -23,6 +23,7 @@ namespace CanInterface
 	void Diagnostics(const StringRef& reply);
 
 	CanAddress GetCanAddress();
+	CanAddress GetCurrentMasterAddress();
 	GCodeResult ChangeAddressAndDataRate(const CanMessageSetAddressAndNormalTiming& msg, const StringRef& reply);
 	bool GetCanMessage(CanMessageBuffer *buf);
 	CanMessageBuffer *GetCanMove();

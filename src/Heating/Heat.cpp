@@ -259,7 +259,7 @@ void Heat::Exit()
 
 		// Broadcast our heater statuses
 		{
-			CanMessageHeatersStatus * const msg = buf->SetupStatusMessage<CanMessageHeatersStatus>(CanInterface::GetCanAddress(), CanId::MasterAddress);
+			CanMessageHeatersStatus * const msg = buf->SetupStatusMessage<CanMessageHeatersStatus>(CanInterface::GetCanAddress(), CanInterface::GetCurrentMasterAddress());
 			msg->whichHeaters = 0;
 			unsigned int heatersFound = 0;
 
@@ -289,7 +289,7 @@ void Heat::Exit()
 
 		// Broadcast our fan RPMs
 		{
-			CanMessageFansReport * const msg = buf->SetupStatusMessage<CanMessageFansReport>(CanInterface::GetCanAddress(), CanId::MasterAddress);
+			CanMessageFansReport * const msg = buf->SetupStatusMessage<CanMessageFansReport>(CanInterface::GetCanAddress(), CanInterface::GetCurrentMasterAddress());
 			const unsigned int numReported = FansManager::PopulateFansReport(*msg);
 			if (numReported != 0)
 			{

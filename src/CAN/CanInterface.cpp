@@ -35,6 +35,13 @@ constexpr unsigned int NumCanBuffers = 40;
 static CanDevice *can0dev = nullptr;
 static CanUserAreaData canConfigData;
 static CanAddress boardAddress;
+static CanAddress currentMasterAddress =
+#if defined(ATECM) || defined(ATEIO)
+										CanId::ATEMasterAddress;
+#else
+										CanId::MasterAddress;
+#endif
+
 static bool enabled = false;
 
 constexpr CanDevice::Config Can0Config =
@@ -224,6 +231,11 @@ CanAddress CanInterface::GetCanAddress()
 	return boardAddress;
 }
 
+CanAddress CanInterface::GetCurrentMasterAddress()
+{
+	return currentMasterAddress;
+}
+
 // Send a message. On return the buffer is available to the caller to re-use or free.
 // Any extra bytes needed as padding are set to zero by the CAN driver.
 bool CanInterface::Send(CanMessageBuffer *buf)
@@ -261,101 +273,109 @@ CanMessageBuffer *CanInterface::GetCanCommand()
 // Process a received message and (eventually) release the buffer that it arrived in
 void CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf)
 {
-	switch (buf->id.MsgType())
+	// Only respond to messages from a master address
+#if defined(ATEIO) || defined(ATECM)
+	if (buf->id.Src() == CanId::ATEMasterAddress)			// ATE boards only respond to the ATE master, because a main board under test may also transmit when it starts up
+#else
+	if (buf->id.Src() == CanId::MasterAddress || buf->id.Src() == CanId::ATEMasterAddress)
+#endif
 	{
-	case CanMessageType::timeSync:
-		//TODO re-implement this as a PLL and use the CAN time stamps for greater accuracy
-		StepTimer::SetLocalTimeOffset(StepTimer::GetTimerTicks() - buf->msg.sync.timeSent);
-		Platform::SetPrinting(buf->msg.sync.isPrinting);
-
-		if (buf->dataLength >= 16)				// if real time is included
+		switch (buf->id.MsgType())
 		{
-			Platform::SetDateTime(buf->msg.sync.realTime);
-		}
-		CanMessageBuffer::Free(buf);
-		break;
+		case CanMessageType::timeSync:
+			currentMasterAddress = buf->id.Src();
+
+			//TODO re-implement this as a PLL and use the CAN time stamps for greater accuracy
+			StepTimer::SetLocalTimeOffset(StepTimer::GetTimerTicks() - buf->msg.sync.timeSent);
+			Platform::SetPrinting(buf->msg.sync.isPrinting);
+
+			if (buf->dataLength >= 16)				// if real time is included
+			{
+				Platform::SetDateTime(buf->msg.sync.realTime);
+			}
+			CanMessageBuffer::Free(buf);
+			break;
 
 #if SUPPORT_DRIVERS
-	case CanMessageType::movement:
-		// Check for duplicate and out-of-sequence message
-		{
-			const uint32_t now = millis();
-			if (buf->msg.move.whenToExecute == lastMotionMessageScheduledTime && now - lastMotionMessageReceivedAt < 100)
+		case CanMessageType::movement:
+			// Check for duplicate and out-of-sequence message
 			{
-				++duplicateMotionMessages;
-				CanMessageBuffer::Free(buf);
-				break;
+				const uint32_t now = millis();
+				if (buf->msg.move.whenToExecute == lastMotionMessageScheduledTime && now - lastMotionMessageReceivedAt < 100)
+				{
+					++duplicateMotionMessages;
+					CanMessageBuffer::Free(buf);
+					break;
+				}
+				lastMotionMessageScheduledTime = buf->msg.move.whenToExecute;
+				lastMotionMessageReceivedAt = now;
+
+				const int8_t seq = buf->msg.move.seq;
+				if (seq != expectedSeq && expectedSeq != 0xFF)
+				{
+					++oosMessages;
+				}
+				expectedSeq = (seq + 1) & 7;
 			}
-			lastMotionMessageScheduledTime = buf->msg.move.whenToExecute;
-			lastMotionMessageReceivedAt = now;
 
-			const int8_t seq = buf->msg.move.seq;
-			if (seq != expectedSeq && expectedSeq != 0xFF)
-			{
-				++oosMessages;
-			}
-			expectedSeq = (seq + 1) & 7;
-		}
+			//TODO if we haven't established time sync yet then we should defer this
+			buf->msg.move.whenToExecute += StepTimer::GetLocalTimeOffset();
+			//DEBUG
+			//accumulatedMotion +=buf->msg.move.perDrive[0].steps;
+			//END
+			PendingMoves.AddMessage(buf);
+			Platform::OnProcessingCanMessage();
+			break;
 
-		//TODO if we haven't established time sync yet then we should defer this
-		buf->msg.move.whenToExecute += StepTimer::GetLocalTimeOffset();
-		//DEBUG
-		//accumulatedMotion +=buf->msg.move.perDrive[0].steps;
-		//END
-		PendingMoves.AddMessage(buf);
-		Platform::OnProcessingCanMessage();
-		break;
+		case CanMessageType::stopMovement:
+			moveInstance->StopDrivers(buf->msg.stopMovement.whichDrives);
+			CanMessageBuffer::Free(buf);
+			Platform::OnProcessingCanMessage();
+			break;
+	#endif
 
-	case CanMessageType::stopMovement:
-		moveInstance->StopDrivers(buf->msg.stopMovement.whichDrives);
-		CanMessageBuffer::Free(buf);
-		Platform::OnProcessingCanMessage();
-		break;
-#endif
+		case CanMessageType::emergencyStop:
+			Platform::EmergencyStop();
+			CanMessageBuffer::Free(buf);
+			break;
 
-	case CanMessageType::emergencyStop:
-		Platform::EmergencyStop();
-		CanMessageBuffer::Free(buf);
-		break;
-
-	case CanMessageType::acknowledgeAnnounce:
-		if (buf->id.Src() == CanId::MasterAddress)
-		{
+		case CanMessageType::acknowledgeAnnounce:
 			mainBoardAcknowledgedAnnounce = true;
 			Platform::OnProcessingCanMessage();
-		}
-		CanMessageBuffer::Free(buf);
-		break;
+			CanMessageBuffer::Free(buf);
+			break;
 
-	case CanMessageType::startup:
-		if (millis() > 1000 || isProgrammed)		// if we've only just powered up and the main board hasn't programmed us yet, no need to start up again
-		{
-			Platform::EmergencyStop();
-		}
-		CanMessageBuffer::Free(buf);
-		Platform::OnProcessingCanMessage();
-		break;
-
-	case CanMessageType::controlledStop:
-		debugPrintf("Unsupported CAN message type %u\n", (unsigned int)(buf->id.MsgType()));
-		CanMessageBuffer::Free(buf);
-		Platform::OnProcessingCanMessage();
-		break;
-
-	default:
-		if (buf->id.Dst() == GetCanAddress() && buf->id.IsRequest())
-		{
-			if (buf->id.Src() == CanId::MasterAddress)
+		case CanMessageType::startup:
+			if (millis() > 1000 || isProgrammed)		// if we've only just powered up and the main board hasn't programmed us yet, no need to start up again
 			{
-				isProgrammed = true;			// record that we've had a communication from the master since we started up
+				Platform::EmergencyStop();
 			}
-			PendingCommands.AddMessage(buf);	// it's addressed to us, so queue it for processing
+			CanMessageBuffer::Free(buf);
+			Platform::OnProcessingCanMessage();
+			break;
+
+		case CanMessageType::controlledStop:
+			debugPrintf("Unsupported CAN message type %u\n", (unsigned int)(buf->id.MsgType()));
+			CanMessageBuffer::Free(buf);
+			Platform::OnProcessingCanMessage();
+			break;
+
+		default:
+			if (buf->id.Dst() == GetCanAddress() && buf->id.IsRequest())
+			{
+				isProgrammed = true;				// record that we've had a communication from the master since we started up
+				PendingCommands.AddMessage(buf);	// it's addressed to us, so queue it for processing
+			}
+			else
+			{
+				CanMessageBuffer::Free(buf);		// it's a broadcast message that we don't want, or a response, so throw it away
+			}
+			break;
 		}
-		else
-		{
-			CanMessageBuffer::Free(buf);		// it's a broadcast message that we don't want, or a response, so throw it away
-		}
-		break;
+	}
+	else
+	{
+		CanMessageBuffer::Free(buf);				// it's a message from a non-master address
 	}
 }
 
@@ -367,12 +387,12 @@ void CanInterface::Diagnostics(const StringRef& reply)
 					messagesQueuedForSending, txTimeouts, messagesReceived, messagesLost, CanMessageBuffer::FreeBuffers());
 }
 
-// Send an announcement message if we haven't had an announce acknowledgement form the main board. On return the buffer is available to use again.
+// Send an announcement message if we haven't had an announce acknowledgement from a main board. On return the buffer is available to use again.
 void CanInterface::SendAnnounce(CanMessageBuffer *buf)
 {
 	if (!mainBoardAcknowledgedAnnounce)
 	{
-		auto msg = buf->SetupRequestMessage<CanMessageAnnounce>(0, boardAddress, CanId::MasterAddress);
+		auto msg = buf->SetupBroadcastMessage<CanMessageAnnounce>(boardAddress);
 		msg->timeSinceStarted = millis();
 		msg->numDrivers = NumDrivers;
 		msg->zero = 0;
@@ -493,7 +513,7 @@ extern "C" [[noreturn]] void CanAsyncSenderLoop(void *)
 	for (;;)
 	{
 		// Set up a message ready
-		auto msg = buf->SetupStatusMessage<CanMessageInputChanged>(CanInterface::GetCanAddress(), CanId::MasterAddress);
+		auto msg = buf->SetupStatusMessage<CanMessageInputChanged>(CanInterface::GetCanAddress(), currentMasterAddress);
 		msg->states = 0;
 		msg->zero = 0;
 		msg->numHandles = 0;
@@ -504,7 +524,7 @@ extern "C" [[noreturn]] void CanAsyncSenderLoop(void *)
 			buf->dataLength = msg->GetActualDataLength();
 			CanInterface::SendAsync(buf);					// this doesn't free the buffer, so we can re-use it
 		}
-		TaskBase::Take(timeToWait);						// wait until we are woken up because a message is available, or we time out
+		TaskBase::Take(timeToWait);							// wait until we are woken up because a message is available, or we time out
 	}
 }
 
