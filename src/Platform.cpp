@@ -1010,9 +1010,11 @@ void Platform::Spin()
 		const auto ts = Heat::FindSensorAtOrAbove(nextSensor);
 		if (ts.IsNotNull())
 		{
+#if 0
 			float temp;
 			const TemperatureError err = ts->GetLatestTemperature(temp);
 			debugPrintf("Sensor %u err %u temp %.1f", ts->GetSensorNumber(), (unsigned int)err, (double)temp);
+#endif
 			nextSensor = ts->GetSensorNumber() + 1;
 		}
 		else
@@ -1025,7 +1027,7 @@ void Platform::Spin()
 #elif 0
 			moveInstance->Diagnostics(AuxMessage);
 #elif 0
-#else
+#elif 0
 //			uint32_t conversionsStarted, conversionsCompleted;
 //			AnalogIn::GetDebugInfo(conversionsStarted, conversionsCompleted);
 			debugPrintf(
@@ -1164,7 +1166,10 @@ void Platform::HandleHeaterFault(unsigned int heater)
 bool Platform::DebugPutc(char c)
 {
 #ifdef DEBUG
-	uart0.write(c);
+	if (c != 0)
+	{
+		uart0.write(c);
+	}
 #endif
 	return true;
 }
