@@ -9,7 +9,6 @@
 #include <Platform.h>
 #include <TaskPriorities.h>
 #include <Movement/Move.h>
-#include <GCodes/GCodes.h>
 #include <Heating/Heat.h>
 #include <InputMonitors/InputMonitor.h>
 #include <CommandProcessing/CommandProcessor.h>
@@ -154,7 +153,6 @@ void AppMain() noexcept
 extern "C" [[noreturn]] void MainTask(void *pvParameters) noexcept
 {
 	Platform::Init();
-	GCodes::Init();
 	Heat::Init();
 	InputMonitor::Init();
 	moveInstance = new Move();
@@ -163,7 +161,6 @@ extern "C" [[noreturn]] void MainTask(void *pvParameters) noexcept
 	for (;;)
 	{
 		Platform::Spin();
-		GCodes::Spin();
 		CommandProcessor::Spin();
 		moveInstance->Spin();
 #if SUPPORT_DRIVERS

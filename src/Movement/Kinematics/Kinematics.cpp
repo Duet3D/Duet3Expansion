@@ -9,7 +9,6 @@
 #include "Kinematics.h"
 #include "CartesianKinematics.h"
 #include "Platform.h"
-#include "GCodes/GCodes.h"
 
 // Constructor. Pass segsPerSecond <= 0.0 to get non-segmented kinematics.
 Kinematics::Kinematics(KinematicsType t, float segsPerSecond, float minSegLength, bool doUseRawG0)

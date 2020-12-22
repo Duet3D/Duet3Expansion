@@ -13,7 +13,6 @@
 #if SUPPORT_DRIVERS
 
 #include "DriveMovement.h"
-#include "GCodes/GCodes.h"			// for class RawMove, HomeAxes
 #include "StepTimer.h"
 
 struct CanMessageMovement;
