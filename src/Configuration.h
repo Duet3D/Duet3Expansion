@@ -102,7 +102,7 @@ constexpr PwmFrequency ServoRefreshFrequency = 50;
 // String lengths. Keeping the number of distinct lengths small will reduce flash memory usage.
 constexpr size_t StringLength20 = 20;
 constexpr size_t StringLength50 = 50;
-constexpr size_t StringLength100 = 50;
+constexpr size_t StringLength100 = 100;
 constexpr size_t StringLength256 = 256;
 constexpr size_t StringLength500 = 500;
 constexpr size_t FormatStringLength = StringLength256;
