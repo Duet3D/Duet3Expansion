@@ -99,11 +99,11 @@ void InputMonitor::AnalogInterrupt(uint16_t reading) noexcept
 	static_cast<InputMonitor*>(cbp.vp)->AnalogInterrupt(reading);
 }
 
-/*static*/ ReadLockedPointer<InputMonitor> InputMonitor::Find(uint16_t handle) noexcept
+/*static*/ ReadLockedPointer<InputMonitor> InputMonitor::Find(uint16_t hndl) noexcept
 {
 	ReadLocker lock(listLock);
 	InputMonitor *current = monitorsList;
-	while (current != nullptr && current->handle != handle)
+	while (current != nullptr && current->handle != hndl)
 	{
 		current = current->next;
 	}
@@ -111,12 +111,12 @@ void InputMonitor::AnalogInterrupt(uint16_t reading) noexcept
 }
 
 // Delete a monitor. Must own the write lock before calling this.
-/*static*/ bool InputMonitor::Delete(uint16_t handle) noexcept
+/*static*/ bool InputMonitor::Delete(uint16_t hndl) noexcept
 {
 	InputMonitor *prev = nullptr, *current = monitorsList;
 	while (current != nullptr)
 	{
-		if (current->handle == handle)
+		if (current->handle == hndl)
 		{
 			current->Deactivate();
 			if (prev == nullptr)
@@ -258,14 +258,14 @@ void InputMonitor::AnalogInterrupt(uint16_t reading) noexcept
 			const uint32_t age = now - p->whenLastSent;
 			if (age >= p->minInterval)
 			{
-				bool state;
+				bool monitorState;
 				{
-					InterruptCriticalSectionLocker lock;
+					InterruptCriticalSectionLocker ilock;
 					p->sendDue = false;
-					state = p->state;
+					monitorState = p->state;
 				}
 
-				if (msg->AddEntry(p->handle, state))
+				if (msg->AddEntry(p->handle, monitorState))
 				{
 					p->whenLastSent = now;
 				}

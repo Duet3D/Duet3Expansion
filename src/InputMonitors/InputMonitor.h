@@ -41,8 +41,8 @@ private:
 	void AnalogInterrupt(uint16_t reading) noexcept;
 	uint16_t GetAnalogValue() const noexcept;
 
-	static bool Delete(uint16_t handle) noexcept;
-	static ReadLockedPointer<InputMonitor> Find(uint16_t handle) noexcept;
+	static bool Delete(uint16_t hndl) noexcept;
+	static ReadLockedPointer<InputMonitor> Find(uint16_t hndl) noexcept;
 
 	InputMonitor *next;
 	IoPort port;
