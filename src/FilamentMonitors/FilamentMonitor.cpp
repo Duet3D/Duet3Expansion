@@ -212,6 +212,7 @@ GCodeResult FilamentMonitor::CommonConfigure(const CanMessageGenericParser& pars
 {
 	CanMessageBuffer buf(nullptr);
 	auto msg = buf.SetupStatusMessage<CanMessageFilamentMonitorsStatus>(CanInterface::GetCanAddress(), CanId::MasterAddress);
+	msg->SetStandardFields(NumDrivers);
 	bool statusChanged = false;
 	bool haveMonitor = false;
 	ReadLocker lock(filamentMonitorsLock);
@@ -274,13 +275,12 @@ GCodeResult FilamentMonitor::CommonConfigure(const CanMessageGenericParser& pars
 		msg->data[driver].Set(fst.ToBaseType());
 	}
 
-	if (statusChanged || (haveMonitor && whenStatusLastSent - millis() >= StatusUpdateInterval))
+	if (statusChanged || (haveMonitor && millis() - whenStatusLastSent >= StatusUpdateInterval))
 	{
 		lock.Release();
 		buf.dataLength = msg->GetActualDataLength();
 		CanInterface::Send(&buf);
 		whenStatusLastSent = millis();
-		statusChanged = false;
 	}
 }
 
