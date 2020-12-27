@@ -274,13 +274,12 @@ GCodeResult FilamentMonitor::CommonConfigure(const CanMessageGenericParser& pars
 		msg->data[driver].Set(fst.ToBaseType());
 	}
 
-	if (statusChanged || (haveMonitor && whenStatusLastSent - millis() >= StatusUpdateInterval))
+	if (statusChanged || (haveMonitor && millis() - whenStatusLastSent >= StatusUpdateInterval))
 	{
 		lock.Release();
 		buf.dataLength = msg->GetActualDataLength();
 		CanInterface::Send(&buf);
 		whenStatusLastSent = millis();
-		statusChanged = false;
 	}
 }
 
