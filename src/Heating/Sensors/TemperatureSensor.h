@@ -24,7 +24,7 @@ public:
 	// Get the most recent reading without checking for timeout
 	float GetStoredReading() const noexcept { return lastTemperature; }
 
-	// Configure the sensor from M305 parameters.
+	// Configure the sensor from M308 parameters.
 	// If we find any parameters, process them and return true. If an error occurs while processing them, return error and write an error message to 'reply.
 	// If we find no relevant parameters, report the current parameters to 'reply' and return ok.
 	virtual GCodeResult Configure(const CanMessageGenericParser& parser, const StringRef& reply);

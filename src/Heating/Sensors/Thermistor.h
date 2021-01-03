@@ -24,7 +24,8 @@ class Thermistor : public SensorWithPort
 {
 public:
 	Thermistor(unsigned int sensorNum, bool p_isPT1000);					// create an instance with default values
-	GCodeResult Configure(const CanMessageGenericParser& parser, const StringRef& reply) override; // configure the sensor from M305 parameters
+
+	GCodeResult Configure(const CanMessageGenericParser& parser, const StringRef& reply) override; // configure the sensor from M308 parameters
 
 	static constexpr const char *TypeNameThermistor = "thermistor";
 	static constexpr const char *TypeNamePT1000 = "pt1000";
