@@ -169,7 +169,7 @@ void Move::Spin()
 		CanMessageBuffer *buf = CanInterface::GetCanMove();
 		if (buf != nullptr)
 		{
-			if (ddaRingAddPointer->Init(buf->msg.move))
+			if (ddaRingAddPointer->Init(buf->msg.moveLinear))
 			{
 				ddaRingAddPointer = ddaRingAddPointer->GetNext();
 				scheduledMoves++;

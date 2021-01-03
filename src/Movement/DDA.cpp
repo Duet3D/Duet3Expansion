@@ -191,7 +191,7 @@ void DDA::Init()
 
 // Set up a real move. Return true if it represents real movement, else false.
 // Return true if it is a real move
-bool DDA::Init(const CanMessageMovement& msg)
+bool DDA::Init(const CanMessageMovementLinear& msg)
 {
 	// 0. Initialise the endpoints, which are used for diagnostic purposes, and set up the DriveMovement objects
 	bool realMove = false;
@@ -241,22 +241,10 @@ bool DDA::Init(const CanMessageMovement& msg)
 
 // Prepare this DDA for execution.
 // This must not be called with interrupts disabled, because it calls Platform::EnableDrive.
-void DDA::Prepare(const CanMessageMovement& msg)
+void DDA::Prepare(const CanMessageMovementLinear& msg)
 {
 	PrepParams params;
 	params.decelStartDistance = 1.0 - decelDistance;
-
-	if (msg.deltaDrives != 0)
-	{
-		afterPrepare.cKc = roundS32(msg.zMovement * DriveMovement::Kc);
-		params.dvecX = msg.finalX - msg.initialX;
-		params.dvecY = msg.finalY - msg.initialY;
-		params.dvecZ = msg.zMovement;
-		params.a2plusb2 = fsquare(params.dvecX) + fsquare(params.dvecY);
-		params.initialX = msg.initialX;
-		params.initialY = msg.initialY;
-		params.dparams = static_cast<const LinearDeltaKinematics*>(&(moveInstance->GetKinematics()));
-	}
 
 	afterPrepare.startSpeedTimesCdivA = (uint32_t)roundU32(startSpeed/acceleration);
 	params.topSpeedTimesCdivD = (uint32_t)roundU32(topSpeed/deceleration);
@@ -272,17 +260,7 @@ void DDA::Prepare(const CanMessageMovement& msg)
 		if (pdm != nullptr && pdm->state == DMState::moving)
 		{
 			Platform::EnableDrive(drive);
-			if ((msg.deltaDrives & (1u << drive)) != 0)
-			{
-				pdm->PrepareDeltaAxis(*this, params);
-
-				// Check for sensible values, print them if they look dubious
-				if (Platform::Debug(moduleDda) && pdm->totalSteps > 1000000)
-				{
-					DebugPrintAll();
-				}
-			}
-			else if ((msg.pressureAdvanceDrives & (1u << drive)) != 0)
+			if ((msg.pressureAdvanceDrives & (1u << drive)) != 0)
 			{
 				// If there is any extruder jerk in this move, in theory that means we need to instantly extrude or retract some amount of filament.
 				// Pass the speed change to PrepareExtruder

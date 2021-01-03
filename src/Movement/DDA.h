@@ -15,7 +15,7 @@
 #include "DriveMovement.h"
 #include "StepTimer.h"
 
-struct CanMessageMovement;
+struct CanMessageMovementLinear;
 
 // This defines a single coordinated movement of one or several motors
 class DDA
@@ -35,7 +35,7 @@ public:
 
 	DDA(DDA* n);
 
-	bool Init(const CanMessageMovement& msg);
+	bool Init(const CanMessageMovementLinear& msg);
 	void Init();													// Set up initial positions for machine startup
 	void Start(uint32_t tim) SPEED_CRITICAL;					// Start executing the DDA, i.e. move the move.
 	void StepDrivers(uint32_t now) SPEED_CRITICAL;			// Take one step of the DDA, called by timed interrupt.
@@ -45,7 +45,7 @@ public:
 	void SetPrevious(DDA *p) { prev = p; }
 	void Complete() { state = completed; }
 	bool Free();
-	void Prepare(const CanMessageMovement& msg) SPEED_CRITICAL;	// Calculate all the values and freeze this DDA
+	void Prepare(const CanMessageMovementLinear& msg) SPEED_CRITICAL;	// Calculate all the values and freeze this DDA
 	bool HasStepError() const;
 	bool IsPrintingMove() const { return flags.isPrintingMove; }
 

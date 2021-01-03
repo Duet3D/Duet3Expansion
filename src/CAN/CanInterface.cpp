@@ -297,20 +297,20 @@ void CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf)
 			break;
 
 #if SUPPORT_DRIVERS
-		case CanMessageType::movement:
+		case CanMessageType::movementLinear:
 			// Check for duplicate and out-of-sequence message
 			{
 				const uint32_t now = millis();
-				if (buf->msg.move.whenToExecute == lastMotionMessageScheduledTime && now - lastMotionMessageReceivedAt < 100)
+				if (buf->msg.moveLinear.whenToExecute == lastMotionMessageScheduledTime && now - lastMotionMessageReceivedAt < 100)
 				{
 					++duplicateMotionMessages;
 					CanMessageBuffer::Free(buf);
 					break;
 				}
-				lastMotionMessageScheduledTime = buf->msg.move.whenToExecute;
+				lastMotionMessageScheduledTime = buf->msg.moveLinear.whenToExecute;
 				lastMotionMessageReceivedAt = now;
 
-				const int8_t seq = buf->msg.move.seq;
+				const int8_t seq = buf->msg.moveLinear.seq;
 				if (seq != expectedSeq && expectedSeq != 0xFF)
 				{
 					++oosMessages;
@@ -319,9 +319,9 @@ void CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf)
 			}
 
 			//TODO if we haven't established time sync yet then we should defer this
-			buf->msg.move.whenToExecute += StepTimer::GetLocalTimeOffset();
+			buf->msg.moveLinear.whenToExecute += StepTimer::GetLocalTimeOffset();
 			//DEBUG
-			//accumulatedMotion +=buf->msg.move.perDrive[0].steps;
+			//accumulatedMotion +=buf->msg.moveLinear.perDrive[0].steps;
 			//END
 			PendingMoves.AddMessage(buf);
 			Platform::OnProcessingCanMessage();
