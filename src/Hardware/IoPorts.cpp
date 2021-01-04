@@ -427,11 +427,11 @@ void IoPort::AppendPinName(const StringRef& str) const
 
 // Function to look up a pin name pass back the corresponding index into the pin table
 // On this platform, the mapping from pin names to pins is fixed, so this is a simple lookup
-/*static*/ bool IoPort::LookupPinName(const char*pn, Pin& pin, bool& hardwareInverted, bool& pullupAlways)
+/*static*/ bool IoPort::LookupPinName(const char*pn, Pin& returnedPin, bool& hardwareInverted, bool& pullupAlways)
 {
 	if (StringEqualsIgnoreCase(pn, NoPinName))
 	{
-		pin = NoPin;
+		returnedPin = NoPin;
 		hardwareInverted = false;
 		return true;
 	}
@@ -468,7 +468,7 @@ void IoPort::AppendPinName(const StringRef& str) const
 			if (*p == 0 && (*q == 0 || *q == ','))
 			{
 				// Found a match
-				pin = (Pin)lp;
+				returnedPin = (Pin)lp;
 				hardwareInverted = hwInverted;
 				pullupAlways = pullAlways;
 				return true;
@@ -506,25 +506,25 @@ void IoPort::AppendPinName(const StringRef& str) const
 // Low level pin access functions
 
 // Find the ADC channel associated with a pin
-/*static*/ AdcInput IoPort::PinToAdcInput(Pin pin, bool useAlternateAdc)
+/*static*/ AdcInput IoPort::PinToAdcInput(Pin p, bool useAlternateAdc)
 {
-	return (pin >= ARRAY_SIZE(PinTable)) ? AdcInput::none
+	return (p >= ARRAY_SIZE(PinTable)) ? AdcInput::none
 #if SAMC21
-			: (useAlternateAdc) ? PinTable[pin].sdadc
+			: (useAlternateAdc) ? PinTable[p].sdadc
 #endif
-				: PinTable[pin].adc;
+				: PinTable[p].adc;
 }
 
-/*static*/ bool IoPort::ReadPin(Pin pin)
+/*static*/ bool IoPort::ReadPin(Pin p)
 {
-	return (pin != NoPin) && digitalRead(pin);
+	return (p != NoPin) && digitalRead(p);
 }
 
-/*static*/ void IoPort::WriteDigital(Pin pin, bool high)
+/*static*/ void IoPort::WriteDigital(Pin p, bool high)
 {
-	if (pin != NoPin)
+	if (p != NoPin)
 	{
-		digitalWrite(pin, high);
+		digitalWrite(p, high);
 	}
 }
 

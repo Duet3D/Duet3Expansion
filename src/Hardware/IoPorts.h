@@ -78,10 +78,10 @@ public:
 	static void AppendPinNames(const StringRef& str, size_t numPorts, IoPort * const ports[]);
 
 	// Look up a pin name in the pins table
-	static bool LookupPinName(const char*pn, Pin& pin, bool& hardwareInverted, bool& pullupAlways);
+	static bool LookupPinName(const char*pn, Pin& returnedPin, bool& hardwareInverted, bool& pullupAlways);
 
 	// Find the ADC channel associated with a pin
-	static AdcInput PinToAdcInput(Pin pin, bool useAlternateAdc);
+	static AdcInput PinToAdcInput(Pin p, bool useAlternateAdc);
 
 	// Low level port access
 	static void SetPinMode(Pin p, PinMode mode) noexcept { pinMode(p, mode); }
