@@ -81,12 +81,10 @@ private:
 	bool running;
 };
 
-constexpr size_t ScratchStringLength = 220;							// standard length of a scratch string, enough to print delta parameters to
-constexpr size_t ShortScratchStringLength = 50;
+constexpr const char* NoPinName = "nil";
 
 constexpr size_t XYZ_AXES = 3;										// The number of Cartesian axes
 constexpr size_t X_AXIS = 0, Y_AXIS = 1, Z_AXIS = 2;				// The indices of the Cartesian axes in drive arrays
-constexpr size_t U_AXIS = 3;										// The assumed index of the U motor when aligning a rotary axis
 
 // Common conversion factors
 constexpr unsigned int MinutesToSeconds = 60;
