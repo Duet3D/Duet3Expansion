@@ -8,7 +8,7 @@
 #ifndef SRC_VERSION_H_
 #define SRC_VERSION_H_
 
-#define VERSION		"3.2-RC2"
+#define VERSION		"3.2"
 
 #include <General/IsoDate.h>
 
