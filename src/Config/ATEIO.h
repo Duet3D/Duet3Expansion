@@ -115,19 +115,24 @@ constexpr PinDescription PinTable[] =
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PB23 CAN0 Rx
 
 	// Extended ADC. We can re-use the ADC0 input channel IDs because the code checks whether the pin is a physical pin.
-	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_0,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"xain0"		},	// extended ADC channel 0
-	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_1,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"xain1"		},	// extended ADC channel 1
-	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_2,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"xain2"		},	// extended ADC channel 2
-	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_3,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"xain3"		},	// extended ADC channel 3
-	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_4,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"xain4"		},	// extended ADC channel 4
-	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_5,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"xain5"		},	// extended ADC channel 5
-	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_6,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"xain6"		},	// extended ADC channel 6
-	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_7,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"xain7"		},	// extended ADC channel 7
+	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_0,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"load0"		},	// extended ADC channel 0
+	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_1,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"load1"		},	// extended ADC channel 1
+	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_2,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"loadspare0"},	// extended ADC channel 2
+	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_3,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"loadspare1"},	// extended ADC channel 3
+	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_4,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"load2"		},	// extended ADC channel 4
+	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_5,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"load3"		},	// extended ADC channel 5
+	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_6,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"voutlc"	},	// extended ADC channel 6
+	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_7,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"load4"		},	// extended ADC channel 7
 };
 
 static constexpr size_t NumPins = ARRAY_SIZE(PinTable);
 static constexpr size_t NumPhysicalPins = 32 + 24;		// 32 pins on port A (some missing), 24 on port B
 static_assert(NumPins == NumPhysicalPins + 8);			// 8 virtual pins for extended ADC inputs
+
+static inline constexpr bool IsExtendedAnalogPin(Pin p) noexcept
+{
+	return p >= NumPhysicalPins && p < NumPhysicalPins + 8;
+}
 
 // Timer/counter used to generate step pulses and other sub-millisecond timings
 TcCount32 * const StepTc = &(TC2->COUNT32);

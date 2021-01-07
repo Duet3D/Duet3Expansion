@@ -149,7 +149,7 @@ uint16_t IoPort::ReadAnalog() const
 		{
 			const uint16_t val =
 #ifdef ATEIO
-			(pin >= NumPhysicalPins)
+			(IsExtendedAnalogPin(pin))
 				? ExtendedAnalog::AnalogIn(GetInputNumber(chan)) :
 #endif
 				AnalogIn::ReadChannel(chan);

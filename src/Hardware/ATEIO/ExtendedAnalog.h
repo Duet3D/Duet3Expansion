@@ -12,10 +12,12 @@
 
 #include <RepRapFirmware.h>
 
+class SharedSpiDevice;
+
 namespace ExtendedAnalog
 {
-	void Init();
-	uint16_t AnalogIn(unsigned int chan);
+	void Init(SharedSpiDevice& sharedSpi) noexcept;
+	uint16_t AnalogIn(unsigned int chan) noexcept;
 }
 
 #endif

@@ -28,7 +28,7 @@ constexpr uint16_t ControlRegisterValue = (1 << 15)		// write
 static SharedSpiClient *device = nullptr;
 
 // Write and read 16 bits to the ADC
-static uint16_t AdcTransfer(uint16_t dataOut)
+static uint16_t AdcTransfer(uint16_t dataOut) noexcept
 {
 	const uint8_t wb[2] = { (uint8_t)(dataOut >> 8), (uint8_t)(dataOut & 255) };
 	uint8_t rb[2];
@@ -36,10 +36,10 @@ static uint16_t AdcTransfer(uint16_t dataOut)
 	return ((uint16_t)rb[0] << 8) | rb[1];
 }
 
-void ExtendedAnalog::Init()
+void ExtendedAnalog::Init(SharedSpiDevice& sharedSpi) noexcept
 {
 	pinMode(ExtendedAdcCsPin, PinMode::OUTPUT_HIGH);
-	device = new SharedSpiClient(Platform::GetSharedSpi(), AdcClockFrequency, AdcSpiMode, false);
+	device = new SharedSpiClient(sharedSpi, AdcClockFrequency, AdcSpiMode, false);
 	device->SetCsPin(ExtendedAdcCsPin);
 
 	// Write the two range registers, select 0V to +10V range
@@ -54,7 +54,7 @@ void ExtendedAnalog::Init()
 }
 
 // Read an ADC channel
-uint16_t ExtendedAnalog::AnalogIn(unsigned int chan)
+uint16_t ExtendedAnalog::AnalogIn(unsigned int chan) noexcept
 {
 	(void)AdcTransfer(ControlRegisterValue | ((chan & 7) << 10));		// set channel to sample next
 	static_assert(AnalogIn::AdcBits >= 13);

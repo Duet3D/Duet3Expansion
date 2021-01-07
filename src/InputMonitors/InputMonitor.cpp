@@ -33,7 +33,17 @@ bool InputMonitor::Activate() noexcept
 		{
 			// Analog port
 			state = port.ReadAnalog() >= threshold;
-			ok = port.SetAnalogCallback(CommonAnalogPortInterrupt, CallbackParameter(this), 1);
+#ifdef ATEIO
+			// We can't set an interrupt on the extended analog channels
+			if (IsExtendedAnalogPin(port.GetPin()))
+			{
+				ok = true;
+			}
+			else
+#endif
+			{
+				ok = port.SetAnalogCallback(CommonAnalogPortInterrupt, CallbackParameter(this), 1);
+			}
 		}
 		active = true;
 		whenLastSent = millis();
@@ -172,7 +182,7 @@ void InputMonitor::AnalogInterrupt(uint16_t reading) noexcept
 		extra = (newMonitor->state) ? 1 : 0;
 		if (!ok)
 		{
-			reply.copy("Failed to set pin change interrupt");
+			reply.printf("Failed to activate input monitor on pin %u", newMonitor->port.GetPin());
 			return GCodeResult::error;
 		}
 		return GCodeResult::ok;

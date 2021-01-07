@@ -29,6 +29,10 @@
 # include <ClosedLoop/ClosedLoop.h>
 #endif
 
+#ifdef ATEIO
+# include <Hardware/ATEIO/ExtendedAnalog.h>
+#endif
+
 #include <hpl_user_area.h>
 
 #if SAME5x
@@ -723,6 +727,10 @@ void Platform::Init()
 	SetPinFunction(SSPIMisoPin, SSPIMisoPinPeriphMode);
 
 	sharedSpi = new SharedSpiDevice(SERCOM_SSPI_NUMBER);
+#endif
+
+#ifdef ATEIO
+	ExtendedAnalog::Init(*sharedSpi);					// must init sharedSpi before calling this
 #endif
 
 	// Read the unique ID
@@ -1580,6 +1588,27 @@ GCodeResult Platform::DoDiagnosticTest(const CanMessageDiagnosticTest& msg, cons
 						(double)((float)(tim1 * (1'000'000/iterations))/SystemCoreClockFreq), (ok1) ? "ok" : "ERROR",
 							(double)((float)(tim2 * (1'000'000/iterations))/SystemCoreClockFreq), (ok2) ? "ok" : "ERROR");
 			return (ok1 && ok2) ? GCodeResult::ok : GCodeResult::error;
+		}
+
+	case 108:
+		{
+			unsigned int i = 100;
+			cpu_irq_disable();
+			asm volatile("":::"memory");
+			uint32_t now1 = SysTick->VAL;
+			do
+			{
+				--i;
+				(void)StepTimer::GetTimerTicks();
+			} while (i != 0);
+			uint32_t now2 = SysTick->VAL;
+			asm volatile("":::"memory");
+			cpu_irq_enable();
+			now1 &= 0x00FFFFFF;
+			now2 &= 0x00FFFFFF;
+			uint32_t tim1 = ((now1 > now2) ? now1 : now1 + (SysTick->LOAD & 0x00FFFFFF) + 1) - now2;
+			reply.printf("Reading step timer 100 times took %.2fus", (double)((1'000'000.0f * (float)tim1)/(float)SystemCoreClock));
+			return GCodeResult::ok;
 		}
 
 	case 1001:	// test watchdog
