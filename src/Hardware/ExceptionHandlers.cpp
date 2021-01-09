@@ -50,7 +50,7 @@ extern "C" [[noreturn]] void hardFaultDispatcher(const uint32_t *pulFaultStackAd
 }
 
 // The fault handler implementation calls a function called hardFaultDispatcher()
-extern "C" [[noreturn]] void HardFault_Handler() noexcept __attribute__((naked));
+extern "C" void HardFault_Handler() noexcept __attribute__((naked));
 void HardFault_Handler() noexcept
 {
 	__asm volatile
@@ -81,7 +81,7 @@ extern "C" [[noreturn]] void wdtFaultDispatcher(const uint32_t *pulFaultStackAdd
 	SoftwareReset(SoftwareResetReason::wdtFault, pulFaultStackAddress);
 }
 
-extern "C" [[noreturn]] void WDT_Handler() noexcept __attribute__((naked));
+extern "C" void WDT_Handler() noexcept __attribute__((naked));
 void WDT_Handler() noexcept
 {
 	__asm volatile

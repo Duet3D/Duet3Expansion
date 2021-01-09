@@ -216,14 +216,14 @@ GCodeResult FilamentMonitor::CommonConfigure(const CanMessageGenericParser& pars
 	bool haveMonitor = false;
 	ReadLocker lock(filamentMonitorsLock);
 
-	for (size_t driver = 0; driver < NumDrivers; ++driver)
+	for (size_t drv = 0; drv < NumDrivers; ++drv)
 	{
 		FilamentSensorStatus fst(FilamentSensorStatus::noMonitor);
-		if (filamentSensors[driver] != nullptr)
+		if (filamentSensors[drv] != nullptr)
 		{
 			const uint32_t startTime = StepTimer::GetTimerTicks();
 			haveMonitor = true;
-			FilamentMonitor& fs = *filamentSensors[driver];
+			FilamentMonitor& fs = *filamentSensors[drv];
 			bool isPrinting;
 			bool fromIsr;
 			int32_t extruderStepsCommanded;
@@ -241,14 +241,14 @@ GCodeResult FilamentMonitor::CommonConfigure(const CanMessageGenericParser& pars
 			else
 			{
 				cpu_irq_enable();
-				extruderStepsCommanded = moveInstance->GetAccumulatedExtrusion(driver, isPrinting);		// get and clear the net extrusion commanded
+				extruderStepsCommanded = moveInstance->GetAccumulatedExtrusion(drv, isPrinting);		// get and clear the net extrusion commanded
 				fromIsr = false;
 				locIsrMillis = 0;
 			}
 
 			if (Platform::IsPrinting())
 			{
-				const float extrusionCommanded = (float)extruderStepsCommanded/Platform::DriveStepsPerUnit(driver);
+				const float extrusionCommanded = (float)extruderStepsCommanded/Platform::DriveStepsPerUnit(drv);
 				fst = fs.Check(isPrinting, fromIsr, locIsrMillis, extrusionCommanded);
 			}
 			else
@@ -271,7 +271,7 @@ GCodeResult FilamentMonitor::CommonConfigure(const CanMessageGenericParser& pars
 				minPollTime = elapsedTime;
 			}
 		}
-		msg->data[driver].Set(fst.ToBaseType());
+		msg->data[drv].Set(fst.ToBaseType());
 	}
 
 	if (statusChanged || (haveMonitor && millis() - whenStatusLastSent >= StatusUpdateInterval))
