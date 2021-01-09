@@ -182,7 +182,11 @@ namespace Platform
  #endif
 
 	inline unsigned int GetProhibitedExtruderMovements(unsigned int extrusions, unsigned int retractions) { return 0; }
+#if SINGLE_DRIVER
+	void SetDirection(bool direction);
+#else
 	void SetDirection(size_t driver, bool direction);
+#endif
 	void SetDirectionValue(size_t driver, bool dVal);
 	bool GetDirectionValue(size_t driver);
 	void SetEnableValue(size_t driver, int8_t eVal);

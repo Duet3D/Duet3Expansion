@@ -199,11 +199,11 @@ void Move::Spin()
 void Move::Diagnostics(const StringRef& reply)
 {
 #if SUPPORT_DRIVERS
-	reply.catf("Moves scheduled %" PRIu32 ", completed %" PRIu32 ", in progress %d, hiccups %" PRIu32 "\n",
+	reply.catf("Moves scheduled %" PRIu32 ", completed %" PRIu32 ", in progress %d, hiccups %" PRIu32,
 					scheduledMoves, completedMoves, (int)(currentDda != nullptr), numHiccups);
 	numHiccups = 0;
-	StepTimer::Diagnostics(reply);
 #endif
+	StepTimer::Diagnostics(reply);
 }
 
 #if SUPPORT_DRIVERS
@@ -340,6 +340,7 @@ void Move::Interrupt()
 		}
 
 		// The next step is due immediately. Check whether we have been in this ISR for too long already and need to take a break
+		//TODO avoid the next read of the step timer, the last one read by ScheduleNextStepInterrupt will do
 		now = StepTimer::GetTimerTicks();
 		if (now - isrStartTime >= DDA::MaxStepInterruptTime)
 		{

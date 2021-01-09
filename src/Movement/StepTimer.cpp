@@ -6,8 +6,9 @@
  */
 
 #include "StepTimer.h"
+#include <Platform.h>
 #include <RTOSIface/RTOSIface.h>
-#include "Move.h"
+#include <CanMessageFormats.h>
 
 #if SAME5x
 # include <hri_tc_e54.h>
@@ -19,6 +20,8 @@ StepTimer * volatile StepTimer::pendingList = nullptr;
 volatile uint32_t StepTimer::localTimeOffset = 0;
 volatile uint32_t StepTimer::whenLastSynced;
 volatile bool StepTimer::synced = false;
+uint32_t StepTimer::peakJitter = 0;
+unsigned int StepTimer::numResyncs = 0;
 
 void StepTimer::Init()
 {
@@ -58,9 +61,38 @@ void StepTimer::Init()
 	return synced;
 }
 
+/*static*/ void StepTimer::ProcessTimeSyncMessage(const CanMessageTimeSync& msg, size_t msgLen) noexcept
+{
+	//TODO use the time stamp and convert this to a PLL
+	const uint32_t oldOffset = localTimeOffset;						// capture volatile variable
+	const uint32_t newOffset = StepTimer::GetTimerTicks() - msg.timeSent;
+	localTimeOffset = newOffset;
+	const uint32_t diff = abs((int32_t)(newOffset - oldOffset));
+	if (diff > MaxSyncJitter)
+	{
+		synced = false;
+		++numResyncs;
+	}
+	else
+	{
+		synced = true;
+		whenLastSynced = millis();
+		if (diff > peakJitter)
+		{
+			peakJitter = diff;
+		}
+	}
+
+	Platform::SetPrinting(msg.isPrinting);
+	if (msgLen >= 16)												// if real time is included
+	{
+		Platform::SetDateTime(msg.realTime);
+	}
+}
+
 // Schedule an interrupt at the specified clock count, or return true if that time is imminent or has passed already.
 // On entry, interrupts must be disabled or the base priority must be <= step interrupt priority.
-bool StepTimer::ScheduleTimerInterrupt(uint32_t tim)
+inline bool StepTimer::ScheduleTimerInterrupt(uint32_t tim)
 {
 	// We need to disable all interrupts, because once we read the current step clock we have only 6us to set up the interrupt, or we will miss it
 	AtomicCriticalSectionLocker lock;
@@ -99,7 +131,7 @@ void StepTimer::DisableTimerInterrupt()
 			tmr->callback(tmr->cbParam);							// execute its callback. This may schedule another callback and hence change the pending list.
 
 			tmr = pendingList;
-			if (tmr == nullptr || tmr != nextTimer)
+			if (tmr != nextTimer || tmr == nullptr)					// tmr != nextTimer is the common case of a new step interrupt scheduled, so test that first
 			{
 				break;												// no more timers, or another timer has been inserted and an interrupt scheduled
 			}
@@ -145,52 +177,56 @@ void StepTimer::SetCallback(TimerCallbackFunction cb, CallbackParameter param)
 // Schedule a callback at a particular tick count, returning true if it was not scheduled because it is already due or imminent.
 bool StepTimer::ScheduleCallbackFromIsr(Ticks when)
 {
-	if (active)
-	{
-		CancelCallbackFromIsr();
-	}
-
 	whenDue = when;
-
-	StepTimer* pst = pendingList;
-
-	// Optimise the common case of no other timer in the list
-	if (pst == nullptr)
+	StepTimer* pst;
+	for (;;)				// this loop executes at most twice
 	{
-		// No other callbacks are scheduled
-		if (ScheduleTimerInterrupt(when))
+		pst = pendingList;
+
+		// Optimise the common case of no other timer in the list
+		if (pst == nullptr)
 		{
-			return true;
-		}
-		next = nullptr;
-		pendingList = this;
-	}
-	else
-	{
-		const Ticks now = GetTimerTicks();
-		const int32_t howSoon = (int32_t)(when - now);
-		if (howSoon < (int32_t)(pst->whenDue - now))
-		{
-			// This callback is due earlier than the first existing one
+			// No other callbacks are scheduled
 			if (ScheduleTimerInterrupt(when))
 			{
 				return true;
 			}
-			next = pst;
+			next = nullptr;
 			pendingList = this;
+			active = true;
+			return false;
 		}
-		else
+
+		if (!active)
 		{
-			StepTimer *prev;
-			do
-			{
-				prev = pst;
-				pst = pst->next;
-			}
-			while (pst != nullptr && (int32_t)(pst->whenDue - now) <= howSoon);
-			next = pst;
-			prev->next = this;
+			break;
 		}
+		CancelCallbackFromIsr();
+	}
+
+	const Ticks now = GetTimerTicks();
+	const int32_t howSoon = (int32_t)(when - now);
+	if (howSoon < (int32_t)(pst->whenDue - now))
+	{
+		// This callback is due earlier than the first existing one
+		if (ScheduleTimerInterrupt(when))
+		{
+			return true;
+		}
+		next = pst;
+		pendingList = this;
+	}
+	else
+	{
+		StepTimer *prev;
+		do
+		{
+			prev = pst;
+			pst = pst->next;
+		}
+		while (pst != nullptr && (int32_t)(pst->whenDue - now) <= howSoon);
+		next = pst;
+		prev->next = this;
 	}
 
 	active = true;
@@ -225,19 +261,23 @@ void StepTimer::CancelCallback()
 
 /*static*/ void StepTimer::Diagnostics(const StringRef& reply)
 {
+	reply.lcatf("Peak sync jitter %" PRIu32 ", resyncs %u, ", peakJitter, numResyncs);
+	peakJitter = 0;
+	numResyncs = 0;
+
 	StepTimer *pst = pendingList;
 	if (pst == nullptr)
 	{
-		reply.cat("No step interrupt scheduled\n");
+		reply.cat("no step interrupt scheduled");
 	}
 	else
 	{
-		reply.catf("Next step interrupt due in %" PRIu32 " ticks, %s\n",
+		reply.catf("next step interrupt due in %" PRIu32 " ticks, %s",
 					pst->whenDue - GetTimerTicks(),
 					((StepTc->INTENSET.reg & TC_INTFLAG_MC0) == 0) ? "disabled" : "enabled");
 		if (StepTc->CC[0].reg != pst->whenDue)
 		{
-			reply.cat("CC0 mismatch\n");
+			reply.cat(", CC0 mismatch!!");
 		}
 	}
 }

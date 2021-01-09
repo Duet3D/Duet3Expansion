@@ -126,9 +126,9 @@ public:
 
 	DriveMovement(DriveMovement *next);
 
-	bool CalcNextStepTimeCartesian(const DDA &dda, bool live) SPEED_CRITICAL;
+	bool CalcNextStepTimeCartesian(const DDA &dda) SPEED_CRITICAL;
 #if SUPPORT_DELTA_MOVEMENT
-	bool CalcNextStepTimeDelta(const DDA &dda, bool live) SPEED_CRITICAL;
+	bool CalcNextStepTimeDelta(const DDA &dda) SPEED_CRITICAL;
 #endif
 	void PrepareCartesianAxis(const DDA& dda, const PrepParams& params) SPEED_CRITICAL;
 	void PrepareDeltaAxis(const DDA& dda, const PrepParams& params) SPEED_CRITICAL;
@@ -140,20 +140,20 @@ public:
 	bool IsDeltaMovement() const { return isDeltaMovement; }
 
 #if HAS_SMART_DRIVERS
-	uint32_t GetStepInterval(uint32_t microstepShift) const;	// Get the current full step interval for this axis or extruder
+	uint32_t GetStepInterval(uint32_t msShift) const;	// Get the current full step interval for this axis or extruder
 #endif
 
 	static void InitialAllocate(unsigned int num);
 	static int NumFree() { return numFree; }
 	static int MinFree() { return minFree; }
 	static void ResetMinFree() { minFree = numFree; }
-	static DriveMovement *Allocate(size_t drive, DMState st);
+	static DriveMovement *Allocate(size_t drv, DMState st);
 	static void Release(DriveMovement *item);
 
 private:
-	bool CalcNextStepTimeCartesianFull(const DDA &dda, bool live) SPEED_CRITICAL;
+	bool CalcNextStepTimeCartesianFull(const DDA &dda) SPEED_CRITICAL;
 #if SUPPORT_DELTA_MOVEMENT
-	bool CalcNextStepTimeDeltaFull(const DDA &dda, bool live) SPEED_CRITICAL;
+	bool CalcNextStepTimeDeltaFull(const DDA &dda) SPEED_CRITICAL;
 #endif
 
 	static DriveMovement *freeList;
@@ -168,7 +168,7 @@ private:
 	uint8_t drive;										// the drive that this DM controls
 	uint8_t microstepShift : 4,							// log2 of the microstepping factor (for when we use dynamic microstepping adjustment)
 			direction : 1,								// true=forwards, false=backwards
-			fullCurrent : 1,							// true if the drivers are set to the full current, false if they are set to the standstill current
+			directionChanged : 1,						// set by CalcNextStepTime if the direction is changed
 			isDeltaMovement : 1;						// true if this motor is executing a delta tower move
 	uint8_t stepsTillRecalc;							// how soon we need to recalculate
 
@@ -224,10 +224,10 @@ private:
 };
 
 // Calculate and store the time since the start of the move when the next step for the specified DriveMovement is due.
-// Return true if there are more steps to do. When finished, leave nextStep == totalSteps + 1.
+// Return true if there are more steps to do. When finished, leave nextStep == totalSteps + 1 and state == DMState::idle.
 // This is also used for extruders on delta machines.
 // We inline this part to speed things up when we are doing double/quad/octal stepping.
-inline bool DriveMovement::CalcNextStepTimeCartesian(const DDA &dda, bool live)
+inline bool DriveMovement::CalcNextStepTimeCartesian(const DDA &dda)
 {
 	++nextStep;
 	if (nextStep <= totalSteps)
@@ -240,7 +240,7 @@ inline bool DriveMovement::CalcNextStepTimeCartesian(const DDA &dda, bool live)
 #endif
 			return true;
 		}
-		return CalcNextStepTimeCartesianFull(dda, live);
+		return CalcNextStepTimeCartesianFull(dda);
 	}
 
 	state = DMState::idle;
@@ -250,9 +250,9 @@ inline bool DriveMovement::CalcNextStepTimeCartesian(const DDA &dda, bool live)
 #if SUPPORT_DELTA_MOVEMENT
 
 // Calculate the time since the start of the move when the next step for the specified DriveMovement is due
-// Return true if there are more steps to do. When finished, leave nextStep == totalSteps + 1.
+// Return true if there are more steps to do. When finished, leave nextStep == totalSteps + 1 and state == DMState::idle.
 // We inline this part to speed things up when we are doing double/quad/octal stepping.
-inline bool DriveMovement::CalcNextStepTimeDelta(const DDA &dda, bool live)
+inline bool DriveMovement::CalcNextStepTimeDelta(const DDA &dda)
 {
 	++nextStep;
 	if (nextStep <= totalSteps)
@@ -267,7 +267,7 @@ inline bool DriveMovement::CalcNextStepTimeDelta(const DDA &dda, bool live)
 		}
 		else
 		{
-			return CalcNextStepTimeDeltaFull(dda, live);
+			return CalcNextStepTimeDeltaFull(dda);
 		}
 	}
 

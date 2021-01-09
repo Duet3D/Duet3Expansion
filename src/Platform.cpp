@@ -1283,6 +1283,38 @@ bool Platform::GetDirectionValue(size_t driver)
 	return (driver < NumDrivers) && directions[driver];
 }
 
+#if SINGLE_DRIVER
+
+void Platform::SetDirection(bool direction)
+{
+# if DIFFERENTIAL_STEPPER_OUTPUTS || ACTIVE_HIGH_DIR
+	// Active high direction signal
+	const bool d = (direction) ? directions[0] : !directions[0];
+# else
+	// Active low direction signal
+	const bool d = (direction) ? !directions[0] : directions[0];
+# endif
+
+# if SUPPORT_SLOW_DRIVERS
+	if (isSlowDriver)
+	{
+		while (StepTimer::GetTimerTicks() - DDA::lastStepLowTime < GetSlowDriverDirHoldClocks()) { }
+	}
+# endif
+	digitalWrite(DirectionPins[0], d);
+# if DIFFERENTIAL_STEPPER_OUTPUTS
+	digitalWrite(InvertedDirectionPins[0], !d);
+# endif
+# if SUPPORT_SLOW_DRIVERS
+	if (isSlowDriver)
+	{
+		DDA::lastDirChangeTime = StepTimer::GetTimerTicks();
+	}
+# endif
+}
+
+#else
+
 void Platform::SetDirection(size_t driver, bool direction)
 {
 	if (driver < NumDrivers)
@@ -1296,9 +1328,7 @@ void Platform::SetDirection(size_t driver, bool direction)
 # endif
 
 # if SUPPORT_SLOW_DRIVERS
-#  if !SINGLE_DRIVER
 		const bool isSlowDriver = slowDriversBitmap.IsBitSet(driver);
-#  endif
 		if (isSlowDriver)
 		{
 			while (StepTimer::GetTimerTicks() - DDA::lastStepLowTime < GetSlowDriverDirHoldClocks()) { }
@@ -1316,6 +1346,8 @@ void Platform::SetDirection(size_t driver, bool direction)
 # endif
 	}
 }
+
+#endif
 
 // The following don't do anything yet
 void Platform::SetEnableValue(size_t driver, int8_t eVal)

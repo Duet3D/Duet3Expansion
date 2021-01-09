@@ -33,7 +33,7 @@ void DriveMovement::InitialAllocate(unsigned int num)
 	ResetMinFree();
 }
 
-DriveMovement *DriveMovement::Allocate(size_t drive, DMState st)
+DriveMovement *DriveMovement::Allocate(size_t drv, DMState st)
 {
 	DriveMovement * const dm = freeList;
 	if (dm != nullptr)
@@ -45,7 +45,7 @@ DriveMovement *DriveMovement::Allocate(size_t drive, DMState st)
 			minFree = numFree;
 		}
 		dm->nextDM = nullptr;
-		dm->drive = (uint8_t)drive;
+		dm->drive = (uint8_t)drv;
 		dm->state = st;
 	}
 	return dm;
@@ -277,7 +277,7 @@ void DriveMovement::DebugPrint(char c) const
 // Calculate and store the time since the start of the move when the next step for the specified DriveMovement is due.
 // Return true if there are more steps to do.
 // This is also used for extruders on delta machines.
-bool DriveMovement::CalcNextStepTimeCartesianFull(const DDA &dda, bool live)
+bool DriveMovement::CalcNextStepTimeCartesianFull(const DDA &dda)
 pre(nextStep < totalSteps; stepsTillRecalc == 0)
 {
 	// Work out how many steps to calculate at a time.
@@ -337,10 +337,7 @@ pre(nextStep < totalSteps; stepsTillRecalc == 0)
 		if (nextCalcStep == reverseStartStep)
 		{
 			direction = !direction;
-			if (live)
-			{
-				Platform::SetDirection(drive, direction);
-			}
+			directionChanged = true;
 		}
 		const uint32_t adjustedTopSpeedTimesCdivDPlusDecelStartClocks = dda.afterPrepare.topSpeedTimesCdivDPlusDecelStartClocks - mp.cart.compensationClocks;
 		nextCalcStepTime = adjustedTopSpeedTimesCdivDPlusDecelStartClocks
@@ -382,7 +379,7 @@ pre(nextStep < totalSteps; stepsTillRecalc == 0)
 
 // Calculate the time since the start of the move when the next step for the specified DriveMovement is due
 // Return true if there are more steps to do
-bool DriveMovement::CalcNextStepTimeDeltaFull(const DDA &dda, bool live)
+bool DriveMovement::CalcNextStepTimeDeltaFull(const DDA &dda)
 pre(nextStep < totalSteps; stepsTillRecalc == 0)
 {
 	// Work out how many steps to calculate at a time.
@@ -418,10 +415,7 @@ pre(nextStep < totalSteps; stepsTillRecalc == 0)
 	if (nextStep == reverseStartStep)
 	{
 		direction = false;
-		if (live)
-		{
-			Platform::SetDirection(drive, false);	// going down now
-		}
+		directionChanged = true;
 	}
 
 	// Calculate d*s*K as an integer, where d = distance the head has travelled, s = steps/mm for this drive, K = a power of 2 to reduce the rounding errors

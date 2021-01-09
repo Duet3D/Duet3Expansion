@@ -635,7 +635,7 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 	{
 	case CanMessageReturnInfo::typeFirmwareVersion:
 	default:
-		reply.printf("%s (%s)", VersionText, IsoDate);
+		reply.printf("%s (%s%s)", VersionText, IsoDate, TIME_SUFFIX);
 		break;
 
 	case CanMessageReturnInfo::typeBoardName:
@@ -671,7 +671,7 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 		else
 		{
 			extra = LastDiagnosticsPart;
-			reply.lcatf("%s (%s)", VersionText, IsoDate);
+			reply.lcatf("%s (%s%s)", VersionText, IsoDate, TIME_SUFFIX);
 			const char *bootloaderVersionText = *reinterpret_cast<const char**>(0x20);		// offset of vectors.pvReservedM8
 			reply.lcatf("Bootloader ID: %s", (bootloaderVersionText == nullptr) ? "not available" : bootloaderVersionText);
 		}
@@ -738,19 +738,23 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 		extra = LastDiagnosticsPart;
 		{
 			moveInstance->Diagnostics(reply);
+
 #if HAS_VOLTAGE_MONITOR && HAS_12V_MONITOR
-			reply.catf("VIN: %.1fV, V12: %.1fV\n", (double)Platform::GetCurrentVinVoltage(), (double)Platform::GetCurrentV12Voltage());
+			reply.lcatf("VIN: %.1fV, V12: %.1fV", (double)Platform::GetCurrentVinVoltage(), (double)Platform::GetCurrentV12Voltage());
 #elif HAS_VOLTAGE_MONITOR
-			reply.catf("VIN: %.1fV\n", (double)Platform::GetCurrentVinVoltage());
+			reply.lcatf("VIN: %.1fV", (double)Platform::GetCurrentVinVoltage());
 #elif HAS_12V_MONITOR
-			reply.catf("V12: %.1fV\n", (double)Platform::GetCurrentV12Voltage());
+			reply.lcatf("V12: %.1fV", (double)Platform::GetCurrentV12Voltage());
 #endif
+
+#if HAS_CPU_TEMP_SENSOR
 			float minTemp, currentTemp, maxTemp;
 			Platform::GetMcuTemperatures(minTemp, currentTemp, maxTemp);
-			reply.catf("MCU temperature: min %.1fC, current %.1fC, max %.1fC\n", (double)minTemp, (double)currentTemp, (double)maxTemp);
+			reply.lcatf("MCU temperature: min %.1fC, current %.1fC, max %.1fC", (double)minTemp, (double)currentTemp, (double)maxTemp);
+#endif
 			uint32_t conversionsStarted, conversionsCompleted, conversionTimeouts;
 			AnalogIn::GetDebugInfo(conversionsStarted, conversionsCompleted, conversionTimeouts);
-			reply.catf("Ticks since heat task active %" PRIu32 ", ADC conversions started %" PRIu32 ", completed %" PRIu32 ", timed out %" PRIu32,
+			reply.lcatf("Ticks since heat task active %" PRIu32 ", ADC conversions started %" PRIu32 ", completed %" PRIu32 ", timed out %" PRIu32,
 						Platform::GetHeatTaskIdleTicks(), conversionsStarted, conversionsCompleted, conversionTimeouts);
 		}
 		break;

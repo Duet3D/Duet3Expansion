@@ -10,6 +10,8 @@
 
 #include "RepRapFirmware.h"
 
+class CanMessageTimeSync;
+
 // Class to implement a software timer with a few microseconds resolution
 class StepTimer
 {
@@ -52,10 +54,10 @@ public:
 	static uint32_t TicksToMicroseconds(uint32_t n) { return (n * 1000)/(StepClockRate/1000); }
 
 	// ISR called from StepTimer. May sometimes get called prematurely.
-	static void Interrupt();
+	static void Interrupt() SPEED_CRITICAL;
 
 	static uint32_t GetLocalTimeOffset() { return localTimeOffset; }
-	static void SetLocalTimeOffset(uint32_t offset) { localTimeOffset = offset; synced = true; whenLastSynced = millis(); }
+	static void ProcessTimeSyncMessage(const CanMessageTimeSync& msg, size_t msgLen) noexcept;
 	static uint32_t ConvertToLocalTime(uint32_t masterTime) { return masterTime + localTimeOffset; }
 	static uint32_t ConvertToMasterTime(uint32_t localTime) { return localTime - localTimeOffset; }
 	static uint32_t GetMasterTime() { return ConvertToMasterTime(GetTimerTicks()); }
@@ -71,7 +73,7 @@ public:
 	static constexpr uint32_t MinSyncInterval = 1000;							// maximum interval in milliseconds between sync messages for us to remain synced
 
 private:
-	static bool ScheduleTimerInterrupt(uint32_t tim);							// Schedule an interrupt at the specified clock count, or return true if it has passed already
+	static bool ScheduleTimerInterrupt(uint32_t tim) SPEED_CRITICAL;			// schedule an interrupt at the specified clock count, or return true if it has passed already
 
 	StepTimer *next;
 	Ticks whenDue;
@@ -83,13 +85,24 @@ private:
 	static volatile uint32_t localTimeOffset;									// local time minus master time
 	static volatile uint32_t whenLastSynced;									// the millis tick count when we last synced
 	static volatile bool synced;
+	static uint32_t peakJitter;
+	static unsigned int numResyncs;
+
+	static constexpr uint32_t MaxSyncJitter = StepClockRate/100;				// 10ms
 };
 
 inline __attribute__((always_inline)) StepTimer::Ticks StepTimer::GetTimerTicks()
 {
 	StepTc->CTRLBSET.reg = TC_CTRLBSET_CMD_READSYNC;
-	// On the EXP3HC board it isn't enough just to wait for SYNCBUSY.COUNT here
-	while (StepTc->CTRLBSET.bit.CMD != 0) { }
+	// On the EXP3HC board at least it isn't enough just to wait for SYNCBUSY.COUNT immediately here
+#if SAME5x
+	__DMB();																	// make sure the write buffer is flushed before we read from the peripheral
+#elif SAMC21
+	// Tony's tests suggest that the following nop is not needed, but including it makes it faster
+	asm volatile("nop");														// allow time for the peripheral to react to the command (faster than DMB instruction)
+#else
+	while (StepTc->CTRLBSET.bit.CMD != 0) { }									// this is the code we previously used to get it working on the EXP3HC
+#endif
 	while (StepTc->SYNCBUSY.bit.COUNT) { }
 	return StepTc->COUNT.reg;
 }

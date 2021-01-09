@@ -284,15 +284,7 @@ void CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf)
 		{
 		case CanMessageType::timeSync:
 			currentMasterAddress = buf->id.Src();
-
-			//TODO re-implement this as a PLL and use the CAN time stamps for greater accuracy
-			StepTimer::SetLocalTimeOffset(StepTimer::GetTimerTicks() - buf->msg.sync.timeSent);
-			Platform::SetPrinting(buf->msg.sync.isPrinting);
-
-			if (buf->dataLength >= 16)				// if real time is included
-			{
-				Platform::SetDateTime(buf->msg.sync.realTime);
-			}
+			StepTimer::ProcessTimeSyncMessage(buf->msg.sync, buf->dataLength);
 			CanMessageBuffer::Free(buf);
 			break;
 
@@ -396,7 +388,7 @@ void CanInterface::SendAnnounce(CanMessageBuffer *buf)
 		msg->timeSinceStarted = millis();
 		msg->numDrivers = NumDrivers;
 		msg->zero = 0;
-		SafeSnprintf(msg->boardTypeAndFirmwareVersion, ARRAY_SIZE(msg->boardTypeAndFirmwareVersion), "%s|%s (%s)", BOARD_TYPE_NAME, VERSION, IsoDate);
+		SafeSnprintf(msg->boardTypeAndFirmwareVersion, ARRAY_SIZE(msg->boardTypeAndFirmwareVersion), "%s|%s (%s%s)", BOARD_TYPE_NAME, VERSION, IsoDate, TIME_SUFFIX);
 		buf->dataLength = msg->GetActualDataLength();
 		Send(buf);
 	}

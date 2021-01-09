@@ -308,10 +308,10 @@ void DDA::Prepare(const CanMessageMovementLinear& msg)
 			pdm->stepsTillRecalc = 0;							// so that we don't skip the calculation
 #if SUPPORT_DELTA_MOVEMENT
 			const bool stepsToDo = (pdm->IsDeltaMovement())
-									? pdm->CalcNextStepTimeDelta(*this, false)
-									: pdm->CalcNextStepTimeCartesian(*this, false);
+									? pdm->CalcNextStepTimeDelta(*this)
+									: pdm->CalcNextStepTimeCartesian(*this);
 #else
-			const bool stepsToDo = pdm->CalcNextStepTimeCartesian(*this, false);
+			const bool stepsToDo = pdm->CalcNextStepTimeCartesian(*this);
 #endif
 			if (stepsToDo)
 			{
@@ -332,9 +332,6 @@ void DDA::Prepare(const CanMessageMovementLinear& msg)
 	state = frozen;					// must do this last so that the ISR doesn't start executing it before we have finished setting it up
 }
 
-// The remaining functions are speed-critical, so use full optimisation
-// The GCC optimize pragma appears to be broken, if we try to force O3 optimisation here then functions are never inlined
-
 // Start executing this move. Must be called with interrupts disabled, to avoid a race condition.
 // startTime is the earliest that we can start the move, but we must not start it before its planned time
 void DDA::Start(uint32_t tim)
@@ -352,8 +349,12 @@ void DDA::Start(uint32_t tim)
 			DriveMovement* const pdm = FindDM(i);
 			if (pdm != nullptr && pdm->state == DMState::moving)
 			{
-				const size_t drive = pdm->drive;
-				Platform::SetDirection(drive, pdm->direction);
+#if SINGLE_DRIVER
+				Platform::SetDirection(pdm->direction);
+#else
+				Platform::SetDirection(pdm->drive, pdm->direction);
+#endif
+				pdm->directionChanged = false;
 			}
 		}
 	}
@@ -375,7 +376,9 @@ void DDA::StepDrivers(uint32_t now)
 	if (dm != nullptr && (now - afterPrepare.moveStartTime) + StepTimer::MinInterruptInterval >= dm->nextStepTime)	// if the next step is due
 	{
 		// Step the driver
-#if SUPPORT_SLOW_DRIVERS
+		bool hasMoreSteps;
+
+# if SUPPORT_SLOW_DRIVERS
 		if (Platform::IsSlowDriver())									// if using a slow driver
 		{
 			uint32_t lastStepPulseTime = lastStepLowTime;
@@ -386,33 +389,41 @@ void DDA::StepDrivers(uint32_t now)
 			Platform::StepDriverHigh();									// generate the step
 			lastStepPulseTime = StepTimer::GetTimerTicks();
 
-			// 3a. Reset all step pins low. Do this now because some external drivers don't like the direction pins being changed before the end of the step pulse.
+#  if SUPPORT_DELTA_MOVEMENT
+			hasMoreSteps = (dm->IsDeltaMovement())
+							? dm->CalcNextStepTimeDelta(*this)
+							: dm->CalcNextStepTimeCartesian(*this);
+#  else
+			hasMoreSteps = dm->CalcNextStepTimeCartesian(*this);
+#  endif
+			// 3a. Reset the step pin low
 			while (StepTimer::GetTimerTicks() - lastStepPulseTime < Platform::GetSlowDriverStepHighClocks()) {}
 			Platform::StepDriverLow();									// set all step pins low
 			lastStepLowTime = StepTimer::GetTimerTicks();
 		}
 		else
+# endif
 		{
 			Platform::StepDriverHigh();									// generate the step
+# if SUPPORT_DELTA_MOVEMENT
+			hasMoreSteps = (dm->IsDeltaMovement())
+							? dm->CalcNextStepTimeDelta(*this)
+							: dm->CalcNextStepTimeCartesian(*this);
+# else
+			hasMoreSteps = dm->CalcNextStepTimeCartesian(*this);
+# endif
+			Platform::StepDriverLow();									// set the step pin low
 		}
-#else
-		Platform::StepDriverHigh();										// generate the step pulse
-#endif
 
-#if SUPPORT_DELTA_MOVEMENT
-		const bool hasMoreSteps = (dm->IsDeltaMovement())
-				? dm->CalcNextStepTimeDelta(*this, true)
-				: dm->CalcNextStepTimeCartesian(*this, true);
-#else
-		const bool hasMoreSteps = dm->CalcNextStepTimeCartesian(*this, true);	// this may change the state of the Direction pin
-#endif
 		if (!hasMoreSteps)
 		{
 			activeDMs = nullptr;
 		}
-
-		// Reset the step pin low. We already did this if we are using any external drivers, but doing it again does no harm.
-		Platform::StepDriverLow();										// set the step pin low
+		else if (dm->directionChanged)
+		{
+			dm->directionChanged = false;
+			Platform::SetDirection(dm->direction);
+		}
 	}
 
 	// If there are no more steps to do and the time for the move has nearly expired, flag the move as complete
@@ -442,12 +453,10 @@ void DDA::StepDrivers(uint32_t now)
 	}
 
 	// 3. Step the drivers
-#if SUPPORT_SLOW_DRIVERS
-	if ((driversStepping & Platform::GetSlowDriversBitmap().GetRaw()) == 0)	// if not using any external drivers
-	{
-		Platform::StepDriversHigh(driversStepping);					// generate the steps
-	}
-	else
+	DriveMovement *dmToInsert = activeDMs;							// head of the chain we need to re-insert
+
+# if SUPPORT_SLOW_DRIVERS
+	if ((driversStepping & Platform::GetSlowDriversBitmap().GetRaw()) != 0)	// if using any slow drivers
 	{
 		uint32_t lastStepPulseTime = lastStepLowTime;
 		while (now - lastStepPulseTime < Platform::GetSlowDriverStepLowClocks() || now - lastDirChangeTime < Platform::GetSlowDriverDirSetupClocks())
@@ -457,39 +466,55 @@ void DDA::StepDrivers(uint32_t now)
 		Platform::StepDriversHigh(driversStepping);					// generate the steps
 		lastStepPulseTime = StepTimer::GetTimerTicks();
 
+#  if SUPPORT_DELTA_MOVEMENT
+		if (dmToInsert->IsDeltaMovement())
+		{
+			(void)dmToInsert->CalcNextStepTimeDelta(*this);
+		}
+		else
+#  endif
+		{
+			(void)dmToInsert->CalcNextStepTimeCartesian(*this);
+		}
+
 		// 3a. Reset all step pins low. Do this now because some external drivers don't like the direction pins being changed before the end of the step pulse.
 		while (StepTimer::GetTimerTicks() - lastStepPulseTime < Platform::GetSlowDriverStepHighClocks()) {}
 		Platform::StepDriversLow();									// set all step pins low
 		lastStepLowTime = StepTimer::GetTimerTicks();
 	}
-#else
-	Platform::StepDriversHigh(driversStepping);						// generate the steps
-#endif
+	else
+# endif
+	{
+		Platform::StepDriversHigh(driversStepping);					// generate the steps
+#  if SUPPORT_DELTA_MOVEMENT
+		if (dmToInsert->IsDeltaMovement())
+		{
+			(void)dmToInsert->CalcNextStepTimeDelta(*this);
+		}
+		else
+#  endif
+		{
+			(void)dmToInsert->CalcNextStepTimeCartesian(*this);
+		}
+		Platform::StepDriversLow();										// set all step pins low
+	}
 
-	// 4. Remove those drives from the list, calculate the next step times, update the direction pins where necessary,
-	//    and re-insert them so as to keep the list in step-time order.
-	//    Note that the call to CalcNextStepTime may change the state of Direction pin.
-	DriveMovement *dmToInsert = activeDMs;							// head of the chain we need to re-insert
+	// 4. Remove those drives from the list, calculate the next step times, update the direction pins where necessary, and re-insert them so as to keep the list in step-time order.
 	activeDMs = dm;													// remove the chain from the list
 	while (dmToInsert != dm)										// note that both of these may be nullptr
 	{
-#if SUPPORT_DELTA_MOVEMENT
-		const bool hasMoreSteps = (dmToInsert->IsDeltaMovement())
-				? dmToInsert->CalcNextStepTimeDelta(*this, true)
-				: dmToInsert->CalcNextStepTimeCartesian(*this, true);
-#else
-		const bool hasMoreSteps = dmToInsert->CalcNextStepTimeCartesian(*this, true);
-#endif
 		DriveMovement * const nextToInsert = dmToInsert->nextDM;
-		if (hasMoreSteps)
+		if (dmToInsert->state == DMState::moving)
 		{
 			InsertDM(dmToInsert);
+			if (dmToInsert->directionChanged)
+			{
+				dmToInsert->directionChanged = false;
+				Platform::SetDirection(dmToInsert->drive, dmToInsert->direction);
+			}
 		}
 		dmToInsert = nextToInsert;
 	}
-
-	// 5. Reset all step pins low. We already did this if we are using any external drivers, but doing it again does no harm.
-	Platform::StepDriversLow();										// set all step pins low
 
 	// 6. If there are no more steps to do and the time for the move has nearly expired, flag the move as complete
 	if (activeDMs == nullptr && StepTimer::GetTimerTicks() - afterPrepare.moveStartTime + WakeupTime >= clocksNeeded)
