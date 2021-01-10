@@ -88,21 +88,21 @@ uint8_t expectedSeq = 0xFF;
 class CanMessageQueue
 {
 public:
-	CanMessageQueue();
-	void AddMessage(CanMessageBuffer *buf);
-	CanMessageBuffer *GetMessage();
+	CanMessageQueue() noexcept;
+	void AddMessage(CanMessageBuffer *buf) noexcept;
+	CanMessageBuffer *GetMessage() noexcept;
 
 private:
 	CanMessageBuffer * volatile pendingMessages;
 	CanMessageBuffer * volatile lastPendingMessage;		// only valid when pendingMessages != nullptr
 };
 
-CanMessageQueue::CanMessageQueue() : pendingMessages(nullptr) { }
+CanMessageQueue::CanMessageQueue() noexcept : pendingMessages(nullptr) { }
 
 static CanMessageQueue PendingMoves;
 static CanMessageQueue PendingCommands;
 
-void CanMessageQueue::AddMessage(CanMessageBuffer *buf)
+void CanMessageQueue::AddMessage(CanMessageBuffer *buf) noexcept
 {
 	buf->next = nullptr;
 	{
@@ -121,7 +121,7 @@ void CanMessageQueue::AddMessage(CanMessageBuffer *buf)
 }
 
 // Fetch a message from the queue, or return nullptr if there are no messages
-CanMessageBuffer *CanMessageQueue::GetMessage()
+CanMessageBuffer *CanMessageQueue::GetMessage() noexcept
 {
 	CanMessageBuffer *buf;
 	{
@@ -136,16 +136,16 @@ CanMessageBuffer *CanMessageQueue::GetMessage()
 	return buf;
 }
 
-extern "C" [[noreturn]] void CanReceiverLoop(void *);
-extern "C" [[noreturn]] void CanAsyncSenderLoop(void *);
+extern "C" [[noreturn]] void CanReceiverLoop(void *) noexcept;
+extern "C" [[noreturn]] void CanAsyncSenderLoop(void *) noexcept;
 
 namespace CanInterface
 {
-	void ProcessReceivedMessage(CanMessageBuffer *buf);
+	void ProcessReceivedMessage(CanMessageBuffer *buf) noexcept;
 }
 
 // Initialise this module and the CAN hardware
-void CanInterface::Init(CanAddress defaultBoardAddress, bool useAlternatePins, bool full)
+void CanInterface::Init(CanAddress defaultBoardAddress, bool useAlternatePins, bool full) noexcept
 {
 	// Read the CAN timing data from the top part of the NVM User Row
 	canConfigData = *reinterpret_cast<CanUserAreaData*>(NVMCTRL_USER + CanUserAreaDataOffset);
@@ -213,7 +213,7 @@ void CanInterface::Init(CanAddress defaultBoardAddress, bool useAlternatePins, b
 
 // Shutdown is called when we are asked to update the firmware.
 // We must allow the response to be sent, but we stop processing further messages.
-void CanInterface::Shutdown()
+void CanInterface::Shutdown() noexcept
 {
 	enabled = false;
 	if (can0dev != nullptr)
@@ -226,19 +226,19 @@ void CanInterface::Shutdown()
 	canAsyncSenderTask.TerminateAndUnlink();
 }
 
-CanAddress CanInterface::GetCanAddress()
+CanAddress CanInterface::GetCanAddress() noexcept
 {
 	return boardAddress;
 }
 
-CanAddress CanInterface::GetCurrentMasterAddress()
+CanAddress CanInterface::GetCurrentMasterAddress() noexcept
 {
 	return currentMasterAddress;
 }
 
 // Send a message. On return the buffer is available to the caller to re-use or free.
 // Any extra bytes needed as padding are set to zero by the CAN driver.
-bool CanInterface::Send(CanMessageBuffer *buf)
+bool CanInterface::Send(CanMessageBuffer *buf) noexcept
 {
 	//TODO option to not force sending, and return true only if successful?
 	can0dev->SendMessage(CanDevice::TxBufferNumber::fifo, 1000, buf);
@@ -246,13 +246,13 @@ bool CanInterface::Send(CanMessageBuffer *buf)
 
 }
 
-bool CanInterface::SendAsync(CanMessageBuffer *buf)
+bool CanInterface::SendAsync(CanMessageBuffer *buf) noexcept
 {
 	//TODO use a dedicated buffer to send these high-priority messages
 	return Send(buf);
 }
 
-bool CanInterface::SendAndFree(CanMessageBuffer *buf)
+bool CanInterface::SendAndFree(CanMessageBuffer *buf) noexcept
 {
 	const bool ok = Send(buf);
 	CanMessageBuffer::Free(buf);
@@ -260,18 +260,18 @@ bool CanInterface::SendAndFree(CanMessageBuffer *buf)
 }
 
 // Return a move message, if there is one. Caller must free the message buffer.
-CanMessageBuffer * CanInterface::GetCanMove()
+CanMessageBuffer * CanInterface::GetCanMove() noexcept
 {
 	return PendingMoves.GetMessage();
 }
 
-CanMessageBuffer *CanInterface::GetCanCommand()
+CanMessageBuffer *CanInterface::GetCanCommand() noexcept
 {
 	return PendingCommands.GetMessage();
 }
 
 // Process a received message and (eventually) release the buffer that it arrived in
-void CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf)
+void CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf) noexcept
 {
 	// Only respond to messages from a master address
 #if defined(ATEIO) || defined(ATECM)
@@ -284,7 +284,7 @@ void CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf)
 		{
 		case CanMessageType::timeSync:
 			currentMasterAddress = buf->id.Src();
-			StepTimer::ProcessTimeSyncMessage(buf->msg.sync, buf->dataLength);
+			StepTimer::ProcessTimeSyncMessage(buf->msg.sync, buf->dataLength, buf->timeStamp);
 			CanMessageBuffer::Free(buf);
 			break;
 
@@ -371,7 +371,7 @@ void CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf)
 	}
 }
 
-void CanInterface::Diagnostics(const StringRef& reply)
+void CanInterface::Diagnostics(const StringRef& reply) noexcept
 {
 	unsigned int messagesQueuedForSending, messagesReceived, txTimeouts, messagesLost, busOffCount;
 	can0dev->GetAndClearStats(messagesQueuedForSending, messagesReceived, txTimeouts, messagesLost, busOffCount);
@@ -380,7 +380,7 @@ void CanInterface::Diagnostics(const StringRef& reply)
 }
 
 // Send an announcement message if we haven't had an announce acknowledgement from a main board. On return the buffer is available to use again.
-void CanInterface::SendAnnounce(CanMessageBuffer *buf)
+void CanInterface::SendAnnounce(CanMessageBuffer *buf) noexcept
 {
 	if (!mainBoardAcknowledgedAnnounce)
 	{
@@ -395,17 +395,17 @@ void CanInterface::SendAnnounce(CanMessageBuffer *buf)
 }
 
 // This is called from the step ISR when the move is stopped by the Z probe
-void CanInterface::MoveStoppedByZProbe()
+void CanInterface::MoveStoppedByZProbe() noexcept
 {
 	//TODO
 }
 
-void CanInterface::WakeAsyncSenderFromIsr()
+void CanInterface::WakeAsyncSenderFromIsr() noexcept
 {
 	canAsyncSenderTask.GiveFromISR();
 }
 
-GCodeResult CanInterface::ChangeAddressAndDataRate(const CanMessageSetAddressAndNormalTiming &msg, const StringRef &reply)
+GCodeResult CanInterface::ChangeAddressAndDataRate(const CanMessageSetAddressAndNormalTiming &msg, const StringRef &reply) noexcept
 {
 	if (msg.oldAddress == boardAddress)
 	{
@@ -451,12 +451,17 @@ GCodeResult CanInterface::ChangeAddressAndDataRate(const CanMessageSetAddressAnd
 }
 
 // Get a message, if there is one
-bool CanInterface::GetCanMessage(CanMessageBuffer *buf)
+bool CanInterface::GetCanMessage(CanMessageBuffer *buf) noexcept
 {
 	return can0dev->ReceiveMessage(CanDevice::RxBufferNumber::fifo0, 0, buf);
 }
 
-extern "C" [[noreturn]] void CanReceiverLoop(void *)
+uint16_t CanInterface::GetTimeStampCounter() noexcept
+{
+	return can0dev->ReadTimestampCounter();
+}
+
+extern "C" [[noreturn]] void CanReceiverLoop(void *) noexcept
 {
 	CanMessageBuffer *buf = nullptr;
 	for (;;)
@@ -494,7 +499,7 @@ extern "C" [[noreturn]] void CanReceiverLoop(void *)
 	}
 }
 
-extern "C" [[noreturn]] void CanAsyncSenderLoop(void *)
+extern "C" [[noreturn]] void CanAsyncSenderLoop(void *) noexcept
 {
 	CanMessageBuffer *buf;
 	while ((buf = CanMessageBuffer::Allocate()) == nullptr)

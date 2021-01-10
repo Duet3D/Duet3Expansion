@@ -9,6 +9,7 @@
 #include <Platform.h>
 #include <RTOSIface/RTOSIface.h>
 #include <CanMessageFormats.h>
+#include <CAN/CanInterface.h>
 
 #if SAME5x
 # include <hri_tc_e54.h>
@@ -22,6 +23,7 @@ volatile uint32_t StepTimer::whenLastSynced;
 volatile bool StepTimer::synced = false;
 uint32_t StepTimer::peakJitter = 0;
 unsigned int StepTimer::numResyncs = 0;
+uint16_t StepTimer::peakTimeStampDelay = 0;
 
 void StepTimer::Init()
 {
@@ -61,11 +63,30 @@ void StepTimer::Init()
 	return synced;
 }
 
-/*static*/ void StepTimer::ProcessTimeSyncMessage(const CanMessageTimeSync& msg, size_t msgLen) noexcept
+/*static*/ void StepTimer::ProcessTimeSyncMessage(const CanMessageTimeSync& msg, size_t msgLen, uint16_t timeStamp) noexcept
 {
-	//TODO use the time stamp and convert this to a PLL
-	const uint32_t oldOffset = localTimeOffset;						// capture volatile variable
-	const uint32_t newOffset = StepTimer::GetTimerTicks() - msg.timeSent;
+	uint32_t localTimeNow;
+	uint16_t timeStampDelay;
+	{
+		AtomicCriticalSectionLocker lock;							// there must be no delay between calling GetTimerTicks and GetTimeStampCounter
+		localTimeNow = StepTimer::GetTimerTicks();
+		timeStampDelay = CanInterface::GetTimeStampCounter();
+	}
+
+	// The time stamp counter runs at 48MHz/16 but the step clock runs at 48MHz/64. So shift the time stamp delay right by 2 to get the delay in step clocks.
+	timeStampDelay = (timeStampDelay - timeStamp) >> 2;
+
+	// Save the peak timestamp delay for diagnostic purposes
+	if (timeStampDelay > peakTimeStampDelay)
+	{
+		peakTimeStampDelay = timeStampDelay;
+	}
+
+	const uint32_t masterTimeNow = msg.timeSent + timeStampDelay;
+	const uint32_t newOffset = localTimeNow - masterTimeNow;
+	const uint32_t oldOffset = localTimeOffset;
+
+	//TODO convert this to a PLL
 	localTimeOffset = newOffset;
 	const uint32_t diff = abs((int32_t)(newOffset - oldOffset));
 	if (diff > MaxSyncJitter)
@@ -261,9 +282,10 @@ void StepTimer::CancelCallback()
 
 /*static*/ void StepTimer::Diagnostics(const StringRef& reply)
 {
-	reply.lcatf("Peak sync jitter %" PRIu32 ", resyncs %u, ", peakJitter, numResyncs);
+	reply.lcatf("Peak sync jitter %" PRIu32 ", peak timestamp delay %u, resyncs %u, ", peakJitter, peakTimeStampDelay, numResyncs);
 	peakJitter = 0;
 	numResyncs = 0;
+	peakTimeStampDelay = 0;
 
 	StepTimer *pst = pendingList;
 	if (pst == nullptr)

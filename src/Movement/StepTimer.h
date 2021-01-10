@@ -57,7 +57,7 @@ public:
 	static void Interrupt() SPEED_CRITICAL;
 
 	static uint32_t GetLocalTimeOffset() { return localTimeOffset; }
-	static void ProcessTimeSyncMessage(const CanMessageTimeSync& msg, size_t msgLen) noexcept;
+	static void ProcessTimeSyncMessage(const CanMessageTimeSync& msg, size_t msgLen, uint16_t timeStamp) noexcept;
 	static uint32_t ConvertToLocalTime(uint32_t masterTime) { return masterTime + localTimeOffset; }
 	static uint32_t ConvertToMasterTime(uint32_t localTime) { return localTime - localTimeOffset; }
 	static uint32_t GetMasterTime() { return ConvertToMasterTime(GetTimerTicks()); }
@@ -87,6 +87,7 @@ private:
 	static volatile bool synced;
 	static uint32_t peakJitter;
 	static unsigned int numResyncs;
+	static uint16_t peakTimeStampDelay;
 
 	static constexpr uint32_t MaxSyncJitter = StepClockRate/100;				// 10ms
 };

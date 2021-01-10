@@ -18,24 +18,25 @@ class CanMessageBuffer;
 
 namespace CanInterface
 {
-	void Init(CanAddress defaultBoardAddress, bool useAlternatePins, bool full);
-	void Shutdown();
-	void Diagnostics(const StringRef& reply);
+	void Init(CanAddress defaultBoardAddress, bool useAlternatePins, bool full) noexcept;
+	void Shutdown() noexcept;
+	void Diagnostics(const StringRef& reply) noexcept;
 
-	CanAddress GetCanAddress();
-	CanAddress GetCurrentMasterAddress();
-	GCodeResult ChangeAddressAndDataRate(const CanMessageSetAddressAndNormalTiming& msg, const StringRef& reply);
-	bool GetCanMessage(CanMessageBuffer *buf);
-	CanMessageBuffer *GetCanMove();
-	bool Send(CanMessageBuffer *buf);
-	bool SendAsync(CanMessageBuffer *buf);
-	bool SendAndFree(CanMessageBuffer *buf);
-	CanMessageBuffer *GetCanCommand();
+	CanAddress GetCanAddress() noexcept;
+	CanAddress GetCurrentMasterAddress() noexcept;
+	GCodeResult ChangeAddressAndDataRate(const CanMessageSetAddressAndNormalTiming& msg, const StringRef& reply) noexcept;
+	bool GetCanMessage(CanMessageBuffer *buf) noexcept;
+	CanMessageBuffer *GetCanMove() noexcept;
+	bool Send(CanMessageBuffer *buf) noexcept;
+	bool SendAsync(CanMessageBuffer *buf) noexcept;
+	bool SendAndFree(CanMessageBuffer *buf) noexcept;
+	CanMessageBuffer *GetCanCommand() noexcept;
+	uint16_t GetTimeStampCounter() noexcept;
 
-	void SendAnnounce(CanMessageBuffer *buf);
+	void SendAnnounce(CanMessageBuffer *buf) noexcept;
 
-	void MoveStoppedByZProbe();
-	void WakeAsyncSenderFromIsr();
+	void MoveStoppedByZProbe() noexcept;
+	void WakeAsyncSenderFromIsr() noexcept;
 }
 
 #endif /* SRC_CAN_CANINTERFACE_H_ */
