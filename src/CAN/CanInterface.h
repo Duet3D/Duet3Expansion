@@ -31,7 +31,11 @@ namespace CanInterface
 	bool SendAsync(CanMessageBuffer *buf) noexcept;
 	bool SendAndFree(CanMessageBuffer *buf) noexcept;
 	CanMessageBuffer *GetCanCommand() noexcept;
+
+#if !SAME70
 	uint16_t GetTimeStampCounter() noexcept;
+	uint16_t GetTimeStampPeriod() noexcept;
+#endif
 
 	void SendAnnounce(CanMessageBuffer *buf) noexcept;
 

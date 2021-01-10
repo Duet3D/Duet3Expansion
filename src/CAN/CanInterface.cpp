@@ -458,7 +458,12 @@ bool CanInterface::GetCanMessage(CanMessageBuffer *buf) noexcept
 
 uint16_t CanInterface::GetTimeStampCounter() noexcept
 {
-	return can0dev->ReadTimestampCounter();
+	return can0dev->ReadTimeStampCounter();
+}
+
+uint16_t CanInterface::GetTimeStampPeriod() noexcept
+{
+	return can0dev->GetTimeStampPeriod();
 }
 
 extern "C" [[noreturn]] void CanReceiverLoop(void *) noexcept

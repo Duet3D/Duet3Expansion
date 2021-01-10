@@ -22,8 +22,8 @@ volatile uint32_t StepTimer::localTimeOffset = 0;
 volatile uint32_t StepTimer::whenLastSynced;
 volatile bool StepTimer::synced = false;
 uint32_t StepTimer::peakJitter = 0;
+uint32_t StepTimer::peakTimeStampDelay = 0;
 unsigned int StepTimer::numResyncs = 0;
-uint16_t StepTimer::peakTimeStampDelay = 0;
 
 void StepTimer::Init()
 {
@@ -66,15 +66,19 @@ void StepTimer::Init()
 /*static*/ void StepTimer::ProcessTimeSyncMessage(const CanMessageTimeSync& msg, size_t msgLen, uint16_t timeStamp) noexcept
 {
 	uint32_t localTimeNow;
-	uint16_t timeStampDelay;
+	uint16_t timeStampNow;
 	{
 		AtomicCriticalSectionLocker lock;							// there must be no delay between calling GetTimerTicks and GetTimeStampCounter
 		localTimeNow = StepTimer::GetTimerTicks();
-		timeStampDelay = CanInterface::GetTimeStampCounter();
+		timeStampNow = CanInterface::GetTimeStampCounter();
 	}
 
-	// The time stamp counter runs at 48MHz/16 but the step clock runs at 48MHz/64. So shift the time stamp delay right by 2 to get the delay in step clocks.
-	timeStampDelay = (timeStampDelay - timeStamp) >> 2;
+	// The time stamp counter runs at the CAN normal bit rate, but the step clock runs at 48MHz/64. Calculate the delay to in step clocks.
+#if SAMC21
+	const uint32_t timeStampDelay = ((uint32_t)((timeStampNow - timeStamp) & 0x7FFF) * CanInterface::GetTimeStampPeriod()) >> 6;	// timestamp counter is 15 bits on SAMC21
+#else
+	const uint32_t timeStampDelay = ((uint32_t)((timeStampNow - timeStamp) & 0xFFFF) * CanInterface::GetTimeStampPeriod()) >> 6;	// timestamp counter is 16 bits on SAME5x
+#endif
 
 	// Save the peak timestamp delay for diagnostic purposes
 	if (timeStampDelay > peakTimeStampDelay)
@@ -282,7 +286,7 @@ void StepTimer::CancelCallback()
 
 /*static*/ void StepTimer::Diagnostics(const StringRef& reply)
 {
-	reply.lcatf("Peak sync jitter %" PRIu32 ", peak timestamp delay %u, resyncs %u, ", peakJitter, peakTimeStampDelay, numResyncs);
+	reply.lcatf("Peak sync jitter %" PRIu32 ", peak timestamp delay %" PRIu32 ", resyncs %u, ", peakJitter, peakTimeStampDelay, numResyncs);
 	peakJitter = 0;
 	numResyncs = 0;
 	peakTimeStampDelay = 0;

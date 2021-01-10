@@ -86,8 +86,8 @@ private:
 	static volatile uint32_t whenLastSynced;									// the millis tick count when we last synced
 	static volatile bool synced;
 	static uint32_t peakJitter;
+	static uint32_t peakTimeStampDelay;
 	static unsigned int numResyncs;
-	static uint16_t peakTimeStampDelay;
 
 	static constexpr uint32_t MaxSyncJitter = StepClockRate/100;				// 10ms
 };
