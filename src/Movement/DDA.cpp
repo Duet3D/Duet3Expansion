@@ -196,7 +196,8 @@ bool DDA::Init(const CanMessageMovementLinear& msg)
 	// 0. Initialise the endpoints, which are used for diagnostic purposes, and set up the DriveMovement objects
 	bool realMove = false;
 
-	for (size_t drive = 0; drive < NumDrivers; drive++)
+	const size_t numDrivers = min<size_t>(msg.numDrivers, NumDrivers);
+	for (size_t drive = 0; drive < numDrivers; drive++)
 	{
 		endPoint[drive] = prev->endPoint[drive];		// the steps for this move will be added later
 		const int32_t delta = msg.perDrive[drive].steps;
