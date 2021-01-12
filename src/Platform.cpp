@@ -1640,8 +1640,27 @@ GCodeResult Platform::DoDiagnosticTest(const CanMessageDiagnosticTest& msg, cons
 			now2 &= 0x00FFFFFF;
 			uint32_t tim1 = ((now1 > now2) ? now1 : now1 + (SysTick->LOAD & 0x00FFFFFF) + 1) - now2;
 			reply.printf("Reading step timer 100 times took %.2fus", (double)((1'000'000.0f * (float)tim1)/(float)SystemCoreClock));
-			return GCodeResult::ok;
 		}
+
+		// Also check the correspondence between the CAN timestamp timer and the step clock
+		{
+			uint32_t startClocks, endClocks;
+			uint16_t startTimeStamp, endTimeStamp;
+			{
+				AtomicCriticalSectionLocker lock;
+				startClocks = StepTimer::GetTimerTicks();
+				startTimeStamp = CanInterface::GetTimeStampCounter();
+			}
+			delay(2);
+			{
+				AtomicCriticalSectionLocker lock;
+				endClocks = StepTimer::GetTimerTicks();
+				endTimeStamp = CanInterface::GetTimeStampCounter();
+			}
+			const uint32_t tsDiff = (((endTimeStamp - startTimeStamp) & 0xFFFF) * CanInterface::GetTimeStampPeriod()) >> 6;
+			reply.lcatf("Clock diff %" PRIu32 ", ts diff %" PRIu32, endClocks - startClocks, tsDiff);
+		}
+		return GCodeResult::ok;
 
 	case 1001:	// test watchdog
 		deferredCommand = DeferredCommand::testWatchdog;
