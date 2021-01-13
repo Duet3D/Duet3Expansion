@@ -97,6 +97,7 @@ private:
 
 inline __attribute__((always_inline)) StepTimer::Ticks StepTimer::GetTimerTicks()
 {
+	StepTc->CTRLBSET.reg = TC_CTRLBSET_CMD_READSYNC;
 #if SAMC21
 	// Tony's tests suggest that the following nop is not needed, but including it makes it faster
 	asm volatile("nop");														// allow time for the peripheral to react to the command (faster than DMB instruction)
