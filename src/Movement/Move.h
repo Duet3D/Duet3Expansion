@@ -85,7 +85,6 @@ private:
 
 	Kinematics *kinematics;								// What kinematics we are using
 
-	unsigned int stepErrors;							// count of step errors, for diagnostics
 	uint32_t scheduledMoves;							// Move counters for the code queue
 	volatile uint32_t completedMoves;					// This one is modified by an ISR, hence volatile
 	uint32_t numHiccups;								// How many times we delayed an interrupt to avoid using too much CPU time in interrupts

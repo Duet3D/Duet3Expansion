@@ -375,8 +375,8 @@ void CanInterface::Diagnostics(const StringRef& reply) noexcept
 {
 	unsigned int messagesQueuedForSending, messagesReceived, txTimeouts, messagesLost, busOffCount;
 	can0dev->GetAndClearStats(messagesQueuedForSending, messagesReceived, txTimeouts, messagesLost, busOffCount);
-	reply.lcatf("CAN messages queued %u, send timeouts %u, received %u, lost %u, free buffers %u",
-					messagesQueuedForSending, txTimeouts, messagesReceived, messagesLost, CanMessageBuffer::FreeBuffers());
+	reply.lcatf("CAN messages queued %u, send timeouts %u, received %u, lost %u, free buffers %u, error reg %" PRIx32,
+					messagesQueuedForSending, txTimeouts, messagesReceived, messagesLost, CanMessageBuffer::FreeBuffers(), can0dev->GetErrorRegister());
 }
 
 // Send an announcement message if we haven't had an announce acknowledgement from a main board. On return the buffer is available to use again.

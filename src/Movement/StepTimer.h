@@ -69,7 +69,7 @@ public:
 	static constexpr uint32_t StepClockRate = 48000000/64;						// 48MHz divided by 64
 	static constexpr uint64_t StepClockRateSquared = (uint64_t)StepClockRate * StepClockRate;
 	static constexpr float StepClocksToMillis = 1000.0/(float)StepClockRate;
-	static constexpr uint32_t MinInterruptInterval = 6;							// about 6us
+	static constexpr uint32_t MinInterruptInterval = 6;							// about 8us. Needs to be long enough for StepTimer::ScheduleTimerInterrupt to work during DMA.
 	static constexpr uint32_t MinSyncInterval = 1000;							// maximum interval in milliseconds between sync messages for us to remain synced
 
 private:

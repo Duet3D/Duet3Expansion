@@ -525,9 +525,9 @@ void Platform::Init()
 		}
 	}
 
-#ifdef DEBUG
+#if defined(SAMMYC21) || defined(DEBUG)
 	// Set up the UART to send to PanelDue for debugging
-	// CAUTION! This sends data to pin io0.out, which inteferes with a BLTouchn connected to that pin. So don't do it in normal use.
+	// CAUTION! This sends data to pin io0.out on a tool board, which inteferes with a BLTouchn connected to that pin. So don't do it in normal use.
 	uart0.begin(57600);
 #endif
 
@@ -1172,7 +1172,7 @@ void Platform::HandleHeaterFault(unsigned int heater)
 // Output a character to the debug channel
 bool Platform::DebugPutc(char c)
 {
-#ifdef DEBUG
+#if defined(SAMMYC21) || defined(DEBUG)
 	if (c != 0)
 	{
 		uart0.write(c);
@@ -1188,7 +1188,11 @@ void Platform::LogError(ErrorCode e)
 
 bool Platform::Debug(Module module)
 {
+#if 0
+	return module == moduleMove;	//DEBUG
+#else
 	return false;
+#endif
 }
 
 #if SUPPORT_DRIVERS

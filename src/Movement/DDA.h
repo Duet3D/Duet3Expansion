@@ -35,17 +35,16 @@ public:
 
 	DDA(DDA* n);
 
-	bool Init(const CanMessageMovementLinear& msg);
-	void Init();													// Set up initial positions for machine startup
-	void Start(uint32_t tim) SPEED_CRITICAL;					// Start executing the DDA, i.e. move the move.
-	void StepDrivers(uint32_t now) SPEED_CRITICAL;			// Take one step of the DDA, called by timed interrupt.
-	bool ScheduleNextStepInterrupt(StepTimer& timer) const;			// Schedule the next interrupt, returning true if we can't because it is already due
+	void Init();														// Set up initial positions for machine startup
+	bool Init(const CanMessageMovementLinear& msg) SPEED_CRITICAL;		// Set up a move from a CAN message
+	void Start(uint32_t tim) SPEED_CRITICAL;							// Start executing the DDA, i.e. move the move.
+	void StepDrivers(uint32_t now) SPEED_CRITICAL;						// Take one step of the DDA, called by timed interrupt.
+	bool ScheduleNextStepInterrupt(StepTimer& timer) const;				// Schedule the next interrupt, returning true if we can't because it is already due
 
 	void SetNext(DDA *n) { next = n; }
 	void SetPrevious(DDA *p) { prev = p; }
 	void Complete() { state = completed; }
-	bool Free();
-	void Prepare(const CanMessageMovementLinear& msg) SPEED_CRITICAL;	// Calculate all the values and freeze this DDA
+	void Free();
 	bool HasStepError() const;
 	bool IsPrintingMove() const { return flags.isPrintingMove; }
 
@@ -73,6 +72,9 @@ public:
 	void DebugPrint() const;												// print the DDA only
 	void DebugPrintAll() const;												// print the DDA and active DMs
 
+	static unsigned int GetAndClearStepErrors() noexcept;
+	static void RecordStepError() noexcept { ++stepErrors; }
+
 	// Note on the following constant:
 	// If we calculate the step interval on every clock, we reach a point where the calculation time exceeds the step interval.
 	// The worst case is pure Z movement on a delta. On a Mini Kossel with 80 steps/mm with this firmware running on a Duet (84MHx SAM3X8 processor),
@@ -97,6 +99,8 @@ public:
 
 	static uint32_t lastStepLowTime;								// when we last completed a step pulse to a slow driver
 	static uint32_t lastDirChangeTime;								// when we last change the DIR signal to a slow driver
+
+	static uint32_t stepsRequested[NumDrivers], stepsDone[NumDrivers];
 
 private:
 	DriveMovement *FindDM(size_t drive) const;
@@ -151,6 +155,8 @@ private:
 
     DriveMovement* activeDMs;				// list of contained DMs that need steps, in step time order
 	DriveMovement *pddm[NumDrivers];		// These describe the state of each drive movement
+
+	static unsigned int stepErrors;
 };
 
 // Find the DriveMovement record for a given drive, or return nullptr if there isn't one

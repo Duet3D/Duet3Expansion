@@ -126,10 +126,7 @@ public:
 
 	DriveMovement(DriveMovement *next);
 
-	bool CalcNextStepTimeCartesian(const DDA &dda) SPEED_CRITICAL;
-#if SUPPORT_DELTA_MOVEMENT
-	bool CalcNextStepTimeDelta(const DDA &dda) SPEED_CRITICAL;
-#endif
+	bool CalcNextStepTime(const DDA &dda) SPEED_CRITICAL;
 	void PrepareCartesianAxis(const DDA& dda, const PrepParams& params) SPEED_CRITICAL;
 	void PrepareDeltaAxis(const DDA& dda, const PrepParams& params) SPEED_CRITICAL;
 	void PrepareExtruder(const DDA& dda, const PrepParams& params, float speedChange) SPEED_CRITICAL;
@@ -227,7 +224,7 @@ private:
 // Return true if there are more steps to do. When finished, leave nextStep == totalSteps + 1 and state == DMState::idle.
 // This is also used for extruders on delta machines.
 // We inline this part to speed things up when we are doing double/quad/octal stepping.
-inline bool DriveMovement::CalcNextStepTimeCartesian(const DDA &dda)
+inline bool DriveMovement::CalcNextStepTime(const DDA &dda)
 {
 	++nextStep;
 	if (nextStep <= totalSteps)
@@ -240,42 +237,16 @@ inline bool DriveMovement::CalcNextStepTimeCartesian(const DDA &dda)
 #endif
 			return true;
 		}
-		return CalcNextStepTimeCartesianFull(dda);
-	}
-
-	state = DMState::idle;
-	return false;
-}
-
 #if SUPPORT_DELTA_MOVEMENT
-
-// Calculate the time since the start of the move when the next step for the specified DriveMovement is due
-// Return true if there are more steps to do. When finished, leave nextStep == totalSteps + 1 and state == DMState::idle.
-// We inline this part to speed things up when we are doing double/quad/octal stepping.
-inline bool DriveMovement::CalcNextStepTimeDelta(const DDA &dda)
-{
-	++nextStep;
-	if (nextStep <= totalSteps)
-	{
-		if (stepsTillRecalc != 0)
-		{
-			--stepsTillRecalc;			// we are doing double or quad stepping
-#if USE_EVEN_STEPS
-			nextStepTime += stepInterval;
+		return (IsDeltaMovement()) ? CalcNextStepTimeDeltaFull(dda) : CalcNextStepTimeCartesianFull(dda);
+#else
+		return CalcNextStepTimeCartesianFull(dda);
 #endif
-			return true;
-		}
-		else
-		{
-			return CalcNextStepTimeDeltaFull(dda);
-		}
 	}
 
 	state = DMState::idle;
 	return false;
 }
-
-#endif
 
 // Return the number of net steps left for the move in the forwards direction.
 // We have already taken nextSteps - 1 steps, unless nextStep is zero.

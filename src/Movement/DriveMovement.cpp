@@ -62,6 +62,8 @@ DriveMovement::DriveMovement(DriveMovement *next) : nextDM(next)
 void DriveMovement::PrepareCartesianAxis(const DDA& dda, const PrepParams& params)
 {
 	isDeltaMovement = false;
+
+	//TODO do we really need to use double in the following?
 	mp.cart.twoCsquaredTimesMmPerStepDivA = roundU64((double)2.0/((double)totalSteps * (double)dda.acceleration));
 	mp.cart.twoCsquaredTimesMmPerStepDivD = roundU64((double)2.0/((double)totalSteps * (double)dda.deceleration));
 
@@ -91,10 +93,11 @@ void DriveMovement::PrepareCartesianAxis(const DDA& dda, const PrepParams& param
 }
 
 // Prepare this DM for a Delta axis move
-//TODO convert this to normalised coordinates like we did for Cartesdian drives
+//TODO convert this to normalised coordinates like we did for Cartesian drives
 void DriveMovement::PrepareDeltaAxis(const DDA& dda, const PrepParams& params)
 {
 	isDeltaMovement = true;
+
 	const float stepsPerMm = Platform::DriveStepsPerUnit(drive);
 	const float A = params.initialX - params.dparams->GetTowerX(drive);
 	const float B = params.initialY - params.dparams->GetTowerY(drive);
@@ -247,7 +250,7 @@ void DriveMovement::DebugPrint(char c) const
 	if (state != DMState::idle)
 	{
 		debugPrintf("DM%c%s dir=%c steps=%" PRIu32 " next=%" PRIu32 " rev=%" PRIu32 " interval=%" PRIu32
-					" 2dtstc2diva=%" PRIu64 "\n",
+					" 2dtstc2divd=%" PRIu64 "\n",
 					c, (state == DMState::stepError) ? " ERR:" : ":", (direction) ? 'F' : 'B', totalSteps, nextStep, reverseStartStep, stepInterval,
 					twoDistanceToStopTimesCsquaredDivD);
 
@@ -369,6 +372,7 @@ pre(nextStep < totalSteps; stepsTillRecalc == 0)
 			// We don't expect any step except the last to be late
 			state = DMState::stepError;
 			stepInterval = 10000000 + nextStepTime;				// so we can tell what happened in the debug print
+			DDA::RecordStepError();
 			return false;
 		}
 	}

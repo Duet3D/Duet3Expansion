@@ -83,7 +83,6 @@ void Move::Init()
 	} while (dda != ddaRingAddPointer);
 
 	currentDda = nullptr;
-	stepErrors = 0;
 	active = true;
 #endif
 }
@@ -150,12 +149,11 @@ void Move::Spin()
 			{
 				ddaRingCheckPointer->DebugPrintAll();
 			}
-			++stepErrors;
 			Platform::LogError(ErrorCode::BadMove);
 		}
 
 		// Now release the DMs and check for underrun
-		(void)ddaRingCheckPointer->Free();
+		ddaRingCheckPointer->Free();
 		ddaRingCheckPointer = ddaRingCheckPointer->GetNext();
 	}
 
@@ -199,8 +197,8 @@ void Move::Spin()
 void Move::Diagnostics(const StringRef& reply)
 {
 #if SUPPORT_DRIVERS
-	reply.catf("Moves scheduled %" PRIu32 ", completed %" PRIu32 ", in progress %d, hiccups %" PRIu32,
-					scheduledMoves, completedMoves, (int)(currentDda != nullptr), numHiccups);
+	reply.catf("Moves scheduled %" PRIu32 ", completed %" PRIu32 ", in progress %d, hiccups %" PRIu32 ", step errors %u",
+					scheduledMoves, completedMoves, (int)(currentDda != nullptr), numHiccups, DDA::GetAndClearStepErrors());
 	numHiccups = 0;
 #endif
 	StepTimer::Diagnostics(reply);

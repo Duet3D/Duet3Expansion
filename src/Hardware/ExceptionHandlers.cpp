@@ -147,7 +147,7 @@ extern "C" [[noreturn]] void NMI_Handler() noexcept
 	SoftwareReset(SoftwareResetReason::NMI);
 }
 
-extern "C" [[noreturn]] void UsageFault_Handler() noexcept
+extern "C" void UsageFault_Handler() noexcept
 {
 	SoftwareReset(SoftwareResetReason::usageFault);
 }

@@ -18,7 +18,7 @@ Move *moveInstance;
 
 void debugPrintf(const char* fmt, ...)
 {
-#ifdef DEBUG				// save on stack usage by not calling vuprintf if debugging is disabled
+#if defined(SAMMYC21) || defined(DEBUG)				// save on stack usage by not calling vuprintf if debugging is disabled
 	va_list vargs;
 	va_start(vargs, fmt);
 	vuprintf(Platform::DebugPutc, fmt, vargs);
