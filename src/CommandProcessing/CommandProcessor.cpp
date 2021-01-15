@@ -435,12 +435,11 @@ static GCodeResult ProcessM569(const CanMessageGeneric& msg, const StringRef& re
 		if (Platform::IsSlowDriver(drive))
 # endif
 		{
-			constexpr float clocksToMicroseconds = 1000000.0f/(float)StepTimer::StepClockRate;
 			reply.catf(", step timing %.1f:%.1f:%.1f:%.1fus",
-						(double)((float)Platform::GetSlowDriverStepHighClocks() * clocksToMicroseconds),
-						(double)((float)Platform::GetSlowDriverStepLowClocks() * clocksToMicroseconds),
-						(double)((float)Platform::GetSlowDriverDirSetupClocks() * clocksToMicroseconds),
-						(double)((float)Platform::GetSlowDriverDirHoldClocks() * clocksToMicroseconds));
+						(double)Platform::GetSlowDriverStepHighMicroseconds(),
+						(double)Platform::GetSlowDriverStepLowMicroseconds(),
+						(double)Platform::GetSlowDriverDirSetupMicroseconds(),
+						(double)Platform::GetSlowDriverDirHoldMicroseconds());
 		}
 		else
 		{

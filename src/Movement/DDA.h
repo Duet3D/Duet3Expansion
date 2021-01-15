@@ -97,7 +97,11 @@ public:
 
 	static void PrintMoves();										// print saved moves for debugging
 
+#if USE_TC_FOR_STEP
+	static uint32_t lastStepHighTime;								// when we last started a step pulse to a slow driver
+#else
 	static uint32_t lastStepLowTime;								// when we last completed a step pulse to a slow driver
+#endif
 	static uint32_t lastDirChangeTime;								// when we last change the DIR signal to a slow driver
 
 	static uint32_t stepsRequested[NumDrivers], stepsDone[NumDrivers];

@@ -318,8 +318,8 @@ GCodeResult FilamentMonitor::CommonConfigure(const CanMessageGenericParser& pars
 			if (first)
 			{
 				reply.lcatf("=== Filament sensors ===\nInterrupt %" PRIu32 " to %" PRIu32 "us, poll %" PRIu32 " to %" PRIu32 "us",
-								StepTimer::TicksToMicroseconds(minInterruptTime), StepTimer::TicksToMicroseconds(maxInterruptTime),
-								StepTimer::TicksToMicroseconds(minPollTime), StepTimer::TicksToMicroseconds(maxPollTime));
+								StepTimer::TicksToIntegerMicroseconds(minInterruptTime), StepTimer::TicksToIntegerMicroseconds(maxInterruptTime),
+								StepTimer::TicksToIntegerMicroseconds(minPollTime), StepTimer::TicksToIntegerMicroseconds(maxPollTime));
 				minPollTime = minInterruptTime = 0xFFFFFFFF;
 				maxPollTime = maxInterruptTime = 0;
 				first = false;

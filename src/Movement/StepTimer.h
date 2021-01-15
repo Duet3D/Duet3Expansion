@@ -51,7 +51,8 @@ public:
 
 	// Convert a number of step timer ticks to microseconds
 	// Our tick rate is a multiple of 1000 so instead of multiplying n by 1000000 and risking overflow, we multiply by 1000 and divide by StepClockRate/1000
-	static uint32_t TicksToMicroseconds(uint32_t n) { return (n * 1000)/(StepClockRate/1000); }
+	static uint32_t TicksToIntegerMicroseconds(uint32_t n) { return (n * 1000)/(StepClockRate/1000); }
+	static float TicksToFloatMicroseconds(uint32_t n) { return (float)n * (1000000.0f/StepClockRate); }
 
 	// ISR called from StepTimer. May sometimes get called prematurely.
 	static void Interrupt() SPEED_CRITICAL;

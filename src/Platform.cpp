@@ -88,9 +88,28 @@ namespace Platform
 
 # if SUPPORT_SLOW_DRIVERS
 #  ifdef EXP1XD
-	uint32_t slowDriverStepTimingClocks[4] = { 2, 2, 2, 2 };		// default to slower timing for external drivers (2 clocks = 2.7us)
+#   if USE_TC_FOR_STEP
+	// The first element of slowDriverStepTimingClocks is the pulse width in TC clocks. The other elements are in step clock units. The second element is the step high + step low time
+	constexpr unsigned int TcPrescaler = 4;															// use prescaler 4
+	constexpr uint32_t TcPrescalerRegVal = TC_CTRLA_PRESCALER_DIV4;									// use prescaler 4
+	constexpr float StepPulseClocksPerMicrosecond = 48.0/TcPrescaler;								// we clock the TC from the 48MHz clock
+	constexpr unsigned int StepClocksToStepTCClocks = 64/TcPrescaler;								// step clock uses the same 48MHx clcok and x64 prescaler
+	constexpr float MinimumStepHighMicroseconds = 0.2;
+
+	uint32_t slowDriverStepTimingClocks[4] = { 2 * StepClocksToStepTCClocks, 4, 2, 4 };				// default to slower timing for external drivers (2 clocks = 2.67us)
+
+	// Convert microseconds to StepTC step clocks, rounding up
+	static constexpr uint32_t MicrosecondsToStepTCClocks(float us)
+	{
+		return (uint32_t)((StepPulseClocksPerMicrosecond * us) + 0.99);
+	}
+
+#   else
+	// All elements are in step clock units. The second element is the step low time.
+	uint32_t slowDriverStepTimingClocks[4] = { 2, 2, 2, 2 };										// default to slower timing for external drivers (2 clocks = 2.67us)
+#   endif
 #  else
-	uint32_t slowDriverStepTimingClocks[4] = { 0, 0, 0, 0 };		// default to fast timing
+	uint32_t slowDriverStepTimingClocks[4] = { 0, 0, 0, 0 };										// default to fast timing
 #  endif
 #  if SINGLE_DRIVER
 #   ifdef EXP1XD
@@ -635,32 +654,31 @@ void Platform::Init()
 
 		// Set up the CCL to invert the step output from PB10 to the inverted output on PA11
 		MCLK->APBCMASK.reg |= MCLK_APBCMASK_CCL;
+
 #  if USE_TC_FOR_STEP
 		// On the EXP1XD the step pin is also output TC1.0 and TC1 is not used for anything else
 		// Use it to generate the step pulse
 		EnableTcClock(StepGenTcNumber, GclkNum48MHz);
 
-		hri_tc_clear_CTRLA_ENABLE_bit(StepGenTc);
 		hri_tc_set_CTRLA_SWRST_bit(StepGenTc);
 
-		hri_tc_write_CTRLA_reg(StepGenTc, TC_CTRLA_MODE_COUNT16 | TC_CTRLA_PRESCALER_DIV4);			// prescaler 4 = 0.0833us resolution
+		hri_tc_write_CTRLA_reg(StepGenTc, TC_CTRLA_MODE_COUNT16 | Platform::TcPrescalerRegVal);
 		hri_tc_set_CTRLB_reg(StepGenTc, TC_CTRLBSET_ONESHOT);
 		hri_tc_write_DBGCTRL_reg(StepGenTc, 0);
 		hri_tc_write_EVCTRL_reg(StepGenTc, 0);
 		hri_tc_write_WAVE_reg(StepGenTc, TC_WAVE_WAVEGEN_MPWM);
 
-		const uint8_t pulseLength = 18;			// fixed 1.5us pulse for now
-		StepGenTc->CC[0].reg = pulseLength;
-		StepGenTc->CCBUF[0].reg = pulseLength;
+		StepGenTc->CC[0].reg = (uint16_t)Platform::slowDriverStepTimingClocks[0];
+		StepGenTc->CCBUF[0].reg = (uint16_t)Platform::slowDriverStepTimingClocks[0];
 
 		hri_tc_set_CTRLA_ENABLE_bit(StepGenTc);
-		hri_tc_wait_for_sync(StepGenTc, TC_SYNCBUSY_CC0 | TC_SYNCBUSY_ENABLE);
+
+		delayMicroseconds(2);												// this avoids a glitch on the step output
 
 		SetPinFunction(StepPins[i], GpioPinFunction::E);					// TC1.0
 #  else
 		SetPinFunction(StepPins[i], GpioPinFunction::I);					// CCL1in5
 #  endif
-		SetPinFunction(InvertedStepPins[i], GpioPinFunction::I);			// CCL1out1
 		CCL->CTRL.reg = 0;													// disable the CCL
 		CCL->SEQCTRL[0].reg = CCL_SEQCTRL_SEQSEL_DISABLE;
 		CCL->LUTCTRL[1].reg &= ~CCL_LUTCTRL_ENABLE;
@@ -675,6 +693,7 @@ void Platform::Init()
 						| CCL_LUTCTRL_TRUTH(0b00001111);
 		CCL->LUTCTRL[1].reg |= CCL_LUTCTRL_ENABLE;
 		CCL->CTRL.reg = CCL_CTRL_ENABLE;
+		SetPinFunction(InvertedStepPins[i], GpioPinFunction::I);			// CCL1out1 do this at the end to avoid a glitch on the output
 
 		// Direction pins
 		IoPort::SetPinMode(DirectionPins[i], OUTPUT_LOW);
@@ -1271,29 +1290,145 @@ const float *Platform::GetDriveStepsPerUnit() { return stepsPerMm; }
 
 # if SUPPORT_SLOW_DRIVERS
 
+float Platform::GetSlowDriverStepHighMicroseconds()
+{
+#  if USE_TC_FOR_STEP
+	return (float)slowDriverStepTimingClocks[0]/StepPulseClocksPerMicrosecond;
+#  else
+	return StepTimer::TicksToFloatMicroseconds(slowDriverStepTimingClocks[0]);
+#  endif
+}
+
+float Platform::GetSlowDriverStepLowMicroseconds()
+{
+#  if USE_TC_FOR_STEP
+	const float period = StepTimer::TicksToFloatMicroseconds(slowDriverStepTimingClocks[1]);
+	return period - GetSlowDriverStepHighMicroseconds();
+#  else
+	return StepTimer::TicksToFloatMicroseconds(slowDriverStepTimingClocks[1]);
+#  endif
+}
+
+float Platform::GetSlowDriverDirSetupMicroseconds()
+{
+	return StepTimer::TicksToFloatMicroseconds(slowDriverStepTimingClocks[2]);
+}
+
+float Platform::GetSlowDriverDirHoldMicroseconds()
+{
+#  if USE_TC_FOR_STEP
+	const float dirHoldFromLeadingEdge = StepTimer::TicksToFloatMicroseconds(slowDriverStepTimingClocks[3]);
+	return dirHoldFromLeadingEdge - GetSlowDriverStepHighMicroseconds();
+#  else
+	return StepTimer::TicksToFloatMicroseconds(slowDriverStepTimingClocks[3]);
+#  endif
+}
+
+// Convert microseconds to step clocks, rounding up
+static uint32_t MicrosecondsToStepClocks(float us)
+{
+	return (uint32_t)(((float)StepTimer::StepClockRate * us * 0.000001) + 0.99);
+}
+
+inline void UpdateTiming(uint32_t& timing, uint32_t clocks)
+{
+#  if SINGLE_DRIVER
+		timing = clocks;
+#  else
+		if (clocks > timing)
+		{
+			timing = clocks;
+		}
+#  endif
+
+}
+
 void Platform::SetDriverStepTiming(size_t drive, const float timings[4])
 {
 	bool isSlow = false;
+
+#  if USE_TC_FOR_STEP
+
+	// Step high time - must do this one first because it affects the conversion of some of the others
+	if (timings[0] > MinimumStepHighMicroseconds)
+	{
+		isSlow = true;
+		UpdateTiming(slowDriverStepTimingClocks[0], MicrosecondsToStepTCClocks(timings[2]));
+	}
+#   if SINGLE_DRIVER		// we can clear the value if we have only one driver
+	else
+	{
+		slowDriverStepTimingClocks[0] = MicrosecondsToStepTCClocks(MinimumStepHighMicroseconds);
+	}
+#   endif
+
+	// If we don't reset the TC when updating CC and CCBUF then the update doesn't happen until after another step pulse
+	StepGenTc->CCBUF[0].reg = (uint16_t)Platform::slowDriverStepTimingClocks[0];
+	StepGenTc->CTRLBSET.reg = TC_CTRLBSET_CMD_UPDATE;
+
+	// Step low time - must convert this to minimum period
+	const float minimumPeriod = timings[1] + GetSlowDriverStepHighMicroseconds();		// use the actual rounded-up value
+	if (minimumPeriod > 0.4)
+	{
+		isSlow = true;
+		UpdateTiming(slowDriverStepTimingClocks[1], MicrosecondsToStepClocks(minimumPeriod));
+	}
+#   if SINGLE_DRIVER		// we can clear the value if we have only one driver
+	else
+	{
+		slowDriverStepTimingClocks[1] = 0;
+	}
+#   endif
+
+	// Direction setup time - we can just convert this one
+	if (timings[2] > 0.2)
+	{
+		isSlow = true;
+		UpdateTiming(slowDriverStepTimingClocks[2], MicrosecondsToStepClocks(timings[2]));
+	}
+#   if SINGLE_DRIVER		// we can clear the value if we have only one driver
+	else
+	{
+		slowDriverStepTimingClocks[2] = 0;
+	}
+#   endif
+
+	// Direction hold time - we need to convert hold time from trailing edge to hold time from leading edge
+	const float holdTimeFromLeadingEdge = timings[3] + GetSlowDriverStepHighMicroseconds();		// use the actual rounded-up value
+	if (holdTimeFromLeadingEdge > 0.2)
+	{
+		isSlow = true;
+		const uint32_t clocks = MicrosecondsToStepClocks(holdTimeFromLeadingEdge);
+		UpdateTiming(slowDriverStepTimingClocks[3], clocks);
+	}
+#   if SINGLE_DRIVER		// we can clear the value if we have only one driver
+	else
+	{
+		slowDriverStepTimingClocks[3] = 0;
+	}
+#   endif
+
+#  else
+
+	// Not using TC to generate step pulses
 	for (size_t i = 0; i < 4; ++i)
 	{
 		if (timings[i] > 0.2)
 		{
 			isSlow = true;
-			const uint32_t clocks = (uint32_t)(((float)StepTimer::StepClockRate * timings[i] * 0.000001) + 0.99);	// convert microseconds to step clocks, rounding up
-#  if SINGLE_DRIVER
-			slowDriverStepTimingClocks[i] = clocks;
-#  else
-			if (clocks > slowDriverStepTimingClocks[i])
-			{
-				slowDriverStepTimingClocks[i] = clocks;
-			}
-#  endif
+			const uint32_t clocks = MicrosecondsToStepClocks(timings[i]);
+			UpdateTiming(slowDriverStepTimingClocks[i], clocks);
 		}
+#   if SINGLE_DRIVER		// we can clear the value if we have only one driver
 		else
 		{
 			slowDriverStepTimingClocks[i] = 0;
 		}
+#   endif
 	}
+
+#  endif	// USE_TC_FOR_STEP
+
 #  if SINGLE_DRIVER
 	isSlowDriver = isSlow;
 #  else
@@ -1301,7 +1436,7 @@ void Platform::SetDriverStepTiming(size_t drive, const float timings[4])
 #  endif
 }
 
-# endif
+# endif		// SUPPORT_SLOW_DRIVERS
 
 float Platform::GetPressureAdvance(size_t driver)
 {
@@ -1362,7 +1497,11 @@ void Platform::SetDirection(bool direction)
 # if SUPPORT_SLOW_DRIVERS
 	if (isSlowDriver)
 	{
-		while (StepTimer::GetTimerTicks() - DDA::lastStepLowTime < GetSlowDriverDirHoldClocks()) { }
+#  if USE_TC_FOR_STEP
+		while (StepTimer::GetTimerTicks() - DDA::lastStepHighTime < GetSlowDriverDirHoldFromLeadingEdgeClocks()) { }
+#  else
+		while (StepTimer::GetTimerTicks() - DDA::lastStepLowTime < GetSlowDriverDirHoldFromTrailingEdgeClocks()) { }
+#  endif
 	}
 # endif
 	digitalWrite(DirectionPins[0], d);

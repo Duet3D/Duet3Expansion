@@ -363,7 +363,11 @@ void DDA::Start(uint32_t tim)
 	}
 }
 
+#if USE_TC_FOR_STEP
+uint32_t DDA::lastStepHighTime = 0;
+#else
 uint32_t DDA::lastStepLowTime = 0;
+#endif
 uint32_t DDA::lastDirChangeTime = 0;
 
 #if SINGLE_DRIVER
@@ -384,16 +388,21 @@ void DDA::StepDrivers(uint32_t now)
 # if SUPPORT_SLOW_DRIVERS
 		if (Platform::IsSlowDriver())									// if using a slow driver
 		{
+#  if USE_TC_FOR_STEP
+			const uint32_t lastStepPulseTime = lastStepHighTime;
+			while (now - lastStepPulseTime < Platform::GetSlowDriverStepPeriodClocks() || now - lastDirChangeTime < Platform::GetSlowDriverDirSetupClocks())
+			{
+				now = StepTimer::GetTimerTicks();
+			}
+			StepGenTc->CTRLBSET.reg = TC_CTRLBSET_CMD_RETRIGGER;
+			lastStepHighTime = StepTimer::GetTimerTicks();				//TODO adjust lastStepLowTime to allow for the pulse length
+			hasMoreSteps = dm->CalcNextStepTime(*this);
+#  else
 			uint32_t lastStepPulseTime = lastStepLowTime;
 			while (now - lastStepPulseTime < Platform::GetSlowDriverStepLowClocks() || now - lastDirChangeTime < Platform::GetSlowDriverDirSetupClocks())
 			{
 				now = StepTimer::GetTimerTicks();
 			}
-#  if USE_TC_FOR_STEP
-			StepGenTc->CTRLBSET.reg = TC_CTRLBSET_CMD_RETRIGGER;
-			lastStepLowTime = StepTimer::GetTimerTicks();				//TODO adjust lastStepLowTime to allow for the pulse length
-			hasMoreSteps = dm->CalcNextStepTime(*this);
-#  else
 			Platform::StepDriverHigh();									// generate the step
 			lastStepPulseTime = StepTimer::GetTimerTicks();
 			hasMoreSteps = dm->CalcNextStepTime(*this);

@@ -11,6 +11,7 @@
 #include "RepRapFirmware.h"
 #include "AdcAveragingFilter.h"
 #include "GCodes/GCodeResult.h"
+#include <Movement/StepTimer.h>
 
 #if SUPPORT_SPI_SENSORS || defined(ATEIO)
 # include <Hardware/SharedSpiDevice.h>
@@ -89,10 +90,21 @@ namespace Platform
 	// Support for slow step pulse generation to suit external drivers
 	extern uint32_t slowDriverStepTimingClocks[4];
 
+#  if USE_TC_FOR_STEP		// the first element has a special meaning when we use a TC to generate the steps
+	inline uint32_t GetSlowDriverStepPeriodClocks() { return slowDriverStepTimingClocks[1]; }
+	inline uint32_t GetSlowDriverDirHoldFromLeadingEdgeClocks() { return slowDriverStepTimingClocks[3]; }
+#  else
 	inline uint32_t GetSlowDriverStepHighClocks() { return slowDriverStepTimingClocks[0]; }
 	inline uint32_t GetSlowDriverStepLowClocks() { return slowDriverStepTimingClocks[1]; }
+	inline uint32_t GetSlowDriverDirHoldFromTrailingEdgeClocks() { return slowDriverStepTimingClocks[3]; }
+#  endif
+
 	inline uint32_t GetSlowDriverDirSetupClocks() { return slowDriverStepTimingClocks[2]; }
-	inline uint32_t GetSlowDriverDirHoldClocks() { return slowDriverStepTimingClocks[3]; }
+
+	float GetSlowDriverStepHighMicroseconds();
+	float GetSlowDriverStepLowMicroseconds();
+	float GetSlowDriverDirSetupMicroseconds();
+	float GetSlowDriverDirHoldMicroseconds();
 
 	void SetDriverStepTiming(size_t drive, const float timings[4]);
 
