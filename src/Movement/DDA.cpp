@@ -389,6 +389,11 @@ void DDA::StepDrivers(uint32_t now)
 			{
 				now = StepTimer::GetTimerTicks();
 			}
+#  if USE_TC_FOR_STEP
+			StepGenTc->CTRLBSET.reg = TC_CTRLBSET_CMD_RETRIGGER;
+			lastStepLowTime = StepTimer::GetTimerTicks();				//TODO adjust lastStepLowTime to allow for the pulse length
+			hasMoreSteps = dm->CalcNextStepTime(*this);
+#  else
 			Platform::StepDriverHigh();									// generate the step
 			lastStepPulseTime = StepTimer::GetTimerTicks();
 			hasMoreSteps = dm->CalcNextStepTime(*this);
@@ -397,13 +402,19 @@ void DDA::StepDrivers(uint32_t now)
 			while (StepTimer::GetTimerTicks() - lastStepPulseTime < Platform::GetSlowDriverStepHighClocks()) {}
 			Platform::StepDriverLow();									// set all step pins low
 			lastStepLowTime = StepTimer::GetTimerTicks();
+#  endif
 		}
 		else
 # endif
 		{
+# if USE_TC_FOR_STEP
+			StepGenTc->CTRLBSET.reg = TC_CTRLBSET_CMD_RETRIGGER;
+			hasMoreSteps = dm->CalcNextStepTime(*this);
+# else
 			Platform::StepDriverHigh();									// generate the step
 			hasMoreSteps = dm->CalcNextStepTime(*this);
 			Platform::StepDriverLow();									// set the step pin low
+# endif
 		}
 
 		++stepsDone[0];

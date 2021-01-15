@@ -43,6 +43,10 @@
 # define DIFFERENTIAL_STEPPER_OUTPUTS	0
 #endif
 
+#ifndef USE_TC_FOR_STEP
+# define USE_TC_FOR_STEP				0
+#endif
+
 #ifndef SUPPORT_CLOSED_LOOP
 # define SUPPORT_CLOSED_LOOP			0
 #endif

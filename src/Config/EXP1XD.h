@@ -29,14 +29,14 @@
 #define SUPPORT_SLOW_DRIVERS	1
 #define SUPPORT_DELTA_MOVEMENT	0
 #define USE_EVEN_STEPS			1
+#define DIFFERENTIAL_STEPPER_OUTPUTS	1
+#define USE_TC_FOR_STEP			0
 
 #define SUPPORT_TMC51xx			0
 #define SUPPORT_TMC2660			0
 #define SUPPORT_TMC22xx			0
 
 constexpr size_t NumDrivers = 1;
-
-#define DIFFERENTIAL_STEPPER_OUTPUTS	1
 
 #if DIFFERENTIAL_STEPPER_OUTPUTS
 
@@ -164,6 +164,11 @@ constexpr IRQn StepTcIRQn = TC2_IRQn;
 constexpr unsigned int StepTcClockId = TC2_GCLK_ID;
 constexpr unsigned int StepTcNumber = 2;
 #define STEP_TC_HANDLER		TC2_Handler
+
+#if USE_TC_FOR_STEP
+TcCount16 * const StepGenTc = &(TC1->COUNT16);
+constexpr unsigned int StepGenTcNumber = 1;
+#endif
 
 // Available UART ports
 #define NUM_SERIAL_PORTS		1

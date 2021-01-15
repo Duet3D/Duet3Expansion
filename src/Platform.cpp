@@ -41,11 +41,19 @@
 constexpr uint32_t FlashBlockSize = 0x00010000;							// the block size we assume for flash
 constexpr uint32_t FirmwareFlashStart = FLASH_ADDR + FlashBlockSize;	// we reserve 64K for the bootloader
 
+#if USE_TC_FOR_STEP
+# include <hri_tc_e54.h>
+#endif
+
 #elif SAMC21
 
 # include <hri_nvmctrl_c21.h>
 constexpr uint32_t FlashBlockSize = 0x00004000;							// the block size we assume for flash
 constexpr uint32_t FirmwareFlashStart = FLASH_ADDR + FlashBlockSize;	// we reserve 16K for the bootloader
+
+#if USE_TC_FOR_STEP
+# include <hri_tc_c21.h>
+#endif
 
 #else
 # error Unsupported processor
@@ -627,13 +635,41 @@ void Platform::Init()
 
 		// Set up the CCL to invert the step output from PB10 to the inverted output on PA11
 		MCLK->APBCMASK.reg |= MCLK_APBCMASK_CCL;
-		SetPinFunction(StepPins[i], GpioPinFunction::I);			// CCL1in5
-		SetPinFunction(InvertedStepPins[i], GpioPinFunction::I);	// CCL1out1
-		CCL->CTRL.reg = 0;											// disable the CCL
+#  if USE_TC_FOR_STEP
+		// On the EXP1XD the step pin is also output TC1.0 and TC1 is not used for anything else
+		// Use it to generate the step pulse
+		EnableTcClock(StepGenTcNumber, GclkNum48MHz);
+
+		hri_tc_clear_CTRLA_ENABLE_bit(StepGenTc);
+		hri_tc_set_CTRLA_SWRST_bit(StepGenTc);
+
+		hri_tc_write_CTRLA_reg(StepGenTc, TC_CTRLA_MODE_COUNT16 | TC_CTRLA_PRESCALER_DIV4);			// prescaler 4 = 0.0833us resolution
+		hri_tc_set_CTRLB_reg(StepGenTc, TC_CTRLBSET_ONESHOT);
+		hri_tc_write_DBGCTRL_reg(StepGenTc, 0);
+		hri_tc_write_EVCTRL_reg(StepGenTc, 0);
+		hri_tc_write_WAVE_reg(StepGenTc, TC_WAVE_WAVEGEN_MPWM);
+
+		const uint8_t pulseLength = 18;			// fixed 1.5us pulse for now
+		StepGenTc->CC[0].reg = pulseLength;
+		StepGenTc->CCBUF[0].reg = pulseLength;
+
+		hri_tc_set_CTRLA_ENABLE_bit(StepGenTc);
+		hri_tc_wait_for_sync(StepGenTc, TC_SYNCBUSY_CC0 | TC_SYNCBUSY_ENABLE);
+
+		SetPinFunction(StepPins[i], GpioPinFunction::E);					// TC1.0
+#  else
+		SetPinFunction(StepPins[i], GpioPinFunction::I);					// CCL1in5
+#  endif
+		SetPinFunction(InvertedStepPins[i], GpioPinFunction::I);			// CCL1out1
+		CCL->CTRL.reg = 0;													// disable the CCL
 		CCL->SEQCTRL[0].reg = CCL_SEQCTRL_SEQSEL_DISABLE;
 		CCL->LUTCTRL[1].reg &= ~CCL_LUTCTRL_ENABLE;
 		CCL->LUTCTRL[1].reg =
-						  CCL_LUTCTRL_INSEL2(CCL_LUTCTRL_INSEL0_IO_Val)
+#  if USE_TC_FOR_STEP
+			  	  	  	  CCL_LUTCTRL_INSEL2(CCL_LUTCTRL_INSEL0_TC_Val)		// take input from TC1.0
+#  else
+						  CCL_LUTCTRL_INSEL2(CCL_LUTCTRL_INSEL0_IO_Val)		// take input from CCL1 IN2
+#  endif
 						| CCL_LUTCTRL_INSEL0(CCL_LUTCTRL_INSEL0_MASK_Val)
 						| CCL_LUTCTRL_INSEL0(CCL_LUTCTRL_INSEL0_MASK_Val)
 						| CCL_LUTCTRL_TRUTH(0b00001111);
