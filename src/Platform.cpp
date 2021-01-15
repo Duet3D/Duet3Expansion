@@ -1110,6 +1110,30 @@ void Platform::Spin()
 					   );
 #endif
 		}
+
+#ifdef SAMMYC21
+		//debugPrintf("IR=%" PRIx32 " ERR=%" PRIx32 " RXF0S=%" PRIx32 " RXF1S=%" PRIx32 " PSR=%" PRIx32 " CCCR=%" PRIx32 "\n",
+		//	CAN0->IR.reg, CAN0->ECR.reg, CAN0->RXF0S.reg, CAN0->RXF1S.reg, CAN0->PSR.reg, CAN0->CCCR.reg);
+
+		// If D is received from the USB port, output some diagnostics
+		while (uart0.available() != 0)
+		{
+			const char c = uart0.read();
+			if (c == 'D')
+			{
+				String<StringLength256> reply;
+				Tasks::Diagnostics(reply.GetRef());
+				debugPrintf("%s\n", reply.c_str());
+				reply.Clear();
+				CanInterface::Diagnostics(reply.GetRef());
+				debugPrintf("%s\n", reply.c_str());
+				reply.Clear();
+				moveInstance->Diagnostics(reply.GetRef());
+				debugPrintf("%s\n", reply.c_str());
+				//moveInstance->DebugPrintCdda();
+			}
+		}
+#endif
 	}
 }
 

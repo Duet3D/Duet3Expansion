@@ -183,12 +183,13 @@ void Move::Spin()
 		DDA * const cdda = ddaRingGetPointer;										// capture volatile variable
 		if (cdda->GetState() == DDA::frozen)
 		{
-			AtomicCriticalSectionLocker();
+			cpu_irq_disable();
 			StartNextMove(cdda, StepTimer::GetTimerTicks());
 			if (cdda->ScheduleNextStepInterrupt(timer))
 			{
 				Interrupt();
 			}
+			cpu_irq_enable();
 		}
 	}
 #endif
@@ -300,7 +301,7 @@ void Move::PrintCurrentDda() const
 	}
 }
 
-// This is the function that is called by the timer interrupt to step the motors.
+// This is the function that is called by the timer interrupt to step the motors. It is also called form Move::Spin() if the first step for a move is due immediately.
 // This may occasionally get called prematurely.
 void Move::Interrupt()
 {
@@ -353,6 +354,16 @@ void Move::Interrupt()
 				return;
 			}
 		}
+	}
+}
+
+// For debugging
+void Move::DebugPrintCdda() const noexcept
+{
+	DDA *cdda = currentDda;
+	if (cdda != nullptr)
+	{
+		cdda->DebugPrintAll();
 	}
 }
 

@@ -66,6 +66,8 @@ public:
 	uint32_t GetStepInterval(size_t axis, uint32_t microstepShift) const;			// Get the current step interval for this axis or extruder
 #endif
 
+	void DebugPrintCdda() const noexcept;											// for debugging
+
 private:
 	bool DDARingAdd();																// Add a processed look-ahead entry to the DDA ring
 	DDA* DDARingGet();																// Get the next DDA ring entry to be run

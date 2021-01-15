@@ -21,7 +21,8 @@ static Task<AnalogInTaskStackWords> analogInTask;
 
 void SerialPortInit(AsyncSerial*) noexcept
 {
-	SetPinFunction(PortBPin(2), GpioPinFunction::D);		// TxD
+	SetPinFunction(PortBPin(2), GpioPinFunction::D);		// TxD on Pad0
+	SetPinFunction(PortBPin(3), GpioPinFunction::D);		// RxD on Pad1
 }
 
 void SerialPortDeinit(AsyncSerial*) noexcept
@@ -29,7 +30,7 @@ void SerialPortDeinit(AsyncSerial*) noexcept
 	pinMode(PortBPin(2), INPUT_PULLUP);
 }
 
-AsyncSerial uart0(5, 3, 512, 512, SerialPortInit, SerialPortDeinit);
+AsyncSerial uart0(5, 1, 512, 512, SerialPortInit, SerialPortDeinit);
 
 extern "C" void SERCOM5_Handler()
 {
