@@ -1362,7 +1362,7 @@ void Platform::SetDriverStepTiming(size_t drive, const float timings[4])
 	}
 #   endif
 
-	// If we don't reset the TC when updating CC and CCBUF then the update doesn't happen until after another step pulse
+	// To get the new width to be applied to the step pulse, we need to update CCBUF[0] and then push it to CC[0]. Writing CC[0] directly doesn't work.
 	StepGenTc->CCBUF[0].reg = (uint16_t)Platform::slowDriverStepTimingClocks[0];
 	StepGenTc->CTRLBSET.reg = TC_CTRLBSET_CMD_UPDATE;
 
@@ -1376,7 +1376,7 @@ void Platform::SetDriverStepTiming(size_t drive, const float timings[4])
 #   if SINGLE_DRIVER		// we can clear the value if we have only one driver
 	else
 	{
-		slowDriverStepTimingClocks[1] = 0;
+		slowDriverStepTimingClocks[1] = 1;
 	}
 #   endif
 
@@ -1395,7 +1395,7 @@ void Platform::SetDriverStepTiming(size_t drive, const float timings[4])
 
 	// Direction hold time - we need to convert hold time from trailing edge to hold time from leading edge
 	const float holdTimeFromLeadingEdge = timings[3] + GetSlowDriverStepHighMicroseconds();		// use the actual rounded-up value
-	if (holdTimeFromLeadingEdge > 0.2)
+	if (holdTimeFromLeadingEdge > 0.4)
 	{
 		isSlow = true;
 		const uint32_t clocks = MicrosecondsToStepClocks(holdTimeFromLeadingEdge);
@@ -1404,7 +1404,7 @@ void Platform::SetDriverStepTiming(size_t drive, const float timings[4])
 #   if SINGLE_DRIVER		// we can clear the value if we have only one driver
 	else
 	{
-		slowDriverStepTimingClocks[3] = 0;
+		slowDriverStepTimingClocks[3] = 1;
 	}
 #   endif
 
