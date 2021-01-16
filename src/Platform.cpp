@@ -1353,7 +1353,7 @@ void Platform::SetDriverStepTiming(size_t drive, const float timings[4])
 	if (timings[0] > MinimumStepHighMicroseconds)
 	{
 		isSlow = true;
-		UpdateTiming(slowDriverStepTimingClocks[0], MicrosecondsToStepTCClocks(timings[2]));
+		UpdateTiming(slowDriverStepTimingClocks[0], MicrosecondsToStepTCClocks(timings[0]));
 	}
 #   if SINGLE_DRIVER		// we can clear the value if we have only one driver
 	else
