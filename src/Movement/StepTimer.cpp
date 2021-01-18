@@ -121,7 +121,7 @@ void StepTimer::Init()
 					peakJitter = diff;
 				}
 				Platform::SetPrinting(msg.isPrinting);
-				if (msgLen >= 16)										// if real time is included
+				if (msgLen >= CanMessageTimeSync::SizeWithRealTime)	// if real time is included
 				{
 					Platform::SetDateTime(msg.realTime);
 				}
