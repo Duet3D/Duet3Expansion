@@ -8,7 +8,8 @@
 #ifndef DDA_H_
 #define DDA_H_
 
-#include "RepRapFirmware.h"
+#include <RepRapFirmware.h>
+#include <Tasks.h>
 
 #if SUPPORT_DRIVERS
 
@@ -34,6 +35,11 @@ public:
 	};
 
 	DDA(DDA* n);
+
+	void* operator new(size_t count) { return Tasks::AllocPermanent(count); }
+	void* operator new(size_t count, std::align_val_t align) { return Tasks::AllocPermanent(count, align); }
+	void operator delete(void* ptr) noexcept {}
+	void operator delete(void* ptr, std::align_val_t align) noexcept {}
 
 	void Init();														// Set up initial positions for machine startup
 	bool Init(const CanMessageMovementLinear& msg) SPEED_CRITICAL;		// Set up a move from a CAN message

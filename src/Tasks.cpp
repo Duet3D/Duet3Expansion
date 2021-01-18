@@ -36,6 +36,15 @@ constexpr uint32_t FlashBlockSize = 0x00010000;					// the erase size we assume 
 constexpr uint32_t FlashBlockSize = 0x00004000;					// the erase size we assume for flash, and the bootloader size (16K)
 #endif
 
+// Define replacement standard library functions
+
+#if SAMC21
+// Reduce the size of the system stack below the default 1024 to save memory. When we set it to 512, M122 reported just 12 words unused, so try a higher value.
+# define SystemStackSize	(600)
+#endif
+
+#include <syscalls.h>
+
 constexpr uint32_t BlockReceiveTimeout = 2000;					// bootloader block receive timeout milliseconds
 
 constexpr uint8_t memPattern = 0xA5;
@@ -380,8 +389,6 @@ extern "C" [[noreturn]] void UpdateBootloaderTask(void *pvParameters) noexcept
 	Platform::ResetProcessor();
 }
 
-extern "C" char _estack;		// this is defined in the linker script
-
 // Return the amount of free handler stack space. It may be negative if the stack has overflowed into the area reserved for the heap.
 static ptrdiff_t GetHandlerFreeStack() noexcept
 {
@@ -437,6 +444,16 @@ void Tasks::Diagnostics(const StringRef& reply) noexcept
 #endif
 	default:					reply.catf("%u", resetCause); break;
 	}
+}
+
+// Allocate memory permanently. Using this saves about 8 bytes per object. You must not call free() on the returned object.
+// It doesn't try to allocate from the free list maintained by malloc, only from virgin memory.
+void *Tasks::AllocPermanent(size_t sz, std::align_val_t align) noexcept
+{
+	__malloc_lock(nullptr);
+	void * const ret = CoreAllocPermanent(sz, align);
+	__malloc_unlock(nullptr);
+	return ret;
 }
 
 static StaticTask_t xIdleTaskTCB;
@@ -508,5 +525,13 @@ uint32_t Tasks::DoMemoryRead(const uint32_t* addr) noexcept
 {
 	return *addr;
 }
+
+// Functions called by CanMessageBuffer in CANlib
+void *MessageBufferAlloc(size_t sz, std::align_val_t align) noexcept
+{
+	return Tasks::AllocPermanent(sz, align);
+}
+
+void MessageBufferDelete(void *ptr, std::align_val_t align) noexcept { }
 
 // End
