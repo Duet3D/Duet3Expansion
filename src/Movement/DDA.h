@@ -113,11 +113,13 @@ public:
 	static uint32_t stepsRequested[NumDrivers], stepsDone[NumDrivers];
 
 private:
-	DriveMovement *FindDM(size_t drive) const;
 	void StopDrive(size_t drive);									// stop movement of a drive and recalculate the endpoint
+
+#if !SINGLE_DRIVER
 	void InsertDM(DriveMovement *dm) SPEED_CRITICAL;
 	void RemoveDM(size_t drive);
-	void ReleaseDMs();
+#endif
+
 	void DebugPrintVector(const char *name, const float *vec, size_t len) const;
 
     DDA *next;								// The next one in the ring
@@ -163,17 +165,14 @@ private:
 		int32_t cKc;						// The Z movement fraction multiplied by Kc and converted to integer
 	} afterPrepare;
 
+#if !SINGLE_DRIVER
     DriveMovement* activeDMs;				// list of contained DMs that need steps, in step time order
-	DriveMovement *pddm[NumDrivers];		// These describe the state of each drive movement
+#endif
+
+    DriveMovement ddms[NumDrivers];			// These describe the state of each drive movement
 
 	static unsigned int stepErrors;
 };
-
-// Find the DriveMovement record for a given drive, or return nullptr if there isn't one
-inline DriveMovement *DDA::FindDM(size_t drive) const
-{
-	return pddm[drive];
-}
 
 // Schedule the next interrupt, returning true if we can't because it is already due
 // Base priority must be >= NvicPriorityStep or interrupts disabled when calling this
@@ -181,7 +180,12 @@ inline bool DDA::ScheduleNextStepInterrupt(StepTimer& timer) const
 {
 	if (state == executing)
 	{
-		const uint32_t whenDue = ((activeDMs != nullptr) ? activeDMs->nextStepTime
+		const uint32_t whenDue = (
+#if SINGLE_DRIVER
+								(ddms[0].state == DMState::moving) ? ddms[0].nextStepTime
+#else
+								(activeDMs != nullptr) ? activeDMs->nextStepTime
+#endif
 									: (clocksNeeded > DDA::WakeupTime) ? clocksNeeded - DDA::WakeupTime
 										: 0)
 								+ afterPrepare.moveStartTime;
@@ -193,7 +197,12 @@ inline bool DDA::ScheduleNextStepInterrupt(StepTimer& timer) const
 // Insert a hiccup long enough to guarantee that we will exit the ISR
 inline void DDA::InsertHiccup(uint32_t now)
 {
-	const uint32_t ticksDueAfterStart = (activeDMs != nullptr) ? activeDMs->nextStepTime
+	const uint32_t ticksDueAfterStart =
+#if SINGLE_DRIVER
+		(ddms[0].state == DMState::moving) ? ddms[0].nextStepTime
+#else
+									(activeDMs != nullptr) ? activeDMs->nextStepTime
+#endif
 										: (clocksNeeded > DDA::WakeupTime) ? clocksNeeded - DDA::WakeupTime
 											: 0;
 	afterPrepare.moveStartTime = now + DDA::HiccupTime - ticksDueAfterStart;
@@ -204,8 +213,8 @@ inline void DDA::InsertHiccup(uint32_t now)
 // Get the current full step interval for this axis or extruder
 inline uint32_t DDA::GetStepInterval(size_t axis, uint32_t microstepShift) const
 {
-	const DriveMovement * const dm = FindDM(axis);
-	return (dm != nullptr) ? dm->GetStepInterval(microstepShift) : 0;
+	const DriveMovement& dm = ddms[axis];
+	return dm.state == DMState::moving ? dm.GetStepInterval(microstepShift) : 0;
 }
 
 #endif

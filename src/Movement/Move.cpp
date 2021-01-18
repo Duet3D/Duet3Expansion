@@ -62,7 +62,6 @@ Move::Move()
 	ddaRingAddPointer->SetNext(dda);
 	dda->SetPrevious(ddaRingAddPointer);
 
-	DriveMovement::InitialAllocate(NumDms);
 	timer.SetCallback(Move::TimerCallback, static_cast<void*>(this));
 
 	for (size_t i = 0; i < NumDrivers; ++i)
@@ -170,10 +169,7 @@ void Move::Spin()
 	// See if we can add another move to the ring
 	for (;;)
 	{
-		const bool canAddMove = (   ddaRingAddPointer->GetState() == DDA::empty
-								 && DriveMovement::NumFree() >= (int)NumDrivers			// check that we won't run out of DMs
-								);
-		if (!canAddMove)
+		if (ddaRingAddPointer->GetState() != DDA::empty)
 		{
 			break;
 		}

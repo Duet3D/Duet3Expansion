@@ -16,48 +16,6 @@
 #include "StepTimer.h"
 #include "Platform.h"
 
-// Static members
-
-DriveMovement *DriveMovement::freeList = nullptr;
-int DriveMovement::numFree = 0;
-int DriveMovement::minFree = 0;
-
-void DriveMovement::InitialAllocate(unsigned int num)
-{
-	while (num != 0)
-	{
-		freeList = new DriveMovement(freeList);
-		++numFree;
-		--num;
-	}
-	ResetMinFree();
-}
-
-DriveMovement *DriveMovement::Allocate(size_t drv, DMState st)
-{
-	DriveMovement * const dm = freeList;
-	if (dm != nullptr)
-	{
-		freeList = dm->nextDM;
-		--numFree;
-		if (numFree < minFree)
-		{
-			minFree = numFree;
-		}
-		dm->nextDM = nullptr;
-		dm->drive = (uint8_t)drv;
-		dm->state = st;
-	}
-	return dm;
-}
-
-// Constructors
-DriveMovement::DriveMovement(DriveMovement *next) : nextDM(next)
-{
-}
-
-// Non static members
-
 // Prepare this DM for a Cartesian axis move
 void DriveMovement::PrepareCartesianAxis(const DDA& dda, const PrepParams& params)
 {

@@ -124,7 +124,7 @@ class DriveMovement
 public:
 	friend class DDA;
 
-	DriveMovement(DriveMovement *next);
+	DriveMovement() { };
 
 	bool CalcNextStepTime(const DDA &dda) SPEED_CRITICAL;
 	void PrepareCartesianAxis(const DDA& dda, const PrepParams& params) SPEED_CRITICAL;
@@ -140,13 +140,6 @@ public:
 	uint32_t GetStepInterval(uint32_t msShift) const;	// Get the current full step interval for this axis or extruder
 #endif
 
-	static void InitialAllocate(unsigned int num);
-	static int NumFree() { return numFree; }
-	static int MinFree() { return minFree; }
-	static void ResetMinFree() { minFree = numFree; }
-	static DriveMovement *Allocate(size_t drv, DMState st);
-	static void Release(DriveMovement *item);
-
 private:
 	bool CalcNextStepTimeCartesianFull(const DDA &dda) SPEED_CRITICAL;
 #if SUPPORT_DELTA_MOVEMENT
@@ -159,7 +152,9 @@ private:
 
 	// Parameters common to Cartesian, delta and extruder moves
 
+#if !SINGLE_DRIVER
 	DriveMovement *nextDM;								// link to next DM that needs a step
+#endif
 
 	DMState state;										// whether this is active or not
 	uint8_t drive;										// the drive that this DM controls
@@ -283,14 +278,6 @@ inline int32_t DriveMovement::GetNetStepsTaken() const
 		netStepsTaken = (int32_t)nextStep - (int32_t)(2 * reverseStartStep) + 1;	// allowing for direction having changed
 	}
 	return (direction) ? netStepsTaken : -netStepsTaken;
-}
-
-// This is inlined because it is only called from one place
-inline void DriveMovement::Release(DriveMovement *item)
-{
-	item->nextDM = freeList;
-	freeList = item;
-	++numFree;
 }
 
 #if HAS_SMART_DRIVERS

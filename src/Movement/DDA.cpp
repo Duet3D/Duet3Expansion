@@ -90,26 +90,11 @@ uint32_t DDA::stepsDone[NumDrivers];
 
 DDA::DDA(DDA* n) : next(n), prev(nullptr), state(empty)
 {
-	for (DriveMovement*& p : pddm)
+	for (size_t i = 0; i < NumDrivers; ++i)
 	{
-		p = nullptr;
-	}
-
-	for (int32_t& ep : endPoint)
-	{
-		ep = 0;
-	}
-}
-
-void DDA::ReleaseDMs()
-{
-	for (DriveMovement*& p : pddm)
-	{
-		if (p != nullptr)
-		{
-			DriveMovement::Release(p);
-			p = nullptr;
-		}
+		endPoint[i] = 0;
+		ddms[i].state = DMState::idle;
+		ddms[i].drive = i;
 	}
 }
 
@@ -122,6 +107,8 @@ pre(state == executing || state == frozen || state == completed)
 			: (state == executing) ? (int32_t)(afterPrepare.moveStartTime + clocksNeeded - StepTimer::GetTimerTicks())
 			: (int32_t)clocksNeeded;
 }
+
+#if !SINGLE_DRIVER
 
 // Insert the specified drive into the step list, in step time order.
 // We insert the drive before any existing entries with the same step time for best performance. Now that we generate step pulses
@@ -154,6 +141,8 @@ void DDA::RemoveDM(size_t drive)
 	}
 }
 
+#endif
+
 void DDA::DebugPrintVector(const char *name, const float *vec, size_t len) const
 {
 	debugPrintf("%s=", name);
@@ -179,10 +168,7 @@ void DDA::DebugPrintAll() const
 	DebugPrint();
 	for (size_t axis = 0; axis < NumDrivers; ++axis)
 	{
-		if (pddm[axis] != nullptr)
-		{
-			pddm[axis]->DebugPrint("ABCDEF"[axis]);
-		}
+		ddms[axis].DebugPrint("ABCDEF"[axis]);
 	}
 }
 
@@ -190,6 +176,10 @@ void DDA::DebugPrintAll() const
 void DDA::Init()
 {
 	state = empty;
+	for (DriveMovement& ddm : ddms)
+	{
+		ddm.state = DMState::idle;
+	}
 }
 
 // Set up a real move. Return true if it represents real movement, else false.
@@ -202,19 +192,30 @@ bool DDA::Init(const CanMessageMovementLinear& msg)
 	bool realMove = false;
 
 	const size_t numDrivers = min<size_t>(msg.numDrivers, NumDrivers);
-	for (size_t drive = 0; drive < numDrivers; drive++)
+	for (size_t drive = 0; drive < NumDrivers; drive++)
 	{
 		endPoint[drive] = prev->endPoint[drive];		// the steps for this move will be added later
-		const int32_t delta = msg.perDrive[drive].steps;
+		DriveMovement& dm = ddms[drive];
 
+#if !SINGLE_DRIVER
+		dm.nextDM = nullptr;
+#endif
+		const int32_t delta = (drive < numDrivers) ? msg.perDrive[drive].steps : 0;
 		if (delta != 0)
 		{
 			realMove = true;
-			DriveMovement*& pdm = pddm[drive];
-			pdm = DriveMovement::Allocate(drive, DMState::moving);
-			pdm->totalSteps = labs(delta);				// for now this is the number of net steps, but gets adjusted later if there is a reverse in direction
-			pdm->direction = (delta >= 0);				// for now this is the direction of net movement, but gets adjusted later if it is a delta movement
+			dm.totalSteps = labs(delta);				// for now this is the number of net steps, but gets adjusted later if there is a reverse in direction
+			dm.direction = (delta >= 0);				// for now this is the direction of net movement, but gets adjusted later if it is a delta movement
 			stepsRequested[drive] += labs(delta);
+			dm.state = DMState::moving;
+		}
+		else
+		{
+			// Set up the steps so that GetStepsTaken will return zero
+			dm.totalSteps = 0;
+			dm.nextStep = 0;
+			dm.reverseStartStep = 1;
+			dm.state = DMState::idle;
 		}
 	}
 
@@ -255,12 +256,14 @@ bool DDA::Init(const CanMessageMovementLinear& msg)
 	afterPrepare.extraAccelerationClocks = msg.accelerationClocks - roundS32(accelDistance/topSpeed);
 	params.compFactor = (topSpeed - startSpeed)/topSpeed;
 
+#if !SINGLE_DRIVER
 	activeDMs = nullptr;
+#endif
 
 	for (size_t drive = 0; drive < numDrivers; ++drive)
 	{
-		DriveMovement* const pdm = FindDM(drive);
-		if (pdm != nullptr && pdm->state == DMState::moving)
+		DriveMovement& dm = ddms[drive];
+		if (dm.state == DMState::moving)
 		{
 			Platform::EnableDrive(drive);
 			if ((msg.pressureAdvanceDrives & (1u << drive)) != 0)
@@ -268,14 +271,14 @@ bool DDA::Init(const CanMessageMovementLinear& msg)
 				// If there is any extruder jerk in this move, in theory that means we need to instantly extrude or retract some amount of filament.
 				// Pass the speed change to PrepareExtruder
 				// But PrepareExtruder doesn't use it currently, so don't bother
-				pdm->PrepareExtruder(*this, params, 0.0);
+				dm.PrepareExtruder(*this, params, 0.0);
 
 				// Check for sensible values, print them if they look dubious
 				if (Platform::Debug(moduleDda)
-					&& (   pdm->totalSteps > 1000000
-						|| pdm->reverseStartStep < pdm->mp.cart.decelStartStep
-						|| (pdm->reverseStartStep <= pdm->totalSteps
-							&& pdm->mp.cart.fourMaxStepDistanceMinusTwoDistanceToStopTimesCsquaredDivD > (int64_t)(pdm->mp.cart.twoCsquaredTimesMmPerStepDivD * pdm->reverseStartStep)
+					&& (   dm.totalSteps > 1000000
+						|| dm.reverseStartStep < dm.mp.cart.decelStartStep
+						|| (dm.reverseStartStep <= dm.totalSteps
+							&& dm.mp.cart.fourMaxStepDistanceMinusTwoDistanceToStopTimesCsquaredDivD > (int64_t)(dm.mp.cart.twoCsquaredTimesMmPerStepDivD * dm.reverseStartStep)
 						   )
 					   )
 				   )
@@ -285,17 +288,17 @@ bool DDA::Init(const CanMessageMovementLinear& msg)
 			}
 			else
 			{
-				pdm->PrepareCartesianAxis(*this, params);
+				dm.PrepareCartesianAxis(*this, params);
 
 				// Check for sensible values, print them if they look dubious
-				if (Platform::Debug(moduleDda) && pdm->totalSteps > 1000000)
+				if (Platform::Debug(moduleDda) && dm.totalSteps > 1000000)
 				{
 					DebugPrintAll();
 				}
 			}
 
-			const uint32_t netSteps = (pdm->reverseStartStep < pdm->totalSteps) ? (2 * pdm->reverseStartStep) - pdm->totalSteps : pdm->totalSteps;
-			if (pdm->direction)
+			const uint32_t netSteps = (dm.reverseStartStep < dm.totalSteps) ? (2 * dm.reverseStartStep) - dm.totalSteps : dm.totalSteps;
+			if (dm.direction)
 			{
 				endPoint[drive] += netSteps;
 			}
@@ -305,26 +308,28 @@ bool DDA::Init(const CanMessageMovementLinear& msg)
 			}
 
 			// Prepare for the first step
-			pdm->nextStep = 0;
-			pdm->nextStepTime = 0;
-			pdm->stepInterval = 999999;							// initialise to a large value so that we will calculate the time for just one step
-			pdm->stepsTillRecalc = 0;							// so that we don't skip the calculation
+			dm.nextStep = 0;
+			dm.nextStepTime = 0;
+			dm.stepInterval = 999999;							// initialise to a large value so that we will calculate the time for just one step
+			dm.stepsTillRecalc = 0;							// so that we don't skip the calculation
 
-			const bool stepsToDo = pdm->CalcNextStepTime(*this);
+			const bool stepsToDo = dm.CalcNextStepTime(*this);
 			if (stepsToDo)
 			{
-				pdm->directionChanged = false;
-				InsertDM(pdm);
+				dm.directionChanged = false;
+#if !SINGLE_DRIVER
+				InsertDM(&dm);
+#endif
 			}
 			else
 			{
-				if (pdm->state == DMState::stepError)
+				if (dm.state == DMState::stepError)
 				{
 					DebugPrint();
-					pdm->DebugPrint(drive + '0');
+					dm.DebugPrint(drive + '0');
 					//msg.DebugPrint();
 				}
-				pdm->state = DMState::idle;
+				dm.state = DMState::idle;
 			}
 		}
 	}
@@ -354,21 +359,24 @@ void DDA::Start(uint32_t tim)
 	}
 	state = executing;
 
+#if SINGLE_DRIVER
+	if (ddms[0].state == DMState::moving)
+	{
+		Platform::SetDirection(ddms[0].direction);
+	}
+#else
 	if (activeDMs != nullptr)
 	{
 		for (size_t i = 0; i < NumDrivers; ++i)
 		{
-			DriveMovement* const pdm = FindDM(i);
-			if (pdm != nullptr && pdm->state == DMState::moving)
+			DriveMovement& dm = ddms[i];
+			if (dm.state == DMState::moving)
 			{
-#if SINGLE_DRIVER
-				Platform::SetDirection(pdm->direction);
-#else
-				Platform::SetDirection(pdm->drive, pdm->direction);
-#endif
+				Platform::SetDirection(dm.drive, dm.direction);
 			}
 		}
 	}
+#endif
 }
 
 #if USE_TC_FOR_STEP
@@ -387,8 +395,7 @@ uint32_t DDA::lastDirChangeTime = 0;
 void DDA::StepDrivers(uint32_t now)
 {
 	// Determine whether the driver is due for stepping, overdue, or will be due very shortly
-	DriveMovement* const dm = activeDMs;
-	if (dm != nullptr && (now - afterPrepare.moveStartTime) + StepTimer::MinInterruptInterval >= dm->nextStepTime)	// if the next step is due
+	if (ddms[0].state == DMState::moving && (now - afterPrepare.moveStartTime) + StepTimer::MinInterruptInterval >= ddms[0].nextStepTime)	// if the next step is due
 	{
 		// Step the driver
 		bool hasMoreSteps;
@@ -404,7 +411,7 @@ void DDA::StepDrivers(uint32_t now)
 			}
 			StepGenTc->CTRLBSET.reg = TC_CTRLBSET_CMD_RETRIGGER;
 			lastStepHighTime = StepTimer::GetTimerTicks();				//TODO adjust lastStepLowTime to allow for the pulse length
-			hasMoreSteps = dm->CalcNextStepTime(*this);
+			hasMoreSteps = ddms[0].CalcNextStepTime(*this);
 #  else
 			uint32_t lastStepPulseTime = lastStepLowTime;
 			while (now - lastStepPulseTime < Platform::GetSlowDriverStepLowClocks() || now - lastDirChangeTime < Platform::GetSlowDriverDirSetupClocks())
@@ -413,7 +420,7 @@ void DDA::StepDrivers(uint32_t now)
 			}
 			Platform::StepDriverHigh();									// generate the step
 			lastStepPulseTime = StepTimer::GetTimerTicks();
-			hasMoreSteps = dm->CalcNextStepTime(*this);
+			hasMoreSteps = ddms[0].CalcNextStepTime(*this);
 
 			// 3a. Reset the step pin low
 			while (StepTimer::GetTimerTicks() - lastStepPulseTime < Platform::GetSlowDriverStepHighClocks()) {}
@@ -426,28 +433,24 @@ void DDA::StepDrivers(uint32_t now)
 		{
 # if USE_TC_FOR_STEP
 			StepGenTc->CTRLBSET.reg = TC_CTRLBSET_CMD_RETRIGGER;
-			hasMoreSteps = dm->CalcNextStepTime(*this);
+			hasMoreSteps = ddms[0].CalcNextStepTime(*this);
 # else
 			Platform::StepDriverHigh();									// generate the step
-			hasMoreSteps = dm->CalcNextStepTime(*this);
+			hasMoreSteps = ddms[0].CalcNextStepTime(*this);
 			Platform::StepDriverLow();									// set the step pin low
 # endif
 		}
 
 		++stepsDone[0];
-		if (!hasMoreSteps)
+		if (hasMoreSteps && ddms[0].directionChanged)
 		{
-			activeDMs = nullptr;
-		}
-		else if (dm->directionChanged)
-		{
-			dm->directionChanged = false;
-			Platform::SetDirection(dm->direction);
+			ddms[0].directionChanged = false;
+			Platform::SetDirection(ddms[0].direction);
 		}
 	}
 
 	// If there are no more steps to do and the time for the move has nearly expired, flag the move as complete
-	if (activeDMs == nullptr && StepTimer::GetTimerTicks() - afterPrepare.moveStartTime + WakeupTime >= clocksNeeded)
+	if (ddms[0].state != DMState::moving && StepTimer::GetTimerTicks() - afterPrepare.moveStartTime + WakeupTime >= clocksNeeded)
 	{
 		state = completed;
 	}
@@ -535,15 +538,19 @@ void DDA::StepDrivers(uint32_t now)
 // For extruder drivers, we need to be able to calculate how much of the extrusion was completed after calling this.
 void DDA::StopDrive(size_t drive)
 {
-	DriveMovement* const pdm = FindDM(drive);
-	if (pdm != nullptr && pdm->state == DMState::moving)
+	DriveMovement& dm = ddms[drive];
+	if (dm.state == DMState::moving)
 	{
-		pdm->state = DMState::idle;
+		dm.state = DMState::idle;
+#if SINGLE_DRIVER
+		state = completed;
+#else
 		RemoveDM(drive);
 		if (activeDMs == nullptr)
 		{
 			state = completed;
 		}
+#endif
 	}
 }
 
@@ -587,8 +594,7 @@ bool DDA::HasStepError() const
 
 	for (size_t drive = 0; drive < NumDrivers; ++drive)
 	{
-		const DriveMovement* const pdm = FindDM(drive);
-		if (pdm != nullptr && pdm->state == DMState::stepError)
+		if (ddms[drive].state == DMState::stepError)
 		{
 			return true;
 		}
@@ -599,15 +605,13 @@ bool DDA::HasStepError() const
 // Free up this DDA, returning true if the lookahead underrun flag was set
 void DDA::Free()
 {
-	ReleaseDMs();
 	state = empty;
 }
 
 // Return the number of net steps already taken in this move by a particular drive
 int32_t DDA::GetStepsTaken(size_t drive) const
 {
-	const DriveMovement * const dmp = FindDM(drive);
-	return (dmp != nullptr) ? dmp->GetNetStepsTaken() : 0;
+	return ddms[drive].GetNetStepsTaken();
 }
 
 unsigned int DDA::GetAndClearStepErrors() noexcept
