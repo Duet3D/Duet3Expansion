@@ -196,6 +196,8 @@ void DDA::Init()
 // Return true if it is a real move
 bool DDA::Init(const CanMessageMovementLinear& msg)
 {
+	MicrosecondsTimer prepareTimer;	//DEBUG
+
 	// 0. Initialise the endpoints, which are used for diagnostic purposes, and set up the DriveMovement objects
 	bool realMove = false;
 
@@ -333,6 +335,12 @@ bool DDA::Init(const CanMessageMovementLinear& msg)
 	}
 
 	state = frozen;					// must do this last so that the ISR doesn't start executing it before we have finished setting it up
+	const uint32_t elapsedTime = prepareTimer.Read();
+	//DEBUG
+	if (elapsedTime > Move::maxPrepareTime)
+	{
+		Move::maxPrepareTime = elapsedTime;
+	}
 	return true;
 }
 

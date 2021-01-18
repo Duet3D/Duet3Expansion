@@ -68,6 +68,8 @@ public:
 
 	void DebugPrintCdda() const noexcept;											// for debugging
 
+	static uint32_t maxPrepareTime;
+
 private:
 	bool DDARingAdd();																// Add a processed look-ahead entry to the DDA ring
 	DDA* DDARingGet();																// Get the next DDA ring entry to be run
@@ -90,6 +92,8 @@ private:
 	uint32_t scheduledMoves;							// Move counters for the code queue
 	volatile uint32_t completedMoves;					// This one is modified by an ISR, hence volatile
 	uint32_t numHiccups;								// How many times we delayed an interrupt to avoid using too much CPU time in interrupts
+	uint32_t maxLoopTime;
+	MicrosecondsTimer spinTimer;	//DEBUG
 	bool active;										// Are we live and running?
 
 #endif	//SUPPORT_DRIVERS

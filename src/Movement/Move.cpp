@@ -40,6 +40,8 @@
 #include <CanMessageFormats.h>
 #include <CanMessageBuffer.h>
 
+uint32_t Move::maxPrepareTime = 0;
+
 Move::Move()
 #if SUPPORT_DRIVERS
 	: currentDda(nullptr), extrudersPrinting(false), scheduledMoves(0), completedMoves(0), numHiccups(0), active(false)
@@ -107,6 +109,8 @@ void Move::Exit()
 	}
 	active = false;												// don't accept any more moves
 #endif
+
+	maxLoopTime = 0;
 }
 
 #if SUPPORT_DRIVERS
@@ -133,9 +137,15 @@ inline void Move::StartNextMove(DDA *cdda, uint32_t startTime)
 
 void Move::Spin()
 {
+	const uint32_t loopTime = spinTimer.Read();
+	if (loopTime > maxLoopTime)
+	{
+		maxLoopTime = loopTime;
+	}
 #if SUPPORT_DRIVERS
 	if (!active)
 	{
+		spinTimer.Reset();
 		return;
 	}
 
@@ -158,22 +168,29 @@ void Move::Spin()
 	}
 
 	// See if we can add another move to the ring
-	const bool canAddMove = (   ddaRingAddPointer->GetState() == DDA::empty
-							 && DriveMovement::NumFree() >= (int)NumDrivers			// check that we won't run out of DMs
-							);
-	if (canAddMove)
+	for (;;)
 	{
+		const bool canAddMove = (   ddaRingAddPointer->GetState() == DDA::empty
+								 && DriveMovement::NumFree() >= (int)NumDrivers			// check that we won't run out of DMs
+								);
+		if (!canAddMove)
+		{
+			break;
+		}
+
 		// OK to add another move
 		CanMessageBuffer *buf = CanInterface::GetCanMove();
-		if (buf != nullptr)
+		if (buf == nullptr)
 		{
-			if (ddaRingAddPointer->Init(buf->msg.moveLinear))
-			{
-				ddaRingAddPointer = ddaRingAddPointer->GetNext();
-				scheduledMoves++;
-			}
-			CanMessageBuffer::Free(buf);
+			break;
 		}
+
+		if (ddaRingAddPointer->Init(buf->msg.moveLinear))
+		{
+			ddaRingAddPointer = ddaRingAddPointer->GetNext();
+			scheduledMoves++;
+		}
+		CanMessageBuffer::Free(buf);
 	}
 
 	// See whether we need to kick off a move
@@ -193,14 +210,16 @@ void Move::Spin()
 		}
 	}
 #endif
+	spinTimer.Reset();
 }
 
 void Move::Diagnostics(const StringRef& reply)
 {
 #if SUPPORT_DRIVERS
-	reply.catf("Moves scheduled %" PRIu32 ", completed %" PRIu32 ", in progress %d, hiccups %" PRIu32 ", step errors %u",
-					scheduledMoves, completedMoves, (int)(currentDda != nullptr), numHiccups, DDA::GetAndClearStepErrors());
+	reply.catf("Moves scheduled %" PRIu32 ", completed %" PRIu32 ", in progress %d, hiccups %" PRIu32 ", step errors %u, maxPrep %" PRIu32 ", maxLoop %" PRIu32,
+					scheduledMoves, completedMoves, (int)(currentDda != nullptr), numHiccups, DDA::GetAndClearStepErrors(), maxPrepareTime, maxLoopTime);
 	numHiccups = 0;
+	maxPrepareTime = maxLoopTime = 0;
 #endif
 	StepTimer::Diagnostics(reply);
 }
