@@ -22,6 +22,7 @@ namespace TaskPriority
 	static constexpr int CanSenderPriority = 3;
 	static constexpr int CanReceiverPriority = 3;
 	static constexpr int CanAsyncSenderPriority = 4;
+	static constexpr int CanClockPriority = 4;
 }
 
 #endif /* SRC_TASKPRIORITIES_H_ */

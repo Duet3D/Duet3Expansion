@@ -49,7 +49,7 @@ constexpr CanDevice::Config Can0Config =
 	.dataSize = 64,									// must be one of: 8, 12, 16, 20, 24, 32, 48, 64
 	.numTxBuffers = 2,
 	.txFifoSize = 10,								// enough to send a 512-byte response broken into 60-byte fragments
-	.numRxBuffers = 0,
+	.numRxBuffers = 1,								// we use a dedicated buffer for the clock sync messages
 	.rxFifo0Size = 16,
 	.rxFifo1Size = 16,
 	.numShortFilterElements = 0,
@@ -62,12 +62,16 @@ static_assert(Can0Config.IsValid());
 // CAN buffer memory must be in the first 64Kb of RAM (SAME5x) or in non-cached RAM (SAME70), so put it in its own segment
 static uint32_t can0Memory[Can0Config.GetMemorySize()] __attribute__ ((section (".CanMessage")));
 
+// CanClock task
+constexpr size_t CanClockTaskStackWords = 130;
+static Task<CanClockTaskStackWords> canClockTask;
+
 // CanReceiver management task
 constexpr size_t CanReceiverTaskStackWords = 120;
 static Task<CanReceiverTaskStackWords> canReceiverTask;
 
 // Async sender task
-constexpr size_t CanAsyncSenderTaskStackWords = 120;
+constexpr size_t CanAsyncSenderTaskStackWords = 100;
 static Task<CanAsyncSenderTaskStackWords> canAsyncSenderTask;
 
 static bool mainBoardAcknowledgedAnnounce = false;	// true after the main board has acknowledged our announcement
@@ -136,6 +140,7 @@ CanMessageBuffer *CanMessageQueue::GetMessage() noexcept
 	return buf;
 }
 
+extern "C" [[noreturn]] void CanClockLoop(void *) noexcept;
 extern "C" [[noreturn]] void CanReceiverLoop(void *) noexcept;
 extern "C" [[noreturn]] void CanAsyncSenderLoop(void *) noexcept;
 
@@ -190,11 +195,19 @@ void CanInterface::Init(CanAddress defaultBoardAddress, bool useAlternatePins, b
 
 	if (full)
 	{
-		// Now a filter for the broadcast ID
-		can0dev->SetExtendedFilterElement(1, CanDevice::RxBufferNumber::fifo0,
+		// Set up a CAN receive filter to receive clock sync messages in buffer 0
+		can0dev->SetExtendedFilterElement(1, CanDevice::RxBufferNumber::buffer0,
+											((uint32_t)CanMessageType::timeSync << CanId::MessageTypeShift) | ((uint32_t)CanId::BroadcastAddress << CanId::DstAddressShift),
+											1);					// mask is unused when using a dedicated Rx buffer, but must be nonzero to enable the element
+
+		// Set up a filter for all other broadcast messages in FIFO 0
+		can0dev->SetExtendedFilterElement(2, CanDevice::RxBufferNumber::fifo0,
 											(uint32_t)CanId::BroadcastAddress << CanId::DstAddressShift,
 											CanId::BoardAddressMask << CanId::DstAddressShift);
 	}
+
+	// For receiving into a dedicated buffer, the mask is ignored and only the extended ID mask is applied. We need to ignore the source address.
+	can0dev->SetExtendedIdMask(0x1FFFFFFF & ~(CanId::BoardAddressMask << CanId::SrcAddressShift));
 	can0dev->Enable();
 
 	enabled = true;
@@ -202,6 +215,9 @@ void CanInterface::Init(CanAddress defaultBoardAddress, bool useAlternatePins, b
 	if (full)
 	{
 		CanMessageBuffer::Init(NumCanBuffers);
+
+		// Create the clock sync
+		canClockTask.Create(CanClockLoop, "CanClock", nullptr, TaskPriority::CanClockPriority);
 
 		// Create the task that receives CAN messages
 		canReceiverTask.Create(CanReceiverLoop, "CanRecv", nullptr, TaskPriority::CanReceiverPriority);
@@ -282,12 +298,6 @@ void CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf) noexcept
 	{
 		switch (buf->id.MsgType())
 		{
-		case CanMessageType::timeSync:
-			currentMasterAddress = buf->id.Src();
-			StepTimer::ProcessTimeSyncMessage(buf->msg.sync, buf->dataLength, buf->timeStamp);
-			CanMessageBuffer::Free(buf);
-			break;
-
 #if SUPPORT_DRIVERS
 		case CanMessageType::movementLinear:
 			// Check for duplicate and out-of-sequence message
@@ -464,6 +474,25 @@ uint16_t CanInterface::GetTimeStampCounter() noexcept
 uint16_t CanInterface::GetTimeStampPeriod() noexcept
 {
 	return can0dev->GetTimeStampPeriod();
+}
+
+extern "C" [[noreturn]] void CanClockLoop(void *) noexcept
+{
+	for (;;)
+	{
+		CanMessageBuffer buf(nullptr);
+		can0dev->ReceiveMessage(CanDevice::RxBufferNumber::buffer0, TaskBase::TimeoutUnlimited, &buf);
+		if (buf.id.MsgType() == CanMessageType::timeSync
+#if defined(ATEIO) || defined(ATECM)
+			&& (buf.id.Src() == CanId::ATEMasterAddress))			// ATE boards only respond to the ATE master, because a main board under test may also transmit when it starts up
+#else
+			&& (buf.id.Src() == CanId::MasterAddress || buf.id.Src() == CanId::ATEMasterAddress))
+#endif
+		{
+			currentMasterAddress = buf.id.Src();
+			StepTimer::ProcessTimeSyncMessage(buf.msg.sync, buf.dataLength, buf.timeStamp);
+		}
+	}
 }
 
 extern "C" [[noreturn]] void CanReceiverLoop(void *) noexcept
