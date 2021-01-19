@@ -6,9 +6,8 @@
  */
 
 #include "CanMessageQueue.h"
-#include <RTOSIface/RTOSIface.h>
 
-CanMessageQueue::CanMessageQueue() noexcept : pendingMessages(nullptr) { }
+CanMessageQueue::CanMessageQueue() noexcept : pendingMessages(nullptr), taskWaitingToGet(nullptr) { }
 
 void CanMessageQueue::AddMessage(CanMessageBuffer *buf) noexcept
 {
@@ -25,23 +24,49 @@ void CanMessageQueue::AddMessage(CanMessageBuffer *buf) noexcept
 			lastPendingMessage->next = buf;
 		}
 		lastPendingMessage = buf;
+
+		TaskBase *waitingTask = taskWaitingToGet;
+		if (waitingTask != nullptr)
+		{
+			taskWaitingToGet = nullptr;
+			waitingTask->Give();
+		}
 	}
 }
 
 // Fetch a message from the queue, or return nullptr if there are no messages
 CanMessageBuffer *CanMessageQueue::GetMessage() noexcept
 {
-	CanMessageBuffer *buf;
-	{
-		TaskCriticalSectionLocker lock;
+	TaskCriticalSectionLocker lock;
 
-		buf = pendingMessages;
-		if (buf != nullptr)
-		{
-			pendingMessages = buf->next;
-		}
+	CanMessageBuffer * const buf = pendingMessages;
+	if (buf != nullptr)
+	{
+		pendingMessages = buf->next;
 	}
 	return buf;
+}
+
+// Fetch a message from the queue, waiting if necessary
+CanMessageBuffer *CanMessageQueue::BlockingGetMessage() noexcept
+{
+	while (true)
+	{
+		{
+			TaskCriticalSectionLocker lock;
+
+			CanMessageBuffer * const buf = pendingMessages;
+			if (buf != nullptr)
+			{
+				pendingMessages = buf->next;
+				return buf;
+			}
+
+			taskWaitingToGet = TaskBase::GetCallerTaskHandle();
+		}
+
+		TaskBase::Take();
+	}
 }
 
 // End

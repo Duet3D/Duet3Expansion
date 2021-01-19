@@ -12,6 +12,7 @@
 
 typedef double floatc_t;
 
+#include <Config/BoardDef.h>
 #include "Configuration.h"
 #include <General/String.h>
 #include <General/StringFunctions.h>
@@ -22,7 +23,10 @@ typedef double floatc_t;
 extern const char VersionText[];
 
 // Warn of what's to come, so we can use pointers to classes without including the entire header files
+#if SUPPORT_DRIVERS
 class Move;
+#endif
+
 class DDA;
 class DriveMovement;
 class Kinematics;
@@ -113,7 +117,9 @@ constexpr size_t UpdateBootloaderMagicWordIndex = 9;				// which word in the use
 // TEMPORARY stuff
 //TODO move these to the right place
 
+#if SUPPORT_DRIVERS
 extern Move *moveInstance;
+#endif
 
 // Module numbers and names, used for diagnostics and debug
 enum Module : uint8_t

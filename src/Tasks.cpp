@@ -164,15 +164,18 @@ extern "C" [[noreturn]] void MainTask(void *pvParameters) noexcept
 	Platform::Init();
 	Heat::Init();
 	InputMonitor::Init();
+
+#if SUPPORT_DRIVERS
 	moveInstance = new Move();
 	moveInstance->Init();
+#endif
 
 	for (;;)
 	{
 		Platform::Spin();
 		CommandProcessor::Spin();
-		moveInstance->Spin();
 #if SUPPORT_DRIVERS
+		moveInstance->Spin();
 		FilamentMonitor::Spin();
 #endif
 	}

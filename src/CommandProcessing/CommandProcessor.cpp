@@ -738,7 +738,10 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 	case CanMessageReturnInfo::typeDiagnosticsPart0 + 5:
 		extra = LastDiagnosticsPart;
 		{
+#if SUPPORT_DRIVERS
 			moveInstance->Diagnostics(reply);
+#endif
+			StepTimer::Diagnostics(reply);
 
 #if HAS_VOLTAGE_MONITOR && HAS_12V_MONITOR
 			reply.lcatf("VIN: %.1fV, V12: %.1fV", (double)Platform::GetCurrentVinVoltage(), (double)Platform::GetCurrentV12Voltage());

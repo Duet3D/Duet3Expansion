@@ -8,7 +8,8 @@
 #ifndef SRC_CAN_CANMESSAGEQUEUE_H_
 #define SRC_CAN_CANMESSAGEQUEUE_H_
 
-#include <CanMessageBuffer.h>
+#include "CanMessageBuffer.h"
+#include <RTOSIface/RTOSIface.h>
 
 class CanMessageQueue
 {
@@ -16,10 +17,12 @@ public:
 	CanMessageQueue() noexcept;
 	void AddMessage(CanMessageBuffer *buf) noexcept;
 	CanMessageBuffer *GetMessage() noexcept;
+	CanMessageBuffer *BlockingGetMessage() noexcept;
 
 private:
 	CanMessageBuffer * volatile pendingMessages;
 	CanMessageBuffer * volatile lastPendingMessage;		// only valid when pendingMessages != nullptr
+	TaskBase * volatile taskWaitingToGet;
 };
 
 #endif /* SRC_CAN_CANMESSAGEQUEUE_H_ */

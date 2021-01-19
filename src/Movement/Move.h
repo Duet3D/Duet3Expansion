@@ -9,12 +9,13 @@
 #define MOVE_H_
 
 #include "RepRapFirmware.h"
+
+#if SUPPORT_DRIVERS
+
 #include "MessageType.h"
 
 #include "DDA.h"								// needed because of our inline functions
 #include "Kinematics/Kinematics.h"
-
-#if SUPPORT_DRIVERS
 
 // Define the number of DDAs and DMs.
 // A DDA represents a move in the queue.
@@ -22,8 +23,6 @@
 // However, DM's are large, so we provide fewer than DRIVES * DdaRingLength of them. The planner checks that enough DMs are available before filling in a new DDA.
 
 const unsigned int DdaRingLength = 50;
-
-#endif	// SUPPORT_DRIVERS
 
 /**
  * This is the master movement class.  It controls all movement in the machine.
@@ -37,10 +36,9 @@ public:
 	void Exit();																	// Shut down
 	void Diagnostics(const StringRef& reply);										// Report useful stuff
 
-#if SUPPORT_DRIVERS
-	void Interrupt() SPEED_CRITICAL;											// Timer callback for step generation
+	void Interrupt() SPEED_CRITICAL;												// Timer callback for step generation
 	void StopDrivers(uint16_t whichDrivers);
-	void CurrentMoveCompleted() SPEED_CRITICAL;								// Signal that the current move has just been completed
+	void CurrentMoveCompleted() SPEED_CRITICAL;										// Signal that the current move has just been completed
 
 	// Kinematics and related functions
 	Kinematics& GetKinematics() const { return *kinematics; }
@@ -70,6 +68,7 @@ public:
 	static uint32_t maxPrepareTime;
 
 private:
+
 	bool DDARingAdd();																// Add a processed look-ahead entry to the DDA ring
 	DDA* DDARingGet();																// Get the next DDA ring entry to be run
 	void StartNextMove(DDA *cdda, uint32_t startTime);								// Start a move
@@ -86,17 +85,14 @@ private:
 	volatile bool extrudersPrinting;												// Set whenever an extruder starts a printing move, cleared by a non-printing extruder move
 	// End DDARing variables
 
-	Kinematics *kinematics;								// What kinematics we are using
+	Kinematics *kinematics;															// What kinematics we are using
 
-	uint32_t scheduledMoves;							// Move counters for the code queue
-	volatile uint32_t completedMoves;					// This one is modified by an ISR, hence volatile
-	uint32_t numHiccups;								// How many times we delayed an interrupt to avoid using too much CPU time in interrupts
+	uint32_t scheduledMoves;														// Move counters for the code queue
+	volatile uint32_t completedMoves;												// This one is modified by an ISR, hence volatile
+	uint32_t numHiccups;															// How many times we delayed an interrupt to avoid using too much CPU time in interrupts
 	uint32_t maxLoopTime;
 	MicrosecondsTimer spinTimer;	//DEBUG
-	bool active;										// Are we live and running?
-
-#endif	//SUPPORT_DRIVERS
-
+	bool active;																	// Are we live and running?
 };
 
 //******************************************************************************************************
@@ -112,5 +108,7 @@ inline uint32_t Move::GetStepInterval(size_t axis, uint32_t microstepShift) cons
 }
 
 #endif
+
+#endif	// SUPPORT_DRIVERS
 
 #endif /* MOVE_H_ */

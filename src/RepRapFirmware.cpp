@@ -14,7 +14,9 @@
 // Version text, without the build date
 extern const char VersionText[] = "Duet " BOARD_TYPE_NAME " firmware version " VERSION;
 
+#if SUPPORT_DRIVERS
 Move *moveInstance;
+#endif
 
 void debugPrintf(const char* fmt, ...)
 {
