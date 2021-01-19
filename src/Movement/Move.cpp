@@ -34,6 +34,9 @@
  */
 
 #include "Move.h"
+
+#if SUPPORT_DRIVERS
+
 #include "StepTimer.h"
 #include "Platform.h"
 #include <CAN/CanInterface.h>
@@ -42,12 +45,12 @@
 
 uint32_t Move::maxPrepareTime = 0;
 
+constexpr size_t MoveTaskStackWords = 200;
+static Task<MoveTaskStackWords> moveTask;
+
 Move::Move()
-#if SUPPORT_DRIVERS
 	: currentDda(nullptr), extrudersPrinting(false), scheduledMoves(0), completedMoves(0), numHiccups(0), active(false)
-#endif
 {
-#if SUPPORT_DRIVERS
 	kinematics = Kinematics::Create(KinematicsType::cartesian);			// default to Cartesian
 
 	// Build the DDA ring
@@ -68,12 +71,10 @@ Move::Move()
 	{
 		extrusionAccumulators[i] = 0;
 	}
-#endif
 }
 
 void Move::Init()
 {
-#if SUPPORT_DRIVERS
 	// Empty the ring
 	ddaRingGetPointer = ddaRingCheckPointer = ddaRingAddPointer;
 	DDA *dda = ddaRingAddPointer;
@@ -85,14 +86,12 @@ void Move::Init()
 
 	currentDda = nullptr;
 	active = true;
-#endif
 }
 
 void Move::Exit()
 {
 	StepTimer::DisableTimerInterrupt();
 
-#if SUPPORT_DRIVERS
 	// Clear the DDA ring so that we don't report any moves as pending
 	currentDda = nullptr;
 	while (ddaRingGetPointer != ddaRingAddPointer)
@@ -107,12 +106,8 @@ void Move::Exit()
 		ddaRingCheckPointer = ddaRingCheckPointer->GetNext();
 	}
 	active = false;												// don't accept any more moves
-#endif
-
 	maxLoopTime = 0;
 }
-
-#if SUPPORT_DRIVERS
 
 // Start the next move. Return true if laser or IO bits need to be active
 // Must be called with base priority greater than or equal to the step interrupt, to avoid a race with the step ISR.
@@ -132,8 +127,6 @@ inline void Move::StartNextMove(DDA *cdda, uint32_t startTime)
 	cdda->Start(startTime);
 }
 
-#endif
-
 void Move::Spin()
 {
 	const uint32_t loopTime = spinTimer.Read();
@@ -141,7 +134,7 @@ void Move::Spin()
 	{
 		maxLoopTime = loopTime;
 	}
-#if SUPPORT_DRIVERS
+
 	if (!active)
 	{
 		spinTimer.Reset();
@@ -205,22 +198,16 @@ void Move::Spin()
 			cpu_irq_enable();
 		}
 	}
-#endif
 	spinTimer.Reset();
 }
 
 void Move::Diagnostics(const StringRef& reply)
 {
-#if SUPPORT_DRIVERS
 	reply.catf("Moves scheduled %" PRIu32 ", completed %" PRIu32 ", in progress %d, hiccups %" PRIu32 ", step errors %u, maxPrep %" PRIu32 ", maxLoop %" PRIu32,
 					scheduledMoves, completedMoves, (int)(currentDda != nullptr), numHiccups, DDA::GetAndClearStepErrors(), maxPrepareTime, maxLoopTime);
 	numHiccups = 0;
 	maxPrepareTime = maxLoopTime = 0;
-#endif
-	StepTimer::Diagnostics(reply);
 }
-
-#if SUPPORT_DRIVERS
 
 # if 0
 // Try to push some babystepping through the lookahead queue
