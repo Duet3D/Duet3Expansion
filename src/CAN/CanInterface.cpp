@@ -6,6 +6,7 @@
  */
 
 #include "CanInterface.h"
+#include "CanMessageQueue.h"
 
 #include <CanSettings.h>
 #include <CanMessageFormats.h>
@@ -89,56 +90,8 @@ uint8_t expectedSeq = 0xFF;
 //DEBUG
 //static int32_t accumulatedMotion = 0;
 
-class CanMessageQueue
-{
-public:
-	CanMessageQueue() noexcept;
-	void AddMessage(CanMessageBuffer *buf) noexcept;
-	CanMessageBuffer *GetMessage() noexcept;
-
-private:
-	CanMessageBuffer * volatile pendingMessages;
-	CanMessageBuffer * volatile lastPendingMessage;		// only valid when pendingMessages != nullptr
-};
-
-CanMessageQueue::CanMessageQueue() noexcept : pendingMessages(nullptr) { }
-
 static CanMessageQueue PendingMoves;
 static CanMessageQueue PendingCommands;
-
-void CanMessageQueue::AddMessage(CanMessageBuffer *buf) noexcept
-{
-	buf->next = nullptr;
-	{
-		TaskCriticalSectionLocker lock;
-
-		if (pendingMessages == nullptr)
-		{
-			pendingMessages = buf;
-		}
-		else
-		{
-			lastPendingMessage->next = buf;
-		}
-		lastPendingMessage = buf;
-	}
-}
-
-// Fetch a message from the queue, or return nullptr if there are no messages
-CanMessageBuffer *CanMessageQueue::GetMessage() noexcept
-{
-	CanMessageBuffer *buf;
-	{
-		TaskCriticalSectionLocker lock;
-
-		buf = pendingMessages;
-		if (buf != nullptr)
-		{
-			pendingMessages = buf->next;
-		}
-	}
-	return buf;
-}
 
 extern "C" [[noreturn]] void CanClockLoop(void *) noexcept;
 extern "C" [[noreturn]] void CanReceiverLoop(void *) noexcept;
