@@ -795,7 +795,7 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 
 void CommandProcessor::Spin()
 {
-	CanMessageBuffer *buf = CanInterface::GetCanCommand();
+	CanMessageBuffer *buf = CanInterface::GetCanCommand(0);
 	if (buf != nullptr)
 	{
 		Platform::OnProcessingCanMessage();

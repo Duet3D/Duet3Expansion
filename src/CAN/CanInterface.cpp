@@ -229,14 +229,14 @@ bool CanInterface::SendAndFree(CanMessageBuffer *buf) noexcept
 }
 
 // Return a move message, if there is one. Caller must free the message buffer.
-CanMessageBuffer * CanInterface::GetCanMove() noexcept
+CanMessageBuffer * CanInterface::GetCanMove(uint32_t timeout) noexcept
 {
-	return PendingMoves.GetMessage();
+	return PendingMoves.GetMessage(timeout);
 }
 
-CanMessageBuffer *CanInterface::GetCanCommand() noexcept
+CanMessageBuffer *CanInterface::GetCanCommand(uint32_t timeout) noexcept
 {
-	return PendingCommands.GetMessage();
+	return PendingCommands.GetMessage(timeout);
 }
 
 // Process a received message. Return the buffer it arrived in if it is free for re-use, else nullptr.

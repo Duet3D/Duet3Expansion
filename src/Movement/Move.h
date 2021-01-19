@@ -32,7 +32,6 @@ class Move
 public:
 	Move();
 	void Init();																	// Start me up
-	void Spin();																	// Called in a tight loop to keep the class going
 	void Exit();																	// Shut down
 	void Diagnostics(const StringRef& reply);										// Report useful stuff
 
@@ -65,7 +64,7 @@ public:
 
 	void DebugPrintCdda() const noexcept;											// for debugging
 
-	static uint32_t maxPrepareTime;
+	[[noreturn]] void TaskLoop() noexcept;
 
 private:
 
@@ -83,6 +82,7 @@ private:
 	volatile int32_t extrusionAccumulators[NumDrivers]; 							// Accumulated extruder motor steps
 	volatile uint32_t extrudersPrintingSince;										// The milliseconds clock time when extrudersPrinting was set to true
 	volatile bool extrudersPrinting;												// Set whenever an extruder starts a printing move, cleared by a non-printing extruder move
+	TaskBase * volatile taskWaitingForMoveToComplete;
 	// End DDARing variables
 
 	Kinematics *kinematics;															// What kinematics we are using
@@ -90,9 +90,7 @@ private:
 	uint32_t scheduledMoves;														// Move counters for the code queue
 	volatile uint32_t completedMoves;												// This one is modified by an ISR, hence volatile
 	uint32_t numHiccups;															// How many times we delayed an interrupt to avoid using too much CPU time in interrupts
-	uint32_t maxLoopTime;
-	MicrosecondsTimer spinTimer;	//DEBUG
-	bool active;																	// Are we live and running?
+	uint32_t maxPrepareTime;
 };
 
 //******************************************************************************************************

@@ -42,14 +42,18 @@
 #include <CAN/CanInterface.h>
 #include <CanMessageFormats.h>
 #include <CanMessageBuffer.h>
-
-uint32_t Move::maxPrepareTime = 0;
+#include <TaskPriorities.h>
 
 constexpr size_t MoveTaskStackWords = 200;
 static Task<MoveTaskStackWords> moveTask;
 
+extern "C" [[noreturn]] void MoveLoop(void * param) noexcept
+{
+	static_cast<Move*>(param)->TaskLoop();
+}
+
 Move::Move()
-	: currentDda(nullptr), extrudersPrinting(false), scheduledMoves(0), completedMoves(0), numHiccups(0), active(false)
+	: currentDda(nullptr), extrudersPrinting(false), taskWaitingForMoveToComplete(nullptr), scheduledMoves(0), completedMoves(0), numHiccups(0)
 {
 	kinematics = Kinematics::Create(KinematicsType::cartesian);			// default to Cartesian
 
@@ -85,12 +89,15 @@ void Move::Init()
 	} while (dda != ddaRingAddPointer);
 
 	currentDda = nullptr;
-	active = true;
+	maxPrepareTime = 0;
+
+	moveTask.Create(MoveLoop, "Move", this, TaskPriority::MovePriority);
 }
 
 void Move::Exit()
 {
 	StepTimer::DisableTimerInterrupt();
+	moveTask.TerminateAndUnlink();
 
 	// Clear the DDA ring so that we don't report any moves as pending
 	currentDda = nullptr;
@@ -105,8 +112,6 @@ void Move::Exit()
 		(void)ddaRingCheckPointer->Free();
 		ddaRingCheckPointer = ddaRingCheckPointer->GetNext();
 	}
-	active = false;												// don't accept any more moves
-	maxLoopTime = 0;
 }
 
 // Start the next move. Return true if laser or IO bits need to be active
@@ -127,86 +132,91 @@ inline void Move::StartNextMove(DDA *cdda, uint32_t startTime)
 	cdda->Start(startTime);
 }
 
-void Move::Spin()
+[[noreturn]] void Move::TaskLoop() noexcept
 {
-	const uint32_t loopTime = spinTimer.Read();
-	if (loopTime > maxLoopTime)
+	while (true)
 	{
-		maxLoopTime = loopTime;
-	}
-
-	if (!active)
-	{
-		spinTimer.Reset();
-		return;
-	}
-
-	// Recycle the DDAs for completed moves, checking for DDA errors to print if Move debug is enabled
-	while (ddaRingCheckPointer->GetState() == DDA::completed)
-	{
-		// Check for step errors and record/print them if we have any, before we lose the DMs
-		if (ddaRingCheckPointer->HasStepError())
+		for (;;)
 		{
-			if (Platform::Debug(moduleMove))
+			// Recycle the DDAs for completed moves, checking for DDA errors to print if Move debug is enabled
+			while (ddaRingCheckPointer->GetState() == DDA::completed)
 			{
-				ddaRingCheckPointer->DebugPrintAll();
+				// Check for step errors and record/print them if we have any, before we lose the DMs
+				if (ddaRingCheckPointer->HasStepError())
+				{
+					if (Platform::Debug(moduleMove))
+					{
+						ddaRingCheckPointer->DebugPrintAll();
+					}
+					Platform::LogError(ErrorCode::BadMove);
+				}
+
+				// Now release the DMs and check for underrun
+				ddaRingCheckPointer->Free();
+				ddaRingCheckPointer = ddaRingCheckPointer->GetNext();
 			}
-			Platform::LogError(ErrorCode::BadMove);
-		}
 
-		// Now release the DMs and check for underrun
-		ddaRingCheckPointer->Free();
-		ddaRingCheckPointer = ddaRingCheckPointer->GetNext();
-	}
+			// If we have a free slot for a new move, quit this loop
+			if (ddaRingAddPointer->GetState() == DDA::empty)
+			{
+				break;
+			}
 
-	// See if we can add another move to the ring
-	for (;;)
-	{
-		if (ddaRingAddPointer->GetState() != DDA::empty)
-		{
-			break;
-		}
+			// Wait for a move to complete
+			{
+				AtomicCriticalSectionLocker lock;
 
-		// OK to add another move
-		CanMessageBuffer *buf = CanInterface::GetCanMove();
-		if (buf == nullptr)
-		{
-			break;
-		}
+				if (ddaRingCheckPointer->GetState() == DDA::completed)
+				{
+					continue;
+				}
+				taskWaitingForMoveToComplete = TaskBase::GetCallerTaskHandle();
+			}
+			TaskBase::Take();
+		};
 
+		// Get another move and add it to the ring
+		CanMessageBuffer *buf = CanInterface::GetCanMove(TaskBase::TimeoutUnlimited);
+
+		MicrosecondsTimer prepareTimer;
 		if (ddaRingAddPointer->Init(buf->msg.moveLinear))
 		{
 			ddaRingAddPointer = ddaRingAddPointer->GetNext();
 			scheduledMoves++;
 		}
-		CanMessageBuffer::Free(buf);
-	}
-
-	// See whether we need to kick off a move
-	if (currentDda == nullptr)
-	{
-		// No DDA is executing, so start executing a new one if possible
-		DDA * const cdda = ddaRingGetPointer;										// capture volatile variable
-		if (cdda->GetState() == DDA::frozen)
+		const uint32_t elapsedTime = prepareTimer.Read();
+		if (elapsedTime > Move::maxPrepareTime)
 		{
-			cpu_irq_disable();
-			StartNextMove(cdda, StepTimer::GetTimerTicks());
-			if (cdda->ScheduleNextStepInterrupt(timer))
+			Move::maxPrepareTime = elapsedTime;
+		}
+
+		CanMessageBuffer::Free(buf);
+
+		// See whether we need to kick off a move
+		if (currentDda == nullptr)
+		{
+			// No DDA is executing, so start executing a new one if possible
+			DDA * const cdda = ddaRingGetPointer;										// capture volatile variable
+			if (cdda->GetState() == DDA::frozen)
 			{
-				Interrupt();
+				cpu_irq_disable();
+				StartNextMove(cdda, StepTimer::GetTimerTicks());
+				if (cdda->ScheduleNextStepInterrupt(timer))
+				{
+					Interrupt();
+				}
+				cpu_irq_enable();
 			}
-			cpu_irq_enable();
 		}
 	}
-	spinTimer.Reset();
 }
 
 void Move::Diagnostics(const StringRef& reply)
 {
-	reply.catf("Moves scheduled %" PRIu32 ", completed %" PRIu32 ", in progress %d, hiccups %" PRIu32 ", step errors %u, maxPrep %" PRIu32 ", maxLoop %" PRIu32,
-					scheduledMoves, completedMoves, (int)(currentDda != nullptr), numHiccups, DDA::GetAndClearStepErrors(), maxPrepareTime, maxLoopTime);
+	reply.catf("Moves scheduled %" PRIu32 ", completed %" PRIu32 ", in progress %d, hiccups %" PRIu32 ", step errors %u, maxPrep %" PRIu32,
+					scheduledMoves, completedMoves, (int)(currentDda != nullptr), numHiccups, DDA::GetAndClearStepErrors(), maxPrepareTime);
 	numHiccups = 0;
-	maxPrepareTime = maxLoopTime = 0;
+	maxPrepareTime = 0;
 }
 
 # if 0
@@ -246,6 +256,13 @@ void Move::CurrentMoveCompleted()
 	currentDda = nullptr;
 	ddaRingGetPointer = ddaRingGetPointer->GetNext();
 	completedMoves++;
+
+	TaskBase * const waitingTask = taskWaitingForMoveToComplete;
+	if (waitingTask != nullptr)
+	{
+		TaskBase::GiveFromISR(waitingTask);
+		taskWaitingForMoveToComplete = nullptr;
+	}
 }
 
 int32_t Move::GetPosition(size_t driver) const

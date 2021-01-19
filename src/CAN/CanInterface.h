@@ -26,11 +26,11 @@ namespace CanInterface
 	CanAddress GetCurrentMasterAddress() noexcept;
 	GCodeResult ChangeAddressAndDataRate(const CanMessageSetAddressAndNormalTiming& msg, const StringRef& reply) noexcept;
 	bool GetCanMessage(CanMessageBuffer *buf) noexcept;
-	CanMessageBuffer *GetCanMove() noexcept;
+	CanMessageBuffer *GetCanMove(uint32_t timeout) noexcept;
 	bool Send(CanMessageBuffer *buf) noexcept;
 	bool SendAsync(CanMessageBuffer *buf) noexcept;
 	bool SendAndFree(CanMessageBuffer *buf) noexcept;
-	CanMessageBuffer *GetCanCommand() noexcept;
+	CanMessageBuffer *GetCanCommand(uint32_t timeout) noexcept;
 
 #if !SAME70
 	uint16_t GetTimeStampCounter() noexcept;

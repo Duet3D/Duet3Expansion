@@ -34,21 +34,8 @@ void CanMessageQueue::AddMessage(CanMessageBuffer *buf) noexcept
 	}
 }
 
-// Fetch a message from the queue, or return nullptr if there are no messages
-CanMessageBuffer *CanMessageQueue::GetMessage() noexcept
-{
-	TaskCriticalSectionLocker lock;
-
-	CanMessageBuffer * const buf = pendingMessages;
-	if (buf != nullptr)
-	{
-		pendingMessages = buf->next;
-	}
-	return buf;
-}
-
-// Fetch a message from the queue, waiting if necessary
-CanMessageBuffer *CanMessageQueue::BlockingGetMessage() noexcept
+// Fetch a message from the queue, optionally waiting if necessary
+CanMessageBuffer *CanMessageQueue::GetMessage(uint32_t timeout) noexcept
 {
 	while (true)
 	{
@@ -62,10 +49,19 @@ CanMessageBuffer *CanMessageQueue::BlockingGetMessage() noexcept
 				return buf;
 			}
 
+			if (timeout == 0)
+			{
+				return buf;
+			}
+
+			TaskBase::ClearNotifyCount();
 			taskWaitingToGet = TaskBase::GetCallerTaskHandle();
 		}
 
-		TaskBase::Take();
+		if (!TaskBase::Take(timeout))
+		{
+			return nullptr;
+		}
 	}
 }
 

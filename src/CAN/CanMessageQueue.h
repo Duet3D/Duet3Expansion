@@ -16,8 +16,7 @@ class CanMessageQueue
 public:
 	CanMessageQueue() noexcept;
 	void AddMessage(CanMessageBuffer *buf) noexcept;
-	CanMessageBuffer *GetMessage() noexcept;
-	CanMessageBuffer *BlockingGetMessage() noexcept;
+	CanMessageBuffer *GetMessage(uint32_t timeout) noexcept;
 
 private:
 	CanMessageBuffer * volatile pendingMessages;

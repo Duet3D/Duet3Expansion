@@ -175,7 +175,6 @@ extern "C" [[noreturn]] void MainTask(void *pvParameters) noexcept
 		Platform::Spin();
 		CommandProcessor::Spin();
 #if SUPPORT_DRIVERS
-		moveInstance->Spin();
 		FilamentMonitor::Spin();
 #endif
 	}
