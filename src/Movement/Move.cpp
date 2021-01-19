@@ -247,6 +247,7 @@ bool Move::SetKinematics(KinematicsType k)
 }
 
 // This is called from the step ISR when the current move has been completed
+// The state field of currentDda must be set to DDAState::completed before calling this
 void Move::CurrentMoveCompleted()
 {
 	for (size_t driver = 0; driver < NumDrivers; ++driver)
