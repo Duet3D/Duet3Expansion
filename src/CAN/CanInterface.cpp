@@ -146,7 +146,7 @@ extern "C" [[noreturn]] void CanAsyncSenderLoop(void *) noexcept;
 
 namespace CanInterface
 {
-	void ProcessReceivedMessage(CanMessageBuffer *buf) noexcept;
+	CanMessageBuffer *ProcessReceivedMessage(CanMessageBuffer *buf) noexcept;
 }
 
 // Initialise this module and the CAN hardware
@@ -286,8 +286,8 @@ CanMessageBuffer *CanInterface::GetCanCommand() noexcept
 	return PendingCommands.GetMessage();
 }
 
-// Process a received message and (eventually) release the buffer that it arrived in
-void CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf) noexcept
+// Process a received message. Return the buffer it arrived in if it is free for re-use, else nullptr.
+CanMessageBuffer *CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf) noexcept
 {
 	// Only respond to messages from a master address
 #if defined(ATEIO) || defined(ATECM)
@@ -306,7 +306,6 @@ void CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf) noexcept
 				if (buf->msg.moveLinear.whenToExecute == lastMotionMessageScheduledTime && now - lastMotionMessageReceivedAt < 100)
 				{
 					++duplicateMotionMessages;
-					CanMessageBuffer::Free(buf);
 					break;
 				}
 				lastMotionMessageScheduledTime = buf->msg.moveLinear.whenToExecute;
@@ -327,24 +326,21 @@ void CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf) noexcept
 			//END
 			PendingMoves.AddMessage(buf);
 			Platform::OnProcessingCanMessage();
-			break;
+			return nullptr;
 
 		case CanMessageType::stopMovement:
 			moveInstance->StopDrivers(buf->msg.stopMovement.whichDrives);
-			CanMessageBuffer::Free(buf);
 			Platform::OnProcessingCanMessage();
 			break;
-	#endif
+#endif
 
 		case CanMessageType::emergencyStop:
 			Platform::EmergencyStop();
-			CanMessageBuffer::Free(buf);
 			break;
 
 		case CanMessageType::acknowledgeAnnounce:
 			mainBoardAcknowledgedAnnounce = true;
 			Platform::OnProcessingCanMessage();
-			CanMessageBuffer::Free(buf);
 			break;
 
 		case CanMessageType::startup:
@@ -352,33 +348,26 @@ void CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf) noexcept
 			{
 				Platform::EmergencyStop();
 			}
-			CanMessageBuffer::Free(buf);
 			Platform::OnProcessingCanMessage();
 			break;
 
 		case CanMessageType::controlledStop:
 			debugPrintf("Unsupported CAN message type %u\n", (unsigned int)(buf->id.MsgType()));
-			CanMessageBuffer::Free(buf);
 			Platform::OnProcessingCanMessage();
 			break;
 
 		default:
 			if (buf->id.Dst() == GetCanAddress() && buf->id.IsRequest())
 			{
-				isProgrammed = true;				// record that we've had a communication from the master since we started up
-				PendingCommands.AddMessage(buf);	// it's addressed to us, so queue it for processing
-			}
-			else
-			{
-				CanMessageBuffer::Free(buf);		// it's a broadcast message that we don't want, or a response, so throw it away
+				isProgrammed = true;					// record that we've had a communication from the master since we started up
+				PendingCommands.AddMessage(buf);		// it's addressed to us, so queue it for processing
+				return nullptr;
 			}
 			break;
 		}
 	}
-	else
-	{
-		CanMessageBuffer::Free(buf);				// it's a message from a non-master address
-	}
+
+	return buf;
 }
 
 void CanInterface::Diagnostics(const StringRef& reply) noexcept
@@ -509,21 +498,12 @@ extern "C" [[noreturn]] void CanReceiverLoop(void *) noexcept
 			// Get a buffer
 			if (buf == nullptr)
 			{
-				for (;;)
-				{
-					buf = CanMessageBuffer::Allocate();
-					if (buf != nullptr)
-					{
-						break;
-					}
-					delay(1);
-				}
+				buf = CanMessageBuffer::BlockingAllocate();
 			}
 
 			if (can0dev->ReceiveMessage(CanDevice::RxBufferNumber::fifo0, TaskBase::TimeoutUnlimited, buf))
 			{
-				CanInterface::ProcessReceivedMessage(buf);
-				buf = nullptr;
+				buf = CanInterface::ProcessReceivedMessage(buf);
 			}
 			else
 			{
