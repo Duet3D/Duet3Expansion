@@ -44,6 +44,11 @@
 #include <CanMessageBuffer.h>
 #include <TaskPriorities.h>
 
+#if 1	//debug
+unsigned int moveCompleteTimeoutErrs;
+unsigned int getCanMoveTimeoutErrs;
+#endif
+
 constexpr size_t MoveTaskStackWords = 200;
 static Task<MoveTaskStackWords> moveTask;
 
@@ -172,12 +177,36 @@ inline void Move::StartNextMove(DDA *cdda, uint32_t startTime)
 				}
 				taskWaitingForMoveToComplete = TaskBase::GetCallerTaskHandle();
 			}
+#if 1	//debug
+			if (!TaskBase::Take(2000) && ddaRingCheckPointer->GetState() == DDA::completed)
+			{
+				++moveCompleteTimeoutErrs;
+			}
+#else
 			TaskBase::Take();
+#endif
 		};
 
 		// Get another move and add it to the ring
+#if 1	//debug
+		CanMessageBuffer *buf;
+		for (;;)
+		{
+			buf = CanInterface::GetCanMove(2000);
+			if (buf != nullptr)
+			{
+				break;
+			}
+			buf = CanInterface::GetCanMove(0);
+			if (buf != nullptr)
+			{
+				++getCanMoveTimeoutErrs;
+				break;
+			}
+		}
+#else
 		CanMessageBuffer *buf = CanInterface::GetCanMove(TaskBase::TimeoutUnlimited);
-
+#endif
 		MicrosecondsTimer prepareTimer;
 		if (ddaRingAddPointer->Init(buf->msg.moveLinear))
 		{
@@ -213,10 +242,13 @@ inline void Move::StartNextMove(DDA *cdda, uint32_t startTime)
 
 void Move::Diagnostics(const StringRef& reply)
 {
-	reply.catf("Moves scheduled %" PRIu32 ", completed %" PRIu32 ", in progress %d, hiccups %" PRIu32 ", step errors %u, maxPrep %" PRIu32,
-					scheduledMoves, completedMoves, (int)(currentDda != nullptr), numHiccups, DDA::GetAndClearStepErrors(), maxPrepareTime);
+	reply.catf("Moves scheduled %" PRIu32 ", completed %" PRIu32 ", in progress %d, hiccups %" PRIu32 ", step errors %u, maxPrep %" PRIu32 ", maxOverdue %" PRIu32 ", maxInc %" PRIu32,
+					scheduledMoves, completedMoves, (int)(currentDda != nullptr), numHiccups, DDA::GetAndClearStepErrors(), maxPrepareTime, DDA::GetAndClearMaxTicksOverdue(), DDA::GetAndClearMaxOverdueIncrement());
 	numHiccups = 0;
 	maxPrepareTime = 0;
+#if 1	//debug
+	reply.catf(", mcErrs %u, gcmErrs %u", moveCompleteTimeoutErrs, getCanMoveTimeoutErrs);
+#endif
 }
 
 # if 0

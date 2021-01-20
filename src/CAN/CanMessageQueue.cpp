@@ -29,7 +29,7 @@ void CanMessageQueue::AddMessage(CanMessageBuffer *buf) noexcept
 		if (waitingTask != nullptr)
 		{
 			taskWaitingToGet = nullptr;
-			waitingTask->Give();
+			waitingTask->GiveFromISR();
 		}
 	}
 }

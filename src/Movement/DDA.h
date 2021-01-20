@@ -79,6 +79,9 @@ public:
 	void DebugPrintAll() const;												// print the DDA and active DMs
 
 	static unsigned int GetAndClearStepErrors() noexcept;
+	static uint32_t GetAndClearMaxTicksOverdue() noexcept;
+	static uint32_t GetAndClearMaxOverdueIncrement() noexcept;
+
 	static void RecordStepError() noexcept { ++stepErrors; }
 
 	// Note on the following constant:
@@ -114,6 +117,7 @@ public:
 
 private:
 	void StopDrive(size_t drive);									// stop movement of a drive and recalculate the endpoint
+	uint32_t WhenNextInterruptDue() const noexcept;					// return when the next interrupt is due relative to the move start time
 
 #if !SINGLE_DRIVER
 	void InsertDM(DriveMovement *dm) SPEED_CRITICAL;
@@ -172,7 +176,22 @@ private:
     DriveMovement ddms[NumDrivers];			// These describe the state of each drive movement
 
 	static unsigned int stepErrors;
+	static uint32_t maxTicksOverdue;
+	static uint32_t maxOverdueIncrement;
 };
+
+// Return when the next interrupt is due relative to the move start time
+inline uint32_t DDA::WhenNextInterruptDue() const noexcept
+{
+	return
+#if SINGLE_DRIVER
+			(ddms[0].state == DMState::moving) ? ddms[0].nextStepTime
+#else
+			(activeDMs != nullptr) ? activeDMs->nextStepTime
+#endif
+				: (clocksNeeded > DDA::WakeupTime) ? clocksNeeded - DDA::WakeupTime
+					: 0;
+}
 
 // Schedule the next interrupt, returning true if we can't because it is already due
 // Base priority must be >= NvicPriorityStep or interrupts disabled when calling this
@@ -180,16 +199,7 @@ inline bool DDA::ScheduleNextStepInterrupt(StepTimer& timer) const
 {
 	if (state == executing)
 	{
-		const uint32_t whenDue = (
-#if SINGLE_DRIVER
-								(ddms[0].state == DMState::moving) ? ddms[0].nextStepTime
-#else
-								(activeDMs != nullptr) ? activeDMs->nextStepTime
-#endif
-									: (clocksNeeded > DDA::WakeupTime) ? clocksNeeded - DDA::WakeupTime
-										: 0)
-								+ afterPrepare.moveStartTime;
-		return timer.ScheduleCallbackFromIsr(whenDue);
+		return timer.ScheduleCallbackFromIsr(WhenNextInterruptDue() + afterPrepare.moveStartTime);
 	}
 	return false;
 }

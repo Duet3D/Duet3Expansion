@@ -84,6 +84,8 @@ static size_t savedMovePointer = 0;
 #endif
 
 unsigned int DDA::stepErrors = 0;
+uint32_t DDA::maxTicksOverdue = 0;
+uint32_t DDA::maxOverdueIncrement = 0;
 
 uint32_t DDA::stepsRequested[NumDrivers];
 uint32_t DDA::stepsDone[NumDrivers];
@@ -345,9 +347,24 @@ bool DDA::Init(const CanMessageMovementLinear& msg)
 // startTime is the earliest that we can start the move, but we must not start it before its planned time
 void DDA::Start(uint32_t tim)
 {
-	if ((int32_t)(afterPrepare.moveStartTime - tim) < 0)
+	const int32_t ticksOverdue = (int32_t)(tim - afterPrepare.moveStartTime);
+	if (ticksOverdue > 0)
 	{
-		afterPrepare.moveStartTime = tim;			// this move is late starting, so record the actual start time
+		// Record the maximum overdue time
+		if ((uint32_t)ticksOverdue > maxTicksOverdue)
+		{
+			const uint32_t increment = (uint32_t)ticksOverdue - maxTicksOverdue;
+			maxTicksOverdue = (uint32_t)ticksOverdue;
+			if (increment > maxOverdueIncrement)
+			{
+				maxOverdueIncrement = increment;
+			}
+		}
+
+		// This move is starting late. See if we can recover some of the lost time by bringing the first step forward if it isn't already overdue.
+		// Otherwise, if our clock runs slightly slower than the master, we will keep getting behind until there is a break in the moves
+		const uint32_t bringFowardBy = min<uint32_t>((uint32_t)ticksOverdue, WhenNextInterruptDue()/2);
+		afterPrepare.moveStartTime = tim - bringFowardBy;
 	}
 	state = executing;
 
@@ -610,6 +627,20 @@ unsigned int DDA::GetAndClearStepErrors() noexcept
 {
 	const unsigned int ret = stepErrors;
 	stepErrors =  0;
+	return ret;
+}
+
+uint32_t DDA::GetAndClearMaxTicksOverdue() noexcept
+{
+	const uint32_t ret = maxTicksOverdue;
+	maxTicksOverdue =  0;
+	return ret;
+}
+
+uint32_t DDA::GetAndClearMaxOverdueIncrement() noexcept
+{
+	const uint32_t ret = maxOverdueIncrement;
+	maxOverdueIncrement =  0;
 	return ret;
 }
 

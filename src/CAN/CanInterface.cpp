@@ -51,8 +51,8 @@ constexpr CanDevice::Config Can0Config =
 	.numTxBuffers = 2,
 	.txFifoSize = 10,								// enough to send a 512-byte response broken into 60-byte fragments
 	.numRxBuffers = 1,								// we use a dedicated buffer for the clock sync messages
-	.rxFifo0Size = 16,
-	.rxFifo1Size = 16,
+	.rxFifo0Size = 32,
+	.rxFifo1Size = 0,
 	.numShortFilterElements = 0,
 	.numExtendedFilterElements = 3,
 	.txEventFifoSize = 2
@@ -83,6 +83,8 @@ static uint32_t lastMotionMessageScheduledTime = 0;
 static uint32_t lastMotionMessageReceivedAt = 0;
 static unsigned int duplicateMotionMessages = 0;
 static unsigned int oosMessages = 0;
+static unsigned int badMoveCommands = 0;
+static uint32_t worstBadMove = 0;
 #endif
 
 uint8_t expectedSeq = 0xFF;
@@ -273,6 +275,23 @@ CanMessageBuffer *CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf) no
 			}
 
 			//TODO if we haven't established time sync yet then we should defer this
+#if 1
+			//DEBUG
+			static uint32_t lastMoveEndedAt = 0;
+			if (lastMoveEndedAt != 0)
+			{
+				const int32_t gap = (int32_t)(buf->msg.moveLinear.whenToExecute - lastMoveEndedAt);
+				if (gap < 0)
+				{
+					++badMoveCommands;
+					if ((uint32_t)(-gap) > worstBadMove)
+					{
+						worstBadMove = (uint32_t)(-gap);
+					}
+				}
+			}
+			lastMoveEndedAt = buf->msg.moveLinear.whenToExecute + buf->msg.moveLinear.accelerationClocks + buf->msg.moveLinear.steadyClocks + buf->msg.moveLinear.decelClocks;
+#endif
 			buf->msg.moveLinear.whenToExecute += StepTimer::GetLocalTimeOffset();
 			//DEBUG
 			//accumulatedMotion +=buf->msg.moveLinear.perDrive[0].steps;
@@ -327,8 +346,11 @@ void CanInterface::Diagnostics(const StringRef& reply) noexcept
 {
 	unsigned int messagesQueuedForSending, messagesReceived, txTimeouts, messagesLost, busOffCount;
 	can0dev->GetAndClearStats(messagesQueuedForSending, messagesReceived, txTimeouts, messagesLost, busOffCount);
-	reply.lcatf("CAN messages queued %u, send timeouts %u, received %u, lost %u, free buffers %u, error reg %" PRIx32,
-					messagesQueuedForSending, txTimeouts, messagesReceived, messagesLost, CanMessageBuffer::FreeBuffers(), can0dev->GetErrorRegister());
+	reply.lcatf("CAN messages queued %u, send timeouts %u, received %u, lost %u, free buffers %u, min %u, error reg %" PRIx32,
+					messagesQueuedForSending, txTimeouts, messagesReceived, messagesLost, CanMessageBuffer::GetFreeBuffers(), CanMessageBuffer::GetAndClearMinFreeBuffers(), can0dev->GetErrorRegister());
+	reply.lcatf("dup %u, oos %u, bm %u, wbm %" PRIu32, duplicateMotionMessages, oosMessages, badMoveCommands, worstBadMove);
+	duplicateMotionMessages = oosMessages = badMoveCommands = 0;
+	worstBadMove = 0;
 }
 
 // Send an announcement message if we haven't had an announce acknowledgement from a main board. On return the buffer is available to use again.
