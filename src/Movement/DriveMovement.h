@@ -100,9 +100,6 @@ struct PrepParams
 	float decelStartDistance;
 	uint32_t topSpeedTimesCdivD;
 
-	// Parameters used only for extruders
-	float compFactor;
-
 	// Parameters used only for delta moves
 	float initialX;
 	float initialY;

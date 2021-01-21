@@ -135,7 +135,7 @@ namespace Platform
 # endif
 	static float stepsPerMm[NumDrivers];
 	static float motorCurrents[NumDrivers];
-	static float pressureAdvance[NumDrivers];
+	static float pressureAdvanceClocks[NumDrivers];
 	static float idleCurrentFactor[NumDrivers];
 #endif
 
@@ -753,7 +753,7 @@ void Platform::Init()
 		driverAtIdleCurrent[i] = false;
 		idleCurrentFactor[i] = 0.3;
 		motorCurrents[i] = 0.0;
-		pressureAdvance[i] = 0.0;
+		pressureAdvanceClocks[i] = 0.0;
 
 # if HAS_SMART_DRIVERS
 		SmartDrivers::SetMicrostepping(i, 16, true);
@@ -1438,14 +1438,14 @@ void Platform::SetDriverStepTiming(size_t drive, const float timings[4])
 
 # endif		// SUPPORT_SLOW_DRIVERS
 
-float Platform::GetPressureAdvance(size_t driver)
+float Platform::GetPressureAdvanceClocks(size_t driver)
 {
-	return pressureAdvance[driver];
+	return pressureAdvanceClocks[driver];
 }
 
 void Platform::SetPressureAdvance(size_t driver, float advance)
 {
-	pressureAdvance[driver] = advance;
+	pressureAdvanceClocks[driver] = advance * (float)StepTimer::StepClockRate;
 }
 
 #if 0	// not used yet and may never be

@@ -254,7 +254,6 @@ bool DDA::Init(const CanMessageMovementLinear& msg)
 	params.topSpeedTimesCdivD = (uint32_t)roundU32(topSpeed/deceleration);
 	afterPrepare.topSpeedTimesCdivDPlusDecelStartClocks = params.topSpeedTimesCdivD + msg.accelerationClocks + msg.steadyClocks;
 	afterPrepare.extraAccelerationClocks = msg.accelerationClocks - roundS32(accelDistance/topSpeed);
-	params.compFactor = (topSpeed - startSpeed)/topSpeed;
 
 #if !SINGLE_DRIVER
 	activeDMs = nullptr;
