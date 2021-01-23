@@ -49,6 +49,7 @@ namespace Heat
 	float GetLowestTemperatureLimit(int heater) noexcept;
 	void SwitchOff(int heater);									// Turn off a specific heater
 	GCodeResult SetTemperature(const CanMessageSetHeaterTemperature& msg, const StringRef& reply);
+	GCodeResult TuningCommand(const CanMessageHeaterTuningCommand& msg, const StringRef& reply);
 
 	float GetAveragePWM(size_t heater)							// Return the running average PWM to the heater as a fraction in [0, 1].
 	pre(heater < NumTotalHeaters);

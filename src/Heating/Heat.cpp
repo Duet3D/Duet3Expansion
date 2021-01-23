@@ -62,7 +62,6 @@ namespace Heat
 	static float retractionMinTemp;								// Minimum temperature to allow regular retraction
 	static bool coldExtrude;									// Is cold extrusion allowed?
 	static int8_t heaterBeingTuned;								// which PID is currently being tuned
-	static int8_t lastHeaterTuned;								// which PID we last finished tuning
 
 	static ReadWriteLock heatersLock;
 	static ReadWriteLock sensorsLock;
@@ -150,7 +149,6 @@ void Heat::Init()
 {
 	coldExtrude = false;
 	heaterBeingTuned = -1;
-	lastHeaterTuned = -1;
 
 	for (Heater *& h : heaters)
 	{
@@ -235,17 +233,6 @@ void Heat::Exit()
 			// Announce ourselves to the main board
 			CanInterface::SendAnnounce(buf);
 
-			// See if we have finished tuning a PID
-			if (heaterBeingTuned != -1)
-			{
-				const auto h = FindHeater(heaterBeingTuned);
-				if (h.IsNull() || !h->IsTuning())
-				{
-					lastHeaterTuned = heaterBeingTuned;
-					heaterBeingTuned = -1;
-				}
-			}
-
 			// Broadcast our sensor temperatures
 			lastSensorsBroadcastWhich = sensorTempsMsg->whichSensors;	// for diagnostics
 			lastSensorsBroadcastWhen = millis();						// for diagnostics
@@ -254,6 +241,25 @@ void Heat::Exit()
 			{
 				buf->dataLength = sensorTempsMsg->GetActualDataLength(sensorsFound);
 				CanInterface::Send(buf);
+			}
+
+			// See if we are tuning a heater, or have finished tuning one
+			if (heaterBeingTuned != -1)
+			{
+				const auto h = FindHeater(heaterBeingTuned);
+				if (h.IsNotNull() && h->IsTuning())
+				{
+					auto msg = buf->SetupResponseMessage<CanMessageHeaterTuningReport>(0, CanInterface::GetCanAddress(), CanInterface::GetCurrentMasterAddress());
+					if (LocalHeater::GetTuningCycleData(*msg))
+					{
+						msg->SetStandardFields(heaterBeingTuned);
+						CanInterface::Send(buf);
+					}
+				}
+				else
+				{
+					heaterBeingTuned = -1;
+				}
 			}
 		}
 
@@ -516,6 +522,22 @@ GCodeResult Heat::SetTemperature(const CanMessageSetHeaterTemperature& msg, cons
 {
 	const auto h = FindHeater(msg.heaterNumber);
 	return (h.IsNotNull()) ? h->SetTemperature(msg, reply) : UnknownHeater(msg.heaterNumber, reply);
+}
+
+GCodeResult Heat::TuningCommand(const CanMessageHeaterTuningCommand& msg, const StringRef& reply)
+{
+	if (heaterBeingTuned != -1 && heaterBeingTuned != (int)msg.heaterNumber)
+	{
+		reply.printf("Heater %d is already being tuned", heaterBeingTuned);
+		return GCodeResult::error;
+	}
+	const auto h = FindHeater(msg.heaterNumber);
+	if (h.IsNull())
+	{
+		return UnknownHeater(msg.heaterNumber, reply);
+	}
+	heaterBeingTuned = (int)msg.heaterNumber;			// setting this is OK even if we are stopping or fail to start tuning, because we check it in the heater task loop
+	return h->TuningCommand(msg, reply);
 }
 
 float Heat::GetAveragePWM(size_t heater)

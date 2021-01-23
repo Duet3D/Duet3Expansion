@@ -828,6 +828,11 @@ void CommandProcessor::Spin()
 			rslt = Heat::SetTemperature(buf->msg.setTemp, replyRef);
 			break;
 
+		case CanMessageType::heaterTuningCommand:
+			requestId = buf->msg.heaterTuningCommand.requestId;
+			rslt = Heat::TuningCommand(buf->msg.heaterTuningCommand, replyRef);
+			break;
+
 		case CanMessageType::m308New:
 			requestId = buf->msg.generic.requestId;
 			rslt = Heat::ProcessM308(buf->msg.generic, replyRef);

@@ -18,6 +18,8 @@
 #include "Hardware/IoPorts.h"
 #include "GCodes/GCodeResult.h"
 
+class CanMessageHeaterTuningReport;
+
 class LocalHeater : public Heater
 {
 	static const size_t NumPreviousTemperatures = 4; // How many samples we average the temperature derivative over
@@ -36,9 +38,10 @@ public:
 	float GetTemperature() const override;			// Get the current temperature
 	float GetAveragePWM() const override;			// Return the running average PWM to the heater. Answer is a fraction in [0, 1].
 	float GetAccumulator() const override;			// Return the integral accumulator
-	void StartAutoTune(float targetTemp, float maxPwm, const StringRef& reply) override;	// Start an auto tune cycle for this PID
-	void GetAutoTuneStatus(const StringRef& reply) const override;	// Get the auto tune status or last result
 	void Suspend(bool sus) override;				// Suspend the heater to conserve power or while doing Z probing
+	GCodeResult TuningCommand(const CanMessageHeaterTuningCommand& msg, const StringRef& reply) override;
+
+	static bool GetTuningCycleData(CanMessageHeaterTuningReport& msg);	// get a heater tuning cycle report, if we have one
 
 protected:
 	void ResetHeater() noexcept override;

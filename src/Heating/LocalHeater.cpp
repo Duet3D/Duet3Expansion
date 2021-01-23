@@ -14,11 +14,33 @@
 const uint32_t InitialTuningReadingInterval = 250;	// the initial reading interval in milliseconds
 const uint32_t TempSettleTimeout = 20000;	// how long we allow the initial temperature to settle
 
+// Variables used during heater tuning
+static float tuningPwm;									// the PWM to use, 0..1
+static float tuningHighTemp;							// the target upper temperature
+static float tuningLowTemp;								// the target lower temperature
+static float tuningPeakTempDrop;						// must be well below TuningHysteresis
+
+static uint32_t dHigh;
+static uint32_t dLow;
+static uint32_t tOn;
+static uint32_t tOff;
+static float heatingRate;
+static float coolingRate;
+static uint32_t lastOffTime;
+static uint32_t lastOnTime;
+static float peakTemp;									// max or min temperature
+static uint32_t peakTime;								// the time at which we recorded peakTemp
+static float afterPeakTemp;								// temperature after max from which we start timing the cooling rate
+static uint32_t afterPeakTime;							// the time at which we recorded afterPeakTemp
+
+static uint16_t cyclesDone;
+static bool tuningCycleComplete;
+
 // Member functions and constructors
 
 LocalHeater::LocalHeater(unsigned int heaterNum) : Heater(heaterNum), mode(HeaterMode::off)
 {
-	ResetHeater();
+	LocalHeater::ResetHeater();
 	SetHeater(0.0);							// set up the pin even if the heater is not enabled (for PCCB)
 
 	// Time the sensor was last sampled.  During startup, we use the current
@@ -28,7 +50,7 @@ LocalHeater::LocalHeater(unsigned int heaterNum) : Heater(heaterNum), mode(Heate
 
 LocalHeater::~LocalHeater()
 {
-	SwitchOff();
+	LocalHeater::SwitchOff();
 	port.Release();
 }
 
@@ -295,7 +317,7 @@ void LocalHeater::Spin()
 			{
 				lastPwm = 0.0;
 			}
-			else if (mode < HeaterMode::tuning0)
+			else if (mode < HeaterMode::firstTuningMode)
 			{
 				// Performing normal temperature control
 				if (GetModel().UsePid())
@@ -435,69 +457,109 @@ float LocalHeater::GetExpectedHeatingRate() const
 			: 0.0;
 }
 
-// Auto tune this PID
-void LocalHeater::StartAutoTune(float targetTemp, float maxPwm, const StringRef& reply)
+// Start or stop running heater tuning cycles
+GCodeResult LocalHeater::TuningCommand(const CanMessageHeaterTuningCommand& msg, const StringRef& reply)
 {
-	//TODO
+	if (msg.on)
+	{
+		// We could do some more checks here but the main board should have done all the checks needed already
+		tuningHighTemp = msg.highTemp;
+		tuningLowTemp = msg.lowTemp;
+		tuningPwm = msg.pwm;
+		tuningPeakTempDrop = msg.peakTempDrop;
+		timeSetHeating = millis();
+		tuningCycleComplete = false;
+		cyclesDone = 0;
+		mode = HeaterMode::tuning1;
+	}
+	else
+	{
+		SwitchOff();
+	}
+	return GCodeResult::ok;
 }
-
-// Get the auto tune status or last result
-void LocalHeater::GetAutoTuneStatus(const StringRef& reply) const
-{
-	//TODO
-	reply.printf("Heater %u not implemented", GetHeaterNumber());
-}
-
-/* Notes on the auto tune algorithm
- *
- * Most 3D printer firmwares use the Åström and Hägglund relay tuning method (sometimes called Ziegler-Nichols + relay).
- * This gives results  of variable quality, but they seem to be generally satisfactory.
- *
- * We use Cohen-Coon tuning instead. This models the heating process as a first-order process (i.e. one that with constant heating
- * power approaches the equilibrium temperature exponentially) with dead time. This process is defined by three constants:
- *
- *  G is the gain of the system, i.e. the increase in ultimate temperature increase per unit of additional PWM
- *  td is the dead time, i.e. the time between increasing the heater PWM and the temperature following an exponential curve
- *  tc is the time constant of the exponential curve
- *
- * If the temperature is stable at T0 to begin with, the temperature at time t after increasing heater PWM by p is:
- *  T = T0 when t <= td
- *  T = T0 + G * p * (1 - exp((t - td)/tc)) when t >= td
- * In practice the transition from no change to the exponential curve is not instant, however this model is a reasonable approximation.
- *
- * Having a process model allows us to preset the I accumulator to a suitable value when switching between heater full on/off and using PID.
- * It will also make it easier to include feedforward terms in future.
- *
- * The auto tune procedure follows the following steps:
- * 1. Turn on any thermostatically-controlled fans that are triggered by the heater being tuned. This is done by code in the Platform module
- *    when it sees that a heater is being auto tuned.
- * 2. Accumulate temperature readings and wait for the starting temperature to stabilise. Abandon auto tuning if the starting temperature
- *    is not stable.
- * 3. Apply a known power to the heater and take temperature readings.
- * 4. Wait until the temperature vs time curve has flattened off, such that the temperature rise over the last 1/3 of the readings is less than the
- *    total temperature rise - which means we have been heating for about 3 time constants. Abandon auto tuning if we don't see a temperature rise
- *    after 30 seconds, or we exceed the target temperature plus 10C.
- * 5. Calculate the G, td and tc values that best fit the model to the temperature readings.
- * 6. Calculate the P, I and D parameters from G, td and tc using the modified Cohen-Coon tuning rules, or the Ho et al tuning rules.
- *    Cohen-Coon (modified to use half the original Kc value):
- *     Kc = (0.67/G) * (tc/td + 0.185)
- *     Ti = 2.5 * td * (tc + 0.185 * td)/(tc + 0.611 * td)
- *     Td = 0.37 * td * tc/(tc + 0.185 * td)
- *    Ho et al, best response to load changes:
- *     Kc = (1.435/G) * (td/tc)^-0.921
- *     Ti = 1.14 * (td/tc)^0.749
- *     Td = 0.482 * tc * (td/tc)^1.137
- *    Ho et al, best response to setpoint changes:
- *     Kc = (1.086/G) * (td/tc)^-0.869
- *     Ti = tc/(0.74 - 0.13 * td/tc)
- *     Td = 0.348 * tc * (td/tc)^0.914
- */
 
 // This is called on each temperature sample when auto tuning
 // It must set lastPWM to the required PWM, unless it is the same as last time.
 void LocalHeater::DoTuningStep()
 {
-	//TODO
+	const uint32_t now = millis();
+	switch (mode)
+	{
+	case HeaterMode::tuning1:		// Heating up
+		if (temperature >= tuningHighTemp)							// if reached target
+		{
+			// Move on to next phase
+			lastPwm = 0.0;
+			SetHeater(0.0);
+			peakTemp = afterPeakTemp = temperature;
+			lastOffTime = peakTime = afterPeakTime = now;
+			mode = HeaterMode::tuning2;
+		}
+		else
+		{
+			lastPwm = tuningPwm;
+		}
+		return;
+
+	case HeaterMode::tuning2:		// Heater is off, record the peak temperature and time
+		if (temperature >= peakTemp)
+		{
+			peakTemp = afterPeakTemp = temperature;
+			peakTime = afterPeakTime = now;
+		}
+		else if (temperature < tuningLowTemp)
+		{
+			// Temperature has dropped below the low limit.
+			// If we have been doing idle cycles, see whether we can switch to collecting data, and turn the heater on.
+			// If we have been collecting data, see if we have enough, and either turn the heater on to start another cycle or finish tuning.
+
+			// Save the data (don't know whether we need it yet)
+			dHigh = peakTime - lastOffTime;
+			tOff = now - lastOffTime;
+			coolingRate = (afterPeakTemp - temperature) * SecondsToMillis/(now - afterPeakTime);
+			lastOnTime = peakTime = afterPeakTime = now;
+			peakTemp = afterPeakTemp = temperature;
+			lastPwm = tuningPwm;						// turn on heater at specified power
+			mode = HeaterMode::tuning3;
+		}
+		else if (afterPeakTime == peakTime && tuningHighTemp - temperature >= tuningPeakTempDrop)
+		{
+			afterPeakTime = now;
+			afterPeakTemp = temperature;
+		}
+		return;
+
+	case HeaterMode::tuning3:	// Heater is turned on, record the lowest temperature and time
+		if (temperature <= peakTemp)
+		{
+			peakTemp = afterPeakTemp = temperature;
+			peakTime = afterPeakTime = now;
+		}
+		else if (temperature >= tuningHighTemp)
+		{
+			// We have reached the target temperature, so record a data point and turn the heater off
+			dLow = peakTime - lastOnTime;
+			tOn = now - lastOnTime;
+			heatingRate = (temperature - afterPeakTemp) * SecondsToMillis/(now - afterPeakTime);
+			lastOffTime = peakTime = afterPeakTime = now;
+			peakTemp = afterPeakTemp = temperature;
+			lastPwm = 0.0;								// turn heater off
+			mode = HeaterMode::tuning2;
+			++cyclesDone;
+			tuningCycleComplete = true;
+		}
+		else if (afterPeakTime == peakTime && temperature - tuningLowTemp >= tuningPeakTempDrop)
+		{
+			afterPeakTime = now;
+			afterPeakTemp = temperature;
+		}
+		return;
+
+	default:
+		// Should not happen, but if it does then quit
+		break;
+	}
 
 	// If we get here, we have finished
 	SwitchOff();								// sets mode and lastPWM, also deletes tuningTempReadings
@@ -519,6 +581,25 @@ void LocalHeater::Suspend(bool sus)
 	{
 		SwitchOn();
 	}
+}
+
+// Get a heater tuning cycle report, if we have one. Caller must fill in the heater number.
+/*static*/ bool LocalHeater::GetTuningCycleData(CanMessageHeaterTuningReport& msg)
+{
+	if (tuningCycleComplete)
+	{
+		msg.cyclesDone = cyclesDone;
+		msg.dhigh = dHigh;
+		msg.dlow = dLow;
+		msg.ton = tOn;
+		msg.toff = tOff;
+		msg.heatingRate = heatingRate;
+		msg.coolingRate = coolingRate;
+		tuningCycleComplete = false;
+		return true;
+	}
+
+	return false;
 }
 
 // End

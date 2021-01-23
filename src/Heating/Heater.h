@@ -21,6 +21,7 @@ class CanMessageSetHeaterTemperature;
 class CanMessageUpdateHeaterModelOld;
 class CanMessageUpdateHeaterModelNew;
 class CanMessageSetHeaterMonitors;
+class CanMessageHeaterTuningCommand;
 
 class Heater
 {
@@ -29,7 +30,7 @@ public:
 	virtual ~Heater();
 
 	// Configuration methods
-	virtual GCodeResult ConfigurePortAndSensor(const char *portName, PwmFrequency freq, unsigned int sensorNumber, const StringRef& reply) = 0;
+	virtual GCodeResult ConfigurePortAndSensor(const char *portName, PwmFrequency freq, unsigned int sn, const StringRef& reply) = 0;
 	virtual GCodeResult SetPwmFrequency(PwmFrequency freq, const StringRef& reply) = 0;
 	virtual GCodeResult ReportDetails(const StringRef& reply) const = 0;
 
@@ -38,10 +39,9 @@ public:
 	virtual void ResetFault() = 0;								// Reset a fault condition - only call this if you know what you are doing
 	virtual void SwitchOff() = 0;
 	virtual void Spin() = 0;
-	virtual void StartAutoTune(float targetTemp, float maxPwm, const StringRef& reply) = 0;	// Start an auto tune cycle for this PID
-	virtual void GetAutoTuneStatus(const StringRef& reply) const = 0;	// Get the auto tune status or last result
 	virtual void Suspend(bool sus) = 0;							// Suspend the heater to conserve power or while doing Z probing
 	virtual float GetAccumulator() const = 0;					// get the inertial term accumulator
+	virtual GCodeResult TuningCommand(const CanMessageHeaterTuningCommand& msg, const StringRef& reply) = 0;
 
 	GCodeResult SetTemperature(const CanMessageSetHeaterTemperature& msg, const StringRef& reply);
 
@@ -67,7 +67,7 @@ public:
 	void SetRawPidParameters(float p_kP, float p_recipTi, float p_tD)
 		{ model.SetRawPidParameters(p_kP, p_recipTi, p_tD); }
 
-	bool IsTuning() const { return GetMode() >= HeaterMode::tuning0; }
+	bool IsTuning() const { return GetMode() >= HeaterMode::firstTuningMode; }
 	uint8_t GetModeByte() const { return (uint8_t)GetMode(); }
 
 protected:
@@ -83,10 +83,10 @@ protected:
 		cooling,
 		stable,
 		// All states from here onwards must be PID tuning states because function IsTuning assumes that
-		tuning0,
 		tuning1,
 		tuning2,
 		tuning3,
+		firstTuningMode = tuning1,
 		lastTuningMode = tuning3
 	};
 
