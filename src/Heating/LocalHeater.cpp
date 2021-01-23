@@ -76,7 +76,6 @@ void LocalHeater::ResetHeater()
 	previousTemperatureIndex = 0;
 	iAccumulator = 0.0;
 	badTemperatureCount = 0;
-	tuned = false;
 	averagePWM = lastPwm = 0.0;
 	heatingFaultCount = 0;
 	temperature = BadErrorTemperature;
@@ -462,6 +461,12 @@ GCodeResult LocalHeater::TuningCommand(const CanMessageHeaterTuningCommand& msg,
 {
 	if (msg.on)
 	{
+		if (lastPwm > 0.0 || GetAveragePWM() > 0.02)
+		{
+			reply.printf("heater %u must be off and cold before auto tuning it", GetHeaterNumber());
+			return GCodeResult::error;
+		}
+
 		// We could do some more checks here but the main board should have done all the checks needed already
 		tuningHighTemp = msg.highTemp;
 		tuningLowTemp = msg.lowTemp;

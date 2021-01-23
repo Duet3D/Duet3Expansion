@@ -69,7 +69,6 @@ private:
 
 	uint8_t previousTemperaturesGood;				// Bitmap indicating which previous temperature were good readings
 	HeaterMode mode;								// Current state of the heater
-	bool tuned;										// True if tuning was successful
 	uint8_t badTemperatureCount;					// Count of sequential dud readings
 
 	static_assert(sizeof(previousTemperaturesGood) * 8 >= NumPreviousTemperatures, "too few bits in previousTemperaturesGood");

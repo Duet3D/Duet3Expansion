@@ -112,6 +112,10 @@ GCodeResult Heater::SetTemperature(const CanMessageSetHeaterTemperature& msg, co
 		Suspend(false);
 		return GCodeResult::ok;
 
+	case CanMessageSetHeaterTemperature::commandReset:
+		ResetHeater();
+		return GCodeResult::ok;
+
 	default:
 		break;
 	}
