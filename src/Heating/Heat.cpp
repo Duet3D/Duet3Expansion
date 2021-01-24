@@ -249,7 +249,7 @@ void Heat::Exit()
 				const auto h = FindHeater(heaterBeingTuned);
 				if (h.IsNotNull() && h->IsTuning())
 				{
-					auto msg = buf->SetupResponseMessage<CanMessageHeaterTuningReport>(0, CanInterface::GetCanAddress(), CanInterface::GetCurrentMasterAddress());
+					auto msg = buf->SetupStatusMessage<CanMessageHeaterTuningReport>(CanInterface::GetCanAddress(), CanInterface::GetCurrentMasterAddress());
 					if (LocalHeater::GetTuningCycleData(*msg))
 					{
 						msg->SetStandardFields(heaterBeingTuned);
@@ -538,6 +538,12 @@ GCodeResult Heat::TuningCommand(const CanMessageHeaterTuningCommand& msg, const 
 	}
 	heaterBeingTuned = (int)msg.heaterNumber;			// setting this is OK even if we are stopping or fail to start tuning, because we check it in the heater task loop
 	return h->TuningCommand(msg, reply);
+}
+
+GCodeResult Heat::FeedForward(const CanMessageHeaterFeedForward& msg, const StringRef& reply)
+{
+	const auto h = FindHeater(msg.heaterNumber);
+	return (h.IsNull()) ? UnknownHeater(msg.heaterNumber, reply) : h->FeedForwardAdjustment(msg.fanPwmAdjustment, msg.extrusionAdjustment);
 }
 
 float Heat::GetAveragePWM(size_t heater)

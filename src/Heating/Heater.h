@@ -42,6 +42,7 @@ public:
 	virtual void Suspend(bool sus) = 0;							// Suspend the heater to conserve power or while doing Z probing
 	virtual float GetAccumulator() const = 0;					// get the inertial term accumulator
 	virtual GCodeResult TuningCommand(const CanMessageHeaterTuningCommand& msg, const StringRef& reply) = 0;
+	virtual GCodeResult FeedForwardAdjustment(float fanPwmChange, float extrusionChange) = 0;
 
 	GCodeResult SetTemperature(const CanMessageSetHeaterTemperature& msg, const StringRef& reply);
 
@@ -89,6 +90,8 @@ protected:
 		firstTuningMode = tuning1,
 		lastTuningMode = tuning3
 	};
+
+	static constexpr float FeedForwardMultiplier = 1.3;		// how much we over-compensate feedforward to allow for heat reservoirs during tuning
 
 	virtual void ResetHeater() noexcept = 0;
 	virtual HeaterMode GetMode() const noexcept = 0;

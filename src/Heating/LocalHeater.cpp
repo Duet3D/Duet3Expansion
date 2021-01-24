@@ -32,6 +32,7 @@ static float peakTemp;									// max or min temperature
 static uint32_t peakTime;								// the time at which we recorded peakTemp
 static float afterPeakTemp;								// temperature after max from which we start timing the cooling rate
 static uint32_t afterPeakTime;							// the time at which we recorded afterPeakTemp
+static float tuningVoltage;								// the VIN voltage with the heater on
 
 static uint16_t cyclesDone;
 static bool tuningCycleComplete;
@@ -484,6 +485,19 @@ GCodeResult LocalHeater::TuningCommand(const CanMessageHeaterTuningCommand& msg,
 	return GCodeResult::ok;
 }
 
+// Adjust heater power for fan PWM or extrusoin change
+GCodeResult LocalHeater::FeedForwardAdjustment(float fanPwmChange, float extrusionChange) noexcept
+{
+	if (mode == HeaterMode::stable)
+	{
+		const float coolingRateIncrease = GetModel().GetCoolingRateChangeFanOn() * fanPwmChange;
+		const float boost = (coolingRateIncrease * (GetTargetTemperature() - NormalAmbientTemperature) * FeedForwardMultiplier)/GetModel().GetHeatingRate();
+		TaskCriticalSectionLocker lock;
+		iAccumulator += boost;
+	}
+	return GCodeResult::ok;
+}
+
 // This is called on each temperature sample when auto tuning
 // It must set lastPWM to the required PWM, unless it is the same as last time.
 void LocalHeater::DoTuningStep()
@@ -544,12 +558,13 @@ void LocalHeater::DoTuningStep()
 		else if (temperature >= tuningHighTemp)
 		{
 			// We have reached the target temperature, so record a data point and turn the heater off
+			tuningVoltage = Platform::GetCurrentVinVoltage();	// save this while the heater is on
 			dLow = peakTime - lastOnTime;
 			tOn = now - lastOnTime;
 			heatingRate = (temperature - afterPeakTemp) * SecondsToMillis/(now - afterPeakTime);
 			lastOffTime = peakTime = afterPeakTime = now;
 			peakTemp = afterPeakTemp = temperature;
-			lastPwm = 0.0;								// turn heater off
+			lastPwm = 0.0;										// turn heater off
 			mode = HeaterMode::tuning2;
 			++cyclesDone;
 			tuningCycleComplete = true;
@@ -600,6 +615,7 @@ void LocalHeater::Suspend(bool sus)
 		msg.toff = tOff;
 		msg.heatingRate = heatingRate;
 		msg.coolingRate = coolingRate;
+		msg.voltage = tuningVoltage;
 		tuningCycleComplete = false;
 		return true;
 	}

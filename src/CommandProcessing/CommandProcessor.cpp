@@ -848,6 +848,11 @@ void CommandProcessor::Spin()
 			rslt = Heat::ConfigureHeater(buf->msg.generic, replyRef);
 			break;
 
+		case CanMessageType::heaterFeedForward:
+			requestId = buf->msg.heaterFeedForward.requestId;
+			rslt = Heat::FeedForward(buf->msg.heaterFeedForward, replyRef);
+			break;
+
 		case CanMessageType::m950Gpio:
 			requestId = buf->msg.generic.requestId;
 			rslt = GpioPorts::HandleM950Gpio(buf->msg.generic, replyRef);
