@@ -558,7 +558,11 @@ void LocalHeater::DoTuningStep()
 		else if (temperature >= tuningHighTemp)
 		{
 			// We have reached the target temperature, so record a data point and turn the heater off
+#if HAS_VOLTAGE_MONITOR
 			tuningVoltage = Platform::GetCurrentVinVoltage();	// save this while the heater is on
+#else
+			tuningVoltage = 0.0;
+#endif
 			dLow = peakTime - lastOnTime;
 			tOn = now - lastOnTime;
 			heatingRate = (temperature - afterPeakTemp) * SecondsToMillis/(now - afterPeakTime);

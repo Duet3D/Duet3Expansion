@@ -348,9 +348,11 @@ void CanInterface::Diagnostics(const StringRef& reply) noexcept
 	can0dev->GetAndClearStats(messagesQueuedForSending, messagesReceived, txTimeouts, messagesLost, busOffCount);
 	reply.lcatf("CAN messages queued %u, send timeouts %u, received %u, lost %u, free buffers %u, min %u, error reg %" PRIx32,
 					messagesQueuedForSending, txTimeouts, messagesReceived, messagesLost, CanMessageBuffer::GetFreeBuffers(), CanMessageBuffer::GetAndClearMinFreeBuffers(), can0dev->GetErrorRegister());
+#if SUPPORT_DRIVERS
 	reply.lcatf("dup %u, oos %u, bm %u, wbm %" PRIu32, duplicateMotionMessages, oosMessages, badMoveCommands, worstBadMove);
 	duplicateMotionMessages = oosMessages = badMoveCommands = 0;
 	worstBadMove = 0;
+#endif
 }
 
 // Send an announcement message if we haven't had an announce acknowledgement from a main board. On return the buffer is available to use again.

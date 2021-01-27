@@ -86,7 +86,7 @@ bool IoPort::SetMode(PinAccess access)
 	if (logicalPinModes[pin] != (int8_t)desiredMode)
 	{
 		const AnalogChannelNumber chan = PinToAdcChannel(pin);
-		if (chan != NO_ADC)
+		if (chan != AdcInput::none)
 		{
 			if (access == PinAccess::readAnalog)
 			{
