@@ -64,7 +64,7 @@ float PulsedFilamentMonitor::MeasuredSensitivity() const noexcept
 GCodeResult PulsedFilamentMonitor::Configure(const CanMessageGenericParser& parser, const StringRef& reply)
 {
 	bool seen = false;
-	const GCodeResult rslt = CommonConfigure(parser, reply, INTERRUPT_MODE_RISING, seen);
+	const GCodeResult rslt = CommonConfigure(parser, reply, InterruptMode::rising, seen);
 	if (rslt <= GCodeResult::warning)
 	{
 		if (parser.GetFloatParam('L', mmPerPulse))

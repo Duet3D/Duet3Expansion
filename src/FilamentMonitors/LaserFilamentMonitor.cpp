@@ -65,7 +65,7 @@ float LaserFilamentMonitor::MeasuredSensitivity() const noexcept
 GCodeResult LaserFilamentMonitor::Configure(const CanMessageGenericParser& parser, const StringRef& reply)
 {
 	bool seen = false;
-	const GCodeResult rslt = CommonConfigure(parser, reply, INTERRUPT_MODE_CHANGE, seen);
+	const GCodeResult rslt = CommonConfigure(parser, reply, InterruptMode::change, seen);
 	if (rslt <= GCodeResult::warning)
 	{
 		if (parser.GetFloatParam('L', calibrationFactor))

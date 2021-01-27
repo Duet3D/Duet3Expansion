@@ -22,7 +22,7 @@ SimpleFilamentMonitor::SimpleFilamentMonitor(unsigned int extruder, unsigned int
 GCodeResult SimpleFilamentMonitor::Configure(const CanMessageGenericParser& parser, const StringRef& reply)
 {
 	bool seen = false;
-	const GCodeResult rslt = CommonConfigure(parser, reply, INTERRUPT_MODE_NONE, seen);
+	const GCodeResult rslt = CommonConfigure(parser, reply, InterruptMode::none, seen);
 	if (rslt <= GCodeResult::warning)
 	{
 		uint16_t temp;
