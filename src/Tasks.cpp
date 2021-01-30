@@ -49,7 +49,7 @@ constexpr uint32_t BlockReceiveTimeout = 2000;					// bootloader block receive t
 
 constexpr uint8_t memPattern = 0xA5;
 
-constexpr unsigned int MainTaskStackWords = 800;
+constexpr unsigned int MainTaskStackWords = 850;				// this seems very large; but a user had a stack overflow when it was set to 800
 
 static Task<MainTaskStackWords> mainTask;
 static Mutex mallocMutex;
