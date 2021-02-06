@@ -23,8 +23,9 @@
 
 #include <malloc.h>
 
-#include "FreeRTOS.h"
-#include "task.h"
+#include <FreeRTOS.h>
+#include <task.h>
+#include <freertos_task_additions.h>
 
 #include <hpl_user_area.h>
 
@@ -411,20 +412,65 @@ ptrdiff_t Tasks::GetNeverUsedRam() noexcept
 void Tasks::Diagnostics(const StringRef& reply) noexcept
 {
 	// Append a memory report to a string
-	reply.lcatf("Never used RAM %d, free system stack %d words\n", GetNeverUsedRam(), GetHandlerFreeStack()/4);
+	reply.lcatf("Never used RAM %d, free system stack %d words\nTasks:", GetNeverUsedRam(), GetHandlerFreeStack()/4);
 
 	// Now the per-task memory report
-	bool printed = false;
 	for (TaskBase *t = TaskBase::GetTaskList(); t != nullptr; t = t->GetNext())
 	{
-		TaskStatus_t taskDetails;
-		vTaskGetInfo(t->GetFreeRTOSHandle(), &taskDetails, pdTRUE, eInvalid);
-		if (printed)
+		ExtendedTaskStatus_t taskDetails;
+		vTaskGetExtendedInfo(t->GetFreeRTOSHandle(), &taskDetails);
+
+		const char* stateText;
+		switch (taskDetails.eCurrentState)
 		{
-			reply.cat(' ');
+		case esRunning:
+			stateText = "running";
+			break;
+		case esReady:
+			stateText = "ready";
+			break;
+		case esNotifyWaiting:
+			stateText = "notifyWait";
+			break;
+		case esResourceWaiting:
+			stateText = "resourceWait";
+			break;
+		case esDelaying:
+			stateText = "delaying";
+			break;
+		case esSuspended:
+			stateText = "suspended";
+			break;
+		case esBlocked:
+			stateText = "blocked";
+			break;
+		default:
+			stateText = "invalid";
+			break;
 		}
-		reply.catf("%s %u", taskDetails.pcTaskName, (unsigned int)taskDetails.usStackHighWaterMark);
-		printed = true;
+
+		const char *mutexName = nullptr;
+		if (taskDetails.eCurrentState == esResourceWaiting)
+		{
+			const Mutex *m = Mutex::GetMutexList();
+			while (m != nullptr)
+			{
+				if ((const void *)m == taskDetails.pvResource)
+				{
+					mutexName = m->GetName();
+					break;
+				}
+			}
+		}
+
+		if (mutexName != nullptr)
+		{
+			reply.catf(" %s(%s,%s,%u)", taskDetails.pcTaskName, stateText, mutexName, (unsigned int)taskDetails.usStackHighWaterMark);
+		}
+		else
+		{
+			reply.catf(" %s(%s,%u)", taskDetails.pcTaskName, stateText, (unsigned int)taskDetails.usStackHighWaterMark);
+		}
 	}
 
 	// Show the up time and reason for the last reset
