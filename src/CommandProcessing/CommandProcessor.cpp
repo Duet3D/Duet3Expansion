@@ -676,6 +676,10 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 		}
 		break;
 
+	case CanMessageReturnInfo::typeBoardUniqueId:
+		Platform::AppendUniqueId(reply);
+		break;
+
 	case CanMessageReturnInfo::typeDiagnosticsPart0 + 1:
 		extra = LastDiagnosticsPart;
 		Tasks::Diagnostics(reply);
