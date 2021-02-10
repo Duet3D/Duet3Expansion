@@ -180,8 +180,13 @@ bool SharedSpiDevice::TransceivePacket(const uint8_t* tx_data, uint8_t* rx_data,
 	// If we didn't wait to receive, then we need to wait for transmit to finish and clear the receive buffer
 	if (rx_data == nullptr)
 	{
-		waitForTxEmpty();
-		(void)hardware->SPI.DATA.reg;
+		waitForTxEmpty();				// wait for the last character to be transmitted
+
+		// The SAME5x seems to buffer more than one received character
+		while (hardware->SPI.INTFLAG.bit.RXC)
+		{
+			(void)hardware->SPI.DATA.reg;
+		}
 	}
 
 	return true;	// success
