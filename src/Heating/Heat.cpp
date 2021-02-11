@@ -398,6 +398,7 @@ GCodeResult Heat::ProcessM308(const CanMessageGeneric& msg, const StringRef& rep
 			String<StringLength20> sensorTypeName;
 			if (parser.GetStringParam('P', sensorTypeName.GetRef()) && sensorTypeName.EqualsIgnoreCase(NoPinName))
 			{
+				WriteLocker lock(sensorsLock);
 				DeleteSensor(sensorNum);
 				return GCodeResult::ok;
 			}
