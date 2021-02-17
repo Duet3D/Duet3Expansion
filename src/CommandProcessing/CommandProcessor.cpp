@@ -168,7 +168,7 @@ static GCodeResult SetMotorCurrents(const CanMessageMultipleDrivesRequest<float>
 	}
 
 	GCodeResult rslt = GCodeResult::ok;
-	drivers.Iterate([msg, reply, &rslt](unsigned int driver, unsigned int count) -> void
+	drivers.Iterate([&msg, &reply, &rslt](unsigned int driver, unsigned int count) -> void
 						{
 							if (driver >= NumDrivers)
 							{
@@ -199,7 +199,7 @@ static GCodeResult SetStandstillCurrentFactor(const CanMessageMultipleDrivesRequ
 	}
 
 	GCodeResult rslt = GCodeResult::ok;
-	drivers.Iterate([msg, reply, &rslt](unsigned int driver, unsigned int count) -> void
+	drivers.Iterate([&msg, &reply, &rslt](unsigned int driver, unsigned int count) -> void
 						{
 							if (driver >= NumDrivers)
 							{
@@ -229,7 +229,7 @@ static GCodeResult HandlePressureAdvance(const CanMessageMultipleDrivesRequest<f
 	}
 
 	GCodeResult rslt = GCodeResult::ok;
-	drivers.Iterate([msg, reply, &rslt](unsigned int driver, unsigned int count) -> void
+	drivers.Iterate([&msg, &reply, &rslt](unsigned int driver, unsigned int count) -> void
 						{
 							if (driver >= NumDrivers)
 							{
@@ -255,7 +255,7 @@ static GCodeResult SetStepsPerMmAndMicrostepping(const CanMessageMultipleDrivesR
 	}
 
 	GCodeResult rslt = GCodeResult::ok;
-	drivers.Iterate([msg, reply, &rslt](unsigned int driver, unsigned int count) -> void
+	drivers.Iterate([&msg, &reply, &rslt](unsigned int driver, unsigned int count) -> void
 						{
 							if (driver >= NumDrivers)
 							{
@@ -513,7 +513,7 @@ static GCodeResult HandleSetDriverStates(const CanMessageMultipleDrivesRequest<D
 {
 	//TODO check message is long enough for the number of drivers specified
 	const auto drivers = Bitmap<uint16_t>::MakeFromRaw(msg.driversToUpdate);
-	drivers.Iterate([msg](unsigned int driver, unsigned int count) -> void
+	drivers.Iterate([&msg](unsigned int driver, unsigned int count) -> void
 		{
 			switch (msg.values[count].mode)
 			{
