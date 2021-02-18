@@ -155,8 +155,7 @@ private:
 
 	DMState state;										// whether this is active or not
 	uint8_t drive;										// the drive that this DM controls
-	uint8_t microstepShift : 4,							// log2 of the microstepping factor (for when we use dynamic microstepping adjustment)
-			direction : 1,								// true=forwards, false=backwards
+	uint8_t direction : 1,								// true=forwards, false=backwards
 			directionChanged : 1,						// set by CalcNextStepTime if the direction is changed
 			isDeltaMovement : 1;						// true if this motor is executing a delta tower move
 	uint8_t stepsTillRecalc;							// how soon we need to recalculate
