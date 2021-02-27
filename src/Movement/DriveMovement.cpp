@@ -61,7 +61,7 @@ void DriveMovement::PrepareDeltaAxis(const DDA& dda, const PrepParams& params)
 	const float B = params.initialY - params.dparams->GetTowerY(drive);
 	const float aAplusbB = A * params.dvecX + B * params.dvecY;
 	const float dSquaredMinusAsquaredMinusBsquared = params.dparams->GetDiagonalSquared(drive) - fsquare(A) - fsquare(B);
-	const float h0MinusZ0 = sqrtf(dSquaredMinusAsquaredMinusBsquared);
+	const float h0MinusZ0 = fastSqrtf(dSquaredMinusAsquaredMinusBsquared);
 	mp.delta.hmz0sK = roundS32(h0MinusZ0 * stepsPerMm * DriveMovement::K2);
 	mp.delta.minusAaPlusBbTimesKs = -roundS32(aAplusbB * stepsPerMm * DriveMovement::K2);
 	mp.delta.dSquaredMinusAsquaredMinusBsquaredTimesKsquaredSsquared = roundS64(dSquaredMinusAsquaredMinusBsquared * fsquare(stepsPerMm * DriveMovement::K2));
@@ -79,12 +79,12 @@ void DriveMovement::PrepareDeltaAxis(const DDA& dda, const PrepParams& params)
 	{
 		// The distance to reversal is the solution to a quadratic equation. One root corresponds to the carriages being below the bed,
 		// the other root corresponds to the carriages being above the bed.
-		const float drev = ((params.dvecZ * sqrtf(params.a2plusb2 * params.dparams->GetDiagonalSquared(drive) - fsquare(A * params.dvecY - B * params.dvecX)))
+		const float drev = ((params.dvecZ * fastSqrtf(params.a2plusb2 * params.dparams->GetDiagonalSquared(drive) - fsquare(A * params.dvecY - B * params.dvecX)))
 							- aAplusbB)/params.a2plusb2;
 		if (drev > 0.0 && drev < 1.0)		// if the reversal point is within range
 		{
 			// Calculate how many steps we need to move up before reversing
-			const float hrev = params.dvecZ * drev + sqrtf(dSquaredMinusAsquaredMinusBsquared - 2 * drev * aAplusbB - params.a2plusb2 * fsquare(drev));
+			const float hrev = params.dvecZ * drev + fastSqrtf(dSquaredMinusAsquaredMinusBsquared - 2 * drev * aAplusbB - params.a2plusb2 * fsquare(drev));
 			const int32_t numStepsUp = (int32_t)((hrev - h0MinusZ0) * stepsPerMm);
 
 			// We may be almost at the peak height already, in which case we don't really have a reversal.

@@ -70,7 +70,7 @@ void LinearDeltaKinematics::Recalc()
 	{
 		D2[axis] = fsquare(diagonals[axis]);
 		homedCarriageHeights[axis] = homedHeight
-									+ sqrtf(D2[axis] - ((axis < UsualNumTowers) ? fsquare(radius) : fsquare(towerX[axis]) + fsquare(towerY[axis])))
+									+ fastSqrtf(D2[axis] - ((axis < UsualNumTowers) ? fsquare(radius) : fsquare(towerX[axis]) + fsquare(towerY[axis])))
 									+ endstopAdjustments[axis];
 	}
 
@@ -82,7 +82,7 @@ float LinearDeltaKinematics::Transform(const float machinePos[], size_t axis) co
 {
 	if (axis < numTowers)
 	{
-		return sqrtf(D2[axis] - fsquare(machinePos[X_AXIS] - towerX[axis]) - fsquare(machinePos[Y_AXIS] - towerY[axis]))
+		return fastSqrtf(D2[axis] - fsquare(machinePos[X_AXIS] - towerX[axis]) - fsquare(machinePos[Y_AXIS] - towerY[axis]))
 			 + machinePos[Z_AXIS]
 			 + (machinePos[X_AXIS] * xTilt)
 			 + (machinePos[Y_AXIS] * yTilt);
@@ -112,7 +112,7 @@ void LinearDeltaKinematics::ForwardTransform(float Ha, float Hb, float Hc, float
 	const float minusHalfB = S * U + P * R + Ha * Q2 + towerX[DELTA_A_AXIS] * U * Q - towerY[DELTA_A_AXIS] * R * Q;
 	const float C = fsquare(S + towerX[DELTA_A_AXIS] * Q) + fsquare(P - towerY[DELTA_A_AXIS] * Q) + (fsquare(Ha) - D2[DELTA_A_AXIS]) * Q2;
 
-	const float z = (minusHalfB - sqrtf(fsquare(minusHalfB) - A * C)) / A;
+	const float z = (minusHalfB - fastSqrtf(fsquare(minusHalfB) - A * C)) / A;
 	machinePos[X_AXIS] = (U * z - S) / Q;
 	machinePos[Y_AXIS] = (P - R * z) / Q;
 	machinePos[Z_AXIS] = z - ((machinePos[X_AXIS] * xTilt) + (machinePos[Y_AXIS] * yTilt));
