@@ -275,7 +275,7 @@ CanMessageBuffer *CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf) no
 			}
 
 			//TODO if we haven't established time sync yet then we should defer this
-#if 1
+# if 1
 			//DEBUG
 			static uint32_t lastMoveEndedAt = 0;
 			if (lastMoveEndedAt != 0)
@@ -291,7 +291,7 @@ CanMessageBuffer *CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf) no
 				}
 			}
 			lastMoveEndedAt = buf->msg.moveLinear.whenToExecute + buf->msg.moveLinear.accelerationClocks + buf->msg.moveLinear.steadyClocks + buf->msg.moveLinear.decelClocks;
-#endif
+# endif
 			buf->msg.moveLinear.whenToExecute += StepTimer::GetLocalTimeOffset();
 			//DEBUG
 			//accumulatedMotion +=buf->msg.moveLinear.perDrive[0].steps;
@@ -302,6 +302,10 @@ CanMessageBuffer *CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf) no
 
 		case CanMessageType::stopMovement:
 			moveInstance->StopDrivers(buf->msg.stopMovement.whichDrives);
+# if 1
+			//DEBUG
+			lastMoveEndedAt = 0;
+# endif
 			Platform::OnProcessingCanMessage();
 			break;
 #endif
