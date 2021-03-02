@@ -345,9 +345,16 @@ CanMessageBuffer *CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf) no
 void CanInterface::Diagnostics(const StringRef& reply) noexcept
 {
 	unsigned int messagesQueuedForSending, messagesReceived, txTimeouts, messagesLost, busOffCount;
-	can0dev->GetAndClearStats(messagesQueuedForSending, messagesReceived, txTimeouts, messagesLost, busOffCount);
+	uint32_t lastCancelledId;
+	can0dev->GetAndClearStats(messagesQueuedForSending, messagesReceived, txTimeouts, messagesLost, busOffCount, lastCancelledId);
 	reply.lcatf("CAN messages queued %u, send timeouts %u, received %u, lost %u, free buffers %u, min %u, error reg %" PRIx32,
 					messagesQueuedForSending, txTimeouts, messagesReceived, messagesLost, CanMessageBuffer::GetFreeBuffers(), CanMessageBuffer::GetAndClearMinFreeBuffers(), can0dev->GetErrorRegister());
+	if (lastCancelledId != 0)
+	{
+		CanId id;
+		id.SetReceivedId(lastCancelledId);
+		reply.lcatf("Last cancelled message type %u dest %u", (unsigned int)id.MsgType(), id.Dst());
+	}
 #if SUPPORT_DRIVERS
 	reply.lcatf("dup %u, oos %u, bm %u, wbm %" PRIu32, duplicateMotionMessages, oosMessages, badMoveCommands, worstBadMove);
 	duplicateMotionMessages = oosMessages = badMoveCommands = 0;

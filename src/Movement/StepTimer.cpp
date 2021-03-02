@@ -61,6 +61,7 @@ void StepTimer::Init()
 	if (syncCount == MaxSyncCount && millis() - whenLastSynced > MinSyncInterval)
 	{
 		syncCount = 0;
+		++numResyncs;
 	}
 	return syncCount == MaxSyncCount;
 }
