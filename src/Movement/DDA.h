@@ -34,49 +34,49 @@ public:
 		completed			// move has been completed or aborted
 	};
 
-	DDA(DDA* n);
+	DDA(DDA* n) noexcept;
 
 	void* operator new(size_t count) { return Tasks::AllocPermanent(count); }
 	void* operator new(size_t count, std::align_val_t align) { return Tasks::AllocPermanent(count, align); }
 	void operator delete(void* ptr) noexcept {}
 	void operator delete(void* ptr, std::align_val_t align) noexcept {}
 
-	void Init();														// Set up initial positions for machine startup
-	bool Init(const CanMessageMovementLinear& msg) SPEED_CRITICAL;		// Set up a move from a CAN message
-	void Start(uint32_t tim) SPEED_CRITICAL;							// Start executing the DDA, i.e. move the move.
-	void StepDrivers(uint32_t now) SPEED_CRITICAL;						// Take one step of the DDA, called by timed interrupt.
-	bool ScheduleNextStepInterrupt(StepTimer& timer) const;				// Schedule the next interrupt, returning true if we can't because it is already due
+	void Init() noexcept;														// Set up initial positions for machine startup
+	bool Init(const CanMessageMovementLinear& msg) noexcept SPEED_CRITICAL;		// Set up a move from a CAN message
+	void Start(uint32_t tim) noexcept SPEED_CRITICAL;							// Start executing the DDA, i.e. move the move.
+	void StepDrivers(uint32_t now) noexcept SPEED_CRITICAL;						// Take one step of the DDA, called by timed interrupt.
+	bool ScheduleNextStepInterrupt(StepTimer& timer) const noexcept SPEED_CRITICAL;		// Schedule the next interrupt, returning true if we can't because it is already due
 
-	void SetNext(DDA *n) { next = n; }
-	void SetPrevious(DDA *p) { prev = p; }
-	void Complete() { state = completed; }
-	void Free();
-	bool HasStepError() const;
-	bool IsPrintingMove() const { return flags.isPrintingMove; }
+	void SetNext(DDA *n) noexcept { next = n; }
+	void SetPrevious(DDA *p) noexcept { prev = p; }
+	void Complete() noexcept { state = completed; }
+	void Free() noexcept;
+	bool HasStepError() const noexcept;
+	bool IsPrintingMove() const noexcept { return flags.isPrintingMove; }
 
-	DDAState GetState() const { return state; }
-	DDA* GetNext() const { return next; }
-	DDA* GetPrevious() const { return prev; }
-	int32_t GetTimeLeft() const;
-	void InsertHiccup(uint32_t now);
+	DDAState GetState() const noexcept { return state; }
+	DDA* GetNext() const noexcept { return next; }
+	DDA* GetPrevious() const noexcept { return prev; }
+	int32_t GetTimeLeft() const noexcept;
+	void InsertHiccup(uint32_t now) noexcept;
 
 	// Filament monitor support
-	int32_t GetStepsTaken(size_t drive) const;
+	int32_t GetStepsTaken(size_t drive) const noexcept;
 
-	void MoveAborted();
-	void StopDrivers(uint16_t whichDrivers);
+	void MoveAborted() noexcept;
+	void StopDrivers(uint16_t whichDrivers) noexcept;
 
-	uint32_t GetClocksNeeded() const { return clocksNeeded; }
-	uint32_t GetMoveFinishTime() const { return afterPrepare.moveStartTime + clocksNeeded; }
+	uint32_t GetClocksNeeded() const noexcept { return clocksNeeded; }
+	uint32_t GetMoveFinishTime() const noexcept { return afterPrepare.moveStartTime + clocksNeeded; }
 
-	int32_t GetPosition(size_t driver) const { return endPoint[driver]; }
+	int32_t GetPosition(size_t driver) const noexcept { return endPoint[driver]; }
 
 #if HAS_SMART_DRIVERS
-	uint32_t GetStepInterval(size_t axis, uint32_t microstepShift) const;	// Get the current full step interval for this axis or extruder
+	uint32_t GetStepInterval(size_t axis, uint32_t microstepShift) const noexcept;	// Get the current full step interval for this axis or extruder
 #endif
 
-	void DebugPrint() const;												// print the DDA only
-	void DebugPrintAll() const;												// print the DDA and active DMs
+	void DebugPrint() const noexcept;												// print the DDA only
+	void DebugPrintAll() const noexcept;												// print the DDA and active DMs
 
 	static unsigned int GetAndClearStepErrors() noexcept;
 	static uint32_t GetAndClearMaxTicksOverdue() noexcept;
@@ -116,15 +116,15 @@ public:
 	static uint32_t stepsRequested[NumDrivers], stepsDone[NumDrivers];
 
 private:
-	void StopDrive(size_t drive);									// stop movement of a drive and recalculate the endpoint
+	void StopDrive(size_t drive) noexcept;							// stop movement of a drive and recalculate the endpoint
 	uint32_t WhenNextInterruptDue() const noexcept;					// return when the next interrupt is due relative to the move start time
 
 #if !SINGLE_DRIVER
-	void InsertDM(DriveMovement *dm) SPEED_CRITICAL;
-	void RemoveDM(size_t drive);
+	void InsertDM(DriveMovement *dm) noexcept SPEED_CRITICAL;
+	void RemoveDM(size_t drive) noexcept;
 #endif
 
-	void DebugPrintVector(const char *name, const float *vec, size_t len) const;
+	void DebugPrintVector(const char *name, const float *vec, size_t len) const noexcept;
 
     DDA *next;								// The next one in the ring
 	DDA *prev;								// The previous one in the ring
@@ -166,7 +166,11 @@ private:
 		int32_t extraAccelerationClocks;	// the additional number of clocks needed because we started the move at less than topSpeed. Negative after ReduceHomingSpeed has been called.
 
 		// These are used only in delta calculations
-		int32_t cKc;						// The Z movement fraction multiplied by Kc and converted to integer
+#if DM_USE_FPU
+		float zFraction;					// the Z movement fraction
+#else
+		int32_t cKc;						// the Z movement fraction multiplied by Kc and converted to integer
+#endif
 	} afterPrepare;
 
 #if !SINGLE_DRIVER
@@ -195,7 +199,7 @@ inline uint32_t DDA::WhenNextInterruptDue() const noexcept
 
 // Schedule the next interrupt, returning true if we can't because it is already due
 // Base priority must be >= NvicPriorityStep or interrupts disabled when calling this
-inline bool DDA::ScheduleNextStepInterrupt(StepTimer& timer) const
+inline bool DDA::ScheduleNextStepInterrupt(StepTimer& timer) const noexcept
 {
 	if (state == executing)
 	{
@@ -205,7 +209,7 @@ inline bool DDA::ScheduleNextStepInterrupt(StepTimer& timer) const
 }
 
 // Insert a hiccup long enough to guarantee that we will exit the ISR
-inline void DDA::InsertHiccup(uint32_t now)
+inline void DDA::InsertHiccup(uint32_t now) noexcept
 {
 	const uint32_t ticksDueAfterStart =
 #if SINGLE_DRIVER
@@ -221,7 +225,7 @@ inline void DDA::InsertHiccup(uint32_t now)
 #if HAS_SMART_DRIVERS
 
 // Get the current full step interval for this axis or extruder
-inline uint32_t DDA::GetStepInterval(size_t axis, uint32_t microstepShift) const
+inline uint32_t DDA::GetStepInterval(size_t axis, uint32_t microstepShift) const noexcept
 {
 	const DriveMovement& dm = ddms[axis];
 	return dm.state == DMState::moving ? dm.GetStepInterval(microstepShift) : 0;

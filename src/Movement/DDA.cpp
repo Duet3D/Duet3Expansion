@@ -251,8 +251,13 @@ bool DDA::Init(const CanMessageMovementLinear& msg)
 	// The conditional code in calculating decelDistance should achieve that
 	params.decelStartDistance = 1.0 - decelDistance;
 	afterPrepare.startSpeedTimesCdivA = (uint32_t)roundU32(startSpeed/acceleration);
+#if DM_USE_FPU
+	params.fTopSpeedTimesCdivD = topSpeed/deceleration;
+	afterPrepare.topSpeedTimesCdivDPlusDecelStartClocks = (uint32_t)params.fTopSpeedTimesCdivD + msg.accelerationClocks + msg.steadyClocks;
+#else
 	params.topSpeedTimesCdivD = (uint32_t)roundU32(topSpeed/deceleration);
 	afterPrepare.topSpeedTimesCdivDPlusDecelStartClocks = params.topSpeedTimesCdivD + msg.accelerationClocks + msg.steadyClocks;
+#endif
 	afterPrepare.extraAccelerationClocks = msg.accelerationClocks - roundS32(accelDistance/topSpeed);
 
 #if !SINGLE_DRIVER
@@ -277,7 +282,11 @@ bool DDA::Init(const CanMessageMovementLinear& msg)
 					&& (   dm.totalSteps > 1000000
 						|| dm.reverseStartStep < dm.mp.cart.decelStartStep
 						|| (dm.reverseStartStep <= dm.totalSteps
-							&& dm.mp.cart.fourMaxStepDistanceMinusTwoDistanceToStopTimesCsquaredDivD > (int64_t)(dm.mp.cart.twoCsquaredTimesMmPerStepDivD * dm.reverseStartStep)
+#if DM_USE_FPU
+							&& dm.mp.cart.fFourMaxStepDistanceMinusTwoDistanceToStopTimesCsquaredDivD > dm.fTwoCsquaredTimesMmPerStepDivD * dm.reverseStartStep
+#else
+							&& dm.mp.cart.fourMaxStepDistanceMinusTwoDistanceToStopTimesCsquaredDivD > (int64_t)(dm.twoCsquaredTimesMmPerStepDivD * dm.reverseStartStep)
+#endif
 						   )
 					   )
 				   )
