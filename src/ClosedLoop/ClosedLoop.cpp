@@ -54,8 +54,8 @@ void  ClosedLoop::DisableEncodersSpi() noexcept
 
 void ClosedLoop::Init() noexcept
 {
-	pinMode(EncoderCsPin, OUTPUT_HIGH);									// make sure that any attached SPI encoder is not selected
-	encoderSpi = new SharedSpiDevice(EncoderSspiSercomNumber);			// create the encoders SPI device
+	pinMode(EncoderCsPin, OUTPUT_HIGH);													// make sure that any attached SPI encoder is not selected
+	encoderSpi = new SharedSpiDevice(EncoderSspiSercomNumber, EncoderSspiDataInPad);	// create the encoders SPI device
 	GenerateAttinyClock();
 	programmer = new AttinyProgrammer(*encoderSpi);
 	programmer->InitAttiny();

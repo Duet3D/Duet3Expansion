@@ -25,7 +25,7 @@ enum class SpiMode : uint8_t
 class SharedSpiDevice
 {
 public:
-	SharedSpiDevice(uint8_t sercomNum);
+	SharedSpiDevice(uint8_t sercomNum, uint32_t dataInPad);
 
 	void Disable() const;
 	void SetClockFrequencyAndMode(uint32_t freq, SpiMode mode) const;

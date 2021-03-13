@@ -66,7 +66,8 @@ constexpr Pin DirectionPins[NumDrivers] = { PortAPin(10) };
 #endif
 
 #define SUPPORT_THERMISTORS		1
-#define SUPPORT_SPI_SENSORS		0
+#define SUPPORT_SPI_SENSORS		1
+#define SUPPORT_I2C_SENSORS		1
 #define SUPPORT_DHT_SENSOR		0
 #define SUPPORT_SDADC			0
 
@@ -76,8 +77,6 @@ constexpr Pin DirectionPins[NumDrivers] = { PortAPin(10) };
 #define DIAG_SERCOM_NUMBER		5		// which SERCOM device we use for debugging output
 
 constexpr bool UseAlternateCanPins = true;
-
-constexpr size_t MaxAxes = 3;			//TEMP we won't need this
 
 constexpr size_t NumThermistorInputs = 2;
 
@@ -92,6 +91,27 @@ constexpr Pin ButtonPins[] = { PortBPin(9) };
 // Diagnostic LEDs
 constexpr Pin LedPins[] = { PortAPin(28) };
 constexpr bool LedActiveHigh = true;
+
+#if SUPPORT_SPI_SENSORS
+// Shared SPI using pins PA16,17,18. If changing this, also change the available pins in the pin table.
+constexpr uint8_t SspiSercomNumber = 1;
+constexpr uint32_t SspiDataInPad = 2;
+constexpr Pin SSPIMosiPin = PortAPin(16);
+constexpr GpioPinFunction SSPIMosiPinPeriphMode = GpioPinFunction::C;
+constexpr Pin SSPISclkPin = PortAPin(17);
+constexpr GpioPinFunction SSPISclkPinPeriphMode = GpioPinFunction::C;
+constexpr Pin SSPIMisoPin = PortAPin(18);
+constexpr GpioPinFunction SSPIMisoPinPeriphMode = GpioPinFunction::C;
+#endif
+
+#if SUPPORT_I2C_SENSORS
+// I2C using pins PA22,23. If changing this, also change the available pins in the pin table.
+constexpr uint8_t I2cSercomNumber = 3;
+constexpr Pin I2CSDAPin = PortAPin(22);
+constexpr GpioPinFunction I2CSDAPinPeriphMode = GpioPinFunction::C;
+constexpr Pin I2CSCLPin = PortAPin(23);
+constexpr GpioPinFunction I2CSCLPinPeriphMode = GpioPinFunction::C;
+#endif
 
 // Table of pin functions that we are allowed to use
 constexpr PinDescription PinTable[] =
@@ -114,14 +134,25 @@ constexpr PinDescription PinTable[] =
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		13,	"pa13"		},	// PA13
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PA14 crystal
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PA15 crystal
+#if SUPPORT_SPI_SENSORS
+	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::sercom1c,	Nx,	nullptr		},	// PA16
+	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::sercom1c,	SercomIo::none,		Nx,	nullptr		},	// PA17
+	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr	 	},	// PA18
+#else
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::sercom1c,	0,	"pa16"		},	// PA16
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::sercom1c,	SercomIo::none,		1,	"pa17"		},	// PA17
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		2,	"pa18"	 	},	// PA18
+#endif
 	{ TcOutput::tc4_1,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		3,	"pa19"		},	// PA19
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"pa20"		},	// PA20
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"pa21"		},	// PA21
+#if SUPPORT_I2C_SENSORS
+	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PA22
+	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PA23
+#else
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"pa22"		},	// PA22 (has TC0.0 on that pin but can't control the frequency well)
 	{ TcOutput::tc0_1,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"pa23"		},	// PA23
+#endif
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"pa24"		},	// PA24
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"pa25"		},	// PA25
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PA26 not on chip

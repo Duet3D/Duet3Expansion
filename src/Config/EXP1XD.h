@@ -68,6 +68,7 @@ constexpr Pin DirectionPins[NumDrivers] = { PortAPin(10) };
 
 #define SUPPORT_THERMISTORS		1
 #define SUPPORT_SPI_SENSORS		0
+#define SUPPORT_I2C_SENSORS		0
 #define SUPPORT_DHT_SENSOR		0
 #define SUPPORT_SDADC			0
 
@@ -77,8 +78,6 @@ constexpr Pin DirectionPins[NumDrivers] = { PortAPin(10) };
 #define DIAG_SERCOM_NUMBER		4		// which SERCOM device we use for debugging output
 
 constexpr bool UseAlternateCanPins = false;
-
-constexpr size_t MaxAxes = 3;			//TEMP we won't need this
 
 constexpr size_t NumThermistorInputs = 1;
 

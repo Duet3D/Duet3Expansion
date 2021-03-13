@@ -24,12 +24,12 @@ constexpr uint32_t SpiTimeout = 10000;
 
 // SharedSpiDevice members
 
-SharedSpiDevice::SharedSpiDevice(uint8_t sercomNum) : hardware(Serial::Sercoms[sercomNum])
+SharedSpiDevice::SharedSpiDevice(uint8_t sercomNum, uint32_t dataInPad) : hardware(Serial::Sercoms[sercomNum])
 {
 	Serial::EnableSercomClock(sercomNum);
 
 	// Set up the SERCOM
-	const uint32_t regCtrlA = SERCOM_SPI_CTRLA_MODE(3) | SERCOM_SPI_CTRLA_DIPO(3) | SERCOM_SPI_CTRLA_DOPO(0) | SERCOM_SPI_CTRLA_FORM(0);
+	const uint32_t regCtrlA = SERCOM_SPI_CTRLA_MODE(3) | SERCOM_SPI_CTRLA_DIPO(dataInPad) | SERCOM_SPI_CTRLA_DOPO(0) | SERCOM_SPI_CTRLA_FORM(0);
 	const uint32_t regCtrlB = 0;											// 8 bits, slave select disabled, receiver disabled for now
 	const uint32_t regCtrlC = 0;											// not 32-bit mode
 

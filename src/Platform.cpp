@@ -781,7 +781,7 @@ void Platform::Init()
 	SetPinFunction(SSPISclkPin, SSPISclkPinPeriphMode);
 	SetPinFunction(SSPIMisoPin, SSPIMisoPinPeriphMode);
 
-	sharedSpi = new SharedSpiDevice(SERCOM_SSPI_NUMBER);
+	sharedSpi = new SharedSpiDevice(SspiSercomNumber, SspiDataInPad);
 #endif
 
 #ifdef ATEIO

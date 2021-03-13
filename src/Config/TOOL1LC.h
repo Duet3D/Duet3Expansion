@@ -83,6 +83,7 @@ constexpr Pin DriverDiagPins[NumDrivers] = { PortBPin(3) };
 
 #define SUPPORT_THERMISTORS		1
 #define SUPPORT_SPI_SENSORS		0
+#define SUPPORT_I2C_SENSORS		0
 #define SUPPORT_DHT_SENSOR		0
 #define SUPPORT_SDADC			1
 

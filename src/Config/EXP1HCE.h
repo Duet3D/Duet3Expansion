@@ -64,6 +64,7 @@ constexpr Pin DiagPins[NumDrivers] = { PortAPin(28) };
 
 #define SUPPORT_THERMISTORS		1
 #define SUPPORT_SPI_SENSORS		0
+#define SUPPORT_I2C_SENSORS		0
 #define SUPPORT_DHT_SENSOR		0
 #define SUPPORT_SDADC			0
 #define NUM_SERIAL_PORTS		0
@@ -72,8 +73,6 @@ constexpr Pin DiagPins[NumDrivers] = { PortAPin(28) };
 #define USE_CACHE				0
 
 constexpr bool UseAlternateCanPins = false;
-
-constexpr size_t MaxAxes = 3;			//TEMP we won't need this
 
 constexpr size_t NumThermistorInputs = 1;
 constexpr float DefaultThermistorSeriesR = 2200.0;
@@ -96,7 +95,7 @@ constexpr Pin EncoderCsPin = PortAPin(18);
 
 // Shared SPI (used for interface to encoders, not for temperature sensors)
 constexpr uint8_t EncoderSspiSercomNumber = 1;
-
+constexpr uint32_t EncoderSspiDataInPad = 3;
 constexpr Pin EncoderMosiPin = PortAPin(16);
 constexpr Pin QuadratureErrorOutPin = EncoderMosiPin;
 constexpr GpioPinFunction EncoderMosiPinPeriphMode = GpioPinFunction::C;

@@ -38,7 +38,8 @@
 
 #define SUPPORT_THERMISTORS		1
 #define SUPPORT_SPI_SENSORS		1
-#define SUPPORT_DHT_SENSOR		0	//TEMP!!!
+#define SUPPORT_I2C_SENSORS		0
+#define SUPPORT_DHT_SENSOR		0
 
 #define USE_MPU					0
 #define USE_CACHE				1
@@ -95,7 +96,8 @@ constexpr Pin BoardAddressPins[4] = { PortCPin(11), PortCPin(12), PortCPin(14), 
 constexpr Pin TempSensePins[NumThermistorInputs] = { PortCPin(3), PortBPin(8), PortBPin(7) };
 
 // Shared SPI
-constexpr uint8_t SERCOM_SSPI_NUMBER = 6;
+constexpr uint8_t SspiSercomNumber = 6;
+constexpr uint32_t SspiDataInPad = 3;
 constexpr Pin SSPIMosiPin = PortCPin(16);
 constexpr GpioPinFunction SSPIMosiPinPeriphMode = GpioPinFunction::C;
 constexpr Pin SSPISclkPin = PortCPin(17);
