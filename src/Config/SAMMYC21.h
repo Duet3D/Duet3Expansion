@@ -93,6 +93,7 @@ constexpr Pin LedPins[] = { PortAPin(28) };
 constexpr bool LedActiveHigh = true;
 
 #if SUPPORT_SPI_SENSORS
+
 // Shared SPI using pins PA16,17,18. If changing this, also change the available pins in the pin table.
 constexpr uint8_t SspiSercomNumber = 1;
 constexpr uint32_t SspiDataInPad = 2;
@@ -102,15 +103,19 @@ constexpr Pin SSPISclkPin = PortAPin(17);
 constexpr GpioPinFunction SSPISclkPinPeriphMode = GpioPinFunction::C;
 constexpr Pin SSPIMisoPin = PortAPin(18);
 constexpr GpioPinFunction SSPIMisoPinPeriphMode = GpioPinFunction::C;
+
 #endif
 
 #if SUPPORT_I2C_SENSORS
+
 // I2C using pins PA22,23. If changing this, also change the available pins in the pin table.
 constexpr uint8_t I2CSercomNumber = 3;
 constexpr Pin I2CSDAPin = PortAPin(22);
 constexpr GpioPinFunction I2CSDAPinPeriphMode = GpioPinFunction::C;
 constexpr Pin I2CSCLPin = PortAPin(23);
 constexpr GpioPinFunction I2CSCLPinPeriphMode = GpioPinFunction::C;
+#define I2C_HANDLER		SERCOM3_Handler
+
 #endif
 
 // Table of pin functions that we are allowed to use
@@ -207,5 +212,6 @@ const NvicPriority NvicPriorityUart = 2;				// serial driver makes RTOS calls
 const NvicPriority NvicPriorityPins = 2;				// priority for GPIO pin interrupts
 const NvicPriority NvicPriorityCan = 3;
 const NvicPriority NvicPriorityDmac = 3;				// priority for DMA complete interrupts
+const NvicPriority NvicPriorityI2C = 4;
 
 #endif /* SRC_CONFIG_SAMMYC21_H_ */

@@ -25,19 +25,19 @@ enum class SpiMode : uint8_t
 class SharedSpiDevice
 {
 public:
-	SharedSpiDevice(uint8_t sercomNum, uint32_t dataInPad);
+	SharedSpiDevice(uint8_t sercomNum, uint32_t dataInPad) noexcept;
 
-	void Disable() const;
-	void SetClockFrequencyAndMode(uint32_t freq, SpiMode mode) const;
-	bool TransceivePacket(const uint8_t *tx_data, uint8_t *rx_data, size_t len) const;
-	bool Take(uint32_t timeout) { return mutex.Take(timeout); }					// get ownership of this SPI, return true if successful
-	void Release() { mutex.Release(); }
+	void Disable() const noexcept;
+	void SetClockFrequencyAndMode(uint32_t freq, SpiMode mode) const noexcept;
+	bool TransceivePacket(const uint8_t *tx_data, uint8_t *rx_data, size_t len) const noexcept;
+	bool Take(uint32_t timeout) noexcept { return mutex.Take(timeout); }					// get ownership of this SPI, return true if successful
+	void Release() noexcept { mutex.Release(); }
 
 private:
 	void Enable() const;
-	bool waitForTxReady() const;
-	bool waitForTxEmpty() const;
-	bool waitForRxReady() const;
+	bool waitForTxReady() const noexcept;
+	bool waitForTxEmpty() const noexcept;
+	bool waitForRxReady() const noexcept;
 
 	Sercom * const hardware;
 	Mutex mutex;
