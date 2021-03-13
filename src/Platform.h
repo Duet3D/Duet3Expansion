@@ -17,6 +17,10 @@
 # include <Hardware/SharedSpiDevice.h>
 #endif
 
+#if SUPPORT_I2C_SENSORS
+# include <Hardware/SharedI2CMaster.h>
+#endif
+
 class CanMessageDiagnosticTest;
 class CanMessageBuffer;
 
@@ -123,6 +127,11 @@ namespace Platform
 #if SUPPORT_SPI_SENSORS || defined(ATEIO)
 	extern SharedSpiDevice *sharedSpi;
 	inline SharedSpiDevice& GetSharedSpi() noexcept { return *sharedSpi; }
+#endif
+
+#if SUPPORT_I2C_SENSORS
+	extern SharedI2CMaster *sharedI2C;
+	inline SharedI2CMaster& GetSharedI2C() noexcept { return *sharedI2C; }
 #endif
 
 	extern bool isPrinting;

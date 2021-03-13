@@ -143,6 +143,10 @@ namespace Platform
 	SharedSpiDevice *sharedSpi;
 #endif
 
+#if SUPPORT_I2C_SENSORS
+	SharedI2CMaster *sharedI2C;
+#endif
+
 #if HAS_VOLTAGE_MONITOR
 	static volatile uint16_t currentVin, highestVin, lowestVin;
 #endif
@@ -780,8 +784,13 @@ void Platform::Init()
 	SetPinFunction(SSPIMosiPin, SSPIMosiPinPeriphMode);
 	SetPinFunction(SSPISclkPin, SSPISclkPinPeriphMode);
 	SetPinFunction(SSPIMisoPin, SSPIMisoPinPeriphMode);
-
 	sharedSpi = new SharedSpiDevice(SspiSercomNumber, SspiDataInPad);
+#endif
+
+#if SUPPORT_I2C_SENSORS
+	SetPinFunction(I2CSDAPin, I2CSDAPinPeriphMode);
+	SetPinFunction(I2CSCLPin, I2CSCLPinPeriphMode);
+	sharedI2C = new SharedI2CMaster(I2CSercomNumber);
 #endif
 
 #ifdef ATEIO
