@@ -30,26 +30,30 @@ SharedSpiDevice::SharedSpiDevice(uint8_t sercomNum, uint32_t dataInPad) : hardwa
 
 	// Set up the SERCOM
 	const uint32_t regCtrlA = SERCOM_SPI_CTRLA_MODE(3) | SERCOM_SPI_CTRLA_DIPO(dataInPad) | SERCOM_SPI_CTRLA_DOPO(0) | SERCOM_SPI_CTRLA_FORM(0);
-	const uint32_t regCtrlB = 0;											// 8 bits, slave select disabled, receiver disabled for now
-	const uint32_t regCtrlC = 0;											// not 32-bit mode
+	const uint32_t regCtrlB = 0;												// 8 bits, slave select disabled, receiver disabled for now
+#if SAME5x
+	const uint32_t regCtrlC = 0;												// not 32-bit mode
+#endif
 
-	if (!hri_sercomusart_is_syncing(hardware, SERCOM_USART_SYNCBUSY_SWRST))
+	if (!hri_sercomspi_is_syncing(hardware, SERCOM_SPI_SYNCBUSY_SWRST))
 	{
-		const uint32_t mode = regCtrlA & SERCOM_USART_CTRLA_MODE_Msk;
-		if (hri_sercomusart_get_CTRLA_reg(hardware, SERCOM_USART_CTRLA_ENABLE))
+		const uint32_t mode = regCtrlA & SERCOM_SPI_CTRLA_MODE_Msk;
+		if (hri_sercomspi_get_CTRLA_reg(hardware, SERCOM_SPI_CTRLA_ENABLE))
 		{
-			hri_sercomusart_clear_CTRLA_ENABLE_bit(hardware);
-			hri_sercomusart_wait_for_sync(hardware, SERCOM_USART_SYNCBUSY_ENABLE);
+			hri_sercomspi_clear_CTRLA_ENABLE_bit(hardware);
+			hri_sercomspi_wait_for_sync(hardware, SERCOM_SPI_SYNCBUSY_ENABLE);
 		}
-		hri_sercomusart_write_CTRLA_reg(hardware, SERCOM_USART_CTRLA_SWRST | mode);
+		hri_sercomspi_write_CTRLA_reg(hardware, SERCOM_SPI_CTRLA_SWRST | mode);
 	}
-	hri_sercomusart_wait_for_sync(hardware, SERCOM_USART_SYNCBUSY_SWRST);
+	hri_sercomspi_wait_for_sync(hardware, SERCOM_SPI_SYNCBUSY_SWRST);
 
-	hri_sercomusart_write_CTRLA_reg(hardware, regCtrlA);
-	hri_sercomusart_write_CTRLB_reg(hardware, regCtrlB);
-	hri_sercomusart_write_CTRLC_reg(hardware, regCtrlC);
-	hri_sercomusart_write_BAUD_reg(hardware, SERCOM_SPI_BAUD_BAUD(Serial::SercomFastGclkFreq/(2 * DefaultSharedSpiClockFrequency) - 1));
-	hri_sercomusart_write_DBGCTRL_reg(hardware, SERCOM_I2CM_DBGCTRL_DBGSTOP);			// baud rate generator is stopped when CPU halted by debugger
+	hri_sercomspi_write_CTRLA_reg(hardware, regCtrlA);
+	hri_sercomspi_write_CTRLB_reg(hardware, regCtrlB);
+#if SAME5x
+	hri_sercomspi_write_CTRLC_reg(hardware, regCtrlC);
+#endif
+	hri_sercomspi_write_BAUD_reg(hardware, SERCOM_SPI_BAUD_BAUD(Serial::SercomFastGclkFreq/(2 * DefaultSharedSpiClockFrequency) - 1));
+	hri_sercomspi_write_DBGCTRL_reg(hardware, SERCOM_I2CM_DBGCTRL_DBGSTOP);		// baud rate generator is stopped when CPU halted by debugger
 
 #if 0	// if using DMA
 	// Set up the DMA descriptors
@@ -74,18 +78,16 @@ SharedSpiDevice::SharedSpiDevice(uint8_t sercomNum, uint32_t dataInPad) : hardwa
 	mutex.Create("SPI");
 }
 
-// SharedSpiClient members
-
 void SharedSpiDevice::Disable() const
 {
 	hardware->SPI.CTRLA.bit.ENABLE = 0;
-	hri_sercomusart_wait_for_sync(hardware, SERCOM_USART_CTRLA_ENABLE);
+	hri_sercomspi_wait_for_sync(hardware, SERCOM_SPI_CTRLA_ENABLE);
 }
 
 inline void SharedSpiDevice::Enable() const
 {
 	hardware->SPI.CTRLA.bit.ENABLE = 1;
-	hri_sercomusart_wait_for_sync(hardware, SERCOM_USART_CTRLA_ENABLE);
+	hri_sercomspi_wait_for_sync(hardware, SERCOM_SPI_CTRLA_ENABLE);
 }
 
 // Wait for transmitter ready returning true if timed out
@@ -134,7 +136,7 @@ void SharedSpiDevice::SetClockFrequencyAndMode(uint32_t freq, SpiMode mode) cons
 {
 	// We have to disable SPI device in order to change the baud rate and mode
 	Disable();
-	hri_sercomusart_write_BAUD_reg(hardware, SERCOM_SPI_BAUD_BAUD(Serial::SercomFastGclkFreq/(2 * freq) - 1));
+	hri_sercomspi_write_BAUD_reg(hardware, SERCOM_SPI_BAUD_BAUD(Serial::SercomFastGclkFreq/(2 * freq) - 1));
 
 	uint32_t regCtrlA = SERCOM_SPI_CTRLA_MODE(3) | SERCOM_SPI_CTRLA_DIPO(3) | SERCOM_SPI_CTRLA_DOPO(0) | SERCOM_SPI_CTRLA_FORM(0) | SERCOM_SPI_CTRLA_ENABLE;
 	if (((uint8_t)mode & 2) != 0)
@@ -145,7 +147,7 @@ void SharedSpiDevice::SetClockFrequencyAndMode(uint32_t freq, SpiMode mode) cons
 	{
 		regCtrlA |= SERCOM_SPI_CTRLA_CPHA;
 	}
-	hri_sercomusart_write_CTRLA_reg(hardware, regCtrlA);
+	hri_sercomspi_write_CTRLA_reg(hardware, regCtrlA);
 	Enable();
 }
 
