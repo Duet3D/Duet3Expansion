@@ -19,6 +19,7 @@
 
 #if SUPPORT_I2C_SENSORS
 # include <Hardware/SharedI2CMaster.h>
+# include <Hardware/LIS3DH.h>
 #endif
 
 class CanMessageDiagnosticTest;
@@ -149,6 +150,10 @@ namespace Platform
 	bool Debug(Module module);
 	void WriteLed(uint8_t ledNumber, bool turnOn);
 	bool DebugPutc(char c);
+
+#if SUPPORT_I2C_SENSORS && SUPPORT_LIS3DH
+	LIS3DH& GetAccelerometer() noexcept;
+#endif
 
 #if SUPPORT_DRIVERS
 	float DriveStepsPerUnit(size_t drive);

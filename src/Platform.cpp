@@ -147,6 +147,10 @@ namespace Platform
 	SharedI2CMaster *sharedI2C;
 #endif
 
+#if SUPPORT_I2C_SENSORS && SUPPORT_LIS3DH
+	LIS3DH *accelerometer;
+#endif
+
 #if HAS_VOLTAGE_MONITOR
 	static volatile uint16_t currentVin, highestVin, lowestVin;
 #endif
@@ -842,8 +846,12 @@ void Platform::Init()
 	uniqueId[4] ^= (uniqueId[4] >> 10);
 
 	InitialiseInterrupts();
-	CanInterface::Init(GetCanAddress(), UseAlternateCanPins, true);
 
+#if SUPPORT_I2C_SENSORS && SUPPORT_LIS3DH
+	accelerometer = new LIS3DH(*sharedI2C, false);
+#endif
+
+	CanInterface::Init(GetCanAddress(), UseAlternateCanPins, true);
 	lastPollTime = millis();
 }
 
@@ -1192,6 +1200,9 @@ void Platform::Spin()
 				moveInstance->Diagnostics(reply.GetRef());
 				debugPrintf("%s\n", reply.c_str());
 				//moveInstance->DebugPrintCdda();
+#if SUPPORT_I2C_SENSORS && SUPPORT_LIS3DH
+				debugPrintf("LIS3DH detected: %s", (accelerometer->CheckPresent()) ? "yes" : "no");
+#endif
 			}
 		}
 #endif
@@ -1218,6 +1229,15 @@ void Platform::WriteLed(uint8_t ledNumber, bool turnOn)
 		digitalWrite(LedPins[ledNumber], (LedActiveHigh) ? turnOn : !turnOn);
 	}
 }
+
+#if SUPPORT_I2C_SENSORS && SUPPORT_LIS3DH
+
+LIS3DH& Platform::GetAccelerometer() noexcept
+{
+	return *accelerometer;
+}
+
+#endif
 
 #if SUPPORT_THERMISTORS
 

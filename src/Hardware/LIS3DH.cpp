@@ -36,6 +36,12 @@ bool LIS3DH::WriteRegister(uint8_t regNum, uint8_t val) noexcept
 	return Transfer(regNum, &val, 2, 0, Lis3dI2CTimeout);
 }
 
+bool LIS3DH::CheckPresent() noexcept
+{
+	uint8_t val;
+	return ReadRegister(WhoAmIRegister, val) && val == WhoAmIValue;
+}
+
 #endif
 
 // End

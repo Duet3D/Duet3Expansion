@@ -19,7 +19,12 @@ class LIS3DH : public SharedI2CClient
 public:
 	LIS3DH(SharedI2CMaster& dev, bool addressLSB) noexcept;
 
+	bool CheckPresent() noexcept;
+
 private:
+	static constexpr uint8_t WhoAmIRegister = 0x0F;
+	static constexpr uint8_t WhoAmIValue = 0x33;
+
 	struct AuxRegisters
 	{
 		uint8_t statusAux;
