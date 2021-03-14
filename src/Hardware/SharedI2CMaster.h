@@ -31,7 +31,7 @@ public:
 	SharedI2CMaster(uint8_t sercomNum) noexcept;
 
 	void SetClockFrequency(uint32_t freq) const noexcept;
-	size_t Transfer(uint16_t address, uint8_t *buffer, size_t numToWrite, size_t numToRead) noexcept;
+	bool Transfer(uint16_t address, uint8_t firstByte, uint8_t *buffer, size_t numToWrite, size_t numToRead) noexcept;
 	ErrorCounts GetErrorCounts(bool clear) noexcept;
 
 	bool Take(uint32_t timeout) noexcept { return mutex.Take(timeout); }		// get ownership of this SPI, return true if successful
@@ -43,7 +43,7 @@ private:
 	void Enable() const noexcept;
 	void Disable() const noexcept;
 	bool WaitForStatus(uint8_t statusBits) noexcept;
-	size_t InternalTransfer(uint16_t address, uint8_t *buffer, size_t numToWrite, size_t numToRead) noexcept;
+	size_t InternalTransfer(uint16_t address, uint8_t firstByte, uint8_t *buffer, size_t numToWrite, size_t numToRead) noexcept;
 
 	Sercom * const hardware;
 	TaskHandle taskWaiting;

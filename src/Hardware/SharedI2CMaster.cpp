@@ -136,21 +136,21 @@ void SharedI2CMaster::Interrupt() noexcept
 }
 
 // Write then read data
-size_t SharedI2CMaster::Transfer(uint16_t address, uint8_t *buffer, size_t numToWrite, size_t numToRead) noexcept
+bool SharedI2CMaster::Transfer(uint16_t address, uint8_t firstByte, uint8_t *buffer, size_t numToWrite, size_t numToRead) noexcept
 {
 	// If an empty transfer, nothing to do
 	if (numToRead + numToWrite == 0)
 	{
-		return 0;
+		return true;
 	}
 
 	size_t bytesTransferred;
 	for (unsigned int triesDone = 0; triesDone < 3; ++triesDone)
 	{
-		bytesTransferred = InternalTransfer(address, buffer, numToWrite, numToRead);
+		bytesTransferred = InternalTransfer(address, firstByte, buffer, numToWrite, numToRead);
 		if (bytesTransferred == numToRead + numToWrite)
 		{
-			break;
+			return true;
 		}
 
 		// Had an I2C error, so re-initialise
@@ -158,18 +158,18 @@ size_t SharedI2CMaster::Transfer(uint16_t address, uint8_t *buffer, size_t numTo
 		Enable();
 		++errorCounts.resets;
 	}
-	return bytesTransferred;
+	return false;
 }
 
-size_t SharedI2CMaster::InternalTransfer(uint16_t address, uint8_t *buffer, size_t numToWrite, size_t numToRead) noexcept
+size_t SharedI2CMaster::InternalTransfer(uint16_t address, uint8_t firstByte, uint8_t *buffer, size_t numToWrite, size_t numToRead) noexcept
 {
 	// Send the address
+	address <<= 1;			// SERCOM uses the bottom bit as the Read flag
 	hardware->I2CM.INTFLAG.reg = SERCOM_I2CM_INTFLAG_ERROR;
 	hardware->I2CM.STATUS.reg = SERCOM_I2CM_STATUS_BUSERR | SERCOM_I2CM_STATUS_RXNACK | SERCOM_I2CM_STATUS_ARBLOST;					// clear all status bits
-	address &= ~1u;				// clear the Read bit
 	if (numToWrite != 0 || address >= 0x80)
 	{
-		hardware->I2CM.ADDR.reg = (address >= 0x80) ? address | SERCOM_I2CM_ADDR_TENBITEN : address;
+		hardware->I2CM.ADDR.reg = (address >= 0x100) ? address | SERCOM_I2CM_ADDR_TENBITEN : address;
 		if (!WaitForStatus(SERCOM_I2CM_INTFLAG_MB) || (hardware->I2CM.STATUS.reg & (SERCOM_I2CM_STATUS_BUSERR | SERCOM_I2CM_STATUS_RXNACK | SERCOM_I2CM_STATUS_ARBLOST)))
 		{
 			return 0;
@@ -179,7 +179,7 @@ size_t SharedI2CMaster::InternalTransfer(uint16_t address, uint8_t *buffer, size
 	size_t bytesSent = 0;
 	if (numToWrite != 0)
 	{
-		hardware->I2CM.ADDR.reg = (address >= 0x80) ? address | SERCOM_I2CM_ADDR_TENBITEN : address;
+		hardware->I2CM.ADDR.reg = (address >= 0x100) ? address | SERCOM_I2CM_ADDR_TENBITEN : address;
 		if (!WaitForStatus(SERCOM_I2CM_INTFLAG_MB) || (hardware->I2CM.STATUS.reg & (SERCOM_I2CM_STATUS_BUSERR | SERCOM_I2CM_STATUS_RXNACK | SERCOM_I2CM_STATUS_ARBLOST)))
 		{
 			return 0;
@@ -187,11 +187,12 @@ size_t SharedI2CMaster::InternalTransfer(uint16_t address, uint8_t *buffer, size
 
 		while (bytesSent < numToWrite)
 		{
-			hardware->I2CM.DATA.reg = *buffer++;
+			hardware->I2CM.DATA.reg = (bytesSent == 0) ? firstByte : *buffer++;
 			if (!WaitForStatus(SERCOM_I2CM_INTFLAG_MB) || (hardware->I2CM.STATUS.reg & (SERCOM_I2CM_STATUS_BUSERR | SERCOM_I2CM_STATUS_RXNACK | SERCOM_I2CM_STATUS_ARBLOST)))
 			{
 				return bytesSent;
 			}
+			++bytesSent;
 		}
 
 		if (numToRead == 0)
@@ -202,9 +203,9 @@ size_t SharedI2CMaster::InternalTransfer(uint16_t address, uint8_t *buffer, size
 	}
 
 	// There are bytes to read, and if there were any bytes to send then we have sent them all
-	if (address >= 0x80)
+	if (address >= 0x100)
 	{
-		hardware->I2CM.ADDR.reg = (address >> 7) | 0b1111001;
+		hardware->I2CM.ADDR.reg = (address >> 8) | 0b1111001;
 	}
 	else if (numToWrite != 0)
 	{
