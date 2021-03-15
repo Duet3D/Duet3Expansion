@@ -76,6 +76,7 @@ SharedI2CMaster::SharedI2CMaster(uint8_t sercomNum) noexcept : hardware(Serial::
 
 	const IRQn irqn = Serial::GetSercomIRQn(sercomNum);
 	NVIC_SetPriority(irqn, NvicPriorityI2C);
+	NVIC_ClearPendingIRQ(irqn);
 	NVIC_EnableIRQ(irqn);
 #if SAME5x
 	NVIC_SetPriority(irqn + 1, NvicPriorityI2C);
@@ -85,6 +86,8 @@ SharedI2CMaster::SharedI2CMaster(uint8_t sercomNum) noexcept : hardware(Serial::
 #endif
 
 	mutex.Create("I2C");
+
+	Enable();
 }
 
 void SharedI2CMaster::SetClockFrequency(uint32_t freq) const noexcept
@@ -99,13 +102,13 @@ void SharedI2CMaster::Enable() const noexcept
 {
 	hardware->I2CM.CTRLA.bit.ENABLE = 1;
 	hri_sercomi2cm_wait_for_sync(hardware, SERCOM_I2CM_CTRLA_ENABLE);
+	hardware->I2CM.STATUS.reg = SERCOM_I2CM_STATUS_BUSSTATE(0x01);
 }
 
 void SharedI2CMaster::Disable() const noexcept
 {
 	hardware->I2CM.CTRLA.bit.ENABLE = 0;
 	hri_sercomi2cm_wait_for_sync(hardware, SERCOM_I2CM_CTRLA_ENABLE);
-	hardware->I2CM.STATUS.reg = SERCOM_I2CM_STATUS_BUSSTATE(0x01);
 }
 
 bool SharedI2CMaster::WaitForStatus(uint8_t statusBits) noexcept

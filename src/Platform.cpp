@@ -304,36 +304,6 @@ namespace Platform
 
 #if SUPPORT_I2C_SENSORS
 
-# if SAMC21
-#  ifndef I2C_HANDLER
-#   error "I2C_HANDLER not defined"
-#  endif
-	void I2C_HANDLER() noexcept
-	{
-		sharedI2C->Interrupt();
-	}
-# elif SAME5x
-#  if !defined(I2C_HANDLER0) || !defined(I2C_HANDLER1) || !defined(I2C_HANDLER3)
-#   error "I2C_HANDLER0, 1 or 3 not defined"
-#  endif
-	void I2C_HANDLER0() noexcept
-	{
-		sharedI2C->Interrupt();
-	}
-
-	void I2C_HANDLER1() noexcept
-	{
-		sharedI2C->Interrupt();
-	}
-
-	void I2C_HANDLER3() noexcept
-	{
-		sharedI2C->Interrupt();
-	}
-# endif
-
-#endif
-
 	static void InitialiseInterrupts()
 	{
 		// Note, I2C interrupt priority is set up in the I2C driver
@@ -2014,5 +1984,36 @@ float Platform::GetMaxV12Voltage()
 }
 
 #endif
+
+# if SAMC21
+#  ifndef I2C_HANDLER
+#   error "I2C_HANDLER not defined"
+#  endif
+	void I2C_HANDLER() noexcept
+	{
+		Platform::sharedI2C->Interrupt();
+	}
+# elif SAME5x
+#  if !defined(I2C_HANDLER0) || !defined(I2C_HANDLER1) || !defined(I2C_HANDLER3)
+#   error "I2C_HANDLER0, 1 or 3 not defined"
+#  endif
+	void I2C_HANDLER0() noexcept
+	{
+		Platform::sharedI2C->Interrupt();
+	}
+
+	void I2C_HANDLER1() noexcept
+	{
+		Platform::sharedI2C->Interrupt();
+	}
+
+	void I2C_HANDLER3() noexcept
+	{
+		Platform::sharedI2C->Interrupt();
+	}
+# endif
+
+#endif
+
 
 // End
