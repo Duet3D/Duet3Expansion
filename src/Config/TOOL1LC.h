@@ -83,7 +83,8 @@ constexpr Pin DriverDiagPins[NumDrivers] = { PortBPin(3) };
 
 #define SUPPORT_THERMISTORS		1
 #define SUPPORT_SPI_SENSORS		0
-#define SUPPORT_I2C_SENSORS		0
+#define SUPPORT_I2C_SENSORS		1
+#define SUPPORT_LIS3DH			1
 #define SUPPORT_DHT_SENSOR		0
 #define SUPPORT_SDADC			1
 
@@ -113,16 +114,34 @@ constexpr Pin TempSensePins[NumThermistorInputs] = { PortBPin(9), PortAPin(2) };
 constexpr Pin ButtonPins[] = { PortBPin(22), PortBPin(23) };
 
 // Diagnostic LEDs
-constexpr Pin LedPins[] = { PortAPin(0), PortAPin(1) };
-constexpr bool LedActiveHigh = true;
+constexpr Pin LedPinsV10[] = { PortAPin(0), PortAPin(1) };
+constexpr bool LedActiveHighV10 = true;
+constexpr Pin LedPinsV11[] = { PortAPin(30), PortAPin(31) };
+constexpr bool LedActiveHighV11 = false;
+
+#if SUPPORT_I2C_SENSORS
+
+// I2C using pins PA16,17
+constexpr uint8_t I2CSercomNumber = 1;
+constexpr Pin I2CSDAPin = PortAPin(16);
+constexpr GpioPinFunction I2CSDAPinPeriphMode = GpioPinFunction::C;
+constexpr Pin I2CSCLPin = PortAPin(17);
+constexpr GpioPinFunction I2CSCLPinPeriphMode = GpioPinFunction::C;
+#define I2C_HANDLER		SERCOM1_Handler
+
+#endif
+
+#if SUPPORT_LIS3DH
+constexpr bool Lis3dhAddressLsb = true;
+#endif
 
 // Table of pin functions that we are allowed to use
 constexpr PinDescription PinTable[] =
 {
 	//	TC					TCC					ADC					SDADC				SERCOM in			SERCOM out	  Exint PinName
 	// Port A
-	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA00 LED0
-	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA01 LED1
+	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA00 LED0 (v1.0), test pad (v1.1)
+	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		1,	"io3.in"		},	// PA01 LED1 (v1.0), IO3 IN (v1.1)
 	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_0,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx, "temp1"			},	// PA02
 	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_1,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx, nullptr			},	// PA03 tied to +3.3V
 	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_4,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA04 VREFB for SDADC, tied to +3.3V
@@ -137,22 +156,22 @@ constexpr PinDescription PinTable[] =
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		13,	"out1.tach"		},	// PA13
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA14 crystal
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA15 crystal
-	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::sercom1c,	Nx,	nullptr			},	// PA16 spare, sercom1 pad 0
-	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::sercom1c,	SercomIo::none,		Nx,	nullptr			},	// PA17 spare, sercom1 pad 1
+	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA16 unused (v1.0), SDA (v1.1)
+	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA17 unused (v1.0), SCL (v1.1)
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		2,	"io2.in" 		},	// PA18 IO2.in (v1.0 and later boards) and sercom1 pad 2
-	{ TcOutput::tc4_1,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA19 spare, sercom1 pad 3, also potential PWM output
+	{ TcOutput::tc4_1,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"pa19"			},	// PA19 spare, potential PWM output
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA20 drivers USART Rx (sercom 3.2)
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		5,	"io1.in"		},	// PA21
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA22 drivers USART Tx (sercom 3.0)
-	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA23 drivers USART SCLK (not needed for TMC22xx)
+	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"pa23"			},	// PA23 spare, test pad on v1.1
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA24 CAN0 Tx
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA25 CAN0 Rx
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA26 not on chip
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"ate.d0.step"	},	// PA27 driver0 step
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"ate.d0.dir"	},	// PA28 driver0 dir
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA29 not on chip
-	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA30 swclk
-	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA31 swdio
+	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA30 swclk, also LED0 on v1.1
+	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA31 swdio, also LED1 on v1.1
 
 	// Port B
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PB00 not on chip
@@ -213,5 +232,6 @@ const NvicPriority NvicPriorityUart = 2;				// serial driver makes RTOS calls
 const NvicPriority NvicPriorityPins = 2;				// priority for GPIO pin interrupts
 const NvicPriority NvicPriorityCan = 3;
 const NvicPriority NvicPriorityDmac = 3;				// priority for DMA complete interrupts
+const NvicPriority NvicPriorityI2C = 4;
 
 #endif /* SRC_CONFIG_TOOL1_V01_H_ */

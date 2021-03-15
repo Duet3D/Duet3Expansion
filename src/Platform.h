@@ -152,7 +152,7 @@ namespace Platform
 	bool DebugPutc(char c);
 
 #if SUPPORT_I2C_SENSORS && SUPPORT_LIS3DH
-	LIS3DH& GetAccelerometer() noexcept;
+	LIS3DH *GetAccelerometer() noexcept;
 #endif
 
 #if SUPPORT_DRIVERS
@@ -284,6 +284,10 @@ namespace Platform
 	uint32_t GetDateTime() noexcept;
 	void SetDateTime(uint32_t tim) noexcept;
 	bool WasDeliberateError() noexcept;
+
+#ifdef TOOL1LC
+	uint8_t GetBoardVariant() noexcept;
+#endif
 }
 
 #endif /* SRC_PLATFORM_H_ */

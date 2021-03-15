@@ -789,7 +789,13 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 	case CanMessageReturnInfo::typeDiagnosticsPart0 + 7:
 		extra = LastDiagnosticsPart;
 #if SUPPORT_I2C_SENSORS && SUPPORT_LIS3DH
-		reply.lcatf("LIS3DH detected: %s", (Platform::GetAccelerometer().CheckPresent()) ? "yes" : "no");
+		{
+			LIS3DH *accelerometer = Platform::GetAccelerometer();
+			if (accelerometer != nullptr)
+			{
+				reply.lcatf("LIS3DH detected: %s", (accelerometer->CheckPresent()) ? "yes" : "no");
+			}
+		}
 #endif
 
 #if SUPPORT_DRIVERS

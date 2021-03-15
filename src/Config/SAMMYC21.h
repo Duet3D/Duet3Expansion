@@ -119,6 +119,10 @@ constexpr GpioPinFunction I2CSCLPinPeriphMode = GpioPinFunction::C;
 
 #endif
 
+#if SUPPORT_LIS3DH
+constexpr bool Lis3dhAddressLsb = false;
+#endif
+
 // Table of pin functions that we are allowed to use
 constexpr PinDescription PinTable[] =
 {

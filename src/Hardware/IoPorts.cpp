@@ -15,6 +15,10 @@
 # include <Hardware/ATEIO/ExtendedAnalog.h>
 #endif
 
+#ifdef TOOL1LC
+# include <Platform.h>
+#endif
+
 // Members of class IoPort
 
 PinUsedBy IoPort::portUsedBy[NumPins];
@@ -438,6 +442,10 @@ void IoPort::AppendPinName(const StringRef& str) const
 
 	for (size_t lp = 0; lp < ARRAY_SIZE(PinTable); ++lp)
 	{
+#ifdef TOOL1LC
+		// Pin io3.in aka PA1 is not available in board version 1.0 and earlier
+		if (Platform::GetBoardVariant() == 0 && lp == PortAPin(1)) { continue; }
+#endif
 		const char *q = PinTable[lp].pinNames;
 		while (*q != 0)
 		{

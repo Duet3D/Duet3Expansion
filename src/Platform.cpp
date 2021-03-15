@@ -82,6 +82,9 @@ namespace Platform
 
 	uint32_t uniqueId[5];
 	bool isPrinting = false;
+#ifdef TOOL1LC
+	static uint8_t boardVariant = 0;
+#endif
 
 #if SUPPORT_DRIVERS
 	static constexpr float DefaultStepsPerMm = 80.0;
@@ -140,15 +143,15 @@ namespace Platform
 #endif
 
 #if SUPPORT_SPI_SENSORS || defined(ATEIO)
-	SharedSpiDevice *sharedSpi;
+	SharedSpiDevice *sharedSpi = nullptr;
 #endif
 
 #if SUPPORT_I2C_SENSORS
-	SharedI2CMaster *sharedI2C;
+	SharedI2CMaster *sharedI2C = nullptr;
 #endif
 
 #if SUPPORT_I2C_SENSORS && SUPPORT_LIS3DH
-	LIS3DH *accelerometer;
+	LIS3DH *accelerometer = nullptr;
 #endif
 
 #if HAS_VOLTAGE_MONITOR
@@ -302,8 +305,6 @@ namespace Platform
 	}
 #endif
 
-#if SUPPORT_I2C_SENSORS
-
 	static void InitialiseInterrupts()
 	{
 		// Note, I2C interrupt priority is set up in the I2C driver
@@ -314,7 +315,7 @@ namespace Platform
 		// Set UART interrupt priority. Each SERCOM has up to 4 interrupts, numbered sequentially.
 # if NUM_SERIAL_PORTS >= 1
 		SetInterruptPriority(Serial0_IRQn, 4, NvicPriorityUart);
-#endif
+# endif
 # if NUM_SERIAL_PORTS >= 2
 		SetInterruptPriority(Serial1_IRQn, 4, NvicPriorityUart);
 # endif
@@ -386,10 +387,8 @@ namespace Platform
 		DisableAllDrives();
 #endif
 		CanInterface::Shutdown();
-		for (Pin pin : LedPins)
-		{
-			digitalWrite(pin, !LedActiveHigh);			// turn the LED off
-		}
+		WriteLed(0, false);
+		WriteLed(1, false);
 	}
 
 	[[noreturn]] static void ShutdownAndReset()
@@ -501,18 +500,63 @@ namespace Platform
 #endif
 	}
 
+	static void InitLeds();
 }	// end namespace Platform
 
-static void InitLeds()
+// LED management
+static void Platform::InitLeds()
 {
-	// Set up the DIAG LED pins
+	// Set up the LED pins
+#ifdef TOOL1LC
+	if (boardVariant == 1)
+	{
+		for (Pin pin : LedPinsV11)
+		{
+			IoPort::SetPinMode(pin, (LedActiveHighV11) ? OUTPUT_LOW : OUTPUT_HIGH);
+		}
+	}
+	else
+	{
+		for (Pin pin : LedPinsV10)
+		{
+			IoPort::SetPinMode(pin, (LedActiveHighV10) ? OUTPUT_LOW : OUTPUT_HIGH);
+		}
+	}
+#else
 	for (Pin pin : LedPins)
 	{
 		IoPort::SetPinMode(pin, (LedActiveHigh) ? OUTPUT_LOW : OUTPUT_HIGH);
 	}
-	digitalWrite(LedPins[0], LedActiveHigh);
+#endif
+	Platform::WriteLed(0, true);				// turn LED on for debugging
 }
 
+void Platform::WriteLed(uint8_t ledNumber, bool turnOn)
+{
+#ifdef TOOL1LC
+	if (boardVariant == 1)
+	{
+		if (ledNumber < ARRAY_SIZE(LedPinsV11))
+		{
+			digitalWrite(LedPinsV11[ledNumber], (LedActiveHighV11) ? turnOn : !turnOn);
+		}
+	}
+	else
+	{
+		if (ledNumber < ARRAY_SIZE(LedPinsV10))
+		{
+			digitalWrite(LedPinsV10[ledNumber], (LedActiveHighV10) ? turnOn : !turnOn);
+		}
+	}
+#else
+	if (ledNumber < ARRAY_SIZE(LedPins))
+	{
+		digitalWrite(LedPins[ledNumber], (LedActiveHigh) ? turnOn : !turnOn);
+	}
+#endif
+}
+
+// Initialisation
 void Platform::Init()
 {
 	IoPort::Init();
@@ -795,9 +839,14 @@ void Platform::Init()
 #endif
 
 #if SUPPORT_I2C_SENSORS
-	SetPinFunction(I2CSDAPin, I2CSDAPinPeriphMode);
-	SetPinFunction(I2CSCLPin, I2CSCLPinPeriphMode);
-	sharedI2C = new SharedI2CMaster(I2CSercomNumber);
+# ifdef TOOL1LC
+	if (boardVariant != 0)
+# endif
+	{
+		SetPinFunction(I2CSDAPin, I2CSDAPinPeriphMode);
+		SetPinFunction(I2CSCLPin, I2CSCLPinPeriphMode);
+		sharedI2C = new SharedI2CMaster(I2CSercomNumber);
+	}
 #endif
 
 #ifdef ATEIO
@@ -818,7 +867,12 @@ void Platform::Init()
 	InitialiseInterrupts();
 
 #if SUPPORT_I2C_SENSORS && SUPPORT_LIS3DH
-	accelerometer = new LIS3DH(*sharedI2C, false);
+# ifdef TOOL1LC
+	if (boardVariant != 0)
+# endif
+	{
+		accelerometer = new LIS3DH(*sharedI2C, Lis3dhAddressLsb);
+	}
 #endif
 
 	CanInterface::Init(GetCanAddress(), UseAlternateCanPins, true);
@@ -1192,19 +1246,11 @@ void Platform::SpinMinimal()
 #endif
 }
 
-void Platform::WriteLed(uint8_t ledNumber, bool turnOn)
-{
-	if (ledNumber < ARRAY_SIZE(LedPins))
-	{
-		digitalWrite(LedPins[ledNumber], (LedActiveHigh) ? turnOn : !turnOn);
-	}
-}
-
 #if SUPPORT_I2C_SENSORS && SUPPORT_LIS3DH
 
-LIS3DH& Platform::GetAccelerometer() noexcept
+LIS3DH *Platform::GetAccelerometer() noexcept
 {
-	return *accelerometer;
+	return accelerometer;
 }
 
 #endif
@@ -1985,6 +2031,18 @@ float Platform::GetMaxV12Voltage()
 
 #endif
 
+#ifdef TOOL1LC
+
+uint8_t Platform::GetBoardVariant() noexcept
+{
+	return boardVariant;
+}
+
+#endif
+
+// Interrupt handlers
+#if SUPPORT_I2C_SENSORS
+
 # if SAMC21
 #  ifndef I2C_HANDLER
 #   error "I2C_HANDLER not defined"
@@ -2014,6 +2072,5 @@ float Platform::GetMaxV12Voltage()
 # endif
 
 #endif
-
 
 // End
