@@ -302,8 +302,6 @@ namespace Platform
 	}
 #endif
 
-#if SUPPORT_I2C_SENSORS
-
 	static void InitialiseInterrupts()
 	{
 		// Note, I2C interrupt priority is set up in the I2C driver
@@ -1984,6 +1982,8 @@ float Platform::GetMaxV12Voltage()
 }
 
 #endif
+
+#if SUPPORT_I2C_SENSORS
 
 # if SAMC21
 #  ifndef I2C_HANDLER
