@@ -103,6 +103,7 @@ void SharedI2CMaster::Enable() const noexcept
 	hardware->I2CM.CTRLA.bit.ENABLE = 1;
 	hri_sercomi2cm_wait_for_sync(hardware, SERCOM_I2CM_CTRLA_ENABLE);
 	hardware->I2CM.STATUS.reg = SERCOM_I2CM_STATUS_BUSSTATE(0x01);
+	while (hardware->I2CM.SYNCBUSY.bit.SYSOP) { }
 }
 
 void SharedI2CMaster::Disable() const noexcept
@@ -124,7 +125,6 @@ bool SharedI2CMaster::WaitForStatus(uint8_t statusBits) noexcept
 		status = hardware->I2CM.INTFLAG.reg;
 		hardware->I2CM.INTENCLR.reg = 0xFF;
 	}
-	hardware->I2CM.INTFLAG.reg = status;
 	return (status & statusBits) != 0;
 }
 
@@ -244,16 +244,20 @@ size_t SharedI2CMaster::InternalTransfer(uint16_t address, uint8_t firstByte, ui
 		{
 			return bytesSent + bytesReceived;
 		}
-		*buffer++ = hardware->I2CM.DATA.reg;
-		++bytesReceived;
-		if (bytesReceived == numToRead)
+		if (bytesReceived + 1 == numToRead)
 		{
 			break;
 		}
-		hardware->I2CM.CTRLB.reg = SERCOM_I2CM_CTRLB_CMD(0x02);					// acknowledge and read another byte
+		*buffer++ = hardware->I2CM.DATA.reg;
+		++bytesReceived;
+		hardware->I2CM.CTRLB.reg = SERCOM_I2CM_CTRLB_CMD(0x02);								// acknowledge and read another byte
 	}
 
-	hardware->I2CM.CTRLB.reg = SERCOM_I2CM_CTRLB_CMD(0x03);						// acknowledge and stop
+	// App note says we need to NAK the last byte and send the stop command before we read the data
+	hardware->I2CM.CTRLB.reg = SERCOM_I2CM_CTRLB_ACKACT | SERCOM_I2CM_CTRLB_CMD(0x03);		// NAK and stop
+	while (hardware->I2CM.SYNCBUSY.bit.SYSOP) { }
+	*buffer++ = hardware->I2CM.DATA.reg;
+	++bytesReceived;
 	return bytesSent + bytesReceived;
 }
 
