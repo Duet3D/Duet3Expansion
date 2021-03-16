@@ -60,12 +60,14 @@ private:
 		uint8_t outZL;
 		uint8_t outZH;
 		static constexpr uint8_t FirstRegNum = 0x27;
-	};
+	} outRegisters;
 
 	template<class T> bool ReadRegisters(T& registers) noexcept;
 	template<class T> bool WriteRegisters(const T& registers) noexcept;
 	bool ReadRegister(uint8_t regNum, uint8_t& val) noexcept;
 	bool WriteRegister(uint8_t regNum, uint8_t val) noexcept;
+	bool ReadOutputRegisters() noexcept;
+	bool WriteControlRegisters() noexcept;
 };
 
 #endif

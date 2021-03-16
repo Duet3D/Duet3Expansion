@@ -560,6 +560,15 @@ void Platform::WriteLed(uint8_t ledNumber, bool turnOn)
 void Platform::Init()
 {
 	IoPort::Init();
+
+#ifdef TOOL1LC
+	// On the board detect pin:
+	// Tool board V1.0 and earlier has 1K lower resistor, 10K upper, so will read as low
+	// Tool board V1.1 has 10K lower resistor, 1K upper, so will read as high
+	pinMode(BoardTypePin, INPUT);
+	boardVariant = (digitalRead(BoardTypePin)) ? 1 : 0;
+#endif
+
 	InitLeds();
 
 #if SUPPORT_CLOSED_LOOP
