@@ -36,6 +36,10 @@
 # endif
 #endif
 
+#if SUPPORT_I2C_SENSORS && SUPPORT_LIS3DH
+# include "AccelerometerHandler.h"
+#endif
+
 #if HAS_VOLTAGE_MONITOR
 constexpr float MinVin = 11.0;
 constexpr float MaxVin = 32.0;
@@ -788,14 +792,11 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 
 	case CanMessageReturnInfo::typeDiagnosticsPart0 + 7:
 		extra = LastDiagnosticsPart;
-#if SUPPORT_I2C_SENSORS && SUPPORT_LIS3DH
-		{
-			LIS3DH *accelerometer = Platform::GetAccelerometer();
-			if (accelerometer != nullptr)
-			{
-				reply.lcatf("LIS3DH detected: %s", (accelerometer->CheckPresent()) ? "yes" : "no");
-			}
-		}
+#if SUPPORT_I2C_SENSORS
+		Platform::GetSharedI2C().Diagnostics(reply);
+# if SUPPORT_LIS3DH
+		AccelerometerHandler::Diagnostics(reply);
+# endif
 #endif
 
 #if SUPPORT_DRIVERS

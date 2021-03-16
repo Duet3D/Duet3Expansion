@@ -25,6 +25,10 @@
 #include <Hardware/Devices.h>
 #include <Math/Isqrt.h>
 
+#if SUPPORT_I2C_SENSORS && SUPPORT_LIS3DH
+# include <CommandProcessing/AccelerometerHandler.h>
+#endif
+
 #if SUPPORT_CLOSED_LOOP
 # include <ClosedLoop/ClosedLoop.h>
 #endif
@@ -148,10 +152,6 @@ namespace Platform
 
 #if SUPPORT_I2C_SENSORS
 	SharedI2CMaster *sharedI2C = nullptr;
-#endif
-
-#if SUPPORT_I2C_SENSORS && SUPPORT_LIS3DH
-	LIS3DH *accelerometer = nullptr;
 #endif
 
 #if HAS_VOLTAGE_MONITOR
@@ -880,7 +880,7 @@ void Platform::Init()
 	if (boardVariant != 0)
 # endif
 	{
-		accelerometer = new LIS3DH(*sharedI2C, Lis3dhAddressLsb);
+		AccelerometerHandler::Init();
 	}
 #endif
 
@@ -1254,15 +1254,6 @@ void Platform::SpinMinimal()
 	currentVin = vinFilter.GetSum()/vinFilter.NumAveraged();
 #endif
 }
-
-#if SUPPORT_I2C_SENSORS && SUPPORT_LIS3DH
-
-LIS3DH *Platform::GetAccelerometer() noexcept
-{
-	return accelerometer;
-}
-
-#endif
 
 #if SUPPORT_THERMISTORS
 

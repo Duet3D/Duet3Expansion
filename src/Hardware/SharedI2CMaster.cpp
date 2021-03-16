@@ -20,12 +20,7 @@
 constexpr uint32_t DefaultSharedI2CClockFrequency = 100000;
 constexpr uint32_t I2CTimeoutTicks = 10;
 
-void SharedI2CMaster::ErrorCounts::Clear() noexcept
-{
-	naks = sendTimeouts = recvTimeouts = finishTimeouts = resets = 0;
-}
-
-SharedI2CMaster::SharedI2CMaster(uint8_t sercomNum) noexcept : hardware(Serial::Sercoms[sercomNum]), taskWaiting(nullptr), state(I2cState::idle)
+SharedI2CMaster::SharedI2CMaster(uint8_t sercomNum) noexcept : hardware(Serial::Sercoms[sercomNum]), taskWaiting(nullptr), busErrors(0), naks(0), state(I2cState::idle)
 {
 	Serial::EnableSercomClock(sercomNum);
 
@@ -175,9 +170,14 @@ bool SharedI2CMaster::Transfer(uint16_t address, uint8_t firstByte, uint8_t *buf
 		// Had an I2C error, so re-initialise
 		Disable();
 		Enable();
-		++errorCounts.resets;
 	}
 	return false;
+}
+
+void SharedI2CMaster::Diagnostics(const StringRef& reply) noexcept
+{
+	reply.lcatf("I2C bus errors %u, naks %u", busErrors, naks);
+	busErrors = naks = 0;
 }
 
 bool SharedI2CMaster::InternalTransfer(uint16_t address, uint8_t firstByte, uint8_t *buffer, size_t numToWrite, size_t numToRead) noexcept
@@ -228,11 +228,13 @@ void SharedI2CMaster::ProtocolError() noexcept
 	if (status & (SERCOM_I2CM_STATUS_BUSERR | SERCOM_I2CM_STATUS_ARBLOST))
 	{
 		state = I2cState::busError;
+		++busErrors;
 	}
 	else if (status & SERCOM_I2CM_STATUS_RXNACK)
 	{
 		state = I2cState::nakError;
 		hardware->I2CM.CTRLB.reg = SERCOM_I2CM_CTRLB_CMD(0x03);			// send stop command, get off bus
+		++naks;
 	}
 	TaskBase::GiveFromISR(taskWaiting);
 	taskWaiting = nullptr;
@@ -339,18 +341,6 @@ void SharedI2CMaster::Interrupt() noexcept
 		}
 		break;
 	}
-}
-
-SharedI2CMaster::ErrorCounts SharedI2CMaster::GetErrorCounts(bool clear) noexcept
-{
-	const irqflags_t flags = cpu_irq_save();
-	const ErrorCounts ret = errorCounts;
-	if (clear)
-	{
-		errorCounts.Clear();
-	}
-	cpu_irq_restore(flags);
-	return ret;
 }
 
 #endif

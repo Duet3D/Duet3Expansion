@@ -17,25 +17,15 @@
 class SharedI2CMaster
 {
 public:
-	struct ErrorCounts
-	{
-		uint32_t naks;
-		uint32_t sendTimeouts;
-		uint32_t recvTimeouts;
-		uint32_t finishTimeouts;
-		uint32_t resets;
-
-		void Clear() noexcept;
-	};
-
 	SharedI2CMaster(uint8_t sercomNum) noexcept;
 
 	void SetClockFrequency(uint32_t freq) const noexcept;
 	bool Transfer(uint16_t address, uint8_t firstByte, uint8_t *buffer, size_t numToWrite, size_t numToRead) noexcept;
-	ErrorCounts GetErrorCounts(bool clear) noexcept;
 
 	bool Take(uint32_t timeout) noexcept { return mutex.Take(timeout); }		// get ownership of this SPI, return true if successful
 	void Release() noexcept { mutex.Release(); }
+
+	void Diagnostics(const StringRef& reply) noexcept;
 
 	void Interrupt() noexcept;
 
@@ -55,12 +45,13 @@ private:
 
 	Sercom * const hardware;
 	TaskHandle taskWaiting;
-	ErrorCounts errorCounts;			// error counts
 	Mutex mutex;
 
 	uint8_t *transferBuffer;
 	size_t numLeftToRead, numLeftToWrite;
 	uint16_t currentAddress;
+	unsigned int busErrors;
+	unsigned int naks;
 	uint8_t firstByteToWrite;
 	volatile I2cState state;
 };

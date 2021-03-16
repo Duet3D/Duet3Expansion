@@ -151,19 +151,15 @@ namespace Platform
 	void WriteLed(uint8_t ledNumber, bool turnOn);
 	bool DebugPutc(char c);
 
-#if SUPPORT_I2C_SENSORS && SUPPORT_LIS3DH
-	LIS3DH *GetAccelerometer() noexcept;
-#endif
-
 #if SUPPORT_DRIVERS
 	float DriveStepsPerUnit(size_t drive);
 	const float *GetDriveStepsPerUnit();
 	void SetDriveStepsPerUnit(size_t drive, float val);
 	float GetPressureAdvanceClocks(size_t driver);
 	void SetPressureAdvance(size_t driver, float advance);
-#if 0	// not used yet and may never be
+# if 0	// not used yet and may never be
 	void BuildDriverStatusMessage(CanMessageBuffer *buf) noexcept;
-#endif
+# endif
 
 # if SINGLE_DRIVER
 	inline void StepDriverLow()
