@@ -24,6 +24,7 @@ namespace TaskPriority
 	static constexpr int MovePriority = 3;
 	static constexpr int CanAsyncSenderPriority = 4;
 	static constexpr int CanClockPriority = 4;
+	static constexpr int Accelerometer = 3;
 }
 
 #endif /* SRC_TASKPRIORITIES_H_ */

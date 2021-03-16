@@ -1002,6 +1002,13 @@ void CommandProcessor::Spin()
 			rslt = FilamentMonitor::Configure(buf->msg.generic, replyRef);
 			break;
 #endif
+
+#if SUPPORT_I2C_SENSORS && SUPPORT_LIS3DH
+		case CanMessageType::accelerometerSettings:
+			requestId = buf->msg.accelerometerSettings.requestId;
+			rslt = AccelerometerHandler::ProcessCanRequest(buf->msg.accelerometerSettings, replyRef);
+			break;
+#endif
 		default:
 			requestId = CanRequestIdAcceptAlways;
 			reply.printf("Board %u received unknown msg type %u", CanInterface::GetCanAddress(), (unsigned int)buf->id.MsgType());

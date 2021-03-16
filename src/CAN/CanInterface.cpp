@@ -212,9 +212,9 @@ CanAddress CanInterface::GetCurrentMasterAddress() noexcept
 bool CanInterface::Send(CanMessageBuffer *buf) noexcept
 {
 	//TODO option to not force sending, and return true only if successful?
+	TaskCriticalSectionLocker lock;					// this is called by multiple tasks, all of them accessing the transmit fifo
 	can0dev->SendMessage(CanDevice::TxBufferNumber::fifo, 1000, buf);
 	return true;
-
 }
 
 bool CanInterface::SendAsync(CanMessageBuffer *buf) noexcept

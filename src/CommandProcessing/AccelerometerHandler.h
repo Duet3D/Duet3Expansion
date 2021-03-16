@@ -20,7 +20,7 @@ namespace AccelerometerHandler
 {
 	void Init() noexcept;
 	bool Present() noexcept;
-	GCodeResult ProcessCanCommand(const CanMessageAccelerometerSettings& msg, const StringRef& reply) noexcept;
+	GCodeResult ProcessCanRequest(const CanMessageAccelerometerSettings& msg, const StringRef& reply) noexcept;
 	void Diagnostics(const StringRef& reply) noexcept;
 };
 
