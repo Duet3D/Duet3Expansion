@@ -40,17 +40,29 @@ public:
 	void Interrupt() noexcept;
 
 private:
+	enum class I2cState : uint8_t
+	{
+		idle = 0, sendingAddressForWrite, writing, sendingTenBitAddressForRead, sendingAddressForRead, reading, busError, nakError, otherError
+	};
+
 	void Enable() const noexcept;
 	void Disable() const noexcept;
 	bool WaitForStatus(uint8_t statusBits) noexcept;
 	bool WaitForSend() noexcept;
 	bool WaitForReceive() noexcept;
-	size_t InternalTransfer(uint16_t address, uint8_t firstByte, uint8_t *buffer, size_t numToWrite, size_t numToRead) noexcept;
+	bool InternalTransfer(uint16_t address, uint8_t firstByte, uint8_t *buffer, size_t numToWrite, size_t numToRead) noexcept;
+	void ProtocolError()  noexcept;
 
 	Sercom * const hardware;
 	TaskHandle taskWaiting;
 	ErrorCounts errorCounts;			// error counts
 	Mutex mutex;
+
+	uint8_t *transferBuffer;
+	size_t numLeftToRead, numLeftToWrite;
+	uint16_t currentAddress;
+	uint8_t firstByteToWrite;
+	volatile I2cState state;
 };
 
 #endif
