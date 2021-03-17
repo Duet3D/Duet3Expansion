@@ -197,7 +197,7 @@ bool SharedI2CMaster::InternalTransfer(uint16_t address, uint8_t firstByte, uint
 	{
 		state = I2cState::sendingAddressForWrite;
 		hardware->I2CM.INTENSET.reg = SERCOM_I2CM_INTFLAG_MB;
-		hardware->I2CM.ADDR.reg = (address >= 0x100) ? address | SERCOM_I2CM_ADDR_TENBITEN : address;
+		hardware->I2CM.ADDR.reg = (currentAddress >= 0x100) ? address | SERCOM_I2CM_ADDR_TENBITEN : currentAddress;
 	}
 	else if (currentAddress >= 0x100)
 	{
@@ -209,7 +209,7 @@ bool SharedI2CMaster::InternalTransfer(uint16_t address, uint8_t firstByte, uint
 	{
 		state = I2cState::sendingAddressForRead;
 		hardware->I2CM.INTENSET.reg = SERCOM_I2CM_INTFLAG_MB | SERCOM_I2CM_INTFLAG_SB;
-		hardware->I2CM.ADDR.reg = address | 0x0001;
+		hardware->I2CM.ADDR.reg = currentAddress | 0x0001;
 	}
 
 	TaskBase::Take(I2CTimeoutTicks);

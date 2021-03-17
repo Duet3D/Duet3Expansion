@@ -1234,7 +1234,7 @@ void Platform::Spin()
 				debugPrintf("%s\n", reply.c_str());
 				//moveInstance->DebugPrintCdda();
 #if SUPPORT_I2C_SENSORS && SUPPORT_LIS3DH
-				debugPrintf("LIS3DH detected: %s", (accelerometer->CheckPresent()) ? "yes" : "no");
+				debugPrintf("LIS3DH detected: %s", AccelerometerHandler::Present() ? "yes" : "no");
 #endif
 			}
 		}
