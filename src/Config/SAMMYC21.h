@@ -121,6 +121,7 @@ constexpr GpioPinFunction I2CSCLPinPeriphMode = GpioPinFunction::C;
 
 #if SUPPORT_LIS3DH
 constexpr bool Lis3dhAddressLsb = false;
+constexpr Pin Lis3dhInt1Pin = PortAPin(0);
 #endif
 
 // Table of pin functions that we are allowed to use

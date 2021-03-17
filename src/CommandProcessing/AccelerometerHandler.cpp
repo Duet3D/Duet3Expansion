@@ -25,92 +25,60 @@ static LIS3DH *accelerometer = nullptr;
 static volatile uint16_t samplingRate;
 static volatile uint16_t numSamplesRequested;
 static volatile uint8_t resolution;
-static volatile uint8_t axes = 0;
+static volatile uint8_t axis;
 
 [[noreturn]] void AccelerometerTaskCode(void*) noexcept
 {
 	for (;;)
 	{
 		TaskBase::Take();
-		if (axes != 0)
+		if (resolution != 0)
 		{
 			// Set up the accelerometer to get as close to the requested sample rate and resolution as we can
-			accelerometer->Configure(samplingRate, resolution);
+			accelerometer->Configure(axis, samplingRate, resolution);
 			CanMessageBuffer buf(nullptr);
 
 			// Collect and send the samples
 			unsigned int samplesSent = 0;
 			unsigned int samplesInBuffer = 0;
 			unsigned int samplesWanted = numSamplesRequested;
+			const unsigned int MaxSamplesInBuffer = (resolution <= 8) ? sizeof(CanMessageAccelerometerData::data) : (2 * sizeof(CanMessageAccelerometerData::data))/3;
+			unsigned int canDataIndex = 0;
 			bool overflowed = false;
-			if (resolution <= 8)
+			do
 			{
-				do
+				uint16_t dataRate;
+				const uint16_t *data;
+				unsigned int samplesRead = accelerometer->CollectData(&data, dataRate, overflowed);
+				data += 2 * axis;
+				if (samplesRead >= samplesWanted)
 				{
-					uint8_t collectedData[32];					// LIS3DH has a 32-deep FIFO
-					uint16_t dataRate;
-					unsigned int samplesRead = accelerometer->Collect8bitData(collectedData, dataRate, overflowed);
-					if (samplesRead >= samplesWanted)
-					{
-						samplesRead = samplesWanted;
-					}
-					constexpr unsigned int MaxSamplesInBuffer = sizeof(CanMessageAccelerometerData::data);
-					const unsigned int samplesToCopy = min<unsigned int>(samplesRead, MaxSamplesInBuffer - samplesInBuffer);
-					CanMessageAccelerometerData& msg = buf.msg.accelerometerData;
-					memcpy(msg.data + samplesInBuffer, collectedData, samplesToCopy);
-					samplesWanted -= samplesToCopy;
-					samplesInBuffer += samplesToCopy;
-					if (samplesInBuffer == MaxSamplesInBuffer || samplesWanted == 0)
-					{
-						// Send the buffer
-						buf.SetupStatusMessage<CanMessageAccelerometerData>(CanInterface::GetCanAddress(), CanInterface::GetCurrentMasterAddress());
-						msg.firstSampleNumber = samplesSent;
-						msg.numSamples = samplesInBuffer;
-						msg.actualSampleRate = dataRate;
-						msg.overflowed = overflowed;
-						msg.twelveBit = false;
+					samplesRead = samplesWanted;
+				}
 
-						buf.dataLength = msg.GetActualDataLength();
-						CanInterface::Send(&buf);
-						samplesSent += samplesInBuffer;
-						overflowed = false;
-
-						if (samplesRead > samplesToCopy)
-						{
-							samplesInBuffer = samplesRead - samplesToCopy;
-							memcpy(msg.data, collectedData + samplesToCopy, samplesInBuffer);
-						}
-						else
-						{
-							samplesInBuffer = 0;
-						}
-
-					}
-				} while (samplesWanted != 0);
-			}
-			else
-			{
-				unsigned int canDataIndex = 0;
-				do
+				while (samplesRead != 0)
 				{
-					uint16_t collectedData[32];					// LIS3DH has a 32-deep FIFO
-					uint16_t dataRate;
-					unsigned int samplesRead = accelerometer->Collect16bitData(collectedData, dataRate, overflowed);
-					if (samplesRead >= samplesWanted)
-					{
-						samplesRead = samplesWanted;
-					}
-					constexpr unsigned int MaxSamplesInBuffer = (2 * sizeof(CanMessageAccelerometerData::data))/3;
-					const unsigned int samplesToCopy = min<unsigned int>(samplesRead, MaxSamplesInBuffer - samplesInBuffer);
+					unsigned int samplesToCopy = min<unsigned int>(samplesRead, MaxSamplesInBuffer - samplesInBuffer);
 					CanMessageAccelerometerData& msg = buf.msg.accelerometerData;
-
-					// Pack the 12-bit data into the buffer
-					const uint16_t *p = collectedData;
+					if (resolution <= 8)
 					{
-						const unsigned int samplesWantedInBuffer = samplesInBuffer + samplesToCopy;
-						while (samplesInBuffer < samplesWantedInBuffer)
+						// Send individual bytes in the CAN message
+						while (samplesToCopy != 0)
 						{
-							const uint16_t val = *p++;
+							msg.data[samplesInBuffer++] = (uint8_t)*data;
+							data += 6;
+							--samplesToCopy;
+							--samplesRead;
+							--samplesWanted;
+						}
+					}
+					else
+					{
+						// Pack the 12-bit data into the buffer
+						while (samplesToCopy != 0)
+						{
+							const uint16_t val = *data;
+							data += 6;
 							if (samplesInBuffer & 1)
 							{
 								msg.data[canDataIndex++] |= (uint8_t)(val << 4);
@@ -122,10 +90,12 @@ static volatile uint8_t axes = 0;
 								msg.data[canDataIndex] = (uint8_t)((val >> 8) & 0x0F);
 							}
 							++samplesInBuffer;
+							--samplesToCopy;
+							--samplesWanted;
+							--samplesRead;
 						}
 					}
-					samplesWanted -= samplesToCopy;
-					samplesInBuffer += samplesToCopy;
+
 					if (samplesInBuffer == MaxSamplesInBuffer || samplesWanted == 0)
 					{
 						// Send the buffer
@@ -134,40 +104,22 @@ static volatile uint8_t axes = 0;
 						msg.numSamples = samplesInBuffer;
 						msg.actualSampleRate = dataRate;
 						msg.overflowed = overflowed;
-						msg.twelveBit = false;
+						msg.twelveBit = (resolution >= 8);
 
 						buf.dataLength = msg.GetActualDataLength();
 						CanInterface::Send(&buf);
 						samplesSent += samplesInBuffer;
-						overflowed = false;
-
 						samplesInBuffer = 0;
-						if (samplesRead > samplesToCopy)
-						{
-							const unsigned int samplesWantedInBuffer = samplesRead - samplesToCopy;
-							while (samplesInBuffer < samplesWantedInBuffer)
-							{
-								const uint16_t val = *p++;
-								if (samplesInBuffer & 1)
-								{
-									msg.data[canDataIndex++] |= (uint8_t)(val << 4);
-									msg.data[canDataIndex++] = (uint8_t)(val >> 4);
-								}
-								else
-								{
-									msg.data[canDataIndex++] = (uint8_t)val;
-									msg.data[canDataIndex] = (uint8_t)((val >> 8) & 0x0F);
-								}
-								++samplesInBuffer;
-							}
-						}
+						canDataIndex = 0;
+						overflowed = false;
 					}
-				} while (samplesWanted != 0);
-			}
-			accelerometer->Stop();
+				}
+			} while (samplesWanted != 0);
+
+			accelerometer->StopCollecting();
 
 			// Wait for another command
-			axes = 0;
+			resolution = 0;
 		}
 	}
 }
@@ -175,7 +127,7 @@ static volatile uint8_t axes = 0;
 // Interface functions called by the main task
 void AccelerometerHandler::Init() noexcept
 {
-	LIS3DH *temp = new LIS3DH(Platform::GetSharedI2C(), Lis3dhAddressLsb);
+	LIS3DH *temp = new LIS3DH(Platform::GetSharedI2C(), Lis3dhInt1Pin, Lis3dhAddressLsb);
 	if (temp->CheckPresent())
 	{
 		accelerometer = temp;
@@ -194,7 +146,7 @@ bool AccelerometerHandler::Present() noexcept
 
 GCodeResult AccelerometerHandler::ProcessCanRequest(const CanMessageAccelerometerSettings &msg, const StringRef &reply) noexcept
 {
-	if (msg.axes != 0 && axes != 0)
+	if (msg.resolution != 0 && resolution != 0)
 	{
 		reply.copy("Accelerometer is busy");
 		return GCodeResult::error;
@@ -202,9 +154,9 @@ GCodeResult AccelerometerHandler::ProcessCanRequest(const CanMessageAcceleromete
 
 	samplingRate = msg.sampleRate;
 	numSamplesRequested = msg.numSamples;
-	resolution = msg.resolutionBits;
-	axes = msg.axes;							// this must be the last one written
-	if (axes != 0)
+	axis = msg.axis;
+	resolution = msg.resolution;						// this must be the last one written because it controls whether data is collected or not
+	if (resolution != 0)
 	{
 		accelerometerTask.Give();
 	}
@@ -214,6 +166,10 @@ GCodeResult AccelerometerHandler::ProcessCanRequest(const CanMessageAcceleromete
 void AccelerometerHandler::Diagnostics(const StringRef& reply) noexcept
 {
 	reply.lcatf("Accelerometer detected: %s", (accelerometer != nullptr) ? "yes" : "no");
+	if (accelerometer != nullptr)
+	{
+		reply.catf(", status: %02x", accelerometer->ReadStatus());
+	}
 }
 
 #endif

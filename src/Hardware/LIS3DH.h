@@ -17,57 +17,53 @@
 class LIS3DH : public SharedI2CClient
 {
 public:
-	LIS3DH(SharedI2CMaster& dev, bool addressLSB) noexcept;
+	LIS3DH(SharedI2CMaster& dev, Pin p_int1Pin, bool addressLSB) noexcept;
 
+	// Do a quick test to check whether the accelerometer is present, returning true if it is
 	bool CheckPresent() noexcept;
 
+	// Configure the accelerometer to collect for the requested axis at or near the requested sampling rate and the requested resolution in bits.
+	// Actual collection does not start until the first call to Collect8bitData or Collect16bitData.
+	void Configure(uint8_t axis, uint16_t samplingRate, uint8_t resolution) noexcept;
+
+	// Collect some data from the FIFO, suspending until the data is available
+	unsigned int CollectData(const uint16_t **collectedData, uint16_t &dataRate, bool &overflowed) noexcept;
+
+	// Stop collecting data
+	void StopCollecting() noexcept;
+
+	// Get a status byte
+	uint8_t ReadStatus() noexcept;
+
+	// Used by the ISR
+	void Int1Isr() noexcept;
+	TaskHandle GetAndClearTaskWaiting() noexcept { const TaskHandle t = taskWaiting; taskWaiting = nullptr; return t; }
+
 private:
-	static constexpr uint8_t WhoAmIRegister = 0x0F;
-	static constexpr uint8_t WhoAmIValue = 0x33;
-
-	struct AuxRegisters
+	enum class LisRegister : uint8_t
 	{
-		uint8_t statusAux;
-		uint8_t outAdc1L;
-		uint8_t outAdc1H;
-		uint8_t outAdc2L;
-		uint8_t outAdc2H;
-		uint8_t outAdc3L;
-		uint8_t outAdc3H;
-		static constexpr uint8_t FirstRegNum = 0x07;
-	} auxRegisters;
+		WhoAmI = 0x0f,
+		Ctrl1 = 0x20,
+		Status = 0x27,
+		OutXL = 0x28,
+		FifoControl = 0x2E,
+		FifoSource = 0x2F
+	};
 
-	struct CtrlRegisters
-	{
-		uint8_t ctrlReg0;
-		uint8_t tempCfgReg;
-		uint8_t ctrlReg1;
-		uint8_t ctrlReg2;
-		uint8_t ctrlReg3;
-		uint8_t ctrlReg4;
-		uint8_t ctrlReg5;
-		uint8_t ctrlReg6;
-		static constexpr uint8_t FirstRegNum = 0x1E;
-	} ctrlRegisters;
+	bool ReadRegisters(LisRegister reg, uint8_t *buffer, size_t numToRead) noexcept;
+	bool WriteRegisters(LisRegister reg, uint8_t *buffer, size_t numToWrite) noexcept;
+	bool ReadRegister(LisRegister reg, uint8_t& val) noexcept;
+	bool WriteRegister(LisRegister reg, uint8_t val) noexcept;
 
-	struct OutRegisters
-	{
-		uint8_t status;
-		uint8_t outXL;
-		uint8_t outXH;
-		uint8_t outYL;
-		uint8_t outYH;
-		uint8_t outZL;
-		uint8_t outZH;
-		static constexpr uint8_t FirstRegNum = 0x27;
-	} outRegisters;
-
-	template<class T> bool ReadRegisters(T& registers) noexcept;
-	template<class T> bool WriteRegisters(const T& registers) noexcept;
-	bool ReadRegister(uint8_t regNum, uint8_t& val) noexcept;
-	bool WriteRegister(uint8_t regNum, uint8_t val) noexcept;
-	bool ReadOutputRegisters() noexcept;
-	bool WriteControlRegisters() noexcept;
+	volatile TaskHandle taskWaiting;
+	uint32_t lastInterruptTime;
+	uint32_t lastInterruptInterval;
+	uint8_t currentAxis;
+	uint8_t ctrlReg1;
+	Pin int1Pin;
+	bool collecting;
+	uint8_t numLastRead;
+	alignas(2) uint8_t dataBuffer[6 * 32];
 };
 
 #endif
