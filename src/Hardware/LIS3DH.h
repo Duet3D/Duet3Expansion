@@ -22,9 +22,11 @@ public:
 	// Do a quick test to check whether the accelerometer is present, returning true if it is
 	bool CheckPresent() noexcept;
 
-	// Configure the accelerometer to collect for the requested axis at or near the requested sampling rate and the requested resolution in bits.
-	// Actual collection does not start until the first call to Collect8bitData or Collect16bitData.
-	void Configure(uint8_t axis, uint16_t samplingRate, uint8_t resolution) noexcept;
+	// Configure the accelerometer to collect at or near the requested sampling rate and the requested resolution in bits.
+	void Configure(uint16_t& samplingRate, uint8_t& resolution) noexcept;
+
+	// Start collecting data
+	void StartCollecting(uint8_t axes) noexcept;
 
 	// Collect some data from the FIFO, suspending until the data is available
 	unsigned int CollectData(const uint16_t **collectedData, uint16_t &dataRate, bool &overflowed) noexcept;
@@ -61,7 +63,6 @@ private:
 	uint8_t currentAxis;
 	uint8_t ctrlReg1;
 	Pin int1Pin;
-	bool collecting;
 	uint8_t numLastRead;
 	alignas(2) uint8_t dataBuffer[6 * 32];
 };

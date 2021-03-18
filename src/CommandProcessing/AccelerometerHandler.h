@@ -13,14 +13,16 @@
 
 #if SUPPORT_LIS3DH
 
-class CanMessageAccelerometerSettings;
+class CanMessageGeneric;
+class CanMessageStartAccelerometer;
 
 // Interface to the accelerometer. These functions are called by the main task.
 namespace AccelerometerHandler
 {
 	void Init() noexcept;
 	bool Present() noexcept;
-	GCodeResult ProcessCanRequest(const CanMessageAccelerometerSettings& msg, const StringRef& reply) noexcept;
+	GCodeResult ProcessConfigRequest(const CanMessageGeneric& msg, const StringRef& reply) noexcept;
+	GCodeResult ProcessStartRequest(const CanMessageStartAccelerometer& msg, const StringRef& reply) noexcept;
 	void Diagnostics(const StringRef& reply) noexcept;
 };
 

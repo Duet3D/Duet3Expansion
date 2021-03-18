@@ -16,41 +16,50 @@
 #include <TaskPriorities.h>
 #include <CanMessageBuffer.h>
 #include <CAN/CanInterface.h>
+#include <CanMessageGenericParser.h>
+
+constexpr uint16_t DefaultSamplingRate = 1000;
+constexpr uint8_t DefaultResolution = 10;
 
 constexpr size_t AccelerometerTaskStackWords = 130;
 static Task<AccelerometerTaskStackWords> accelerometerTask;
 
 static LIS3DH *accelerometer = nullptr;
 
-static volatile uint16_t samplingRate;
+static uint16_t samplingRate = DefaultSamplingRate;
 static volatile uint16_t numSamplesRequested;
-static volatile uint8_t resolution;
-static volatile uint8_t axis;
+static uint8_t resolution = DefaultResolution;
+static uint8_t orientation = 0;
+static volatile uint8_t axes;
+static volatile bool running = false;
 
 [[noreturn]] void AccelerometerTaskCode(void*) noexcept
 {
 	for (;;)
 	{
 		TaskBase::Take();
-		if (resolution != 0)
+		if (running)
 		{
-			// Set up the accelerometer to get as close to the requested sample rate and resolution as we can
-			accelerometer->Configure(axis, samplingRate, resolution);
-			CanMessageBuffer buf(nullptr);
-
 			// Collect and send the samples
+			CanMessageBuffer buf(nullptr);
+			CanMessageAccelerometerData& msg = *(buf.SetupStatusMessage<CanMessageAccelerometerData>(CanInterface::GetCanAddress(), CanInterface::GetCurrentMasterAddress()));
+			const unsigned int MaxSamplesInBuffer = msg.SetAxesAndResolution(axes, resolution);
+			const uint16_t mask = (1u << resolution) - 1u;
+
 			unsigned int samplesSent = 0;
 			unsigned int samplesInBuffer = 0;
 			unsigned int samplesWanted = numSamplesRequested;
-			const unsigned int MaxSamplesInBuffer = (resolution <= 8) ? sizeof(CanMessageAccelerometerData::data) : (2 * sizeof(CanMessageAccelerometerData::data))/3;
-			unsigned int canDataIndex = 0;
+			size_t canDataIndex = 0;
+			unsigned int bitsUsed = 0;
+			uint16_t bitsPending = 0;
 			bool overflowed = false;
+
+			accelerometer->StartCollecting(axes);
 			do
 			{
 				uint16_t dataRate;
 				const uint16_t *data;
 				unsigned int samplesRead = accelerometer->CollectData(&data, dataRate, overflowed);
-				data += 2 * axis;
 				if (samplesRead >= samplesWanted)
 				{
 					samplesRead = samplesWanted;
@@ -59,36 +68,35 @@ static volatile uint8_t axis;
 				while (samplesRead != 0)
 				{
 					unsigned int samplesToCopy = min<unsigned int>(samplesRead, MaxSamplesInBuffer - samplesInBuffer);
-					CanMessageAccelerometerData& msg = buf.msg.accelerometerData;
-					if (resolution <= 8)
+					unsigned int axis = 0;
+					while (samplesToCopy != 0)
 					{
-						// Send individual bytes in the CAN message
-						while (samplesToCopy != 0)
+						// Extract the required bits from the data and pack them into the CAN buffer
+						if (axes & (1 << axis))
 						{
-							msg.data[samplesInBuffer++] = (uint8_t)*data;
-							data += 6;
-							--samplesToCopy;
-							--samplesRead;
-							--samplesWanted;
-						}
-					}
-					else
-					{
-						// Pack the 12-bit data into the buffer
-						while (samplesToCopy != 0)
-						{
-							const uint16_t val = *data;
-							data += 6;
-							if (samplesInBuffer & 1)
+							// Copy data for this axis
+							if (resolution == 16)
 							{
-								msg.data[canDataIndex++] |= (uint8_t)(val << 4);
-								msg.data[canDataIndex++] = (uint8_t)(val >> 4);
+								msg.data[canDataIndex++] = *data;
 							}
 							else
 							{
-								msg.data[canDataIndex++] = (uint8_t)val;
-								msg.data[canDataIndex] = (uint8_t)((val >> 8) & 0x0F);
+								const uint16_t val = *data & mask;
+								bitsPending |= val << bitsUsed;
+								bitsUsed += resolution;
+								if (bitsUsed >= 16u)
+								{
+									msg.data[canDataIndex++] = bitsPending;
+									bitsUsed -= 16u;
+									bitsPending = val >> (resolution - bitsUsed);
+								}
 							}
+						}
+						++axis;
+						++data;
+						if (axis == 3)
+						{
+							axis = 0;
 							++samplesInBuffer;
 							--samplesToCopy;
 							--samplesWanted;
@@ -99,15 +107,19 @@ static volatile uint8_t axis;
 					if (samplesInBuffer == MaxSamplesInBuffer || samplesWanted == 0)
 					{
 						// Send the buffer
-						buf.SetupStatusMessage<CanMessageAccelerometerData>(CanInterface::GetCanAddress(), CanInterface::GetCurrentMasterAddress());
+						if (bitsUsed != 0)
+						{
+							msg.data[canDataIndex] = bitsPending;
+						}
 						msg.firstSampleNumber = samplesSent;
 						msg.numSamples = samplesInBuffer;
 						msg.actualSampleRate = dataRate;
 						msg.overflowed = overflowed;
-						msg.twelveBit = (resolution >= 8);
+						msg.zero = 0;
 
 						buf.dataLength = msg.GetActualDataLength();
 						CanInterface::Send(&buf);
+
 						samplesSent += samplesInBuffer;
 						samplesInBuffer = 0;
 						canDataIndex = 0;
@@ -119,7 +131,7 @@ static volatile uint8_t axis;
 			accelerometer->StopCollecting();
 
 			// Wait for another command
-			resolution = 0;
+			running = false;
 		}
 	}
 }
@@ -130,6 +142,7 @@ void AccelerometerHandler::Init() noexcept
 	LIS3DH *temp = new LIS3DH(Platform::GetSharedI2C(), Lis3dhInt1Pin, Lis3dhAddressLsb);
 	if (temp->CheckPresent())
 	{
+		temp->Configure(samplingRate, resolution);
 		accelerometer = temp;
 		accelerometerTask.Create(AccelerometerTaskCode, "ACCEL", nullptr, TaskPriority::Accelerometer);
 	}
@@ -144,22 +157,58 @@ bool AccelerometerHandler::Present() noexcept
 	return accelerometer != nullptr;
 }
 
-GCodeResult AccelerometerHandler::ProcessCanRequest(const CanMessageAccelerometerSettings &msg, const StringRef &reply) noexcept
+GCodeResult AccelerometerHandler::ProcessConfigRequest(const CanMessageGeneric& msg, const StringRef &reply) noexcept
 {
-	if (msg.resolution != 0 && resolution != 0)
+	CanMessageGenericParser parser(msg, M955Params);
+	uint8_t deviceNumber;
+	if (!parser.GetUintParam('P', deviceNumber))
 	{
-		reply.copy("Accelerometer is busy");
+		reply.copy("Bad M955 message");
+		return GCodeResult::error;
+	}
+	if (deviceNumber != 0 || accelerometer == nullptr)
+	{
+		reply.printf("Accelerometer %u.%u not present", CanInterface::GetCanAddress(), deviceNumber);
 		return GCodeResult::error;
 	}
 
-	samplingRate = msg.sampleRate;
-	numSamplesRequested = msg.numSamples;
-	axis = msg.axis;
-	resolution = msg.resolution;						// this must be the last one written because it controls whether data is collected or not
-	if (resolution != 0)
+	if (running)
 	{
-		accelerometerTask.Give();
+		reply.printf("Accelerometer %u.%u is busy collecting data", CanInterface::GetCanAddress(), deviceNumber);
+		return GCodeResult::error;
 	}
+
+	bool seen = parser.GetUintParam('I', orientation);
+	if (parser.GetUintParam('S', samplingRate)) { seen = true; }
+	if (parser.GetUintParam('R', resolution))  { seen = true; }
+
+	if (seen)
+	{
+		accelerometer->Configure(samplingRate, resolution);
+	}
+
+	reply.printf("Accelerometer %u:%u samples at %uHz with %u-bit resolution", CanInterface::GetCanAddress(), deviceNumber, samplingRate, resolution);
+	return GCodeResult::ok;
+}
+
+GCodeResult AccelerometerHandler::ProcessStartRequest(const CanMessageStartAccelerometer& msg, const StringRef& reply) noexcept
+{
+	if (msg.deviceNumber != 0 || accelerometer == nullptr)
+	{
+		reply.printf("Accelerometer %u.%u not present", CanInterface::GetCanAddress(), msg.deviceNumber);
+		return GCodeResult::error;
+	}
+
+	if (running)
+	{
+		reply.printf("Accelerometer %u.%u is busy collecting data", CanInterface::GetCanAddress(), msg.deviceNumber);
+		return GCodeResult::error;
+	}
+
+	axes = msg.axes;
+	numSamplesRequested = msg.numSamples;
+	running = true;
+	accelerometerTask.Give();
 	return GCodeResult::ok;
 }
 

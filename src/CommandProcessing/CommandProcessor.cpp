@@ -1004,9 +1004,14 @@ void CommandProcessor::Spin()
 #endif
 
 #if SUPPORT_I2C_SENSORS && SUPPORT_LIS3DH
-		case CanMessageType::accelerometerSettings:
-			requestId = buf->msg.accelerometerSettings.requestId;
-			rslt = AccelerometerHandler::ProcessCanRequest(buf->msg.accelerometerSettings, replyRef);
+		case CanMessageType::accelerometerConfig:
+			requestId = buf->msg.generic.requestId;
+			rslt = AccelerometerHandler::ProcessConfigRequest(buf->msg.generic, replyRef);
+			break;
+
+		case CanMessageType::startAccelerometer:
+			requestId = buf->msg.startAccelerometer.requestId;
+			rslt = AccelerometerHandler::ProcessStartRequest(buf->msg.startAccelerometer, replyRef);
 			break;
 #endif
 		default:
