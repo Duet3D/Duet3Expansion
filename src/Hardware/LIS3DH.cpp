@@ -173,17 +173,20 @@ unsigned int LIS3DH::CollectData(const uint16_t **collectedData, uint16_t &dataR
 		numToRead = 32;
 	}
 
-	// Read the data
-	if (!ReadRegisters(LisRegister::OutXL, dataBuffer, 6 * numToRead))
+	if (numToRead != 0)
 	{
-		return 0;
-	}
+		// Read the data
+		if (!ReadRegisters(LisRegister::OutXL, dataBuffer, 6 * numToRead))
+		{
+			return 0;
+		}
 
-	*collectedData = reinterpret_cast<const uint16_t*>(dataBuffer);
-	overflowed = (fifoStatus & 0x40) != 0;
-	dataRate = (lastInterruptInterval == 0) ? 0
-				: (numLastRead * StepTimer::StepClockRate)/lastInterruptTime;
-	numLastRead = numToRead;
+		*collectedData = reinterpret_cast<const uint16_t*>(dataBuffer);
+		overflowed = (fifoStatus & 0x40) != 0;
+		dataRate = (lastInterruptInterval == 0) ? 0
+					: (numLastRead * StepTimer::StepClockRate)/lastInterruptTime;
+		numLastRead = numToRead;
+	}
 	return numToRead;
 }
 
@@ -195,7 +198,7 @@ void LIS3DH::StopCollecting() noexcept
 
 bool LIS3DH::ReadRegisters(LisRegister reg, uint8_t *buffer, size_t numToRead) noexcept
 {
-	return Transfer((uint8_t)reg, buffer, 1, numToRead, Lis3dI2CTimeout);
+	return Transfer((uint8_t)reg | 0x80, buffer, 1, numToRead, Lis3dI2CTimeout);
 }
 
 bool LIS3DH::WriteRegisters(LisRegister reg, uint8_t *buffer, size_t numToWrite) noexcept
@@ -204,7 +207,7 @@ bool LIS3DH::WriteRegisters(LisRegister reg, uint8_t *buffer, size_t numToWrite)
 	{
 		return false;
 	}
-	return Transfer((uint8_t)reg, buffer, 1 + numToWrite, 0, Lis3dI2CTimeout);
+	return Transfer((uint8_t)reg | 0x80, buffer, 1 + numToWrite, 0, Lis3dI2CTimeout);
 }
 
 bool LIS3DH::ReadRegister(LisRegister reg, uint8_t& val) noexcept

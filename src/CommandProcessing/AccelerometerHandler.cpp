@@ -7,7 +7,7 @@
 
 #include "AccelerometerHandler.h"
 
-#if SUPPORT_LIS3DH
+#if SUPPORT_I2C_SENSORS && SUPPORT_LIS3DH
 
 #include <RTOSIface/RTOSIface.h>
 #include <Hardware/LIS3DH.h>
@@ -115,6 +115,7 @@ static volatile bool running = false;
 						msg.numSamples = samplesInBuffer;
 						msg.actualSampleRate = dataRate;
 						msg.overflowed = overflowed;
+						msg.lastPacket = (samplesWanted == 0);
 						msg.zero = 0;
 
 						buf.dataLength = msg.GetActualDataLength();

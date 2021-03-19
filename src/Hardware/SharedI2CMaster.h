@@ -37,9 +37,6 @@ private:
 
 	void Enable() const noexcept;
 	void Disable() const noexcept;
-	bool WaitForStatus(uint8_t statusBits) noexcept;
-	bool WaitForSend() noexcept;
-	bool WaitForReceive() noexcept;
 	bool InternalTransfer(uint16_t address, uint8_t firstByte, uint8_t *buffer, size_t numToWrite, size_t numToRead) noexcept;
 	void ProtocolError()  noexcept;
 

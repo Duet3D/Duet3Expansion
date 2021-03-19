@@ -11,7 +11,7 @@
 #include <RepRapFirmware.h>
 #include <GCodes/GCodeResult.h>
 
-#if SUPPORT_LIS3DH
+#if SUPPORT_I2C_SENSORS && SUPPORT_LIS3DH
 
 class CanMessageGeneric;
 class CanMessageStartAccelerometer;

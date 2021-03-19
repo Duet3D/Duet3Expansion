@@ -121,7 +121,7 @@ constexpr GpioPinFunction I2CSCLPinPeriphMode = GpioPinFunction::C;
 
 #if SUPPORT_LIS3DH
 constexpr bool Lis3dhAddressLsb = false;
-constexpr Pin Lis3dhInt1Pin = PortAPin(0);
+constexpr Pin Lis3dhInt1Pin = PortAPin(13);
 #endif
 
 // Table of pin functions that we are allowed to use
@@ -142,7 +142,11 @@ constexpr PinDescription PinTable[] =
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PA10 driver DIR
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PA11 driver STEP
 	{ TcOutput::none,	TccOutput::tcc2_0E,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		12,	"pa12"	 	},	// PA12
+#if SUPPORT_LIS3DH
+	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		13,	nullptr		},	// PA13
+#else
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		13,	"pa13"		},	// PA13
+#endif
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PA14 crystal
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PA15 crystal
 #if SUPPORT_SPI_SENSORS
