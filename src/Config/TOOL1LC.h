@@ -141,7 +141,7 @@ constexpr PinDescription PinTable[] =
 {
 	//	TC					TCC					ADC					SDADC				SERCOM in			SERCOM out	  Exint PinName
 	// Port A
-	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA00 LED0 (v1.0), test pad (v1.1)
+	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		0,	nullptr			},	// PA00 LED0 (v1.0), test pad (v1.1)
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		1,	"io3.in"		},	// PA01 LED1 (v1.0), IO3 IN (v1.1)
 	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_0,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx, "temp1"			},	// PA02
 	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_1,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx, nullptr			},	// PA03 tied to +3.3V

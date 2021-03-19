@@ -18,6 +18,8 @@
 #include <CAN/CanInterface.h>
 #include <CanMessageGenericParser.h>
 
+#define TEST_PACKING	0
+
 constexpr uint16_t DefaultSamplingRate = 1000;
 constexpr uint8_t DefaultResolution = 10;
 
@@ -44,7 +46,6 @@ static volatile bool running = false;
 			CanMessageBuffer buf(nullptr);
 			CanMessageAccelerometerData& msg = *(buf.SetupStatusMessage<CanMessageAccelerometerData>(CanInterface::GetCanAddress(), CanInterface::GetCurrentMasterAddress()));
 			const unsigned int MaxSamplesInBuffer = msg.SetAxesAndResolution(axes, resolution);
-			const uint16_t mask = (1u << resolution) - 1u;
 
 			unsigned int samplesSent = 0;
 			unsigned int samplesInBuffer = 0;
@@ -54,6 +55,9 @@ static volatile bool running = false;
 			uint16_t bitsPending = 0;
 			bool overflowed = false;
 
+#if TEST_PACKING
+			uint16_t pattern = 0;
+#endif
 			accelerometer->StartCollecting(axes);
 			do
 			{
@@ -68,40 +72,48 @@ static volatile bool running = false;
 				while (samplesRead != 0)
 				{
 					unsigned int samplesToCopy = min<unsigned int>(samplesRead, MaxSamplesInBuffer - samplesInBuffer);
-					unsigned int axis = 0;
 					while (samplesToCopy != 0)
 					{
 						// Extract the required bits from the data and pack them into the CAN buffer
-						if (axes & (1 << axis))
+						for (unsigned int axis = 0; axis < 3; ++axis)
 						{
-							// Copy data for this axis
-							if (resolution == 16)
+							if (axes & (1u << axis))
 							{
-								msg.data[canDataIndex++] = *data;
-							}
-							else
-							{
-								const uint16_t val = *data & mask;
-								bitsPending |= val << bitsUsed;
-								bitsUsed += resolution;
-								if (bitsUsed >= 16u)
+								// Copy data for this axis
+								if (resolution == 16u)
 								{
-									msg.data[canDataIndex++] = bitsPending;
-									bitsUsed -= 16u;
-									bitsPending = val >> (resolution - bitsUsed);
+									msg.data[canDataIndex++] =
+#if TEST_PACKING
+															pattern++;
+#else
+															*data;
+#endif
+								}
+								else
+								{
+									const uint16_t val =
+#if TEST_PACKING
+															pattern++ & ((1u << resolution) - 1u);
+#else
+															*data >> (16u - resolution);		// data from LIS3DH is left justified
+#endif
+									bitsPending |= val << bitsUsed;
+									bitsUsed += resolution;
+									if (bitsUsed >= 16u)
+									{
+										msg.data[canDataIndex++] = bitsPending;
+										bitsUsed -= 16u;
+										bitsPending = val >> (resolution - bitsUsed);
+									}
 								}
 							}
+							++data;
 						}
-						++axis;
-						++data;
-						if (axis == 3)
-						{
-							axis = 0;
-							++samplesInBuffer;
-							--samplesToCopy;
-							--samplesWanted;
-							--samplesRead;
-						}
+
+						++samplesInBuffer;
+						--samplesToCopy;
+						--samplesWanted;
+						--samplesRead;
 					}
 
 					if (samplesInBuffer == MaxSamplesInBuffer || samplesWanted == 0)
@@ -125,6 +137,8 @@ static volatile bool running = false;
 						samplesInBuffer = 0;
 						canDataIndex = 0;
 						overflowed = false;
+						bitsUsed = 0;
+						bitsPending = 0;
 					}
 				}
 			} while (samplesWanted != 0);

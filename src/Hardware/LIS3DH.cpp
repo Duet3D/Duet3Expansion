@@ -142,6 +142,11 @@ void LIS3DH:: StartCollecting(uint8_t axes) noexcept
 		ReadRegisters(LisRegister::OutXL, dataBuffer, 6);
 	}
 
+#ifdef TOOL1LC
+	// The experimental setup needs the pullup resistor enabled on the interrupt pin
+	pinMode(int1Pin, INPUT_PULLUP);
+#endif
+
 	AtomicCriticalSectionLocker lock;
 	WriteRegister(LisRegister::Ctrl1, ctrlReg1);
 	lastInterruptTime = StepTimer::GetTimerTicks();
@@ -184,7 +189,7 @@ unsigned int LIS3DH::CollectData(const uint16_t **collectedData, uint16_t &dataR
 		*collectedData = reinterpret_cast<const uint16_t*>(dataBuffer);
 		overflowed = (fifoStatus & 0x40) != 0;
 		dataRate = (lastInterruptInterval == 0) ? 0
-					: (numLastRead * StepTimer::StepClockRate)/lastInterruptTime;
+					: (numLastRead * StepTimer::StepClockRate)/lastInterruptInterval;
 		numLastRead = numToRead;
 	}
 	return numToRead;
