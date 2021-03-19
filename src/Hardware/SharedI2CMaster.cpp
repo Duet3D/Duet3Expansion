@@ -17,10 +17,11 @@
 # include <hri_sercom_c21.h>
 #endif
 
-constexpr uint32_t DefaultSharedI2CClockFrequency = 100000;
-constexpr uint32_t I2CTimeoutTicks = 10;
+constexpr uint32_t DefaultSharedI2CClockFrequency = 400000;
+constexpr uint32_t I2CTimeoutTicks = 100;
 
-SharedI2CMaster::SharedI2CMaster(uint8_t sercomNum) noexcept : hardware(Serial::Sercoms[sercomNum]), taskWaiting(nullptr), busErrors(0), naks(0), state(I2cState::idle)
+SharedI2CMaster::SharedI2CMaster(uint8_t sercomNum) noexcept
+	: hardware(Serial::Sercoms[sercomNum]), taskWaiting(nullptr), busErrors(0), naks(0), otherErrors(0), state(I2cState::idle)
 {
 	Serial::EnableSercomClock(sercomNum);
 
@@ -128,8 +129,8 @@ bool SharedI2CMaster::Transfer(uint16_t address, uint8_t firstByte, uint8_t *buf
 
 void SharedI2CMaster::Diagnostics(const StringRef& reply) noexcept
 {
-	reply.lcatf("I2C bus errors %u, naks %u", busErrors, naks);
-	busErrors = naks = 0;
+	reply.lcatf("I2C bus errors %u, naks %u, other errors %u", busErrors, naks, otherErrors);
+	busErrors = naks = otherErrors = 0;
 }
 
 bool SharedI2CMaster::InternalTransfer(uint16_t address, uint8_t firstByte, uint8_t *buffer, size_t numToWrite, size_t numToRead) noexcept
@@ -141,6 +142,8 @@ bool SharedI2CMaster::InternalTransfer(uint16_t address, uint8_t firstByte, uint
 	numLeftToWrite = numToWrite;
 	hardware->I2CM.INTFLAG.reg = 0xFF;										// clear all flag bits
 	hardware->I2CM.STATUS.reg = SERCOM_I2CM_STATUS_BUSERR | SERCOM_I2CM_STATUS_RXNACK | SERCOM_I2CM_STATUS_ARBLOST;		// clear all status bits
+	hardware->I2CM.CTRLB.reg = SERCOM_I2CM_CTRLB_SMEN;						// make sure the ACKACT bit is clear
+
 	TaskBase::ClearNotifyCount();
 	taskWaiting = TaskBase::GetCallerTaskHandle();
 
@@ -183,15 +186,18 @@ void SharedI2CMaster::ProtocolError() noexcept
 	hardware->I2CM.STATUS.reg = status;
 	if (status & (SERCOM_I2CM_STATUS_BUSERR | SERCOM_I2CM_STATUS_ARBLOST))
 	{
-		state = I2cState::busError;
 		++busErrors;
 	}
 	else if (status & SERCOM_I2CM_STATUS_RXNACK)
 	{
-		state = I2cState::nakError;
-		hardware->I2CM.CTRLB.reg = SERCOM_I2CM_CTRLB_SMEN | SERCOM_I2CM_CTRLB_CMD(0x03);			// send stop command, get off bus
 		++naks;
 	}
+	else
+	{
+		++otherErrors;
+	}
+	hardware->I2CM.CTRLB.reg = SERCOM_I2CM_CTRLB_SMEN | SERCOM_I2CM_CTRLB_CMD(0x03);			// send stop command, get off bus
+	state = I2cState::protocolError;
 	TaskBase::GiveFromISR(taskWaiting);
 	taskWaiting = nullptr;
 }
@@ -274,7 +280,6 @@ void SharedI2CMaster::Interrupt() noexcept
 		break;
 
 	case I2cState::sendingAddressForRead:
-		hardware->I2CM.CTRLB.reg = SERCOM_I2CM_CTRLB_SMEN;
 		state = I2cState::reading;
 		// no break
 	case I2cState::reading:
@@ -284,7 +289,7 @@ void SharedI2CMaster::Interrupt() noexcept
 			if (numLeftToRead == 0)
 			{
 				// App note says we need to NAK the last byte and send the stop command before we read the data
-				hardware->I2CM.CTRLB.reg |= SERCOM_I2CM_CTRLB_ACKACT | SERCOM_I2CM_CTRLB_CMD(0x03);	// NAK and stop
+				hardware->I2CM.CTRLB.reg = SERCOM_I2CM_CTRLB_SMEN | SERCOM_I2CM_CTRLB_ACKACT | SERCOM_I2CM_CTRLB_CMD(0x03);	// NAK and stop
 				while (hardware->I2CM.SYNCBUSY.bit.SYSOP) { }
 				*transferBuffer++ = hardware->I2CM.DATA.reg;
 				state = I2cState::idle;
@@ -293,9 +298,7 @@ void SharedI2CMaster::Interrupt() noexcept
 			}
 			else
 			{
-				*transferBuffer++ = hardware->I2CM.DATA.reg;
-//				hardware->I2CM.CTRLB.reg = SERCOM_I2CM_CTRLB_CMD(0x02);								// acknowledge and read another byte
-//				while (hardware->I2CM.SYNCBUSY.bit.SYSOP) { }
+				*transferBuffer++ = hardware->I2CM.DATA.reg;			// read the data and acknowledge it because we have set SMEN in CTRLB
 				hardware->I2CM.INTENSET.reg = SERCOM_I2CM_INTFLAG_MB | SERCOM_I2CM_INTFLAG_SB;
 			}
 		}

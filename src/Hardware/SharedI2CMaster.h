@@ -32,7 +32,7 @@ public:
 private:
 	enum class I2cState : uint8_t
 	{
-		idle = 0, sendingAddressForWrite, writing, sendingTenBitAddressForRead, sendingAddressForRead, reading, busError, nakError, otherError
+		idle = 0, sendingAddressForWrite, writing, sendingTenBitAddressForRead, sendingAddressForRead, reading, protocolError
 	};
 
 	void Enable() const noexcept;
@@ -47,8 +47,7 @@ private:
 	uint8_t *transferBuffer;
 	size_t numLeftToRead, numLeftToWrite;
 	uint16_t currentAddress;
-	unsigned int busErrors;
-	unsigned int naks;
+	unsigned int busErrors, naks, otherErrors;
 	uint8_t firstByteToWrite;
 	volatile I2cState state;
 };
