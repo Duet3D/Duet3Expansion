@@ -31,9 +31,11 @@ static LIS3DH *accelerometer = nullptr;
 static uint16_t samplingRate = DefaultSamplingRate;
 static volatile uint16_t numSamplesRequested;
 static uint8_t resolution = DefaultResolution;
-static uint8_t orientation = 0;
+static uint8_t orientation = 20;							// +Z -> +Z, +X -> +X
 static volatile uint8_t axes;
 static volatile bool running = false;
+static uint8_t axisLookup[3];
+static bool axisInverted[3];
 
 [[noreturn]] void AccelerometerTaskCode(void*) noexcept
 {
@@ -79,24 +81,25 @@ static volatile bool running = false;
 						{
 							if (axes & (1u << axis))
 							{
+								uint16_t dataVal =
+#if TEST_PACKING
+													pattern++;
+#else
+													data[axisLookup[axis]];
+								if (axisInverted[axis])
+								{
+									dataVal = (dataVal == 0x8000) ? ~dataVal : ~dataVal + 1;
+								}
+								dataVal >>= (16u - resolution);								// data from LIS3DH is left justified
+#endif
 								// Copy data for this axis
 								if (resolution == 16u)
 								{
-									msg.data[canDataIndex++] =
-#if TEST_PACKING
-															pattern++;
-#else
-															*data;
-#endif
+									msg.data[canDataIndex++] = dataVal;
 								}
 								else
 								{
-									const uint16_t val =
-#if TEST_PACKING
-															pattern++ & ((1u << resolution) - 1u);
-#else
-															*data >> (16u - resolution);		// data from LIS3DH is left justified
-#endif
+									const uint16_t val = dataVal;
 									bitsPending |= val << bitsUsed;
 									bitsUsed += resolution;
 									if (bitsUsed >= 16u)
@@ -107,8 +110,8 @@ static volatile bool running = false;
 									}
 								}
 							}
-							++data;
 						}
+						data += 3;
 
 						++samplesInBuffer;
 						--samplesToCopy;
@@ -151,6 +154,38 @@ static volatile bool running = false;
 	}
 }
 
+static bool TranslateOrientation(uint8_t input) noexcept
+{
+	if (input >= 70u) { return false; }
+	const uint8_t xDigit = input % 10u;
+	if (xDigit >= 7u) { return false; }
+	const uint8_t zDigit = input / 10u;
+	const uint8_t xOrientation = xDigit & 0x03;
+	const uint8_t zOrientation = zDigit & 0x03;
+	if (xOrientation == 3u || zOrientation == 3u || xOrientation == zOrientation) { return false; }
+	const uint8_t xInverted = xDigit & 0x04;
+	const uint8_t zInverted = zDigit & 0x04;
+	uint8_t yInverted = xInverted ^ zInverted;
+
+	// Calculate the Y orientation. We must have axes 0, 1 and 2 so they must add up to 3.
+	const uint8_t yOrientation = 3u - xOrientation - zOrientation;
+
+	// The total number of inversions must be even if the cyclic order of the axes is 012, odd if it is 210 (can we prove this?)
+	if ((xOrientation + 1) % 3 != yOrientation)
+	{
+		yInverted ^= 0x04;									// we need an odd number of axis inversions
+	}
+
+	// Now fill in the axis table
+	axisLookup[xOrientation] = 0;
+	axisInverted[xOrientation] = xInverted;
+	axisLookup[yOrientation] = 1;
+	axisInverted[yOrientation] = yInverted;
+	axisLookup[zOrientation] = 2;
+	axisInverted[zOrientation] = zInverted;
+	return true;
+}
+
 // Interface functions called by the main task
 void AccelerometerHandler::Init() noexcept
 {
@@ -159,6 +194,7 @@ void AccelerometerHandler::Init() noexcept
 	{
 		temp->Configure(samplingRate, resolution);
 		accelerometer = temp;
+		(void)TranslateOrientation(orientation);
 		accelerometerTask.Create(AccelerometerTaskCode, "ACCEL", nullptr, TaskPriority::Accelerometer);
 	}
 	else
@@ -172,6 +208,7 @@ bool AccelerometerHandler::Present() noexcept
 	return accelerometer != nullptr;
 }
 
+// Translate the orientation from a 2-digit number to translation tables, returning true if successful, false if bad orientation
 GCodeResult AccelerometerHandler::ProcessConfigRequest(const CanMessageGeneric& msg, const StringRef &reply) noexcept
 {
 	CanMessageGenericParser parser(msg, M955Params);
@@ -193,7 +230,20 @@ GCodeResult AccelerometerHandler::ProcessConfigRequest(const CanMessageGeneric& 
 		return GCodeResult::error;
 	}
 
-	bool seen = parser.GetUintParam('I', orientation);
+	uint8_t localOrientation;
+	bool seen = parser.GetUintParam('I', localOrientation);
+	if (seen)
+	{
+		if (TranslateOrientation(localOrientation))
+		{
+			orientation = localOrientation;
+		}
+		else
+		{
+			reply.copy("Invalid orientation");
+			return GCodeResult::error;
+		}
+	}
 	if (parser.GetUintParam('S', samplingRate)) { seen = true; }
 	if (parser.GetUintParam('R', resolution))  { seen = true; }
 
@@ -202,7 +252,7 @@ GCodeResult AccelerometerHandler::ProcessConfigRequest(const CanMessageGeneric& 
 		accelerometer->Configure(samplingRate, resolution);
 	}
 
-	reply.printf("Accelerometer %u:%u samples at %uHz with %u-bit resolution", CanInterface::GetCanAddress(), deviceNumber, samplingRate, resolution);
+	reply.printf("Accelerometer %u:%u with orientation %u samples at %uHz with %u-bit resolution", CanInterface::GetCanAddress(), deviceNumber, orientation, samplingRate, resolution);
 	return GCodeResult::ok;
 }
 
