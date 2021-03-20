@@ -66,6 +66,12 @@ static bool axisInverted[3];
 				uint16_t dataRate;
 				const uint16_t *data;
 				unsigned int samplesRead = accelerometer->CollectData(&data, dataRate, overflowed);
+				if (samplesSent + samplesInBuffer == 0 && samplesRead != 0)
+				{
+					// The first sample taken after waking up is inaccurate, so discard it
+					--samplesRead;
+					data += 3;
+				}
 				if (samplesRead >= samplesWanted)
 				{
 					samplesRead = samplesWanted;
