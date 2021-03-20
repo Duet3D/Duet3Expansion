@@ -181,6 +181,8 @@ unsigned int LIS3DH::CollectData(const uint16_t **collectedData, uint16_t &dataR
 	if (numToRead != 0)
 	{
 		// Read the data
+		// When the auto-increment bit is set in the register number, after reading register 0x2D it wraps back to 0x28
+		// The datasheet doesn't mention this but ST app note AN3308 does
 		if (!ReadRegisters(LisRegister::OutXL, dataBuffer, 6 * numToRead))
 		{
 			return 0;
