@@ -19,7 +19,7 @@ constexpr uint8_t FifoInterruptLevel = 24;							// how full the FIFO must get b
 static constexpr uint8_t WhoAmIValue = 0x33;
 
 LIS3DH::LIS3DH(SharedI2CMaster& dev, Pin p_int1Pin, bool addressLSB) noexcept
-	: SharedI2CClient(dev, (addressLSB) ? Lis3dAddress | 0x0001 : Lis3dAddress), int1Pin(p_int1Pin)
+	: SharedI2CClient(dev, (addressLSB) ? Lis3dAddress | 0x0001 : Lis3dAddress), taskWaiting(nullptr), int1Pin(p_int1Pin)
 {
 }
 
@@ -38,7 +38,7 @@ uint8_t LIS3DH::ReadStatus() noexcept
 
 // Configure the accelerometer to collect for the requested axis at or near the requested sampling rate and the requested resolution in bits.
 // Actual collection does not start until the first call to Collect8bitData or Collect16bitData.
-void LIS3DH::Configure(uint16_t& samplingRate, uint8_t& resolution) noexcept
+bool LIS3DH::Configure(uint16_t& samplingRate, uint8_t& resolution) noexcept
 {
 	// Set up control registers 1 and 4 according to the selected sampling rate and resolution
 	ctrlReg1 = 0;													// collect no axes for now
@@ -77,40 +77,10 @@ void LIS3DH::Configure(uint16_t& samplingRate, uint8_t& resolution) noexcept
 			samplingRate = 1600;
 		}
 	}
-	else if (samplingRate >= 400)
-	{
-		odr = 0x7;
-		samplingRate = 400;
-	}
-	else if (samplingRate >= 200)
-	{
-		odr = 0x6;
-		samplingRate = 200;
-	}
-	else if (samplingRate >= 100)
-	{
-		odr = 0x5;
-		samplingRate = 100;
-	}
-	else if (samplingRate >= 50)
-	{
-		odr = 0x4;
-		samplingRate = 500;
-	}
-	else if (samplingRate >= 25)
-	{
-		odr = 0x3;
-		samplingRate = 25;
-	}
-	else if (samplingRate >= 10)
-	{
-		odr = 0x2;
-		samplingRate = 10;
-	}
 	else
 	{
-		odr = 0x1;
-		samplingRate = 1;
+		odr = 0x7;
+		samplingRate = 400;											// select 400Hz, lower is not useful
 	}
 
 	ctrlReg1 |= (odr << 4);
@@ -122,16 +92,19 @@ void LIS3DH::Configure(uint16_t& samplingRate, uint8_t& resolution) noexcept
 	dataBuffer[3] = ctrlReg4;
 	dataBuffer[4] = (1u << 6);					// ctrlReg5: enable fifo
 	dataBuffer[5] = 0;							// ctrlReg6: INT2 disabled, active high interrupts
-	WriteRegisters(LisRegister::Ctrl1, dataBuffer, 6);
-
-	// Set the fifo mode
-	WriteRegister(LisRegister::FifoControl, (2u << 6) | (FifoInterruptLevel - 1));
+	bool ok = WriteRegisters(LisRegister::Ctrl1, dataBuffer, 6);
+	if (ok)
+	{
+		// Set the fifo mode
+		ok = WriteRegister(LisRegister::FifoControl, (2u << 6) | (FifoInterruptLevel - 1));
+	}
+	return ok;
 }
 
 void Int1Interrupt(CallbackParameter p) noexcept;		// forward declaration
 
 // Start collecting data
-void LIS3DH:: StartCollecting(uint8_t axes) noexcept
+bool LIS3DH:: StartCollecting(uint8_t axes) noexcept
 {
 	ctrlReg1 |= (axes & 7);
 
@@ -147,11 +120,9 @@ void LIS3DH:: StartCollecting(uint8_t axes) noexcept
 	pinMode(int1Pin, INPUT_PULLUP);
 #endif
 
-	AtomicCriticalSectionLocker lock;
-	WriteRegister(LisRegister::Ctrl1, ctrlReg1);
-	lastInterruptTime = StepTimer::GetTimerTicks();
-	attachInterrupt(int1Pin, Int1Interrupt, InterruptMode::rising, this);
-	numLastRead = 0;
+	totalNumRead = 0;
+	const bool ok = WriteRegister(LisRegister::Ctrl1, ctrlReg1);
+	return ok && attachInterrupt(int1Pin, Int1Interrupt, InterruptMode::rising, this);
 }
 
 // Collect some 8-bit data from the FIFO, suspending until the data is available
@@ -190,9 +161,8 @@ unsigned int LIS3DH::CollectData(const uint16_t **collectedData, uint16_t &dataR
 
 		*collectedData = reinterpret_cast<const uint16_t*>(dataBuffer);
 		overflowed = (fifoStatus & 0x40) != 0;
-		dataRate = (lastInterruptInterval == 0) ? 0
-					: (numLastRead * StepTimer::StepClockRate)/lastInterruptInterval;
-		numLastRead = numToRead;
+		dataRate = (totalNumRead == 0) ? 0 : (totalNumRead * StepTimer::StepClockRate)/(lastInterruptTime - firstInterruptTime);
+		totalNumRead += numToRead;
 	}
 	return numToRead;
 }
@@ -234,7 +204,10 @@ bool LIS3DH::WriteRegister(LisRegister reg, uint8_t val) noexcept
 void LIS3DH::Int1Isr() noexcept
 {
 	const uint32_t now = StepTimer::GetTimerTicks();
-	lastInterruptInterval = now - lastInterruptTime;
+	if (totalNumRead == 0)
+	{
+		firstInterruptTime = now;
+	}
 	lastInterruptTime = now;
 	TaskBase::GiveFromISR(taskWaiting);
 	taskWaiting = nullptr;

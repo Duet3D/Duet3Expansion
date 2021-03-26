@@ -24,7 +24,7 @@ constexpr uint16_t DefaultSamplingRate = 1000;
 constexpr uint8_t DefaultResolution = 10;
 
 constexpr size_t AccelerometerTaskStackWords = 130;
-static Task<AccelerometerTaskStackWords> accelerometerTask;
+static Task<AccelerometerTaskStackWords> *accelerometerTask;
 
 static LIS3DH *accelerometer = nullptr;
 
@@ -60,97 +60,99 @@ static bool axisInverted[3];
 #if TEST_PACKING
 			uint16_t pattern = 0;
 #endif
-			accelerometer->StartCollecting(axes);
-			do
+			if (accelerometer->StartCollecting(axes))
 			{
-				uint16_t dataRate;
-				const uint16_t *data;
-				unsigned int samplesRead = accelerometer->CollectData(&data, dataRate, overflowed);
-				if (samplesSent + samplesInBuffer == 0 && samplesRead != 0)
+				do
 				{
-					// The first sample taken after waking up is inaccurate, so discard it
-					--samplesRead;
-					data += 3;
-				}
-				if (samplesRead >= samplesWanted)
-				{
-					samplesRead = samplesWanted;
-				}
-
-				while (samplesRead != 0)
-				{
-					unsigned int samplesToCopy = min<unsigned int>(samplesRead, MaxSamplesInBuffer - samplesInBuffer);
-					while (samplesToCopy != 0)
+					uint16_t dataRate;
+					const uint16_t *data;
+					unsigned int samplesRead = accelerometer->CollectData(&data, dataRate, overflowed);
+					if (samplesSent + samplesInBuffer == 0 && samplesRead != 0)
 					{
-						// Extract the required bits from the data and pack them into the CAN buffer
-						for (unsigned int axis = 0; axis < 3; ++axis)
+						// The first sample taken after waking up is inaccurate, so discard it
+						--samplesRead;
+						data += 3;
+					}
+					if (samplesRead >= samplesWanted)
+					{
+						samplesRead = samplesWanted;
+					}
+
+					while (samplesRead != 0)
+					{
+						unsigned int samplesToCopy = min<unsigned int>(samplesRead, MaxSamplesInBuffer - samplesInBuffer);
+						while (samplesToCopy != 0)
 						{
-							if (axes & (1u << axis))
+							// Extract the required bits from the data and pack them into the CAN buffer
+							for (unsigned int axis = 0; axis < 3; ++axis)
 							{
-								uint16_t dataVal =
+								if (axes & (1u << axis))
+								{
+									uint16_t dataVal =
 #if TEST_PACKING
-													pattern++;
+														pattern++;
 #else
-													data[axisLookup[axis]];
-								if (axisInverted[axis])
-								{
-									dataVal = (dataVal == 0x8000) ? ~dataVal : ~dataVal + 1;
-								}
-								dataVal >>= (16u - resolution);								// data from LIS3DH is left justified
-#endif
-								// Copy data for this axis
-								if (resolution == 16u)
-								{
-									msg.data[canDataIndex++] = dataVal;
-								}
-								else
-								{
-									const uint16_t val = dataVal;
-									bitsPending |= val << bitsUsed;
-									bitsUsed += resolution;
-									if (bitsUsed >= 16u)
+														data[axisLookup[axis]];
+									if (axisInverted[axis])
 									{
-										msg.data[canDataIndex++] = bitsPending;
-										bitsUsed -= 16u;
-										bitsPending = val >> (resolution - bitsUsed);
+										dataVal = (dataVal == 0x8000) ? ~dataVal : ~dataVal + 1;
+									}
+									dataVal >>= (16u - resolution);								// data from LIS3DH is left justified
+#endif
+									// Copy data for this axis
+									if (resolution == 16u)
+									{
+										msg.data[canDataIndex++] = dataVal;
+									}
+									else
+									{
+										const uint16_t val = dataVal;
+										bitsPending |= val << bitsUsed;
+										bitsUsed += resolution;
+										if (bitsUsed >= 16u)
+										{
+											msg.data[canDataIndex++] = bitsPending;
+											bitsUsed -= 16u;
+											bitsPending = val >> (resolution - bitsUsed);
+										}
 									}
 								}
 							}
+							data += 3;
+
+							++samplesInBuffer;
+							--samplesToCopy;
+							--samplesWanted;
+							--samplesRead;
 						}
-						data += 3;
 
-						++samplesInBuffer;
-						--samplesToCopy;
-						--samplesWanted;
-						--samplesRead;
-					}
-
-					if (samplesInBuffer == MaxSamplesInBuffer || samplesWanted == 0)
-					{
-						// Send the buffer
-						if (bitsUsed != 0)
+						if (samplesInBuffer == MaxSamplesInBuffer || samplesWanted == 0)
 						{
-							msg.data[canDataIndex] = bitsPending;
+							// Send the buffer
+							if (bitsUsed != 0)
+							{
+								msg.data[canDataIndex] = bitsPending;
+							}
+							msg.firstSampleNumber = samplesSent;
+							msg.numSamples = samplesInBuffer;
+							msg.actualSampleRate = dataRate;
+							msg.overflowed = overflowed;
+							msg.lastPacket = (samplesWanted == 0);
+							msg.zero = 0;
+
+							buf.dataLength = msg.GetActualDataLength();
+							CanInterface::Send(&buf);
+
+							samplesSent += samplesInBuffer;
+							samplesInBuffer = 0;
+							canDataIndex = 0;
+							overflowed = false;
+							bitsUsed = 0;
+							bitsPending = 0;
 						}
-						msg.firstSampleNumber = samplesSent;
-						msg.numSamples = samplesInBuffer;
-						msg.actualSampleRate = dataRate;
-						msg.overflowed = overflowed;
-						msg.lastPacket = (samplesWanted == 0);
-						msg.zero = 0;
-
-						buf.dataLength = msg.GetActualDataLength();
-						CanInterface::Send(&buf);
-
-						samplesSent += samplesInBuffer;
-						samplesInBuffer = 0;
-						canDataIndex = 0;
-						overflowed = false;
-						bitsUsed = 0;
-						bitsPending = 0;
 					}
-				}
-			} while (samplesWanted != 0);
+				} while (samplesWanted != 0);
+			}
 
 			accelerometer->StopCollecting();
 
@@ -201,7 +203,8 @@ void AccelerometerHandler::Init() noexcept
 		temp->Configure(samplingRate, resolution);
 		accelerometer = temp;
 		(void)TranslateOrientation(orientation);
-		accelerometerTask.Create(AccelerometerTaskCode, "ACCEL", nullptr, TaskPriority::Accelerometer);
+		accelerometerTask = new Task<AccelerometerTaskStackWords>;
+		accelerometerTask->Create(AccelerometerTaskCode, "ACCEL", nullptr, TaskPriority::Accelerometer);
 	}
 	else
 	{
@@ -237,8 +240,7 @@ GCodeResult AccelerometerHandler::ProcessConfigRequest(const CanMessageGeneric& 
 	}
 
 	uint8_t localOrientation;
-	bool seen = parser.GetUintParam('I', localOrientation);
-	if (seen)
+	if (parser.GetUintParam('I', localOrientation))
 	{
 		if (TranslateOrientation(localOrientation))
 		{
@@ -250,12 +252,18 @@ GCodeResult AccelerometerHandler::ProcessConfigRequest(const CanMessageGeneric& 
 			return GCodeResult::error;
 		}
 	}
+
+	bool seen = true;
 	if (parser.GetUintParam('S', samplingRate)) { seen = true; }
 	if (parser.GetUintParam('R', resolution))  { seen = true; }
 
 	if (seen)
 	{
-		accelerometer->Configure(samplingRate, resolution);
+		if (!accelerometer->Configure(samplingRate, resolution))
+		{
+			reply.copy("Failed to configure accelerometer");
+			return GCodeResult::error;
+		}
 	}
 
 	reply.printf("Accelerometer %u:%u with orientation %u samples at %uHz with %u-bit resolution", CanInterface::GetCanAddress(), deviceNumber, orientation, samplingRate, resolution);
@@ -279,7 +287,7 @@ GCodeResult AccelerometerHandler::ProcessStartRequest(const CanMessageStartAccel
 	axes = msg.axes;
 	numSamplesRequested = msg.numSamples;
 	running = true;
-	accelerometerTask.Give();
+	accelerometerTask->Give();
 	return GCodeResult::ok;
 }
 

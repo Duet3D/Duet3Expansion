@@ -23,10 +23,10 @@ public:
 	bool CheckPresent() noexcept;
 
 	// Configure the accelerometer to collect at or near the requested sampling rate and the requested resolution in bits.
-	void Configure(uint16_t& samplingRate, uint8_t& resolution) noexcept;
+	bool Configure(uint16_t& samplingRate, uint8_t& resolution) noexcept;
 
 	// Start collecting data
-	void StartCollecting(uint8_t axes) noexcept;
+	bool StartCollecting(uint8_t axes) noexcept;
 
 	// Collect some data from the FIFO, suspending until the data is available
 	unsigned int CollectData(const uint16_t **collectedData, uint16_t &dataRate, bool &overflowed) noexcept;
@@ -39,7 +39,6 @@ public:
 
 	// Used by the ISR
 	void Int1Isr() noexcept;
-	TaskHandle GetAndClearTaskWaiting() noexcept { const TaskHandle t = taskWaiting; taskWaiting = nullptr; return t; }
 
 private:
 	enum class LisRegister : uint8_t
@@ -58,12 +57,12 @@ private:
 	bool WriteRegister(LisRegister reg, uint8_t val) noexcept;
 
 	volatile TaskHandle taskWaiting;
+	uint32_t firstInterruptTime;
 	uint32_t lastInterruptTime;
-	uint32_t lastInterruptInterval;
+	uint32_t totalNumRead;
 	uint8_t currentAxis;
 	uint8_t ctrlReg1;
 	Pin int1Pin;
-	uint8_t numLastRead;
 	alignas(2) uint8_t dataBuffer[6 * 32];
 };
 
