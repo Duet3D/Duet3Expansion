@@ -14,7 +14,7 @@
 void SoftwareReset(SoftwareResetReason initialReason, const uint32_t *stk) noexcept
 {
 	uint16_t fullReason = (uint16_t)initialReason;
-	cpu_irq_disable();							// disable interrupts before we call any flash functions. We don't enable them again.
+	IrqDisable();							// disable interrupts before we call any flash functions. We don't enable them again.
 	WatchdogReset();							// kick the watchdog
 
 	Cache::Disable();

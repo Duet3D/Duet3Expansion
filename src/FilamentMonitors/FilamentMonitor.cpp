@@ -228,19 +228,19 @@ GCodeResult FilamentMonitor::CommonConfigure(const CanMessageGenericParser& pars
 			bool fromIsr;
 			int32_t extruderStepsCommanded;
 			uint32_t locIsrMillis;
-			cpu_irq_disable();
+			IrqDisable();
 			if (fs.haveIsrStepsCommanded)
 			{
 				extruderStepsCommanded = fs.isrExtruderStepsCommanded;
 				isPrinting = fs.isrWasPrinting;
 				locIsrMillis = fs.lastIsrMillis;
 				fs.haveIsrStepsCommanded = false;
-				cpu_irq_enable();
+				IrqEnable();
 				fromIsr = true;
 			}
 			else
 			{
-				cpu_irq_enable();
+				IrqEnable();
 				extruderStepsCommanded = moveInstance->GetAccumulatedExtrusion(drv, isPrinting);		// get and clear the net extrusion commanded
 				fromIsr = false;
 				locIsrMillis = 0;

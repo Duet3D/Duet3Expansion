@@ -24,10 +24,10 @@ bool InputMonitor::Activate() noexcept
 		if (threshold == 0)
 		{
 			// Digital input
-			const irqflags_t flags = cpu_irq_save();
+			const irqflags_t flags = IrqSave();
 			ok = port.AttachInterrupt(CommonDigitalPortInterrupt, InterruptMode::change, CallbackParameter(this));
 			state = port.ReadDigital();
-			cpu_irq_restore(flags);
+			IrqRestore(flags);
 		}
 		else
 		{

@@ -1845,13 +1845,13 @@ void Platform::OnProcessingCanMessage()
 // Execute a timed task that takes less than one millisecond
 static uint32_t TimedSqrt(uint64_t arg, uint32_t& timeAcc) noexcept
 {
-	cpu_irq_disable();
+	IrqDisable();
 	asm volatile("":::"memory");
 	uint32_t now1 = SysTick->VAL;
 	const uint32_t ret = isqrt64(arg);
 	uint32_t now2 = SysTick->VAL;
 	asm volatile("":::"memory");
-	cpu_irq_enable();
+	IrqEnable();
 	now1 &= 0x00FFFFFF;
 	now2 &= 0x00FFFFFF;
 	timeAcc += ((now1 > now2) ? now1 : now1 + (SysTick->LOAD & 0x00FFFFFF) + 1) - now2;
@@ -1906,7 +1906,7 @@ GCodeResult Platform::DoDiagnosticTest(const CanMessageDiagnosticTest& msg, cons
 	case 108:
 		{
 			unsigned int i = 100;
-			cpu_irq_disable();
+			IrqDisable();
 			asm volatile("":::"memory");
 			uint32_t now1 = SysTick->VAL;
 			do
@@ -1916,7 +1916,7 @@ GCodeResult Platform::DoDiagnosticTest(const CanMessageDiagnosticTest& msg, cons
 			} while (i != 0);
 			uint32_t now2 = SysTick->VAL;
 			asm volatile("":::"memory");
-			cpu_irq_enable();
+			IrqEnable();
 			now1 &= 0x00FFFFFF;
 			now2 &= 0x00FFFFFF;
 			uint32_t tim1 = ((now1 > now2) ? now1 : now1 + (SysTick->LOAD & 0x00FFFFFF) + 1) - now2;

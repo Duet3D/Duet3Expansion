@@ -228,13 +228,13 @@ inline void Move::StartNextMove(DDA *cdda, uint32_t startTime)
 			DDA * const cdda = ddaRingGetPointer;										// capture volatile variable
 			if (cdda->GetState() == DDA::frozen)
 			{
-				cpu_irq_disable();
+				IrqDisable();
 				StartNextMove(cdda, StepTimer::GetTimerTicks());
 				if (cdda->ScheduleNextStepInterrupt(timer))
 				{
 					Interrupt();
 				}
-				cpu_irq_enable();
+				IrqEnable();
 			}
 		}
 	}
@@ -308,7 +308,7 @@ void Move::StopDrivers(uint16_t whichDrivers)
 #if SAME5x
 	const uint32_t oldPrio = ChangeBasePriority(NvicPriorityStep);
 #elif SAMC21
-	const irqflags_t flags = cpu_irq_save();
+	const irqflags_t flags = IrqSave();
 #else
 # error Unsupported processor
 #endif
@@ -324,7 +324,7 @@ void Move::StopDrivers(uint16_t whichDrivers)
 #if SAME5x
 	RestoreBasePriority(oldPrio);
 #elif SAMC21
-	cpu_irq_restore(flags);
+	IrqRestore(flags);
 #else
 # error Unsupported processor
 #endif
