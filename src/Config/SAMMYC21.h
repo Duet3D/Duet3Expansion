@@ -36,7 +36,7 @@
 
 constexpr size_t NumDrivers = 1;
 
-#define USE_CCL		1
+#define USE_CCL		0			// USE_CCL also requires DIFFERENTIAL_STEPPER_OUTPUTS
 
 #if USE_CCL
 
