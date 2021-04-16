@@ -25,7 +25,7 @@ class FopDt;
 namespace Heat
 {
 	// Methods that don't relate to a particular heater
-	[[noreturn]] void Task();
+	[[noreturn]] void TaskLoop(void *);
 	void Init();												// Set everything up
 	void Exit();												// Shut everything down
 

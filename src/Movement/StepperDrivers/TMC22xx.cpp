@@ -648,7 +648,7 @@ Uart * const TmcDriverState::uart = UART_TMC22xx;
 #endif
 
 // TMC22xx management task
-static Task<TmcTaskStackWords> tmcTask;
+static Task<TmcTaskStackWords> *tmcTask;
 
 static DmaCallbackReason dmaFinishedReason;
 
@@ -1554,7 +1554,7 @@ inline void TmcDriverState::UartTmcHandler() noexcept
 void TransferCompleteCallback(CallbackParameter, DmaCallbackReason reason) noexcept
 {
 	dmaFinishedReason = reason;
-	tmcTask.GiveFromISR();
+	tmcTask->GiveFromISR();
 }
 
 # else
@@ -1935,7 +1935,8 @@ void SmartDrivers::Init() noexcept
 	}
 
 	driversState = DriversState::noPower;
-	tmcTask.Create(TmcLoop, "TMC", nullptr, TaskPriority::TmcPriority);
+	tmcTask = new Task<TmcTaskStackWords>;
+	tmcTask->Create(TmcLoop, "TMC", nullptr, TaskPriority::TmcPriority);
 }
 
 // Shut down the drivers and stop any related interrupts
@@ -1954,7 +1955,7 @@ void SmartDrivers::Exit() noexcept
 		NVIC_DisableIRQ(TMC22xxUartIRQns[drive]);
 	}
 #endif
-	tmcTask.TerminateAndUnlink();
+	tmcTask->TerminateAndUnlink();
 	driversState = DriversState::shutDown;				// prevent Spin() calls from doing anything
 }
 
@@ -2045,7 +2046,7 @@ void SmartDrivers::Spin(bool powered) noexcept
 		if (driversState == DriversState::noPower)
 		{
 			driversState = DriversState::notInitialised;
-			tmcTask.Give();									// wake up the TMC task because the drivers need to be initialised
+			tmcTask->Give();									// wake up the TMC task because the drivers need to be initialised
 		}
 	}
 	else if (driversState != DriversState::shutDown)

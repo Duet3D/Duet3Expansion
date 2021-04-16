@@ -44,12 +44,7 @@ constexpr uint32_t HeaterTaskStackWords = 200;					// task stack size in dwords
 constexpr uint32_t HeaterTaskStackWords = 170;					// task stack size in dwords
 #endif
 
-static Task<HeaterTaskStackWords> heaterTask;
-
-extern "C" [[noreturn]] void HeaterTask(void * pvParameters)
-{
-	Heat::Task();
-}
+static Task<HeaterTaskStackWords> *heaterTask;
 
 namespace Heat
 {
@@ -167,7 +162,8 @@ void Heat::Init()
 	retractionMinTemp = HOT_ENOUGH_TO_RETRACT;
 	coldExtrude = false;
 
-	heaterTask.Create(HeaterTask, "HEAT", nullptr, TaskPriority::HeatPriority);
+	heaterTask = new Task<HeaterTaskStackWords>;
+	heaterTask->Create(Heat::TaskLoop, "HEAT", nullptr, TaskPriority::HeatPriority);
 }
 
 void Heat::Exit()
@@ -180,10 +176,10 @@ void Heat::Exit()
 		}
 	}
 
-	heaterTask.Suspend();
+	heaterTask->Suspend();
 }
 
-[[noreturn]] void Heat::Task()
+[[noreturn]] void Heat::TaskLoop(void *)
 {
 	// Get a message buffer. We use the same one all the time and never release it.
 	CanMessageBuffer *buf;

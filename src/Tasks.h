@@ -9,7 +9,7 @@
 #define SRC_TASKS_H_
 
 #include "RepRapFirmware.h"
-#include "RTOSIface/RTOSIface.h"
+#include <RTOSIface/RTOSIface.h>
 
 [[noreturn]] void AppMain();
 

@@ -328,60 +328,53 @@ extern "C" [[noreturn]] void UpdateBootloaderTask(void *pvParameters) noexcept
 	{
 		if (blockBuffer == nullptr)
 		{
-			blockBuffer = new uint32_t[FlashBlockSize/4];
+			blockBuffer = new uint32_t[FlashBlockSize/4];			// if this fails then an OutOfMemory reset will occur
 		}
 
-		if (blockBuffer == nullptr)
+		const FirmwareFlashErrorCode err = GetBootloaderBlock(reinterpret_cast<uint8_t*>(blockBuffer));
+		const uint32_t start = millis();
+		do
 		{
-			ReportFlashError(FirmwareFlashErrorCode::noMemory);
+			Platform::SpinMinimal();								// make sure the currentVin is up to date and the green LED gets turned off
+		} while (millis() - start < 300);
+
+		if (err != FirmwareFlashErrorCode::ok)
+		{
+			ReportFlashError(err);
+		}
+		else if (!CheckCRC(blockBuffer))
+		{
+			ReportFlashError(FirmwareFlashErrorCode::badCRC);
+		}
+#if HAS_VOLTAGE_MONITOR
+		else if (Platform::GetCurrentVinVoltage() < 10.5)
+		{
+			ReportFlashError(FirmwareFlashErrorCode::vinTooLow);
+		}
+#endif
+		else if (!Flash::Init())
+		{
+			ReportFlashError(FirmwareFlashErrorCode::flashInitFailed);
+		}
+		else if (!Flash::Unlock(FLASH_ADDR, FlashBlockSize))
+		{
+			ReportFlashError(FirmwareFlashErrorCode::unlockFailed);
+		}
+		else if (!Flash::Erase(FLASH_ADDR, FlashBlockSize))
+		{
+			ReportFlashError(FirmwareFlashErrorCode::eraseFailed);
+		}
+		else if (!Flash::Write(FLASH_ADDR, FlashBlockSize, blockBuffer))
+		{
+			ReportFlashError(FirmwareFlashErrorCode::writeFailed);
+		}
+		else if (!Flash::Lock(FLASH_ADDR, FlashBlockSize))
+		{
+			ReportFlashError(FirmwareFlashErrorCode::lockFailed);
 		}
 		else
 		{
-			const FirmwareFlashErrorCode err = GetBootloaderBlock(reinterpret_cast<uint8_t*>(blockBuffer));
-			const uint32_t start = millis();
-			do
-			{
-				Platform::SpinMinimal();														// make sure the currentVin is up to date and the green LED gets turned off
-			} while (millis() - start < 300);
-
-			if (err != FirmwareFlashErrorCode::ok)
-			{
-				ReportFlashError(err);
-			}
-			else if (!CheckCRC(blockBuffer))
-			{
-				ReportFlashError(FirmwareFlashErrorCode::badCRC);
-			}
-#if HAS_VOLTAGE_MONITOR
-			else if (Platform::GetCurrentVinVoltage() < 10.5)
-			{
-				ReportFlashError(FirmwareFlashErrorCode::vinTooLow);
-			}
-#endif
-			else if (!Flash::Init())
-			{
-				ReportFlashError(FirmwareFlashErrorCode::flashInitFailed);
-			}
-			else if (!Flash::Unlock(FLASH_ADDR, FlashBlockSize))
-			{
-				ReportFlashError(FirmwareFlashErrorCode::unlockFailed);
-			}
-			else if (!Flash::Erase(FLASH_ADDR, FlashBlockSize))
-			{
-				ReportFlashError(FirmwareFlashErrorCode::eraseFailed);
-			}
-			else if (!Flash::Write(FLASH_ADDR, FlashBlockSize, blockBuffer))
-			{
-				ReportFlashError(FirmwareFlashErrorCode::writeFailed);
-			}
-			else if (!Flash::Lock(FLASH_ADDR, FlashBlockSize))
-			{
-				ReportFlashError(FirmwareFlashErrorCode::lockFailed);
-			}
-			else
-			{
-				break;		// success!
-			}
+			break;		// success!
 		}
 	}
 

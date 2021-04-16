@@ -50,7 +50,7 @@ unsigned int getCanMoveTimeoutErrs;
 #endif
 
 constexpr size_t MoveTaskStackWords = 200;
-static Task<MoveTaskStackWords> moveTask;
+static Task<MoveTaskStackWords> *moveTask;
 
 extern "C" [[noreturn]] void MoveLoop(void * param) noexcept
 {
@@ -96,13 +96,14 @@ void Move::Init()
 	currentDda = nullptr;
 	maxPrepareTime = 0;
 
-	moveTask.Create(MoveLoop, "Move", this, TaskPriority::MovePriority);
+	moveTask = new Task<MoveTaskStackWords>;
+	moveTask->Create(MoveLoop, "Move", this, TaskPriority::MovePriority);
 }
 
 void Move::Exit()
 {
 	StepTimer::DisableTimerInterrupt();
-	moveTask.TerminateAndUnlink();
+	moveTask->TerminateAndUnlink();
 
 	// Clear the DDA ring so that we don't report any moves as pending
 	currentDda = nullptr;
