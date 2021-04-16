@@ -234,17 +234,11 @@ constexpr IRQn Serial1_IRQn = SERCOM5_0_IRQn;
 // DMA channel assignments. Channels 0-3 have individual interrupt vectors, channels 4-31 share an interrupt vector.
 constexpr DmaChannel DmacChanTmcTx = 0;
 constexpr DmaChannel DmacChanTmcRx = 1;
-constexpr DmaChannel DmacChanAdc0Tx = 2;
-// Next channel is used by ADC0 for receive
-constexpr DmaChannel DmacChanAdc1Tx = 4;
-// Next channel is used by ADC1 for receive
 
-constexpr unsigned int NumDmaChannelsUsed = 6;			// must be at least the number of channels used, may be larger. Max 32 on the SAME51.
+constexpr unsigned int NumDmaChannelsUsed = 2;			// must be at least the number of channels used, may be larger. Max 32 on the SAME51.
 
 constexpr DmaPriority DmacPrioTmcTx = 0;
 constexpr DmaPriority DmacPrioTmcRx = 3;
-constexpr DmaPriority DmacPrioAdcTx = 0;
-constexpr DmaPriority DmacPrioAdcRx = 2;
 
 // Interrupt priorities, lower means higher priority. 0-2 can't make RTOS calls.
 const NvicPriority NvicPriorityStep = 3;				// step interrupt is next highest, it can preempt most other interrupts
@@ -252,5 +246,6 @@ const NvicPriority NvicPriorityUart = 3;				// serial driver makes RTOS calls
 const NvicPriority NvicPriorityPins = 3;				// priority for GPIO pin interrupts
 const NvicPriority NvicPriorityCan = 4;
 const NvicPriority NvicPriorityDmac = 5;				// priority for DMA complete interrupts
+const NvicPriority NvicPriorityAdc = 5;
 
 #endif /* SRC_CONFIG_EXPANSION1_V09_H_ */

@@ -52,7 +52,7 @@ extern "C" void SERCOM3_3_Handler()
 
 void DeviceInit() noexcept
 {
-	AnalogIn::Init(DmacChanAdc0Tx, DmacPrioAdcTx, DmacPrioAdcRx);
+	AnalogIn::Init(NvicPriorityAdc);
 	AnalogOut::Init();
 	analogInTask.Create(AnalogIn::TaskLoop, "AIN", nullptr, TaskPriority::AinPriority);
 }
