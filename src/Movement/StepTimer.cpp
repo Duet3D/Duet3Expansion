@@ -332,4 +332,10 @@ void StepTimer::CancelCallback()
 	}
 }
 
+// Function called by FreeRTOS to read the timer
+extern "C" uint32_t StepTimerGetTimerTicks() noexcept
+{
+	return StepTimer::GetTimerTicks();
+}
+
 // End

@@ -402,12 +402,24 @@ ptrdiff_t Tasks::GetNeverUsedRam() noexcept
 	return heapLimit - heapTop;
 }
 
+// Function called by FreeRTOS and internally to reset the run-time counter and return the number of timer ticks since it was last reset
+extern "C" uint32_t TaskResetRunTimeCounter() noexcept
+{
+	static uint32_t whenLastReset = 0;
+	const uint32_t now = StepTimer::GetTimerTicks();
+	const uint32_t ret = now - whenLastReset;
+	whenLastReset = now;
+	return ret;
+}
+
 void Tasks::Diagnostics(const StringRef& reply) noexcept
 {
 	// Append a memory report to a string
 	reply.lcatf("Never used RAM %d, free system stack %d words\nTasks:", GetNeverUsedRam(), GetHandlerFreeStack()/4);
 
 	// Now the per-task memory report
+	const uint32_t timeSinceLastCall = TaskResetRunTimeCounter();
+	float totalCpuPercent = 0.0;
 	for (TaskBase *t = TaskBase::GetTaskList(); t != nullptr; t = t->GetNext())
 	{
 		ExtendedTaskStatus_t taskDetails;
@@ -426,7 +438,7 @@ void Tasks::Diagnostics(const StringRef& reply) noexcept
 			stateText = "notifyWait";
 			break;
 		case esResourceWaiting:
-			stateText = "resourceWait";
+			stateText = "resourceWait:";
 			break;
 		case esDelaying:
 			stateText = "delaying";
@@ -456,15 +468,11 @@ void Tasks::Diagnostics(const StringRef& reply) noexcept
 			}
 		}
 
-		if (mutexName != nullptr)
-		{
-			reply.catf(" %s(%s,%s,%u)", taskDetails.pcTaskName, stateText, mutexName, (unsigned int)taskDetails.usStackHighWaterMark);
-		}
-		else
-		{
-			reply.catf(" %s(%s,%u)", taskDetails.pcTaskName, stateText, (unsigned int)taskDetails.usStackHighWaterMark);
-		}
+		const float cpuPercent = (100 * (float)taskDetails.ulRunTimeCounter)/(float)timeSinceLastCall;
+		totalCpuPercent += cpuPercent;
+		reply.catf(" %s(%s%s,%.1f%%,%u)", taskDetails.pcTaskName, stateText, mutexName, (double)cpuPercent, (unsigned int)taskDetails.usStackHighWaterMark);
 	}
+	reply.catf(", total %.1f%%", (double)totalCpuPercent);
 
 	// Show the up time and reason for the last reset
 	const uint32_t now = (uint32_t)(millis64()/1000u);		// get up time in seconds
