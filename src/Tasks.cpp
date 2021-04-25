@@ -56,11 +56,36 @@ static Task<MainTaskStackWords> mainTask;
 static Mutex mallocMutex;
 static unsigned int heatTaskIdleTicks = 0;
 
+// Idle task data
+constexpr unsigned int IdleTaskStackWords = 50;				// currently we don't use the idle talk for anything, so this can be quite small
+static Task<IdleTaskStackWords> idleTask;
+
+extern "C" void vApplicationGetIdleTaskMemory(StaticTask_t **ppxIdleTaskTCBBuffer, StackType_t **ppxIdleTaskStackBuffer, uint32_t *pulIdleTaskStackSize) noexcept
+{
+	*ppxIdleTaskTCBBuffer = idleTask.GetTaskMemory();
+	*ppxIdleTaskStackBuffer = idleTask.GetStackBase();
+	*pulIdleTaskStackSize = idleTask.GetStackSize();
+}
+
+#if configUSE_TIMERS
+
+// Timer task data
+constexpr unsigned int TimerTaskStackWords = 60;
+static Task<TimerTaskStackWords> timerTask;
+
+extern "C" void vApplicationGetTimerTaskMemory(StaticTask_t **ppxTimerTaskTCBBuffer, StackType_t **ppxTimerTaskStackBuffer, uint32_t *pulTimerTaskStackSize) noexcept
+{
+    *ppxTimerTaskTCBBuffer = timerTask.GetTaskMemory();
+    *ppxTimerTaskStackBuffer = timerTask.GetStackBase();
+    *pulTimerTaskStackSize = timerTask.GetStackSize();
+}
+
+#endif
+
 extern "C" [[noreturn]] void MainTask(void * pvParameters) noexcept;
 extern "C" [[noreturn]] void UpdateBootloaderTask(void * pvParameters) noexcept;
 
-// We need to make malloc/free thread safe, else sprintf and related I/O functions are liable to crash.
-// We must use a recursive mutex for it.
+// Make malloc/free thread safe. We must use a recursive mutex for it.
 extern "C" void __malloc_lock (struct _reent *_r) noexcept
 {
 	if (xTaskGetSchedulerState() == taskSCHEDULER_RUNNING)		// don't take mutex if scheduler not started or suspended
@@ -146,6 +171,12 @@ void AppMain() noexcept
 #if USE_CACHE
 	Cache::Init();
 	Cache::Enable();
+#endif
+
+	idleTask.AddToList();			// add the FreeRTOS internal tasks to the task list
+
+#if configUSE_TIMERS
+	timerTask.AddToList();
 #endif
 
 	// Create the startup task and memory allocation mutex
@@ -506,9 +537,6 @@ void *Tasks::AllocPermanent(size_t sz, std::align_val_t align) noexcept
 	return ret;
 }
 
-static StaticTask_t xIdleTaskTCB;
-static StackType_t uxIdleTaskStack[configMINIMAL_STACK_SIZE];
-
 extern "C" void vApplicationTickHook(void) noexcept
 {
 	CoreSysTick();
@@ -534,18 +562,6 @@ extern "C" void vApplicationTickHook(void) noexcept
 			stackPtr + 5);												// discard uninteresting registers, keep LR PC PSR
 	}
 #endif
-}
-
-extern "C" void vApplicationGetIdleTaskMemory(StaticTask_t **ppxIdleTaskTCBBuffer, StackType_t **ppxIdleTaskStackBuffer, uint32_t *pulIdleTaskStackSize) noexcept
-{
-    /* Pass out a pointer to the StaticTask_t structure in which the Idle task's state will be stored. */
-    *ppxIdleTaskTCBBuffer = &xIdleTaskTCB;
-
-    /* Pass out the array that will be used as the Idle task's stack. */
-    *ppxIdleTaskStackBuffer = uxIdleTaskStack;
-
-    /* Pass out the size of the array pointed to by *ppxIdleTaskStackBuffer. */
-    *pulIdleTaskStackSize = ARRAY_SIZE(uxIdleTaskStack);
 }
 
 static StaticTask_t xTimerTaskTCB;
