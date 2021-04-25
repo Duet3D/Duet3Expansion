@@ -112,6 +112,7 @@ void AppMain() noexcept
 		// Update the bootloader
 		nvmUserRow.b32[UpdateBootloaderMagicWordIndex] = 0xFFFFFFFF;								// clear the bootloader update flag
 		_user_area_write(reinterpret_cast<void*>(NVMCTRL_USER), 0, reinterpret_cast<const uint8_t*>(&nvmUserRow), sizeof(nvmUserRow));
+		delayMicroseconds(10000);																	// in case we reset early due to low voltage etc.
 		updateBootloader = true;																	// we can't update it until we have started RTOS
 	}
 	else if ((nvmUserRow0 & mask) != reqValue)
