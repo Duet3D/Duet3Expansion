@@ -129,6 +129,10 @@ GCodeResult RotatingMagnetFilamentMonitor::Configure(const CanMessageGenericPars
 			else
 			{
 				reply.catf("version %u, ", version);
+				if (switchOpenMask != 0)
+				{
+					reply.cat(((sensorValue & switchOpenMask) != 0) ? "no filament, " : "filament present, ");
+				}
 				if (version >= 3)
 				{
 					reply.catf("mag %u agc %u, ", magnitude, agc);
