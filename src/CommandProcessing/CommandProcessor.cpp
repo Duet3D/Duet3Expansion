@@ -1021,30 +1021,37 @@ void CommandProcessor::Spin()
 			break;
 		}
 
-		// Re-use the message buffer to send a standard reply
-		const CanAddress srcAddress = buf->id.Src();
-		CanMessageStandardReply *msg = buf->SetupResponseMessage<CanMessageStandardReply>(requestId, CanInterface::GetCanAddress(), srcAddress);
-		msg->resultCode = (uint16_t)rslt;
-		msg->extra = extra;
-		const size_t totalLength = reply.strlen();
-		size_t lengthDone = 0;
-		uint8_t fragmentNumber = 0;
-		for (;;)
+		if (requestId == CanRequestIdNoReplyNeeded)
 		{
-			const size_t fragmentLength = min<size_t>(totalLength - lengthDone, CanMessageStandardReply::MaxTextLength);
-			memcpy(msg->text, reply.c_str() + lengthDone, fragmentLength);
-			lengthDone += fragmentLength;
-			buf->dataLength = msg->GetActualDataLength(fragmentLength);
-			msg->fragmentNumber = fragmentNumber;
-			if (lengthDone == totalLength)
+			CanMessageBuffer::Free(buf);					// no reply wanted so discard the response and free the buffer
+		}
+		else
+		{
+			// Re-use the message buffer to send a standard reply
+			const CanAddress srcAddress = buf->id.Src();
+			CanMessageStandardReply *msg = buf->SetupResponseMessage<CanMessageStandardReply>(requestId, CanInterface::GetCanAddress(), srcAddress);
+			msg->resultCode = (uint16_t)rslt;
+			msg->extra = extra;
+			const size_t totalLength = reply.strlen();
+			size_t lengthDone = 0;
+			uint8_t fragmentNumber = 0;
+			for (;;)
 			{
-				msg->moreFollows = false;
-				CanInterface::SendAndFree(buf);
-				break;
+				const size_t fragmentLength = min<size_t>(totalLength - lengthDone, CanMessageStandardReply::MaxTextLength);
+				memcpy(msg->text, reply.c_str() + lengthDone, fragmentLength);
+				lengthDone += fragmentLength;
+				buf->dataLength = msg->GetActualDataLength(fragmentLength);
+				msg->fragmentNumber = fragmentNumber;
+				if (lengthDone == totalLength)
+				{
+					msg->moreFollows = false;
+					CanInterface::SendAndFree(buf);
+					break;
+				}
+				msg->moreFollows = true;
+				CanInterface::Send(buf);
+				++fragmentNumber;
 			}
-			msg->moreFollows = true;
-			CanInterface::Send(buf);
-			++fragmentNumber;
 		}
 	}
 }
