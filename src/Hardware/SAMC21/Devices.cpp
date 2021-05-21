@@ -14,7 +14,7 @@
 #include <AnalogOut.h>
 
 // Analog input support
-constexpr size_t AnalogInTaskStackWords = 120;
+constexpr size_t AnalogInTaskStackWords = 200;				// was 120 but we got a stack overflow
 static Task<AnalogInTaskStackWords> analogInTask;
 
 # ifdef SAMMYC21
