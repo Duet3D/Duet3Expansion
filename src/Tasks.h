@@ -20,6 +20,7 @@ namespace Tasks
 	void Diagnostics(const StringRef& reply) noexcept;
 	uint32_t DoDivide(uint32_t a, uint32_t b) noexcept;
 	uint32_t DoMemoryRead(const uint32_t* addr) noexcept;
+	void *GetNVMBuffer(const uint32_t *stk) noexcept;
 }
 
 // Functions called by CanMessageBuffer in CANlib

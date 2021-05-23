@@ -39,9 +39,9 @@ Licence: GPL
 // We now avoid calling vuprintf from debugPrintf unless this is a debug build
 
 #ifdef DEBUG
-constexpr uint32_t HeaterTaskStackWords = 200;					// task stack size in dwords
+constexpr uint32_t HeaterTaskStackWords = 230;					// task stack size in dwords
 #else
-constexpr uint32_t HeaterTaskStackWords = 170;					// task stack size in dwords
+constexpr uint32_t HeaterTaskStackWords = 200;					// task stack size in dwords
 #endif
 
 static Task<HeaterTaskStackWords> *heaterTask;
@@ -181,21 +181,15 @@ void Heat::Exit()
 
 [[noreturn]] void Heat::TaskLoop(void *)
 {
-	// Get a message buffer. We use the same one all the time and never release it.
-	CanMessageBuffer *buf;
-	while ((buf = CanMessageBuffer::Allocate()) == nullptr)
-	{
-		delay(5);
-	}
-
 	uint32_t lastWakeTime = xTaskGetTickCount();
 	for (;;)
 	{
+		CanMessageBuffer buf(nullptr);
 		const uint32_t startTime = millis();
 		{
 			// Walk the sensor list and poll all sensors
 			// Also prepare to broadcast our sensor temperatures
-			CanMessageSensorTemperatures * const sensorTempsMsg = buf->SetupBroadcastMessage<CanMessageSensorTemperatures>(CanInterface::GetCanAddress());
+			CanMessageSensorTemperatures * const sensorTempsMsg = buf.SetupBroadcastMessage<CanMessageSensorTemperatures>(CanInterface::GetCanAddress());
 			sensorTempsMsg->whichSensors = 0;
 			unsigned int sensorsFound = 0;
 			{
@@ -227,7 +221,7 @@ void Heat::Exit()
 			}
 
 			// Announce ourselves to the main board
-			CanInterface::SendAnnounce(buf);
+			CanInterface::SendAnnounce(&buf);
 
 			// Broadcast our sensor temperatures
 			lastSensorsBroadcastWhich = sensorTempsMsg->whichSensors;	// for diagnostics
@@ -235,8 +229,8 @@ void Heat::Exit()
 			lastSensorsFound = sensorsFound;
 			if (sensorsFound != 0)
 			{
-				buf->dataLength = sensorTempsMsg->GetActualDataLength(sensorsFound);
-				CanInterface::Send(buf);
+				buf.dataLength = sensorTempsMsg->GetActualDataLength(sensorsFound);
+				CanInterface::Send(&buf);
 			}
 
 			// See if we are tuning a heater, or have finished tuning one
@@ -245,11 +239,11 @@ void Heat::Exit()
 				const auto h = FindHeater(heaterBeingTuned);
 				if (h.IsNotNull() && h->IsTuning())
 				{
-					auto msg = buf->SetupStatusMessage<CanMessageHeaterTuningReport>(CanInterface::GetCanAddress(), CanInterface::GetCurrentMasterAddress());
+					auto msg = buf.SetupStatusMessage<CanMessageHeaterTuningReport>(CanInterface::GetCanAddress(), CanInterface::GetCurrentMasterAddress());
 					if (LocalHeater::GetTuningCycleData(*msg))
 					{
 						msg->SetStandardFields(heaterBeingTuned);
-						CanInterface::Send(buf);
+						CanInterface::Send(&buf);
 					}
 				}
 				else
@@ -261,7 +255,7 @@ void Heat::Exit()
 
 		// Broadcast our heater statuses
 		{
-			CanMessageHeatersStatus * const msg = buf->SetupStatusMessage<CanMessageHeatersStatus>(CanInterface::GetCanAddress(), CanInterface::GetCurrentMasterAddress());
+			CanMessageHeatersStatus * const msg = buf.SetupStatusMessage<CanMessageHeatersStatus>(CanInterface::GetCanAddress(), CanInterface::GetCurrentMasterAddress());
 			msg->whichHeaters = 0;
 			unsigned int heatersFound = 0;
 
@@ -284,19 +278,19 @@ void Heat::Exit()
 
 			if (heatersFound != 0)
 			{
-				buf->dataLength = msg->GetActualDataLength(heatersFound);
-				CanInterface::Send(buf);
+				buf.dataLength = msg->GetActualDataLength(heatersFound);
+				CanInterface::Send(&buf);
 			}
 		}
 
 		// Broadcast our fan RPMs
 		{
-			CanMessageFansReport * const msg = buf->SetupStatusMessage<CanMessageFansReport>(CanInterface::GetCanAddress(), CanInterface::GetCurrentMasterAddress());
+			CanMessageFansReport * const msg = buf.SetupStatusMessage<CanMessageFansReport>(CanInterface::GetCanAddress(), CanInterface::GetCurrentMasterAddress());
 			const unsigned int numReported = FansManager::PopulateFansReport(*msg);
 			if (numReported != 0)
 			{
-				buf->dataLength = msg->GetActualDataLength(numReported);
-				CanInterface::Send(buf);
+				buf.dataLength = msg->GetActualDataLength(numReported);
+				CanInterface::Send(&buf);
 			}
 		}
 

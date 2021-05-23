@@ -95,6 +95,8 @@ uint8_t expectedSeq = 0xFF;
 static CanMessageQueue PendingMoves;
 static CanMessageQueue PendingCommands;
 
+static Mutex txFifoMutex;
+
 extern "C" [[noreturn]] void CanClockLoop(void *) noexcept;
 extern "C" [[noreturn]] void CanReceiverLoop(void *) noexcept;
 extern "C" [[noreturn]] void CanAsyncSenderLoop(void *) noexcept;
@@ -107,6 +109,9 @@ namespace CanInterface
 // Initialise this module and the CAN hardware
 void CanInterface::Init(CanAddress defaultBoardAddress, bool useAlternatePins, bool full) noexcept
 {
+	// Create the mutex
+	txFifoMutex.Create("CANtx");
+
 	// Read the CAN timing data from the top part of the NVM User Row
 	canConfigData = *reinterpret_cast<CanUserAreaData*>(NVMCTRL_USER + CanUserAreaDataOffset);
 
@@ -212,7 +217,7 @@ CanAddress CanInterface::GetCurrentMasterAddress() noexcept
 bool CanInterface::Send(CanMessageBuffer *buf) noexcept
 {
 	//TODO option to not force sending, and return true only if successful?
-	TaskCriticalSectionLocker lock;					// this is called by multiple tasks, all of them accessing the transmit fifo
+	MutexLocker lock(txFifoMutex);
 	can0dev->SendMessage(CanDevice::TxBufferNumber::fifo, 1000, buf);
 	return true;
 }

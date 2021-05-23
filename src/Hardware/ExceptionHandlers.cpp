@@ -7,6 +7,7 @@
 
 #include "ExceptionHandlers.h"
 #include <Platform.h>
+#include <Tasks.h>
 #include <Hardware/NonVolatileMemory.h>
 #include <Cache.h>
 
@@ -14,7 +15,7 @@
 void SoftwareReset(SoftwareResetReason initialReason, const uint32_t *stk) noexcept
 {
 	uint16_t fullReason = (uint16_t)initialReason;
-	IrqDisable();							// disable interrupts before we call any flash functions. We don't enable them again.
+	IrqDisable();								// disable interrupts before we call any flash functions. We don't enable them again.
 	WatchdogReset();							// kick the watchdog
 
 	Cache::Disable();
@@ -25,10 +26,11 @@ void SoftwareReset(SoftwareResetReason initialReason, const uint32_t *stk) noexc
 	}
 
 	// Record the reason for the software reset
-	NonVolatileMemory mem;
-	SoftwareResetData * const srd = mem.AllocateResetDataSlot();
+
+	NonVolatileMemory * const mem = new(Tasks::GetNVMBuffer(stk)) NonVolatileMemory;
+	SoftwareResetData * const srd = mem->AllocateResetDataSlot();
 	srd->Populate(fullReason, stk);
-	mem.EnsureWritten();
+	mem->EnsureWritten();
 
 	Platform::ResetProcessor();
 	for(;;) {}

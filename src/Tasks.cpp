@@ -14,6 +14,7 @@
 #include <CommandProcessing/CommandProcessor.h>
 #include <FilamentMonitors/FilamentMonitor.h>
 #include <Hardware/Devices.h>
+#include <Hardware/NonVolatileMemory.h>
 #include <CanMessageBuffer.h>
 #include <CanMessageFormats.h>
 #include <Duet3Common.h>
@@ -57,7 +58,7 @@ static Mutex mallocMutex;
 static unsigned int heatTaskIdleTicks = 0;
 
 // Idle task data
-constexpr unsigned int IdleTaskStackWords = 50;				// currently we don't use the idle talk for anything, so this can be quite small
+constexpr unsigned int IdleTaskStackWords = 50;					// currently we don't use the idle talk for anything, so this can be quite small
 static Task<IdleTaskStackWords> idleTask;
 
 extern "C" void vApplicationGetIdleTaskMemory(StaticTask_t **ppxIdleTaskTCBBuffer, StackType_t **ppxIdleTaskStackBuffer, uint32_t *pulIdleTaskStackSize) noexcept
@@ -100,6 +101,31 @@ extern "C" void __malloc_unlock (struct _reent *_r) noexcept
 	{
 		mallocMutex.Release();
 	}
+}
+
+// Get a 4-byte aligned NonVolatileMemory buffer suitable for the crash handler to use for reading/writing flash memory.
+// We don't want to use a static buffer because that is wasteful of RAM, given that only the crash handler uses it, we have interrupts disabled while we use it,
+// and we reset immediately afterwards.
+// Instead we use either the bottom or top of the main task stack.
+// Parameter 'stk' is the stack we are interested in, which we must not overwrite. The caller is either using the same stack a little lower, or the exception stack.
+void *Tasks::GetNVMBuffer(const uint32_t *stk) noexcept
+{
+	constexpr size_t stackAllowance = 128;
+	static_assert((sizeof(NonVolatileMemory) & 3) == 0);
+	static_assert(MainTaskStackWords * 4 >= 2 * sizeof(NonVolatileMemory) + stackAllowance + 4);
+	const char * const cStack = reinterpret_cast<const char*>(stk);
+
+	// See if we can use the bottom of the main task stack
+	char *ret = (char *)&mainTask + sizeof(TaskBase);
+	if (cStack > ret + (sizeof(NonVolatileMemory) + stackAllowance + 4))	// allow space for the buffer + 128b in case we are on that stack
+	{
+		ret += 4;															// the +4 is so that we leave the stack marker alone in case the main task raised the exception
+	}
+	else
+	{
+		ret += (MainTaskStackWords * 4) - sizeof(NonVolatileMemory);		// use the top area instead
+	}
+	return ret;
 }
 
 // Application entry point
@@ -417,11 +443,11 @@ extern "C" [[noreturn]] void UpdateBootloaderTask(void *pvParameters) noexcept
 	Platform::ResetProcessor();
 }
 
-// Return the amount of free handler stack space. It may be negative if the stack has overflowed into the area reserved for the heap.
+// Return the amount of free handler stack space
 static ptrdiff_t GetHandlerFreeStack() noexcept
 {
 	const char * const ramend = &_estack;
-	const char * stack_lwm = heapTop;
+	const char * stack_lwm = sysStackLimit;
 	while (stack_lwm < ramend && *stack_lwm == memPattern)
 	{
 		++stack_lwm;
