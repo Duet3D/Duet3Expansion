@@ -103,7 +103,7 @@ void StepTimer::Init()
 	{
 		syncCount = 1;
 	}
-	else if (msg.lastTimeSent == oldMasterTime)
+	else if (msg.lastTimeSent == oldMasterTime && msg.lastTimeAcknowledgeDelay != 0)
 	{
 		// We have the previous message details and now we have the transmit delay for that message
 		const uint32_t correctedMasterTime = oldMasterTime + msg.lastTimeAcknowledgeDelay;
