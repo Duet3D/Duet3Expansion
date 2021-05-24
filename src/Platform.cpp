@@ -331,8 +331,6 @@ namespace Platform
 #else
 # error Undefined processor
 #endif
-
-		StepTimer::Init();										// initialise the step pulse timer CAN1
 	}
 
 	[[noreturn]] RAMFUNC static void EraseAndReset()

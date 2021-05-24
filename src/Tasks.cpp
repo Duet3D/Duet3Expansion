@@ -213,6 +213,7 @@ void AppMain() noexcept
 	WatchdogInit();
 	NVIC_EnableIRQ(WDT_IRQn);		// enable the watchdog early warning interrupt
 
+	StepTimer::Init();				// initialise the step pulse timer now because we use it for measuring task CPU usage
 	vTaskStartScheduler();			// doesn't return
 	while (true) { }
 }
