@@ -82,7 +82,7 @@ static bool isProgrammed = false;					// true after the main board has sent us a
 static uint32_t lastMotionMessageScheduledTime = 0;
 static uint32_t lastMotionMessageReceivedAt = 0;
 static unsigned int duplicateMotionMessages = 0;
-static unsigned int oosMessages = 0;
+static unsigned int oosMessages1Ahead = 0, oosMessages2Ahead = 0, oosMessages2Behind = 0, oosMessagesOther = 0;
 static unsigned int badMoveCommands = 0;
 static uint32_t worstBadMove = 0;
 #endif
@@ -274,7 +274,21 @@ CanMessageBuffer *CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf) no
 				const int8_t seq = buf->msg.moveLinear.seq;
 				if (seq != expectedSeq && expectedSeq != 0xFF)
 				{
-					++oosMessages;
+					switch ((seq - expectedSeq) & 7)
+					{
+					case 1:
+						++oosMessages1Ahead;
+						break;
+					case 2:
+						++oosMessages2Ahead;
+						break;
+					case 6:
+						++oosMessages2Behind;
+						break;
+					default:
+						++oosMessagesOther;
+						break;
+					}
 				}
 				expectedSeq = (seq + 1) & 7;
 			}
@@ -365,8 +379,8 @@ void CanInterface::Diagnostics(const StringRef& reply) noexcept
 		reply.lcatf("Last cancelled message type %u dest %u", (unsigned int)id.MsgType(), id.Dst());
 	}
 #if SUPPORT_DRIVERS
-	reply.lcatf("dup %u, oos %u, bm %u, wbm %" PRIu32, duplicateMotionMessages, oosMessages, badMoveCommands, worstBadMove);
-	duplicateMotionMessages = oosMessages = badMoveCommands = 0;
+	reply.lcatf("dup %u, oos %u/%u/%u/%u, bm %u, wbm %" PRIu32, duplicateMotionMessages, oosMessages1Ahead, oosMessages2Ahead, oosMessages2Behind, oosMessagesOther, badMoveCommands, worstBadMove);
+	duplicateMotionMessages = oosMessages1Ahead = oosMessages2Ahead = oosMessages2Behind = oosMessagesOther = badMoveCommands = 0;
 	worstBadMove = 0;
 #endif
 }
