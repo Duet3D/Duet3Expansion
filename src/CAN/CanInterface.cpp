@@ -25,6 +25,8 @@
 #include <Version.h>
 #include <hpl_user_area.h>
 
+#define OOS_DEBUG		0				// debug for out-of-sequence errors
+
 #if SAME5x
 constexpr uint32_t CanUserAreaDataOffset = 512 - sizeof(CanUserAreaData);
 #elif SAMC21
@@ -96,6 +98,20 @@ static CanMessageQueue PendingMoves;
 static CanMessageQueue PendingCommands;
 
 static Mutex txFifoMutex;
+
+#if OOS_DEBUG
+
+struct OosInfo
+{
+	uint8_t seq;
+	uint32_t startTime;
+};
+
+OosInfo oosBuffer[16];
+
+size_t oosCount = 0;
+
+#endif
 
 extern "C" [[noreturn]] void CanClockLoop(void *) noexcept;
 extern "C" [[noreturn]] void CanReceiverLoop(void *) noexcept;
@@ -261,36 +277,62 @@ CanMessageBuffer *CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf) no
 #if SUPPORT_DRIVERS
 		case CanMessageType::movementLinear:
 			// Check for duplicate and out-of-sequence message
+			// We can get out-of-sequence messages because of a bug in the CAN hardware; so use only the sequence number to detect duplicates
 			{
-				const uint32_t now = millis();
-				if (buf->msg.moveLinear.whenToExecute == lastMotionMessageScheduledTime && now - lastMotionMessageReceivedAt < 100)
+				const int8_t seq = buf->msg.moveLinear.seq;
+				if (((seq + 1) & 0x7F) == expectedSeq)
 				{
 					++duplicateMotionMessages;
+#if OOS_DEBUG
+					if (oosCount != 0)
+					{
+						oosBuffer[oosCount].seq = buf->msg.moveLinear.seq;
+						oosBuffer[oosCount].startTime = buf->msg.moveLinear.whenToExecute;
+					}
+#endif
 					break;
 				}
-				lastMotionMessageScheduledTime = buf->msg.moveLinear.whenToExecute;
-				lastMotionMessageReceivedAt = now;
 
-				const int8_t seq = buf->msg.moveLinear.seq;
+				lastMotionMessageScheduledTime = buf->msg.moveLinear.whenToExecute;
+				lastMotionMessageReceivedAt = millis();
+
 				if (seq != expectedSeq && expectedSeq != 0xFF)
 				{
-					switch ((seq - expectedSeq) & 7)
+					switch ((seq - expectedSeq) & 0x7F)
 					{
 					case 1:
 						++oosMessages1Ahead;
 						break;
+
 					case 2:
 						++oosMessages2Ahead;
 						break;
-					case 6:
+
+					case 0x7E:
 						++oosMessages2Behind;
 						break;
+
 					default:
 						++oosMessagesOther;
 						break;
 					}
+#if OOS_DEBUG
+					if (oosCount == 0)
+					{
+						qq;
+						oosCount = 1;
+					}
+#endif
 				}
-				expectedSeq = (seq + 1) & 7;
+
+#if OOS_DEBUG
+				if (oosCount != 0)
+				{
+					oosBuffer[oosCount].seq = seq;
+					oosBuffer[oosCount].startTime = buf->msg.moveLinear.whenToExecute;
+				}
+#endif
+				expectedSeq = (seq + 1) & 0x7F;
 			}
 
 			//TODO if we haven't established time sync yet then we should defer this
