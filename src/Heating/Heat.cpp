@@ -185,6 +185,10 @@ void Heat::Exit()
 	for (;;)
 	{
 		CanMessageBuffer buf(nullptr);
+
+		// Announce ourselves to the main board, if it hasn't acknowledged us already
+		CanInterface::SendAnnounce(&buf);
+
 		const uint32_t startTime = millis();
 		{
 			// Walk the sensor list and poll all sensors
@@ -220,9 +224,6 @@ void Heat::Exit()
 				}
 			}
 
-			// Announce ourselves to the main board
-			CanInterface::SendAnnounce(&buf);
-
 			// Broadcast our sensor temperatures
 			lastSensorsBroadcastWhich = sensorTempsMsg->whichSensors;	// for diagnostics
 			lastSensorsBroadcastWhen = millis();						// for diagnostics
@@ -232,24 +233,24 @@ void Heat::Exit()
 				buf.dataLength = sensorTempsMsg->GetActualDataLength(sensorsFound);
 				CanInterface::Send(&buf);
 			}
+		}
 
-			// See if we are tuning a heater, or have finished tuning one
-			if (heaterBeingTuned != -1)
+		// See if we are tuning a heater, or have finished tuning one
+		if (heaterBeingTuned != -1)
+		{
+			const auto h = FindHeater(heaterBeingTuned);
+			if (h.IsNotNull() && h->IsTuning())
 			{
-				const auto h = FindHeater(heaterBeingTuned);
-				if (h.IsNotNull() && h->IsTuning())
+				auto msg = buf.SetupStatusMessage<CanMessageHeaterTuningReport>(CanInterface::GetCanAddress(), CanInterface::GetCurrentMasterAddress());
+				if (LocalHeater::GetTuningCycleData(*msg))
 				{
-					auto msg = buf.SetupStatusMessage<CanMessageHeaterTuningReport>(CanInterface::GetCanAddress(), CanInterface::GetCurrentMasterAddress());
-					if (LocalHeater::GetTuningCycleData(*msg))
-					{
-						msg->SetStandardFields(heaterBeingTuned);
-						CanInterface::Send(&buf);
-					}
+					msg->SetStandardFields(heaterBeingTuned);
+					CanInterface::Send(&buf);
 				}
-				else
-				{
-					heaterBeingTuned = -1;
-				}
+			}
+			else
+			{
+				heaterBeingTuned = -1;
 			}
 		}
 
