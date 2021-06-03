@@ -52,7 +52,10 @@ LocalHeater::LocalHeater(unsigned int heaterNum) : Heater(heaterNum), mode(Heate
 LocalHeater::~LocalHeater()
 {
 	LocalHeater::SwitchOff();
-	port.Release();
+	for (auto& port : ports)
+	{
+		port.Release();
+	}
 }
 
 float LocalHeater::GetTemperature() const
@@ -65,9 +68,12 @@ float LocalHeater::GetAccumulator() const
 	return iAccumulator;
 }
 
-inline void LocalHeater::SetHeater(float power) const
+void LocalHeater::SetHeater(float power) const
 {
-	port.WriteAnalog(power);
+	for (auto& port : ports)
+	{
+		port.WriteAnalog(power);
+	}
 }
 
 void LocalHeater::ResetHeater()
@@ -85,12 +91,33 @@ void LocalHeater::ResetHeater()
 // Configure the heater port and the sensor number
 GCodeResult LocalHeater::ConfigurePortAndSensor(const char *portName, PwmFrequency freq, unsigned int sn, const StringRef& reply)
 {
-	if (!port.AssignPort(portName, reply, PinUsedBy::heater, PinAccess::pwm))
+	if constexpr (MaxPortsPerHeater == 1)
 	{
-		return GCodeResult::error;
+		if (!ports[0].AssignPort(portName, reply, PinUsedBy::heater, PinAccess::pwm))
+		{
+			return GCodeResult::error;
+		}
+	}
+	else
+	{
+		PinAccess access[MaxPortsPerHeater];
+		IoPort* portAddrs[MaxPortsPerHeater];
+		for (size_t i = 0; i < MaxPortsPerHeater; ++i)
+		{
+			access[i] = PinAccess::pwm;
+			portAddrs[i] = &ports[i];
+		}
+		if (IoPort::AssignPorts(portName, reply, PinUsedBy::heater, MaxPortsPerHeater, portAddrs, access) == 0)
+		{
+			return GCodeResult::error;
+		}
+
 	}
 
-	port.SetFrequency(freq);
+	for (auto& port : ports)
+	{
+		port.SetFrequency(freq);
+	}
 	SetSensorNumber(sn);
 	if (Heat::FindSensor(sn).IsNull())
 	{
@@ -108,14 +135,26 @@ GCodeResult LocalHeater::ConfigurePortAndSensor(const char *portName, PwmFrequen
 
 GCodeResult LocalHeater::SetPwmFrequency(PwmFrequency freq, const StringRef& reply)
 {
-	port.SetFrequency(freq);
+	for (auto& port : ports)
+	{
+		port.SetFrequency(freq);
+	}
 	return GCodeResult::ok;
 }
 
 GCodeResult LocalHeater::ReportDetails(const StringRef& reply) const
 {
 	reply.printf("Heater %u", GetHeaterNumber());
-	port.AppendDetails(reply);
+	ports[0].AppendDetails(reply);
+	if constexpr (MaxPortsPerHeater > 1)
+	{
+		for (size_t i = 1; i < MaxPortsPerHeater && ports[i].IsValid(); ++i)
+		{
+			reply.cat('+');
+			ports[i].AppendDetails(reply);
+		}
+	}
+
 	if (GetSensorNumber() >= 0)
 	{
 		reply.catf(", sensor %d", GetSensorNumber());

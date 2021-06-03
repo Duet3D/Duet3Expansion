@@ -79,8 +79,9 @@ constexpr Pin DirectionPins[NumDrivers] = { PortAPin(10) };
 
 constexpr bool UseAlternateCanPins = true;
 
-constexpr size_t NumThermistorInputs = 2;
+constexpr size_t MaxPortsPerHeater = 1;
 
+constexpr size_t NumThermistorInputs = 2;
 constexpr float DefaultThermistorSeriesR = 2200.0;
 
 constexpr Pin TempSensePins[NumThermistorInputs] = { PortAPin(2), PortAPin(3) };

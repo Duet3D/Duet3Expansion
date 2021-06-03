@@ -50,10 +50,12 @@ constexpr size_t NumDrivers = 3;
 constexpr size_t MaxSmartDrivers = 3;
 constexpr float MaxTmc5160Current = 6300.0;			// The maximum current we allow the TMC5160/5161 drivers to be set to
 
-constexpr size_t NumThermistorInputs = 3;
 constexpr size_t NumAddressBits = 4;
 constexpr size_t NumBoardTypeBits = 3;
 
+constexpr size_t MaxPortsPerHeater = 3;
+
+constexpr size_t NumThermistorInputs = 3;
 constexpr float DefaultThermistorSeriesR = 2200.0;
 constexpr float MinVrefLoadR = (DefaultThermistorSeriesR / NumThermistorInputs) * 4700.0/((DefaultThermistorSeriesR / NumThermistorInputs) + 4700.0);
 																			// there are 3 temperature sensing channels and a 4K7 load resistor

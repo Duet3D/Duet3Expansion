@@ -33,6 +33,8 @@
 
 #define DIAG_SERCOM_NUMBER		3		// which SERCOM device we use for debugging output
 
+constexpr size_t MaxPortsPerHeater = 1;
+
 constexpr bool UseAlternateCanPins = true;
 
 constexpr Pin BoardTypePins[] = { PortAPin(5), PortAPin(4) };
