@@ -87,6 +87,15 @@ static unsigned int duplicateMotionMessages = 0;
 static unsigned int oosMessages1Ahead = 0, oosMessages2Ahead = 0, oosMessages2Behind = 0, oosMessagesOther = 0;
 static unsigned int badMoveCommands = 0;
 static uint32_t worstBadMove = 0;
+static int32_t minAdvance, maxAdvance;
+static uint32_t maxMotionProcessingDelay = 0;
+
+static void ResetAdvance() noexcept
+{
+	minAdvance = std::numeric_limits<int32_t>::max();
+	maxAdvance = std::numeric_limits<int32_t>::min();
+}
+
 #endif
 
 uint8_t expectedSeq = 0xFF;
@@ -201,6 +210,10 @@ void CanInterface::Init(CanAddress defaultBoardAddress, bool useAlternatePins, b
 		// Create the task that send endstop etc. updates
 		canAsyncSenderTask.Create(CanAsyncSenderLoop, "CanAsync", nullptr, TaskPriority::CanAsyncSenderPriority);
 	}
+
+#if SUPPORT_DRIVERS
+	ResetAdvance();
+#endif
 }
 
 // Shutdown is called when we are asked to update the firmware.
@@ -354,6 +367,33 @@ CanMessageBuffer *CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf) no
 			lastMoveEndedAt = buf->msg.moveLinear.whenToExecute + buf->msg.moveLinear.accelerationClocks + buf->msg.moveLinear.steadyClocks + buf->msg.moveLinear.decelClocks;
 # endif
 			buf->msg.moveLinear.whenToExecute += StepTimer::GetLocalTimeOffset();
+
+			// Track how much processing delay there was
+			{
+				const uint16_t timeStampNow = CanInterface::GetTimeStampCounter();
+
+				// The time stamp counter runs at the CAN normal bit rate, but the step clock runs at 48MHz/64. Calculate the delay to in step clocks.
+				// Datasheet suggests that on the SAMC21 only 15 bits of timestamp counter are readable, but Microchip confirmed this is a documentation error (case 00625843)
+				const uint32_t timeStampDelay = ((uint32_t)((timeStampNow - buf->timeStamp) & 0xFFFF) * CanInterface::GetTimeStampPeriod()) >> 6;	// timestamp counter is 16 bits
+				if (timeStampDelay > maxMotionProcessingDelay)
+				{
+					maxMotionProcessingDelay = timeStampDelay;
+				}
+			}
+
+			// Track how much we are given moves in advance
+			{
+				const int32_t advance = (int32_t)(buf->msg.moveLinear.whenToExecute - StepTimer::GetTimerTicks());
+				if (advance < minAdvance)
+				{
+					minAdvance = advance;
+				}
+				if (advance > maxAdvance)
+				{
+					maxAdvance = advance;
+				}
+			}
+
 			//DEBUG
 			//accumulatedMotion +=buf->msg.moveLinear.perDrive[0].steps;
 			//END
@@ -421,9 +461,15 @@ void CanInterface::Diagnostics(const StringRef& reply) noexcept
 		reply.lcatf("Last cancelled message type %u dest %u", (unsigned int)id.MsgType(), id.Dst());
 	}
 #if SUPPORT_DRIVERS
-	reply.lcatf("dup %u, oos %u/%u/%u/%u, bm %u, wbm %" PRIu32, duplicateMotionMessages, oosMessages1Ahead, oosMessages2Ahead, oosMessages2Behind, oosMessagesOther, badMoveCommands, worstBadMove);
+	reply.lcatf("dup %u, oos %u/%u/%u/%u, bm %u, wbm %" PRIu32 ", rxMotionDelay %" PRIu32,
+					duplicateMotionMessages, oosMessages1Ahead, oosMessages2Ahead, oosMessages2Behind, oosMessagesOther, badMoveCommands, worstBadMove, maxMotionProcessingDelay);
 	duplicateMotionMessages = oosMessages1Ahead = oosMessages2Ahead = oosMessages2Behind = oosMessagesOther = badMoveCommands = 0;
-	worstBadMove = 0;
+	worstBadMove = maxMotionProcessingDelay = 0;
+	if (minAdvance <= maxAdvance)
+	{
+		reply.catf( ", adv %" PRIi32 "/%" PRIi32, minAdvance, maxAdvance);
+	}
+	ResetAdvance();
 #endif
 }
 
