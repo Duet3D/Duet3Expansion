@@ -45,6 +45,8 @@ static CanAddress currentMasterAddress =
 										CanId::MasterAddress;
 #endif
 
+static unsigned int txTimeouts = 0;
+static uint32_t lastCancelledId = 0;
 static bool enabled = false;
 
 constexpr CanDevice::Config Can0Config =
@@ -247,7 +249,12 @@ bool CanInterface::Send(CanMessageBuffer *buf) noexcept
 {
 	//TODO option to not force sending, and return true only if successful?
 	MutexLocker lock(txFifoMutex);
-	can0dev->SendMessage(CanDevice::TxBufferNumber::fifo, 1000, buf);
+	const uint32_t cancelledId = can0dev->SendMessage(CanDevice::TxBufferNumber::fifo, 1000, buf);
+	if (cancelledId != 0)
+	{
+		lastCancelledId = cancelledId;
+		++txTimeouts;
+	}
 	return true;
 }
 
@@ -449,15 +456,16 @@ CanMessageBuffer *CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf) no
 
 void CanInterface::Diagnostics(const StringRef& reply) noexcept
 {
-	unsigned int messagesQueuedForSending, messagesReceived, txTimeouts, messagesLost, busOffCount;
-	uint32_t lastCancelledId;
-	can0dev->GetAndClearStats(messagesQueuedForSending, messagesReceived, txTimeouts, messagesLost, busOffCount, lastCancelledId);
+	unsigned int messagesQueuedForSending, messagesReceived, messagesLost, busOffCount;
+	can0dev->GetAndClearStats(messagesQueuedForSending, messagesReceived, messagesLost, busOffCount);
 	reply.lcatf("CAN messages queued %u, send timeouts %u, received %u, lost %u, free buffers %u, min %u, error reg %" PRIx32,
 					messagesQueuedForSending, txTimeouts, messagesReceived, messagesLost, CanMessageBuffer::GetFreeBuffers(), CanMessageBuffer::GetAndClearMinFreeBuffers(), can0dev->GetErrorRegister());
+	txTimeouts = 0;
 	if (lastCancelledId != 0)
 	{
 		CanId id;
 		id.SetReceivedId(lastCancelledId);
+		lastCancelledId = 0;
 		reply.lcatf("Last cancelled message type %u dest %u", (unsigned int)id.MsgType(), id.Dst());
 	}
 #if SUPPORT_DRIVERS
