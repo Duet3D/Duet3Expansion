@@ -37,7 +37,7 @@ private:
 	IoPort tachoPort;										// port used to read the tacho
 
 	// Variables used to read the tacho
-	static constexpr uint32_t fanMaxInterruptCount = 32;	// number of fan interrupts that we average over
+	static constexpr uint32_t fanMaxInterruptCount = 16;	// number of fan interrupts that we average over
 	uint32_t fanInterruptCount;								// accessed only in ISR, so no need to declare it volatile
 	volatile uint32_t fanLastResetTime;						// time (in step clocks) at which we last reset the interrupt count, accessed inside and outside ISR
 	volatile uint32_t fanInterval;							// written by ISR, read outside the ISR
