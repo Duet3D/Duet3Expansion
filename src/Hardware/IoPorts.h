@@ -57,7 +57,7 @@ public:
 	static size_t AssignPorts(const char *pinNames, const StringRef& reply, PinUsedBy neededFor, size_t numPorts, IoPort * const ports[], const PinAccess access[]);
 	bool AssignPort(const char *pinName, const StringRef& reply, PinUsedBy neededFor, PinAccess access) { return Allocate(pinName, reply, neededFor, access); }
 
-	void AppendPinName(const StringRef& str) const;
+	void AppendPinName(const StringRef& str, bool includeBoardAddress = true) const;
 	bool IsValid() const { return pin != NoPin; }
 	bool GetInvert() const;
 	void SetInvert(bool pInvert);
@@ -119,6 +119,7 @@ public:
 	PwmPort();
 
 	void AppendDetails(const StringRef& str) const;			// hides the version in IoPort
+	void AppendFrequency(const StringRef& str) const;		// append the frequency if the port is valid
 	void SetFrequency(PwmFrequency freq) { frequency = freq; }
 	void WriteAnalog(float pwm) const;
 
