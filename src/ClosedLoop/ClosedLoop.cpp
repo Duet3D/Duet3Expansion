@@ -16,7 +16,11 @@
 #include "TLI5012B.h"
 #include "AttinyProgrammer.h"
 
-static bool closedLoopEnabled = false;
+static bool closedLoopEnabled;
+static bool stepDirection;
+static float targetMotorSteps;
+
+static float encoderCountPerUnit = 1;
 static Encoder *encoder = nullptr;
 static SharedSpiDevice *encoderSpi = nullptr;
 static AttinyProgrammer *programmer;
@@ -59,6 +63,46 @@ void ClosedLoop::Init() noexcept
 	GenerateAttinyClock();
 	programmer = new AttinyProgrammer(*encoderSpi);
 	programmer->InitAttiny();
+	closedLoopEnabled = false;
+	stepDirection = true;
+	targetMotorSteps = 0;
+}
+
+bool ClosedLoop::GetClosedLoopEnabled() noexcept
+{
+	return closedLoopEnabled;
+}
+
+bool ClosedLoop::SetClosedLoopEnabled(bool enabled, const StringRef &reply) noexcept
+{
+
+	if (enabled) {
+# if SUPPORT_SLOW_DRIVERS
+		// TODO: Check what we need to do here
+		if (Platform::IsSlowDriver()) {
+			reply.copy("Closed loop drive mode not yet supported")
+			return false;
+		}
+# endif
+# if USE_TC_FOR_STEP || !SINGLE_DRIVER
+		// TODO: Check what we need to do here
+		reply.copy("Closed loop drive mode not yet supported")
+		return false;
+# endif
+		if (encoder == nullptr)
+		{
+			reply.copy("No encoder specified for closed loop drive mode");
+			return false;
+		}
+	}
+
+	closedLoopEnabled = enabled;
+	return true;
+}
+
+void ClosedLoop::SetStepDirection(bool dir) noexcept
+{
+	stepDirection = dir;
 }
 
 void  ClosedLoop::TurnAttinyOff() noexcept
@@ -71,36 +115,85 @@ EncoderType ClosedLoop::GetEncoderType() noexcept
 	return (encoder == nullptr) ? EncoderType::none : encoder->GetType();
 }
 
+int32_t ClosedLoop::GetEncoderReading() noexcept
+{
+	if (encoder == nullptr)
+	{
+		return 0;
+	}
+	else
+	{
+		return encoder->GetReading() * encoderCountPerUnit;
+	}
+}
+
+void ClosedLoop::TakeStep() noexcept
+{
+	targetMotorSteps += (stepDirection ? 1 : -1) * 1;	// TODO: Need to * by step angle
+}
+
 GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const StringRef &reply) noexcept
 {
+	// TODO: THIS NEEDS TO BE REFACTORED NOW WE'RE USING M569 instead
+	// --------------------------------------------------------------
+
 	CanMessageGenericParser parser(msg, M569Point1Params);
 	bool seen = false;
-	uint8_t temp;
+	uint8_t tempUint;
+	float tempFloat;
+
+	bool finalClosedLoopEnabled = closedLoopEnabled;	// The 'final' state the user intends closedLoopEnabled to be
 
 	// Check closed loop enable/disable
-	if (parser.GetUintParam('S', temp))
+	if (parser.GetUintParam('S', tempUint))
 	{
 		seen = true;
-		//TODO
-		if (temp != 0)
-		{
-			reply.copy("Closed loop mode not supported yet");
+
+		switch(tempUint) {
+		case 0:
+			finalClosedLoopEnabled = false;
+			break;
+		case 1:
+# if SUPPORT_SLOW_DRIVERS
+			// TODO: Check what we need to do here
+			if (Platform::IsSlowDriver()) {
+				reply.copy("Closed loop mode not yet supported")
+				return GCodeResult::error;
+			}
+#endif
+# if USE_TC_FOR_STEP || !SINGLE_DRIVER
+			// TODO: Check what we need to do here
+			reply.copy("Closed loop mode not yet supported")
 			return GCodeResult::error;
+#else
+			finalClosedLoopEnabled = true;
+			break;
+#endif
 		}
 	}
-	if (parser.GetUintParam('T', temp))
+
+	// Check encoder type
+	if (parser.GetUintParam('T', tempUint))
 	{
 		seen = true;
-		if (temp < EncoderType::NumValues)
+		if (tempUint < EncoderType::NumValues)
 		{
-			if (temp != GetEncoderType().ToBaseType())
+			if (tempUint != GetEncoderType().ToBaseType())
 			{
+				// Check that the user is requesting a valid selection
+				if (finalClosedLoopEnabled && tempUint == EncoderType::none)
+				{
+					reply.copy("Invalid encoder type for closed loop mode S1");
+					return GCodeResult::error;
+				}
+
 				//TODO need to get a lock here in case there is any movement
 				delete encoder;
-				switch (temp)
+				switch (tempUint)
 				{
 				case EncoderType::none:
 				default:
+					encoder = nullptr;
 					break;
 
 				case EncoderType::as5047:
@@ -132,10 +225,34 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 			return GCodeResult::error;
 		}
 	}
+	else
+	{
+		// If no encoder has been specified, and none is already selected
+		// Then we cannot be in closed loop mode
+		if (encoder == nullptr && finalClosedLoopEnabled)
+		{
+			reply.copy("Invalid encoder type for closed loop mode S1");
+			return GCodeResult::error;
+		}
+	}
+
+	// 'commit' the finalClosedLoopEnabled value now no errors have been thrown
+	if (closedLoopEnabled != finalClosedLoopEnabled)
+	{
+		closedLoopEnabled = finalClosedLoopEnabled;
+	}
+
+	// Check encoder count per unit value
+	if (parser.GetFloatParam('E', tempFloat))
+	{
+		encoderCountPerUnit = tempFloat;
+	}
 
 	if (!seen)
 	{
-		reply.printf("Closed loop mode %s, encoder type %s", (closedLoopEnabled) ? "enabled" : "disabled", GetEncoderType().ToString());
+		reply.printf("Closed loop mode %s", (closedLoopEnabled) ? "enabled" : "disabled");
+		reply.catf(", encoder type %s", GetEncoderType().ToString());
+		reply.catf(", encoder steps per unit %f", (double) encoderCountPerUnit);
 	}
 	return GCodeResult::ok;
 }
@@ -148,6 +265,12 @@ void ClosedLoop::Diagnostics(const StringRef& reply) noexcept
 		reply.catf(", position %" PRIi32, encoder->GetReading());
 		encoder->AppendDiagnostics(reply);
 	}
+
+	//DEBUG
+	reply.cat("\n~~~~~\n");
+	reply.catf("targetMotorSteps = %f\n", (double) targetMotorSteps);
+	reply.catf("closedLoopEnabled = %i\n", closedLoopEnabled);
+	reply.cat("~~~~~\n");
 
 	//DEBUG
 	//reply.catf(", event status 0x%08" PRIx32 ", TCC2 CTRLA 0x%08" PRIx32 ", TCC2 EVCTRL 0x%08" PRIx32, EVSYS->CHSTATUS.reg, QuadratureTcc->CTRLA.reg, QuadratureTcc->EVCTRL.reg);

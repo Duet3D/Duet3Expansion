@@ -28,7 +28,7 @@
 # if SUPPORT_TMC22xx
 #  include "Movement/StepperDrivers/TMC22xx.h"
 # endif
-# if SUPPORT_TMC51xx
+# if SUPPORT_TMC51xx || SUPPORT_TMC2160
 #  include "Movement/StepperDrivers/TMC51xx.h"
  #endif
 # if SUPPORT_CLOSED_LOOP
@@ -343,6 +343,12 @@ static GCodeResult ProcessM569(const CanMessageGeneric& msg, const StringRef& re
 		if (parser.GetUintParam('D', val))	// set driver mode
 		{
 			seen = true;
+			// enable/disabled closed loop control
+			if (!ClosedLoop::SetClosedLoopEnabled(val == (uint32_t) DriverMode::direct, reply))
+			{
+				// reply.printf is done in ClosedLoop::SetClosedLoopEnabled()
+				return GCodeResult::error;
+			}
 			if (!SmartDrivers::SetDriverMode(drive, val))
 			{
 				reply.printf("Driver %u.%u does not support mode '%s'", CanInterface::GetCanAddress(), drive, TranslateDriverMode(val));
@@ -380,7 +386,7 @@ static GCodeResult ProcessM569(const CanMessageGeneric& msg, const StringRef& re
 			}
 		}
 
-#if SUPPORT_TMC51xx
+#if SUPPORT_TMC51xx || SUPPORT_TMC2160
 		if (parser.GetUintParam('H', val))		// set coolStep threshold
 		{
 			seen = true;
@@ -460,7 +466,7 @@ static GCodeResult ProcessM569(const CanMessageGeneric& msg, const StringRef& re
 				SmartDrivers::GetRegister(drive, SmartDriverRegister::tblank)
 			);
 
-# if SUPPORT_TMC51xx
+# if SUPPORT_TMC51xx || SUPPORT_TMC2160
 		{
 			const uint32_t thigh = SmartDrivers::GetRegister(drive, SmartDriverRegister::thigh);
 			bool bdummy;
@@ -479,7 +485,7 @@ static GCodeResult ProcessM569(const CanMessageGeneric& msg, const StringRef& re
 					  );
 		}
 
-# if SUPPORT_TMC22xx || SUPPORT_TMC51xx
+# if SUPPORT_TMC22xx || SUPPORT_TMC51xx || SUPPORT_TMC2160
 		if (SmartDrivers::GetDriverMode(drive) == DriverMode::stealthChop)
 		{
 			const uint32_t tpwmthrs = SmartDrivers::GetRegister(drive, SmartDriverRegister::tpwmthrs);

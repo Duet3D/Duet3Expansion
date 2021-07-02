@@ -13,6 +13,10 @@
 #include "GCodes/GCodeResult.h"
 #include <Movement/StepTimer.h>
 
+#if SUPPORT_CLOSED_LOOP
+# include "ClosedLoop/ClosedLoop.h"
+#endif
+
 #if SUPPORT_SPI_SENSORS || defined(ATEIO)
 # include <Hardware/SharedSpiDevice.h>
 #endif
@@ -164,19 +168,34 @@ namespace Platform
 # if SINGLE_DRIVER
 	inline void StepDriverLow()
 	{
+#  if SUPPORT_CLOSED_LOOP
+		if (!ClosedLoop::GetClosedLoopEnabled())
+		{
+#  endif
 #  if DIFFERENTIAL_STEPPER_OUTPUTS || ACTIVE_HIGH_STEP
-		StepPio->OUTCLR.reg = DriverBit;
+			StepPio->OUTCLR.reg = DriverBit;
 #  else
-		StepPio->OUTSET.reg = DriverBit;
+			StepPio->OUTSET.reg = DriverBit;
+#  endif
+#  if SUPPORT_CLOSED_LOOP
+		}
 #  endif
 	}
 
 	inline void StepDriverHigh()
 	{
+#  if SUPPORT_CLOSED_LOOP
+		if (ClosedLoop::GetClosedLoopEnabled()) {ClosedLoop::TakeStep();}
+		else
+		{
+#  endif
 #  if DIFFERENTIAL_STEPPER_OUTPUTS || ACTIVE_HIGH_STEP
-		StepPio->OUTSET.reg = DriverBit;
+			StepPio->OUTSET.reg = DriverBit;
 #  else
-		StepPio->OUTCLR.reg = DriverBit;
+			StepPio->OUTCLR.reg = DriverBit;
+#  endif
+#  if SUPPORT_CLOSED_LOOP
+		}
 #  endif
 	}
 

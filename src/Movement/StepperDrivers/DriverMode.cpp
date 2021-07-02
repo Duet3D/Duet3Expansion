@@ -15,6 +15,7 @@ static const char * const DriverModeStrings[] =
 	"random off-time",
 	"spreadCycle",
 	"stealthChop",
+	"direct",
 	"unknown"
 };
 

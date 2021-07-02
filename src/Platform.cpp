@@ -376,7 +376,7 @@ namespace Platform
 	{
 		Heat::SwitchOffAll();
 #if SUPPORT_DRIVERS
-# if SUPPORT_TMC51xx
+# if SUPPORT_TMC51xx || SUPPORT_TMC2160
 		IoPort::WriteDigital(GlobalTmc51xxEnablePin, true);
 # endif
 # if SUPPORT_TMC22xx
@@ -1562,6 +1562,11 @@ bool Platform::GetDirectionValue(size_t driver)
 
 void Platform::SetDirection(bool direction)
 {
+# if SUPPORT_CLOSED_LOOP
+	if (ClosedLoop::GetClosedLoopEnabled()) {ClosedLoop::SetStepDirection(direction);}
+	else
+	{
+# endif
 # if DIFFERENTIAL_STEPPER_OUTPUTS || ACTIVE_HIGH_DIR
 	// Active high direction signal
 	const bool d = (direction) ? directions[0] : !directions[0];
@@ -1588,6 +1593,9 @@ void Platform::SetDirection(bool direction)
 	if (isSlowDriver)
 	{
 		DDA::lastDirChangeTime = StepTimer::GetTimerTicks();
+	}
+# endif
+# if SUPPORT_CLOSED_LOOP
 	}
 # endif
 }

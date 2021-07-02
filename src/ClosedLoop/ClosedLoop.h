@@ -23,12 +23,18 @@ namespace ClosedLoop
 {
 	void Init() noexcept;
 	EncoderType GetEncoderType() noexcept;
+	int32_t GetEncoderReading() noexcept;
 	GCodeResult ProcessM569Point1(const CanMessageGeneric& msg, const StringRef& reply) noexcept;
 	void Diagnostics(const StringRef& reply) noexcept;
 
 	void EnableEncodersSpi() noexcept;
 	void DisableEncodersSpi() noexcept;
 	void TurnAttinyOff() noexcept;
+
+	void TakeStep() noexcept;
+	void SetStepDirection(bool) noexcept;
+	bool GetClosedLoopEnabled() noexcept;
+	bool SetClosedLoopEnabled(bool, const StringRef&) noexcept;
 }
 
 #endif

@@ -4,12 +4,12 @@
  *  Created on: 26 Aug 2018
  *      Author: David
  *  Purpose:
- *  	Support for TMC5130, TMC5160 and TMC5161 stepper drivers
+ *  	Support for TMC5130, TMC5160, TMC5161 and TMC2160 stepper drivers
  */
 
 #include "TMC51xx.h"
 
-#if SUPPORT_TMC51xx
+#if SUPPORT_TMC51xx || SUPPORT_TMC2160
 
 #include <RTOSIface/RTOSIface.h>
 #include <Movement/Move.h>
@@ -38,7 +38,11 @@ static inline const Move& GetMoveInstance() { return reprap.GetMove(); }
 #endif
 
 //#define TMC_TYPE	5130
-#define TMC_TYPE	5160
+#if  SUPPORT_TMC2160
+# define TMC_TYPE	2160
+#else
+# define TMC_TYPE	5160
+#endif
 #define DEBUG_DRIVER_TIMEOUT	0
 
 constexpr float MinimumMotorCurrent = 50.0;
@@ -55,7 +59,7 @@ constexpr size_t TmcTaskStackWords = 100;
 
 #if TMC_TYPE == 5130
 constexpr float SenseResistor = 0.11;						// 0.082R external + 0.03 internal
-#elif TMC_TYPE == 5160
+#elif TMC_TYPE == 5160 || TMC_TYPE == 2160
 // We now define MaxTmc5160Current in the board configuration file because it varies between boards
 constexpr float MaximumStandstillCurrent = MaxTmc5160Current * 0.707;
 constexpr float SenseResistor = 0.050;						// assume same as we use for TMC2660
@@ -104,7 +108,7 @@ constexpr uint32_t GCONF_TEST_MODE = 1 << 17;				// 0: Normal operation, 1: Enab
 
 #if TMC_TYPE == 5130
 constexpr uint32_t DefaultGConfReg = GCONF_DIAG0_STALL | GCONF_DIAG0_PUSHPULL;
-#elif TMC_TYPE == 5160
+#elif TMC_TYPE == 5160 || TMC_TYPE == 2160
 constexpr uint32_t DefaultGConfReg = GCONF_5160_RECAL | GCONF_5160_MULTISTEP_FILT | GCONF_DIAG0_STALL | GCONF_DIAG0_PUSHPULL;
 #endif
 
@@ -125,7 +129,7 @@ constexpr uint32_t GSTAT_UV_CP = 1 << 2;					// undervoltage on charge pump, dri
 // OTP_READ register (0x07, RO, 5160 only) is not used in this firmware
 // FACTORY_CONF register (0x08, RW, 5160 only) trims the clock frequency and is preset for 12MHz
 
-#if TMC_TYPE == 5160
+#if TMC_TYPE == 5160 || TMC_TYPE == 2160
 
 // SHORT_CONF register
 constexpr uint8_t REGNUM_5160_SHORTCONF = 0x09;
@@ -173,6 +177,11 @@ constexpr uint32_t DefaultGlobalScalerReg = 0;				// until we use it as part of 
 
 constexpr uint8_t REGNUM_5160_OFFSET_READ = 0x0B;			// Bits 8..15: Offset calibration result phase A (signed). Bits 0..7: Offset calibration result phase B (signed).
 
+# if TMC_TYPE == 2160
+constexpr uint8_t REGNUM_2160_X_DIRECT = 0x2D;				// Coil currents for direct mode. Bits 8..0: signed coil A current. Bits 24..16: signed coil B current.
+															// A maximal value of 255 in this register corresponds to a current of IHOLD
+															// Note: Reg GCONF bit 16 (direct_mode) must be set to use this register
+# endif
 #endif
 
 // Velocity dependent control registers
@@ -229,7 +238,7 @@ constexpr uint32_t CHOPCONF_DISS2VS = 1 << 31;				// disable low side short prot
 
 #if TMC_TYPE == 5130
 constexpr uint32_t DefaultChopConfReg = (1 << CHOPCONF_TBL_SHIFT) | (3 << CHOPCONF_TOFF_SHIFT) | (5 << CHOPCONF_HSTRT_SHIFT) | CHOPCONF_5130_VSENSE_HIGH;
-#elif TMC_TYPE == 5160
+#elif TMC_TYPE == 5160 || TMC_TYPE == 2160
 constexpr uint32_t DefaultChopConfReg = (1 << CHOPCONF_TBL_SHIFT) | (3 << CHOPCONF_TOFF_SHIFT) | (5 << CHOPCONF_HSTRT_SHIFT);
 #endif
 
@@ -313,7 +322,7 @@ private:
 	}
 
 	// Write register numbers are in priority order, most urgent first, in same order as WriteRegNumbers
-	static constexpr unsigned int WriteGConf = 0;			// microstepping
+	static constexpr unsigned int WriteGConf = 0;			// microstepping and direct mode
 	static constexpr unsigned int WriteIholdIrun = 1;		// current setting
 	static constexpr unsigned int WriteTpwmthrs = 2;		// upper step rate limit for stealthchop
 	static constexpr unsigned int WriteTcoolthrs = 3;		// lower velocity for coolStep and stallGuard
@@ -321,12 +330,18 @@ private:
 	static constexpr unsigned int WriteChopConf = 5;		// chopper control
 	static constexpr unsigned int WriteCoolConf = 6;		// coolstep control
 	static constexpr unsigned int WritePwmConf = 7;			// stealthchop and freewheel control
-#if TMC_TYPE == 5160
+#if TMC_TYPE == 5160 || TMC_TYPE == 2160
 	static constexpr unsigned int Write5160ShortConf = 8;	// short circuit detection configuration
 	static constexpr unsigned int Write5160DrvConf = 9;		// driver timing
 	static constexpr unsigned int Write5160GlobalScaler = 10; // motor current scaling
 
+# if TMC_TYPE == 5160
 	static constexpr unsigned int NumWriteRegisters = 11;	// the number of registers that we write to
+# else
+	static constexpr unsigned int Write2160XDirect = 11;	// coil current values for direct mode
+
+	static constexpr unsigned int NumWriteRegisters = 12;	// the number of registers that we write to
+# endif
 #else
 	static constexpr unsigned int NumWriteRegisters = 8;	// the number of registers that we write to
 #endif
@@ -367,6 +382,8 @@ private:
 	uint8_t regIndexRequested;								// the register we asked to read in the previous transaction, or 0xFF
 	uint8_t previousRegIndexRequested;						// the register we asked to read in the previous transaction, or 0xFF
 	bool enabled;											// true if driver is enabled
+
+	DriverMode driverMode;									// closed-loop needs this in order to persist the driver mode if closed loop is turned on & off again
 };
 
 const uint8_t TmcDriverState::WriteRegNumbers[NumWriteRegisters] =
@@ -379,10 +396,13 @@ const uint8_t TmcDriverState::WriteRegNumbers[NumWriteRegisters] =
 	REGNUM_CHOPCONF,
 	REGNUM_COOLCONF,
 	REGNUM_PWMCONF,
-#if TMC_TYPE == 5160
+#if TMC_TYPE == 5160 || TMC_TYPE == 2160
 	REGNUM_5160_SHORTCONF,
 	REGNUM_5160_DRVCONF,
-	REGNUM_5160_GLOBAL_SCALER
+	REGNUM_5160_GLOBAL_SCALER,
+# if TMC_TYPE == 2160
+	REGNUM_2160_X_DIRECT
+# endif
 #endif
 };
 
@@ -409,7 +429,7 @@ pre(!driversPowered)
 
 	// Set default values for all registers and flag them to be updated
 	UpdateRegister(WriteGConf, DefaultGConfReg);
-#if TMC_TYPE == 5160
+#if TMC_TYPE == 5160 || TMC_TYPE == 2160
 	UpdateRegister(Write5160ShortConf, DefaultShortConfReg);
 	UpdateRegister(Write5160DrvConf, DefaultDrvConfReg);
 	UpdateRegister(Write5160GlobalScaler, DefaultGlobalScalerReg);
@@ -594,18 +614,38 @@ bool TmcDriverState::SetChopConf(uint32_t newVal)
 // Set the driver mode
 bool TmcDriverState::SetDriverMode(unsigned int mode)
 {
+	driverMode = (DriverMode) mode;
+
 	switch (mode)
 	{
 	case (unsigned int)DriverMode::spreadCycle:
-		UpdateRegister(WriteGConf, writeRegisters[WriteGConf] & ~GCONF_STEALTHCHOP);
+		UpdateRegister(WriteGConf,
+				writeRegisters[WriteGConf]
+				   & ~GCONF_STEALTHCHOP
+#if TMC_TYPE == 2160
+				   & ~GCONF_DIRECT_MODE
+#endif
+		);
 		return true;
 
 	case (unsigned int)DriverMode::stealthChop:
-		UpdateRegister(WriteGConf, writeRegisters[WriteGConf] | GCONF_STEALTHCHOP);
+		UpdateRegister(WriteGConf,
+				(writeRegisters[WriteGConf]
+				   | GCONF_STEALTHCHOP)
+#if TMC_TYPE == 2160
+				   & ~GCONF_DIRECT_MODE
+#endif
+			);
 		return true;
 
 	case (unsigned int)DriverMode::constantOffTime:
-		UpdateRegister(WriteGConf, writeRegisters[WriteGConf] & ~GCONF_STEALTHCHOP);
+		UpdateRegister(WriteGConf,
+				writeRegisters[WriteGConf]
+				   & ~GCONF_STEALTHCHOP
+#if TMC_TYPE == 2160
+				   & ~GCONF_DIRECT_MODE
+#endif
+					);
 		UpdateRegister(WriteChopConf,
 #if TMC_TYPE == 5130
 			(writeRegisters[WriteChopConf] | CHOPCONF_CHM) & ~CHOPCONF_5130_RNDTOFF
@@ -622,6 +662,12 @@ bool TmcDriverState::SetDriverMode(unsigned int mode)
 		return true;
 #endif
 
+#if TMC_TYPE == 2160
+	case (unsigned int)DriverMode::direct:
+		UpdateRegister(WriteGConf, (writeRegisters[WriteGConf] | GCONF_DIRECT_MODE) & ~GCONF_STEALTHCHOP);
+		return true;
+#endif
+
 	default:
 		return false;
 	}
@@ -630,6 +676,7 @@ bool TmcDriverState::SetDriverMode(unsigned int mode)
 // Get the driver mode
 DriverMode TmcDriverState::GetDriverMode() const
 {
+	// TODO: Add in direct mode
 	return ((writeRegisters[WriteGConf] & GCONF_STEALTHCHOP) != 0) ? DriverMode::stealthChop
 		: ((writeRegisters[WriteChopConf] & CHOPCONF_CHM) == 0) ? DriverMode::spreadCycle
 #if TMC_TYPE == 5130
@@ -656,7 +703,7 @@ void TmcDriverState::UpdateCurrent()
 	const uint32_t iHoldCsBits = (32 * iHoldCurrent - 800)/1615;	// formula checked by simulation on a spreadsheet
 	UpdateRegister(WriteIholdIrun,
 					(writeRegisters[WriteIholdIrun] & ~(IHOLDIRUN_IRUN_MASK | IHOLDIRUN_IHOLD_MASK)) | (iRunCsBits << IHOLDIRUN_IRUN_SHIFT) | (iHoldCsBits << IHOLDIRUN_IHOLD_SHIFT));
-#elif TMC_TYPE == 5160
+#elif TMC_TYPE == 5160 || TMC_TYPE == 2160
 	// See if we can set IRUN to 31 and do the current adjustment in the global scaler
 	uint32_t gs = lrintf(motorCurrent * 256 * RecipFullScaleCurrent);
 	uint32_t iRun = 31;

@@ -14,6 +14,7 @@ enum class DriverMode : unsigned int
 	randomOffTime,
 	spreadCycle,
 	stealthChop,			// includes stealthChop2
+	direct,
 	unknown					// must be last!
 };
 
