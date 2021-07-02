@@ -15,6 +15,7 @@
 #include "QuadratureEncoder.h"
 #include "TLI5012B.h"
 #include "AttinyProgrammer.h"
+#include <TaskPriorities.h>
 
 static bool closedLoopEnabled;
 static bool stepDirection;
@@ -24,6 +25,9 @@ static float encoderCountPerUnit = 1;
 static Encoder *encoder = nullptr;
 static SharedSpiDevice *encoderSpi = nullptr;
 static AttinyProgrammer *programmer;
+
+constexpr size_t ClosedLoopTaskStackWords = 200;
+static Task<ClosedLoopTaskStackWords> *closedLoopTask;
 
 static void GenerateAttinyClock()
 {
@@ -56,6 +60,12 @@ void  ClosedLoop::DisableEncodersSpi() noexcept
 #endif
 }
 
+extern "C" [[noreturn]] void ClosedLoopLoop(void * param) noexcept
+{
+	ClosedLoop::TaskLoop();
+//	static_cast<ClosedLoop*>(param)->TaskLoop();
+}
+
 void ClosedLoop::Init() noexcept
 {
 	pinMode(EncoderCsPin, OUTPUT_HIGH);													// make sure that any attached SPI encoder is not selected
@@ -63,9 +73,15 @@ void ClosedLoop::Init() noexcept
 	GenerateAttinyClock();
 	programmer = new AttinyProgrammer(*encoderSpi);
 	programmer->InitAttiny();
+
+	// Set default values
 	closedLoopEnabled = false;
 	stepDirection = true;
 	targetMotorSteps = 0;
+
+	// Set up the task
+	closedLoopTask = new Task<ClosedLoopTaskStackWords>;
+	closedLoopTask->Create(ClosedLoopLoop, "Move", nullptr, TaskPriority::ClosedLoop);
 }
 
 bool ClosedLoop::GetClosedLoopEnabled() noexcept
@@ -274,6 +290,15 @@ void ClosedLoop::Diagnostics(const StringRef& reply) noexcept
 
 	//DEBUG
 	//reply.catf(", event status 0x%08" PRIx32 ", TCC2 CTRLA 0x%08" PRIx32 ", TCC2 EVCTRL 0x%08" PRIx32, EVSYS->CHSTATUS.reg, QuadratureTcc->CTRLA.reg, QuadratureTcc->EVCTRL.reg);
+}
+
+[[noreturn]] void ClosedLoop::TaskLoop() noexcept
+{
+	while (true)
+	{
+		targetMotorSteps++;
+		TaskBase::Take();
+	}
 }
 
 #endif

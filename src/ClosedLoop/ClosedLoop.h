@@ -35,6 +35,8 @@ namespace ClosedLoop
 	void SetStepDirection(bool) noexcept;
 	bool GetClosedLoopEnabled() noexcept;
 	bool SetClosedLoopEnabled(bool, const StringRef&) noexcept;
+
+	[[noreturn]] void TaskLoop() noexcept;
 }
 
 #endif
