@@ -25,7 +25,7 @@ void CanMessageQueue::AddMessage(CanMessageBuffer *buf) noexcept
 		}
 		lastPendingMessage = buf;
 
-		TaskBase *waitingTask = taskWaitingToGet;
+		TaskBase * const waitingTask = taskWaitingToGet;
 		if (waitingTask != nullptr)
 		{
 			taskWaitingToGet = nullptr;
