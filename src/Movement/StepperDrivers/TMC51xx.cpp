@@ -544,7 +544,11 @@ bool TmcDriverState::SetRegister(SmartDriverRegister reg, uint32_t regVal)
 	case SmartDriverRegister::coolStep:
 		UpdateRegister (WriteTcoolthrs, regVal & ((1u << 20) - 1));
 		return true;
-
+#if SUPPORT_TMC2160
+	case SmartDriverRegister::xDirect:
+		UpdateRegister(Write2160XDirect, regVal);
+		return true;
+#endif
 	case SmartDriverRegister::hdec:
 	default:
 		return false;
@@ -1422,6 +1426,15 @@ void SmartDrivers::EnableDrive(size_t driver, bool en)
 	{
 		driverStates[driver].Enable(en);
 	}
+}
+
+bool SmartDrivers::UpdatePending(size_t driver)
+{
+	if (driver < numTmc51xxDrivers)
+	{
+		return driverStates[driver].UpdatePending();
+	}
+	return false;
 }
 
 uint32_t SmartDrivers::GetLiveStatus(size_t driver)

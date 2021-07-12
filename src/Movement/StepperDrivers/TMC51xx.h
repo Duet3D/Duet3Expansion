@@ -34,6 +34,7 @@ namespace SmartDrivers
 	uint32_t GetAxisNumber(size_t drive);
 	void SetCurrent(size_t driver, float current);
 	void EnableDrive(size_t driver, bool en);
+	bool UpdatePending(size_t driver);
 	uint32_t GetLiveStatus(size_t driver);
 	uint32_t GetAccumulatedStatus(size_t drive, uint32_t bitsToKeep);
 	bool SetMicrostepping(size_t drive, unsigned int microsteps, bool interpolation);

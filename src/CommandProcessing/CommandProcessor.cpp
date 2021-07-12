@@ -30,7 +30,7 @@
 # endif
 # if SUPPORT_TMC51xx || SUPPORT_TMC2160
 #  include "Movement/StepperDrivers/TMC51xx.h"
- #endif
+# endif
 # if SUPPORT_CLOSED_LOOP
 #  include <ClosedLoop/ClosedLoop.h>
 # endif
@@ -1006,6 +1006,13 @@ void CommandProcessor::Spin()
 		case CanMessageType::configureFilamentMonitor:
 			requestId = buf->msg.generic.requestId;
 			rslt = FilamentMonitor::Configure(buf->msg.generic, replyRef);
+			break;
+#endif
+
+#if SUPPORT_CLOSED_LOOP
+		case CanMessageType::startClosedLoopDataCollection:
+			requestId = buf->msg.startClosedLoopDataCollection.requestId;
+			rslt = ClosedLoop::StartDataCollection(buf->msg.startClosedLoopDataCollection, replyRef);
 			break;
 #endif
 

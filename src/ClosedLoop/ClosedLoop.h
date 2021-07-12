@@ -16,6 +16,7 @@
 #include <Hardware/SharedSpiDevice.h>
 #include <CanMessageFormats.h>
 #include <General/NamedEnum.h>
+#include <ClosedLoop/Trigonometry.h>
 
 class SpiEncoder;
 
@@ -37,6 +38,9 @@ namespace ClosedLoop
 	bool SetClosedLoopEnabled(bool, const StringRef&) noexcept;
 
 	[[noreturn]] void TaskLoop() noexcept;
+
+	GCodeResult StartDataCollection(const CanMessageStartClosedLoopDataCollection&, const StringRef&) noexcept;
+	[[noreturn]] void DataCollectionLoop() noexcept;
 }
 
 #endif

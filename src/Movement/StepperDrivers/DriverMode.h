@@ -25,7 +25,7 @@ inline const char* TranslateDriverMode(DriverMode mode) noexcept
 	return TranslateDriverMode((unsigned int)mode);
 }
 
-// Register codes used to implement M569 command parameters.
+// Register codes used to implement M569 command parameters and closed-loop control.
 // This common set is used for all smart drivers. Not all are complete registers, some are just parts of registers.
 
 enum class SmartDriverRegister : unsigned int
@@ -41,7 +41,8 @@ enum class SmartDriverRegister : unsigned int
 	thigh,
 	mstepPos,
 	pwmScale,
-	pwmAuto
+	pwmAuto,
+	xDirect
 };
 
 #endif /* SRC_MOVEMENT_STEPPERDRIVERS_DRIVERMODE_H_ */
