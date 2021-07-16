@@ -26,6 +26,7 @@ namespace ClosedLoop
 	EncoderType GetEncoderType() noexcept;
 	int32_t GetEncoderReading() noexcept;
 	GCodeResult ProcessM569Point1(const CanMessageGeneric& msg, const StringRef& reply) noexcept;
+	GCodeResult FindEncoderCountPerStep(const CanMessageGeneric& msg, const StringRef& reply) noexcept;
 	void Diagnostics(const StringRef& reply) noexcept;
 
 	void EnableEncodersSpi() noexcept;
@@ -37,7 +38,16 @@ namespace ClosedLoop
 	bool GetClosedLoopEnabled() noexcept;
 	bool SetClosedLoopEnabled(bool, const StringRef&) noexcept;
 
-	[[noreturn]] void TaskLoop() noexcept;
+	void ControlMotorCurrents() noexcept;
+	void Spin() noexcept;
+	[[noreturn]] void TuningLoop() noexcept;
+
+	// Enumeration of closed loop recording modes
+	enum RecordingMode : uint8_t
+	{
+		Immediate = 0,
+		OnNextMove = 1,
+	};
 
 	GCodeResult StartDataCollection(const CanMessageStartClosedLoopDataCollection&, const StringRef&) noexcept;
 	[[noreturn]] void DataCollectionLoop() noexcept;

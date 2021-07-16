@@ -14,8 +14,8 @@
 
 namespace Trigonometry
 {
-	float FastSin(uint16_t) noexcept;
-	float FastCos(uint16_t) noexcept;
+	int16_t FastSin(uint16_t) noexcept;
+	int16_t FastCos(uint16_t) noexcept;
 }
 
 #endif /* SRC_CLOSEDLOOP_TRIGONOMETRY_H_ */

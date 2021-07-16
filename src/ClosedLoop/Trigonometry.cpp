@@ -12,28 +12,32 @@
 
 // Immediately Invoked Function Expression (IIFE) to calculate the lookup table
 // (Note the '()' at the end of the definition)
-constexpr std::array<float, RESOLUTION> lookupTable = []
+constexpr std::array<int16_t, RESOLUTION> lookupTable = []
 {
-	std::array<float, RESOLUTION> LUT = {};
+	std::array<int16_t, RESOLUTION> LUT = {};
 
     for (int i = 0; i < RESOLUTION; ++i)
     {
-    	LUT[i] = sin(((float)i/(RESOLUTION-1)) * (PI / 2.0));
+    	LUT[i] = 255 * sin(((float)i/(RESOLUTION-1)) * (PI / 2.0));
     }
 
     return LUT;
 }();
 
 static_assert(lookupTable[0] == 0);
-static_assert(lookupTable[RESOLUTION-1] == 1);
+static_assert(lookupTable[RESOLUTION-1] == 255);
 
 // Calculates sin in a fast, but approximate way.
 // The phase argument is a value between 0-4095
-// The return value is an approximate result of sin(2pi * phase/4095)
-float Trigonometry::FastSin(uint16_t phase) noexcept
+// The return value is an approximate result of 255 * sin(2pi * phase/4095)
+int16_t Trigonometry::FastSin(uint16_t phase) noexcept
 {
 	int quadrant = phase / RESOLUTION;
-	int index = phase % (RESOLUTION - 1);
+	int index = phase % RESOLUTION;
+
+	if (index < 0 || index > 1023) {
+		return -10;
+	}
 
 	switch(quadrant) {
 		case 0:
@@ -52,10 +56,14 @@ float Trigonometry::FastSin(uint16_t phase) noexcept
 // Calculates cos in a fast, but approximate way.
 // The phase argument is a value between 0-4095
 // The return value is an approximate result of cos(2pi * phase/4095)
-float Trigonometry::FastCos(uint16_t phase) noexcept
+int16_t Trigonometry::FastCos(uint16_t phase) noexcept
 {
 	int quadrant = phase / RESOLUTION;
-	int index = phase % (RESOLUTION - 1);
+	int index = phase % RESOLUTION;
+
+	if (index < 0 || index > 1023) {
+		return -10;
+	}
 
 	switch(quadrant) {
 		case 0:
