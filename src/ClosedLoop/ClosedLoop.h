@@ -24,7 +24,6 @@ namespace ClosedLoop
 {
 	void Init() noexcept;
 	EncoderType GetEncoderType() noexcept;
-	int32_t GetEncoderReading() noexcept;
 	GCodeResult ProcessM569Point1(const CanMessageGeneric& msg, const StringRef& reply) noexcept;
 	GCodeResult FindEncoderCountPerStep(const CanMessageGeneric& msg, const StringRef& reply) noexcept;
 	void Diagnostics(const StringRef& reply) noexcept;

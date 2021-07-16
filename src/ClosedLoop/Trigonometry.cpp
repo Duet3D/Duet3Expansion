@@ -7,7 +7,6 @@
 
 #include "Trigonometry.h"
 
-#define PI 3.1415926535898
 #define RESOLUTION 1024
 
 // Immediately Invoked Function Expression (IIFE) to calculate the lookup table
@@ -18,7 +17,7 @@ constexpr std::array<int16_t, RESOLUTION> lookupTable = []
 
     for (int i = 0; i < RESOLUTION; ++i)
     {
-    	LUT[i] = 255 * sin(((float)i/(RESOLUTION-1)) * (PI / 2.0));
+    	LUT[i] = 255 * sin(((float)i/(RESOLUTION-1)) * (Pi / 2.0));
     }
 
     return LUT;
@@ -29,7 +28,7 @@ static_assert(lookupTable[RESOLUTION-1] == 255);
 
 // Calculates sin in a fast, but approximate way.
 // The phase argument is a value between 0-4095
-// The return value is an approximate result of 255 * sin(2pi * phase/4095)
+// The return value is an approximate result of sin(2pi * phase/4095)
 int16_t Trigonometry::FastSin(uint16_t phase) noexcept
 {
 	int quadrant = phase / RESOLUTION;
