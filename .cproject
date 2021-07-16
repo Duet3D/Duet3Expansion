@@ -1100,7 +1100,7 @@
 									<listOptionValue builtIn="false" value="RTOS"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.dialect.std.1972769428" name="Language standard" superClass="gnu.cpp.compiler.option.dialect.std" useByScannerDiscovery="true" value="gnu.cpp.compiler.dialect.default" valueType="enumerated"/>
-								<option id="gnu.cpp.compiler.option.other.other.5747925" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" useByScannerDiscovery="false" value="-c -mcpu=cortex-m0plus -mthumb -ffunction-sections -fdata-sections -fno-threadsafe-statics -fno-exceptions -fno-rtti -nostdlib -Wundef -Wdouble-promotion -Werror=return-type -fsingle-precision-constant &quot;-Wa,-ahl=$*.s&quot;" valueType="string"/>
+								<option id="gnu.cpp.compiler.option.other.other.5747925" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" useByScannerDiscovery="false" value="-c -mcpu=cortex-m0plus -mthumb -ffunction-sections -fdata-sections -fno-threadsafe-statics -fno-rtti -fno-exceptions -nostdlib -Wundef -Wdouble-promotion -Werror=return-type -fsingle-precision-constant &quot;-Wa,-ahl=$*.s&quot;" valueType="string"/>
 								<option id="gnu.cpp.compiler.option.include.files.76681472" name="Include files (-include)" superClass="gnu.cpp.compiler.option.include.files" useByScannerDiscovery="false"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.compiler.option.include.paths.517560169" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G}&quot;"/>
