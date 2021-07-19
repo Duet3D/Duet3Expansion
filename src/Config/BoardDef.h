@@ -26,10 +26,6 @@
 # include "EXP1HCE.h"
 #endif
 
-#ifdef EXP1HCL
-# include "EXP1HCL.h"
-#endif
-
 #ifdef SAMMYC21
 # include "SAMMYC21.h"
 #endif

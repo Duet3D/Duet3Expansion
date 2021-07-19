@@ -7,18 +7,13 @@
 
 #include <ClosedLoop/QuadratureEncoder.h>
 
-#if SUPPORT_CLOSED_LOOP && defined(EXP1HCE)
+#if SUPPORT_CLOSED_LOOP
 
 #include <Hardware/IoPorts.h>
 #include <ClosedLoop/ClosedLoop.h>
 
 QuadratureEncoder::QuadratureEncoder(bool isLinear) noexcept : Encoder(), linear(isLinear)
 {
-}
-
-QuadratureEncoder::~QuadratureEncoder()
-{
-	QuadratureEncoder::Disable();
 }
 
 // Enable the decoder and reset the counter to zero. Won't work if the decoder has never been programmed.

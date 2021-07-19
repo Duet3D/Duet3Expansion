@@ -10,7 +10,7 @@
 
 #include <RepRapFirmware.h>
 
-#if SUPPORT_CLOSED_LOOP && defined(EXP1HCE)
+#if SUPPORT_CLOSED_LOOP
 
 #include <Hardware/SharedSpiClient.h>
 
