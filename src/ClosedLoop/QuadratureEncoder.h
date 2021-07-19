@@ -21,8 +21,8 @@ public:
 	void* operator new(size_t sz) noexcept { return FreelistManager::Allocate<QuadratureEncoder>(); }
 	void operator delete(void* p) noexcept { FreelistManager::Release<QuadratureEncoder>(p); }
 
-	QuadratureEncoder(bool linear) noexcept;
-	~QuadratureEncoder() { Disable(); }
+	QuadratureEncoder(bool p_linear) noexcept;
+	~QuadratureEncoder();
 
 	EncoderType GetType() const noexcept override { return (linear) ? EncoderType::linearQuadrature : EncoderType::rotaryQuadrature; }
 	void Enable() noexcept override;				// Enable the decoder and reset the counter to zero. Won't work if the decoder has never been programmed.

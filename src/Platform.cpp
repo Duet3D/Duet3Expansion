@@ -311,7 +311,11 @@ namespace Platform
 		NVIC_SetPriority(StepTcIRQn, NvicPriorityStep);
 
 #if SAME5x
+# if defined(EXP3HC)
 		NVIC_SetPriority(CAN1_IRQn, NvicPriorityCan);
+# elif defined(EXP1HCL)
+		NVIC_SetPriority(CAN0_IRQn, NvicPriorityCan);
+# endif
 		// Set UART interrupt priority. Each SERCOM has up to 4 interrupts, numbered sequentially.
 # if NUM_SERIAL_PORTS >= 1
 		SetInterruptPriority(Serial0_IRQn, 4, NvicPriorityUart);
@@ -464,25 +468,23 @@ namespace Platform
 
 	static CanAddress GetCanAddress() noexcept
 	{
-#if SAME5x
+#if defined(EXP3HC)
 		const CanAddress switches = ReadBoardAddress();
 		return (switches == 0) ? CanId::ExpansionBoardFirmwareUpdateAddress : switches;
-#elif SAMC21
-# if defined(TOOL1LC)
+#elif defined(TOOL1LC)
 		return CanId::ToolBoardDefaultAddress;
-# elif defined(SAMMYC21)
+#elif defined(SAMMYC21)
 		return CanId::SammyC21DefaultAddress;
-# elif defined(EXP1XD)
+#elif defined(EXP1XD)
 		return CanId::Exp1XDBoardDefaultAddress;
-# elif defined(EXP1HCE)
+#elif defined(EXP1HCE) || defined(EXP1HCL)
 		return CanId::Exp1HCEBoardDefaultAddress;
-# elif defined(ATECM)
+#elif defined(ATECM)
 		return CanId::ATECMBoardDefaultAddress;
-# elif defined(ATEIO)
+#elif defined(ATEIO)
 		return CanId::ATEIOBoardDefaultAddress;
-# else
+#else
 # 	 error Unknown board
-# endif
 #endif
 	}
 
