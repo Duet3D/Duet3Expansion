@@ -70,9 +70,11 @@ constexpr Pin DiagPins[NumDrivers] = { PortAPin(21) };
 #define NUM_SERIAL_PORTS		0
 
 #define USE_MPU					0
-#define USE_CACHE				0		//TODO enable cache
+#define USE_CACHE				1
 
-constexpr bool UseAlternateCanPins = false;
+constexpr bool UseAlternateCanPins = true;
+
+constexpr size_t MaxPortsPerHeater = 1;
 
 constexpr size_t NumThermistorInputs = 1;
 constexpr float DefaultThermistorSeriesR = 2200.0;

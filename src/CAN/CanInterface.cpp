@@ -147,18 +147,19 @@ void CanInterface::Init(CanAddress defaultBoardAddress, bool useAlternatePins, b
 
 	// Set up the CAN pins
 #if SAME5x
-	// We don't support alternate pins for the SAME5x yet
-# if defined(EXP3HC)
-	SetPinFunction(PortBPin(13), GpioPinFunction::H);
-	SetPinFunction(PortBPin(12), GpioPinFunction::H);
-	const unsigned int whichPort = 1;							// we use CAN1
-# elif defined(EXP1HCL)
-	SetPinFunction(PortAPin(23), GpioPinFunction::H);
-	SetPinFunction(PortAPin(22), GpioPinFunction::H);
-	const unsigned int whichPort = 0;							// we use CAN0
-# else
-#  error Undefined board
-# endif
+	unsigned int whichPort;
+	if (useAlternatePins)
+	{
+		SetPinFunction(PortAPin(23), GpioPinFunction::H);
+		SetPinFunction(PortAPin(22), GpioPinFunction::H);
+		whichPort = 0;											// use CAN0	on EXP1HCL
+	}
+	else
+	{
+		SetPinFunction(PortBPin(13), GpioPinFunction::H);
+		SetPinFunction(PortBPin(12), GpioPinFunction::H);
+		whichPort = 1;											// use CAN1 on EXP3HC
+	}
 #elif SAMC21
 	if (useAlternatePins)
 	{
@@ -170,7 +171,7 @@ void CanInterface::Init(CanAddress defaultBoardAddress, bool useAlternatePins, b
 		SetPinFunction(PortAPin(25), GpioPinFunction::G);
 		SetPinFunction(PortAPin(24), GpioPinFunction::G);
 	}
-	const unsigned int whichPort = 0;							// we use CAN0 on the SAMC21
+	const unsigned int whichPort = 0;							// we always use CAN0 on the SAMC21
 #endif
 
 	// Initialise the CAN hardware, using the timing data if it was valid

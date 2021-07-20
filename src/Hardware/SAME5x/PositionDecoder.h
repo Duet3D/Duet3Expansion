@@ -12,7 +12,7 @@
 
 #if SUPPORT_CLOSED_LOOP
 
-// Class to use the Position Decoder peripheral in the SAME5x as a qudrature decoder
+// Class to use the Position Decoder peripheral in the SAME5x as a quadrature decoder
 class PositionDecoder
 {
 public:
