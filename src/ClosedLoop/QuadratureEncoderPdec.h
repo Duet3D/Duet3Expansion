@@ -40,9 +40,6 @@ private:
 	// Get the current position. In linear mode, 'pos' is not used.
 	int32_t GetPosition(uint16_t& pos) noexcept;
 
-	// Enable or disable the decoder
-	void Run(bool enable) noexcept;
-
 	unsigned int positionBits;
 	uint32_t counterHigh;
 	uint16_t lastCount;

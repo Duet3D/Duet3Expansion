@@ -20,34 +20,36 @@ QuadratureEncoderPdec::QuadratureEncoderPdec(bool linear) : counterHigh(0), last
 
 	for (Pin p : PositionDecoderPins)
 	{
-		SetPinMode(p, PositionDecoderPinFunction);
+		SetPinFunction(p, PositionDecoderPinFunction);
 	}
 }
 
 QuadratureEncoderPdec::~QuadratureEncoderPdec()
 {
+	QuadratureEncoderPdec::Disable();
 }
 
 // Overridden virtual functions
-void QuadratureEncoderPdec::Run(bool enable) noexcept
-{
-	PDEC->CTRLBSET.reg = (enable) ? PDEC_CTRLBSET_CMD_START : PDEC_CTRLBSET_CMD_STOP;
-}
-
 void QuadratureEncoderPdec::Enable() noexcept
 {
+	PDEC->CTRLBSET.reg = PDEC_CTRLBSET_CMD_START;
 }
 
 void QuadratureEncoderPdec::Disable() noexcept
 {
+	PDEC->CTRLBSET.reg = PDEC_CTRLBSET_CMD_STOP;
 }
 
 int32_t QuadratureEncoderPdec::GetReading() noexcept
 {
+	uint16_t pos = 0;
+	return GetPosition(pos);
+	//TODO what about pos?
 }
 
 void QuadratureEncoderPdec::AppendDiagnostics(const StringRef &reply) noexcept
 {
+	// Nothing needed here yet
 }
 
 // End of overridden virtual functions
