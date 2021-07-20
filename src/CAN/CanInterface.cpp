@@ -150,8 +150,8 @@ void CanInterface::Init(CanAddress defaultBoardAddress, bool useAlternatePins, b
 	unsigned int whichPort;
 	if (useAlternatePins)
 	{
-		SetPinFunction(PortAPin(23), GpioPinFunction::H);
-		SetPinFunction(PortAPin(22), GpioPinFunction::H);
+		SetPinFunction(PortAPin(23), GpioPinFunction::I);
+		SetPinFunction(PortAPin(22), GpioPinFunction::I);
 		whichPort = 0;											// use CAN0	on EXP1HCL
 	}
 	else

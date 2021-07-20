@@ -10,8 +10,8 @@
 
 #include <Hardware/PinDescription.h>
 
-#define BOARD_TYPE_NAME		"EXP1HCE"
-#define BOOTLOADER_NAME		"SAMC21"
+#define BOARD_TYPE_NAME		"EXP1HCL"
+#define BOOTLOADER_NAME		"SAME5x"
 
 // General features
 #define HAS_VREF_MONITOR		1
@@ -43,8 +43,8 @@ constexpr size_t NumDrivers = 1;
 constexpr size_t MaxSmartDrivers = 1;
 constexpr float MaxTmc5160Current = 6300.0;			// The maximum current we allow the TMC5160/5161 drivers to be set to
 
-constexpr Pin GlobalTmc51xxEnablePin = PortBPin(2);
-constexpr Pin GlobalTmc51xxCSPin = PortAPin(1);
+constexpr Pin GlobalTmc51xxEnablePin = PortBPin(3);
+constexpr Pin GlobalTmc51xxCSPin = PortAPin(10);
 
 #define TMC51xx_USES_SERCOM	1
 Sercom * const SERCOM_TMC51xx = SERCOM0;
@@ -92,8 +92,8 @@ constexpr bool LedActiveHigh = false;
 constexpr Pin VinMonitorPin = PortAPin(2);
 constexpr Pin V12MonitorPin = PortBPin(2);
 constexpr float VinDividerRatio = (60.4 + 4.7)/4.7;
-constexpr float VinMonitorVoltageRange = VinDividerRatio * 3.3;				// we use the 5V supply as the voltage reference
-constexpr float V12MonitorVoltageRange = VinDividerRatio * 3.3;				// we use the 5V supply as the voltage reference
+constexpr float VinMonitorVoltageRange = VinDividerRatio * 3.3;
+constexpr float V12MonitorVoltageRange = VinMonitorVoltageRange;				// we use the same resistors on both dividers
 
 constexpr Pin TempSensePins[NumThermistorInputs] = { PortBPin(8) };
 constexpr Pin ButtonPins[] = { PortAPin(20) };
@@ -193,8 +193,8 @@ static_assert(NumPins == 32 + 24);		// 32 pins on port A (some missing), 24 on p
 // Timer/counter used to generate step pulses and other sub-millisecond timings
 TcCount32 * const StepTc = &(TC0->COUNT32);
 constexpr IRQn StepTcIRQn = TC0_IRQn;
-constexpr unsigned int StepTcNumber = 2;
-#define STEP_TC_HANDLER			TC2_Handler
+constexpr unsigned int StepTcNumber = 0;
+#define STEP_TC_HANDLER			TC0_Handler
 
 // Available UART ports
 #define NUM_SERIAL_PORTS		0
