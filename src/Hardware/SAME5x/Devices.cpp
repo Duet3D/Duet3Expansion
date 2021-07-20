@@ -91,6 +91,9 @@ extern "C" void SERCOM2_3_Handler()
 
 void DeviceInit() noexcept
 {
+#ifdef EXP1HCL
+	pinMode(ClockGenPin, OUTPUT_LOW);			// default the TMC clock to its internal clock until we program the clock generator
+#endif
 	AnalogIn::Init(NvicPriorityAdc);
 	AnalogOut::Init();
 	analogInTask.Create(AnalogIn::TaskLoop, "AIN", nullptr, TaskPriority::AinPriority);

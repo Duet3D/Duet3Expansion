@@ -48,6 +48,17 @@ void  ClosedLoop::TurnAttinyOff() noexcept
 
 #endif
 
+#ifdef EXP1HCL
+
+static void GenerateTmcClock()
+{
+	// Currently we program DPLL0 to generate 120MHz output, so to get 15MHz we divide by 8
+	ConfigureGclk(ClockGenGclkNumber, GclkSource::dpll0, 8, true);
+	SetPinFunction(ClockGenPin, ClockGenPinPeriphMode);
+}
+
+#endif
+
 void  ClosedLoop::EnableEncodersSpi() noexcept
 {
 	SetPinFunction(EncoderMosiPin, EncoderMosiPinPeriphMode);
@@ -67,10 +78,12 @@ void ClosedLoop::Init() noexcept
 	pinMode(EncoderCsPin, OUTPUT_HIGH);													// make sure that any attached SPI encoder is not selected
 	encoderSpi = new SharedSpiDevice(EncoderSspiSercomNumber, EncoderSspiDataInPad);	// create the encoders SPI device
 
-#ifdef EXP1HCE
+#if defined(EXP1HCE)
 	GenerateAttinyClock();
 	programmer = new AttinyProgrammer(*encoderSpi);
 	programmer->InitAttiny();
+#elif defined(EXP1HCL)
+	GenerateTmcClock();
 #endif
 }
 
