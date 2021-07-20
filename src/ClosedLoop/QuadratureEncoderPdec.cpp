@@ -9,17 +9,50 @@
 
 #if SAME5x && SUPPORT_CLOSED_LOOP
 
-#include <PositionDecoder.h>
+#include "QuadratureEncoderPdec.h"
 #include <hri_mclk_e54.h>
 #include <cmath>
 
-PositionDecoder::PositionDecoder() : counterHigh(0), lastCount(0), cpr(0)
+QuadratureEncoderPdec::QuadratureEncoderPdec(bool linear) : counterHigh(0), lastCount(0), cpr((linear) ? 0 : 1)
 {
 	hri_mclk_set_APBCMASK_PDEC_bit(MCLK);		// enable the bus clock
 	hri_gclk_write_PCHCTRL_reg(GCLK, PDEC_GCLK_ID, GCLK_PCHCTRL_GEN(GclkNum60MHz) | GCLK_PCHCTRL_CHEN);
+
+	for (Pin p : PositionDecoderPins)
+	{
+		SetPinMode(p, PositionDecoderPinFunction);
+	}
 }
 
-void PositionDecoder::SetCountsPerRev(uint16_t p_cpr) noexcept
+QuadratureEncoderPdec::~QuadratureEncoderPdec()
+{
+}
+
+// Overridden virtual functions
+void QuadratureEncoderPdec::Run(bool enable) noexcept
+{
+	PDEC->CTRLBSET.reg = (enable) ? PDEC_CTRLBSET_CMD_START : PDEC_CTRLBSET_CMD_STOP;
+}
+
+void QuadratureEncoderPdec::Enable() noexcept
+{
+}
+
+void QuadratureEncoderPdec::Disable() noexcept
+{
+}
+
+int32_t QuadratureEncoderPdec::GetReading() noexcept
+{
+}
+
+void QuadratureEncoderPdec::AppendDiagnostics(const StringRef &reply) noexcept
+{
+}
+
+// End of overridden virtual functions
+
+void QuadratureEncoderPdec::SetCountsPerRev(uint16_t p_cpr) noexcept
 {
 	cpr = p_cpr;
 	uint32_t ctrla = PDEC_CTRLA_MODE_QDEC
@@ -44,7 +77,7 @@ void PositionDecoder::SetCountsPerRev(uint16_t p_cpr) noexcept
 }
 
 // Get the current position. In linear mode, 'pos' is not used.
-int32_t PositionDecoder::GetPosition(uint16_t& pos) noexcept
+int32_t QuadratureEncoderPdec::GetPosition(uint16_t& pos) noexcept
 {
 	PDEC->CTRLBSET.reg = PDEC_CTRLBSET_CMD_READSYNC;
 	while (PDEC->SYNCBUSY.bit.COUNT) { }
@@ -100,7 +133,7 @@ int32_t PositionDecoder::GetPosition(uint16_t& pos) noexcept
 }
 
 // Set the position. In linear mode, 'revs' is the linear position and 'pos' is not used.
-void PositionDecoder::SetPosition(int32_t revs, uint16_t pos) noexcept
+void QuadratureEncoderPdec::SetPosition(int32_t revs, uint16_t pos) noexcept
 {
 	while (PDEC->SYNCBUSY.bit.STATUS) { }
 	const bool stopped = PDEC->STATUS.bit.STOP;
@@ -135,11 +168,6 @@ void PositionDecoder::SetPosition(int32_t revs, uint16_t pos) noexcept
 		PDEC->CTRLBSET.reg = PDEC_CTRLBSET_CMD_START;
 		while (PDEC->CTRLBSET.bit.CMD != 0) { }
 	}
-}
-
-void PositionDecoder::Run(bool enable) noexcept
-{
-	PDEC->CTRLBSET.reg = (enable) ? PDEC_CTRLBSET_CMD_START : PDEC_CTRLBSET_CMD_STOP;
 }
 
 #endif	// SUPPORT_CLOSED_LOOP

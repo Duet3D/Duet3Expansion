@@ -99,7 +99,6 @@ constexpr Pin TempSensePins[NumThermistorInputs] = { PortBPin(8) };
 constexpr Pin ButtonPins[] = { PortAPin(20) };
 
 // Encoder and quadrature decoder interface
-constexpr Pin QuadratureResetPin = PortAPin(0);
 constexpr Pin EncoderCsPin = PortAPin(18);
 
 // Shared SPI (used for interface to encoders, not for temperature sensors)
@@ -113,6 +112,10 @@ constexpr GpioPinFunction EncoderSclkPinPeriphMode = GpioPinFunction::C;
 
 constexpr Pin EncoderMisoPin = PortAPin(19);
 constexpr GpioPinFunction EncoderMisoPinPeriphMode = GpioPinFunction::C;
+
+// Position decoder
+constexpr Pin PositionDecoderPins[] = { PortAPin(24), PortAPin(25), PortBPin(22) };
+constexpr GpioPinFunction PositionDecoderPinFunction = GpioPinFunction::G;
 
 // Clock generator pin for TMC2160
 constexpr uint8_t ClockGenGclkNumber = 5;

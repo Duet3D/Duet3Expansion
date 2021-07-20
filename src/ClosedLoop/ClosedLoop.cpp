@@ -12,7 +12,15 @@
 #include <CanMessageGenericParser.h>
 #include "SpiEncoder.h"
 #include "AS5047D.h"
-#include "QuadratureEncoder.h"
+
+#ifdef EXP1HCE
+# include "QuadratureEncoderAttiny.h"
+#endif
+
+#ifdef EXP1HCL
+# include "QuadratureEncoderPdec.h"
+#endif
+
 #include "TLI5012B.h"
 #include "AttinyProgrammer.h"
 
@@ -112,11 +120,23 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 					break;
 
 				case EncoderType::linearQuadrature:
-					encoder = new QuadratureEncoder(true);
+#ifdef EXP1HCE
+					encoder = new QuadratureEncoderAttiny(true);
+#elif defined(EXP1HCL)
+					encoder = new QuadratureEncoderPdec(true);
+#else
+# error Unknown board
+#endif
 					break;
 
 				case EncoderType::rotaryQuadrature:
-					encoder = new QuadratureEncoder(false);
+#ifdef EXP1HCE
+					encoder = new QuadratureEncoderAttiny(false);
+#elif defined(EXP1HCL)
+					encoder = new QuadratureEncoderPdec(false);
+#else
+# error Unknown board
+#endif
 					break;
 				}
 

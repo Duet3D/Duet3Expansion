@@ -5,24 +5,24 @@
  *      Author: David
  */
 
-#include <ClosedLoop/QuadratureEncoder.h>
+#include "QuadratureEncoderAttiny.h"
 
 #if SUPPORT_CLOSED_LOOP && defined(EXP1HCE)
 
 #include <Hardware/IoPorts.h>
 #include <ClosedLoop/ClosedLoop.h>
 
-QuadratureEncoder::QuadratureEncoder(bool isLinear) noexcept : Encoder(), linear(isLinear)
+QuadratureEncoderAttiny::QuadratureEncoderAttiny(bool isLinear) noexcept : Encoder(), linear(isLinear)
 {
 }
 
-QuadratureEncoder::~QuadratureEncoder()
+QuadratureEncoderAttiny::~QuadratureEncoderAttiny()
 {
-	QuadratureEncoder::Disable();
+	QuadratureEncoderAttiny::Disable();
 }
 
 // Enable the decoder and reset the counter to zero. Won't work if the decoder has never been programmed.
-void QuadratureEncoder::Enable() noexcept
+void QuadratureEncoderAttiny::Enable() noexcept
 {
 	// Set up the attiny
 	ClosedLoop::DisableEncodersSpi();
@@ -92,7 +92,7 @@ void QuadratureEncoder::Enable() noexcept
 }
 
 // Disable the decoder. Call this during initialisation. Can also be called later if necessary.
-void QuadratureEncoder::Disable() noexcept
+void QuadratureEncoderAttiny::Disable() noexcept
 {
 	//TODO disable the events
 	ClosedLoop::DisableEncodersSpi();
@@ -102,7 +102,7 @@ void QuadratureEncoder::Disable() noexcept
 // Get the 32-bit position
 // The low 16 bits are held in the TCC register. We hold the high 16 bits in in memory.
 // When but 15 of the TCC register changes, we need to work out whether the counter overflowed or underflowed and adjust the high word.
-int32_t QuadratureEncoder::GetReading() noexcept
+int32_t QuadratureEncoderAttiny::GetReading() noexcept
 {
 	// Read the TCC register
 	QuadratureTcc->CTRLBSET.reg = TCC_CTRLBSET_CMD_READSYNC;
@@ -117,7 +117,7 @@ int32_t QuadratureEncoder::GetReading() noexcept
 }
 
 // Set the position. Call this after homing.
-void QuadratureEncoder::SetReading(int32_t pos) noexcept
+void QuadratureEncoderAttiny::SetReading(int32_t pos) noexcept
 {
 	// Constrain the position, otherwise we will hang while reading it back if it is out of range
 	const uint32_t upos = (uint16_t)(constrain<int32_t>(pos, -32767, 32767) + 0x8000);
@@ -128,7 +128,7 @@ void QuadratureEncoder::SetReading(int32_t pos) noexcept
 	} while (GetReading() != pos);
 }
 
-void QuadratureEncoder::AppendDiagnostics(const StringRef &reply) noexcept
+void QuadratureEncoderAttiny::AppendDiagnostics(const StringRef &reply) noexcept
 {
 	// Nothing needed here yet
 }
