@@ -343,7 +343,7 @@ void IoPort::AppendDetails(const StringRef& str) const
 }
 
 // Append the names of the pin to a string, picking only those that have the correct hardware invert status
-void IoPort::AppendPinName(const StringRef& str) const
+void IoPort::AppendPinName(const StringRef& str, bool includeBoardAddress) const
 {
 	if (IsValid())
 	{
@@ -376,13 +376,13 @@ void IoPort::AppendPinName(const StringRef& str) const
 			else
 			{
 				// Include this one
-				if (numPrinted == 0)
-				{
-					str.catf("%u.", CanInterface::GetCanAddress());
-				}
-				else
+				if (numPrinted != 0)
 				{
 					str.cat(',');
+				}
+				else if (includeBoardAddress)
+				{
+					str.catf("%u.", CanInterface::GetCanAddress());
 				}
 				++numPrinted;
 				while (*pn != 0 && *pn != ',')
@@ -557,13 +557,19 @@ PwmPort::PwmPort()
 	frequency = DefaultPinWritePwmFreq;
 }
 
-void PwmPort::AppendDetails(const StringRef& str) const
+// Append the frequency if the port is valid
+void PwmPort::AppendFrequency(const StringRef& str) const
 {
-	IoPort::AppendDetails(str);
 	if (IsValid())
 	{
 		str.catf(" frequency %uHz", frequency);
 	}
+}
+
+void PwmPort::AppendDetails(const StringRef& str) const
+{
+	IoPort::AppendDetails(str);
+	AppendFrequency(str);
 }
 
 void PwmPort::WriteAnalog(float pwm) const

@@ -31,6 +31,8 @@
 #define USE_MPU					0
 #define USE_CACHE				0
 
+constexpr size_t MaxPortsPerHeater = 1;
+
 constexpr bool UseAlternateCanPins = true;
 
 constexpr Pin BoardTypePins[] = { PortAPin(5), PortAPin(4) };

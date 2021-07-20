@@ -123,6 +123,7 @@ void Move::Exit()
 // Start the next move. Return true if laser or IO bits need to be active
 // Must be called with base priority greater than or equal to the step interrupt, to avoid a race with the step ISR.
 // startTime is the earliest that we can start the move, but we must not start it before its planned time
+// After calling this, the first interrupt must be scheduled
 inline void Move::StartNextMove(DDA *cdda, uint32_t startTime)
 {
 	if (!cdda->IsPrintingMove())
