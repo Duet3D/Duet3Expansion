@@ -37,9 +37,11 @@ namespace ClosedLoop
 	bool GetClosedLoopEnabled() noexcept;
 	bool SetClosedLoopEnabled(bool, const StringRef&) noexcept;
 
-	void ControlMotorCurrents() noexcept;
 	void Spin() noexcept;
 	[[noreturn]] void TuningLoop() noexcept;
+
+	void ControlMotorCurrents() noexcept;
+	void Log() noexcept;
 
 	// Enumeration of closed loop recording modes
 	enum RecordingMode : uint8_t
@@ -48,8 +50,10 @@ namespace ClosedLoop
 		OnNextMove = 1,
 	};
 
+	void CollectSample() noexcept;
 	GCodeResult StartDataCollection(const CanMessageStartClosedLoopDataCollection&, const StringRef&) noexcept;
 	[[noreturn]] void DataCollectionLoop() noexcept;
+	[[noreturn]] void DataTransmissionLoop() noexcept;
 }
 
 #endif
