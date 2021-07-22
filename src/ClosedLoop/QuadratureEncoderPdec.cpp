@@ -13,15 +13,17 @@
 #include <hri_mclk_e54.h>
 #include <cmath>
 
-QuadratureEncoderPdec::QuadratureEncoderPdec(bool linear) : counterHigh(0), lastCount(0), cpr((linear) ? 0 : 1)
+QuadratureEncoderPdec::QuadratureEncoderPdec(bool linear) : counterHigh(0), lastCount(0), cpr((linear) ? 0 : 1000)
 {
-	hri_mclk_set_APBCMASK_PDEC_bit(MCLK);		// enable the bus clock
+	MCLK->APBCMASK.reg |= MCLK_APBCMASK_PDEC;
 	hri_gclk_write_PCHCTRL_reg(GCLK, PDEC_GCLK_ID, GCLK_PCHCTRL_GEN(GclkNum60MHz) | GCLK_PCHCTRL_CHEN);
 
 	for (Pin p : PositionDecoderPins)
 	{
 		SetPinFunction(p, PositionDecoderPinFunction);
 	}
+
+	SetCountsPerRev(cpr);
 }
 
 QuadratureEncoderPdec::~QuadratureEncoderPdec()
@@ -32,6 +34,7 @@ QuadratureEncoderPdec::~QuadratureEncoderPdec()
 // Overridden virtual functions
 void QuadratureEncoderPdec::Enable() noexcept
 {
+	SetPosition(0, 0);
 	PDEC->CTRLBSET.reg = PDEC_CTRLBSET_CMD_START;
 }
 
@@ -78,7 +81,9 @@ void QuadratureEncoderPdec::SetCountsPerRev(uint16_t p_cpr) noexcept
 	PDEC->CTRLA.reg = ctrla;
 }
 
-// Get the current position. In linear mode, 'pos' is not used.
+// Get the current position
+// In rotary mode, return the number of rotations, and pass back the position within the current rotation in 'pos'
+// In linear mode, 'pos' is not used and a 32-bit position is returned.
 int32_t QuadratureEncoderPdec::GetPosition(uint16_t& pos) noexcept
 {
 	PDEC->CTRLBSET.reg = PDEC_CTRLBSET_CMD_READSYNC;
