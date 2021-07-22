@@ -5,8 +5,8 @@
  *      Author: David
  */
 
-#ifndef SRC_CONFIG_EXPANSION1_V09_H_
-#define SRC_CONFIG_EXPANSION1_V09_H_
+#ifndef SRC_CONFIG_EXP3HC_H_
+#define SRC_CONFIG_EXP3HC_H_
 
 #include <Hardware/PinDescription.h>
 
@@ -251,4 +251,4 @@ const NvicPriority NvicPriorityCan = 4;
 const NvicPriority NvicPriorityDmac = 5;				// priority for DMA complete interrupts
 const NvicPriority NvicPriorityAdc = 5;
 
-#endif /* SRC_CONFIG_EXPANSION1_V09_H_ */
+#endif /* SRC_CONFIG_EXP3HC_H_ */

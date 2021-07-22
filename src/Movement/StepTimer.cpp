@@ -24,6 +24,7 @@ uint32_t StepTimer::prevMasterTime;												// the previous master time recei
 uint32_t StepTimer::prevLocalTime;												// the previous local time when the master time was received, corrected for receive processing delay
 int32_t StepTimer::peakPosJitter = 0;
 int32_t StepTimer::peakNegJitter = 0;
+bool StepTimer::gotJitter = false;
 uint32_t StepTimer::peakReceiveDelay = 0;
 volatile unsigned int StepTimer::syncCount = 0;
 unsigned int StepTimer::numJitterResyncs = 0;
@@ -124,7 +125,12 @@ void StepTimer::Init()
 			whenLastSynced = millis();
 			if (locSyncCount == MaxSyncCount)
 			{
-				if (diff > peakPosJitter)
+				if (!gotJitter)
+				{
+					peakPosJitter = peakNegJitter = diff;
+					gotJitter = true;
+				}
+				else if (diff > peakPosJitter)
 				{
 					peakPosJitter = diff;
 				}
@@ -322,7 +328,7 @@ void StepTimer::CancelCallback()
 /*static*/ void StepTimer::Diagnostics(const StringRef& reply)
 {
 	reply.lcatf("Peak sync jitter %" PRIi32 "/%" PRIi32 ", peak Rx sync delay %" PRIu32 ", resyncs %u/%u, ", peakNegJitter, peakPosJitter, peakReceiveDelay, numTimeoutResyncs, numJitterResyncs);
-	peakNegJitter = peakPosJitter = 0;
+	gotJitter = false;
 	numTimeoutResyncs = numJitterResyncs = 0;
 	peakReceiveDelay = 0;
 

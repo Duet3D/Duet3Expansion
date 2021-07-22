@@ -5,24 +5,23 @@
  *      Author: David
  */
 
-#ifndef SRC_CLOSEDLOOP_QUADRATUREENCODER_H_
-#define SRC_CLOSEDLOOP_QUADRATUREENCODER_H_
+#ifndef SRC_CLOSEDLOOP_QUADRATUREENCODERATTINY_H_
+#define SRC_CLOSEDLOOP_QUADRATUREENCODERATTINY_H_
 
-#include <ClosedLoop/SpiEncoder.h>
+#include "Encoder.h"
 
-#if SUPPORT_CLOSED_LOOP
+#if SUPPORT_CLOSED_LOOP && defined(EXP1HCE)
 
 #include <General/FreelistManager.h>
-#include <General/NamedEnum.h>
 
-class QuadratureEncoder : public Encoder
+class QuadratureEncoderAttiny : public Encoder
 {
 public:
-	void* operator new(size_t sz) noexcept { return FreelistManager::Allocate<QuadratureEncoder>(); }
-	void operator delete(void* p) noexcept { FreelistManager::Release<QuadratureEncoder>(p); }
+	void* operator new(size_t sz) noexcept { return FreelistManager::Allocate<QuadratureEncoderAttiny>(); }
+	void operator delete(void* p) noexcept { FreelistManager::Release<QuadratureEncoderAttiny>(p); }
 
-	QuadratureEncoder(bool linear) noexcept;
-	~QuadratureEncoder() { Disable(); }
+	QuadratureEncoderAttiny(bool p_linear) noexcept;
+	~QuadratureEncoderAttiny();
 
 	EncoderType GetType() const noexcept override { return (linear) ? EncoderType::linearQuadrature : EncoderType::rotaryQuadrature; }
 	void Enable() noexcept override;				// Enable the decoder and reset the counter to zero. Won't work if the decoder has never been programmed.
@@ -39,4 +38,4 @@ private:
 
 #endif
 
-#endif /* SRC_CLOSEDLOOP_QUADRATUREENCODER_H_ */
+#endif /* SRC_CLOSEDLOOP_QUADRATUREENCODERATTINY_H_ */

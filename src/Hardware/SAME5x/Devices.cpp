@@ -17,6 +17,8 @@
 constexpr size_t AnalogInTaskStackWords = 300;
 static Task<AnalogInTaskStackWords> analogInTask;
 
+#if defined(EXP3HC)
+
 void SerialPortInit(AsyncSerial*) noexcept
 {
 	SetPinFunction(PortBPin(20), GpioPinFunction::C);		// TxD
@@ -50,8 +52,48 @@ extern "C" void SERCOM3_3_Handler()
 	uart0.Interrupt3();
 }
 
+#elif defined(EXP1HCL)
+
+void SerialPortInit(AsyncSerial*) noexcept
+{
+	SetPinFunction(PortAPin(12), GpioPinFunction::C);		// TxD
+# if 0	// we don't use the receiver, but if we did we would need to do this:
+	SetPinFunction(PortAPin(13), GpioPinFunction::C);		// RxD
+# endif
+}
+
+void SerialPortDeinit(AsyncSerial*) noexcept
+{
+	pinMode(PortAPin(12), INPUT_PULLUP);
+# if 0	// we don't use the receiver, but if we did we would need to do this:
+	pinMode(PortAPin(13), INPUT_PULLUP);					// RxD
+# endif
+}
+
+AsyncSerial uart0(2, 1, 512, 512, SerialPortInit, SerialPortDeinit);
+
+extern "C" void SERCOM2_0_Handler()
+{
+	uart0.Interrupt0();
+}
+
+extern "C" void SERCOM2_2_Handler()
+{
+	uart0.Interrupt2();
+}
+
+extern "C" void SERCOM2_3_Handler()
+{
+	uart0.Interrupt3();
+}
+
+#endif
+
 void DeviceInit() noexcept
 {
+#ifdef EXP1HCL
+	pinMode(ClockGenPin, OUTPUT_LOW);			// default the TMC clock to its internal clock until we program the clock generator
+#endif
 	AnalogIn::Init(NvicPriorityAdc);
 	AnalogOut::Init();
 	analogInTask.Create(AnalogIn::TaskLoop, "AIN", nullptr, TaskPriority::AinPriority);

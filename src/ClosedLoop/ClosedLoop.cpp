@@ -14,13 +14,20 @@
 # include <CanMessageGenericParser.h>
 # include "SpiEncoder.h"
 # include "AS5047D.h"
-# include "QuadratureEncoder.h"
 # include "TLI5012B.h"
 # include "AttinyProgrammer.h"
 # include <TaskPriorities.h>
 # include <CAN/CanInterface.h>
 # include <CanMessageBuffer.h>
 # include <CanMessageFormats.h>
+
+# ifdef EXP1HCE
+#  include "QuadratureEncoderAttiny.h"
+# endif
+
+# ifdef EXP1HCL
+#  include "QuadratureEncoderPdec.h"
+# endif
 
 # if SUPPORT_CAN_LOGGING
 #  include "Logger.h"
@@ -95,7 +102,6 @@ const uint32_t COIL_B_MASK = 0x01FF0000;
 
 // ATTiny programming vars
 static SharedSpiDevice *encoderSpi = nullptr;
-static AttinyProgrammer *programmer;
 
 // Variable & masks to determine if we are tuning, and what type of tuning we are doing
 // if tuning & TUNING_TYPE_MASK == true, then we are currently performing TUNING_TYPE
@@ -115,6 +121,9 @@ static Task<DataCollectionTaskStackWords> *dataCollectionTask;
 constexpr size_t DataTransmissionTaskStackWords = 200;
 static Task<DataTransmissionTaskStackWords> *dataTransmissionTask;
 
+#ifdef EXP1HCE
+static AttinyProgrammer *programmer;
+
 
 static void GenerateAttinyClock()
 {
@@ -124,6 +133,13 @@ static void GenerateAttinyClock()
 	ConfigureGclk(ClockGenGclkNumber, GclkSource::dpll, 3, true);
 	SetPinFunction(ClockGenPin, ClockGenPinPeriphMode);
 }
+
+void  ClosedLoop::TurnAttinyOff() noexcept
+{
+	programmer->TurnAttinyOff();
+}
+
+#endif
 
 // Helper function to set a given coil current in
 void SetMotorPhase(uint16_t phase)	// , float magnitude
@@ -142,29 +158,36 @@ void SetMotorPhase(uint16_t phase)	// , float magnitude
 # endif
 }
 
+#ifdef EXP1HCL
+
+static void GenerateTmcClock()
+{
+	// Currently we program DPLL0 to generate 120MHz output, so to get 15MHz we divide by 8
+	ConfigureGclk(ClockGenGclkNumber, GclkSource::dpll0, 8, true);
+	SetPinFunction(ClockGenPin, ClockGenPinPeriphMode);
+}
+
+#endif
+
 void ZeroStepper()
 {
-# if SUPPORT_TMC2160 && SINGLE_DRIVER
+#if SUPPORT_TMC2160 && SINGLE_DRIVER
 	Platform::EnableDrive(0);
-# else
-#  error Cannot support closed loop with the specified hardware
-# endif
+#else
+#error Cannot support closed loop with the specified hardware
+#endif
 
 	tuning |= ZEROING_MASK;
 
 	return;
 
-
-
-
-
 	// Enable (and keep enabled) the drive
 	// TODO: We should modify Platform::EnableDrive such that if closed loop is enabled, it sets a var in here, then we can handle a disabled closed loop driver
-# if SUPPORT_TMC2160 && SINGLE_DRIVER
+#if SUPPORT_TMC2160 && SINGLE_DRIVER
 	Platform::EnableDrive(0);
-# else
-#  error Cannot support closed loop with the specified hardware
-# endif
+#else
+#error Cannot support closed loop with the specified hardware
+#endif
 
 	switch (ClosedLoop::GetEncoderType().ToBaseType())
 	{
@@ -178,29 +201,16 @@ void ZeroStepper()
 
 void  ClosedLoop::EnableEncodersSpi() noexcept
 {
-# ifdef EXP1HCE
 	SetPinFunction(EncoderMosiPin, EncoderMosiPinPeriphMode);
 	SetPinFunction(EncoderSclkPin, EncoderSclkPinPeriphMode);
 	SetPinFunction(EncoderMisoPin, EncoderMisoPinPeriphMode);
-# else
-#  error Undefined hardware
-# endif
 }
 
 void  ClosedLoop::DisableEncodersSpi() noexcept
 {
-# ifdef EXP1HCE
 	ClearPinFunction(EncoderMosiPin);
 	ClearPinFunction(EncoderSclkPin);
 	ClearPinFunction(EncoderMisoPin);
-# else
-#  error Undefined hardware
-# endif
-}
-
-void  ClosedLoop::TurnAttinyOff() noexcept
-{
-	programmer->TurnAttinyOff();
 }
 
 extern "C" [[noreturn]] void TuningTaskLoop(void * param) noexcept {ClosedLoop::TuningLoop();}
@@ -212,9 +222,14 @@ void ClosedLoop::Init() noexcept
 	// Init the ATTiny programmer
 	pinMode(EncoderCsPin, OUTPUT_HIGH);													// make sure that any attached SPI encoder is not selected
 	encoderSpi = new SharedSpiDevice(EncoderSspiSercomNumber, EncoderSspiDataInPad);	// create the encoders SPI device
+
+#if defined(EXP1HCE)
 	GenerateAttinyClock();
 	programmer = new AttinyProgrammer(*encoderSpi);
 	programmer->InitAttiny();
+#elif defined(EXP1HCL)
+	GenerateTmcClock();
+#endif
 
 	// Set up the tuning task
 	tuningTask = new Task<TuningTaskStackWords>;
@@ -241,13 +256,13 @@ bool ClosedLoop::SetClosedLoopEnabled(bool enabled, const StringRef &reply) noex
 # if SUPPORT_SLOW_DRIVERS
 		// TODO: Check what we need to do here
 		if (Platform::IsSlowDriver()) {
-			reply.copy("Closed loop drive mode not yet supported")
+			reply.copy("Closed loop drive mode not yet supported");
 			return false;
 		}
 # endif
 # if USE_TC_FOR_STEP || !SINGLE_DRIVER || !SUPPORT_TMC2160
 		// TODO: Check what we need to do here
-		reply.copy("Closed loop drive mode not yet supported")
+		reply.copy("Closed loop drive mode not yet supported");
 		return false;
 # endif
 		if (encoder == nullptr)
@@ -281,12 +296,12 @@ void ClosedLoop::TakeStep() noexcept
 	// TODO: The below causes an error! Perhaps SmartDrivers::GetMicrostepping is returning something unexpected
 
 	bool interpolation;	// TODO: Work out what this is for!
-# if HAS_SMART_DRIVERS && SINGLE_DRIVER
+# if SUPPORT_TMC2160 && SINGLE_DRIVER
 	float microstepAngle = 1.0/SmartDrivers::GetMicrostepping(0, interpolation);
-# else
-#  error Undefined hardware
-# endif
 	targetMotorSteps += (stepDirection ? microstepAngle : -microstepAngle);
+# else
+#  error Cannot support closed loop with the specified hardware
+# endif
 }
 
 // TODO: This isn't currently called anywhere, but it's quite a useful utility. Do we want this in a GCODE command?
@@ -442,11 +457,23 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 					break;
 
 				case EncoderType::linearQuadrature:
-					encoder = new QuadratureEncoder(true);
+#ifdef EXP1HCE
+					encoder = new QuadratureEncoderAttiny(true);
+#elif defined(EXP1HCL)
+					encoder = new QuadratureEncoderPdec(true);
+#else
+# error Unknown board
+#endif
 					break;
 
 				case EncoderType::rotaryQuadrature:
-					encoder = new QuadratureEncoder(false);
+#ifdef EXP1HCE
+					encoder = new QuadratureEncoderAttiny(false);
+#elif defined(EXP1HCL)
+					encoder = new QuadratureEncoderPdec(false);
+#else
+# error Unknown board
+#endif
 					break;
 				}
 
@@ -497,7 +524,14 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 
 void ClosedLoop::Diagnostics(const StringRef& reply) noexcept
 {
-	reply.printf("Encoder programmed status %s, encoder type %s, tuning: %#x", programmer->GetProgramStatus().ToString(), GetEncoderType().ToString(), tuning);
+#if defined(EXP1HCE)
+	reply.printf("Encoder programmed status %s, encoder type %s", programmer->GetProgramStatus().ToString(), GetEncoderType().ToString());
+#elif defined(EXP1HCL)
+	reply.printf("Encoder type %s", GetEncoderType().ToString());
+#endif
+
+	reply.catf(", tuning: %#x", tuning);
+
 	if (encoder != nullptr)
 	{
 		reply.catf(", position %" PRIi32, encoder->GetReading());
@@ -559,6 +593,7 @@ void ClosedLoop::CollectSample() noexcept
 
 void ClosedLoop::Log() noexcept
 {
+# if SUPPORT_CAN_LOGGING
 	// Update the error vars
 	maxError = currentError > maxError ? currentError : maxError;
 	ewmaError = ewmaError == 0 ? currentError : 0.5 * ewmaError + 0.5 * currentError;
@@ -570,6 +605,7 @@ void ClosedLoop::Log() noexcept
 		reply.printf("Closed loop error exceeded warning threshold. Error = %f", (double) currentError);
 		Logger::LogMessage(0, reply.GetRef(), LogLevel::warn);
 	}
+# endif
 }
 
 void ClosedLoop::ControlMotorCurrents() noexcept
@@ -669,7 +705,15 @@ void ClosedLoop::ControlMotorCurrents() noexcept
 
 			int curEncoder = encoder->GetReading();
 			int newEncoder = curEncoder - (averageDeviation / 4096.0) * encoderCountPerStep * 4;
-			((QuadratureEncoder*) encoder)->SetReading(newEncoder);
+# if defined(EXP1HCE)
+			// TODO: Should be able to just cast to (Encoder)
+			((QuadratureEncoderAttiny*) encoder)->SetReading(newEncoder);
+# elif defined(EXP1HCL)
+			// TODO: :(
+//			((QuadratureEncoderPdec*) encoder)->SetReading(newEncoder);
+# else
+#  error Cannot support closed loop with the specified hardware
+# endif
 
 			tuning &= ~ZEROING_MASK;
 

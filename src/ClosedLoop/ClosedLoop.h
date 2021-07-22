@@ -30,7 +30,10 @@ namespace ClosedLoop
 
 	void EnableEncodersSpi() noexcept;
 	void DisableEncodersSpi() noexcept;
+
+#ifdef EXP1HCE
 	void TurnAttinyOff() noexcept;
+#endif
 
 	void TakeStep() noexcept;
 	void SetStepDirection(bool) noexcept;

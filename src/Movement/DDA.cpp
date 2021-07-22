@@ -353,6 +353,7 @@ bool DDA::Init(const CanMessageMovementLinear& msg)
 
 // Start executing this move. Must be called with interrupts disabled, to avoid a race condition.
 // startTime is the earliest that we can start the move, but we must not start it before its planned time
+// After calling this, the first interrupt must be scheduled
 void DDA::Start(uint32_t tim)
 {
 	const int32_t ticksOverdue = (int32_t)(tim - afterPrepare.moveStartTime);
