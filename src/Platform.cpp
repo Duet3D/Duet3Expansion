@@ -174,7 +174,7 @@ namespace Platform
 	static uint32_t lastFanCheckTime = 0;
 	static unsigned int heatTaskIdleTicks = 0;
 
-	constexpr uint32_t GreenLedFlashTime = 100;				// how long the green LED stays on after we process a CAN message
+	constexpr uint32_t ActLedFlashTime = 100;				// how long the green LED stays on after we process a CAN message
 	static uint32_t whenLastCanMessageProcessed = 0;
 
 #if SUPPORT_THERMISTORS
@@ -1110,7 +1110,7 @@ void Platform::Spin()
 		lastFanCheckTime = now;
 	}
 
-	// Update the Diag LED. Flash it quickly (8Hz) if we are not synced to the master, else flash in sync with the master (about 2Hz).
+	// Update the Status LED. Flash it quickly (8Hz) if we are not synced to the master, else flash in sync with the master (about 2Hz).
 	WriteLed(0,
 				(StepTimer::IsSynced())
 					? (StepTimer::GetMasterTime() & (1u << 19)) != 0
@@ -1246,7 +1246,7 @@ void Platform::Spin()
 
 void Platform::SpinMinimal()
 {
-	if (millis() - whenLastCanMessageProcessed > GreenLedFlashTime)
+	if (millis() - whenLastCanMessageProcessed > ActLedFlashTime)
 	{
 		WriteLed(1, false);
 	}
@@ -1841,7 +1841,7 @@ void Platform::EmergencyStop()
 void Platform::OnProcessingCanMessage()
 {
 	whenLastCanMessageProcessed = millis();
-	WriteLed(1, true);				// turn the green LED on
+	WriteLed(1, true);				// turn the ACT LED on
 }
 
 // Execute a timed task that takes less than one millisecond

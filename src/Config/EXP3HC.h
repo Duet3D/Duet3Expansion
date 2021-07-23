@@ -80,7 +80,7 @@ constexpr Pin DirectionPins[NumDrivers] = { PortAPin(23), PortCPin(28), PortAPin
 constexpr Pin BoardTypePins[NumBoardTypeBits] = { PortBPin(18), PortCPin(18), PortCPin(13) };
 
 // Diagnostic LEDs
-constexpr Pin LedPins[] = { PortCPin(10) };
+constexpr Pin LedPins[] = { PortCPin(10), PortCPin(7) };
 constexpr bool LedActiveHigh = true;
 
 constexpr Pin VinMonitorPin = PortAPin(10);
