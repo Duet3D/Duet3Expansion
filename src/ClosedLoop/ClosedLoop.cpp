@@ -114,10 +114,19 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 		seen = true;
 		if (temp < EncoderType::NumValues)
 		{
-			if (temp != GetEncoderType().ToBaseType())
+			if (temp == GetEncoderType().ToBaseType())
+			{
+				if (encoder != nullptr)
+				{
+					encoder->Disable();
+					//TODO re-initialise the encoder
+					encoder->Enable();
+				}
+			}
+			else
 			{
 				//TODO need to get a lock here in case there is any movement
-				delete encoder;
+				DeleteObject(encoder);
 				switch (temp)
 				{
 				case EncoderType::none:
@@ -155,6 +164,7 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 
 				if (encoder != nullptr)
 				{
+					//TODO initialise the encoder
 					encoder->Enable();
 				}
 			}

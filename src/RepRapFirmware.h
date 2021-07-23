@@ -85,6 +85,22 @@ private:
 	bool running;
 };
 
+// Function to delete an object and clear the pointer. Safe to call even if the pointer is already null.
+template <typename T> void DeleteObject(T*& ptr) noexcept
+{
+	T* p2 = nullptr;
+	std::swap(ptr, p2);
+	delete p2;
+}
+
+// Function to make a pointer point to a new object and delete the existing object, if any. T2 must be the same as T or derived from it.
+template <typename T, typename T2> void ReplaceObject(T*& ptr, T2* pNew) noexcept
+{
+	T* p2 = pNew;
+	std::swap(ptr, p2);
+	delete p2;
+}
+
 constexpr const char* NoPinName = "nil";
 
 constexpr size_t XYZ_AXES = 3;										// The number of Cartesian axes
