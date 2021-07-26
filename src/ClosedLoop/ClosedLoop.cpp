@@ -430,7 +430,16 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 		seen = true;
 		if (tempUint < EncoderType::NumValues)
 		{
-			if (tempUint != GetEncoderType().ToBaseType())
+			if (tempUint == GetEncoderType().ToBaseType())
+			{
+				if (encoder != nullptr)
+				{
+					encoder->Disable();
+					//TODO re-initialise the encoder
+					encoder->Enable();
+				}
+			}
+			else
 			{
 				// Check that the user is requesting a valid selection
 				if (finalClosedLoopEnabled && tempUint == EncoderType::none)
@@ -440,7 +449,7 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 				}
 
 				//TODO need to get a lock here in case there is any movement
-				delete encoder;
+				DeleteObject(encoder);
 				switch (tempUint)
 				{
 				case EncoderType::none:
@@ -479,6 +488,7 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 
 				if (encoder != nullptr)
 				{
+					//TODO initialise the encoder
 					encoder->Enable();
 				}
 			}

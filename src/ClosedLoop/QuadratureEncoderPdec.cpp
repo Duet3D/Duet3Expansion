@@ -13,17 +13,22 @@
 #include <hri_mclk_e54.h>
 #include <cmath>
 
-QuadratureEncoderPdec::QuadratureEncoderPdec(bool linear) : counterHigh(0), lastCount(0), cpr((linear) ? 0 : 1000)
+QuadratureEncoderPdec::QuadratureEncoderPdec(bool linear) : counterHigh(0), lastCount(0)
 {
 	MCLK->APBCMASK.reg |= MCLK_APBCMASK_PDEC;
 	hri_gclk_write_PCHCTRL_reg(GCLK, PDEC_GCLK_ID, GCLK_PCHCTRL_GEN(GclkNum60MHz) | GCLK_PCHCTRL_CHEN);
+
+	PDEC->CTRLA.bit.ENABLE = 0;
+	while (PDEC->SYNCBUSY.bit.ENABLE) { }
+	PDEC->CTRLA.bit.SWRST = 1;
+	while (PDEC->SYNCBUSY.bit.SWRST) { }
 
 	for (Pin p : PositionDecoderPins)
 	{
 		SetPinFunction(p, PositionDecoderPinFunction);
 	}
 
-	SetCountsPerRev(cpr);
+	SetCountsPerRev((linear) ? 0 : 4000);
 }
 
 QuadratureEncoderPdec::~QuadratureEncoderPdec()
@@ -35,24 +40,36 @@ QuadratureEncoderPdec::~QuadratureEncoderPdec()
 void QuadratureEncoderPdec::Enable() noexcept
 {
 	SetPosition(0, 0);
+	PDEC->CTRLA.bit.ENABLE = 1;
+	while (PDEC->SYNCBUSY.bit.ENABLE) { }
 	PDEC->CTRLBSET.reg = PDEC_CTRLBSET_CMD_START;
+	while (PDEC->SYNCBUSY.bit.CTRLB) { }
 }
 
 void QuadratureEncoderPdec::Disable() noexcept
 {
 	PDEC->CTRLBSET.reg = PDEC_CTRLBSET_CMD_STOP;
+	while (PDEC->SYNCBUSY.bit.CTRLB) { }
+	PDEC->CTRLA.bit.ENABLE = 0;
+	while (PDEC->SYNCBUSY.bit.ENABLE) { }
 }
 
 int32_t QuadratureEncoderPdec::GetReading() noexcept
 {
 	uint16_t pos = 0;
-	return GetPosition(pos);
-	//TODO what about pos?
+	const int32_t r = GetPosition(pos);
+	return (cpr == 0) ? r : (r * (int32_t)cpr) + (int32_t)pos;
 }
 
 void QuadratureEncoderPdec::AppendDiagnostics(const StringRef &reply) noexcept
 {
 	// Nothing needed here yet
+#if 1	//debug
+	PDEC->CTRLBSET.reg = PDEC_CTRLBSET_CMD_READSYNC;
+	while (PDEC->SYNCBUSY.reg & (PDEC_SYNCBUSY_CTRLB | PDEC_SYNCBUSY_COUNT)) { }
+	const uint16_t count = PDEC->COUNT.reg;
+	reply.catf(", raw count = %u", count);
+#endif
 }
 
 // End of overridden virtual functions
@@ -60,11 +77,11 @@ void QuadratureEncoderPdec::AppendDiagnostics(const StringRef &reply) noexcept
 void QuadratureEncoderPdec::SetCountsPerRev(uint16_t p_cpr) noexcept
 {
 	cpr = p_cpr;
-	uint32_t ctrla = PDEC_CTRLA_MODE_QDEC
+	uint32_t ctrla = PDEC_CTRLA_MODE_QDEC | PDEC_CTRLA_CONF_X4
 					| PDEC_CTRLA_PINEN0 | PDEC_CTRLA_PINEN1 | PDEC_CTRLA_PINEN2;
 	if (cpr == 0)
 	{
-		ctrla |= PDEC_CTRLA_ANGULAR(7) | PDEC_CTRLA_CONF_X4;
+		ctrla |= PDEC_CTRLA_ANGULAR(7);
 		positionBits = 16;
 	}
 	else
@@ -74,7 +91,7 @@ void QuadratureEncoderPdec::SetCountsPerRev(uint16_t p_cpr) noexcept
 		{
 			++positionBits;
 		}
-		ctrla |= PDEC_CTRLA_ANGULAR(positionBits - 9) | PDEC_CTRLA_CONF_X4S | PDEC_CTRLA_PEREN;
+		ctrla |= PDEC_CTRLA_ANGULAR(positionBits - 9) | PDEC_CTRLA_PEREN;
 		PDEC->CC[0].reg = cpr - 1;
 	}
 
@@ -87,13 +104,13 @@ void QuadratureEncoderPdec::SetCountsPerRev(uint16_t p_cpr) noexcept
 int32_t QuadratureEncoderPdec::GetPosition(uint16_t& pos) noexcept
 {
 	PDEC->CTRLBSET.reg = PDEC_CTRLBSET_CMD_READSYNC;
-	while (PDEC->SYNCBUSY.bit.COUNT) { }
+	while (PDEC->SYNCBUSY.reg & (PDEC_SYNCBUSY_CTRLB | PDEC_SYNCBUSY_COUNT)) { }
 	const uint16_t count = PDEC->COUNT.reg;
 	if (cpr == 0 || positionBits <= 14)
 	{
 		// Handle wrap around of the high position bits or the low revolution bits
 		const uint16_t currentHighBits = count >> 14;
-		const uint16_t lastHighBits = count >> 14;
+		const uint16_t lastHighBits = lastCount >> 14;
 		if (currentHighBits == 3 && lastHighBits == 0)
 		{
 			--counterHigh;
@@ -108,14 +125,14 @@ int32_t QuadratureEncoderPdec::GetPosition(uint16_t& pos) noexcept
 		// Handle 15-bit rotary quadrature encoders (do they exist?)
 		if ((count & 0x8000) != 0 && (lastCount & 0x8000) == 0)
 		{
-			if (count >= cpr/2 && lastCount < cpr/2)
+			if ((count & 0x7FFF) >= cpr/2 && (lastCount & 0x7FFF) < cpr/2)
 			{
 				--counterHigh;
 			}
 		}
 		else if ((count & 0x8000) == 0 && (lastCount & 0x8000) != 0)
 		{
-			if (count < cpr/2 && lastCount >= cpr/2)
+			if ((count & 0x7FFF) < cpr/2 && (lastCount & 0x7FFF) >= cpr/2)
 			{
 				++counterHigh;
 			}
