@@ -10,6 +10,7 @@
 #if SUPPORT_CLOSED_LOOP
 
 #include <CanMessageGenericParser.h>
+#include <Platform.h>
 #include "SpiEncoder.h"
 #include "AS5047D.h"
 
@@ -26,10 +27,10 @@
 
 static bool closedLoopEnabled = false;
 static Encoder *encoder = nullptr;
-static SharedSpiDevice *encoderSpi = nullptr;
 
 #ifdef EXP1HCE
 
+static SharedSpiDevice *encoderSpi = nullptr;
 static AttinyProgrammer *programmer;
 
 static void GenerateAttinyClock()
@@ -59,6 +60,8 @@ static void GenerateTmcClock()
 
 #endif
 
+#ifdef EXP1HCE
+
 void  ClosedLoop::EnableEncodersSpi() noexcept
 {
 	SetPinFunction(EncoderMosiPin, EncoderMosiPinPeriphMode);
@@ -73,16 +76,19 @@ void  ClosedLoop::DisableEncodersSpi() noexcept
 	ClearPinFunction(EncoderMisoPin);
 }
 
+#endif
+
 void ClosedLoop::Init() noexcept
 {
 	pinMode(EncoderCsPin, OUTPUT_HIGH);													// make sure that any attached SPI encoder is not selected
-	encoderSpi = new SharedSpiDevice(EncoderSspiSercomNumber, EncoderSspiDataInPad);	// create the encoders SPI device
 
 #if defined(EXP1HCE)
+	encoderSpi = new SharedSpiDevice(EncoderSspiSercomNumber, EncoderSspiDataInPad);	// create the encoders SPI device
 	GenerateAttinyClock();
 	programmer = new AttinyProgrammer(*encoderSpi);
 	programmer->InitAttiny();
 #elif defined(EXP1HCL)
+	// The EXP1HCL board uses the standard shared SPI device
 	GenerateTmcClock();
 #endif
 }
@@ -134,11 +140,19 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 					break;
 
 				case EncoderType::as5047:
+#ifdef EXP1HCE
 					encoder = new AS5047D(*encoderSpi, EncoderCsPin);
+#elif defined(EXP1HCL)
+					encoder = new AS5047D(*Platform::sharedSpi, EncoderCsPin);
+#endif
 					break;
 
 				case EncoderType::tli5012:
+#ifdef EXP1HCE
 					encoder = new TLI5012B(*encoderSpi, EncoderCsPin);
+#elif defined(EXP1HCL)
+					encoder = new TLI5012B(*Platform::sharedSpi, EncoderCsPin);
+#endif
 					break;
 
 				case EncoderType::linearQuadrature:
