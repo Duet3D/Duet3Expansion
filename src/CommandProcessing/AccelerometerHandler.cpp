@@ -266,7 +266,8 @@ GCodeResult AccelerometerHandler::ProcessConfigRequest(const CanMessageGeneric& 
 		}
 	}
 
-	reply.printf("Accelerometer %u:%u with orientation %u samples at %uHz with %u-bit resolution", CanInterface::GetCanAddress(), deviceNumber, orientation, samplingRate, resolution);
+	reply.printf("Accelerometer %u:%u type %s with orientation %u samples at %uHz with %u-bit resolution",
+					CanInterface::GetCanAddress(), deviceNumber, accelerometer->GetTypeName(), orientation, samplingRate, resolution);
 	return GCodeResult::ok;
 }
 
