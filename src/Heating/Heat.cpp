@@ -590,6 +590,11 @@ void Heat::Diagnostics(const StringRef& reply)
 {
 	reply.lcatf("Last sensors broadcast 0x%08" PRIx64 " found %u %" PRIu32 " ticks ago, loop time %" PRIu32,
 					lastSensorsBroadcastWhich, lastSensorsFound, millis() - lastSensorsBroadcastWhen, heatTaskLoopTime);
+#if 0	// temporary to debug a board that reports bad Vssa
+	reply.catf(", Vref %u Vssa %u",
+		(unsigned int)(Platform::GetVrefFilter(0)->GetSum()/ThermistorAveragingFilter::NumAveraged()),
+		(unsigned int)(Platform::GetVssaFilter(0)->GetSum()/ThermistorAveragingFilter::NumAveraged()));
+#endif
 }
 
 // End
