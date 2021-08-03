@@ -12,33 +12,44 @@
 #include <Hardware/IoPorts.h>
 #include <Movement/StepTimer.h>
 
-constexpr uint16_t Lis3dAddress = 0b0011000;						// bottom bit is 1 if SDO/SA0 connected to Vcc, 0 if connected to ground
+constexpr uint16_t LisAddresses[] =
+{
+	0b0011000,						// LIS3DH with SDO/SA0 connected to ground, address 0x30/0x32
+	0b0011001,						// LIS3DH with SDO/SA0 connected to Vcc, address 0x32/0x33
+	0b0011110,						// LIS3DSH with SEL grounded
+	0b0011101						// LIS3DSH with SEL connected to Vcc
+};
+
 constexpr uint32_t Lis3dI2CTimeout = 25;
 constexpr uint8_t FifoInterruptLevel = 24;							// how full the FIFO must get before we want an interrupt
 
 static constexpr uint8_t WhoAmIValue_3DH = 0x33;
 static constexpr uint8_t WhoAmIValue_3DSH = 0x3F;
 
-LIS3DH::LIS3DH(SharedI2CMaster& dev, Pin p_int1Pin, bool addressLSB) noexcept
-	: SharedI2CClient(dev, (addressLSB) ? Lis3dAddress | 0x0001 : Lis3dAddress), taskWaiting(nullptr), int1Pin(p_int1Pin)
+LIS3DH::LIS3DH(SharedI2CMaster& dev, Pin p_int1Pin) noexcept
+	: SharedI2CClient(dev, LisAddresses[0]), taskWaiting(nullptr), int1Pin(p_int1Pin)
 {
 }
 
 // Do a quick test to check whether the accelerometer is present, returning true if it is
 bool LIS3DH::CheckPresent() noexcept
 {
-	uint8_t val;
-	if (ReadRegister(LisRegister::WhoAmI, val))
+	for (uint16_t addr : LisAddresses)
 	{
-		if (val == WhoAmIValue_3DH)
+		SetAddress(addr);
+		uint8_t val;
+		if (ReadRegister(LisRegister::WhoAmI, val))
 		{
-			is3DSH = false;
-			return true;
-		}
-		else if (val == WhoAmIValue_3DSH)
-		{
-			is3DSH = true;
-			return true;
+			if (val == WhoAmIValue_3DH)
+			{
+				is3DSH = false;
+				return true;
+			}
+			else if (val == WhoAmIValue_3DSH)
+			{
+				is3DSH = true;
+				return true;
+			}
 		}
 	}
 	return false;

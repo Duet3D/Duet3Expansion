@@ -17,7 +17,7 @@
 class LIS3DH : public SharedI2CClient
 {
 public:
-	LIS3DH(SharedI2CMaster& dev, Pin p_int1Pin, bool addressLSB) noexcept;
+	LIS3DH(SharedI2CMaster& dev, Pin p_int1Pin) noexcept;
 
 	// Do a quick test to check whether the accelerometer is present, returning true if it is
 	bool CheckPresent() noexcept;

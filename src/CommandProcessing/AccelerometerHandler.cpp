@@ -197,7 +197,7 @@ static bool TranslateOrientation(uint8_t input) noexcept
 // Interface functions called by the main task
 void AccelerometerHandler::Init() noexcept
 {
-	LIS3DH *temp = new LIS3DH(Platform::GetSharedI2C(), Lis3dhInt1Pin, Lis3dhAddressLsb);
+	LIS3DH *temp = new LIS3DH(Platform::GetSharedI2C(), Lis3dhInt1Pin);
 	if (temp->CheckPresent())
 	{
 		temp->Configure(samplingRate, resolution);
