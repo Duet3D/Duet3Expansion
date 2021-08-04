@@ -10,6 +10,7 @@
 #if SUPPORT_CLOSED_LOOP
 
 #include "AS5047D.h"
+#include "TLI5012B.h"
 #include "SpiEncoder.h"
 
 # include <math.h>
@@ -100,8 +101,6 @@ static int16_t phaseShift;						// The desired shift in the position of the moto
 static uint16_t stepPhase;						// The current position of the motor
 static uint16_t desiredStepPhase = 0;			// The desired position of the motor
 
-static uint8_t phaseCounter = 0;				// Used to achieve M569.5 V1
-
 static int16_t coilA;							// The current to run through coil A
 static int16_t coilB;							// The current to run through coil A
 
@@ -116,9 +115,6 @@ static float ewmaError = 0;
 // Masks for each coil register
 const uint32_t COIL_A_MASK = 0x000001FF;
 const uint32_t COIL_B_MASK = 0x01FF0000;
-
-// ATTiny programming vars
-static SharedSpiDevice *encoderSpi = nullptr;
 
 // Bitmask of any tuning manoeuvres that have been requested
 static uint8_t tuning = 0;
@@ -349,8 +345,8 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 	// Report back if !seen
 	if (!seen) {
 		reply.catf("Encoder type: %s", GetEncoderType().ToString());
-		reply.catf(", encoder CPR: %f", tempCPR);
-		reply.catf(", PID parameters: p=%f, i=%f, d=%f", Kp, Ki, Kd);
+		reply.catf(", encoder CPR: %f", (double) tempCPR);
+		reply.catf(", PID parameters: p=%f, i=%f, d=%f", (double) Kp, (double) Ki, (double) Kd);
 		return GCodeResult::ok;
 	}
 
@@ -470,7 +466,7 @@ void ClosedLoop::Diagnostics(const StringRef& reply) noexcept
 		reply.catf(" (filter: %#x, samples: %d, mode: %d, rate: %d, movement: %d)", filterRequested, samplesRequested, modeRequested, rateRequested, movementRequested);
 	}
 
-	reply.catf(", ultimateGain=%f, oscillationPeriod=%f", ultimateGain, oscillationPeriod);
+	reply.catf(", ultimateGain=%f, oscillationPeriod=%f", (double) ultimateGain, (double) oscillationPeriod);
 
 	//DEBUG
 	//reply.catf(", event status 0x%08" PRIx32 ", TCC2 CTRLA 0x%08" PRIx32 ", TCC2 EVCTRL 0x%08" PRIx32, EVSYS->CHSTATUS.reg, QuadratureTcc->CTRLA.reg, QuadratureTcc->EVCTRL.reg);
