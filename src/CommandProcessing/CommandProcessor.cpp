@@ -903,6 +903,15 @@ void CommandProcessor::Spin()
 # endif
 			break;
 
+		case CanMessageType::m569p6:
+			requestId = buf->msg.generic.requestId;
+# if SUPPORT_CLOSED_LOOP
+			rslt = ClosedLoop::ProcessM569Point6(buf->msg.generic, replyRef);
+# else
+			rslt = GCodeResult::errorNotSupported;
+# endif
+			break;
+
 		case CanMessageType::setStandstillCurrentFactor:
 			requestId = buf->msg.multipleDrivesRequestFloat.requestId;
 			rslt = SetStandstillCurrentFactor(buf->msg.multipleDrivesRequestFloat, buf->dataLength, replyRef);

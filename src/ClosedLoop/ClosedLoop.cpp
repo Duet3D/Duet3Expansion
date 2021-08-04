@@ -9,24 +9,25 @@
 
 #if SUPPORT_CLOSED_LOOP
 
-# include <math.h>
-# include <Platform.h>
-# include <CanMessageGenericParser.h>
-# include "SpiEncoder.h"
 # include "AS5047D.h"
 # include "TLI5012B.h"
-# include "AttinyProgrammer.h"
+# include "SpiEncoder.h"
+
+# include <math.h>
+# include <Platform.h>
 # include <TaskPriorities.h>
 # include <CAN/CanInterface.h>
 # include <CanMessageBuffer.h>
 # include <CanMessageFormats.h>
+# include <CanMessageGenericParser.h>
 
-# ifdef EXP1HCE
+# if defined(EXP1HCE)
+#  include "AttinyProgrammer.h"
 #  include "QuadratureEncoderAttiny.h"
-# endif
-
-# ifdef EXP1HCL
+#elif defined(EXP1HCL)
 #  include "QuadratureEncoderPdec.h"
+#else
+#  error Cannot support closed loop with the specified hardware
 # endif
 
 # if SUPPORT_CAN_LOGGING
@@ -39,32 +40,46 @@
 #  error Cannot support closed loop with the specified hardware
 # endif
 
-int32_t averageDeviation = 0;
-
-uint16_t phaseOffset = 0;
+# ifdef EXP1HCL
+#  define CLOSED_LOOP_DATA_BUFFER_SIZE 2000		//  (1000 readings of 12 variables)
+# else
+#  define CLOSED_LOOP_DATA_BUFFER_SIZE 50		//	(50 readings of 12 variables)
+# endif
 
 // Control variables
 // Variables that can be set by the user to determine how the closed loop controller works
 
 static bool closedLoopEnabled = false;			// Has closed loop been enabled by the user?
+static uint8_t tuningError;						// Flags for any tuning errors
+
+static bool coilAPolarity = true;				// True = +ve, False = -ve
+static bool coilBPolarity = false;				// True = +ve, False = -ve
+
+static uint8_t holdCurrent = 0;					// The minimum holding current when stationary
 
 static float Kp = 100;							// The proportional constant for the PID controller
-static float Ki = 1;							// The proportional constant for the PID controller
+static float Ki = 0.01;							// The proportional constant for the PID controller
 static float Kd = 10;							// The proportional constant for the PID controller
 
+static float ultimateGain = 0;					// The ultimate gain of the controller (used for tuning)
+static float oscillationPeriod = 0;				// The oscillation period when Kp = ultimate gain
+
 static Encoder *encoder = nullptr;				// Pointer to the encoder object in use
-static float encoderCountPerStep = 1;			// How many encoder readings do we get per step?
+static float encoderCountPerStep;				// How many encoder readings do we get per step?
 
 static bool collectingData = false;				// Are we currently collecting data? If so:
 static uint16_t rateRequested;					//	- What sample rate did they request?
 static uint16_t filterRequested;				//	- What filter did they request?
 static uint16_t samplesRequested;				//	- How many samples did they request?
 static ClosedLoop::RecordingMode modeRequested;	//	- What mode did they request?
-static int16_t sampleBuffer[50 * 12];			//	- Store the samples here (max. 50 samples of 12 variables)
+static uint8_t movementRequested;				//	- Which calibration movement did they request? 0=none, 1=polarity, 2=continuous
+static float sampleBuffer[CLOSED_LOOP_DATA_BUFFER_SIZE * 12];	//	- Store the samples here (max. CLOSED_LOOP_DATA_BUFFER_SIZE samples of 12 variables)
 static uint16_t sampleBufferReadPointer = 0;	//  - Send this sample next to the mainboard
 static uint16_t sampleBufferWritePointer = 0;	//  - Store the next sample at this point in the buffer
 
+# if SUPPORT_CAN_LOGGING
 static uint32_t backOffTime = 100;				// TODO: ms before a closed loop error should be reported again
+# endif
 
 
 // Working variables
@@ -86,15 +101,18 @@ static int16_t phaseShift;						// The desired shift in the position of the moto
 static uint16_t stepPhase;						// The current position of the motor
 static uint16_t desiredStepPhase = 0;			// The desired position of the motor
 
+static uint8_t phaseCounter = 0;				// Used to achieve M569.5 V1
+
 static int16_t coilA;							// The current to run through coil A
 static int16_t coilB;							// The current to run through coil A
-
 
 // Misc. variables
 
 // Logging vars
+# if SUPPORT_CAN_LOGGING
 static float maxError = 0;
 static float ewmaError = 0;
+# endif
 
 // Masks for each coil register
 const uint32_t COIL_A_MASK = 0x000001FF;
@@ -103,11 +121,8 @@ const uint32_t COIL_B_MASK = 0x01FF0000;
 // ATTiny programming vars
 static SharedSpiDevice *encoderSpi = nullptr;
 
-// Variable & masks to determine if we are tuning, and what type of tuning we are doing
-// if tuning & TUNING_TYPE_MASK == true, then we are currently performing TUNING_TYPE
+// Bitmask of any tuning manoeuvres that have been requested
 static uint8_t tuning = 0;
-const uint8_t ZEROING_MASK = 1 << 0;
-const uint8_t ENCODER_STEPS_MASK = 1 << 1;
 
 // Tuning task - handles any pending tuning operations
 constexpr size_t TuningTaskStackWords = 200;
@@ -141,12 +156,22 @@ void  ClosedLoop::TurnAttinyOff() noexcept
 
 #endif
 
-// Helper function to set a given coil current in
-void SetMotorPhase(uint16_t phase)	// , float magnitude
+// TODO: Helper function to convert between the internal representation of encoderCountPerStep, and the appropriate external representation (e.g. CPR)
+#if false
+float countPerStepToExternalUnits() {
+	// TODO
+}
+
+float externalUnitsToCountPerStep() {
+	// TODO
+}
+#endif
+
+// Helper function to set the motor to a given phase and magnitude
+void SetMotorPhase(uint16_t phase, float magnitude)
 {
-	coilA = Trigonometry::FastSin(phase);// * (abs(PIDControlSignal) / 255.0);
-	// TODO: This negative depends on if the motor is configured to run forward/backward
-	coilB = Trigonometry::FastCos(phase);// * (abs(PIDControlSignal) / 255.0);
+	coilA = 255 * (coilAPolarity ? magnitude : -magnitude ) * Trigonometry::FastCos(phase);
+	coilB = 255 * (coilBPolarity ? magnitude : -magnitude ) * Trigonometry::FastSin(phase);
 	// TODO: Should we ::Give() to the task that's responsible for setting these registers here?
 
 # if SUPPORT_TMC2160 && SINGLE_DRIVER
@@ -169,35 +194,6 @@ static void GenerateTmcClock()
 
 #endif
 
-void ZeroStepper()
-{
-#if SUPPORT_TMC2160 && SINGLE_DRIVER
-	Platform::EnableDrive(0);
-#else
-#error Cannot support closed loop with the specified hardware
-#endif
-
-	tuning |= ZEROING_MASK;
-
-	return;
-
-	// Enable (and keep enabled) the drive
-	// TODO: We should modify Platform::EnableDrive such that if closed loop is enabled, it sets a var in here, then we can handle a disabled closed loop driver
-#if SUPPORT_TMC2160 && SINGLE_DRIVER
-	Platform::EnableDrive(0);
-#else
-#error Cannot support closed loop with the specified hardware
-#endif
-
-	switch (ClosedLoop::GetEncoderType().ToBaseType())
-	{
-	case EncoderType::rotaryQuadrature:
-		SetMotorPhase(0);
-		break;
-	}
-
-	tuning |= ZEROING_MASK;
-}
 
 void  ClosedLoop::EnableEncodersSpi() noexcept
 {
@@ -230,6 +226,9 @@ void ClosedLoop::Init() noexcept
 #elif defined(EXP1HCL)
 	GenerateTmcClock();
 #endif
+
+	// Init that we have not been tuned
+	tuningError = TUNE_ERR_NOT_PERFORMED_MINIMAL_TUNE;
 
 	// Set up the tuning task
 	tuningTask = new Task<TuningTaskStackWords>;
@@ -270,11 +269,25 @@ bool ClosedLoop::SetClosedLoopEnabled(bool enabled, const StringRef &reply) noex
 			reply.copy("No encoder specified for closed loop drive mode");
 			return false;
 		}
-		ZeroStepper();
+		Platform::EnableDrive(0);
 	}
 
+	// Reset the tuning
+	tuningError = TUNE_ERR_NOT_PERFORMED_MINIMAL_TUNE;
+
+	// Set the target position to the current position
+	rawEncoderReading = encoder->GetReading();
+	currentMotorSteps = rawEncoderReading / encoderCountPerStep;
+	targetMotorSteps = currentMotorSteps;
+
+	// Set the closed loop enabled state
 	closedLoopEnabled = enabled;
 	return true;
+}
+
+void ClosedLoop::SetHoldingCurrent(float percent)
+{
+	holdCurrent = (uint8_t)constrain<long>(lrintf((percent * 256)/100.0), 0, 255);
 }
 
 void ClosedLoop::SetStepDirection(bool dir) noexcept
@@ -290,8 +303,12 @@ EncoderType ClosedLoop::GetEncoderType() noexcept
 // TODO: Instead of having this take step, why not use the current DDA to calculate where we need to be?
 void ClosedLoop::TakeStep() noexcept
 {
-	targetMotorSteps += (stepDirection ? 0.0625 : -0.0625);
+# if SINGLE_DRIVER
+	targetMotorSteps += (stepDirection ? 0.0625 : -0.0625) * (Platform::GetDirectionValue(1) ? 1 : -1);
 	return;
+# else
+#  error Cannot support closed loop with the specified hardware
+# endif
 
 	// TODO: The below causes an error! Perhaps SmartDrivers::GetMicrostepping is returning something unexpected
 
@@ -304,15 +321,298 @@ void ClosedLoop::TakeStep() noexcept
 # endif
 }
 
+
+GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const StringRef &reply) noexcept
+{
+	CanMessageGenericParser parser(msg, M569Point1Params);
+
+	// Set default parameters
+	uint8_t tempEncoderType = GetEncoderType().ToBaseType();
+	float tempCPR = encoderCountPerStep;		// TODO: Use countPerStepToExternalUnits() here
+	float tempKp = Kp;
+	float tempKi = Ki;
+	float tempKd = Kd;
+
+	// Pull changed parameters
+	uint8_t seen = 0;
+	seen |= parser.GetUintParam('T', tempEncoderType) 	<< 0;
+	seen |= parser.GetFloatParam('E', tempCPR) 			<< 1;
+	seen |= parser.GetFloatParam('R', tempKp) 			<< 2;
+	seen |= parser.GetFloatParam('I', tempKi) 			<< 3;
+	seen |= parser.GetFloatParam('D', tempKd) 			<< 4;
+
+	// Report back if !seen
+	if (!seen) {
+		reply.catf("Encoder type: %s", GetEncoderType().ToString());
+		reply.catf(", encoder CPR: %f", tempCPR);
+		reply.catf(", PID parameters: p=%f, i=%f, d=%f", Kp, Ki, Kd);
+		return GCodeResult::ok;
+	}
+
+	// Validate the new params
+	if (tempEncoderType > EncoderType::NumValues) {reply.copy("Invalid T value. Valid values are 0,1");return GCodeResult::error;}
+
+	// Set the new params
+	encoderCountPerStep = tempCPR;
+	Kp = tempKp;
+	Ki = tempKi;
+	Kd = tempKd;
+
+	// If encoder type or count per steps has changed, we need to re-tune
+	if ((seen & 0x1 << 0) || (seen & 0x1 << 1)) {
+		tuningError |= TUNE_ERR_NOT_PERFORMED_MINIMAL_TUNE;
+	}
+
+	//TODO need to get a lock here in case there is any movement
+	if (seen & 0x1 << 0) {
+		DeleteObject(encoder);
+		switch (tempEncoderType)
+		{
+		case EncoderType::none:
+		default:
+			encoder = nullptr;
+			break;
+
+		case EncoderType::as5047:
+			encoder = new AS5047D(*encoderSpi, EncoderCsPin);
+			break;
+
+		case EncoderType::tli5012:
+			encoder = new TLI5012B(*encoderSpi, EncoderCsPin);
+			break;
+
+		case EncoderType::linearQuadrature:
+#ifdef EXP1HCE
+			encoder = new QuadratureEncoderAttiny(true);
+#elif defined(EXP1HCL)
+			encoder = new QuadratureEncoderPdec(true);
+#else
+# error Unknown board
+#endif
+			break;
+
+		case EncoderType::rotaryQuadrature:
+#ifdef EXP1HCE
+			encoder = new QuadratureEncoderAttiny(false);
+#elif defined(EXP1HCL)
+			// TODO: Debug why this can't be set to rotary mode
+			encoder = new QuadratureEncoderPdec(true);
+#else
+# error Unknown board
+#endif
+			break;
+		}
+
+		if (encoder != nullptr)
+		{
+			//TODO initialise the encoder
+			encoder->Enable();
+		}
+	}
+
+	reply.printf("%x", seen);
+	return GCodeResult::ok;
+}
+
+GCodeResult ClosedLoop::ProcessM569Point6(const CanMessageGeneric &msg, const StringRef &reply) noexcept
+{
+	CanMessageGenericParser parser(msg, M569Point6Params);
+
+	uint8_t desiredTuning;
+	if (!parser.GetUintParam('V', desiredTuning))
+	{
+		reply.copy("Missing parameter 'V'");
+		return GCodeResult::error;
+	}
+
+	if (desiredTuning > FULL_TUNE)
+	{
+		reply.printf("Invalid 'V' parameter value. V may be 0-%d.", FULL_TUNE);
+		return GCodeResult::error;
+	}
+
+	tuning = desiredTuning;
+
+	return GCodeResult::ok;
+}
+
+void ClosedLoop::Diagnostics(const StringRef& reply) noexcept
+{
+#if defined(EXP1HCE)
+	reply.printf("Encoder programmed status %s, encoder type %s", programmer->GetProgramStatus().ToString(), GetEncoderType().ToString());
+#elif defined(EXP1HCL)
+	reply.printf("Encoder type %s", GetEncoderType().ToString());
+#endif
+
+	reply.catf(", tuning: %#x, tuning error: %#x", tuning, tuningError);
+
+	if (encoder != nullptr)
+	{
+		reply.catf(", position %" PRIi32, encoder->GetReading());
+		encoder->AppendDiagnostics(reply);
+	}
+	reply.catf(", collecting data: %s", collectingData ? "yes" : "no");
+	if (collectingData)
+	{
+		reply.catf(" (filter: %#x, samples: %d, mode: %d, rate: %d, movement: %d)", filterRequested, samplesRequested, modeRequested, rateRequested, movementRequested);
+	}
+
+	reply.catf(", ultimateGain=%f, oscillationPeriod=%f", ultimateGain, oscillationPeriod);
+
+	//DEBUG
+	//reply.catf(", event status 0x%08" PRIx32 ", TCC2 CTRLA 0x%08" PRIx32 ", TCC2 EVCTRL 0x%08" PRIx32, EVSYS->CHSTATUS.reg, QuadratureTcc->CTRLA.reg, QuadratureTcc->EVCTRL.reg);
+}
+
+void ClosedLoop::Spin() noexcept
+{
+	if (collectingData && rateRequested == 0) {CollectSample();}
+	if (!closedLoopEnabled) {return;}
+	if (tuningError) {return tuningTask->Give();}
+
+	if (!tuning) {
+		ControlMotorCurrents();
+		Log();
+	} else {
+		tuningTask->Give();
+	}
+}
+
+void ClosedLoop::CollectSample() noexcept
+{
+	if (filterRequested & 1)  		{sampleBuffer[sampleBufferWritePointer++] = rawEncoderReading;}
+	if (filterRequested & 2)  		{sampleBuffer[sampleBufferWritePointer++] = currentMotorSteps;}
+	if (filterRequested & 4)  		{sampleBuffer[sampleBufferWritePointer++] = targetMotorSteps;}
+	if (filterRequested & 8)  		{sampleBuffer[sampleBufferWritePointer++] = stepPhase;}
+	if (filterRequested & 16)  		{sampleBuffer[sampleBufferWritePointer++] = PIDControlSignal;}
+	if (filterRequested & 32)  		{sampleBuffer[sampleBufferWritePointer++] = PIDPTerm;}
+	if (filterRequested & 64)  		{sampleBuffer[sampleBufferWritePointer++] = PIDITerm;}
+	if (filterRequested & 128)  	{sampleBuffer[sampleBufferWritePointer++] = PIDDTerm;}
+	if (filterRequested & 256)  	{sampleBuffer[sampleBufferWritePointer++] = phaseShift;}
+	if (filterRequested & 512)  	{sampleBuffer[sampleBufferWritePointer++] = desiredStepPhase;}
+	if (filterRequested & 1024) 	{sampleBuffer[sampleBufferWritePointer++] = coilA;}
+	if (filterRequested & 2048) 	{sampleBuffer[sampleBufferWritePointer++] = coilB;}
+
+	// Count how many bits are set in 'filterRequested'
+	// TODO: Look into a more efficient way of doing this
+	int variableCount = 0;
+	int tmpFilter = filterRequested;
+	while (tmpFilter != 0) {
+		variableCount += tmpFilter & 0x1;
+		tmpFilter >>= 1;
+	}
+
+	if (sampleBufferWritePointer >= (samplesRequested * variableCount)) {
+		// Mark that we have finished collecting data
+		collectingData = false;
+		movementRequested = 0;	// Just to be safe
+		dataTransmissionTask->Give();
+	}
+}
+
+void ClosedLoop::Log() noexcept
+{
+# if SUPPORT_CAN_LOGGING
+	// Update the error vars
+	maxError = currentError > maxError ? currentError : maxError;
+	ewmaError = ewmaError == 0 ? currentError : 0.5 * ewmaError + 0.5 * currentError;
+
+	if (currentError > 1)
+	{
+		// TODO: Does this take too long to do in ::Spin()?
+		String<StringLength500> reply;
+		reply.printf("Closed loop error exceeded warning threshold. Error = %f", (double) currentError);
+		Logger::LogMessage(0, reply.GetRef(), LogLevel::warn);
+	}
+# endif
+}
+
+int phsCtr = 0;
+
+void ClosedLoop::ControlMotorCurrents() noexcept
+{
+	// Calculate the current position & phase from the encoder reading
+	rawEncoderReading = encoder->GetReading();
+	currentMotorSteps = rawEncoderReading / encoderCountPerStep;
+
+	// Calculate the current error, if it's zero we don't need to do anything!
+	currentError = targetMotorSteps - currentMotorSteps;
+	if (!collectingData && currentError == 0) {return;}	// TODO: We are dealing with floats so this should probably be a range
+
+	// Use a PID controller to calculate the required 'torque' - the control signal
+	PIDPTerm = Kp * currentError;
+	if (abs(PIDITerm + Ki * currentError) < 512)	// We don't want this to overflow, so set an upper bound.
+	{
+		PIDITerm += Ki * currentError;		// TODO: Is this causing an overflow?
+	}
+	PIDDTerm = Kd * (lastError - currentError);
+	float sumOfTerms = PIDPTerm + PIDITerm + PIDDTerm;
+	PIDControlSignal = (int16_t) constrain<float>(sumOfTerms, -255, 255);	// Clamp between -255 and 255
+
+	// Calculate the offset required to produce the torque in the correct direction
+	// i.e. if we are moving in the positive direction, we must apply currents with a positive phase shift
+	// The max abs value of phase shift we want is 25%.
+	// Given that PIDControlSignal is -255 .. 255 and phase is 0 .. 4095
+	// and that 25% of 4095 ~= 1024, our max phase shift ~= 4 * PIDControlSignal
+	// DEBUG: Experimenting with microstepping by doing 0.1 *
+	phaseShift = (4 * PIDControlSignal);
+
+	// Calculate stepPhase - a 0-4095 value representing the phase *within* the current step
+	float tmp = currentMotorSteps / 4;
+	if (tmp >= 0) {
+		stepPhase = (tmp - (int) tmp) * 4095;
+	} else {
+		stepPhase = (1 + tmp - (int) tmp) * 4095;
+	}
+
+	// Calculate the required motor currents to induce that torque
+	// TODO: Have a minimum holding current
+	// (If stepPhase < phaseShift, we need to add on an extra 4095 to bring us back within the correct range)
+	desiredStepPhase = stepPhase + phaseShift + ((stepPhase < -phaseShift) * 4095);
+	desiredStepPhase = desiredStepPhase % 4096;
+
+//	desiredStepPhase += 128;
+////
+//	if (desiredStepPhase >= 4096)
+//	{
+//		desiredStepPhase = 0;
+////		phsCtr += 1;
+////		if (phsCtr == 4) {phsCtr = 0;}
+//////		switch (phsCtr) {
+//////		case 0:
+//////			coilAPolarity = true;
+//////			coilBPolarity = true;
+//////			break;
+//////		case 1:
+//////			coilAPolarity = false;
+//////			coilBPolarity = false;
+//////			break;
+//////		case 2:
+//////			coilAPolarity = true;
+//////			coilBPolarity = false;
+//////			break;
+//////		case 3:
+//////			coilAPolarity = false;
+//////			coilBPolarity = true;
+//////			break;
+//////		}
+//	}
+
+	// Assert the required motor currents
+	SetMotorPhase(desiredStepPhase, abs(PIDControlSignal)/255.0);
+
+	// Update vars for the next cycle
+	lastError = currentError;
+}
+
 // TODO: This isn't currently called anywhere, but it's quite a useful utility. Do we want this in a GCODE command?
 // TODO: If we are going to use this, definitely pull it into the tuning loop
 GCodeResult ClosedLoop::FindEncoderCountPerStep(const CanMessageGeneric &msg, const StringRef &reply) noexcept
 {
 	// TODO: Check we are in closed loop mode
-	tuning |= ENCODER_STEPS_MASK;
+	tuning |= ENCODER_STEPS_CHECK;
 
 	// Set to 0
-	SetMotorPhase(512);
+	SetMotorPhase(512, 1);
 # if SUPPORT_TMC2160 && SINGLE_DRIVER
 	while (SmartDrivers::UpdatePending(0)) { }
 # else
@@ -322,7 +622,7 @@ GCodeResult ClosedLoop::FindEncoderCountPerStep(const CanMessageGeneric &msg, co
 	int32_t zeroReading = encoder->GetReading();
 
 	// Set to 1024
-	SetMotorPhase(1536);
+	SetMotorPhase(1536, 1);
 # if SUPPORT_TMC2160 && SINGLE_DRIVER
 	while (SmartDrivers::UpdatePending(0)) { }
 # else
@@ -332,7 +632,7 @@ GCodeResult ClosedLoop::FindEncoderCountPerStep(const CanMessageGeneric &msg, co
 	int32_t quarterReading = encoder->GetReading();
 
 	// Set to 2048
-	SetMotorPhase(2560);
+	SetMotorPhase(2560, 1);
 # if SUPPORT_TMC2160 && SINGLE_DRIVER
 	while (SmartDrivers::UpdatePending(0)) { }
 # else
@@ -342,7 +642,7 @@ GCodeResult ClosedLoop::FindEncoderCountPerStep(const CanMessageGeneric &msg, co
 	int32_t halfReading = encoder->GetReading();
 
 	// Set to 3092
-	SetMotorPhase(3584);
+	SetMotorPhase(3584, 1);
 # if SUPPORT_TMC2160 && SINGLE_DRIVER
 	while (SmartDrivers::UpdatePending(0)) { }
 # else
@@ -352,7 +652,7 @@ GCodeResult ClosedLoop::FindEncoderCountPerStep(const CanMessageGeneric &msg, co
 	int32_t fullReading = encoder->GetReading();
 
 	// Set back to 0
-	SetMotorPhase(512);
+	SetMotorPhase(512, 1);
 # if SUPPORT_TMC2160 && SINGLE_DRIVER
 	while (SmartDrivers::UpdatePending(0)) { }
 # else
@@ -361,7 +661,7 @@ GCodeResult ClosedLoop::FindEncoderCountPerStep(const CanMessageGeneric &msg, co
 	delayMicroseconds(100000);
 	int32_t secondZeroReading = encoder->GetReading();
 
-	tuning &= ~ENCODER_STEPS_MASK;
+	tuning &= ~ENCODER_STEPS_CHECK;
 
 	reply.catf("\nreading: %d", (int) zeroReading);
 	reply.catf("\nreading: %d", (int) quarterReading);
@@ -386,356 +686,254 @@ GCodeResult ClosedLoop::FindEncoderCountPerStep(const CanMessageGeneric &msg, co
 	return GCodeResult::ok;
 }
 
-// TODO: THIS NEEDS TO BE REFACTORED A LITTLE NOW WE'RE USING M569 instead
-GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const StringRef &reply) noexcept
-{
-	CanMessageGenericParser parser(msg, M569Point1Params);
-	bool seen = false;
-	uint8_t tempUint;
-	float tempFloat;
-
-	bool finalClosedLoopEnabled = closedLoopEnabled;	// The 'final' state the user intends closedLoopEnabled to be
-
-	// Check closed loop enable/disable
-	if (parser.GetUintParam('S', tempUint))
-	{
-		seen = true;
-
-		switch(tempUint) {
-		case 0:
-			finalClosedLoopEnabled = false;
-			break;
-		case 1:
-# if SUPPORT_SLOW_DRIVERS
-			// TODO: Check what we need to do here
-			if (Platform::IsSlowDriver()) {
-				reply.copy("Closed loop mode not yet supported")
-				return GCodeResult::error;
-			}
-# endif
-# if USE_TC_FOR_STEP || !SINGLE_DRIVER
-			// TODO: Check what we need to do here
-			reply.copy("Closed loop mode not yet supported")
-			return GCodeResult::error;
-# else
-			finalClosedLoopEnabled = true;
-			break;
-# endif
-		}
-	}
-
-	// Check encoder type
-	if (parser.GetUintParam('T', tempUint))
-	{
-		seen = true;
-		if (tempUint < EncoderType::NumValues)
-		{
-			if (tempUint == GetEncoderType().ToBaseType())
-			{
-				if (encoder != nullptr)
-				{
-					encoder->Disable();
-					//TODO re-initialise the encoder
-					encoder->Enable();
-				}
-			}
-			else
-			{
-				// Check that the user is requesting a valid selection
-				if (finalClosedLoopEnabled && tempUint == EncoderType::none)
-				{
-					reply.copy("Invalid encoder type for closed loop mode S1");
-					return GCodeResult::error;
-				}
-
-				//TODO need to get a lock here in case there is any movement
-				DeleteObject(encoder);
-				switch (tempUint)
-				{
-				case EncoderType::none:
-				default:
-					encoder = nullptr;
-					break;
-
-				case EncoderType::as5047:
-					encoder = new AS5047D(*encoderSpi, EncoderCsPin);
-					break;
-
-				case EncoderType::tli5012:
-					encoder = new TLI5012B(*encoderSpi, EncoderCsPin);
-					break;
-
-				case EncoderType::linearQuadrature:
-#ifdef EXP1HCE
-					encoder = new QuadratureEncoderAttiny(true);
-#elif defined(EXP1HCL)
-					encoder = new QuadratureEncoderPdec(true);
-#else
-# error Unknown board
-#endif
-					break;
-
-				case EncoderType::rotaryQuadrature:
-#ifdef EXP1HCE
-					encoder = new QuadratureEncoderAttiny(false);
-#elif defined(EXP1HCL)
-					encoder = new QuadratureEncoderPdec(false);
-#else
-# error Unknown board
-#endif
-					break;
-				}
-
-				if (encoder != nullptr)
-				{
-					//TODO initialise the encoder
-					encoder->Enable();
-				}
-			}
-		}
-		else
-		{
-			reply.copy("Encoder type out of range");
-			return GCodeResult::error;
-		}
-	}
-	else
-	{
-		// If no encoder has been specified, and none is already selected
-		// Then we cannot be in closed loop mode
-		if (encoder == nullptr && finalClosedLoopEnabled)
-		{
-			reply.copy("Invalid encoder type for closed loop mode S1");
-			return GCodeResult::error;
-		}
-	}
-
-	// 'commit' the finalClosedLoopEnabled value now no errors have been thrown
-	if (closedLoopEnabled != finalClosedLoopEnabled)
-	{
-		closedLoopEnabled = finalClosedLoopEnabled;
-	}
-
-	// Check encoder count per unit value
-	if (parser.GetFloatParam('E', tempFloat))
-	{
-		encoderCountPerStep = tempFloat;
-	}
-
-	if (!seen)
-	{
-		reply.printf("Closed loop mode %s", (closedLoopEnabled) ? "enabled" : "disabled");
-		reply.catf(", encoder type %s", GetEncoderType().ToString());
-		reply.catf(", encoder steps per unit %f", (double) encoderCountPerStep);
-	}
-
-	return GCodeResult::ok;
-}
-
-void ClosedLoop::Diagnostics(const StringRef& reply) noexcept
-{
-#if defined(EXP1HCE)
-	reply.printf("Encoder programmed status %s, encoder type %s", programmer->GetProgramStatus().ToString(), GetEncoderType().ToString());
-#elif defined(EXP1HCL)
-	reply.printf("Encoder type %s", GetEncoderType().ToString());
-#endif
-
-	reply.catf(", tuning: %#x", tuning);
-
-	if (encoder != nullptr)
-	{
-		reply.catf(", position %" PRIi32, encoder->GetReading());
-		encoder->AppendDiagnostics(reply);
-	}
-	reply.catf(", collecting data: %s", collectingData ? "yes" : "no");
-	if (collectingData)
-	{
-		reply.catf(" (filter: %#x, samples: %d, mode: %d, rate: %d)", filterRequested, samplesRequested, modeRequested, rateRequested);
-	}
-
-	//DEBUG
-	//reply.catf(", event status 0x%08" PRIx32 ", TCC2 CTRLA 0x%08" PRIx32 ", TCC2 EVCTRL 0x%08" PRIx32, EVSYS->CHSTATUS.reg, QuadratureTcc->CTRLA.reg, QuadratureTcc->EVCTRL.reg);
-}
-
-void ClosedLoop::Spin() noexcept
-{
-	if (!closedLoopEnabled) {return;}
-
-	if (tuning == 0) {
-		ControlMotorCurrents();
-		Log();
-		if (collectingData && rateRequested == 0) {CollectSample();}
-	} else {
-		tuningTask->Give();
-	}
-}
-
-void ClosedLoop::CollectSample() noexcept
-{
-	if (filterRequested & 1)  		{sampleBuffer[sampleBufferWritePointer++] = rawEncoderReading;}
-	if (filterRequested & 2)  		{sampleBuffer[sampleBufferWritePointer++] = (int16_t) (currentMotorSteps * 1000);}	// To pass back a float, * by 1000 and pass back an int
-	if (filterRequested & 4)  		{sampleBuffer[sampleBufferWritePointer++] = (int16_t) (targetMotorSteps * 1000);}	// To pass back a float, * by 1000 and pass back an int
-	if (filterRequested & 8)  		{sampleBuffer[sampleBufferWritePointer++] = stepPhase;}
-	if (filterRequested & 16)  		{sampleBuffer[sampleBufferWritePointer++] = PIDControlSignal;}
-	if (filterRequested & 32)  		{sampleBuffer[sampleBufferWritePointer++] = (int16_t) (PIDPTerm * 1000);}			// To pass back a float, * by 1000 and pass back an int
-	if (filterRequested & 64)  		{sampleBuffer[sampleBufferWritePointer++] = (int16_t) (PIDITerm * 1000);}			// To pass back a float, * by 1000 and pass back an int
-	if (filterRequested & 128)  	{sampleBuffer[sampleBufferWritePointer++] = (int16_t) (PIDDTerm * 1000);}			// To pass back a float, * by 1000 and pass back an int
-	if (filterRequested & 256)  	{sampleBuffer[sampleBufferWritePointer++] = phaseShift;}
-	if (filterRequested & 512)  	{sampleBuffer[sampleBufferWritePointer++] = desiredStepPhase;}
-	if (filterRequested & 1024) 	{sampleBuffer[sampleBufferWritePointer++] = coilA;}
-	if (filterRequested & 2048) 	{sampleBuffer[sampleBufferWritePointer++] = coilB;}
-
-	// Count how many bits are set in 'filterRequested'
-	// TODO: Look into a more efficient way of doing this
-	int variableCount = 0;
-	int tmpFilter = filterRequested;
-	while (tmpFilter != 0) {
-		variableCount += tmpFilter & 0x1;
-		tmpFilter >>= 1;
-	}
-
-	if (sampleBufferWritePointer >= (samplesRequested * variableCount)) {
-		// Mark that we have finished collecting data
-		collectingData = false;
-		dataTransmissionTask->Give();
-	}
-}
-
-void ClosedLoop::Log() noexcept
-{
-# if SUPPORT_CAN_LOGGING
-	// Update the error vars
-	maxError = currentError > maxError ? currentError : maxError;
-	ewmaError = ewmaError == 0 ? currentError : 0.5 * ewmaError + 0.5 * currentError;
-
-	if (currentError > 1)
-	{
-		// TODO: Does this take too long to do in ::Spin()?
-		String<StringLength500> reply;
-		reply.printf("Closed loop error exceeded warning threshold. Error = %f", (double) currentError);
-		Logger::LogMessage(0, reply.GetRef(), LogLevel::warn);
-	}
-# endif
-}
-
-void ClosedLoop::ControlMotorCurrents() noexcept
-{
-	// Calculate the current position & phase from the encoder reading
-	rawEncoderReading = encoder->GetReading();
-	currentMotorSteps = rawEncoderReading / encoderCountPerStep;
-
-	// Calculate the current error, if it's zero we don't need to do anything!
-	currentError = targetMotorSteps - currentMotorSteps;
-	if (currentError == 0) {return;}	// TODO: We are dealing with floats so this should probably be a range
-
-	// Use a PID controller to calculate the required 'torque' - the control signal
-	PIDPTerm = Kp * currentError;
-	if (abs(PIDITerm + Ki * currentError) < 512)	// We don't want this to overflow, so set an upper bound.
-	{
-		PIDITerm += Ki * currentError;		// TODO: Is this causing an overflow?
-	}
-	PIDDTerm = Kd * (lastError - currentError);
-	float sumOfTerms = PIDPTerm + PIDITerm + PIDDTerm;
-	PIDControlSignal = (int16_t) constrain<float>(sumOfTerms, -255, 255);	// Clamp between -255 and 255
-
-	// TODO: This negative depends on if the motor is configured to run forward/backward
-//	PIDControlSignal = PIDControlSignal;
-
-	// Calculate the offset required to produce the torque in the correct direction
-	// i.e. if we are moving in the positive direction, we must apply currents with a positive phase shift
-	// The max abs value of phase shift we want is 25%.
-	// Given that PIDControlSignal is -255 .. 255 and phase is 0 .. 4095
-	// and that 25% of 4095 ~= 1024, our max phase shift ~= 4 * PIDControlSignal
-	// DEBUG: Experimenting with microstepping by doing 0.1 *
-	phaseShift = (4 * PIDControlSignal);
-
-	// Calculate stepPhase - a 0-4095 value representing the phase *within* the current step
-	float tmp = currentMotorSteps / 4;
-	if (tmp >= 0) {
-		stepPhase = (tmp - (int) tmp) * 4095;
-	} else {
-		stepPhase = (1 + tmp - (int) tmp) * 4095;
-	}
-
-	// Calculate the required motor currents to induce that torque
-	// TODO: Have a minimum holding current
-	// (If stepPhase < phaseShift, we need to add on an extra 4095 to bring us back within the correct range)
-	desiredStepPhase = stepPhase + phaseShift + ((stepPhase < -phaseShift) * 4095);
-	desiredStepPhase = desiredStepPhase % 4096;
-
-	// NEED TO DO 4096 - desiredStepPhase if the motor is in reverse.
-
-	// Assert the required motor currents
-	SetMotorPhase(desiredStepPhase);
-
-	// Update vars for the next cycle
-	lastError = currentError;
-}
 
 [[noreturn]] void ClosedLoop::TuningLoop() noexcept
 {
 
-	while (true)
-	{
-		if (tuning & ZEROING_MASK)
-		{
-			// We are going to do a full 0-4096 sweep in steps of 32
-			// and collect the average of the difference between the desired position and the actual position
-# if SUPPORT_TMC2160 && SINGLE_DRIVER
-			int count = 0;	//TODO: Remove & calculate
+	while (true) {
+		// Wait until there is some tuning to do
+		while (!tuning) {TaskBase::Take();}
 
-			for(int desiredPhase = 0; desiredPhase < 4096; desiredPhase += 32)
-			{
-				// Set the desired phase
-				SetMotorPhase(desiredPhase);
-
-				// Wait for (a) the motor currents to be set and (b) 20 ticks for the motor to actually move
-				while (SmartDrivers::UpdatePending(0)) {
-					TaskBase::Take(10);
-				}
-				vTaskDelay(20);
-
-				// Measure the actual phase
-				currentMotorSteps = encoder->GetReading() / encoderCountPerStep;
-				float tmp = currentMotorSteps / 4;
-				int measuredPhase;
-				if (tmp >= 0) {
-					measuredPhase = (tmp - (int) tmp) * 4095;
+		// Do a zeroing manoeuvre
+		if (tuning & ZEROING_MANOEUVRE) {
+			// Ease the motor from 4096 down to 0
+			desiredStepPhase = 4096*2;	// (*2 because we first divide by 2)
+			while (desiredStepPhase > 0) {
+				if (desiredStepPhase > 1) {
+					desiredStepPhase /= 2;
 				} else {
-					measuredPhase = (1 + tmp - (int) tmp) * 4095;
+					desiredStepPhase = 0;
 				}
-
-				// Add on the difference
-				averageDeviation += desiredPhase - measuredPhase + (4096 * (measuredPhase < desiredPhase));
-				count++;
+				SetMotorPhase(desiredStepPhase, 1);
+				while (SmartDrivers::UpdatePending(0)) {TaskBase::Take(10);}
+				vTaskDelay(2);
+				rawEncoderReading = encoder->GetReading();
+				if (collectingData && rateRequested == 0) {CollectSample();}
 			}
 
-			// Calculate the average deviation
-			averageDeviation /= count;
+			// Calculate where the motor has moved to
+			rawEncoderReading = encoder->GetReading();
+			currentMotorSteps = rawEncoderReading / encoderCountPerStep;
+			float tmp = currentMotorSteps / 4;
+			if (tmp >= 0) {
+				stepPhase = (tmp - (int) tmp) * 4095;
+			} else {
+				stepPhase = (1 + tmp - (int) tmp) * 4095;
+			}
 
-			int curEncoder = encoder->GetReading();
-			int newEncoder = curEncoder - (averageDeviation / 4096.0) * encoderCountPerStep * 4;
-# if defined(EXP1HCE)
-			// TODO: Should be able to just cast to (Encoder)
-			((QuadratureEncoderAttiny*) encoder)->SetReading(newEncoder);
-# elif defined(EXP1HCL)
-			// TODO: :(
-//			((QuadratureEncoderPdec*) encoder)->SetReading(newEncoder);
-# else
-#  error Cannot support closed loop with the specified hardware
-# endif
+			// Set this as the new zero position
+			((QuadratureEncoderPdec*) encoder)->SetOffset(-rawEncoderReading);
+			targetMotorSteps = 0;
 
-			tuning &= ~ZEROING_MASK;
+			tuning &= ~ZEROING_MANOEUVRE;
+			tuningError &= ~TUNE_ERR_NOT_ZEROED;
+		}
 
+		// Do a polarity check manoeuvre
+		if (tuning & POLARITY_CHECK) {
+			// We are going to step through a full phase, and check that the error never exceeds max_err
 
-# else
-#  error Cannot support closed loop with the specified hardware
-# endif
+			const int max_err = 5 * (1024 / encoderCountPerStep);	// Allow up to 5x the resolution of the encoder
+			int deviations = 0;
 
+			for (desiredStepPhase = 0; desiredStepPhase<4096; desiredStepPhase+=256) {
+				// Move the motor
+				SetMotorPhase(desiredStepPhase, 1);
+
+				// Wait for the motor to move
+				while (SmartDrivers::UpdatePending(0)) {TaskBase::Take(10);}
+				vTaskDelay(2);
+
+				// Calculate where the motor has moved to
+				rawEncoderReading = encoder->GetReading();
+				currentMotorSteps = rawEncoderReading / encoderCountPerStep;
+				float tmp = currentMotorSteps / 4;
+				if (tmp >= 0) {
+					stepPhase = (tmp - (int) tmp) * 4095;
+				} else {
+					stepPhase = (1 + tmp - (int) tmp) * 4095;
+				}
+
+				int16_t distance1 = stepPhase - desiredStepPhase;
+				int16_t distance2 = 4095 - max(stepPhase, desiredStepPhase) + min(stepPhase, desiredStepPhase);
+
+				// Check the error in the movement
+				if (abs(distance1) > max_err && abs(distance2) > max_err) {
+					deviations++;
+				}
+			}
+
+			// Allow a small number of deviations
+			if (deviations > 10) {
+				tuningError |= TUNE_ERR_INCORRECT_POLARITY;
+			}
+
+			tuning &= ~POLARITY_CHECK;
+			tuningError &= ~TUNE_ERR_NOT_CHECKED_POLARITY;
+		}
+
+		// Do a polarity detection manoeuvre
+		if (tuning & CONTROL_CHECK) {
+			// TODO
+			tuning &= ~CONTROL_CHECK;
+			tuningError &= ~TUNE_ERR_NOT_CHECKED_CONTROL;
+		}
+
+		if (tuning & ENCODER_STEPS_CHECK) {
+			// TODO
+			tuning &= ~ENCODER_STEPS_CHECK;
+			tuningError &= ~TUNE_ERR_NOT_CHECKED_ENCODER_STEPS;
+		}
+
+		// Do a polarity detection manoeuvre
+		if (tuning & POLARITY_DETECTION_MANOEUVRE) {
+			// TODO
+			tuning &= ~POLARITY_DETECTION_MANOEUVRE;
+		}
+
+		// Do a continuous phase increase manoeuvre
+		if (tuning & CONTINUOUS_PHASE_INCREASE_MANOEUVRE) {
+			// TODO
+			tuning &= ~CONTINUOUS_PHASE_INCREASE_MANOEUVRE;
+		}
+
+		// Do a step manoeuvre
+		if (tuning & STEP_MANOEUVRE) {
+			// TODO
+			tuning &= ~STEP_MANOEUVRE;
+		}
+
+		// Do a ziegler-nichols tuning manoeuvre
+		if (tuning & ZIEGLER_NICHOLS_MANOEUVRE) {
+
+			// We will need to restore these afterwards...
+			const float prevKp = Kp;
+			const float prevKi = Ki;
+			const float prevKd = Kd;
+
+			// Reset the PID controller
+			Ki = 0;
+			Kd = 0;
+			Kp = 0;
+			PIDITerm = 0;
+
+			ultimateGain = 0;		// Reset the ultimate gain value
+			int direction = 1;		// Which direction are we moving in
+
+			float lowerBound = 0;
+			float upperBound = 10000;
+
+			while (upperBound - lowerBound > 100) {
+
+				Kp = lowerBound + (upperBound - lowerBound) / 2;
+
+				targetMotorSteps = currentMotorSteps + (direction * 10);
+
+				// Flip the direction
+				direction = -direction;
+
+				int initialRiseTime = 0;		// The time it takes to initially meet the target
+
+				float peakError = 0;			// The peak of the current oscillation
+				float prevPeakError = 0;		// The peak of the previous oscillation
+				int prevTimestamp = 0;			// The previous time of oscillation
+
+				int oscillationCount = 0;		// The number of oscillations that have occurred
+
+				float ewmaDecayFraction = 0;	// An EWMA of the decay fraction of oscillations
+				float ewmaOscillationPeriod = 0;// An EWMA of the oscillation period
+
+				// Run up to a maximum of 4096
+				for (int time=0; time<16384; time++) {
+					TaskBase::Take(10);		// TODO: Use delayuntil here?
+
+					ControlMotorCurrents();
+
+					float currentPosition = direction * currentMotorSteps;
+					float targetPosition = direction * targetMotorSteps;
+					float error = abs(currentPosition - targetPosition);
+
+					// Search for the initial rise time
+					if (initialRiseTime == 0) {
+						if (currentPosition > targetPosition) {
+							initialRiseTime = time;
+						} else {
+							continue;
+						}
+					}
+
+					// Wait another two initial rise times for oscillations to occur
+					if (time < 3 * initialRiseTime) {continue;}
+
+					// We're now in the prime time for oscillations - check if they are actually happening:
+
+					// Record data if we are above the target
+					if (currentPosition > targetPosition) {
+						peakError = max<float>(peakError, error);
+						continue;
+					}
+					// Process data if we have just crossed the target
+					float decayFraction;
+					if (peakError > 0) {
+						if (prevPeakError > 0) {
+							decayFraction = peakError / prevPeakError;
+							ewmaDecayFraction =
+									ewmaDecayFraction == 0
+									? decayFraction
+									: 0.7 * ewmaDecayFraction + 0.3 * decayFraction;
+							if (oscillationCount > 5) {
+								ewmaOscillationPeriod =
+										ewmaOscillationPeriod == 0
+										? (time - prevTimestamp)
+										: 0.3 * ewmaOscillationPeriod + 0.7 * (time - prevTimestamp);
+							}
+						}
+						oscillationCount++;
+						prevPeakError = peakError;
+						peakError = 0;
+						prevTimestamp = time;
+					}
+
+					PIDPTerm = ewmaOscillationPeriod;
+					PIDDTerm = (time - prevTimestamp);
+
+					// Wait for at least 5 oscillations
+					if (oscillationCount < 5) {
+						continue;
+					}
+
+					// Check that the next 5 oscillations all keep the average decay fraction above 98%
+					if (ewmaDecayFraction < 0.98) {
+						// No oscillations, this is the new lower bound.
+						lowerBound = Kp;
+						break;
+					}
+					if (oscillationCount >= 10) {
+						// Oscillations found! This is the new upper bound.
+						upperBound = Kp;
+						oscillationPeriod = ewmaOscillationPeriod;
+						break;
+					}
+
+					// If we time out of this loop, assume no oscillations
+					if (time == 16383) {
+						lowerBound = Kp;
+					}
+
+				}
+			}
+
+			ultimateGain = upperBound;
+			Kp = prevKp;
+			Ki = prevKi;
+			Kd = prevKd;
+
+			tuning &= ~ZIEGLER_NICHOLS_MANOEUVRE;
 		}
 
 		TaskBase::Take();
 	}
+
 }
 
 GCodeResult ClosedLoop::StartDataCollection(const CanMessageStartClosedLoopDataCollection& msg, const StringRef& reply) noexcept
@@ -752,10 +950,35 @@ GCodeResult ClosedLoop::StartDataCollection(const CanMessageStartClosedLoopDataC
 		return GCodeResult::error;
 	}
 
+	if (msg.rate == 0) {
+		// Count how many bits are set in 'msg.filter'
+		// TODO: Look into a more efficient way of doing this
+		int variableCount = 0;
+		int tmpFilter = msg.filter;
+		while (tmpFilter != 0) {
+			variableCount += tmpFilter & 0x1;
+			tmpFilter >>= 1;
+		}
+
+		const int maxSamples = (CLOSED_LOOP_DATA_BUFFER_SIZE * 12) / variableCount;
+
+		if (msg.numSamples > maxSamples)
+		{
+			reply.printf("Maximum samples is %d when sample rate is continuous (R0) and %d variables are being collected (D%d)", maxSamples, variableCount, msg.filter);
+			return GCodeResult::error;
+		}
+	}
+
+	if (msg.movement > FULL_TUNE) {
+		reply.printf("Maximum value for V is %d. V%d is invalid.", FULL_TUNE, msg.movement);
+		return GCodeResult::error;
+	}
+
 	// Set up the recording vars
 	collectingData = true;
 	rateRequested = msg.rate;
 	filterRequested = msg.filter;
+	tuning |= msg.movement;
 	samplesRequested = msg.numSamples;
 	modeRequested = (RecordingMode) msg.mode;
 
@@ -782,7 +1005,8 @@ GCodeResult ClosedLoop::StartDataCollection(const CanMessageStartClosedLoopDataC
 			}
 
 			// Work out the maximum number of samples that can be sent in 1 packet
-			const int maxSamplesInPacket = 29 / variableCount;
+			// TODO: This 14 comes from CanMessageFormats.h::1218. Should it be a constant?
+			const int maxSamplesInPacket = 14 / variableCount;
 
 			// Loop for until everything has been read
 			while (sampleBufferReadPointer < sampleBufferWritePointer) {
@@ -862,13 +1086,13 @@ GCodeResult ClosedLoop::StartDataCollection(const CanMessageStartClosedLoopDataC
 				// TODO: Pack more than one set of data into a message
 				int dataPointer = 0;
 				if (filterRequested & 1)  		{msg.data[dataPointer++] = rawEncoderReading;}
-				if (filterRequested & 2)  		{msg.data[dataPointer++] = (int16_t) (currentMotorSteps * 1000);}	// To pass back a float, * by 1000 and pass back an int
-				if (filterRequested & 4)  		{msg.data[dataPointer++] = (int16_t) (targetMotorSteps * 1000);}	// To pass back a float, * by 1000 and pass back an int
+				if (filterRequested & 2)  		{msg.data[dataPointer++] = currentMotorSteps;}	// TODO: To pass back a float, * by 1000 and pass back an int
+				if (filterRequested & 4)  		{msg.data[dataPointer++] = targetMotorSteps;}	// TODO: To pass back a float, * by 1000 and pass back an int
 				if (filterRequested & 8)  		{msg.data[dataPointer++] = stepPhase;}
 				if (filterRequested & 16)  		{msg.data[dataPointer++] = PIDControlSignal;}
-				if (filterRequested & 32)  		{msg.data[dataPointer++] = (int16_t) (PIDPTerm * 1000);}	// To pass back a float, * by 1000 and pass back an int
-				if (filterRequested & 64)  		{msg.data[dataPointer++] = (int16_t) (PIDITerm * 1000);}	// To pass back a float, * by 1000 and pass back an int
-				if (filterRequested & 128)  	{msg.data[dataPointer++] = (int16_t) (PIDDTerm * 1000);}	// To pass back a float, * by 1000 and pass back an int
+				if (filterRequested & 32)  		{msg.data[dataPointer++] = PIDPTerm;}	// TODO: To pass back a float, * by 1000 and pass back an int
+				if (filterRequested & 64)  		{msg.data[dataPointer++] = PIDITerm;}	// TODO: To pass back a float, * by 1000 and pass back an int
+				if (filterRequested & 128)  	{msg.data[dataPointer++] = PIDDTerm;}	// TODO: To pass back a float, * by 1000 and pass back an int
 				if (filterRequested & 256)  	{msg.data[dataPointer++] = phaseShift;}
 				if (filterRequested & 512)  	{msg.data[dataPointer++] = desiredStepPhase;}
 				if (filterRequested & 1024) 	{msg.data[dataPointer++] = coilA;}

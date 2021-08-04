@@ -16,6 +16,7 @@
 #include <DmacManager.h>
 #include <TaskPriorities.h>
 #include <General/Portability.h>
+#include <ClosedLoop/ClosedLoop.h>
 
 #if SAME5x || SAMC21
 
@@ -491,6 +492,13 @@ float TmcDriverState::GetStandstillCurrentPercent() const
 void TmcDriverState::SetStandstillCurrentPercent(float percent)
 {
 	standstillCurrentFraction = (uint8_t)constrain<long>(lrintf((percent * 256)/100.0), 0, 255);
+# if SUPPORT_CLOSED_LOOP
+	// If we are in closed loop mode, stand still current is handled elsewhere
+	if (ClosedLoop::GetClosedLoopEnabled()) {
+		ClosedLoop::SetHoldingCurrent(percent);
+		standstillCurrentFraction = 255;
+	}
+# endif
 	UpdateCurrent();
 }
 
@@ -669,6 +677,7 @@ bool TmcDriverState::SetDriverMode(unsigned int mode)
 #if TMC_TYPE == 2160
 	case (unsigned int)DriverMode::direct:
 		UpdateRegister(WriteGConf, (writeRegisters[WriteGConf] | GCONF_DIRECT_MODE) & ~GCONF_STEALTHCHOP);
+		SetStandstillCurrentPercent(100);	// We need to set IHOLD to IRUN for direct mode
 		return true;
 #endif
 

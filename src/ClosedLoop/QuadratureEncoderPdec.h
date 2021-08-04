@@ -28,6 +28,7 @@ public:
 	void Enable() noexcept override;				// Enable the decoder and reset the counter to zero
 	void Disable() noexcept override;				// Disable the decoder. Call this during initialisation. Can also be called later if necessary.
 	int32_t GetReading() noexcept override;			// Get the 32-bit position
+	void SetOffset(int32_t offset) noexcept;		// Set the 32-bit offset
 	void AppendDiagnostics(const StringRef& reply) noexcept override;
 
 private:
@@ -44,6 +45,7 @@ private:
 	uint32_t counterHigh;
 	uint16_t lastCount;
 	uint16_t cpr;
+	uint32_t offset;
 };
 
 #endif
