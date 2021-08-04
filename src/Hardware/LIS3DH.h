@@ -17,10 +17,13 @@
 class LIS3DH : public SharedI2CClient
 {
 public:
-	LIS3DH(SharedI2CMaster& dev, Pin p_int1Pin, bool addressLSB) noexcept;
+	LIS3DH(SharedI2CMaster& dev, Pin p_int1Pin) noexcept;
 
 	// Do a quick test to check whether the accelerometer is present, returning true if it is
 	bool CheckPresent() noexcept;
+
+	// Return the type name of the accelerometer. Only valid after checkPresent returns true.
+	const char *GetTypeName() const noexcept;
 
 	// Configure the accelerometer to collect at or near the requested sampling rate and the requested resolution in bits.
 	bool Configure(uint16_t& samplingRate, uint8_t& resolution) noexcept;
@@ -44,15 +47,16 @@ private:
 	enum class LisRegister : uint8_t
 	{
 		WhoAmI = 0x0f,
-		Ctrl1 = 0x20,
+		Ctrl_0x20 = 0x20,			// this is CTRL_REG1 on the LIS3DH and CTRL_REG4 on the LIS3DSH
+		CtrlReg6 = 0x25,
 		Status = 0x27,
 		OutXL = 0x28,
 		FifoControl = 0x2E,
 		FifoSource = 0x2F
 	};
 
-	bool ReadRegisters(LisRegister reg, uint8_t *buffer, size_t numToRead) noexcept;
-	bool WriteRegisters(LisRegister reg, uint8_t *buffer, size_t numToWrite) noexcept;
+	bool ReadRegisters(LisRegister reg, size_t numToRead) noexcept;
+	bool WriteRegisters(LisRegister reg, size_t numToWrite) noexcept;
 	bool ReadRegister(LisRegister reg, uint8_t& val) noexcept;
 	bool WriteRegister(LisRegister reg, uint8_t val) noexcept;
 
@@ -60,8 +64,9 @@ private:
 	uint32_t firstInterruptTime;
 	uint32_t lastInterruptTime;
 	uint32_t totalNumRead;
+	bool is3DSH;
 	uint8_t currentAxis;
-	uint8_t ctrlReg1;
+	uint8_t ctrlReg_0x20;
 	Pin int1Pin;
 	alignas(2) uint8_t dataBuffer[6 * 32];
 };

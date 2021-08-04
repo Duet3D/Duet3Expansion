@@ -241,9 +241,10 @@ void Thermistor::Poll()
 		const int32_t averagedVrefReading = rawAveragedVrefReading + (adcHighOffset * (1 << (AnalogIn::AdcBits - 12 + Thermistor::AdcOversampleBits - 1)));
 
 		// VREF is the measured voltage at VREF less the drop of a 15 ohm (EXP3HC) or 10 ohm (TOOL1LC) resistor.
-		// VSSA is the voltage measured across the VSSA fuse. We assume the same maximum load and the same 15 ohms maximum resistance for the fuse.
+		// VSSA is the voltage measured across the VSSA fuse, plus a 10R resistor on TOOL1LC 1.1 and later.
+		// So we assume the same maximum load and 18 ohms maximum resistance for the fuse.
 		// Assume a maximum ADC reading offset of 100.
-		constexpr int32_t maxDrop = (OversampledAdcRange * 15)/MinVrefLoadR + (100 << Thermistor::AdcOversampleBits);
+		constexpr int32_t maxDrop = (OversampledAdcRange * 18)/MinVrefLoadR + (100 << Thermistor::AdcOversampleBits);
 
 # if SAME5x		// SAMC21 uses 3.3V to feed VRef but we don't have it available to use a a reference voltage, so we use 5V instead
 		if (averagedVrefReading < OversampledAdcRange - maxDrop)

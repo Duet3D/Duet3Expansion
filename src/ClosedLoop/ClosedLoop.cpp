@@ -9,9 +9,8 @@
 
 #if SUPPORT_CLOSED_LOOP
 
-# include "AS5047D.h"
-# include "TLI5012B.h"
-# include "SpiEncoder.h"
+#include "AS5047D.h"
+#include "SpiEncoder.h"
 
 # include <math.h>
 # include <Platform.h>
@@ -137,8 +136,7 @@ constexpr size_t DataTransmissionTaskStackWords = 200;
 static Task<DataTransmissionTaskStackWords> *dataTransmissionTask;
 
 #ifdef EXP1HCE
-static AttinyProgrammer *programmer;
-
+static SharedSpiDevice *encoderSpi = nullptr;
 
 static void GenerateAttinyClock()
 {
@@ -194,6 +192,7 @@ static void GenerateTmcClock()
 
 #endif
 
+#ifdef EXP1HCE
 
 void  ClosedLoop::EnableEncodersSpi() noexcept
 {
@@ -209,21 +208,27 @@ void  ClosedLoop::DisableEncodersSpi() noexcept
 	ClearPinFunction(EncoderMisoPin);
 }
 
-extern "C" [[noreturn]] void TuningTaskLoop(void * param) noexcept {ClosedLoop::TuningLoop();}
-extern "C" [[noreturn]] void DataCollectionTaskLoop(void * param) noexcept {ClosedLoop::DataCollectionLoop();}
-extern "C" [[noreturn]] void DataTransmissionTaskLoop(void * param) noexcept {ClosedLoop::DataTransmissionLoop();}
+#endif
+
+extern "C" [[noreturn]] void TuningTaskLoop(void *param) noexcept
+{
+	ClosedLoop::TuningLoop();
+}
+extern "C" [[noreturn]] void DataCollectionTaskLoop(void *param) noexcept { ClosedLoop::DataCollectionLoop(); }
+extern "C" [[noreturn]] void DataTransmissionTaskLoop(void *param) noexcept { ClosedLoop::DataTransmissionLoop(); }
 
 void ClosedLoop::Init() noexcept
 {
 	// Init the ATTiny programmer
 	pinMode(EncoderCsPin, OUTPUT_HIGH);													// make sure that any attached SPI encoder is not selected
-	encoderSpi = new SharedSpiDevice(EncoderSspiSercomNumber, EncoderSspiDataInPad);	// create the encoders SPI device
 
 #if defined(EXP1HCE)
+	encoderSpi = new SharedSpiDevice(EncoderSspiSercomNumber, EncoderSspiDataInPad);	// create the encoders SPI device
 	GenerateAttinyClock();
 	programmer = new AttinyProgrammer(*encoderSpi);
 	programmer->InitAttiny();
 #elif defined(EXP1HCL)
+	// The EXP1HCL board uses the standard shared SPI device
 	GenerateTmcClock();
 #endif
 
@@ -373,13 +378,21 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 			encoder = nullptr;
 			break;
 
-		case EncoderType::as5047:
-			encoder = new AS5047D(*encoderSpi, EncoderCsPin);
-			break;
+				case EncoderType::as5047:
+#ifdef EXP1HCE
+					encoder = new AS5047D(*encoderSpi, EncoderCsPin);
+#elif defined(EXP1HCL)
+					encoder = new AS5047D(*Platform::sharedSpi, EncoderCsPin);
+#endif
+					break;
 
-		case EncoderType::tli5012:
-			encoder = new TLI5012B(*encoderSpi, EncoderCsPin);
-			break;
+				case EncoderType::tli5012:
+#ifdef EXP1HCE
+					encoder = new TLI5012B(*encoderSpi, EncoderCsPin);
+#elif defined(EXP1HCL)
+					encoder = new TLI5012B(*Platform::sharedSpi, EncoderCsPin);
+#endif
+					break;
 
 		case EncoderType::linearQuadrature:
 #ifdef EXP1HCE
