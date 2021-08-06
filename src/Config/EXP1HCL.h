@@ -210,12 +210,12 @@ constexpr DmaPriority DmacPrioTmcTx = 0;
 constexpr DmaPriority DmacPrioTmcRx = 3;
 constexpr DmaPriority DmacPrioAdcRx = 2;
 
-// Interrupt priorities, lower means higher priority. 0 can't make RTOS calls.
-const NvicPriority NvicPriorityStep = 1;				// step interrupt is next highest, it can preempt most other interrupts
-const NvicPriority NvicPriorityUart = 2;				// serial driver makes RTOS calls
-const NvicPriority NvicPriorityPins = 2;				// priority for GPIO pin interrupts
-const NvicPriority NvicPriorityCan = 3;
-const NvicPriority NvicPriorityDmac = 3;				// priority for DMA complete interrupts
+// Interrupt priorities, lower means higher priority. 0-2 can't make RTOS calls.
+const NvicPriority NvicPriorityStep = 3;				// step interrupt is next highest, it can preempt most other interrupts
+const NvicPriority NvicPriorityUart = 3;				// serial driver makes RTOS calls
+const NvicPriority NvicPriorityPins = 3;				// priority for GPIO pin interrupts
+const NvicPriority NvicPriorityCan = 4;
+const NvicPriority NvicPriorityDmac = 5;				// priority for DMA complete interrupts
 const NvicPriority NvicPriorityAdc = 5;
 
 
