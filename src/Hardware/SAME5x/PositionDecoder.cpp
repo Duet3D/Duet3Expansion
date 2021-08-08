@@ -10,7 +10,6 @@
 #if SAME5x && SUPPORT_CLOSED_LOOP
 
 #include <PositionDecoder.h>
-#include <hri_mclk_e54.h>
 #include <cmath>
 
 PositionDecoder::PositionDecoder() : counterHigh(0), lastCount(0), cpr(0)
