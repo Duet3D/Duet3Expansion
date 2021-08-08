@@ -19,6 +19,9 @@
 static bool closedLoopEnabled = false;
 static Encoder *encoder = nullptr;
 static SharedSpiDevice *encoderSpi = nullptr;
+
+#ifdef EXP1HCE
+
 static AttinyProgrammer *programmer;
 
 static void GenerateAttinyClock()
@@ -30,40 +33,37 @@ static void GenerateAttinyClock()
 	SetPinFunction(ClockGenPin, ClockGenPinPeriphMode);
 }
 
+void  ClosedLoop::TurnAttinyOff() noexcept
+{
+	programmer->TurnAttinyOff();
+}
+
+#endif
+
 void  ClosedLoop::EnableEncodersSpi() noexcept
 {
-#ifdef EXP1HCE
 	SetPinFunction(EncoderMosiPin, EncoderMosiPinPeriphMode);
 	SetPinFunction(EncoderSclkPin, EncoderSclkPinPeriphMode);
 	SetPinFunction(EncoderMisoPin, EncoderMisoPinPeriphMode);
-#else
-# error Undefined hardware
-#endif
 }
 
 void  ClosedLoop::DisableEncodersSpi() noexcept
 {
-#ifdef EXP1HCE
 	ClearPinFunction(EncoderMosiPin);
 	ClearPinFunction(EncoderSclkPin);
 	ClearPinFunction(EncoderMisoPin);
-#else
-# error Undefined hardware
-#endif
 }
 
 void ClosedLoop::Init() noexcept
 {
 	pinMode(EncoderCsPin, OUTPUT_HIGH);													// make sure that any attached SPI encoder is not selected
 	encoderSpi = new SharedSpiDevice(EncoderSspiSercomNumber, EncoderSspiDataInPad);	// create the encoders SPI device
+
+#ifdef EXP1HCE
 	GenerateAttinyClock();
 	programmer = new AttinyProgrammer(*encoderSpi);
 	programmer->InitAttiny();
-}
-
-void  ClosedLoop::TurnAttinyOff() noexcept
-{
-	programmer->TurnAttinyOff();
+#endif
 }
 
 EncoderType ClosedLoop::GetEncoderType() noexcept
@@ -142,7 +142,12 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 
 void ClosedLoop::Diagnostics(const StringRef& reply) noexcept
 {
+#if defined(EXP1HCE)
 	reply.printf("Encoder programmed status %s, encoder type %s", programmer->GetProgramStatus().ToString(), GetEncoderType().ToString());
+#elif defined(EXP1HCL)
+	reply.printf("Encoder type %s", GetEncoderType().ToString());
+#endif
+
 	if (encoder != nullptr)
 	{
 		reply.catf(", position %" PRIi32, encoder->GetReading());

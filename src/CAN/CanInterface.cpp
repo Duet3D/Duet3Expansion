@@ -148,9 +148,17 @@ void CanInterface::Init(CanAddress defaultBoardAddress, bool useAlternatePins, b
 	// Set up the CAN pins
 #if SAME5x
 	// We don't support alternate pins for the SAME5x yet
+# if defined(EXP3HC)
 	SetPinFunction(PortBPin(13), GpioPinFunction::H);
 	SetPinFunction(PortBPin(12), GpioPinFunction::H);
-	const unsigned int whichPort = 1;							// we use CAN1 on the SAME5x
+	const unsigned int whichPort = 1;							// we use CAN1
+# elif defined(EXP1HCL)
+	SetPinFunction(PortAPin(23), GpioPinFunction::H);
+	SetPinFunction(PortAPin(22), GpioPinFunction::H);
+	const unsigned int whichPort = 0;							// we use CAN0
+# else
+#  error Undefined board
+# endif
 #elif SAMC21
 	if (useAlternatePins)
 	{
