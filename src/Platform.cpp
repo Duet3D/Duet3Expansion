@@ -156,15 +156,13 @@ namespace Platform
 
 #if HAS_VOLTAGE_MONITOR
 	static volatile uint16_t currentVin, highestVin, lowestVin;
-#endif
-#if HAS_12V_MONITOR
-	static volatile uint16_t currentV12, highestV12, lowestV12;
-#endif
-
 //	static uint16_t lastUnderVoltageValue, lastOverVoltageValue;
-#if HAS_VOLTAGE_MONITOR
 	static uint32_t numUnderVoltageEvents, previousUnderVoltageEvents;
 	static volatile uint32_t numOverVoltageEvents, previousOverVoltageEvents;
+#endif
+
+#if HAS_12V_MONITOR
+	static volatile uint16_t currentV12, highestV12, lowestV12;
 #endif
 
 	static float currentMcuTemperature, highestMcuTemperature, lowestMcuTemperature;
@@ -457,6 +455,7 @@ namespace Platform
 	static void SetupThermistorFilter(Pin pin, size_t filterIndex, bool useAlternateAdc)
 	{
 		thermistorFilters[filterIndex].Init(0);
+		IoPort::SetPinMode(pin, PinMode::AIN);
 #if SAMC21
 		const AdcInput adcChan = (useAlternateAdc) ? PinToSdAdcChannel(pin) : PinToAdcChannel(pin);
 #else
@@ -496,7 +495,7 @@ namespace Platform
 		numUnderVoltageEvents = previousUnderVoltageEvents = numOverVoltageEvents = previousOverVoltageEvents = 0;
 
 		vinFilter.Init(0);
-		pinMode(VinMonitorPin, AIN);
+		IoPort::SetPinMode(VinMonitorPin, AIN);
 		AnalogIn::EnableChannel(PinToAdcChannel(VinMonitorPin), vinFilter.CallbackFeedIntoFilter, &vinFilter, 1, false);
 #endif
 	}
@@ -646,7 +645,7 @@ void Platform::Init()
 	lowestV12 = 9999;
 
 	v12Filter.Init(0);
-	pinMode(V12MonitorPin, AIN);
+	IoPort::SetPinMode(V12MonitorPin, AIN);
 	AnalogIn::EnableChannel(PinToAdcChannel(V12MonitorPin), v12Filter.CallbackFeedIntoFilter, &v12Filter, 1, false);
 #endif
 

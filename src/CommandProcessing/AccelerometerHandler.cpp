@@ -32,10 +32,23 @@ static uint16_t samplingRate = DefaultSamplingRate;
 static volatile uint16_t numSamplesRequested;
 static uint8_t resolution = DefaultResolution;
 static uint8_t orientation = 20;							// +Z -> +Z, +X -> +X
-static volatile uint8_t axes;
+static volatile uint8_t axesRequested;
 static volatile bool running = false;
-static uint8_t axisLookup[3];
+static uint8_t axisLookup[3];								// mapping from each Cartesian axis to the corresponding accelerometer axis
 static bool axisInverted[3];
+
+static uint8_t TranslateAxes(uint8_t axes) noexcept
+{
+	uint8_t rslt = 0;
+	for (unsigned int i = 0; i < 3; ++i)
+	{
+		if (axes & (1u << i))
+		{
+			rslt |= 1u << axisLookup[i];
+		}
+	}
+	return rslt;
+}
 
 [[noreturn]] void AccelerometerTaskCode(void*) noexcept
 {
@@ -47,7 +60,7 @@ static bool axisInverted[3];
 			// Collect and send the samples
 			CanMessageBuffer buf(nullptr);
 			CanMessageAccelerometerData& msg = *(buf.SetupStatusMessage<CanMessageAccelerometerData>(CanInterface::GetCanAddress(), CanInterface::GetCurrentMasterAddress()));
-			const unsigned int MaxSamplesInBuffer = msg.SetAxesAndResolution(axes, resolution);
+			const unsigned int MaxSamplesInBuffer = msg.SetAxesAndResolution(axesRequested, resolution);
 
 			unsigned int samplesSent = 0;
 			unsigned int samplesInBuffer = 0;
@@ -60,7 +73,7 @@ static bool axisInverted[3];
 #if TEST_PACKING
 			uint16_t pattern = 0;
 #endif
-			if (accelerometer->StartCollecting(axes))
+			if (accelerometer->StartCollecting(TranslateAxes(axesRequested)))
 			{
 				do
 				{
@@ -86,7 +99,7 @@ static bool axisInverted[3];
 							// Extract the required bits from the data and pack them into the CAN buffer
 							for (unsigned int axis = 0; axis < 3; ++axis)
 							{
-								if (axes & (1u << axis))
+								if (axesRequested & (1u << axis))
 								{
 									uint16_t dataVal =
 #if TEST_PACKING
@@ -285,7 +298,7 @@ GCodeResult AccelerometerHandler::ProcessStartRequest(const CanMessageStartAccel
 		return GCodeResult::error;
 	}
 
-	axes = msg.axes;
+	axesRequested = msg.axes;
 	numSamplesRequested = msg.numSamples;
 	running = true;
 	accelerometerTask->Give();
