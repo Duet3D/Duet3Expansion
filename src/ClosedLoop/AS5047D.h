@@ -23,7 +23,7 @@ public:
 	AS5047D(SharedSpiDevice& spiDev, Pin p_csPin) noexcept;
 	~AS5047D() { Disable(); }
 
-	EncoderType GetType() const noexcept override { return EncoderType::as5047; }
+	EncoderType GetType() const noexcept override { return EncoderType::AS5047; }
 	void Enable() noexcept override;
 	void Disable() noexcept override;
 	int32_t GetReading() noexcept override;
@@ -31,6 +31,8 @@ public:
 
 private:
 	bool DoSpiTransaction(uint16_t command, uint16_t& response) noexcept;
+
+	int32_t lastAngle;
 };
 
 #endif

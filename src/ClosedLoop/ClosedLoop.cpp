@@ -139,7 +139,7 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 				default:
 					break;
 
-				case EncoderType::as5047:
+				case EncoderType::AS5047:
 #ifdef EXP1HCE
 					encoder = new AS5047D(*encoderSpi, EncoderCsPin);
 #elif defined(EXP1HCL)
@@ -147,7 +147,7 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 #endif
 					break;
 
-				case EncoderType::tli5012:
+				case EncoderType::TLI5012:
 #ifdef EXP1HCE
 					encoder = new TLI5012B(*encoderSpi, EncoderCsPin);
 #elif defined(EXP1HCL)
