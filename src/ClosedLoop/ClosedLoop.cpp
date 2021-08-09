@@ -115,6 +115,7 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 			return GCodeResult::error;
 		}
 	}
+
 	if (parser.GetUintParam('T', temp))
 	{
 		seen = true;
@@ -125,8 +126,7 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 				if (encoder != nullptr)
 				{
 					encoder->Disable();
-					//TODO re-initialise the encoder
-					encoder->Enable();
+					return encoder->Init(reply);
 				}
 			}
 			else
@@ -178,8 +178,7 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 
 				if (encoder != nullptr)
 				{
-					//TODO initialise the encoder
-					encoder->Enable();
+					return encoder->Init(reply);
 				}
 			}
 		}

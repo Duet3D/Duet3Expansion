@@ -24,6 +24,7 @@ public:
 	~TLI5012B() { Disable(); }
 
 	EncoderType GetType() const noexcept override { return EncoderType::TLI5012; }
+	GCodeResult Init(const StringRef& reply) noexcept override;
 	void Enable() noexcept override;
 	void Disable() noexcept override;
 	int32_t GetReading() noexcept override;

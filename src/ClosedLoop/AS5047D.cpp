@@ -65,6 +65,50 @@ AS5047D::AS5047D(SharedSpiDevice& spiDev, Pin p_csPin) noexcept
 {
 }
 
+// Initialise the encoder and enable it if successful. If there are any warnings or errors, put the corresponding message text in 'reply'.
+GCodeResult AS5047D::Init(const StringRef& reply) noexcept
+{
+	// See if we can read sensible data from the encoder
+	uint16_t responseDiag, responseErrfl;
+	if (GetDiagnosticRegisters(responseDiag, responseErrfl))
+	{
+		if (CheckResponse(responseDiag))
+		{
+			if ((responseDiag & 0x0F00) == 0x100)
+			{
+				Enable();
+				return GCodeResult::ok;
+			}
+
+			reply.copy("Encoder warning");
+			if ((responseDiag & 0x0100) == 0)
+			{
+				reply.cat(": offset loop not ready");
+			}
+			if ((responseDiag & 0x0200) != 0)
+			{
+				reply.cat(": CORDIC overflow");
+			}
+			if ((responseDiag & 0x0400) != 0)
+			{
+				reply.cat(": magnet too strong");
+			}
+			if ((responseDiag & 0x0800) != 0)
+			{
+				reply.cat(": magnet too weak");
+			}
+			Enable();
+			return GCodeResult::warning;
+		}
+
+		reply.copy("Bad response from encoder");
+		return GCodeResult::error;
+	}
+
+	reply.copy("Failed to read encoder diagnostic registers");
+	return GCodeResult::error;
+}
+
 void AS5047D::Enable() noexcept
 {
 	IoPort::SetPinMode(csPin, OUTPUT_HIGH);
@@ -99,76 +143,81 @@ int32_t AS5047D::GetReading() noexcept
 	return lastAngle;
 }
 
-void AS5047D::AppendDiagnostics(const StringRef &reply) noexcept
+// Get the diagnostic register and the error flags register
+bool AS5047D::GetDiagnosticRegisters(uint16_t& diagReg, uint16_t& errFlags) noexcept
 {
 	if (spi.Select(0))			// get the mutex and set the clock rate
 	{
-		uint16_t responseDiag, responseErrfl;
-		const bool ok = DoSpiTransaction(AddParityBit(AS5047ReadCommand | AS5047RegDiag), responseDiag)
+		const bool ok = DoSpiTransaction(AddParityBit(AS5047ReadCommand | AS5047RegDiag), diagReg)
 					 && (DelayCycles(GetCurrentCycles(), Clocks350ns), 				// need at least 350ns CS high time
-						 DoSpiTransaction(AddParityBit(AS5047ReadCommand | AS5047RegErrfl), responseDiag))
+						 DoSpiTransaction(AddParityBit(AS5047ReadCommand | AS5047RegErrfl), diagReg))
 					 && (DelayCycles(GetCurrentCycles(), Clocks350ns), 				// need at least 350ns CS high time
-						 DoSpiTransaction(AddParityBit(AS5047ReadCommand | AS5047RegNop), responseErrfl));
+						 DoSpiTransaction(AddParityBit(AS5047ReadCommand | AS5047RegNop), errFlags));
 		spi.Deselect();			// release the mutex
-		if (ok)
-		{
-			if (CheckResponse(responseDiag))
-			{
-				reply.catf(", agc %u", responseDiag & 0x007F);
-				if ((responseDiag & 0x0100) == 0)
-				{
-					reply.cat(", offset loop not ready");
-				}
-				if ((responseDiag & 0x0200) != 0)
-				{
-					reply.cat(", CORDIC overflow");
-				}
-				if ((responseDiag & 0x0400) != 0)
-				{
-					reply.cat(", magnet too strong");
-				}
-				if ((responseDiag & 0x0800) != 0)
-				{
-					reply.cat(", magnet too weak");
-				}
-			}
-			else
-			{
-				reply.cat(", bad diag register response");
-			}
+		return ok;
+	}
 
-			if (CheckResponse(responseErrfl))
+	return false;
+}
+
+// Get diagnostic information and append it to a string
+void AS5047D::AppendDiagnostics(const StringRef &reply) noexcept
+{
+	uint16_t responseDiag, responseErrfl;
+	if (GetDiagnosticRegisters(responseDiag, responseErrfl))
+	{
+		if (CheckResponse(responseDiag))
+		{
+			reply.catf(", agc %u", responseDiag & 0x007F);
+			if ((responseDiag & 0x0100) == 0)
 			{
-				if (responseErrfl & 0x01)
-				{
-					reply.cat(", framing error");
-				}
-				if (responseErrfl & 0x02)
-				{
-					reply.cat(", invalid command error");
-				}
-				if (responseErrfl & 0x04)
-				{
-					reply.cat(", parity error");
-				}
-				if ((responseErrfl & 0x07) == 0)
-				{
-					reply.cat(", no error");
-				}
+				reply.cat(", offset loop not ready");
 			}
-			else
+			if ((responseDiag & 0x0200) != 0)
 			{
-				reply.cat(", bad errfl register response");
+				reply.cat(", CORDIC overflow");
+			}
+			if ((responseDiag & 0x0400) != 0)
+			{
+				reply.cat(", magnet too strong");
+			}
+			if ((responseDiag & 0x0800) != 0)
+			{
+				reply.cat(", magnet too weak");
 			}
 		}
 		else
 		{
-			reply.cat(", failed to read encoder diagnostics");
+			reply.cat(", bad diag register response");
+		}
+
+		if (CheckResponse(responseErrfl))
+		{
+			if (responseErrfl & 0x01)
+			{
+				reply.cat(", framing error");
+			}
+			if (responseErrfl & 0x02)
+			{
+				reply.cat(", invalid command error");
+			}
+			if (responseErrfl & 0x04)
+			{
+				reply.cat(", parity error");
+			}
+			if ((responseErrfl & 0x07) == 0)
+			{
+				reply.cat(", no error");
+			}
+		}
+		else
+		{
+			reply.cat(", bad errfl register response");
 		}
 	}
 	else
 	{
-		reply.cat(", failed to acquire SPI bus");
+		reply.cat(", failed to read encoder diagnostics");
 	}
 }
 

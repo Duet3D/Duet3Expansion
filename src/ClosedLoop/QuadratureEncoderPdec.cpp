@@ -37,6 +37,15 @@ QuadratureEncoderPdec::~QuadratureEncoderPdec()
 }
 
 // Overridden virtual functions
+
+// Initialise the encoder and enable it if successful. If there are any warnings or errors, put the corresponding message text in 'reply'.
+GCodeResult QuadratureEncoderPdec::Init(const StringRef& reply) noexcept
+{
+	// There's little if anything we can do to test the encoder
+	Enable();
+	return GCodeResult::ok;
+}
+
 void QuadratureEncoderPdec::Enable() noexcept
 {
 	SetPosition(0, 0);
