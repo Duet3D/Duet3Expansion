@@ -70,6 +70,9 @@ namespace Heat
 	inline bool IsBedOrChamberHeater(int heater) { return false; }
 
 	void Diagnostics(const StringRef& reply);
+
+	void NewDriverFault();
+	void NewHeaterFault();
 };
 
 #endif /* SRC_HEATING_HEAT_H_ */

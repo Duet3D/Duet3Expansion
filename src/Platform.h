@@ -12,6 +12,7 @@
 #include "AdcAveragingFilter.h"
 #include "GCodes/GCodeResult.h"
 #include <Movement/StepTimer.h>
+#include <Heating/Heat.h>
 
 #if SUPPORT_SPI_SENSORS || defined(ATEIO)
 # include <Hardware/SharedSpiDevice.h>
@@ -221,6 +222,12 @@ namespace Platform
 # else
 	StandardDriverStatus GetStandardDriverStatus(size_t driver);
 # endif
+
+	// Signal that a new drivers fault has occurred and the main board needs to be told about it urgently
+	inline void NewDriverFault() { Heat::NewDriverFault(); }
+
+	// Function to send the status of our drivers - must be called only by the Heat task
+	void SendDriversStatus(CanMessageBuffer& buf);
 #endif	//SUPPORT_DRIVERS
 
 #if SUPPORT_THERMISTORS

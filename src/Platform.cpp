@@ -1817,6 +1817,31 @@ float Platform::GetTmcDriversTemperature()
 }
 #endif
 
+#if SUPPORT_DRIVERS
+
+// Function to broadcast the drivers status message. Called only by the Heat task.
+void Platform::SendDriversStatus(CanMessageBuffer& buf)
+{
+	CanMessageDriversStatus * const msg = buf.SetupStatusMessage<CanMessageDriversStatus>(CanInterface::GetCanAddress(), CanInterface::GetCurrentMasterAddress());
+# if HAS_SMART_DRIVERS
+	msg->SetStandardFields(MaxSmartDrivers);
+	for (size_t driver = 0; driver < MaxSmartDrivers; ++driver)
+	{
+		msg->data[driver] = SmartDrivers::GetStandardDriverStatus(driver);
+	}
+# else
+	msg->SetStandardFields(NumDrivers);
+	for (size_t driver = 0; driver < NumDrivers; ++driver)
+	{
+		msg->data[driver] = Platform::GetStandardDriverStatus(driver);
+	}
+# endif
+	buf.dataLength = msg->GetActualDataLength();
+	CanInterface::Send(&buf);
+}
+
+#endif
+
 void Platform::Tick()
 {
 	++heatTaskIdleTicks;
