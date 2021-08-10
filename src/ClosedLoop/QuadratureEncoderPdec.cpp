@@ -13,7 +13,19 @@
 #include <hri_mclk_e54.h>
 #include <cmath>
 
-QuadratureEncoderPdec::QuadratureEncoderPdec(bool linear) : counterHigh(0), lastCount(0)
+QuadratureEncoderPdec::QuadratureEncoderPdec(bool linear) : counterHigh(0), lastCount(0), cpr((linear) ? 0 : 4000)
+{
+}
+
+QuadratureEncoderPdec::~QuadratureEncoderPdec()
+{
+	QuadratureEncoderPdec::Disable();
+}
+
+// Overridden virtual functions
+
+// Initialise the encoder and enable it if successful. If there are any warnings or errors, put the corresponding message text in 'reply'.
+GCodeResult QuadratureEncoderPdec::Init(const StringRef& reply) noexcept
 {
 	MCLK->APBCMASK.reg |= MCLK_APBCMASK_PDEC;
 	hri_gclk_write_PCHCTRL_reg(GCLK, PDEC_GCLK_ID, GCLK_PCHCTRL_GEN(GclkNum60MHz) | GCLK_PCHCTRL_CHEN);
@@ -28,19 +40,8 @@ QuadratureEncoderPdec::QuadratureEncoderPdec(bool linear) : counterHigh(0), last
 		SetPinFunction(p, PositionDecoderPinFunction);
 	}
 
-	SetCountsPerRev((linear) ? 0 : 4000);
-}
+	SetCountsPerRev();
 
-QuadratureEncoderPdec::~QuadratureEncoderPdec()
-{
-	QuadratureEncoderPdec::Disable();
-}
-
-// Overridden virtual functions
-
-// Initialise the encoder and enable it if successful. If there are any warnings or errors, put the corresponding message text in 'reply'.
-GCodeResult QuadratureEncoderPdec::Init(const StringRef& reply) noexcept
-{
 	// There's little if anything we can do to test the encoder
 	Enable();
 	return GCodeResult::ok;
@@ -83,9 +84,9 @@ void QuadratureEncoderPdec::AppendDiagnostics(const StringRef &reply) noexcept
 
 // End of overridden virtual functions
 
-void QuadratureEncoderPdec::SetCountsPerRev(uint16_t p_cpr) noexcept
+// Set the hardware counts per revolution from the stored value cpr
+void QuadratureEncoderPdec::SetCountsPerRev() noexcept
 {
-	cpr = p_cpr;
 	uint32_t ctrla = PDEC_CTRLA_MODE_QDEC | PDEC_CTRLA_CONF_X4
 					| PDEC_CTRLA_PINEN0 | PDEC_CTRLA_PINEN1 | PDEC_CTRLA_PINEN2;
 	if (cpr == 0)

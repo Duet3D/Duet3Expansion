@@ -33,7 +33,7 @@ public:
 
 private:
 	// Set the counts per motor revolution, for encoders attached to a motor shaft. A value of zero means we are using a linear encoder instead.
-	void SetCountsPerRev(uint16_t p_cpr) noexcept;
+	void SetCountsPerRev() noexcept;
 
 	// Set the position. In linear mode, 'revs' is the linear position and 'pos' is not used.
 	void SetPosition(int32_t revs, uint16_t pos) noexcept;
