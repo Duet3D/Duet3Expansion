@@ -32,6 +32,14 @@ Licence: GPL
 # include "Sensors/DhtSensor.h"
 #endif
 
+#if SUPPORT_TMC22xx
+# include <Movement/StepperDrivers/TMC22xx.h>
+#endif
+
+#if SUPPORT_TMC51xx
+# include <Movement/StepperDrivers/TMC51xx.h>
+#endif
+
 #include "Tasks.h"
 
 // The task stack size must be large enough for calls to debugPrintf when a heater fault occurs.
@@ -179,6 +187,12 @@ void Heat::Exit()
 	heaterTask->Suspend();
 }
 
+// This is the task loop executed by the Heat task. This task performs the following functions:
+// - Spin the PIDs every 250ms. They must be spun at regular intervals for the I and D terms to work consistently.
+// - Broadcast the sensor temperatures
+// - Broadcast the status of our heaters
+// - Broadcast the status of our fans
+// - Broadcast the status of our motor drivers
 [[noreturn]] void Heat::TaskLoop(void *)
 {
 	uint32_t lastWakeTime = xTaskGetTickCount();
@@ -295,7 +309,29 @@ void Heat::Exit()
 			}
 		}
 
-		Platform::KickHeatTaskWatchdog();
+#if SUPPORT_DRIVERS
+		// Broadcast our driver status
+		{
+			CanMessageDriversStatus * const msg = buf.SetupStatusMessage<CanMessageDriversStatus>(CanInterface::GetCanAddress(), CanInterface::GetCurrentMasterAddress());
+# if HAS_SMART_DRIVERS
+			msg->SetStandardFields(MaxSmartDrivers);
+			for (size_t driver = 0; driver < MaxSmartDrivers; ++driver)
+			{
+				msg->data[driver] = SmartDrivers::GetStandardDriverStatus(driver);
+			}
+# else
+			msg->SetStandardFields(NumDrivers);
+			for (size_t driver = 0; driver < NumDrivers; ++driver)
+			{
+				msg->data[driver] = Platform::GetStandardDriverStatus(driver);
+			}
+# endif
+			buf.dataLength = msg->GetActualDataLength();
+			CanInterface::Send(&buf);
+		}
+#endif
+
+		Platform::KickHeatTaskWatchdog();				// tell Platform that we are alive
 
 		heatTaskLoopTime = millis() - startTime;
 

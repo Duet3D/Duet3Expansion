@@ -1726,6 +1726,16 @@ void Platform::SetMotorCurrent(size_t driver, float current)
 	UpdateMotorCurrent(driver);
 }
 
+# else
+
+StandardDriverStatus Platform::GetStandardDriverStatus(size_t driver)
+{
+	//TODO implement alarm input
+	StandardDriverStatus rslt;
+	rslt.all = 0;
+	return rslt;
+}
+
 # endif
 
 #endif	//SUPPORT_DRIVERS

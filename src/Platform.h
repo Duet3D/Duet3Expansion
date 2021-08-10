@@ -157,9 +157,6 @@ namespace Platform
 	void SetDriveStepsPerUnit(size_t drive, float val);
 	float GetPressureAdvanceClocks(size_t driver);
 	void SetPressureAdvance(size_t driver, float advance);
-# if 0	// not used yet and may never be
-	void BuildDriverStatusMessage(CanMessageBuffer *buf) noexcept;
-# endif
 
 # if SINGLE_DRIVER
 	inline void StepDriverLow()
@@ -201,14 +198,14 @@ namespace Platform
 	}
 
 	inline uint32_t GetDriversBitmap(size_t driver) { return driveDriverBits[driver]; } 		// Get the step bit for this driver
- #endif
+# endif
 
 	inline unsigned int GetProhibitedExtruderMovements(unsigned int extrusions, unsigned int retractions) { return 0; }
-#if SINGLE_DRIVER
+# if SINGLE_DRIVER
 	void SetDirection(bool direction);
-#else
+# else
 	void SetDirection(size_t driver, bool direction);
-#endif
+# endif
 	void SetDirectionValue(size_t driver, bool dVal);
 	bool GetDirectionValue(size_t driver);
 	void SetEnableValue(size_t driver, int8_t eVal);
@@ -218,10 +215,12 @@ namespace Platform
 	void DisableAllDrives();
 	void SetDriverIdle(size_t driver, uint8_t percent);
 
-#if HAS_SMART_DRIVERS
+# if HAS_SMART_DRIVERS
 	void SetMotorCurrent(size_t driver, float current);		//TODO avoid the int->float->int conversion
 	float GetTmcDriversTemperature();
-#endif
+# else
+	StandardDriverStatus GetStandardDriverStatus(size_t driver);
+# endif
 #endif	//SUPPORT_DRIVERS
 
 #if SUPPORT_THERMISTORS
