@@ -62,21 +62,20 @@ static void GenerateTestReport(const StringRef& reply)
 #if HAS_CPU_TEMP_SENSOR
 	// Check the MCU temperature
 	{
-		float minMcuTemperature, currentMcuTemperature, maxMcuTemperature;
-		Platform::GetMcuTemperatures(minMcuTemperature, currentMcuTemperature, maxMcuTemperature);
-		if (currentMcuTemperature < MinTemp)
+		const MinCurMax& mcuTemperature = Platform::GetMcuTemperatures();
+		if (mcuTemperature.current < MinTemp)
 		{
-			reply.lcatf("MCU temperature %.1fC is lower than expected", (double)currentMcuTemperature);
+			reply.lcatf("MCU temperature %.1fC is lower than expected", (double)mcuTemperature.current);
 			testFailed = true;
 		}
-		else if (currentMcuTemperature > MaxTemp)
+		else if (mcuTemperature.current > MaxTemp)
 		{
-			reply.lcatf("MCU temperature %.1fC is higher than expected", (double)currentMcuTemperature);
+			reply.lcatf("MCU temperature %.1fC is higher than expected", (double)mcuTemperature.current);
 			testFailed = true;
 		}
 		else
 		{
-			reply.lcatf("MCU temperature reading OK (%.1fC)", (double)currentMcuTemperature);
+			reply.lcatf("MCU temperature reading OK (%.1fC)", (double)mcuTemperature.current);
 		}
 	}
 #endif
@@ -656,12 +655,18 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 		reply.cat(BOARD_TYPE_NAME);
 		reply.cat("\"");
 #if HAS_VOLTAGE_MONITOR
-		reply.catf(",\"vin\":{\"min\":%.1f,\"cur\":%.1f,\"max\":%.1f}",
-					(double)Platform::GetMinVinVoltage(), (double)Platform::GetCurrentVinVoltage(), (double)Platform::GetMaxVinVoltage());
+		{
+			const MinCurMax vinVoltage = Platform::GetPowerVoltages();
+			reply.catf(",\"vin\":{\"min\":%.1f,\"cur\":%.1f,\"max\":%.1f}",
+						(double)vinVoltage.minimum, (double)vinVoltage.current, (double)vinVoltage.maximum);
+		}
 #endif
 #if HAS_12V_MONITOR
-		reply.catf(",\"v12\":{\"min\":%.1f,\"cur\":%.1f,\"max\":%.1f}",
-					(double)Platform::GetMinV12Voltage(), (double)Platform::GetCurrentV12Voltage(), (double)Platform::GetMaxV12Voltage());
+		{
+			const MinCurMax v12Voltage = Platform::GetV12Voltages();
+			reply.catf(",\"v12\":{\"min\":%.1f,\"cur\":%.1f,\"max\":%.1f}",
+						(double)v12Voltage.minimum, (double)v12Voltage.current, (double)v12Voltage.maximum);
+		}
 #endif
 		reply.cat('}');
 		break;
@@ -759,9 +764,8 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 #endif
 
 #if HAS_CPU_TEMP_SENSOR
-			float minTemp, currentTemp, maxTemp;
-			Platform::GetMcuTemperatures(minTemp, currentTemp, maxTemp);
-			reply.lcatf("MCU temperature: min %.1fC, current %.1fC, max %.1fC", (double)minTemp, (double)currentTemp, (double)maxTemp);
+			const MinCurMax& mcuTemperature = Platform::GetMcuTemperatures();
+			reply.lcatf("MCU temperature: min %.1fC, current %.1fC, max %.1fC", (double)mcuTemperature.minimum, (double)mcuTemperature.current, (double)mcuTemperature.maximum);
 #endif
 			uint32_t conversionsStarted, conversionsCompleted, conversionTimeouts, errors;
 			AnalogIn::GetDebugInfo(conversionsStarted, conversionsCompleted, conversionTimeouts, errors);

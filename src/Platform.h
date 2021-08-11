@@ -240,7 +240,7 @@ namespace Platform
 # endif
 #endif
 
-	void GetMcuTemperatures(float& minTemp, float& currentTemp, float& maxTemp);
+	const MinCurMax& GetMcuTemperatures();
 
 	void HandleHeaterFault(unsigned int heater);
 
@@ -272,15 +272,13 @@ namespace Platform
 	}
 
 #if HAS_VOLTAGE_MONITOR
-	float GetMinVinVoltage();
-	float GetCurrentVinVoltage();
-	float GetMaxVinVoltage();
+	MinCurMax GetPowerVoltages() noexcept;
+	float GetCurrentVinVoltage() noexcept;
 #endif
 
 #if HAS_12V_MONITOR
-	float GetMinV12Voltage();
-	float GetCurrentV12Voltage();
-	float GetMaxV12Voltage();
+	MinCurMax GetV12Voltages() noexcept;
+	float GetCurrentV12Voltage() noexcept;
 #endif
 
 	uint32_t GetDateTime() noexcept;

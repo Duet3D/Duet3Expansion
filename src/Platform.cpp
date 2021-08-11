@@ -165,7 +165,7 @@ namespace Platform
 	static volatile uint16_t currentV12, highestV12, lowestV12;
 #endif
 
-	static float currentMcuTemperature, highestMcuTemperature, lowestMcuTemperature;
+	static MinCurMax mcuTemperature;
 	static float mcuTemperatureAdjust = 0.0;
 
 	static uint32_t lastPollTime;
@@ -669,9 +669,9 @@ void Platform::Init()
 #endif
 
 	// Set up the MCU temperature sensors
-	currentMcuTemperature = 0.0;
-	highestMcuTemperature = -273.16;
-	lowestMcuTemperature = 999.0;
+	mcuTemperature.current = 0.0;
+	mcuTemperature.maximum = -273.16;
+	mcuTemperature.minimum = 999.0;
 	mcuTemperatureAdjust = 0.0;
 
 	// Set up the MCU temperature sense filters
@@ -1131,22 +1131,22 @@ void Platform::Spin()
 			int32_t result =  (tempCalF1 * tc_result - tempCalF2 * tp_result);
 			const int32_t divisor = (tempCalF3 * tp_result - tempCalF4 * tc_result);
 			result = (divisor == 0) ? 0 : result/divisor;
-			currentMcuTemperature = (float)result/16 + mcuTemperatureAdjust;
+			mcuTemperature.current = (float)result/16 + mcuTemperatureAdjust;
 #elif SAMC21
 		if (tsensFilter.IsValid())
 		{
 			const int16_t temperatureTimes100 = (int16_t)((uint16_t)(tsensFilter.GetSum()/tsensFilter.NumAveraged()) ^ (1u << 15));
-			currentMcuTemperature = (float)temperatureTimes100 * 0.01;
+			mcuTemperature.current = (float)temperatureTimes100 * 0.01;
 #else
 # error Unsupported processor
 #endif
-			if (currentMcuTemperature < lowestMcuTemperature)
+			if (mcuTemperature.current < mcuTemperature.minimum)
 			{
-				lowestMcuTemperature = currentMcuTemperature;
+				mcuTemperature.minimum = mcuTemperature.current;
 			}
-			if (currentMcuTemperature > highestMcuTemperature)
+			if (mcuTemperature.current > mcuTemperature.maximum)
 			{
-				highestMcuTemperature = currentMcuTemperature;
+				mcuTemperature.maximum = mcuTemperature.current;
 			}
 		}
 
@@ -1304,11 +1304,9 @@ ThermistorAveragingFilter *Platform::GetVrefFilter(unsigned int filterNumber)
 
 #endif
 
-void Platform::GetMcuTemperatures(float& minTemp, float& currentTemp, float& maxTemp)
+const MinCurMax& Platform::GetMcuTemperatures()
 {
-	minTemp = lowestMcuTemperature;
-	currentTemp = currentMcuTemperature;
-	maxTemp = highestMcuTemperature;
+	return mcuTemperature;
 }
 
 void Platform::KickHeatTaskWatchdog()
@@ -2030,38 +2028,36 @@ bool Platform::WasDeliberateError() noexcept
 
 #if HAS_VOLTAGE_MONITOR
 
-float Platform::GetMinVinVoltage()
+MinCurMax Platform::GetPowerVoltages() noexcept
 {
-	return AdcReadingToPowerVoltage(lowestVin);
+	MinCurMax result;
+	result.minimum = AdcReadingToPowerVoltage(lowestVin);
+	result.current = AdcReadingToPowerVoltage(currentVin);
+	result.maximum = AdcReadingToPowerVoltage(highestVin);
+	return result;
 }
 
-float Platform::GetCurrentVinVoltage()
+float Platform::GetCurrentVinVoltage() noexcept
 {
 	return AdcReadingToPowerVoltage(currentVin);
-}
-
-float Platform::GetMaxVinVoltage()
-{
-	return AdcReadingToPowerVoltage(highestVin);
 }
 
 #endif
 
 #if HAS_12V_MONITOR
 
-float Platform::GetMinV12Voltage()
+MinCurMax Platform::GetV12Voltages() noexcept
 {
-	return AdcReadingToPowerVoltage(lowestV12);
+	MinCurMax result;
+	result.minimum = AdcReadingToPowerVoltage(lowestV12);
+	result.current = AdcReadingToPowerVoltage(currentV12);
+	result.maximum = AdcReadingToPowerVoltage(highestV12);
+	return result;
 }
 
-float Platform::GetCurrentV12Voltage()
+float Platform::GetCurrentV12Voltage() noexcept
 {
 	return AdcReadingToPowerVoltage(currentV12);
-}
-
-float Platform::GetMaxV12Voltage()
-{
-	return AdcReadingToPowerVoltage(highestV12);
 }
 
 #endif

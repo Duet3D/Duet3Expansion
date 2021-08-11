@@ -359,6 +359,30 @@ void Heat::Exit()
 				newDriverFaultState = 0;					// we recently sent it, so send it again next time
 			}
 #endif
+
+			// Send a board health message
+			{
+				CanMessageBoardStatus * const boardStatusMsg = buf.SetupBroadcastMessage<CanMessageBoardStatus>(CanInterface::GetCanAddress());
+				boardStatusMsg->Clear();
+
+				// We must add fields in the following order: VIN, V12, MCU temperature
+				size_t index = 0;
+#if HAS_VOLTAGE_MONITOR
+				boardStatusMsg->values[index++] = Platform::GetPowerVoltages();
+				boardStatusMsg->hasVin = true;
+#endif
+#if HAS_12V_MONITOR
+				boardStatusMsg->values[index++] = Platform::GetV12Voltages();
+				boardStatusMsg->hasV12 = true;
+#endif
+#if HAS_CPU_TEMP_SENSOR
+				boardStatusMsg->values[index++] = Platform::GetMcuTemperatures();
+				boardStatusMsg->hasV12 = true;
+#endif
+				buf.dataLength = boardStatusMsg->GetActualDataLength();
+				CanInterface::Send(&buf);
+			}
+
 			Platform::KickHeatTaskWatchdog();				// tell Platform that we are alive
 			heatTaskLoopTime = millis() - startTime;
 		}
