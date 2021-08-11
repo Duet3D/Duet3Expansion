@@ -1015,6 +1015,12 @@ void CommandProcessor::Spin()
 			break;
 #endif
 		default:
+			// We received a message type that we don't recognise. If it's a broadcast, ignore it. If it's addressed to us, send a reply.
+			if (buf->id.Src() != CanInterface::GetCanAddress())
+			{
+				CanMessageBuffer::Free(buf);
+				return;
+			}
 			requestId = CanRequestIdAcceptAlways;
 			reply.printf("Board %u received unknown msg type %u", CanInterface::GetCanAddress(), (unsigned int)buf->id.MsgType());
 			rslt = GCodeResult::error;
