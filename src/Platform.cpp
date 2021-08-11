@@ -172,7 +172,6 @@ namespace Platform
 	static uint32_t lastFanCheckTime = 0;
 	static unsigned int heatTaskIdleTicks = 0;
 
-	constexpr uint32_t ActLedFlashTime = 100;				// how long the green LED stays on after we process a CAN message
 	static uint32_t whenLastCanMessageProcessed = 0;
 
 #if SUPPORT_THERMISTORS
