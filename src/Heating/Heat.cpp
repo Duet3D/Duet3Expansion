@@ -258,7 +258,7 @@ void Heat::Exit()
 			SendHeatersStatus(buf);
 		}
 
-		// Check whether it is time to send regular messages
+		// Check whether it is time to poll sensors and PIDs and send regular messages
 		if ((int32_t)(millis() - nextWakeTime) >= 0)
 		{
 			// Announce ourselves to the main board, if it hasn't acknowledged us already
@@ -362,7 +362,7 @@ void Heat::Exit()
 
 			// Send a board health message
 			{
-				CanMessageBoardStatus * const boardStatusMsg = buf.SetupBroadcastMessage<CanMessageBoardStatus>(CanInterface::GetCanAddress());
+				CanMessageBoardStatus * const boardStatusMsg = buf.SetupStatusMessage<CanMessageBoardStatus>(CanInterface::GetCanAddress(), CanInterface::GetCurrentMasterAddress());
 				boardStatusMsg->Clear();
 
 				// We must add fields in the following order: VIN, V12, MCU temperature

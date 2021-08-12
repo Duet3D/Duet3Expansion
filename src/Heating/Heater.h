@@ -72,25 +72,6 @@ public:
 	uint8_t GetModeByte() const { return (uint8_t)GetMode(); }
 
 protected:
-	enum class HeaterMode : uint8_t
-	{
-		// The order of these is important because we test "mode > HeatingMode::suspended" to determine whether the heater is active
-		// and "mode >= HeatingMode::off" to determine whether the heater is either active or suspended
-		fault,
-		offline,
-		off,
-		suspended,
-		heating,
-		cooling,
-		stable,
-		// All states from here onwards must be PID tuning states because function IsTuning assumes that
-		tuning1,
-		tuning2,
-		tuning3,
-		firstTuningMode = tuning1,
-		lastTuningMode = tuning3
-	};
-
 	static constexpr float FeedForwardMultiplier = 1.3;		// how much we over-compensate feedforward to allow for heat reservoirs during tuning
 
 	virtual void ResetHeater() noexcept = 0;
