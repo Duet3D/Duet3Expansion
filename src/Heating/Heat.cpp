@@ -377,7 +377,7 @@ void Heat::Exit()
 #endif
 #if HAS_CPU_TEMP_SENSOR
 				boardStatusMsg->values[index++] = Platform::GetMcuTemperatures();
-				boardStatusMsg->hasV12 = true;
+				boardStatusMsg->hasMcuTemp = true;
 #endif
 				buf.dataLength = boardStatusMsg->GetActualDataLength();
 				CanInterface::Send(&buf);

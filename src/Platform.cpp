@@ -490,7 +490,7 @@ namespace Platform
 	{
 #if HAS_VOLTAGE_MONITOR
 		currentVin = highestVin = 0;
-		lowestVin = 9999;
+		lowestVin = 65535;
 		numUnderVoltageEvents = previousUnderVoltageEvents = numOverVoltageEvents = previousOverVoltageEvents = 0;
 
 		vinFilter.Init(0);
@@ -641,7 +641,7 @@ void Platform::Init()
 
 #if HAS_12V_MONITOR
 	currentV12 = highestV12 = 0;
-	lowestV12 = 9999;
+	lowestV12 = 65535;
 
 	v12Filter.Init(0);
 	IoPort::SetPinMode(V12MonitorPin, AIN);
@@ -958,6 +958,15 @@ void Platform::Spin()
 
 #if HAS_12V_MONITOR
 	currentV12 = v12Filter.GetSum()/v12Filter.NumAveraged();
+	if (currentV12 < lowestV12)
+	{
+		lowestV12 = currentV12;
+	}
+	if (currentV12 > highestV12)
+	{
+		highestV12 = currentV12;
+	}
+
 	const float volts12 = (currentV12 * V12MonitorVoltageRange)/(1u << AnalogIn::AdcBits);
 	if (!powered && voltsVin >= 10.5 && volts12 >= 10.5)
 	{
@@ -1252,6 +1261,14 @@ void Platform::SpinMinimal()
 #if HAS_VOLTAGE_MONITOR
 	// Get the VIN voltage
 	currentVin = vinFilter.GetSum()/vinFilter.NumAveraged();
+	if (currentVin < lowestVin)
+	{
+		lowestVin = currentVin;
+	}
+	if (currentVin > highestVin)
+	{
+		highestVin = currentVin;
+	}
 #endif
 }
 
