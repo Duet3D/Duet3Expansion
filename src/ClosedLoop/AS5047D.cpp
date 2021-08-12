@@ -20,9 +20,20 @@ constexpr uint16_t AS5047RegMag = 0x3FFD;
 constexpr uint16_t AS5047RegAngleUnc = 0x3FFE;
 constexpr uint16_t AS5047RegAngleCom = 0x3FFF;
 
-constexpr uint16_t AS5047WriteCommand = 0x4000;
+constexpr uint16_t AS5047ReadCommand = 0x4000;
 
-// Adjust the top bit of a word to make it even parity
+constexpr uint32_t AS54047ClockFrequency = 5000000;			// maximum is a little under 10MHz
+
+// Convert nanoseconds to clock cycles
+static inline constexpr uint32_t NanoSecondsToClocks(uint32_t ns) noexcept
+{
+	return ((SystemCoreClockFreq/1000000) * ns)/1000;
+}
+
+constexpr uint32_t Clocks350ns = NanoSecondsToClocks(350);
+constexpr uint32_t ClocksHalfSclk = SystemCoreClockFreq/(2 * AS54047ClockFrequency);
+
+// Adjust the top bit of a 16-bit word to make it even parity
 static inline constexpr uint16_t AddParityBit(uint16_t w) noexcept
 {
 	uint16_t p = w ^ (w << 8);
@@ -32,6 +43,7 @@ static inline constexpr uint16_t AddParityBit(uint16_t w) noexcept
 	return w ^ (p & 0x8000);
 }
 
+// Return true if the passed 16-bit word has even parity
 static inline constexpr bool CheckEvenParity(uint16_t w) noexcept
 {
 	w ^= w >> 8;
@@ -41,8 +53,60 @@ static inline constexpr bool CheckEvenParity(uint16_t w) noexcept
 	return (w & 1u) == 0;
 }
 
-AS5047D::AS5047D(SharedSpiDevice& spiDev, Pin p_csPin) noexcept : SpiEncoder(spiDev, 6000000, SpiMode::mode1, false, p_csPin)
+// Check a response returning true if it is good
+static inline bool CheckResponse(uint16_t response) noexcept
 {
+	return CheckEvenParity(response) && (response & 0x4000) == 0;
+}
+
+AS5047D::AS5047D(SharedSpiDevice& spiDev, Pin p_csPin) noexcept
+	: SpiEncoder(spiDev, AS54047ClockFrequency, SpiMode::mode1, false, p_csPin),
+	  lastAngle(0)
+{
+}
+
+// Initialise the encoder and enable it if successful. If there are any warnings or errors, put the corresponding message text in 'reply'.
+GCodeResult AS5047D::Init(const StringRef& reply) noexcept
+{
+	// See if we can read sensible data from the encoder
+	uint16_t responseDiag, responseErrfl;
+	if (GetDiagnosticRegisters(responseDiag, responseErrfl))
+	{
+		if (CheckResponse(responseDiag))
+		{
+			if ((responseDiag & 0x0F00) == 0x100)
+			{
+				Enable();
+				return GCodeResult::ok;
+			}
+
+			reply.copy("Encoder warning");
+			if ((responseDiag & 0x0100) == 0)
+			{
+				reply.cat(": offset loop not ready");
+			}
+			if ((responseDiag & 0x0200) != 0)
+			{
+				reply.cat(": CORDIC overflow");
+			}
+			if ((responseDiag & 0x0400) != 0)
+			{
+				reply.cat(": magnet too strong");
+			}
+			if ((responseDiag & 0x0800) != 0)
+			{
+				reply.cat(": magnet too weak");
+			}
+			Enable();
+			return GCodeResult::warning;
+		}
+
+		reply.copy("Bad response from encoder");
+		return GCodeResult::error;
+	}
+
+	reply.copy("Failed to read encoder diagnostic registers");
+	return GCodeResult::error;
 }
 
 void AS5047D::Enable() noexcept
@@ -59,53 +123,115 @@ void AS5047D::Disable() noexcept
 
 int32_t AS5047D::GetReading() noexcept
 {
-	uint16_t response;
-	DoSpiTransaction(AddParityBit(AS5047RegAngleCom), response);
-	DoSpiTransaction(AddParityBit(AS5047RegNop), response);
+	if (spi.Select(0))			// get the mutex and set the clock rate
+	{
+		uint16_t response;
+		const bool ok = DoSpiTransaction(AddParityBit(AS5047ReadCommand | AS5047RegAngleCom), response)
+					 && (DelayCycles(GetCurrentCycles(), Clocks350ns), 				// need at least 350ns CS high time
+						 DoSpiTransaction(AddParityBit(AS5047ReadCommand | AS5047RegNop), response));
+		spi.Deselect();			// release the mutex
+		if (ok && CheckResponse(response))
+
+		{
+			response &= 0x3FFF;
+			lastAngle = (int32_t)((response & 0x2000) ? response | 0xFFFFC000 : response);
+			return lastAngle;
+		}
+	}
 
 	//TODO how to report an error?
-	response &= 0x3FFFF;
-	return (int32_t)((response & 0x2000) ? response | 0xFFFFC000 : response);
+	return lastAngle;
 }
 
+// Get the diagnostic register and the error flags register
+bool AS5047D::GetDiagnosticRegisters(uint16_t& diagReg, uint16_t& errFlags) noexcept
+{
+	if (spi.Select(0))			// get the mutex and set the clock rate
+	{
+		const bool ok = DoSpiTransaction(AddParityBit(AS5047ReadCommand | AS5047RegDiag), diagReg)
+					 && (DelayCycles(GetCurrentCycles(), Clocks350ns), 				// need at least 350ns CS high time
+						 DoSpiTransaction(AddParityBit(AS5047ReadCommand | AS5047RegErrfl), diagReg))
+					 && (DelayCycles(GetCurrentCycles(), Clocks350ns), 				// need at least 350ns CS high time
+						 DoSpiTransaction(AddParityBit(AS5047ReadCommand | AS5047RegNop), errFlags));
+		spi.Deselect();			// release the mutex
+		return ok;
+	}
+
+	return false;
+}
+
+// Get diagnostic information and append it to a string
 void AS5047D::AppendDiagnostics(const StringRef &reply) noexcept
 {
-	uint16_t response;
-	if (DoSpiTransaction(AddParityBit(AS5047RegDiag), response) && DoSpiTransaction(AddParityBit(AS5047RegNop), response))
+	uint16_t responseDiag, responseErrfl;
+	if (GetDiagnosticRegisters(responseDiag, responseErrfl))
 	{
-		reply.catf(", AS5047 agc %u", response & 0x007F);
-		if ((response & 0x0100) == 0)
+		if (CheckResponse(responseDiag))
 		{
-			reply.cat(", offset loop not ready");
+			reply.catf(", agc %u", responseDiag & 0x007F);
+			if ((responseDiag & 0x0100) == 0)
+			{
+				reply.cat(", offset loop not ready");
+			}
+			if ((responseDiag & 0x0200) != 0)
+			{
+				reply.cat(", CORDIC overflow");
+			}
+			if ((responseDiag & 0x0400) != 0)
+			{
+				reply.cat(", magnet too strong");
+			}
+			if ((responseDiag & 0x0800) != 0)
+			{
+				reply.cat(", magnet too weak");
+			}
 		}
-		if ((response & 0x0200) != 0)
+		else
 		{
-			reply.cat(", CORDIC overflow");
+			reply.cat(", bad diag register response");
 		}
-		if ((response & 0x0400) != 0)
+
+		if (CheckResponse(responseErrfl))
 		{
-			reply.cat(", magnet too strong");
+			if (responseErrfl & 0x01)
+			{
+				reply.cat(", framing error");
+			}
+			if (responseErrfl & 0x02)
+			{
+				reply.cat(", invalid command error");
+			}
+			if (responseErrfl & 0x04)
+			{
+				reply.cat(", parity error");
+			}
+			if ((responseErrfl & 0x07) == 0)
+			{
+				reply.cat(", no error");
+			}
 		}
-		if ((response & 0x0800) != 0)
+		else
 		{
-			reply.cat(", magnet too weak");
+			reply.cat(", bad errfl register response");
 		}
 	}
 	else
 	{
-		reply.cat(", failed to read AS5047 diagnostics");
+		reply.cat(", failed to read encoder diagnostics");
 	}
 }
 
+// Perform an SPI transaction. Caller must get ownership of the SPI device first and release it afterwards, possibly after doing multiple transactions.
+// Leave at least 350ns between multiple calls to this function.
 bool AS5047D::DoSpiTransaction(uint16_t command, uint16_t &response) noexcept
 {
-	// We have exclusive access to this SPI so we don't need to get the mutex
 	IoPort::WriteDigital(csPin, false);
-	delayMicroseconds(1);			// need at least 350ns before the clock
-	const bool ok = spi.TransceivePacket(reinterpret_cast<const uint8_t*>(&command), reinterpret_cast<uint8_t*>(&response), 2);
-	delayMicroseconds(1);			// need at least half an SPI clock here
-	IoPort::WriteDigital(csPin, false);
-	return ok && (response & 0x4000) == 0 && CheckEvenParity(response);
+	const uint8_t txBuffer[2] = { (uint8_t)(command >> 8), (uint8_t)(command & 0xFF) };
+	uint8_t rxBuffer[2];
+	const bool ok = spi.TransceivePacket(txBuffer, rxBuffer, 2);
+	IoPort::WriteDigital(csPin, true);
+	response = ((uint16_t)rxBuffer[0]) << 8 | rxBuffer[1];
+	return ok;
 }
 
 #endif

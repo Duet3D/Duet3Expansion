@@ -168,14 +168,13 @@ namespace Platform
 	static volatile uint16_t currentV12, highestV12, lowestV12;
 #endif
 
-	static float currentMcuTemperature, highestMcuTemperature, lowestMcuTemperature;
+	static MinCurMax mcuTemperature;
 	static float mcuTemperatureAdjust = 0.0;
 
 	static uint32_t lastPollTime;
 	static uint32_t lastFanCheckTime = 0;
 	static unsigned int heatTaskIdleTicks = 0;
 
-	constexpr uint32_t ActLedFlashTime = 100;				// how long the green LED stays on after we process a CAN message
 	static uint32_t whenLastCanMessageProcessed = 0;
 
 #if SUPPORT_THERMISTORS
@@ -494,7 +493,7 @@ namespace Platform
 	{
 #if HAS_VOLTAGE_MONITOR
 		currentVin = highestVin = 0;
-		lowestVin = 9999;
+		lowestVin = 65535;
 		numUnderVoltageEvents = previousUnderVoltageEvents = numOverVoltageEvents = previousOverVoltageEvents = 0;
 
 		vinFilter.Init(0);
@@ -645,7 +644,7 @@ void Platform::Init()
 
 #if HAS_12V_MONITOR
 	currentV12 = highestV12 = 0;
-	lowestV12 = 9999;
+	lowestV12 = 65535;
 
 	v12Filter.Init(0);
 	IoPort::SetPinMode(V12MonitorPin, AIN);
@@ -673,9 +672,9 @@ void Platform::Init()
 #endif
 
 	// Set up the MCU temperature sensors
-	currentMcuTemperature = 0.0;
-	highestMcuTemperature = -273.16;
-	lowestMcuTemperature = 999.0;
+	mcuTemperature.current = 0.0;
+	mcuTemperature.maximum = -273.16;
+	mcuTemperature.minimum = 999.0;
 	mcuTemperatureAdjust = 0.0;
 
 	// Set up the MCU temperature sense filters
@@ -963,6 +962,15 @@ void Platform::Spin()
 
 #if HAS_12V_MONITOR
 	currentV12 = v12Filter.GetSum()/v12Filter.NumAveraged();
+	if (currentV12 < lowestV12)
+	{
+		lowestV12 = currentV12;
+	}
+	if (currentV12 > highestV12)
+	{
+		highestV12 = currentV12;
+	}
+
 	const float volts12 = (currentV12 * V12MonitorVoltageRange)/(1u << AnalogIn::AdcBits);
 	if (!powered && voltsVin >= 10.5 && volts12 >= 10.5)
 	{
@@ -1140,22 +1148,22 @@ void Platform::Spin()
 			int32_t result =  (tempCalF1 * tc_result - tempCalF2 * tp_result);
 			const int32_t divisor = (tempCalF3 * tp_result - tempCalF4 * tc_result);
 			result = (divisor == 0) ? 0 : result/divisor;
-			currentMcuTemperature = (float)result/16 + mcuTemperatureAdjust;
+			mcuTemperature.current = (float)result/16 + mcuTemperatureAdjust;
 #elif SAMC21
 		if (tsensFilter.IsValid())
 		{
 			const int16_t temperatureTimes100 = (int16_t)((uint16_t)(tsensFilter.GetSum()/tsensFilter.NumAveraged()) ^ (1u << 15));
-			currentMcuTemperature = (float)temperatureTimes100 * 0.01;
+			mcuTemperature.current = (float)temperatureTimes100 * 0.01;
 #else
 # error Unsupported processor
 #endif
-			if (currentMcuTemperature < lowestMcuTemperature)
+			if (mcuTemperature.current < mcuTemperature.minimum)
 			{
-				lowestMcuTemperature = currentMcuTemperature;
+				mcuTemperature.minimum = mcuTemperature.current;
 			}
-			if (currentMcuTemperature > highestMcuTemperature)
+			if (mcuTemperature.current > mcuTemperature.maximum)
 			{
-				highestMcuTemperature = currentMcuTemperature;
+				mcuTemperature.maximum = mcuTemperature.current;
 			}
 		}
 
@@ -1261,6 +1269,14 @@ void Platform::SpinMinimal()
 #if HAS_VOLTAGE_MONITOR
 	// Get the VIN voltage
 	currentVin = vinFilter.GetSum()/vinFilter.NumAveraged();
+	if (currentVin < lowestVin)
+	{
+		lowestVin = currentVin;
+	}
+	if (currentVin > highestVin)
+	{
+		highestVin = currentVin;
+	}
 #endif
 }
 
@@ -1313,11 +1329,9 @@ ThermistorAveragingFilter *Platform::GetVrefFilter(unsigned int filterNumber)
 
 #endif
 
-void Platform::GetMcuTemperatures(float& minTemp, float& currentTemp, float& maxTemp)
+const MinCurMax& Platform::GetMcuTemperatures()
 {
-	minTemp = lowestMcuTemperature;
-	currentTemp = currentMcuTemperature;
-	maxTemp = highestMcuTemperature;
+	return mcuTemperature;
 }
 
 void Platform::KickHeatTaskWatchdog()
@@ -1792,6 +1806,16 @@ void Platform::SetMotorCurrent(size_t driver, float current)
 	UpdateMotorCurrent(driver);
 }
 
+# else
+
+StandardDriverStatus Platform::GetStandardDriverStatus(size_t driver)
+{
+	//TODO implement alarm input
+	StandardDriverStatus rslt;
+	rslt.all = 0;
+	return rslt;
+}
+
 # endif
 
 #endif	//SUPPORT_DRIVERS
@@ -1871,6 +1895,31 @@ float Platform::GetTmcDriversTemperature()
 			: (temperatureWarningDrivers.Intersects(mask)) ? 100.0
 				: 0.0;
 }
+#endif
+
+#if SUPPORT_DRIVERS
+
+// Function to broadcast the drivers status message. Called only by the Heat task.
+void Platform::SendDriversStatus(CanMessageBuffer& buf)
+{
+	CanMessageDriversStatus * const msg = buf.SetupStatusMessage<CanMessageDriversStatus>(CanInterface::GetCanAddress(), CanInterface::GetCurrentMasterAddress());
+# if HAS_SMART_DRIVERS
+	msg->SetStandardFields(MaxSmartDrivers);
+	for (size_t driver = 0; driver < MaxSmartDrivers; ++driver)
+	{
+		msg->data[driver] = SmartDrivers::GetStandardDriverStatus(driver);
+	}
+# else
+	msg->SetStandardFields(NumDrivers);
+	for (size_t driver = 0; driver < NumDrivers; ++driver)
+	{
+		msg->data[driver] = Platform::GetStandardDriverStatus(driver);
+	}
+# endif
+	buf.dataLength = msg->GetActualDataLength();
+	CanInterface::Send(&buf);
+}
+
 #endif
 
 void Platform::Tick()
@@ -2062,38 +2111,36 @@ bool Platform::WasDeliberateError() noexcept
 
 #if HAS_VOLTAGE_MONITOR
 
-float Platform::GetMinVinVoltage()
+MinCurMax Platform::GetPowerVoltages() noexcept
 {
-	return AdcReadingToPowerVoltage(lowestVin);
+	MinCurMax result;
+	result.minimum = AdcReadingToPowerVoltage(lowestVin);
+	result.current = AdcReadingToPowerVoltage(currentVin);
+	result.maximum = AdcReadingToPowerVoltage(highestVin);
+	return result;
 }
 
-float Platform::GetCurrentVinVoltage()
+float Platform::GetCurrentVinVoltage() noexcept
 {
 	return AdcReadingToPowerVoltage(currentVin);
-}
-
-float Platform::GetMaxVinVoltage()
-{
-	return AdcReadingToPowerVoltage(highestVin);
 }
 
 #endif
 
 #if HAS_12V_MONITOR
 
-float Platform::GetMinV12Voltage()
+MinCurMax Platform::GetV12Voltages() noexcept
 {
-	return AdcReadingToPowerVoltage(lowestV12);
+	MinCurMax result;
+	result.minimum = AdcReadingToPowerVoltage(lowestV12);
+	result.current = AdcReadingToPowerVoltage(currentV12);
+	result.maximum = AdcReadingToPowerVoltage(highestV12);
+	return result;
 }
 
-float Platform::GetCurrentV12Voltage()
+float Platform::GetCurrentV12Voltage() noexcept
 {
 	return AdcReadingToPowerVoltage(currentV12);
-}
-
-float Platform::GetMaxV12Voltage()
-{
-	return AdcReadingToPowerVoltage(highestV12);
 }
 
 #endif

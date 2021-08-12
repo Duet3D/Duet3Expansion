@@ -25,6 +25,7 @@ public:
 	~QuadratureEncoderPdec();
 
 	EncoderType GetType() const noexcept override { return (cpr == 0) ? EncoderType::linearQuadrature : EncoderType::rotaryQuadrature; }
+	GCodeResult Init(const StringRef& reply) noexcept override;
 	void Enable() noexcept override;				// Enable the decoder and reset the counter to zero
 	void Disable() noexcept override;				// Disable the decoder. Call this during initialisation. Can also be called later if necessary.
 	int32_t GetReading() noexcept override;			// Get the 32-bit position
@@ -33,7 +34,7 @@ public:
 
 private:
 	// Set the counts per motor revolution, for encoders attached to a motor shaft. A value of zero means we are using a linear encoder instead.
-	void SetCountsPerRev(uint16_t p_cpr) noexcept;
+	void SetCountsPerRev() noexcept;
 
 	// Set the position. In linear mode, 'revs' is the linear position and 'pos' is not used.
 	void SetPosition(int32_t revs, uint16_t pos) noexcept;

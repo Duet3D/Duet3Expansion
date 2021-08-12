@@ -24,6 +24,7 @@ public:
 	~QuadratureEncoderAttiny();
 
 	EncoderType GetType() const noexcept override { return (linear) ? EncoderType::linearQuadrature : EncoderType::rotaryQuadrature; }
+	GCodeResult Init(const StringRef& reply) noexcept override;
 	void Enable() noexcept override;				// Enable the decoder and reset the counter to zero. Won't work if the decoder has never been programmed.
 	void Disable() noexcept override;				// Disable the decoder. Call this during initialisation. Can also be called later if necessary.
 	int32_t GetReading() noexcept override;			// Get the 32-bit position

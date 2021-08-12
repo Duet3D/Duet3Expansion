@@ -13,6 +13,14 @@ TLI5012B::TLI5012B(SharedSpiDevice& spiDev, Pin p_csPin) noexcept : SpiEncoder(s
 {
 }
 
+// Initialise the encoder and enable it if successful. If there are any warnings or errors, put the corresponding message text in 'reply'.
+GCodeResult TLI5012B::Init(const StringRef& reply) noexcept
+{
+	//TODO
+	reply.copy("This encoder type is not supported");
+	return GCodeResult::error;
+}
+
 void TLI5012B::Enable() noexcept
 {
 	//TODO

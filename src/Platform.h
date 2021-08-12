@@ -12,6 +12,7 @@
 #include "AdcAveragingFilter.h"
 #include "GCodes/GCodeResult.h"
 #include <Movement/StepTimer.h>
+#include <Heating/Heat.h>
 
 #if SUPPORT_CLOSED_LOOP
 # include "ClosedLoop/ClosedLoop.h"
@@ -161,9 +162,6 @@ namespace Platform
 	void SetDriveStepsPerUnit(size_t drive, float val);
 	float GetPressureAdvanceClocks(size_t driver);
 	void SetPressureAdvance(size_t driver, float advance);
-# if 0	// not used yet and may never be
-	void BuildDriverStatusMessage(CanMessageBuffer *buf) noexcept;
-# endif
 
 # if SINGLE_DRIVER
 	inline void StepDriverLow()
@@ -220,14 +218,14 @@ namespace Platform
 	}
 
 	inline uint32_t GetDriversBitmap(size_t driver) { return driveDriverBits[driver]; } 		// Get the step bit for this driver
- #endif
+# endif
 
 	inline unsigned int GetProhibitedExtruderMovements(unsigned int extrusions, unsigned int retractions) { return 0; }
-#if SINGLE_DRIVER
+# if SINGLE_DRIVER
 	void SetDirection(bool direction);
-#else
+# else
 	void SetDirection(size_t driver, bool direction);
-#endif
+# endif
 	void SetDirectionValue(size_t driver, bool dVal);
 	bool GetDirectionValue(size_t driver);
 	void SetEnableValue(size_t driver, int8_t eVal);
@@ -238,10 +236,18 @@ namespace Platform
 	void DisableAllDrives();
 	void SetDriverIdle(size_t driver, uint8_t percent);
 
-#if HAS_SMART_DRIVERS
+# if HAS_SMART_DRIVERS
 	void SetMotorCurrent(size_t driver, float current);		//TODO avoid the int->float->int conversion
 	float GetTmcDriversTemperature();
-#endif
+# else
+	StandardDriverStatus GetStandardDriverStatus(size_t driver);
+# endif
+
+	// Signal that a new drivers fault has occurred and the main board needs to be told about it urgently
+	inline void NewDriverFault() { Heat::NewDriverFault(); }
+
+	// Function to send the status of our drivers - must be called only by the Heat task
+	void SendDriversStatus(CanMessageBuffer& buf);
 #endif	//SUPPORT_DRIVERS
 
 #if SUPPORT_THERMISTORS
@@ -254,7 +260,7 @@ namespace Platform
 # endif
 #endif
 
-	void GetMcuTemperatures(float& minTemp, float& currentTemp, float& maxTemp);
+	const MinCurMax& GetMcuTemperatures();
 
 	void HandleHeaterFault(unsigned int heater);
 
@@ -286,15 +292,13 @@ namespace Platform
 	}
 
 #if HAS_VOLTAGE_MONITOR
-	float GetMinVinVoltage();
-	float GetCurrentVinVoltage();
-	float GetMaxVinVoltage();
+	MinCurMax GetPowerVoltages() noexcept;
+	float GetCurrentVinVoltage() noexcept;
 #endif
 
 #if HAS_12V_MONITOR
-	float GetMinV12Voltage();
-	float GetCurrentV12Voltage();
-	float GetMaxV12Voltage();
+	MinCurMax GetV12Voltages() noexcept;
+	float GetCurrentV12Voltage() noexcept;
 #endif
 
 	uint32_t GetDateTime() noexcept;

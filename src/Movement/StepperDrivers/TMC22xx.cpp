@@ -2133,6 +2133,27 @@ uint32_t SmartDrivers::GetRegister(size_t driver, SmartDriverRegister reg) noexc
 	return (driver < GetNumTmcDrivers()) ? driverStates[driver].GetRegister(reg) : 0;
 }
 
+StandardDriverStatus SmartDrivers::GetStandardDriverStatus(size_t driver) noexcept
+{
+	StandardDriverStatus rslt;
+	if (driver < GetNumTmcDrivers())
+	{
+		const uint32_t status = driverStates[driver].ReadLiveStatus();
+		// The lowest 8 bits of StandardDriverStatus have the same meanings as for the TMC2209 status
+		rslt.all = status & 0x000000FF;
+		rslt.all |= (status >> (31 - 10)) & (1u << 10);			// put the standstill bit in the right place
+		if (status & TMC_RR_SG)
+		{
+			rslt.stall = true;
+		}
+	}
+	else
+	{
+		rslt.all = 0;
+	}
+	return rslt;
+}
+
 #endif
 
 // End

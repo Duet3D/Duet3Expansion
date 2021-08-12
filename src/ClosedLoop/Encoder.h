@@ -12,19 +12,31 @@
 
 #if SUPPORT_CLOSED_LOOP
 
+#include <GCodes/GCodeResult.h>
+
 class Encoder
 {
 public:
 	Encoder() noexcept { }
 	virtual ~Encoder() { }
 
+	// Get the type of this encoder
 	virtual EncoderType GetType() const noexcept = 0;
-	virtual void Enable() noexcept = 0;
-	virtual void Disable() noexcept = 0;
-	virtual int32_t GetReading() noexcept = 0;
-	virtual void AppendDiagnostics(const StringRef& reply) noexcept = 0;
 
-	static void Init() noexcept;
+	// Initialise the encoder and enable it if successful. If there are any warnings or errors, put the corresponding message text in 'reply'.
+	virtual GCodeResult Init(const StringRef& reply) noexcept = 0;
+
+	// Enable the encoder
+	virtual void Enable() noexcept = 0;
+
+	// Disable the encoder
+	virtual void Disable() noexcept = 0;
+
+	// Get the current reading
+	virtual int32_t GetReading() noexcept = 0;
+
+	// Get diagnostic information and append it to a string
+	virtual void AppendDiagnostics(const StringRef& reply) noexcept = 0;
 };
 
 #endif

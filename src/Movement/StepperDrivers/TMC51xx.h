@@ -8,7 +8,8 @@
 #ifndef SRC_MOVEMENT_STEPPERDRIVERS_TMC51XX_H_
 #define SRC_MOVEMENT_STEPPERDRIVERS_TMC51XX_H_
 
-#include "RepRapFirmware.h"
+#include <RepRapFirmware.h>
+#include <Duet3Common.h>
 
 #if SUPPORT_TMC51xx || SUPPORT_TMC2160
 
@@ -50,6 +51,7 @@ namespace SmartDrivers
 	void SetStandstillCurrentPercent(size_t driver, float percent);
 	bool SetRegister(size_t driver, SmartDriverRegister reg, uint32_t regVal);
 	uint32_t GetRegister(size_t driver, SmartDriverRegister reg);
+	StandardDriverStatus GetStandardDriverStatus(size_t driver);
 };
 
 #endif

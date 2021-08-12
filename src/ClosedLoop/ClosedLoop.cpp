@@ -416,56 +416,66 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 
 	//TODO need to get a lock here in case there is any movement
 	if (seen & 0x1 << 0) {
-		DeleteObject(encoder);
-		switch (tempEncoderType)
+		if (tempEncoderType == GetEncoderType().ToBaseType())
 		{
-		case EncoderType::none:
-		default:
-			encoder = nullptr;
-			break;
+			if (encoder != nullptr)
+			{
+				encoder->Disable();
+				return encoder->Init(reply);
+			}
+		}
+		else
+		{
+			DeleteObject(encoder);
+			switch (tempEncoderType)
+			{
+			case EncoderType::none:
+			default:
+				encoder = nullptr;
+				break;
 
-				case EncoderType::as5047:
-#ifdef EXP1HCE
-					encoder = new AS5047D(*encoderSpi, EncoderCsPin);
-#elif defined(EXP1HCL)
-					encoder = new AS5047D(*Platform::sharedSpi, EncoderCsPin);
-#endif
-					break;
+					case EncoderType::AS5047:
+	#ifdef EXP1HCE
+						encoder = new AS5047D(*encoderSpi, EncoderCsPin);
+	#elif defined(EXP1HCL)
+						encoder = new AS5047D(*Platform::sharedSpi, EncoderCsPin);
+	#endif
+						break;
 
-				case EncoderType::tli5012:
-#ifdef EXP1HCE
-					encoder = new TLI5012B(*encoderSpi, EncoderCsPin);
-#elif defined(EXP1HCL)
-					encoder = new TLI5012B(*Platform::sharedSpi, EncoderCsPin);
-#endif
-					break;
+					case EncoderType::TLI5012:
+	#ifdef EXP1HCE
+						encoder = new TLI5012B(*encoderSpi, EncoderCsPin);
+	#elif defined(EXP1HCL)
+						encoder = new TLI5012B(*Platform::sharedSpi, EncoderCsPin);
+	#endif
+						break;
 
-		case EncoderType::linearQuadrature:
-#ifdef EXP1HCE
-			encoder = new QuadratureEncoderAttiny(true);
-#elif defined(EXP1HCL)
-			encoder = new QuadratureEncoderPdec(true);
-#else
-# error Unknown board
-#endif
-			break;
+			case EncoderType::linearQuadrature:
+	#ifdef EXP1HCE
+				encoder = new QuadratureEncoderAttiny(true);
+	#elif defined(EXP1HCL)
+				encoder = new QuadratureEncoderPdec(true);
+	#else
+	# error Unknown board
+	#endif
+				break;
 
-		case EncoderType::rotaryQuadrature:
-#ifdef EXP1HCE
-			encoder = new QuadratureEncoderAttiny(false);
-#elif defined(EXP1HCL)
-			// TODO: Debug why this can't be set to rotary mode
-			encoder = new QuadratureEncoderPdec(true);
-#else
-# error Unknown board
-#endif
-			break;
+			case EncoderType::rotaryQuadrature:
+	#ifdef EXP1HCE
+				encoder = new QuadratureEncoderAttiny(false);
+	#elif defined(EXP1HCL)
+				// TODO: Debug why this can't be set to rotary mode
+				encoder = new QuadratureEncoderPdec(true);
+	#else
+	# error Unknown board
+	#endif
+				break;
+			}
 		}
 
 		if (encoder != nullptr)
 		{
-			//TODO initialise the encoder
-			encoder->Enable();
+			return encoder->Init(reply);
 		}
 	}
 
