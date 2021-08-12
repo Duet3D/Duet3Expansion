@@ -32,6 +32,7 @@ namespace ClosedLoop
 	const uint8_t TUNE_ERR_CONTROL_FAILED 				= 1 << 6;
 	const uint8_t TUNE_ERR_SYSTEM_ERROR					= 1 << 7;
 	const uint8_t TUNE_ERR_NOT_PERFORMED_MINIMAL_TUNE = TUNE_ERR_NOT_FOUND_POLARITY | TUNE_ERR_NOT_ZEROED | TUNE_ERR_NOT_CHECKED_POLARITY | TUNE_ERR_NOT_CHECKED_CONTROL | TUNE_ERR_NOT_CHECKED_ENCODER_STEPS;
+	const uint8_t TUNE_ERR_TUNING_FAILURE = TUNE_ERR_INCORRECT_POLARITY | TUNE_ERR_CONTROL_FAILED | TUNE_ERR_SYSTEM_ERROR;
 
 	// Tuning manoeuvres
 	const uint8_t POLARITY_DETECTION_MANOEUVRE 			= 1 << 0;
@@ -79,8 +80,7 @@ namespace ClosedLoop
 	void ControlMotorCurrents() noexcept;
 	void Log() noexcept;
 
-
-
+	uint8_t ReadLiveStatus() noexcept;
 
 	void CollectSample() noexcept;
 	GCodeResult StartDataCollection(const CanMessageStartClosedLoopDataCollection&, const StringRef&) noexcept;

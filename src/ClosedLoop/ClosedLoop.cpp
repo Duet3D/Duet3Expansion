@@ -106,6 +106,9 @@ static uint16_t desiredStepPhase = 0;			// The desired position of the motor
 static int16_t coilA;							// The current to run through coil A
 static int16_t coilB;							// The current to run through coil A
 
+static bool stall = false;						// Has the closed loop error threshold been exceeded?
+static bool preStall = false;					// Has the closed loop warning threshold been exceeded?
+
 // Misc. variables
 
 // Logging vars
@@ -539,6 +542,7 @@ GCodeResult ClosedLoop::ProcessM569Point6(const CanMessageGeneric &msg, const St
 void ClosedLoop::Diagnostics(const StringRef& reply) noexcept
 {
 	reply.printf("Closed loop enabled: %s", closedLoopEnabled ? "yes" : "no");
+	reply.catf(", live status: %#x", ReadLiveStatus());
 #if defined(EXP1HCE)
 	reply.catf(", encoder programmed status %s, encoder type %s", programmer->GetProgramStatus().ToString(), GetEncoderType().ToString());
 #elif defined(EXP1HCL)
@@ -638,8 +642,18 @@ void ClosedLoop::ControlMotorCurrents() noexcept
 	rawEncoderReading = encoder->GetReading();
 	currentMotorSteps = rawEncoderReading / encoderCountPerStep;
 
-	// Calculate the current error, if it's zero we don't need to do anything!
+	// Calculate the current error
 	currentError = targetMotorSteps - currentMotorSteps;
+
+	// Look for a stall or pre-stall
+	if (!stall && abs(currentError) > errorThresholds[1]) {
+		// We have just stalled! Alert RRF immediately!
+		Platform::NewDriverFault();
+	}
+	preStall = errorThresholds[0] > 0 && abs(currentError) > errorThresholds[0];
+	stall 	 = errorThresholds[1] > 0 && abs(currentError) > errorThresholds[1];
+
+	// If the current error is zero, we don't need to do anything!
 	if (!collectingData && currentError == 0) {return;}	// TODO: We are dealing with floats so this should probably be a range
 
 	// Use a PID controller to calculate the required 'torque' - the control signal
@@ -673,33 +687,6 @@ void ClosedLoop::ControlMotorCurrents() noexcept
 	// (If stepPhase < phaseShift, we need to add on an extra 4095 to bring us back within the correct range)
 	desiredStepPhase = stepPhase + phaseShift + ((stepPhase < -phaseShift) * 4095);
 	desiredStepPhase = desiredStepPhase % 4096;
-
-//	desiredStepPhase += 128;
-////
-//	if (desiredStepPhase >= 4096)
-//	{
-//		desiredStepPhase = 0;
-////		phsCtr += 1;
-////		if (phsCtr == 4) {phsCtr = 0;}
-//////		switch (phsCtr) {
-//////		case 0:
-//////			coilAPolarity = true;
-//////			coilBPolarity = true;
-//////			break;
-//////		case 1:
-//////			coilAPolarity = false;
-//////			coilBPolarity = false;
-//////			break;
-//////		case 2:
-//////			coilAPolarity = true;
-//////			coilBPolarity = false;
-//////			break;
-//////		case 3:
-//////			coilAPolarity = false;
-//////			coilBPolarity = true;
-//////			break;
-//////		}
-//	}
 
 	// Assert the required motor currents
 	SetMotorPhase(desiredStepPhase, abs(PIDControlSignal)/255.0);
@@ -790,6 +777,15 @@ GCodeResult ClosedLoop::FindEncoderCountPerStep(const CanMessageGeneric &msg, co
 	return GCodeResult::ok;
 }
 
+uint8_t ClosedLoop::ReadLiveStatus() noexcept
+{
+	uint8_t result = 0;
+	result |= stall << 0;															// prestall
+	result |= preStall << 1;														// stall
+	result |= ((tuningError & TUNE_ERR_NOT_PERFORMED_MINIMAL_TUNE) > 0) << 2;		// status - 0=not tuned
+	result |= ((tuningError & TUNE_ERR_TUNING_FAILURE) > 0) << 3;					// status - 1=tuning error
+	return result;
+}
 
 [[noreturn]] void ClosedLoop::TuningLoop() noexcept
 {

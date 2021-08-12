@@ -1616,8 +1616,24 @@ StandardDriverStatus SmartDrivers::GetStandardDriverStatus(size_t driver) noexce
 		rslt.all = (status >> (25 - 0)) & (0x0F << 0);			// this puts the it, otpw, s2ga and s2gb bits in the right place
 		rslt.all |= (status >> (12 - 4)) & (3u << 4);			// put s2vsa and s2vsb in the right place
 		rslt.all |= (status >> (29 - 6)) & (3u << 6);			// put ola and olb in the right place
-		rslt.all |= (status >> (24 - 9)) & (1u << 9);			// put the stall bit in the right place
+# if SUPPORT_CLOSED_LOOP
+		if (ClosedLoop::GetClosedLoopEnabled())
+		{
+			const uint8_t closedLoopStatus = ClosedLoop::ReadLiveStatus();
+			rslt.all |= (closedLoopStatus << (8 - 0))  & (1u  << 8);		// put the prestall bit in the right place
+			rslt.all |= (closedLoopStatus << (9 - 1))  & (1u  << 9);		// put the stall bit in the right place
+			rslt.all |= (closedLoopStatus << (11 - 2)) & (31u << 11);		// put the driver status bits in the right place
+			rslt.all |= false << 10;										// put the standstill bit in the right place
+		}
+		else
+		{
+			rslt.all |= (status >> (24 - 9)) & (1u << 9);		// put the stall bit in the right place
+			rslt.all |= (status >> (31 - 10)) & (1u << 10);			// put the standstill bit in the right place
+		}
+# else
+		rslt.all |= (status >> (24 - 9)) & (1u << 9);		// put the stall bit in the right place
 		rslt.all |= (status >> (31 - 10)) & (1u << 10);			// put the standstill bit in the right place
+# endif
 	}
 	else
 	{
