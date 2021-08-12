@@ -232,6 +232,7 @@ namespace Platform
 	bool GetDirectionValue(size_t driver);
 	void SetEnableValue(size_t driver, int8_t eVal);
 	int8_t GetEnableValue(size_t driver);
+	void DriveEnableOverride(bool override);
 	void EnableDrive(size_t driver);
 	void DisableDrive(size_t driver);
 	void DisableAllDrives();

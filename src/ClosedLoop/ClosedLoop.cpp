@@ -55,11 +55,13 @@ static uint8_t tuningError;						// Flags for any tuning errors
 static bool coilAPolarity = true;				// True = +ve, False = -ve
 static bool coilBPolarity = false;				// True = +ve, False = -ve
 
-static uint8_t holdCurrent = 0;					// The minimum holding current when stationary
+static float holdCurrent = 0;					// The minimum holding current when stationary
 
 static float Kp = 100;							// The proportional constant for the PID controller
 static float Ki = 0.01;							// The proportional constant for the PID controller
 static float Kd = 10;							// The proportional constant for the PID controller
+
+static float errorThresholds[2];				// The error thresholds. [0] is pre-stall, [1] is stall
 
 static float ultimateGain = 0;					// The ultimate gain of the controller (used for tuning)
 static float oscillationPeriod = 0;				// The oscillation period when Kp = ultimate gain
@@ -161,9 +163,20 @@ float externalUnitsToCountPerStep() {
 }
 #endif
 
+void ReportTuningErrors(uint8_t tuningErrorBitmask, const StringRef &reply)
+{
+	if (tuningErrorBitmask & ClosedLoop::TUNE_ERR_NOT_ZEROED) 					{reply.catf(" The drive has not been zeroed.");}
+	if (tuningErrorBitmask & ClosedLoop::TUNE_ERR_NOT_CHECKED_POLARITY) 		{reply.catf(" The drive has not had it's polarity checked.");}
+	if (tuningErrorBitmask & ClosedLoop::TUNE_ERR_NOT_CHECKED_CONTROL) 			{reply.catf(" The drive has not had it's control checked.");}
+	if (tuningErrorBitmask & ClosedLoop::TUNE_ERR_NOT_CHECKED_ENCODER_STEPS) 	{reply.catf(" The encoder has not had it's count per revolution checked.");}
+	if (tuningErrorBitmask & ClosedLoop::TUNE_ERR_INCORRECT_POLARITY) 			{reply.catf(" The drive has been found to have an incorrect polarity.");}
+	if (tuningErrorBitmask & ClosedLoop::TUNE_ERR_CONTROL_FAILED) 				{reply.catf(" The drive has been found to be uncontrollable.");}
+}
+
 // Helper function to set the motor to a given phase and magnitude
 void SetMotorPhase(uint16_t phase, float magnitude)
 {
+	magnitude = constrain<float>(magnitude, holdCurrent, 1.0);
 	coilA = 255 * (coilAPolarity ? magnitude : -magnitude ) * Trigonometry::FastCos(phase);
 	coilB = 255 * (coilBPolarity ? magnitude : -magnitude ) * Trigonometry::FastSin(phase);
 	// TODO: Should we ::Give() to the task that's responsible for setting these registers here?
@@ -231,6 +244,10 @@ void ClosedLoop::Init() noexcept
 	// Init that we have not been tuned
 	tuningError = TUNE_ERR_NOT_PERFORMED_MINIMAL_TUNE;
 
+	// Initialise to no error thresholds
+	errorThresholds[0] = 0;
+	errorThresholds[1] = 0;
+
 	// Set up the tuning task
 	tuningTask = new Task<TuningTaskStackWords>;
 	tuningTask->Create(TuningTaskLoop, "CLTune", nullptr, TaskPriority::ClosedLoop);
@@ -270,7 +287,6 @@ bool ClosedLoop::SetClosedLoopEnabled(bool enabled, const StringRef &reply) noex
 			reply.copy("No encoder specified for closed loop drive mode");
 			return false;
 		}
-		Platform::EnableDrive(0);
 	}
 
 	// Reset the tuning
@@ -288,12 +304,26 @@ bool ClosedLoop::SetClosedLoopEnabled(bool enabled, const StringRef &reply) noex
 
 void ClosedLoop::SetHoldingCurrent(float percent)
 {
-	holdCurrent = (uint8_t)constrain<long>(lrintf((percent * 256)/100.0), 0, 255);
+	holdCurrent = constrain<long>(percent, 0, 100) / 100.0;
 }
 
 void ClosedLoop::SetStepDirection(bool dir) noexcept
 {
 	stepDirection = dir;
+}
+
+void ClosedLoop::ResetError(size_t driver) noexcept
+{
+# if SINGLE_DRIVER
+	if (driver == 0) {
+		// Set the target position to the current position
+		rawEncoderReading = encoder->GetReading();
+		currentMotorSteps = rawEncoderReading / encoderCountPerStep;
+		targetMotorSteps = currentMotorSteps;
+	}
+# else
+#  error Cannot support closed loop with the specified hardware
+# endif
 }
 
 EncoderType ClosedLoop::GetEncoderType() noexcept
@@ -304,24 +334,27 @@ EncoderType ClosedLoop::GetEncoderType() noexcept
 // TODO: Instead of having this take step, why not use the current DDA to calculate where we need to be?
 void ClosedLoop::TakeStep() noexcept
 {
-# if SINGLE_DRIVER
-	targetMotorSteps += (stepDirection ? 0.0625 : -0.0625) * (Platform::GetDirectionValue(1) ? 1 : -1);
-	return;
-# else
-#  error Cannot support closed loop with the specified hardware
-# endif
-
-	// TODO: The below causes an error! Perhaps SmartDrivers::GetMicrostepping is returning something unexpected
-
 	bool interpolation;	// TODO: Work out what this is for!
 # if SUPPORT_TMC2160 && SINGLE_DRIVER
-	float microstepAngle = 1.0/SmartDrivers::GetMicrostepping(0, interpolation);
-	targetMotorSteps += (stepDirection ? microstepAngle : -microstepAngle);
+	int microsteps = SmartDrivers::GetMicrostepping(0, interpolation);
+	float microstepAngle = microsteps == 0 ? 1 : 1.0/microsteps;
+	targetMotorSteps += (stepDirection ? microstepAngle : -microstepAngle) * (Platform::GetDirectionValue(1) ? 1 : -1);
 # else
 #  error Cannot support closed loop with the specified hardware
 # endif
 }
 
+//bool ClosedLoop::DeferDriverStateControl(size_t driver, const CanMessageMultipleDrivesRequest<DriverStateControl>& msg)
+//{
+//	if (tuning && driver == 0) {
+//
+//		deferredStateControlMsg = msg;
+//		deferredStateControl = true;
+//		return true;
+//	} else {
+//		return false;
+//	}
+//}
 
 GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const StringRef &reply) noexcept
 {
@@ -333,14 +366,21 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 	float tempKp = Kp;
 	float tempKi = Ki;
 	float tempKd = Kd;
+	size_t numThresholds = 4;
+	float tempErrorThresholds[numThresholds];
+	uint8_t tempCoilPolarity = (coilAPolarity << 1) | coilBPolarity;
 
 	// Pull changed parameters
 	uint8_t seen = 0;
 	seen |= parser.GetUintParam('T', tempEncoderType) 	<< 0;
-	seen |= parser.GetFloatParam('E', tempCPR) 			<< 1;
+	seen |= parser.GetFloatParam('C', tempCPR) 			<< 1;
 	seen |= parser.GetFloatParam('R', tempKp) 			<< 2;
 	seen |= parser.GetFloatParam('I', tempKi) 			<< 3;
 	seen |= parser.GetFloatParam('D', tempKd) 			<< 4;
+	seen |= parser.GetFloatArrayParam('E',
+				numThresholds,
+				tempErrorThresholds) 					<< 5;
+	seen |= parser.GetUintParam('L', tempCoilPolarity)  << 6;
 
 	// Report back if !seen
 	if (!seen) {
@@ -352,12 +392,22 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 
 	// Validate the new params
 	if (tempEncoderType > EncoderType::NumValues) {reply.copy("Invalid T value. Valid values are 0,1");return GCodeResult::error;}
+	if ((seen & 0x1 << 5) && tempErrorThresholds[0] < 0) {reply.copy("Error threshold value must be greater than zero.");return GCodeResult::error;}
+	if ((seen & 0x1 << 5) && tempErrorThresholds[1] < 0) {reply.copy("Error threshold value must be greater than zero.");return GCodeResult::error;}
+	if (tempCoilPolarity > 3) {reply.copy("Invalid L value. Valid values are 0,1,2,3");return GCodeResult::error;}
 
 	// Set the new params
 	encoderCountPerStep = tempCPR;
 	Kp = tempKp;
 	Ki = tempKi;
 	Kd = tempKd;
+	coilAPolarity = tempCoilPolarity & 0x2;
+	coilBPolarity = tempCoilPolarity & 0x1;
+
+	if (seen & 0x1 << 5) {
+		errorThresholds[0] = tempErrorThresholds[0];
+		errorThresholds[1] = tempErrorThresholds[1];
+	}
 
 	// If encoder type or count per steps has changed, we need to re-tune
 	if ((seen & 0x1 << 0) || (seen & 0x1 << 1)) {
@@ -427,6 +477,12 @@ GCodeResult ClosedLoop::ProcessM569Point6(const CanMessageGeneric &msg, const St
 {
 	CanMessageGenericParser parser(msg, M569Point6Params);
 
+	// Check we are in direct drive mode
+	if (SmartDrivers::GetDriverMode(0) != DriverMode::direct) {
+		reply.copy("Drive is not in closed loop mode.");
+		return GCodeResult::error;
+	}
+
 	uint8_t desiredTuning;
 	if (!parser.GetUintParam('V', desiredTuning))
 	{
@@ -440,19 +496,47 @@ GCodeResult ClosedLoop::ProcessM569Point6(const CanMessageGeneric &msg, const St
 		return GCodeResult::error;
 	}
 
+	uint8_t prevTuningError = tuningError;
 	tuning = desiredTuning;
 
-	return GCodeResult::ok;
+	// TODO: Is this the best way to do this?
+	while (tuning) {
+		tuningTask->Give();
+	}
+
+	// There are now 3 scenarios
+	// 1. No tuning errors exist (!tuningError)							= OK
+	// 2. No new tuning errors exist !(~prevTuningError & tuningError)	= WARNING
+	// 3. A new tuning error has been introduced (else)					= ERROR
+
+	if (!tuningError) {
+		return GCodeResult::ok;
+	} else if (!(~prevTuningError & tuningError)) {
+		reply.copy("No new tuning errors have been found, but some existing tuning errors exist.");
+		ReportTuningErrors(tuningError, reply);
+		return GCodeResult::warning;
+	} else {
+		reply.copy("One or more tuning errors occurred. Closed loop mode has been disabled, please correct this error and re-enable closed loop control.");
+		ReportTuningErrors(~prevTuningError & tuningError, reply);
+		if (prevTuningError & tuningError) {
+			reply.catf(" In addition, the following tuning errors were already present:");
+			ReportTuningErrors(prevTuningError & tuningError, reply);
+		}
+		return GCodeResult::error;
+	}
 }
 
 void ClosedLoop::Diagnostics(const StringRef& reply) noexcept
 {
+	reply.printf("Closed loop enabled: %s", closedLoopEnabled ? "yes" : "no");
 #if defined(EXP1HCE)
-	reply.printf("Encoder programmed status %s, encoder type %s", programmer->GetProgramStatus().ToString(), GetEncoderType().ToString());
+	reply.catf(", encoder programmed status %s, encoder type %s", programmer->GetProgramStatus().ToString(), GetEncoderType().ToString());
 #elif defined(EXP1HCL)
-	reply.printf("Encoder type %s", GetEncoderType().ToString());
+	reply.catf(", encoder type %s", GetEncoderType().ToString());
 #endif
 
+	reply.catf(", pre-error threshold: %f, error threshold: %f", (double) errorThresholds[0], (double) errorThresholds[1]);
+	reply.catf(", coil A polarity: %s, coil B polarity: %s", coilAPolarity ? "+" : "-", coilBPolarity ? "+" : "-");
 	reply.catf(", tuning: %#x, tuning error: %#x", tuning, tuningError);
 
 	if (encoder != nullptr)
@@ -500,6 +584,7 @@ void ClosedLoop::CollectSample() noexcept
 	if (filterRequested & 512)  	{sampleBuffer[sampleBufferWritePointer++] = desiredStepPhase;}
 	if (filterRequested & 1024) 	{sampleBuffer[sampleBufferWritePointer++] = coilA;}
 	if (filterRequested & 2048) 	{sampleBuffer[sampleBufferWritePointer++] = coilB;}
+	if (filterRequested & 4096) 	{sampleBuffer[sampleBufferWritePointer++] = currentError;}
 
 	// Count how many bits are set in 'filterRequested'
 	// TODO: Look into a more efficient way of doing this
@@ -703,6 +788,66 @@ GCodeResult ClosedLoop::FindEncoderCountPerStep(const CanMessageGeneric &msg, co
 		// Wait until there is some tuning to do
 		while (!tuning) {TaskBase::Take();}
 
+		// Enable all motors & disable them becoming idle
+		Platform::DriveEnableOverride(true);
+
+		// Check we are in direct drive mode
+		if (SmartDrivers::GetDriverMode(0) != DriverMode::direct) {
+			tuningError |= TUNE_ERR_SYSTEM_ERROR;
+			tuning = 0;
+		}
+
+		// Wait for the driver registers to be written
+		while (SmartDrivers::UpdatePending(0)) {TaskBase::Take(10);}
+
+		// Do a polarity detection manoeuvre
+		if (tuning & POLARITY_DETECTION_MANOEUVRE) {
+
+			int correctCoilPhase = 0;
+			int correctCoilPhaseError = 0;
+
+			for (int coilPhase=0; coilPhase<4; coilPhase++) {
+				int totalError = 0;			// The total error made by this phase arrangement
+				// Change the coil phase
+				coilAPolarity = coilPhase & 0x2;
+				coilBPolarity = coilPhase & 0x1;
+				for (desiredStepPhase = 0; desiredStepPhase<4096; desiredStepPhase+=256) {
+					// Move the motor
+					SetMotorPhase(desiredStepPhase, 1);
+
+					// Wait for the motor to move
+					while (SmartDrivers::UpdatePending(0)) {TaskBase::Take(10);}
+					vTaskDelay(2);
+
+					// Calculate where the motor has moved to
+					rawEncoderReading = encoder->GetReading();
+					currentMotorSteps = rawEncoderReading / encoderCountPerStep;
+					float tmp = currentMotorSteps / 4;
+					if (tmp >= 0) {
+						stepPhase = (tmp - (int) tmp) * 4095;
+					} else {
+						stepPhase = (1 + tmp - (int) tmp) * 4095;
+					}
+
+					// Calculate & accumulate the error
+					int16_t distance1 = abs(stepPhase - desiredStepPhase);
+					int16_t distance2 = abs(4095 - max(stepPhase, desiredStepPhase) + min(stepPhase, desiredStepPhase));
+					totalError += min<int16_t>(distance1, distance2);
+				}
+				// Update if this is the correct coil phase
+				if (coilPhase == 0 || totalError < correctCoilPhaseError) {
+					correctCoilPhase = coilPhase;
+					correctCoilPhaseError = totalError;
+				}
+			}
+
+			coilAPolarity = correctCoilPhase & 0x2;
+			coilBPolarity = correctCoilPhase & 0x1;
+
+			tuning &= ~POLARITY_DETECTION_MANOEUVRE;
+			tuningError &= ~TUNE_ERR_NOT_FOUND_POLARITY;
+		}
+
 		// Do a zeroing manoeuvre
 		if (tuning & ZEROING_MANOEUVRE) {
 			// Ease the motor from 4096 down to 0
@@ -792,12 +937,6 @@ GCodeResult ClosedLoop::FindEncoderCountPerStep(const CanMessageGeneric &msg, co
 			// TODO
 			tuning &= ~ENCODER_STEPS_CHECK;
 			tuningError &= ~TUNE_ERR_NOT_CHECKED_ENCODER_STEPS;
-		}
-
-		// Do a polarity detection manoeuvre
-		if (tuning & POLARITY_DETECTION_MANOEUVRE) {
-			// TODO
-			tuning &= ~POLARITY_DETECTION_MANOEUVRE;
 		}
 
 		// Do a continuous phase increase manoeuvre
@@ -940,6 +1079,8 @@ GCodeResult ClosedLoop::FindEncoderCountPerStep(const CanMessageGeneric &msg, co
 			tuning &= ~ZIEGLER_NICHOLS_MANOEUVRE;
 		}
 
+		Platform::DriveEnableOverride(false);
+
 		TaskBase::Take();
 	}
 
@@ -985,7 +1126,7 @@ GCodeResult ClosedLoop::StartDataCollection(const CanMessageStartClosedLoopDataC
 
 	// Set up the recording vars
 	collectingData = true;
-	rateRequested = msg.rate;
+	rateRequested = (1000.0 / msg.rate) / portTICK_PERIOD_MS;
 	filterRequested = msg.filter;
 	tuning |= msg.movement;
 	samplesRequested = msg.numSamples;
@@ -1106,6 +1247,7 @@ GCodeResult ClosedLoop::StartDataCollection(const CanMessageStartClosedLoopDataC
 				if (filterRequested & 512)  	{msg.data[dataPointer++] = desiredStepPhase;}
 				if (filterRequested & 1024) 	{msg.data[dataPointer++] = coilA;}
 				if (filterRequested & 2048) 	{msg.data[dataPointer++] = coilB;}
+				if (filterRequested & 4096) 	{msg.data[dataPointer++] = currentError;}
 
 				// Send the CAN message
 				buf.dataLength = msg.GetActualDataLength();
@@ -1113,7 +1255,7 @@ GCodeResult ClosedLoop::StartDataCollection(const CanMessageStartClosedLoopDataC
 			}
 
 			// Pause to maintain the sample rate (TODO: Implement variable sample rate)
-			vTaskDelayUntil(&lastWakeTime, 25);
+			vTaskDelayUntil(&lastWakeTime, rateRequested);
 		}
 
 		// Mark that we have finished collecting data

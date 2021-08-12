@@ -677,7 +677,7 @@ bool TmcDriverState::SetDriverMode(unsigned int mode)
 #if TMC_TYPE == 2160
 	case (unsigned int)DriverMode::direct:
 		UpdateRegister(WriteGConf, (writeRegisters[WriteGConf] | GCONF_DIRECT_MODE) & ~GCONF_STEALTHCHOP);
-		SetStandstillCurrentPercent(100);	// We need to set IHOLD to IRUN for direct mode
+		SetStandstillCurrentPercent(0);	// Default to 0% - the user can override this with M917
 		return true;
 #endif
 
@@ -690,7 +690,11 @@ bool TmcDriverState::SetDriverMode(unsigned int mode)
 DriverMode TmcDriverState::GetDriverMode() const
 {
 	// TODO: Add in direct mode
-	return ((writeRegisters[WriteGConf] & GCONF_STEALTHCHOP) != 0) ? DriverMode::stealthChop
+	return
+#if TMC_TYPE == 2160
+		  ((writeRegisters[WriteGConf] & GCONF_DIRECT_MODE) != 0) ? DriverMode::direct :
+#endif
+		  ((writeRegisters[WriteGConf] & GCONF_STEALTHCHOP) != 0) ? DriverMode::stealthChop
 		: ((writeRegisters[WriteChopConf] & CHOPCONF_CHM) == 0) ? DriverMode::spreadCycle
 #if TMC_TYPE == 5130
 			: ((writeRegisters[WriteChopConf] & CHOPCONF_5130_RNDTOFF) != 0) ? DriverMode::randomOffTime
