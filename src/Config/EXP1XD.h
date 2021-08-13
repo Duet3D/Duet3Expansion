@@ -33,6 +33,7 @@
 #define USE_TC_FOR_STEP			1
 
 #define SUPPORT_TMC51xx			0
+#define SUPPORT_TMC2160			0
 #define SUPPORT_TMC2660			0
 #define SUPPORT_TMC22xx			0
 

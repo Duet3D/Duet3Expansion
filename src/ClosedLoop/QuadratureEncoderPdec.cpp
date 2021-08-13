@@ -68,7 +68,12 @@ int32_t QuadratureEncoderPdec::GetReading() noexcept
 {
 	uint16_t pos = 0;
 	const int32_t r = GetPosition(pos);
-	return (cpr == 0) ? r : (r * (int32_t)cpr) + (int32_t)pos;
+	return ((cpr == 0) ? r : (r * (int32_t)cpr) + (int32_t)pos) + offset;
+}
+
+void QuadratureEncoderPdec::SetOffset(int32_t offset) noexcept
+{
+	this->offset += offset;
 }
 
 void QuadratureEncoderPdec::AppendDiagnostics(const StringRef &reply) noexcept

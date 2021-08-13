@@ -137,6 +137,9 @@ namespace Platform
 	static bool directions[NumDrivers];
 	static bool driverAtIdleCurrent[NumDrivers];
 	static int8_t enableValues[NumDrivers] = { 0 };
+	static DriverStateControl driverStates[NumDrivers];
+	static bool driverEnableOverride = false;
+	static DriverStateControl overriddenDriverStates[NumDrivers];
 # if !HAS_SMART_DRIVERS
 	static bool driverIsEnabled[NumDrivers] = { false };
 # endif
@@ -377,7 +380,7 @@ namespace Platform
 	{
 		Heat::SwitchOffAll();
 #if SUPPORT_DRIVERS
-# if SUPPORT_TMC51xx
+# if SUPPORT_TMC51xx || SUPPORT_TMC2160
 		IoPort::WriteDigital(GlobalTmc51xxEnablePin, true);
 # endif
 # if SUPPORT_TMC22xx
@@ -818,6 +821,7 @@ void Platform::Init()
 		idleCurrentFactor[i] = 0.3;
 		motorCurrents[i] = 0.0;
 		pressureAdvanceClocks[i] = 0.0;
+		driverStates[i] = DriverStateControl(DriverStateControl::driverDisabled);
 
 # if HAS_SMART_DRIVERS
 		SmartDrivers::SetMicrostepping(i, 16, true);
@@ -987,6 +991,10 @@ void Platform::Spin()
 	{
 		powered = false;
 	}
+#endif
+
+#if SUPPORT_CLOSED_LOOP
+	ClosedLoop::Spin();
 #endif
 
 #if HAS_SMART_DRIVERS
@@ -1579,6 +1587,11 @@ bool Platform::GetDirectionValue(size_t driver)
 
 void Platform::SetDirection(bool direction)
 {
+# if SUPPORT_CLOSED_LOOP
+	if (ClosedLoop::GetClosedLoopEnabled()) {ClosedLoop::SetStepDirection(direction);}
+	else
+	{
+# endif
 # if DIFFERENTIAL_STEPPER_OUTPUTS || ACTIVE_HIGH_DIR
 	// Active high direction signal
 	const bool d = (direction) ? directions[0] : !directions[0];
@@ -1605,6 +1618,9 @@ void Platform::SetDirection(bool direction)
 	if (isSlowDriver)
 	{
 		DDA::lastDirChangeTime = StepTimer::GetTimerTicks();
+	}
+# endif
+# if SUPPORT_CLOSED_LOOP
 	}
 # endif
 }
@@ -1669,12 +1685,51 @@ int8_t Platform::GetEnableValue(size_t driver)
 	return (driver < NumDrivers) ? enableValues[driver] : 0;
 }
 
+void Platform::DriveEnableOverride(bool override)
+{
+	if (override) {
+		for (size_t driver=0; driver<NumDrivers; driver++)
+		{
+			overriddenDriverStates[driver] = driverStates[driver];
+			EnableDrive(driver);
+		}
+		driverEnableOverride = true;
+	} else {
+		driverEnableOverride = false;
+		for (size_t driver=0; driver<NumDrivers; driver++)
+		{
+			switch (overriddenDriverStates[driver].mode)
+			{
+			case DriverStateControl::driverActive:
+				EnableDrive(driver);
+				break;
+
+			case DriverStateControl::driverIdle:
+				SetDriverIdle(driver, overriddenDriverStates[driver].idlePercent);
+				break;
+
+			case DriverStateControl::driverDisabled:
+			default:
+				DisableDrive(driver);
+				break;
+			}
+		}
+	}
+}
+
 void Platform::EnableDrive(size_t driver)
 {
+	if (driverEnableOverride) {
+		overriddenDriverStates[driver] = DriverStateControl(DriverStateControl::driverActive);
+		return;
+	}
 # if HAS_SMART_DRIVERS
 	if (driverAtIdleCurrent[driver])
 	{
 		driverAtIdleCurrent[driver] = false;
+#  if SUPPORT_CLOSED_LOOP
+		ClosedLoop::ResetError(driver);
+#  endif
 		UpdateMotorCurrent(driver);
 	}
 	SmartDrivers::EnableDrive(driver, true);
@@ -1687,10 +1742,15 @@ void Platform::EnableDrive(size_t driver)
 #  endif
 	}
 # endif
+	driverStates[driver] = DriverStateControl(DriverStateControl::driverActive);
 }
 
 void Platform::DisableDrive(size_t driver)
 {
+	if (driverEnableOverride) {
+		overriddenDriverStates[driver] = DriverStateControl(DriverStateControl::driverDisabled);
+		return;
+	}
 # if HAS_SMART_DRIVERS
 	SmartDrivers::EnableDrive(driver, false);
 # else
@@ -1702,10 +1762,15 @@ void Platform::DisableDrive(size_t driver)
 #  endif
 	}
 # endif
+	driverStates[driver] = DriverStateControl(DriverStateControl::driverDisabled);
 }
 
 void Platform::SetDriverIdle(size_t driver, uint8_t percent)
 {
+	if (driverEnableOverride) {
+		overriddenDriverStates[driver] = DriverStateControl(DriverStateControl::driverIdle, percent);
+		return;
+	}
 	idleCurrentFactor[driver] = (float)percent * 0.01;
 	if (percent == 0)
 	{
@@ -1718,6 +1783,7 @@ void Platform::SetDriverIdle(size_t driver, uint8_t percent)
 		UpdateMotorCurrent(driver);
 	}
 # endif
+	driverStates[driver] = DriverStateControl(DriverStateControl::driverIdle, percent);
 }
 
 void Platform::DisableAllDrives()

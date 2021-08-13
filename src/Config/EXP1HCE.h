@@ -34,14 +34,17 @@
 #define ACTIVE_HIGH_STEP		1		// 1 = active high, 0 = active low
 #define ACTIVE_HIGH_DIR			1		// 1 = active high, 0 = active low
 
-#define SUPPORT_TMC51xx			1
+#define SUPPORT_TMC51xx			0
+#define SUPPORT_TMC2160			1
 #define SUPPORT_TMC2660			0
 #define SUPPORT_TMC22xx			0
 #define SUPPORT_CLOSED_LOOP		1
+#define SUPPORT_CAN_LOGGING		1
 
 constexpr size_t NumDrivers = 1;
 constexpr size_t MaxSmartDrivers = 1;
-constexpr float MaxTmc5160Current = 6300.0;			// The maximum current we allow the TMC5160/5161 drivers to be set to
+constexpr float MaxTmc5160Current = 4500.0;			// The maximum current we allow the TMC5160/5161 drivers to be set to.
+													// TODO: MaxTmc5160Current could be 6300, but not when holding.
 
 constexpr Pin GlobalTmc51xxEnablePin = PortBPin(2);
 constexpr Pin GlobalTmc51xxCSPin = PortAPin(1);
