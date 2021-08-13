@@ -22,7 +22,7 @@ class CanMessageHeaterTuningReport;
 
 class LocalHeater : public Heater
 {
-	static const size_t NumPreviousTemperatures = 4; // How many samples we average the temperature derivative over
+	static const size_t NumPreviousTemperatures = 8; // How many samples we average the temperature derivative over
 
 public:
 	LocalHeater(unsigned int heaterNum);
