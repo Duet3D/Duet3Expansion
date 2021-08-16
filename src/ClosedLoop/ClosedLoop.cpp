@@ -150,6 +150,15 @@ void SetMotorPhase(uint16_t phase, float magnitude)
 # endif
 }
 
+# ifdef EXP1HCL
+static void GenerateTmcClock()
+{
+	// Currently we program DPLL0 to generate 120MHz output, so to get 15MHz we divide by 8
+	ConfigureGclk(ClockGenGclkNumber, GclkSource::dpll0, 8, true);
+	SetPinFunction(ClockGenPin, ClockGenPinPeriphMode);
+}
+# endif
+
 void ClosedLoop::Init() noexcept
 {
 	// Init the ATTiny programmer
@@ -182,7 +191,7 @@ void ClosedLoop::Init() noexcept
 
 	// Set up the data transmission task
 	dataTransmissionTask = new Task<ClosedLoop::TaskStackWords>;
-	dataTransmissionTask->Create(DataTransmissionTaskLoop, "CLData", nullptr, TaskPriority::ClosedLoop);
+	dataTransmissionTask->Create(DataTransmissionTaskLoop, "CLSend", nullptr, TaskPriority::ClosedLoop);
 }
 
 GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const StringRef &reply) noexcept
@@ -195,9 +204,8 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 	float tempKp = Kp;
 	float tempKi = Ki;
 	float tempKd = Kd;
-	size_t numThresholds = 4;
+	size_t numThresholds = 2;
 	float tempErrorThresholds[numThresholds];
-	uint8_t tempCoilPolarity = (coilAPolarity << 1) | coilBPolarity;
 
 	// Pull changed parameters
 	uint8_t seen = 0;
@@ -209,7 +217,6 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 	seen |= parser.GetFloatArrayParam('E',
 				numThresholds,
 				tempErrorThresholds) 					<< 5;
-	seen |= parser.GetUintParam('L', tempCoilPolarity)  << 6;
 
 	// Report back if !seen
 	if (!seen) {
@@ -223,15 +230,12 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 	if (tempEncoderType > EncoderType::NumValues) {reply.copy("Invalid T value. Valid values are 0,1");return GCodeResult::error;}
 	if ((seen & 0x1 << 5) && tempErrorThresholds[0] < 0) {reply.copy("Error threshold value must be greater than zero.");return GCodeResult::error;}
 	if ((seen & 0x1 << 5) && tempErrorThresholds[1] < 0) {reply.copy("Error threshold value must be greater than zero.");return GCodeResult::error;}
-	if (tempCoilPolarity > 3) {reply.copy("Invalid L value. Valid values are 0,1,2,3");return GCodeResult::error;}
 
 	// Set the new params
 	encoderCountPerStep = tempCPR;
 	Kp = tempKp;
 	Ki = tempKi;
 	Kd = tempKd;
-	coilAPolarity = tempCoilPolarity & 0x2;
-	coilBPolarity = tempCoilPolarity & 0x1;
 
 	if (seen & 0x1 << 5) {
 		errorThresholds[0] = tempErrorThresholds[0];
@@ -264,40 +268,40 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 				break;
 
 					case EncoderType::AS5047:
-	#ifdef EXP1HCE
+#ifdef EXP1HCE
 						encoder = new AS5047D(*encoderSpi, EncoderCsPin);
-	#elif defined(EXP1HCL)
+#elif defined(EXP1HCL)
 						encoder = new AS5047D(*Platform::sharedSpi, EncoderCsPin);
-	#endif
+#endif
 						break;
 
 					case EncoderType::TLI5012:
-	#ifdef EXP1HCE
+#ifdef EXP1HCE
 						encoder = new TLI5012B(*encoderSpi, EncoderCsPin);
-	#elif defined(EXP1HCL)
+#elif defined(EXP1HCL)
 						encoder = new TLI5012B(*Platform::sharedSpi, EncoderCsPin);
-	#endif
+#endif
 						break;
 
 			case EncoderType::linearQuadrature:
-	#ifdef EXP1HCE
+#ifdef EXP1HCE
 				encoder = new QuadratureEncoderAttiny(true);
-	#elif defined(EXP1HCL)
+#elif defined(EXP1HCL)
 				encoder = new QuadratureEncoderPdec(true);
-	#else
-	# error Unknown board
-	#endif
+#else
+# error Unknown board
+#endif
 				break;
 
 			case EncoderType::rotaryQuadrature:
-	#ifdef EXP1HCE
+#ifdef EXP1HCE
 				encoder = new QuadratureEncoderAttiny(false);
-	#elif defined(EXP1HCL)
+#elif defined(EXP1HCL)
 				// TODO: Debug why this can't be set to rotary mode
 				encoder = new QuadratureEncoderPdec(true);
-	#else
-	# error Unknown board
-	#endif
+#else
+# error Unknown board
+#endif
 				break;
 			}
 		}
@@ -441,7 +445,7 @@ GCodeResult ClosedLoop::ProcessM569Point6(const CanMessageGeneric &msg, const St
 	{
 
 		// If we are not collecting data, block the task
-		// If rateRequested == 0, the data collection is handled in ::Spin()
+		// If rateRequested == 0, the data collection is handled in ClosedLoop::ControlLoop()
 		while (!collectingData || rateRequested == 0)
 		{
 			TaskBase::Take();
@@ -956,15 +960,6 @@ void ClosedLoop::ControlMotorCurrents() noexcept
 	// Update vars for the next cycle
 	lastError = currentError;
 }
-
-# ifdef EXP1HCL
-static void GenerateTmcClock()
-{
-	// Currently we program DPLL0 to generate 120MHz output, so to get 15MHz we divide by 8
-	ConfigureGclk(ClockGenGclkNumber, GclkSource::dpll0, 8, true);
-	SetPinFunction(ClockGenPin, ClockGenPinPeriphMode);
-}
-# endif
 
 # ifdef EXP1HCE
 static SharedSpiDevice *encoderSpi = nullptr;

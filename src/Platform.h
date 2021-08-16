@@ -167,33 +167,24 @@ namespace Platform
 	inline void StepDriverLow()
 	{
 #  if SUPPORT_CLOSED_LOOP
-		if (!ClosedLoop::GetClosedLoopEnabled())
-		{
+		if (ClosedLoop::GetClosedLoopEnabled()) {return;}
 #  endif
 #  if DIFFERENTIAL_STEPPER_OUTPUTS || ACTIVE_HIGH_STEP
 			StepPio->OUTCLR.reg = DriverBit;
 #  else
 			StepPio->OUTSET.reg = DriverBit;
-#  endif
-#  if SUPPORT_CLOSED_LOOP
-		}
 #  endif
 	}
 
 	inline void StepDriverHigh()
 	{
 #  if SUPPORT_CLOSED_LOOP
-		if (ClosedLoop::GetClosedLoopEnabled()) {ClosedLoop::TakeStep();}
-		else
-		{
+		if (ClosedLoop::GetClosedLoopEnabled()) {ClosedLoop::TakeStep();return;}
 #  endif
 #  if DIFFERENTIAL_STEPPER_OUTPUTS || ACTIVE_HIGH_STEP
 			StepPio->OUTSET.reg = DriverBit;
 #  else
 			StepPio->OUTCLR.reg = DriverBit;
-#  endif
-#  if SUPPORT_CLOSED_LOOP
-		}
 #  endif
 	}
 

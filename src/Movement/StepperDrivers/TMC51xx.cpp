@@ -383,8 +383,6 @@ private:
 	uint8_t regIndexRequested;								// the register we asked to read in the previous transaction, or 0xFF
 	uint8_t previousRegIndexRequested;						// the register we asked to read in the previous transaction, or 0xFF
 	bool enabled;											// true if driver is enabled
-
-	DriverMode driverMode;									// closed-loop needs this in order to persist the driver mode if closed loop is turned on & off again
 };
 
 const uint8_t TmcDriverState::WriteRegNumbers[NumWriteRegisters] =
@@ -494,8 +492,8 @@ void TmcDriverState::SetStandstillCurrentPercent(float percent)
 	standstillCurrentFraction = (uint8_t)constrain<long>(lrintf((percent * 256)/100.0), 0, 255);
 # if SUPPORT_CLOSED_LOOP
 	// If we are in closed loop mode, stand still current is handled elsewhere
+	ClosedLoop::SetHoldingCurrent(percent);
 	if (ClosedLoop::GetClosedLoopEnabled()) {
-		ClosedLoop::SetHoldingCurrent(percent);
 		standstillCurrentFraction = 255;
 	}
 # endif
@@ -626,8 +624,6 @@ bool TmcDriverState::SetChopConf(uint32_t newVal)
 // Set the driver mode
 bool TmcDriverState::SetDriverMode(unsigned int mode)
 {
-	driverMode = (DriverMode) mode;
-
 	switch (mode)
 	{
 	case (unsigned int)DriverMode::spreadCycle:
@@ -677,7 +673,9 @@ bool TmcDriverState::SetDriverMode(unsigned int mode)
 #if TMC_TYPE == 2160
 	case (unsigned int)DriverMode::direct:
 		UpdateRegister(WriteGConf, (writeRegisters[WriteGConf] | GCONF_DIRECT_MODE) & ~GCONF_STEALTHCHOP);
-		SetStandstillCurrentPercent(0);	// Default to 0% - the user can override this with M917
+		// ClosedLoop is now in control of standstill currents
+		standstillCurrentFraction = 255;
+		UpdateCurrent();
 		return true;
 #endif
 
@@ -689,7 +687,6 @@ bool TmcDriverState::SetDriverMode(unsigned int mode)
 // Get the driver mode
 DriverMode TmcDriverState::GetDriverMode() const
 {
-	// TODO: Add in direct mode
 	return
 #if TMC_TYPE == 2160
 		  ((writeRegisters[WriteGConf] & GCONF_DIRECT_MODE) != 0) ? DriverMode::direct :

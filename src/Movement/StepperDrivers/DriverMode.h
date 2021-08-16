@@ -14,7 +14,9 @@ enum class DriverMode : unsigned int
 	randomOffTime,
 	spreadCycle,
 	stealthChop,			// includes stealthChop2
+#if SUPPORT_TMC2160
 	direct,
+#endif
 	unknown					// must be last!
 };
 
@@ -42,7 +44,9 @@ enum class SmartDriverRegister : unsigned int
 	mstepPos,
 	pwmScale,
 	pwmAuto,
-	xDirect
+#if SUPPORT_TMC2160
+	xDirect,
+#endif
 };
 
 #endif /* SRC_MOVEMENT_STEPPERDRIVERS_DRIVERMODE_H_ */
