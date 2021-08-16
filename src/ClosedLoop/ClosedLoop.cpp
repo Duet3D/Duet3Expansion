@@ -648,88 +648,6 @@ void ClosedLoop::ControlMotorCurrents() noexcept
 	lastError = currentError;
 }
 
-// TODO: This isn't currently called anywhere, but it's quite a useful utility. Do we want this in a GCODE command?
-// TODO: If we are going to use this, definitely pull it into the tuning loop
-GCodeResult ClosedLoop::FindEncoderCountPerStep(const CanMessageGeneric &msg, const StringRef &reply) noexcept
-{
-	// TODO: Check we are in closed loop mode
-	tuning |= ENCODER_STEPS_CHECK;
-
-	// Set to 0
-	SetMotorPhase(512, 1);
-# if SUPPORT_TMC2160 && SINGLE_DRIVER
-	while (SmartDrivers::UpdatePending(0)) { }
-# else
-#  error Cannot support closed loop with the specified hardware
-# endif
-	delayMicroseconds(100000);
-	int32_t zeroReading = encoder->GetReading();
-
-	// Set to 1024
-	SetMotorPhase(1536, 1);
-# if SUPPORT_TMC2160 && SINGLE_DRIVER
-	while (SmartDrivers::UpdatePending(0)) { }
-# else
-#  error Cannot support closed loop with the specified hardware
-# endif
-	delayMicroseconds(100000);
-	int32_t quarterReading = encoder->GetReading();
-
-	// Set to 2048
-	SetMotorPhase(2560, 1);
-# if SUPPORT_TMC2160 && SINGLE_DRIVER
-	while (SmartDrivers::UpdatePending(0)) { }
-# else
-#  error Cannot support closed loop with the specified hardware
-# endif
-	delayMicroseconds(100000);
-	int32_t halfReading = encoder->GetReading();
-
-	// Set to 3092
-	SetMotorPhase(3584, 1);
-# if SUPPORT_TMC2160 && SINGLE_DRIVER
-	while (SmartDrivers::UpdatePending(0)) { }
-# else
-#  error Cannot support closed loop with the specified hardware
-# endif
-	delayMicroseconds(100000);
-	int32_t fullReading = encoder->GetReading();
-
-	// Set back to 0
-	SetMotorPhase(512, 1);
-# if SUPPORT_TMC2160 && SINGLE_DRIVER
-	while (SmartDrivers::UpdatePending(0)) { }
-# else
-#  error Cannot support closed loop with the specified hardware
-# endif
-	delayMicroseconds(100000);
-	int32_t secondZeroReading = encoder->GetReading();
-
-	tuning &= ~ENCODER_STEPS_CHECK;
-
-	reply.catf("\nreading: %d", (int) zeroReading);
-	reply.catf("\nreading: %d", (int) quarterReading);
-	reply.catf("\nreading: %d", (int) halfReading);
-	reply.catf("\nreading: %d", (int) fullReading);
-	reply.catf("\nreading: %d", (int) secondZeroReading);
-
-	// Tell the user the encoder readings per step
-	int32_t stepOne = quarterReading-zeroReading;
-	reply.catf("\nStep 1: %d", (int) stepOne);
-	int32_t stepTwo = halfReading-quarterReading;
-	reply.catf("\nStep 2: %d", (int) stepTwo);
-	int32_t stepThree = fullReading-halfReading;
-	reply.catf("\nStep 3: %d", (int) stepThree);
-	int32_t stepFour = secondZeroReading-fullReading;
-	reply.catf("\nStep 4: %d", (int) stepFour);
-
-	// Work out the average
-	float avgStep = (secondZeroReading - zeroReading) / 4.0;
-	reply.catf("\nAverage: %f", (double) avgStep);
-
-	return GCodeResult::ok;
-}
-
 uint8_t ClosedLoop::ReadLiveStatus() noexcept
 {
 	uint8_t result = 0;
@@ -1063,7 +981,7 @@ void ClosedLoop::PerformTune() noexcept
 
 }
 
-GCodeResult ClosedLoop::StartDataCollection(const CanMessageStartClosedLoopDataCollection& msg, const StringRef& reply) noexcept
+GCodeResult ClosedLoop::ProcessM569Point5(const CanMessageStartClosedLoopDataCollection& msg, const StringRef& reply) noexcept
 {
 	if (!closedLoopEnabled || msg.deviceNumber != 0 || encoder == nullptr)
 	{

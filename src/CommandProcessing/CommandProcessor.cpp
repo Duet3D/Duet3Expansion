@@ -1025,7 +1025,7 @@ void CommandProcessor::Spin()
 #if SUPPORT_CLOSED_LOOP
 		case CanMessageType::startClosedLoopDataCollection:
 			requestId = buf->msg.startClosedLoopDataCollection.requestId;
-			rslt = ClosedLoop::StartDataCollection(buf->msg.startClosedLoopDataCollection, replyRef);
+			rslt = ClosedLoop::ProcessM569Point5(buf->msg.startClosedLoopDataCollection, replyRef);
 			break;
 #endif
 
