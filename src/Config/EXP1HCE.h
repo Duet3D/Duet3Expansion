@@ -39,7 +39,6 @@
 #define SUPPORT_TMC2660			0
 #define SUPPORT_TMC22xx			0
 #define SUPPORT_CLOSED_LOOP		1
-#define SUPPORT_CAN_LOGGING		1
 
 constexpr size_t NumDrivers = 1;
 constexpr size_t MaxSmartDrivers = 1;

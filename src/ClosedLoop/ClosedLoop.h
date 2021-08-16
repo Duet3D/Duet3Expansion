@@ -74,11 +74,10 @@ namespace ClosedLoop
 	void ResetError(size_t driver) noexcept;
 	bool SetClosedLoopEnabled(bool, const StringRef&) noexcept;
 
-	void Spin() noexcept;
-	[[noreturn]] void TuningLoop() noexcept;
+	void PerformTune() noexcept;
+	[[noreturn]] void ControlLoop() noexcept;
 
 	void ControlMotorCurrents() noexcept;
-	void Log() noexcept;
 
 	uint8_t ReadLiveStatus() noexcept;
 
