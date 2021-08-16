@@ -53,11 +53,21 @@ namespace ClosedLoop
 		OnNextMove = 1,
 	};
 
+	constexpr size_t TaskStackWords = 200;		// Size of the stack for all closed loop tasks
+
 	void Init() noexcept;
 
 	GCodeResult ProcessM569Point1(const CanMessageGeneric& msg, const StringRef& reply) noexcept;
-	GCodeResult ProcessM569Point6(const CanMessageGeneric& msg, const StringRef& reply) noexcept;
 	GCodeResult ProcessM569Point5(const CanMessageStartClosedLoopDataCollection&, const StringRef&) noexcept;
+	GCodeResult ProcessM569Point6(const CanMessageGeneric& msg, const StringRef& reply) noexcept;
+
+	[[noreturn]] void ControlLoop() noexcept;
+	[[noreturn]] void DataCollectionLoop() noexcept;
+	[[noreturn]] void DataTransmissionLoop() noexcept;
+
+	void PerformTune() noexcept;
+	void CollectSample() noexcept;
+	void ControlMotorCurrents() noexcept;
 
 #  ifdef EXP1HCE
 	void TurnAttinyOff() noexcept;
@@ -74,14 +84,6 @@ namespace ClosedLoop
 	void SetHoldingCurrent(float percent);
 	void ResetError(size_t driver) noexcept;
 	bool SetClosedLoopEnabled(bool, const StringRef&) noexcept;
-
-	void PerformTune() noexcept;
-	void CollectSample() noexcept;
-	void ControlMotorCurrents() noexcept;
-
-	[[noreturn]] void ControlLoop() noexcept;
-	[[noreturn]] void DataCollectionLoop() noexcept;
-	[[noreturn]] void DataTransmissionLoop() noexcept;
 }
 
 #  ifdef EXP1HCL

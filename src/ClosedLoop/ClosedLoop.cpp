@@ -9,9 +9,9 @@
 
 #if SUPPORT_CLOSED_LOOP
 
-#include "AS5047D.h"
-#include "TLI5012B.h"
-#include "SpiEncoder.h"
+# include "AS5047D.h"
+# include "TLI5012B.h"
+# include "SpiEncoder.h"
 
 # include <math.h>
 # include <Platform.h>
@@ -24,9 +24,11 @@
 # if defined(EXP1HCE)
 #  include "AttinyProgrammer.h"
 #  include "QuadratureEncoderAttiny.h"
-#elif defined(EXP1HCL)
+#  define CLOSED_LOOP_DATA_BUFFER_SIZE 50		//	(50 readings of 12 variables)
+# elif defined(EXP1HCL)
 #  include "QuadratureEncoderPdec.h"
-#else
+#  define CLOSED_LOOP_DATA_BUFFER_SIZE 2000		//  (1000 readings of 12 variables)
+# else
 #  error Cannot support closed loop with the specified hardware
 # endif
 
@@ -34,12 +36,6 @@
 #  include "Movement/StepperDrivers/TMC51xx.h"
 # else
 #  error Cannot support closed loop with the specified hardware
-# endif
-
-# ifdef EXP1HCL
-#  define CLOSED_LOOP_DATA_BUFFER_SIZE 2000		//  (1000 readings of 12 variables)
-# else
-#  define CLOSED_LOOP_DATA_BUFFER_SIZE 50		//	(50 readings of 12 variables)
 # endif
 
 // Control variables
@@ -60,6 +56,7 @@ static float Kd = 0;							// The proportional constant for the PID controller
 
 static float errorThresholds[2];				// The error thresholds. [0] is pre-stall, [1] is stall
 
+static uint8_t tuning = 0;						// Bitmask of any tuning manoeuvres that have been requested
 static float ultimateGain = 0;					// The ultimate gain of the controller (used for tuning)
 static float oscillationPeriod = 0;				// The oscillation period when Kp = ultimate gain
 
@@ -102,48 +99,20 @@ static int16_t coilB;							// The current to run through coil A
 static bool stall = false;						// Has the closed loop error threshold been exceeded?
 static bool preStall = false;					// Has the closed loop warning threshold been exceeded?
 
-// Misc. variables
 
-// Masks for each coil register
-const uint32_t COIL_A_MASK = 0x000001FF;
-const uint32_t COIL_B_MASK = 0x01FF0000;
+// Tasks and task loops
+static Task<ClosedLoop::TaskStackWords> *controlTask;				// Control task - controls the motor currents
+extern "C" [[noreturn]] void ControlTaskLoop(void *param) noexcept { ClosedLoop::ControlLoop(); }
 
-// Bitmask of any tuning manoeuvres that have been requested
-static uint8_t tuning = 0;
+static Task<ClosedLoop::TaskStackWords> *dataCollectionTask;		// Data collection task - handles sampling some of the static vars in this file
+extern "C" [[noreturn]] void DataCollectionTaskLoop(void *param) noexcept { ClosedLoop::DataCollectionLoop(); }
 
-// Control task - controls the motor currents
-constexpr size_t ControlTaskStackWords = 200;
-static Task<ControlTaskStackWords> *controlTask;
+static Task<ClosedLoop::TaskStackWords> *dataTransmissionTask;		// Data transmission task - handles sending back the buffered sample data
+extern "C" [[noreturn]] void DataTransmissionTaskLoop(void *param) noexcept { ClosedLoop::DataTransmissionLoop(); }
 
-// Data collection task - handles sampling some of the static vars in this file
-constexpr size_t DataCollectionTaskStackWords = 200;
-static Task<DataCollectionTaskStackWords> *dataCollectionTask;
-
-// Data transmission task - handles sending back the buffered sample data
-constexpr size_t DataTransmissionTaskStackWords = 200;
-static Task<DataTransmissionTaskStackWords> *dataTransmissionTask;
-
-#ifdef EXP1HCE
-static SharedSpiDevice *encoderSpi = nullptr;
-
-static void GenerateAttinyClock()
-{
-	// Currently we program the DPLL to generate 48MHz output, so to get 16MHz we divide by 3 and set the Improve Duty Cycle bit
-	// We could instead program the DPLL to generate 96MHz and divide it by an extra factor of 2 in the other GCLKs
-	// Or we could divide by 4 and be content with 12MHz.
-	ConfigureGclk(ClockGenGclkNumber, GclkSource::dpll, 3, true);
-	SetPinFunction(ClockGenPin, ClockGenPinPeriphMode);
-}
-
-void  ClosedLoop::TurnAttinyOff() noexcept
-{
-	programmer->TurnAttinyOff();
-}
-
-#endif
 
 // TODO: Helper function to convert between the internal representation of encoderCountPerStep, and the appropriate external representation (e.g. CPR)
-#if false
+# if false
 float countPerStepToExternalUnits() {
 	// TODO
 }
@@ -151,8 +120,9 @@ float countPerStepToExternalUnits() {
 float externalUnitsToCountPerStep() {
 	// TODO
 }
-#endif
+# endif
 
+// Helper function to cat all the current tuning errors onto a reply in human-readable form
 void ReportTuningErrors(uint8_t tuningErrorBitmask, const StringRef &reply)
 {
 	if (tuningErrorBitmask & ClosedLoop::TUNE_ERR_NOT_ZEROED) 					{reply.catf(" The drive has not been zeroed.");}
@@ -174,59 +144,26 @@ void SetMotorPhase(uint16_t phase, float magnitude)
 # if SUPPORT_TMC2160 && SINGLE_DRIVER
 	SmartDrivers::SetRegister(0,
 			SmartDriverRegister::xDirect,
-			((coilB << 16) & COIL_B_MASK) | (coilA & COIL_A_MASK));
+			((coilB << 16) & 0x01FF0000) | (coilA & 0x000001FF));
 # else
 #  error Cannot support closed loop with the specified hardware
 # endif
 }
-
-#ifdef EXP1HCL
-
-static void GenerateTmcClock()
-{
-	// Currently we program DPLL0 to generate 120MHz output, so to get 15MHz we divide by 8
-	ConfigureGclk(ClockGenGclkNumber, GclkSource::dpll0, 8, true);
-	SetPinFunction(ClockGenPin, ClockGenPinPeriphMode);
-}
-
-#endif
-
-#ifdef EXP1HCE
-
-void  ClosedLoop::EnableEncodersSpi() noexcept
-{
-	SetPinFunction(EncoderMosiPin, EncoderMosiPinPeriphMode);
-	SetPinFunction(EncoderSclkPin, EncoderSclkPinPeriphMode);
-	SetPinFunction(EncoderMisoPin, EncoderMisoPinPeriphMode);
-}
-
-void  ClosedLoop::DisableEncodersSpi() noexcept
-{
-	ClearPinFunction(EncoderMosiPin);
-	ClearPinFunction(EncoderSclkPin);
-	ClearPinFunction(EncoderMisoPin);
-}
-
-#endif
-
-extern "C" [[noreturn]] void ControlTaskLoop(void *param) noexcept { ClosedLoop::ControlLoop(); }
-extern "C" [[noreturn]] void DataCollectionTaskLoop(void *param) noexcept { ClosedLoop::DataCollectionLoop(); }
-extern "C" [[noreturn]] void DataTransmissionTaskLoop(void *param) noexcept { ClosedLoop::DataTransmissionLoop(); }
 
 void ClosedLoop::Init() noexcept
 {
 	// Init the ATTiny programmer
 	pinMode(EncoderCsPin, OUTPUT_HIGH);													// make sure that any attached SPI encoder is not selected
 
-#if defined(EXP1HCE)
+# if defined(EXP1HCE)
 	encoderSpi = new SharedSpiDevice(EncoderSspiSercomNumber, EncoderSspiDataInPad);	// create the encoders SPI device
 	GenerateAttinyClock();
 	programmer = new AttinyProgrammer(*encoderSpi);
 	programmer->InitAttiny();
-#elif defined(EXP1HCL)
+# elif defined(EXP1HCL)
 	// The EXP1HCL board uses the standard shared SPI device
 	GenerateTmcClock();
-#endif
+# endif
 
 	// Init that we have not been tuned
 	tuningError = TUNE_ERR_NOT_PERFORMED_MINIMAL_TUNE;
@@ -236,112 +173,17 @@ void ClosedLoop::Init() noexcept
 	errorThresholds[1] = 0;
 
 	// Set up the control task
-	controlTask = new Task<ControlTaskStackWords>;
+	controlTask = new Task<ClosedLoop::TaskStackWords>;
 	controlTask->Create(ControlTaskLoop, "CLControl", nullptr, TaskPriority::ClosedLoop);
 
 	// Set up the data collection task
-	dataCollectionTask = new Task<DataCollectionTaskStackWords>;
+	dataCollectionTask = new Task<ClosedLoop::TaskStackWords>;
 	dataCollectionTask->Create(DataCollectionTaskLoop, "CLData", nullptr, TaskPriority::ClosedLoop);
 
 	// Set up the data transmission task
-	dataTransmissionTask = new Task<DataTransmissionTaskStackWords>;
+	dataTransmissionTask = new Task<ClosedLoop::TaskStackWords>;
 	dataTransmissionTask->Create(DataTransmissionTaskLoop, "CLData", nullptr, TaskPriority::ClosedLoop);
 }
-
-bool ClosedLoop::GetClosedLoopEnabled() noexcept
-{
-	return closedLoopEnabled;
-}
-
-bool ClosedLoop::SetClosedLoopEnabled(bool enabled, const StringRef &reply) noexcept
-{
-
-	if (enabled) {
-# if SUPPORT_SLOW_DRIVERS
-		// TODO: Check what we need to do here
-		if (Platform::IsSlowDriver()) {
-			reply.copy("Closed loop drive mode not yet supported");
-			return false;
-		}
-# endif
-# if USE_TC_FOR_STEP || !SINGLE_DRIVER || !SUPPORT_TMC2160
-		// TODO: Check what we need to do here
-		reply.copy("Closed loop drive mode not yet supported");
-		return false;
-# endif
-		if (encoder == nullptr)
-		{
-			reply.copy("No encoder specified for closed loop drive mode");
-			return false;
-		}
-	}
-
-	// Reset the tuning
-	tuningError = TUNE_ERR_NOT_PERFORMED_MINIMAL_TUNE;
-
-	// Set the target position to the current position
-	rawEncoderReading = encoder->GetReading();
-	currentMotorSteps = rawEncoderReading / encoderCountPerStep;
-	targetMotorSteps = currentMotorSteps;
-
-	// Set the closed loop enabled state
-	closedLoopEnabled = enabled;
-	return true;
-}
-
-void ClosedLoop::SetHoldingCurrent(float percent)
-{
-	holdCurrent = constrain<long>(percent, 0, 100) / 100.0;
-}
-
-void ClosedLoop::SetStepDirection(bool dir) noexcept
-{
-	stepDirection = dir;
-}
-
-void ClosedLoop::ResetError(size_t driver) noexcept
-{
-# if SINGLE_DRIVER
-	if (driver == 0) {
-		// Set the target position to the current position
-		rawEncoderReading = encoder->GetReading();
-		currentMotorSteps = rawEncoderReading / encoderCountPerStep;
-		targetMotorSteps = currentMotorSteps;
-	}
-# else
-#  error Cannot support closed loop with the specified hardware
-# endif
-}
-
-EncoderType ClosedLoop::GetEncoderType() noexcept
-{
-	return (encoder == nullptr) ? EncoderType::none : encoder->GetType();
-}
-
-// TODO: Instead of having this take step, why not use the current DDA to calculate where we need to be?
-void ClosedLoop::TakeStep() noexcept
-{
-	bool interpolation;	// TODO: Work out what this is for!
-# if SUPPORT_TMC2160 && SINGLE_DRIVER
-	int microsteps = SmartDrivers::GetMicrostepping(0, interpolation);
-	float microstepAngle = microsteps == 0 ? 1 : 1.0/microsteps;
-	targetMotorSteps += (stepDirection ? microstepAngle : -microstepAngle) * (Platform::GetDirectionValue(1) ? 1 : -1);
-# else
-#  error Cannot support closed loop with the specified hardware
-# endif
-}
-
-//bool ClosedLoop::DeferDriverStateControl(size_t driver, const CanMessageMultipleDrivesRequest<DriverStateControl>& msg)
-//{
-//	if (tuning && driver == 0) {
-//
-//		deferredStateControlMsg = msg;
-//		deferredStateControl = true;
-//		return true;
-//	} else {
-//		return false;
-//	}
-//}
 
 GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const StringRef &reply) noexcept
 {
@@ -470,6 +312,57 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 	return GCodeResult::ok;
 }
 
+GCodeResult ClosedLoop::ProcessM569Point5(const CanMessageStartClosedLoopDataCollection& msg, const StringRef& reply) noexcept
+{
+	if (!closedLoopEnabled || msg.deviceNumber != 0 || encoder == nullptr)
+	{
+		reply.copy("Drive is not in closed loop mode");
+		return GCodeResult::error;
+	}
+
+	if (collectingData)
+	{
+		reply.copy("Drive is already collecting data");
+		return GCodeResult::error;
+	}
+
+	if (msg.rate == 0) {
+		// Count how many bits are set in 'msg.filter'
+		// TODO: Look into a more efficient way of doing this
+		int variableCount = 0;
+		int tmpFilter = msg.filter;
+		while (tmpFilter != 0) {
+			variableCount += tmpFilter & 0x1;
+			tmpFilter >>= 1;
+		}
+
+		const int maxSamples = (CLOSED_LOOP_DATA_BUFFER_SIZE * 12) / variableCount;
+
+		if (msg.numSamples > maxSamples)
+		{
+			reply.printf("Maximum samples is %d when sample rate is continuous (R0) and %d variables are being collected (D%d)", maxSamples, variableCount, msg.filter);
+			return GCodeResult::error;
+		}
+	}
+
+	if (msg.movement > FULL_TUNE) {
+		reply.printf("Maximum value for V is %d. V%d is invalid.", FULL_TUNE, msg.movement);
+		return GCodeResult::error;
+	}
+
+	// Set up the recording vars
+	collectingData = true;
+	rateRequested = msg.rate == 0 ? 0 : (1000.0 / msg.rate) / portTICK_PERIOD_MS;
+	filterRequested = msg.filter;
+	tuning |= msg.movement;
+	samplesRequested = msg.numSamples;
+	modeRequested = (RecordingMode) msg.mode;
+
+	// Start the data collection task
+	dataCollectionTask->Give();
+	return GCodeResult::ok;
+}
+
 GCodeResult ClosedLoop::ProcessM569Point6(const CanMessageGeneric &msg, const StringRef &reply) noexcept
 {
 	CanMessageGenericParser parser(msg, M569Point6Params);
@@ -523,141 +416,6 @@ GCodeResult ClosedLoop::ProcessM569Point6(const CanMessageGeneric &msg, const St
 	}
 }
 
-void ClosedLoop::Diagnostics(const StringRef& reply) noexcept
-{
-	reply.printf("Closed loop enabled: %s", closedLoopEnabled ? "yes" : "no");
-	reply.catf(", live status: %#x", ReadLiveStatus());
-#if defined(EXP1HCE)
-	reply.catf(", encoder programmed status %s, encoder type %s", programmer->GetProgramStatus().ToString(), GetEncoderType().ToString());
-#elif defined(EXP1HCL)
-	reply.catf(", encoder type %s", GetEncoderType().ToString());
-#endif
-
-	reply.catf(", pre-error threshold: %f, error threshold: %f", (double) errorThresholds[0], (double) errorThresholds[1]);
-	reply.catf(", coil A polarity: %s, coil B polarity: %s", coilAPolarity ? "+" : "-", coilBPolarity ? "+" : "-");
-	reply.catf(", tuning: %#x, tuning error: %#x", tuning, tuningError);
-
-	if (encoder != nullptr)
-	{
-		reply.catf(", position %" PRIi32, encoder->GetReading());
-		encoder->AppendDiagnostics(reply);
-	}
-	reply.catf(", collecting data: %s", collectingData ? "yes" : "no");
-	if (collectingData)
-	{
-		reply.catf(" (filter: %#x, samples: %d, mode: %d, rate: %d, movement: %d)", filterRequested, samplesRequested, modeRequested, rateRequested, movementRequested);
-	}
-
-	reply.catf(", ultimateGain=%f, oscillationPeriod=%f", (double) ultimateGain, (double) oscillationPeriod);
-
-	//DEBUG
-	//reply.catf(", event status 0x%08" PRIx32 ", TCC2 CTRLA 0x%08" PRIx32 ", TCC2 EVCTRL 0x%08" PRIx32, EVSYS->CHSTATUS.reg, QuadratureTcc->CTRLA.reg, QuadratureTcc->EVCTRL.reg);
-}
-
-void ClosedLoop::CollectSample() noexcept
-{
-	if (filterRequested & 1)  		{sampleBuffer[sampleBufferWritePointer++] = rawEncoderReading;}
-	if (filterRequested & 2)  		{sampleBuffer[sampleBufferWritePointer++] = currentMotorSteps;}
-	if (filterRequested & 4)  		{sampleBuffer[sampleBufferWritePointer++] = targetMotorSteps;}
-	if (filterRequested & 8)  		{sampleBuffer[sampleBufferWritePointer++] = stepPhase;}
-	if (filterRequested & 16)  		{sampleBuffer[sampleBufferWritePointer++] = PIDControlSignal;}
-	if (filterRequested & 32)  		{sampleBuffer[sampleBufferWritePointer++] = PIDPTerm;}
-	if (filterRequested & 64)  		{sampleBuffer[sampleBufferWritePointer++] = PIDITerm;}
-	if (filterRequested & 128)  	{sampleBuffer[sampleBufferWritePointer++] = PIDDTerm;}
-	if (filterRequested & 256)  	{sampleBuffer[sampleBufferWritePointer++] = phaseShift;}
-	if (filterRequested & 512)  	{sampleBuffer[sampleBufferWritePointer++] = desiredStepPhase;}
-	if (filterRequested & 1024) 	{sampleBuffer[sampleBufferWritePointer++] = coilA;}
-	if (filterRequested & 2048) 	{sampleBuffer[sampleBufferWritePointer++] = coilB;}
-	if (filterRequested & 4096) 	{sampleBuffer[sampleBufferWritePointer++] = currentError;}
-
-	// Count how many bits are set in 'filterRequested'
-	// TODO: Look into a more efficient way of doing this
-	int variableCount = 0;
-	int tmpFilter = filterRequested;
-	while (tmpFilter != 0) {
-		variableCount += tmpFilter & 0x1;
-		tmpFilter >>= 1;
-	}
-
-	if (sampleBufferWritePointer >= (samplesRequested * variableCount)) {
-		// Mark that we have finished collecting data
-		collectingData = false;
-		movementRequested = 0;	// Just to be safe
-		dataTransmissionTask->Give();
-	}
-}
-
-int phsCtr = 0;
-
-void ClosedLoop::ControlMotorCurrents() noexcept
-{
-	// Calculate the current position & phase from the encoder reading
-	rawEncoderReading = encoder->GetReading();
-	currentMotorSteps = rawEncoderReading / encoderCountPerStep;
-
-	// Calculate the current error
-	currentError = targetMotorSteps - currentMotorSteps;
-
-	// Look for a stall or pre-stall
-	if (!stall && abs(currentError) > errorThresholds[1]) {
-		// We have just stalled! Alert RRF immediately!
-		Platform::NewDriverFault();
-	}
-	preStall = errorThresholds[0] > 0 && abs(currentError) > errorThresholds[0];
-	stall 	 = errorThresholds[1] > 0 && abs(currentError) > errorThresholds[1];
-
-	// If the current error is zero, we don't need to do anything!
-	if (!collectingData && currentError == 0) {return;}	// TODO: We are dealing with floats so this should probably be a range
-
-	// Use a PID controller to calculate the required 'torque' - the control signal
-	PIDPTerm = Kp * currentError;
-	if (abs(PIDITerm + Ki * currentError) < 512)	// We don't want this to overflow, so set an upper bound.
-	{
-		PIDITerm += Ki * currentError;		// TODO: Is this causing an overflow?
-	}
-	PIDDTerm = Kd * (lastError - currentError);
-	float sumOfTerms = PIDPTerm + PIDITerm + PIDDTerm;
-	PIDControlSignal = (int16_t) constrain<float>(sumOfTerms, -255, 255);	// Clamp between -255 and 255
-
-	// Calculate the offset required to produce the torque in the correct direction
-	// i.e. if we are moving in the positive direction, we must apply currents with a positive phase shift
-	// The max abs value of phase shift we want is 25%.
-	// Given that PIDControlSignal is -255 .. 255 and phase is 0 .. 4095
-	// and that 25% of 4095 ~= 1024, our max phase shift ~= 4 * PIDControlSignal
-	// DEBUG: Experimenting with microstepping by doing 0.1 *
-	phaseShift = (4 * PIDControlSignal);
-
-	// Calculate stepPhase - a 0-4095 value representing the phase *within* the current step
-	float tmp = currentMotorSteps / 4;
-	if (tmp >= 0) {
-		stepPhase = (tmp - (int) tmp) * 4095;
-	} else {
-		stepPhase = (1 + tmp - (int) tmp) * 4095;
-	}
-
-	// Calculate the required motor currents to induce that torque
-	// TODO: Have a minimum holding current
-	// (If stepPhase < phaseShift, we need to add on an extra 4095 to bring us back within the correct range)
-	desiredStepPhase = stepPhase + phaseShift + ((stepPhase < -phaseShift) * 4095);
-	desiredStepPhase = desiredStepPhase % 4096;
-
-	// Assert the required motor currents
-	SetMotorPhase(desiredStepPhase, abs(PIDControlSignal)/255.0);
-
-	// Update vars for the next cycle
-	lastError = currentError;
-}
-
-uint8_t ClosedLoop::ReadLiveStatus() noexcept
-{
-	uint8_t result = 0;
-	result |= stall << 0;															// prestall
-	result |= preStall << 1;														// stall
-	result |= ((tuningError & TUNE_ERR_NOT_PERFORMED_MINIMAL_TUNE) > 0) << 2;		// status - 0=not tuned
-	result |= ((tuningError & TUNE_ERR_TUNING_FAILURE) > 0) << 3;					// status - 1=tuning error
-	return result;
-}
-
 [[noreturn]] void ClosedLoop::ControlLoop() noexcept
 {
 	uint32_t lastWakeTime = xTaskGetTickCount();
@@ -674,6 +432,132 @@ uint8_t ClosedLoop::ReadLiveStatus() noexcept
 		} else {
 			ControlMotorCurrents();										// Otherwise control those motor currents!
 		}
+	}
+}
+
+[[noreturn]] void ClosedLoop::DataCollectionLoop() noexcept
+{
+	while (true)
+	{
+
+		// If we are not collecting data, block the task
+		// If rateRequested == 0, the data collection is handled in ::Spin()
+		while (!collectingData || rateRequested == 0)
+		{
+			TaskBase::Take();
+		}
+
+		// If we are using RecordingMode::OnNextMove, wait for a move to start
+		float startRecordingTrigger = targetMotorSteps;
+		while (modeRequested == RecordingMode::OnNextMove && startRecordingTrigger == targetMotorSteps)
+		{
+			TaskBase::Take(10);
+		}
+
+		uint32_t lastWakeTime = xTaskGetTickCount();
+
+		// Loop for each sample
+		for (int i = 0; i < samplesRequested; i++)
+		{
+
+			{
+				// Set up a CAN message
+				CanMessageBuffer buf(nullptr);
+				CanMessageClosedLoopData& msg = *(buf.SetupStatusMessage<CanMessageClosedLoopData>(CanInterface::GetCanAddress(), CanInterface::GetCurrentMasterAddress()));
+
+				// Populate the control fields
+				msg.numSamples = 1;
+				msg.lastPacket = (i == samplesRequested - 1);
+				msg.firstSampleNumber = i;
+				msg.filter = filterRequested;
+
+				// Populate the data fields
+				// TODO: Pack more than one set of data into a message
+				int dataPointer = 0;
+				if (filterRequested & 1)  		{msg.data[dataPointer++] = rawEncoderReading;}
+				if (filterRequested & 2)  		{msg.data[dataPointer++] = currentMotorSteps;}	// TODO: To pass back a float, * by 1000 and pass back an int
+				if (filterRequested & 4)  		{msg.data[dataPointer++] = targetMotorSteps;}	// TODO: To pass back a float, * by 1000 and pass back an int
+				if (filterRequested & 8)  		{msg.data[dataPointer++] = stepPhase;}
+				if (filterRequested & 16)  		{msg.data[dataPointer++] = PIDControlSignal;}
+				if (filterRequested & 32)  		{msg.data[dataPointer++] = PIDPTerm;}	// TODO: To pass back a float, * by 1000 and pass back an int
+				if (filterRequested & 64)  		{msg.data[dataPointer++] = PIDITerm;}	// TODO: To pass back a float, * by 1000 and pass back an int
+				if (filterRequested & 128)  	{msg.data[dataPointer++] = PIDDTerm;}	// TODO: To pass back a float, * by 1000 and pass back an int
+				if (filterRequested & 256)  	{msg.data[dataPointer++] = phaseShift;}
+				if (filterRequested & 512)  	{msg.data[dataPointer++] = desiredStepPhase;}
+				if (filterRequested & 1024) 	{msg.data[dataPointer++] = coilA;}
+				if (filterRequested & 2048) 	{msg.data[dataPointer++] = coilB;}
+				if (filterRequested & 4096) 	{msg.data[dataPointer++] = currentError;}
+
+				// Send the CAN message
+				buf.dataLength = msg.GetActualDataLength();
+				CanInterface::Send(&buf);
+			}
+
+			// Pause to maintain the sample rate (TODO: Implement variable sample rate)
+			vTaskDelayUntil(&lastWakeTime, rateRequested);
+		}
+
+		// Mark that we have finished collecting data
+		collectingData = false;
+	}
+}
+
+[[noreturn]] void ClosedLoop::DataTransmissionLoop() noexcept
+{
+	while (true)
+	{
+		// Only attempt to transmit data if we are not collecting data and data has been collected
+		// TODO: This is a poor man's version of a lock - implement an actual lock!
+		if (!collectingData && sampleBufferWritePointer > 0)
+		{
+			// Count how many bits are set in 'filterRequested'
+			// TODO: Look into a more efficient way of doing this
+			int variableCount = 0;
+			int tmpFilter = filterRequested;
+			while (tmpFilter != 0) {
+				variableCount += tmpFilter & 0x1;
+				tmpFilter >>= 1;
+			}
+
+			// Work out the maximum number of samples that can be sent in 1 packet
+			// TODO: This 14 comes from CanMessageFormats.h::1218. Should it be a constant?
+			const int maxSamplesInPacket = 14 / variableCount;
+
+			// Loop for until everything has been read
+			while (sampleBufferReadPointer < sampleBufferWritePointer) {
+				// Set up a CAN message
+				CanMessageBuffer buf(nullptr);
+				CanMessageClosedLoopData& msg = *(buf.SetupStatusMessage<CanMessageClosedLoopData>(CanInterface::GetCanAddress(), CanInterface::GetCurrentMasterAddress()));
+
+				// Populate the control fields
+				msg.firstSampleNumber = sampleBufferReadPointer / variableCount;
+				msg.filter = filterRequested;
+
+				const int samplesRemaining = (sampleBufferWritePointer - sampleBufferReadPointer) / variableCount;
+				msg.lastPacket = samplesRemaining <= maxSamplesInPacket;
+				msg.numSamples = msg.lastPacket ? samplesRemaining : maxSamplesInPacket;
+
+				int dataLength = 0;
+				// TODO: Can we memcpy here instead?
+				for (int i=0; i<(msg.numSamples * variableCount); i++)
+				{
+					msg.data[dataLength++] = sampleBuffer[sampleBufferReadPointer++];
+				}
+
+				// Send the CAN message
+				buf.dataLength = msg.GetActualDataLength();
+				CanInterface::Send(&buf);
+			}
+
+			// If we are finished collecting data, reset the buffer
+			if (!collectingData)
+			{
+				sampleBufferReadPointer = 0;
+				sampleBufferWritePointer = 0;
+			}
+		}
+
+		TaskBase::Take(100);
 	}
 }
 
@@ -981,181 +865,263 @@ void ClosedLoop::PerformTune() noexcept
 
 }
 
-GCodeResult ClosedLoop::ProcessM569Point5(const CanMessageStartClosedLoopDataCollection& msg, const StringRef& reply) noexcept
+void ClosedLoop::CollectSample() noexcept
 {
-	if (!closedLoopEnabled || msg.deviceNumber != 0 || encoder == nullptr)
-	{
-		reply.copy("Drive is not in closed loop mode");
-		return GCodeResult::error;
+	if (filterRequested & 1)  		{sampleBuffer[sampleBufferWritePointer++] = rawEncoderReading;}
+	if (filterRequested & 2)  		{sampleBuffer[sampleBufferWritePointer++] = currentMotorSteps;}
+	if (filterRequested & 4)  		{sampleBuffer[sampleBufferWritePointer++] = targetMotorSteps;}
+	if (filterRequested & 8)  		{sampleBuffer[sampleBufferWritePointer++] = stepPhase;}
+	if (filterRequested & 16)  		{sampleBuffer[sampleBufferWritePointer++] = PIDControlSignal;}
+	if (filterRequested & 32)  		{sampleBuffer[sampleBufferWritePointer++] = PIDPTerm;}
+	if (filterRequested & 64)  		{sampleBuffer[sampleBufferWritePointer++] = PIDITerm;}
+	if (filterRequested & 128)  	{sampleBuffer[sampleBufferWritePointer++] = PIDDTerm;}
+	if (filterRequested & 256)  	{sampleBuffer[sampleBufferWritePointer++] = phaseShift;}
+	if (filterRequested & 512)  	{sampleBuffer[sampleBufferWritePointer++] = desiredStepPhase;}
+	if (filterRequested & 1024) 	{sampleBuffer[sampleBufferWritePointer++] = coilA;}
+	if (filterRequested & 2048) 	{sampleBuffer[sampleBufferWritePointer++] = coilB;}
+	if (filterRequested & 4096) 	{sampleBuffer[sampleBufferWritePointer++] = currentError;}
+
+	// Count how many bits are set in 'filterRequested'
+	// TODO: Look into a more efficient way of doing this
+	int variableCount = 0;
+	int tmpFilter = filterRequested;
+	while (tmpFilter != 0) {
+		variableCount += tmpFilter & 0x1;
+		tmpFilter >>= 1;
 	}
 
-	if (collectingData)
-	{
-		reply.copy("Drive is already collecting data");
-		return GCodeResult::error;
-	}
-
-	if (msg.rate == 0) {
-		// Count how many bits are set in 'msg.filter'
-		// TODO: Look into a more efficient way of doing this
-		int variableCount = 0;
-		int tmpFilter = msg.filter;
-		while (tmpFilter != 0) {
-			variableCount += tmpFilter & 0x1;
-			tmpFilter >>= 1;
-		}
-
-		const int maxSamples = (CLOSED_LOOP_DATA_BUFFER_SIZE * 12) / variableCount;
-
-		if (msg.numSamples > maxSamples)
-		{
-			reply.printf("Maximum samples is %d when sample rate is continuous (R0) and %d variables are being collected (D%d)", maxSamples, variableCount, msg.filter);
-			return GCodeResult::error;
-		}
-	}
-
-	if (msg.movement > FULL_TUNE) {
-		reply.printf("Maximum value for V is %d. V%d is invalid.", FULL_TUNE, msg.movement);
-		return GCodeResult::error;
-	}
-
-	// Set up the recording vars
-	collectingData = true;
-	rateRequested = msg.rate == 0 ? 0 : (1000.0 / msg.rate) / portTICK_PERIOD_MS;
-	filterRequested = msg.filter;
-	tuning |= msg.movement;
-	samplesRequested = msg.numSamples;
-	modeRequested = (RecordingMode) msg.mode;
-
-	// Start the data collection task
-	dataCollectionTask->Give();
-	return GCodeResult::ok;
-}
-
-[[noreturn]] void ClosedLoop::DataTransmissionLoop() noexcept
-{
-	while (true)
-	{
-		// Only attempt to transmit data if we are not collecting data and data has been collected
-		// TODO: This is a poor man's version of a lock - implement an actual lock!
-		if (!collectingData && sampleBufferWritePointer > 0)
-		{
-			// Count how many bits are set in 'filterRequested'
-			// TODO: Look into a more efficient way of doing this
-			int variableCount = 0;
-			int tmpFilter = filterRequested;
-			while (tmpFilter != 0) {
-				variableCount += tmpFilter & 0x1;
-				tmpFilter >>= 1;
-			}
-
-			// Work out the maximum number of samples that can be sent in 1 packet
-			// TODO: This 14 comes from CanMessageFormats.h::1218. Should it be a constant?
-			const int maxSamplesInPacket = 14 / variableCount;
-
-			// Loop for until everything has been read
-			while (sampleBufferReadPointer < sampleBufferWritePointer) {
-				// Set up a CAN message
-				CanMessageBuffer buf(nullptr);
-				CanMessageClosedLoopData& msg = *(buf.SetupStatusMessage<CanMessageClosedLoopData>(CanInterface::GetCanAddress(), CanInterface::GetCurrentMasterAddress()));
-
-				// Populate the control fields
-				msg.firstSampleNumber = sampleBufferReadPointer / variableCount;
-				msg.filter = filterRequested;
-
-				const int samplesRemaining = (sampleBufferWritePointer - sampleBufferReadPointer) / variableCount;
-				msg.lastPacket = samplesRemaining <= maxSamplesInPacket;
-				msg.numSamples = msg.lastPacket ? samplesRemaining : maxSamplesInPacket;
-
-				int dataLength = 0;
-				// TODO: Can we memcpy here instead?
-				for (int i=0; i<(msg.numSamples * variableCount); i++)
-				{
-					msg.data[dataLength++] = sampleBuffer[sampleBufferReadPointer++];
-				}
-
-				// Send the CAN message
-				buf.dataLength = msg.GetActualDataLength();
-				CanInterface::Send(&buf);
-			}
-
-			// If we are finished collecting data, reset the buffer
-			if (!collectingData)
-			{
-				sampleBufferReadPointer = 0;
-				sampleBufferWritePointer = 0;
-			}
-		}
-
-		TaskBase::Take(100);
-	}
-}
-
-[[noreturn]] void ClosedLoop::DataCollectionLoop() noexcept
-{
-	while (true)
-	{
-
-		// If we are not collecting data, block the task
-		// If rateRequested == 0, the data collection is handled in ::Spin()
-		while (!collectingData || rateRequested == 0)
-		{
-			TaskBase::Take();
-		}
-
-		// If we are using RecordingMode::OnNextMove, wait for a move to start
-		float startRecordingTrigger = targetMotorSteps;
-		while (modeRequested == RecordingMode::OnNextMove && startRecordingTrigger == targetMotorSteps)
-		{
-			TaskBase::Take(10);
-		}
-
-		uint32_t lastWakeTime = xTaskGetTickCount();
-
-		// Loop for each sample
-		for (int i = 0; i < samplesRequested; i++)
-		{
-
-			{
-				// Set up a CAN message
-				CanMessageBuffer buf(nullptr);
-				CanMessageClosedLoopData& msg = *(buf.SetupStatusMessage<CanMessageClosedLoopData>(CanInterface::GetCanAddress(), CanInterface::GetCurrentMasterAddress()));
-
-				// Populate the control fields
-				msg.numSamples = 1;
-				msg.lastPacket = (i == samplesRequested - 1);
-				msg.firstSampleNumber = i;
-				msg.filter = filterRequested;
-
-				// Populate the data fields
-				// TODO: Pack more than one set of data into a message
-				int dataPointer = 0;
-				if (filterRequested & 1)  		{msg.data[dataPointer++] = rawEncoderReading;}
-				if (filterRequested & 2)  		{msg.data[dataPointer++] = currentMotorSteps;}	// TODO: To pass back a float, * by 1000 and pass back an int
-				if (filterRequested & 4)  		{msg.data[dataPointer++] = targetMotorSteps;}	// TODO: To pass back a float, * by 1000 and pass back an int
-				if (filterRequested & 8)  		{msg.data[dataPointer++] = stepPhase;}
-				if (filterRequested & 16)  		{msg.data[dataPointer++] = PIDControlSignal;}
-				if (filterRequested & 32)  		{msg.data[dataPointer++] = PIDPTerm;}	// TODO: To pass back a float, * by 1000 and pass back an int
-				if (filterRequested & 64)  		{msg.data[dataPointer++] = PIDITerm;}	// TODO: To pass back a float, * by 1000 and pass back an int
-				if (filterRequested & 128)  	{msg.data[dataPointer++] = PIDDTerm;}	// TODO: To pass back a float, * by 1000 and pass back an int
-				if (filterRequested & 256)  	{msg.data[dataPointer++] = phaseShift;}
-				if (filterRequested & 512)  	{msg.data[dataPointer++] = desiredStepPhase;}
-				if (filterRequested & 1024) 	{msg.data[dataPointer++] = coilA;}
-				if (filterRequested & 2048) 	{msg.data[dataPointer++] = coilB;}
-				if (filterRequested & 4096) 	{msg.data[dataPointer++] = currentError;}
-
-				// Send the CAN message
-				buf.dataLength = msg.GetActualDataLength();
-				CanInterface::Send(&buf);
-			}
-
-			// Pause to maintain the sample rate (TODO: Implement variable sample rate)
-			vTaskDelayUntil(&lastWakeTime, rateRequested);
-		}
-
+	if (sampleBufferWritePointer >= (samplesRequested * variableCount)) {
 		// Mark that we have finished collecting data
 		collectingData = false;
+		movementRequested = 0;	// Just to be safe
+		dataTransmissionTask->Give();
 	}
+}
+
+void ClosedLoop::ControlMotorCurrents() noexcept
+{
+	// Calculate the current position & phase from the encoder reading
+	rawEncoderReading = encoder->GetReading();
+	currentMotorSteps = rawEncoderReading / encoderCountPerStep;
+
+	// Calculate the current error
+	currentError = targetMotorSteps - currentMotorSteps;
+
+	// Look for a stall or pre-stall
+	if (!stall && abs(currentError) > errorThresholds[1]) {
+		// We have just stalled! Alert RRF immediately!
+		Platform::NewDriverFault();
+	}
+	preStall = errorThresholds[0] > 0 && abs(currentError) > errorThresholds[0];
+	stall 	 = errorThresholds[1] > 0 && abs(currentError) > errorThresholds[1];
+
+	// If the current error is zero, we don't need to do anything!
+	if (!collectingData && currentError == 0) {return;}	// TODO: We are dealing with floats so this should probably be a range
+
+	// Use a PID controller to calculate the required 'torque' - the control signal
+	PIDPTerm = Kp * currentError;
+	if (abs(PIDITerm + Ki * currentError) < 512)	// We don't want this to overflow, so set an upper bound.
+	{
+		PIDITerm += Ki * currentError;		// TODO: Is this causing an overflow?
+	}
+	PIDDTerm = Kd * (lastError - currentError);
+	float sumOfTerms = PIDPTerm + PIDITerm + PIDDTerm;
+	PIDControlSignal = (int16_t) constrain<float>(sumOfTerms, -255, 255);	// Clamp between -255 and 255
+
+	// Calculate the offset required to produce the torque in the correct direction
+	// i.e. if we are moving in the positive direction, we must apply currents with a positive phase shift
+	// The max abs value of phase shift we want is 25%.
+	// Given that PIDControlSignal is -255 .. 255 and phase is 0 .. 4095
+	// and that 25% of 4095 ~= 1024, our max phase shift ~= 4 * PIDControlSignal
+	// DEBUG: Experimenting with microstepping by doing 0.1 *
+	phaseShift = (4 * PIDControlSignal);
+
+	// Calculate stepPhase - a 0-4095 value representing the phase *within* the current step
+	float tmp = currentMotorSteps / 4;
+	if (tmp >= 0) {
+		stepPhase = (tmp - (int) tmp) * 4095;
+	} else {
+		stepPhase = (1 + tmp - (int) tmp) * 4095;
+	}
+
+	// Calculate the required motor currents to induce that torque
+	// TODO: Have a minimum holding current
+	// (If stepPhase < phaseShift, we need to add on an extra 4095 to bring us back within the correct range)
+	desiredStepPhase = stepPhase + phaseShift + ((stepPhase < -phaseShift) * 4095);
+	desiredStepPhase = desiredStepPhase % 4096;
+
+	// Assert the required motor currents
+	SetMotorPhase(desiredStepPhase, abs(PIDControlSignal)/255.0);
+
+	// Update vars for the next cycle
+	lastError = currentError;
+}
+
+# ifdef EXP1HCL
+static void GenerateTmcClock()
+{
+	// Currently we program DPLL0 to generate 120MHz output, so to get 15MHz we divide by 8
+	ConfigureGclk(ClockGenGclkNumber, GclkSource::dpll0, 8, true);
+	SetPinFunction(ClockGenPin, ClockGenPinPeriphMode);
+}
+# endif
+
+# ifdef EXP1HCE
+static SharedSpiDevice *encoderSpi = nullptr;
+
+static void GenerateAttinyClock()
+{
+	// Currently we program the DPLL to generate 48MHz output, so to get 16MHz we divide by 3 and set the Improve Duty Cycle bit
+	// We could instead program the DPLL to generate 96MHz and divide it by an extra factor of 2 in the other GCLKs
+	// Or we could divide by 4 and be content with 12MHz.
+	ConfigureGclk(ClockGenGclkNumber, GclkSource::dpll, 3, true);
+	SetPinFunction(ClockGenPin, ClockGenPinPeriphMode);
+}
+
+void  ClosedLoop::TurnAttinyOff() noexcept
+{
+	programmer->TurnAttinyOff();
+}
+# endif
+
+# ifdef EXP1HCE
+void  ClosedLoop::EnableEncodersSpi() noexcept
+{
+	SetPinFunction(EncoderMosiPin, EncoderMosiPinPeriphMode);
+	SetPinFunction(EncoderSclkPin, EncoderSclkPinPeriphMode);
+	SetPinFunction(EncoderMisoPin, EncoderMisoPinPeriphMode);
+}
+
+void  ClosedLoop::DisableEncodersSpi() noexcept
+{
+	ClearPinFunction(EncoderMosiPin);
+	ClearPinFunction(EncoderSclkPin);
+	ClearPinFunction(EncoderMisoPin);
+}
+# endif
+
+EncoderType ClosedLoop::GetEncoderType() noexcept
+{
+	return (encoder == nullptr) ? EncoderType::none : encoder->GetType();
+}
+
+void ClosedLoop::Diagnostics(const StringRef& reply) noexcept
+{
+	reply.printf("Closed loop enabled: %s", closedLoopEnabled ? "yes" : "no");
+	reply.catf(", live status: %#x", ReadLiveStatus());
+#if defined(EXP1HCE)
+	reply.catf(", encoder programmed status %s, encoder type %s", programmer->GetProgramStatus().ToString(), GetEncoderType().ToString());
+#elif defined(EXP1HCL)
+	reply.catf(", encoder type %s", GetEncoderType().ToString());
+#endif
+
+	reply.catf(", pre-error threshold: %f, error threshold: %f", (double) errorThresholds[0], (double) errorThresholds[1]);
+	reply.catf(", coil A polarity: %s, coil B polarity: %s", coilAPolarity ? "+" : "-", coilBPolarity ? "+" : "-");
+	reply.catf(", tuning: %#x, tuning error: %#x", tuning, tuningError);
+
+	if (encoder != nullptr)
+	{
+		reply.catf(", position %" PRIi32, encoder->GetReading());
+		encoder->AppendDiagnostics(reply);
+	}
+	reply.catf(", collecting data: %s", collectingData ? "yes" : "no");
+	if (collectingData)
+	{
+		reply.catf(" (filter: %#x, samples: %d, mode: %d, rate: %d, movement: %d)", filterRequested, samplesRequested, modeRequested, rateRequested, movementRequested);
+	}
+
+	reply.catf(", ultimateGain=%f, oscillationPeriod=%f", (double) ultimateGain, (double) oscillationPeriod);
+
+	//DEBUG
+	//reply.catf(", event status 0x%08" PRIx32 ", TCC2 CTRLA 0x%08" PRIx32 ", TCC2 EVCTRL 0x%08" PRIx32, EVSYS->CHSTATUS.reg, QuadratureTcc->CTRLA.reg, QuadratureTcc->EVCTRL.reg);
+}
+
+// TODO: Instead of having this take step, why not use the current DDA to calculate where we need to be?
+void ClosedLoop::TakeStep() noexcept
+{
+	bool interpolation;	// TODO: Work out what this is for!
+# if SUPPORT_TMC2160 && SINGLE_DRIVER
+	int microsteps = SmartDrivers::GetMicrostepping(0, interpolation);
+	float microstepAngle = microsteps == 0 ? 1 : 1.0/microsteps;
+	targetMotorSteps += (stepDirection ? microstepAngle : -microstepAngle) * (Platform::GetDirectionValue(1) ? 1 : -1);
+# else
+#  error Cannot support closed loop with the specified hardware
+# endif
+}
+
+uint8_t ClosedLoop::ReadLiveStatus() noexcept
+{
+	uint8_t result = 0;
+	result |= stall << 0;															// prestall
+	result |= preStall << 1;														// stall
+	result |= ((tuningError & TUNE_ERR_NOT_PERFORMED_MINIMAL_TUNE) > 0) << 2;		// status - 0=not tuned
+	result |= ((tuningError & TUNE_ERR_TUNING_FAILURE) > 0) << 3;					// status - 1=tuning error
+	return result;
+}
+
+void ClosedLoop::SetStepDirection(bool dir) noexcept
+{
+	stepDirection = dir;
+}
+
+bool ClosedLoop::GetClosedLoopEnabled() noexcept
+{
+	return closedLoopEnabled;
+}
+
+void ClosedLoop::SetHoldingCurrent(float percent)
+{
+	holdCurrent = constrain<long>(percent, 0, 100) / 100.0;
+}
+
+void ClosedLoop::ResetError(size_t driver) noexcept
+{
+# if SINGLE_DRIVER
+	if (driver == 0) {
+		// Set the target position to the current position
+		rawEncoderReading = encoder->GetReading();
+		currentMotorSteps = rawEncoderReading / encoderCountPerStep;
+		targetMotorSteps = currentMotorSteps;
+	}
+# else
+#  error Cannot support closed loop with the specified hardware
+# endif
+}
+
+bool ClosedLoop::SetClosedLoopEnabled(bool enabled, const StringRef &reply) noexcept
+{
+
+	if (enabled) {
+# if SUPPORT_SLOW_DRIVERS
+		// TODO: Check what we need to do here
+		if (Platform::IsSlowDriver()) {
+			reply.copy("Closed loop drive mode not yet supported");
+			return false;
+		}
+# endif
+# if USE_TC_FOR_STEP || !SINGLE_DRIVER || !SUPPORT_TMC2160
+		// TODO: Check what we need to do here
+		reply.copy("Closed loop drive mode not yet supported");
+		return false;
+# endif
+		if (encoder == nullptr)
+		{
+			reply.copy("No encoder specified for closed loop drive mode");
+			return false;
+		}
+	}
+
+	// Reset the tuning
+	tuningError = TUNE_ERR_NOT_PERFORMED_MINIMAL_TUNE;
+
+	// Set the target position to the current position
+	rawEncoderReading = encoder->GetReading();
+	currentMotorSteps = rawEncoderReading / encoderCountPerStep;
+	targetMotorSteps = currentMotorSteps;
+
+	// Set the closed loop enabled state
+	closedLoopEnabled = enabled;
+	return true;
 }
 
 #endif
