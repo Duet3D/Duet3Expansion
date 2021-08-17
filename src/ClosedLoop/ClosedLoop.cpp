@@ -9,6 +9,8 @@
 
 #if SUPPORT_CLOSED_LOOP
 
+using std::atomic;
+
 # include "AS5047D.h"
 # include "TLI5012B.h"
 # include "SpiEncoder.h"
@@ -77,10 +79,10 @@ static uint16_t sampleBufferWritePointer = 0;	//  - Store the next sample at thi
 // Working variables
 // These variables are all used to calculate the required motor currents. They are declared here so they can be reported on by the data collection task
 
-static int16_t rawEncoderReading;				// The raw reading taken from the encoder
+static atomic<int16_t> rawEncoderReading;		// The raw reading taken from the encoder
 static bool stepDirection = true;				// The direction the motor is attempting to take steps in
 static float currentMotorSteps;					// The number of steps the motor has taken relative to it's zero position
-static float targetMotorSteps = 0;				// The number of steps the motor should have taken relative to it's zero position
+static atomic<float> targetMotorSteps = 0;		// The number of steps the motor should have taken relative to it's zero position
 static float currentError;						// The current error
 static float lastError = 0;						// The error from the previous iteration
 
@@ -340,7 +342,7 @@ GCodeResult ClosedLoop::ProcessM569Point5(const CanMessageStartClosedLoopDataCol
 			tmpFilter >>= 1;
 		}
 
-		const int maxSamples = (CLOSED_LOOP_DATA_BUFFER_SIZE * 12) / variableCount;
+		const unsigned int maxSamples = (CLOSED_LOOP_DATA_BUFFER_SIZE * 12) / variableCount;
 
 		if (msg.numSamples > maxSamples)
 		{
@@ -477,7 +479,7 @@ GCodeResult ClosedLoop::ProcessM569Point6(const CanMessageGeneric &msg, const St
 
 				// Populate the data fields
 				// TODO: Pack more than one set of data into a message
-				int dataPointer = 0;
+				unsigned int dataPointer = 0;
 				if (filterRequested & 1)  		{msg.data[dataPointer++] = rawEncoderReading;}
 				if (filterRequested & 2)  		{msg.data[dataPointer++] = currentMotorSteps;}	// TODO: To pass back a float, * by 1000 and pass back an int
 				if (filterRequested & 4)  		{msg.data[dataPointer++] = targetMotorSteps;}	// TODO: To pass back a float, * by 1000 and pass back an int
@@ -525,7 +527,7 @@ GCodeResult ClosedLoop::ProcessM569Point6(const CanMessageGeneric &msg, const St
 
 			// Work out the maximum number of samples that can be sent in 1 packet
 			// TODO: This 14 comes from CanMessageFormats.h::1218. Should it be a constant?
-			const int maxSamplesInPacket = 14 / variableCount;
+			const unsigned int maxSamplesInPacket = 14 / variableCount;
 
 			// Loop for until everything has been read
 			while (sampleBufferReadPointer < sampleBufferWritePointer) {
@@ -537,11 +539,11 @@ GCodeResult ClosedLoop::ProcessM569Point6(const CanMessageGeneric &msg, const St
 				msg.firstSampleNumber = sampleBufferReadPointer / variableCount;
 				msg.filter = filterRequested;
 
-				const int samplesRemaining = (sampleBufferWritePointer - sampleBufferReadPointer) / variableCount;
+				const unsigned int samplesRemaining = (sampleBufferWritePointer - sampleBufferReadPointer) / variableCount;
 				msg.lastPacket = samplesRemaining <= maxSamplesInPacket;
 				msg.numSamples = msg.lastPacket ? samplesRemaining : maxSamplesInPacket;
 
-				int dataLength = 0;
+				unsigned int dataLength = 0;
 				// TODO: Can we memcpy here instead?
 				for (int i=0; i<(msg.numSamples * variableCount); i++)
 				{
@@ -584,11 +586,11 @@ void ClosedLoop::PerformTune() noexcept
 	// Do a polarity detection manoeuvre
 	if (tuning & POLARITY_DETECTION_MANOEUVRE) {
 
-		int correctCoilPhase = 0;
-		int correctCoilPhaseError = 0;
+		unsigned int correctCoilPhase = 0;
+		unsigned int correctCoilPhaseError = 0;
 
-		for (int coilPhase=0; coilPhase<4; coilPhase++) {
-			int totalError = 0;			// The total error made by this phase arrangement
+		for (unsigned int coilPhase=0; coilPhase<4; coilPhase++) {
+			unsigned int totalError = 0;			// The total error made by this phase arrangement
 			// Change the coil phase
 			coilAPolarity = coilPhase & 0x2;
 			coilBPolarity = coilPhase & 0x1;
@@ -612,7 +614,7 @@ void ClosedLoop::PerformTune() noexcept
 
 				// Calculate & accumulate the error
 				int16_t distance1 = abs(stepPhase - desiredStepPhase);
-				int16_t distance2 = abs(4095 - max(stepPhase, desiredStepPhase) + min(stepPhase, desiredStepPhase));
+				int16_t distance2 = abs(4095 - max<uint16_t>(stepPhase, desiredStepPhase) + min<uint16_t>(stepPhase, desiredStepPhase));
 				totalError += min<int16_t>(distance1, distance2);
 			}
 			// Update if this is the correct coil phase
@@ -668,8 +670,8 @@ void ClosedLoop::PerformTune() noexcept
 	if (tuning & POLARITY_CHECK) {
 		// We are going to step through a full phase, and check that the error never exceeds max_err
 
-		const int max_err = 5 * (1024 / encoderCountPerStep);	// Allow up to 5x the resolution of the encoder
-		int deviations = 0;
+		const unsigned int max_err = 5 * (1024 / encoderCountPerStep);	// Allow up to 5x the resolution of the encoder
+		unsigned int deviations = 0;
 
 		for (desiredStepPhase = 0; desiredStepPhase<4096; desiredStepPhase+=256) {
 			// Move the motor
@@ -730,7 +732,7 @@ void ClosedLoop::PerformTune() noexcept
 	if (tuning & STEP_MANOEUVRE) {
 		uint32_t lastWakeTime = xTaskGetTickCount();
 		targetMotorSteps = currentMotorSteps + 4;
-		for (int i=0; i<4096; i++) {
+		for (unsigned int i=0; i<4096; i++) {
 			ControlMotorCurrents();
 			vTaskDelayUntil(&lastWakeTime, controlDelay);
 		}
@@ -766,19 +768,19 @@ void ClosedLoop::PerformTune() noexcept
 			// Flip the direction
 			direction = -direction;
 
-			int initialRiseTime = 0;		// The time it takes to initially meet the target
+			unsigned int initialRiseTime = 0;		// The time it takes to initially meet the target
 
 			float peakError = 0;			// The peak of the current oscillation
 			float prevPeakError = 0;		// The peak of the previous oscillation
-			int prevTimestamp = 0;			// The previous time of oscillation
+			unsigned int prevTimestamp = 0;			// The previous time of oscillation
 
-			int oscillationCount = 0;		// The number of oscillations that have occurred
+			unsigned int oscillationCount = 0;		// The number of oscillations that have occurred
 
 			float ewmaDecayFraction = 0;	// An EWMA of the decay fraction of oscillations
 			float ewmaOscillationPeriod = 0;// An EWMA of the oscillation period
 
 			// Run up to a maximum of 4096
-			for (int time=0; time<16384; time++) {
+			for (unsigned int time=0; time<16384; time++) {
 				TaskBase::Take(10);		// TODO: Use delayuntil here? And run at PID frequency
 
 				ControlMotorCurrents();
@@ -1036,9 +1038,9 @@ void ClosedLoop::TakeStep() noexcept
 {
 	bool interpolation;	// TODO: Work out what this is for!
 # if SUPPORT_TMC2160 && SINGLE_DRIVER
-	int microsteps = SmartDrivers::GetMicrostepping(0, interpolation);
+	unsigned int microsteps = SmartDrivers::GetMicrostepping(0, interpolation);
 	float microstepAngle = microsteps == 0 ? 1 : 1.0/microsteps;
-	targetMotorSteps += (stepDirection ? microstepAngle : -microstepAngle) * (Platform::GetDirectionValue(1) ? 1 : -1);
+	targetMotorSteps = targetMotorSteps + (stepDirection ? microstepAngle : -microstepAngle) * (Platform::GetDirectionValue(0) ? 1 : -1);
 # else
 #  error Cannot support closed loop with the specified hardware
 # endif

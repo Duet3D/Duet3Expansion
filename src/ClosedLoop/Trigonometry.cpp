@@ -31,8 +31,8 @@ static_assert(lookupTable[Resolution-1] == 1);
 // The return value is an approximate result of sin(2pi * phase/4095)
 float Trigonometry::FastSin(uint16_t phase) noexcept
 {
-	int quadrant = phase / Resolution;
-	int index = phase % Resolution;
+	unsigned int quadrant = phase / Resolution;
+	unsigned int index = phase % Resolution;
 
 	switch(quadrant) {
 		case 0:
@@ -53,8 +53,8 @@ float Trigonometry::FastSin(uint16_t phase) noexcept
 // The return value is an approximate result of cos(2pi * phase/4095)
 float Trigonometry::FastCos(uint16_t phase) noexcept
 {
-	int quadrant = phase / Resolution;
-	int index = phase % Resolution;
+	unsigned int quadrant = phase / Resolution;
+	unsigned int index = phase % Resolution;
 
 	switch(quadrant) {
 		case 0:
