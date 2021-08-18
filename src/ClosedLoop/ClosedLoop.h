@@ -46,6 +46,22 @@ namespace ClosedLoop
 	const uint8_t MINIMAL_TUNE 							= POLARITY_DETECTION_MANOEUVRE | ZEROING_MANOEUVRE | POLARITY_CHECK | CONTROL_CHECK | ENCODER_STEPS_CHECK;
 	const uint8_t FULL_TUNE 							= (1 << 8) - 1;
 
+	// Variables available for recording
+	const uint16_t RECORD_RAW_ENCODER_READING 			= 1 << 0;
+	const uint16_t RECORD_CURRENT_MOTOR_STEPS 			= 1 << 1;
+	const uint16_t RECORD_TARGET_MOTOR_STEPS 			= 1 << 2;
+	const uint16_t RECORD_CURRENT_ERROR 				= 1 << 3;
+	const uint16_t RECORD_PID_CONTROL_SIGNAL 			= 1 << 4;
+	const uint16_t RECORD_PID_P_TERM 					= 1 << 5;
+	const uint16_t RECORD_PID_I_TERM 					= 1 << 6;
+	const uint16_t RECORD_PID_D_TERM 					= 1 << 7;
+	const uint16_t RECORD_STEP_PHASE 					= 1 << 8;
+	const uint16_t RECORD_DESIRED_STEP_PHASE 			= 1 << 9;
+	const uint16_t RECORD_PHASE_SHIFT 					= 1 << 10;
+	const uint16_t RECORD_COIL_A_CURRENT 				= 1 << 11;
+	const uint16_t RECORD_COIL_B_CURRENT 				= 1 << 12;
+
+
 	// Enumeration of closed loop recording modes
 	enum RecordingMode : uint8_t
 	{

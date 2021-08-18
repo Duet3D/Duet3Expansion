@@ -480,19 +480,19 @@ GCodeResult ClosedLoop::ProcessM569Point6(const CanMessageGeneric &msg, const St
 				// Populate the data fields
 				// TODO: Pack more than one set of data into a message
 				unsigned int dataPointer = 0;
-				if (filterRequested & 1)  		{msg.data[dataPointer++] = rawEncoderReading;}
-				if (filterRequested & 2)  		{msg.data[dataPointer++] = currentMotorSteps;}	// TODO: To pass back a float, * by 1000 and pass back an int
-				if (filterRequested & 4)  		{msg.data[dataPointer++] = targetMotorSteps;}	// TODO: To pass back a float, * by 1000 and pass back an int
-				if (filterRequested & 8)  		{msg.data[dataPointer++] = stepPhase;}
-				if (filterRequested & 16)  		{msg.data[dataPointer++] = PIDControlSignal;}
-				if (filterRequested & 32)  		{msg.data[dataPointer++] = PIDPTerm;}	// TODO: To pass back a float, * by 1000 and pass back an int
-				if (filterRequested & 64)  		{msg.data[dataPointer++] = PIDITerm;}	// TODO: To pass back a float, * by 1000 and pass back an int
-				if (filterRequested & 128)  	{msg.data[dataPointer++] = PIDDTerm;}	// TODO: To pass back a float, * by 1000 and pass back an int
-				if (filterRequested & 256)  	{msg.data[dataPointer++] = phaseShift;}
-				if (filterRequested & 512)  	{msg.data[dataPointer++] = desiredStepPhase;}
-				if (filterRequested & 1024) 	{msg.data[dataPointer++] = coilA;}
-				if (filterRequested & 2048) 	{msg.data[dataPointer++] = coilB;}
-				if (filterRequested & 4096) 	{msg.data[dataPointer++] = currentError;}
+				if (filterRequested & RECORD_RAW_ENCODER_READING) 	{msg.data[dataPointer++] = rawEncoderReading;}
+				if (filterRequested & RECORD_CURRENT_MOTOR_STEPS) 	{msg.data[dataPointer++] = currentMotorSteps;}
+				if (filterRequested & RECORD_TARGET_MOTOR_STEPS)  	{msg.data[dataPointer++] = targetMotorSteps;}
+				if (filterRequested & RECORD_STEP_PHASE)  			{msg.data[dataPointer++] = stepPhase;}
+				if (filterRequested & RECORD_PID_CONTROL_SIGNAL)  	{msg.data[dataPointer++] = PIDControlSignal;}
+				if (filterRequested & RECORD_PID_P_TERM)  			{msg.data[dataPointer++] = PIDPTerm;}
+				if (filterRequested & RECORD_PID_I_TERM)  			{msg.data[dataPointer++] = PIDITerm;}
+				if (filterRequested & RECORD_PID_D_TERM)  			{msg.data[dataPointer++] = PIDDTerm;}
+				if (filterRequested & RECORD_PHASE_SHIFT)  			{msg.data[dataPointer++] = phaseShift;}
+				if (filterRequested & RECORD_DESIRED_STEP_PHASE)  	{msg.data[dataPointer++] = desiredStepPhase;}
+				if (filterRequested & RECORD_COIL_A_CURRENT) 		{msg.data[dataPointer++] = coilA;}
+				if (filterRequested & RECORD_COIL_B_CURRENT) 		{msg.data[dataPointer++] = coilB;}
+				if (filterRequested & RECORD_CURRENT_ERROR) 		{msg.data[dataPointer++] = currentError;}
 
 				// Send the CAN message
 				buf.dataLength = msg.GetActualDataLength();
@@ -873,19 +873,19 @@ void ClosedLoop::PerformTune() noexcept
 
 void ClosedLoop::CollectSample() noexcept
 {
-	if (filterRequested & 1)  		{sampleBuffer[sampleBufferWritePointer++] = rawEncoderReading;}
-	if (filterRequested & 2)  		{sampleBuffer[sampleBufferWritePointer++] = currentMotorSteps;}
-	if (filterRequested & 4)  		{sampleBuffer[sampleBufferWritePointer++] = targetMotorSteps;}
-	if (filterRequested & 8)  		{sampleBuffer[sampleBufferWritePointer++] = stepPhase;}
-	if (filterRequested & 16)  		{sampleBuffer[sampleBufferWritePointer++] = PIDControlSignal;}
-	if (filterRequested & 32)  		{sampleBuffer[sampleBufferWritePointer++] = PIDPTerm;}
-	if (filterRequested & 64)  		{sampleBuffer[sampleBufferWritePointer++] = PIDITerm;}
-	if (filterRequested & 128)  	{sampleBuffer[sampleBufferWritePointer++] = PIDDTerm;}
-	if (filterRequested & 256)  	{sampleBuffer[sampleBufferWritePointer++] = phaseShift;}
-	if (filterRequested & 512)  	{sampleBuffer[sampleBufferWritePointer++] = desiredStepPhase;}
-	if (filterRequested & 1024) 	{sampleBuffer[sampleBufferWritePointer++] = coilA;}
-	if (filterRequested & 2048) 	{sampleBuffer[sampleBufferWritePointer++] = coilB;}
-	if (filterRequested & 4096) 	{sampleBuffer[sampleBufferWritePointer++] = currentError;}
+	if (filterRequested & RECORD_RAW_ENCODER_READING) 	{sampleBuffer[sampleBufferWritePointer++] = rawEncoderReading;}
+	if (filterRequested & RECORD_CURRENT_MOTOR_STEPS) 	{sampleBuffer[sampleBufferWritePointer++] = currentMotorSteps;}
+	if (filterRequested & RECORD_TARGET_MOTOR_STEPS)  	{sampleBuffer[sampleBufferWritePointer++] = targetMotorSteps;}
+	if (filterRequested & RECORD_STEP_PHASE)  			{sampleBuffer[sampleBufferWritePointer++] = stepPhase;}
+	if (filterRequested & RECORD_PID_CONTROL_SIGNAL)  	{sampleBuffer[sampleBufferWritePointer++] = PIDControlSignal;}
+	if (filterRequested & RECORD_PID_P_TERM)  			{sampleBuffer[sampleBufferWritePointer++] = PIDPTerm;}
+	if (filterRequested & RECORD_PID_I_TERM)  			{sampleBuffer[sampleBufferWritePointer++] = PIDITerm;}
+	if (filterRequested & RECORD_PID_D_TERM)  			{sampleBuffer[sampleBufferWritePointer++] = PIDDTerm;}
+	if (filterRequested & RECORD_PHASE_SHIFT)  			{sampleBuffer[sampleBufferWritePointer++] = phaseShift;}
+	if (filterRequested & RECORD_DESIRED_STEP_PHASE)  	{sampleBuffer[sampleBufferWritePointer++] = desiredStepPhase;}
+	if (filterRequested & RECORD_COIL_A_CURRENT) 		{sampleBuffer[sampleBufferWritePointer++] = coilA;}
+	if (filterRequested & RECORD_COIL_B_CURRENT) 		{sampleBuffer[sampleBufferWritePointer++] = coilB;}
+	if (filterRequested & RECORD_CURRENT_ERROR) 		{sampleBuffer[sampleBufferWritePointer++] = currentError;}
 
 	// Count how many bits are set in 'filterRequested'
 	// TODO: Look into a more efficient way of doing this
