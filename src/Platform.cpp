@@ -2009,10 +2009,32 @@ GCodeResult Platform::DoDiagnosticTest(const CanMessageDiagnosticTest& msg, cons
 				}
 			}
 
-			reply.printf("Square roots: 62-bit %.2fus %s, 32-bit %.2fus %s",
+			bool ok3 = true;
+			uint32_t tim3 = 0;
+			float val = 10000.0;
+			for (unsigned int i = 0; i < iterations; ++i)
+			{
+				IrqDisable();
+				asm volatile("":::"memory");
+				uint32_t now1 = SysTick->VAL;
+				const float nval = fastSqrtf(val);
+				uint32_t now2 = SysTick->VAL;
+				asm volatile("":::"memory");
+				IrqEnable();
+				now1 &= 0x00FFFFFF;
+				now2 &= 0x00FFFFFF;
+				tim3 += ((now1 > now2) ? now1 : now1 + (SysTick->LOAD & 0x00FFFFFF) + 1) - now2;
+				if (nval != sqrtf(val))
+				{
+					ok3 = false;
+				}
+				val = nval;
+			}
+			reply.printf("Square roots: 62-bit %.2fus %s, 32-bit %.2fus %s, float %.2fus %s",
 						(double)((float)(tim1 * (1'000'000/iterations))/SystemCoreClockFreq), (ok1) ? "ok" : "ERROR",
-							(double)((float)(tim2 * (1'000'000/iterations))/SystemCoreClockFreq), (ok2) ? "ok" : "ERROR");
-			return (ok1 && ok2) ? GCodeResult::ok : GCodeResult::error;
+							(double)((float)(tim2 * (1'000'000/iterations))/SystemCoreClockFreq), (ok2) ? "ok" : "ERROR",
+								(double)((float)(tim3 * (1'000'000/iterations))/SystemCoreClock), (ok3) ? "ok" : "ERROR");
+			return (ok1 && ok2 && ok3) ? GCodeResult::ok : GCodeResult::error;
 		}
 
 	case 108:

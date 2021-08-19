@@ -342,14 +342,14 @@ static GCodeResult ProcessM569(const CanMessageGeneric& msg, const StringRef& re
 		if (parser.GetUintParam('D', val))	// set driver mode
 		{
 			seen = true;
-#if SUPPORT_CLOSED_LOOP
+# if SUPPORT_CLOSED_LOOP
 			// enable/disabled closed loop control
 			if (!ClosedLoop::SetClosedLoopEnabled(val == (uint32_t) DriverMode::direct, reply))
 			{
 				// reply.printf is done in ClosedLoop::SetClosedLoopEnabled()
 				return GCodeResult::error;
 			}
-#endif
+# endif
 			if (!SmartDrivers::SetDriverMode(drive, val))
 			{
 				reply.printf("Driver %u.%u does not support mode '%s'", CanInterface::GetCanAddress(), drive, TranslateDriverMode(val));
