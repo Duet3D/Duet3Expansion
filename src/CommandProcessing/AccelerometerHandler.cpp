@@ -225,7 +225,7 @@ void AccelerometerHandler::Init() noexcept
 	}
 }
 
-bool AccelerometerHandler::Present() noexcept
+bool AccelerometerHandler::IsPresent() noexcept
 {
 	return accelerometer != nullptr;
 }

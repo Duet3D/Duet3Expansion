@@ -20,7 +20,7 @@ class CanMessageStartAccelerometer;
 namespace AccelerometerHandler
 {
 	void Init() noexcept;
-	bool Present() noexcept;
+	bool IsPresent() noexcept;
 	GCodeResult ProcessConfigRequest(const CanMessageGeneric& msg, const StringRef& reply) noexcept;
 	GCodeResult ProcessStartRequest(const CanMessageStartAccelerometer& msg, const StringRef& reply) noexcept;
 	void Diagnostics(const StringRef& reply) noexcept;

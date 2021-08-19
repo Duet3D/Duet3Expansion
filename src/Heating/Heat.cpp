@@ -40,6 +40,10 @@ Licence: GPL
 # include <Movement/StepperDrivers/TMC51xx.h>
 #endif
 
+#if SUPPORT_I2C_SENSORS && SUPPORT_LIS3DH
+# include <CommandProcessing/AccelerometerHandler.h>
+#endif
+
 #include "Tasks.h"
 
 // The task stack size must be large enough for calls to debugPrintf when a heater fault occurs.
@@ -378,6 +382,11 @@ void Heat::Exit()
 #if HAS_CPU_TEMP_SENSOR
 				boardStatusMsg->values[index++] = Platform::GetMcuTemperatures();
 				boardStatusMsg->hasMcuTemp = true;
+#endif
+#if SUPPORT_I2C_SENSORS && SUPPORT_LIS3DH
+				boardStatusMsg->hasAccelerometer = AccelerometerHandler::IsPresent();
+#else
+				boardStatusMsg->hasAccelerometer = false;
 #endif
 				buf.dataLength = boardStatusMsg->GetActualDataLength();
 				CanInterface::Send(&buf);
