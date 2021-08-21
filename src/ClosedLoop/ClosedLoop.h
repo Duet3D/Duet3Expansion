@@ -28,8 +28,19 @@ namespace ClosedLoop
 
 	void EnableEncodersSpi() noexcept;
 	void DisableEncodersSpi() noexcept;
+
+#ifdef EXP1HCE
 	void TurnAttinyOff() noexcept;
+#endif
 }
+
+#ifdef EXP1HCL
+
+// The encoder uses the standard shared SPI device, so we don't need to enable/disable it
+inline void ClosedLoop::EnableEncodersSpi() noexcept { }
+inline void ClosedLoop::DisableEncodersSpi() noexcept { }
+
+#endif
 
 #endif
 

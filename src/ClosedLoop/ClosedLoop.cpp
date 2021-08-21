@@ -10,14 +10,26 @@
 #if SUPPORT_CLOSED_LOOP
 
 #include <CanMessageGenericParser.h>
+#include <Platform.h>
 #include "SpiEncoder.h"
 #include "AS5047D.h"
-#include "QuadratureEncoder.h"
+
+#ifdef EXP1HCE
+# include "QuadratureEncoderAttiny.h"
+#endif
+
+#ifdef EXP1HCL
+# include "QuadratureEncoderPdec.h"
+#endif
+
 #include "TLI5012B.h"
 #include "AttinyProgrammer.h"
 
 static bool closedLoopEnabled = false;
 static Encoder *encoder = nullptr;
+
+#ifdef EXP1HCE
+
 static SharedSpiDevice *encoderSpi = nullptr;
 static AttinyProgrammer *programmer;
 
@@ -30,40 +42,55 @@ static void GenerateAttinyClock()
 	SetPinFunction(ClockGenPin, ClockGenPinPeriphMode);
 }
 
+void  ClosedLoop::TurnAttinyOff() noexcept
+{
+	programmer->TurnAttinyOff();
+}
+
+#endif
+
+#ifdef EXP1HCL
+
+static void GenerateTmcClock()
+{
+	// Currently we program DPLL0 to generate 120MHz output, so to get 15MHz we divide by 8
+	ConfigureGclk(ClockGenGclkNumber, GclkSource::dpll0, 8, true);
+	SetPinFunction(ClockGenPin, ClockGenPinPeriphMode);
+}
+
+#endif
+
+#ifdef EXP1HCE
+
 void  ClosedLoop::EnableEncodersSpi() noexcept
 {
-#ifdef EXP1HCE
 	SetPinFunction(EncoderMosiPin, EncoderMosiPinPeriphMode);
 	SetPinFunction(EncoderSclkPin, EncoderSclkPinPeriphMode);
 	SetPinFunction(EncoderMisoPin, EncoderMisoPinPeriphMode);
-#else
-# error Undefined hardware
-#endif
 }
 
 void  ClosedLoop::DisableEncodersSpi() noexcept
 {
-#ifdef EXP1HCE
 	ClearPinFunction(EncoderMosiPin);
 	ClearPinFunction(EncoderSclkPin);
 	ClearPinFunction(EncoderMisoPin);
-#else
-# error Undefined hardware
-#endif
 }
+
+#endif
 
 void ClosedLoop::Init() noexcept
 {
 	pinMode(EncoderCsPin, OUTPUT_HIGH);													// make sure that any attached SPI encoder is not selected
+
+#if defined(EXP1HCE)
 	encoderSpi = new SharedSpiDevice(EncoderSspiSercomNumber, EncoderSspiDataInPad);	// create the encoders SPI device
 	GenerateAttinyClock();
 	programmer = new AttinyProgrammer(*encoderSpi);
 	programmer->InitAttiny();
-}
-
-void  ClosedLoop::TurnAttinyOff() noexcept
-{
-	programmer->TurnAttinyOff();
+#elif defined(EXP1HCL)
+	// The EXP1HCL board uses the standard shared SPI device
+	GenerateTmcClock();
+#endif
 }
 
 EncoderType ClosedLoop::GetEncoderType() noexcept
@@ -93,10 +120,19 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 		seen = true;
 		if (temp < EncoderType::NumValues)
 		{
-			if (temp != GetEncoderType().ToBaseType())
+			if (temp == GetEncoderType().ToBaseType())
+			{
+				if (encoder != nullptr)
+				{
+					encoder->Disable();
+					//TODO re-initialise the encoder
+					encoder->Enable();
+				}
+			}
+			else
 			{
 				//TODO need to get a lock here in case there is any movement
-				delete encoder;
+				DeleteObject(encoder);
 				switch (temp)
 				{
 				case EncoderType::none:
@@ -104,24 +140,45 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 					break;
 
 				case EncoderType::as5047:
+#ifdef EXP1HCE
 					encoder = new AS5047D(*encoderSpi, EncoderCsPin);
+#elif defined(EXP1HCL)
+					encoder = new AS5047D(*Platform::sharedSpi, EncoderCsPin);
+#endif
 					break;
 
 				case EncoderType::tli5012:
+#ifdef EXP1HCE
 					encoder = new TLI5012B(*encoderSpi, EncoderCsPin);
+#elif defined(EXP1HCL)
+					encoder = new TLI5012B(*Platform::sharedSpi, EncoderCsPin);
+#endif
 					break;
 
 				case EncoderType::linearQuadrature:
-					encoder = new QuadratureEncoder(true);
+#ifdef EXP1HCE
+					encoder = new QuadratureEncoderAttiny(true);
+#elif defined(EXP1HCL)
+					encoder = new QuadratureEncoderPdec(true);
+#else
+# error Unknown board
+#endif
 					break;
 
 				case EncoderType::rotaryQuadrature:
-					encoder = new QuadratureEncoder(false);
+#ifdef EXP1HCE
+					encoder = new QuadratureEncoderAttiny(false);
+#elif defined(EXP1HCL)
+					encoder = new QuadratureEncoderPdec(false);
+#else
+# error Unknown board
+#endif
 					break;
 				}
 
 				if (encoder != nullptr)
 				{
+					//TODO initialise the encoder
 					encoder->Enable();
 				}
 			}
@@ -142,7 +199,12 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 
 void ClosedLoop::Diagnostics(const StringRef& reply) noexcept
 {
+#if defined(EXP1HCE)
 	reply.printf("Encoder programmed status %s, encoder type %s", programmer->GetProgramStatus().ToString(), GetEncoderType().ToString());
+#elif defined(EXP1HCL)
+	reply.printf("Encoder type %s", GetEncoderType().ToString());
+#endif
+
 	if (encoder != nullptr)
 	{
 		reply.catf(", position %" PRIi32, encoder->GetReading());
