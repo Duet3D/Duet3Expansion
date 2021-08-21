@@ -20,6 +20,7 @@
 # include <CanMessageBuffer.h>
 # include <CanMessageFormats.h>
 # include <CanMessageGenericParser.h>
+# include <CanMessageGenericTables.h>
 
 # if defined(EXP1HCE)
 #  include "AttinyProgrammer.h"
