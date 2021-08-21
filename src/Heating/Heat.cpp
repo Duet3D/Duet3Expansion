@@ -25,6 +25,7 @@ Licence: GPL
 #include "Sensors/TemperatureSensor.h"
 #include "CanMessageGenericParser.h"
 #include <CanMessageBuffer.h>
+#include <CanMessageGenericTables.h>
 #include "CAN/CanInterface.h"
 #include "Fans/FansManager.h"
 

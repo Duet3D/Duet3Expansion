@@ -17,6 +17,7 @@
 #include <CanMessageBuffer.h>
 #include <CAN/CanInterface.h>
 #include <CanMessageGenericParser.h>
+#include <CanMessageGenericTables.h>
 
 #define TEST_PACKING	0
 
