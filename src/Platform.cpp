@@ -494,6 +494,7 @@ namespace Platform
 		numUnderVoltageEvents = previousUnderVoltageEvents = numOverVoltageEvents = previousOverVoltageEvents = 0;
 
 		vinFilter.Init(0);
+		pinMode(VinMonitorPin, AIN);
 		AnalogIn::EnableChannel(PinToAdcChannel(VinMonitorPin), vinFilter.CallbackFeedIntoFilter, &vinFilter, 1, false);
 #endif
 	}
@@ -643,6 +644,7 @@ void Platform::Init()
 	lowestV12 = 9999;
 
 	v12Filter.Init(0);
+	pinMode(V12MonitorPin, AIN);
 	AnalogIn::EnableChannel(PinToAdcChannel(V12MonitorPin), v12Filter.CallbackFeedIntoFilter, &v12Filter, 1, false);
 #endif
 
