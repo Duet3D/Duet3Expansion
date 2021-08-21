@@ -8,6 +8,7 @@
 #include "GpioPorts.h"
 #include <CAN/CanInterface.h>
 #include <CanMessageGenericParser.h>
+#include <CanMessageGenericTables.h>
 
 static PwmPort ports[MaxGpOutPorts];
 

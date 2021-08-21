@@ -13,12 +13,13 @@
 #include "RotatingMagnetFilamentMonitor.h"
 #include "LaserFilamentMonitor.h"
 #include "PulsedFilamentMonitor.h"
-#include "Platform.h"
-#include "Movement/Move.h"
+#include <Platform.h>
+#include <Movement/Move.h>
 #include <CAN/CanInterface.h>
 #include <CanMessageFormats.h>
 #include <CanMessageBuffer.h>
 #include <CanMessageGenericParser.h>
+#include <CanMessageGenericTables.h>
 
 // Static data
 ReadWriteLock FilamentMonitor::filamentMonitorsLock;

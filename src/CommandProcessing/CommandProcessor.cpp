@@ -7,12 +7,13 @@
 
 #include "CommandProcessor.h"
 #include <CAN/CanInterface.h>
-#include "CanMessageBuffer.h"
-#include "GCodes/GCodeResult.h"
-#include "Heating/Heat.h"
-#include "Fans/FansManager.h"
+#include <CanMessageBuffer.h>
+#include <GCodes/GCodeResult.h>
+#include <Heating/Heat.h>
+#include <Fans/FansManager.h>
 #include <FilamentMonitors/FilamentMonitor.h>
-#include "CanMessageGenericParser.h"
+#include <CanMessageGenericParser.h>
+#include <CanMessageGenericTables.h>
 #include <InputMonitors/InputMonitor.h>
 #include <GPIO/GpioPorts.h>
 #include <Platform.h>
