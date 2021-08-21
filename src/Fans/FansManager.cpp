@@ -8,9 +8,10 @@
 #include "FansManager.h"
 
 #include "LocalFan.h"
-#include "CanMessageFormats.h"
-#include "CanMessageGenericParser.h"
-#include "CAN/CanInterface.h"
+#include <CanMessageFormats.h>
+#include <CanMessageGenericParser.h>
+#include <CanMessageGenericTables.h>
+#include <CAN/CanInterface.h>
 
 #include <utility>
 

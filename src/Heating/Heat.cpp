@@ -23,10 +23,11 @@ Licence: GPL
 #include <Platform.h>
 #include <TaskPriorities.h>
 #include "Sensors/TemperatureSensor.h"
-#include "CanMessageGenericParser.h"
+#include <CanMessageGenericParser.h>
 #include <CanMessageBuffer.h>
-#include "CAN/CanInterface.h"
-#include "Fans/FansManager.h"
+#include <CanMessageGenericTables.h>
+#include <CAN/CanInterface.h>
+#include <Fans/FansManager.h>
 
 #if SUPPORT_DHT_SENSOR
 # include "Sensors/DhtSensor.h"
