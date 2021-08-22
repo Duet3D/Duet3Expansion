@@ -919,6 +919,11 @@ void CommandProcessor::Spin()
 # endif
 			break;
 
+		case CanMessageType::m569p7:
+			requestId = buf->msg.generic.requestId;
+			rslt = Platform::ProcessM569Point7(buf->msg.generic, replyRef);
+			break;
+
 		case CanMessageType::setStandstillCurrentFactor:
 			requestId = buf->msg.multipleDrivesRequestFloat.requestId;
 			rslt = SetStandstillCurrentFactor(buf->msg.multipleDrivesRequestFloat, buf->dataLength, replyRef);

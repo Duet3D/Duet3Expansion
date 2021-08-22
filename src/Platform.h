@@ -230,11 +230,15 @@ namespace Platform
 	bool GetDirectionValue(size_t driver);
 	void SetEnableValue(size_t driver, int8_t eVal);
 	int8_t GetEnableValue(size_t driver);
-	void DriveEnableOverride(bool override);
+#if SUPPORT_CLOSED_LOOP
+	void DriveEnableOverride(size_t driver, bool doOverride);
+#endif
 	void EnableDrive(size_t driver);
 	void DisableDrive(size_t driver);
 	void DisableAllDrives();
-	void SetDriverIdle(size_t driver, uint8_t percent);
+	void SetDriverIdle(size_t driver, uint16_t idlePercent);
+
+	GCodeResult ProcessM569Point7(const CanMessageGeneric& msg, const StringRef& reply);
 
 # if HAS_SMART_DRIVERS
 	void SetMotorCurrent(size_t driver, float current);		//TODO avoid the int->float->int conversion

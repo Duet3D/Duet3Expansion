@@ -796,7 +796,7 @@ uint8_t ClosedLoop::ReadLiveStatus() noexcept
 		while (!tuning) {TaskBase::Take();}
 
 		// Enable all motors & disable them becoming idle
-		Platform::DriveEnableOverride(true);
+		Platform::DriveEnableOverride(0, true);
 
 		// Check we are in direct drive mode
 		if (SmartDrivers::GetDriverMode(0) != DriverMode::direct) {
@@ -1086,7 +1086,7 @@ uint8_t ClosedLoop::ReadLiveStatus() noexcept
 			tuning &= ~ZIEGLER_NICHOLS_MANOEUVRE;
 		}
 
-		Platform::DriveEnableOverride(false);
+		Platform::DriveEnableOverride(0, false);
 
 		TaskBase::Take();
 	}
