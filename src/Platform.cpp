@@ -1828,7 +1828,7 @@ void Platform::DisableAllDrives()
 
 GCodeResult Platform::ProcessM569Point7(const CanMessageGeneric& msg, const StringRef& reply)
 {
-	CanMessageGenericParser parser(msg, M569Params);
+	CanMessageGenericParser parser(msg, M569Point7Params);
 	uint8_t drive;
 	if (!parser.GetUintParam('P', drive))
 	{
