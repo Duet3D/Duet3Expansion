@@ -116,17 +116,17 @@ extern "C" [[noreturn]] void DataTransmissionTaskLoop(void *param) noexcept { Cl
 
 // TODO: Helper function to convert between the internal representation of encoderCountPerStep, and the appropriate external representation (e.g. CPR)
 # if false
-float countPerStepToExternalUnits() {
+static float countPerStepToExternalUnits() {
 	// TODO
 }
 
-float externalUnitsToCountPerStep() {
+static float externalUnitsToCountPerStep() {
 	// TODO
 }
 # endif
 
 // Helper function to cat all the current tuning errors onto a reply in human-readable form
-void ReportTuningErrors(uint8_t tuningErrorBitmask, const StringRef &reply)
+static void ReportTuningErrors(uint8_t tuningErrorBitmask, const StringRef &reply)
 {
 	if (tuningErrorBitmask & ClosedLoop::TUNE_ERR_NOT_ZEROED) 					{reply.catf(" The drive has not been zeroed.");}
 	if (tuningErrorBitmask & ClosedLoop::TUNE_ERR_NOT_CHECKED_POLARITY) 		{reply.catf(" The drive has not had it's polarity checked.");}
@@ -137,12 +137,11 @@ void ReportTuningErrors(uint8_t tuningErrorBitmask, const StringRef &reply)
 }
 
 // Helper function to set the motor to a given phase and magnitude
-void SetMotorPhase(uint16_t phase, float magnitude)
+static void SetMotorPhase(uint16_t phase, float magnitude)
 {
 	magnitude = constrain<float>(magnitude, holdCurrent, 1.0);
 	coilA = 255 * (coilAPolarity ? magnitude : -magnitude ) * Trigonometry::FastCos(phase);
 	coilB = 255 * (coilBPolarity ? magnitude : -magnitude ) * Trigonometry::FastSin(phase);
-	// TODO: Should we ::Give() to the task that's responsible for setting these registers here?
 
 # if SUPPORT_TMC2160 && SINGLE_DRIVER
 	SmartDrivers::SetRegister(0,
