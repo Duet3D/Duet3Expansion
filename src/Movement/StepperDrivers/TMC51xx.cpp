@@ -1218,6 +1218,10 @@ extern "C" [[noreturn]] void TmcLoop(void *)
 				}
 			}
 
+#if SUPPORT_CLOSED_LOOP
+			ClosedLoop::ControlLoop();	// Allow closed-loop to set the motor currents before we write
+#endif
+
 			// Set up data to write. Driver 0 is the first in the SPI chain so we must write them in reverse order.
 			volatile uint8_t *writeBufPtr = sendData + 5 * numTmc51xxDrivers;
 			for (size_t i = 0; i < numTmc51xxDrivers; ++i)

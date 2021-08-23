@@ -102,11 +102,12 @@ static int16_t coilB;							// The current to run through coil A
 static bool stall = false;						// Has the closed loop error threshold been exceeded?
 static bool preStall = false;					// Has the closed loop warning threshold been exceeded?
 
+static int tuneCounter = 1;						// A counter for tuning tasks to use
+static bool newTuningMove = true;				// Indicates if a tuning move has just finished
+static int tuningVar1, tuningVar2, tuningVar3;	// Three general purpose variables for any tuning task to use
+
 
 // Tasks and task loops
-static Task<ClosedLoop::TaskStackWords> *controlTask;				// Control task - controls the motor currents
-extern "C" [[noreturn]] void ControlTaskLoop(void *param) noexcept { ClosedLoop::ControlLoop(); }
-
 static Task<ClosedLoop::TaskStackWords> *dataCollectionTask;		// Data collection task - handles sampling some of the static vars in this file
 extern "C" [[noreturn]] void DataCollectionTaskLoop(void *param) noexcept { ClosedLoop::DataCollectionLoop(); }
 
@@ -182,10 +183,6 @@ void ClosedLoop::Init() noexcept
 	// Initialise to no error thresholds
 	errorThresholds[0] = 0;
 	errorThresholds[1] = 0;
-
-	// Set up the control task
-	controlTask = new Task<ClosedLoop::TaskStackWords>;
-	controlTask->Create(ControlTaskLoop, "CLControl", nullptr, TaskPriority::ClosedLoop);
 
 	// Set up the data collection task
 	dataCollectionTask = new Task<ClosedLoop::TaskStackWords>;
@@ -392,13 +389,17 @@ GCodeResult ClosedLoop::ProcessM569Point6(const CanMessageGeneric &msg, const St
 		return GCodeResult::error;
 	}
 
+	// Enable all motors & disable them becoming idle
+	Platform::DriveEnableOverride(0, true);
+
 	uint8_t prevTuningError = tuningError;
 	tuning = desiredTuning;
 
 	// TODO: Is this the best way to do this?
-	while (tuning) {
-		controlTask->Give();
-	}
+	while (tuning) {continue;}
+
+	// Return the drivers to their previous state
+	Platform::DriveEnableOverride(0, false);
 
 	// There are now 3 scenarios
 	// 1. No tuning errors exist (!tuningError)							= OK
@@ -422,22 +423,16 @@ GCodeResult ClosedLoop::ProcessM569Point6(const CanMessageGeneric &msg, const St
 	}
 }
 
-[[noreturn]] void ClosedLoop::ControlLoop() noexcept
+void ClosedLoop::ControlLoop() noexcept
 {
-	uint32_t lastWakeTime = xTaskGetTickCount();
+	if (collectingData && rateRequested == 0) {CollectSample();}	// Collect a sample, if we need to
 
-	while (true) {
-		vTaskDelayUntil(&lastWakeTime, controlDelay);					// Wait for our time
+	if (!closedLoopEnabled) {return;}								// If closed loop disabled, we are finished
 
-		if (collectingData && rateRequested == 0) {CollectSample();}	// Collect a sample, if we need to
-
-		if (!closedLoopEnabled) {continue;}								// If closed loop disabled, we are finished
-
-		if (tuning || tuningError) {
-			PerformTune();												// If we need to tune, tune
-		} else {
-			ControlMotorCurrents();										// Otherwise control those motor currents!
-		}
+	if (tuning || tuningError) {
+		PerformTune();												// If we need to tune, tune
+	} else {
+		ControlMotorCurrents();										// Otherwise control those motor currents!
 	}
 }
 
@@ -483,16 +478,16 @@ GCodeResult ClosedLoop::ProcessM569Point6(const CanMessageGeneric &msg, const St
 				if (filterRequested & CL_RECORD_RAW_ENCODER_READING) 	{msg.data[dataPointer++] = rawEncoderReading;}
 				if (filterRequested & CL_RECORD_CURRENT_MOTOR_STEPS) 	{msg.data[dataPointer++] = currentMotorSteps;}
 				if (filterRequested & CL_RECORD_TARGET_MOTOR_STEPS)  	{msg.data[dataPointer++] = targetMotorSteps;}
-				if (filterRequested & CL_RECORD_STEP_PHASE)  			{msg.data[dataPointer++] = stepPhase;}
+				if (filterRequested & CL_RECORD_CURRENT_ERROR) 		{msg.data[dataPointer++] = currentError;}
 				if (filterRequested & CL_RECORD_PID_CONTROL_SIGNAL)  	{msg.data[dataPointer++] = PIDControlSignal;}
 				if (filterRequested & CL_RECORD_PID_P_TERM)  			{msg.data[dataPointer++] = PIDPTerm;}
 				if (filterRequested & CL_RECORD_PID_I_TERM)  			{msg.data[dataPointer++] = PIDITerm;}
 				if (filterRequested & CL_RECORD_PID_D_TERM)  			{msg.data[dataPointer++] = PIDDTerm;}
-				if (filterRequested & CL_RECORD_PHASE_SHIFT)  			{msg.data[dataPointer++] = phaseShift;}
+				if (filterRequested & CL_RECORD_STEP_PHASE)  			{msg.data[dataPointer++] = stepPhase;}
 				if (filterRequested & CL_RECORD_DESIRED_STEP_PHASE)  	{msg.data[dataPointer++] = desiredStepPhase;}
+				if (filterRequested & CL_RECORD_PHASE_SHIFT)  			{msg.data[dataPointer++] = phaseShift;}
 				if (filterRequested & CL_RECORD_COIL_A_CURRENT) 		{msg.data[dataPointer++] = coilA;}
 				if (filterRequested & CL_RECORD_COIL_B_CURRENT) 		{msg.data[dataPointer++] = coilB;}
-				if (filterRequested & CL_RECORD_CURRENT_ERROR) 			{msg.data[dataPointer++] = currentError;}
 
 				// Send the CAN message
 				buf.dataLength = msg.GetActualDataLength();
@@ -571,85 +566,107 @@ void ClosedLoop::PerformTune() noexcept
 {
 	if (!tuning) {return;}
 
-	// Enable all motors & disable them becoming idle
-	Platform::DriveEnableOverride(0, true);
+	constexpr unsigned int stepPhaseDistance = 8;	// Must be a power of 2 < 4096. Represents how much the phase will change each time the motor needs to move.
 
 	// Check we are in direct drive mode
 	if (SmartDrivers::GetDriverMode(0) != DriverMode::direct) {
 		tuningError |= TUNE_ERR_SYSTEM_ERROR;
 		tuning = 0;
+		return;
 	}
-
-	// Wait for the driver registers to be written
-	while (SmartDrivers::UpdatePending(0)) {TaskBase::Take(10);}
 
 	// Do a polarity detection manoeuvre
 	if (tuning & POLARITY_DETECTION_MANOEUVRE) {
 
-		unsigned int correctCoilPhase = 0;
-		unsigned int correctCoilPhaseError = 0;
-
-		for (unsigned int coilPhase=0; coilPhase<4; coilPhase++) {
-			unsigned int totalError = 0;			// The total error made by this phase arrangement
-			// Change the coil phase
-			coilAPolarity = coilPhase & 0x2;
-			coilBPolarity = coilPhase & 0x1;
-			for (desiredStepPhase = 0; desiredStepPhase<4096; desiredStepPhase+=256) {
-				// Move the motor
-				SetMotorPhase(desiredStepPhase, 1);
-
-				// Wait for the motor to move
-				while (SmartDrivers::UpdatePending(0)) {TaskBase::Take(10);}
-				vTaskDelay(2);
-
-				// Calculate where the motor has moved to
-				rawEncoderReading = encoder->GetReading();
-				currentMotorSteps = rawEncoderReading / encoderCountPerStep;
-				float tmp = currentMotorSteps / 4;
-				if (tmp >= 0) {
-					stepPhase = (tmp - (int) tmp) * 4095;
-				} else {
-					stepPhase = (1 + tmp - (int) tmp) * 4095;
-				}
-
-				// Calculate & accumulate the error
-				int16_t distance1 = abs(stepPhase - desiredStepPhase);
-				int16_t distance2 = abs(4095 - max<uint16_t>(stepPhase, desiredStepPhase) + min<uint16_t>(stepPhase, desiredStepPhase));
-				totalError += min<int16_t>(distance1, distance2);
-			}
-			// Update if this is the correct coil phase
-			if (coilPhase == 0 || totalError < correctCoilPhaseError) {
-				correctCoilPhase = coilPhase;
-				correctCoilPhaseError = totalError;
-			}
+		if (newTuningMove) {
+			// This is the first run
+			tuningVar1 = 0;		// correctCoilPhase
+			tuningVar2 = 0;		// correctCoilPhaseError
+			tuneCounter = 0;
+			newTuningMove = false;
 		}
 
-		coilAPolarity = correctCoilPhase & 0x2;
-		coilBPolarity = correctCoilPhase & 0x1;
+		if (tuneCounter > 0) {
+			// Calculate where the motor has moved to
+			rawEncoderReading = encoder->GetReading();
+			currentMotorSteps = rawEncoderReading / encoderCountPerStep;
+			float tmp = currentMotorSteps / 4;
+			if (tmp >= 0) {
+				stepPhase = (tmp - (int) tmp) * 4095;
+			} else {
+				stepPhase = (1 + tmp - (int) tmp) * 4095;
+			}
 
-		tuning &= ~POLARITY_DETECTION_MANOEUVRE;
-		tuningError &= ~TUNE_ERR_NOT_FOUND_POLARITY;
+			// Calculate & accumulate the error
+			int16_t distance1 = abs(stepPhase - desiredStepPhase);
+			int16_t distance2 = abs(4095 - max<uint16_t>(stepPhase, desiredStepPhase) + min<uint16_t>(stepPhase, desiredStepPhase));
+			tuningVar3 += min<int16_t>(distance1, distance2);	// totalError
+		}
+
+		if (tuneCounter % 4096 == 0) {
+			// If the polarity is about to change, update if this is the correct polarity
+			if (tuneCounter == 4096 || tuningVar3 < tuningVar2) {
+				tuningVar1 = (tuneCounter - 1) / 4096;
+				tuningVar2 = tuningVar3;
+			}
+			tuningVar3 = 0;
+		}
+
+		// Set the correct coil polarities
+		coilAPolarity = (tuneCounter / 4096) & 0x2;
+		coilBPolarity = (tuneCounter / 4096) & 0x1;
+
+		// Calculate the current desired step phase
+		desiredStepPhase = tuneCounter % 4096;
+
+		// Move the motor
+		SetMotorPhase(desiredStepPhase, 1);
+
+		if (tuneCounter >= 16384) {
+			// This is the last run
+			coilAPolarity = tuningVar1 & 0x2;
+			coilBPolarity = tuningVar1 & 0x1;
+
+			tuningError &= ~TUNE_ERR_NOT_FOUND_POLARITY;
+			tuning &= ~POLARITY_DETECTION_MANOEUVRE;
+			newTuningMove = true;
+		}
+
+		tuneCounter += stepPhaseDistance;
+		return;		// If we have done this tuning move, we don't want to do any others
 	}
 
 	// Do a zeroing manoeuvre
 	if (tuning & ZEROING_MANOEUVRE) {
-		// Ease the motor from 4096 down to 0
-		desiredStepPhase = 4096*2;	// (*2 because we first divide by 2)
-		while (desiredStepPhase > 0) {
-			if (desiredStepPhase > 1) {
-				desiredStepPhase /= 2;
-			} else {
-				desiredStepPhase = 0;
-			}
-			SetMotorPhase(desiredStepPhase, 1);
-			while (SmartDrivers::UpdatePending(0)) {TaskBase::Take(10);}
-			vTaskDelay(2);	// TODO: Match rate of main ControlMotorCurrents loop
-			rawEncoderReading = encoder->GetReading();
-			if (collectingData && rateRequested == 0) {CollectSample();}
+		if (newTuningMove) {
+			// This is the first run
+			tuneCounter = 4096 + 1024;	// 4096 phase movement + 1024 delay
+			newTuningMove = false;
 		}
 
-		// Calculate where the motor has moved to
-		rawEncoderReading = encoder->GetReading();
+		if (tuneCounter > 1024) {
+			// We are still moving
+			tuneCounter -= stepPhaseDistance;
+			desiredStepPhase = tuneCounter - 1024;
+			SetMotorPhase(desiredStepPhase, 1);
+		} else if (tuneCounter > 0) {
+			tuneCounter -= stepPhaseDistance;
+		} else {
+			// We are done
+			// Calculate where the motor has moved to
+			rawEncoderReading = encoder->GetReading();
+
+			// Set this as the new zero position
+			((QuadratureEncoderPdec*) encoder)->SetOffset(-rawEncoderReading);
+			targetMotorSteps = targetMotorSteps - (rawEncoderReading / encoderCountPerStep);
+
+			// Set the appropriate flags
+			newTuningMove = true;
+			tuning &= ~ZEROING_MANOEUVRE;
+			tuningError &= ~TUNE_ERR_NOT_ZEROED;
+		}
+
+		rawEncoderReading = encoder->GetReading();	// (For data collection)
 		currentMotorSteps = rawEncoderReading / encoderCountPerStep;
 		float tmp = currentMotorSteps / 4;
 		if (tmp >= 0) {
@@ -657,30 +674,22 @@ void ClosedLoop::PerformTune() noexcept
 		} else {
 			stepPhase = (1 + tmp - (int) tmp) * 4095;
 		}
-
-		// Set this as the new zero position
-		((QuadratureEncoderPdec*) encoder)->SetOffset(-rawEncoderReading);
-		targetMotorSteps = 0;
-
-		tuning &= ~ZEROING_MANOEUVRE;
-		tuningError &= ~TUNE_ERR_NOT_ZEROED;
+		return;		// If we have done this tuning move, we don't want to do any others
 	}
 
 	// Do a polarity check manoeuvre
 	if (tuning & POLARITY_CHECK) {
 		// We are going to step through a full phase, and check that the error never exceeds max_err
 
-		const unsigned int max_err = 5 * (1024 / encoderCountPerStep);	// Allow up to 5x the resolution of the encoder
-		unsigned int deviations = 0;
+		if (newTuningMove) {
+			// This is the first run
+			tuningVar1 = 10 * (1024 / encoderCountPerStep);	// max_err - allow up to 10x the resolution of the encoder
+			tuningVar2 = 0;		// deviations
+			tuneCounter = 0;
+			newTuningMove = false;
+		}
 
-		for (desiredStepPhase = 0; desiredStepPhase<4096; desiredStepPhase+=256) {
-			// Move the motor
-			SetMotorPhase(desiredStepPhase, 1);
-
-			// Wait for the motor to move
-			while (SmartDrivers::UpdatePending(0)) {TaskBase::Take(10);}
-			vTaskDelay(2);
-
+		if (tuneCounter < 4096) {
 			// Calculate where the motor has moved to
 			rawEncoderReading = encoder->GetReading();
 			currentMotorSteps = rawEncoderReading / encoderCountPerStep;
@@ -695,18 +704,26 @@ void ClosedLoop::PerformTune() noexcept
 			int16_t distance2 = 4095 - max(stepPhase, desiredStepPhase) + min(stepPhase, desiredStepPhase);
 
 			// Check the error in the movement
-			if (abs(distance1) > max_err && abs(distance2) > max_err) {
-				deviations++;
+			if (abs(distance1) > tuningVar1 && abs(distance2) > tuningVar1) {
+				tuningVar2++;
 			}
+
+			// Allow a small number of deviations
+			if (tuningVar2 > 10) {
+				tuningError |= TUNE_ERR_INCORRECT_POLARITY;
+			}
+
+			// Move the motor for the next iteration
+			desiredStepPhase = tuneCounter;
+			SetMotorPhase(desiredStepPhase, 1);
+		} else {
+			tuning &= ~POLARITY_CHECK;
+			tuningError &= ~TUNE_ERR_NOT_CHECKED_POLARITY;
+			newTuningMove = true;
 		}
 
-		// Allow a small number of deviations
-		if (deviations > 10) {
-			tuningError |= TUNE_ERR_INCORRECT_POLARITY;
-		}
-
-		tuning &= ~POLARITY_CHECK;
-		tuningError &= ~TUNE_ERR_NOT_CHECKED_POLARITY;
+		tuneCounter += stepPhaseDistance;
+		return;		// If we have done this tuning move, we don't want to do any others
 	}
 
 	// Do a polarity detection manoeuvre
@@ -730,15 +747,17 @@ void ClosedLoop::PerformTune() noexcept
 
 	// Do a step manoeuvre
 	if (tuning & STEP_MANOEUVRE) {
-		uint32_t lastWakeTime = xTaskGetTickCount();
 		targetMotorSteps = currentMotorSteps + 4;
-		for (unsigned int i=0; i<4096; i++) {
-			ControlMotorCurrents();
-			vTaskDelayUntil(&lastWakeTime, controlDelay);
-		}
 		tuning &= ~STEP_MANOEUVRE;
 	}
 
+	// TODO: Implement Ziegler-Nichols manoeuvre
+#if true
+	// Do a Ziegler-Nichols manoeuvre
+	if (tuning & ZIEGLER_NICHOLS_MANOEUVRE) {
+		tuning &= ~ZIEGLER_NICHOLS_MANOEUVRE;
+	}
+#else
 	// Do a ziegler-nichols tuning manoeuvre
 	if (tuning & ZIEGLER_NICHOLS_MANOEUVRE) {
 
@@ -866,8 +885,7 @@ void ClosedLoop::PerformTune() noexcept
 
 		tuning &= ~ZIEGLER_NICHOLS_MANOEUVRE;
 	}
-
-	Platform::DriveEnableOverride(0, false);
+#endif
 
 }
 
@@ -876,16 +894,17 @@ void ClosedLoop::CollectSample() noexcept
 	if (filterRequested & CL_RECORD_RAW_ENCODER_READING) 	{sampleBuffer[sampleBufferWritePointer++] = rawEncoderReading;}
 	if (filterRequested & CL_RECORD_CURRENT_MOTOR_STEPS) 	{sampleBuffer[sampleBufferWritePointer++] = currentMotorSteps;}
 	if (filterRequested & CL_RECORD_TARGET_MOTOR_STEPS)  	{sampleBuffer[sampleBufferWritePointer++] = targetMotorSteps;}
-	if (filterRequested & CL_RECORD_STEP_PHASE)  			{sampleBuffer[sampleBufferWritePointer++] = stepPhase;}
+	if (filterRequested & CL_RECORD_CURRENT_ERROR) 		{sampleBuffer[sampleBufferWritePointer++] = currentError;}
 	if (filterRequested & CL_RECORD_PID_CONTROL_SIGNAL)  	{sampleBuffer[sampleBufferWritePointer++] = PIDControlSignal;}
 	if (filterRequested & CL_RECORD_PID_P_TERM)  			{sampleBuffer[sampleBufferWritePointer++] = PIDPTerm;}
 	if (filterRequested & CL_RECORD_PID_I_TERM)  			{sampleBuffer[sampleBufferWritePointer++] = PIDITerm;}
 	if (filterRequested & CL_RECORD_PID_D_TERM)  			{sampleBuffer[sampleBufferWritePointer++] = PIDDTerm;}
-	if (filterRequested & CL_RECORD_PHASE_SHIFT)  			{sampleBuffer[sampleBufferWritePointer++] = phaseShift;}
+	if (filterRequested & CL_RECORD_STEP_PHASE)  			{sampleBuffer[sampleBufferWritePointer++] = stepPhase;}
 	if (filterRequested & CL_RECORD_DESIRED_STEP_PHASE)  	{sampleBuffer[sampleBufferWritePointer++] = desiredStepPhase;}
+	if (filterRequested & CL_RECORD_PHASE_SHIFT)  			{sampleBuffer[sampleBufferWritePointer++] = phaseShift;}
 	if (filterRequested & CL_RECORD_COIL_A_CURRENT) 		{sampleBuffer[sampleBufferWritePointer++] = coilA;}
 	if (filterRequested & CL_RECORD_COIL_B_CURRENT) 		{sampleBuffer[sampleBufferWritePointer++] = coilB;}
-	if (filterRequested & CL_RECORD_CURRENT_ERROR) 			{sampleBuffer[sampleBufferWritePointer++] = currentError;}
+
 
 	// Count how many bits are set in 'filterRequested'
 	// TODO: Look into a more efficient way of doing this

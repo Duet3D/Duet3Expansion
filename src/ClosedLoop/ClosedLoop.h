@@ -61,10 +61,10 @@ namespace ClosedLoop
 	GCodeResult ProcessM569Point5(const CanMessageStartClosedLoopDataCollection&, const StringRef&) noexcept;
 	GCodeResult ProcessM569Point6(const CanMessageGeneric& msg, const StringRef& reply) noexcept;
 
-	[[noreturn]] void ControlLoop() noexcept;
 	[[noreturn]] void DataCollectionLoop() noexcept;
 	[[noreturn]] void DataTransmissionLoop() noexcept;
 
+	void ControlLoop() noexcept;
 	void PerformTune() noexcept;
 	void CollectSample() noexcept;
 	void ControlMotorCurrents() noexcept;
