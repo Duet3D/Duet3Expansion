@@ -15,7 +15,7 @@ constexpr std::array<float, Resolution> lookupTable = []
 {
 	std::array<float, Resolution> LUT = {};
 
-	for (int i = 0; i < Resolution; ++i)
+	for (unsigned int i = 0; i < Resolution; ++i)
 	{
 		LUT[i] = sinf(((float)i/(Resolution-1)) * (Pi / 2.0));
 	}
