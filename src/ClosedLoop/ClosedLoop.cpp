@@ -22,6 +22,7 @@ using std::atomic;
 # include <CanMessageBuffer.h>
 # include <CanMessageFormats.h>
 # include <CanMessageGenericParser.h>
+# include <CanMessageGenericTables.h>
 
 # if defined(EXP1HCE)
 #  include "AttinyProgrammer.h"
@@ -572,7 +573,7 @@ void ClosedLoop::PerformTune() noexcept
 	if (!tuning) {return;}
 
 	// Enable all motors & disable them becoming idle
-	Platform::DriveEnableOverride(true);
+	Platform::DriveEnableOverride(0, true);
 
 	// Check we are in direct drive mode
 	if (SmartDrivers::GetDriverMode(0) != DriverMode::direct) {
@@ -867,7 +868,7 @@ void ClosedLoop::PerformTune() noexcept
 		tuning &= ~ZIEGLER_NICHOLS_MANOEUVRE;
 	}
 
-	Platform::DriveEnableOverride(false);
+	Platform::DriveEnableOverride(0, false);
 
 }
 

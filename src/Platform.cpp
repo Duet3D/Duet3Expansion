@@ -22,6 +22,8 @@
 #include "Heating/Sensors/TemperatureSensor.h"
 #include "Fans/FansManager.h"
 #include <CanMessageFormats.h>
+#include <CanMessageGenericTables.h>
+#include <CanMessageGenericParser.h>
 #include <Hardware/Devices.h>
 #include <Math/Isqrt.h>
 
@@ -137,9 +139,11 @@ namespace Platform
 	static bool directions[NumDrivers];
 	static bool driverAtIdleCurrent[NumDrivers];
 	static int8_t enableValues[NumDrivers] = { 0 };
+	IoPort brakePorts[NumDrivers];
 	static DriverStateControl driverStates[NumDrivers];
-	static bool driverEnableOverride = false;
-	static DriverStateControl overriddenDriverStates[NumDrivers];
+#if SUPPORT_CLOSED_LOOP
+	static bool driverEnableOverride[NumDrivers] = { 0 };
+#endif
 # if !HAS_SMART_DRIVERS
 	static bool driverIsEnabled[NumDrivers] = { false };
 # endif
@@ -147,6 +151,10 @@ namespace Platform
 	static float motorCurrents[NumDrivers];
 	static float pressureAdvanceClocks[NumDrivers];
 	static float idleCurrentFactor[NumDrivers];
+
+	static void InternalEnableDrive(size_t driver);
+	static void InternalDisableDrive(size_t driver);
+	static void InternalSetDriverIdle(size_t driver);
 #endif
 
 #if SUPPORT_SPI_SENSORS || defined(ATEIO)
@@ -1247,7 +1255,7 @@ void Platform::Spin()
 				debugPrintf("%s\n", reply.c_str());
 				//moveInstance->DebugPrintCdda();
 #if SUPPORT_I2C_SENSORS && SUPPORT_LIS3DH
-				debugPrintf("LIS3DH detected: %s", AccelerometerHandler::Present() ? "yes" : "no");
+				debugPrintf("LIS3DH detected: %s", AccelerometerHandler::IsPresent() ? "yes" : "no");
 #endif
 			}
 		}
@@ -1681,44 +1689,51 @@ int8_t Platform::GetEnableValue(size_t driver)
 	return (driver < NumDrivers) ? enableValues[driver] : 0;
 }
 
-void Platform::DriveEnableOverride(bool override)
+#if SUPPORT_CLOSED_LOOP
+
+void Platform::DriveEnableOverride(size_t driver, bool doOverride)
 {
-	if (override) {
-		for (size_t driver=0; driver<NumDrivers; driver++)
+	if (doOverride)
+	{
+		driverEnableOverride[driver] = true;
+		EnableDrive(driver);
+	}
+	else
+	{
+		driverEnableOverride[driver] = false;				// do this before calling SetDriverIdle
+		switch (driverStates[driver].mode)
 		{
-			overriddenDriverStates[driver] = driverStates[driver];
-			EnableDrive(driver);
-		}
-		driverEnableOverride = true;
-	} else {
-		driverEnableOverride = false;
-		for (size_t driver=0; driver<NumDrivers; driver++)
-		{
-			switch (overriddenDriverStates[driver].mode)
-			{
-			case DriverStateControl::driverActive:
-				EnableDrive(driver);
-				break;
+		case DriverStateControl::driverActive:
+			InternalEnableDrive(driver);
+			break;
 
-			case DriverStateControl::driverIdle:
-				SetDriverIdle(driver, overriddenDriverStates[driver].idlePercent);
-				break;
+		case DriverStateControl::driverIdle:
+			InternalSetDriverIdle(driver);
+			break;
 
-			case DriverStateControl::driverDisabled:
-			default:
-				DisableDrive(driver);
-				break;
-			}
+		case DriverStateControl::driverDisabled:
+		default:
+			InternalDisableDrive(driver);
+			break;
 		}
 	}
 }
 
+#endif
+
 void Platform::EnableDrive(size_t driver)
 {
-	if (driverEnableOverride) {
-		overriddenDriverStates[driver] = DriverStateControl(DriverStateControl::driverActive);
-		return;
+	driverStates[driver] = DriverStateControl(DriverStateControl::driverActive);
+#if SUPPORT_CLOSED_LOOP
+	if (!driverEnableOverride[driver])						// if the override flag is set, the driver is already enabled
+#endif
+	{
+		InternalEnableDrive(driver);
 	}
+}
+
+void Platform::InternalEnableDrive(size_t driver)
+{
 # if HAS_SMART_DRIVERS
 	if (driverAtIdleCurrent[driver])
 	{
@@ -1738,15 +1753,23 @@ void Platform::EnableDrive(size_t driver)
 #  endif
 	}
 # endif
-	driverStates[driver] = DriverStateControl(DriverStateControl::driverActive);
+	brakePorts[driver].WriteDigital(true);					// energise the brake solenoid to release the brake
 }
 
 void Platform::DisableDrive(size_t driver)
 {
-	if (driverEnableOverride) {
-		overriddenDriverStates[driver] = DriverStateControl(DriverStateControl::driverDisabled);
-		return;
+	driverStates[driver] = DriverStateControl::driverDisabled;
+#if SUPPORT_CLOSED_LOOP
+	if (!driverEnableOverride[driver])						// if the override flag is set, don't disable the driver, just flag is as disabled
+#endif
+	{
+		InternalDisableDrive(driver);
 	}
+}
+
+void Platform::InternalDisableDrive(size_t driver)
+{
+	brakePorts[driver].WriteDigital(false);					// de-energise the brake solenoid to apply the brake
 # if HAS_SMART_DRIVERS
 	SmartDrivers::EnableDrive(driver, false);
 # else
@@ -1758,19 +1781,25 @@ void Platform::DisableDrive(size_t driver)
 #  endif
 	}
 # endif
-	driverStates[driver] = DriverStateControl(DriverStateControl::driverDisabled);
 }
 
-void Platform::SetDriverIdle(size_t driver, uint8_t percent)
+void Platform::SetDriverIdle(size_t driver, uint16_t idlePercent)
 {
-	if (driverEnableOverride) {
-		overriddenDriverStates[driver] = DriverStateControl(DriverStateControl::driverIdle, percent);
-		return;
-	}
-	idleCurrentFactor[driver] = (float)percent * 0.01;
-	if (percent == 0)
+	idleCurrentFactor[driver] = (float)idlePercent * 0.01;
+	driverStates[driver] = DriverStateControl::driverIdle;
+#if SUPPORT_CLOSED_LOOP
+	if (!driverEnableOverride)
+#endif
 	{
-		DisableDrive(driver);
+		InternalSetDriverIdle(driver);
+	}
+}
+
+void Platform::InternalSetDriverIdle(size_t driver)
+{
+	if (idleCurrentFactor[driver] == 0.0)
+	{
+		InternalDisableDrive(driver);
 	}
 # if HAS_SMART_DRIVERS
 	else
@@ -1779,7 +1808,6 @@ void Platform::SetDriverIdle(size_t driver, uint8_t percent)
 		UpdateMotorCurrent(driver);
 	}
 # endif
-	driverStates[driver] = DriverStateControl(DriverStateControl::driverIdle, percent);
 }
 
 void Platform::DisableAllDrives()
@@ -1792,6 +1820,34 @@ void Platform::DisableAllDrives()
 		DisableDrive(driver);
 # endif
 	}
+}
+
+GCodeResult Platform::ProcessM569Point7(const CanMessageGeneric& msg, const StringRef& reply)
+{
+	CanMessageGenericParser parser(msg, M569Point7Params);
+	uint8_t drive;
+	if (!parser.GetUintParam('P', drive))
+	{
+		reply.copy("Missing P parameter in CAN message");
+		return GCodeResult::error;
+	}
+
+	if (drive >= NumDrivers)
+	{
+		reply.printf("Driver number %u.%u out of range", CanInterface::GetCanAddress(), drive);
+		return GCodeResult::error;
+	}
+
+	if (parser.HasParameter('C'))
+	{
+		String<StringLength20> portName;
+		parser.GetStringParam('C', portName.GetRef());
+		return GetGCodeResultFromSuccess(brakePorts[drive].AssignPort(portName.c_str(), reply, PinUsedBy::gpout, PinAccess::write0));
+	}
+
+	reply.printf("Driver %u.%u uses brake port ", CanInterface::GetCanAddress(), drive);
+	brakePorts[drive].AppendPinName(reply);
+	return GCodeResult::ok;
 }
 
 # if HAS_SMART_DRIVERS

@@ -30,6 +30,12 @@ inline GCodeResult GetGCodeResultFromError(bool err)
 	return (err) ? GCodeResult::error : GCodeResult::ok;
 }
 
+// Convert a true/false success/failure indication to a GCodeResult
+inline GCodeResult GetGCodeResultFromSuccess(bool ok) noexcept
+{
+	return (ok) ? GCodeResult::ok : GCodeResult::error;
+}
+
 // Convert a true/false finished/not-finished indication to a GCodeResult
 inline GCodeResult GetGCodeResultFromFinished(bool finished)
 {
