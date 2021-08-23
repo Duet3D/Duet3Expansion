@@ -42,7 +42,8 @@
 
 constexpr size_t NumDrivers = 1;
 constexpr size_t MaxSmartDrivers = 1;
-constexpr float MaxTmc5160Current = 6300.0;			// The maximum current we allow the TMC5160/5161 drivers to be set to
+constexpr float MaxTmc5160Current = 4500.0;			// The maximum current we allow the TMC5160/5161 drivers to be set to.
+													// TODO: MaxTmc5160Current could be 6300, but not when holding.
 
 constexpr Pin GlobalTmc51xxEnablePin = PortBPin(3);
 constexpr Pin GlobalTmc51xxCSPin = PortAPin(10);

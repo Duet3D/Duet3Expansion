@@ -1001,10 +1001,6 @@ void Platform::Spin()
 	}
 #endif
 
-#if SUPPORT_CLOSED_LOOP
-	ClosedLoop::Spin();
-#endif
-
 #if HAS_SMART_DRIVERS
 	SmartDrivers::Spin(powered);
 

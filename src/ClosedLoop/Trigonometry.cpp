@@ -7,46 +7,42 @@
 
 #include "Trigonometry.h"
 
-#define RESOLUTION 1024
+constexpr unsigned int Resolution = 1024;
 
 // Immediately Invoked Function Expression (IIFE) to calculate the lookup table
 // (Note the '()' at the end of the definition)
-constexpr std::array<float, RESOLUTION> lookupTable = []
+constexpr std::array<float, Resolution> lookupTable = []
 {
-	std::array<float, RESOLUTION> LUT = {};
+	std::array<float, Resolution> LUT = {};
 
-    for (int i = 0; i < RESOLUTION; ++i)
-    {
-    	LUT[i] = sin(((float)i/(RESOLUTION-1)) * (Pi / 2.0));
-    }
+	for (int i = 0; i < Resolution; ++i)
+	{
+		LUT[i] = sinf(((float)i/(Resolution-1)) * (Pi / 2.0));
+	}
 
-    return LUT;
+	return LUT;
 }();
 
 static_assert(lookupTable[0] == 0);
-static_assert(lookupTable[RESOLUTION-1] == 1);
+static_assert(lookupTable[Resolution-1] == 1);
 
 // Calculates sin in a fast, but approximate way.
 // The phase argument is a value between 0-4095
 // The return value is an approximate result of sin(2pi * phase/4095)
 float Trigonometry::FastSin(uint16_t phase) noexcept
 {
-	int quadrant = phase / RESOLUTION;
-	int index = phase % RESOLUTION;
-
-	if (index < 0 || index > 1023) {
-		return -10;
-	}
+	unsigned int quadrant = phase / Resolution;
+	unsigned int index = phase % Resolution;
 
 	switch(quadrant) {
 		case 0:
 			return lookupTable[index];
 		case 1:
-			return lookupTable[RESOLUTION - 1 - index];
+			return lookupTable[Resolution - 1 - index];
 		case 2:
 			return -lookupTable[index];
 		case 3:
-			return -lookupTable[RESOLUTION - 1 - index];
+			return -lookupTable[Resolution - 1 - index];
 		default:
 			return 0;
 	}
@@ -57,20 +53,16 @@ float Trigonometry::FastSin(uint16_t phase) noexcept
 // The return value is an approximate result of cos(2pi * phase/4095)
 float Trigonometry::FastCos(uint16_t phase) noexcept
 {
-	int quadrant = phase / RESOLUTION;
-	int index = phase % RESOLUTION;
-
-	if (index < 0 || index > 1023) {
-		return -10;
-	}
+	unsigned int quadrant = phase / Resolution;
+	unsigned int index = phase % Resolution;
 
 	switch(quadrant) {
 		case 0:
-			return lookupTable[RESOLUTION - 1 - index];
+			return lookupTable[Resolution - 1 - index];
 		case 1:
 			return -lookupTable[index];
 		case 2:
-			return -lookupTable[RESOLUTION - 1 - index];
+			return -lookupTable[Resolution - 1 - index];
 		case 3:
 			return lookupTable[index];
 		default:
