@@ -60,7 +60,7 @@ void LocalFan::Refresh(bool checkSensors)
 
 	if (sensorsMonitored.IsEmpty())
 	{
-		reqVal = val;
+		reqVal = (val <= 0.0) ? 0.0 : max<float>(val * maxVal, minVal);		// scale the requested PWM by the maximum, enforce the minimum
 	}
 	else if (!checkSensors)
 	{
@@ -85,17 +85,24 @@ void LocalFan::Refresh(bool checkSensors)
 					const TemperatureError err = sensor->GetLatestTemperature(ht);
 					if (err != TemperatureError::success || ht < BadLowTemperature || ht >= triggerTemperatures[1])
 					{
-						reqVal = max<float>(reqVal, (bangBangMode) ? max<float>(0.5, val) : 1.0);
+						reqVal = maxVal;
 					}
-					else if (!bangBangMode && ht > triggerTemperatures[0])
+					else if (!bangBangMode && ht >= triggerTemperatures[0])
 					{
 						// We already know that ht < triggerTemperatures[1], therefore unless we have NaNs it is safe to divide by (triggerTemperatures[1] - triggerTemperatures[0])
-						reqVal = max<float>(reqVal, (ht - triggerTemperatures[0])/(triggerTemperatures[1] - triggerTemperatures[0]));
+						const float newVal = minVal + (maxVal - minVal) * (ht - triggerTemperatures[0])/(triggerTemperatures[1] - triggerTemperatures[0]);
+						if (newVal > reqVal)
+						{
+							reqVal = newVal;
+						}
 					}
 					else if (lastVal > 0.0 && ht + ThermostatHysteresis > triggerTemperatures[0])		// if the fan is on, add a hysteresis before turning it off
 					{
-						const float minFanSpeed = (bangBangMode) ? max<float>(0.5, val) : minVal;
-						reqVal = constrain<float>(reqVal, minFanSpeed, maxVal);
+						const float newVal = (bangBangMode) ? maxVal : minVal;
+						if (newVal > reqVal)
+						{
+							reqVal = newVal;
+						}
 					}
 #if 0 //HAS_SMART_DRIVERS
 					const int channel = sensor->GetSmartDriversChannel();
@@ -111,7 +118,6 @@ void LocalFan::Refresh(bool checkSensors)
 
 	if (reqVal > 0.0)
 	{
-		reqVal = max<float>(reqVal * maxVal, minVal);		// scale the requested PWM by the maximum, enforce the minimum
 		if (lastVal == 0.0)
 		{
 			// We are turning this fan on
