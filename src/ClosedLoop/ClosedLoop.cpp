@@ -27,10 +27,10 @@ using std::atomic;
 # if defined(EXP1HCE)
 #  include "AttinyProgrammer.h"
 #  include "QuadratureEncoderAttiny.h"
-#  define CLOSED_LOOP_DATA_BUFFER_SIZE 50		//	(50 readings of 12 variables)
+#  define CLOSED_LOOP_DATA_BUFFER_SIZE 50		//	(50 readings)
 # elif defined(EXP1HCL)
 #  include "QuadratureEncoderPdec.h"
-#  define CLOSED_LOOP_DATA_BUFFER_SIZE 2000		//  (1000 readings of 12 variables)
+#  define CLOSED_LOOP_DATA_BUFFER_SIZE 2000		//  (2000 readings)
 # else
 #  error Cannot support closed loop with the specified hardware
 # endif
@@ -67,12 +67,13 @@ static Encoder *encoder = nullptr;				// Pointer to the encoder object in use
 static float encoderCountPerStep;				// How many encoder readings do we get per step?
 
 static bool collectingData = false;				// Are we currently collecting data? If so:
+static StepTimer::Ticks dataCollectionStartTicks;// - At what tick did data collection start?
 static uint16_t rateRequested;					//	- What sample rate did they request?
 static uint16_t filterRequested;				//	- What filter did they request?
 static uint16_t samplesRequested;				//	- How many samples did they request?
 static ClosedLoop::RecordingMode modeRequested;	//	- What mode did they request?
 static uint8_t movementRequested;				//	- Which calibration movement did they request? 0=none, 1=polarity, 2=continuous
-static float sampleBuffer[CLOSED_LOOP_DATA_BUFFER_SIZE * 12];	//	- Store the samples here (max. CLOSED_LOOP_DATA_BUFFER_SIZE samples of 12 variables)
+static float sampleBuffer[CLOSED_LOOP_DATA_BUFFER_SIZE * 14];	//	- Store the samples here (max. CLOSED_LOOP_DATA_BUFFER_SIZE samples of 12 variables)
 static uint16_t sampleBufferReadPointer = 0;	//  - Send this sample next to the mainboard
 static uint16_t sampleBufferWritePointer = 0;	//  - Store the next sample at this point in the buffer
 
@@ -332,18 +333,18 @@ GCodeResult ClosedLoop::ProcessM569Point5(const CanMessageStartClosedLoopDataCol
 	if (msg.rate == 0) {
 		// Count how many bits are set in 'msg.filter'
 		// TODO: Look into a more efficient way of doing this
-		int variableCount = 0;
+		int variableCount = 1;
 		int tmpFilter = msg.filter;
 		while (tmpFilter != 0) {
 			variableCount += tmpFilter & 0x1;
 			tmpFilter >>= 1;
 		}
 
-		const unsigned int maxSamples = (CLOSED_LOOP_DATA_BUFFER_SIZE * 12) / variableCount;
+		const unsigned int maxSamples = (CLOSED_LOOP_DATA_BUFFER_SIZE * 14) / variableCount;
 
 		if (msg.numSamples > maxSamples)
 		{
-			reply.printf("Maximum samples is %d when sample rate is continuous (R0) and %d variables are being collected (D%d)", maxSamples, variableCount, msg.filter);
+			reply.printf("Maximum samples is %d when sample rate is continuous (R0) and %d variables are being collected (D%d)", maxSamples, variableCount - 1, msg.filter);
 			return GCodeResult::error;
 		}
 	}
@@ -354,6 +355,7 @@ GCodeResult ClosedLoop::ProcessM569Point5(const CanMessageStartClosedLoopDataCol
 	}
 
 	// Set up the recording vars
+	dataCollectionStartTicks = StepTimer::GetTimerTicks();
 	collectingData = true;
 	rateRequested = msg.rate == 0 ? 0 : (1000.0 / msg.rate) / portTICK_PERIOD_MS;
 	filterRequested = msg.filter;
@@ -434,7 +436,7 @@ void ClosedLoop::ControlLoop() noexcept
 
 	if (tuningError) {return;}										// Don't do anything if there is a tuning error
 
-	ControlMotorCurrents();										// Otherwise control those motor currents!
+	ControlMotorCurrents();											// Otherwise control those motor currents!
 }
 
 [[noreturn]] void ClosedLoop::DataCollectionLoop() noexcept
@@ -476,6 +478,7 @@ void ClosedLoop::ControlLoop() noexcept
 				// Populate the data fields
 				// TODO: Pack more than one set of data into a message
 				unsigned int dataPointer = 0;
+																		{msg.data[dataPointer++] = StepTimer::GetTimerTicks() - dataCollectionStartTicks;}	// (Always collect this)
 				if (filterRequested & CL_RECORD_RAW_ENCODER_READING) 	{msg.data[dataPointer++] = rawEncoderReading;}
 				if (filterRequested & CL_RECORD_CURRENT_MOTOR_STEPS) 	{msg.data[dataPointer++] = currentMotorSteps;}
 				if (filterRequested & CL_RECORD_TARGET_MOTOR_STEPS)  	{msg.data[dataPointer++] = targetMotorSteps;}
@@ -514,7 +517,7 @@ void ClosedLoop::ControlLoop() noexcept
 		{
 			// Count how many bits are set in 'filterRequested'
 			// TODO: Look into a more efficient way of doing this
-			int variableCount = 0;
+			int variableCount = 1;
 			int tmpFilter = filterRequested;
 			while (tmpFilter != 0) {
 				variableCount += tmpFilter & 0x1;
@@ -895,10 +898,11 @@ void ClosedLoop::PerformTune() noexcept
 
 void ClosedLoop::CollectSample() noexcept
 {
+															{sampleBuffer[sampleBufferWritePointer++] = StepTimer::GetTimerTicks() - dataCollectionStartTicks;}	// (Always collect this)
 	if (filterRequested & CL_RECORD_RAW_ENCODER_READING) 	{sampleBuffer[sampleBufferWritePointer++] = rawEncoderReading;}
 	if (filterRequested & CL_RECORD_CURRENT_MOTOR_STEPS) 	{sampleBuffer[sampleBufferWritePointer++] = currentMotorSteps;}
 	if (filterRequested & CL_RECORD_TARGET_MOTOR_STEPS)  	{sampleBuffer[sampleBufferWritePointer++] = targetMotorSteps;}
-	if (filterRequested & CL_RECORD_CURRENT_ERROR) 		{sampleBuffer[sampleBufferWritePointer++] = currentError;}
+	if (filterRequested & CL_RECORD_CURRENT_ERROR) 			{sampleBuffer[sampleBufferWritePointer++] = currentError;}
 	if (filterRequested & CL_RECORD_PID_CONTROL_SIGNAL)  	{sampleBuffer[sampleBufferWritePointer++] = PIDControlSignal;}
 	if (filterRequested & CL_RECORD_PID_P_TERM)  			{sampleBuffer[sampleBufferWritePointer++] = PIDPTerm;}
 	if (filterRequested & CL_RECORD_PID_I_TERM)  			{sampleBuffer[sampleBufferWritePointer++] = PIDITerm;}
@@ -912,7 +916,7 @@ void ClosedLoop::CollectSample() noexcept
 
 	// Count how many bits are set in 'filterRequested'
 	// TODO: Look into a more efficient way of doing this
-	int variableCount = 0;
+	int variableCount = 1;
 	int tmpFilter = filterRequested;
 	while (tmpFilter != 0) {
 		variableCount += tmpFilter & 0x1;
