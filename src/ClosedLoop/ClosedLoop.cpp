@@ -46,6 +46,7 @@ using std::atomic;
 
 static bool closedLoopEnabled = false;			// Has closed loop been enabled by the user?
 static uint8_t tuningError;						// Flags for any tuning errors
+static uint8_t prevTuningError;					// Used to see what errors have been introduced by tuning
 static uint16_t controlDelay = 1 / portTICK_PERIOD_MS;// 1ms = 1MHz control frequency. TODO: Make this variable (& user controlled?)
 
 static bool coilAPolarity = true;				// True = +ve, False = -ve
@@ -370,16 +371,38 @@ GCodeResult ClosedLoop::ProcessM569Point6(const CanMessageGeneric &msg, const St
 {
 	CanMessageGenericParser parser(msg, M569Point6Params);
 
+	uint8_t desiredTuning;
+	if (!parser.GetUintParam('V', desiredTuning)) {
+		if (tuning) {
+			return GCodeResult::notFinished;
+		} else {
+			// Tuning has finished - there are now 3 scenarios
+			// 1. No tuning errors exist (!tuningError)							= OK
+			// 2. No new tuning errors exist !(~prevTuningError & tuningError)	= WARNING
+			// 3. A new tuning error has been introduced (else)					= WARNING
+
+			if (!tuningError) {
+				reply.copy("Tuning completed successfully.");
+				return GCodeResult::ok;
+			} else if (!(~prevTuningError & tuningError)) {
+				reply.copy("No new tuning errors have been found, but some existing tuning errors exist.");
+				ReportTuningErrors(tuningError, reply);
+				return GCodeResult::warning;
+			} else {
+				reply.copy("One or more tuning errors occurred.");
+				ReportTuningErrors(~prevTuningError & tuningError, reply);
+				if (prevTuningError & tuningError) {
+					reply.catf(" In addition, the following tuning errors were already present:");
+					ReportTuningErrors(prevTuningError & tuningError, reply);
+				}
+				return GCodeResult::warning;
+			}
+		}
+	}
+
 	// Check we are in direct drive mode
 	if (SmartDrivers::GetDriverMode(0) != DriverMode::direct) {
 		reply.copy("Drive is not in closed loop mode.");
-		return GCodeResult::error;
-	}
-
-	uint8_t desiredTuning;
-	if (!parser.GetUintParam('V', desiredTuning))
-	{
-		reply.copy("Missing parameter 'V'");
 		return GCodeResult::error;
 	}
 
@@ -392,35 +415,10 @@ GCodeResult ClosedLoop::ProcessM569Point6(const CanMessageGeneric &msg, const St
 	// Enable all motors & disable them becoming idle
 	Platform::DriveEnableOverride(0, true);
 
-	uint8_t prevTuningError = tuningError;
+	prevTuningError = tuningError;
 	tuning = desiredTuning;
 
-	// TODO: Is this the best way to do this?
-	while (tuning) {continue;}
-
-	// Return the drivers to their previous state
-	Platform::DriveEnableOverride(0, false);
-
-	// There are now 3 scenarios
-	// 1. No tuning errors exist (!tuningError)							= OK
-	// 2. No new tuning errors exist !(~prevTuningError & tuningError)	= WARNING
-	// 3. A new tuning error has been introduced (else)					= ERROR
-
-	if (!tuningError) {
-		return GCodeResult::ok;
-	} else if (!(~prevTuningError & tuningError)) {
-		reply.copy("No new tuning errors have been found, but some existing tuning errors exist.");
-		ReportTuningErrors(tuningError, reply);
-		return GCodeResult::warning;
-	} else {
-		reply.copy("One or more tuning errors occurred. Closed loop mode has been disabled, please correct this error and re-enable closed loop control.");
-		ReportTuningErrors(~prevTuningError & tuningError, reply);
-		if (prevTuningError & tuningError) {
-			reply.catf(" In addition, the following tuning errors were already present:");
-			ReportTuningErrors(prevTuningError & tuningError, reply);
-		}
-		return GCodeResult::error;
-	}
+	return GCodeResult::notFinished;
 }
 
 void ClosedLoop::ControlLoop() noexcept
@@ -429,11 +427,15 @@ void ClosedLoop::ControlLoop() noexcept
 
 	if (!closedLoopEnabled) {return;}								// If closed loop disabled, we are finished
 
-	if (tuning || tuningError) {
-		PerformTune();												// If we need to tune, tune
-	} else {
-		ControlMotorCurrents();										// Otherwise control those motor currents!
+	if (tuning) {													// If we need to tune, tune
+		PerformTune();
+		if (!tuning) {Platform::DriveEnableOverride(0, false);}		// If that was the last tuning move, release the override
+		return;
 	}
+
+	if (tuningError) {return;}										// Don't do anything if there is a tuning error
+
+	ControlMotorCurrents();										// Otherwise control those motor currents!
 }
 
 [[noreturn]] void ClosedLoop::DataCollectionLoop() noexcept
@@ -582,6 +584,7 @@ void ClosedLoop::PerformTune() noexcept
 			// This is the first run
 			tuningVar1 = 0;		// correctCoilPhase
 			tuningVar2 = 0;		// correctCoilPhaseError
+			tuningVar3 = 0;		//
 			tuneCounter = 0;
 			newTuningMove = false;
 		}
@@ -601,15 +604,15 @@ void ClosedLoop::PerformTune() noexcept
 			int16_t distance1 = abs(stepPhase - desiredStepPhase);
 			int16_t distance2 = abs(4095 - max<uint16_t>(stepPhase, desiredStepPhase) + min<uint16_t>(stepPhase, desiredStepPhase));
 			tuningVar3 += min<int16_t>(distance1, distance2);	// totalError
-		}
 
-		if (tuneCounter % 4096 == 0) {
-			// If the polarity is about to change, update if this is the correct polarity
-			if (tuneCounter == 4096 || tuningVar3 < tuningVar2) {
-				tuningVar1 = (tuneCounter - 1) / 4096;
-				tuningVar2 = tuningVar3;
+			if (tuneCounter % 4096 == 0) {
+				// If the polarity is about to change, update if this is the correct polarity
+				if (tuneCounter == 4096 || tuningVar3 < tuningVar2) {
+					tuningVar1 = (tuneCounter - 1) / 4096;
+					tuningVar2 = tuningVar3;
+				}
+				tuningVar3 = 0;
 			}
-			tuningVar3 = 0;
 		}
 
 		// Set the correct coil polarities
@@ -708,15 +711,16 @@ void ClosedLoop::PerformTune() noexcept
 				tuningVar2++;
 			}
 
-			// Allow a small number of deviations
-			if (tuningVar2 > 10) {
-				tuningError |= TUNE_ERR_INCORRECT_POLARITY;
-			}
-
 			// Move the motor for the next iteration
 			desiredStepPhase = tuneCounter;
 			SetMotorPhase(desiredStepPhase, 1);
 		} else {
+			// We are finished - check the number of deviations (Allow a small number of deviations)
+			if (tuningVar2 > 10) {
+				tuningError |= TUNE_ERR_INCORRECT_POLARITY;
+			} else {
+				tuningError &= ~TUNE_ERR_INCORRECT_POLARITY;
+			}
 			tuning &= ~POLARITY_CHECK;
 			tuningError &= ~TUNE_ERR_NOT_CHECKED_POLARITY;
 			newTuningMove = true;
@@ -749,6 +753,7 @@ void ClosedLoop::PerformTune() noexcept
 	if (tuning & STEP_MANOEUVRE) {
 		targetMotorSteps = currentMotorSteps + 4;
 		tuning &= ~STEP_MANOEUVRE;
+		newTuningMove = true;
 	}
 
 	// TODO: Implement Ziegler-Nichols manoeuvre
