@@ -47,7 +47,6 @@ using std::atomic;
 static bool closedLoopEnabled = false;			// Has closed loop been enabled by the user?
 static uint8_t tuningError;						// Flags for any tuning errors
 static uint8_t prevTuningError;					// Used to see what errors have been introduced by tuning
-static uint16_t controlDelay = 1 / portTICK_PERIOD_MS;// 1ms = 1MHz control frequency. TODO: Make this variable (& user controlled?)
 
 static bool coilAPolarity = true;				// True = +ve, False = -ve
 static bool coilBPolarity = false;				// True = +ve, False = -ve
