@@ -68,7 +68,7 @@ constexpr float RecipFullScaleCurrent = SenseResistor/325.0;		// 1.0 divided by 
 #endif
 
 // The SPI clock speed is a compromise:
-// - too high and polling the driver chips take too much of the CPU time
+// - too high and polling the driver chips takes too much of the CPU time
 // - too low and we won't detect stalls quickly enough.
 // TODO use the DIAG outputs to detect stalls instead
 // There are 40 bits to send per driver, so on the 3HC the total is 120 bits
@@ -1110,7 +1110,8 @@ static inline void DisableDma()
 static inline void ResetSpi()
 {
 #if TMC51xx_USES_SERCOM
-	hri_sercomspi_clear_CTRLA_ENABLE_bit(SERCOM_TMC51xx);	// warning: this makes SCLK float!
+	SERCOM_TMC51xx->SPI.CTRLA.bit.ENABLE = 0;			// warning: this makes SCLK float!
+	while (SERCOM_TMC51xx->SPI.SYNCBUSY.bit.ENABLE) { }
 #elif TMC51xx_USES_USART
 	USART_TMC51xx->US_CR = US_CR_RSTRX | US_CR_RSTTX;	// reset transmitter and receiver
 #else
@@ -1122,8 +1123,10 @@ static inline void ResetSpi()
 static inline void EnableSpi()
 {
 #if TMC51xx_USES_SERCOM
-	hri_sercomspi_set_CTRLB_RXEN_bit(SERCOM_TMC51xx);
-	hri_sercomspi_set_CTRLA_ENABLE_bit(SERCOM_TMC51xx);
+	SERCOM_TMC51xx->SPI.CTRLB.bit.RXEN = 1;
+	while (SERCOM_TMC51xx->SPI.SYNCBUSY.bit.CTRLB) { }
+	SERCOM_TMC51xx->SPI.CTRLA.bit.ENABLE = 1;
+	while (SERCOM_TMC51xx->SPI.SYNCBUSY.bit.ENABLE) { }
 #elif TMC51xx_USES_USART
 	USART_TMC51xx->US_CR = US_CR_RXEN | US_CR_TXEN;		// enable transmitter and receiver
 #else
@@ -1243,7 +1246,7 @@ extern "C" [[noreturn]] void TmcLoop(void *)
 				InterruptCriticalSectionLocker lock2;
 
 				fastDigitalWriteLow(GlobalTmc51xxCSPin);			// set CS low
-				xTaskNotifyStateClear(nullptr);
+				TaskBase::ClearNotifyCount();
 				EnableEndOfTransferInterrupt();
 				ResetSpi();
 				EnableDma();
