@@ -19,6 +19,7 @@ using std::numeric_limits;
 
 # include <math.h>
 # include <Platform.h>
+# include <General/Bitmap.h>
 # include <TaskPriorities.h>
 # include <CAN/CanInterface.h>
 # include <CanMessageBuffer.h>
@@ -133,6 +134,12 @@ extern "C" [[noreturn]] void DataCollectionTaskLoop(void *param) noexcept { Clos
 static Task<ClosedLoop::TaskStackWords> *dataTransmissionTask;		// Data transmission task - handles sending back the buffered sample data
 extern "C" [[noreturn]] void DataTransmissionTaskLoop(void *param) noexcept { ClosedLoop::DataTransmissionLoop(); }
 
+
+// Helper function to count the number of variables being collected by a given filter
+static inline unsigned int CountVariablesCollected(uint16_t filter)
+{
+	return (new Bitmap<uint16_t>(filter))->CountSetBits() + 1;
+}
 
 // Helper function to convert a time period (expressed in StepTimer::Ticks) to ms
 static inline float TickPeriodToTimePeriod(StepTimer::Ticks tickPeriod) {
@@ -375,14 +382,7 @@ GCodeResult ClosedLoop::ProcessM569Point5(const CanMessageStartClosedLoopDataCol
 	}
 
 	if (msg.rate == 0) {
-		// Count how many bits are set in 'msg.filter'
-		// TODO: Look into a more efficient way of doing this
-		int variableCount = 1;
-		int tmpFilter = msg.filter;
-		while (tmpFilter != 0) {
-			variableCount += tmpFilter & 0x1;
-			tmpFilter >>= 1;
-		}
+		int variableCount = CountVariablesCollected(msg.filter);
 
 		const unsigned int maxSamples = (CLOSED_LOOP_DATA_BUFFER_SIZE * 14) / variableCount;
 
@@ -579,13 +579,7 @@ void ClosedLoop::ControlLoop() noexcept
 		if (!collectingData && sampleBufferWritePointer > 0)
 		{
 			// Count how many bits are set in 'filterRequested'
-			// TODO: Look into a more efficient way of doing this
-			int variableCount = 1;
-			int tmpFilter = filterRequested;
-			while (tmpFilter != 0) {
-				variableCount += tmpFilter & 0x1;
-				tmpFilter >>= 1;
-			}
+			int variableCount = CountVariablesCollected(filterRequested);
 
 			// Work out the maximum number of samples that can be sent in 1 packet
 			// TODO: This 14 comes from CanMessageFormats.h::1218. Should it be a constant?
@@ -979,13 +973,7 @@ void ClosedLoop::CollectSample() noexcept
 
 
 	// Count how many bits are set in 'filterRequested'
-	// TODO: Look into a more efficient way of doing this
-	int variableCount = 1;
-	int tmpFilter = filterRequested;
-	while (tmpFilter != 0) {
-		variableCount += tmpFilter & 0x1;
-		tmpFilter >>= 1;
-	}
+	int variableCount = CountVariablesCollected(filterRequested);
 
 	if (sampleBufferWritePointer >= (samplesRequested * variableCount)) {
 		// Mark that we have finished collecting data
