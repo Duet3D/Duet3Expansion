@@ -742,7 +742,7 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 # endif
 		for (size_t driver = 0; driver < NumDrivers; ++driver)
 		{
-			reply.lcatf("Driver %u: position %" PRIi32 ", %.1f steps/mm"
+			reply.lcatf("Driver %u: pos %" PRIi32 ", %.1f steps/mm"
 # if HAS_SMART_DRIVERS
 				", "
 # endif
