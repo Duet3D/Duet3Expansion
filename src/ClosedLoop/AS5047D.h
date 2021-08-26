@@ -29,6 +29,7 @@ public:
 	void Disable() noexcept override;
 	int32_t GetReading() noexcept override;
 	void AppendDiagnostics(const StringRef& reply) noexcept override;
+	void AppendStatus(const StringRef& reply) noexcept override;
 
 private:
 	struct DiagnosticRegisters

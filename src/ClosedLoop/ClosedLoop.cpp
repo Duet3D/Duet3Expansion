@@ -221,15 +221,19 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 	// Report back if !seen
 	if (!seen) {
 		reply.catf("Encoder type: %s", GetEncoderType().ToString());
+		if (encoder != nullptr)
+		{
+			encoder->AppendStatus(reply);
+		}
 		reply.catf(", encoder CPR: %f", (double) tempCPR);
 		reply.catf(", PID parameters: p=%f, i=%f, d=%f", (double) Kp, (double) Ki, (double) Kd);
 		return GCodeResult::ok;
 	}
 
 	// Validate the new params
-	if (tempEncoderType > EncoderType::NumValues) {reply.copy("Invalid T value. Valid values are 0,1");return GCodeResult::error;}
-	if ((seen & 0x1 << 5) && tempErrorThresholds[0] < 0) {reply.copy("Error threshold value must be greater than zero.");return GCodeResult::error;}
-	if ((seen & 0x1 << 5) && tempErrorThresholds[1] < 0) {reply.copy("Error threshold value must be greater than zero.");return GCodeResult::error;}
+	if (tempEncoderType > EncoderType::NumValues) {reply.copy("Invalid T value. Valid values are 0,1"); return GCodeResult::error;}
+	if ((seen & 0x1 << 5) && tempErrorThresholds[0] < 0) {reply.copy("Error threshold value must be greater than zero."); return GCodeResult::error;}
+	if ((seen & 0x1 << 5) && tempErrorThresholds[1] < 0) {reply.copy("Error threshold value must be greater than zero."); return GCodeResult::error;}
 
 	// Set the new params
 	encoderCountPerStep = tempCPR;

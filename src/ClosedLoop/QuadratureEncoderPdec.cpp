@@ -87,6 +87,11 @@ void QuadratureEncoderPdec::AppendDiagnostics(const StringRef &reply) noexcept
 #endif
 }
 
+void QuadratureEncoderPdec::AppendStatus(const StringRef& reply) noexcept
+{
+	// Nothing needed here yet
+}
+
 // End of overridden virtual functions
 
 // Set the hardware counts per revolution from the stored value cpr

@@ -232,6 +232,27 @@ void AS5047D::AppendDiagnostics(const StringRef &reply) noexcept
 	}
 }
 
+// Append short form status to a string. If there is an error then the user can use M122 to get more details.
+void AS5047D::AppendStatus(const StringRef& reply) noexcept
+{
+	DiagnosticRegisters regs;
+	if (GetDiagnosticRegisters(regs))
+	{
+		if (CheckResponse(regs.diag) && CheckResponse(regs.mag) && (regs.diag & 0x0F00) == 0x0100)
+		{
+			reply.catf(", agc %u, mag %u", regs.diag & 0x007F, regs.mag & 0x3FFF);
+		}
+		else
+		{
+			reply.cat(", sensor error");
+		}
+	}
+	else
+	{
+		reply.cat(", sensor comms error");
+	}
+}
+
 // Perform an SPI transaction. Caller must get ownership of the SPI device first and release it afterwards, possibly after doing multiple transactions.
 // Leave at least 350ns between multiple calls to this function.
 bool AS5047D::DoSpiTransaction(uint16_t command, uint16_t &response) noexcept

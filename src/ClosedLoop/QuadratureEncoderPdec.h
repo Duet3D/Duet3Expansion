@@ -31,6 +31,7 @@ public:
 	int32_t GetReading() noexcept override;			// Get the 32-bit position
 	void SetOffset(int32_t offset) noexcept;		// Set the 32-bit offset
 	void AppendDiagnostics(const StringRef& reply) noexcept override;
+	void AppendStatus(const StringRef& reply) noexcept override;
 
 private:
 	// Set the counts per motor revolution, for encoders attached to a motor shaft. A value of zero means we are using a linear encoder instead.
