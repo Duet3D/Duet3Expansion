@@ -10,10 +10,12 @@
 #if SUPPORT_CLOSED_LOOP
 
 using std::atomic;
+using std::numeric_limits;
 
 # include "AS5047D.h"
 # include "TLI5012B.h"
 # include "SpiEncoder.h"
+# include <ClosedLoop/DerivativeAveragingFilter.h>
 
 # include <math.h>
 # include <Platform.h>
@@ -88,6 +90,9 @@ static atomic<float> targetMotorSteps = 0;		// The number of steps the motor sho
 static float currentError;						// The current error
 static float lastError = 0;						// The error from the previous iteration
 
+static constexpr unsigned int derivativeFilterSize = 8;// The range of the derivative filter
+static DerivativeAveragingFilter<derivativeFilterSize> *derivativeFilter = nullptr;// An averaging filter to smooth the derivative of the error
+
 static float PIDPTerm;							// Proportional term
 static float PIDITerm = 0;						// Integral term
 static float PIDDTerm;							// Derivative term
@@ -108,6 +113,19 @@ static bool newTuningMove = true;				// Indicates if a tuning move has just fini
 static int tuningVar1, tuningVar2, tuningVar3;	// Three general purpose variables for any tuning task to use
 
 
+// Monitoring variables
+// These variables monitor how fast the PID loop is running etc.
+
+static StepTimer::Ticks minControlLoopRuntime;		// The minimum time the control loop has taken to run
+static StepTimer::Ticks maxControlLoopRuntime;		// The maximum time the control loop has taken to run
+static float ewmaControlLoopRuntime;				// The exponentially weighted moving average (ewma) time the control loop has taken
+
+static StepTimer::Ticks prevControlLoopCallTime;	// The last time the control loop was called
+static StepTimer::Ticks minControlLoopCallInterval;	// The minimum interval between the control loop being called
+static StepTimer::Ticks maxControlLoopCallInterval;	// The maximum interval between the control loop being called
+static float ewmaControlLoopCallInterval;			// An ewma of the frequency the control loop is called at
+
+
 // Tasks and task loops
 static Task<ClosedLoop::TaskStackWords> *dataCollectionTask;		// Data collection task - handles sampling some of the static vars in this file
 extern "C" [[noreturn]] void DataCollectionTaskLoop(void *param) noexcept { ClosedLoop::DataCollectionLoop(); }
@@ -115,6 +133,26 @@ extern "C" [[noreturn]] void DataCollectionTaskLoop(void *param) noexcept { Clos
 static Task<ClosedLoop::TaskStackWords> *dataTransmissionTask;		// Data transmission task - handles sending back the buffered sample data
 extern "C" [[noreturn]] void DataTransmissionTaskLoop(void *param) noexcept { ClosedLoop::DataTransmissionLoop(); }
 
+
+// Helper function to convert a time period (expressed in StepTimer::Ticks) to ms
+static inline float TickPeriodToTimePeriod(StepTimer::Ticks tickPeriod) {
+	return tickPeriod * StepTimer::StepClocksToMillis;
+}
+
+// Helper function to convert a time period (expressed in StepTimer::Ticks) to a frequency in Hz
+static inline float TickPeriodToFreq(StepTimer::Ticks tickPeriod) {
+	return 1000.0l / TickPeriodToTimePeriod(tickPeriod);
+}
+
+// Helper function to reset the 'monitoring variables' as defined above
+static void ResetMonitoringVariables() {
+	minControlLoopRuntime = numeric_limits<StepTimer::Ticks>::max();
+	maxControlLoopRuntime = numeric_limits<StepTimer::Ticks>::min();
+	ewmaControlLoopRuntime = 0;
+	minControlLoopCallInterval = numeric_limits<StepTimer::Ticks>::max();
+	maxControlLoopCallInterval = numeric_limits<StepTimer::Ticks>::min();
+	ewmaControlLoopCallInterval = 0;
+}
 
 // TODO: Helper function to convert between the internal representation of encoderCountPerStep, and the appropriate external representation (e.g. CPR)
 # if false
@@ -185,6 +223,11 @@ void ClosedLoop::Init() noexcept
 	errorThresholds[0] = 0;
 	errorThresholds[1] = 0;
 
+	// Initialise the monitoring variables
+	ResetMonitoringVariables();
+
+	derivativeFilter = new DerivativeAveragingFilter<derivativeFilterSize>();
+
 	// Set up the data collection task
 	dataCollectionTask = new Task<ClosedLoop::TaskStackWords>;
 	dataCollectionTask->Create(DataCollectionTaskLoop, "CLData", nullptr, TaskPriority::ClosedLoop);
@@ -236,6 +279,7 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 	Kp = tempKp;
 	Ki = tempKi;
 	Kd = tempKd;
+	PIDITerm = 0;
 
 	if (seen & 0x1 << 5) {
 		errorThresholds[0] = tempErrorThresholds[0];
@@ -424,19 +468,38 @@ GCodeResult ClosedLoop::ProcessM569Point6(const CanMessageGeneric &msg, const St
 
 void ClosedLoop::ControlLoop() noexcept
 {
-	if (collectingData && rateRequested == 0) {CollectSample();}	// Collect a sample, if we need to
-
-	if (!closedLoopEnabled) {return;}								// If closed loop disabled, we are finished
-
-	if (tuning) {													// If we need to tune, tune
-		PerformTune();
-		if (!tuning) {Platform::DriveEnableOverride(0, false);}		// If that was the last tuning move, release the override
-		return;
+	// Record the control loop call interval
+	StepTimer::Ticks loopCallTime = StepTimer::GetTimerTicks();
+	if (prevControlLoopCallTime != 0) {
+		StepTimer::Ticks timeElapsed = loopCallTime - prevControlLoopCallTime;
+		ewmaControlLoopCallInterval = ewmaControlLoopCallInterval == 0
+				? timeElapsed
+				: timeElapsed * 0.5 + ewmaControlLoopCallInterval * 0.5;
+		minControlLoopCallInterval = min<StepTimer::Ticks>(minControlLoopCallInterval, timeElapsed);
+		maxControlLoopCallInterval = max<StepTimer::Ticks>(maxControlLoopCallInterval, timeElapsed);
 	}
 
-	if (tuningError) {return;}										// Don't do anything if there is a tuning error
+	if (collectingData && rateRequested == 0) {CollectSample();}	// Collect a sample, if we need to
 
-	ControlMotorCurrents();											// Otherwise control those motor currents!
+	if (!closedLoopEnabled) {
+		// If closed loop disabled, do nothing
+	} else if (tuning) {											// If we need to tune, tune
+		PerformTune();
+		if (!tuning) {Platform::DriveEnableOverride(0, false);}		// If that was the last tuning move, release the override
+	} else if (tuningError) {
+		// Don't do anything if there is a tuning error
+	} else {
+		ControlMotorCurrents();							// Otherwise control those motor currents!
+	}
+
+	// Record how long this has taken to run
+	prevControlLoopCallTime = loopCallTime;
+	StepTimer::Ticks loopRuntime = StepTimer::GetTimerTicks() - loopCallTime;
+	ewmaControlLoopRuntime = ewmaControlLoopRuntime == 0
+			? loopRuntime
+			: loopRuntime * 0.5 + ewmaControlLoopRuntime * 0.5;
+	minControlLoopRuntime = min<StepTimer::Ticks>(minControlLoopRuntime, loopRuntime);
+	maxControlLoopRuntime = max<StepTimer::Ticks>(maxControlLoopRuntime, loopRuntime);
 }
 
 [[noreturn]] void ClosedLoop::DataCollectionLoop() noexcept
@@ -756,6 +819,7 @@ void ClosedLoop::PerformTune() noexcept
 		targetMotorSteps = currentMotorSteps + 4;
 		tuning &= ~STEP_MANOEUVRE;
 		newTuningMove = true;
+		return;
 	}
 
 	// TODO: Implement Ziegler-Nichols manoeuvre
@@ -933,12 +997,18 @@ void ClosedLoop::CollectSample() noexcept
 
 void ClosedLoop::ControlMotorCurrents() noexcept
 {
+	// Get the time delta
+	float currentTimestamp = TickPeriodToTimePeriod(StepTimer::GetTimerTicks()) / 1000;
+	float timeDelta = currentTimestamp - (TickPeriodToTimePeriod(prevControlLoopCallTime) / 1000);
+
 	// Calculate the current position & phase from the encoder reading
 	rawEncoderReading = encoder->GetReading();
 	currentMotorSteps = rawEncoderReading / encoderCountPerStep;
 
-	// Calculate the current error
+	// Calculate and store the current error
 	currentError = targetMotorSteps - currentMotorSteps;
+	if (!derivativeFilter->IsInit()) {derivativeFilter->Init(currentError, currentTimestamp);}
+	derivativeFilter->ProcessReading(currentError, currentTimestamp);
 
 	// Look for a stall or pre-stall
 	if (!stall && abs(currentError) > errorThresholds[1]) {
@@ -953,11 +1023,11 @@ void ClosedLoop::ControlMotorCurrents() noexcept
 
 	// Use a PID controller to calculate the required 'torque' - the control signal
 	PIDPTerm = Kp * currentError;
-	if (abs(PIDITerm + Ki * currentError) < 512)	// We don't want this to overflow, so set an upper bound.
-	{
-		PIDITerm += Ki * currentError;		// TODO: Is this causing an overflow?
+	float newITerm = PIDITerm + Ki * currentError * timeDelta;
+	if (abs(newITerm) < 255) {		// Limit to the value the PID control signal is clamped to
+		PIDITerm = newITerm;
 	}
-	PIDDTerm = Kd * (lastError - currentError);
+	PIDDTerm = derivativeFilter->IsValid() ? Kd * (float)derivativeFilter->GetDerivative() : 0.0;
 	float sumOfTerms = PIDPTerm + PIDITerm + PIDDTerm;
 	PIDControlSignal = (int16_t) constrain<float>(sumOfTerms, -255, 255);	// Clamp between -255 and 255
 
@@ -1056,6 +1126,18 @@ void ClosedLoop::Diagnostics(const StringRef& reply) noexcept
 
 	reply.catf(", ultimateGain=%f, oscillationPeriod=%f", (double) ultimateGain, (double) oscillationPeriod);
 
+	reply.cat(", Control loop runtime (ms): ");
+	reply.catf("min=%f, ", (double) TickPeriodToTimePeriod(minControlLoopRuntime));
+	reply.catf("max=%f, ", (double) TickPeriodToTimePeriod(maxControlLoopRuntime));
+	reply.catf("avg=%f"  , (double) TickPeriodToTimePeriod(ewmaControlLoopRuntime));
+
+	reply.cat(", Control loop frequency (Hz): ");
+	reply.catf("min=%f, ", (double) TickPeriodToFreq(maxControlLoopCallInterval));
+	reply.catf("max=%f, ", (double) TickPeriodToFreq(minControlLoopCallInterval));
+	reply.catf("avg=%f"  , (double) TickPeriodToFreq(ewmaControlLoopCallInterval));
+
+	ResetMonitoringVariables();
+
 	//DEBUG
 	//reply.catf(", event status 0x%08" PRIx32 ", TCC2 CTRLA 0x%08" PRIx32 ", TCC2 EVCTRL 0x%08" PRIx32, EVSYS->CHSTATUS.reg, QuadratureTcc->CTRLA.reg, QuadratureTcc->EVCTRL.reg);
 }
@@ -1105,6 +1187,7 @@ void ClosedLoop::ResetError(size_t driver) noexcept
 		// Set the target position to the current position
 		rawEncoderReading = encoder->GetReading();
 		currentMotorSteps = rawEncoderReading / encoderCountPerStep;
+		derivativeFilter = new DerivativeAveragingFilter<derivativeFilterSize>();
 		targetMotorSteps = currentMotorSteps;
 	}
 # else
@@ -1141,6 +1224,7 @@ bool ClosedLoop::SetClosedLoopEnabled(bool enabled, const StringRef &reply) noex
 	// Set the target position to the current position
 	rawEncoderReading = encoder->GetReading();
 	currentMotorSteps = rawEncoderReading / encoderCountPerStep;
+	derivativeFilter = new DerivativeAveragingFilter<derivativeFilterSize>();
 	targetMotorSteps = currentMotorSteps;
 
 	// Set the closed loop enabled state
