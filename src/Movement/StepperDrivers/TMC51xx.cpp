@@ -73,7 +73,11 @@ constexpr float RecipFullScaleCurrent = SenseResistor/325.0;		// 1.0 divided by 
 // TODO use the DIAG outputs to detect stalls instead
 // There are 40 bits to send per driver, so on the 3HC the total is 120 bits
 // With a 2MHz SPI clock, on the 3HC the TMC task takes about 25% of the CPU time. So we now use 500kHz. This means the SPI transfer will complete in a little over 240us.
-const uint32_t DriversSpiClockFrequency = 500000;			// 2MHz SPI clock
+#if SUPPORT_CLOSED_LOOP
+const uint32_t DriversSpiClockFrequency = 1000000;			// 1MHz SPI clock
+#else
+const uint32_t DriversSpiClockFrequency = 500000;			// 500kHz SPI clock
+#endif
 const uint32_t TransferTimeout = 2;							// any transfer should complete within 2 ticks @ 1ms/tick
 
 // GCONF register (0x00, RW)
