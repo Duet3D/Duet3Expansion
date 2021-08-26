@@ -56,7 +56,7 @@ static bool coilBPolarity = false;				// True = +ve, False = -ve
 
 static float holdCurrent = 0;					// The minimum holding current when stationary
 
-static float Kp = 1000;							// The proportional constant for the PID controller
+static float Kp = 100;							// The proportional constant for the PID controller
 static float Ki = 0;							// The proportional constant for the PID controller
 static float Kd = 0;							// The proportional constant for the PID controller
 
