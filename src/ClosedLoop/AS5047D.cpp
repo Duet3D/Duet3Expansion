@@ -69,31 +69,31 @@ AS5047D::AS5047D(SharedSpiDevice& spiDev, Pin p_csPin) noexcept
 GCodeResult AS5047D::Init(const StringRef& reply) noexcept
 {
 	// See if we can read sensible data from the encoder
-	uint16_t responseDiag, responseErrfl;
-	if (GetDiagnosticRegisters(responseDiag, responseErrfl))
+	DiagnosticRegisters regs;
+	if (GetDiagnosticRegisters(regs))
 	{
-		if (CheckResponse(responseDiag))
+		if (CheckResponse(regs.diag))
 		{
-			if ((responseDiag & 0x0F00) == 0x100)
+			if ((regs.diag & 0x0F00) == 0x100)
 			{
 				Enable();
 				return GCodeResult::ok;
 			}
 
 			reply.copy("Encoder warning");
-			if ((responseDiag & 0x0100) == 0)
+			if ((regs.diag & 0x0100) == 0)
 			{
 				reply.cat(": offset loop not ready");
 			}
-			if ((responseDiag & 0x0200) != 0)
+			if ((regs.diag & 0x0200) != 0)
 			{
 				reply.cat(": CORDIC overflow");
 			}
-			if ((responseDiag & 0x0400) != 0)
+			if ((regs.diag & 0x0400) != 0)
 			{
 				reply.cat(": magnet too strong");
 			}
-			if ((responseDiag & 0x0800) != 0)
+			if ((regs.diag & 0x0800) != 0)
 			{
 				reply.cat(": magnet too weak");
 			}
@@ -144,15 +144,17 @@ int32_t AS5047D::GetReading() noexcept
 }
 
 // Get the diagnostic register and the error flags register
-bool AS5047D::GetDiagnosticRegisters(uint16_t& diagReg, uint16_t& errFlags) noexcept
+bool AS5047D::GetDiagnosticRegisters(DiagnosticRegisters& regs) noexcept
 {
 	if (spi.Select(0))			// get the mutex and set the clock rate
 	{
-		const bool ok = DoSpiTransaction(AddParityBit(AS5047ReadCommand | AS5047RegDiag), diagReg)
+		const bool ok = DoSpiTransaction(AddParityBit(AS5047ReadCommand | AS5047RegDiag), regs.diag)
 					 && (DelayCycles(GetCurrentCycles(), Clocks350ns), 				// need at least 350ns CS high time
-						 DoSpiTransaction(AddParityBit(AS5047ReadCommand | AS5047RegErrfl), diagReg))
+						 DoSpiTransaction(AddParityBit(AS5047ReadCommand | AS5047RegMag), regs.diag))
 					 && (DelayCycles(GetCurrentCycles(), Clocks350ns), 				// need at least 350ns CS high time
-						 DoSpiTransaction(AddParityBit(AS5047ReadCommand | AS5047RegNop), errFlags));
+						 DoSpiTransaction(AddParityBit(AS5047ReadCommand | AS5047RegErrfl), regs.mag))
+					 && (DelayCycles(GetCurrentCycles(), Clocks350ns), 				// need at least 350ns CS high time
+						 DoSpiTransaction(AddParityBit(AS5047ReadCommand | AS5047RegNop), regs.errFlags));
 		spi.Deselect();			// release the mutex
 		return ok;
 	}
@@ -163,25 +165,25 @@ bool AS5047D::GetDiagnosticRegisters(uint16_t& diagReg, uint16_t& errFlags) noex
 // Get diagnostic information and append it to a string
 void AS5047D::AppendDiagnostics(const StringRef &reply) noexcept
 {
-	uint16_t responseDiag, responseErrfl;
-	if (GetDiagnosticRegisters(responseDiag, responseErrfl))
+	DiagnosticRegisters regs;
+	if (GetDiagnosticRegisters(regs))
 	{
-		if (CheckResponse(responseDiag))
+		if (CheckResponse(regs.diag))
 		{
-			reply.catf(", agc %u", responseDiag & 0x007F);
-			if ((responseDiag & 0x0100) == 0)
+			reply.catf(", agc %u", regs.diag & 0x007F);
+			if ((regs.diag & 0x0100) == 0)
 			{
 				reply.cat(", offset loop not ready");
 			}
-			if ((responseDiag & 0x0200) != 0)
+			if ((regs.diag & 0x0200) != 0)
 			{
 				reply.cat(", CORDIC overflow");
 			}
-			if ((responseDiag & 0x0400) != 0)
+			if ((regs.diag & 0x0400) != 0)
 			{
 				reply.cat(", magnet too strong");
 			}
-			if ((responseDiag & 0x0800) != 0)
+			if ((regs.diag & 0x0800) != 0)
 			{
 				reply.cat(", magnet too weak");
 			}
@@ -191,21 +193,30 @@ void AS5047D::AppendDiagnostics(const StringRef &reply) noexcept
 			reply.cat(", bad diag register response");
 		}
 
-		if (CheckResponse(responseErrfl))
+		if (CheckResponse(regs.mag))
 		{
-			if (responseErrfl & 0x01)
+			reply.catf(", mag %u", regs.mag & 0x3FFF);
+		}
+		else
+		{
+			reply.cat(", bad mag register response");
+		}
+
+		if (CheckResponse(regs.errFlags))
+		{
+			if (regs.errFlags & 0x01)
 			{
 				reply.cat(", framing error");
 			}
-			if (responseErrfl & 0x02)
+			if (regs.errFlags & 0x02)
 			{
 				reply.cat(", invalid command error");
 			}
-			if (responseErrfl & 0x04)
+			if (regs.errFlags & 0x04)
 			{
 				reply.cat(", parity error");
 			}
-			if ((responseErrfl & 0x07) == 0)
+			if ((regs.errFlags & 0x07) == 0)
 			{
 				reply.cat(", no error");
 			}
