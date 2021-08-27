@@ -67,7 +67,7 @@ static float ultimateGain = 0;					// The ultimate gain of the controller (used 
 static float oscillationPeriod = 0;				// The oscillation period when Kp = ultimate gain
 
 static Encoder *encoder = nullptr;				// Pointer to the encoder object in use
-static float encoderCountPerStep;				// How many encoder readings do we get per step?
+static float encoderPulsePerStep;				// How many encoder readings do we get per step?
 
 static bool collectingData = false;				// Are we currently collecting data? If so:
 static StepTimer::Ticks dataCollectionStartTicks;// - At what tick did data collection start?
@@ -161,16 +161,26 @@ static void ResetMonitoringVariables() {
 	ewmaControlLoopCallInterval = 0;
 }
 
-// TODO: Helper function to convert between the internal representation of encoderCountPerStep, and the appropriate external representation (e.g. CPR)
-# if false
-static float countPerStepToExternalUnits() {
-	// TODO
+// Helper function to convert between the internal representation of encoderCountPerStep, and the appropriate external representation (e.g. CPR)
+static float pulsePerStepToExternalUnits(float pps, uint8_t encoderType) {
+	switch (encoderType)
+	{
+	case EncoderType::rotaryQuadrature:
+		return pps / 4;				// Output count per step
+	default:
+		return pps;					// Output pulse per step
+	}
 }
 
-static float externalUnitsToCountPerStep() {
-	// TODO
+static float externalUnitsToPulsePerStep(float externalUnits, uint8_t encoderType) {
+	switch (encoderType)
+	{
+	case EncoderType::rotaryQuadrature:
+		return externalUnits * 4;	// Input is count per step
+	default:
+		return externalUnits;		// Input is pulse per step
+	}
 }
-# endif
 
 // Helper function to cat all the current tuning errors onto a reply in human-readable form
 static void ReportTuningErrors(uint8_t tuningErrorBitmask, const StringRef &reply)
@@ -250,7 +260,7 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 
 	// Set default parameters
 	uint8_t tempEncoderType = GetEncoderType().ToBaseType();
-	float tempCPR = encoderCountPerStep;		// TODO: Use countPerStepToExternalUnits() here
+	float tempCPR = encoderPulsePerStep;		// TODO: Use countPerStepToExternalUnits() here
 	float tempKp = Kp;
 	float tempKi = Ki;
 	float tempKd = Kd;
@@ -271,7 +281,7 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 	// Report back if !seen
 	if (!seen) {
 		reply.catf("Encoder type: %s", GetEncoderType().ToString());
-		reply.catf(", encoder CPR: %f", (double) tempCPR);
+		reply.catf(", encoder CPR: %f", (double) pulsePerStepToExternalUnits(tempCPR, tempEncoderType));
 		reply.catf(", PID parameters: p=%f, i=%f, d=%f", (double) Kp, (double) Ki, (double) Kd);
 		return GCodeResult::ok;
 	}
@@ -281,8 +291,13 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 	if ((seen & 0x1 << 5) && tempErrorThresholds[0] < 0) {reply.copy("Error threshold value must be greater than zero.");return GCodeResult::error;}
 	if ((seen & 0x1 << 5) && tempErrorThresholds[1] < 0) {reply.copy("Error threshold value must be greater than zero.");return GCodeResult::error;}
 
+	// Convert external units to internal units
+	if (seen & 0x1 << 1) {
+		tempCPR = externalUnitsToPulsePerStep(tempCPR, tempEncoderType);
+	}
+
 	// Set the new params
-	encoderCountPerStep = tempCPR;
+	encoderPulsePerStep = tempCPR;
 	Kp = tempKp;
 	Ki = tempKi;
 	Kd = tempKd;
@@ -651,7 +666,7 @@ void ClosedLoop::PerformTune() noexcept
 		if (tuneCounter > 0) {
 			// Calculate where the motor has moved to
 			rawEncoderReading = encoder->GetReading();
-			currentMotorSteps = rawEncoderReading / encoderCountPerStep;
+			currentMotorSteps = rawEncoderReading / encoderPulsePerStep;
 			float tmp = currentMotorSteps / 4;
 			if (tmp >= 0) {
 				stepPhase = (tmp - (int) tmp) * 4095;
@@ -720,7 +735,7 @@ void ClosedLoop::PerformTune() noexcept
 
 			// Set this as the new zero position
 			((QuadratureEncoderPdec*) encoder)->SetOffset(-rawEncoderReading);
-			targetMotorSteps = targetMotorSteps - (rawEncoderReading / encoderCountPerStep);
+			targetMotorSteps = targetMotorSteps - (rawEncoderReading / encoderPulsePerStep);
 
 			// Set the appropriate flags
 			newTuningMove = true;
@@ -729,7 +744,7 @@ void ClosedLoop::PerformTune() noexcept
 		}
 
 		rawEncoderReading = encoder->GetReading();	// (For data collection)
-		currentMotorSteps = rawEncoderReading / encoderCountPerStep;
+		currentMotorSteps = rawEncoderReading / encoderPulsePerStep;
 		float tmp = currentMotorSteps / 4;
 		if (tmp >= 0) {
 			stepPhase = (tmp - (int) tmp) * 4095;
@@ -745,7 +760,7 @@ void ClosedLoop::PerformTune() noexcept
 
 		if (newTuningMove) {
 			// This is the first run
-			tuningVar1 = 10 * (1024 / encoderCountPerStep);	// max_err - allow up to 10x the resolution of the encoder
+			tuningVar1 = 10 * (1024 / encoderPulsePerStep);	// max_err - allow up to 10x the resolution of the encoder
 			tuningVar2 = 0;		// deviations
 			tuneCounter = 0;
 			newTuningMove = false;
@@ -754,7 +769,7 @@ void ClosedLoop::PerformTune() noexcept
 		if (tuneCounter < 4096) {
 			// Calculate where the motor has moved to
 			rawEncoderReading = encoder->GetReading();
-			currentMotorSteps = rawEncoderReading / encoderCountPerStep;
+			currentMotorSteps = rawEncoderReading / encoderPulsePerStep;
 			float tmp = currentMotorSteps / 4;
 			if (tmp >= 0) {
 				stepPhase = (tmp - (int) tmp) * 4095;
@@ -991,7 +1006,7 @@ void ClosedLoop::ControlMotorCurrents() noexcept
 
 	// Calculate the current position & phase from the encoder reading
 	rawEncoderReading = encoder->GetReading();
-	currentMotorSteps = rawEncoderReading / encoderCountPerStep;
+	currentMotorSteps = rawEncoderReading / encoderPulsePerStep;
 
 	// Calculate and store the current error
 	currentError = targetMotorSteps - currentMotorSteps;
@@ -1174,7 +1189,7 @@ void ClosedLoop::ResetError(size_t driver) noexcept
 	if (driver == 0) {
 		// Set the target position to the current position
 		rawEncoderReading = encoder->GetReading();
-		currentMotorSteps = rawEncoderReading / encoderCountPerStep;
+		currentMotorSteps = rawEncoderReading / encoderPulsePerStep;
 		derivativeFilter = new DerivativeAveragingFilter<derivativeFilterSize>();
 		targetMotorSteps = currentMotorSteps;
 	}
@@ -1211,7 +1226,7 @@ bool ClosedLoop::SetClosedLoopEnabled(bool enabled, const StringRef &reply) noex
 
 	// Set the target position to the current position
 	rawEncoderReading = encoder->GetReading();
-	currentMotorSteps = rawEncoderReading / encoderCountPerStep;
+	currentMotorSteps = rawEncoderReading / encoderPulsePerStep;
 	derivativeFilter = new DerivativeAveragingFilter<derivativeFilterSize>();
 	targetMotorSteps = currentMotorSteps;
 
