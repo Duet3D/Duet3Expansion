@@ -15,6 +15,7 @@
 #  include <CanMessageFormats.h>
 #  include <General/NamedEnum.h>
 #  include <GCodes/GCodeResult.h>
+#  include <Movement/StepTimer.h>
 #  include <ClosedLoop/Trigonometry.h>
 #  include <Hardware/SharedSpiDevice.h>
 
