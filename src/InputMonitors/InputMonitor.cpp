@@ -132,6 +132,7 @@ void InputMonitor::AnalogInterrupt(uint16_t reading) noexcept
 		if (current->handle == hndl)
 		{
 			current->Deactivate();
+			current->port.Release();
 			if (prev == nullptr)
 			{
 				monitorsList = current->next;
