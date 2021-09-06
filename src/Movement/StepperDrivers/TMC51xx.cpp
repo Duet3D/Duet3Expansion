@@ -56,7 +56,11 @@ const bool DefaultStallDetectFiltered = false;
 const unsigned int DefaultMinimumStepsPerSecond = 200;		// for stall detection: 1 rev per second assuming 1.8deg/step, as per the TMC5160 datasheet
 const uint32_t DefaultTcoolthrs = 2000;						// max interval between 1/256 microsteps for stall detection to be enabled
 const uint32_t DefaultThigh = 200;
+#if SUPPORT_CLOSED_LOOP
+constexpr size_t TmcTaskStackWords = 160;
+#else
 constexpr size_t TmcTaskStackWords = 100;
+#endif
 
 #if TMC_TYPE == 5130
 constexpr float SenseResistor = 0.11;						// 0.082R external + 0.03 internal
