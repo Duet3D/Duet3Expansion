@@ -61,7 +61,7 @@ static inline bool CheckResponse(uint16_t response) noexcept
 
 AS5047D::AS5047D(SharedSpiDevice& spiDev, Pin p_csPin) noexcept
 	: SpiEncoder(spiDev, AS54047ClockFrequency, SpiMode::mode1, false, p_csPin),
-	  lastAngle(0)
+	  AbsoluteEncoder()
 {
 }
 
@@ -121,7 +121,7 @@ void AS5047D::Disable() noexcept
 	ClosedLoop::DisableEncodersSpi();
 }
 
-int32_t AS5047D::GetReading() noexcept
+uint32_t AS5047D::GetAbsolutePosition(bool& error) noexcept
 {
 	if (spi.Select(0))			// get the mutex and set the clock rate
 	{
@@ -131,16 +131,15 @@ int32_t AS5047D::GetReading() noexcept
 						 DoSpiTransaction(AddParityBit(AS5047ReadCommand | AS5047RegNop), response));
 		spi.Deselect();			// release the mutex
 		if (ok && CheckResponse(response))
-
 		{
 			response &= 0x3FFF;
-			lastAngle = (int32_t)((response & 0x2000) ? response | 0xFFFFC000 : response);
-			return lastAngle;
+			error = false;
+			return ((response & 0x2000) ? response | 0xFFFFC000 : response) + ABS_READING_OFFSET;
 		}
 	}
 
-	//TODO how to report an error?
-	return lastAngle;
+	error = true;
+	return 0;
 }
 
 // Get the diagnostic register and the error flags register
@@ -163,6 +162,9 @@ bool AS5047D::GetDiagnosticRegisters(uint16_t& diagReg, uint16_t& errFlags) noex
 // Get diagnostic information and append it to a string
 void AS5047D::AppendDiagnostics(const StringRef &reply) noexcept
 {
+	reply.catf(", encoder full rotations %d", (int) fullRotations);
+	reply.catf(", encoder last angle %d", (int) lastAngle);
+	reply.catf(", zero crossing index=%d, zero crossing offset=%d", zeroCrossingIndex, zeroCrossingOffset);
 	uint16_t responseDiag, responseErrfl;
 	if (GetDiagnosticRegisters(responseDiag, responseErrfl))
 	{

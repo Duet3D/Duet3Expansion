@@ -51,8 +51,7 @@ static bool closedLoopEnabled = false;			// Has closed loop been enabled by the 
 static uint8_t tuningError;						// Flags for any tuning errors
 static uint8_t prevTuningError;					// Used to see what errors have been introduced by tuning
 
-static bool coilAPolarity = true;				// True = +ve, False = -ve
-static bool coilBPolarity = false;				// True = +ve, False = -ve
+static bool reversePolarity = false;			// Flag if the polarity on this motor is reversed
 
 static float holdCurrent = 0;					// The minimum holding current when stationary
 
@@ -84,7 +83,7 @@ static uint16_t sampleBufferWritePointer = 0;	//  - Store the next sample at thi
 // Working variables
 // These variables are all used to calculate the required motor currents. They are declared here so they can be reported on by the data collection task
 
-static atomic<int16_t> rawEncoderReading;		// The raw reading taken from the encoder
+static atomic<int32_t> rawEncoderReading;		// The raw reading taken from the encoder
 static bool stepDirection = true;				// The direction the motor is attempting to take steps in
 static float currentMotorSteps;					// The number of steps the motor has taken relative to it's zero position
 static atomic<float> targetMotorSteps = 0;		// The number of steps the motor should have taken relative to it's zero position
@@ -109,9 +108,12 @@ static int16_t coilB;							// The current to run through coil A
 static bool stall = false;						// Has the closed loop error threshold been exceeded?
 static bool preStall = false;					// Has the closed loop warning threshold been exceeded?
 
-static int tuneCounter = 1;						// A counter for tuning tasks to use
+static int32_t tuneCounter = 1;					// A counter for tuning tasks to use
 static bool newTuningMove = true;				// Indicates if a tuning move has just finished
-static int tuningVar1, tuningVar2, tuningVar3;	// Three general purpose variables for any tuning task to use
+static float tuningVar1,
+			 tuningVar2,
+			 tuningVar3,
+			 tuningVar4;						// Four general purpose variables for any tuning task to use
 
 
 // Monitoring variables
@@ -166,9 +168,11 @@ static float pulsePerStepToExternalUnits(float pps, uint8_t encoderType) {
 	switch (encoderType)
 	{
 	case EncoderType::rotaryQuadrature:
-		return pps / 4;				// Output count per step
+		return pps / 4;													// Output count per step
+	case EncoderType::AS5047:
+		return (360.0 / ((AS5047D*) encoder)->GetMaxValue()) * pps;		// Output degree per step
 	default:
-		return pps;					// Output pulse per step
+		return pps;														// Output pulse per step
 	}
 }
 
@@ -176,9 +180,11 @@ static float externalUnitsToPulsePerStep(float externalUnits, uint8_t encoderTyp
 	switch (encoderType)
 	{
 	case EncoderType::rotaryQuadrature:
-		return externalUnits * 4;	// Input is count per step
+		return externalUnits * 4;												// Input is count per step
+	case EncoderType::AS5047:
+		return (((AS5047D*) encoder)->GetMaxValue() / 360.0) * externalUnits;	// Input is degree per step
 	default:
-		return externalUnits;		// Input is pulse per step
+		return externalUnits;													// Input is pulse per step
 	}
 }
 
@@ -197,8 +203,8 @@ static void ReportTuningErrors(uint8_t tuningErrorBitmask, const StringRef &repl
 static void SetMotorPhase(uint16_t phase, float magnitude)
 {
 	magnitude = constrain<float>(magnitude, holdCurrent, 1.0);
-	coilA = 255 * (coilAPolarity ? magnitude : -magnitude ) * Trigonometry::FastCos(phase);
-	coilB = 255 * (coilBPolarity ? magnitude : -magnitude ) * Trigonometry::FastSin(phase);
+	coilA = 255 * Trigonometry::FastCos(phase) * magnitude;
+	coilB = 255 * Trigonometry::FastSin(phase) * (reversePolarity ? magnitude : -magnitude);
 
 # if SUPPORT_TMC2160 && SINGLE_DRIVER
 	SmartDrivers::SetRegister(0,
@@ -353,7 +359,7 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 #ifdef EXP1HCE
 				encoder = new QuadratureEncoderAttiny(true);
 #elif defined(EXP1HCL)
-				encoder = new QuadratureEncoderPdec(true);
+				encoder = new QuadratureEncoderPdec();
 #else
 # error Unknown board
 #endif
@@ -364,7 +370,7 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 				encoder = new QuadratureEncoderAttiny(false);
 #elif defined(EXP1HCL)
 				// TODO: Debug why this can't be set to rotary mode
-				encoder = new QuadratureEncoderPdec(true);
+				encoder = new QuadratureEncoderPdec();
 #else
 # error Unknown board
 #endif
@@ -503,6 +509,7 @@ void ClosedLoop::ControlLoop() noexcept
 		if (!tuning) {Platform::DriveEnableOverride(0, false);}		// If that was the last tuning move, release the override
 	} else if (tuningError) {
 		// Don't do anything if there is a tuning error
+		SetMotorPhase(0, 0);
 	} else {
 		ControlMotorCurrents();							// Otherwise control those motor currents!
 	}
@@ -651,59 +658,36 @@ void ClosedLoop::PerformTune() noexcept
 		return;
 	}
 
-	// Do a polarity detection manoeuvre
+	// Do a polarity detection manoeuvre for quadrature encoders
 	if (tuning & POLARITY_DETECTION_MANOEUVRE) {
 
 		if (newTuningMove) {
 			// This is the first run
-			tuningVar1 = 0;		// correctCoilPhase
-			tuningVar2 = 0;		// correctCoilPhaseError
-			tuningVar3 = 0;		//
+			reversePolarity = false;
+			tuningVar1 = encoder->GetReading();		// startEncoderReading
 			tuneCounter = 0;
 			newTuningMove = false;
 		}
 
-		if (tuneCounter > 0) {
-			// Calculate where the motor has moved to
-			rawEncoderReading = encoder->GetReading();
-			currentMotorSteps = rawEncoderReading / encoderPulsePerStep;
-			float tmp = currentMotorSteps / 4;
-			if (tmp >= 0) {
-				stepPhase = (tmp - (int) tmp) * 4095;
+		rawEncoderReading = encoder->GetReading();
+
+		if (tuneCounter < 4096) {
+			// Calculate the current desired step phase
+			desiredStepPhase = tuneCounter % 4096;
+
+			// Move the motor
+			SetMotorPhase(desiredStepPhase, 1);
+		} else {
+			// We are finished
+
+			// Calculate the correct polarity
+			if (encoder->GetReading() > tuningVar1) {
+				reversePolarity = false;
 			} else {
-				stepPhase = (1 + tmp - (int) tmp) * 4095;
+				reversePolarity = true;
 			}
 
-			// Calculate & accumulate the error
-			int16_t distance1 = abs(stepPhase - desiredStepPhase);
-			int16_t distance2 = abs(4095 - max<uint16_t>(stepPhase, desiredStepPhase) + min<uint16_t>(stepPhase, desiredStepPhase));
-			tuningVar3 += min<int16_t>(distance1, distance2);	// totalError
-
-			if (tuneCounter % 4096 == 0) {
-				// If the polarity is about to change, update if this is the correct polarity
-				if (tuneCounter == 4096 || tuningVar3 < tuningVar2) {
-					tuningVar1 = (tuneCounter - 1) / 4096;
-					tuningVar2 = tuningVar3;
-				}
-				tuningVar3 = 0;
-			}
-		}
-
-		// Set the correct coil polarities
-		coilAPolarity = (tuneCounter / 4096) & 0x2;
-		coilBPolarity = (tuneCounter / 4096) & 0x1;
-
-		// Calculate the current desired step phase
-		desiredStepPhase = tuneCounter % 4096;
-
-		// Move the motor
-		SetMotorPhase(desiredStepPhase, 1);
-
-		if (tuneCounter >= 16384) {
-			// This is the last run
-			coilAPolarity = tuningVar1 & 0x2;
-			coilBPolarity = tuningVar1 & 0x1;
-
+			// Set the appropriate flags
 			tuningError &= ~TUNE_ERR_NOT_FOUND_POLARITY;
 			tuning &= ~POLARITY_DETECTION_MANOEUVRE;
 			newTuningMove = true;
@@ -713,8 +697,12 @@ void ClosedLoop::PerformTune() noexcept
 		return;		// If we have done this tuning move, we don't want to do any others
 	}
 
-	// Do a zeroing manoeuvre
-	if (tuning & ZEROING_MANOEUVRE) {
+	// Do a zeroing manoeuvre for quadrature encoders
+	if ((tuning & ZEROING_MANOEUVRE)
+			&& (encoder != nullptr
+					&& (encoder->GetType() == EncoderType::rotaryQuadrature
+					||  encoder->GetType() == EncoderType::linearQuadrature))) {
+
 		if (newTuningMove) {
 			// This is the first run
 			tuneCounter = 4096 + 1024;	// 4096 phase movement + 1024 delay
@@ -734,7 +722,7 @@ void ClosedLoop::PerformTune() noexcept
 			rawEncoderReading = encoder->GetReading();
 
 			// Set this as the new zero position
-			((QuadratureEncoderPdec*) encoder)->SetOffset(-rawEncoderReading);
+			((RelativeEncoder*) encoder)->SetOffset(-rawEncoderReading);
 			targetMotorSteps = targetMotorSteps - (rawEncoderReading / encoderPulsePerStep);
 
 			// Set the appropriate flags
@@ -754,13 +742,56 @@ void ClosedLoop::PerformTune() noexcept
 		return;		// If we have done this tuning move, we don't want to do any others
 	}
 
+	// Do a zeroing manoeuvre for AS5047D encoders
+	if ((tuning & ZEROING_MANOEUVRE)
+			&& (encoder != nullptr && encoder->GetType() == EncoderType::AS5047)) {
+
+		AS5047D* absoluteEncoder = (AS5047D*) encoder;
+
+		if (newTuningMove) {
+			// This is the first run
+			absoluteEncoder->ClearLUT();
+			tuningVar3 = 0;						// Target position
+			tuningVar4 = 0;						// Position counter
+			newTuningMove = false;
+		}
+
+		rawEncoderReading = absoluteEncoder->GetReading();
+
+		if (rawEncoderReading < tuningVar3) {
+			tuningVar4 += 1;
+		} else if (rawEncoderReading > tuningVar3) {
+			tuningVar4 -= 1;
+		} else {
+			const float realWorldPos = absoluteEncoder->GetMaxValue() * tuningVar4 / (1024 * (360.0 / pulsePerStepToExternalUnits(encoderPulsePerStep, EncoderType::AS5047)));
+			absoluteEncoder->StoreLUTValueForPosition(rawEncoderReading, realWorldPos);
+			tuningVar3 += absoluteEncoder->GetLUTResolution();
+		}
+
+		if (tuningVar3 >= absoluteEncoder->GetMaxValue()) {
+			// We are finished
+			absoluteEncoder->StoreLUT();
+			tuning &= ~ZEROING_MANOEUVRE;
+			tuningError &= ~TUNE_ERR_NOT_ZEROED;
+			newTuningMove = true;
+		}
+
+		desiredStepPhase = (tuningVar4 > 0 ? 0 : 4096) + (int)tuningVar4 % 4096;
+		SetMotorPhase(desiredStepPhase, 1);
+	}
+
+	// Handle zeroing manoeuvre for other encoder types
+	if (tuning & POLARITY_DETECTION_MANOEUVRE) {
+		// TODO
+	}
+
 	// Do a polarity check manoeuvre
 	if (tuning & POLARITY_CHECK) {
 		// We are going to step through a full phase, and check that the error never exceeds max_err
 
 		if (newTuningMove) {
 			// This is the first run
-			tuningVar1 = 10 * (1024 / encoderPulsePerStep);	// max_err - allow up to 10x the resolution of the encoder
+			tuningVar1 = 409;	// max_err - allow up to ~10% error
 			tuningVar2 = 0;		// deviations
 			tuneCounter = 0;
 			newTuningMove = false;
@@ -819,8 +850,34 @@ void ClosedLoop::PerformTune() noexcept
 
 	// Do a continuous phase increase manoeuvre
 	if (tuning & CONTINUOUS_PHASE_INCREASE_MANOEUVRE) {
-		// TODO
-		tuning &= ~CONTINUOUS_PHASE_INCREASE_MANOEUVRE;
+
+		if (newTuningMove) {
+			// This is the first run
+			tuneCounter = 0;
+			newTuningMove = false;
+		}
+
+		// For data collection
+		rawEncoderReading = encoder->GetReading();
+		currentMotorSteps = rawEncoderReading / encoderPulsePerStep;
+		float tmp = currentMotorSteps / 4;
+		if (tmp >= 0) {
+			stepPhase = (tmp - (int) tmp) * 4095;
+		} else {
+			stepPhase = (1 + tmp - (int) tmp) * 4095;
+		}
+
+		// Increase the desired step phase
+		desiredStepPhase = tuneCounter;
+		SetMotorPhase(desiredStepPhase, 1);
+		tuneCounter += stepPhaseDistance;
+
+		if (tuneCounter >= 4096) {
+			//tuning &= ~CONTINUOUS_PHASE_INCREASE_MANOEUVRE;
+			newTuningMove = true;
+			return;
+		}
+
 	}
 
 	// Do a step manoeuvre
@@ -1113,7 +1170,7 @@ void ClosedLoop::Diagnostics(const StringRef& reply) noexcept
 #endif
 
 	reply.catf(", pre-error threshold: %f, error threshold: %f", (double) errorThresholds[0], (double) errorThresholds[1]);
-	reply.catf(", coil A polarity: %s, coil B polarity: %s", coilAPolarity ? "+" : "-", coilBPolarity ? "+" : "-");
+	reply.catf(", reverse polarity: %s", reversePolarity ? "yes" : "no");
 	reply.catf(", tuning: %#x, tuning error: %#x", tuning, tuningError);
 
 	if (encoder != nullptr)

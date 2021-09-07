@@ -8,13 +8,17 @@
 #ifndef SRC_CLOSEDLOOP_AS5047D_H_
 #define SRC_CLOSEDLOOP_AS5047D_H_
 
+#include <ClosedLoop/AbsoluteEncoder.h>
 #include <ClosedLoop/SpiEncoder.h>
 
 #if SUPPORT_CLOSED_LOOP
 
 #include <General/FreelistManager.h>
 
-class AS5047D : public SpiEncoder
+constexpr int16_t READING_RANGE = 0x1 << 14;
+constexpr int16_t ABS_READING_OFFSET = 0x1 << 13;
+
+class AS5047D : public SpiEncoder, public AbsoluteEncoder<READING_RANGE, 16>
 {
 public:
 	void* operator new(size_t sz) noexcept { return FreelistManager::Allocate<AS5047D>(); }
@@ -27,14 +31,13 @@ public:
 	GCodeResult Init(const StringRef& reply) noexcept override;
 	void Enable() noexcept override;
 	void Disable() noexcept override;
-	int32_t GetReading() noexcept override;
+	uint32_t GetAbsolutePosition(bool& error) noexcept;
 	void AppendDiagnostics(const StringRef& reply) noexcept override;
 
 private:
 	bool DoSpiTransaction(uint16_t command, uint16_t& response) noexcept;
 	bool GetDiagnosticRegisters(uint16_t& diagResponse, uint16_t& errFlags) noexcept;
 
-	int32_t lastAngle;
 };
 
 #endif

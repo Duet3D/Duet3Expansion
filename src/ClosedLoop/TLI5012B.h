@@ -8,13 +8,15 @@
 #ifndef SRC_CLOSEDLOOP_TLI5012B_H_
 #define SRC_CLOSEDLOOP_TLI5012B_H_
 
+#include <ClosedLoop/AbsoluteEncoder.h>
 #include <ClosedLoop/SpiEncoder.h>
 
 #if SUPPORT_CLOSED_LOOP
 
 #include <General/FreelistManager.h>
 
-class TLI5012B : public SpiEncoder
+// TODO: Fill out MAX parameter in MagneticEncoder below
+class TLI5012B : public SpiEncoder, public AbsoluteEncoder<0, 16>
 {
 public:
 	void* operator new(size_t sz) noexcept { return FreelistManager::Allocate<TLI5012B>(); }
@@ -27,7 +29,7 @@ public:
 	GCodeResult Init(const StringRef& reply) noexcept override;
 	void Enable() noexcept override;
 	void Disable() noexcept override;
-	int32_t GetReading() noexcept override;
+	uint32_t GetAbsolutePosition(bool& error) noexcept;
 	void AppendDiagnostics(const StringRef& reply) noexcept override;
 
 private:

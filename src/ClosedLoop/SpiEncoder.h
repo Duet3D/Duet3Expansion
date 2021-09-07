@@ -14,7 +14,7 @@
 
 #include <Hardware/SharedSpiClient.h>
 
-class SpiEncoder : public Encoder
+class SpiEncoder
 {
 public:
 	SpiEncoder(SharedSpiDevice& spiDev, uint32_t clockFreq, SpiMode m, bool polarity, Pin p_csPin) noexcept;
