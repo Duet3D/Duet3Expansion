@@ -707,7 +707,7 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 		extra = LastDiagnosticsPart;
 		{
 			// We split the software reset data into two parts, because currently the buffer that the main board uses to receive each fragment isn't big enough to hold it all
-			NonVolatileMemory mem;
+			NonVolatileMemory mem(NvmPage::common);
 			unsigned int slot;
 			const SoftwareResetData *srd = mem.GetLastWrittenResetData(slot);
 			if (srd == nullptr)
@@ -724,7 +724,7 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 	case CanMessageReturnInfo::typeDiagnosticsPart0 + 3:
 		extra = LastDiagnosticsPart;
 		{
-			NonVolatileMemory mem;
+			NonVolatileMemory mem(NvmPage::common);
 			unsigned int slot;
 			const SoftwareResetData *srd = mem.GetLastWrittenResetData(slot);
 			if (srd != nullptr)

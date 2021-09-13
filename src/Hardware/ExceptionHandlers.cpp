@@ -26,8 +26,7 @@ void SoftwareReset(SoftwareResetReason initialReason, const uint32_t *stk) noexc
 	}
 
 	// Record the reason for the software reset
-
-	NonVolatileMemory * const mem = new(Tasks::GetNVMBuffer(stk)) NonVolatileMemory;
+	NonVolatileMemory * const mem = new(Tasks::GetNVMBuffer(stk)) NonVolatileMemory(NvmPage::common);
 	SoftwareResetData * const srd = mem->AllocateResetDataSlot();
 	srd->Populate(fullReason, stk);
 	mem->EnsureWritten();

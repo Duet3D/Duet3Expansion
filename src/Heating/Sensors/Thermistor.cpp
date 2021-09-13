@@ -70,7 +70,7 @@ GCodeResult Thermistor::Configure(const CanMessageGenericParser& parser, const S
 			Platform::GetAdcFilter(adcFilterChannel)->Init((1u << AnalogIn::AdcBits) - 1);
 #if HAS_VREF_MONITOR
 			// Default the H and L parameters to the values from nonvolatile memory
-			NonVolatileMemory mem;
+			NonVolatileMemory mem(NvmPage::common);
 			adcLowOffset = mem.GetThermistorLowCalibration(adcFilterChannel);
 			adcHighOffset = mem.GetThermistorHighCalibration(adcFilterChannel);
 #endif
@@ -124,7 +124,7 @@ GCodeResult Thermistor::Configure(const CanMessageGenericParser& parser, const S
 						// Store the value in NVM
 //						if (!reprap.GetGCodes().IsRunningConfigFile())
 						{
-							NonVolatileMemory mem;
+							NonVolatileMemory mem(NvmPage::common);
 							mem.SetThermistorLowCalibration(adcFilterChannel, adcLowOffset);
 							mem.EnsureWritten();
 						}
@@ -177,7 +177,7 @@ GCodeResult Thermistor::Configure(const CanMessageGenericParser& parser, const S
 					// Store the value in NVM
 //					if (!reprap.GetGCodes().IsRunningConfigFile())
 					{
-						NonVolatileMemory mem;
+						NonVolatileMemory mem(NvmPage::common);
 						mem.SetThermistorHighCalibration(adcFilterChannel, adcHighOffset);
 						mem.EnsureWritten();
 					}
