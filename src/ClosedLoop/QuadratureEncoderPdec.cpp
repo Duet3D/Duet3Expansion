@@ -98,20 +98,24 @@ void QuadratureEncoderPdec::AppendStatus(const StringRef& reply) noexcept
 void QuadratureEncoderPdec::SetCountsPerRev() noexcept
 {
 	uint32_t ctrla = PDEC_CTRLA_MODE_QDEC | PDEC_CTRLA_CONF_X4
-					| PDEC_CTRLA_PINEN0 | PDEC_CTRLA_PINEN1 | PDEC_CTRLA_PINEN2;
+					| PDEC_CTRLA_PINEN0 | PDEC_CTRLA_PINEN1;		// enable A and B inputs but not the index input
 	if (cpr == 0)
 	{
+		// Linear mode
 		ctrla |= PDEC_CTRLA_ANGULAR(7);
 		positionBits = 16;
 	}
 	else
 	{
+		// Rotational mode
 		positionBits = 9;
 		while (positionBits < 16 && (1u << positionBits) < cpr)
 		{
 			++positionBits;
 		}
-		ctrla |= PDEC_CTRLA_ANGULAR(positionBits - 9) | PDEC_CTRLA_PEREN;
+		ctrla |=  PDEC_CTRLA_ANGULAR(positionBits - 9)
+				| PDEC_CTRLA_PEREN
+				| PDEC_CTRLA_PINEN2;								// enable the index input too
 		PDEC->CC[0].reg = cpr - 1;
 	}
 
