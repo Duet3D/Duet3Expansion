@@ -499,6 +499,9 @@ void ClosedLoop::ControlLoop() noexcept
 		maxControlLoopCallInterval = max<StepTimer::Ticks>(maxControlLoopCallInterval, timeElapsed);
 	}
 
+	// Read the current state of the drive
+	ReadState();
+
 	if (collectingData && rateRequested == 0) {CollectSample();}	// Collect a sample, if we need to
 
 	if (!closedLoopEnabled) {
@@ -673,11 +676,9 @@ void ClosedLoop::CollectSample() noexcept
 	}
 }
 
-void ClosedLoop::ControlMotorCurrents() noexcept
+void ClosedLoop::ReadState() noexcept
 {
-	// Get the time delta
-	float currentTimestamp = TickPeriodToTimePeriod(StepTimer::GetTimerTicks()) / 1000;
-	float timeDelta = currentTimestamp - (TickPeriodToTimePeriod(prevControlLoopCallTime) / 1000);
+	if (encoder == nullptr) {return;}	// We can't read anything if encoder is a nullptr
 
 	// Calculate the current position & phase from the encoder reading
 	rawEncoderReading = encoder->GetReading();
@@ -685,8 +686,24 @@ void ClosedLoop::ControlMotorCurrents() noexcept
 
 	// Calculate and store the current error
 	currentError = targetMotorSteps - currentMotorSteps;
+	float currentTimestamp = TickPeriodToTimePeriod(StepTimer::GetTimerTicks()) / 1000;
 	if (!derivativeFilter->IsInit()) {derivativeFilter->Init(currentError, currentTimestamp);}
 	derivativeFilter->ProcessReading(currentError, currentTimestamp);
+
+	// Calculate stepPhase - a 0-4095 value representing the phase *within* the current step
+	float tmp = currentMotorSteps / 4;
+	if (tmp >= 0) {
+		stepPhase = (tmp - (int) tmp) * 4095;
+	} else {
+		stepPhase = (1 + tmp - (int) tmp) * 4095;
+	}
+}
+
+void ClosedLoop::ControlMotorCurrents() noexcept
+{
+	// Get the time delta
+	float currentTimestamp = TickPeriodToTimePeriod(StepTimer::GetTimerTicks()) / 1000;
+	float timeDelta = currentTimestamp - (TickPeriodToTimePeriod(prevControlLoopCallTime) / 1000);
 
 	// Look for a stall or pre-stall
 	if (!stall && abs(currentError) > errorThresholds[1]) {
@@ -714,19 +731,9 @@ void ClosedLoop::ControlMotorCurrents() noexcept
 	// The max abs value of phase shift we want is 25%.
 	// Given that PIDControlSignal is -255 .. 255 and phase is 0 .. 4095
 	// and that 25% of 4095 ~= 1024, our max phase shift ~= 4 * PIDControlSignal
-	// DEBUG: Experimenting with microstepping by doing 0.1 *
 	phaseShift = (4 * PIDControlSignal);
 
-	// Calculate stepPhase - a 0-4095 value representing the phase *within* the current step
-	float tmp = currentMotorSteps / 4;
-	if (tmp >= 0) {
-		stepPhase = (tmp - (int) tmp) * 4095;
-	} else {
-		stepPhase = (1 + tmp - (int) tmp) * 4095;
-	}
-
 	// Calculate the required motor currents to induce that torque
-	// TODO: Have a minimum holding current
 	// (If stepPhase < phaseShift, we need to add on an extra 4095 to bring us back within the correct range)
 	desiredStepPhase = stepPhase + phaseShift + ((stepPhase < -phaseShift) * 4095);
 	desiredStepPhase = desiredStepPhase % 4096;

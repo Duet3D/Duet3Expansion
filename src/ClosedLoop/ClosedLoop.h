@@ -165,6 +165,7 @@ namespace ClosedLoop
 	[[noreturn]] void DataCollectionLoop() noexcept;
 	[[noreturn]] void DataTransmissionLoop() noexcept;
 
+	void ReadState() noexcept;
 	void ControlLoop() noexcept;
 	void PerformTune() noexcept;
 	void CollectSample() noexcept;
