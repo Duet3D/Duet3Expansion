@@ -42,6 +42,9 @@ public:
 
 	// Get diagnostic information and append it to a string
 	virtual void AppendDiagnostics(const StringRef& reply) noexcept = 0;
+
+	// Append brief encoder status as a string
+	virtual void AppendStatus(const StringRef& reply) noexcept = 0;
 };
 
 #endif

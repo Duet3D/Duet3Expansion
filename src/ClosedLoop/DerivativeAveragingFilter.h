@@ -13,17 +13,17 @@
 // Class that takes in readings and timestamps
 // and outputs the current derivative
 // n should be a power of 2 for best efficiency
-template<size_t n> class DerivativeAveragingFilter
+template<size_t N> class DerivativeAveragingFilter
 {
 public:
-	DerivativeAveragingFilter() noexcept : init(false), valid(false) {}
+	DerivativeAveragingFilter() noexcept : init(false), valid(false), index(0) {}
 
 	void Init(float reading, float timestamp) volatile noexcept
 	{
 		TaskCriticalSectionLocker lock;
 
 		index = 0;
-		for (size_t i = 0; i < n; ++i)
+		for (size_t i = 0; i < N; ++i)
 		{
 			readings[i] = reading;
 			timestamps[i] = timestamp;
@@ -51,26 +51,25 @@ public:
 			derivative = 0;
 		}
 
-		++index;
-		if (index == n)
+		index = (index + 1) % N;
+		if (index == 0)
 		{
-			index = 0;
 			valid = true;
 		}
 	}
 
-	bool IsInit() volatile noexcept { return init; }
-	bool IsValid() volatile noexcept { return valid; }
-	static constexpr size_t N() noexcept { return n; }
-	float GetDerivative() noexcept { return derivative; }
+	bool IsInit() const volatile noexcept { return init; }
+	bool IsValid() const volatile noexcept { return valid; }
+	static constexpr size_t NumValues() noexcept { return N; }
+	float GetDerivative() const noexcept { return derivative; }
 
 private:
 	bool init;
 	bool valid;
 	size_t index;
 	float derivative;
-	float readings[n];
-	float timestamps[n];
+	float readings[N];
+	float timestamps[N];
 };
 
 #endif /* SRC_DERIVATIVEAVERAGINGFILTER_H_ */

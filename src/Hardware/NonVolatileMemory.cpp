@@ -16,7 +16,7 @@
 constexpr uint32_t RWW_ADDR = FLASH_ADDR + 0x00400000;
 #endif
 
-NonVolatileMemory::NonVolatileMemory() noexcept : state(NvmState::notRead)
+NonVolatileMemory::NonVolatileMemory(NvmPage whichPage) noexcept : state(NvmState::notRead), page(whichPage)
 {
 }
 
@@ -25,24 +25,17 @@ void NonVolatileMemory::EnsureRead() noexcept
 	if (state == NvmState::notRead)
 	{
 #if SAME5x
-		memcpyu32(reinterpret_cast<uint32_t *>(&buffer), reinterpret_cast<const uint32_t *>(SEEPROM_ADDR), sizeof(buffer)/sizeof(uint32_t));
-#elif SAM4E || SAM4S || SAME70
-		const bool cacheEnabled = Cache::Disable();
-		flash_read_user_signature(reinterpret_cast<uint32_t*>(&buffer), sizeof(buffer)/sizeof(uint32_t));
-		if (cacheEnabled)
-		{
-			Cache::Enable();
-		}
+		memcpyu32(reinterpret_cast<uint32_t *>(&buffer), reinterpret_cast<const uint32_t *>(SEEPROM_ADDR + (512 * (unsigned int)page)), sizeof(buffer)/sizeof(uint32_t));
 #elif SAMC21
-		memcpyu32(reinterpret_cast<uint32_t *>(&buffer), reinterpret_cast<const uint32_t *>(RWW_ADDR), sizeof(buffer)/sizeof(uint32_t));
+		memcpyu32(reinterpret_cast<uint32_t *>(&buffer), reinterpret_cast<const uint32_t *>(RWW_ADDR + (512 * (unsigned int)page)), sizeof(buffer)/sizeof(uint32_t));
 #else
 # error Unsupported processor
 #endif
-		if (buffer.magic != NVM::MagicValue)
+		if (buffer.commonPage.magic != GetMagicValue())
 		{
 //			debugPrintf("Invalid user area\n");
 			memset(&buffer, 0xFF, sizeof(buffer));
-			buffer.magic = NVM::MagicValue;
+			buffer.commonPage.magic =GetMagicValue();
 			state = NvmState::eraseAndWriteNeeded;
 		}
 		else
@@ -60,46 +53,37 @@ void NonVolatileMemory::EnsureWritten() noexcept
 	{
 		// No need to erase on the SAME5x because the EEPROM emulation manages it
         while (NVMCTRL->SEESTAT.bit.BUSY) { }
-        memcpyu32(reinterpret_cast<uint32_t*>(SEEPROM_ADDR), reinterpret_cast<const uint32_t*>(&buffer), sizeof(buffer)/sizeof(uint32_t));
+        memcpyu32(reinterpret_cast<uint32_t*>(SEEPROM_ADDR + (512 * (unsigned int)page)), reinterpret_cast<const uint32_t*>(&buffer), sizeof(buffer)/sizeof(uint32_t));
 		state = NvmState::clean;
         while (NVMCTRL->SEESTAT.bit.BUSY) { }
 	}
-#else
+#elif SAMC21
 	if (state == NvmState::eraseAndWriteNeeded)
 	{
-		// Erase the page
-# if SAM4E || SAM4S || SAME70
-		flash_erase_user_signature();
-# elif SAMC21
-		Flash::RwwErase(RWW_ADDR, 512);
-# endif
+		Flash::RwwErase(RWW_ADDR + (512 * (unsigned int)page), 512);
 		state = NvmState::writeNeeded;
 	}
 
 	if (state == NvmState::writeNeeded)
 	{
-# if SAM4E || SAM4S || SAME70
-		flash_write_user_signature(&buffer, sizeof(buffer)/sizeof(uint32_t));
-# elif SAMC21
-		Flash::RwwWrite(RWW_ADDR, 512, (uint8_t*)&buffer);
-# else
-#  error Unsupported processor
-# endif
+		Flash::RwwWrite(RWW_ADDR + (512 * (unsigned int)page), 512, (uint8_t*)&buffer);
 		state = NvmState::clean;
 	}
+#else
+# error Unsupported processor
 #endif
 }
 
 SoftwareResetData* NonVolatileMemory::GetLastWrittenResetData(unsigned int &slot) noexcept
 {
 	EnsureRead();
-	for (unsigned int i = NumberOfResetDataSlots; i != 0; )
+	for (unsigned int i = CommonPage::NumberOfResetDataSlots; i != 0; )
 	{
 		--i;
-		if (buffer.resetData[i].IsValid())
+		if (buffer.commonPage.resetData[i].IsValid())
 		{
 			slot = i;
-			return &buffer.resetData[i];
+			return &buffer.commonPage.resetData[i];
 		}
 	}
 	return nullptr;
@@ -108,56 +92,56 @@ SoftwareResetData* NonVolatileMemory::GetLastWrittenResetData(unsigned int &slot
 SoftwareResetData* NonVolatileMemory::AllocateResetDataSlot() noexcept
 {
 	EnsureRead();
-	for (unsigned int i = 0; i < NumberOfResetDataSlots; ++i)
+	for (unsigned int i = 0; i < CommonPage::NumberOfResetDataSlots; ++i)
 	{
-		if (buffer.resetData[i].IsVacant())
+		if (buffer.commonPage.resetData[i].IsVacant())
 		{
 			if (state == NvmState::clean)			// need this test because state may already be EraseAndWriteNeeded after EnsureRead
 			{
 				state = NvmState::writeNeeded;		// assume the caller will write to the allocated slot
 			}
-			return &buffer.resetData[i];
+			return &buffer.commonPage.resetData[i];
 		}
 	}
 
 	// All slots are full, so clear them out and start again
-	for (unsigned int i = 0; i < NumberOfResetDataSlots; ++i)
+	for (unsigned int i = 0; i < CommonPage::NumberOfResetDataSlots; ++i)
 	{
-		buffer.resetData[i].Clear();
+		buffer.commonPage.resetData[i].Clear();
 	}
 	state = NvmState::eraseAndWriteNeeded;
-	return &buffer.resetData[0];
+	return &buffer.commonPage.resetData[0];
 }
 
 int8_t NonVolatileMemory::GetThermistorLowCalibration(unsigned int inputNumber) noexcept
 {
-	return GetThermistorCalibration(inputNumber, buffer.thermistorLowCalibration);
+	return GetThermistorCalibration(inputNumber, buffer.commonPage.thermistorLowCalibration);
 }
 
 int8_t NonVolatileMemory::GetThermistorHighCalibration(unsigned int inputNumber) noexcept
 {
-	return GetThermistorCalibration(inputNumber, buffer.thermistorHighCalibration);
+	return GetThermistorCalibration(inputNumber, buffer.commonPage.thermistorHighCalibration);
 }
 
 void NonVolatileMemory::SetThermistorLowCalibration(unsigned int inputNumber, int8_t val) noexcept
 {
-	SetThermistorCalibration(inputNumber, val, buffer.thermistorLowCalibration);
+	SetThermistorCalibration(inputNumber, val, buffer.commonPage.thermistorLowCalibration);
 }
 
 void NonVolatileMemory::SetThermistorHighCalibration(unsigned int inputNumber, int8_t val) noexcept
 {
-	SetThermistorCalibration(inputNumber, val, buffer.thermistorHighCalibration);
+	SetThermistorCalibration(inputNumber, val, buffer.commonPage.thermistorHighCalibration);
 }
 
 int8_t NonVolatileMemory::GetThermistorCalibration(unsigned int inputNumber, uint8_t *calibArray) noexcept
 {
 	EnsureRead();
-	return (inputNumber >= MaxCalibratedThermistors || calibArray[inputNumber] == 0xFF) ? 0 : calibArray[inputNumber] - 0x7F;
+	return (inputNumber >= CommonPage::MaxCalibratedThermistors || calibArray[inputNumber] == 0xFF) ? 0 : calibArray[inputNumber] - 0x7F;
 }
 
 void NonVolatileMemory::SetThermistorCalibration(unsigned int inputNumber, int8_t val, uint8_t *calibArray) noexcept
 {
-	if (inputNumber < MaxCalibratedThermistors)
+	if (inputNumber < CommonPage::MaxCalibratedThermistors)
 	{
 		EnsureRead();
 		const uint8_t oldVal = calibArray[inputNumber];

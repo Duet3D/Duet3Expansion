@@ -45,4 +45,9 @@ void TLI5012B::AppendDiagnostics(const StringRef &reply) noexcept
 	reply.cat(", TLI5012B diagnostics not implemented");
 }
 
+void TLI5012B::AppendStatus(const StringRef& reply) noexcept
+{
+	//TODO
+}
+
 #endif

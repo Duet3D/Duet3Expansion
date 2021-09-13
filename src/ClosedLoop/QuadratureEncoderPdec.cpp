@@ -70,6 +70,11 @@ void QuadratureEncoderPdec::AppendDiagnostics(const StringRef &reply) noexcept
 #endif
 }
 
+void QuadratureEncoderPdec::AppendStatus(const StringRef& reply) noexcept
+{
+	// Nothing needed here yet
+}
+
 // Get the current position relative to the starting position
 int32_t QuadratureEncoderPdec::GetRelativePosition(bool& error) noexcept
 {

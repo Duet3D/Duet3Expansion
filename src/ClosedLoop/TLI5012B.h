@@ -25,7 +25,7 @@ public:
 	void operator delete(void* p) noexcept { FreelistManager::Release<TLI5012B>(p); }
 
 	TLI5012B(SharedSpiDevice& spiDev, Pin p_csPin) noexcept;
-	~TLI5012B() { Disable(); }
+	~TLI5012B() { TLI5012B::Disable(); }
 
 	EncoderType GetType() const noexcept override { return EncoderType::TLI5012; }
 	GCodeResult Init(const StringRef& reply) noexcept override;
@@ -33,6 +33,7 @@ public:
 	void Disable() noexcept override;
 	uint32_t GetAbsolutePosition(bool& error) noexcept;
 	void AppendDiagnostics(const StringRef& reply) noexcept override;
+	void AppendStatus(const StringRef& reply) noexcept override;
 
 private:
 };

@@ -29,6 +29,7 @@ public:
 	void Enable() noexcept override;				// Enable the decoder and reset the counter to zero
 	void Disable() noexcept override;				// Disable the decoder. Call this during initialisation. Can also be called later if necessary.
 	void AppendDiagnostics(const StringRef& reply) noexcept override;
+	void AppendStatus(const StringRef& reply) noexcept override;
 
 protected:
 	// Get the current position relative to the starting position

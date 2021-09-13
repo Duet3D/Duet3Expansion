@@ -46,7 +46,10 @@ bool InputMonitor::Activate() noexcept
 			}
 		}
 		active = true;
-		whenLastSent = millis();
+
+		// Respond to the next change within 2ms because we may be enabling an endstop switch or Z probe
+		const uint32_t now = millis();
+		whenLastSent = (minInterval <= 2) ? now : now - (minInterval - 2);
 	}
 
 	return ok;
@@ -129,6 +132,7 @@ void InputMonitor::AnalogInterrupt(uint16_t reading) noexcept
 		if (current->handle == hndl)
 		{
 			current->Deactivate();
+			current->port.Release();
 			if (prev == nullptr)
 			{
 				monitorsList = current->next;
