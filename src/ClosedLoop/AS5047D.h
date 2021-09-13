@@ -15,10 +15,10 @@
 
 #include <General/FreelistManager.h>
 
-constexpr int16_t READING_RANGE = 0x1 << 14;
-constexpr int16_t ABS_READING_OFFSET = 0x1 << 13;
+constexpr int16_t AS5047D_READING_RANGE = 0x1 << 14;
+constexpr int16_t AS5047D_ABS_READING_OFFSET = 0x1 << 13;
 
-class AS5047D : public SpiEncoder, public AbsoluteEncoder<READING_RANGE, 16>
+class AS5047D : public SpiEncoder, public AbsoluteEncoder<AS5047D_READING_RANGE, 16>
 {
 public:
 	void* operator new(size_t sz) noexcept { return FreelistManager::Allocate<AS5047D>(); }

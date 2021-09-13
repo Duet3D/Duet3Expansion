@@ -78,7 +78,6 @@ void AbsoluteEncoder<MAX, LUT_RESOLUTION>::StoreLUT() noexcept {
 	// TODO: Verify all LUT values are present
 
 	// TODO: Store LUT to NVRAM (as fourier transform)
-	float mag, angle;
 	for (size_t harmonic=0; harmonic<NUM_HARMONICS; harmonic++) {
 		float sum1 = 0.0, sum2 = 0.0;
 		const size_t LUTLength = MAX / LUT_RESOLUTION;

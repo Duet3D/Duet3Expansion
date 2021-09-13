@@ -134,7 +134,7 @@ uint32_t AS5047D::GetAbsolutePosition(bool& error) noexcept
 		{
 			response &= 0x3FFF;
 			error = false;
-			return ((response & 0x2000) ? response | 0xFFFFC000 : response) + ABS_READING_OFFSET;
+			return ((response & 0x2000) ? response | 0xFFFFC000 : response) + AS5047D_ABS_READING_OFFSET;
 		}
 	}
 
