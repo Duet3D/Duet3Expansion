@@ -25,6 +25,8 @@
 
 # if SUPPORT_CLOSED_LOOP
 
+constexpr unsigned int NUM_HARMONICS = 17;	// Store harmonics 0-16
+
 template<unsigned int MAX, unsigned int LUT_RESOLUTION>
 class AbsoluteEncoder : public Encoder
 {
@@ -59,6 +61,9 @@ protected:
 	int zeroCrossingIndex;
 	int zeroCrossingOffset;
 	float correctionLUT[MAX / LUT_RESOLUTION];
+	float fourierMagnitudes[NUM_HARMONICS];
+	float fourierAngles[NUM_HARMONICS];
+
 };
 
 # include <ClosedLoop/AbsoluteEncoder.cpp>		// Required since template definitions/implementations cannot be separated

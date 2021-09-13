@@ -49,6 +49,13 @@ int32_t AbsoluteEncoder<MAX, LUT_RESOLUTION>::GetReading() noexcept {
 template<unsigned int MAX, unsigned int LUT_RESOLUTION>
 void AbsoluteEncoder<MAX, LUT_RESOLUTION>::LoadLUT() noexcept {
 	// TODO: Read back LUT from NVRAM (fourier transform -> array)
+	const size_t LUTLength = MAX / LUT_RESOLUTION;
+	for (size_t index=0; index<LUTLength; index++) {
+		correctionLUT[index] = index * LUT_RESOLUTION;
+		for (size_t harmonic=0; harmonic<NUM_HARMONICS; harmonic++) {
+			correctionLUT[index] -= fourierMagnitudes[harmonic] * sinf(harmonic * TwoPi * index / LUTLength + fourierAngles[harmonic]);
+		}
+	}
 
 	// Find the zero-crossing index and offset
 	float prevVal = correctionLUT[0];
@@ -71,6 +78,19 @@ void AbsoluteEncoder<MAX, LUT_RESOLUTION>::StoreLUT() noexcept {
 	// TODO: Verify all LUT values are present
 
 	// TODO: Store LUT to NVRAM (as fourier transform)
+	float mag, angle;
+	for (size_t harmonic=0; harmonic<NUM_HARMONICS; harmonic++) {
+		float sum1 = 0.0, sum2 = 0.0;
+		const size_t LUTLength = MAX / LUT_RESOLUTION;
+		for (size_t i = 0; i < LUTLength; ++i)
+		{
+			const float offset = i * LUT_RESOLUTION - correctionLUT[i];
+			sum1 += offset * sinf(harmonic * i * TwoPi/LUTLength);
+			sum2 += offset * cosf(harmonic * i * TwoPi/LUTLength);
+		}
+		fourierMagnitudes[harmonic] = sqrtf(fsquare(sum1) + fsquare(sum2)) / (harmonic == 0 ? LUTLength : (LUTLength/2));
+		fourierAngles[harmonic] = atan2f(sum2, sum1);
+	}
 
 	// Read back the LUT (Ensures that the fourier transformed version is used)
 	LoadLUT();
@@ -88,7 +108,6 @@ void AbsoluteEncoder<MAX, LUT_RESOLUTION>::ScrubLUT() noexcept {
 
 template<unsigned int MAX, unsigned int LUT_RESOLUTION>
 void AbsoluteEncoder<MAX, LUT_RESOLUTION>::StoreLUTValueForPosition(int16_t encoder_reading, float real_world_position) noexcept {
-	if (real_world_position < 0) {real_world_position = MAX + real_world_position;}
 	correctionLUT[encoder_reading / LUT_RESOLUTION] = real_world_position;
 }
 
