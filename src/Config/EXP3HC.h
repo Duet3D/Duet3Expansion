@@ -164,12 +164,7 @@ constexpr PinDescription PinTable[] =
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::sercom5c,	SercomIo::none,		Nx,	"uart1.rx"		},	// PB17
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PB18 board type 0
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		3,	"out4.tach"		},	// PB19
-#if 1
-	// Temporarily don't allow PB20 to be an OUT pin, so that we can use it to connect a PanelDue as a debug console
-	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::sercom3c,	Nx,	"uart2.tx"		},	// PB20
-#else
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::sercom3c,	Nx,	"io2.out,uart2.tx" },	// PB20
-#endif
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::sercom3c,	SercomIo::none,		Nx,	"uart2.rx"		},	// PB21
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PB22 drivers CS
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PB23 drivers ENN
