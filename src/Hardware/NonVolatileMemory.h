@@ -20,6 +20,8 @@ class NonVolatileMemory
 public:
 	NonVolatileMemory() noexcept;
 
+	void *operator new(size_t, void *p) noexcept { return p; }			// for placement new
+
 	void EnsureWritten() noexcept;
 	SoftwareResetData *GetLastWrittenResetData(unsigned int &slot) noexcept;
 	SoftwareResetData *AllocateResetDataSlot() noexcept;
