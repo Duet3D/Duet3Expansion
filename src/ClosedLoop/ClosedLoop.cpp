@@ -115,6 +115,22 @@ float 	ClosedLoop::tuningVar1,
 		ClosedLoop::tuningVar4;						// Four general purpose variables for any tuning task to use
 
 
+// The bitmask of a minimal tune for each encoder type
+// This is an array so that ZEROING_MANOEUVRE can be removed from the magnetic encoders if the LUT is in NVM
+uint8_t ClosedLoop::minimalTunes[5] = {
+	// None
+	0,
+	// linearQuadrature
+	POLARITY_DETECTION_MANOEUVRE | ZEROING_MANOEUVRE | POLARITY_CHECK | CONTROL_CHECK | ENCODER_STEPS_CHECK,
+	// rotaryQuadrature
+	POLARITY_DETECTION_MANOEUVRE | ZEROING_MANOEUVRE | POLARITY_CHECK | CONTROL_CHECK | ENCODER_STEPS_CHECK,
+	// AS5047
+	POLARITY_DETECTION_MANOEUVRE | ZEROING_MANOEUVRE | POLARITY_CHECK | CONTROL_CHECK | ENCODER_STEPS_CHECK,
+	// TLI5012
+	POLARITY_DETECTION_MANOEUVRE | ZEROING_MANOEUVRE | POLARITY_CHECK | CONTROL_CHECK | ENCODER_STEPS_CHECK,
+};
+
+
 // Monitoring variables
 // These variables monitor how fast the PID loop is running etc.
 
@@ -238,9 +254,6 @@ void ClosedLoop::Init() noexcept
 	GenerateTmcClock();
 # endif
 
-	// Init that we have not been tuned
-	tuningError = TUNE_ERR_NOT_PERFORMED_MINIMAL_TUNE;
-
 	// Initialise to no error thresholds
 	errorThresholds[0] = 0;
 	errorThresholds[1] = 0;
@@ -317,9 +330,9 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 		errorThresholds[1] = tempErrorThresholds[1];
 	}
 
-	// If encoder type or count per steps has changed, we need to re-tune
-	if ((seen & 0x1 << 0) || (seen & 0x1 << 1)) {
-		tuningError |= TUNE_ERR_NOT_PERFORMED_MINIMAL_TUNE;
+	// If encoder count per steps has changed, we need to re-tune
+	if ((seen & 0x1 << 1) && encoder != nullptr) {
+		tuningError = minimalTunes[encoder->GetType().ToBaseType()];
 	}
 
 	//TODO need to get a lock here in case there is any movement
@@ -348,6 +361,9 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 #elif defined(EXP1HCL)
 						encoder = new AS5047D(*Platform::sharedSpi, EncoderCsPin);
 #endif
+						if (((AS5047D*) encoder)->LoadLUT()) {
+							minimalTunes[EncoderType::AS5047] &= ~ZEROING_MANOEUVRE;
+						}
 						break;
 
 					case EncoderType::TLI5012:
@@ -383,11 +399,11 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 
 		if (encoder != nullptr)
 		{
+			tuningError = minimalTunes[encoder->GetType().ToBaseType()];
 			return encoder->Init(reply);
 		}
 	}
 
-	reply.printf("%x", seen);
 	return GCodeResult::ok;
 }
 
@@ -847,10 +863,10 @@ void ClosedLoop::TakeStep() noexcept
 uint8_t ClosedLoop::ReadLiveStatus() noexcept
 {
 	uint8_t result = 0;
-	result |= stall << 0;															// prestall
-	result |= preStall << 1;														// stall
-	result |= ((tuningError & TUNE_ERR_NOT_PERFORMED_MINIMAL_TUNE) > 0) << 2;		// status - 0=not tuned
-	result |= ((tuningError & TUNE_ERR_TUNING_FAILURE) > 0) << 3;					// status - 1=tuning error
+	result |= stall << 0;																						// prestall
+	result |= preStall << 1;																					// stall
+	result |= (encoder != nullptr && (tuningError & minimalTunes[encoder->GetType().ToBaseType()]) > 0) << 2;	// status - 0=not tuned
+	result |= ((tuningError & TUNE_ERR_TUNING_FAILURE) > 0) << 3;												// status - 1=tuning error
 	return result;
 }
 
@@ -907,8 +923,8 @@ bool ClosedLoop::SetClosedLoopEnabled(bool enabled, const StringRef &reply) noex
 		}
 	}
 
-	// Reset the tuning
-	tuningError = TUNE_ERR_NOT_PERFORMED_MINIMAL_TUNE;
+	// Reset the tuning (We have already checked encoder != nullptr)
+	tuningError = minimalTunes[encoder->GetType().ToBaseType()];
 
 	// Set the target position to the current position
 	rawEncoderReading = encoder->GetReading();

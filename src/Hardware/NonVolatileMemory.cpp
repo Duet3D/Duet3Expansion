@@ -162,4 +162,54 @@ void NonVolatileMemory::SetThermistorCalibration(unsigned int inputNumber, int8_
 	}
 }
 
+bool NonVolatileMemory::GetClosedLoopDataWritten() noexcept
+{
+	EnsureRead();
+	return !buffer.closedLoopPage.neverWritten;
+}
+
+float* NonVolatileMemory::GetClosedLoopLUTHarmonicAngles() noexcept
+{
+	EnsureRead();
+	return buffer.closedLoopPage.absEncoderLUTHarmonicAngles;
+}
+
+float* NonVolatileMemory::GetClosedLoopLUTHarmonicMagnitudes() noexcept
+{
+	EnsureRead();
+	return buffer.closedLoopPage.absEncoderLUTHarmonicMagnitudes;
+}
+
+void NonVolatileMemory::SetClosedLoopLUTHarmonicValue(float* harmonicArray, size_t harmonic, float value) noexcept
+{
+	EnsureRead();
+	const float oldValue = harmonicArray[harmonic];
+	const bool hasBeenWrittenBefore = !buffer.closedLoopPage.neverWritten;
+	if (oldValue != value)
+	{
+		buffer.closedLoopPage.neverWritten = 0;
+		harmonicArray[harmonic] = value;
+
+		// If we are only changing 1s to 0s then we don't need to erase
+		if (hasBeenWrittenBefore)
+		{
+			state = NvmState::eraseAndWriteNeeded;
+		}
+		else
+		{
+			state = NvmState::writeNeeded;
+		}
+	}
+}
+
+void NonVolatileMemory::SetClosedLoopLUTHarmonicAngle(size_t harmonic, float value) noexcept
+{
+	SetClosedLoopLUTHarmonicValue(buffer.closedLoopPage.absEncoderLUTHarmonicAngles, harmonic, value);
+}
+
+void NonVolatileMemory::SetClosedLoopLUTHarmonicMagnitude(size_t harmonic, float value) noexcept
+{
+	SetClosedLoopLUTHarmonicValue(buffer.closedLoopPage.absEncoderLUTHarmonicMagnitudes, harmonic, value);
+}
+
 // End

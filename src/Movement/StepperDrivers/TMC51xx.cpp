@@ -57,7 +57,7 @@ const unsigned int DefaultMinimumStepsPerSecond = 200;		// for stall detection: 
 const uint32_t DefaultTcoolthrs = 2000;						// max interval between 1/256 microsteps for stall detection to be enabled
 const uint32_t DefaultThigh = 200;
 #if SUPPORT_CLOSED_LOOP
-constexpr size_t TmcTaskStackWords = 160;
+constexpr size_t TmcTaskStackWords = 430;
 #else
 constexpr size_t TmcTaskStackWords = 100;
 #endif

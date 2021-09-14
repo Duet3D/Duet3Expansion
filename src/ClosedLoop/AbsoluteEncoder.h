@@ -31,13 +31,13 @@ template<unsigned int MAX, unsigned int LUT_RESOLUTION>
 class AbsoluteEncoder : public Encoder
 {
 public:
-	AbsoluteEncoder() noexcept : lastAngle(0), fullRotations(0), LUTLoaded(false) {}
+	AbsoluteEncoder() noexcept : lastAngle(0), fullRotations(0), LUTLoaded(false) {};
 
 	// Get the current reading
 	int32_t GetReading() noexcept;
 
 	// Lookup table (LUT) management
-	void LoadLUT() noexcept;
+	bool LoadLUT() noexcept;
 	void StoreLUT() noexcept;
 	void ClearLUT() noexcept;
 	void ScrubLUT() noexcept;
@@ -61,8 +61,6 @@ protected:
 	int zeroCrossingIndex;
 	int zeroCrossingOffset;
 	float correctionLUT[MAX / LUT_RESOLUTION];
-	float fourierMagnitudes[NUM_HARMONICS];
-	float fourierAngles[NUM_HARMONICS];
 
 };
 
