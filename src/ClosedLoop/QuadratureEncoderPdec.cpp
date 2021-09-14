@@ -33,7 +33,7 @@ GCodeResult QuadratureEncoderPdec::Init(const StringRef& reply) noexcept
 
 	// Set count per rev = 0
 	uint32_t ctrla = PDEC_CTRLA_MODE_QDEC | PDEC_CTRLA_CONF_X4
-					| PDEC_CTRLA_PINEN0 | PDEC_CTRLA_PINEN1 | PDEC_CTRLA_PINEN2
+					| PDEC_CTRLA_PINEN0 | PDEC_CTRLA_PINEN1			// enable A and B inputs but not the index input
 					| PDEC_CTRLA_ANGULAR(7);
 	PDEC->CTRLA.reg = ctrla;
 
