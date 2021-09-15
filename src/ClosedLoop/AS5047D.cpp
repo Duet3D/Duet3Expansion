@@ -22,7 +22,7 @@ constexpr uint16_t AS5047RegAngleCom = 0x3FFF;
 
 constexpr uint16_t AS5047ReadCommand = 0x4000;
 
-constexpr uint32_t AS54047ClockFrequency = 5000000;			// maximum is a little under 10MHz
+constexpr uint32_t AS5047ClockFrequency = 5000000;			// maximum is a little under 10MHz
 
 // Convert nanoseconds to clock cycles
 static inline constexpr uint32_t NanoSecondsToClocks(uint32_t ns) noexcept
@@ -31,7 +31,7 @@ static inline constexpr uint32_t NanoSecondsToClocks(uint32_t ns) noexcept
 }
 
 constexpr uint32_t Clocks350ns = NanoSecondsToClocks(350);
-constexpr uint32_t ClocksHalfSclk = SystemCoreClockFreq/(2 * AS54047ClockFrequency);
+constexpr uint32_t ClocksHalfSclk = SystemCoreClockFreq/(2 * AS5047ClockFrequency);
 
 // Adjust the top bit of a 16-bit word to make it even parity
 static inline constexpr uint16_t AddParityBit(uint16_t w) noexcept
@@ -60,7 +60,7 @@ static inline bool CheckResponse(uint16_t response) noexcept
 }
 
 AS5047D::AS5047D(SharedSpiDevice& spiDev, Pin p_csPin) noexcept
-	: SpiEncoder(spiDev, AS54047ClockFrequency, SpiMode::mode1, false, p_csPin),
+	: SpiEncoder(spiDev, AS5047ClockFrequency, SpiMode::mode1, false, p_csPin),
 	  lastAngle(0)
 {
 }
