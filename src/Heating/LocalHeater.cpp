@@ -256,7 +256,7 @@ void LocalHeater::Spin()
 		float derivative = 0.0;
 		bool gotDerivative = false;
 		badTemperatureCount = 0;
-		if ((previousTemperaturesGood & (1 << (NumPreviousTemperatures - 1))) != 0)
+		if ((previousTemperaturesGood & (1u << (NumPreviousTemperatures - 1))) != 0)
 		{
 			const float tentativeDerivative = ((float)SecondsToMillis/HeatSampleIntervalMillis) * (temperature - previousTemperatures[previousTemperatureIndex])
 							/ (float)(NumPreviousTemperatures);
@@ -268,7 +268,8 @@ void LocalHeater::Spin()
 			}
 		}
 		previousTemperatures[previousTemperatureIndex] = temperature;
-		previousTemperaturesGood = (previousTemperaturesGood << 1) | 1;
+		previousTemperaturesGood = (previousTemperaturesGood << 1) | 1u;
+		previousTemperatureIndex = (previousTemperatureIndex + 1) % NumPreviousTemperatures;
 
 		if (GetModel().IsEnabled())
 		{
@@ -289,7 +290,7 @@ void LocalHeater::Spin()
 					else if (gotDerivative)
 					{
 						const float expectedRate = GetExpectedHeatingRate();
-						if (derivative + AllowedTemperatureDerivativeNoise < expectedRate * 0.75
+						if (derivative + AllowedTemperatureDerivativeNoise < expectedRate * 0.7
 							&& (float)(millis() - timeSetHeating) > GetModel().GetDeadTime() * SecondsToMillis * 2)
 						{
 							++heatingFaultCount;
@@ -458,7 +459,6 @@ void LocalHeater::Spin()
 		// Set the heater power and update the average PWM
 		SetHeater(lastPwm);
 		averagePWM = averagePWM * (1.0 - HeatSampleIntervalMillis/(HeatPwmAverageTime * SecondsToMillis)) + lastPwm;
-		previousTemperatureIndex = (previousTemperatureIndex + 1) % NumPreviousTemperatures;
 
 		// For temperature sensors which do not require frequent sampling and averaging,
 		// their temperature is read here and error/safety handling performed.  However,
@@ -490,7 +490,7 @@ float LocalHeater::GetAveragePWM() const
 // Get a conservative estimate of the expected heating rate at the current temperature and average PWM. The result may be negative.
 float LocalHeater::GetExpectedHeatingRate() const
 {
-	const float initialHeatingRate = GetModel().GetHeatingRate() * GetAveragePWM();
+	const float initialHeatingRate = GetModel().GetHeatingRate() * min<float>(GetAveragePWM(), lastPwm);
 	return (temperature > LowAmbientTemperature)
 				? initialHeatingRate - (temperature - LowAmbientTemperature) * GetModel().GetCoolingRateFanOn()
 					: initialHeatingRate;
