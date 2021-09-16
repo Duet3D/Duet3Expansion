@@ -522,8 +522,6 @@ void ClosedLoop::ControlLoop() noexcept
 	// Read the current state of the drive
 	ReadState();
 
-	if (collectingData && rateRequested == 0) {CollectSample();}	// Collect a sample, if we need to
-
 	if (!closedLoopEnabled) {
 		// If closed loop disabled, do nothing
 	} else if (tuning) {											// If we need to tune, tune
@@ -535,6 +533,8 @@ void ClosedLoop::ControlLoop() noexcept
 	} else {
 		ControlMotorCurrents();							// Otherwise control those motor currents!
 	}
+
+	if (collectingData && rateRequested == 0) {CollectSample();}	// Collect a sample, if we need to
 
 	// Record how long this has taken to run
 	prevControlLoopCallTime = loopCallTime;
@@ -585,7 +585,7 @@ void ClosedLoop::ControlLoop() noexcept
 				// Populate the data fields
 				// TODO: Pack more than one set of data into a message
 				unsigned int dataPointer = 0;
-																		{msg.data[dataPointer++] = StepTimer::GetTimerTicks() - dataCollectionStartTicks;}	// (Always collect this)
+																		{msg.data[dataPointer++] = TickPeriodToTimePeriod(StepTimer::GetTimerTicks() - dataCollectionStartTicks);}	// (Always collect this)
 				if (filterRequested & CL_RECORD_RAW_ENCODER_READING) 	{msg.data[dataPointer++] = rawEncoderReading;}
 				if (filterRequested & CL_RECORD_CURRENT_MOTOR_STEPS) 	{msg.data[dataPointer++] = currentMotorSteps;}
 				if (filterRequested & CL_RECORD_TARGET_MOTOR_STEPS)  	{msg.data[dataPointer++] = targetMotorSteps;}
@@ -669,7 +669,7 @@ void ClosedLoop::ControlLoop() noexcept
 
 void ClosedLoop::CollectSample() noexcept
 {
-															{sampleBuffer[sampleBufferWritePointer++] = StepTimer::GetTimerTicks() - dataCollectionStartTicks;}	// (Always collect this)
+															{sampleBuffer[sampleBufferWritePointer++] = TickPeriodToTimePeriod(StepTimer::GetTimerTicks() - dataCollectionStartTicks);}	// (Always collect this)
 	if (filterRequested & CL_RECORD_RAW_ENCODER_READING) 	{sampleBuffer[sampleBufferWritePointer++] = rawEncoderReading;}
 	if (filterRequested & CL_RECORD_CURRENT_MOTOR_STEPS) 	{sampleBuffer[sampleBufferWritePointer++] = currentMotorSteps;}
 	if (filterRequested & CL_RECORD_TARGET_MOTOR_STEPS)  	{sampleBuffer[sampleBufferWritePointer++] = targetMotorSteps;}
