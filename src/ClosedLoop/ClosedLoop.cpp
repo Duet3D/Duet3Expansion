@@ -890,8 +890,7 @@ void ClosedLoop::ResetError(size_t driver) noexcept
 # if SINGLE_DRIVER
 	if (driver == 0) {
 		// Set the target position to the current position
-		rawEncoderReading = encoder->GetReading();
-		currentMotorSteps = rawEncoderReading / encoderPulsePerStep;
+		ReadState();
 		derivativeFilter = new DerivativeAveragingFilter<derivativeFilterSize>();
 		targetMotorSteps = currentMotorSteps;
 	}
@@ -927,10 +926,7 @@ bool ClosedLoop::SetClosedLoopEnabled(bool enabled, const StringRef &reply) noex
 	tuningError = minimalTunes[encoder->GetType().ToBaseType()];
 
 	// Set the target position to the current position
-	rawEncoderReading = encoder->GetReading();
-	currentMotorSteps = rawEncoderReading / encoderPulsePerStep;
-	derivativeFilter = new DerivativeAveragingFilter<derivativeFilterSize>();
-	targetMotorSteps = currentMotorSteps;
+	ResetError(0);
 
 	// Set the closed loop enabled state
 	closedLoopEnabled = enabled;

@@ -37,8 +37,6 @@ void ClosedLoop::PerformTune() noexcept
 			newTuningMove = false;
 		}
 
-		rawEncoderReading = encoder->GetReading();
-
 		if (tuneCounter < 4096) {
 			// Calculate the current desired step phase
 			desiredStepPhase = tuneCounter % 4096;
@@ -87,11 +85,11 @@ void ClosedLoop::PerformTune() noexcept
 		} else {
 			// We are done
 			// Calculate where the motor has moved to
-			rawEncoderReading = encoder->GetReading();
+			int32_t zeroPosition = encoder->GetReading();
 
 			// Set this as the new zero position
-			((RelativeEncoder*) encoder)->SetOffset(-rawEncoderReading);
-			targetMotorSteps = targetMotorSteps - (rawEncoderReading / encoderPulsePerStep);
+			((RelativeEncoder*) encoder)->SetOffset(-zeroPosition);
+			targetMotorSteps = targetMotorSteps - (zeroPosition / encoderPulsePerStep);
 
 			// Set the appropriate flags
 			newTuningMove = true;
@@ -99,14 +97,6 @@ void ClosedLoop::PerformTune() noexcept
 			tuningError &= ~TUNE_ERR_NOT_ZEROED;
 		}
 
-		rawEncoderReading = encoder->GetReading();	// (For data collection)
-		currentMotorSteps = rawEncoderReading / encoderPulsePerStep;
-		float tmp = currentMotorSteps / 4;
-		if (tmp >= 0) {
-			stepPhase = (tmp - (int) tmp) * 4095;
-		} else {
-			stepPhase = (1 + tmp - (int) tmp) * 4095;
-		}
 		return;		// If we have done this tuning move, we don't want to do any others
 	}
 
@@ -123,8 +113,6 @@ void ClosedLoop::PerformTune() noexcept
 			tuningVar4 = 0;						// Position counter
 			newTuningMove = false;
 		}
-
-		rawEncoderReading = absoluteEncoder->GetReading();
 
 		if (rawEncoderReading < tuningVar3) {
 			tuningVar4 += 1;
@@ -167,15 +155,6 @@ void ClosedLoop::PerformTune() noexcept
 
 		if (tuneCounter < 4096) {
 			// Calculate where the motor has moved to
-			rawEncoderReading = encoder->GetReading();
-			currentMotorSteps = rawEncoderReading / encoderPulsePerStep;
-			float tmp = currentMotorSteps / 4;
-			if (tmp >= 0) {
-				stepPhase = (tmp - (int) tmp) * 4095;
-			} else {
-				stepPhase = (1 + tmp - (int) tmp) * 4095;
-			}
-
 			int16_t distance1 = stepPhase - desiredStepPhase;
 			int16_t distance2 = 4095 - max(stepPhase, desiredStepPhase) + min(stepPhase, desiredStepPhase);
 
@@ -223,16 +202,6 @@ void ClosedLoop::PerformTune() noexcept
 			// This is the first run
 			tuneCounter = 0;
 			newTuningMove = false;
-		}
-
-		// For data collection
-		rawEncoderReading = encoder->GetReading();
-		currentMotorSteps = rawEncoderReading / encoderPulsePerStep;
-		float tmp = currentMotorSteps / 4;
-		if (tmp >= 0) {
-			stepPhase = (tmp - (int) tmp) * 4095;
-		} else {
-			stepPhase = (1 + tmp - (int) tmp) * 4095;
 		}
 
 		// Increase the desired step phase
