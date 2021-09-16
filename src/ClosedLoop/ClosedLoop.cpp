@@ -107,13 +107,6 @@ int16_t ClosedLoop::coilB;							// The current to run through coil A
 bool 	ClosedLoop::stall = false;						// Has the closed loop error threshold been exceeded?
 bool 	ClosedLoop::preStall = false;					// Has the closed loop warning threshold been exceeded?
 
-int32_t ClosedLoop::tuneCounter = 1;					// A counter for tuning tasks to use
-bool 	ClosedLoop::newTuningMove = true;				// Indicates if a tuning move has just finished
-float 	ClosedLoop::tuningVar1,
-		ClosedLoop::tuningVar2,
-		ClosedLoop::tuningVar3,
-		ClosedLoop::tuningVar4;						// Four general purpose variables for any tuning task to use
-
 
 // The bitmask of a minimal tune for each encoder type
 // This is an array so that ZEROING_MANOEUVRE can be removed from the magnetic encoders if the LUT is in NVM

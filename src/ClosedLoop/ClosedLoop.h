@@ -129,13 +129,6 @@ namespace ClosedLoop
 	extern bool stall;						// Has the closed loop error threshold been exceeded?
 	extern bool preStall;					// Has the closed loop warning threshold been exceeded?
 
-	extern int32_t tuneCounter;					// A counter for tuning tasks to use
-	extern bool newTuningMove;				// Indicates if a tuning move has just finished
-	extern float tuningVar1,
-				 tuningVar2,
-				 tuningVar3,
-				 tuningVar4;						// Four general purpose variables for any tuning task to use
-
 
 	// The bitmask of a minimal tune for each encoder type
 	// This is an array so that ZEROING_MANOEUVRE can be removed from the magnetic encoders if the LUT is in NVM
