@@ -401,11 +401,13 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 	return GCodeResult::ok;
 }
 
+static float startRecordingTrigger;
+
 GCodeResult ClosedLoop::ProcessM569Point5(const CanMessageStartClosedLoopDataCollection& msg, const StringRef& reply) noexcept
 {
-	if (!closedLoopEnabled || msg.deviceNumber != 0 || encoder == nullptr)
+	if (encoder == nullptr || msg.deviceNumber != 0)
 	{
-		reply.copy("Drive is not in closed loop mode");
+		reply.copy("No encoder has been specified");
 		return GCodeResult::error;
 	}
 
@@ -440,6 +442,13 @@ GCodeResult ClosedLoop::ProcessM569Point5(const CanMessageStartClosedLoopDataCol
 	tuning |= msg.movement;
 	samplesRequested = msg.numSamples;
 	modeRequested = (RecordingMode) msg.mode;
+
+	// If we are using RecordingMode::OnNextMove, mark the current state
+
+	if (modeRequested == RecordingMode::OnNextMove)
+	{
+		startRecordingTrigger = targetMotorSteps;
+	}
 
 	// Start the data collection task
 	dataCollectionTask->Give();
@@ -530,12 +539,15 @@ void ClosedLoop::ControlLoop() noexcept
 
 	// Collect a sample, if we need to
 	if (collectingData && rateRequested == 0) {
-		if (samplesRequested-- > 0) {
-			CollectSample();
-		} else {
-			collectingData = false;
-			movementRequested = 0;	// Just to be safe
-			dataTransmissionTask->Give();
+		if (modeRequested != RecordingMode::OnNextMove || startRecordingTrigger != targetMotorSteps) {
+			modeRequested = RecordingMode::Immediate;
+			if (samplesRequested-- > 0) {
+				CollectSample();
+			} else {
+				collectingData = false;
+				movementRequested = 0;	// Just to be safe
+				dataTransmissionTask->Give();
+			}
 		}
 	}
 
@@ -621,7 +633,7 @@ void ClosedLoop::ControlLoop() noexcept
 {
 	while (true)
 	{
-		{
+		if (!collectingData) {	// Only do if we are not collecting data - we don't want to lock the buffer whilst moving!
 			ReadLocker locker(sampleBufferLock);
 
 			// Only attempt to transmit data if there is any
@@ -851,7 +863,7 @@ void ClosedLoop::TakeStep() noexcept
 # if SUPPORT_TMC2160 && SINGLE_DRIVER
 	unsigned int microsteps = SmartDrivers::GetMicrostepping(0, interpolation);
 	float microstepAngle = microsteps == 0 ? 1 : 1.0/microsteps;
-	targetMotorSteps = targetMotorSteps + (stepDirection ? microstepAngle : -microstepAngle) * (Platform::GetDirectionValue(0) ? 1 : -1);
+	targetMotorSteps = targetMotorSteps + (stepDirection ? microstepAngle : -microstepAngle) * (Platform::GetDirectionValue(0) ? 1 : -1) * (reversePolarity ? -1 : 1);
 # else
 #  error Cannot support closed loop with the specified hardware
 # endif
