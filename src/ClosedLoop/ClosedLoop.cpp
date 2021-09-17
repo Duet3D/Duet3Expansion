@@ -76,6 +76,7 @@ uint16_t 	ClosedLoop::samplesRequested;				//	- How many samples did they reques
 ClosedLoop::RecordingMode ClosedLoop::modeRequested;	//	- What mode did they request?
 uint8_t 	ClosedLoop::movementRequested;				//	- Which calibration movement did they request? 0=none, 1=polarity, 2=continuous
 float 		ClosedLoop::sampleBuffer[CLOSED_LOOP_DATA_BUFFER_SIZE * 14];	//	- Store the samples here (max. CLOSED_LOOP_DATA_BUFFER_SIZE samples of 12 variables)
+ReadWriteLock ClosedLoop::sampleBufferLock;				//  - Lock for the sample buffer
 uint16_t 	ClosedLoop::sampleBufferReadPointer = 0;	//  - Send this sample next to the mainboard
 uint16_t 	ClosedLoop::sampleBufferWritePointer = 0;	//  - Store the next sample at this point in the buffer
 
@@ -527,7 +528,16 @@ void ClosedLoop::ControlLoop() noexcept
 		ControlMotorCurrents();							// Otherwise control those motor currents!
 	}
 
-	if (collectingData && rateRequested == 0) {CollectSample();}	// Collect a sample, if we need to
+	// Collect a sample, if we need to
+	if (collectingData && rateRequested == 0) {
+		if (samplesRequested-- > 0) {
+			CollectSample();
+		} else {
+			collectingData = false;
+			movementRequested = 0;	// Just to be safe
+			dataTransmissionTask->Give();
+		}
+	}
 
 	// Record how long this has taken to run
 	prevControlLoopCallTime = loopCallTime;
@@ -563,7 +573,6 @@ void ClosedLoop::ControlLoop() noexcept
 		// Loop for each sample
 		for (int i = 0; i < samplesRequested; i++)
 		{
-
 			{
 				// Set up a CAN message
 				CanMessageBuffer buf(nullptr);
@@ -612,49 +621,52 @@ void ClosedLoop::ControlLoop() noexcept
 {
 	while (true)
 	{
-		// Only attempt to transmit data if we are not collecting data and data has been collected
-		// TODO: This is a poor man's version of a lock - implement an actual lock!
-		if (!collectingData && sampleBufferWritePointer > 0)
 		{
-			// Count how many bits are set in 'filterRequested'
-			int variableCount = CountVariablesCollected(filterRequested);
+			ReadLocker locker(sampleBufferLock);
 
-			// Work out the maximum number of samples that can be sent in 1 packet
-			// TODO: This 14 comes from CanMessageFormats.h::1218. Should it be a constant?
-			const unsigned int maxSamplesInPacket = 14 / variableCount;
+			// Only attempt to transmit data if there is any
+			if (sampleBufferWritePointer > 0)
+			{
+				// Count how many bits are set in 'filterRequested'
+				int variableCount = CountVariablesCollected(filterRequested);
 
-			// Loop for until everything has been read
-			while (sampleBufferReadPointer < sampleBufferWritePointer) {
-				// Set up a CAN message
-				CanMessageBuffer buf(nullptr);
-				CanMessageClosedLoopData& msg = *(buf.SetupStatusMessage<CanMessageClosedLoopData>(CanInterface::GetCanAddress(), CanInterface::GetCurrentMasterAddress()));
+				// Work out the maximum number of samples that can be sent in 1 packet
+				// TODO: This 14 comes from CanMessageFormats.h::1218. Should it be a constant?
+				const unsigned int maxSamplesInPacket = 14 / variableCount;
 
-				// Populate the control fields
-				msg.firstSampleNumber = sampleBufferReadPointer / variableCount;
-				msg.filter = filterRequested;
-				msg.zero = msg.zero2 = 0;
+				// Loop for until everything has been read
+				while (sampleBufferReadPointer < sampleBufferWritePointer) {
+					// Set up a CAN message
+					CanMessageBuffer buf(nullptr);
+					CanMessageClosedLoopData& msg = *(buf.SetupStatusMessage<CanMessageClosedLoopData>(CanInterface::GetCanAddress(), CanInterface::GetCurrentMasterAddress()));
 
-				const unsigned int samplesRemaining = (sampleBufferWritePointer - sampleBufferReadPointer) / variableCount;
-				msg.lastPacket = samplesRemaining <= maxSamplesInPacket;
-				msg.numSamples = msg.lastPacket ? samplesRemaining : maxSamplesInPacket;
+					// Populate the control fields
+					msg.firstSampleNumber = sampleBufferReadPointer / variableCount;
+					msg.filter = filterRequested;
+					msg.zero = msg.zero2 = 0;
 
-				unsigned int dataLength = 0;
-				// TODO: Can we memcpy here instead?
-				for (int i=0; i<(msg.numSamples * variableCount); i++)
-				{
-					msg.data[dataLength++] = sampleBuffer[sampleBufferReadPointer++];
+					const unsigned int samplesRemaining = (sampleBufferWritePointer - sampleBufferReadPointer) / variableCount;
+					msg.lastPacket = samplesRemaining <= maxSamplesInPacket;
+					msg.numSamples = msg.lastPacket ? samplesRemaining : maxSamplesInPacket;
+
+					unsigned int dataLength = 0;
+					// TODO: Can we memcpy here instead?
+					for (int i=0; i<(msg.numSamples * variableCount); i++)
+					{
+						msg.data[dataLength++] = sampleBuffer[sampleBufferReadPointer++];
+					}
+
+					// Send the CAN message
+					buf.dataLength = msg.GetActualDataLength();
+					CanInterface::Send(&buf);
 				}
 
-				// Send the CAN message
-				buf.dataLength = msg.GetActualDataLength();
-				CanInterface::Send(&buf);
-			}
-
-			// If we are finished collecting data, reset the buffer
-			if (!collectingData)
-			{
-				sampleBufferReadPointer = 0;
-				sampleBufferWritePointer = 0;
+				// If we are finished collecting data, reset the buffer
+				if (!collectingData)
+				{
+					sampleBufferReadPointer = 0;
+					sampleBufferWritePointer = 0;
+				}
 			}
 		}
 
@@ -664,6 +676,7 @@ void ClosedLoop::ControlLoop() noexcept
 
 void ClosedLoop::CollectSample() noexcept
 {
+	WriteLocker locker(sampleBufferLock);
 															{sampleBuffer[sampleBufferWritePointer++] = TickPeriodToTimePeriod(StepTimer::GetTimerTicks() - dataCollectionStartTicks);}	// (Always collect this)
 	if (filterRequested & CL_RECORD_RAW_ENCODER_READING) 	{sampleBuffer[sampleBufferWritePointer++] = rawEncoderReading;}
 	if (filterRequested & CL_RECORD_CURRENT_MOTOR_STEPS) 	{sampleBuffer[sampleBufferWritePointer++] = currentMotorSteps;}
@@ -678,17 +691,6 @@ void ClosedLoop::CollectSample() noexcept
 	if (filterRequested & CL_RECORD_PHASE_SHIFT)  			{sampleBuffer[sampleBufferWritePointer++] = phaseShift;}
 	if (filterRequested & CL_RECORD_COIL_A_CURRENT) 		{sampleBuffer[sampleBufferWritePointer++] = coilA;}
 	if (filterRequested & CL_RECORD_COIL_B_CURRENT) 		{sampleBuffer[sampleBufferWritePointer++] = coilB;}
-
-
-	// Count how many bits are set in 'filterRequested'
-	int variableCount = CountVariablesCollected(filterRequested);
-
-	if (sampleBufferWritePointer >= (samplesRequested * variableCount)) {
-		// Mark that we have finished collecting data
-		collectingData = false;
-		movementRequested = 0;	// Just to be safe
-		dataTransmissionTask->Give();
-	}
 }
 
 void ClosedLoop::ReadState() noexcept
@@ -821,7 +823,7 @@ void ClosedLoop::Diagnostics(const StringRef& reply) noexcept
 	reply.catf(", collecting data: %s", collectingData ? "yes" : "no");
 	if (collectingData)
 	{
-		reply.catf(" (filter: %#x, samples: %d, mode: %d, rate: %d, movement: %d)", filterRequested, samplesRequested, modeRequested, rateRequested, movementRequested);
+		reply.catf(" (filter: %#x, mode: %d, rate: %d, movement: %d)", filterRequested, modeRequested, rateRequested, movementRequested);
 	}
 
 	reply.catf(", ultimateGain=%f, oscillationPeriod=%f", (double) ultimateGain, (double) oscillationPeriod);

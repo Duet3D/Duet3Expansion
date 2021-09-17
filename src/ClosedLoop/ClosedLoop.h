@@ -97,6 +97,7 @@ namespace ClosedLoop
 	extern ClosedLoop::RecordingMode modeRequested;	//	- What mode did they request?
 	extern uint8_t movementRequested;				//	- Which calibration movement did they request? 0=none, 1=polarity, 2=continuous
 	extern float sampleBuffer[CLOSED_LOOP_DATA_BUFFER_SIZE * 14];	//	- Store the samples here (max. CLOSED_LOOP_DATA_BUFFER_SIZE samples of 12 variables)
+	extern ReadWriteLock sampleBufferLock; 		//  - Closed loop sample lock
 	extern uint16_t sampleBufferReadPointer;	//  - Send this sample next to the mainboard
 	extern uint16_t sampleBufferWritePointer;	//  - Store the next sample at this point in the buffer
 
