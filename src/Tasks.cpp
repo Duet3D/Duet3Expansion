@@ -129,7 +129,7 @@ void *Tasks::GetNVMBuffer(const uint32_t *stk) noexcept
 }
 
 // Application entry point
-void AppMain() noexcept
+[[noreturn]] void AppMain() noexcept
 {
 	bool updateBootloader = false;
 

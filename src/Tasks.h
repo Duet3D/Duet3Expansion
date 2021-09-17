@@ -11,7 +11,7 @@
 #include "RepRapFirmware.h"
 #include <RTOSIface/RTOSIface.h>
 
-[[noreturn]] void AppMain();
+[[noreturn]] void AppMain() noexcept;
 
 namespace Tasks
 {
