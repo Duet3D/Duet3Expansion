@@ -731,7 +731,7 @@ void ClosedLoop::ControlMotorCurrents() noexcept
 	stall 	 = errorThresholds[1] > 0 && abs(currentError) > errorThresholds[1];
 
 	// If the current error is zero, we don't need to do anything!
-	if (!collectingData && currentError == 0) {return;}	// TODO: We are dealing with floats so this should probably be a range
+	if (!collectingData && currentError == 0) {return;}
 
 	// Use a PID controller to calculate the required 'torque' - the control signal
 	PIDPTerm = Kp * currentError;
