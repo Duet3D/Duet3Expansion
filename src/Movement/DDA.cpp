@@ -453,9 +453,19 @@ void DDA::StepDrivers(uint32_t now)
 			StepGenTc->CTRLBSET.reg = TC_CTRLBSET_CMD_RETRIGGER;
 			hasMoreSteps = ddms[0].CalcNextStepTime(*this);
 # else
-			Platform::StepDriverHigh();									// generate the step
-			hasMoreSteps = ddms[0].CalcNextStepTime(*this);
-			Platform::StepDriverLow();									// set the step pin low
+#  if SUPPORT_CLOSED_LOOP
+			if (ClosedLoop::GetClosedLoopEnabled())
+			{
+				ClosedLoop::TakeStep();										//TODO remove this when ClosedLoop calls GetCurrentMotion instead of relying on TakeStep
+				hasMoreSteps = ddms[0].CalcNextStepTime(*this);				//TODO remove this when we refactor the code to not generate step interrupts when in closed loop mode
+			}
+			else
+#  endif
+			{
+				Platform::StepDriverHigh();									// generate the step
+				hasMoreSteps = ddms[0].CalcNextStepTime(*this);
+				Platform::StepDriverLow();									// set the step pin low
+			}
 # endif
 		}
 

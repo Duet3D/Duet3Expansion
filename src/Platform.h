@@ -166,9 +166,6 @@ namespace Platform
 # if SINGLE_DRIVER
 	inline void StepDriverLow()
 	{
-#  if SUPPORT_CLOSED_LOOP
-		if (ClosedLoop::GetClosedLoopEnabled()) {return;}
-#  endif
 #  if DIFFERENTIAL_STEPPER_OUTPUTS || ACTIVE_HIGH_STEP
 			StepPio->OUTCLR.reg = DriverBit;
 #  else

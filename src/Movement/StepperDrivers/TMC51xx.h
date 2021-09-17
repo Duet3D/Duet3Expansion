@@ -40,6 +40,7 @@ namespace SmartDrivers
 	uint32_t GetAccumulatedStatus(size_t drive, uint32_t bitsToKeep);
 	bool SetMicrostepping(size_t drive, unsigned int microsteps, bool interpolation);
 	unsigned int GetMicrostepping(size_t drive, bool& interpolation);
+	unsigned int GetMicrostepShift(size_t driver);
 	bool SetDriverMode(size_t driver, unsigned int mode);
 	DriverMode GetDriverMode(size_t driver);
 	void SetStallThreshold(size_t driver, int sgThreshold);

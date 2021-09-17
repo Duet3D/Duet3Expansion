@@ -292,6 +292,7 @@ public:
 	void WriteAll();
 	bool SetMicrostepping(uint32_t shift, bool interpolate);
 	unsigned int GetMicrostepping(bool& interpolation) const;		// Get microstepping
+	unsigned int GetMicrostepShift() const { return microstepShiftFactor; }
 	bool SetDriverMode(unsigned int mode);
 	DriverMode GetDriverMode() const;
 	void SetCurrent(float current);
@@ -1503,6 +1504,12 @@ unsigned int SmartDrivers::GetMicrostepping(size_t driver, bool& interpolation)
 	}
 	interpolation = false;
 	return 1;
+}
+
+// Get the amount we have to shift 1 left by to get the microstepping
+unsigned int SmartDrivers::GetMicrostepShift(size_t driver)
+{
+	return (driver < numTmc51xxDrivers) ? driverStates[driver].GetMicrostepShift() : 0;
 }
 
 bool SmartDrivers::SetDriverMode(size_t driver, unsigned int mode)

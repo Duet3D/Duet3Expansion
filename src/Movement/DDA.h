@@ -75,6 +75,10 @@ public:
 	uint32_t GetStepInterval(size_t axis, uint32_t microstepShift) const noexcept;	// Get the current full step interval for this axis or extruder
 #endif
 
+#if SUPPORT_CLOSED_LOOP
+	void GetCurrentMotion(MotionParameters& mParams, int32_t netMicrostepsTaken, int microstepShift) const noexcept;
+#endif
+
 	void DebugPrint() const noexcept;												// print the DDA only
 	void DebugPrintAll() const noexcept;												// print the DDA and active DMs
 
@@ -229,6 +233,16 @@ inline uint32_t DDA::GetStepInterval(size_t axis, uint32_t microstepShift) const
 {
 	const DriveMovement& dm = ddms[axis];
 	return dm.state == DMState::moving ? dm.GetStepInterval(microstepShift) : 0;
+}
+
+#endif
+
+#if SUPPORT_CLOSED_LOOP
+
+// Get the current position, speed and acceleration
+inline void DDA::GetCurrentMotion(MotionParameters& mParams, int32_t netMicrostepsTaken, int microstepShift) const noexcept
+{
+	return ddms[0].GetCurrentMotion(mParams, netMicrostepsTaken, microstepShift);
 }
 
 #endif
