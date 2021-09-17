@@ -44,6 +44,11 @@
 #include <CanMessageBuffer.h>
 #include <TaskPriorities.h>
 
+#if HAS_SMART_DRIVERS
+# include "StepperDrivers/TMC51xx.h"
+# include "StepperDrivers/TMC22xx.h"
+#endif
+
 #if 1	//debug
 unsigned int moveCompleteTimeoutErrs;
 unsigned int getCanMoveTimeoutErrs;
@@ -59,6 +64,9 @@ extern "C" [[noreturn]] void MoveLoop(void * param) noexcept
 
 Move::Move()
 	: currentDda(nullptr), extrudersPrinting(false), taskWaitingForMoveToComplete(nullptr), scheduledMoves(0), completedMoves(0), numHiccups(0)
+#if SUPPORT_CLOSED_LOOP
+	, netMicrostepsTaken(0), driver0MicrostepShift(0)
+#endif
 {
 	kinematics = Kinematics::Create(KinematicsType::cartesian);			// default to Cartesian
 
@@ -420,6 +428,22 @@ void Move::DebugPrintCdda() const noexcept
 		cdda->DebugPrintAll();
 	}
 }
+
+#if HAS_SMART_DRIVERS
+
+bool Move::SetMicrostepping(size_t driver, unsigned int microsteps, bool interpolate) noexcept
+{
+	const bool ret = SmartDrivers::SetMicrostepping(driver, microsteps, interpolate);
+# if SUPPORT_CLOSED_LOOP
+	if (ret && driver == 0)
+	{
+		driver0MicrostepShift = -(int)SmartDrivers::GetMicrostepShift(0);
+	}
+# endif
+	return ret;
+}
+
+#endif
 
 #endif	//SUPPORT_DRIVERS
 

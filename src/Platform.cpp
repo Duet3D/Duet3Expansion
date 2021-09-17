@@ -832,7 +832,7 @@ void Platform::Init()
 		driverStates[i] = DriverStateControl(DriverStateControl::driverDisabled);
 
 # if HAS_SMART_DRIVERS
-		SmartDrivers::SetMicrostepping(i, 16, true);
+		moveInstance->SetMicrostepping(i, 16, true);
 # endif
 	}
 

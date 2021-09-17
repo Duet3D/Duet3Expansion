@@ -12,6 +12,18 @@
 
 #if SUPPORT_DRIVERS
 
+#if SUPPORT_CLOSED_LOOP
+
+// Struct to pass data back to the ClosedLoop module
+struct MotionParameters
+{
+	float position;
+	float speed;
+	float acceleration;
+};
+
+#endif
+
 class LinearDeltaKinematics;
 class DDA;
 
@@ -141,6 +153,10 @@ public:
 	uint32_t GetStepInterval(uint32_t msShift) const;	// Get the current full step interval for this axis or extruder
 #endif
 
+#if SUPPORT_CLOSED_LOOP
+	void GetCurrentMotion(MotionParameters& mParams, int32_t netMicrostepsTaken, int microstepShift) const noexcept;
+#endif
+
 private:
 	bool CalcNextStepTimeCartesianFull(const DDA &dda) SPEED_CRITICAL;
 #if SUPPORT_DELTA_MOVEMENT
@@ -211,9 +227,10 @@ private:
 			uint32_t accelCompensationClocks;			// compensationClocks * (1 - startSpeed/topSpeed)
 		} cart;
 
+#if SUPPORT_DELTA_MOVEMENT
 		struct DeltaParameters							// Parameters for delta movement
 		{
-#if DM_USE_FPU
+# if DM_USE_FPU
 			// The following don't depend on how the move is executed, so they could be set up in Init() if we use fixed acceleration/deceleration
 			float fDSquaredMinusAsquaredMinusBsquaredTimesSsquared;
 			float fHmz0s;								// the starting step position less the starting Z height, multiplied by the Z movement fraction and K (can go negative)
@@ -222,7 +239,7 @@ private:
 			// The following depend on how the move is executed, so they must be set up in Prepare()
 			float fAccelStopDs;
 			float fDecelStartDs;
-#else
+# else
 			// The following don't depend on how the move is executed, so they could be set up in Init() if we use fixed acceleration/deceleration
 			int64_t dSquaredMinusAsquaredMinusBsquaredTimesKsquaredSsquared;
 			int32_t hmz0sK;								// the starting step position less the starting Z height, multiplied by the Z movement fraction and K (can go negative)
@@ -231,8 +248,9 @@ private:
 			// The following depend on how the move is executed, so they must be set up in Prepare()
 			uint32_t accelStopDsK;
 			uint32_t decelStartDsK;
-#endif
+# endif
 		} delta;
+#endif
 	} mp;
 
 	static constexpr uint32_t NoStepTime = 0xFFFFFFFF;	// value to indicate that no further steps are needed when calculating the next step time
@@ -321,6 +339,19 @@ inline uint32_t DriveMovement::GetStepInterval(uint32_t microstepShift) const
 
 #endif
 
-#endif	// SUPPORT_DRIVERS
+#if SUPPORT_CLOSED_LOOP
+
+// This is called on the current DDA with interrupts disabled, to report the current position, speed and acceleration
+// netMicrostepsTaken is the position in microsteps at the start of this move
+inline void DriveMovement::GetCurrentMotion(MotionParameters& mParams, int32_t netMicrostepsTaken, int microstepShift) const noexcept
+{
+	// When we switch to a segment-based approach we will calculate the position directly.
+	mParams.position = ldexp(netMicrostepsTaken + GetNetStepsTaken(), microstepShift);
+	mParams.speed = mParams.acceleration = 0;
+}
+
+#endif
+
+	#endif	// SUPPORT_DRIVERS
 
 #endif /* DRIVEMOVEMENT_H_ */

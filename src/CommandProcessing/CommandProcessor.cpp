@@ -272,7 +272,7 @@ static GCodeResult SetStepsPerMmAndMicrostepping(const CanMessageMultipleDrivesR
 #if HAS_SMART_DRIVERS
 								const uint16_t microstepping = msg.values[count].GetMicrostepping() & 0x03FF;
 								const bool interpolate = (msg.values[count].GetMicrostepping() & 0x8000) != 0;
-								if (!SmartDrivers::SetMicrostepping(driver, microstepping, interpolate))
+								if (!moveInstance->SetMicrostepping(driver, microstepping, interpolate))
 								{
 									reply.lcatf("Driver %u.%u does not support x%u microstepping", CanInterface::GetCanAddress(), driver, microstepping);
 									if (interpolate)

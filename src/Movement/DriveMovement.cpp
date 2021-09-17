@@ -12,7 +12,11 @@
 #include "DDA.h"
 #include "Move.h"
 #include "Math/Isqrt.h"
-#include "Kinematics/LinearDeltaKinematics.h"
+
+#if SUPPORT_DELTA_MOVEMENT
+# include "Kinematics/LinearDeltaKinematics.h"
+#endif
+
 #include "StepTimer.h"
 #include "Platform.h"
 
@@ -69,6 +73,8 @@ void DriveMovement::PrepareCartesianAxis(const DDA& dda, const PrepParams& param
 	mp.cart.fourMaxStepDistanceMinusTwoDistanceToStopTimesCsquaredDivD = 0;
 #endif
 }
+
+#if SUPPORT_DELTA_MOVEMENT
 
 // Prepare this DM for a Delta axis move
 //TODO convert this to normalised coordinates like we did for Cartesian drives
@@ -181,6 +187,8 @@ void DriveMovement::PrepareDeltaAxis(const DDA& dda, const PrepParams& params)
 #endif
 	}
 }
+
+#endif
 
 // Prepare this DM for an extruder move. The caller has already checked that pressure advance is enabled.
 void DriveMovement::PrepareExtruder(const DDA& dda, const PrepParams& params, float speedChange)
@@ -307,23 +315,25 @@ void DriveMovement::DebugPrint(char c) const
 					twoDistanceToStopTimesCsquaredDivD);
 #endif
 
+#if SUPPORT_DELTA_MOVEMENT
 		if (isDeltaMovement)
 		{
-#if DM_USE_FPU
+# if DM_USE_FPU
 			debugPrintf("hmz0s=%.2f minusAaPlusBbTimesS=%.2f dSquaredMinusAsquaredMinusBsquared=%.2f\n"
 						"2c2mmsda=%.2f 2c2mmsdd=%.2f asds=%.2f dsds=%.2f mmstcdts=%.2f\n",
 						(double)mp.delta.fHmz0s, (double)mp.delta.fMinusAaPlusBbTimesS, (double)mp.delta.fDSquaredMinusAsquaredMinusBsquaredTimesSsquared,
 						(double)fTwoCsquaredTimesMmPerStepDivA, (double)fTwoCsquaredTimesMmPerStepDivD, (double)mp.delta.fAccelStopDs, (double)mp.delta.fDecelStartDs, (double)fMmPerStepTimesCdivtopSpeed
 						);
-#else
+# else
 			debugPrintf("hmz0sK=%" PRIi32 " minusAaPlusBbTimesKs=%" PRIi32 " dSquaredMinusAsquaredMinusBsquared=%" PRId64 "\n"
 						"2c2mmsda=%" PRIu64 "2c2mmsdd=%" PRIu64 " asdsk=%" PRIu32 " dsdsk=%" PRIu32 " mmstcdts=%" PRIu32 "\n",
 						mp.delta.hmz0sK, mp.delta.minusAaPlusBbTimesKs, mp.delta.dSquaredMinusAsquaredMinusBsquaredTimesKsquaredSsquared,
 						twoCsquaredTimesMmPerStepDivA, twoCsquaredTimesMmPerStepDivD, mp.delta.accelStopDsK, mp.delta.decelStartDsK, mmPerStepTimesCKdivtopSpeed
 						);
-#endif
+# endif
 		}
 		else
+#endif
 		{
 #if DM_USE_FPU
 			debugPrintf("accelStopStep=%" PRIu32 " decelStartStep=%" PRIu32 " 2c2mmsda=%.2f 2c2mmsdd=%.2f\n"

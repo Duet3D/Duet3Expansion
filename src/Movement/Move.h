@@ -60,14 +60,18 @@ public:
 
 #if HAS_SMART_DRIVERS
 	uint32_t GetStepInterval(size_t axis, uint32_t microstepShift) const;			// Get the current step interval for this axis or extruder
+	bool SetMicrostepping(size_t driver, unsigned int microsteps, bool interpolate) noexcept;
 #endif
 
 	void DebugPrintCdda() const noexcept;											// for debugging
 
 	[[noreturn]] void TaskLoop() noexcept;
 
-private:
+#if SUPPORT_CLOSED_LOOP
+	void GetCurrentMotion(MotionParameters& mParams) const noexcept;				// get the net full steps taken, including in the current move so far, also speed and acceleration
+#endif
 
+private:
 	bool DDARingAdd();																// Add a processed look-ahead entry to the DDA ring
 	DDA* DDARingGet();																// Get the next DDA ring entry to be run
 	void StartNextMove(DDA *cdda, uint32_t startTime);								// Start a move
@@ -91,6 +95,15 @@ private:
 	volatile uint32_t completedMoves;												// This one is modified by an ISR, hence volatile
 	uint32_t numHiccups;															// How many times we delayed an interrupt to avoid using too much CPU time in interrupts
 	uint32_t maxPrepareTime;
+
+#if SUPPORT_CLOSED_LOOP
+# if SINGLE_DRIVER
+	int32_t netMicrostepsTaken;														// the net microsteps taken not counting any move that is in progress
+	int driver0MicrostepShift;														// the microstepping set for driver 0 as a negative shift factor
+# else
+#  error Only one closed loop driver supported by this code
+# endif
+#endif
 };
 
 //******************************************************************************************************
@@ -103,6 +116,26 @@ inline uint32_t Move::GetStepInterval(size_t axis, uint32_t microstepShift) cons
 {
 	const DDA * const cdda = currentDda;		// capture volatile variable
 	return (cdda != nullptr) ? cdda->GetStepInterval(axis, microstepShift) : 0;
+}
+
+#endif
+
+#if SUPPORT_CLOSED_LOOP
+
+// Get the net full steps taken, including in the current move so far, also speed and acceleration
+inline void Move::GetCurrentMotion(MotionParameters& mParams) const noexcept
+{
+	InterruptCriticalSectionLocker lock;
+	const DDA * const cdda = currentDda;			// capture volatile variable
+	if (cdda != nullptr)
+	{
+		cdda->GetCurrentMotion(mParams, netMicrostepsTaken, driver0MicrostepShift);
+	}
+	else
+	{
+		mParams.position = ldexp((float)netMicrostepsTaken, driver0MicrostepShift);
+		mParams.speed = mParams.acceleration = 0.0;
+	}
 }
 
 #endif
