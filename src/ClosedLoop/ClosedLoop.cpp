@@ -574,6 +574,7 @@ void ClosedLoop::ControlLoop() noexcept
 				msg.lastPacket = (i == samplesRequested - 1);
 				msg.firstSampleNumber = i;
 				msg.filter = filterRequested;
+				msg.zero = msg.zero2 = 0;
 
 				// Populate the data fields
 				// TODO: Pack more than one set of data into a message
@@ -631,6 +632,7 @@ void ClosedLoop::ControlLoop() noexcept
 				// Populate the control fields
 				msg.firstSampleNumber = sampleBufferReadPointer / variableCount;
 				msg.filter = filterRequested;
+				msg.zero = msg.zero2 = 0;
 
 				const unsigned int samplesRemaining = (sampleBufferWritePointer - sampleBufferReadPointer) / variableCount;
 				msg.lastPacket = samplesRemaining <= maxSamplesInPacket;
