@@ -630,18 +630,6 @@ bool DDA::HasStepError() const
 	return false;
 }
 
-// Free up this DDA, returning true if the lookahead underrun flag was set
-void DDA::Free()
-{
-	state = empty;
-}
-
-// Return the number of net steps already taken in this move by a particular drive
-int32_t DDA::GetStepsTaken(size_t drive) const
-{
-	return ddms[drive].GetNetStepsTaken();
-}
-
 unsigned int DDA::GetAndClearStepErrors() noexcept
 {
 	const unsigned int ret = stepErrors;

@@ -226,6 +226,18 @@ inline void DDA::InsertHiccup(uint32_t now) noexcept
 	afterPrepare.moveStartTime = now + DDA::HiccupTime - ticksDueAfterStart;
 }
 
+// Return the number of net steps already taken in this move by a particular drive
+inline int32_t DDA::GetStepsTaken(size_t drive) const
+{
+	return ddms[drive].GetNetStepsTaken();
+}
+
+// Free up this DDA
+inline void DDA::Free()
+{
+	state = empty;
+}
+
 #if HAS_SMART_DRIVERS
 
 // Get the current full step interval for this axis or extruder

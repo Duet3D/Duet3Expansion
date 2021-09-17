@@ -292,10 +292,19 @@ bool Move::SetKinematics(KinematicsType k)
 // The state field of currentDda must be set to DDAState::completed before calling this
 void Move::CurrentMoveCompleted()
 {
+#if SINGLE_DRIVER
+	const int32_t stepsTaken = currentDda->GetStepsTaken(0);
+	extrusionAccumulators[0] += stepsTaken;
+# if SUPPORT_CLOSED_LOOP
+	netMicrostepsTaken += stepsTaken;
+# endif
+#else
 	for (size_t driver = 0; driver < NumDrivers; ++driver)
 	{
 		extrusionAccumulators[driver] += currentDda->GetStepsTaken(driver);
 	}
+#endif
+
 	currentDda = nullptr;
 	ddaRingGetPointer = ddaRingGetPointer->GetNext();
 	completedMoves++;
