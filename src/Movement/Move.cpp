@@ -65,7 +65,7 @@ extern "C" [[noreturn]] void MoveLoop(void * param) noexcept
 Move::Move()
 	: currentDda(nullptr), extrudersPrinting(false), taskWaitingForMoveToComplete(nullptr), scheduledMoves(0), completedMoves(0), numHiccups(0)
 #if SUPPORT_CLOSED_LOOP
-	, netMicrostepsTaken(0), driver0MicrostepShift(0)
+	, netMicrostepsTaken(0), driver0MicrostepShift(-4)					// default to x16 microstepping
 #endif
 {
 	kinematics = Kinematics::Create(KinematicsType::cartesian);			// default to Cartesian
@@ -269,6 +269,8 @@ float Move::PushBabyStepping(float amount)
 }
 # endif
 
+#if SUPPORT_DELTA_MOVEMENT
+
 // Change the kinematics to the specified type if it isn't already
 // If it is already correct leave its parameters alone.
 // This violates our rule on no dynamic memory allocation after the initialisation phase,
@@ -287,6 +289,8 @@ bool Move::SetKinematics(KinematicsType k)
 	}
 	return true;
 }
+
+#endif
 
 // This is called from the step ISR when the current move has been completed
 // The state field of currentDda must be set to DDAState::completed before calling this

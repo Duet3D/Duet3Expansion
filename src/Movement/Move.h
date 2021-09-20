@@ -39,10 +39,12 @@ public:
 	void StopDrivers(uint16_t whichDrivers);
 	void CurrentMoveCompleted() SPEED_CRITICAL;										// Signal that the current move has just been completed
 
+#if SUPPORT_DELTA_MOVEMENT
 	// Kinematics and related functions
 	Kinematics& GetKinematics() const { return *kinematics; }
 	bool SetKinematics(KinematicsType k);											// Set kinematics, return true if successful
-																					// Convert Cartesian coordinates to delta motor coordinates, return true if successful
+#endif
+
 	static void TimerCallback(CallbackParameter cb)
 	{
 		static_cast<Move*>(cb.vp)->Interrupt();
@@ -125,7 +127,7 @@ inline uint32_t Move::GetStepInterval(size_t axis, uint32_t microstepShift) cons
 // Get the net full steps taken, including in the current move so far, also speed and acceleration
 inline void Move::GetCurrentMotion(MotionParameters& mParams) const noexcept
 {
-	InterruptCriticalSectionLocker lock;
+	AtomicCriticalSectionLocker lock;
 	const DDA * const cdda = currentDda;			// capture volatile variable
 	if (cdda != nullptr)
 	{
