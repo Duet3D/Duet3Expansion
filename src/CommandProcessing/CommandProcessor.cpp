@@ -555,7 +555,6 @@ static GCodeResult ProcessM569Point2(const CanMessageGeneric& msg, const StringR
 		}
 	}
 
-	reply.printf("Register %02x value %08" PRIx32, regNum, regVal);
 	return rslt;
 #else
 	return GCodeResult::errorNotSupported;
