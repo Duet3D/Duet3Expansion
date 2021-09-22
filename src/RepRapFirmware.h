@@ -20,8 +20,6 @@ typedef double floatc_t;
 #include <General/SimpleMath.h>
 #include "MessageType.h"
 
-extern const char VersionText[];
-
 // Warn of what's to come, so we can use pointers to classes without including the entire header files
 #if SUPPORT_DRIVERS
 class Move;

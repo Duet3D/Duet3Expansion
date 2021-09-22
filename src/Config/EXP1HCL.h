@@ -42,8 +42,10 @@
 
 constexpr size_t NumDrivers = 1;
 constexpr size_t MaxSmartDrivers = 1;
-constexpr float MaxTmc5160Current = 4500.0;			// The maximum current we allow the TMC5160/5161 drivers to be set to.
-													// TODO: MaxTmc5160Current could be 6300, but not when holding.
+constexpr float MaxTmc5160Current = 4500.0;					// the maximum current we allow the TMC5160/5161 drivers to be set to.
+															// TODO: MaxTmc5160Current could be 6300, but not when holding.
+constexpr uint32_t DefaultStandstillCurrentPercent = 71;
+constexpr float Tmc5160SenseResistor = 0.050;
 
 constexpr Pin GlobalTmc51xxEnablePin = PortBPin(3);
 constexpr Pin GlobalTmc51xxCSPin = PortAPin(10);
@@ -59,7 +61,7 @@ constexpr GpioPinFunction TMC51xxSclkPinPeriphMode = GpioPinFunction::C;
 constexpr Pin TMC51xxMisoPin = PortAPin(11);
 constexpr GpioPinFunction TMC51xxMisoPinPeriphMode = GpioPinFunction::C;
 
-PortGroup * const StepPio = &(PORT->Group[1]);		// the PIO that all the step pins are on (port B)
+PortGroup * const StepPio = &(PORT->Group[1]);				// the PIO that all the step pins are on (port B)
 constexpr Pin StepPins[NumDrivers] = { PortBPin(23) };
 constexpr Pin DirectionPins[NumDrivers] = { PortAPin(27) };
 constexpr Pin DiagPins[NumDrivers] = { PortAPin(21) };

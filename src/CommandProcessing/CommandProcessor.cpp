@@ -19,7 +19,6 @@
 #include <Platform.h>
 #include <Movement/Move.h>
 #include <Tasks.h>
-#include <Version.h>
 #include <AnalogIn.h>
 #include <Hardware/NonVolatileMemory.h>
 #include <hpl_user_area.h>
@@ -521,6 +520,48 @@ static GCodeResult ProcessM569(const CanMessageGeneric& msg, const StringRef& re
 	return GCodeResult::ok;
 }
 
+static GCodeResult ProcessM569Point2(const CanMessageGeneric& msg, const StringRef& reply)
+{
+#if SUPPORT_TMC22xx || SUPPORT_TMC51xx
+	CanMessageGenericParser parser(msg, M569Point2Params);
+	uint8_t drive;
+	uint8_t regNum;
+	if (!parser.GetUintParam('P', drive) || !parser.GetUintParam('R', regNum))
+	{
+		reply.copy("Missing P or R parameter in CAN message");
+		return GCodeResult::error;
+	}
+
+	if (drive >= NumDrivers)
+	{
+		reply.printf("Driver number %u.%u out of range", CanInterface::GetCanAddress(), drive);
+		return GCodeResult::error;
+	}
+
+	uint32_t regVal;
+	if (parser.GetUintParam('V', regVal))
+	{
+		return SmartDrivers::SetAnyRegister(drive, reply, regNum, regVal);
+	}
+
+	const uint32_t startTime = millis();
+	GCodeResult rslt;
+	while ((rslt = SmartDrivers::GetAnyRegister(drive, reply, regNum)) == GCodeResult::notFinished)
+	{
+		if (millis() - startTime >= 50)
+		{
+			reply.copy("Failed to read register");
+			return GCodeResult::error;
+		}
+	}
+
+	reply.printf("Register %02x value %08" PRIx32, regNum, regVal);
+	return rslt;
+#else
+	return GCodeResult::errorNotSupported;
+#endif
+}
+
 static GCodeResult HandleSetDriverStates(const CanMessageMultipleDrivesRequest<DriverStateControl>& msg, const StringRef& reply)
 {
 	//TODO check message is long enough for the number of drivers specified
@@ -646,7 +687,7 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 	{
 	case CanMessageReturnInfo::typeFirmwareVersion:
 	default:
-		reply.printf("%s (%s%s)", VersionText, IsoDate, TIME_SUFFIX);
+		Platform::AppendBoardAndFirmwareDetails(reply);
 		break;
 
 	case CanMessageReturnInfo::typeBoardName:
@@ -688,7 +729,7 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 		else
 		{
 			extra = LastDiagnosticsPart;
-			reply.lcatf("%s (%s%s)", VersionText, IsoDate, TIME_SUFFIX);
+			Platform::AppendBoardAndFirmwareDetails(reply);
 			const char *bootloaderVersionText = *reinterpret_cast<const char**>(0x20);		// offset of vectors.pvReservedM8
 			reply.lcatf("Bootloader ID: %s", (bootloaderVersionText == nullptr) ? "not available" : bootloaderVersionText);
 		}
@@ -744,7 +785,7 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 		{
 			reply.lcatf("Driver %u: pos %" PRIi32 ", %.1f steps/mm"
 # if HAS_SMART_DRIVERS
-				", "
+				","
 # endif
 				, driver, moveInstance->GetPosition(driver), (double)Platform::DriveStepsPerUnit(driver));
 # if HAS_SMART_DRIVERS
@@ -908,6 +949,11 @@ void CommandProcessor::Spin()
 # else
 			rslt = GCodeResult::errorNotSupported;
 # endif
+			break;
+
+		case CanMessageType::m569p2:		// read/write smart driver register
+			requestId = buf->msg.generic.requestId;
+			rslt = ProcessM569Point2(buf->msg.generic, replyRef);
 			break;
 
 		case CanMessageType::m569p6:

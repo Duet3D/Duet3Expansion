@@ -49,7 +49,9 @@ constexpr bool UseAlternateCanPins = false;
 
 constexpr size_t NumDrivers = 3;
 constexpr size_t MaxSmartDrivers = 3;
-constexpr float MaxTmc5160Current = 6300.0;			// The maximum current we allow the TMC5160/5161 drivers to be set to
+constexpr float MaxTmc5160Current = 6300.0;									// the maximum current we allow the TMC5160/5161 drivers to be set to
+constexpr uint32_t DefaultStandstillCurrentPercent = 71;
+constexpr float Tmc5160SenseResistor = 0.050;
 
 constexpr size_t NumAddressBits = 4;
 constexpr size_t NumBoardTypeBits = 3;

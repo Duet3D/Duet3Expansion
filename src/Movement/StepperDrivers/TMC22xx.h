@@ -8,12 +8,12 @@
 #ifndef TMC22xx_H_
 #define TMC22xx_H_
 
-#include "RepRapFirmware.h"
+#include <RepRapFirmware.h>
 
 #if SUPPORT_TMC22xx
 
 #include "DriverMode.h"
-#include "MessageType.h"
+#include <GCodes/GCodeResult.h>
 
 // TMC22xx DRV_STATUS register bit assignments
 const uint32_t TMC_RR_OT = 1u << 1;			// over temperature shutdown
@@ -62,6 +62,8 @@ namespace SmartDrivers
 	void SetStandstillCurrentPercent(size_t drive, float percent) noexcept;
 	bool SetRegister(size_t driver, SmartDriverRegister reg, uint32_t regVal) noexcept;
 	uint32_t GetRegister(size_t driver, SmartDriverRegister reg) noexcept;
+	GCodeResult GetAnyRegister(size_t driver, const StringRef& reply, uint8_t regNum) noexcept;
+	GCodeResult SetAnyRegister(size_t driver, const StringRef& reply, uint8_t regNum, uint32_t regVal) noexcept;
 	StandardDriverStatus GetStandardDriverStatus(size_t driver) noexcept;
 };
 

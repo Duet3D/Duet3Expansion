@@ -11,7 +11,7 @@
 #include "Version.h"
 #include <General/SafeVsnprintf.h>
 
-// Version text, without the build date
+// Version text, without the build date. One of the unused interrupt vectors declared in CoreN2G point to this.
 extern const char VersionText[] = "Duet " BOARD_TYPE_NAME " firmware version " VERSION;
 
 #if SUPPORT_DRIVERS

@@ -294,6 +294,8 @@ namespace Platform
 	void SetDateTime(uint32_t tim) noexcept;
 	bool WasDeliberateError() noexcept;
 
+	void AppendBoardAndFirmwareDetails(const StringRef& reply) noexcept;
+
 #ifdef TOOL1LC
 	uint8_t GetBoardVariant() noexcept;
 #endif

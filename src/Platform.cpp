@@ -26,6 +26,7 @@
 #include <CanMessageGenericParser.h>
 #include <Hardware/Devices.h>
 #include <Math/Isqrt.h>
+#include <Version.h>
 
 #if SUPPORT_I2C_SENSORS && SUPPORT_LIS3DH
 # include <CommandProcessing/AccelerometerHandler.h>
@@ -2218,6 +2219,18 @@ float Platform::GetCurrentV12Voltage() noexcept
 }
 
 #endif
+
+void Platform::AppendBoardAndFirmwareDetails(const StringRef& reply) noexcept
+{
+#ifdef TOOL1LC
+	reply.lcatf("Duet " BOARD_TYPE_NAME " rev %s firmware version " VERSION " (%s%s)",
+				(boardVariant == 1) ? "1.1 or later" : "1.0 or earlier",
+				IsoDate, TIME_SUFFIX);
+#else
+	reply.lcatf("Duet " BOARD_TYPE_NAME " firmware version " VERSION " (%s%s)",
+				IsoDate, TIME_SUFFIX);
+#endif
+}
 
 #ifdef TOOL1LC
 

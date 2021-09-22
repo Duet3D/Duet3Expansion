@@ -41,14 +41,13 @@
 #include <Movement/StepTimer.h>
 #include <Cache.h>
 #include <General/Portability.h>
+#include <Hardware/IoPorts.h>
 
 #if SAME5x || SAMC21
-# include <Hardware/IoPorts.h>
 # include <DmacManager.h>
 # include <Serial.h>
 # include <component/sercom.h>
 #else
-# include <RepRap.h>
 # include <sam/drivers/pdc/pdc.h>
 # include <sam/drivers/uart/uart.h>
 #endif
@@ -308,9 +307,8 @@ constexpr uint8_t REGNUM_PWM_AUTO = 0x72;
 // Bytes 3-6 32-bit data, MSB first
 // Byte 7 8-bit CRC
 
-#if USE_FAST_CRC
-
 // Fast table-driven CRC-8. The result after we have taken the CRC of all bytes needs to be reflected.
+// The CRC polynomial used by the TMC drivers is: X^8 + X^2 + X + 1 which is CRC-8-CCITT
 static constexpr uint8_t crc_table[256] =
 {
 	0x00, 0x91, 0xE3, 0x72, 0x07, 0x96, 0xE4, 0x75, 0x0E, 0x9F, 0xED, 0x7C, 0x09, 0x98, 0xEA, 0x7B,
@@ -365,43 +363,11 @@ static inline constexpr uint8_t CRCAddFinalByte(uint8_t crc, uint8_t finalByte) 
 
 static_assert(CRCAddFinalByte(CRCAddByte(CRCAddByte(0, 1), 2), 3) == 0x1E);
 
-#else
-
-// Slow CRC code
-
-// Add 1 bit to a CRC
-static inline constexpr uint8_t CRCAddBit(uint8_t crc, uint8_t currentByte, uint8_t bit) noexcept
-{
-	return (((crc ^ (currentByte << (7 - bit))) & 0x80) != 0)
-			? (crc << 1) ^ 0x07
-				: (crc << 1);
-}
-
-// Add a byte to a CRC
-static inline constexpr uint8_t CRCAddByte(uint8_t crc, uint8_t currentByte) noexcept
-{
-	crc = CRCAddBit(crc, currentByte, 0);
-	crc = CRCAddBit(crc, currentByte, 1);
-	crc = CRCAddBit(crc, currentByte, 2);
-	crc = CRCAddBit(crc, currentByte, 3);
-	crc = CRCAddBit(crc, currentByte, 4);
-	crc = CRCAddBit(crc, currentByte, 5);
-	crc = CRCAddBit(crc, currentByte, 6);
-	crc = CRCAddBit(crc, currentByte, 7);
-	return crc;
-}
-
-static inline constexpr uint8_t CRCAddFinalByte(uint8_t crc, uint8_t finalByte) noexcept
-{
-	return CRCAddByte(crc, finalByte);
-}
-
-static_assert(CRCAddFinalByte(CRCAddByte(CRCAddByte(0, 1), 2), 3) == 0x1E);
-
-#endif
-
 // CRC of the first byte we send in any request
 static constexpr uint8_t InitialByteCRC = CRCAddByte(0, 0x05);
+
+// CRC of the first two bytes we receive in any reply
+static constexpr uint8_t InitialReceiveCrc = CRCAddByte(CRCAddByte(0, 0x05), 0xFF);
 
 #if !TMC22xx_USE_SLAVEADDR
 
@@ -456,6 +422,8 @@ public:
 
 	bool SetRegister(SmartDriverRegister reg, uint32_t regVal) noexcept;
 	uint32_t GetRegister(SmartDriverRegister reg) const noexcept;
+	GCodeResult GetAnyRegister(const StringRef& reply, uint8_t regNum) noexcept;
+	GCodeResult SetAnyRegister(const StringRef& reply, uint8_t regNum, uint32_t regVal) noexcept;
 
 	float GetStandstillCurrentPercent() const noexcept;
 	void SetStandstillCurrentPercent(float percent) noexcept;
@@ -521,7 +489,7 @@ private:
 #endif
 #if (TMC22xx_HAS_MUX || TMC22xx_SINGLE_DRIVER) && !TMC22xx_USE_SLAVEADDR
 	static void SetupDMASend(uint8_t regnum, uint32_t outVal) noexcept SPEED_CRITICAL;	// set up the DMAC to send a register
-	static void SetupDMARead(uint8_t regnum, uint8_t crc) noexcept SPEED_CRITICAL;		// set up the DMAC to receive a register
+	static void SetupDMARead(uint8_t regnum) noexcept SPEED_CRITICAL;					// set up the DMAC to receive a register
 #else
 	void SetupDMASend(uint8_t regnum, uint32_t outVal) noexcept SPEED_CRITICAL;			// set up the DMAC to send a register
 	void SetupDMARead(uint8_t regnum) noexcept SPEED_CRITICAL;							// set up the DMAC to receive a register
@@ -546,6 +514,7 @@ private:
 	static constexpr unsigned int WriteSgthrs = 7;				// stallguard threshold
 	static constexpr unsigned int WriteCoolconf = 8;			// coolstep configuration
 #endif
+	static constexpr unsigned int WriteSpecial = NumWriteRegisters;
 
 #if HAS_STALL_DETECT
 	static constexpr unsigned int NumReadRegisters = 7;			// the number of registers that we read from on a TMC2209
@@ -564,9 +533,10 @@ private:
 #if HAS_STALL_DETECT
 	static constexpr unsigned int ReadSgResult = 6;			// stallguard result, TMC2209 only
 #endif
+	static constexpr unsigned int ReadSpecial = NumReadRegisters;
 
-	volatile uint32_t writeRegisters[NumWriteRegisters];	// the values we want the TMC22xx writable registers to have
-	volatile uint32_t readRegisters[NumReadRegisters];		// the last values read from the TMC22xx readable registers
+	volatile uint32_t writeRegisters[NumWriteRegisters + 1];	// the values we want the TMC22xx writable registers to have
+	volatile uint32_t readRegisters[NumReadRegisters + 1];		// the last values read from the TMC22xx readable registers
 	volatile uint32_t accumulatedReadRegisters[NumReadRegisters];
 
 	uint32_t configuredChopConfReg;							// the configured chopper control register, in the Enabled state, without the microstepping bits
@@ -627,9 +597,9 @@ private:
 #if TMC22xx_USE_SLAVEADDR
 	uint8_t initialSendCRC;
 	uint8_t readIfCountCRC;									// CRC of the message needed to read the IFCNT register
-#else
-	static const uint8_t ReadRegCRCs[NumReadRegisters];		// precomputed CRCs of the messages needed to read the registers
 #endif
+	volatile uint8_t specialReadRegisterNumber;				// the special register number we are reading
+	volatile uint8_t specialWriteRegisterNumber;			// the special register number we are writing
 	bool enabled;											// true if driver is enabled
 #if RESET_MICROSTEP_COUNTERS_AT_INIT
 	bool hadStepFailure;
@@ -650,7 +620,11 @@ Uart * const TmcDriverState::uart = UART_TMC22xx;
 // TMC22xx management task
 static Task<TmcTaskStackWords> *tmcTask;
 
+#if TMC22xx_USES_SERCOM
 static DmaCallbackReason dmaFinishedReason;
+#else
+static bool dmaFinished;
+#endif
 
 // To write a register, we send one 8-byte packet to write it, then a 4-byte packet to ask for the IFCOUNT register, then we receive an 8-byte packet containing IFCOUNT.
 // This is the message we send - volatile because we care about when it is written, and dword-aligned so that we can use 32-bit mode on the SAME5x
@@ -675,7 +649,8 @@ constexpr size_t SendDataCRCIndex0 = 7;
 constexpr size_t SendDataCRCIndex1 = 11;
 
 // Buffer for the message we receive when reading data, dword-aligned so that we can use 32-bit mode on the SAME5x. The first 4 or 12 bytes bytes are our own transmitted data.
-alignas(4) volatile uint8_t TmcDriverState::receiveData[20];
+// Align on a 16-bit boundary to make sure it covers only 2 cache lines not 3
+alignas(16) volatile uint8_t TmcDriverState::receiveData[20];
 
 constexpr uint8_t TmcDriverState::WriteRegNumbers[NumWriteRegisters] =
 {
@@ -705,22 +680,6 @@ constexpr uint8_t TmcDriverState::ReadRegNumbers[NumReadRegisters] =
 	REGNUM_SG_RESULT					// TMC2209 only
 #endif
 };
-
-#if !TMC22xx_USE_SLAVEADDR
-constexpr uint8_t TmcDriverState::ReadRegCRCs[NumReadRegisters] =
-{
-	CRCAddFinalByte(InitialSendCRC, ReadRegNumbers[0]),
-	CRCAddFinalByte(InitialSendCRC, ReadRegNumbers[1]),
-	CRCAddFinalByte(InitialSendCRC, ReadRegNumbers[2]),
-	CRCAddFinalByte(InitialSendCRC, ReadRegNumbers[3]),
-	CRCAddFinalByte(InitialSendCRC, ReadRegNumbers[4]),
-	CRCAddFinalByte(InitialSendCRC, ReadRegNumbers[5]),
-# if HAS_STALL_DETECT
-	CRCAddFinalByte(InitialSendCRC, ReadRegNumbers[6])
-# endif
-};
-
-#endif
 
 // State structures for all drivers
 static TmcDriverState driverStates[MaxSmartDrivers];
@@ -830,11 +789,7 @@ inline void TmcDriverState::SetupDMASend(uint8_t regNum, uint32_t regVal) noexce
 }
 
 // Set up the PDC or DMAC to send a register read request and receive the status
-#if TMC22xx_USE_SLAVEADDR
 inline void TmcDriverState::SetupDMARead(uint8_t regNum) noexcept
-#else
-inline void TmcDriverState::SetupDMARead(uint8_t regNum, uint8_t crc) noexcept
-#endif
 {
 #if TMC22xx_USES_SERCOM
 	DmacManager::DisableChannel(DmacChanTmcTx);
@@ -849,12 +804,13 @@ inline void TmcDriverState::SetupDMARead(uint8_t regNum, uint8_t crc) noexcept
 #if TMC22xx_USE_SLAVEADDR
 	sendData[SendDataSlaveAddressIndex0] = driverNumber & 3u;
 	uint8_t crc = initialSendCRC;
+#else
+	sendData[SendDataSlaveAddressIndex0] = 0;
+	uint8_t crc = InitialSendCRC;
 #endif
 	sendData[2] = regNum;
 	sendData[3] =
-#if !TMC22xx_USE_SLAVEADDR
-		crc;
-#elif USE_FAST_CRC
+#if USE_FAST_CRC
 		Reflect(CRCAddByte(crc, regNum));
 #else
 		CRCAddByte(crc, regNum);
@@ -994,6 +950,7 @@ pre(!driversPowered)
 	hadStepFailure = false;
 #endif
 	registersToUpdate = 0;
+	specialReadRegisterNumber = specialWriteRegisterNumber = 0xFF;
 	motorCurrent = 0.0;
 	standstillCurrentFraction = (uint8_t)min<uint32_t>((DefaultStandstillCurrentPercent * 256)/100, 255);
 	UpdateRegister(WriteGConf, DefaultGConfReg);
@@ -1168,6 +1125,37 @@ uint32_t TmcDriverState::GetRegister(SmartDriverRegister reg) const noexcept
 	}
 }
 
+GCodeResult TmcDriverState::GetAnyRegister(const StringRef& reply, uint8_t regNum) noexcept
+{
+	if (specialReadRegisterNumber == 0xFE)
+	{
+		reply.printf("Register 0x%02x value 0x%08" PRIx32, regNum, readRegisters[ReadSpecial]);
+		specialReadRegisterNumber = 0xFF;
+		return GCodeResult::ok;
+	}
+
+	if (specialReadRegisterNumber == 0xFF)
+	{
+		specialReadRegisterNumber = regNum;
+	}
+	return GCodeResult::notFinished;
+}
+
+GCodeResult TmcDriverState::SetAnyRegister(const StringRef& reply, uint8_t regNum, uint32_t regVal) noexcept
+{
+	for (size_t i = 0; i < NumWriteRegisters; ++i)
+	{
+		if (regNum == WriteRegNumbers[i])
+		{
+			UpdateRegister(i, regVal);
+			return GCodeResult::ok;
+		}
+	}
+	specialWriteRegisterNumber = regNum;
+	UpdateRegister(WriteSpecial, regVal);
+	return GCodeResult::ok;
+}
+
 // Set the chopper control register to the settings provided by the user. We allow only the lowest 17 bits to be set.
 bool TmcDriverState::SetChopConf(uint32_t newVal) noexcept
 {
@@ -1288,59 +1276,59 @@ void TmcDriverState::AppendDriverStatus(const StringRef& reply) noexcept
 {
 	if (!DriverAssumedPresent())
 	{
-		reply.cat("assumed not present");
+		reply.cat(" assumed not present");
 		return;
 	}
 
 	const uint32_t lastReadStatus = readRegisters[ReadDrvStat];
 	if (lastReadStatus & TMC_RR_OT)
 	{
-		reply.cat("temperature-shutdown! ");
+		reply.cat(" temperature-shutdown!");
 	}
 	else if (lastReadStatus & TMC_RR_OTPW)
 	{
-		reply.cat("temperature-warning, ");
+		reply.cat(" temperature-warning");
 	}
 	if (lastReadStatus & TMC_RR_S2G)
 	{
-		reply.cat("short-to-ground, ");
+		reply.cat(" short-to-ground");
 	}
 	if (lastReadStatus & TMC_RR_OLA)
 	{
-		reply.cat("open-load-A, ");
+		reply.cat(" open-load-A");
 	}
 	if (lastReadStatus & TMC_RR_OLB)
 	{
-		reply.cat("open-load-B, ");
+		reply.cat(" open-load-B");
 	}
 	if (lastReadStatus & TMC_RR_STST)
 	{
-		reply.cat("standstill, ");
+		reply.cat(" standstill");
 	}
 #if RESET_MICROSTEP_COUNTERS_AT_INIT
 	if (hadStepFailure)
 	{
-		reply.cat("stepFail, ");
+		reply.cat(" stepFail");
 	}
 #endif
 	else if ((lastReadStatus & (TMC_RR_OT | TMC_RR_OTPW | TMC_RR_S2G | TMC_RR_OLA | TMC_RR_OLB | TMC_RR_STST)) == 0)
 	{
-		reply.cat("ok, ");
+		reply.cat( "ok");
 	}
 
 #if HAS_STALL_DETECT
 	if (minSgLoadRegister <= maxSgLoadRegister)
 	{
-		reply.catf("SG min/max %" PRIu32 "/%" PRIu32 ", ", minSgLoadRegister, maxSgLoadRegister);
+		reply.catf(", SG min/max %" PRIu32 "/%" PRIu32, minSgLoadRegister, maxSgLoadRegister);
 	}
 	else
 	{
-		reply.cat("SG min/max n/a, ");
+		reply.cat(", SG min/max n/a");
 	}
 	ResetLoadRegisters();
 #endif
 
-	reply.catf("read errors %u, write errors %u, ifcnt %u, reads %u, writes %u, timeouts %u, DMA errors %u",
+	reply.catf(", read errors %u, write errors %u, ifcnt %u, reads %u, writes %u, timeouts %u, DMA errors %u",
 					readErrors, writeErrors, lastIfCount, numReads, numWrites, numTimeouts, numDmaErrors);
 	if (failedOp != 0xFF)
 	{
@@ -1359,7 +1347,10 @@ inline void TmcDriverState::TransferDone() noexcept
 		const uint8_t currentIfCount = receiveData[18];
 		// Note, the TMC2209 IFCNT register seems to start at a random value, so we expect to get a write error on the first write.
 		// We could read IFCNT once to get the initial value, but doing the first write twice does no harm.
-		if (regnumBeingUpdated < NumWriteRegisters && currentIfCount == (uint8_t)(lastIfCount + 1) && (sendData[2] & 0x7F) == WriteRegNumbers[regnumBeingUpdated])
+		if (   regnumBeingUpdated <= NumWriteRegisters
+			&& currentIfCount == (uint8_t)(lastIfCount + 1)
+			&& (sendData[2] & 0x7F) == ((regnumBeingUpdated == WriteSpecial) ? specialWriteRegisterNumber : WriteRegNumbers[regnumBeingUpdated])
+		   )
 		{
 			++numWrites;
 			registersToUpdate &= ~(1u << regnumBeingUpdated);
@@ -1378,10 +1369,15 @@ inline void TmcDriverState::TransferDone() noexcept
 	}
 	else if (driversState != DriversState::noPower)		// we don't check the CRC, so only accept the result if power is still good
 	{
-		if (sendData[2] == ReadRegNumbers[registerToRead] && ReadRegNumbers[registerToRead] == receiveData[6] && receiveData[4] == 0x05 && receiveData[5] == 0xFF)
+		const uint8_t readRegNumber = (registerToRead < NumReadRegisters) ? ReadRegNumbers[registerToRead] : specialReadRegisterNumber;
+		if (  sendData[2] == readRegNumber
+			&& readRegNumber == receiveData[6]
+			&& receiveData[4] == 0x05
+			&& receiveData[5] == 0xFF
+			&& Reflect(CRCAddByte(CRCAddByte(CRCAddByte(CRCAddByte(CRCAddByte(InitialReceiveCrc, receiveData[6]), receiveData[7]), receiveData[8]), receiveData[9]), receiveData[10])) == receiveData[11]
+		   )
 		{
-			// We asked to read the scheduled read register, and the sync byte, slave address and register number in the received message match
-			//TODO here we could check the CRC of the received message, but for now we assume that we won't get any corruption in the 32-bit received data
+			// We asked to read the scheduled read register, and the sync byte, slave address and register number in the received message match, also the CRC is correct
 			uint32_t regVal = ((uint32_t)receiveData[7] << 24) | ((uint32_t)receiveData[8] << 16) | ((uint32_t)receiveData[9] << 8) | receiveData[10];
 
 			if (registerToRead == ReadDrvStat)
@@ -1411,12 +1407,20 @@ inline void TmcDriverState::TransferDone() noexcept
 			}
 #endif
 			readRegisters[registerToRead] = regVal;
-			accumulatedReadRegisters[registerToRead] |= regVal;
 
-			++registerToRead;
-			if (registerToRead >= NumReadRegisters)
+			if (registerToRead == ReadSpecial)
 			{
+				specialReadRegisterNumber = 0xFE;						// set it to 0xFE to indicate that we have read it and to prevent it being read again
 				registerToRead = 0;
+			}
+			else
+			{
+				accumulatedReadRegisters[registerToRead] |= regVal;
+				++registerToRead;
+				if (registerToRead == ReadSpecial && specialReadRegisterNumber >= 0x80)
+				{
+					registerToRead = 0;
+				}
 			}
 			++numReads;
 		}
@@ -1492,7 +1496,8 @@ inline void TmcDriverState::StartTransfer() noexcept
 #else
 		uart->UART_CR = UART_CR_RSTRX | UART_CR_RSTTX;	// reset transmitter and receiver
 #endif
-		SetupDMASend(WriteRegNumbers[regNum], writeRegisters[regNum]);						// set up the DMAC
+		const uint8_t regNumber = (regNum < WriteSpecial) ? WriteRegNumbers[regNum] : specialWriteRegisterNumber;
+		SetupDMASend(regNumber, writeRegisters[regNum]);									// set up the DMAC
 #if TMC22xx_USES_SERCOM
 		dmaFinishedReason = DmaCallbackReason::none;
 		DmacManager::EnableCompletedInterrupt(DmacChanTmcRx);
@@ -1515,16 +1520,13 @@ inline void TmcDriverState::StartTransfer() noexcept
 		uart->UART_CR = UART_CR_RSTRX | UART_CR_RSTTX;	// reset transmitter and receiver
 #endif
 
-#if TMC22xx_USE_SLAVEADDR
-		SetupDMARead(ReadRegNumbers[registerToRead]);										// set up the DMAC
-#else
-		SetupDMARead(ReadRegNumbers[registerToRead], ReadRegCRCs[registerToRead]);			// set up the DMAC
-#endif
+		const uint8_t readRegNumber = (registerToRead < NumReadRegisters) ? ReadRegNumbers[registerToRead] : specialReadRegisterNumber;
+		SetupDMARead(readRegNumber);														// set up the DMAC
 
 #if TMC22xx_USES_SERCOM
 		dmaFinishedReason = DmaCallbackReason::none;
 		DmacManager::EnableCompletedInterrupt(DmacChanTmcRx);
-		sercom->USART.CTRLB.reg |= (SERCOM_USART_CTRLB_RXEN | SERCOM_USART_CTRLB_TXEN);	// enable transmitter and receiver
+		sercom->USART.CTRLB.reg |= (SERCOM_USART_CTRLB_RXEN | SERCOM_USART_CTRLB_TXEN);		// enable transmitter and receiver
 #else
 		uart->UART_IER = UART_IER_ENDRX;				// enable end-of-receive interrupt
 		uart->UART_CR = UART_CR_RXEN | UART_CR_TXEN;	// enable transmitter and receiver
@@ -1865,7 +1867,9 @@ void SmartDrivers::Init() noexcept
 	DmacManager::SetInterruptCallback(DmacChanTmcRx, TransferCompleteCallback, CallbackParameter(0));
 # else
 	// Set up the single UART that communicates with all TMC22xx drivers
-	ConfigurePin(TMC22xx_UART_PINS);									// the pins are already set up for UART use in the pins table
+	SetPinFunction(TMC22xxUartTxPin, TMC22xxUartPeriphMode);
+	SetPinFunction(TMC22xxUartRxPin, TMC22xxUartPeriphMode);
+	EnablePullup(TMC22xxUartRxPin);
 
 	// Enable the clock to the UART
 	pmc_enable_periph_clk(ID_TMC22xx_UART);
@@ -2131,6 +2135,28 @@ bool SmartDrivers::SetRegister(size_t driver, SmartDriverRegister reg, uint32_t 
 uint32_t SmartDrivers::GetRegister(size_t driver, SmartDriverRegister reg) noexcept
 {
 	return (driver < GetNumTmcDrivers()) ? driverStates[driver].GetRegister(reg) : 0;
+}
+
+// Read any register from a driver
+// This will return GCodeResult:notFinished for at least the first call, so it must be called repeatedly until it returns a different value.
+GCodeResult SmartDrivers::GetAnyRegister(size_t driver, const StringRef& reply, uint8_t regNum) noexcept
+{
+	if (driver < GetNumTmcDrivers())
+	{
+		return driverStates[driver].GetAnyRegister(reply, regNum);
+	}
+	reply.copy("Invalid smart driver number");
+	return GCodeResult::error;
+}
+
+GCodeResult SmartDrivers::SetAnyRegister(size_t driver, const StringRef& reply, uint8_t regNum, uint32_t regVal) noexcept
+{
+	if (driver < GetNumTmcDrivers())
+	{
+		return driverStates[driver].SetAnyRegister(reply, regNum, regVal);
+	}
+	reply.copy("Invalid smart driver number");
+	return GCodeResult::error;
 }
 
 StandardDriverStatus SmartDrivers::GetStandardDriverStatus(size_t driver) noexcept
