@@ -26,13 +26,7 @@ class SpiEncoder;
 namespace ClosedLoop
 {
 	// The size of the closed loop data buffer
-#  if defined(EXP1HCE)
-#   define CLOSED_LOOP_DATA_BUFFER_SIZE 50		//	(50 readings)
-#  elif defined(EXP1HCL)
-#   define CLOSED_LOOP_DATA_BUFFER_SIZE 2000		//  (2000 readings)
-#  else
-#   error Cannot support closed loop with the specified hardware
-#  endif
+	constexpr unsigned int DataBufferSize = 2000;		//  (2000 readings)
 
 	// Possible tuning errors
 	constexpr uint8_t TUNE_ERR_NOT_FOUND_POLARITY			= 1 << 0;
@@ -96,7 +90,7 @@ namespace ClosedLoop
 	extern uint16_t samplesRequested;				//	- How many samples did they request?
 	extern ClosedLoop::RecordingMode modeRequested;	//	- What mode did they request?
 	extern uint8_t movementRequested;				//	- Which calibration movement did they request? 0=none, 1=polarity, 2=continuous
-	extern float sampleBuffer[CLOSED_LOOP_DATA_BUFFER_SIZE * 14];	//	- Store the samples here (max. CLOSED_LOOP_DATA_BUFFER_SIZE samples of 12 variables)
+	extern float sampleBuffer[DataBufferSize * 14];	//	- Store the samples here (max. CLOSED_LOOP_DATA_BUFFER_SIZE samples of 12 variables)
 	extern ReadWriteLock sampleBufferLock; 		//  - Closed loop sample lock
 	extern uint16_t sampleBufferReadPointer;	//  - Send this sample next to the mainboard
 	extern uint16_t sampleBufferWritePointer;	//  - Store the next sample at this point in the buffer

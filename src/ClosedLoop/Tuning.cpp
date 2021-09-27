@@ -425,7 +425,7 @@ static bool newTuningMove = true;				// Indicates if a tuning move has just fini
 
 void ClosedLoop::PerformTune() noexcept
 {
-	if (!tuning) {return;}
+	if (tuning == 0) {return;}
 
 	// Check we are in direct drive mode
 	if (SmartDrivers::GetDriverMode(0) != DriverMode::direct) {
@@ -440,7 +440,7 @@ void ClosedLoop::PerformTune() noexcept
 		if (encoder != nullptr
 				&& encoder->GetPositioningType() == EncoderPositioningType::absolute
 				&& (tuning & ZEROING_MANOEUVRE)) {
-			((AS5047D*) encoder)->ClearLUT();
+			((AS5047D*) encoder)->ClearLUT();			//TODO this assumes that any absolute encoder is a AS5047D
 		}
 		newTuningMove = PolarityDetection(newTuningMove);
 		if (newTuningMove) {

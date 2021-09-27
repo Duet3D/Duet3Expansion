@@ -27,16 +27,7 @@ using std::numeric_limits;
 # include <CanMessageGenericParser.h>
 # include <CanMessageGenericTables.h>
 
-# if defined(EXP1HCE)
-#  include "AttinyProgrammer.h"
-#  include "QuadratureEncoderAttiny.h"
-#  define CLOSED_LOOP_DATA_BUFFER_SIZE 50		//	(50 readings)
-# elif defined(EXP1HCL)
-#  include "QuadratureEncoderPdec.h"
-#  define CLOSED_LOOP_DATA_BUFFER_SIZE 2000		//  (2000 readings)
-# else
-#  error Cannot support closed loop with the specified hardware
-# endif
+# include "QuadratureEncoderPdec.h"
 
 # if SUPPORT_TMC2160
 #  include "Movement/StepperDrivers/TMC51xx.h"
@@ -75,7 +66,7 @@ uint16_t 	ClosedLoop::filterRequested;				//	- What filter did they request?
 uint16_t 	ClosedLoop::samplesRequested;				//	- How many samples did they request?
 ClosedLoop::RecordingMode ClosedLoop::modeRequested;	//	- What mode did they request?
 uint8_t 	ClosedLoop::movementRequested;				//	- Which calibration movement did they request? 0=none, 1=polarity, 2=continuous
-float 		ClosedLoop::sampleBuffer[CLOSED_LOOP_DATA_BUFFER_SIZE * 14];	//	- Store the samples here (max. CLOSED_LOOP_DATA_BUFFER_SIZE samples of 12 variables)
+float 		ClosedLoop::sampleBuffer[DataBufferSize * 14];	//	- Store the samples here (max. CLOSED_LOOP_DATA_BUFFER_SIZE samples of 12 variables)
 ReadWriteLock ClosedLoop::sampleBufferLock;				//  - Lock for the sample buffer
 uint16_t 	ClosedLoop::sampleBufferReadPointer = 0;	//  - Send this sample next to the mainboard
 uint16_t 	ClosedLoop::sampleBufferWritePointer = 0;	//  - Store the next sample at this point in the buffer
@@ -173,6 +164,7 @@ static void ResetMonitoringVariables() {
 }
 
 // Helper function to convert between the internal representation of encoderCountPerStep, and the appropriate external representation (e.g. CPR)
+//TODO make this a virtual function member fo the encoder?
 float ClosedLoop::PulsePerStepToExternalUnits(float pps, uint8_t encoderType) noexcept {
 	switch (encoderType)
 	{
@@ -185,6 +177,7 @@ float ClosedLoop::PulsePerStepToExternalUnits(float pps, uint8_t encoderType) no
 	}
 }
 
+//TODO make this a virtual function member fo the encoder?
 float ClosedLoop::ExternalUnitsToPulsePerStep(float externalUnits, uint8_t encoderType) noexcept {
 	switch (encoderType)
 	{
@@ -201,9 +194,9 @@ float ClosedLoop::ExternalUnitsToPulsePerStep(float externalUnits, uint8_t encod
 static void ReportTuningErrors(uint8_t tuningErrorBitmask, const StringRef &reply)
 {
 	if (tuningErrorBitmask & ClosedLoop::TUNE_ERR_NOT_ZEROED) 					{reply.catf(" The drive has not been zeroed.");}
-	if (tuningErrorBitmask & ClosedLoop::TUNE_ERR_NOT_CHECKED_POLARITY) 		{reply.catf(" The drive has not had it's polarity checked.");}
-	if (tuningErrorBitmask & ClosedLoop::TUNE_ERR_NOT_CHECKED_CONTROL) 			{reply.catf(" The drive has not had it's control checked.");}
-	if (tuningErrorBitmask & ClosedLoop::TUNE_ERR_NOT_CHECKED_ENCODER_STEPS) 	{reply.catf(" The encoder has not had it's count per revolution checked.");}
+	if (tuningErrorBitmask & ClosedLoop::TUNE_ERR_NOT_CHECKED_POLARITY) 		{reply.catf(" The drive has not had its polarity checked.");}
+	if (tuningErrorBitmask & ClosedLoop::TUNE_ERR_NOT_CHECKED_CONTROL) 			{reply.catf(" The drive has not had its control checked.");}
+	if (tuningErrorBitmask & ClosedLoop::TUNE_ERR_NOT_CHECKED_ENCODER_STEPS) 	{reply.catf(" The encoder has not had its count per revolution checked.");}
 	if (tuningErrorBitmask & ClosedLoop::TUNE_ERR_INCORRECT_POLARITY) 			{reply.catf(" The drive has been found to have an incorrect polarity.");}
 	if (tuningErrorBitmask & ClosedLoop::TUNE_ERR_CONTROL_FAILED) 				{reply.catf(" The drive has been found to be uncontrollable.");}
 }
@@ -224,29 +217,20 @@ void ClosedLoop::SetMotorPhase(uint16_t phase, float magnitude) noexcept
 # endif
 }
 
-# ifdef EXP1HCL
 static void GenerateTmcClock()
 {
 	// Currently we program DPLL0 to generate 120MHz output, so to get 15MHz we divide by 8
 	ConfigureGclk(ClockGenGclkNumber, GclkSource::dpll0, 8, true);
 	SetPinFunction(ClockGenPin, ClockGenPinPeriphMode);
 }
-# endif
 
 void ClosedLoop::Init() noexcept
 {
 	// Init the ATTiny programmer
 	pinMode(EncoderCsPin, OUTPUT_HIGH);													// make sure that any attached SPI encoder is not selected
 
-# if defined(EXP1HCE)
-	encoderSpi = new SharedSpiDevice(EncoderSspiSercomNumber, EncoderSspiDataInPad);	// create the encoders SPI device
-	GenerateAttinyClock();
-	programmer = new AttinyProgrammer(*encoderSpi);
-	programmer->InitAttiny();
-# elif defined(EXP1HCL)
 	// The EXP1HCL board uses the standard shared SPI device
 	GenerateTmcClock();
-# endif
 
 	// Initialise to no error thresholds
 	errorThresholds[0] = 0;
@@ -293,22 +277,27 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 	// Report back if !seen
 	if (!seen) {
 		reply.catf("Encoder type: %s", GetEncoderType().ToString());
-		reply.catf(", encoder CPR: %f", (double) PulsePerStepToExternalUnits(tempCPR, tempEncoderType));
+		//TODO add a virtual function member to the encoder, to return the units string?
+		const char* const units = (tempEncoderType == EncoderType::rotaryQuadrature) ? "encoder pulses/step"
+									: (tempEncoderType == EncoderType::AS5047) ? "motor degrees/step"
+										: "encoder CPR";
+		reply.catf(", %s: %.1f", units, (double)PulsePerStepToExternalUnits(tempCPR, tempEncoderType));
+
 		if (encoder != nullptr)
 		{
 			encoder->AppendStatus(reply);
 		}
-		reply.catf(", PID parameters: p=%f, i=%f, d=%f", (double) Kp, (double) Ki, (double) Kd);
+		reply.catf(", PID parameters: P=%.3f, I=%.3f, D=%.3f", (double) Kp, (double) Ki, (double) Kd);
 		return GCodeResult::ok;
 	}
 
 	// Validate the new params
-	if (tempEncoderType > EncoderType::NumValues) {reply.copy("Invalid T value. Valid values are 0,1"); return GCodeResult::error;}
-	if ((seen & 0x1 << 5) && tempErrorThresholds[0] < 0) {reply.copy("Error threshold value must be greater than zero."); return GCodeResult::error;}
-	if ((seen & 0x1 << 5) && tempErrorThresholds[1] < 0) {reply.copy("Error threshold value must be greater than zero."); return GCodeResult::error;}
+	if (tempEncoderType > EncoderType::NumValues) {reply.copy("Invalid T value. Valid values are 0 and 1"); return GCodeResult::error;}
+	if ((seen & (0x1 << 5)) && tempErrorThresholds[0] < 0) {reply.copy("Error threshold value must be greater than zero"); return GCodeResult::error;}
+	if ((seen & (0x1 << 5)) && tempErrorThresholds[1] < 0) {reply.copy("Error threshold value must be greater than zero"); return GCodeResult::error;}
 
 	// Convert external units to internal units
-	if (seen & 0x1 << 1) {
+	if (seen & (0x1 << 1)) {
 		tempCPR = ExternalUnitsToPulsePerStep(tempCPR, tempEncoderType);
 	}
 
@@ -319,18 +308,18 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 	Kd = tempKd;
 	PIDITerm = 0;
 
-	if (seen & 0x1 << 5) {
+	if (seen & (0x1 << 5)) {
 		errorThresholds[0] = tempErrorThresholds[0];
 		errorThresholds[1] = tempErrorThresholds[1];
 	}
 
 	// If encoder count per steps has changed, we need to re-tune
-	if ((seen & 0x1 << 1) && encoder != nullptr) {
+	if ((seen & (0x1 << 1)) && encoder != nullptr) {
 		tuningError = minimalTunes[encoder->GetType().ToBaseType()];
 	}
 
 	//TODO need to get a lock here in case there is any movement
-	if (seen & 0x1 << 0) {
+	if (seen & (0x1 << 0)) {
 		if (tempEncoderType == GetEncoderType().ToBaseType())
 		{
 			if (encoder != nullptr)
@@ -350,43 +339,23 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 				break;
 
 					case EncoderType::AS5047:
-#ifdef EXP1HCE
-						encoder = new AS5047D(*encoderSpi, EncoderCsPin);
-#elif defined(EXP1HCL)
 						encoder = new AS5047D(*Platform::sharedSpi, EncoderCsPin);
-#endif
 						if (((AS5047D*) encoder)->LoadLUT()) {
 							minimalTunes[EncoderType::AS5047] &= ~ZEROING_MANOEUVRE;
 						}
 						break;
 
 					case EncoderType::TLI5012:
-#ifdef EXP1HCE
-						encoder = new TLI5012B(*encoderSpi, EncoderCsPin);
-#elif defined(EXP1HCL)
 						encoder = new TLI5012B(*Platform::sharedSpi, EncoderCsPin);
-#endif
 						break;
 
 			case EncoderType::linearQuadrature:
-#ifdef EXP1HCE
-				encoder = new QuadratureEncoderAttiny(true);
-#elif defined(EXP1HCL)
 				encoder = new QuadratureEncoderPdec();
-#else
-# error Unknown board
-#endif
 				break;
 
 			case EncoderType::rotaryQuadrature:
-#ifdef EXP1HCE
-				encoder = new QuadratureEncoderAttiny(false);
-#elif defined(EXP1HCL)
 				// TODO: Debug why this can't be set to rotary mode
 				encoder = new QuadratureEncoderPdec();
-#else
-# error Unknown board
-#endif
 				break;
 			}
 		}
@@ -420,7 +389,7 @@ GCodeResult ClosedLoop::ProcessM569Point5(const CanMessageStartClosedLoopDataCol
 	if (msg.rate == 0) {
 		int variableCount = CountVariablesCollected(msg.filter);
 
-		const unsigned int maxSamples = (CLOSED_LOOP_DATA_BUFFER_SIZE * 14) / variableCount;
+		const unsigned int maxSamples = (DataBufferSize * 14) / variableCount;
 
 		if (msg.numSamples > maxSamples)
 		{
@@ -461,7 +430,7 @@ GCodeResult ClosedLoop::ProcessM569Point6(const CanMessageGeneric &msg, const St
 
 	uint8_t desiredTuning;
 	if (!parser.GetUintParam('V', desiredTuning)) {
-		if (tuning) {
+		if (tuning != 0) {
 			return GCodeResult::notFinished;
 		} else {
 			// Tuning has finished - there are now 3 scenarios
@@ -502,6 +471,9 @@ GCodeResult ClosedLoop::ProcessM569Point6(const CanMessageGeneric &msg, const St
 
 	// Enable all motors & disable them becoming idle
 	Platform::DriveEnableOverride(0, true);
+	//TODO with a delay here, tuning DC's large motor hardy ever succeeds. With the delay removed, it succeeds more often. So removed the delay for now.
+	//TODO the following delay will affect heater timing, so instead we should get the task that actually does the tuning to wait 100ms before starting
+	//delay(100);							// allow the motor current to build up and the brake (if any) to release
 
 	prevTuningError = tuningError;
 	tuning = desiredTuning;
@@ -527,9 +499,9 @@ void ClosedLoop::ControlLoop() noexcept
 
 	if (!closedLoopEnabled) {
 		// If closed loop disabled, do nothing
-	} else if (tuning) {											// If we need to tune, tune
+	} else if (tuning != 0) {											// If we need to tune, tune
 		PerformTune();
-		if (!tuning) {Platform::DriveEnableOverride(0, false);}		// If that was the last tuning move, release the override
+		if (tuning == 0) {Platform::DriveEnableOverride(0, false);}		// If that was the last tuning move, release the override
 	} else if (tuningError) {
 		// Don't do anything if there is a tuning error
 		SetMotorPhase(0, 0);
@@ -574,7 +546,7 @@ void ClosedLoop::ControlLoop() noexcept
 		}
 
 		// If we are using RecordingMode::OnNextMove, wait for a move to start
-		float startRecordingTrigger = targetMotorSteps;
+		startRecordingTrigger = targetMotorSteps;
 		while (modeRequested == RecordingMode::OnNextMove && startRecordingTrigger == targetMotorSteps)
 		{
 			TaskBase::Take(10);
@@ -774,40 +746,6 @@ void ClosedLoop::ControlMotorCurrents() noexcept
 	lastError = currentError;
 }
 
-# ifdef EXP1HCE
-static SharedSpiDevice *encoderSpi = nullptr;
-
-static void GenerateAttinyClock()
-{
-	// Currently we program the DPLL to generate 48MHz output, so to get 16MHz we divide by 3 and set the Improve Duty Cycle bit
-	// We could instead program the DPLL to generate 96MHz and divide it by an extra factor of 2 in the other GCLKs
-	// Or we could divide by 4 and be content with 12MHz.
-	ConfigureGclk(ClockGenGclkNumber, GclkSource::dpll, 3, true);
-	SetPinFunction(ClockGenPin, ClockGenPinPeriphMode);
-}
-
-void  ClosedLoop::TurnAttinyOff() noexcept
-{
-	programmer->TurnAttinyOff();
-}
-# endif
-
-# ifdef EXP1HCE
-void  ClosedLoop::EnableEncodersSpi() noexcept
-{
-	SetPinFunction(EncoderMosiPin, EncoderMosiPinPeriphMode);
-	SetPinFunction(EncoderSclkPin, EncoderSclkPinPeriphMode);
-	SetPinFunction(EncoderMisoPin, EncoderMisoPinPeriphMode);
-}
-
-void  ClosedLoop::DisableEncodersSpi() noexcept
-{
-	ClearPinFunction(EncoderMosiPin);
-	ClearPinFunction(EncoderSclkPin);
-	ClearPinFunction(EncoderMisoPin);
-}
-# endif
-
 EncoderType ClosedLoop::GetEncoderType() noexcept
 {
 	return (encoder == nullptr) ? EncoderType::none : encoder->GetType();
@@ -825,7 +763,7 @@ void ClosedLoop::Diagnostics(const StringRef& reply) noexcept
 
 	reply.catf(", pre-error threshold: %f, error threshold: %f", (double) errorThresholds[0], (double) errorThresholds[1]);
 	reply.catf(", reverse polarity: %s", reversePolarity ? "yes" : "no");
-	reply.catf(", tuning: %#x, tuning error: %#x", tuning, tuningError);
+	reply.catf(", tuning mode: %#x, tuning error: %#x", tuning, tuningError);
 
 	if (encoder != nullptr)
 	{
