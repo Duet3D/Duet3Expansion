@@ -831,10 +831,7 @@ void Platform::Init()
 		motorCurrents[i] = 0.0;
 		pressureAdvanceClocks[i] = 0.0;
 		driverStates[i] = DriverStateControl(DriverStateControl::driverDisabled);
-
-# if HAS_SMART_DRIVERS
-		moveInstance->SetMicrostepping(i, 16, true);
-# endif
+		// We can't set microstepping here because moveInstance hasn't been created yet
 	}
 
 # if HAS_STALL_DETECT
@@ -2129,6 +2126,20 @@ GCodeResult Platform::DoDiagnosticTest(const CanMessageDiagnosticTest& msg, cons
 			reply.lcatf("Clock diff %" PRIu32 ", ts diff %" PRIu32, endClocks - startClocks, tsDiff);
 		}
 		return GCodeResult::ok;
+
+#if SAME5x
+	case 500:												// report write buffer
+		reply.printf("Write buffer is %s", (SCnSCB->ACTLR & SCnSCB_ACTLR_DISDEFWBUF_Msk) ? "disabled" : "enabled");
+		return GCodeResult::ok;
+
+	case 501:
+		SCnSCB->ACTLR |= SCnSCB_ACTLR_DISDEFWBUF_Msk;		// disable write buffer
+		return GCodeResult::ok;
+
+	case 502:
+		SCnSCB->ACTLR &= ~SCnSCB_ACTLR_DISDEFWBUF_Msk;		// enable write buffer
+		return GCodeResult::ok;
+#endif
 
 	case 1001:	// test watchdog
 		deferredCommand = DeferredCommand::testWatchdog;

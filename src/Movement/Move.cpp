@@ -106,6 +106,13 @@ void Move::Init()
 
 	moveTask = new Task<MoveTaskStackWords>;
 	moveTask->Create(MoveLoop, "Move", this, TaskPriority::MovePriority);
+
+# if HAS_SMART_DRIVERS
+	for (size_t i = 0; i < NumDrivers; ++i)
+	{
+		SetMicrostepping(i, 16, true);
+	}
+# endif
 }
 
 void Move::Exit()

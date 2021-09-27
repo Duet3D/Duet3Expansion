@@ -199,6 +199,10 @@ void *Tasks::GetNVMBuffer(const uint32_t *stk) noexcept
 	Cache::Enable();
 #endif
 
+#if 0	// If we get an imprecise hard fault reported immediately after startup, temporarily enable this to make all hard faults precise, with some loss of performance
+	SCnSCB->ACTLR |= SCnSCB_ACTLR_DISDEFWBUF_Msk;		// disable write buffer
+#endif
+
 	idleTask.AddToList();			// add the FreeRTOS internal tasks to the task list
 
 #if configUSE_TIMERS
