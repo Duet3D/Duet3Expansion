@@ -175,6 +175,10 @@ namespace Platform
 
 	inline void StepDriverHigh()
 	{
+#  if SUPPORT_CLOSED_LOOP
+		ClosedLoop::TakeStep();
+		if (ClosedLoop::GetClosedLoopEnabled()) {return;}
+#  endif
 #  if DIFFERENTIAL_STEPPER_OUTPUTS || ACTIVE_HIGH_STEP
 			StepPio->OUTSET.reg = DriverBit;
 #  else

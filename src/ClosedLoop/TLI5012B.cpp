@@ -9,7 +9,9 @@
 
 #if SUPPORT_CLOSED_LOOP
 
-TLI5012B::TLI5012B(SharedSpiDevice& spiDev, Pin p_csPin) noexcept : SpiEncoder(spiDev, 60000, SpiMode::mode1, false, p_csPin)	//TODO use correct frequency and mode
+TLI5012B::TLI5012B(SharedSpiDevice& spiDev, Pin p_csPin) noexcept
+: SpiEncoder(spiDev, 60000, SpiMode::mode1, false, p_csPin),	//TODO use correct frequency and mode
+  AbsoluteEncoder()
 {
 }
 
@@ -31,7 +33,7 @@ void TLI5012B::Disable() noexcept
 	//TODO
 }
 
-int32_t TLI5012B::GetReading() noexcept
+uint32_t TLI5012B::GetAbsolutePosition(bool& error) noexcept
 {
 	//TODO
 	return 0;

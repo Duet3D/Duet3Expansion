@@ -1,5 +1,5 @@
 /*
- * ClosedLoop.h
+ * Trigonometry.h
  *
  *  Created on: 12 Jul 2021
  *      Author: Louis

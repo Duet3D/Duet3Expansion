@@ -14,6 +14,8 @@
 
 #include <GCodes/GCodeResult.h>
 
+NamedEnum(EncoderPositioningType, uint8_t, absolute, relative);
+
 class Encoder
 {
 public:
@@ -22,6 +24,9 @@ public:
 
 	// Get the type of this encoder
 	virtual EncoderType GetType() const noexcept = 0;
+
+	// Get the positioning type of this encoder (absolute or relative)
+	virtual EncoderPositioningType GetPositioningType() const noexcept = 0;
 
 	// Initialise the encoder and enable it if successful. If there are any warnings or errors, put the corresponding message text in 'reply'.
 	virtual GCodeResult Init(const StringRef& reply) noexcept = 0;

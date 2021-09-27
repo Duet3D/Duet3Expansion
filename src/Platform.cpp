@@ -1593,9 +1593,8 @@ bool Platform::GetDirectionValue(size_t driver)
 void Platform::SetDirection(bool direction)
 {
 # if SUPPORT_CLOSED_LOOP
-	if (ClosedLoop::GetClosedLoopEnabled()) {ClosedLoop::SetStepDirection(direction);}
-	else
-	{
+	ClosedLoop::SetStepDirection(direction);
+	if (ClosedLoop::GetClosedLoopEnabled()) {return;}
 # endif
 # if DIFFERENTIAL_STEPPER_OUTPUTS || ACTIVE_HIGH_DIR
 	// Active high direction signal
@@ -1623,9 +1622,6 @@ void Platform::SetDirection(bool direction)
 	if (isSlowDriver)
 	{
 		DDA::lastDirChangeTime = StepTimer::GetTimerTicks();
-	}
-# endif
-# if SUPPORT_CLOSED_LOOP
 	}
 # endif
 }
