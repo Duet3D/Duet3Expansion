@@ -23,14 +23,14 @@
 class RelativeEncoder : public Encoder
 {
 public:
-	inline RelativeEncoder() noexcept : offset(0) {}
+	RelativeEncoder() noexcept : offset(0) {}
 
 	// Offset management
-	inline void SetOffset(int32_t newOffset) noexcept { offset += newOffset; }
-	inline void ClearOffset() noexcept { offset = 0; }
+	void SetOffset(int32_t newOffset) noexcept { offset += newOffset; }
+	void ClearOffset() noexcept { offset = 0; }
 
 	// Get the current reading
-	inline int32_t GetReading() noexcept {
+	int32_t GetReading() noexcept {
 		bool error;	// TODO: How to handle error?
 		return GetRelativePosition(error) + offset;
 	}
@@ -40,7 +40,7 @@ public:
 
 protected:
 	// Get the relative position since the start
-	virtual int32_t GetRelativePosition(bool& error) noexcept;
+	virtual int32_t GetRelativePosition(bool& error) noexcept = 0;
 
 	// For calculating the raw reading
 	int32_t offset;

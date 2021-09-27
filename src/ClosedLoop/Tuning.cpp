@@ -1,6 +1,8 @@
 
 #include "ClosedLoop.h"
 
+#if SUPPORT_CLOSED_LOOP
+
 # include "AS5047D.h"
 # include "AbsoluteEncoder.h"
 # include "RelativeEncoder.h"
@@ -10,8 +12,6 @@
 # else
 #  error Cannot support closed loop with the specified hardware
 # endif
-
-#if SUPPORT_CLOSED_LOOP
 
 static int32_t tuneCounter;							// A counter for tuning tasks to use
 static constexpr uint32_t PHASE_STEP_DISTANCE = 8;	// The distance of one small step, essentially a speed control.
@@ -497,4 +497,4 @@ void ClosedLoop::PerformTune() noexcept
 
 }
 
-#endif
+#endif	// #if SUPPORT_CLOSED_LOOP

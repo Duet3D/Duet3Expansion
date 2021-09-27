@@ -61,8 +61,7 @@ static inline bool CheckResponse(uint16_t response) noexcept
 
 AS5047D::AS5047D(SharedSpiDevice& spiDev, Pin p_csPin) noexcept
 	: SpiEncoder(spiDev, AS5047ClockFrequency, SpiMode::mode1, false, p_csPin),
-	  AbsoluteEncoder(),
-	  lastAngle(0)
+	  AbsoluteEncoder()
 {
 }
 
