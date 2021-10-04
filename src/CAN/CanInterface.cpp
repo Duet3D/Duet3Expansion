@@ -495,11 +495,13 @@ void CanInterface::SendAnnounce(CanMessageBuffer *buf) noexcept
 {
 	if (!mainBoardAcknowledgedAnnounce)
 	{
-		auto msg = buf->SetupBroadcastMessage<CanMessageAnnounce>(boardAddress);
+		auto msg = buf->SetupBroadcastMessage<CanMessageAnnounceNew>(boardAddress);
 		msg->timeSinceStarted = millis();
 		msg->numDrivers = NumDrivers;
 		msg->zero = 0;
-		SafeSnprintf(msg->boardTypeAndFirmwareVersion, ARRAY_SIZE(msg->boardTypeAndFirmwareVersion), "%s|%s (%s%s)", BOARD_TYPE_NAME, VERSION, IsoDate, TIME_SUFFIX);
+		memcpy(msg->uniqueId, Platform::GetUniqueId().GetRaw(), sizeof(msg->uniqueId));
+		// Note, board type name, firmware version, firmware date and firmware time are limited to 43 characters in the new
+		SafeSnprintf(msg->boardTypeAndFirmwareVersion, ARRAY_SIZE(msg->boardTypeAndFirmwareVersion), "%s|%s (%s%.6s)", BOARD_TYPE_NAME, VERSION, IsoDate, TIME_SUFFIX);
 		buf->dataLength = msg->GetActualDataLength();
 		Send(buf);
 	}

@@ -87,7 +87,7 @@ namespace Platform
 {
 	static uint32_t errorCodeBits = 0;
 
-	uint32_t uniqueId[5];
+	UniqueIdBase uniqueId;
 	bool isPrinting = false;
 #ifdef TOOL1LC
 	static uint8_t boardVariant = 0;
@@ -872,16 +872,7 @@ void Platform::Init()
 	ExtendedAnalog::Init(*sharedSpi);					// must init sharedSpi before calling this
 #endif
 
-	// Read the unique ID
-	for (unsigned int i = 0; i < 4; ++i)
-	{
-		uniqueId[i] = *reinterpret_cast<const uint32_t*>(SerialNumberAddresses[i]);
-	}
-
-	// Put the checksum at the end
-	// We only print 30 5-bit characters = 128 data bits + 22 checksum bits. So compress the 32 checksum bits into 22.
-	uniqueId[4] = uniqueId[0] ^ uniqueId[1] ^ uniqueId[2] ^ uniqueId[3];
-	uniqueId[4] ^= (uniqueId[4] >> 10);
+	uniqueId.SetFromCurrentBoard();
 
 	InitialiseInterrupts();
 
@@ -1883,56 +1874,16 @@ uint8_t Platform::ReadBoardAddress()
 
 #endif
 
-// Append the unique processor ID to a string as 30 base5 alphanumeric digits with 5 embedded separators
-void Platform::AppendUniqueId(const StringRef& str)
+// Get a pointer to the four unique ID dwords
+const UniqueIdBase& Platform::GetUniqueId() noexcept
 {
-	for (size_t i = 0; i < 30; ++i)
-	{
-		if ((i % 5) == 0 && i != 0)
-		{
-			str.cat('-');
-		}
-		const size_t index = (i * 5) / 32;
-		const size_t shift = (i * 5) % 32;
-		uint32_t val = uniqueId[index] >> shift;
-		if (shift > 32 - 5)
-		{
-			// We need some bits from the next dword too
-			val |= uniqueId[index + 1] << (32 - shift);
-		}
-		val &= 31;
-		char c;
-		if (val < 10)
-		{
-			c = val + '0';
-		}
-		else
-		{
-			c = val + ('A' - 10);
-			// We have 26 letters in the usual A-Z alphabet and we only need 22 of them plus 0-9.
-			// So avoid using letters C, E, I and O which are easily mistaken for G, F, 1 and 0.
-			if (c >= 'C')
-			{
-				++c;
-			}
-			if (c >= 'E')
-			{
-				++c;
-			}
-			if (c >= 'I')
-			{
-				++c;
-			}
-			if (c >= 'O')
-			{
-				++c;
-			}
-		}
-		str.cat(c);
-	}
+	return uniqueId;
 }
 
-#if HAS_SMART_DRIVERS
+#if SUPPORT_DRIVERS
+
+# if HAS_SMART_DRIVERS
+
 // TMC driver temperatures
 float Platform::GetTmcDriversTemperature()
 {
@@ -1941,9 +1892,8 @@ float Platform::GetTmcDriversTemperature()
 			: (temperatureWarningDrivers.Intersects(mask)) ? 100.0
 				: 0.0;
 }
-#endif
 
-#if SUPPORT_DRIVERS
+# endif
 
 // Function to broadcast the drivers status message. Called only by the Heat task.
 void Platform::SendDriversStatus(CanMessageBuffer& buf)
@@ -1968,7 +1918,7 @@ void Platform::SendDriversStatus(CanMessageBuffer& buf)
 
 #endif
 
-void Platform::Tick()
+void Platform::Tick() noexcept
 {
 	++heatTaskIdleTicks;
 }

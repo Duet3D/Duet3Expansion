@@ -13,6 +13,7 @@
 #include "GCodes/GCodeResult.h"
 #include <Movement/StepTimer.h>
 #include <Heating/Heat.h>
+#include <UniqueIdBase.h>
 
 #if SUPPORT_CLOSED_LOOP
 # include "ClosedLoop/ClosedLoop.h"
@@ -264,9 +265,9 @@ namespace Platform
 	uint8_t ReadBoardAddress();
 #endif
 
-	void AppendUniqueId(const StringRef& str);
+	const UniqueIdBase& GetUniqueId() noexcept;
 
-	void Tick();
+	void Tick() noexcept;
 
 	void StartFirmwareUpdate();
 	void StartBootloaderUpdate();

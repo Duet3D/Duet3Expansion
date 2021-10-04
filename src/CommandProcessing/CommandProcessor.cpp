@@ -154,7 +154,7 @@ static void GenerateTestReport(const StringRef& reply)
 	if (!testFailed)
 	{
 		reply.lcat("Board ID: ");
-		Platform::AppendUniqueId(reply);
+		Platform::GetUniqueId().AppendCharsToString(reply);
 	}
 }
 
@@ -735,7 +735,7 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 		break;
 
 	case CanMessageReturnInfo::typeBoardUniqueId:
-		Platform::AppendUniqueId(reply);
+		Platform::GetUniqueId().AppendCharsToString(reply);
 		break;
 
 	case CanMessageReturnInfo::typeDiagnosticsPart0 + 1:
