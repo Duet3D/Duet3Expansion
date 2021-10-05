@@ -373,11 +373,11 @@ void Heat::Exit()
 				// We must add fields in the following order: VIN, V12, MCU temperature
 				size_t index = 0;
 #if HAS_VOLTAGE_MONITOR
-				boardStatusMsg->values[index++] = Platform::GetPowerVoltages();
+				boardStatusMsg->values[index++] = Platform::GetPowerVoltages(false);
 				boardStatusMsg->hasVin = true;
 #endif
 #if HAS_12V_MONITOR
-				boardStatusMsg->values[index++] = Platform::GetV12Voltages();
+				boardStatusMsg->values[index++] = Platform::GetV12Voltages(false);
 				boardStatusMsg->hasV12 = true;
 #endif
 #if HAS_CPU_TEMP_SENSOR

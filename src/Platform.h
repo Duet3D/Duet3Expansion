@@ -286,12 +286,12 @@ namespace Platform
 	}
 
 #if HAS_VOLTAGE_MONITOR
-	MinCurMax GetPowerVoltages() noexcept;
+	MinCurMax GetPowerVoltages(bool resetMinMax) noexcept;
 	float GetCurrentVinVoltage() noexcept;
 #endif
 
 #if HAS_12V_MONITOR
-	MinCurMax GetV12Voltages() noexcept;
+	MinCurMax GetV12Voltages(bool resetMinMax) noexcept;
 	float GetCurrentV12Voltage() noexcept;
 #endif
 

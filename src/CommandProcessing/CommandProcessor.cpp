@@ -705,14 +705,14 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 		reply.cat("\"");
 #if HAS_VOLTAGE_MONITOR
 		{
-			const MinCurMax vinVoltage = Platform::GetPowerVoltages();
+			const MinCurMax vinVoltage = Platform::GetPowerVoltages(false);
 			reply.catf(",\"vin\":{\"min\":%.1f,\"cur\":%.1f,\"max\":%.1f}",
 						(double)vinVoltage.minimum, (double)vinVoltage.current, (double)vinVoltage.maximum);
 		}
 #endif
 #if HAS_12V_MONITOR
 		{
-			const MinCurMax v12Voltage = Platform::GetV12Voltages();
+			const MinCurMax v12Voltage = Platform::GetV12Voltages(false);
 			reply.catf(",\"v12\":{\"min\":%.1f,\"cur\":%.1f,\"max\":%.1f}",
 						(double)v12Voltage.minimum, (double)v12Voltage.current, (double)v12Voltage.maximum);
 		}
@@ -804,22 +804,29 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 #endif
 			StepTimer::Diagnostics(reply);
 
-#if HAS_VOLTAGE_MONITOR && HAS_12V_MONITOR
-			reply.lcatf("VIN: %.1fV, V12: %.1fV", (double)Platform::GetCurrentVinVoltage(), (double)Platform::GetCurrentV12Voltage());
-#elif HAS_VOLTAGE_MONITOR
-			reply.lcatf("VIN: %.1fV", (double)Platform::GetCurrentVinVoltage());
-#elif HAS_12V_MONITOR
-			reply.lcatf("V12: %.1fV", (double)Platform::GetCurrentV12Voltage());
+#if HAS_VOLTAGE_MONITOR
+			{
+				const MinCurMax vin = Platform::GetPowerVoltages(true);
+				reply.lcatf("VIN voltage: min %.1f, current %.1f, max %.1f", (double)vin.minimum, (double)vin.current, (double)vin.maximum);
+			}
+#endif
+#if HAS_12V_MONITOR
+			{
+				const MinCurMax v12 = Platform::GetV12Voltages(true);
+				reply.lcatf("V12 voltage: min %.1f, current %.1f, max %.1f", (double)v12.minimum, (double)v12.current, (double)v12.maximum);
+			}
 #endif
 
 #if HAS_CPU_TEMP_SENSOR
 			const MinCurMax& mcuTemperature = Platform::GetMcuTemperatures();
 			reply.lcatf("MCU temperature: min %.1fC, current %.1fC, max %.1fC", (double)mcuTemperature.minimum, (double)mcuTemperature.current, (double)mcuTemperature.maximum);
 #endif
+#if 0	// the following are no longer needed
 			uint32_t conversionsStarted, conversionsCompleted, conversionTimeouts, errors;
 			AnalogIn::GetDebugInfo(conversionsStarted, conversionsCompleted, conversionTimeouts, errors);
 			reply.lcatf("Ticks since heat task active %" PRIu32 ", ADC conversions started %" PRIu32 ", completed %" PRIu32 ", timed out %" PRIu32 ", errs %" PRIu32,
 						Platform::GetHeatTaskIdleTicks(), conversionsStarted, conversionsCompleted, conversionTimeouts, errors);
+#endif
 		}
 		break;
 

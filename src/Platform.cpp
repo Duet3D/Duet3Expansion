@@ -959,13 +959,16 @@ void Platform::Spin()
 
 #if HAS_12V_MONITOR
 	currentV12 = v12Filter.GetSum()/v12Filter.NumAveraged();
-	if (currentV12 < lowestV12)
+	if (v12Filter.IsValid())
 	{
-		lowestV12 = currentV12;
-	}
-	if (currentV12 > highestV12)
-	{
-		highestV12 = currentV12;
+		if (currentV12 < lowestV12)
+		{
+			lowestV12 = currentV12;
+		}
+		if (currentV12 > highestV12)
+		{
+			highestV12 = currentV12;
+		}
 	}
 
 	const float volts12 = (currentV12 * V12MonitorVoltageRange)/(1u << AnalogIn::AdcBits);
@@ -1261,14 +1264,17 @@ void Platform::SpinMinimal()
 
 #if HAS_VOLTAGE_MONITOR
 	// Get the VIN voltage
-	currentVin = vinFilter.GetSum()/vinFilter.NumAveraged();
-	if (currentVin < lowestVin)
+	currentVin = vinFilter.GetSum()/vinFilter.NumAveraged();			// we must store this even if it is not valid yet
+	if (vinFilter.IsValid())
 	{
-		lowestVin = currentVin;
-	}
-	if (currentVin > highestVin)
-	{
-		highestVin = currentVin;
+		if (currentVin < lowestVin)
+		{
+			lowestVin = currentVin;
+		}
+		if (currentVin > highestVin)
+		{
+			highestVin = currentVin;
+		}
 	}
 #endif
 }
@@ -2143,12 +2149,16 @@ bool Platform::WasDeliberateError() noexcept
 
 #if HAS_VOLTAGE_MONITOR
 
-MinCurMax Platform::GetPowerVoltages() noexcept
+MinCurMax Platform::GetPowerVoltages(bool resetMinMax) noexcept
 {
 	MinCurMax result;
 	result.minimum = AdcReadingToPowerVoltage(lowestVin);
 	result.current = AdcReadingToPowerVoltage(currentVin);
 	result.maximum = AdcReadingToPowerVoltage(highestVin);
+	if (resetMinMax)
+	{
+		lowestVin = highestVin = currentVin;
+	}
 	return result;
 }
 
@@ -2161,12 +2171,16 @@ float Platform::GetCurrentVinVoltage() noexcept
 
 #if HAS_12V_MONITOR
 
-MinCurMax Platform::GetV12Voltages() noexcept
+MinCurMax Platform::GetV12Voltages(bool resetMinMax) noexcept
 {
 	MinCurMax result;
 	result.minimum = AdcReadingToPowerVoltage(lowestV12);
 	result.current = AdcReadingToPowerVoltage(currentV12);
 	result.maximum = AdcReadingToPowerVoltage(highestV12);
+	if (resetMinMax)
+	{
+		lowestV12 = highestV12 = currentV12;
+	}
 	return result;
 }
 
