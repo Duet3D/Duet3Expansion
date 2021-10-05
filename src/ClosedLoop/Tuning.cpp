@@ -423,6 +423,7 @@ static bool ZieglerNichols(bool firstIteration) noexcept
 
 static bool newTuningMove = true;				// Indicates if a tuning move has just finished
 
+// This is called from every iteration of the closed loop control loop if tuning is enabled
 void ClosedLoop::PerformTune() noexcept
 {
 	if (tuning == 0) {return;}
@@ -440,7 +441,7 @@ void ClosedLoop::PerformTune() noexcept
 		if (encoder != nullptr
 				&& encoder->GetPositioningType() == EncoderPositioningType::absolute
 				&& (tuning & ZEROING_MANOEUVRE)) {
-			((AS5047D*) encoder)->ClearLUT();			//TODO this assumes that any absolute encoder is a AS5047D
+			((AS5047D*) encoder)->ClearLUT();			//TODO this assumes that any absolute encoder is a AS5047D. Make ClearLUT a virtual method?
 		}
 		newTuningMove = PolarityDetection(newTuningMove);
 		if (newTuningMove) {
@@ -494,7 +495,6 @@ void ClosedLoop::PerformTune() noexcept
 			tuning &= ~ZIEGLER_NICHOLS_MANOEUVRE;
 		}
 	}
-
 }
 
 #endif	// #if SUPPORT_CLOSED_LOOP

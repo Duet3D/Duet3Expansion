@@ -54,6 +54,9 @@ namespace ClosedLoop
 	constexpr size_t TaskStackWords = 200;				// Size of the stack for all closed loop tasks
 	constexpr unsigned int derivativeFilterSize = 8;	// The range of the derivative filter
 
+	constexpr unsigned int tuningStepsPerSecond = 1000;
+	constexpr uint32_t stepTicksPerTuningStep = StepTimer::StepClockRate/tuningStepsPerSecond;
+
 	// Control variables
 	// Variables that can be set by the user to determine how the closed loop controller works
 	bool 	closedLoopEnabled = false;					// Has closed loop been enabled by the user?
@@ -131,6 +134,8 @@ namespace ClosedLoop
 	StepTimer::Ticks maxControlLoopCallInterval;		// The maximum interval between the control loop being called
 	float 			 ewmaControlLoopCallInterval;		// An ewma of the frequency the control loop is called at
 
+	StepTimer::Ticks whenLastTuningStepTaken;
+
 	// Functions private to this module
 	EncoderType GetEncoderType() noexcept
 	{
@@ -140,6 +145,7 @@ namespace ClosedLoop
 	void ReadState() noexcept;
 	void CollectSample() noexcept;
 	void ControlMotorCurrents() noexcept;
+	void StartTuning(uint8_t tuningType) noexcept;
 
 	extern "C" [[noreturn]] void DataCollectionLoop(void *param) noexcept;
 	extern "C" [[noreturn]] void DataTransmissionLoop(void *param) noexcept;
@@ -421,7 +427,6 @@ GCodeResult ClosedLoop::ProcessM569Point5(const CanMessageStartClosedLoopDataCol
 	collectingData = true;
 	rateRequested = msg.rate == 0 ? 0 : (1000.0 / msg.rate) / portTICK_PERIOD_MS;
 	filterRequested = msg.filter;
-	tuning |= msg.movement;
 	samplesRequested = msg.numSamples;
 	modeRequested = (RecordingMode) msg.mode;
 
@@ -433,6 +438,7 @@ GCodeResult ClosedLoop::ProcessM569Point5(const CanMessageStartClosedLoopDataCol
 
 	// Start the data collection task
 	dataCollectionTask->Give();
+	StartTuning(tuning | msg.movement);
 	return GCodeResult::ok;
 }
 
@@ -488,9 +494,15 @@ GCodeResult ClosedLoop::ProcessM569Point6(const CanMessageGeneric &msg, const St
 	//delay(100);							// allow the motor current to build up and the brake (if any) to release
 
 	prevTuningError = tuningError;
-	tuning = desiredTuning;
+	StartTuning(desiredTuning);
 
 	return GCodeResult::notFinished;
+}
+
+void ClosedLoop::StartTuning(uint8_t tuningMode) noexcept
+{
+	whenLastTuningStepTaken = StepTimer::GetTimerTicks();
+	tuning = tuningMode;
 }
 
 void ClosedLoop::ControlLoop() noexcept
@@ -512,8 +524,15 @@ void ClosedLoop::ControlLoop() noexcept
 	if (!closedLoopEnabled) {
 		// If closed loop disabled, do nothing
 	} else if (tuning != 0) {											// If we need to tune, tune
-		PerformTune();
-		if (tuning == 0) {Platform::DriveEnableOverride(0, false);}		// If that was the last tuning move, release the override
+		const uint32_t now = StepTimer::GetTimerTicks();
+		if (now - whenLastTuningStepTaken >= stepTicksPerTuningStep)
+		{
+			whenLastTuningStepTaken = now;
+			PerformTune();
+			if (tuning == 0) {
+				Platform::DriveEnableOverride(0, false);
+			}		// If that was the last tuning move, release the override
+		}
 	} else if (tuningError) {
 		// Don't do anything if there is a tuning error
 		SetMotorPhase(0, 0);

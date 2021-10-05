@@ -45,7 +45,6 @@ private:
 
 	bool DoSpiTransaction(uint16_t command, uint16_t& response) noexcept;
 	bool GetDiagnosticRegisters(DiagnosticRegisters& regs) noexcept;
-
 };
 
 #endif
