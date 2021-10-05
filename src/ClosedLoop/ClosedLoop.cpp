@@ -82,7 +82,7 @@ atomic<float> 	ClosedLoop::targetMotorSteps = 0;		// The number of steps the mot
 float 			ClosedLoop::currentError;						// The current error
 float 			ClosedLoop::lastError = 0;						// The error from the previous iteration
 
-DerivativeAveragingFilter<ClosedLoop::derivativeFilterSize> *ClosedLoop::derivativeFilter = nullptr;// An averaging filter to smooth the derivative of the error
+DerivativeAveragingFilter<ClosedLoop::derivativeFilterSize> ClosedLoop::derivativeFilter;	// An averaging filter to smooth the derivative of the error
 
 float 	ClosedLoop::PIDPTerm;							// Proportional term
 float 	ClosedLoop::PIDITerm = 0;						// Integral term
@@ -239,7 +239,7 @@ void ClosedLoop::Init() noexcept
 	// Initialise the monitoring variables
 	ResetMonitoringVariables();
 
-	derivativeFilter = new DerivativeAveragingFilter<derivativeFilterSize>();
+	derivativeFilter.Reset();
 
 	// Set up the data collection task
 	dataCollectionTask = new Task<ClosedLoop::TaskStackWords>;
@@ -688,8 +688,8 @@ void ClosedLoop::ReadState() noexcept
 	// Calculate and store the current error
 	currentError = targetMotorSteps - currentMotorSteps;
 	float currentTimestamp = TickPeriodToTimePeriod(StepTimer::GetTimerTicks()) / 1000;
-	if (!derivativeFilter->IsInit()) {derivativeFilter->Init(currentError, currentTimestamp);}
-	derivativeFilter->ProcessReading(currentError, currentTimestamp);
+	if (!derivativeFilter.IsInit()) {derivativeFilter.Init(currentError, currentTimestamp);}
+	derivativeFilter.ProcessReading(currentError, currentTimestamp);
 
 	// Calculate stepPhase - a 0-4095 value representing the phase *within* the current step
 	float tmp = currentMotorSteps / 4;
@@ -723,7 +723,7 @@ void ClosedLoop::ControlMotorCurrents() noexcept
 	if (abs(newITerm) < 255) {		// Limit to the value the PID control signal is clamped to
 		PIDITerm = newITerm;
 	}
-	PIDDTerm = derivativeFilter->IsValid() ? Kd * (float)derivativeFilter->GetDerivative() : 0.0;
+	PIDDTerm = derivativeFilter.IsValid() ? Kd * (float)derivativeFilter.GetDerivative() : 0.0;
 	float sumOfTerms = PIDPTerm + PIDITerm + PIDDTerm;
 	PIDControlSignal = (int16_t) constrain<float>(sumOfTerms, -255, 255);	// Clamp between -255 and 255
 
@@ -838,7 +838,7 @@ void ClosedLoop::ResetError(size_t driver) noexcept
 	if (driver == 0) {
 		// Set the target position to the current position
 		ReadState();
-		derivativeFilter = new DerivativeAveragingFilter<derivativeFilterSize>();
+		derivativeFilter.Reset();
 		targetMotorSteps = currentMotorSteps;
 	}
 # else
@@ -867,10 +867,10 @@ bool ClosedLoop::SetClosedLoopEnabled(bool enabled, const StringRef &reply) noex
 			reply.copy("No encoder specified for closed loop drive mode");
 			return false;
 		}
-	}
 
-	// Reset the tuning (We have already checked encoder != nullptr)
-	tuningError = minimalTunes[encoder->GetType().ToBaseType()];
+		// Reset the tuning (We have already checked encoder != nullptr)
+		tuningError = minimalTunes[encoder->GetType().ToBaseType()];
+	}
 
 	// Set the target position to the current position
 	ResetError(0);

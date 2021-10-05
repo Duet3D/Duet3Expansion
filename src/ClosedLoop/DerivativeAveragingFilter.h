@@ -16,7 +16,9 @@
 template<size_t N> class DerivativeAveragingFilter
 {
 public:
-	DerivativeAveragingFilter() noexcept : init(false), valid(false), index(0) {}
+	DerivativeAveragingFilter() noexcept { Reset(); }
+
+	void Reset() noexcept { init = false; valid = false; index = 0; }
 
 	void Init(float reading, float timestamp) volatile noexcept
 	{
