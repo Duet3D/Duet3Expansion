@@ -437,15 +437,6 @@ GCodeResult ClosedLoop::ProcessM569Point5(const CanMessageStartClosedLoopDataCol
 	const unsigned int samplesPerBuffer =  ARRAY_SIZE(sampleBuffer) / variableCount;
 	sampleBufferLimit = samplesPerBuffer * variableCount;		// wrap the read/write pointers round when they reach this value
 
-	if (msg.rate == 0)
-	{
-		if (msg.numSamples > samplesPerBuffer)
-		{
-			reply.printf("Maximum samples is %u when sample rate is continuous (R0) and %u variables are being collected (D%d)", samplesPerBuffer, variableCount - 1, msg.filter);
-			return GCodeResult::error;
-		}
-	}
-
 	// Set up the recording vars
 	sampleBufferWritePointer = sampleBufferReadPointer = 0;
 	samplesCollected = samplesSent = 0;
