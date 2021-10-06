@@ -27,9 +27,6 @@ namespace ClosedLoop
 {
 	// Constants and variables that are used by both the ClosedLoop and the Tuning modules
 
-	// The size of the closed loop data buffer
-	constexpr unsigned int DataBufferSize = 2000;		//  (2000 readings)
-
 	// Possible tuning errors
 	constexpr uint8_t TUNE_ERR_NOT_FOUND_POLARITY			= 1u << 0;
 	constexpr uint8_t TUNE_ERR_NOT_ZEROED					= 1u << 1;
@@ -51,13 +48,6 @@ namespace ClosedLoop
 	constexpr uint8_t STEP_MANOEUVRE 						= 1u << 6;
 	constexpr uint8_t ZIEGLER_NICHOLS_MANOEUVRE 			= 1u << 7;
 	constexpr uint8_t FULL_TUNE 							= (1u << 8) - 1;
-
-	// Enumeration of closed loop recording modes
-	enum RecordingMode : uint8_t
-	{
-		Immediate = 0,
-		OnNextMove = 1,
-	};
 
 	//TODO reduce the number of these public variables, preferably to zero. Use a cleaner interface between the tuning module and the mian closed loop module.
 	extern Encoder *encoder;						// Pointer to the encoder object in use

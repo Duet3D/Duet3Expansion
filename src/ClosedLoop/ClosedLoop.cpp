@@ -50,15 +50,25 @@ float 		ClosedLoop::currentMotorSteps;				// The number of steps the motor has t
 
 namespace ClosedLoop
 {
-	// Variables and constant private to this module
+	// Constants private to this module
 	constexpr size_t TaskStackWords = 200;				// Size of the stack for all closed loop tasks
 	constexpr unsigned int derivativeFilterSize = 8;	// The range of the derivative filter
-
-	constexpr unsigned int tuningStepsPerSecond = 1000;
+	constexpr unsigned int DataBufferSize = 2000 * 14;	// When collecting samples we can accommodate 2000 readings of up to 14 samples
+	constexpr unsigned int tuningStepsPerSecond = 2000;
 	constexpr uint32_t stepTicksPerTuningStep = StepTimer::StepClockRate/tuningStepsPerSecond;
 
-	// Control variables
-	// Variables that can be set by the user to determine how the closed loop controller works
+	// Enumeration of closed loop recording modes
+	enum RecordingMode : uint8_t
+	{
+		None = 0,			// not collecting data
+		Immediate,			// collecting data now
+		OnNextMove,			// collect data when the next movement command starts executing
+		SendingData			// finished collecting data but still sending it to the main board
+	};
+
+	// Variables private to this module
+
+	// Control variables, set by the user to determine how the closed loop controller works
 	bool 	closedLoopEnabled = false;					// Has closed loop been enabled by the user?
 	uint8_t prevTuningError;							// Used to see what errors have been introduced by tuning
 
@@ -73,32 +83,42 @@ namespace ClosedLoop
 	float 	ultimateGain = 0;							// The ultimate gain of the controller (used for tuning)
 	float 	oscillationPeriod = 0;						// The oscillation period when Kp = ultimate gain
 
-	bool 		collectingData = false;					// Are we currently collecting data? If so:
-	StepTimer::Ticks dataCollectionStartTicks;			// - At what tick did data collection start?
-	uint16_t 	rateRequested;							//	- What sample rate did they request?
-	uint16_t 	filterRequested;						//	- What filter did they request?
-	uint16_t 	samplesRequested;						//	- How many samples did they request?
-	RecordingMode modeRequested;						//	- What mode did they request?
-	uint8_t 	movementRequested;						//	- Which calibration movement did they request? 0=none, 1=polarity, 2=continuous
-	float 		sampleBuffer[DataBufferSize * 14];		//	- Store the samples here (max. CLOSED_LOOP_DATA_BUFFER_SIZE samples of 12 variables)
-	ReadWriteLock sampleBufferLock;						//  - Lock for the sample buffer
-	uint16_t 	sampleBufferReadPointer = 0;			//  - Send this sample next to the mainboard
-	uint16_t 	sampleBufferWritePointer = 0;			//  - Store the next sample at this point in the buffer
+	// Data collection variables
+	// Input variables
+	volatile RecordingMode samplingMode = RecordingMode::None;	// What mode did they request? Volatile because we care about when it is written.
+	uint8_t 	movementRequested;						// Which calibration movement did they request? 0=none, 1=polarity, 2=continuous
+	uint16_t	filterRequested;						// What filter did they request?
+	volatile uint16_t samplesRequested;
+
+	// Derived variables
+	volatile unsigned int variableCount;
+	volatile uint16_t samplesCollected = 0;
+	volatile uint16_t samplesSent = 0;;
+	StepTimer::Ticks dataCollectionStartTicks;			// At what tick did data collection start?
+	StepTimer::Ticks dataCollectionIntervalTicks;		// the requested interval between samples
+	StepTimer::Ticks whenNextSampleDue;					// when it will be time to take the next sample
+
+	// Data collection buffer and related variables
+	float 	sampleBuffer[DataBufferSize];				// Ring buffer to store the samples in
+	volatile size_t sampleBufferReadPointer = 0;		// Send this sample next to the main board
+	volatile size_t sampleBufferWritePointer = 0;		// Store the next sample at this point in the buffer
+	volatile size_t	sampleBufferLimit;					// the limit for the read/write pointers, to avoid wrapping within a single set of sampled variables
+	volatile bool	sampleBufferOverflowed;				// true if we collected data faster than we could send it
 
 	// Working variables
 	// These variables are all used to calculate the required motor currents. They are declared here so they can be reported on by the data collection task
-	bool 			stepDirection = true;				// The direction the motor is attempting to take steps in
-	float 			currentError;						// The current error
-	float 			lastError = 0;						// The error from the previous iteration
+	bool 	stepDirection = true;						// The direction the motor is attempting to take steps in
+	float 	currentError;								// The current error
+	float 	lastError = 0;								// The error from the previous iteration
 
 	DerivativeAveragingFilter<derivativeFilterSize> derivativeFilter;	// An averaging filter to smooth the derivative of the error
 
 	float 	PIDPTerm;									// Proportional term
-	float 	PIDITerm = 0;								// Integral term
+	float 	PIDITerm = 0;								// Integral accumulator
 	float 	PIDDTerm;									// Derivative term
 	int16_t PIDControlSignal;							// The overall -255 to 255 signal from the PID controller
 
-	int16_t  phaseShift;								// The desired shift in the position of the motor
+	int16_t phaseShift;									// The desired shift in the position of the motor
 
 	int16_t coilA;										// The current to run through coil A
 	int16_t coilB;										// The current to run through coil A
@@ -124,7 +144,6 @@ namespace ClosedLoop
 
 	// Monitoring variables
 	// These variables monitor how fast the PID loop is running etc.
-
 	StepTimer::Ticks minControlLoopRuntime;				// The minimum time the control loop has taken to run
 	StepTimer::Ticks maxControlLoopRuntime;				// The maximum time the control loop has taken to run
 	float 			 ewmaControlLoopRuntime;			// The exponentially weighted moving average (ewma) time the control loop has taken
@@ -134,7 +153,7 @@ namespace ClosedLoop
 	StepTimer::Ticks maxControlLoopCallInterval;		// The maximum interval between the control loop being called
 	float 			 ewmaControlLoopCallInterval;		// An ewma of the frequency the control loop is called at
 
-	StepTimer::Ticks whenLastTuningStepTaken;
+	StepTimer::Ticks whenLastTuningStepTaken;			// when we last called the tuning code
 
 	// Functions private to this module
 	EncoderType GetEncoderType() noexcept
@@ -142,18 +161,19 @@ namespace ClosedLoop
 		return (encoder == nullptr) ? EncoderType::none : encoder->GetType();
 	}
 
+	// Return true if we are currently collecting data or primed to collect data or finishing sending data
+	inline bool CollectingData() noexcept { return samplingMode != RecordingMode::None; }
+
 	void ReadState() noexcept;
 	void CollectSample() noexcept;
 	void ControlMotorCurrents() noexcept;
 	void StartTuning(uint8_t tuningType) noexcept;
 
-	extern "C" [[noreturn]] void DataCollectionLoop(void *param) noexcept;
 	extern "C" [[noreturn]] void DataTransmissionLoop(void *param) noexcept;
 
 }	// end namespace
 
 // Tasks and task loops
-static Task<ClosedLoop::TaskStackWords> *dataCollectionTask;		// Data collection task - handles sampling some of the static vars in this file
 static Task<ClosedLoop::TaskStackWords> *dataTransmissionTask;		// Data transmission task - handles sending back the buffered sample data
 
 // Helper function to count the number of variables being collected by a given filter
@@ -183,20 +203,20 @@ static void ResetMonitoringVariables() {
 }
 
 // Helper function to convert between the internal representation of encoderCountPerStep, and the appropriate external representation (e.g. CPR)
-//TODO make this a virtual function member fo the encoder?
+//TODO make this a virtual function member of the encoder?
 float ClosedLoop::PulsePerStepToExternalUnits(float pps, uint8_t encoderType) noexcept {
 	switch (encoderType)
 	{
 	case EncoderType::rotaryQuadrature:
-		return pps / 4;													// Output count per step
+		return pps / 4;															// Output count per step
 	case EncoderType::AS5047:
-		return (360.0 / ((AS5047D*) ClosedLoop::encoder)->GetMaxValue()) * pps;		// Output degree per step
+		return (360.0 / ((AS5047D*) ClosedLoop::encoder)->GetMaxValue()) * pps;	// Output degree per step
 	default:
-		return pps;														// Output pulse per step
+		return pps;																// Output pulse per step
 	}
 }
 
-//TODO make this a virtual function member fo the encoder?
+//TODO make this a virtual function member of the encoder?
 float ClosedLoop::ExternalUnitsToPulsePerStep(float externalUnits, uint8_t encoderType) noexcept {
 	switch (encoderType)
 	{
@@ -245,11 +265,9 @@ static void GenerateTmcClock()
 
 void ClosedLoop::Init() noexcept
 {
-	// Init the ATTiny programmer
-	pinMode(EncoderCsPin, OUTPUT_HIGH);													// make sure that any attached SPI encoder is not selected
+	pinMode(EncoderCsPin, OUTPUT_HIGH);											// make sure that any attached SPI encoder is not selected
 
-	// The EXP1HCL board uses the standard shared SPI device
-	GenerateTmcClock();
+	GenerateTmcClock();															// generate the clock for the TMC2160A
 
 	// Initialise to no error thresholds
 	errorThresholds[0] = 0;
@@ -259,10 +277,6 @@ void ClosedLoop::Init() noexcept
 	ResetMonitoringVariables();
 
 	derivativeFilter.Reset();
-
-	// Set up the data collection task
-	dataCollectionTask = new Task<ClosedLoop::TaskStackWords>;
-	dataCollectionTask->Create(DataCollectionLoop, "CLData", nullptr, TaskPriority::ClosedLoop);
 
 	// Set up the data transmission task
 	dataTransmissionTask = new Task<ClosedLoop::TaskStackWords>;
@@ -357,16 +371,16 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 				encoder = nullptr;
 				break;
 
-					case EncoderType::AS5047:
-						encoder = new AS5047D(*Platform::sharedSpi, EncoderCsPin);
-						if (((AS5047D*) encoder)->LoadLUT()) {
-							minimalTunes[EncoderType::AS5047] &= ~ZEROING_MANOEUVRE;
-						}
-						break;
+			case EncoderType::AS5047:
+				encoder = new AS5047D(*Platform::sharedSpi, EncoderCsPin);
+				if (((AS5047D*) encoder)->LoadLUT()) {
+					minimalTunes[EncoderType::AS5047] &= ~ZEROING_MANOEUVRE;
+				}
+				break;
 
-					case EncoderType::TLI5012:
-						encoder = new TLI5012B(*Platform::sharedSpi, EncoderCsPin);
-						break;
+			case EncoderType::TLI5012:
+				encoder = new TLI5012B(*Platform::sharedSpi, EncoderCsPin);
+				break;
 
 			case EncoderType::linearQuadrature:
 				encoder = new QuadratureEncoderPdec();
@@ -395,49 +409,54 @@ GCodeResult ClosedLoop::ProcessM569Point5(const CanMessageStartClosedLoopDataCol
 {
 	if (encoder == nullptr || msg.deviceNumber != 0)
 	{
-		reply.copy("No encoder has been specified");
+		reply.copy("No encoder has been configured");
 		return GCodeResult::error;
 	}
 
-	if (collectingData)
+	if (CollectingData())
 	{
-		reply.copy("Drive is already collecting data");
+		reply.copy("Driver is already collecting data");
 		return GCodeResult::error;
 	}
 
-	if (msg.rate == 0) {
-		int variableCount = CountVariablesCollected(msg.filter);
+	const uint8_t requestedMode = msg.mode + 1;			// the A parameter is out of step with the enumeration by 1
+	if (requestedMode != (uint8_t)RecordingMode::Immediate && msg.mode != (uint8_t)RecordingMode::OnNextMove)
+	{
+		reply.copy("Invalid recording mode");
+		return GCodeResult::error;
+	}
 
-		const unsigned int maxSamples = (DataBufferSize * 14) / variableCount;
+	if (msg.movement > FULL_TUNE)
+	{
+		reply.printf("Maximum value for V is %u. V%u is invalid", FULL_TUNE, msg.movement);
+		return GCodeResult::error;
+	}
 
-		if (msg.numSamples > maxSamples)
+	// Calculate how many samples will fit in the buffer
+	variableCount = CountVariablesCollected(msg.filter);
+	const unsigned int samplesPerBuffer =  ARRAY_SIZE(sampleBuffer) / variableCount;
+	sampleBufferLimit = samplesPerBuffer * variableCount;		// wrap the read/write pointers round when they reach this value
+
+	if (msg.rate == 0)
+	{
+		if (msg.numSamples > samplesPerBuffer)
 		{
-			reply.printf("Maximum samples is %d when sample rate is continuous (R0) and %d variables are being collected (D%d)", maxSamples, variableCount - 1, msg.filter);
+			reply.printf("Maximum samples is %u when sample rate is continuous (R0) and %u variables are being collected (D%d)", samplesPerBuffer, variableCount - 1, msg.filter);
 			return GCodeResult::error;
 		}
 	}
 
-	if (msg.movement > FULL_TUNE) {
-		reply.printf("Maximum value for V is %d. V%d is invalid.", FULL_TUNE, msg.movement);
-		return GCodeResult::error;
-	}
-
 	// Set up the recording vars
-	dataCollectionStartTicks = StepTimer::GetTimerTicks();
-	collectingData = true;
-	rateRequested = msg.rate == 0 ? 0 : (1000.0 / msg.rate) / portTICK_PERIOD_MS;
+	sampleBufferWritePointer = sampleBufferReadPointer = 0;
+	samplesCollected = samplesSent = 0;
+	sampleBufferOverflowed = false;
 	filterRequested = msg.filter;
 	samplesRequested = msg.numSamples;
-	modeRequested = (RecordingMode) msg.mode;
+	startRecordingTrigger = targetMotorSteps;					// mark the current number of steps in case we are using RecordingMode::OnNextMove
+	dataCollectionIntervalTicks = (msg.rate == 0) ? 1 : StepTimer::StepClockRate/msg.rate;
+	dataCollectionStartTicks = whenNextSampleDue = StepTimer::GetTimerTicks();
+	samplingMode = (RecordingMode)requestedMode;				// do this one last, it triggers data collection
 
-	// If we are using RecordingMode::OnNextMove, mark the current state
-	if (modeRequested == RecordingMode::OnNextMove)
-	{
-		startRecordingTrigger = targetMotorSteps;
-	}
-
-	// Start the data collection task
-	dataCollectionTask->Give();
 	StartTuning(tuning | msg.movement);
 	return GCodeResult::ok;
 }
@@ -447,43 +466,53 @@ GCodeResult ClosedLoop::ProcessM569Point6(const CanMessageGeneric &msg, const St
 	CanMessageGenericParser parser(msg, M569Point6Params);
 
 	uint8_t desiredTuning;
-	if (!parser.GetUintParam('V', desiredTuning)) {
-		if (tuning != 0) {
+	if (!parser.GetUintParam('V', desiredTuning))
+	{
+		// We have been called to return the status after the previous call returned "not finished"
+		if (tuning != 0)
+		{
 			return GCodeResult::notFinished;
-		} else {
-			// Tuning has finished - there are now 3 scenarios
-			// 1. No tuning errors exist (!tuningError)							= OK
-			// 2. No new tuning errors exist !(~prevTuningError & tuningError)	= WARNING
-			// 3. A new tuning error has been introduced (else)					= WARNING
+		}
 
-			if (!tuningError) {
-				reply.copy("Tuning completed successfully.");
-				return GCodeResult::ok;
-			} else if (!(~prevTuningError & tuningError)) {
-				reply.copy("No new tuning errors have been found, but some existing tuning errors exist.");
-				ReportTuningErrors(tuningError, reply);
-				return GCodeResult::warning;
-			} else {
-				reply.copy("One or more tuning errors occurred.");
-				ReportTuningErrors(~prevTuningError & tuningError, reply);
-				if (prevTuningError & tuningError) {
-					reply.catf(" In addition, the following tuning errors were already present:");
-					ReportTuningErrors(prevTuningError & tuningError, reply);
-				}
-				return GCodeResult::warning;
+		// Tuning has finished - there are now 3 scenarios
+		// 1. No tuning errors exist (!tuningError)							= OK
+		// 2. No new tuning errors exist !(~prevTuningError & tuningError)	= WARNING
+		// 3. A new tuning error has been introduced (else)					= WARNING
+		if (tuningError == 0)
+		{
+			reply.copy("Tuning completed successfully");
+			return GCodeResult::ok;
+		}
+
+		if ((~prevTuningError & tuningError) == 0)
+		{
+			reply.copy("No new tuning errors have been found, but some previous tuning errors were not cleared");
+			ReportTuningErrors(tuningError, reply);
+		}
+		else
+		{
+			reply.copy("One or more tuning errors occurred");
+			ReportTuningErrors(~prevTuningError & tuningError, reply);
+			if (prevTuningError & tuningError)
+			{
+				reply.catf(" In addition, the following tuning errors were already present");
+				ReportTuningErrors(prevTuningError & tuningError, reply);
 			}
 		}
+		return GCodeResult::warning;
 	}
 
+	// Here if this is a new command to start a tuning move
 	// Check we are in direct drive mode
-	if (SmartDrivers::GetDriverMode(0) != DriverMode::direct) {
-		reply.copy("Drive is not in closed loop mode.");
+	if (SmartDrivers::GetDriverMode(0) != DriverMode::direct)
+	{
+		reply.copy("Drive is not in closed loop mode");
 		return GCodeResult::error;
 	}
 
 	if (desiredTuning > FULL_TUNE)
 	{
-		reply.printf("Invalid 'V' parameter value. V may be 0-%d.", FULL_TUNE);
+		reply.printf("Invalid 'V' parameter value. V may be 0-%d", FULL_TUNE);
 		return GCodeResult::error;
 	}
 
@@ -508,9 +537,9 @@ void ClosedLoop::StartTuning(uint8_t tuningMode) noexcept
 void ClosedLoop::ControlLoop() noexcept
 {
 	// Record the control loop call interval
-	StepTimer::Ticks loopCallTime = StepTimer::GetTimerTicks();
+	const StepTimer::Ticks loopCallTime = StepTimer::GetTimerTicks();
 	if (prevControlLoopCallTime != 0) {
-		StepTimer::Ticks timeElapsed = loopCallTime - prevControlLoopCallTime;
+		const StepTimer::Ticks timeElapsed = loopCallTime - prevControlLoopCallTime;
 		ewmaControlLoopCallInterval = ewmaControlLoopCallInterval == 0
 				? timeElapsed
 				: timeElapsed * 0.5 + ewmaControlLoopCallInterval * 0.5;
@@ -524,10 +553,10 @@ void ClosedLoop::ControlLoop() noexcept
 	if (!closedLoopEnabled) {
 		// If closed loop disabled, do nothing
 	} else if (tuning != 0) {											// If we need to tune, tune
-		const uint32_t now = StepTimer::GetTimerTicks();
-		if (now - whenLastTuningStepTaken >= stepTicksPerTuningStep)
+		// Limit the rate at which we command tuning steps
+		if (loopCallTime - whenLastTuningStepTaken >= stepTicksPerTuningStep)
 		{
-			whenLastTuningStepTaken = now;
+			whenLastTuningStepTaken = loopCallTime;
 			PerformTune();
 			if (tuning == 0) {
 				Platform::DriveEnableOverride(0, false);
@@ -541,17 +570,11 @@ void ClosedLoop::ControlLoop() noexcept
 	}
 
 	// Collect a sample, if we need to
-	if (collectingData && rateRequested == 0) {
-		if (modeRequested != RecordingMode::OnNextMove || startRecordingTrigger != targetMotorSteps) {
-			modeRequested = RecordingMode::Immediate;
-			if (samplesRequested-- > 0) {
-				CollectSample();
-			} else {
-				collectingData = false;
-				movementRequested = 0;	// Just to be safe
-				dataTransmissionTask->Give();
-			}
-		}
+	if (samplingMode == RecordingMode::Immediate && (int32_t)(loopCallTime - whenNextSampleDue) >= 0)
+	{
+		// It's time to take a sample
+		CollectSample();
+		whenNextSampleDue += dataCollectionIntervalTicks;
 	}
 
 	// Record how long this has taken to run
@@ -564,144 +587,110 @@ void ClosedLoop::ControlLoop() noexcept
 	maxControlLoopRuntime = max<StepTimer::Ticks>(maxControlLoopRuntime, loopRuntime);
 }
 
-[[noreturn]] void ClosedLoop::DataCollectionLoop(void *param) noexcept
+// Send data from the buffer to the main board over CAN
+[[noreturn]] void ClosedLoop::DataTransmissionLoop(void *param) noexcept
 {
 	while (true)
 	{
-
-		// If we are not collecting data, block the task
-		// If rateRequested == 0, the data collection is handled in ClosedLoop::ControlLoop()
-		while (!collectingData || rateRequested == 0)
+		RecordingMode locMode;			// to capture the volatile variable
+		if ((locMode = samplingMode) == RecordingMode::Immediate || locMode == RecordingMode::SendingData)
 		{
-			TaskBase::Take();
-		}
+			// Started a new data collection
+			samplesSent = 0;
 
-		// If we are using RecordingMode::OnNextMove, wait for a move to start
-		startRecordingTrigger = targetMotorSteps;
-		while (modeRequested == RecordingMode::OnNextMove && startRecordingTrigger == targetMotorSteps)
-		{
-			TaskBase::Take(10);
-		}
-
-		uint32_t lastWakeTime = xTaskGetTickCount();
-
-		// Loop for each sample
-		for (int i = 0; i < samplesRequested; i++)
-		{
+			// Loop until everything has been read. Stop when either we have sent the requested number of samples, or the state is SendingData and we have sent all the data in the buffer.
+			// Note, this may mean that the last packet contains no data and has the "last" flag set.
+			bool finished;
+			do
 			{
 				// Set up a CAN message
 				CanMessageBuffer buf(nullptr);
 				CanMessageClosedLoopData& msg = *(buf.SetupStatusMessage<CanMessageClosedLoopData>(CanInterface::GetCanAddress(), CanInterface::GetCurrentMasterAddress()));
 
 				// Populate the control fields
-				msg.numSamples = 1;
-				msg.lastPacket = (i == samplesRequested - 1);
-				msg.firstSampleNumber = i;
+				msg.firstSampleNumber = samplesSent;
 				msg.filter = filterRequested;
 				msg.zero = msg.zero2 = 0;
 
-				// Populate the data fields
-				// TODO: Pack more than one set of data into a message
-				unsigned int dataPointer = 0;
-																		{msg.data[dataPointer++] = TickPeriodToTimePeriod(StepTimer::GetTimerTicks() - dataCollectionStartTicks);}	// (Always collect this)
-				if (filterRequested & CL_RECORD_RAW_ENCODER_READING) 	{msg.data[dataPointer++] = rawEncoderReading;}
-				if (filterRequested & CL_RECORD_CURRENT_MOTOR_STEPS) 	{msg.data[dataPointer++] = currentMotorSteps;}
-				if (filterRequested & CL_RECORD_TARGET_MOTOR_STEPS)  	{msg.data[dataPointer++] = targetMotorSteps;}
-				if (filterRequested & CL_RECORD_CURRENT_ERROR) 		{msg.data[dataPointer++] = currentError;}
-				if (filterRequested & CL_RECORD_PID_CONTROL_SIGNAL)  	{msg.data[dataPointer++] = PIDControlSignal;}
-				if (filterRequested & CL_RECORD_PID_P_TERM)  			{msg.data[dataPointer++] = PIDPTerm;}
-				if (filterRequested & CL_RECORD_PID_I_TERM)  			{msg.data[dataPointer++] = PIDITerm;}
-				if (filterRequested & CL_RECORD_PID_D_TERM)  			{msg.data[dataPointer++] = PIDDTerm;}
-				if (filterRequested & CL_RECORD_STEP_PHASE)  			{msg.data[dataPointer++] = stepPhase;}
-				if (filterRequested & CL_RECORD_DESIRED_STEP_PHASE)  	{msg.data[dataPointer++] = desiredStepPhase;}
-				if (filterRequested & CL_RECORD_PHASE_SHIFT)  			{msg.data[dataPointer++] = phaseShift;}
-				if (filterRequested & CL_RECORD_COIL_A_CURRENT) 		{msg.data[dataPointer++] = coilA;}
-				if (filterRequested & CL_RECORD_COIL_B_CURRENT) 		{msg.data[dataPointer++] = coilB;}
+				unsigned int numCopied = 0;
+				unsigned int numSamplesInMessage = 0;
+				size_t copyReadPointer = sampleBufferReadPointer;			// capture volatile variable
+				do
+				{
+					while (samplesSent == samplesCollected && samplingMode == RecordingMode::Immediate)
+					{
+						TaskBase::Take();			// wait for data to be available
+					}
+
+					if (samplesSent < samplesCollected)
+					{
+						memcpy(msg.data + numCopied, sampleBuffer + copyReadPointer, variableCount * sizeof(float));
+						numCopied += variableCount;
+						copyReadPointer += variableCount;
+						if (copyReadPointer >= sampleBufferLimit)
+						{
+							copyReadPointer = 0;
+						}
+						sampleBufferReadPointer = copyReadPointer;
+						++samplesSent;
+						++numSamplesInMessage;
+					}
+					finished = samplesSent >= samplesRequested || (samplingMode != RecordingMode::Immediate && samplesSent == samplesCollected);
+				} while (!finished && numCopied + variableCount <= CanMessageClosedLoopData::MaxDataItems);
+
+				msg.numSamples = numSamplesInMessage;
+				msg.lastPacket = finished;
+				msg.overflowed = sampleBufferOverflowed;
 
 				// Send the CAN message
 				buf.dataLength = msg.GetActualDataLength();
 				CanInterface::Send(&buf);
-			}
-
-			// Pause to maintain the sample rate (TODO: Implement variable sample rate)
-			vTaskDelayUntil(&lastWakeTime, rateRequested);
+			} while (!finished);
+			samplingMode = RecordingMode::None;
 		}
-
-		// Mark that we have finished collecting data
-		collectingData = false;
+		else
+		{
+			TaskBase::Take();			// wait for a new data collection to start
+		}
 	}
 }
 
-[[noreturn]] void ClosedLoop::DataTransmissionLoop(void *param) noexcept
-{
-	while (true)
-	{
-		if (!collectingData) {	// Only do if we are not collecting data - we don't want to lock the buffer whilst moving!
-			ReadLocker locker(sampleBufferLock);
-
-			// Only attempt to transmit data if there is any
-			if (sampleBufferWritePointer > 0)
-			{
-				// Count how many bits are set in 'filterRequested'
-				unsigned int variableCount = CountVariablesCollected(filterRequested);
-
-				// Work out the maximum number of samples that can be sent in 1 packet
-				const unsigned int maxSamplesInPacket = CanMessageClosedLoopData::MaxDataItems / variableCount;
-
-				// Loop for until everything has been read
-				while (sampleBufferReadPointer < sampleBufferWritePointer) {
-					// Set up a CAN message
-					CanMessageBuffer buf(nullptr);
-					CanMessageClosedLoopData& msg = *(buf.SetupStatusMessage<CanMessageClosedLoopData>(CanInterface::GetCanAddress(), CanInterface::GetCurrentMasterAddress()));
-
-					// Populate the control fields
-					msg.firstSampleNumber = sampleBufferReadPointer / variableCount;
-					msg.filter = filterRequested;
-					msg.zero = msg.zero2 = 0;
-
-					const unsigned int samplesRemaining = (sampleBufferWritePointer - sampleBufferReadPointer) / variableCount;
-					msg.lastPacket = samplesRemaining <= maxSamplesInPacket;
-					msg.numSamples = msg.lastPacket ? samplesRemaining : maxSamplesInPacket;
-
-					const size_t numToCopy = msg.numSamples * variableCount;
-					memcpy(msg.data, sampleBuffer + sampleBufferReadPointer, numToCopy * sizeof(float));
-					sampleBufferReadPointer += numToCopy;
-
-					// Send the CAN message
-					buf.dataLength = msg.GetActualDataLength();
-					CanInterface::Send(&buf);
-				}
-
-				// If we are finished collecting data, reset the buffer
-				if (!collectingData)
-				{
-					sampleBufferReadPointer = 0;
-					sampleBufferWritePointer = 0;
-				}
-			}
-		}
-
-		TaskBase::Take(100);
-	}
-}
-
+// Store a sample in the buffer
 void ClosedLoop::CollectSample() noexcept
 {
-	WriteLocker locker(sampleBufferLock);
-															{sampleBuffer[sampleBufferWritePointer++] = TickPeriodToTimePeriod(StepTimer::GetTimerTicks() - dataCollectionStartTicks);}	// (Always collect this)
-	if (filterRequested & CL_RECORD_RAW_ENCODER_READING) 	{sampleBuffer[sampleBufferWritePointer++] = rawEncoderReading;}
-	if (filterRequested & CL_RECORD_CURRENT_MOTOR_STEPS) 	{sampleBuffer[sampleBufferWritePointer++] = currentMotorSteps;}
-	if (filterRequested & CL_RECORD_TARGET_MOTOR_STEPS)  	{sampleBuffer[sampleBufferWritePointer++] = targetMotorSteps;}
-	if (filterRequested & CL_RECORD_CURRENT_ERROR) 			{sampleBuffer[sampleBufferWritePointer++] = currentError;}
-	if (filterRequested & CL_RECORD_PID_CONTROL_SIGNAL)  	{sampleBuffer[sampleBufferWritePointer++] = PIDControlSignal;}
-	if (filterRequested & CL_RECORD_PID_P_TERM)  			{sampleBuffer[sampleBufferWritePointer++] = PIDPTerm;}
-	if (filterRequested & CL_RECORD_PID_I_TERM)  			{sampleBuffer[sampleBufferWritePointer++] = PIDITerm;}
-	if (filterRequested & CL_RECORD_PID_D_TERM)  			{sampleBuffer[sampleBufferWritePointer++] = PIDDTerm;}
-	if (filterRequested & CL_RECORD_STEP_PHASE)  			{sampleBuffer[sampleBufferWritePointer++] = stepPhase;}
-	if (filterRequested & CL_RECORD_DESIRED_STEP_PHASE)  	{sampleBuffer[sampleBufferWritePointer++] = desiredStepPhase;}
-	if (filterRequested & CL_RECORD_PHASE_SHIFT)  			{sampleBuffer[sampleBufferWritePointer++] = phaseShift;}
-	if (filterRequested & CL_RECORD_COIL_A_CURRENT) 		{sampleBuffer[sampleBufferWritePointer++] = coilA;}
-	if (filterRequested & CL_RECORD_COIL_B_CURRENT) 		{sampleBuffer[sampleBufferWritePointer++] = coilB;}
+	size_t wp = sampleBufferWritePointer;					// capture volatile variable and don't update it until all data has been written
+	if (wp == sampleBufferReadPointer && samplesSent != samplesCollected)
+	{
+		sampleBufferOverflowed = true;						// the buffer is full so tell the sending task about it
+		samplingMode = RecordingMode::SendingData;			// stop collecting data
+	}
+	else
+	{
+		sampleBuffer[wp++] = TickPeriodToTimePeriod(StepTimer::GetTimerTicks() - dataCollectionStartTicks);		// Always collect this
+
+		if (filterRequested & CL_RECORD_RAW_ENCODER_READING) 	{sampleBuffer[wp++] = (float)rawEncoderReading;}
+		if (filterRequested & CL_RECORD_CURRENT_MOTOR_STEPS) 	{sampleBuffer[wp++] = currentMotorSteps;}
+		if (filterRequested & CL_RECORD_TARGET_MOTOR_STEPS)  	{sampleBuffer[wp++] = targetMotorSteps;}
+		if (filterRequested & CL_RECORD_CURRENT_ERROR) 			{sampleBuffer[wp++] = currentError;}
+		if (filterRequested & CL_RECORD_PID_CONTROL_SIGNAL)  	{sampleBuffer[wp++] = (float)PIDControlSignal;}
+		if (filterRequested & CL_RECORD_PID_P_TERM)  			{sampleBuffer[wp++] = PIDPTerm;}
+		if (filterRequested & CL_RECORD_PID_I_TERM)  			{sampleBuffer[wp++] = PIDITerm;}
+		if (filterRequested & CL_RECORD_PID_D_TERM)  			{sampleBuffer[wp++] = PIDDTerm;}
+		if (filterRequested & CL_RECORD_STEP_PHASE)  			{sampleBuffer[wp++] = (float)stepPhase;}
+		if (filterRequested & CL_RECORD_DESIRED_STEP_PHASE)  	{sampleBuffer[wp++] = (float)desiredStepPhase;}
+		if (filterRequested & CL_RECORD_PHASE_SHIFT)  			{sampleBuffer[wp++] = (float)phaseShift;}
+		if (filterRequested & CL_RECORD_COIL_A_CURRENT) 		{sampleBuffer[wp++] = (float)coilA;}
+		if (filterRequested & CL_RECORD_COIL_B_CURRENT) 		{sampleBuffer[wp++] = (float)coilB;}
+
+		sampleBufferWritePointer = (wp >= sampleBufferLimit) ? 0 : wp;
+		++samplesCollected;
+		if (samplesCollected == samplesRequested)
+		{
+			samplingMode = RecordingMode::SendingData;		// stop collecting data
+		}
+	}
+
+	dataTransmissionTask->Give();
 }
 
 void ClosedLoop::ReadState() noexcept
@@ -734,15 +723,15 @@ void ClosedLoop::ControlMotorCurrents() noexcept
 	float timeDelta = currentTimestamp - (TickPeriodToTimePeriod(prevControlLoopCallTime) / 1000);
 
 	// Look for a stall or pre-stall
-	if (!stall && abs(currentError) > errorThresholds[1]) {
-		// We have just stalled! Alert RRF immediately!
+	preStall = errorThresholds[0] > 0 && abs(currentError) > errorThresholds[0];
+	const bool alreadyStalled = stall;
+	stall 	 = errorThresholds[1] > 0 && abs(currentError) > errorThresholds[1];
+	if (stall && !alreadyStalled) {
 		Platform::NewDriverFault();
 	}
-	preStall = errorThresholds[0] > 0 && abs(currentError) > errorThresholds[0];
-	stall 	 = errorThresholds[1] > 0 && abs(currentError) > errorThresholds[1];
 
 	// If the current error is zero, we don't need to do anything!
-	if (!collectingData && currentError == 0) {return;}
+	if (currentError == 0 && !CollectingData()) { return; }
 
 	// Use a PID controller to calculate the required 'torque' - the control signal
 	PIDPTerm = Kp * currentError;
@@ -787,10 +776,10 @@ void ClosedLoop::Diagnostics(const StringRef& reply) noexcept
 		reply.catf(", position %" PRIi32, encoder->GetReading());
 		encoder->AppendDiagnostics(reply);
 	}
-	reply.catf(", collecting data: %s", collectingData ? "yes" : "no");
-	if (collectingData)
+	reply.catf(", collecting data: %s", CollectingData() ? "yes" : "no");
+	if (CollectingData())
 	{
-		reply.catf(" (filter: %#x, mode: %d, rate: %d, movement: %d)", filterRequested, modeRequested, rateRequested, movementRequested);
+		reply.catf(" (filter: %#x, mode: %u, rate: %u, movement: %u)", filterRequested, samplingMode, (unsigned int)(StepTimer::StepClockRate/dataCollectionIntervalTicks), movementRequested);
 	}
 
 	reply.catf(", ultimateGain=%f, oscillationPeriod=%f", (double) ultimateGain, (double) oscillationPeriod);
@@ -814,11 +803,16 @@ void ClosedLoop::Diagnostics(const StringRef& reply) noexcept
 // TODO: Instead of having this take step, why not use the current DDA to calculate where we need to be?
 void ClosedLoop::TakeStep() noexcept
 {
-	bool interpolation;	// TODO: Work out what this is for!
 # if SUPPORT_TMC2160 && SINGLE_DRIVER
-	unsigned int microsteps = SmartDrivers::GetMicrostepping(0, interpolation);
-	float microstepAngle = microsteps == 0 ? 1 : 1.0/microsteps;
+	bool dummy;			// this receives the interpolation, but we don't use it
+	const unsigned int microsteps = SmartDrivers::GetMicrostepping(0, dummy);
+	const float microstepAngle = (microsteps == 0) ? 1.0 : 1.0/microsteps;
 	targetMotorSteps = targetMotorSteps + (stepDirection ? microstepAngle : -microstepAngle) * (Platform::GetDirectionValue(0) ? 1 : -1) * (reversePolarity ? -1 : 1);
+	if (samplingMode == RecordingMode::OnNextMove)
+	{
+		dataCollectionStartTicks = whenNextSampleDue = StepTimer::GetTimerTicks();
+		samplingMode = RecordingMode::Immediate;
+	}
 # else
 #  error Cannot support closed loop with the specified hardware
 # endif
