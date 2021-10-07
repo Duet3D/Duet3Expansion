@@ -54,8 +54,10 @@ namespace ClosedLoop
 	constexpr size_t TaskStackWords = 200;				// Size of the stack for all closed loop tasks
 	constexpr unsigned int derivativeFilterSize = 8;	// The range of the derivative filter
 	constexpr unsigned int DataBufferSize = 2000 * 14;	// When collecting samples we can accommodate 2000 readings of up to 14 samples
-	constexpr unsigned int tuningStepsPerSecond = 2000;
-	constexpr uint32_t stepTicksPerTuningStep = StepTimer::StepClockRate/tuningStepsPerSecond;
+	constexpr unsigned int tuningStepsPerSecond = 2000;	// the rate at which we send 1/256 microsteps during tuning, slow enough for high-inertia motors
+	constexpr StepTimer::Ticks stepTicksPerTuningStep = StepTimer::StepClockRate/tuningStepsPerSecond;
+	constexpr StepTimer::Ticks stepTicksBeforeTuning = StepTimer::StepClockRate/10;
+														// 1/10 sec delay between enabling the driver and starting tuning, to allow for brake release and current buildup
 
 	// Enumeration of closed loop recording modes
 	enum RecordingMode : uint8_t
@@ -524,7 +526,7 @@ void ClosedLoop::StartTuning(uint8_t tuningMode) noexcept
 	if (tuningMode != 0)
 	{
 		Platform::DriveEnableOverride(0, true);					// enable the motor and prevent it becoming idle
-		whenLastTuningStepTaken = StepTimer::GetTimerTicks();
+		whenLastTuningStepTaken = StepTimer::GetTimerTicks() + stepTicksBeforeTuning;	// delay the start to allow brake release and motor current buildup
 		tuning = tuningMode;
 	}
 }
@@ -548,9 +550,12 @@ void ClosedLoop::ControlLoop() noexcept
 	if (!closedLoopEnabled) {
 		// If closed loop disabled, do nothing
 	} else if (tuning != 0) {									// if we need to tune, tune
-		// Limit the rate at which we command tuning steps
-		if (loopCallTime - whenLastTuningStepTaken >= stepTicksPerTuningStep)
+		// Limit the rate at which we command tuning steps Need to do signed comparison because initially, whenLastTuningStepTaken is in the future.
+		if ((int32_t)(loopCallTime - whenLastTuningStepTaken) >= (int32_t)stepTicksPerTuningStep)
 		{
+			if (samplingMode == RecordingMode::OnNextMove) {
+				samplingMode = RecordingMode::Immediate;
+			}
 			whenLastTuningStepTaken = loopCallTime;
 			PerformTune();
 			if (tuning == 0) {
