@@ -128,19 +128,19 @@ namespace ClosedLoop
 	bool 	stall = false;								// Has the closed loop error threshold been exceeded?
 	bool 	preStall = false;							// Has the closed loop warning threshold been exceeded?
 
-	// The bitmask of a minimal tune for each encoder type
+	// The bitmask of a minimal tuning error for each encoder type
 	// This is an array so that ZEROING_MANOEUVRE can be removed from the magnetic encoders if the LUT is in NVM
 	uint8_t minimalTunes[5] = {
 		// None
 		0,
 		// linearQuadrature
-		POLARITY_DETECTION_MANOEUVRE | ZEROING_MANOEUVRE | POLARITY_CHECK | CONTROL_CHECK | ENCODER_STEPS_CHECK,
+		TUNE_ERR_NOT_DONE_BASIC,
 		// rotaryQuadrature
-		POLARITY_DETECTION_MANOEUVRE | ZEROING_MANOEUVRE | POLARITY_CHECK | CONTROL_CHECK | ENCODER_STEPS_CHECK,
+		TUNE_ERR_NOT_DONE_BASIC,
 		// AS5047
-		POLARITY_DETECTION_MANOEUVRE | ZEROING_MANOEUVRE | POLARITY_CHECK | CONTROL_CHECK | ENCODER_STEPS_CHECK,
+		TUNE_ERR_NOT_DONE_BASIC | TUNE_ERR_NOT_CALIBRATED,
 		// TLI5012
-		POLARITY_DETECTION_MANOEUVRE | ZEROING_MANOEUVRE | POLARITY_CHECK | CONTROL_CHECK | ENCODER_STEPS_CHECK,
+		TUNE_ERR_NOT_DONE_BASIC | TUNE_ERR_NOT_CALIBRATED,
 	};
 
 
@@ -234,12 +234,11 @@ float ClosedLoop::ExternalUnitsToPulsePerStep(float externalUnits, uint8_t encod
 // Helper function to cat all the current tuning errors onto a reply in human-readable form
 static void ReportTuningErrors(uint8_t tuningErrorBitmask, const StringRef &reply)
 {
-	if (tuningErrorBitmask & ClosedLoop::TUNE_ERR_NOT_ZEROED) 					{reply.catf(" The drive has not been zeroed.");}
-	if (tuningErrorBitmask & ClosedLoop::TUNE_ERR_NOT_CHECKED_POLARITY) 		{reply.catf(" The drive has not had its polarity checked.");}
-	if (tuningErrorBitmask & ClosedLoop::TUNE_ERR_NOT_CHECKED_CONTROL) 			{reply.catf(" The drive has not had its control checked.");}
-	if (tuningErrorBitmask & ClosedLoop::TUNE_ERR_NOT_CHECKED_ENCODER_STEPS) 	{reply.catf(" The encoder has not had its count per revolution checked.");}
-	if (tuningErrorBitmask & ClosedLoop::TUNE_ERR_INCORRECT_POLARITY) 			{reply.catf(" The drive has been found to have an incorrect polarity.");}
-	if (tuningErrorBitmask & ClosedLoop::TUNE_ERR_CONTROL_FAILED) 				{reply.catf(" The drive has been found to be uncontrollable.");}
+	if (tuningErrorBitmask & ClosedLoop::TUNE_ERR_NOT_DONE_BASIC) 		{reply.catf(" The drive has not had basic tuning done.");}
+	if (tuningErrorBitmask & ClosedLoop::TUNE_ERR_NOT_CALIBRATED) 		{reply.catf(" The drive has not been calibrated.");}
+	if (tuningErrorBitmask & ClosedLoop::TUNE_ERR_SYSTEM_ERROR) 		{reply.catf(" A system error occurred while tuning.");}
+	if (tuningErrorBitmask & ClosedLoop::TUNE_ERR_TOO_LITTLE_MOTION)	{reply.catf(" The measured motion was less than expected.");}
+	if (tuningErrorBitmask & ClosedLoop::TUNE_ERR_TOO_MUCH_MOTION)		{reply.catf(" The measured motion was more than expected.");}
 }
 
 // Helper function to set the motor to a given phase and magnitude
@@ -376,7 +375,7 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 			case EncoderType::AS5047:
 				encoder = new AS5047D(*Platform::sharedSpi, EncoderCsPin);
 				if (((AS5047D*) encoder)->LoadLUT()) {
-					minimalTunes[EncoderType::AS5047] &= ~ZEROING_MANOEUVRE;
+					minimalTunes[EncoderType::AS5047] &= ~TUNE_ERR_NOT_CALIBRATED;
 				}
 				break;
 
@@ -428,11 +427,14 @@ GCodeResult ClosedLoop::ProcessM569Point5(const CanMessageStartClosedLoopDataCol
 		return GCodeResult::error;
 	}
 
+#if 0	//TODO when we have redefined the V parameter values, validate the parameter
+	// Validate the V parameter
 	if (msg.movement > FULL_TUNE)
 	{
 		reply.printf("Maximum value for V is %u. V%u is invalid", FULL_TUNE, msg.movement);
 		return GCodeResult::error;
 	}
+#endif
 
 	if (msg.movement != 0 && tuning != 0)
 	{
@@ -509,11 +511,14 @@ GCodeResult ClosedLoop::ProcessM569Point6(const CanMessageGeneric &msg, const St
 		return GCodeResult::error;
 	}
 
+#if 0	//TODO when we have redefined the V parameter values, validate the parameter
+	// Validate the V parameter
 	if (desiredTuning > FULL_TUNE)
 	{
 		reply.printf("Invalid 'V' parameter value. V may be 0-%d", FULL_TUNE);
 		return GCodeResult::error;
 	}
+#endif
 
 	prevTuningError = tuningError;
 	StartTuning(desiredTuning);
@@ -527,8 +532,44 @@ void ClosedLoop::StartTuning(uint8_t tuningMode) noexcept
 	{
 		Platform::DriveEnableOverride(0, true);					// enable the motor and prevent it becoming idle
 		whenLastTuningStepTaken = StepTimer::GetTimerTicks() + stepTicksBeforeTuning;	// delay the start to allow brake release and motor current buildup
+		if (tuningMode & ENCODER_CALIBRATION_MANOEUVRE)
+		{
+			tuningMode |= BASIC_TUNING_MANOEUVRE;				// always run basic tuning before encoder calibration
+		}
 		tuning = tuningMode;
 	}
+}
+
+void ClosedLoop::SetBasicTuningResults(float forwardCountsPerStep, float ReverseCountsPerStep, int32_t finalReading) noexcept
+{
+	float averageCountsPerStep = (forwardCountsPerStep + ReverseCountsPerStep) * 0.5;
+	reversePolarity = averageCountsPerStep < 0.0;
+	if (reversePolarity)
+	{
+		averageCountsPerStep = -averageCountsPerStep;
+	}
+
+	if (averageCountsPerStep > encoderPulsePerStep * 1.1)
+	{
+		tuningError |= TUNE_ERR_TOO_MUCH_MOTION;
+	}
+	else if (averageCountsPerStep < encoderPulsePerStep * 0.9)
+	{
+		tuningError |= TUNE_ERR_TOO_LITTLE_MOTION;
+	}
+	else
+	{
+		tuningError &= ~(TUNE_ERR_TOO_MUCH_MOTION | TUNE_ERR_TOO_LITTLE_MOTION);
+	}
+
+	if (encoder->GetPositioningType() == EncoderPositioningType::relative)
+	{
+		// Set the new zero position
+		((RelativeEncoder*)encoder)->SetOffset(-finalReading);
+		targetMotorSteps = targetMotorSteps - (finalReading / encoderPulsePerStep);
+	}
+
+	tuningError &= ~TUNE_ERR_NOT_DONE_BASIC;
 }
 
 void ClosedLoop::ControlLoop() noexcept

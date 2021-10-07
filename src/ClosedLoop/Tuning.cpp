@@ -30,21 +30,20 @@ static constexpr uint32_t PHASE_STEP_DISTANCE = 8;	// The distance of one small 
 
 
 /*
- * Polarity Detection
+ * Basic tuning
  * ------------------
  *
- * Relative:
- * Absolute:
  *  - Increase the step phase from 0 to 4096
  *  - If the raw encoder reading has increased, reverse_polarity = false
  *  -   Otherwise, reverse_polarity = true
  *
  */
 
-static int32_t startEncoderReading;
-
-static bool PolarityDetection(bool firstIteration) noexcept
+static bool BasicTuning(bool firstIteration) noexcept
 {
+	static int32_t startEncoderReading;
+	static float forwardCountsPerStep;
+
 	if (firstIteration) {
 		tuneCounter = 0;
 		ClosedLoop::reversePolarity = false;
@@ -53,11 +52,22 @@ static bool PolarityDetection(bool firstIteration) noexcept
 
 	if (tuneCounter < 4096) {
 		// Calculate the current desired step phase, and move the motor
-		ClosedLoop::desiredStepPhase = tuneCounter % 4096;
+		ClosedLoop::desiredStepPhase = tuneCounter;
+		ClosedLoop::SetMotorPhase(ClosedLoop::desiredStepPhase, 1);
+	} else if (tuneCounter < 8192) {
+		if (tuneCounter == 4096) {
+			const int32_t reading = ClosedLoop::encoder->GetReading();
+			forwardCountsPerStep = (float)(reading - startEncoderReading) * 0.25;
+			startEncoderReading = reading;
+		}
+		// Calculate the current desired step phase, and move the motor
+		ClosedLoop::desiredStepPhase = 8192 - tuneCounter;
 		ClosedLoop::SetMotorPhase(ClosedLoop::desiredStepPhase, 1);
 	} else {
 		// We are finished, calculate the correct polarity
-		ClosedLoop::reversePolarity = ClosedLoop::encoder->GetReading() <= startEncoderReading;
+		const int32_t reading = ClosedLoop::encoder->GetReading();
+		const float reverseCountsPerStep = (float)(startEncoderReading - reading) * 0.25;
+		ClosedLoop::SetBasicTuningResults(forwardCountsPerStep, reverseCountsPerStep, reading);
 		return true;
 	}
 
@@ -67,32 +77,27 @@ static bool PolarityDetection(bool firstIteration) noexcept
 
 
 /*
- * Polarity Detection
- * ------------------
+ * Magnetic encoder calibration
+ * ----------------------------
  *
  * Absolute:
  * 	- Move to a number of 'target positions'
  * 	- At each target position, record the current encoder reading
  * 	- Store this reading in the encoder LUT
- *
- * Relative:
- *  - Decrease step phase from 4096 to 0
- *  - Wait for 1/4 of a cycle to allow motor position to settle
- *  - Set the current position as the zero position
- *  TODO: A better procedure might be to record the offset as we
- *        move from 4096 to 0, then set the zero position as the
- *        average of this offset.
- *
  */
 
-static AS5047D* absoluteEncoder;
-int targetPosition;
-int positionCounter;
-
-static bool ZeroingAbsolute(bool firstIteration) noexcept
+static bool EncoderCalibration(bool firstIteration) noexcept
 {
+	static int targetPosition;
+	static int positionCounter;
+
+	if (ClosedLoop::encoder->GetPositioningType() == EncoderPositioningType::relative)
+	{
+		return true;			// we don't do this tuning for relative encoders
+	}
+
+	AS5047D* absoluteEncoder = (AS5047D*) ClosedLoop::encoder;
 	if (firstIteration) {
-		absoluteEncoder = (AS5047D*) ClosedLoop::encoder;
 		absoluteEncoder->ClearLUT();
 		targetPosition = 0;
 		positionCounter = 0;
@@ -117,118 +122,6 @@ static bool ZeroingAbsolute(bool firstIteration) noexcept
 	ClosedLoop::desiredStepPhase = (positionCounter > 0 ? 0 : 4096) + positionCounter % 4096;
 	ClosedLoop::SetMotorPhase(ClosedLoop::desiredStepPhase, 1);
 	return false;
-}
-
-static bool ZeroingRelative(bool firstIteration) noexcept
-{
-	if (firstIteration) {
-		// This is the first run
-		tuneCounter = 4096 + 1024;	// 4096 phase movement + 1024 delay
-	}
-
-	if (tuneCounter > 1024) {
-		// Until we reach 1024, move
-		// (When < 1024 but >0 do nothing to allow motor to settle)
-		ClosedLoop::desiredStepPhase = tuneCounter - 1024;
-		ClosedLoop::SetMotorPhase(ClosedLoop::desiredStepPhase, 1);
-	} else if (tuneCounter < 0) {
-		// We are done, calculate where the motor has moved to
-		int32_t zeroPosition = ClosedLoop::encoder->GetReading();
-
-		// Set this as the new zero position
-		((RelativeEncoder*) ClosedLoop::encoder)->SetOffset(-zeroPosition);
-		ClosedLoop::targetMotorSteps = ClosedLoop::targetMotorSteps - (zeroPosition / ClosedLoop::encoderPulsePerStep);
-
-		// Return that we are done
-		return true;
-	}
-
-	// Decrement the counter and return that we haven't finished
-	tuneCounter -= PHASE_STEP_DISTANCE;
-	return false;
-}
-
-
-/*
- * Polarity Check
- * ------------------
- *
- * Absolute:
- * Relative:
- *  - Move from position 0 to 4096
- *  - At each position, compare the current position to the intended position
- *  - If the error exceeds maxAllowedError, maxAllowedDeviations number of times, fail
- *  - Otherwise, succeed
- *
- */
-
-static size_t numberOfDeviations;
-static constexpr uint32_t maxAllowedError = 409;	// ~= 10% of 4095
-static constexpr size_t maxAllowedDeviations = 10;	// Allow up to 10 errors
-
-
-static bool PolarityCheck(bool firstIteration) noexcept
-{
-	if (firstIteration) {
-		tuneCounter = 0;
-		numberOfDeviations = 0;
-	}
-
-	if (tuneCounter < 4096) {
-		// Calculate where the motor has moved to
-		int16_t distance1 = ClosedLoop::stepPhase - ClosedLoop::desiredStepPhase;
-		int16_t distance2 = 4095 - max(ClosedLoop::stepPhase, ClosedLoop::desiredStepPhase) + min(ClosedLoop::stepPhase, ClosedLoop::desiredStepPhase);
-
-		// Check the error in the movement
-		numberOfDeviations += (abs(distance1) > maxAllowedError && abs(distance2) > maxAllowedError);
-
-		// Move the motor for the next iteration
-		ClosedLoop::desiredStepPhase = tuneCounter;
-		ClosedLoop::SetMotorPhase(ClosedLoop::desiredStepPhase, 1);
-	} else {
-		// We are finished - check the number of deviations (Allow a small number of deviations)
-		if (numberOfDeviations > maxAllowedDeviations) {
-			ClosedLoop::tuningError |= ClosedLoop::TUNE_ERR_INCORRECT_POLARITY;
-		} else {
-			ClosedLoop::tuningError &= ~ClosedLoop::TUNE_ERR_INCORRECT_POLARITY;
-		}
-		return true;
-	}
-
-	tuneCounter += PHASE_STEP_DISTANCE;
-	return false;
-}
-
-
-/*
- * Control Check
- * -------------
- *
- * Absolute:
- * Relative:
- *  - TODO!
- *
- */
-
-static bool ControlCheck(bool firstIteration) noexcept
-{
-	return true;
-}
-
-
-/*
- * Encoder Steps Check
- * -------------
- *
- * Absolute:
- * Relative:
- *  - TODO!
- *
- */
-
-static bool EncoderStepsCheck(bool firstIteration) noexcept
-{
-	return true;
 }
 
 
@@ -421,11 +314,11 @@ static bool ZieglerNichols(bool firstIteration) noexcept
  *
  */
 
-static bool newTuningMove = true;				// Indicates if a tuning move has just finished
-
 // This is called from every iteration of the closed loop control loop if tuning is enabled
 void ClosedLoop::PerformTune() noexcept
 {
+	static bool newTuningMove = true;						// indicates if a tuning move has just finished
+
 	// Check we are in direct drive mode and we have an encoder
 	if (SmartDrivers::GetDriverMode(0) != DriverMode::direct || encoder == nullptr ) {
 		tuningError |= TUNE_ERR_SYSTEM_ERROR;
@@ -434,60 +327,35 @@ void ClosedLoop::PerformTune() noexcept
 	}
 
 	// Run one iteration of the one, highest priority, tuning move
-	if (tuning & POLARITY_DETECTION_MANOEUVRE) {
-		// If we are soon to do a zeroing move, and we are using an abs encoder, clear the encoder LUT
-		if (encoder->GetPositioningType() == EncoderPositioningType::absolute
-			&& (tuning & ZEROING_MANOEUVRE)) {
-			((AS5047D*) encoder)->ClearLUT();			//TODO this assumes that any absolute encoder is a AS5047D. Make ClearLUT a virtual method?
-		}
-		newTuningMove = PolarityDetection(newTuningMove);
+	if (tuning & BASIC_TUNING_MANOEUVRE) {
+		newTuningMove = BasicTuning(newTuningMove);
 		if (newTuningMove) {
-			tuningError &= ~TUNE_ERR_NOT_FOUND_POLARITY;
-			tuning &= ~POLARITY_DETECTION_MANOEUVRE;
+			tuningError &= ~TUNE_ERR_NOT_DONE_BASIC;
+			tuning &= ~BASIC_TUNING_MANOEUVRE;				// we can do encoder calibration after basic tuning
 		}
-	} else if (tuning & ZEROING_MANOEUVRE) {
-		if (encoder->GetPositioningType() == EncoderPositioningType::absolute) {
-			newTuningMove = ZeroingAbsolute(newTuningMove);
-		} else {
-			newTuningMove = ZeroingRelative(newTuningMove);
-		}
+	} else if (tuning & ENCODER_CALIBRATION_MANOEUVRE) {
+		newTuningMove = EncoderCalibration(newTuningMove);
 		if (newTuningMove) {
-			tuningError &= ~TUNE_ERR_NOT_ZEROED;
-			tuning &= ~ZEROING_MANOEUVRE;
-		}
-	} else if (tuning & POLARITY_CHECK) {
-		newTuningMove = PolarityCheck(newTuningMove);
-		if (newTuningMove) {
-			tuningError &= ~TUNE_ERR_NOT_CHECKED_POLARITY;
-			tuning &= ~POLARITY_CHECK;
-		}
-	} else if (tuning & CONTROL_CHECK) {
-		newTuningMove = ControlCheck(newTuningMove);
-		if (newTuningMove) {
-			tuning &= ~CONTROL_CHECK;
-			tuningError &= ~TUNE_ERR_NOT_CHECKED_CONTROL;
-		}
-	} else if (tuning & ENCODER_STEPS_CHECK) {
-		newTuningMove = EncoderStepsCheck(newTuningMove);
-		if (newTuningMove) {
-			tuning &= ~ENCODER_STEPS_CHECK;
-			tuningError &= ~TUNE_ERR_NOT_CHECKED_ENCODER_STEPS;
+			tuning = 0;
 		}
 	} else if (tuning & CONTINUOUS_PHASE_INCREASE_MANOEUVRE) {
 		newTuningMove = ContinuousPhaseIncrease(newTuningMove);
 		if (newTuningMove) {
-			tuning &= ~CONTINUOUS_PHASE_INCREASE_MANOEUVRE;
+			tuning = 0;
 		}
 	} else if (tuning & STEP_MANOEUVRE) {
 		newTuningMove = Step(newTuningMove);
 		if (newTuningMove) {
-			tuning &= ~STEP_MANOEUVRE;
+			tuning = 0;
 		}
 	} else if (tuning & ZIEGLER_NICHOLS_MANOEUVRE) {
 		newTuningMove = ZieglerNichols(newTuningMove);
 		if (newTuningMove) {
-			tuning &= ~ZIEGLER_NICHOLS_MANOEUVRE;
+			tuning = 0;
 		}
+	} else {
+		tuning = 0;
+		newTuningMove = true;								// ready for next time
 	}
 }
 
