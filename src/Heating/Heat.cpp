@@ -481,7 +481,7 @@ GCodeResult Heat::ProcessM308(const CanMessageGeneric& msg, const StringRef& rep
 		if (sensorNum < MaxSensors)
 		{
 			// Check for deleting the sensor by assigning a null port. Borrow the sensor type name string temporarily for this.
-			String<StringLength20> sensorTypeName;
+			String<StringLength50> sensorTypeName;							// StringLength20 is too short for "thermocouple-max31856"
 			if (parser.GetStringParam('P', sensorTypeName.GetRef()) && sensorTypeName.EqualsIgnoreCase(NoPinName))
 			{
 				WriteLocker lock(sensorsLock);
