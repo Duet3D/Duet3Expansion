@@ -426,10 +426,8 @@ static bool newTuningMove = true;				// Indicates if a tuning move has just fini
 // This is called from every iteration of the closed loop control loop if tuning is enabled
 void ClosedLoop::PerformTune() noexcept
 {
-	if (tuning == 0) {return;}
-
-	// Check we are in direct drive mode
-	if (SmartDrivers::GetDriverMode(0) != DriverMode::direct) {
+	// Check we are in direct drive mode and we have an encoder
+	if (SmartDrivers::GetDriverMode(0) != DriverMode::direct || encoder == nullptr ) {
 		tuningError |= TUNE_ERR_SYSTEM_ERROR;
 		tuning = 0;
 		return;
@@ -438,9 +436,8 @@ void ClosedLoop::PerformTune() noexcept
 	// Run one iteration of the one, highest priority, tuning move
 	if (tuning & POLARITY_DETECTION_MANOEUVRE) {
 		// If we are soon to do a zeroing move, and we are using an abs encoder, clear the encoder LUT
-		if (encoder != nullptr
-				&& encoder->GetPositioningType() == EncoderPositioningType::absolute
-				&& (tuning & ZEROING_MANOEUVRE)) {
+		if (encoder->GetPositioningType() == EncoderPositioningType::absolute
+			&& (tuning & ZEROING_MANOEUVRE)) {
 			((AS5047D*) encoder)->ClearLUT();			//TODO this assumes that any absolute encoder is a AS5047D. Make ClearLUT a virtual method?
 		}
 		newTuningMove = PolarityDetection(newTuningMove);
@@ -449,10 +446,7 @@ void ClosedLoop::PerformTune() noexcept
 			tuning &= ~POLARITY_DETECTION_MANOEUVRE;
 		}
 	} else if (tuning & ZEROING_MANOEUVRE) {
-		if (encoder == nullptr) {
-			tuningError |= TUNE_ERR_SYSTEM_ERROR;
-			newTuningMove = true;
-		} else if (encoder->GetPositioningType() == EncoderPositioningType::absolute) {
+		if (encoder->GetPositioningType() == EncoderPositioningType::absolute) {
 			newTuningMove = ZeroingAbsolute(newTuningMove);
 		} else {
 			newTuningMove = ZeroingRelative(newTuningMove);

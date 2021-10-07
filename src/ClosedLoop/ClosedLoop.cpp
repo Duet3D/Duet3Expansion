@@ -859,7 +859,6 @@ void ClosedLoop::ResetError(size_t driver) noexcept
 
 bool ClosedLoop::SetClosedLoopEnabled(bool enabled, const StringRef &reply) noexcept
 {
-
 	if (enabled) {
 # if SUPPORT_SLOW_DRIVERS
 		// TODO: Check what we need to do here
