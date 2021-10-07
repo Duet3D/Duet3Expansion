@@ -43,17 +43,29 @@ static bool BasicTuning(bool firstIteration) noexcept
 {
 	static int32_t startEncoderReading;
 	static float forwardCountsPerStep;
+	static uint16_t initialStepPhase;
 
 	if (firstIteration) {
 		tuneCounter = 0;
 		ClosedLoop::reversePolarity = false;
-		startEncoderReading = ClosedLoop::encoder->GetReading();
+		initialStepPhase = ClosedLoop::desiredStepPhase;
 	}
 
-	if (tuneCounter < 4096) {
+	//TODO rewrite this as a state machine
+	//TODO remove accesses to desiredStepPhase, call a function in ClosedLoop to adjust it and set the current instead
+	if (tuneCounter == 0 && ClosedLoop::desiredStepPhase != 0) {
+		// Advance to phase 0
+		const uint16_t distanceToGo = 4096 - ClosedLoop::desiredStepPhase;
+		ClosedLoop::desiredStepPhase = (ClosedLoop::desiredStepPhase + min<uint16_t>(distanceToGo, PHASE_STEP_DISTANCE)) % 4096;
+		ClosedLoop::SetMotorPhase(ClosedLoop::desiredStepPhase, 1);
+	} else if (tuneCounter < 4096) {
+		if (tuneCounter == 0) {
+			startEncoderReading = ClosedLoop::encoder->GetReading();
+		}
 		// Calculate the current desired step phase, and move the motor
 		ClosedLoop::desiredStepPhase = tuneCounter;
 		ClosedLoop::SetMotorPhase(ClosedLoop::desiredStepPhase, 1);
+		tuneCounter += PHASE_STEP_DISTANCE;
 	} else if (tuneCounter < 8192) {
 		if (tuneCounter == 4096) {
 			const int32_t reading = ClosedLoop::encoder->GetReading();
@@ -63,15 +75,25 @@ static bool BasicTuning(bool firstIteration) noexcept
 		// Calculate the current desired step phase, and move the motor
 		ClosedLoop::desiredStepPhase = 8192 - tuneCounter;
 		ClosedLoop::SetMotorPhase(ClosedLoop::desiredStepPhase, 1);
+		tuneCounter += PHASE_STEP_DISTANCE;
 	} else {
-		// We are finished, calculate the correct polarity
-		const int32_t reading = ClosedLoop::encoder->GetReading();
-		const float reverseCountsPerStep = (float)(startEncoderReading - reading) * 0.25;
-		ClosedLoop::SetBasicTuningResults(forwardCountsPerStep, reverseCountsPerStep, reading);
-		return true;
+		if (tuneCounter == 8192) {
+			// We are finished, calculate the correct polarity
+			const int32_t reading = ClosedLoop::encoder->GetReading();
+			const float reverseCountsPerStep = (float)(startEncoderReading - reading) * 0.25;
+			ClosedLoop::SetBasicTuningResults(forwardCountsPerStep, reverseCountsPerStep, reading);
+			++tuneCounter;		// so that we only do the above once
+		}
+		if (ClosedLoop::desiredStepPhase != initialStepPhase) {
+			// Go back to the original phase
+			const uint16_t distanceToGo = (ClosedLoop::desiredStepPhase - initialStepPhase) % 4096;
+			ClosedLoop::desiredStepPhase = (ClosedLoop::desiredStepPhase - min<uint16_t>(distanceToGo, PHASE_STEP_DISTANCE)) % 4096;
+			ClosedLoop::SetMotorPhase(ClosedLoop::desiredStepPhase, 1);
+		} else {
+			return true;
+		}
 	}
 
-	tuneCounter += PHASE_STEP_DISTANCE;
 	return false;
 }
 
