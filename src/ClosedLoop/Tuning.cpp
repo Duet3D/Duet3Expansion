@@ -328,6 +328,9 @@ void ClosedLoop::PerformTune() noexcept
 
 	// Run one iteration of the one, highest priority, tuning move
 	if (tuning & BASIC_TUNING_MANOEUVRE) {
+		if (encoder->GetPositioningType() == EncoderPositioningType::absolute && (tuning & ENCODER_CALIBRATION_MANOEUVRE)) {
+			((AS5047D*)encoder)->ClearLUT();				//TODO this assumes that any absolute encoder is a AS5047D. Make ClearLUT a virtual method?
+		}
 		newTuningMove = BasicTuning(newTuningMove);
 		if (newTuningMove) {
 			tuningError &= ~TUNE_ERR_NOT_DONE_BASIC;
