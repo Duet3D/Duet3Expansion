@@ -432,6 +432,12 @@ GCodeResult ClosedLoop::ProcessM569Point5(const CanMessageStartClosedLoopDataCol
 		return GCodeResult::error;
 	}
 
+	if (msg.movement != 0 && tuning != 0)
+	{
+		reply.copy("Driver is already performing tuning");
+		return GCodeResult::error;
+	}
+
 	// Calculate how many samples will fit in the buffer
 	variableCount = CountVariablesCollected(msg.filter);
 	const unsigned int samplesPerBuffer =  ARRAY_SIZE(sampleBuffer) / variableCount;
@@ -448,7 +454,7 @@ GCodeResult ClosedLoop::ProcessM569Point5(const CanMessageStartClosedLoopDataCol
 	dataCollectionStartTicks = whenNextSampleDue = StepTimer::GetTimerTicks();
 	samplingMode = (RecordingMode)requestedMode;				// do this one last, it triggers data collection
 
-	StartTuning(tuning | msg.movement);
+	StartTuning(msg.movement);
 	return GCodeResult::ok;
 }
 
@@ -507,12 +513,6 @@ GCodeResult ClosedLoop::ProcessM569Point6(const CanMessageGeneric &msg, const St
 		return GCodeResult::error;
 	}
 
-	// Enable all motors & disable them becoming idle
-	Platform::DriveEnableOverride(0, true);
-	//TODO with a delay here, tuning DC's large motor hardly ever succeeds. With the delay removed, it succeeds more often. So removed the delay for now.
-	//TODO the following delay will affect heater timing, so instead we should get the task that actually does the tuning to wait 100ms before starting
-	//delay(100);							// allow the motor current to build up and the brake (if any) to release
-
 	prevTuningError = tuningError;
 	StartTuning(desiredTuning);
 
@@ -521,8 +521,12 @@ GCodeResult ClosedLoop::ProcessM569Point6(const CanMessageGeneric &msg, const St
 
 void ClosedLoop::StartTuning(uint8_t tuningMode) noexcept
 {
-	whenLastTuningStepTaken = StepTimer::GetTimerTicks();
-	tuning = tuningMode;
+	if (tuningMode != 0)
+	{
+		Platform::DriveEnableOverride(0, true);					// enable the motor and prevent it becoming idle
+		whenLastTuningStepTaken = StepTimer::GetTimerTicks();
+		tuning = tuningMode;
+	}
 }
 
 void ClosedLoop::ControlLoop() noexcept
@@ -543,7 +547,7 @@ void ClosedLoop::ControlLoop() noexcept
 
 	if (!closedLoopEnabled) {
 		// If closed loop disabled, do nothing
-	} else if (tuning != 0) {											// If we need to tune, tune
+	} else if (tuning != 0) {									// if we need to tune, tune
 		// Limit the rate at which we command tuning steps
 		if (loopCallTime - whenLastTuningStepTaken >= stepTicksPerTuningStep)
 		{
@@ -557,7 +561,7 @@ void ClosedLoop::ControlLoop() noexcept
 		// Don't do anything if there is a tuning error
 		SetMotorPhase(0, 0);
 	} else {
-		ControlMotorCurrents();							// Otherwise control those motor currents!
+		ControlMotorCurrents();									// otherwise control those motor currents!
 	}
 
 	// Collect a sample, if we need to
@@ -583,7 +587,7 @@ void ClosedLoop::ControlLoop() noexcept
 {
 	while (true)
 	{
-		RecordingMode locMode;			// to capture the volatile variable
+		RecordingMode locMode;									// to capture the volatile variable
 		if ((locMode = samplingMode) == RecordingMode::Immediate || locMode == RecordingMode::SendingData)
 		{
 			// Started a new data collection
@@ -605,12 +609,12 @@ void ClosedLoop::ControlLoop() noexcept
 
 				unsigned int numCopied = 0;
 				unsigned int numSamplesInMessage = 0;
-				size_t copyReadPointer = sampleBufferReadPointer;			// capture volatile variable
+				size_t copyReadPointer = sampleBufferReadPointer;	// capture volatile variable
 				do
 				{
 					while (samplesSent == samplesCollected && samplingMode == RecordingMode::Immediate)
 					{
-						TaskBase::Take();			// wait for data to be available
+						TaskBase::Take();						// wait for data to be available
 					}
 
 					if (samplesSent < samplesCollected)
@@ -641,7 +645,7 @@ void ClosedLoop::ControlLoop() noexcept
 		}
 		else
 		{
-			TaskBase::Take();			// wait for a new data collection to start
+			TaskBase::Take();									// wait for a new data collection to start
 		}
 	}
 }
@@ -649,15 +653,15 @@ void ClosedLoop::ControlLoop() noexcept
 // Store a sample in the buffer
 void ClosedLoop::CollectSample() noexcept
 {
-	size_t wp = sampleBufferWritePointer;					// capture volatile variable and don't update it until all data has been written
+	size_t wp = sampleBufferWritePointer;						// capture volatile variable and don't update it until all data has been written
 	if (wp == sampleBufferReadPointer && samplesSent != samplesCollected)
 	{
-		sampleBufferOverflowed = true;						// the buffer is full so tell the sending task about it
-		samplingMode = RecordingMode::SendingData;			// stop collecting data
+		sampleBufferOverflowed = true;							// the buffer is full so tell the sending task about it
+		samplingMode = RecordingMode::SendingData;				// stop collecting data
 	}
 	else
 	{
-		sampleBuffer[wp++] = TickPeriodToTimePeriod(StepTimer::GetTimerTicks() - dataCollectionStartTicks);		// Always collect this
+		sampleBuffer[wp++] = TickPeriodToTimePeriod(StepTimer::GetTimerTicks() - dataCollectionStartTicks);		// always collect this
 
 		if (filterRequested & CL_RECORD_RAW_ENCODER_READING) 	{sampleBuffer[wp++] = (float)rawEncoderReading;}
 		if (filterRequested & CL_RECORD_CURRENT_MOTOR_STEPS) 	{sampleBuffer[wp++] = currentMotorSteps;}
@@ -677,7 +681,7 @@ void ClosedLoop::CollectSample() noexcept
 		++samplesCollected;
 		if (samplesCollected == samplesRequested)
 		{
-			samplingMode = RecordingMode::SendingData;		// stop collecting data
+			samplingMode = RecordingMode::SendingData;			// stop collecting data
 		}
 	}
 
@@ -686,7 +690,7 @@ void ClosedLoop::CollectSample() noexcept
 
 void ClosedLoop::ReadState() noexcept
 {
-	if (encoder == nullptr) {return;}	// We can't read anything if encoder is a nullptr
+	if (encoder == nullptr) {return;}							// we can't read anything if there is no encoder
 
 	// Calculate the current position & phase from the encoder reading
 	rawEncoderReading = encoder->GetReading();
@@ -727,12 +731,12 @@ void ClosedLoop::ControlMotorCurrents() noexcept
 	// Use a PID controller to calculate the required 'torque' - the control signal
 	PIDPTerm = Kp * currentError;
 	float newITerm = PIDITerm + Ki * currentError * timeDelta;
-	if (abs(newITerm) < 255) {		// Limit to the value the PID control signal is clamped to
+	if (abs(newITerm) < 255) {									// limit to the value the PID control signal is clamped to
 		PIDITerm = newITerm;
 	}
 	PIDDTerm = derivativeFilter.IsValid() ? Kd * (float)derivativeFilter.GetDerivative() : 0.0;
 	float sumOfTerms = PIDPTerm + PIDITerm + PIDDTerm;
-	PIDControlSignal = (int16_t) constrain<float>(sumOfTerms, -255, 255);	// Clamp between -255 and 255
+	PIDControlSignal = (int16_t) constrain<float>(sumOfTerms, -255, 255);	// clamp between -255 and 255
 
 	// Calculate the offset required to produce the torque in the correct direction
 	// i.e. if we are moving in the positive direction, we must apply currents with a positive phase shift

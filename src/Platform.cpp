@@ -1687,16 +1687,15 @@ void Platform::DriveEnableOverride(size_t driver, bool doOverride)
 	if (doOverride)
 	{
 		driverEnableOverride[driver] = true;
-		EnableDrive(driver);
+		InternalEnableDrive(driver);
 	}
-	else
+	else if (driverEnableOverride[driver])
 	{
-		driverEnableOverride[driver] = false;				// do this before calling SetDriverIdle
+		driverEnableOverride[driver] = false;				// do this before calling InternalSetDriverIdle
 		switch (driverStates[driver].mode)
 		{
 		case DriverStateControl::driverActive:
-			InternalEnableDrive(driver);
-			break;
+			break;											// driver is already enabled
 
 		case DriverStateControl::driverIdle:
 			InternalSetDriverIdle(driver);

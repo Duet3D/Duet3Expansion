@@ -49,7 +49,7 @@ namespace ClosedLoop
 	constexpr uint8_t ZIEGLER_NICHOLS_MANOEUVRE 			= 1u << 7;
 	constexpr uint8_t FULL_TUNE 							= (1u << 8) - 1;
 
-	//TODO reduce the number of these public variables, preferably to zero. Use a cleaner interface between the tuning module and the mian closed loop module.
+	//TODO reduce the number of these public variables, preferably to zero. Use a cleaner interface between the tuning module and the main closed loop module.
 	extern Encoder *encoder;						// Pointer to the encoder object in use
 	extern bool reversePolarity;					// Flag if the polarity on this motor is reversed
 	extern uint8_t tuning;							// Bitmask of any tuning manoeuvres that have been requested
