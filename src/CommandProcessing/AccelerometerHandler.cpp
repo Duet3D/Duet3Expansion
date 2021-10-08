@@ -267,7 +267,7 @@ GCodeResult AccelerometerHandler::ProcessConfigRequest(const CanMessageGeneric& 
 		}
 	}
 
-	bool seen = true;
+	bool seen = false;
 	if (parser.GetUintParam('S', samplingRate)) { seen = true; }
 	if (parser.GetUintParam('R', resolution))  { seen = true; }
 
