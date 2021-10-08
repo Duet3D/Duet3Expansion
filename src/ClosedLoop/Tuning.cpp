@@ -54,9 +54,8 @@ static bool BasicTuning(bool firstIteration) noexcept
 	//TODO rewrite this as a state machine
 	//TODO remove accesses to desiredStepPhase, call a function in ClosedLoop to adjust it and set the current instead
 	if (tuneCounter == 0 && ClosedLoop::desiredStepPhase != 0) {
-		// Advance to phase 0
-		const uint16_t distanceToGo = 4096 - ClosedLoop::desiredStepPhase;
-		ClosedLoop::desiredStepPhase = (ClosedLoop::desiredStepPhase + min<uint16_t>(distanceToGo, PHASE_STEP_DISTANCE)) % 4096;
+		// Go back to phase 0. Note that ClosedLoop::desiredStepPhase in this context is the actual current step phase.
+		ClosedLoop::desiredStepPhase -= min<uint16_t>(ClosedLoop::desiredStepPhase, PHASE_STEP_DISTANCE);
 		ClosedLoop::SetMotorPhase(ClosedLoop::desiredStepPhase, 1);
 	} else if (tuneCounter < 4096) {
 		if (tuneCounter == 0) {
@@ -84,10 +83,10 @@ static bool BasicTuning(bool firstIteration) noexcept
 			ClosedLoop::SetBasicTuningResults(forwardCountsPerStep, reverseCountsPerStep, reading);
 			++tuneCounter;		// so that we only do the above once
 		}
-		if (ClosedLoop::desiredStepPhase != initialStepPhase) {
-			// Go back to the original phase
-			const uint16_t distanceToGo = (ClosedLoop::desiredStepPhase - initialStepPhase) % 4096;
-			ClosedLoop::desiredStepPhase = (ClosedLoop::desiredStepPhase - min<uint16_t>(distanceToGo, PHASE_STEP_DISTANCE)) % 4096;
+		if (ClosedLoop::desiredStepPhase < initialStepPhase) {
+			// Go forward to the original phase
+			const uint16_t distanceToGo = initialStepPhase - ClosedLoop::desiredStepPhase;
+			ClosedLoop::desiredStepPhase += min<uint16_t>(distanceToGo, PHASE_STEP_DISTANCE);
 			ClosedLoop::SetMotorPhase(ClosedLoop::desiredStepPhase, 1);
 		} else {
 			return true;
