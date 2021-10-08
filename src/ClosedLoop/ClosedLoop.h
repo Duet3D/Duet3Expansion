@@ -45,7 +45,6 @@ namespace ClosedLoop
 
 	//TODO reduce the number of these public variables, preferably to zero. Use a cleaner interface between the tuning module and the main closed loop module.
 	extern Encoder *encoder;						// Pointer to the encoder object in use
-	extern bool reversePolarity;					// Flag if the polarity on this motor is reversed
 	extern uint8_t tuning;							// Bitmask of any tuning manoeuvres that have been requested
 	extern uint8_t tuningError;						// Flags for any tuning errors
 	extern uint16_t stepPhase;						// The current position of the motor
@@ -82,7 +81,9 @@ namespace ClosedLoop
 	float PulsePerStepToExternalUnits(float pps, uint8_t encoderType) noexcept;
 	float ExternalUnitsToPulsePerStep(float externalUnits, uint8_t encoderType) noexcept;
 	void SetMotorPhase(uint16_t phase, float magnitude) noexcept;
+	void SetForwardPolarity() noexcept;
 	void SetBasicTuningResults(float forwardCountsPerStep, float ReverseCountsPerStep, int32_t finalReading) noexcept;
+	void ResetStepPosition(uint16_t motorPhase) noexcept;
 
 	// Methods in the tuning module
 	void PerformTune() noexcept;

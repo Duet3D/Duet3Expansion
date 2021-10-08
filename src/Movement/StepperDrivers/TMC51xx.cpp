@@ -1481,7 +1481,7 @@ void SmartDrivers::Init() noexcept
 #endif
 
 	driversState = DriversState::noPower;
-	tmcTask.Create(TmcLoop, "TMC", nullptr, TaskPriority::TmcPriority);
+	tmcTask.Create(TmcLoop, "TMC", nullptr, TaskPriority::TmcOpenLoop);
 }
 
 // Shut down the drivers and stop any related interrupts
@@ -1579,7 +1579,17 @@ unsigned int SmartDrivers::GetMicrostepShift(size_t driver) noexcept
 
 bool SmartDrivers::SetDriverMode(size_t driver, unsigned int mode) noexcept
 {
+
+#if SUPPORT_CLOSED_LOOP
+	const bool ret = driver < numTmc51xxDrivers && driverStates[driver].SetDriverMode(mode);
+	if (ret && driver == 0)
+	{
+		tmcTask.SetPriority((mode == (unsigned int)DriverMode::direct) ? TaskPriority::TmcClosedLoop : TaskPriority::TmcOpenLoop);
+	}
+	return ret;
+#else
 	return driver < numTmc51xxDrivers && driverStates[driver].SetDriverMode(mode);
+#endif
 }
 
 DriverMode SmartDrivers::GetDriverMode(size_t driver) noexcept

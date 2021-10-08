@@ -1940,7 +1940,7 @@ void SmartDrivers::Init() noexcept
 
 	driversState = DriversState::noPower;
 	tmcTask = new Task<TmcTaskStackWords>;
-	tmcTask->Create(TmcLoop, "TMC", nullptr, TaskPriority::TmcPriority);
+	tmcTask->Create(TmcLoop, "TMC", nullptr, TaskPriority::TmcOpenLoop);
 }
 
 // Shut down the drivers and stop any related interrupts

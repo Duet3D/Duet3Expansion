@@ -38,13 +38,13 @@ using std::numeric_limits;
 // Variables that are used by both the ClosedLoop and the Tuning modules
 
 Encoder*	ClosedLoop::encoder = nullptr;				// Pointer to the encoder object in use
-bool 		ClosedLoop::reversePolarity = false;		// Flag if the polarity on this motor is reversed
 uint8_t		ClosedLoop::tuning = 0;						// Bitmask of any tuning manoeuvres that have been requested
 uint8_t		ClosedLoop::tuningError;					// Flags for any tuning errors
 uint16_t	ClosedLoop::stepPhase;						// The current position of the motor
 uint16_t	ClosedLoop::desiredStepPhase = 0;			// The desired position of the motor
 atomic<int32_t> ClosedLoop::rawEncoderReading;			// The raw reading taken from the encoder
 atomic<float> 	ClosedLoop::targetMotorSteps = 0;		// The number of steps the motor should have taken relative to it's zero position
+														// TODO no good for an extruder, use int32_t instead to count 1/256 microsteps and handle overflow
 float 		ClosedLoop::encoderPulsePerStep;			// How many encoder readings do we get per step?
 float 		ClosedLoop::currentMotorSteps;				// The number of steps the motor has taken relative to it's zero position
 
@@ -52,12 +52,14 @@ namespace ClosedLoop
 {
 	// Constants private to this module
 	constexpr size_t TaskStackWords = 200;				// Size of the stack for all closed loop tasks
-	constexpr unsigned int derivativeFilterSize = 8;	// The range of the derivative filter
-	constexpr unsigned int DataBufferSize = 2000 * 14;	// When collecting samples we can accommodate 2000 readings of up to 14 samples
+	constexpr unsigned int derivativeFilterSize = 16;	// The range of the derivative filter (use a power of 2 for efficiency)
+	constexpr unsigned int DataBufferSize = 2000 * 14;	// When collecting samples we can accommodate 2000 readings of up to 13 variables + timestamp
 	constexpr unsigned int tuningStepsPerSecond = 2000;	// the rate at which we send 1/256 microsteps during tuning, slow enough for high-inertia motors
 	constexpr StepTimer::Ticks stepTicksPerTuningStep = StepTimer::StepClockRate/tuningStepsPerSecond;
 	constexpr StepTimer::Ticks stepTicksBeforeTuning = StepTimer::StepClockRate/10;
 														// 1/10 sec delay between enabling the driver and starting tuning, to allow for brake release and current buildup
+	constexpr StepTimer::Ticks DataCollectionIdleStepTicks = StepTimer::StepClockRate/200;
+														// start collecting tuning data 5ms before the start of the tuning move
 
 	// Enumeration of closed loop recording modes
 	enum RecordingMode : uint8_t
@@ -75,6 +77,7 @@ namespace ClosedLoop
 	uint8_t prevTuningError;							// Used to see what errors have been introduced by tuning
 
 	float 	holdCurrent = 0;							// The minimum holding current when stationary
+	float	reversePolarityMultiplier = 1.0;			// +1 if encoder direction is forwards, -1 if it is reverse
 
 	float 	Kp = 100;									// The proportional constant for the PID controller
 	float 	Ki = 0;										// The proportional constant for the PID controller
@@ -166,9 +169,9 @@ namespace ClosedLoop
 	// Return true if we are currently collecting data or primed to collect data or finishing sending data
 	inline bool CollectingData() noexcept { return samplingMode != RecordingMode::None; }
 
-	void ReadState() noexcept;
+	void ReadState(StepTimer::Ticks now) noexcept;
 	void CollectSample() noexcept;
-	void ControlMotorCurrents() noexcept;
+	void ControlMotorCurrents(StepTimer::Ticks loopStartTime) noexcept;
 	void StartTuning(uint8_t tuningType) noexcept;
 
 	extern "C" [[noreturn]] void DataTransmissionLoop(void *param) noexcept;
@@ -246,7 +249,7 @@ void ClosedLoop::SetMotorPhase(uint16_t phase, float magnitude) noexcept
 {
 	magnitude = constrain<float>(magnitude, holdCurrent, 1.0);
 	coilA = 255 * Trigonometry::FastCos(phase) * magnitude;
-	coilB = 255 * Trigonometry::FastSin(phase) * (reversePolarity ? magnitude : -magnitude);
+	coilB = 255 * Trigonometry::FastSin(phase) * reversePolarityMultiplier * magnitude;
 
 # if SUPPORT_TMC2160 && SINGLE_DRIVER
 	SmartDrivers::SetRegister(0,
@@ -281,7 +284,7 @@ void ClosedLoop::Init() noexcept
 
 	// Set up the data transmission task
 	dataTransmissionTask = new Task<ClosedLoop::TaskStackWords>;
-	dataTransmissionTask->Create(DataTransmissionLoop, "CLSend", nullptr, TaskPriority::ClosedLoop);
+	dataTransmissionTask->Create(DataTransmissionLoop, "CLSend", nullptr, TaskPriority::ClosedLoopDataTransmission);
 }
 
 GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const StringRef &reply) noexcept
@@ -420,11 +423,19 @@ GCodeResult ClosedLoop::ProcessM569Point5(const CanMessageStartClosedLoopDataCol
 		return GCodeResult::error;
 	}
 
-	const uint8_t requestedMode = msg.mode + 1;			// the A parameter is out of step with the enumeration by 1
-	if (requestedMode != (uint8_t)RecordingMode::Immediate && msg.mode != (uint8_t)RecordingMode::OnNextMove)
+	uint8_t requestedMode;
+	if (msg.movement != 0)
 	{
-		reply.copy("Invalid recording mode");
-		return GCodeResult::error;
+		requestedMode = (uint8_t)RecordingMode::OnNextMove;		// when recording a tuning move we ignore the mode and start 5ms before it
+	}
+	else
+	{
+		requestedMode = msg.mode + 1;							// the A parameter is out of step with the enumeration by 1
+		if (requestedMode != (uint8_t)RecordingMode::Immediate && requestedMode != (uint8_t)RecordingMode::OnNextMove)
+		{
+			reply.copy("Invalid recording mode");
+			return GCodeResult::error;
+		}
 	}
 
 #if 0	//TODO when we have redefined the V parameter values, validate the parameter
@@ -540,13 +551,22 @@ void ClosedLoop::StartTuning(uint8_t tuningMode) noexcept
 	}
 }
 
+void ClosedLoop::SetForwardPolarity() noexcept
+{
+	reversePolarityMultiplier = 1.0;
+}
+
 void ClosedLoop::SetBasicTuningResults(float forwardCountsPerStep, float ReverseCountsPerStep, int32_t finalReading) noexcept
 {
 	float averageCountsPerStep = (forwardCountsPerStep + ReverseCountsPerStep) * 0.5;
-	reversePolarity = averageCountsPerStep < 0.0;
-	if (reversePolarity)
+	if (averageCountsPerStep < 0.0)
 	{
 		averageCountsPerStep = -averageCountsPerStep;
+		reversePolarityMultiplier = -1.0;
+	}
+	else
+	{
+		reversePolarityMultiplier = 1.0;
 	}
 
 	if (averageCountsPerStep > encoderPulsePerStep * 1.1)
@@ -566,10 +586,14 @@ void ClosedLoop::SetBasicTuningResults(float forwardCountsPerStep, float Reverse
 	{
 		// Set the new zero position
 		((RelativeEncoder*)encoder)->SetOffset(-finalReading);
-		targetMotorSteps = targetMotorSteps - (finalReading / encoderPulsePerStep);
 	}
 
 	tuningError &= ~TUNE_ERR_NOT_DONE_BASIC;
+}
+
+void ClosedLoop::ResetStepPosition(uint16_t motorPhase) noexcept
+{
+	currentMotorSteps = targetMotorSteps = (float)motorPhase/4096;
 }
 
 void ClosedLoop::ControlLoop() noexcept
@@ -586,28 +610,30 @@ void ClosedLoop::ControlLoop() noexcept
 	}
 
 	// Read the current state of the drive
-	ReadState();
+	ReadState(loopCallTime);
 
 	if (!closedLoopEnabled) {
 		// If closed loop disabled, do nothing
 	} else if (tuning != 0) {									// if we need to tune, tune
 		// Limit the rate at which we command tuning steps Need to do signed comparison because initially, whenLastTuningStepTaken is in the future.
-		if ((int32_t)(loopCallTime - whenLastTuningStepTaken) >= (int32_t)stepTicksPerTuningStep)
+		const int32_t timeSinceLastTuningStep = (int32_t)(loopCallTime - whenLastTuningStepTaken);
+		if (timeSinceLastTuningStep >= (int32_t)stepTicksPerTuningStep)
 		{
-			if (samplingMode == RecordingMode::OnNextMove) {
-				samplingMode = RecordingMode::Immediate;
-			}
 			whenLastTuningStepTaken = loopCallTime;
 			PerformTune();
 			if (tuning == 0) {
 				Platform::DriveEnableOverride(0, false);
 			}		// If that was the last tuning move, release the override
 		}
+		else if (samplingMode == RecordingMode::OnNextMove && timeSinceLastTuningStep + (int32_t)DataCollectionIdleStepTicks >= 0) {
+			dataCollectionStartTicks = loopCallTime;
+			samplingMode = RecordingMode::Immediate;
+		}
 	} else if (tuningError) {
 		// Don't do anything if there is a tuning error
 		SetMotorPhase(0, 0);
 	} else {
-		ControlMotorCurrents();									// otherwise control those motor currents!
+		ControlMotorCurrents(loopCallTime);							// otherwise control those motor currents!
 	}
 
 	// Collect a sample, if we need to
@@ -633,7 +659,7 @@ void ClosedLoop::ControlLoop() noexcept
 {
 	while (true)
 	{
-		RecordingMode locMode;									// to capture the volatile variable
+		RecordingMode locMode;										// to capture the volatile variable
 		if ((locMode = samplingMode) == RecordingMode::Immediate || locMode == RecordingMode::SendingData)
 		{
 			// Started a new data collection
@@ -660,7 +686,7 @@ void ClosedLoop::ControlLoop() noexcept
 				{
 					while (samplesSent == samplesCollected && samplingMode == RecordingMode::Immediate)
 					{
-						TaskBase::Take();						// wait for data to be available
+						TaskBase::Take();							// wait for data to be available
 					}
 
 					if (samplesSent < samplesCollected)
@@ -672,11 +698,11 @@ void ClosedLoop::ControlLoop() noexcept
 						{
 							copyReadPointer = 0;
 						}
-						sampleBufferReadPointer = copyReadPointer;
-						++samplesSent;
+						++samplesSent;								// update this one first to avoid a race condition
+						sampleBufferReadPointer = copyReadPointer;	// now it's safe to update this one
 						++numSamplesInMessage;
 					}
-					finished = samplesSent >= samplesRequested || (samplingMode != RecordingMode::Immediate && samplesSent == samplesCollected);
+					finished = (samplingMode != RecordingMode::Immediate && samplesSent == samplesCollected);
 				} while (!finished && numCopied + variableCount <= CanMessageClosedLoopData::MaxDataItems);
 
 				msg.numSamples = numSamplesInMessage;
@@ -734,9 +760,9 @@ void ClosedLoop::CollectSample() noexcept
 	dataTransmissionTask->Give();
 }
 
-void ClosedLoop::ReadState() noexcept
+void ClosedLoop::ReadState(StepTimer::Ticks now) noexcept
 {
-	if (encoder == nullptr) {return;}							// we can't read anything if there is no encoder
+	if (encoder == nullptr) { return; }							// we can't read anything if there is no encoder
 
 	// Calculate the current position & phase from the encoder reading
 	rawEncoderReading = encoder->GetReading();
@@ -744,24 +770,17 @@ void ClosedLoop::ReadState() noexcept
 
 	// Calculate and store the current error
 	currentError = targetMotorSteps - currentMotorSteps;
-	float currentTimestamp = TickPeriodToTimePeriod(StepTimer::GetTimerTicks()) / 1000;
-	if (!derivativeFilter.IsInit()) {derivativeFilter.Init(currentError, currentTimestamp);}
-	derivativeFilter.ProcessReading(currentError, currentTimestamp);
+	derivativeFilter.ProcessReading(currentError, now);
 
 	// Calculate stepPhase - a 0-4095 value representing the phase *within* the current step
-	float tmp = currentMotorSteps / 4;
-	if (tmp >= 0) {
-		stepPhase = (tmp - (int) tmp) * 4095;
-	} else {
-		stepPhase = (1 + tmp - (int) tmp) * 4095;
-	}
+	const float tmp = currentMotorSteps * 0.25;
+	stepPhase = (tmp - floorf(tmp)) * 4095;
 }
 
-void ClosedLoop::ControlMotorCurrents() noexcept
+void ClosedLoop::ControlMotorCurrents(StepTimer::Ticks loopStartTime) noexcept
 {
-	// Get the time delta
-	float currentTimestamp = TickPeriodToTimePeriod(StepTimer::GetTimerTicks()) / 1000;
-	float timeDelta = currentTimestamp - (TickPeriodToTimePeriod(prevControlLoopCallTime) / 1000);
+	// Get the time delta in seconds
+	const float timeDelta = (loopStartTime - prevControlLoopCallTime) * (1.0/(float)StepTimer::StepClockRate);
 
 	// Look for a stall or pre-stall
 	preStall = errorThresholds[0] > 0 && abs(currentError) > errorThresholds[0];
@@ -776,13 +795,10 @@ void ClosedLoop::ControlMotorCurrents() noexcept
 
 	// Use a PID controller to calculate the required 'torque' - the control signal
 	PIDPTerm = Kp * currentError;
-	float newITerm = PIDITerm + Ki * currentError * timeDelta;
-	if (abs(newITerm) < 255) {									// limit to the value the PID control signal is clamped to
-		PIDITerm = newITerm;
-	}
-	PIDDTerm = derivativeFilter.IsValid() ? Kd * (float)derivativeFilter.GetDerivative() : 0.0;
-	float sumOfTerms = PIDPTerm + PIDITerm + PIDDTerm;
-	PIDControlSignal = (int16_t) constrain<float>(sumOfTerms, -255, 255);	// clamp between -255 and 255
+	PIDITerm = constrain<float>(PIDITerm + Ki * currentError * timeDelta, -255.0, 255.0);
+	PIDDTerm = constrain<float>(Kd * (float)derivativeFilter.GetDerivative(), -255.0, 255.0);	// constrain D so that we can graph it more sensibly
+	const float sumOfTerms = PIDPTerm + PIDITerm + PIDDTerm;
+	PIDControlSignal = (int16_t) constrain<float>(sumOfTerms, -255.0, 255.0);					// clamp between -255 and 255
 
 	// Calculate the offset required to produce the torque in the correct direction
 	// i.e. if we are moving in the positive direction, we must apply currents with a positive phase shift
@@ -809,7 +825,7 @@ void ClosedLoop::Diagnostics(const StringRef& reply) noexcept
 	reply.catf(", live status: %#x", ReadLiveStatus());
 	reply.catf(", encoder type %s", GetEncoderType().ToString());
 	reply.catf(", pre-error threshold: %f, error threshold: %f", (double) errorThresholds[0], (double) errorThresholds[1]);
-	reply.catf(", reverse polarity: %s", reversePolarity ? "yes" : "no");
+	reply.catf(", reverse polarity: %s", (reversePolarityMultiplier < 0.0) ? "yes" : "no");
 	reply.catf(", tuning mode: %#x, tuning error: %#x", tuning, tuningError);
 
 	if (encoder != nullptr)
@@ -848,7 +864,7 @@ void ClosedLoop::TakeStep() noexcept
 	bool dummy;			// this receives the interpolation, but we don't use it
 	const unsigned int microsteps = SmartDrivers::GetMicrostepping(0, dummy);
 	const float microstepAngle = (microsteps == 0) ? 1.0 : 1.0/microsteps;
-	targetMotorSteps = targetMotorSteps + (stepDirection ? microstepAngle : -microstepAngle) * (Platform::GetDirectionValue(0) ? 1 : -1) * (reversePolarity ? -1 : 1);
+	targetMotorSteps = targetMotorSteps + (stepDirection ? microstepAngle : -microstepAngle) * (Platform::GetDirectionValue(0) ? 1 : -1) * reversePolarityMultiplier;
 	if (samplingMode == RecordingMode::OnNextMove)
 	{
 		dataCollectionStartTicks = whenNextSampleDue = StepTimer::GetTimerTicks();
@@ -889,7 +905,7 @@ void ClosedLoop::ResetError(size_t driver) noexcept
 # if SINGLE_DRIVER
 	if (driver == 0) {
 		// Set the target position to the current position
-		ReadState();
+		ReadState(StepTimer::GetTimerTicks());
 		derivativeFilter.Reset();
 		targetMotorSteps = currentMotorSteps;
 	}

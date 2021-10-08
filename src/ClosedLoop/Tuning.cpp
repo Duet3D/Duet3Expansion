@@ -47,7 +47,7 @@ static bool BasicTuning(bool firstIteration) noexcept
 
 	if (firstIteration) {
 		tuneCounter = 0;
-		ClosedLoop::reversePolarity = false;
+		ClosedLoop::SetForwardPolarity();
 		initialStepPhase = ClosedLoop::desiredStepPhase;
 	}
 
@@ -89,6 +89,7 @@ static bool BasicTuning(bool firstIteration) noexcept
 			ClosedLoop::desiredStepPhase += min<uint16_t>(distanceToGo, PHASE_STEP_DISTANCE);
 			ClosedLoop::SetMotorPhase(ClosedLoop::desiredStepPhase, 1);
 		} else {
+			ClosedLoop::ResetStepPosition(initialStepPhase);
 			return true;
 		}
 	}
@@ -174,7 +175,7 @@ static bool ContinuousPhaseIncrease(bool firstIteration) noexcept
 
 static bool Step(bool firstIteration) noexcept
 {
-	ClosedLoop::targetMotorSteps = ClosedLoop::currentMotorSteps + 4;
+	ClosedLoop::targetMotorSteps = ClosedLoop::targetMotorSteps + 4;
 	return true;
 }
 
