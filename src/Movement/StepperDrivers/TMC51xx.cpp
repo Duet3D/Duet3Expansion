@@ -302,6 +302,7 @@ public:
 	unsigned int GetMicrostepping(bool& interpolation) const noexcept;
 #if SUPPORT_CLOSED_LOOP
 	unsigned int GetMicrostepShift() const noexcept { return microstepShiftFactor; }
+	uint16_t GetMicrostepPosition() const noexcept { return readRegisters[ReadMsCnt] & 1023; }
 #endif
 	bool SetDriverMode(unsigned int mode) noexcept;
 	DriverMode GetDriverMode() const noexcept;
@@ -864,7 +865,7 @@ void TmcDriverState::AppendDriverStatus(const StringRef& reply, bool clearGlobal
 	}
 
 	ResetLoadRegisters();
-	reply.catf(", reads %u, writes %u timeouts %u", numReads, numWrites, numTimeouts);
+	reply.catf(", mspos %u, reads %u, writes %u timeouts %u", (unsigned int)(readRegisters[ReadMsCnt] & 1023), numReads, numWrites, numTimeouts);
 	numReads = numWrites = 0;
 	if (clearGlobalStats)
 	{
@@ -1575,11 +1576,16 @@ unsigned int SmartDrivers::GetMicrostepShift(size_t driver) noexcept
 	return (driver < numTmc51xxDrivers) ? driverStates[driver].GetMicrostepShift() : 0;
 }
 
+// Get the coil A microstep position as a number in the range 0..1023
+uint16_t SmartDrivers::GetMicrostepPosition(size_t driver) noexcept
+{
+	return (driver < numTmc51xxDrivers) ? driverStates[driver].GetMicrostepPosition() : 0;
+}
+
 #endif
 
 bool SmartDrivers::SetDriverMode(size_t driver, unsigned int mode) noexcept
 {
-
 #if SUPPORT_CLOSED_LOOP
 	const bool ret = driver < numTmc51xxDrivers && driverStates[driver].SetDriverMode(mode);
 	if (ret && driver == 0)

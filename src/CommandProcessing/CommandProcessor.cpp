@@ -343,8 +343,8 @@ static GCodeResult ProcessM569(const CanMessageGeneric& msg, const StringRef& re
 		{
 			seen = true;
 # if SUPPORT_CLOSED_LOOP
-			// enable/disabled closed loop control
-			if (!ClosedLoop::SetClosedLoopEnabled(val == (uint32_t) DriverMode::direct, reply))
+			// Enable/disabled closed loop control
+			if (!ClosedLoop::SetClosedLoopEnabled(drive, val == (uint32_t)DriverMode::direct, reply))
 			{
 				// reply.printf is done in ClosedLoop::SetClosedLoopEnabled()
 				return GCodeResult::error;
@@ -355,6 +355,12 @@ static GCodeResult ProcessM569(const CanMessageGeneric& msg, const StringRef& re
 				reply.printf("Driver %u.%u does not support mode '%s'", CanInterface::GetCanAddress(), drive, TranslateDriverMode(val));
 				return GCodeResult::error;
 			}
+# if SUPPORT_CLOSED_LOOP
+			if (val == (uint32_t) DriverMode::direct)
+			{
+				ClosedLoop::DriverSwitchedToClosedLoop(drive);
+			}
+# endif
 		}
 
 		if (parser.GetUintParam('F', val))		// set off time

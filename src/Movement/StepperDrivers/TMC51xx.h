@@ -42,6 +42,7 @@ namespace SmartDrivers
 	unsigned int GetMicrostepping(size_t drive, bool& interpolation) noexcept;
 #if SUPPORT_CLOSED_LOOP
 	unsigned int GetMicrostepShift(size_t driver) noexcept;
+	uint16_t GetMicrostepPosition(size_t driver) noexcept;
 #endif
 	bool SetDriverMode(size_t driver, unsigned int mode) noexcept;
 	DriverMode GetDriverMode(size_t driver) noexcept;

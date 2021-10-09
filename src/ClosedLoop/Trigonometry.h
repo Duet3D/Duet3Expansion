@@ -36,8 +36,8 @@ namespace Trigonometry
 	void FastSinCos(uint16_t phase, float& sine, float& cosine) noexcept;
 }
 
-// Calculate 255 * the sine and cosine of the phase value passed, where phase is between 0 and 4095, and 4096 would correspond to 2*pi
-inline void Trigonometry::FastSinCos(uint16_t phase, float& sine, float& cosine) noexcept
+// Calculate 255 * minus the sine and plus the cosine of the phase value passed, where phase is between 0 and 4095, and 4096 would correspond to 2*pi
+inline void Trigonometry::FastSinCos(uint16_t phase, float& msine, float& cosine) noexcept
 {
 	unsigned int quadrant = (phase / Resolution) & 3;
 	unsigned int index = phase % Resolution;
@@ -46,19 +46,19 @@ inline void Trigonometry::FastSinCos(uint16_t phase, float& sine, float& cosine)
 	const float r2 = lookupTable[Resolution - index];
 	switch (quadrant) {
 	case 0:
-		sine = r1;
+		msine = -r1;
 		cosine = r2;
 		break;
 	case 1:
-		sine = r2;
+		msine = -r2;
 		cosine = -r1;
 		break;
 	case 2:
-		sine = -r1;
+		msine = r1;
 		cosine = -r2;
 		break;
 	case 3:
-		sine = -r2;
+		msine = r2;
 		cosine = r1;
 		break;
 	}

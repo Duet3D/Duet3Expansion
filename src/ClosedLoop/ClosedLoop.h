@@ -47,12 +47,11 @@ namespace ClosedLoop
 	extern Encoder *encoder;						// Pointer to the encoder object in use
 	extern uint8_t tuning;							// Bitmask of any tuning manoeuvres that have been requested
 	extern uint8_t tuningError;						// Flags for any tuning errors
-	extern uint16_t stepPhase;						// The current position of the motor
+	extern uint16_t measuredStepPhase;				// The measured position of the motor
 	extern uint16_t desiredStepPhase;				// The desired position of the motor
 	extern std::atomic<int32_t> rawEncoderReading;	// The raw reading taken from the encoder
 	extern std::atomic<float> targetMotorSteps;		// The number of steps the motor should have taken relative to it's zero position
 	extern float encoderPulsePerStep;				// How many encoder readings do we get per step?
-	extern float currentMotorSteps;					// The number of steps the motor has taken relative to it's zero position
 
 	// Closed loop public methods
 	void Init() noexcept;
@@ -69,7 +68,8 @@ namespace ClosedLoop
 	uint8_t ReadLiveStatus() noexcept;
 	void SetStepDirection(bool) noexcept;
 	bool GetClosedLoopEnabled() noexcept;
-	bool SetClosedLoopEnabled(bool enabled, const StringRef &reply) noexcept;
+	bool SetClosedLoopEnabled(uint8_t drive, bool enabled, const StringRef &reply) noexcept;
+	void DriverSwitchedToClosedLoop(uint8_t drive) noexcept;
 	void SetHoldingCurrent(float percent);
 	void ResetError(size_t driver) noexcept;
 
