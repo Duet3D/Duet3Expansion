@@ -62,6 +62,7 @@ namespace ClosedLoop
 														// start collecting tuning data 5ms before the start of the tuning move
 	constexpr float DefaultHoldCurrentFraction = 0.25;	// the minimum fraction of the requested current that we apply when holding position
 	constexpr float MinimumDegreesPhaseShift = 15.0;	// the phase shift at which we start reducing current instead of reducing the phase shift, where 90deg is one full step
+	constexpr float MinimumPhaseShift = (MinimumDegreesPhaseShift/360.0) * 4096;	// the same in units where 4096 is a complete circle
 
 	// Enumeration of closed loop recording modes
 	enum RecordingMode : uint8_t
@@ -78,7 +79,11 @@ namespace ClosedLoop
 	bool 	closedLoopEnabled = false;					// Has closed loop been enabled by the user?
 	uint8_t prevTuningError;							// Used to see what errors have been introduced by tuning
 
-	float 	holdCurrentFraction = DefaultHoldCurrentFraction;	// The minimum holding current when stationary
+	// Holding current, and variables derived from it
+	float 	holdCurrentFraction = DefaultHoldCurrentFraction;			// The minimum holding current when stationary
+	float	recipHoldCurrentFraction = 1.0/DefaultHoldCurrentFraction;	// The reciprocal of the minimum holding current
+	float	holdCurrentFractionTimesMinPhaseShift = MinimumPhaseShift * DefaultHoldCurrentFraction;
+
 	float	reversePolarityMultiplier = 1.0;			// +1 if encoder direction is forwards, -1 if it is reverse
 
 	float 	Kp = 100;									// The proportional constant for the PID controller
@@ -794,29 +799,29 @@ void ClosedLoop::ControlMotorCurrents(StepTimer::Ticks loopStartTime) noexcept
 	// - if the required phase shift is greater than about 15 degrees, apply it at maximum current
 	// - below 15 degrees, keep the phase shift at +/- 15 degrees and reduce the current, but not below the minimum holding current
 	// - after that, keep the current at the holding current and reduce the phase shift.
-	constexpr float MinimumPhaseShift = (MinimumDegreesPhaseShift/360.0) * 4096;
 	float currentFraction;
-	if (fabsf(phaseShift) >= MinimumPhaseShift)
+	const float absPhaseShift = fabsf(phaseShift);
+	if (absPhaseShift >= MinimumPhaseShift)
 	{
 		// Use the requested phase shifg at full current
 		currentFraction = 1.0;
 	}
-	else if (fabsf(phaseShift) >= MinimumPhaseShift * holdCurrentFraction)		// TODO pre-calculate and store the product when holdCurrentFraction changes
+	else if (absPhaseShift >= holdCurrentFractionTimesMinPhaseShift)
 	{
-		// Use the minimum phase shif but reduce the current
-		currentFraction = fabsf(phaseShift) * (1.0/MinimumPhaseShift);
+		// Use the minimum phase shift but reduce the current
+		currentFraction = absPhaseShift * (1.0/MinimumPhaseShift);
 		phaseShift = (phaseShift >= 0) ? MinimumPhaseShift : -MinimumPhaseShift;
 	}
 	else
 	{
 		// Reduce the phase shift and keep the current the same
 		currentFraction = holdCurrentFraction;
-		phaseShift /= holdCurrentFraction;										//TODO precalculate the reciprocal of the holding current fraction
+		phaseShift *= recipHoldCurrentFraction;
 	}
 
-	// Calculate the required motor currents to induce that torque
-	// (If stepPhase < phaseShift, we need to add on an extra 4095 to bring us back within the correct range)
-	desiredStepPhase = (uint16_t)((int16_t)stepPhase + lrintf(phaseShift) + 4096) % 4096;
+	// Calculate the required motor currents to induce that torque and reduce it module 4096
+	// The following assumes that signed arithmaetic is 2's complement
+	desiredStepPhase = (uint16_t)((int32_t)stepPhase + lrintf(phaseShift)) % 4096;
 
 	// Assert the required motor currents
 	SetMotorPhase(desiredStepPhase, currentFraction);
@@ -894,9 +899,14 @@ bool ClosedLoop::GetClosedLoopEnabled() noexcept
 	return closedLoopEnabled;
 }
 
+// Set the minimum holding current. Don't allow zero because we need its reciprocal
 void ClosedLoop::SetHoldingCurrent(float percent)
 {
-	holdCurrentFraction = constrain<long>(percent, 0, 100) / 100.0;
+	TaskCriticalSectionLocker lock;			// don't allow the closed loop task to see an inconsistent combination of these values
+
+	holdCurrentFraction = constrain<float>(percent, 10.0, 100.0) / 100.0;
+	holdCurrentFractionTimesMinPhaseShift = MinimumPhaseShift * holdCurrentFraction;
+	recipHoldCurrentFraction = 1.0/holdCurrentFraction;
 }
 
 void ClosedLoop::ResetError(size_t driver) noexcept
