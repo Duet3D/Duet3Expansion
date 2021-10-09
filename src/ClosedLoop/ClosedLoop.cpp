@@ -52,7 +52,7 @@ namespace ClosedLoop
 {
 	// Constants private to this module
 	constexpr size_t TaskStackWords = 200;				// Size of the stack for all closed loop tasks
-	constexpr unsigned int derivativeFilterSize = 16;	// The range of the derivative filter (use a power of 2 for efficiency)
+	constexpr unsigned int derivativeFilterSize = 32;	// The range of the derivative filter (use a power of 2 for efficiency)
 	constexpr unsigned int DataBufferSize = 2000 * 14;	// When collecting samples we can accommodate 2000 readings of up to 13 variables + timestamp
 	constexpr unsigned int tuningStepsPerSecond = 2000;	// the rate at which we send 1/256 microsteps during tuning, slow enough for high-inertia motors
 	constexpr StepTimer::Ticks stepTicksPerTuningStep = StepTimer::StepClockRate/tuningStepsPerSecond;
@@ -60,6 +60,7 @@ namespace ClosedLoop
 														// 1/10 sec delay between enabling the driver and starting tuning, to allow for brake release and current buildup
 	constexpr StepTimer::Ticks DataCollectionIdleStepTicks = StepTimer::StepClockRate/200;
 														// start collecting tuning data 5ms before the start of the tuning move
+	constexpr float DefaultHoldCurrentFraction = 0.25;	// the minimum fraction of the requested current that we apply when holding position
 
 	// Enumeration of closed loop recording modes
 	enum RecordingMode : uint8_t
@@ -76,7 +77,7 @@ namespace ClosedLoop
 	bool 	closedLoopEnabled = false;					// Has closed loop been enabled by the user?
 	uint8_t prevTuningError;							// Used to see what errors have been introduced by tuning
 
-	float 	holdCurrent = 0;							// The minimum holding current when stationary
+	float 	holdCurrentFraction = DefaultHoldCurrentFraction;	// The minimum holding current when stationary
 	float	reversePolarityMultiplier = 1.0;			// +1 if encoder direction is forwards, -1 if it is reverse
 
 	float 	Kp = 100;									// The proportional constant for the PID controller
@@ -121,7 +122,7 @@ namespace ClosedLoop
 	float 	PIDPTerm;									// Proportional term
 	float 	PIDITerm = 0;								// Integral accumulator
 	float 	PIDDTerm;									// Derivative term
-	int16_t PIDControlSignal;							// The overall -255 to 255 signal from the PID controller
+	float	PIDControlSignal;							// The overall signal from the PID controller
 
 	int16_t phaseShift;									// The desired shift in the position of the motor
 
@@ -247,7 +248,7 @@ static void ReportTuningErrors(uint8_t tuningErrorBitmask, const StringRef &repl
 // Helper function to set the motor to a given phase and magnitude
 void ClosedLoop::SetMotorPhase(uint16_t phase, float magnitude) noexcept
 {
-	magnitude = constrain<float>(magnitude, holdCurrent, 1.0);
+	magnitude = constrain<float>(magnitude, holdCurrentFraction, 1.0);
 	coilA = 255 * Trigonometry::FastCos(phase) * magnitude;
 	coilB = 255 * Trigonometry::FastSin(phase) * reversePolarityMultiplier * magnitude;
 
@@ -492,24 +493,19 @@ GCodeResult ClosedLoop::ProcessM569Point6(const CanMessageGeneric &msg, const St
 		// 3. A new tuning error has been introduced (else)					= WARNING
 		if (tuningError == 0)
 		{
-			reply.copy("Tuning completed successfully");
+			reply.printf("Driver %u.0 tuned successfully", CanInterface::GetCanAddress());
 			return GCodeResult::ok;
 		}
 
-		if ((~prevTuningError & tuningError) == 0)
+		if ((~prevTuningError & tuningError) != 0)
 		{
-			reply.copy("No new tuning errors have been found, but some previous tuning errors were not cleared");
-			ReportTuningErrors(tuningError, reply);
-		}
-		else
-		{
-			reply.copy("One or more tuning errors occurred");
+			reply.printf("Driver %u.0 new tuning error(s):", CanInterface::GetCanAddress());
 			ReportTuningErrors(~prevTuningError & tuningError, reply);
-			if (prevTuningError & tuningError)
-			{
-				reply.catf(" In addition, the following tuning errors were already present");
-				ReportTuningErrors(prevTuningError & tuningError, reply);
-			}
+		}
+		if ((prevTuningError & ~tuningError) != 0)
+		{
+			reply.lcatf("Driver %u.0 un-cleared previous tuning error(s):", CanInterface::GetCanAddress());
+			ReportTuningErrors(prevTuningError & tuningError, reply);
 		}
 		return GCodeResult::warning;
 	}
@@ -739,7 +735,7 @@ void ClosedLoop::CollectSample() noexcept
 		if (filterRequested & CL_RECORD_CURRENT_MOTOR_STEPS) 	{sampleBuffer[wp++] = currentMotorSteps;}
 		if (filterRequested & CL_RECORD_TARGET_MOTOR_STEPS)  	{sampleBuffer[wp++] = targetMotorSteps;}
 		if (filterRequested & CL_RECORD_CURRENT_ERROR) 			{sampleBuffer[wp++] = currentError;}
-		if (filterRequested & CL_RECORD_PID_CONTROL_SIGNAL)  	{sampleBuffer[wp++] = (float)PIDControlSignal;}
+		if (filterRequested & CL_RECORD_PID_CONTROL_SIGNAL)  	{sampleBuffer[wp++] = PIDControlSignal;}
 		if (filterRequested & CL_RECORD_PID_P_TERM)  			{sampleBuffer[wp++] = PIDPTerm;}
 		if (filterRequested & CL_RECORD_PID_I_TERM)  			{sampleBuffer[wp++] = PIDITerm;}
 		if (filterRequested & CL_RECORD_PID_D_TERM)  			{sampleBuffer[wp++] = PIDDTerm;}
@@ -791,26 +787,30 @@ void ClosedLoop::ControlMotorCurrents(StepTimer::Ticks loopStartTime) noexcept
 	}
 
 	// Use a PID controller to calculate the required 'torque' - the control signal
+	// We choose to use a PID control signal in the range -256 to +256. This is rather arbitrary.
 	PIDPTerm = Kp * currentError;
-	PIDITerm = constrain<float>(PIDITerm + Ki * currentError * timeDelta, -255.0, 255.0);
-	PIDDTerm = constrain<float>(Kd * derivativeFilter.GetDerivative(), -255.0, 255.0);		// constrain D so that we can graph it more sensibly
-	const float sumOfTerms = PIDPTerm + PIDITerm + PIDDTerm;
-	PIDControlSignal = (int16_t)constrain<float>(4.0 * sumOfTerms, -1024.0, 1024.0);		// clamp between -255 and 255
+	PIDITerm = constrain<float>(PIDITerm + Ki * currentError * timeDelta, -256.0, 256.0);	// constrain I to prevent it running away
+	PIDDTerm = constrain<float>(Kd * derivativeFilter.GetDerivative(), -256.0, 256.0);		// constrain D so that we can graph it more sensibly after a sudden step input
+	PIDControlSignal = constrain<float>(PIDPTerm + PIDITerm + PIDDTerm, -256.0, 256.0);		// clamp the sum between +/- 256
 
 	// Calculate the offset required to produce the torque in the correct direction
 	// i.e. if we are moving in the positive direction, we must apply currents with a positive phase shift
-	// The max abs value of phase shift we want is 25%.
+	// The max abs value of phase shift we want is 1 full step i.e. 25%.
 	// Given that PIDControlSignal is -255 .. 255 and phase is 0 .. 4095
 	// and that 25% of 4095 ~= 1024, our max phase shift ~= 4 * PIDControlSignal
-	phaseShift = PIDControlSignal;
+	phaseShift = (int16_t)(PIDControlSignal * 4.0);
 
 	// Calculate the required motor currents to induce that torque
 	// (If stepPhase < phaseShift, we need to add on an extra 4095 to bring us back within the correct range)
-	desiredStepPhase = (uint16_t)(stepPhase + phaseShift + 4096) % 4096;
+	desiredStepPhase = (uint16_t)((int16_t)stepPhase + phaseShift + 4096) % 4096;
 
 	// Assert the required motor currents
-	//TODO apply a minimum motor current
-	SetMotorPhase(desiredStepPhase, (float)abs(PIDControlSignal)/1024.0);
+	// We used to control the motor current magnitude linearly with the phase, but that gives a square-law torque curve so the torque is too low at low phase angles.
+	// So only reduce current when the both the control signal AND the error are small fractions of a step
+	const float controlFraction = max<float>(fabsf(PIDControlSignal) * (1.0/256.0), currentError) * encoderPulsePerStep;
+	const float currentFraction = (controlFraction >= 1.0) ? 1.0
+									: controlFraction * ((1.0 - holdCurrentFraction)) + holdCurrentFraction;
+	SetMotorPhase(desiredStepPhase, currentFraction);
 
 	// Update vars for the next cycle
 	lastError = currentError;
@@ -894,7 +894,7 @@ bool ClosedLoop::GetClosedLoopEnabled() noexcept
 
 void ClosedLoop::SetHoldingCurrent(float percent)
 {
-	holdCurrent = constrain<long>(percent, 0, 100) / 100.0;
+	holdCurrentFraction = constrain<long>(percent, 0, 100) / 100.0;
 }
 
 void ClosedLoop::ResetError(size_t driver) noexcept
