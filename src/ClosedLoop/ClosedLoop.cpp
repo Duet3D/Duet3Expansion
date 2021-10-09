@@ -153,12 +153,10 @@ namespace ClosedLoop
 	// These variables monitor how fast the PID loop is running etc.
 	StepTimer::Ticks minControlLoopRuntime;				// The minimum time the control loop has taken to run
 	StepTimer::Ticks maxControlLoopRuntime;				// The maximum time the control loop has taken to run
-	float 			 ewmaControlLoopRuntime;			// The exponentially weighted moving average (ewma) time the control loop has taken
 
 	StepTimer::Ticks prevControlLoopCallTime;			// The last time the control loop was called
 	StepTimer::Ticks minControlLoopCallInterval;		// The minimum interval between the control loop being called
 	StepTimer::Ticks maxControlLoopCallInterval;		// The maximum interval between the control loop being called
-	float 			 ewmaControlLoopCallInterval;		// An ewma of the frequency the control loop is called at
 
 	StepTimer::Ticks whenLastTuningStepTaken;			// when we last called the tuning code
 
@@ -203,10 +201,8 @@ static inline float TickPeriodToFreq(StepTimer::Ticks tickPeriod) {
 static void ResetMonitoringVariables() {
 	ClosedLoop::minControlLoopRuntime = numeric_limits<StepTimer::Ticks>::max();
 	ClosedLoop::maxControlLoopRuntime = numeric_limits<StepTimer::Ticks>::min();
-	ClosedLoop::ewmaControlLoopRuntime = 0;
 	ClosedLoop::minControlLoopCallInterval = numeric_limits<StepTimer::Ticks>::max();
 	ClosedLoop::maxControlLoopCallInterval = numeric_limits<StepTimer::Ticks>::min();
-	ClosedLoop::ewmaControlLoopCallInterval = 0;
 }
 
 // Helper function to convert between the internal representation of encoderCountPerStep, and the appropriate external representation (e.g. CPR)
@@ -249,11 +245,13 @@ static void ReportTuningErrors(uint8_t tuningErrorBitmask, const StringRef &repl
 // Helper function to set the motor to a given phase and magnitude
 void ClosedLoop::SetMotorPhase(uint16_t phase, float magnitude) noexcept
 {
-	coilA = (int16_t)(255 * Trigonometry::FastCos(phase) * magnitude);
-	coilB = (int16_t)(255 * Trigonometry::FastSin(phase) * reversePolarityMultiplier * magnitude);
+	float sine, cosine;
+	Trigonometry::FastSinCos(phase, sine, cosine);
+	coilA = (int16_t)lrintf(cosine * magnitude);
+	coilB = (int16_t)lrintf(sine * reversePolarityMultiplier * magnitude);
 
 # if SUPPORT_TMC2160 && SINGLE_DRIVER
-	SmartDrivers::SetRegister(0, SmartDriverRegister::xDirect, ((coilB << 16) | coilA) & 0x01FF01FF);
+	SmartDrivers::SetRegister(0, SmartDriverRegister::xDirect, (((uint32_t)(uint16_t)coilB << 16) | (uint32_t)(uint16_t)coilA) & 0x01FF01FF);
 # else
 #  error Cannot support closed loop with the specified hardware
 # endif
@@ -596,9 +594,6 @@ void ClosedLoop::ControlLoop() noexcept
 	const StepTimer::Ticks loopCallTime = StepTimer::GetTimerTicks();
 	if (prevControlLoopCallTime != 0) {
 		const StepTimer::Ticks timeElapsed = loopCallTime - prevControlLoopCallTime;
-		ewmaControlLoopCallInterval = ewmaControlLoopCallInterval == 0
-				? timeElapsed
-				: timeElapsed * 0.5 + ewmaControlLoopCallInterval * 0.5;
 		minControlLoopCallInterval = min<StepTimer::Ticks>(minControlLoopCallInterval, timeElapsed);
 		maxControlLoopCallInterval = max<StepTimer::Ticks>(maxControlLoopCallInterval, timeElapsed);
 	}
@@ -641,9 +636,6 @@ void ClosedLoop::ControlLoop() noexcept
 	// Record how long this has taken to run
 	prevControlLoopCallTime = loopCallTime;
 	StepTimer::Ticks loopRuntime = StepTimer::GetTimerTicks() - loopCallTime;
-	ewmaControlLoopRuntime = ewmaControlLoopRuntime == 0
-			? loopRuntime
-			: loopRuntime * 0.5 + ewmaControlLoopRuntime * 0.5;
 	minControlLoopRuntime = min<StepTimer::Ticks>(minControlLoopRuntime, loopRuntime);
 	maxControlLoopRuntime = max<StepTimer::Ticks>(maxControlLoopRuntime, loopRuntime);
 }
@@ -854,16 +846,9 @@ void ClosedLoop::Diagnostics(const StringRef& reply) noexcept
 	}
 
 	reply.catf(", ultimateGain=%f, oscillationPeriod=%f", (double) ultimateGain, (double) oscillationPeriod);
-
-	reply.cat(", Control loop runtime (ms): ");
-	reply.catf("min=%f, ", (double) TickPeriodToTimePeriod(minControlLoopRuntime));
-	reply.catf("max=%f, ", (double) TickPeriodToTimePeriod(maxControlLoopRuntime));
-	reply.catf("avg=%f"  , (double) TickPeriodToTimePeriod(ewmaControlLoopRuntime));
-
-	reply.cat(", Control loop frequency (Hz): ");
-	reply.catf("min=%f, ", (double) TickPeriodToFreq(maxControlLoopCallInterval));
-	reply.catf("max=%f, ", (double) TickPeriodToFreq(minControlLoopCallInterval));
-	reply.catf("avg=%f"  , (double) TickPeriodToFreq(ewmaControlLoopCallInterval));
+	reply.lcatf("Control loop runtime (ms): min=%f, max=%f, frequency (Hz): min=%f, max=%f",
+				(double) TickPeriodToTimePeriod(minControlLoopRuntime), (double) TickPeriodToTimePeriod(maxControlLoopRuntime),
+				(double) TickPeriodToFreq(maxControlLoopCallInterval), (double) TickPeriodToFreq(minControlLoopCallInterval));
 
 	ResetMonitoringVariables();
 
