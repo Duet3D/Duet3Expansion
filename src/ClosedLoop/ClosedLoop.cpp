@@ -626,7 +626,7 @@ void ClosedLoop::ControlLoop() noexcept
 			}		// If that was the last tuning move, release the override
 		}
 		else if (samplingMode == RecordingMode::OnNextMove && timeSinceLastTuningStep + (int32_t)DataCollectionIdleStepTicks >= 0) {
-			dataCollectionStartTicks = loopCallTime;
+			dataCollectionStartTicks = whenNextSampleDue = loopCallTime;
 			samplingMode = RecordingMode::Immediate;
 		}
 	} else if (tuningError) {
@@ -774,13 +774,13 @@ void ClosedLoop::ReadState(StepTimer::Ticks now) noexcept
 
 	// Calculate stepPhase - a 0-4095 value representing the phase *within* the current step
 	const float tmp = currentMotorSteps * 0.25;
-	stepPhase = (tmp - floorf(tmp)) * 4095;
+	stepPhase = (uint16_t)((tmp - floorf(tmp)) * 4095.9);
 }
 
 void ClosedLoop::ControlMotorCurrents(StepTimer::Ticks loopStartTime) noexcept
 {
 	// Get the time delta in seconds
-	const float timeDelta = (loopStartTime - prevControlLoopCallTime) * (1.0/(float)StepTimer::StepClockRate);
+	const float timeDelta = (float)(loopStartTime - prevControlLoopCallTime) * (1.0/(float)StepTimer::StepClockRate);
 
 	// Look for a stall or pre-stall
 	preStall = errorThresholds[0] > 0 && abs(currentError) > errorThresholds[0];
@@ -790,30 +790,27 @@ void ClosedLoop::ControlMotorCurrents(StepTimer::Ticks loopStartTime) noexcept
 		Platform::NewDriverFault();
 	}
 
-	// If the current error is zero, we don't need to do anything!
-	if (currentError == 0 && !CollectingData()) { return; }
-
 	// Use a PID controller to calculate the required 'torque' - the control signal
 	PIDPTerm = Kp * currentError;
 	PIDITerm = constrain<float>(PIDITerm + Ki * currentError * timeDelta, -255.0, 255.0);
-	PIDDTerm = constrain<float>(Kd * (float)derivativeFilter.GetDerivative(), -255.0, 255.0);	// constrain D so that we can graph it more sensibly
+	PIDDTerm = constrain<float>(Kd * derivativeFilter.GetDerivative(), -255.0, 255.0);		// constrain D so that we can graph it more sensibly
 	const float sumOfTerms = PIDPTerm + PIDITerm + PIDDTerm;
-	PIDControlSignal = (int16_t) constrain<float>(sumOfTerms, -255.0, 255.0);					// clamp between -255 and 255
+	PIDControlSignal = (int16_t)constrain<float>(4.0 * sumOfTerms, -1024.0, 1024.0);		// clamp between -255 and 255
 
 	// Calculate the offset required to produce the torque in the correct direction
 	// i.e. if we are moving in the positive direction, we must apply currents with a positive phase shift
 	// The max abs value of phase shift we want is 25%.
 	// Given that PIDControlSignal is -255 .. 255 and phase is 0 .. 4095
 	// and that 25% of 4095 ~= 1024, our max phase shift ~= 4 * PIDControlSignal
-	phaseShift = (4 * PIDControlSignal);
+	phaseShift = PIDControlSignal;
 
 	// Calculate the required motor currents to induce that torque
 	// (If stepPhase < phaseShift, we need to add on an extra 4095 to bring us back within the correct range)
-	desiredStepPhase = stepPhase + phaseShift + ((stepPhase < -phaseShift) * 4095);
-	desiredStepPhase = desiredStepPhase % 4096;
+	desiredStepPhase = (uint16_t)(stepPhase + phaseShift + 4096) % 4096;
 
 	// Assert the required motor currents
-	SetMotorPhase(desiredStepPhase, abs(PIDControlSignal)/255.0);
+	//TODO apply a minimum motor current
+	SetMotorPhase(desiredStepPhase, (float)abs(PIDControlSignal)/1024.0);
 
 	// Update vars for the next cycle
 	lastError = currentError;
