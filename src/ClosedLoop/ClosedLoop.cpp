@@ -61,6 +61,7 @@ namespace ClosedLoop
 	constexpr StepTimer::Ticks DataCollectionIdleStepTicks = StepTimer::StepClockRate/200;
 														// start collecting tuning data 5ms before the start of the tuning move
 	constexpr float DefaultHoldCurrentFraction = 0.25;	// the minimum fraction of the requested current that we apply when holding position
+	constexpr float MinimumDegreesPhaseShift = 15.0;	// the phase shift at which we start reducing current instead of reducing the phase shift, where 90deg is one full step
 
 	// Enumeration of closed loop recording modes
 	enum RecordingMode : uint8_t
@@ -124,7 +125,7 @@ namespace ClosedLoop
 	float 	PIDDTerm;									// Derivative term
 	float	PIDControlSignal;							// The overall signal from the PID controller
 
-	int16_t phaseShift;									// The desired shift in the position of the motor
+	float	phaseShift;									// The desired shift in the position of the motor, where 1024 = 1 full step
 
 	int16_t coilA;										// The current to run through coil A
 	int16_t coilB;										// The current to run through coil A
@@ -248,14 +249,11 @@ static void ReportTuningErrors(uint8_t tuningErrorBitmask, const StringRef &repl
 // Helper function to set the motor to a given phase and magnitude
 void ClosedLoop::SetMotorPhase(uint16_t phase, float magnitude) noexcept
 {
-	magnitude = constrain<float>(magnitude, holdCurrentFraction, 1.0);
-	coilA = 255 * Trigonometry::FastCos(phase) * magnitude;
-	coilB = 255 * Trigonometry::FastSin(phase) * reversePolarityMultiplier * magnitude;
+	coilA = (int16_t)(255 * Trigonometry::FastCos(phase) * magnitude);
+	coilB = (int16_t)(255 * Trigonometry::FastSin(phase) * reversePolarityMultiplier * magnitude);
 
 # if SUPPORT_TMC2160 && SINGLE_DRIVER
-	SmartDrivers::SetRegister(0,
-			SmartDriverRegister::xDirect,
-			((coilB << 16) & 0x01FF0000) | (coilA & 0x000001FF));
+	SmartDrivers::SetRegister(0, SmartDriverRegister::xDirect, ((coilB << 16) | coilA) & 0x01FF01FF);
 # else
 #  error Cannot support closed loop with the specified hardware
 # endif
@@ -741,7 +739,7 @@ void ClosedLoop::CollectSample() noexcept
 		if (filterRequested & CL_RECORD_PID_D_TERM)  			{sampleBuffer[wp++] = PIDDTerm;}
 		if (filterRequested & CL_RECORD_STEP_PHASE)  			{sampleBuffer[wp++] = (float)stepPhase;}
 		if (filterRequested & CL_RECORD_DESIRED_STEP_PHASE)  	{sampleBuffer[wp++] = (float)desiredStepPhase;}
-		if (filterRequested & CL_RECORD_PHASE_SHIFT)  			{sampleBuffer[wp++] = (float)phaseShift;}
+		if (filterRequested & CL_RECORD_PHASE_SHIFT)  			{sampleBuffer[wp++] = phaseShift;}
 		if (filterRequested & CL_RECORD_COIL_A_CURRENT) 		{sampleBuffer[wp++] = (float)coilA;}
 		if (filterRequested & CL_RECORD_COIL_B_CURRENT) 		{sampleBuffer[wp++] = (float)coilB;}
 
@@ -798,18 +796,37 @@ void ClosedLoop::ControlMotorCurrents(StepTimer::Ticks loopStartTime) noexcept
 	// The max abs value of phase shift we want is 1 full step i.e. 25%.
 	// Given that PIDControlSignal is -255 .. 255 and phase is 0 .. 4095
 	// and that 25% of 4095 ~= 1024, our max phase shift ~= 4 * PIDControlSignal
-	phaseShift = (int16_t)(PIDControlSignal * 4.0);
+	phaseShift = PIDControlSignal * 4.0;
+
+	// New control algorithm:
+	// - if the required phase shift is greater than about 15 degrees, apply it at maximum current
+	// - below 15 degrees, keep the phase shift at +/- 15 degrees and reduce the current, but not below the minimum holding current
+	// - after that, keep the current at the holding current and reduce the phase shift.
+	constexpr float MinimumPhaseShift = (MinimumDegreesPhaseShift/360.0) * 4096;
+	float currentFraction;
+	if (fabsf(phaseShift) >= MinimumPhaseShift)
+	{
+		// Use the requested phase shifg at full current
+		currentFraction = 1.0;
+	}
+	else if (fabsf(phaseShift) >= MinimumPhaseShift * holdCurrentFraction)		// TODO pre-calculate and store the product when holdCurrentFraction changes
+	{
+		// Use the minimum phase shif but reduce the current
+		currentFraction = fabsf(phaseShift) * (1.0/MinimumPhaseShift);
+		phaseShift = (phaseShift >= 0) ? MinimumPhaseShift : -MinimumPhaseShift;
+	}
+	else
+	{
+		// Reduce the phase shift and keep the current the same
+		currentFraction = holdCurrentFraction;
+		phaseShift /= holdCurrentFraction;										//TODO precalculate the reciprocal of the holding current fraction
+	}
 
 	// Calculate the required motor currents to induce that torque
 	// (If stepPhase < phaseShift, we need to add on an extra 4095 to bring us back within the correct range)
-	desiredStepPhase = (uint16_t)((int16_t)stepPhase + phaseShift + 4096) % 4096;
+	desiredStepPhase = (uint16_t)((int16_t)stepPhase + lrintf(phaseShift) + 4096) % 4096;
 
 	// Assert the required motor currents
-	// We used to control the motor current magnitude linearly with the phase, but that gives a square-law torque curve so the torque is too low at low phase angles.
-	// So only reduce current when the both the control signal AND the error are small fractions of a step
-	const float controlFraction = max<float>(fabsf(PIDControlSignal) * (1.0/256.0), currentError) * encoderPulsePerStep;
-	const float currentFraction = (controlFraction >= 1.0) ? 1.0
-									: controlFraction * ((1.0 - holdCurrentFraction)) + holdCurrentFraction;
 	SetMotorPhase(desiredStepPhase, currentFraction);
 
 	// Update vars for the next cycle
