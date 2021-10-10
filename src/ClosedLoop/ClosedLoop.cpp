@@ -125,7 +125,7 @@ namespace ClosedLoop
 	DerivativeAveragingFilter<derivativeFilterSize> derivativeFilter;	// An averaging filter to smooth the derivative of the error
 
 	float 	PIDPTerm;									// Proportional term
-	float 	PIDITerm = 0;								// Integral accumulator
+	float 	PIDITerm = 0.0;								// Integral accumulator
 	float 	PIDDTerm;									// Derivative term
 	float	PIDControlSignal;							// The overall signal from the PID controller
 
@@ -249,10 +249,10 @@ static void ReportTuningErrors(uint8_t tuningErrorBitmask, const StringRef &repl
 // Helper function to set the motor to a given phase and magnitude
 void ClosedLoop::SetMotorPhase(uint16_t phase, float magnitude) noexcept
 {
-	float msine, cosine;
-	Trigonometry::FastSinCos(phase, msine, cosine);
+	float sine, cosine;
+	Trigonometry::FastSinCos(phase, sine, cosine);
 	coilA = (int16_t)lrintf(cosine * magnitude);
-	coilB = (int16_t)lrintf(msine * magnitude);
+	coilB = (int16_t)lrintf(sine * magnitude);
 
 # if SUPPORT_TMC2160 && SINGLE_DRIVER
 	SmartDrivers::SetRegister(0, SmartDriverRegister::xDirect, (((uint32_t)(uint16_t)coilB << 16) | (uint32_t)(uint16_t)coilA) & 0x01FF01FF);
@@ -608,7 +608,7 @@ void ClosedLoop::ControlLoop() noexcept
 
 	if (!closedLoopEnabled) {
 		// If closed loop disabled, do nothing
-	} else if (tuning != 0) {									// if we need to tune, tune
+	} else if (tuning != 0) {										// if we need to tune, tune
 		// Limit the rate at which we command tuning steps Need to do signed comparison because initially, whenLastTuningStepTaken is in the future.
 		const int32_t timeSinceLastTuningStep = (int32_t)(loopCallTime - whenLastTuningStepTaken);
 		if (timeSinceLastTuningStep >= (int32_t)stepTicksPerTuningStep)
@@ -625,7 +625,6 @@ void ClosedLoop::ControlLoop() noexcept
 		}
 	} else if (tuningError) {
 		// Don't do anything if there is a tuning error
-		SetMotorPhase(0, 0);
 	} else {
 		ControlMotorCurrents(loopCallTime);							// otherwise control those motor currents!
 	}
@@ -868,7 +867,7 @@ void ClosedLoop::TakeStep() noexcept
 	bool dummy;			// this receives the interpolation, but we don't use it
 	const unsigned int microsteps = SmartDrivers::GetMicrostepping(0, dummy);
 	const float microstepAngle = (microsteps == 0) ? 1.0 : 1.0/microsteps;
-	targetMotorSteps = targetMotorSteps + (stepDirection ? microstepAngle : -microstepAngle) * (Platform::GetDirectionValue(0) ? 1 : -1);
+	targetMotorSteps = targetMotorSteps + (stepDirection ? -microstepAngle : +microstepAngle);
 	if (samplingMode == RecordingMode::OnNextMove)
 	{
 		dataCollectionStartTicks = whenNextSampleDue = StepTimer::GetTimerTicks();
@@ -950,8 +949,8 @@ bool ClosedLoop::SetClosedLoopEnabled(uint8_t drive, bool enabled, const StringR
 			ReadState();												// set up currentMotorSteps and measuredStepPhase
 			((RelativeEncoder*)encoder)->SetOffset(lrintf(((int32_t)initialStepPhase - (int32_t)measuredStepPhase) * encoderPulsePerStep / 1024.0));	// set the new zero position
 		}
-//DEBUG
-//		desiredStepPhase = initialStepPhase;
+
+		desiredStepPhase = initialStepPhase;							// set this to be picked up later in DriverSwitchedToClosedLoop
 
 		// Set the target position to the current position
 		ResetError(0);													// this calls ReadState again and sets up targetMotorSteps
@@ -973,6 +972,8 @@ bool ClosedLoop::SetClosedLoopEnabled(uint8_t drive, bool enabled, const StringR
 void ClosedLoop::DriverSwitchedToClosedLoop(uint8_t drive) noexcept
 {
 	delay(3);															// allow time for the switch to complete and a few control loop iterations to be done
+	SetMotorPhase(desiredStepPhase, SmartDrivers::GetStandstillCurrentPercent(0) * 0.01);	// set the motor currents to match the initial position using the open loop standstill current
+	PIDITerm = 0.0;														// clear the integral term accumulator
 	ResetMonitoringVariables();											// the first loop iteration will have recorded a higher than normal loop call interval, so start again
 }
 

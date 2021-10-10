@@ -1586,10 +1586,6 @@ bool Platform::GetDirectionValue(size_t driver)
 
 void Platform::SetDirection(bool direction)
 {
-# if SUPPORT_CLOSED_LOOP
-	ClosedLoop::SetStepDirection(direction);
-	if (ClosedLoop::GetClosedLoopEnabled()) {return;}
-# endif
 # if DIFFERENTIAL_STEPPER_OUTPUTS || ACTIVE_HIGH_DIR
 	// Active high direction signal
 	const bool d = (direction) ? directions[0] : !directions[0];
@@ -1598,6 +1594,13 @@ void Platform::SetDirection(bool direction)
 	const bool d = (direction) ? !directions[0] : directions[0];
 # endif
 
+# if SUPPORT_CLOSED_LOOP
+	if (ClosedLoop::GetClosedLoopEnabled())
+	{
+		ClosedLoop::SetStepDirection(d);
+		return;
+	}
+# endif
 # if SUPPORT_SLOW_DRIVERS
 	if (isSlowDriver)
 	{
