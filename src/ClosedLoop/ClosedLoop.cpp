@@ -137,6 +137,9 @@ namespace ClosedLoop
 	bool 	stall = false;								// Has the closed loop error threshold been exceeded?
 	bool 	preStall = false;							// Has the closed loop warning threshold been exceeded?
 
+	//TEMP tuning variables
+	float fo, fs, ro, rs;
+
 	// The bitmask of a minimal tuning error for each encoder type
 	// This is an array so that ZEROING_MANOEUVRE can be removed from the magnetic encoders if the LUT is in NVM
 	uint8_t minimalTunes[5] = {
@@ -487,6 +490,11 @@ GCodeResult ClosedLoop::ProcessM569Point6(const CanMessageGeneric &msg, const St
 			return GCodeResult::notFinished;
 		}
 
+#if 1
+		//TEMP just report results
+		reply.printf("Tuning result: fs=%f fo=%f rs=%f ro=%f", fs,fo, rs, ro);
+		return GCodeResult::warning;
+#else
 		// Tuning has finished - there are now 3 scenarios
 		// 1. No tuning errors exist (!tuningError)							= OK
 		// 2. No new tuning errors exist !(~prevTuningError & tuningError)	= WARNING
@@ -508,6 +516,7 @@ GCodeResult ClosedLoop::ProcessM569Point6(const CanMessageGeneric &msg, const St
 			ReportTuningErrors(prevTuningError & tuningError, reply);
 		}
 		return GCodeResult::warning;
+#endif
 	}
 
 	// Here if this is a new command to start a tuning move
@@ -552,8 +561,15 @@ void ClosedLoop::SetForwardPolarity() noexcept
 	reversePolarityMultiplier = 1;
 }
 
-void ClosedLoop::SetBasicTuningResults(float forwardCountsPerStep, float ReverseCountsPerStep, int32_t finalReading) noexcept
+void ClosedLoop::SetBasicTuningResults(float forwardSlope, float forwardOrigin, float reverseSlope, float reverseOrigin) noexcept
 {
+#if 1
+	//TEMP just save the results so that we can report them
+	fs = forwardSlope;
+	fo = forwardOrigin;
+	rs = reverseSlope;
+	ro = reverseOrigin;
+#else
 	float averageCountsPerStep = (forwardCountsPerStep + ReverseCountsPerStep) * 0.5;
 	if (averageCountsPerStep < 0.0)
 	{
@@ -584,6 +600,7 @@ void ClosedLoop::SetBasicTuningResults(float forwardCountsPerStep, float Reverse
 	}
 
 	tuningError &= ~TUNE_ERR_NOT_DONE_BASIC;
+#endif
 }
 
 void ClosedLoop::ResetStepPosition(uint16_t motorPhase) noexcept

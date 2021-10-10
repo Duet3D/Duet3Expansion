@@ -82,7 +82,7 @@ namespace ClosedLoop
 	float ExternalUnitsToPulsePerStep(float externalUnits, uint8_t encoderType) noexcept;
 	void SetMotorPhase(uint16_t phase, float magnitude) noexcept;
 	void SetForwardPolarity() noexcept;
-	void SetBasicTuningResults(float forwardCountsPerStep, float ReverseCountsPerStep, int32_t finalReading) noexcept;
+	void SetBasicTuningResults(float forwardSlope, float forwardOrigin, float reverseSlope, float reverseOrigin) noexcept;
 	void ResetStepPosition(uint16_t motorPhase) noexcept;
 
 	// Methods in the tuning module

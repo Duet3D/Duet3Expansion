@@ -13,9 +13,6 @@
 #  error Cannot support closed loop with the specified hardware
 # endif
 
-static int32_t tuneCounter;							// A counter for tuning tasks to use
-static constexpr uint32_t PHASE_STEP_DISTANCE = 8;	// The distance of one small step, essentially a speed control.
-
 /*
  * The following sections, delimited by comments, implement different tuning moves.
  * The comment gives the name of the move, and a description for how it is implemented
@@ -33,65 +30,150 @@ static constexpr uint32_t PHASE_STEP_DISTANCE = 8;	// The distance of one small 
  * Basic tuning
  * ------------------
  *
- *  - Increase the step phase from 0 to 4096
- *  - If the raw encoder reading has increased, reverse_polarity = false
- *  -   Otherwise, reverse_polarity = true
+ *  - Increase the step phase by a little over 4096 counts and back again
+ *  - ignore the points near the start position
+ *  - feed the remaining (phase, encoder reading) points into a linear regression algorithm, separately on the forward and the reverse movements
+ *  - the linear regression gives us the encoder offset and the counts per step
+ *  - pass these figures to the ClosedLoop module. It will check the counts per step, set the forward/reverse encoder polarity flag, and set the zero position
  *
+ *  Notes on linear regression:
+ *  From https://en.wikipedia.org/wiki/Simple_linear_regression the formula to fit a straight line y = mx + c to a set of N (x, y) points is:
+ *   m = sigma(i=0..(N-1): (xi - xm) * (yi - ym)) / sigma(i=0..(N-1): (xi - xm)^2)
+ *   c = ym - m * xm
+ *  where xi is the ith x, yi is the ith y, xm is the mean x, ym is the mean y
+ *  In our case the x values are the motor phase values selected, which are spaced uniformly, so that xi = x0 + p*i
+ *  So xm = (x0 + (x0 + p*(N-1)))/2 = x0 + p*(N-1)/2
+ *  and (xi - xm) = p*i - p*(N-1)/2 = p*(i - (N-1)/2)
+ *
+ *  Expand the numerator in the equation for m to:
+ *   sigma(i=0..(N-1): yi*(xi - xm)) - ym*sigma(i=0..(N-1): (xi - xm))
+ *  Simplify this to:
+ *   sigma(i=0..N-1): yi*p*(i - (N-1)/2)) - ym*sigma(i=0..(N-1): p*(i - (N-1)/2))
+ *  and further to:
+ *   sigma(i=0..N-1): yi*p*(i - (N-1)/2)) - ym*p*(N * (N-1)/2 - N * (N-1)/2)
+ *  and even further to:
+ *   p * (sigma(i=0..N-1): yi*(i - (N-1)/2))
+ *  We can accumulate the first term as we take readings, and we can accumulate the sum of the y values so we can calculate ym at the end.
+ *
+ *  The denominator in the equation for m expands to:
+ *   sigma(i=0..(N-1): p^2*(i - (N-1)/2)^2)
+ *  Expand this to:
+ *   p^2 * sigma(i=0..(N-1): I^2) - sigma(i=0..(N-1): i * (N-1)) + sigma(i=0..(N-1): ((N-1)/2)^2)
+ *  Simplify to:
+ *   p^2 * sigma(i=0..(N-1): I^2) - (N-1) * sigma(i=0..(N-1): i) + N * ((N-1)/2)^2
+ *  Using sigma(i=0..(N-1): I) = N * (N-1)/2, sigma(i=0..(N-1): I^2) = (N * (N-1) * (2*N - 1))/6 we get:
+ *   p^2 * ((N * (N-1) * (2*N - 1))/6 - (N-1)*N * (N-1)/2 + N * ((N-1)/2)^2)
+ *  which simplifies to:
+ *   p^2*(N^3-N)/12
+ *  So numerator/denominator is:
+ *   (sigma(i=0..N-1): yi*(i - (N-1)/2))) / (p*(N^3-N)/12)
  */
 
 static bool BasicTuning(bool firstIteration) noexcept
 {
-	static int32_t startEncoderReading;
-	static float forwardCountsPerStep;
-	static uint16_t initialStepPhase;
+	enum class BasicTuningState { forwardInitial = 0, forwards, reverseInitial, reverse };
 
-	if (firstIteration) {
-		tuneCounter = 0;
+	static BasicTuningState state;									// state machine control
+	static uint16_t initialStepPhase;								// the step phase we started at
+	static unsigned int stepCounter;								// a counter to use within a state
+	static float regressionAccumulator;
+	static float readingAccumulator;
+	static float forwardOrigin;
+	static float forwardSlope;
+
+	constexpr unsigned int NumDummySteps = 8;						// how many steps to take before we start collecting data
+	constexpr uint16_t PhaseIncrement = 8;							// how much to increment the phase by on each step, must be a factor of 4096
+	static_assert(4096 % PhaseIncrement == 0);
+	constexpr unsigned int NumSamples = 4096/PhaseIncrement;		// the number of samples we take to d the linear regression
+	constexpr float HalfNumSamplesMinusOne = ((float)NumSamples * 0.5) - 1.0;
+	constexpr float Denominator = (float)PhaseIncrement * (fcube((float)NumSamples) - (float)NumSamples)/12.0;
+
+	if (firstIteration)
+	{
+		state = BasicTuningState::forwardInitial;
+		stepCounter = 0;
 		ClosedLoop::SetForwardPolarity();
-		initialStepPhase = ClosedLoop::desiredStepPhase;
 	}
 
-	//TODO rewrite this as a state machine
-	//TODO remove accesses to desiredStepPhase, call a function in ClosedLoop to adjust it and set the current instead
-	if (tuneCounter == 0 && ClosedLoop::desiredStepPhase != 0) {
-		// Go back to phase 0. Note that ClosedLoop::desiredStepPhase in this context is the actual current step phase.
-		ClosedLoop::desiredStepPhase -= min<uint16_t>(ClosedLoop::desiredStepPhase, PHASE_STEP_DISTANCE);
-		ClosedLoop::SetMotorPhase(ClosedLoop::desiredStepPhase, 1);
-	} else if (tuneCounter < 4096) {
-		if (tuneCounter == 0) {
-			startEncoderReading = ClosedLoop::encoder->GetReading();
+	switch (state)
+	{
+	case BasicTuningState::forwardInitial:
+		// In this state we move forwards a few microsteps to allow the motor to settle down
+		ClosedLoop::desiredStepPhase += PhaseIncrement;
+		ClosedLoop::SetMotorPhase(ClosedLoop::desiredStepPhase, 1.0);
+		++stepCounter;
+		if (stepCounter == NumDummySteps)
+		{
+			regressionAccumulator = readingAccumulator = 0.0;
+			stepCounter = 0;
+			initialStepPhase = ClosedLoop::desiredStepPhase;
+			state = BasicTuningState::forwards;
 		}
-		// Calculate the current desired step phase, and move the motor
-		ClosedLoop::desiredStepPhase = tuneCounter;
-		ClosedLoop::SetMotorPhase(ClosedLoop::desiredStepPhase, 1);
-		tuneCounter += PHASE_STEP_DISTANCE;
-	} else if (tuneCounter < 8192) {
-		if (tuneCounter == 4096) {
+		break;
+
+	case BasicTuningState::forwards:
+		// Collect data and move forwards, until we have moved 4 full steps
+		{
 			const int32_t reading = ClosedLoop::encoder->GetReading();
-			forwardCountsPerStep = (float)(reading - startEncoderReading) * 0.25;
-			startEncoderReading = reading;
+			readingAccumulator += (float)reading;
+			regressionAccumulator += (float)reading * ((float)stepCounter - HalfNumSamplesMinusOne);
 		}
-		// Calculate the current desired step phase, and move the motor
-		ClosedLoop::desiredStepPhase = 8192 - tuneCounter;
-		ClosedLoop::SetMotorPhase(ClosedLoop::desiredStepPhase, 1);
-		tuneCounter += PHASE_STEP_DISTANCE;
-	} else {
-		if (tuneCounter == 8192) {
-			// We are finished, calculate the correct polarity
+
+		if (stepCounter == NumSamples)
+		{
+			// Save the accumulated data
+			const float ymean = readingAccumulator/NumSamples;
+			forwardSlope = regressionAccumulator / Denominator;
+			forwardOrigin = ymean - forwardSlope * (initialStepPhase + (float)PhaseIncrement * HalfNumSamplesMinusOne);
+			stepCounter = 0;
+			state = BasicTuningState::reverseInitial;
+		}
+		else
+		{
+			ClosedLoop::desiredStepPhase += PhaseIncrement;
+			ClosedLoop::SetMotorPhase(ClosedLoop::desiredStepPhase, 1.0);
+			++stepCounter;
+		}
+		break;
+
+	case BasicTuningState::reverseInitial:
+		// In this state we move backwards a few microsteps to allow the motor to settle down
+		ClosedLoop::desiredStepPhase -= PhaseIncrement;
+		ClosedLoop::SetMotorPhase(ClosedLoop::desiredStepPhase, 1.0);
+		++stepCounter;
+		if (stepCounter == NumDummySteps)
+		{
+			regressionAccumulator = readingAccumulator = 0.0;
+			stepCounter = 0;
+			initialStepPhase = ClosedLoop::desiredStepPhase;
+			state = BasicTuningState::reverse;
+		}
+		break;
+
+	case BasicTuningState::reverse:
+		// Collect data and move backwards, until we have moved 4 full steps
+		{
 			const int32_t reading = ClosedLoop::encoder->GetReading();
-			const float reverseCountsPerStep = (float)(startEncoderReading - reading) * 0.25;
-			ClosedLoop::SetBasicTuningResults(forwardCountsPerStep, reverseCountsPerStep, reading);
-			++tuneCounter;		// so that we only do the above once
+			readingAccumulator += (float)reading;
+			regressionAccumulator += (float)reading * ((float)stepCounter - HalfNumSamplesMinusOne);
 		}
-		if (ClosedLoop::desiredStepPhase < initialStepPhase) {
-			// Go forward to the original phase
-			const uint16_t distanceToGo = initialStepPhase - ClosedLoop::desiredStepPhase;
-			ClosedLoop::desiredStepPhase += min<uint16_t>(distanceToGo, PHASE_STEP_DISTANCE);
-			ClosedLoop::SetMotorPhase(ClosedLoop::desiredStepPhase, 1);
-		} else {
-			ClosedLoop::ResetStepPosition(initialStepPhase);
-			return true;
+
+		if (stepCounter == NumSamples)
+		{
+			// Save the accumulated data
+			const float ymean = readingAccumulator/NumSamples;
+			const float reverseSlope = regressionAccumulator / (-Denominator);
+			const float reverseOrigin = ymean - reverseSlope * (initialStepPhase - (float)PhaseIncrement * HalfNumSamplesMinusOne);
+			ClosedLoop::SetBasicTuningResults(forwardSlope, forwardOrigin, reverseSlope, reverseOrigin);
+			return true;				// finished tuning
 		}
+		else
+		{
+			ClosedLoop::desiredStepPhase -= PhaseIncrement;
+			ClosedLoop::SetMotorPhase(ClosedLoop::desiredStepPhase, 1.0);
+			++stepCounter;
+		}
+		break;
 	}
 
 	return false;
