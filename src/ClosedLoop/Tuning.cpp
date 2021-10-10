@@ -85,7 +85,7 @@ static bool BasicTuning(bool firstIteration) noexcept
 	constexpr uint16_t PhaseIncrement = 8;							// how much to increment the phase by on each step, must be a factor of 4096
 	static_assert(4096 % PhaseIncrement == 0);
 	constexpr unsigned int NumSamples = 4096/PhaseIncrement;		// the number of samples we take to d the linear regression
-	constexpr float HalfNumSamplesMinusOne = ((float)NumSamples * 0.5) - 1.0;
+	constexpr float HalfNumSamplesMinusOne = (float)(NumSamples - 1) * 0.5;
 	constexpr float Denominator = (float)PhaseIncrement * (fcube((float)NumSamples) - (float)NumSamples)/12.0;
 
 	if (firstIteration)
