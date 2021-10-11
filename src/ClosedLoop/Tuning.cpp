@@ -43,14 +43,14 @@
  *  where xi is the ith x, yi is the ith y, xm is the mean x, ym is the mean y
  *  In our case the x values are the motor phase values selected, which are spaced uniformly, so that xi = x0 + p*i
  *  So xm = (x0 + (x0 + p*(N-1)))/2 = x0 + p*(N-1)/2
- *  and (xi - xm) = p*i - p*(N-1)/2 = p*(i - (N-1)/2)
+ *  and (xi - xm) = x0 + p*i - x0 - p*(N-1)/2 = p*(i - (N-1)/2)
  *
  *  Expand the numerator in the equation for m to:
  *   sigma(i=0..(N-1): yi*(xi - xm)) - ym*sigma(i=0..(N-1): (xi - xm))
  *  Simplify this to:
  *   sigma(i=0..N-1): yi*p*(i - (N-1)/2)) - ym*sigma(i=0..(N-1): p*(i - (N-1)/2))
  *  and further to:
- *   sigma(i=0..N-1): yi*p*(i - (N-1)/2)) - ym*p*(N * (N-1)/2 - N * (N-1)/2)
+ *   p * sigma(i=0..N-1): yi*(i - (N-1)/2)) - ym*p*(N * (N-1)/2 - N * (N-1)/2)
  *  and even further to:
  *   p * (sigma(i=0..N-1): yi*(i - (N-1)/2))
  *  We can accumulate the first term as we take readings, and we can accumulate the sum of the y values so we can calculate ym at the end.
@@ -58,10 +58,10 @@
  *  The denominator in the equation for m expands to:
  *   sigma(i=0..(N-1): p^2*(i - (N-1)/2)^2)
  *  Expand this to:
- *   p^2 * sigma(i=0..(N-1): I^2) - sigma(i=0..(N-1): i * (N-1)) + sigma(i=0..(N-1): ((N-1)/2)^2)
+ *   p^2 * sigma(i=0..(N-1): i^2) - sigma(i=0..(N-1): i * (N-1)) + sigma(i=0..(N-1): ((N-1)/2)^2)
  *  Simplify to:
- *   p^2 * sigma(i=0..(N-1): I^2) - (N-1) * sigma(i=0..(N-1): i) + N * ((N-1)/2)^2
- *  Using sigma(i=0..(N-1): I) = N * (N-1)/2, sigma(i=0..(N-1): I^2) = (N * (N-1) * (2*N - 1))/6 we get:
+ *   p^2 * sigma(i=0..(N-1): i^2) - (N-1) * sigma(i=0..(N-1): i) + N * ((N-1)/2)^2
+ *  Using sigma(i=0..(N-1): i) = N * (N-1)/2, sigma(i=0..(N-1): i^2) = (N * (N-1) * (2*N - 1))/6 we get:
  *   p^2 * ((N * (N-1) * (2*N - 1))/6 - (N-1)*N * (N-1)/2 + N * ((N-1)/2)^2)
  *  which simplifies to:
  *   p^2*(N^3-N)/12
@@ -78,8 +78,6 @@ static bool BasicTuning(bool firstIteration) noexcept
 	static unsigned int stepCounter;								// a counter to use within a state
 	static float regressionAccumulator;
 	static float readingAccumulator;
-	static float forwardOrigin;
-	static float forwardSlope;
 
 	constexpr unsigned int NumDummySteps = 8;						// how many steps to take before we start collecting data
 	constexpr uint16_t PhaseIncrement = 8;							// how much to increment the phase by on each step, must be a factor of 4096
@@ -123,8 +121,11 @@ static bool BasicTuning(bool firstIteration) noexcept
 		{
 			// Save the accumulated data
 			const float ymean = readingAccumulator/NumSamples;
-			forwardSlope = regressionAccumulator / Denominator;
-			forwardOrigin = ymean - forwardSlope * (initialStepPhase + (float)PhaseIncrement * HalfNumSamplesMinusOne);
+			const float slope = regressionAccumulator / Denominator;
+			const float xMean = initialStepPhase + (float)PhaseIncrement * HalfNumSamplesMinusOne;
+			const float origin = ymean - slope * xMean;
+			ClosedLoop::SetBasicTuningResults(slope, origin, xMean, false);
+
 			stepCounter = 0;
 			state = BasicTuningState::reverseInitial;
 		}
@@ -162,9 +163,10 @@ static bool BasicTuning(bool firstIteration) noexcept
 		{
 			// Save the accumulated data
 			const float ymean = readingAccumulator/NumSamples;
-			const float reverseSlope = regressionAccumulator / (-Denominator);
-			const float reverseOrigin = ymean - reverseSlope * (initialStepPhase - (float)PhaseIncrement * HalfNumSamplesMinusOne);
-			ClosedLoop::SetBasicTuningResults(forwardSlope, forwardOrigin, reverseSlope, reverseOrigin);
+			const float slope = regressionAccumulator / (-Denominator);			// negate the demnominator because the phase increment was negative
+			const float xMean = initialStepPhase - (float)PhaseIncrement * HalfNumSamplesMinusOne;
+			const float origin = ymean - slope * xMean;
+			ClosedLoop::SetBasicTuningResults(slope, origin, xMean, true);
 			return true;				// finished tuning
 		}
 		else
@@ -239,11 +241,14 @@ static bool EncoderCalibration(bool firstIteration) noexcept
  *
  */
 
+#if 0	// not implemented
+
 static bool ContinuousPhaseIncrease(bool firstIteration) noexcept
 {
 	return true;
 }
 
+#endif
 
 /*
  * Step
@@ -272,12 +277,8 @@ static bool Step(bool firstIteration) noexcept
  *
  */
 
+#if 1
 // TODO: Implement ziegler-Nichols move
-#if true
-static bool ZieglerNichols(bool firstIteration) noexcept
-{
-	return true;
-}
 
 #else
 static bool ZieglerNichols(bool firstIteration) noexcept
@@ -445,13 +446,14 @@ void ClosedLoop::PerformTune() noexcept
 		if (newTuningMove) {
 			tuning = 0;
 		}
-	} else if (tuning & CONTINUOUS_PHASE_INCREASE_MANOEUVRE) {
-		newTuningMove = ContinuousPhaseIncrease(newTuningMove);
+	} else if (tuning & STEP_MANOEUVRE) {
+		newTuningMove = Step(newTuningMove);
 		if (newTuningMove) {
 			tuning = 0;
 		}
-	} else if (tuning & STEP_MANOEUVRE) {
-		newTuningMove = Step(newTuningMove);
+#if 0	// not implemented
+	} else if (tuning & CONTINUOUS_PHASE_INCREASE_MANOEUVRE) {
+		newTuningMove = ContinuousPhaseIncrease(newTuningMove);
 		if (newTuningMove) {
 			tuning = 0;
 		}
@@ -460,6 +462,7 @@ void ClosedLoop::PerformTune() noexcept
 		if (newTuningMove) {
 			tuning = 0;
 		}
+#endif
 	} else {
 		tuning = 0;
 		newTuningMove = true;								// ready for next time

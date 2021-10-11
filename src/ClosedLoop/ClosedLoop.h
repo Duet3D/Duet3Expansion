@@ -32,16 +32,21 @@ namespace ClosedLoop
 	constexpr uint8_t TUNE_ERR_NOT_CALIBRATED				= 1u << 1;
 	constexpr uint8_t TUNE_ERR_TOO_LITTLE_MOTION			= 1u << 2;
 	constexpr uint8_t TUNE_ERR_TOO_MUCH_MOTION				= 1u << 3;
-	constexpr uint8_t TUNE_ERR_SYSTEM_ERROR					= 1u << 7;
-	constexpr uint8_t TUNE_ERR_TUNING_FAILURE 				= TUNE_ERR_NOT_DONE_BASIC | TUNE_ERR_NOT_CALIBRATED | TUNE_ERR_SYSTEM_ERROR | TUNE_ERR_TOO_LITTLE_MOTION | TUNE_ERR_TOO_MUCH_MOTION;
+	constexpr uint8_t TUNE_ERR_INCONSISTENT_MOTION			= 1u << 4;
+	constexpr uint8_t TUNE_ERR_SYSTEM_ERROR					= 1u << 5;
+
+	constexpr uint8_t TUNE_ERR_TUNING_FAILURE 				= TUNE_ERR_NOT_CALIBRATED | TUNE_ERR_SYSTEM_ERROR
+															| TUNE_ERR_TOO_LITTLE_MOTION | TUNE_ERR_TOO_MUCH_MOTION | TUNE_ERR_INCONSISTENT_MOTION;
 
 	// Tuning manoeuvres
 	constexpr uint8_t BASIC_TUNING_MANOEUVRE 				= 1u << 0;		// this measures the polarity, check that the CPR looks OK, and for relative encoders sets the zero position
 	constexpr uint8_t ENCODER_CALIBRATION_MANOEUVRE 		= 1u << 1;		// this calibrates an absolute encoder
-	// The remainder are not currently implemented
+	constexpr uint8_t STEP_MANOEUVRE 						= 1u << 6;		// this does a sudden step change in the requested position for PID tuning
+
+#if 0	// The remainder are not currently implemented
 	constexpr uint8_t CONTINUOUS_PHASE_INCREASE_MANOEUVRE 	= 1u << 5;
-	constexpr uint8_t STEP_MANOEUVRE 						= 1u << 6;
 	constexpr uint8_t ZIEGLER_NICHOLS_MANOEUVRE 			= 1u << 7;
+#endif
 
 	//TODO reduce the number of these public variables, preferably to zero. Use a cleaner interface between the tuning module and the main closed loop module.
 	extern Encoder *encoder;						// Pointer to the encoder object in use
@@ -82,7 +87,7 @@ namespace ClosedLoop
 	float ExternalUnitsToPulsePerStep(float externalUnits, uint8_t encoderType) noexcept;
 	void SetMotorPhase(uint16_t phase, float magnitude) noexcept;
 	void SetForwardPolarity() noexcept;
-	void SetBasicTuningResults(float forwardSlope, float forwardOrigin, float reverseSlope, float reverseOrigin) noexcept;
+	void SetBasicTuningResults(float slope, float origin, float xMean, bool reverse) noexcept;
 	void ResetStepPosition(uint16_t motorPhase) noexcept;
 
 	// Methods in the tuning module
