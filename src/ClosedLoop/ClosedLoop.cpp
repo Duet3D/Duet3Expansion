@@ -35,6 +35,8 @@ using std::numeric_limits;
 #  error Cannot support closed loop with the specified hardware
 # endif
 
+#define BASIC_TUNING_DEBUG	0
+
 // Variables that are used by both the ClosedLoop and the Tuning modules
 
 Encoder*	ClosedLoop::encoder = nullptr;				// Pointer to the encoder object in use
@@ -158,7 +160,7 @@ namespace ClosedLoop
 		// Print the values - used for debugging only
 		void Print(const char *s, const StringRef& reply) const noexcept
 		{
-			reply.catf("%s: origin %.4f meanX %.1f origin %.2f revised origin %.2f\n", s, (double)slope, (double)xMean, (double)origin, (double)revisedOrigin);
+			reply.catf("%s: slope %.4f meanX %.1f origin %.2f revised origin %.2f\n", s, (double)slope, (double)xMean, (double)origin, (double)revisedOrigin);
 		}
 	};
 
@@ -166,6 +168,17 @@ namespace ClosedLoop
 	float measuredCountsPerStep;
 	float tuningHysteresis;
 	StepTimer::Ticks whenLastTuningStepTaken;			// when the control loop last called the tuning code
+
+#if BASIC_TUNING_DEBUG
+	int32_t originalRawEncoderReading = 0;
+	uint16_t originalDesiredStepPhase = 0, originalMeasuredStepPhase = 0;
+	float originalCurrentMotorSteps = 0.0;
+	float originalAssumedEncoderReading = 0.0, originalDesiredEncoderReading = 0.0;
+	int32_t offsetCorrectionMade = 0;
+	int32_t finalRawEncoderReading = 0;
+	uint16_t finalMeasuredStepPhase = 0;
+	float finalCurrentMotorSteps = 0.0;
+#endif
 
 	// The bitmask of a minimal tuning error for each encoder type
 	// This is an array so that ZEROING_MANOEUVRE can be removed from the magnetic encoders if the LUT is in NVM
@@ -276,6 +289,7 @@ void ClosedLoop::ReportTuningErrors(uint8_t tuningErrorBitmask, const StringRef 
 }
 
 // Helper function to set the motor to a given phase and magnitude
+// The phase is normally in the range 0 to 4095 but when tuning it can be 0 to somewhat over 8192. We must take it modulo 4096 when computing the currents.
 void ClosedLoop::SetMotorPhase(uint16_t phase, float magnitude) noexcept
 {
 	float sine, cosine;
@@ -329,20 +343,21 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 	float tempKd = Kd;
 	size_t numThresholds = 2;
 	float tempErrorThresholds[numThresholds];
+	float holdingCurrentPercent;
 
 	// Pull changed parameters
 	uint8_t seen = 0;
-	seen |= parser.GetUintParam('T', tempEncoderType) 	<< 0;
-	seen |= parser.GetFloatParam('C', tempCPR) 			<< 1;
-	seen |= parser.GetFloatParam('R', tempKp) 			<< 2;
-	seen |= parser.GetFloatParam('I', tempKi) 			<< 3;
-	seen |= parser.GetFloatParam('D', tempKd) 			<< 4;
-	seen |= parser.GetFloatArrayParam('E',
-				numThresholds,
-				tempErrorThresholds) 					<< 5;
+	seen |= parser.GetUintParam('T', tempEncoderType) 			<< 0;
+	seen |= parser.GetFloatParam('C', tempCPR) 					<< 1;
+	seen |= parser.GetFloatParam('R', tempKp) 					<< 2;
+	seen |= parser.GetFloatParam('I', tempKi) 					<< 3;
+	seen |= parser.GetFloatParam('D', tempKd) 					<< 4;
+	seen |= parser.GetFloatArrayParam('E', numThresholds, tempErrorThresholds) << 5;
+	seen |= parser.GetFloatParam('H', holdingCurrentPercent)	<< 6;
 
 	// Report back if !seen
-	if (!seen) {
+	if (seen == 0)
+	{
 		reply.catf("Encoder type: %s", GetEncoderType().ToString());
 		//TODO add a virtual function member to the encoder, to return the units string?
 		const char* const units = (tempEncoderType == EncoderType::rotaryQuadrature) ? "encoder pulses/step"
@@ -354,7 +369,7 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 		{
 			encoder->AppendStatus(reply);
 		}
-		reply.catf(", PID parameters: P=%.3f, I=%.3f, D=%.3f", (double) Kp, (double) Ki, (double) Kd);
+		reply.catf(", PID parameters P=%.3f I=%.3f D=%.3f, min. current %.1f%%", (double) Kp, (double) Ki, (double) Kd, (double)(holdCurrentFraction * 100.0));
 		return GCodeResult::ok;
 	}
 
@@ -369,11 +384,20 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 	}
 
 	// Set the new params
+	TaskCriticalSectionLocker lock;			// don't allow the closed loop task to see an inconsistent combination of these values
+
 	encoderPulsePerStep = tempCPR;
 	Kp = tempKp;
 	Ki = tempKi;
 	Kd = tempKd;
 	PIDITerm = 0;
+
+	if (seen & (1u << 6))
+	{
+		holdCurrentFraction = constrain<float>(holdingCurrentPercent, 10.0, 100.0) / 100.0;
+		holdCurrentFractionTimesMinPhaseShift = MinimumPhaseShift * holdCurrentFraction;
+		recipHoldCurrentFraction = 1.0/holdCurrentFraction;
+	}
 
 	if (seen & (0x1 << 5)) {
 		errorThresholds[0] = tempErrorThresholds[0];
@@ -507,48 +531,10 @@ GCodeResult ClosedLoop::ProcessM569Point6(const CanMessageGeneric &msg, const St
 			return GCodeResult::notFinished;
 		}
 
-		// Check that the forward and reverse slopes are similar and a good match to the configured counts per step
-		const float averageSlope = (forwardTuningResults.slope + reverseTuningResults.slope) * 0.5;
-		// We sometimes read different forwards and reverse counts, so instead of taking an average of the origin, average the origin w.r.t. the mid points of the tuning moves
-		forwardTuningResults.CalcRevisedOrigin(averageSlope);
-		reverseTuningResults.CalcRevisedOrigin(averageSlope);
-
-#if 1	//TEMP debug
+#if BASIC_TUNING_DEBUG
 		forwardTuningResults.Print("Forward", reply);
-		reverseTuningResults.Print("Forward", reply);
+		reverseTuningResults.Print("Reverse", reply);
 #endif
-		measuredCountsPerStep = fabsf(averageSlope) * 1024;
-		tuningHysteresis = fabsf(forwardTuningResults.revisedOrigin - reverseTuningResults.revisedOrigin)/measuredCountsPerStep;
-
-		if (fabsf(averageSlope) < MinimumSlope || fabsf(forwardTuningResults.slope - reverseTuningResults.slope) > MaxSlopeMismatch * 2 * fabsf(averageSlope))
-		{
-			tuningError |= TUNE_ERR_INCONSISTENT_MOTION;
-		}
-		else if (measuredCountsPerStep > encoderPulsePerStep * 1.05)
-		{
-			tuningError |= TUNE_ERR_TOO_MUCH_MOTION;
-		}
-		else if (measuredCountsPerStep < encoderPulsePerStep * 0.95)
-		{
-			tuningError |= TUNE_ERR_TOO_LITTLE_MOTION;
-		}
-		else
-		{
-			// Tuning succeeded
-			reversePolarityMultiplier = (averageSlope < 0.0) ? -1 : 1;
-
-			if (encoder->GetPositioningType() == EncoderPositioningType::relative)
-			{
-				const int32_t averageOffset = lrintf((forwardTuningResults.revisedOrigin + reverseTuningResults.revisedOrigin) * 0.5);
-				((RelativeEncoder*)encoder)->SetOffset(-averageOffset);					// set the new zero position
-				const float assumedEncoderReading = desiredStepPhase * averageSlope;
-				currentMotorSteps = assumedEncoderReading / encoderPulsePerStep;
-			}
-
-			tuningError &= ~(TUNE_ERR_TOO_MUCH_MOTION | TUNE_ERR_TOO_LITTLE_MOTION | TUNE_ERR_INCONSISTENT_MOTION);
-		}
-
-		tuningError &= ~TUNE_ERR_NOT_DONE_BASIC;
 
 		// Tuning has finished - there are now 3 scenarios
 		// 1. No tuning errors exist (!tuningError)							= OK
@@ -556,6 +542,13 @@ GCodeResult ClosedLoop::ProcessM569Point6(const CanMessageGeneric &msg, const St
 		// 3. A new tuning error has been introduced (else)					= WARNING
 		if (tuningError == 0)
 		{
+#if BASIC_TUNING_DEBUG
+			reply.catf("OER %" PRIi32 " AER %.1f DER %.1f DSP %u OMSP %u OCMS %.3f\n",
+						originalRawEncoderReading, (double)originalAssumedEncoderReading, (double)originalDesiredEncoderReading,
+							originalDesiredStepPhase, originalMeasuredStepPhase, (double)originalCurrentMotorSteps);
+			reply.catf("OCM %" PRIi32 " FER %" PRIi32 " FMSP %u FCMS %.3f\n",
+						offsetCorrectionMade, finalRawEncoderReading, finalMeasuredStepPhase, (double)finalCurrentMotorSteps);
+#endif
 			reply.catf("Driver %u.0 tuned successfully, measured hysteresis %.2f step", CanInterface::GetCanAddress(), (double)tuningHysteresis);
 			if (tuningHysteresis <= MaxSafeHysteresis)
 			{
@@ -622,12 +615,71 @@ void ClosedLoop::SetForwardPolarity() noexcept
 	reversePolarityMultiplier = 1;
 }
 
-void ClosedLoop::SetBasicTuningResults(float slope, float origin, float xMean, bool reverse) noexcept
+void ClosedLoop::SaveBasicTuningResult(float slope, float origin, float xMean, bool reverse) noexcept
 {
 	TuningResults& r = (reverse) ? reverseTuningResults : forwardTuningResults;
 	r.slope = slope;
 	r.origin = origin;
 	r.xMean = xMean;
+}
+
+// Call this when we have stopped basic tuning movement and are ready to switch to closed loop control
+void ClosedLoop::FinishedBasicTuning() noexcept
+{
+	// Check that the forward and reverse slopes are similar and a good match to the configured counts per step
+	const float averageSlope = (forwardTuningResults.slope + reverseTuningResults.slope) * 0.5;
+	// We sometimes read different forwards and reverse counts, so instead of taking an average of the origin, average the origin w.r.t. the mid points of the tuning moves
+	forwardTuningResults.CalcRevisedOrigin(averageSlope);
+	reverseTuningResults.CalcRevisedOrigin(averageSlope);
+
+	measuredCountsPerStep = fabsf(averageSlope) * 1024;
+	tuningHysteresis = fabsf(forwardTuningResults.revisedOrigin - reverseTuningResults.revisedOrigin)/measuredCountsPerStep;
+
+	if (fabsf(averageSlope) < MinimumSlope || fabsf(forwardTuningResults.slope - reverseTuningResults.slope) > MaxSlopeMismatch * 2 * fabsf(averageSlope))
+	{
+		tuningError |= TUNE_ERR_INCONSISTENT_MOTION;
+	}
+	else if (measuredCountsPerStep > encoderPulsePerStep * 1.05)
+	{
+		tuningError |= TUNE_ERR_TOO_MUCH_MOTION;
+	}
+	else if (measuredCountsPerStep < encoderPulsePerStep * 0.95)
+	{
+		tuningError |= TUNE_ERR_TOO_LITTLE_MOTION;
+	}
+	else
+	{
+		// Tuning succeeded
+#if BASIC_TUNING_DEBUG
+		ReadState();
+		originalRawEncoderReading = rawEncoderReading;
+		originalDesiredStepPhase = desiredStepPhase;
+		originalMeasuredStepPhase = measuredStepPhase;
+		originalCurrentMotorSteps = currentMotorSteps;
+#endif
+		reversePolarityMultiplier = (averageSlope < 0.0) ? -1 : 1;
+
+		if (encoder->GetPositioningType() == EncoderPositioningType::relative)
+		{
+			const float averageOffset = (forwardTuningResults.revisedOrigin + reverseTuningResults.revisedOrigin) * 0.5;
+			((RelativeEncoder*)encoder)->SetOffset(-lrintf(averageOffset));					// in future, subtract this offset so that zero reading means zero phase
+			const float desiredEncoderReading = desiredStepPhase * fabsf(averageSlope);		// the encoder reading we ought to be getting now if there is no hysteresis
+			targetMotorSteps = currentMotorSteps = desiredEncoderReading / encoderPulsePerStep;
+#if BASIC_TUNING_DEBUG
+			originalAssumedEncoderReading = desiredStepPhase * averageSlope + averageOffset;
+			originalDesiredEncoderReading = desiredEncoderReading;
+			offsetCorrectionMade = -lrintf(averageOffset);
+			ReadState();
+			finalRawEncoderReading = rawEncoderReading;
+			finalMeasuredStepPhase = measuredStepPhase;
+			finalCurrentMotorSteps = currentMotorSteps;
+#endif
+		}
+
+		tuningError &= ~(TUNE_ERR_TOO_MUCH_MOTION | TUNE_ERR_TOO_LITTLE_MOTION | TUNE_ERR_INCONSISTENT_MOTION);
+	}
+
+	tuningError &= ~TUNE_ERR_NOT_DONE_BASIC;
 }
 
 void ClosedLoop::ResetStepPosition(uint16_t motorPhase) noexcept
@@ -940,16 +992,6 @@ void ClosedLoop::SetStepDirection(bool dir) noexcept
 bool ClosedLoop::GetClosedLoopEnabled() noexcept
 {
 	return closedLoopEnabled;
-}
-
-// Set the minimum holding current. Don't allow zero because we need its reciprocal
-void ClosedLoop::SetHoldingCurrent(float percent)
-{
-	TaskCriticalSectionLocker lock;			// don't allow the closed loop task to see an inconsistent combination of these values
-
-	holdCurrentFraction = constrain<float>(percent, 10.0, 100.0) / 100.0;
-	holdCurrentFractionTimesMinPhaseShift = MinimumPhaseShift * holdCurrentFraction;
-	recipHoldCurrentFraction = 1.0/holdCurrentFraction;
 }
 
 void ClosedLoop::ResetError(size_t driver) noexcept

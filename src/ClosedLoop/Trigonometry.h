@@ -37,6 +37,7 @@ namespace Trigonometry
 }
 
 // Calculate 255 * the sine and cosine of the phase value passed, where phase is between 0 and 4095, and 4096 would correspond to 2*pi
+// The phase is normally in the range 0 to 4095 but when tuning it can be 0 to somewhat over 8192. We must take it modulo 4096.
 inline void Trigonometry::FastSinCos(uint16_t phase, float& sine, float& cosine) noexcept
 {
 	unsigned int quadrant = (phase / Resolution) & 3;

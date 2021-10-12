@@ -75,6 +75,7 @@ static bool BasicTuning(bool firstIteration) noexcept
 
 	static BasicTuningState state;									// state machine control
 	static uint16_t initialStepPhase;								// the step phase we started at
+	static int32_t initialEncoderReading;							// this stores the reading at the start of a data collection phase
 	static unsigned int stepCounter;								// a counter to use within a state
 	static float regressionAccumulator;
 	static float readingAccumulator;
@@ -113,18 +114,22 @@ static bool BasicTuning(bool firstIteration) noexcept
 		// Collect data and move forwards, until we have moved 4 full steps
 		{
 			const int32_t reading = ClosedLoop::encoder->GetReading();
-			readingAccumulator += (float)reading;
-			regressionAccumulator += (float)reading * ((float)stepCounter - HalfNumSamplesMinusOne);
+			if (stepCounter == 0)
+			{
+				initialEncoderReading = reading;			// to reduce rounding error, get rid of any large constant offset when accumulating
+			}
+			readingAccumulator += (float)(reading - initialEncoderReading);
+			regressionAccumulator += (float)(reading - initialEncoderReading) * ((float)stepCounter - HalfNumSamplesMinusOne);
 		}
 
 		if (stepCounter == NumSamples)
 		{
 			// Save the accumulated data
-			const float ymean = readingAccumulator/NumSamples;
+			const float yMean = readingAccumulator/NumSamples + (float)initialEncoderReading;
 			const float slope = regressionAccumulator / Denominator;
-			const float xMean = initialStepPhase + (float)PhaseIncrement * HalfNumSamplesMinusOne;
-			const float origin = ymean - slope * xMean;
-			ClosedLoop::SetBasicTuningResults(slope, origin, xMean, false);
+			const float xMean = (float)initialStepPhase + (float)PhaseIncrement * HalfNumSamplesMinusOne;
+			const float origin = yMean - slope * xMean;
+			ClosedLoop::SaveBasicTuningResult(slope, origin, xMean, false);
 
 			stepCounter = 0;
 			state = BasicTuningState::reverseInitial;
@@ -155,19 +160,24 @@ static bool BasicTuning(bool firstIteration) noexcept
 		// Collect data and move backwards, until we have moved 4 full steps
 		{
 			const int32_t reading = ClosedLoop::encoder->GetReading();
-			readingAccumulator += (float)reading;
-			regressionAccumulator += (float)reading * ((float)stepCounter - HalfNumSamplesMinusOne);
+			if (stepCounter == 0)
+			{
+				initialEncoderReading = reading;			// to reduce rounding error, get rid of any large constant offset when accumulating
+			}
+			readingAccumulator += (float)(reading - initialEncoderReading);
+			regressionAccumulator += (float)(reading - initialEncoderReading) * ((float)stepCounter - HalfNumSamplesMinusOne);
 		}
 
 		if (stepCounter == NumSamples)
 		{
 			// Save the accumulated data
-			const float ymean = readingAccumulator/NumSamples;
-			const float slope = regressionAccumulator / (-Denominator);			// negate the demnominator because the phase increment was negative
-			const float xMean = initialStepPhase - (float)PhaseIncrement * HalfNumSamplesMinusOne;
-			const float origin = ymean - slope * xMean;
-			ClosedLoop::SetBasicTuningResults(slope, origin, xMean, true);
-			return true;				// finished tuning
+			const float yMean = readingAccumulator/NumSamples + (float)initialEncoderReading;
+			const float slope = regressionAccumulator / (-Denominator);			// negate the denominator because the phase increment was negative this time
+			const float xMean = (float)initialStepPhase - (float)PhaseIncrement * HalfNumSamplesMinusOne;
+			const float origin = yMean - slope * xMean;
+			ClosedLoop::SaveBasicTuningResult(slope, origin, xMean, true);
+			ClosedLoop::FinishedBasicTuning();									// call this when we have stopped and are ready to switch to closed loop control
+			return true;														// finished tuning
 		}
 		else
 		{

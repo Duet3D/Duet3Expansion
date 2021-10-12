@@ -42,8 +42,7 @@
 
 constexpr size_t NumDrivers = 1;
 constexpr size_t MaxSmartDrivers = 1;
-constexpr float MaxTmc5160Current = 4500.0;					// the maximum current we allow the TMC5160/5161 drivers to be set to.
-															// TODO: MaxTmc5160Current could be 6300, but not when holding.
+constexpr float MaxTmc5160Current = 6300.0;					// the maximum current we allow the TMC5160/5161 drivers to be set to in open loop mode
 constexpr uint32_t DefaultStandstillCurrentPercent = 71;
 constexpr float Tmc5160SenseResistor = 0.050;
 

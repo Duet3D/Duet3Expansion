@@ -75,7 +75,6 @@ namespace ClosedLoop
 	bool GetClosedLoopEnabled() noexcept;
 	bool SetClosedLoopEnabled(uint8_t drive, bool enabled, const StringRef &reply) noexcept;
 	void DriverSwitchedToClosedLoop(uint8_t drive) noexcept;
-	void SetHoldingCurrent(float percent);
 	void ResetError(size_t driver) noexcept;
 
 	// Methods called by the encoders
@@ -87,7 +86,9 @@ namespace ClosedLoop
 	float ExternalUnitsToPulsePerStep(float externalUnits, uint8_t encoderType) noexcept;
 	void SetMotorPhase(uint16_t phase, float magnitude) noexcept;
 	void SetForwardPolarity() noexcept;
-	void SetBasicTuningResults(float slope, float origin, float xMean, bool reverse) noexcept;
+	void SaveBasicTuningResult(float slope, float origin, float xMean, bool reverse) noexcept;
+	void FinishedBasicTuning() noexcept;			// Call this when we have stopped basic tuning movement and are ready to switch to closed loop control
+
 	void ResetStepPosition(uint16_t motorPhase) noexcept;
 
 	// Methods in the tuning module

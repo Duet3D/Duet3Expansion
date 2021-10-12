@@ -404,7 +404,7 @@ private:
 	uint16_t numReads, numWrites;							// how many successful reads and writes we had
 	static uint16_t numTimeouts;							// how many times a transfer timed out
 
-	uint8_t standstillCurrentFraction;						// divide this by 256 to get the motor current standstill fraction
+	uint16_t standstillCurrentFraction;						// divide this by 256 to get the motor current standstill fraction
 	uint8_t regIndexBeingUpdated;							// which register we are sending
 	uint8_t regIndexRequested;								// the register we asked to read in the previous transaction, or 0xFF
 	uint8_t previousRegIndexRequested;						// the register we asked to read in the previous transaction, or 0xFF
@@ -454,7 +454,7 @@ pre(!driversPowered)
 	registersToUpdate = newRegistersToUpdate = 0;
 	specialReadRegisterNumber = specialWriteRegisterNumber = 0xFF;
 	motorCurrent = 0;
-	standstillCurrentFraction = (uint8_t)min<uint32_t>((DefaultStandstillCurrentPercent * 256)/100, 255);
+	standstillCurrentFraction = (uint16_t)min<uint32_t>((DefaultStandstillCurrentPercent * 256)/100, 256);
 
 	// Set default values for all registers and flag them to be updated
 	UpdateRegister(WriteGConf, DefaultGConfReg);
@@ -522,14 +522,7 @@ float TmcDriverState::GetStandstillCurrentPercent() const noexcept
 
 void TmcDriverState::SetStandstillCurrentPercent(float percent) noexcept
 {
-	standstillCurrentFraction = (uint8_t)constrain<long>(lrintf((percent * 256)/100.0), 0, 255);
-# if SUPPORT_CLOSED_LOOP
-	// If we are in closed loop mode, stand still current is handled elsewhere
-	ClosedLoop::SetHoldingCurrent(percent);
-	if (ClosedLoop::GetClosedLoopEnabled()) {
-		standstillCurrentFraction = 255;
-	}
-# endif
+	standstillCurrentFraction = (uint16_t)constrain<long>(lrintf((percent * 256)/100.0), 0, 256);
 	UpdateCurrent();
 }
 
@@ -698,10 +691,16 @@ bool TmcDriverState::SetDriverMode(unsigned int mode) noexcept
 	{
 	case (unsigned int)DriverMode::spreadCycle:
 		UpdateRegister(WriteGConf, writeRegisters[WriteGConf] & ~(GCONF_DIRECT_MODE | GCONF_STEALTHCHOP));
+#if SUPPORT_CLOSED_LOOP
+		UpdateCurrent();		// if we are leaving closed loop mode then we need to update the standstill current
+#endif
 		return true;
 
 	case (unsigned int)DriverMode::stealthChop:
 		UpdateRegister(WriteGConf, (writeRegisters[WriteGConf] & ~GCONF_DIRECT_MODE) | GCONF_STEALTHCHOP);
+#if SUPPORT_CLOSED_LOOP
+		UpdateCurrent();		// if we are leaving closed loop mode then we need to update the standstill current
+#endif
 		return true;
 
 	case (unsigned int)DriverMode::constantOffTime:
@@ -713,20 +712,25 @@ bool TmcDriverState::SetDriverMode(unsigned int mode) noexcept
 				writeRegisters[WriteChopConf] | CHOPCONF_CHM
 #endif
 			);
+#if SUPPORT_CLOSED_LOOP
+		UpdateCurrent();		// if we are leaving closed loop mode then we need to update the standstill current
+#endif
 		return true;
 
 #if TMC_TYPE == 5130
 	case (unsigned int)DriverMode::randomOffTime:
 		UpdateRegister(WriteGConf, writeRegisters[WriteGConf] & ~GCONF_STEALTHCHOP);
 		UpdateRegister(WriteChopConf, writeRegisters[WriteChopConf] | CHOPCONF_CHM | CHOPCONF_5130_RNDTOFF);
+# if SUPPORT_CLOSED_LOOP
+		UpdateCurrent();		// in case we are leaving closed loop mode
+# endif
 		return true;
 #endif
 
-#if TMC_TYPE == 2160
+#if SUPPORT_CLOSED_LOOP
 	case (unsigned int)DriverMode::direct:
 		UpdateRegister(WriteGConf, (writeRegisters[WriteGConf] & ~GCONF_STEALTHCHOP) | GCONF_DIRECT_MODE);
-		standstillCurrentFraction = 255;		// ClosedLoop is now in control of standstill currents
-		UpdateCurrent();
+		UpdateCurrent();		// when entering closed loop mode we need to update the standstill current
 		return true;
 #endif
 
@@ -785,9 +789,15 @@ void TmcDriverState::UpdateCurrent() noexcept
 
 	// At high motor currents, limit the standstill current fraction to avoid overheating particular pairs of mosfets. Avoid dividing by zero if motorCurrent is zero.
 	constexpr uint32_t MaxStandstillCurrentTimes256 = 256 * (uint32_t)MaximumStandstillCurrent;
-	const uint8_t limitedStandstillCurrentFraction = (motorCurrent * standstillCurrentFraction <= MaxStandstillCurrentTimes256)
-														? standstillCurrentFraction
-															: (uint8_t)(MaxStandstillCurrentTimes256/motorCurrent);
+	const uint16_t desiredStandstillCurrentFraction =
+#if SUPPORT_CLOSED_LOOP
+		(ClosedLoop::GetClosedLoopEnabled()) ? 256 : standstillCurrentFraction;
+#else
+		standstillCurrentFraction;
+#endif
+	const uint16_t limitedStandstillCurrentFraction = (motorCurrent * desiredStandstillCurrentFraction <= MaxStandstillCurrentTimes256)
+														? desiredStandstillCurrentFraction
+															: (uint16_t)(MaxStandstillCurrentTimes256/motorCurrent);
 	const uint32_t iHold = (iRun * limitedStandstillCurrentFraction)/256;
 	UpdateRegister(WriteIholdIrun,
 					(writeRegisters[WriteIholdIrun] & ~(IHOLDIRUN_IRUN_MASK | IHOLDIRUN_IHOLD_MASK)) | (iRun << IHOLDIRUN_IRUN_SHIFT) | (iHold << IHOLDIRUN_IHOLD_SHIFT));
