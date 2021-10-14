@@ -219,13 +219,13 @@ static bool EncoderCalibration(bool firstIteration) noexcept
 		positionCounter = 0;
 	}
 
-	if (ClosedLoop::rawEncoderReading < targetPosition) {
+	if (ClosedLoop::currentEncoderReading < targetPosition) {
 		positionCounter += 1;
-	} else if (ClosedLoop::rawEncoderReading > targetPosition) {
+	} else if (ClosedLoop::currentEncoderReading > targetPosition) {
 		positionCounter -= 1;
 	} else {
 		const float realWorldPos = absoluteEncoder->GetMaxValue() * positionCounter / (1024 * (360.0 / ClosedLoop::PulsePerStepToExternalUnits(ClosedLoop::encoderPulsePerStep, EncoderType::AS5047)));
-		absoluteEncoder->StoreLUTValueForPosition(ClosedLoop::rawEncoderReading, realWorldPos);
+		absoluteEncoder->StoreLUTValueForPosition(ClosedLoop::currentEncoderReading, realWorldPos);
 		targetPosition += absoluteEncoder->GetLUTResolution();
 	}
 
@@ -272,7 +272,7 @@ static bool ContinuousPhaseIncrease(bool firstIteration) noexcept
 
 static bool Step(bool firstIteration) noexcept
 {
-	ClosedLoop::targetMotorSteps = ClosedLoop::targetMotorSteps + 4;
+	ClosedLoop::AdjustTargetMotorSteps(4.0);
 	return true;
 }
 

@@ -54,8 +54,7 @@ namespace ClosedLoop
 	extern uint8_t tuningError;						// Flags for any tuning errors
 	extern uint16_t measuredStepPhase;				// The measured position of the motor
 	extern uint16_t desiredStepPhase;				// The desired position of the motor
-	extern std::atomic<int32_t> rawEncoderReading;	// The raw reading taken from the encoder
-	extern std::atomic<float> targetMotorSteps;		// The number of steps the motor should have taken relative to it's zero position
+	extern int32_t currentEncoderReading;			// The latest reading taken from the encoder
 	extern float encoderPulsePerStep;				// How many encoder readings do we get per step?
 
 	// Closed loop public methods
@@ -87,9 +86,8 @@ namespace ClosedLoop
 	void SetMotorPhase(uint16_t phase, float magnitude) noexcept;
 	void SetForwardPolarity() noexcept;
 	void SaveBasicTuningResult(float slope, float origin, float xMean, bool reverse) noexcept;
-	void FinishedBasicTuning() noexcept;			// Call this when we have stopped basic tuning movement and are ready to switch to closed loop control
-
-	void ResetStepPosition(uint16_t motorPhase) noexcept;
+	void FinishedBasicTuning() noexcept;			// call this when we have stopped basic tuning movement and are ready to switch to closed loop control
+	void AdjustTargetMotorSteps(float amount) noexcept;	// called by tuning to execute a step
 
 	// Methods in the tuning module
 	void PerformTune() noexcept;

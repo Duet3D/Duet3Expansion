@@ -44,8 +44,7 @@ uint8_t		ClosedLoop::tuning = 0;						// Bitmask of any tuning manoeuvres that h
 uint8_t		ClosedLoop::tuningError;					// Flags for any tuning errors
 uint16_t	ClosedLoop::measuredStepPhase;				// The measured position of the motor
 uint16_t	ClosedLoop::desiredStepPhase = 0;			// The desired position of the motor
-atomic<int32_t> ClosedLoop::rawEncoderReading;			// The raw reading taken from the encoder
-atomic<float> 	ClosedLoop::targetMotorSteps = 0;		// The number of steps the motor should have taken relative to it's zero position
+int32_t		ClosedLoop::currentEncoderReading;			// The raw reading taken from the encoder
 														// TODO no good for an extruder, use int32_t instead to count 1/256 microsteps and handle overflow
 float 		ClosedLoop::encoderPulsePerStep;			// How many encoder readings do we get per step?
 
@@ -53,7 +52,7 @@ namespace ClosedLoop
 {
 	// Constants private to this module
 	constexpr size_t TaskStackWords = 200;				// Size of the stack for all closed loop tasks
-	constexpr unsigned int derivativeFilterSize = 32;	// The range of the derivative filter (use a power of 2 for efficiency)
+	constexpr unsigned int derivativeFilterSize = 8;	// The range of the derivative filter (use a power of 2 for efficiency)
 	constexpr unsigned int DataBufferSize = 2000 * 14;	// When collecting samples we can accommodate 2000 readings of up to 13 variables + timestamp
 	constexpr unsigned int tuningStepsPerSecond = 2000;	// the rate at which we send 1/256 microsteps during tuning, slow enough for high-inertia motors
 	constexpr StepTimer::Ticks stepTicksPerTuningStep = StepTimer::StepClockRate/tuningStepsPerSecond;
@@ -125,8 +124,10 @@ namespace ClosedLoop
 	// Working variables
 	// These variables are all used to calculate the required motor currents. They are declared here so they can be reported on by the data collection task
 	bool 	stepDirection = true;						// The direction the motor is attempting to take steps in
-	float 	currentError;								// The current error
+	float	targetMotorSteps;							// The number of steps the motor should have taken relative to it's zero position
 	float	currentMotorSteps;							// The number of steps the motor has taken relative to it's zero position
+	int32_t targetEncoderReading;						// The encoder reading we want, calculated from targetMotorSteps
+	float 	currentError;								// The current error
 
 	DerivativeAveragingFilter<derivativeFilterSize> derivativeFilter;	// An averaging filter to smooth the derivative of the error
 
@@ -663,8 +664,8 @@ void ClosedLoop::FinishedBasicTuning() noexcept
 		{
 			const float averageOffset = (forwardTuningResults.revisedOrigin + reverseTuningResults.revisedOrigin) * 0.5;
 			((RelativeEncoder*)encoder)->SetOffset(-lrintf(averageOffset));					// in future, subtract this offset so that zero reading means zero phase
-			const float desiredEncoderReading = desiredStepPhase * fabsf(averageSlope);		// the encoder reading we ought to be getting now if there is no hysteresis
-			targetMotorSteps = currentMotorSteps = desiredEncoderReading / encoderPulsePerStep;
+			targetEncoderReading = lrintf(desiredStepPhase * fabsf(averageSlope));		// the encoder reading we ought to be getting now if there is no hysteresis
+			targetMotorSteps = currentMotorSteps = targetEncoderReading / encoderPulsePerStep;
 #if BASIC_TUNING_DEBUG
 			originalAssumedEncoderReading = desiredStepPhase * averageSlope + averageOffset;
 			originalDesiredEncoderReading = desiredEncoderReading;
@@ -682,9 +683,11 @@ void ClosedLoop::FinishedBasicTuning() noexcept
 	tuningError &= ~TUNE_ERR_NOT_DONE_BASIC;
 }
 
-void ClosedLoop::ResetStepPosition(uint16_t motorPhase) noexcept
+// This is called by tuning to execute a step
+void ClosedLoop::AdjustTargetMotorSteps(float amount) noexcept
 {
-	currentMotorSteps = targetMotorSteps = (float)motorPhase/4096;
+	targetMotorSteps += amount;
+	targetEncoderReading = lrintf(targetMotorSteps * encoderPulsePerStep);
 }
 
 void ClosedLoop::ControlLoop() noexcept
@@ -699,7 +702,7 @@ void ClosedLoop::ControlLoop() noexcept
 	ReadState();
 
 	// Calculate and store the current error
-	currentError = targetMotorSteps - currentMotorSteps;
+	currentError = (float)(targetEncoderReading - currentEncoderReading)/encoderPulsePerStep;	//TODO eliminate this division
 	derivativeFilter.ProcessReading(currentError, loopCallTime);
 
 	if (!closedLoopEnabled) {
@@ -821,7 +824,7 @@ void ClosedLoop::CollectSample() noexcept
 	{
 		sampleBuffer[wp++] = TickPeriodToTimePeriod(StepTimer::GetTimerTicks() - dataCollectionStartTicks);		// always collect this
 
-		if (filterRequested & CL_RECORD_RAW_ENCODER_READING) 	{sampleBuffer[wp++] = (float)rawEncoderReading;}
+		if (filterRequested & CL_RECORD_RAW_ENCODER_READING) 	{sampleBuffer[wp++] = (float)currentEncoderReading;}
 		if (filterRequested & CL_RECORD_CURRENT_MOTOR_STEPS) 	{sampleBuffer[wp++] = currentMotorSteps;}
 		if (filterRequested & CL_RECORD_TARGET_MOTOR_STEPS)  	{sampleBuffer[wp++] = targetMotorSteps;}
 		if (filterRequested & CL_RECORD_CURRENT_ERROR) 			{sampleBuffer[wp++] = currentError;}
@@ -851,8 +854,8 @@ void ClosedLoop::ReadState() noexcept
 	if (encoder == nullptr) { return; }							// we can't read anything if there is no encoder
 
 	// Calculate the current position & phase from the encoder reading
-	rawEncoderReading = encoder->GetReading() * reversePolarityMultiplier;
-	currentMotorSteps = (float)rawEncoderReading / encoderPulsePerStep;
+	currentEncoderReading = encoder->GetReading() * reversePolarityMultiplier;
+	currentMotorSteps = (float)currentEncoderReading / encoderPulsePerStep;
 
 	// Calculate stepPhase - a 0-4095 value representing the phase *within* the current 4 full steps
 	const float tmp = currentMotorSteps * 0.25;
@@ -963,7 +966,9 @@ void ClosedLoop::TakeStep() noexcept
 	bool dummy;			// this receives the interpolation, but we don't use it
 	const unsigned int microsteps = SmartDrivers::GetMicrostepping(0, dummy);
 	const float microstepAngle = (microsteps == 0) ? 1.0 : 1.0/microsteps;
-	targetMotorSteps = targetMotorSteps + (stepDirection ? -microstepAngle : +microstepAngle);
+	targetMotorSteps += (stepDirection ? -microstepAngle : +microstepAngle);
+	targetEncoderReading = lrintf(targetMotorSteps * encoderPulsePerStep);
+
 	if (samplingMode == RecordingMode::OnNextMove)
 	{
 		dataCollectionStartTicks = whenNextSampleDue = StepTimer::GetTimerTicks();
@@ -1002,6 +1007,7 @@ void ClosedLoop::ResetError(size_t driver) noexcept
 		ReadState();
 		derivativeFilter.Reset();
 		targetMotorSteps = currentMotorSteps;
+		targetEncoderReading = currentEncoderReading;
 	}
 # else
 #  error Cannot support closed loop with the specified hardware
