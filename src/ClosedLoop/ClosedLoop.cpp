@@ -936,9 +936,7 @@ void ClosedLoop::Diagnostics(const StringRef& reply) noexcept
 	// The rest is only relevant if we are in closed loop mode
 	if (closedLoopEnabled)
 	{
-		reply.lcatf("Live status: %#x", ReadLiveStatus());
 		reply.catf(", tuning mode: %#x, tuning error: %#x", tuning, tuningError);
-
 		reply.catf(", collecting data: %s", CollectingData() ? "yes" : "no");
 		if (CollectingData())
 		{
@@ -979,13 +977,14 @@ void ClosedLoop::TakeStep() noexcept
 # endif
 }
 
-uint8_t ClosedLoop::ReadLiveStatus() noexcept
+StandardDriverStatus ClosedLoop::ReadLiveStatus() noexcept
 {
-	uint8_t result = 0;
-	result |= stall << 0;																						// prestall
-	result |= preStall << 1;																					// stall
-	result |= (encoder != nullptr && (tuningError & minimalTunes[encoder->GetType().ToBaseType()]) > 0) << 2;	// status - 0=not tuned
-	result |= ((tuningError & TUNE_ERR_TUNING_FAILURE) != 0) << 3;												// status - 1=tuning error
+	StandardDriverStatus result;
+	result.all = 0;
+	result.stall = stall;
+	result.prestall = preStall;
+	result.closedLoopNotTuned = ((tuningError & minimalTunes[encoder->GetType().ToBaseType()]) != 0);
+	result.closedLoopTuningError = ((tuningError & TUNE_ERR_TUNING_FAILURE) != 0);
 	return result;
 }
 

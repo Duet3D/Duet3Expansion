@@ -1747,20 +1747,16 @@ StandardDriverStatus SmartDrivers::GetStandardDriverStatus(size_t driver) noexce
 # if SUPPORT_CLOSED_LOOP
 		if (ClosedLoop::GetClosedLoopEnabled())
 		{
-			const uint8_t closedLoopStatus = ClosedLoop::ReadLiveStatus();
-			rslt.all |= (closedLoopStatus << (8 - 0))  & (1u  << 8);		// put the prestall bit in the right place
-			rslt.all |= (closedLoopStatus << (9 - 1))  & (1u  << 9);		// put the stall bit in the right place
-			rslt.all |= (closedLoopStatus << (11 - 2)) & (31u << 11);		// put the driver status bits in the right place
-			rslt.all |= false << 10;										// put the standstill bit in the right place
+			rslt.all |= ClosedLoop::ReadLiveStatus().all;
 		}
 		else
 		{
-			rslt.all |= (status >> (24 - 9)) & (1u << 9);		// put the stall bit in the right place
-			rslt.all |= (status >> (31 - 10)) & (1u << 10);		// put the standstill bit in the right place
+			rslt.all |= ((status >> TMC_RR_STST_BIT_POS) & 1u) << StandardDriverStatus::StandstillBitPos;	// put the standstill bit in the right place
+			rslt.all |= ((status >> TMC_RR_SG_BIT_POS) & 1u) << StandardDriverStatus::StallBitPos;			// put the stall bit in the right place
 		}
 # else
-		rslt.all |= (status >> (24 - 9)) & (1u << 9);			// put the stall bit in the right place
-		rslt.all |= (status >> (31 - 10)) & (1u << 10);			// put the standstill bit in the right place
+		rslt.all |= ((status >> TMC_RR_STST_BIT_POS) & 1u) << StandardDriverStatus::StandstillBitPos;	// put the standstill bit in the right place
+		rslt.all |= ((status >> TMC_RR_SG_BIT_POS) & 1u) << StandardDriverStatus::StallBitPos;			// put the stall bit in the right place
 # endif
 	}
 	else

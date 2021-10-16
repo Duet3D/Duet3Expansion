@@ -69,7 +69,7 @@ namespace ClosedLoop
 	// Methods called by the motion system
 	void ControlLoop() noexcept;
 	void TakeStep() noexcept;
-	uint8_t ReadLiveStatus() noexcept;
+	StandardDriverStatus ReadLiveStatus() noexcept;
 	void SetStepDirection(bool) noexcept;
 	bool GetClosedLoopEnabled() noexcept;
 	bool SetClosedLoopEnabled(uint8_t drive, bool enabled, const StringRef &reply) noexcept;
