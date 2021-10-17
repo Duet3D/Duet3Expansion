@@ -9,6 +9,7 @@
 #define SRC_CONFIG_BOARDDEF_H_
 
 #include <Duet3Common.h>								// this file is in the CANlib project because both main and expansion boards need it
+#include <RRF3Common.h>
 
 #ifdef EXP3HC
 # include "EXP3HC.h"

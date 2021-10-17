@@ -1751,12 +1751,12 @@ StandardDriverStatus SmartDrivers::GetStandardDriverStatus(size_t driver) noexce
 		}
 		else
 		{
-			rslt.all |= ((status >> TMC_RR_STST_BIT_POS) & 1u) << StandardDriverStatus::StandstillBitPos;	// put the standstill bit in the right place
-			rslt.all |= ((status >> TMC_RR_SG_BIT_POS) & 1u) << StandardDriverStatus::StallBitPos;			// put the stall bit in the right place
+			rslt.all |= ExtractBit(status, TMC_RR_STST_BIT_POS, StandardDriverStatus::StandstillBitPos);	// put the standstill bit in the right place
+			rslt.all |= ExtractBit(status, TMC_RR_SG_BIT_POS, StandardDriverStatus::StallBitPos);			// put the stall bit in the right place
 		}
 # else
-		rslt.all |= ((status >> TMC_RR_STST_BIT_POS) & 1u) << StandardDriverStatus::StandstillBitPos;	// put the standstill bit in the right place
-		rslt.all |= ((status >> TMC_RR_SG_BIT_POS) & 1u) << StandardDriverStatus::StallBitPos;			// put the stall bit in the right place
+		rslt.all |= ExtractBit(status, TMC_RR_STST_BIT_POS, StandardDriverStatus::StandstillBitPos);	// put the standstill bit in the right place
+		rslt.all |= ExtractBit(status, TMC_RR_SG_BIT_POS, StandardDriverStatus::StallBitPos);			// put the stall bit in the right place
 # endif
 	}
 	else
