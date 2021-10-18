@@ -794,7 +794,12 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 # endif
 				, driver, moveInstance->GetPosition(driver), (double)Platform::DriveStepsPerUnit(driver));
 # if HAS_SMART_DRIVERS
-			SmartDrivers::AppendDriverStatus(driver, reply);
+			const StandardDriverStatus status = SmartDrivers::GetStandardDriverStatus(driver);
+			status.AppendText(reply, 0);
+			if (!status.notPresent)
+			{
+				SmartDrivers::AppendDriverStatus(driver, reply);
+			}
 # endif
 			reply.catf(", steps req %" PRIu32 " done %" PRIu32, DDA::stepsRequested[driver], DDA::stepsDone[driver]);
 			DDA::stepsRequested[driver] = DDA::stepsDone[driver] = 0;

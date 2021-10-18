@@ -981,8 +981,8 @@ StandardDriverStatus ClosedLoop::ReadLiveStatus() noexcept
 {
 	StandardDriverStatus result;
 	result.all = 0;
-	result.stall = stall;
-	result.prestall = preStall;
+	result.closedLoopPositionNotMaintained = stall;
+	result.closedLoopPositionWarning = preStall;
 	result.closedLoopNotTuned = ((tuningError & minimalTunes[encoder->GetType().ToBaseType()]) != 0);
 	result.closedLoopTuningError = ((tuningError & TUNE_ERR_TUNING_FAILURE) != 0);
 	return result;
