@@ -999,17 +999,17 @@ void Platform::Spin()
 	// Check one TMC driver for temperature warning or temperature shutdown
 	if (enableValues[nextDriveToPoll] >= 0)				// don't poll driver if it is flagged "no poll"
 	{
-		const uint32_t stat = SmartDrivers::GetAccumulatedStatus(nextDriveToPoll, 0);
+		const StandardDriverStatus stat = SmartDrivers::GetStatus(nextDriveToPoll, true, true);
 		const DriversBitmap mask = DriversBitmap::MakeFromBits(nextDriveToPoll);
-		if (stat & TMC_RR_OT)
+		if (stat.ot)
 		{
 			temperatureShutdownDrivers |= mask;
 		}
-		else if (stat & TMC_RR_OTPW)
+		else if (stat.otpw)
 		{
 			temperatureWarningDrivers |= mask;
 		}
-		if (stat & TMC_RR_S2G)
+		if (stat.s2ga || stat.s2gb || stat.s2vsa || stat.s2vsb)
 		{
 			shortToGroundDrivers |= mask;
 		}
@@ -1020,7 +1020,7 @@ void Platform::Spin()
 
 		// The driver often produces a transient open-load error, especially in stealthchop mode, so we require the condition to persist before we report it.
 		// Also, false open load indications persist when in standstill, if the phase has zero current in that position
-		if ((stat & TMC_RR_OLA) != 0)
+		if (stat.ola)
 		{
 			if (!openLoadATimer.IsRunning())
 			{
@@ -1039,7 +1039,7 @@ void Platform::Spin()
 			}
 		}
 
-		if ((stat & TMC_RR_OLB) != 0)
+		if (stat.olb)
 		{
 			if (!openLoadBTimer.IsRunning())
 			{
@@ -1059,7 +1059,7 @@ void Platform::Spin()
 		}
 
 # if HAS_STALL_DETECT
-		if ((stat & TMC_RR_SG) != 0)
+		if (stat.stall)
 		{
 			if (stalledDrivers.Disjoint(mask))
 			{
@@ -1911,7 +1911,7 @@ void Platform::SendDriversStatus(CanMessageBuffer& buf)
 	msg->SetStandardFields(MaxSmartDrivers);
 	for (size_t driver = 0; driver < MaxSmartDrivers; ++driver)
 	{
-		msg->data[driver] = SmartDrivers::GetStandardDriverStatus(driver);
+		msg->data[driver] = SmartDrivers::GetStatus(driver);
 	}
 # else
 	msg->SetStandardFields(NumDrivers);

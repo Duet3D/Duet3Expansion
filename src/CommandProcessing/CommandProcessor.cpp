@@ -127,13 +127,13 @@ static void GenerateTestReport(const StringRef& reply)
 	bool driversOK = true;
 	for (size_t driver = 0; driver < NumDrivers; ++driver)
 	{
-		const uint32_t stat = SmartDrivers::GetAccumulatedStatus(driver, 0xFFFFFFFF);
-		if ((stat & (TMC_RR_OT || TMC_RR_OTPW)) != 0)
+		const StandardDriverStatus stat = SmartDrivers::GetStatus(driver, true, false);
+		if (stat.ot || stat.otpw)
 		{
 			reply.lcatf("Driver %u reports over temperature", driver);
 			driversOK = false;
 		}
-		if ((stat & TMC_RR_S2G) != 0)
+		if (stat.s2ga || stat.s2gb || stat.s2vsa || stat.s2vsb)
 		{
 			reply.lcatf("Driver %u reports short-to-ground", driver);
 			driversOK = false;
@@ -794,7 +794,7 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 # endif
 				, driver, moveInstance->GetPosition(driver), (double)Platform::DriveStepsPerUnit(driver));
 # if HAS_SMART_DRIVERS
-			const StandardDriverStatus status = SmartDrivers::GetStandardDriverStatus(driver);
+			const StandardDriverStatus status = SmartDrivers::GetStatus(driver);
 			status.AppendText(reply, 0);
 			if (!status.notPresent)
 			{
