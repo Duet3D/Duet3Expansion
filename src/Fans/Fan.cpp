@@ -14,8 +14,7 @@ Fan::Fan(unsigned int fanNum)
 	  val(0.0), lastVal(0.0),
 	  minVal(DefaultMinFanPwm),
 	  maxVal(1.0),										// 100% maximum fan speed
-	  blipTime(DefaultFanBlipTime),
-	  isConfigured(false)
+	  blipTime(DefaultFanBlipTime)
 {
 	triggerTemperatures[0] = triggerTemperatures[1] = DefaultHotEndFanTemperature;
 }
@@ -30,7 +29,6 @@ GCodeResult Fan::Configure(const CanMessageFanParameters& msg, const StringRef& 
 	minVal = msg.minVal;
 	maxVal = msg.maxVal;
 	sensorsMonitored.SetFromRaw(msg.sensorsMonitored);
-	isConfigured = true;
 	(void)UpdateFanConfiguration(reply);
 	return GCodeResult::ok;
 }

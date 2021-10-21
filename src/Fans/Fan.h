@@ -31,12 +31,9 @@ public:
 	float GetLastVal() const noexcept { return lastVal; }
 
 	// Set or report the parameters for this fan
-	// If 'mCode' is an M-code used to set parameters (which should only ever be 106 or 107)
-	// then search for parameters used to configure the fan. If any are found, perform appropriate actions and return true.
 	// If errors were discovered while processing parameters, put an appropriate error message in 'reply' and set 'error' to true.
 	// If no relevant parameters are found, print the existing ones to 'reply' and return false.
 	GCodeResult Configure(const CanMessageFanParameters& msg, const StringRef& reply);
-	bool IsConfigured() const { return isConfigured && IsEnabled(); }
 
 	float GetConfiguredPwm() const { return val; }			// returns the configured PWM. Actual PWM may be different, e.g. due to blipping or for thermostatic fans.
 
@@ -57,8 +54,6 @@ protected:
 	float triggerTemperatures[2];
 	uint32_t blipTime;										// in milliseconds
 	SensorsBitmap sensorsMonitored;
-
-	bool isConfigured;
 };
 
 #endif /* SRC_FAN_H_ */
