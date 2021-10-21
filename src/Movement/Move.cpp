@@ -86,7 +86,7 @@ Move::Move()
 
 	for (size_t i = 0; i < NumDrivers; ++i)
 	{
-		extrusionAccumulators[i] = 0;
+		movementAccumulators[i] = 0;
 	}
 }
 
@@ -305,14 +305,14 @@ void Move::CurrentMoveCompleted()
 {
 #if SINGLE_DRIVER
 	const int32_t stepsTaken = currentDda->GetStepsTaken(0);
-	extrusionAccumulators[0] += stepsTaken;
+	movementAccumulators[0] += stepsTaken;
 # if SUPPORT_CLOSED_LOOP
 	netMicrostepsTaken += stepsTaken;
 # endif
 #else
 	for (size_t driver = 0; driver < NumDrivers; ++driver)
 	{
-		extrusionAccumulators[driver] += currentDda->GetStepsTaken(driver);
+		movementAccumulators[driver] += currentDda->GetStepsTaken(driver);
 	}
 #endif
 
@@ -366,10 +366,10 @@ void Move::StopDrivers(uint16_t whichDrivers)
 int32_t Move::GetAccumulatedExtrusion(size_t driver, bool& isPrinting) noexcept
 {
 	AtomicCriticalSectionLocker lock;
-	const int32_t ret = extrusionAccumulators[driver];
+	const int32_t ret = movementAccumulators[driver];
 	const DDA * const cdda = currentDda;						// capture volatile variable
 	const int32_t adjustment = (cdda == nullptr) ? 0 : cdda->GetStepsTaken(driver);
-	extrusionAccumulators[driver] = -adjustment;
+	movementAccumulators[driver] = -adjustment;
 	isPrinting = extrudersPrinting;
 	return ret + adjustment;
 }

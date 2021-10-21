@@ -62,7 +62,7 @@ float LaserFilamentMonitor::MeasuredSensitivity() const noexcept
 }
 
 // Configure this sensor, returning true if error and setting 'seen' if we processed any configuration parameters
-GCodeResult LaserFilamentMonitor::Configure(const CanMessageGenericParser& parser, const StringRef& reply)
+GCodeResult LaserFilamentMonitor::Configure(const CanMessageGenericParser& parser, const StringRef& reply) noexcept
 {
 	bool seen = false;
 	const GCodeResult rslt = CommonConfigure(parser, reply, InterruptMode::change, seen);

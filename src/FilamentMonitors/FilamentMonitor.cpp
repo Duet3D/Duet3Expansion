@@ -215,69 +215,71 @@ GCodeResult FilamentMonitor::CommonConfigure(const CanMessageGenericParser& pars
 	auto msg = buf.SetupStatusMessage<CanMessageFilamentMonitorsStatus>(CanInterface::GetCanAddress(), CanInterface::GetCurrentMasterAddress());
 	bool statusChanged = false;
 	bool haveMonitor = false;
-	ReadLocker lock(filamentMonitorsLock);
 
-	for (size_t drv = 0; drv < NumDrivers; ++drv)
 	{
-		FilamentSensorStatus fst(FilamentSensorStatus::noMonitor);
-		if (filamentSensors[drv] != nullptr)
+		ReadLocker lock(filamentMonitorsLock);
+
+		for (size_t drv = 0; drv < NumDrivers; ++drv)
 		{
-			const uint32_t startTime = StepTimer::GetTimerTicks();
-			haveMonitor = true;
-			FilamentMonitor& fs = *filamentSensors[drv];
-			bool isPrinting;
-			bool fromIsr;
-			int32_t extruderStepsCommanded;
-			uint32_t locIsrMillis;
-			IrqDisable();
-			if (fs.haveIsrStepsCommanded)
+			FilamentSensorStatus fst(FilamentSensorStatus::noMonitor);
+			if (filamentSensors[drv] != nullptr)
 			{
-				extruderStepsCommanded = fs.isrExtruderStepsCommanded;
-				isPrinting = fs.isrWasPrinting;
-				locIsrMillis = fs.lastIsrMillis;
-				fs.haveIsrStepsCommanded = false;
-				IrqEnable();
-				fromIsr = true;
-			}
-			else
-			{
-				IrqEnable();
-				extruderStepsCommanded = moveInstance->GetAccumulatedExtrusion(drv, isPrinting);		// get and clear the net extrusion commanded
-				fromIsr = false;
-				locIsrMillis = 0;
-			}
+				const uint32_t startTime = StepTimer::GetTimerTicks();
+				haveMonitor = true;
+				FilamentMonitor& fs = *filamentSensors[drv];
+				bool isPrinting;
+				bool fromIsr;
+				int32_t extruderStepsCommanded;
+				uint32_t locIsrMillis;
+				IrqDisable();
+				if (fs.haveIsrStepsCommanded)
+				{
+					extruderStepsCommanded = fs.isrExtruderStepsCommanded;
+					isPrinting = fs.isrWasPrinting;
+					locIsrMillis = fs.lastIsrMillis;
+					fs.haveIsrStepsCommanded = false;
+					IrqEnable();
+					fromIsr = true;
+				}
+				else
+				{
+					IrqEnable();
+					extruderStepsCommanded = moveInstance->GetAccumulatedExtrusion(drv, isPrinting);		// get and clear the net extrusion commanded
+					fromIsr = false;
+					locIsrMillis = 0;
+				}
 
-			if (Platform::IsPrinting())
-			{
-				const float extrusionCommanded = (float)extruderStepsCommanded/Platform::DriveStepsPerUnit(drv);
-				fst = fs.Check(isPrinting, fromIsr, locIsrMillis, extrusionCommanded);
-			}
-			else
-			{
-				fst = fs.Clear();
-			}
-			if (fst != fs.lastStatus)
-			{
-				statusChanged = true;
-				fs.lastStatus = fst;
-			}
+				if (Platform::IsPrinting())
+				{
+					const float extrusionCommanded = (float)extruderStepsCommanded/Platform::DriveStepsPerUnit(drv);
+					fst = fs.Check(isPrinting, fromIsr, locIsrMillis, extrusionCommanded);
+				}
+				else
+				{
+					fst = fs.Clear();
+				}
+				if (fst != fs.lastStatus)
+				{
+					statusChanged = true;
+					fs.lastStatus = fst;
+				}
 
-			const uint32_t elapsedTime = StepTimer::GetTimerTicks() - startTime;
-			if (elapsedTime > maxPollTime)
-			{
-				maxPollTime = elapsedTime;
+				const uint32_t elapsedTime = StepTimer::GetTimerTicks() - startTime;
+				if (elapsedTime > maxPollTime)
+				{
+					maxPollTime = elapsedTime;
+				}
+				if (elapsedTime < minPollTime)
+				{
+					minPollTime = elapsedTime;
+				}
 			}
-			if (elapsedTime < minPollTime)
-			{
-				minPollTime = elapsedTime;
-			}
+			msg->data[drv].Set(fst.ToBaseType());
 		}
-		msg->data[drv].Set(fst.ToBaseType());
 	}
 
 	if (statusChanged || (haveMonitor && millis() - whenStatusLastSent >= StatusUpdateInterval))
 	{
-		lock.Release();
 		buf.dataLength = msg->GetActualDataLength();
 		CanInterface::Send(&buf);
 		whenStatusLastSent = millis();

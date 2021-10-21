@@ -85,7 +85,7 @@ private:
 	DDA* ddaRingCheckPointer;
 
 	StepTimer timer;
-	volatile int32_t extrusionAccumulators[NumDrivers]; 							// Accumulated extruder motor steps
+	volatile int32_t movementAccumulators[NumDrivers]; 								// Accumulated motor steps
 	volatile uint32_t extrudersPrintingSince;										// The milliseconds clock time when extrudersPrinting was set to true
 	volatile bool extrudersPrinting;												// Set whenever an extruder starts a printing move, cleared by a non-printing extruder move
 	TaskBase * volatile taskWaitingForMoveToComplete;

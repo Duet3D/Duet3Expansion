@@ -30,7 +30,7 @@ public:
 	FilamentMonitor(const FilamentMonitor&) = delete;
 
 	// Configure this sensor, returning an error code and setting 'seen' if we processed any configuration parameters
-	virtual GCodeResult Configure(const CanMessageGenericParser& parser, const StringRef& reply) = 0;
+	virtual GCodeResult Configure(const CanMessageGenericParser& parser, const StringRef& reply) noexcept = 0;
 
 	// Print diagnostic info for this sensor
 	virtual void Diagnostics(const StringRef& reply) noexcept = 0;

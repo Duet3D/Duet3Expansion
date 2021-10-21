@@ -19,7 +19,7 @@ SimpleFilamentMonitor::SimpleFilamentMonitor(unsigned int extruder, unsigned int
 }
 
 // Configure this sensor, returning true if error and setting 'seen' if we processed any configuration parameters
-GCodeResult SimpleFilamentMonitor::Configure(const CanMessageGenericParser& parser, const StringRef& reply)
+GCodeResult SimpleFilamentMonitor::Configure(const CanMessageGenericParser& parser, const StringRef& reply) noexcept
 {
 	bool seen = false;
 	const GCodeResult rslt = CommonConfigure(parser, reply, InterruptMode::none, seen);

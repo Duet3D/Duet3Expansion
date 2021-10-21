@@ -61,7 +61,7 @@ float PulsedFilamentMonitor::MeasuredSensitivity() const noexcept
 }
 
 // Configure this sensor, returning true if error and setting 'seen' if we processed any configuration parameters
-GCodeResult PulsedFilamentMonitor::Configure(const CanMessageGenericParser& parser, const StringRef& reply)
+GCodeResult PulsedFilamentMonitor::Configure(const CanMessageGenericParser& parser, const StringRef& reply) noexcept
 {
 	bool seen = false;
 	const GCodeResult rslt = CommonConfigure(parser, reply, InterruptMode::rising, seen);
