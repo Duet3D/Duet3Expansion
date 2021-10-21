@@ -59,7 +59,6 @@ public:
 	void SetHeaterMonitoring(HeaterMonitor *h);
 
 	const FopDt& GetModel() const { return model; }				// Get the process model
-	GCodeResult SetOrReportModelOld(unsigned int heater, const CanMessageUpdateHeaterModelOld& msg, const StringRef& reply) noexcept;
 	GCodeResult SetOrReportModelNew(unsigned int heater, const CanMessageUpdateHeaterModelNew& msg, const StringRef& reply) noexcept;
 
 	bool IsHeaterEnabled() const								// Is this heater enabled?

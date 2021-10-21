@@ -58,18 +58,6 @@ GCodeResult Heater::SetHeaterMonitors(const CanMessageSetHeaterMonitors& msg, co
 	return GCodeResult::ok;
 }
 
-GCodeResult Heater::SetOrReportModelOld(unsigned int heater, const CanMessageUpdateHeaterModelOld& msg, const StringRef& reply) noexcept
-{
-	const float coolingRate = 1.0/msg.timeConstant;
-	const float heatingRate = msg.gain * coolingRate;
-	const GCodeResult rslt = SetModel(heatingRate, coolingRate, 0.0, msg.deadTime, msg.maxPwm, msg.standardVoltage, msg.usePid, msg.inverted, reply);
-	if (msg.pidParametersOverridden && (rslt == GCodeResult::ok || rslt == GCodeResult::warning))
-	{
-		SetRawPidParameters(msg.kP, msg.recipTi, msg.tD);
-	}
-	return rslt;
-}
-
 GCodeResult Heater::SetOrReportModelNew(unsigned int heater, const CanMessageUpdateHeaterModelNew& msg, const StringRef& reply) noexcept
 {
 	const GCodeResult rslt = SetModel(msg.heatingRate, msg.coolingRate, msg.coolingRateChangeFanOn, msg.deadTime, msg.maxPwm, msg.standardVoltage, msg.usePid, msg.inverted, reply);
