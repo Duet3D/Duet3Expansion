@@ -64,14 +64,11 @@ public:
 	bool IsHeaterEnabled() const								// Is this heater enabled?
 		{ return model.IsEnabled(); }
 
-	void SetRawPidParameters(float p_kP, float p_recipTi, float p_tD)
-		{ model.SetRawPidParameters(p_kP, p_recipTi, p_tD); }
-
 	bool IsTuning() const { return GetMode() >= HeaterMode::firstTuningMode; }
 	uint8_t GetModeByte() const { return (uint8_t)GetMode(); }
 
 protected:
-	static constexpr float FeedForwardMultiplier = 1.3;		// how much we over-compensate feedforward to allow for heat reservoirs during tuning
+	static constexpr float FeedForwardMultiplier = 1.3;			// how much we over-compensate feedforward to allow for heat reservoirs during tuning
 
 	virtual void ResetHeater() noexcept = 0;
 	virtual HeaterMode GetMode() const noexcept = 0;
@@ -84,6 +81,8 @@ protected:
 	float GetMaxHeatingFaultTime() const noexcept { return maxHeatingFaultTime; }
 	float GetTargetTemperature() const noexcept { return requestedTemperature; }
 	GCodeResult SetModel(float phr, float pcr, float pcrChange, float td, float maxPwm, float voltage, bool usePid, bool inverted, const StringRef& reply) noexcept;	// Set the process model
+
+	void SetRawPidParameters(float p_kP, float p_recipTi, float p_tD) { model.SetRawPidParameters(p_kP, p_recipTi, p_tD); }
 
 	HeaterMonitor monitors[MaxMonitorsPerHeater];	// embedding them in the Heater uses less memory than dynamic allocation
 
