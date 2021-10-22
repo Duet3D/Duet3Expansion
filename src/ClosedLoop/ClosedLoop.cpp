@@ -310,6 +310,7 @@ static void GenerateTmcClock()
 	// Currently we program DPLL0 to generate 120MHz output, so to get 15MHz we divide by 8
 	ConfigureGclk(ClockGenGclkNumber, GclkSource::dpll0, 8, true);
 	SetPinFunction(ClockGenPin, ClockGenPinPeriphMode);
+	SmartDrivers::SetTmcExternalClock(15000000);
 }
 
 void ClosedLoop::Init() noexcept

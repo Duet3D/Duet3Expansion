@@ -31,6 +31,7 @@ namespace SmartDrivers
 #if SUPPORT_CLOSED_LOOP
 	unsigned int GetMicrostepShift(size_t driver) noexcept;
 	uint16_t GetMicrostepPosition(size_t driver) noexcept;
+	void SetTmcExternalClock(uint32_t frequency) noexcept;
 #endif
 	bool SetDriverMode(size_t driver, unsigned int mode) noexcept;
 	DriverMode GetDriverMode(size_t driver) noexcept;
