@@ -280,6 +280,7 @@ GCodeResult FilamentMonitor::CommonConfigure(const CanMessageGenericParser& pars
 
 	if (statusChanged || (haveMonitor && millis() - whenStatusLastSent >= StatusUpdateInterval))
 	{
+		msg->SetStandardFields(NumDrivers);
 		buf.dataLength = msg->GetActualDataLength();
 		CanInterface::Send(&buf);
 		whenStatusLastSent = millis();
