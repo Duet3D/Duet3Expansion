@@ -23,6 +23,7 @@ Licence: GPL
 #include <Platform.h>
 #include <TaskPriorities.h>
 #include "Sensors/TemperatureSensor.h"
+#include "Sensors/RemoteSensor.h"
 #include <CanMessageGenericParser.h>
 #include <CanMessageBuffer.h>
 #include <CanMessageGenericTables.h>
@@ -64,7 +65,7 @@ namespace Heat
 	// Private members
 	static Heater* heaters[MaxHeaters];							// A PID controller for each heater
 
-	static TemperatureSensor *sensorsRoot = nullptr;			// The sensor list. Only the Heat task is allowed to modify the linkage.
+	static TemperatureSensor * volatile sensorsRoot = nullptr;	// The sensor list, which must be maintained in sensor number order because the Heat task assumes that
 
 	static float extrusionMinTemp;								// Minimum temperature to allow regular extrusion
 	static float retractionMinTemp;								// Minimum temperature to allow regular retraction
@@ -78,6 +79,7 @@ namespace Heat
 	static uint32_t lastSensorsBroadcastWhen = 0;				// for diagnostics
 	static unsigned int lastSensorsFound = 0;					// for diagnostics
 	static uint32_t heatTaskLoopTime = 0;						// for diagnostics
+	static unsigned int temperatureOrderingErrors = 0;			// for diagnostics
 
 	static uint8_t newDriverFaultState = 0;
 	static uint8_t newHeaterFaultState = 0;
@@ -166,7 +168,7 @@ namespace Heat
 					msg->whichHeaters |= (uint64_t)1u << heater;
 					msg->reports[heatersFound].mode = h->GetModeByte();
 					msg->reports[heatersFound].averagePwm = (uint8_t)(h->GetAveragePWM() * 255.0);
-					msg->reports[heatersFound].temperature = h->GetTemperature();
+					msg->reports[heatersFound].SetTemperature(h->GetTemperature());
 					++heatersFound;
 				}
 			}
@@ -277,17 +279,29 @@ void Heat::Exit()
 				sensorTempsMsg->whichSensors = 0;
 				unsigned int sensorsFound = 0;
 				{
+					unsigned int nextUnreportedSensor = 0;
 					ReadLocker lock(sensorsLock);
 					for (TemperatureSensor *currentSensor = sensorsRoot; currentSensor != nullptr; currentSensor = currentSensor->GetNext())
 					{
 						currentSensor->Poll();
 						if (currentSensor->GetBoardAddress() == CanInterface::GetCanAddress() && sensorsFound < ARRAY_SIZE(sensorTempsMsg->temperatureReports))
 						{
-							sensorTempsMsg->whichSensors |= (uint64_t)1u << currentSensor->GetSensorNumber();
-							float temperature;
-							sensorTempsMsg->temperatureReports[sensorsFound].errorCode = (uint8_t)(currentSensor->GetLatestTemperature(temperature));
-							sensorTempsMsg->temperatureReports[sensorsFound].SetTemperature(temperature);
-							++sensorsFound;
+							const unsigned int sn = currentSensor->GetSensorNumber();
+							if (sn >= nextUnreportedSensor && sn < 64)
+							{
+								sensorTempsMsg->whichSensors |= (uint64_t)1u << sn;
+								float temperature;
+								sensorTempsMsg->temperatureReports[sensorsFound].errorCode = (uint8_t)(currentSensor->GetLatestTemperature(temperature));
+								sensorTempsMsg->temperatureReports[sensorsFound].SetTemperature(temperature);
+								++sensorsFound;
+								nextUnreportedSensor = sn + 1;
+							}
+							else
+							{
+								// We have a duplicate sensor number, or the sensors list is not ordered by sensor number, or the sensor number is out of range
+								// Don't send its temperature because that will mess up the relationship between the bitmap and the sensor data in the message
+								++temperatureOrderingErrors;
+							}
 						}
 					}
 				}
@@ -553,7 +567,7 @@ float Heat::GetLowestTemperatureLimit(int heater) noexcept
 }
 
 // Get the temperature of a sensor
-float Heat::GetSensorTemperature(int sensorNum, TemperatureError& err)
+float Heat::GetSensorTemperature(int sensorNum, TemperatureError& err) noexcept
 {
 	const auto sensor = FindSensor(sensorNum);
 	if (sensor.IsNotNull())
@@ -565,6 +579,32 @@ float Heat::GetSensorTemperature(int sensorNum, TemperatureError& err)
 
 	err = TemperatureError::unknownSensor;
 	return BadErrorTemperature;
+}
+
+void Heat::ProcessRemoteSensorsReport(CanAddress src, const CanMessageSensorTemperatures& msg) noexcept
+{
+	Bitmap<uint64_t> sensorsReported(msg.whichSensors);
+	sensorsReported.Iterate([src, &msg](unsigned int sensor, unsigned int index)
+								{
+									if (index < ARRAY_SIZE(msg.temperatureReports) && src != CanInterface::GetCanAddress())
+									{
+										const CanSensorReport& sr = msg.temperatureReports[index];
+										auto ts = FindSensor(sensor);
+										if (ts.IsNotNull())
+										{
+											ts->UpdateRemoteTemperature(src, sr);
+										}
+										else
+										{
+											// Create a new RemoteSensor
+											ts.Release();
+											RemoteSensor * const rs = new RemoteSensor(sensor, src);
+											rs->UpdateRemoteTemperature(src, sr);
+											InsertSensor(rs);
+										}
+									}
+								}
+							);
 }
 
 void Heat::SwitchOff(int heater)
@@ -677,8 +717,9 @@ void Heat::SuspendHeaters(bool sus)
 
 void Heat::Diagnostics(const StringRef& reply)
 {
-	reply.lcatf("Last sensors broadcast 0x%08" PRIx64 " found %u %" PRIu32 " ticks ago, loop time %" PRIu32,
-					lastSensorsBroadcastWhich, lastSensorsFound, millis() - lastSensorsBroadcastWhen, heatTaskLoopTime);
+	reply.lcatf("Last sensors broadcast 0x%08" PRIx64 " found %u %" PRIu32 " ticks ago, %u ordering errs, loop time %" PRIu32,
+					lastSensorsBroadcastWhich, lastSensorsFound, millis() - lastSensorsBroadcastWhen, temperatureOrderingErrors, heatTaskLoopTime);
+	temperatureOrderingErrors = 0;
 #if 0	// temporary to debug a board that reports bad Vssa
 	reply.catf(", Vref %u Vssa %u",
 		(unsigned int)(Platform::GetVrefFilter(0)->GetSum()/ThermistorAveragingFilter::NumAveraged()),

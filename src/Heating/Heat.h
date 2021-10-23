@@ -39,7 +39,8 @@ namespace Heat
 	void ResetFault(int heater);								// Reset a heater fault - only call this if you know what you are doing
 
 	// Methods that relate to sensors
-	float GetSensorTemperature(int sensorNum, TemperatureError& err); // Result is in degrees Celsius
+	float GetSensorTemperature(int sensorNum, TemperatureError& err) noexcept;	// Result is in degrees Celsius
+	void ProcessRemoteSensorsReport(CanAddress src, const CanMessageSensorTemperatures& msg) noexcept;
 
 	// Methods that relate to a particular heater
 	float GetHighestTemperatureLimit(int heater) noexcept;

@@ -893,6 +893,10 @@ void CommandProcessor::Spin()
 
 		switch (id)
 		{
+		case CanMessageType::sensorTemperaturesReport:
+			Heat::ProcessRemoteSensorsReport(buf->id.Src(), buf->msg.sensorTemperaturesBroadcast);
+			break;
+
 		case CanMessageType::returnInfo:
 			requestId = buf->msg.getInfo.requestId;
 			rslt = GetInfo(buf->msg.getInfo, replyRef, extra);

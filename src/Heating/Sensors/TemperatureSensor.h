@@ -8,7 +8,7 @@
 #include <CanId.h>
 
 class CanMessageGenericParser;
-class CanTemperatureReport;
+class CanSensorReport;
 
 class TemperatureSensor
 {
@@ -18,16 +18,25 @@ public:
 	// Virtual destructor
 	virtual ~TemperatureSensor();
 
+	// Configure the sensor from M308 parameters.
+	// If we find any parameters, process them and return true. If an error occurs while processing them, return error and write an error message to 'reply.
+	// If we find no relevant parameters, report the current parameters to 'reply' and return ok.
+	virtual GCodeResult Configure(const CanMessageGenericParser& parser, const StringRef& reply);
+
+	// Get the expansion board address. Overridden for remote sensors.
+	virtual CanAddress GetBoardAddress() const;
+
+	// Try to get a temperature reading
+	virtual void Poll() = 0;
+
+	// Update the temperature, if it is a remote sensor. Overridden in class RemoteSensor.
+	virtual void UpdateRemoteTemperature(CanAddress src, const CanSensorReport& report) noexcept;
+
 	// Get the latest temperature reading
 	TemperatureError GetLatestTemperature(float& t);
 
 	// Get the most recent reading without checking for timeout
 	float GetStoredReading() const noexcept { return lastTemperature; }
-
-	// Configure the sensor from M308 parameters.
-	// If we find any parameters, process them and return true. If an error occurs while processing them, return error and write an error message to 'reply.
-	// If we find no relevant parameters, report the current parameters to 'reply' and return ok.
-	virtual GCodeResult Configure(const CanMessageGenericParser& parser, const StringRef& reply);
 
 	// Return the sensor type
 	const char *GetSensorType() const { return sensorType; }
@@ -45,17 +54,8 @@ public:
 	TemperatureSensor *GetNext() const { return next; }
 	void SetNext(TemperatureSensor *n) { next = n; }
 
-	// Get the expansion board address. Overridden for remote sensors.
-	virtual CanAddress GetBoardAddress() const;
-
-	// Update the temperature, if it is a remote sensor. Overridden in class RemoteSensor.
-	virtual void UpdateRemoteTemperature(CanAddress src, const CanTemperatureReport& report);
-
 	// Factory method
 	static TemperatureSensor *Create(unsigned int sensorNum, const char *typeName, const StringRef& reply);
-
-	// Try to get a temperature reading
-	virtual void Poll() = 0;
 
 protected:
 	void SetResult(float t, TemperatureError rslt);
