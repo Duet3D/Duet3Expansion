@@ -79,7 +79,7 @@ namespace Heat
 	static uint32_t lastSensorsBroadcastWhen = 0;				// for diagnostics
 	static unsigned int lastSensorsFound = 0;					// for diagnostics
 	static uint32_t heatTaskLoopTime = 0;						// for diagnostics
-	static unsigned int temperatureOrderingErrors = 0;			// for diagnostics
+	static unsigned int sensorOrderingErrors = 0;				// for diagnostics
 
 	static uint8_t newDriverFaultState = 0;
 	static uint8_t newHeaterFaultState = 0;
@@ -300,7 +300,7 @@ void Heat::Exit()
 							{
 								// We have a duplicate sensor number, or the sensors list is not ordered by sensor number, or the sensor number is out of range
 								// Don't send its temperature because that will mess up the relationship between the bitmap and the sensor data in the message
-								++temperatureOrderingErrors;
+								++sensorOrderingErrors;
 							}
 						}
 					}
@@ -718,8 +718,8 @@ void Heat::SuspendHeaters(bool sus)
 void Heat::Diagnostics(const StringRef& reply)
 {
 	reply.lcatf("Last sensors broadcast 0x%08" PRIx64 " found %u %" PRIu32 " ticks ago, %u ordering errs, loop time %" PRIu32,
-					lastSensorsBroadcastWhich, lastSensorsFound, millis() - lastSensorsBroadcastWhen, temperatureOrderingErrors, heatTaskLoopTime);
-	temperatureOrderingErrors = 0;
+					lastSensorsBroadcastWhich, lastSensorsFound, millis() - lastSensorsBroadcastWhen, sensorOrderingErrors, heatTaskLoopTime);
+	sensorOrderingErrors = 0;
 #if 0	// temporary to debug a board that reports bad Vssa
 	reply.catf(", Vref %u Vssa %u",
 		(unsigned int)(Platform::GetVrefFilter(0)->GetSum()/ThermistorAveragingFilter::NumAveraged()),
