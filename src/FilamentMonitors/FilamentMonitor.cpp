@@ -243,8 +243,8 @@ GCodeResult FilamentMonitor::CommonConfigure(const CanMessageGenericParser& pars
 				}
 				else
 				{
-					IrqEnable();
 					extruderStepsCommanded = moveInstance->GetAccumulatedExtrusion(drv, isPrinting);		// get and clear the net extrusion commanded
+					IrqEnable();
 					fromIsr = false;
 					locIsrMillis = 0;
 				}

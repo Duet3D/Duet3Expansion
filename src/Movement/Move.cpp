@@ -303,20 +303,23 @@ bool Move::SetKinematics(KinematicsType k)
 // The state field of currentDda must be set to DDAState::completed before calling this
 void Move::CurrentMoveCompleted()
 {
+	{
+		DDA *cdda = currentDda;						// capture volatile variable
+		AtomicCriticalSectionLocker lock;			// disable interrupts while we are updating the move accumulators, until we set currentDda to null
 #if SINGLE_DRIVER
-	const int32_t stepsTaken = currentDda->GetStepsTaken(0);
+	const int32_t stepsTaken = cdda->GetStepsTaken(0);
 	movementAccumulators[0] += stepsTaken;
 # if SUPPORT_CLOSED_LOOP
 	netMicrostepsTaken += stepsTaken;
 # endif
 #else
-	for (size_t driver = 0; driver < NumDrivers; ++driver)
-	{
-		movementAccumulators[driver] += currentDda->GetStepsTaken(driver);
-	}
+		for (size_t driver = 0; driver < NumDrivers; ++driver)
+		{
+			movementAccumulators[driver] += cdda->GetStepsTaken(driver);
+		}
 #endif
-
-	currentDda = nullptr;
+		currentDda = nullptr;
+	}
 	ddaRingGetPointer = ddaRingGetPointer->GetNext();
 	completedMoves++;
 
