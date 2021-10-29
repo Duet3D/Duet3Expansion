@@ -113,10 +113,11 @@ GCodeResult LaserFilamentMonitor::Configure(const CanMessageGenericParser& parse
 		{
 			reply.printf("Duet3D laser filament monitor v%u%s on pin ", version, (switchOpenMask != 0) ? " with switch" : "");
 			GetPort().AppendPinName(reply);
-			reply.catf(", %s, allow %ld%% to %ld%%, check every %.1fmm, calibration factor %.3f, ",
+			reply.catf(", %s, allow %ld%% to %ld%%, check %s moves every %.1fmm, calibration factor %.3f, ",
 						(comparisonEnabled) ? "enabled" : "disabled",
 						ConvertToPercent(minMovementAllowed),
 						ConvertToPercent(maxMovementAllowed),
+						(checkNonPrintingMoves) ? "all" : "printing",
 						(double)minimumExtrusionCheckLength,
 						(double)calibrationFactor);
 

@@ -115,11 +115,12 @@ GCodeResult RotatingMagnetFilamentMonitor::Configure(const CanMessageGenericPars
 		{
 			reply.printf("Duet3D rotating magnet filament monitor v%u%s on pin ", version, (switchOpenMask != 0) ? " with switch" : "");
 			GetPort().AppendPinName(reply);
-			reply.catf(", %s, sensitivity %.2fmm/rev, allow %ld%% to %ld%%, check every %.1fmm, ",
+			reply.catf(", %s, sensitivity %.2fmm/rev, allow %ld%% to %ld%%, check %s moves every %.1fmm, ",
 						(comparisonEnabled) ? "enabled" : "disabled",
 						(double)mmPerRev,
 						ConvertToPercent(minMovementAllowed),
 						ConvertToPercent(maxMovementAllowed),
+						(checkNonPrintingMoves) ? "all" : "printing",
 						(double)minimumExtrusionCheckLength);
 
 			if (!dataReceived)
