@@ -82,7 +82,7 @@ Move::Move()
 	ddaRingAddPointer->SetNext(dda);
 	dda->SetPrevious(ddaRingAddPointer);
 
-	timer.SetCallback(Move::TimerCallback, static_cast<void*>(this));
+	timer.SetCallback(Move::TimerCallback, CallbackParameter(this));
 
 	for (size_t i = 0; i < NumDrivers; ++i)
 	{

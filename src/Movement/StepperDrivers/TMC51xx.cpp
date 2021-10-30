@@ -1456,7 +1456,7 @@ void SmartDrivers::Init() noexcept
 	DmacManager::SetDataLength(DmacChanTmcTx, ARRAY_SIZE(sendData));
 	DmacManager::SetTriggerSourceSercomTx(DmacChanTmcTx, SERCOM_TMC51xx_NUMBER);
 
-	DmacManager::SetInterruptCallback(DmacChanTmcRx, RxDmaCompleteCallback, 0U);
+	DmacManager::SetInterruptCallback(DmacChanTmcRx, RxDmaCompleteCallback, CallbackParameter(0U));
 
 	SERCOM_TMC51xx->SPI.CTRLA.bit.ENABLE = 1;		// keep the SPI enabled all the time so that the SPCLK line is driven
 

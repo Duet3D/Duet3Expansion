@@ -61,7 +61,7 @@ GCodeResult FilamentMonitor::CommonConfigure(const CanMessageGenericParser& pars
 		}
 
 		haveIsrStepsCommanded = false;
-		if (interruptMode != InterruptMode::none && !port.AttachInterrupt(InterruptEntry, interruptMode, this))
+		if (interruptMode != InterruptMode::none && !port.AttachInterrupt(InterruptEntry, interruptMode, CallbackParameter(this)))
 		{
 			reply.copy("unsuitable pin");
 			return GCodeResult::error;

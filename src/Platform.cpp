@@ -472,7 +472,7 @@ namespace Platform
 #else
 		const AdcInput adcChan = PinToAdcChannel(pin);
 #endif
-		AnalogIn::EnableChannel(adcChan, thermistorFilters[filterIndex].CallbackFeedIntoFilter, &thermistorFilters[filterIndex], 1, useAlternateAdc);
+		AnalogIn::EnableChannel(adcChan, thermistorFilters[filterIndex].CallbackFeedIntoFilter, CallbackParameter(&thermistorFilters[filterIndex]), 1, useAlternateAdc);
 	}
 #endif
 
@@ -507,7 +507,7 @@ namespace Platform
 
 		vinFilter.Init(0);
 		IoPort::SetPinMode(VinMonitorPin, AIN);
-		AnalogIn::EnableChannel(PinToAdcChannel(VinMonitorPin), vinFilter.CallbackFeedIntoFilter, &vinFilter, 1, false);
+		AnalogIn::EnableChannel(PinToAdcChannel(VinMonitorPin), vinFilter.CallbackFeedIntoFilter, CallbackParameter(&vinFilter), 1, false);
 #endif
 	}
 
@@ -657,7 +657,7 @@ void Platform::Init()
 
 	v12Filter.Init(0);
 	IoPort::SetPinMode(V12MonitorPin, AIN);
-	AnalogIn::EnableChannel(PinToAdcChannel(V12MonitorPin), v12Filter.CallbackFeedIntoFilter, &v12Filter, 1, false);
+	AnalogIn::EnableChannel(PinToAdcChannel(V12MonitorPin), v12Filter.CallbackFeedIntoFilter, CallbackParameter(&v12Filter), 1, false);
 #endif
 
 #if HAS_VREF_MONITOR
@@ -689,12 +689,12 @@ void Platform::Init()
 	// Set up the MCU temperature sense filters
 #if SAME5x
 	tpFilter.Init(0);
-	AnalogIn::EnableTemperatureSensor(0, tpFilter.CallbackFeedIntoFilter, &tpFilter, 1, 0);
+	AnalogIn::EnableTemperatureSensor(0, tpFilter.CallbackFeedIntoFilter, CallbackParameter(&tpFilter), 1, 0);
 	tcFilter.Init(0);
-	AnalogIn::EnableTemperatureSensor(1, tcFilter.CallbackFeedIntoFilter, &tcFilter, 1, 0);
+	AnalogIn::EnableTemperatureSensor(1, tcFilter.CallbackFeedIntoFilter, CallbackParameter(&tcFilter), 1, 0);
 #elif SAMC21
 	tsensFilter.Init(0);
-	AnalogIn::EnableTemperatureSensor(tsensFilter.CallbackFeedIntoFilter, &tsensFilter, 1);
+	AnalogIn::EnableTemperatureSensor(tsensFilter.CallbackFeedIntoFilter, CallbackParameter(&tsensFilter), 1);
 #else
 # error Unsupported processor
 #endif
