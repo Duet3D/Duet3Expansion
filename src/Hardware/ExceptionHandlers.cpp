@@ -37,8 +37,7 @@ void SoftwareReset(SoftwareResetReason initialReason, const uint32_t *stk) noexc
 
 [[noreturn]] void OutOfMemoryHandler() noexcept
 {
-	register const uint32_t * stack_ptr asm ("sp");
-	SoftwareReset(SoftwareResetReason::outOfMemory, stack_ptr);
+	SoftwareReset(SoftwareResetReason::outOfMemory, GetStackPointer());
 }
 
 // Exception handlers

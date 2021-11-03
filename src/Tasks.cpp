@@ -179,7 +179,7 @@ void *Tasks::GetNVMBuffer(const uint32_t *stk) noexcept
 
 	// Fill the free memory with a pattern so that we can check for stack usage and memory corruption
 	char* p = heapTop;
-	register const char * stack_ptr asm ("sp");
+	const char * stack_ptr = (const char *_ecv_array)GetStackPointer();
 	while (p + 16 < stack_ptr)
 	{
 		*p++ = memPattern;
