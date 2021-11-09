@@ -35,6 +35,8 @@ static uint8_t resolution = DefaultResolution;
 static uint8_t orientation = 20;							// +Z -> +Z, +X -> +X
 static volatile uint8_t axesRequested;
 static volatile bool running = false;
+static volatile bool successfulStart = false;
+static volatile bool failedStart = false;
 static uint8_t axisLookup[3];								// mapping from each Cartesian axis to the corresponding accelerometer axis
 static bool axisInverted[3];
 
@@ -76,6 +78,7 @@ static uint8_t TranslateAxes(uint8_t axes) noexcept
 #endif
 			if (accelerometer->StartCollecting(TranslateAxes(axesRequested)))
 			{
+				successfulStart = true;
 				do
 				{
 					uint16_t dataRate;
@@ -166,6 +169,10 @@ static uint8_t TranslateAxes(uint8_t axes) noexcept
 						}
 					}
 				} while (samplesWanted != 0);
+			}
+			else
+			{
+				failedStart = true;
 			}
 
 			accelerometer->StopCollecting();
@@ -303,17 +310,34 @@ GCodeResult AccelerometerHandler::ProcessStartRequest(const CanMessageStartAccel
 
 	axesRequested = msg.axes;
 	numSamplesRequested = msg.numSamples;
+	successfulStart = false;
+	failedStart = false;
 	running = true;
 	accelerometerTask->Give();
-	return GCodeResult::ok;
+	const uint32_t startTime = millis();
+	do
+	{
+		delay(5);
+		if (successfulStart)
+		{
+			return GCodeResult::ok;
+		}
+	} while (!failedStart && millis() - startTime < 1000);
+
+	reply.copy("Failed to start accelerometer data collection");
+	return GCodeResult::error;
 }
 
 void AccelerometerHandler::Diagnostics(const StringRef& reply) noexcept
 {
-	reply.lcatf("Accelerometer detected: %s", (accelerometer != nullptr) ? "yes" : "no");
+	reply.lcatf("Accelerometer: %s", (accelerometer != nullptr) ? accelerometer->GetTypeName() : "none");
 	if (accelerometer != nullptr)
 	{
 		reply.catf(", status: %02x", accelerometer->ReadStatus());
+		if (accelerometer->HasInterruptError())
+		{
+			reply.cat(", INT1 error!");
+		}
 	}
 }
 

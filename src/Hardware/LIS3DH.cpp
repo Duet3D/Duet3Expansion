@@ -34,6 +34,7 @@ LIS3DH::LIS3DH(SharedI2CMaster& dev, Pin p_int1Pin) noexcept
 // Do a quick test to check whether the accelerometer is present, returning true if it is
 bool LIS3DH::CheckPresent() noexcept
 {
+	interruptError = false;
 	for (uint16_t addr : LisAddresses)
 	{
 		SetAddress(addr);
@@ -187,12 +188,20 @@ bool LIS3DH:: StartCollecting(uint8_t axes) noexcept
 		ReadRegisters(LisRegister::OutXL, 6);
 	}
 
-#ifdef TOOL1LC
-	// The experimental setup needs the pullup resistor enabled on the interrupt pin
+	// Version 1.1 tool boards need the pullup resistor enabled on the interrupt pin.
+	// For other tool board versions and for the SAMMYC21, pulling it up allows us to check for a disconnected pin
 	pinMode(int1Pin, INPUT_PULLUP);
-#endif
 
 	totalNumRead = 0;
+
+	// Before we enable data collection, check that the interrupt line is low
+	delayMicroseconds(5);
+	if (digitalRead(int1Pin))
+	{
+		interruptError = true;
+		return false;
+	}
+
 	const bool ok = WriteRegister(LisRegister::Ctrl_0x20, ctrlReg_0x20 | (axes & 7));
 	return ok && attachInterrupt(int1Pin, Int1Interrupt, InterruptMode::rising, CallbackParameter(this));
 }
