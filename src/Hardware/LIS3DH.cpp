@@ -196,9 +196,9 @@ bool LIS3DH:: StartCollecting(uint8_t axes) noexcept
 
 	// Before we enable data collection, check that the interrupt line is low
 	delayMicroseconds(5);
-	if (digitalRead(int1Pin))
+	interruptError = digitalRead(int1Pin);
+	if (interruptError)
 	{
-		interruptError = true;
 		return false;
 	}
 
