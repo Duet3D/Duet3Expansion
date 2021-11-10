@@ -325,6 +325,10 @@ GCodeResult AccelerometerHandler::ProcessStartRequest(const CanMessageStartAccel
 	} while (!failedStart && millis() - startTime < 1000);
 
 	reply.copy("Failed to start accelerometer data collection");
+	if (accelerometer->HasInterruptError())
+	{
+		reply.cat(": INT1 error");
+	}
 	return GCodeResult::error;
 }
 
