@@ -20,28 +20,6 @@ Heater::~Heater()
 {
 }
 
-// Set the process model returning true if successful
-GCodeResult Heater::SetModel(float phr, float pcr, float pcrChange, float td, float maxPwm, float voltage, bool usePid, bool inverted, const StringRef& reply)
-{
-	const float temperatureLimit = GetHighestTemperatureLimit();
-	const bool rslt = model.SetParameters(phr, pcr, pcrChange, td, maxPwm, temperatureLimit, voltage, usePid, inverted);
-	if (rslt)
-	{
-		if (model.IsEnabled())
-		{
-			return UpdateModel(reply);
-		}
-		else
-		{
-			ResetHeater();
-		}
-		return GCodeResult::ok;
-	}
-
-	reply.copy("bad model parameters");
-	return GCodeResult::error;
-}
-
 GCodeResult Heater::SetFaultDetectionParameters(float pMaxTempExcursion, float pMaxFaultTime)
 {
 	maxTempExcursion = pMaxTempExcursion;
@@ -58,14 +36,25 @@ GCodeResult Heater::SetHeaterMonitors(const CanMessageSetHeaterMonitors& msg, co
 	return GCodeResult::ok;
 }
 
-GCodeResult Heater::SetOrReportModelNew(unsigned int heater, const CanMessageUpdateHeaterModelNew& msg, const StringRef& reply) noexcept
+GCodeResult Heater::SetModel(unsigned int heater, const CanMessageHeaterModelNewNew& msg, const StringRef& reply) noexcept
 {
-	const GCodeResult rslt = SetModel(msg.heatingRate, msg.coolingRate, msg.coolingRateChangeFanOn, msg.deadTime, msg.maxPwm, msg.standardVoltage, msg.usePid, msg.inverted, reply);
-	if (msg.pidParametersOverridden && (rslt == GCodeResult::ok || rslt == GCodeResult::warning))
+	const float temperatureLimit = GetHighestTemperatureLimit();
+	const bool rslt = model.SetParameters(msg, temperatureLimit);
+	if (rslt)
 	{
-		SetRawPidParameters(msg.kP, msg.recipTi, msg.tD);
+		if (model.IsEnabled())
+		{
+			return UpdateModel(reply);
+		}
+		else
+		{
+			ResetHeater();
+		}
+		return GCodeResult::ok;
 	}
-	return rslt;
+
+	reply.copy("bad model parameters");
+	return GCodeResult::error;
 }
 
 GCodeResult Heater::SetTemperature(const CanMessageSetHeaterTemperature& msg, const StringRef& reply)

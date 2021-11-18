@@ -12,11 +12,9 @@
  * The master class that controls all the heaters controlled by the expansion board
  */
 
-#include "RepRapFirmware.h"
+#include <RepRapFirmware.h>
 #include <Heating/LocalHeater.h>
-#include "MessageType.h"
-#include "GCodes/GCodeResult.h"
-#include "CanMessageFormats.h"
+#include <CanMessageFormats.h>
 #include <RTOSIface/RTOSIface.h>
 
 class TemperatureSensor;
@@ -31,7 +29,7 @@ namespace Heat
 
 	GCodeResult ConfigureHeater(const CanMessageGeneric& msg, const StringRef& reply);
 	GCodeResult ProcessM308(const CanMessageGeneric& msg, const StringRef& reply);
-	GCodeResult ProcessM307New(const CanMessageUpdateHeaterModelNew& msg, const StringRef& reply);
+	GCodeResult ProcessM307New(const CanMessageHeaterModelNewNew& msg, const StringRef& reply);
 	GCodeResult SetFaultDetection(const CanMessageSetHeaterFaultDetectionParameters& msg, const StringRef& reply);
 	GCodeResult SetHeaterMonitors(const CanMessageSetHeaterMonitors& msg, const StringRef& reply);
 

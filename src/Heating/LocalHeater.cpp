@@ -368,10 +368,10 @@ void LocalHeater::Spin()
 					const bool inLoadMode = (mode == HeaterMode::stable) || fabsf(error) < 3.0;		// use standard PID when maintaining temperature
 					const PidParameters& params = GetModel().GetPidParameters(inLoadMode);
 
-					// If the P and D terms together demand that the heater is full on or full off, disregard the I term
+					// If the P and D terms together demand that the heater is full on or full off, disregard the I term to reduce integral windup
 					const float errorMinusDterm = error - (params.tD * derivative);
 					const float pPlusD = params.kP * errorMinusDterm;
-					const float expectedPwm = constrain<float>((temperature - NormalAmbientTemperature)/GetModel().GetGainFanOff(), 0.0, GetModel().GetMaxPwm());
+					const float expectedPwm = GetModel().EstimateRequiredPwm(temperature - NormalAmbientTemperature, 0.0);
 					if (pPlusD + expectedPwm > GetModel().GetMaxPwm())
 					{
 						lastPwm = GetModel().GetMaxPwm();
@@ -387,24 +387,17 @@ void LocalHeater::Spin()
 					}
 					else
 					{
-						const float errorToUse = error;
 						iAccumulator = constrain<float>
-										(iAccumulator + (errorToUse * params.kP * params.recipTi * HeatSampleIntervalMillis * MillisToSeconds),
+										(iAccumulator + (error * params.kP * params.recipTi * HeatSampleIntervalMillis * MillisToSeconds),
 											0.0, GetModel().GetMaxPwm());
 						lastPwm = constrain<float>(pPlusD + iAccumulator, 0.0, GetModel().GetMaxPwm());
 					}
+
 #if HAS_VOLTAGE_MONITOR
 					// Scale the PID based on the current voltage vs. the calibration voltage
-					if (lastPwm < 1.0 && GetModel().GetVoltage() >= 10.0)				// if heater is not fully on and we know the voltage we tuned the heater at
+					if (!Heat::IsBedOrChamberHeater(GetHeaterNumber()))
 					{
-						if (!Heat::IsBedOrChamberHeater(GetHeaterNumber()))
-						{
-							const float currentVoltage = Platform::GetCurrentVinVoltage();
-							if (currentVoltage >= 10.0)				// if we have a sensible reading
-							{
-								lastPwm = min<float>(lastPwm * fsquare(GetModel().GetVoltage()/currentVoltage), 1.0);	// adjust the PWM by the square of the voltage ratio
-							}
-						}
+						lastPwm = GetModel().CorrectPwm(lastPwm, Platform::GetCurrentVinVoltage());
 					}
 #endif
 				}
@@ -490,10 +483,9 @@ float LocalHeater::GetAveragePWM() const
 // Get a conservative estimate of the expected heating rate at the current temperature and average PWM. The result may be negative.
 float LocalHeater::GetExpectedHeatingRate() const
 {
-	const float initialHeatingRate = GetModel().GetHeatingRate() * min<float>(GetAveragePWM(), lastPwm);
-	return (temperature > LowAmbientTemperature)
-				? initialHeatingRate - (temperature - LowAmbientTemperature) * GetModel().GetCoolingRateFanOn()
-					: initialHeatingRate;
+	const float temperatureRise = max<float>(temperature - LowAmbientTemperature, 0.0);
+	const float pwm = min<float>(GetAveragePWM(), lastPwm);
+	return GetModel().GetNetHeatingRate(temperatureRise, 1.0, pwm);
 }
 
 // Start or stop running heater tuning cycles
@@ -524,7 +516,7 @@ GCodeResult LocalHeater::TuningCommand(const CanMessageHeaterTuningCommand& msg,
 	return GCodeResult::ok;
 }
 
-// Adjust heater power for fan PWM or extrusoin change
+// Adjust heater power for fan PWM or extrusion change
 GCodeResult LocalHeater::FeedForwardAdjustment(float fanPwmChange, float extrusionChange) noexcept
 {
 	if (mode == HeaterMode::stable)

@@ -6,45 +6,87 @@
  */
 
 #include "FOPDT.h"
+#include "CanMessageFormats.h"
 
 // Heater 6 on the Duet 0.8.5 is disabled by default at startup so that we can use fan 2.
 // Set up sensible defaults here in case the user enables the heater without specifying values for all the parameters.
 FopDt::FopDt()
-	: heatingRate(DefaultHotEndHeaterHeatingRate),
-	  coolingRateFanOff(DefaultHotEndHeaterCoolingRate), coolingRateChangeFanOn(0.0),
-	  deadTime(DefaultHotEndHeaterDeadTime), maxPwm(1.0), standardVoltage(0.0),
-	  enabled(true), usePid(true), inverted(false), pidParametersOverridden(false)
 {
-	CalcPidConstants();
+	Reset();
 }
 
-// Check the model parameters are sensible, if they are then save them and return true.
-bool FopDt::SetParameters(float phr, float pcr, float pcrChange, float pdt, float pMaxPwm, float temperatureLimit, float pVoltage, bool pUsePid, bool pInverted)
+bool FopDt::SetParameters(const CanMessageHeaterModelNewNew& msg, float temperatureLimit) noexcept
 {
 	// DC 2017-06-20: allow S down to 0.01 for one of our OEMs (use > 0.0099 because >= 0.01 doesn't work due to rounding error)
 	const float maxTempIncrease = max<float>(1500.0, temperatureLimit + 500.0);
-	if (   phr/pcr > 10.0									// minimum 10C temperature rise (same as with earlier heater model)
-		&& phr/pcr <= maxTempIncrease						// max temperature increase within limits
-		&& pcrChange >= 0.0
-		&& pdt > 0.099
-		&& 0.5 >= pdt * (pcr + pcrChange)					// dead time less then cooling time constant
-		&& pMaxPwm > 0.0099
-		&& pMaxPwm <= 1.0
+	if (   msg.heatingRate/msg.coolingRate > 10.0									// minimum 10C temperature rise (same as with earlier heater model)
+		&& msg.heatingRate/msg.coolingRate <= maxTempIncrease						// max temperature increase within limits
+		&& msg.coolingRateChangeFanOn >= 0.0
+		&& msg.coolingRateExponent >= 1.0
+		&& msg.coolingRateExponent <= 1.6
+		&& msg.deadTime > 0.099
+		&& 0.5 >= msg.deadTime * (msg.coolingRate + msg.coolingRateChangeFanOn)		// dead time less then cooling time constant
+		&& msg.maxPwm > 0.0099
+		&& msg.maxPwm <= 1.0
 	   )
 	{
-		heatingRate = phr;
-		coolingRateFanOff = pcr;
-		coolingRateChangeFanOn = pcrChange;
-		deadTime = pdt;
-		maxPwm = pMaxPwm;
-		standardVoltage = pVoltage;
-		usePid = pUsePid;
-		inverted = pInverted;
+		heatingRate = msg.heatingRate;
+		coolingRateFanOff = msg.coolingRate;
+		coolingRateChangeFanOn = msg.coolingRateChangeFanOn;
+		coolingRateExponent = msg.coolingRateExponent;
+		deadTime = msg.deadTime;
+		maxPwm = msg.maxPwm;
+		standardVoltage = msg.standardVoltage;
+		usePid = msg.usePid;
+		inverted = msg.inverted;
 		enabled = true;
 		CalcPidConstants();
+
+		if (msg.pidParametersOverridden)
+		{
+			SetRawPidParameters(msg.kP, msg.recipTi, msg.tD);
+		}
 		return true;
 	}
 	return false;
+}
+
+void FopDt::Reset() noexcept
+{
+	SetDefaultToolParameters();						// set some values so that we don't report rubbish in the OM
+	enabled = false;								// heater is disabled until the parameters are set
+}
+
+// Set up default parameters for a tool heater and enable the model
+void FopDt::SetDefaultToolParameters() noexcept
+{
+	heatingRate = DefaultHotEndHeaterHeatingRate;
+	coolingRateFanOff = DefaultHotEndHeaterCoolingRate;
+	deadTime = DefaultHotEndHeaterDeadTime;
+	coolingRateChangeFanOn = 0.0;
+	coolingRateExponent = DefaultHotEndHeaterCoolingRateExponent;
+	maxPwm = 1.0;
+	standardVoltage = 0.0;
+	usePid = true;
+	inverted = false;
+	enabled = true;
+	CalcPidConstants();
+}
+
+// Set up default parameters for a bed/chamber heater and enable the model
+void FopDt::SetDefaultBedOrChamberParameters() noexcept
+{
+	heatingRate = DefaultBedHeaterHeatingRate;
+	coolingRateFanOff = DefaultBedHeaterCoolingRate;
+	deadTime = DefaultBedHeaterDeadTime;
+	coolingRateChangeFanOn = 0.0;
+	coolingRateExponent = DefaultBedHeaterCoolingRateExponent;
+	maxPwm = 1.0;
+	standardVoltage = 0.0;
+	usePid = false;
+	inverted = false;
+	enabled = true;
+	CalcPidConstants();
 }
 
 // Get the PID parameters as reported by M301
@@ -115,6 +157,34 @@ void FopDt::CalcPidConstants()
 	setpointChangeParams.tD = deadTime * 0.7;
 
 	pidParametersOverridden = false;
+}
+
+// Adjust the actual heater PWM for supply voltage
+float FopDt::CorrectPwm(float requiredPwm, float actualVoltage) const noexcept
+{
+	if (requiredPwm < maxPwm && standardVoltage >= 10.0 && actualVoltage >= 10.0)
+	{
+		requiredPwm *= fsquare(standardVoltage/actualVoltage);
+	}
+	return max<float>(requiredPwm, maxPwm);
+}
+
+// Calculate the expected cooling rate for a given temperature rise abiie ambient
+float FopDt::GetCoolingRate(float temperatureRise, float fanPwm) const noexcept
+{
+	return coolingRateFanOff * powf(temperatureRise, coolingRateExponent) + temperatureRise * coolingRateChangeFanOn;
+}
+
+// Get an estimate of the expected heating rate at the specified temperature rise and PWM. The result may be negative.
+float FopDt::GetNetHeatingRate(float temperatureRise, float fanPwm, float heaterPwm) const noexcept
+{
+	return heatingRate * heaterPwm - GetCoolingRate(temperatureRise, fanPwm);
+}
+
+// Get an estimate of the heater PWM required to maintain a specified temperature
+float FopDt::EstimateRequiredPwm(float temperatureRise, float fanPwm) const noexcept
+{
+	return GetCoolingRate(temperatureRise, fanPwm)/heatingRate;
 }
 
 // End

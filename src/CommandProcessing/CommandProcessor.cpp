@@ -8,7 +8,6 @@
 #include "CommandProcessor.h"
 #include <CAN/CanInterface.h>
 #include <CanMessageBuffer.h>
-#include <GCodes/GCodeResult.h>
 #include <Heating/Heat.h>
 #include <Fans/FansManager.h>
 #include <FilamentMonitors/FilamentMonitor.h>
@@ -902,9 +901,9 @@ void CommandProcessor::Spin()
 			rslt = GetInfo(buf->msg.getInfo, replyRef, extra);
 			break;
 
-		case CanMessageType::updateHeaterModelNew:
-			requestId = buf->msg.heaterModelNew.requestId;
-			rslt = Heat::ProcessM307New(buf->msg.heaterModelNew, replyRef);
+		case CanMessageType::heaterModelNewNew:
+			requestId = buf->msg.heaterModelNewNew.requestId;
+			rslt = Heat::ProcessM307New(buf->msg.heaterModelNewNew, replyRef);
 			break;
 
 		case CanMessageType::setHeaterTemperature:

@@ -474,10 +474,10 @@ GCodeResult Heat::ConfigureHeater(const CanMessageGeneric& msg, const StringRef&
 	return h->ReportDetails(reply);
 }
 
-GCodeResult Heat::ProcessM307New(const CanMessageUpdateHeaterModelNew& msg, const StringRef& reply)
+GCodeResult Heat::ProcessM307New(const CanMessageHeaterModelNewNew& msg, const StringRef& reply)
 {
 	const auto h = FindHeater(msg.heater);
-	return (h.IsNotNull()) ? h->SetOrReportModelNew(msg.heater, msg, reply) : UnknownHeater(msg.heater, reply);
+	return (h.IsNotNull()) ? h->SetModel(msg.heater, msg, reply) : UnknownHeater(msg.heater, reply);
 }
 
 GCodeResult Heat::ProcessM308(const CanMessageGeneric& msg, const StringRef& reply)

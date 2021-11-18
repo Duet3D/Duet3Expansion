@@ -8,18 +8,16 @@
 #ifndef SRC_HEATING_HEATER_H_
 #define SRC_HEATING_HEATER_H_
 
-#include "RepRapFirmware.h"
+#include <RepRapFirmware.h>
 #include "HeaterMonitor.h"
 #include "FOPDT.h"
-#include <GCodes/GCodeResult.h>
 
 #include <CanId.h>
 
 class HeaterMonitor;
 class CanMessageGenericParser;
 class CanMessageSetHeaterTemperature;
-class CanMessageUpdateHeaterModelOld;
-class CanMessageUpdateHeaterModelNew;
+class CanMessageHeaterModelNewNew;
 class CanMessageSetHeaterMonitors;
 class CanMessageHeaterTuningCommand;
 
@@ -59,7 +57,7 @@ public:
 	void SetHeaterMonitoring(HeaterMonitor *h);
 
 	const FopDt& GetModel() const { return model; }				// Get the process model
-	GCodeResult SetOrReportModelNew(unsigned int heater, const CanMessageUpdateHeaterModelNew& msg, const StringRef& reply) noexcept;
+	GCodeResult SetModel(unsigned int heater, const CanMessageHeaterModelNewNew& msg, const StringRef& reply) noexcept;
 
 	bool IsHeaterEnabled() const								// Is this heater enabled?
 		{ return model.IsEnabled(); }
@@ -80,7 +78,6 @@ protected:
 	float GetMaxTemperatureExcursion() const noexcept { return maxTempExcursion; }
 	float GetMaxHeatingFaultTime() const noexcept { return maxHeatingFaultTime; }
 	float GetTargetTemperature() const noexcept { return requestedTemperature; }
-	GCodeResult SetModel(float phr, float pcr, float pcrChange, float td, float maxPwm, float voltage, bool usePid, bool inverted, const StringRef& reply) noexcept;	// Set the process model
 
 	void SetRawPidParameters(float p_kP, float p_recipTi, float p_tD) { model.SetRawPidParameters(p_kP, p_recipTi, p_tD); }
 
