@@ -18,7 +18,7 @@ typedef double floatc_t;
 #include <General/StringFunctions.h>
 #include <General/Bitmap.h>
 #include <General/SimpleMath.h>
-#include "MessageType.h"
+#include <GCodeResult.h>
 
 // Warn of what's to come, so we can use pointers to classes without including the entire header files
 #if SUPPORT_DRIVERS

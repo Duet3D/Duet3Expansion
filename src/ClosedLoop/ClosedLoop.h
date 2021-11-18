@@ -6,19 +6,18 @@
  */
 
 #ifndef SRC_CLOSEDLOOP_CLOSEDLOOP_H_
-# define SRC_CLOSEDLOOP_CLOSEDLOOP_H_
+#define SRC_CLOSEDLOOP_CLOSEDLOOP_H_
 
-# include <RepRapFirmware.h>
+#include <RepRapFirmware.h>
 
-# if SUPPORT_CLOSED_LOOP
+#if SUPPORT_CLOSED_LOOP
 
-#  include <CanMessageFormats.h>
-#  include <General/NamedEnum.h>
-#  include <GCodes/GCodeResult.h>
-#  include <Movement/StepTimer.h>
-#  include <ClosedLoop/Trigonometry.h>
-#  include <Hardware/SharedSpiDevice.h>
-#  include <ClosedLoop/DerivativeAveragingFilter.h>
+# include <CanMessageFormats.h>
+# include <General/NamedEnum.h>
+# include <Movement/StepTimer.h>
+# include <ClosedLoop/Trigonometry.h>
+# include <Hardware/SharedSpiDevice.h>
+# include <ClosedLoop/DerivativeAveragingFilter.h>
 
 class Encoder;
 class SpiEncoder;

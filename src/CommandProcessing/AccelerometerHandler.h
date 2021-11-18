@@ -9,7 +9,6 @@
 #define SRC_COMMANDPROCESSING_ACCELEROMETERHANDLER_H_
 
 #include <RepRapFirmware.h>
-#include <GCodes/GCodeResult.h>
 
 #if SUPPORT_I2C_SENSORS && SUPPORT_LIS3DH
 

@@ -8,9 +8,8 @@
 #ifndef SRC_FAN_H_
 #define SRC_FAN_H_
 
-#include "RepRapFirmware.h"
-#include "Hardware/IoPorts.h"
-#include "GCodes/GCodeResult.h"
+#include <RepRapFirmware.h>
+#include <Hardware/IoPorts.h>
 
 class GCodeBuffer;
 class CanMessageFanParameters;

@@ -10,7 +10,6 @@
 
 #include <RepRapFirmware.h>
 #include <Hardware/IoPorts.h>
-#include <GCodes/GCodeResult.h>
 #include <RTOSIface/RTOSIface.h>
 
 struct CanMessageCreateInputMonitor;

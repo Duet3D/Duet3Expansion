@@ -8,9 +8,8 @@
 #ifndef SRC_GPIO_GPODEVICE_H_
 #define SRC_GPIO_GPODEVICE_H_
 
-#include "RepRapFirmware.h"
-#include "Hardware/IoPorts.h"
-#include "GCodes/GCodeResult.h"
+#include <RepRapFirmware.h>
+#include <Hardware/IoPorts.h>
 #include <CanMessageFormats.h>
 
 namespace GpioPorts

@@ -8,9 +8,8 @@
 #ifndef SRC_FANS_FANSMANAGER_H_
 #define SRC_FANS_FANSMANAGER_H_
 
-#include "RepRapFirmware.h"
+#include <RepRapFirmware.h>
 #include "Fan.h"
-#include "GCodes/GCodeResult.h"
 #include <RTOSIface/RTOSIface.h>
 
 class CanMessageGeneric;

@@ -12,16 +12,10 @@
 
 #if SUPPORT_DRIVERS
 
-#include "MessageType.h"
-
 #include "DDA.h"								// needed because of our inline functions
 #include "Kinematics/Kinematics.h"
 
-// Define the number of DDAs and DMs.
-// A DDA represents a move in the queue.
-// Each DDA needs one DM per drive that it moves.
-// However, DM's are large, so we provide fewer than DRIVES * DdaRingLength of them. The planner checks that enough DMs are available before filling in a new DDA.
-
+// Define the number of DDAs
 const unsigned int DdaRingLength = 50;
 
 /**

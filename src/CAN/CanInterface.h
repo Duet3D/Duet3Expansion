@@ -11,7 +11,6 @@
 #include <RepRapFirmware.h>
 #include <CanId.h>
 #include <CanMessageFormats.h>
-#include <GCodes/GCodeResult.h>
 
 struct CanMessageMovement;
 class CanMessageBuffer;

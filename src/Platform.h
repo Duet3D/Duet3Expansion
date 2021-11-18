@@ -8,9 +8,8 @@
 #ifndef SRC_PLATFORM_H_
 #define SRC_PLATFORM_H_
 
-#include "RepRapFirmware.h"
+#include <RepRapFirmware.h>
 #include "AdcAveragingFilter.h"
-#include "GCodes/GCodeResult.h"
 #include <Movement/StepTimer.h>
 #include <Heating/Heat.h>
 #include <UniqueIdBase.h>
