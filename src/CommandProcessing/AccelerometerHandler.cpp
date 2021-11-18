@@ -30,7 +30,7 @@ static Task<AccelerometerTaskStackWords> *accelerometerTask;
 static LIS3DH *accelerometer = nullptr;
 
 static uint16_t samplingRate = DefaultSamplingRate;
-static volatile uint16_t numSamplesRequested;
+static volatile uint32_t numSamplesRequested;
 static uint8_t resolution = DefaultResolution;
 static uint8_t orientation = 20;							// +Z -> +Z, +X -> +X
 static volatile uint8_t axesRequested;

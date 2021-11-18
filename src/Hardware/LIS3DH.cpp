@@ -242,7 +242,7 @@ unsigned int LIS3DH::CollectData(const uint16_t **collectedData, uint16_t &dataR
 
 		*collectedData = reinterpret_cast<const uint16_t*>(dataBuffer);
 		overflowed = (fifoStatus & 0x40) != 0;
-		dataRate = (totalNumRead == 0) ? 0 : (totalNumRead * StepTimer::StepClockRate)/(lastInterruptTime - firstInterruptTime);
+		dataRate = (totalNumRead == 0) ? 0 : (totalNumRead * (uint64_t)StepTimer::StepClockRate)/(lastInterruptTime - firstInterruptTime);
 		totalNumRead += numToRead;
 	}
 	return numToRead;
