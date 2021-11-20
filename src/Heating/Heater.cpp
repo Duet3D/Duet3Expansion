@@ -63,20 +63,24 @@ GCodeResult Heater::SetTemperature(const CanMessageSetHeaterTemperature& msg, co
 	{
 	case CanMessageSetHeaterTemperature::commandNone:
 		requestedTemperature = msg.setPoint;
+		model.CalcPidConstants(requestedTemperature);
 		return GCodeResult::ok;
 
 	case CanMessageSetHeaterTemperature::commandOff:
 		requestedTemperature = msg.setPoint;
+		model.CalcPidConstants(requestedTemperature - NormalAmbientTemperature);
 		SwitchOff();
 		return GCodeResult::ok;
 
 	case CanMessageSetHeaterTemperature::commandOn:
 		requestedTemperature = msg.setPoint;
+		model.CalcPidConstants(requestedTemperature - NormalAmbientTemperature);
 		SwitchOn();
 		return GCodeResult::ok;
 
 	case CanMessageSetHeaterTemperature::commandResetFault:
 		requestedTemperature = msg.setPoint;
+		model.CalcPidConstants(requestedTemperature - NormalAmbientTemperature);
 		ResetFault();
 		return GCodeResult::ok;
 
@@ -86,6 +90,7 @@ GCodeResult Heater::SetTemperature(const CanMessageSetHeaterTemperature& msg, co
 
 	case CanMessageSetHeaterTemperature::commandUnsuspend:
 		requestedTemperature = msg.setPoint;
+		model.CalcPidConstants(requestedTemperature - NormalAmbientTemperature);
 		Suspend(false);
 		return GCodeResult::ok;
 

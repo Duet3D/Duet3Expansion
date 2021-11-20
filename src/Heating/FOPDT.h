@@ -46,25 +46,22 @@ public:
 	void SetDefaultBedOrChamberParameters() noexcept;
 
 	// Stored parameters
-	float GetHeatingRate() const noexcept { return heatingRate; }
-	float GetCoolingRateChangeFanOn() const noexcept { return coolingRateChangeFanOn; }
 	float GetDeadTime() const noexcept { return deadTime; }
 	float GetMaxPwm() const noexcept { return maxPwm; }
-	float EstimateRequiredPwm(float temperatureRise, float fanPwm) const noexcept;
-	float GetCoolingRate(float temperatureRise, float fanPwm) const noexcept;
-	float GetNetHeatingRate(float temperatureRise, float fanPwm, float heaterPwm) const noexcept;
-	float CorrectPwm(float requiredPwm, float actualVoltage) const noexcept;
-	void AppendM307Command(unsigned int heaterNumber, const StringRef& str) const noexcept;
-	void AppendParameters(const StringRef& str) const noexcept;
 	bool UsePid() const noexcept { return usePid; }
 	bool IsInverted() const noexcept { return inverted; }
 	bool IsEnabled() const noexcept { return enabled; }
+
+	float EstimateRequiredPwm(float temperatureRise, float fanPwm) const noexcept;
+	float GetNetHeatingRate(float temperatureRise, float fanPwm, float heaterPwm) const noexcept;
+	float CorrectPwmForVoltage(float requiredPwm, float actualVoltage) const noexcept;
+	float GetPwmCorrectionForFan(float temperatureRise, float fanPwmChange) const noexcept;
+	void CalcPidConstants(float targetTemperature) noexcept;
 
 	// Derived parameters
 	bool ArePidParametersOverridden() const noexcept { return pidParametersOverridden; }
 	M301PidParameters GetM301PidParameters(bool forLoadChange) const noexcept;
 	void SetM301PidParameters(const M301PidParameters& params) noexcept;
-	void SetRawPidParameters(float p_kP, float p_recipTi, float p_tD) noexcept;
 
 	const PidParameters& GetPidParameters(bool forLoadChange) const noexcept
 	{
@@ -72,12 +69,14 @@ public:
 	}
 
 private:
-	void CalcPidConstants() noexcept;
+	float GetCoolingRate(float temperatureRise, float fanPwm) const noexcept;
+	void SetRawPidParameters(float p_kP, float p_recipTi, float p_tD) noexcept;
+	static float EstimateMaxTemperatureRise(float hr, float cr, float cre) noexcept;
 
-	float heatingRate;
-	float coolingRateFanOff;
-	float coolingRateChangeFanOn;
-	float coolingRateExponent;
+	float heatingRate;						// the rate at which the heater heats up at full PWM with no cooling
+	float basicCoolingRate;					// the rate at which the heater cools down when it is 100C above ambient and the fan is off
+	float fanCoolingRate;					// the additional cooling rate at 100C above ambient with the fan on at full PWM
+	float coolingRateExponent;				// how the basic cooling rate varies with temperature difference
 	float deadTime;
 	float maxPwm;
 	float standardVoltage;					// power voltage reading at which tuning was done, or 0 if unknown

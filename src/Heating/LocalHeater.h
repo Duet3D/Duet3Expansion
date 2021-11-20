@@ -21,7 +21,7 @@ class CanMessageHeaterTuningReport;
 
 class LocalHeater : public Heater
 {
-	static const size_t NumPreviousTemperatures = 8; // How many samples we average the temperature derivative over
+	static const size_t NumPreviousTemperatures = 4; // How many samples we average the temperature derivative over
 
 public:
 	LocalHeater(unsigned int heaterNum);
@@ -62,6 +62,8 @@ private:
 	float iAccumulator;								// The integral LocalHeater component
 	float lastPwm;									// The last PWM value we output, before scaling by kS
 	float averagePWM;								// The running average of the PWM, after scaling.
+	float lastTemperatureValue;								// the last temperature we recorded while heating up
+	uint32_t lastTemperatureMillis;							// when we recorded the last temperature
 	uint32_t timeSetHeating;						// When we turned on the heater
 	uint32_t lastSampleTime;						// Time when the temperature was last sampled by Spin()
 

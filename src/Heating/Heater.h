@@ -79,8 +79,6 @@ protected:
 	float GetMaxHeatingFaultTime() const noexcept { return maxHeatingFaultTime; }
 	float GetTargetTemperature() const noexcept { return requestedTemperature; }
 
-	void SetRawPidParameters(float p_kP, float p_recipTi, float p_tD) { model.SetRawPidParameters(p_kP, p_recipTi, p_tD); }
-
 	HeaterMonitor monitors[MaxMonitorsPerHeater];	// embedding them in the Heater uses less memory than dynamic allocation
 
 private:

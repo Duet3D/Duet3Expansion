@@ -179,27 +179,23 @@ TemperatureError LocalHeater::ReadTemperature()
 // This must be called whenever the heater is turned on, and any time the heater is active and the target temperature is changed
 void LocalHeater::SwitchOn()
 {
-	if (GetModel().IsEnabled())
+	if (GetModel().IsEnabled() && mode != HeaterMode::fault)
 	{
-		if (mode == HeaterMode::fault)
+		const float target = GetTargetTemperature();
+		const HeaterMode newMode = (temperature + TEMPERATURE_CLOSE_ENOUGH < target) ? HeaterMode::heating
+						: (temperature > target + TEMPERATURE_CLOSE_ENOUGH) ? HeaterMode::cooling
+							: HeaterMode::stable;
+		if (newMode != mode)
 		{
-		}
-		else if (GetModel().IsEnabled())
-		{
-			//debugPrintf("Heater %d on, temp %.1f\n", heater, temperature);
-			const float target = GetTargetTemperature();
-			const HeaterMode oldMode = mode;
-			mode = (temperature + TEMPERATURE_CLOSE_ENOUGH < target) ? HeaterMode::heating
-					: (temperature > target + TEMPERATURE_CLOSE_ENOUGH) ? HeaterMode::cooling
-						: HeaterMode::stable;
-			if (mode != oldMode)
+			// The Heat task can preempt the GCodes task that calls this, so lock out the Heat task while we update multiple variables
+			TaskCriticalSectionLocker lock;
+			if (newMode == HeaterMode::heating)
 			{
-				heatingFaultCount = 0;
-				if (mode == HeaterMode::heating)
-				{
-					timeSetHeating = millis();
-				}
+				lastTemperatureValue = temperature;
+				lastTemperatureMillis = timeSetHeating = millis();
 			}
+			heatingFaultCount = 0;
+			mode = newMode;
 		}
 	}
 }
@@ -287,31 +283,46 @@ void LocalHeater::Spin()
 						mode = HeaterMode::stable;
 						heatingFaultCount = 0;
 					}
-					else if (gotDerivative)
-					{
-						const float expectedRate = GetExpectedHeatingRate();
-						if (derivative + AllowedTemperatureDerivativeNoise < expectedRate * 0.7
-							&& (float)(millis() - timeSetHeating) > GetModel().GetDeadTime() * SecondsToMillis * 2)
-						{
-							++heatingFaultCount;
-							if (heatingFaultCount * HeatSampleIntervalMillis > GetMaxHeatingFaultTime() * SecondsToMillis)
-							{
-								SetHeater(0.0);					// do this here just to be sure
-								mode = HeaterMode::fault;
-								Platform::HandleHeaterFault(GetHeaterNumber());
-								//TODO report the reason for the heater fault to the main board
-								debugPrintf("Heating fault on heater %d, temperature rising much more slowly than the expected %.1f" DEGREE_SYMBOL "C/sec\n",
-									GetHeaterNumber(), (double)expectedRate);
-							}
-						}
-						else if (heatingFaultCount != 0)
-						{
-							--heatingFaultCount;
-						}
-					}
 					else
 					{
-						// Leave the heating fault count alone
+						const uint32_t now = millis();
+						if ((float)(millis() - timeSetHeating) < GetModel().GetDeadTime() * SecondsToMillis * 1.5)
+						{
+							// Record the temperature for when we are past the dead time
+							lastTemperatureValue = temperature;
+							lastTemperatureMillis = now;
+						}
+						else if (gotDerivative)												// this is a check in case we just had a temperature spike
+						{
+							const float expectedRate = GetExpectedHeatingRate();
+							const float minSamplingInterval = 3.0/expectedRate;				// check the temperature if we expect a 3C rise since last time
+							const float actualInterval = (float)(now - lastTemperatureMillis) * MillisToSeconds;
+							if (actualInterval >= minSamplingInterval)
+							{
+								// Check that we are heating fast enough, and if so, take another sample
+								const float expectedTemperatureRise = expectedRate * actualInterval;
+								const float actualTemperatureRise = temperature - lastTemperatureValue;
+								if (actualTemperatureRise < expectedTemperatureRise * 0.7)
+								{
+									++heatingFaultCount;
+									if (heatingFaultCount * HeatSampleIntervalMillis > GetMaxHeatingFaultTime() * SecondsToMillis)
+									{
+										SetHeater(0.0);					// do this here just to be sure
+										mode = HeaterMode::fault;
+										Platform::HandleHeaterFault(GetHeaterNumber());
+										//TODO report the reason for the heater fault to the main board
+										debugPrintf("Heating fault on heater %d, temperature rising much more slowly than the expected %.1f" DEGREE_SYMBOL "C/sec\n",
+											GetHeaterNumber(), (double)expectedRate);
+									}
+								}
+								else if (heatingFaultCount != 0)
+								{
+									--heatingFaultCount;
+								}
+								lastTemperatureValue = temperature;
+								lastTemperatureMillis = now;
+							}
+						}
 					}
 				}
 				break;
@@ -397,7 +408,7 @@ void LocalHeater::Spin()
 					// Scale the PID based on the current voltage vs. the calibration voltage
 					if (!Heat::IsBedOrChamberHeater(GetHeaterNumber()))
 					{
-						lastPwm = GetModel().CorrectPwm(lastPwm, Platform::GetCurrentVinVoltage());
+						lastPwm = GetModel().CorrectPwmForVoltage(lastPwm, Platform::GetCurrentVinVoltage());
 					}
 #endif
 				}
@@ -521,8 +532,7 @@ GCodeResult LocalHeater::FeedForwardAdjustment(float fanPwmChange, float extrusi
 {
 	if (mode == HeaterMode::stable)
 	{
-		const float coolingRateIncrease = GetModel().GetCoolingRateChangeFanOn() * fanPwmChange;
-		const float boost = (coolingRateIncrease * (GetTargetTemperature() - NormalAmbientTemperature) * FeedForwardMultiplier)/GetModel().GetHeatingRate();
+		const float boost = GetModel().GetPwmCorrectionForFan(GetTargetTemperature() - NormalAmbientTemperature, fanPwmChange) * FeedForwardMultiplier;
 		TaskCriticalSectionLocker lock;
 		iAccumulator += boost;
 	}
