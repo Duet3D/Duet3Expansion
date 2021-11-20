@@ -17,7 +17,7 @@
 class Duet3DFilamentMonitor : public FilamentMonitor
 {
 public:
-	Duet3DFilamentMonitor(unsigned int extruder, unsigned int type) noexcept;
+	Duet3DFilamentMonitor(unsigned int extruder, unsigned int pType) noexcept;
 
 	bool Interrupt() noexcept override;
 

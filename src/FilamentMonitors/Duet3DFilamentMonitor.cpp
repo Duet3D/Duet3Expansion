@@ -28,8 +28,8 @@
 #include "Movement/StepTimer.h"
 
 // Constructors
-Duet3DFilamentMonitor::Duet3DFilamentMonitor(unsigned int extruder, unsigned int type) noexcept
-	: FilamentMonitor(extruder, type), overrunErrorCount(0), polarityErrorCount(0)
+Duet3DFilamentMonitor::Duet3DFilamentMonitor(unsigned int extruder, unsigned int pType) noexcept
+	: FilamentMonitor(extruder, pType), overrunErrorCount(0), polarityErrorCount(0)
 {
 	InitReceiveBuffer();
 }
