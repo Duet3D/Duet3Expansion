@@ -52,7 +52,7 @@ extern "C" void SERCOM3_3_Handler()
 	uart0.Interrupt3();
 }
 
-#elif defined(EXP1HCL)
+#elif defined(EXP1HCLv0_3) || defined(EXP1HCLv1_0)
 
 void SerialPortInit(AsyncSerial*) noexcept
 {
@@ -91,7 +91,7 @@ extern "C" void SERCOM2_3_Handler()
 
 void DeviceInit() noexcept
 {
-#ifdef EXP1HCL
+#if defined(EXP1HCLv0_3) || defined(EXP1HCLv1_0)
 	pinMode(ClockGenPin, OUTPUT_LOW);			// default the TMC clock to its internal clock until we program the clock generator
 #endif
 	AnalogIn::Init(NvicPriorityAdc);

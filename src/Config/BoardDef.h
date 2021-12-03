@@ -11,36 +11,24 @@
 #include <Duet3Common.h>								// this file is in the CANlib project because both main and expansion boards need it
 #include <RRF3Common.h>
 
-#ifdef EXP3HC
+#if defined(EXP3HC)
 # include "EXP3HC.h"
-#endif
-
-#ifdef TOOL1LC
+#elif defined(TOOL1LC)
 # include "TOOL1LC.h"
-#endif
-
-#ifdef EXP1XD
+#elif defined(EXP1XD)
 # include "EXP1XD.h"
-#endif
-
-#ifdef EXP1HCE
-# include "EXP1HCE.h"
-#endif
-
-#ifdef EXP1HCL
-# include "EXP1HCL.h"
-#endif
-
-#ifdef SAMMYC21
+#elif defined(EXP1HCLv0_3)
+# include "EXP1HCLv0_3.h"
+#elif defined(EXP1HCLv1_0)
+# include "EXP1HCLv1_0.h"
+#elif defined(SAMMYC21)
 # include "SAMMYC21.h"
-#endif
-
-#ifdef ATECM
+#elif defined(ATECM)
 # include "ATECM.h"
-#endif
-
-#ifdef ATEIO
+#elif defined(ATEIO)
 # include "ATEIO.h"
+#else
+# error Board type not defined
 #endif
 
 // Default board features

@@ -322,7 +322,7 @@ namespace Platform
 #if SAME5x
 # if defined(EXP3HC)
 		NVIC_SetPriority(CAN1_IRQn, NvicPriorityCan);
-# elif defined(EXP1HCL)
+# elif defined(EXP1HCLv0_3) || defined(EXP1HCLv1_0)
 		NVIC_SetPriority(CAN0_IRQn, NvicPriorityCan);
 # endif
 		// Set UART interrupt priority. Each SERCOM has up to 4 interrupts, numbered sequentially.
@@ -487,7 +487,7 @@ namespace Platform
 		return CanId::SammyC21DefaultAddress;
 #elif defined(EXP1XD)
 		return CanId::Exp1XDBoardDefaultAddress;
-#elif defined(EXP1HCE) || defined(EXP1HCL)
+#elif defined(EXP1HCE) || defined(EXP1HCLv0_3) || defined(EXP1HCLv1_0)
 		return CanId::Exp1HCEBoardDefaultAddress;
 #elif defined(ATECM)
 		return CanId::ATECMBoardDefaultAddress;

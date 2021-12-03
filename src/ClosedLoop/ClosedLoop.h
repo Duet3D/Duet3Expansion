@@ -92,7 +92,7 @@ namespace ClosedLoop
 	void PerformTune() noexcept;
 }
 
-#  ifdef EXP1HCL
+#  if defined(EXP1HCLv0_3) || defined(EXP1HCLv1_0)
 // The encoder uses the standard shared SPI device, so we don't need to enable/disable it
 inline void ClosedLoop::EnableEncodersSpi() noexcept { }
 inline void ClosedLoop::DisableEncodersSpi() noexcept { }
