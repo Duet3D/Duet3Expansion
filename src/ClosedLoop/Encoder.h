@@ -12,7 +12,7 @@
 
 #if SUPPORT_CLOSED_LOOP
 
-#include <GCodes/GCodeResult.h>
+#include <GCodeResult.h>
 
 NamedEnum(EncoderPositioningType, uint8_t, absolute, relative);
 
