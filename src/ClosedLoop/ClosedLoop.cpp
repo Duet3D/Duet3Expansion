@@ -365,7 +365,7 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 		const char* const units = (tempEncoderType == EncoderType::rotaryQuadrature) ? "encoder pulses/step"
 									: (tempEncoderType == EncoderType::AS5047) ? "motor degrees/step"
 										: "encoder CPR";
-		reply.catf(", %s: %.1f", units, (double)PulsePerStepToExternalUnits(tempCPR, tempEncoderType));
+		reply.catf(", %s: %.2f", units, (double)PulsePerStepToExternalUnits(tempCPR, tempEncoderType));
 
 		if (encoder != nullptr)
 		{
@@ -898,7 +898,7 @@ void ClosedLoop::ControlMotorCurrents(StepTimer::Ticks loopStartTime) noexcept
 	const float absPhaseShift = fabsf(phaseShift);
 	if (absPhaseShift >= MinimumPhaseShift)
 	{
-		// Use the requested phase shifg at full current
+		// Use the requested phase shift at full current
 		currentFraction = 1.0;
 	}
 	else if (absPhaseShift >= holdCurrentFractionTimesMinPhaseShift)
