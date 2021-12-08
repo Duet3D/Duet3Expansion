@@ -285,8 +285,8 @@ void ClosedLoop::ReportTuningErrors(uint8_t tuningErrorBitmask, const StringRef 
 	if (tuningErrorBitmask & TUNE_ERR_NOT_CALIBRATED) 		{ reply.cat(" The drive has not been calibrated."); }
 	if (tuningErrorBitmask & TUNE_ERR_SYSTEM_ERROR) 		{ reply.cat(" A system error occurred while tuning."); }
 	if (tuningErrorBitmask & TUNE_ERR_INCONSISTENT_MOTION)	{ reply.cat(" The measured motion was inconsistent."); }
-	if (tuningErrorBitmask & TUNE_ERR_TOO_LITTLE_MOTION)	{ reply.catf(" The measured motion was less than expected; counts/step is about %.1f.", (double)measuredCountsPerStep); }
-	if (tuningErrorBitmask & TUNE_ERR_TOO_MUCH_MOTION)		{ reply.catf(" The measured motion was more than expected; counts/step is about %.1f.", (double)measuredCountsPerStep); }
+	if (tuningErrorBitmask & TUNE_ERR_TOO_LITTLE_MOTION)	{ reply.catf(" The measured motion was less than expected; counts/step is about %.2f.", (double)(measuredCountsPerStep * 0.25)); }
+	if (tuningErrorBitmask & TUNE_ERR_TOO_MUCH_MOTION)		{ reply.catf(" The measured motion was more than expected; counts/step is about %.2f.", (double)(measuredCountsPerStep * 0.25)); }
 }
 
 // Helper function to set the motor to a given phase and magnitude
