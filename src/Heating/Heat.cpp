@@ -266,12 +266,12 @@ void Heat::Exit()
 		}
 
 		// Check whether it is time to poll sensors and PIDs and send regular messages
-		if ((int32_t)(millis() - nextWakeTime) >= 0)
+		const uint32_t startTime = millis();
+		if ((int32_t)(startTime - nextWakeTime) >= 0)
 		{
 			// Announce ourselves to the main board, if it hasn't acknowledged us already
 			CanInterface::SendAnnounce(&buf);
 
-			const uint32_t startTime = millis();
 			{
 				// Walk the sensor list and poll all sensors
 				// Also prepare to broadcast our sensor temperatures

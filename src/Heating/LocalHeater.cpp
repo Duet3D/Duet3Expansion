@@ -7,8 +7,11 @@
 
 #include "LocalHeater.h"
 #include "Heat.h"
-#include "Platform.h"
-#include "CanMessageGenericParser.h"
+#include <Platform.h>
+#include <CanMessageBuffer.h>
+#include <CanMessageGenericParser.h>
+#include <CAN/CanInterface.h>
+#include <General/SafeVsnprintf.h>
 
 // Private constants
 const uint32_t InitialTuningReadingInterval = 250;	// the initial reading interval in milliseconds
@@ -236,12 +239,7 @@ void LocalHeater::Spin()
 			badTemperatureCount++;
 			if (badTemperatureCount > MaxBadTemperatureCount)
 			{
-				lastPwm = 0.0;
-				SetHeater(0.0);						// do this here just to be sure, in case the call to platform.Message causes a delay
-				mode = HeaterMode::fault;
-				Platform::HandleHeaterFault(GetHeaterNumber());
-				//TODO report the reason for the heater fault to the main board
-				debugPrintf("Temperature reading fault on heater %u: %s\n", GetHeaterNumber(), TemperatureErrorString(err));
+				RaiseHeaterFault(HeaterFaultType::failedToReadSensor, "%s", TemperatureErrorString(err));
 			}
 		}
 		// We leave lastPWM alone if we have a temporary temperature reading error
@@ -286,7 +284,7 @@ void LocalHeater::Spin()
 					else
 					{
 						const uint32_t now = millis();
-						if ((float)(now - timeSetHeating) < GetModel().GetDeadTime() * SecondsToMillis * 1.5)
+						if ((float)(now - timeSetHeating) < GetModel().GetDeadTime() * SecondsToMillis * 2)		// wait for twice the dead time before we start looking at the temperature rise
 						{
 							// Record the temperature for when we are past the dead time
 							lastTemperatureValue = temperature;
@@ -302,17 +300,14 @@ void LocalHeater::Spin()
 								// Check that we are heating fast enough, and if so, take another sample
 								const float expectedTemperatureRise = expectedRate * actualInterval;
 								const float actualTemperatureRise = temperature - lastTemperatureValue;
-								if (actualTemperatureRise < expectedTemperatureRise * 0.7)
+								if (actualTemperatureRise < expectedTemperatureRise * 0.5)
 								{
 									++heatingFaultCount;
 									if (heatingFaultCount * HeatSampleIntervalMillis > GetMaxHeatingFaultTime() * SecondsToMillis)
 									{
-										SetHeater(0.0);					// do this here just to be sure
-										mode = HeaterMode::fault;
-										Platform::HandleHeaterFault(GetHeaterNumber());
-										//TODO report the reason for the heater fault to the main board
-										debugPrintf("Heating fault on heater %d, temperature rising much more slowly than the expected %.1f" DEGREE_SYMBOL "C/sec\n",
-											GetHeaterNumber(), (double)expectedRate);
+										RaiseHeaterFault(HeaterFaultType::temperatureRisingTooSlowly,
+															"expected %.2f" DEGREE_SYMBOL "C/sec measured %.2f" DEGREE_SYMBOL "C/sec",
+																(double)expectedRate, (double)(actualTemperatureRise/actualInterval));
 									}
 								}
 								else
@@ -336,12 +331,9 @@ void LocalHeater::Spin()
 					++heatingFaultCount;
 					if (heatingFaultCount * HeatSampleIntervalMillis > GetMaxHeatingFaultTime() * SecondsToMillis)
 					{
-						SetHeater(0.0);					// do this here just to be sure
-						mode = HeaterMode::fault;
-						Platform::HandleHeaterFault(GetHeaterNumber());
-						//TODO report the reason for the heater fault to the main board
-						debugPrintf("Heating fault on heater %u, temperature excursion exceeded %.1f" DEGREE_SYMBOL "C\n",
-							GetHeaterNumber(), (double)GetMaxTemperatureExcursion());
+						RaiseHeaterFault(HeaterFaultType::exceededAllowedExcursion,
+											"target %.1f" DEGREE_SYMBOL "C actual %.1f" DEGREE_SYMBOL "C",
+												(double)targetTemperature, (double)temperature);
 					}
 				}
 				else if (heatingFaultCount != 0)
@@ -428,18 +420,16 @@ void LocalHeater::Spin()
 				}
 
 				// Verify that everything is operating in the required temperature range
-				for (HeaterMonitor& prot : monitors)
+				for (size_t i = 0; i < ARRAY_SIZE(monitors); ++i)
 				{
+					HeaterMonitor& prot = monitors[i];
 					if (!prot.Check())
 					{
 						lastPwm = 0.0;
 						switch (prot.GetAction())
 						{
 						case HeaterMonitorAction::GenerateFault:
-							mode = HeaterMode::fault;
-							Platform::HandleHeaterFault(GetHeaterNumber());
-							//TODO report the reason for the heater fault to the main board
-							debugPrintf("Heating fault on heater %u\n", GetHeaterNumber());
+							RaiseHeaterFault(HeaterFaultType::monitorTriggered, "monitor %u was triggered", i);
 							break;
 
 						case HeaterMonitorAction::TemporarySwitchOff:
@@ -669,6 +659,22 @@ void LocalHeater::Suspend(bool sus)
 	}
 
 	return false;
+}
+
+// Raise a heater fault. This turns off the heater, sets its state to 'fault', and sends an event to the main board.
+// The length of text to be included must not exceed 55 characters + terminator, else it will be truncated.
+void LocalHeater::RaiseHeaterFault(HeaterFaultType type, const char *format, ...) noexcept
+{
+	lastPwm = 0.0;
+	SetHeater(0.0);
+	if (mode != HeaterMode::fault)
+	{
+		mode = HeaterMode::fault;
+		va_list vargs;
+		va_start(vargs, format);
+		CanInterface::RaiseEvent(EventType::heater_fault, (uint16_t)type, GetHeaterNumber(), format, vargs);
+		va_end(vargs);
+	}
 }
 
 // End

@@ -37,8 +37,8 @@ namespace CanInterface
 #endif
 
 	void SendAnnounce(CanMessageBuffer *buf) noexcept;
+	void RaiseEvent(EventType type, uint16_t param, uint8_t device, const char *format, va_list vargs) noexcept;
 
-	void MoveStoppedByZProbe() noexcept;
 	void WakeAsyncSenderFromIsr() noexcept;
 }
 

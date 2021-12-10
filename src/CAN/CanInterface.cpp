@@ -508,12 +508,6 @@ void CanInterface::SendAnnounce(CanMessageBuffer *buf) noexcept
 	}
 }
 
-// This is called from the step ISR when the move is stopped by the Z probe
-void CanInterface::MoveStoppedByZProbe() noexcept
-{
-	//TODO
-}
-
 void CanInterface::WakeAsyncSenderFromIsr() noexcept
 {
 	canAsyncSenderTask.GiveFromISR();
@@ -578,6 +572,20 @@ uint16_t CanInterface::GetTimeStampCounter() noexcept
 uint16_t CanInterface::GetTimeStampPeriod() noexcept
 {
 	return can0dev->GetTimeStampPeriod();
+}
+
+// Send an event. The text will be truncated if it is longer than 55 characters.
+void CanInterface::RaiseEvent(EventType type, uint16_t param, uint8_t device, const char *format, va_list vargs) noexcept
+{
+	CanMessageBuffer buf(nullptr);
+	auto msg = buf.SetupStatusMessage<CanMessageEvent>(CanInterface::GetCanAddress(), CanId::MasterAddress);
+	msg->eventType = EventType::heater_fault;
+	msg->deviceNumber = device;
+	msg->eventParam = param;
+	msg->zero = 0;
+	SafeVsnprintf(msg->text, ARRAY_SIZE(msg->text), format, vargs);
+	buf.dataLength = msg->GetActualDataLength();
+	CanInterface::Send(&buf);
 }
 
 extern "C" [[noreturn]] void CanClockLoop(void *) noexcept
