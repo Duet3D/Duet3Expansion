@@ -68,6 +68,8 @@ namespace ClosedLoop
 	constexpr float MinimumSlope = 7.5/1024;			// we require at least 8 transitions (8 pulses) per step, but we may measure slightly lower than the true value
 	constexpr float MaxSafeHysteresis = 0.2;			// the maximum hysteresis in full steps that we are happy with - warn if there is more
 
+	constexpr float PIDIlimit = 80.0;
+
 	// Enumeration of closed loop recording modes
 	enum RecordingMode : uint8_t
 	{
@@ -879,7 +881,7 @@ void ClosedLoop::ControlMotorCurrents(StepTimer::Ticks loopStartTime) noexcept
 	// Use a PID controller to calculate the required 'torque' - the control signal
 	// We choose to use a PID control signal in the range -256 to +256. This is rather arbitrary.
 	PIDPTerm = Kp * currentError;
-	PIDITerm = constrain<float>(PIDITerm + Ki * currentError * timeDelta, -256.0, 256.0);	// constrain I to prevent it running away
+	PIDITerm = constrain<float>(PIDITerm + Ki * currentError * timeDelta, -PIDIlimit, PIDIlimit);	// constrain I to prevent it running away
 	PIDDTerm = constrain<float>(Kd * derivativeFilter.GetDerivative(), -256.0, 256.0);		// constrain D so that we can graph it more sensibly after a sudden step input
 	PIDControlSignal = constrain<float>(PIDPTerm + PIDITerm + PIDDTerm, -256.0, 256.0);		// clamp the sum between +/- 256
 
