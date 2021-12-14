@@ -43,7 +43,6 @@ namespace Heat
 	// Methods that relate to a particular heater
 	float GetHighestTemperatureLimit(int heater) noexcept;
 	float GetLowestTemperatureLimit(int heater) noexcept;
-	void SwitchOff(int heater);									// Turn off a specific heater
 	GCodeResult SetTemperature(const CanMessageSetHeaterTemperature& msg, const StringRef& reply);
 	GCodeResult TuningCommand(const CanMessageHeaterTuningCommand& msg, const StringRef& reply);
 	GCodeResult FeedForward(const CanMessageHeaterFeedForward& msg, const StringRef& reply);

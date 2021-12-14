@@ -46,7 +46,7 @@ public:
 protected:
 	void ResetHeater() noexcept override;
 	HeaterMode GetMode() const noexcept override { return mode; }
-	void SwitchOn() noexcept override;				// Turn the heater on and set the mode
+	GCodeResult SwitchOn(const StringRef& reply) noexcept override;		// Turn the heater on and set the mode
 	GCodeResult UpdateModel(const StringRef& reply) noexcept override;	// Called when the heater model has been changed
 
 private:

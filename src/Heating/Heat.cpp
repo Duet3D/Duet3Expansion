@@ -607,22 +607,12 @@ void Heat::ProcessRemoteSensorsReport(CanAddress src, const CanMessageSensorTemp
 							);
 }
 
-void Heat::SwitchOff(int heater)
-{
-	const auto h = FindHeater(heater);
-	if (h.IsNotNull())
-	{
-		h->SwitchOff();
-	}
-}
-
 void Heat::SwitchOffAll()
 {
 	ReadLocker lock(heatersLock);
 
-	for (size_t heater = 0; heater < MaxHeaters; ++heater)
+	for (Heater * const h : heaters)
 	{
-		Heater * const h = heaters[heater];
 		if (h != nullptr)
 		{
 			h->SwitchOff();

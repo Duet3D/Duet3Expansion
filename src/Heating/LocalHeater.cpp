@@ -180,27 +180,37 @@ TemperatureError LocalHeater::ReadTemperature()
 }
 
 // This must be called whenever the heater is turned on, and any time the heater is active and the target temperature is changed
-void LocalHeater::SwitchOn()
+GCodeResult LocalHeater::SwitchOn(const StringRef& reply) noexcept
 {
-	if (GetModel().IsEnabled() && mode != HeaterMode::fault)
+	if (!GetModel().IsEnabled())
 	{
-		const float target = GetTargetTemperature();
-		const HeaterMode newMode = (temperature + TEMPERATURE_CLOSE_ENOUGH < target) ? HeaterMode::heating
-						: (temperature > target + TEMPERATURE_CLOSE_ENOUGH) ? HeaterMode::cooling
-							: HeaterMode::stable;
-		if (newMode != mode)
-		{
-			// The Heat task can preempt the GCodes task that calls this, so lock out the Heat task while we update multiple variables
-			TaskCriticalSectionLocker lock;
-			if (newMode == HeaterMode::heating)
-			{
-				lastTemperatureValue = temperature;
-				lastTemperatureMillis = timeSetHeating = millis();
-			}
-			heatingFaultCount = 0;
-			mode = newMode;
-		}
+		reply.printf("Failed to turn on heater %u because its model is disabled", GetHeaterNumber());
+		return GCodeResult::error;
 	}
+
+	if (mode == HeaterMode::fault)
+	{
+		reply.printf("Failed to turn on heater %u because it is in a fault state", GetHeaterNumber());
+		return GCodeResult::error;
+	}
+
+	const float target = GetTargetTemperature();
+	const HeaterMode newMode = (temperature + TEMPERATURE_CLOSE_ENOUGH < target) ? HeaterMode::heating
+					: (temperature > target + TEMPERATURE_CLOSE_ENOUGH) ? HeaterMode::cooling
+						: HeaterMode::stable;
+	if (newMode != mode)
+	{
+		// The Heat task can preempt the GCodes task that calls this, so lock out the Heat task while we update multiple variables
+		TaskCriticalSectionLocker lock;
+		if (newMode == HeaterMode::heating)
+		{
+			lastTemperatureValue = temperature;
+			lastTemperatureMillis = timeSetHeating = millis();
+		}
+		heatingFaultCount = 0;
+		mode = newMode;
+	}
+	return GCodeResult::ok;
 }
 
 // Switch off the specified heater. If in tuning mode, delete the array used to store tuning temperature readings.
@@ -275,49 +285,47 @@ void LocalHeater::Spin()
 			switch(mode)
 			{
 			case HeaterMode::heating:
+				if (error <= TEMPERATURE_CLOSE_ENOUGH)
 				{
-					if (error <= TEMPERATURE_CLOSE_ENOUGH)
+					mode = HeaterMode::stable;
+					heatingFaultCount = 0;
+				}
+				else
+				{
+					const uint32_t now = millis();
+					if ((float)(now - timeSetHeating) < GetModel().GetDeadTime() * SecondsToMillis * 2)		// wait for twice the dead time before we start looking at the temperature rise
 					{
-						mode = HeaterMode::stable;
-						heatingFaultCount = 0;
+						// Record the temperature for when we are past the dead time
+						lastTemperatureValue = temperature;
+						lastTemperatureMillis = now;
 					}
-					else
+					else if (gotDerivative)												// this is a check in case we just had a temperature spike
 					{
-						const uint32_t now = millis();
-						if ((float)(now - timeSetHeating) < GetModel().GetDeadTime() * SecondsToMillis * 2)		// wait for twice the dead time before we start looking at the temperature rise
+						const float expectedRate = GetExpectedHeatingRate();
+						const float minSamplingInterval = 3.0/expectedRate;				// check the temperature if we expect a 3C rise since last time
+						const float actualInterval = (float)(now - lastTemperatureMillis) * MillisToSeconds;
+						if (actualInterval >= minSamplingInterval)
 						{
-							// Record the temperature for when we are past the dead time
-							lastTemperatureValue = temperature;
-							lastTemperatureMillis = now;
-						}
-						else if (gotDerivative)												// this is a check in case we just had a temperature spike
-						{
-							const float expectedRate = GetExpectedHeatingRate();
-							const float minSamplingInterval = 3.0/expectedRate;				// check the temperature if we expect a 3C rise since last time
-							const float actualInterval = (float)(now - lastTemperatureMillis) * MillisToSeconds;
-							if (actualInterval >= minSamplingInterval)
+							// Check that we are heating fast enough, and if so, take another sample
+							const float expectedTemperatureRise = expectedRate * actualInterval;
+							const float actualTemperatureRise = temperature - lastTemperatureValue;
+							if (actualTemperatureRise < expectedTemperatureRise * 0.5)
 							{
-								// Check that we are heating fast enough, and if so, take another sample
-								const float expectedTemperatureRise = expectedRate * actualInterval;
-								const float actualTemperatureRise = temperature - lastTemperatureValue;
-								if (actualTemperatureRise < expectedTemperatureRise * 0.5)
+								++heatingFaultCount;
+								if (heatingFaultCount * HeatSampleIntervalMillis > GetMaxHeatingFaultTime() * SecondsToMillis)
 								{
-									++heatingFaultCount;
-									if (heatingFaultCount * HeatSampleIntervalMillis > GetMaxHeatingFaultTime() * SecondsToMillis)
-									{
-										RaiseHeaterFault(HeaterFaultType::temperatureRisingTooSlowly,
-															"expected %.2f" DEGREE_SYMBOL "C/sec measured %.2f" DEGREE_SYMBOL "C/sec",
-																(double)expectedRate, (double)(actualTemperatureRise/actualInterval));
-									}
+									RaiseHeaterFault(HeaterFaultType::temperatureRisingTooSlowly,
+														"expected %.2f" DEGREE_SYMBOL "C/sec measured %.2f" DEGREE_SYMBOL "C/sec",
+															(double)expectedRate, (double)(actualTemperatureRise/actualInterval));
 								}
-								else
+							}
+							else
+							{
+								lastTemperatureValue = temperature;
+								lastTemperatureMillis = now;
+								if (heatingFaultCount != 0)
 								{
-									lastTemperatureValue = temperature;
-									lastTemperatureMillis = now;
-									if (heatingFaultCount != 0)
-									{
-										--heatingFaultCount;
-									}
+									--heatingFaultCount;
 								}
 							}
 						}
@@ -637,7 +645,8 @@ void LocalHeater::Suspend(bool sus)
 	}
 	else if (mode == HeaterMode::suspended)
 	{
-		SwitchOn();
+		String<1> dummy;
+		SwitchOn(dummy.GetRef());
 	}
 }
 

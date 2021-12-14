@@ -70,7 +70,7 @@ protected:
 
 	virtual void ResetHeater() noexcept = 0;
 	virtual HeaterMode GetMode() const noexcept = 0;
-	virtual void SwitchOn() noexcept = 0;
+	virtual GCodeResult SwitchOn(const StringRef& reply) noexcept = 0;
 	virtual GCodeResult UpdateModel(const StringRef& reply) noexcept = 0;
 
 	int GetSensorNumber() const noexcept { return sensorNumber; }

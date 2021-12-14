@@ -75,8 +75,7 @@ GCodeResult Heater::SetTemperature(const CanMessageSetHeaterTemperature& msg, co
 	case CanMessageSetHeaterTemperature::commandOn:
 		requestedTemperature = msg.setPoint;
 		model.CalcPidConstants(requestedTemperature - NormalAmbientTemperature);
-		SwitchOn();
-		return GCodeResult::ok;
+		return SwitchOn(reply);
 
 	case CanMessageSetHeaterTemperature::commandResetFault:
 		requestedTemperature = msg.setPoint;
