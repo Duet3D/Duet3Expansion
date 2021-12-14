@@ -632,6 +632,15 @@ static GCodeResult ProcessM915(const CanMessageGeneric& msg, const StringRef& re
 		}
 	}
 
+	{
+		uint8_t rParam;
+		if (parser.GetUintParam('R', rParam))
+		{
+			seen = true;
+			Platform::SetOrResetEventOnStall(drivers, rParam != 0);
+		}
+	}
+
 	if (!seen)
 	{
 		drivers.Iterate([&reply](unsigned int drive, unsigned int) noexcept

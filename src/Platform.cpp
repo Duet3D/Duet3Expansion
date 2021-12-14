@@ -145,9 +145,6 @@ namespace Platform
 #if SUPPORT_CLOSED_LOOP
 	static bool driverEnableOverride[NumDrivers] = { 0 };
 #endif
-# if !HAS_SMART_DRIVERS
-	static bool driverIsEnabled[NumDrivers] = { false };
-# endif
 	static float stepsPerMm[NumDrivers];
 	static float motorCurrents[NumDrivers];
 	static float pressureAdvanceClocks[NumDrivers];
@@ -208,11 +205,12 @@ namespace Platform
 
 #if SUPPORT_DRIVERS
 # if HAS_SMART_DRIVERS
-	static DriversBitmap temperatureShutdownDrivers, temperatureWarningDrivers, shortToGroundDrivers;
-	static DriversBitmap openLoadADrivers, openLoadBDrivers, notOpenLoadADrivers, notOpenLoadBDrivers;
-	MillisTimer openLoadATimer, openLoadBTimer;
-	MillisTimer driversFanTimer;		// driver cooling fan timer
+	static DriversBitmap temperatureShutdownDrivers, temperatureWarningDrivers;
 	static uint8_t nextDriveToPoll;
+	static StandardDriverStatus lastEventStatus[NumDrivers];			// the status which we last reported as an event
+	static MillisTimer openLoadTimers[NumDrivers];
+# else
+	static bool driverIsEnabled[NumDrivers] = { false };
 # endif
 
 # if HAS_SMART_DRIVERS && HAS_VOLTAGE_MONITOR
@@ -220,8 +218,7 @@ namespace Platform
 # endif
 
 # if HAS_STALL_DETECT
-	DriversBitmap logOnStallDrivers, pauseOnStallDrivers, rehomeOnStallDrivers;
-	DriversBitmap stalledDrivers, stalledDriversToLog, stalledDriversToPause, stalledDriversToRehome;
+	DriversBitmap eventOnStallDrivers;
 # endif
 #endif
 
@@ -712,11 +709,6 @@ void Platform::Init()
 	SmartDrivers::Init();
 	temperatureShutdownDrivers.Clear();
 	temperatureWarningDrivers.Clear();
-	shortToGroundDrivers.Clear();
-	openLoadADrivers.Clear();
-	openLoadBDrivers.Clear();
-	notOpenLoadADrivers.Clear();
-	notOpenLoadBDrivers.Clear();
 # endif
 
 	for (size_t i = 0; i < NumDrivers; ++i)
@@ -835,13 +827,7 @@ void Platform::Init()
 	}
 
 # if HAS_STALL_DETECT
-	stalledDrivers.Clear();;
-	logOnStallDrivers.Clear();
-	pauseOnStallDrivers.Clear();
-	rehomeOnStallDrivers.Clear();
-	stalledDriversToLog.Clear();
-	stalledDriversToPause.Clear();
-	stalledDriversToRehome.Clear();
+	eventOnStallDrivers.Clear();
 #endif
 
 # if HAS_SMART_DRIVERS && HAS_VOLTAGE_MONITOR
@@ -996,113 +982,74 @@ void Platform::Spin()
 #if HAS_SMART_DRIVERS
 	SmartDrivers::Spin(powered);
 
-	// Check one TMC driver for temperature warning or temperature shutdown
+	// Check one TMC driver for warnings and errors
 	if (enableValues[nextDriveToPoll] >= 0)				// don't poll driver if it is flagged "no poll"
 	{
-		const StandardDriverStatus stat = SmartDrivers::GetStatus(nextDriveToPoll, true, true);
+		StandardDriverStatus stat = SmartDrivers::GetStatus(nextDriveToPoll, true, true);
 		const DriversBitmap mask = DriversBitmap::MakeFromBits(nextDriveToPoll);
+
+		// First set the driver temperature status for the temperature sensor code
 		if (stat.ot)
 		{
 			temperatureShutdownDrivers |= mask;
 		}
-		else if (stat.otpw)
+		else
 		{
-			temperatureWarningDrivers |= mask;
+			if (stat.otpw)
+			{
+				temperatureWarningDrivers |= mask;
+			}
+			else
+			{
+				temperatureWarningDrivers &= ~mask;
+			}
+			temperatureShutdownDrivers &= ~mask;
 		}
-		if (stat.s2ga || stat.s2gb || stat.s2vsa || stat.s2vsb)
+
+		// Deal with the open load bits
+		// The driver often produces a transient open-load error, especially in stealthchop mode, so we require the condition to persist before we report it.
+		// So clear them unless they have been active for the minimum time.
+		MillisTimer& timer = openLoadTimers[nextDriveToPoll];
+		if (stat.IsAnyOpenLoadBitSet())
 		{
-			shortToGroundDrivers |= mask;
+			if (timer.IsRunning())
+			{
+				if (!timer.Check(OpenLoadTimeout))
+				{
+					stat.ClearOpenLoadBits();
+				}
+			}
+			else
+			{
+				timer.Start();
+				stat.ClearOpenLoadBits();
+			}
 		}
 		else
 		{
-			shortToGroundDrivers &= ~mask;
+			timer.Stop();
 		}
 
-		// The driver often produces a transient open-load error, especially in stealthchop mode, so we require the condition to persist before we report it.
-		// Also, false open load indications persist when in standstill, if the phase has zero current in that position
-		if (stat.ola)
+		const StandardDriverStatus oldStatus = lastEventStatus[nextDriveToPoll];
+		lastEventStatus[nextDriveToPoll] = stat;
+		if (stat.HasNewErrorSince(oldStatus))
 		{
-			if (!openLoadATimer.IsRunning())
-			{
-				openLoadATimer.Start();
-				openLoadADrivers.Clear();
-				notOpenLoadADrivers.Clear();
-			}
-			openLoadADrivers |= mask;
+			// It's a new error
+			CanInterface::RaiseEvent(EventType::driver_error, stat.AsU16(), nextDriveToPoll, "", va_list());
 		}
-		else if (openLoadATimer.IsRunning())
+		else if (stat.HasNewWarningSince(oldStatus))
 		{
-			notOpenLoadADrivers |= mask;
-			if (openLoadADrivers.Disjoint(~notOpenLoadADrivers) )
-			{
-				openLoadATimer.Stop();
-			}
-		}
-
-		if (stat.olb)
-		{
-			if (!openLoadBTimer.IsRunning())
-			{
-				openLoadBTimer.Start();
-				openLoadBDrivers.Clear();
-				notOpenLoadBDrivers.Clear();
-			}
-			openLoadBDrivers |= mask;
-		}
-		else if (openLoadBTimer.IsRunning())
-		{
-			notOpenLoadBDrivers |= mask;
-			if (openLoadBDrivers.Disjoint(~notOpenLoadBDrivers))
-			{
-				openLoadBTimer.Stop();
-			}
+			// It's a new warning
+			CanInterface::RaiseEvent(EventType::driver_warning, stat.AsU16(), nextDriveToPoll, "", va_list());
 		}
 
 # if HAS_STALL_DETECT
-		if (stat.stall)
+		if (stat.HasNewStallSince(oldStatus) && eventOnStallDrivers.Intersects(mask))
 		{
-			if (stalledDrivers.Disjoint(mask))
-			{
-				// This stall is new so check whether we need to perform some action in response to the stall
-				if (rehomeOnStallDrivers.Intersects(mask))
-				{
-					stalledDriversToRehome |= mask;
-				}
-				else if (pauseOnStallDrivers.Intersects(mask))
-				{
-					stalledDriversToPause |= mask;
-				}
-				else if (logOnStallDrivers.Intersects(mask))
-				{
-					stalledDriversToLog |= mask;
-				}
-			}
-			stalledDrivers |= mask;
-		}
-		else
-		{
-			stalledDrivers &= ~mask;
+			CanInterface::RaiseEvent(EventType::driver_stall, 0, nextDriveToPoll, "", va_list());
 		}
 # endif
 	}
-
-# if 0 //HAS_STALL_DETECT
-	// Action any pause or rehome actions due to motor stalls. This may have to be done more than once.
-	if (stalledDriversToRehome != 0)
-	{
-		if (reprap.GetGCodes().ReHomeOnStall(stalledDriversToRehome))
-		{
-			stalledDriversToRehome = 0;
-		}
-	}
-	else if (stalledDriversToPause != 0)
-	{
-		if (reprap.GetGCodes().PauseOnStall(stalledDriversToPause))
-		{
-			stalledDriversToPause = 0;
-		}
-	}
-# endif
 
 	// Advance drive number ready for next time
 	++nextDriveToPoll;
@@ -1851,6 +1798,27 @@ void Platform::SetMotorCurrent(size_t driver, float current)
 	UpdateMotorCurrent(driver);
 }
 
+// TMC driver temperatures
+float Platform::GetTmcDriversTemperature()
+{
+	const DriversBitmap mask = DriversBitmap::MakeLowestNBits(MaxSmartDrivers);
+	return (temperatureShutdownDrivers.Intersects(mask)) ? 150.0
+			: (temperatureWarningDrivers.Intersects(mask)) ? 100.0
+				: 0.0;
+}
+
+void Platform::SetOrResetEventOnStall(DriversBitmap drivers, bool enable) noexcept
+{
+	if (enable)
+	{
+		eventOnStallDrivers |= drivers;
+	}
+	else
+	{
+		eventOnStallDrivers &= ~drivers;
+	}
+}
+
 # else
 
 StandardDriverStatus Platform::GetStandardDriverStatus(size_t driver)
@@ -1890,19 +1858,6 @@ const UniqueIdBase& Platform::GetUniqueId() noexcept
 
 #if SUPPORT_DRIVERS
 
-# if HAS_SMART_DRIVERS
-
-// TMC driver temperatures
-float Platform::GetTmcDriversTemperature()
-{
-	const DriversBitmap mask = DriversBitmap::MakeLowestNBits(MaxSmartDrivers);
-	return (temperatureShutdownDrivers.Intersects(mask)) ? 150.0
-			: (temperatureWarningDrivers.Intersects(mask)) ? 100.0
-				: 0.0;
-}
-
-# endif
-
 // Function to broadcast the drivers status message. Called only by the Heat task.
 void Platform::SendDriversStatus(CanMessageBuffer& buf)
 {
@@ -1911,13 +1866,13 @@ void Platform::SendDriversStatus(CanMessageBuffer& buf)
 	msg->SetStandardFields(MaxSmartDrivers);
 	for (size_t driver = 0; driver < MaxSmartDrivers; ++driver)
 	{
-		msg->data[driver] = SmartDrivers::GetStatus(driver);
+		msg->data[driver] = SmartDrivers::GetStatus(driver).AsU32();
 	}
 # else
 	msg->SetStandardFields(NumDrivers);
 	for (size_t driver = 0; driver < NumDrivers; ++driver)
 	{
-		msg->data[driver] = Platform::GetStandardDriverStatus(driver);
+		msg->data[driver] = Platform::GetStandardDriverStatus(driver).AsU32();
 	}
 # endif
 	buf.dataLength = msg->GetActualDataLength();

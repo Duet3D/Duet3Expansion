@@ -232,6 +232,7 @@ namespace Platform
 # if HAS_SMART_DRIVERS
 	void SetMotorCurrent(size_t driver, float current);		//TODO avoid the int->float->int conversion
 	float GetTmcDriversTemperature();
+	void SetOrResetEventOnStall(DriversBitmap drivers, bool enable) noexcept;
 # else
 	StandardDriverStatus GetStandardDriverStatus(size_t driver);
 # endif

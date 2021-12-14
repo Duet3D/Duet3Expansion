@@ -578,8 +578,8 @@ uint16_t CanInterface::GetTimeStampPeriod() noexcept
 void CanInterface::RaiseEvent(EventType type, uint16_t param, uint8_t device, const char *format, va_list vargs) noexcept
 {
 	CanMessageBuffer buf(nullptr);
-	auto msg = buf.SetupStatusMessage<CanMessageEvent>(CanInterface::GetCanAddress(), CanId::MasterAddress);
-	msg->eventType = EventType::heater_fault;
+	auto msg = buf.SetupStatusMessage<CanMessageEvent>(GetCanAddress(), GetCurrentMasterAddress());
+	msg->eventType = type.ToBaseType();
 	msg->deviceNumber = device;
 	msg->eventParam = param;
 	msg->zero = 0;
