@@ -27,7 +27,6 @@ private:
 	void CalcDerivedParameters();
 
 	// Configurable parameters
-	unsigned int thermistorInputChannel;
 	float lowTemp, highTemp;
 	bool filtered;
 

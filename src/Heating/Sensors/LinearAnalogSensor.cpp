@@ -63,26 +63,28 @@ GCodeResult LinearAnalogSensor::Configure(const CanMessageGenericParser& parser,
 
 void LinearAnalogSensor::Poll()
 {
-	const volatile ThermistorAveragingFilter *tempFilter = Platform::GetAdcFilter(thermistorInputChannel);
-	int32_t tempReading;
-	if (filtered)
+	if (filtered && adcFilterChannel >= 0)
 	{
-		if (!tempFilter->IsValid())
+		const volatile ThermistorAveragingFilter * const tempFilter = Platform::GetAdcFilter(adcFilterChannel);
+		if (tempFilter->IsValid())
+		{
+			const int32_t averagedTempReading = tempFilter->GetSum()/(tempFilter->NumAveraged() >> AdcOversampleBits);
+			SetResult((averagedTempReading * linearIncreasePerCount) + lowTemp, TemperatureError::success);
+		}
+		else
 		{
 			SetResult(TemperatureError::notReady);
 		}
-		tempReading = tempFilter->GetSum()/(tempFilter->NumAveraged() >> AdcOversampleBits);
 	}
 	else
 	{
-		tempReading = tempFilter->GetLastReading() << AdcOversampleBits;
+		SetResult((port.ReadAnalog() * linearIncreasePerCount) + lowTemp, TemperatureError::success);
 	}
-
-	SetResult((tempReading * linearIncreasePerCount) + lowTemp, TemperatureError::success);
 }
 
 void LinearAnalogSensor::CalcDerivedParameters()
 {
+	adcFilterChannel = Platform::GetAveragingFilterIndex(port);
 	linearIncreasePerCount = (highTemp - lowTemp)/((filtered) ? FilteredAdcRange : UnfilteredAdcRange);
 }
 

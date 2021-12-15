@@ -40,7 +40,7 @@ int32_t Thermistor::GetRawReading(bool& valid) const noexcept
 	if (adcFilterChannel >= 0)
 	{
 		// Filtered ADC channel
-		const volatile ThermistorAveragingFilter *tempFilter = Platform::GetAdcFilter(adcFilterChannel);
+		const volatile ThermistorAveragingFilter * const tempFilter = Platform::GetAdcFilter(adcFilterChannel);
 		valid = tempFilter->IsValid();
 		return tempFilter->GetSum()/(tempFilter->NumAveraged() >> AdcOversampleBits);
 	}
@@ -231,8 +231,8 @@ void Thermistor::Poll()
 
 #if HAS_VREF_MONITOR
 	// Use the actual VSSA and VREF values read by the ADC
-	const volatile ThermistorAveragingFilter *vrefFilter = Platform::GetVrefFilter(adcFilterChannel);
-	const volatile ThermistorAveragingFilter *vssaFilter = Platform::GetVssaFilter(adcFilterChannel);			// this one may be null on SAMC21 tool boards
+	const volatile ThermistorAveragingFilter * const vrefFilter = Platform::GetVrefFilter(adcFilterChannel);
+	const volatile ThermistorAveragingFilter * const vssaFilter = Platform::GetVssaFilter(adcFilterChannel);			// this one may be null on SAMC21 tool boards
 	if (tempFilterValid && vrefFilter->IsValid() && (vssaFilter == nullptr || vssaFilter->IsValid()))
 	{
 		const int32_t rawAveragedVssaReading = (vssaFilter == nullptr) ? 0 : vssaFilter->GetSum()/(vssaFilter->NumAveraged() >> Thermistor::AdcOversampleBits);
