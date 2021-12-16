@@ -154,13 +154,14 @@ void FopDt::CalcPidConstants(float targetTemperature) noexcept
 {
 	if (!pidParametersOverridden)
 	{
-		const float averageCoolingRate = GetCoolingRate(targetTemperature - NormalAmbientTemperature, 0.2);
+		const float temperatureRise = targetTemperature - NormalAmbientTemperature;
+		const float averageCoolingRatePerDegC = GetCoolingRate(temperatureRise, 0.2)/temperatureRise;
 		loadChangeParams.kP = 0.7/(heatingRate * deadTime);
-		loadChangeParams.recipTi = powf(averageCoolingRate, 0.25)/(1.14 * powf(deadTime, 0.75));	// Ti = 1.14 * timeConstant^0.25 * deadTime^0.75 (Ho et al)
+		loadChangeParams.recipTi = powf(averageCoolingRatePerDegC, 0.25)/(1.14 * powf(deadTime, 0.75));	// Ti = 1.14 * timeConstant^0.25 * deadTime^0.75 (Ho et al)
 		loadChangeParams.tD = deadTime * 0.7;
 
 		setpointChangeParams.kP = 0.7/(heatingRate * deadTime);
-		setpointChangeParams.recipTi = powf(averageCoolingRate, 0.5)/powf(deadTime, 0.5);			// Ti = timeConstant^0.5 * deadTime^0.5
+		setpointChangeParams.recipTi = powf(averageCoolingRatePerDegC, 0.5)/powf(deadTime, 0.5);			// Ti = timeConstant^0.5 * deadTime^0.5
 		setpointChangeParams.tD = deadTime * 0.7;
 	}
 }
