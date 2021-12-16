@@ -68,6 +68,11 @@ GCodeResult LaserFilamentMonitor::Configure(const CanMessageGenericParser& parse
 	const GCodeResult rslt = CommonConfigure(parser, reply, InterruptMode::change, seen);
 	if (rslt <= GCodeResult::warning)
 	{
+		if (seen)
+		{
+			Init();				// Init() resets dataReceived and version, so only do it if the port has been configured
+		}
+
 		if (parser.GetFloatParam('L', calibrationFactor))
 		{
 			seen = true;
@@ -105,11 +110,7 @@ GCodeResult LaserFilamentMonitor::Configure(const CanMessageGenericParser& parse
 			checkNonPrintingMoves = (temp > 0);
 		}
 
-		if (seen)
-		{
-			Init();
-		}
-		else
+		if (!seen)
 		{
 			reply.printf("Duet3D laser filament monitor v%u%s on pin ", version, (switchOpenMask != 0) ? " with switch" : "");
 			GetPort().AppendPinName(reply);

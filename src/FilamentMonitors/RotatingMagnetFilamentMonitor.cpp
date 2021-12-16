@@ -68,8 +68,14 @@ GCodeResult RotatingMagnetFilamentMonitor::Configure(const CanMessageGenericPars
 {
 	bool seen = false;
 	const GCodeResult rslt = CommonConfigure(parser, reply, InterruptMode::change, seen);
+
 	if (rslt <= GCodeResult::warning)
 	{
+		if (seen)
+		{
+			Init();				// Init() resets dataReceived and version, so only do it if the port has been configured
+		}
+
 		if (parser.GetFloatParam('L', mmPerRev))
 		{
 			seen = true;
@@ -107,11 +113,7 @@ GCodeResult RotatingMagnetFilamentMonitor::Configure(const CanMessageGenericPars
 			checkNonPrintingMoves = (temp > 0);
 		}
 
-		if (seen)
-		{
-			Init();
-		}
-		else
+		if (!seen)
 		{
 			reply.printf("Duet3D rotating magnet filament monitor v%u%s on pin ", version, (switchOpenMask != 0) ? " with switch" : "");
 			GetPort().AppendPinName(reply);
