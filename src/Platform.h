@@ -300,6 +300,7 @@ namespace Platform
 	bool WasDeliberateError() noexcept;
 
 	void AppendBoardAndFirmwareDetails(const StringRef& reply) noexcept;
+	void AppendDiagnostics(const StringRef& reply) noexcept;
 
 #ifdef TOOL1LC
 	uint8_t GetBoardVariant() noexcept;

@@ -55,12 +55,6 @@ public:
 		return sum;
 	}
 
-	// Return the last reading
-	uint32_t GetLastReading() const volatile noexcept
-	{
-		return readings[(index - 1) % numAveraged];
-	}
-
 	// Return true if we have a valid average
 	bool IsValid() const volatile noexcept
 	{
@@ -71,7 +65,7 @@ public:
 	uint16_t GetLatestReading() const volatile noexcept
 	{
 		size_t indexOfLastReading = index;			// capture volatile variable
-		indexOfLastReading =  (indexOfLastReading == 0) ? numAveraged - 1 : indexOfLastReading - 1;
+		indexOfLastReading = (indexOfLastReading == 0) ? numAveraged - 1 : indexOfLastReading - 1;
 		return readings[indexOfLastReading];
 	}
 
@@ -79,6 +73,8 @@ public:
 
 	// Function used as an ADC callback to feed a result into an averaging filter
 	static void CallbackFeedIntoFilter(CallbackParameter cp, uint16_t val) noexcept;
+
+	bool CheckIntegrity() const noexcept;
 
 private:
 	uint16_t readings[numAveraged];
@@ -89,9 +85,22 @@ private:
 	//invariant(index < numAveraged)
 };
 
+// This is called from an ISR or high priority task to add a new reading to the filter.
 template<size_t numAveraged> void AdcAveragingFilter<numAveraged>::CallbackFeedIntoFilter(CallbackParameter cp, uint16_t val) noexcept
 {
 	static_cast<AdcAveragingFilter<numAveraged>*>(cp.vp)->ProcessReading(val);
+}
+
+template<size_t numAveraged> bool AdcAveragingFilter<numAveraged>::CheckIntegrity() const noexcept
+{
+	AtomicCriticalSectionLocker lock;
+
+	uint32_t locSum = 0;
+	for (size_t i = 0; i < numAveraged; ++i)
+	{
+		locSum += readings[i];
+	}
+	return locSum == sum;
 }
 
 #endif /* SRC_ADCAVERAGINGFILTER_H_ */

@@ -2160,6 +2160,23 @@ void Platform::AppendBoardAndFirmwareDetails(const StringRef& reply) noexcept
 #endif
 }
 
+void Platform::AppendDiagnostics(const StringRef& reply) noexcept
+{
+	bool ok = true;
+	for (const ThermistorAveragingFilter& filter : thermistorFilters)
+	{
+		if (!filter.CheckIntegrity())
+		{
+			ok = false;
+			reply.lcatf("Averaging filter %u is bad", &filter - thermistorFilters);
+		}
+	}
+	if (ok)
+	{
+		reply.lcat("All averaging filters OK");
+	}
+}
+
 #ifdef TOOL1LC
 
 uint8_t Platform::GetBoardVariant() noexcept

@@ -734,6 +734,10 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 		reply.cat('}');
 		break;
 
+	case CanMessageReturnInfo::typeBoardUniqueId:
+		Platform::GetUniqueId().AppendCharsToString(reply);
+		break;
+
 	case CanMessageReturnInfo::typeDiagnosticsPart0:
 		if (msg.param == 1)
 		{
@@ -745,11 +749,8 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 			Platform::AppendBoardAndFirmwareDetails(reply);
 			const char *bootloaderVersionText = *reinterpret_cast<const char**>(0x20);		// offset of vectors.pvReservedM8
 			reply.lcatf("Bootloader ID: %s", (bootloaderVersionText == nullptr) ? "not available" : bootloaderVersionText);
+			Platform::AppendDiagnostics(reply);
 		}
-		break;
-
-	case CanMessageReturnInfo::typeBoardUniqueId:
-		Platform::GetUniqueId().AppendCharsToString(reply);
 		break;
 
 	case CanMessageReturnInfo::typeDiagnosticsPart0 + 1:
