@@ -50,7 +50,7 @@ public:
 
 	bool SetMode(PinAccess access);
 	void Release();
-	void AppendDetails(const StringRef& str) const;
+	void AppendBasicDetails(const StringRef& str) const;
 
 	Pin GetPin() const { return pin; }
 
@@ -118,7 +118,7 @@ class PwmPort : public IoPort
 public:
 	PwmPort();
 
-	void AppendDetails(const StringRef& str) const;			// hides the version in IoPort
+	void AppendFullDetails(const StringRef& str) const;
 	void AppendFrequency(const StringRef& str) const;		// append the frequency if the port is valid
 	void SetFrequency(PwmFrequency freq) { frequency = freq; }
 	void WriteAnalog(float pwm) const;

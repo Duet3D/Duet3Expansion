@@ -321,7 +321,7 @@ void IoPort::ToggleInvert(bool pInvert)
 	}
 }
 
-void IoPort::AppendDetails(const StringRef& str) const
+void IoPort::AppendBasicDetails(const StringRef& str) const
 {
 	if (IsValid())
 	{
@@ -566,9 +566,9 @@ void PwmPort::AppendFrequency(const StringRef& str) const
 	}
 }
 
-void PwmPort::AppendDetails(const StringRef& str) const
+void PwmPort::AppendFullDetails(const StringRef& str) const
 {
-	IoPort::AppendDetails(str);
+	AppendBasicDetails(str);
 	AppendFrequency(str);
 }
 

@@ -2162,6 +2162,7 @@ void Platform::AppendBoardAndFirmwareDetails(const StringRef& reply) noexcept
 
 void Platform::AppendDiagnostics(const StringRef& reply) noexcept
 {
+#if SUPPORT_THERMISTORS
 	bool ok = true;
 	for (const ThermistorAveragingFilter& filter : thermistorFilters)
 	{
@@ -2175,6 +2176,7 @@ void Platform::AppendDiagnostics(const StringRef& reply) noexcept
 	{
 		reply.lcat("All averaging filters OK");
 	}
+#endif
 }
 
 #ifdef TOOL1LC

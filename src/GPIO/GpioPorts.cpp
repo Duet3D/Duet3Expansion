@@ -69,7 +69,7 @@ GCodeResult GpioPorts::HandleM950Gpio(const CanMessageGeneric &msg, const String
 		else
 		{
 			reply.printf("GPIO/servo port %u", gpioNumber);
-			port.AppendDetails(reply);
+			port.AppendFullDetails(reply);
 		}
 		return GCodeResult::ok;
 	}
