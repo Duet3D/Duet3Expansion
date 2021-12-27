@@ -78,6 +78,7 @@ protected:
 	float GetMaxTemperatureExcursion() const noexcept { return maxTempExcursion; }
 	float GetMaxHeatingFaultTime() const noexcept { return maxHeatingFaultTime; }
 	float GetTargetTemperature() const noexcept { return requestedTemperature; }
+	bool IsBedOrChamber() const noexcept { return isBedOrChamber; }
 
 	HeaterMonitor monitors[MaxMonitorsPerHeater];	// embedding them in the Heater uses less memory than dynamic allocation
 
@@ -86,9 +87,10 @@ private:
 
 	unsigned int heaterNumber;
 	int sensorNumber;								// the sensor number used by this heater
-	float requestedTemperature;						// The required temperature
-	float maxTempExcursion;							// The maximum temperature excursion permitted while maintaining the setpoint
-	float maxHeatingFaultTime;						// How long a heater fault is permitted to persist before a heater fault is raised
+	float requestedTemperature;						// the required temperature
+	float maxTempExcursion;							// the maximum temperature excursion permitted while maintaining the setpoint
+	float maxHeatingFaultTime;						// how long a heater fault is permitted to persist before a heater fault is raised
+	bool isBedOrChamber;							// true if this was a bed or chamber heater when it was switched on
 };
 
 #endif /* SRC_HEATING_HEATER_H_ */

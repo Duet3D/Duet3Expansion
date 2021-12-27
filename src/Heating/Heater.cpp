@@ -12,7 +12,8 @@
 
 Heater::Heater(unsigned int num)
 	: heaterNumber(num), sensorNumber(-1), requestedTemperature(0.0),
-	  maxTempExcursion(DefaultMaxTempExcursion), maxHeatingFaultTime(DefaultMaxHeatingFaultTime)
+	  maxTempExcursion(DefaultMaxTempExcursion), maxHeatingFaultTime(DefaultMaxHeatingFaultTime),
+	  isBedOrChamber(false)
 {
 }
 
@@ -67,27 +68,32 @@ GCodeResult Heater::SetTemperature(const CanMessageSetHeaterTemperature& msg, co
 		return GCodeResult::ok;
 
 	case CanMessageSetHeaterTemperature::commandOff:
+		isBedOrChamber = msg.isBedOrChamber;
 		requestedTemperature = msg.setPoint;
 		model.CalcPidConstants(requestedTemperature);
 		SwitchOff();
 		return GCodeResult::ok;
 
 	case CanMessageSetHeaterTemperature::commandOn:
+		isBedOrChamber = msg.isBedOrChamber;
 		requestedTemperature = msg.setPoint;
 		model.CalcPidConstants(requestedTemperature);
 		return SwitchOn(reply);
 
 	case CanMessageSetHeaterTemperature::commandResetFault:
+		isBedOrChamber = msg.isBedOrChamber;
 		requestedTemperature = msg.setPoint;
 		model.CalcPidConstants(requestedTemperature);
 		ResetFault();
 		return GCodeResult::ok;
 
 	case CanMessageSetHeaterTemperature::commandSuspend:
+		isBedOrChamber = msg.isBedOrChamber;
 		Suspend(true);
 		return GCodeResult::ok;
 
 	case CanMessageSetHeaterTemperature::commandUnsuspend:
+		isBedOrChamber = msg.isBedOrChamber;
 		requestedTemperature = msg.setPoint;
 		model.CalcPidConstants(requestedTemperature);
 		Suspend(false);
