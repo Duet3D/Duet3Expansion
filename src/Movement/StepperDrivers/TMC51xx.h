@@ -21,8 +21,6 @@ namespace SmartDrivers
 	void Spin(bool powered) noexcept;
 	void TurnDriversOff() noexcept;
 
-	void SetAxisNumber(size_t driver, uint32_t axisNumber) noexcept;
-	uint32_t GetAxisNumber(size_t drive) noexcept;
 	void SetCurrent(size_t driver, float current) noexcept;
 	void EnableDrive(size_t driver, bool en) noexcept;
 	bool SetMicrostepping(size_t drive, unsigned int microsteps, bool interpolation) noexcept;

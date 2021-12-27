@@ -332,8 +332,6 @@ class TmcDriverState
 {
 public:
 	void Init(uint32_t p_driverNumber) noexcept;
-	void SetAxisNumber(size_t p_axisNumber) noexcept;
-	uint32_t GetAxisNumber() const noexcept { return axisNumber; }
 	void WriteAll() noexcept;
 	bool SetMicrostepping(uint32_t shift, bool interpolate) noexcept;
 	unsigned int GetMicrostepping(bool& interpolation) const noexcept;
@@ -535,11 +533,6 @@ void TmcDriverState::SetStallDetectThreshold(int sgThreshold) noexcept
 	const uint32_t sgVal = ((uint32_t)constrain<int>(sgThreshold, -64, 63)) & 127u;
 	writeRegisters[WriteCoolConf] = (writeRegisters[WriteCoolConf] & ~COOLCONF_SGT_MASK) | (sgVal << COOLCONF_SGT_SHIFT);
 	newRegistersToUpdate |= 1u << WriteCoolConf;
-}
-
-inline void TmcDriverState::SetAxisNumber(size_t p_axisNumber) noexcept
-{
-	axisNumber = p_axisNumber;
 }
 
 // Write all registers. This is called when the drivers are known to be powered up.
@@ -1519,19 +1512,6 @@ void SmartDrivers::Exit() noexcept
 #endif
 	tmcTask.TerminateAndUnlink();
 	driversState = DriversState::shutDown;						// prevent Spin() calls from doing anything
-}
-
-void SmartDrivers::SetAxisNumber(size_t driver, uint32_t axisNumber) noexcept
-{
-	if (driver < numTmc51xxDrivers)
-	{
-		driverStates[driver].SetAxisNumber(axisNumber);
-	}
-}
-
-uint32_t SmartDrivers::GetAxisNumber(size_t drive) noexcept
-{
-	return (drive < numTmc51xxDrivers) ? driverStates[drive].GetAxisNumber() : 0;
 }
 
 void SmartDrivers::SetCurrent(size_t driver, float current) noexcept
