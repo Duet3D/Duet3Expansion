@@ -18,6 +18,8 @@
 // Define the number of DDAs
 const unsigned int DdaRingLength = 50;
 
+struct CanMessageStopMovement;
+
 /**
  * This is the master movement class.  It controls all movement in the machine.
  */
@@ -30,7 +32,7 @@ public:
 	void Diagnostics(const StringRef& reply);										// Report useful stuff
 
 	void Interrupt() SPEED_CRITICAL;												// Timer callback for step generation
-	void StopDrivers(uint16_t whichDrivers);
+	void StopDrivers(const CanMessageStopMovement& msg, size_t dataLength);
 	void CurrentMoveCompleted() SPEED_CRITICAL;										// Signal that the current move has just been completed
 
 #if SUPPORT_DELTA_MOVEMENT
@@ -53,6 +55,8 @@ public:
 	// Filament monitor support
 	int32_t GetAccumulatedExtrusion(size_t driver, bool& isPrinting) noexcept;		// Return and reset the accumulated commanded extrusion amount
 	uint32_t ExtruderPrintingSince() const noexcept { return extrudersPrintingSince; }	// When we started doing normal moves after the most recent extruder-only move
+
+	void SaveAdjustment(size_t drive, int32_t steps) noexcept;
 
 #if HAS_SMART_DRIVERS
 	uint32_t GetStepInterval(size_t axis, uint32_t microstepShift) const;			// Get the current step interval for this axis or extruder

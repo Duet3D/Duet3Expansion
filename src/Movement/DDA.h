@@ -17,6 +17,7 @@
 #include "StepTimer.h"
 
 struct CanMessageMovementLinear;
+struct CanMessageStopMovement;
 
 // This defines a single coordinated movement of one or several motors
 class DDA
@@ -63,8 +64,7 @@ public:
 	// Filament monitor support
 	int32_t GetStepsTaken(size_t drive) const noexcept;
 
-	void MoveAborted() noexcept;
-	void StopDrivers(uint16_t whichDrivers) noexcept;
+	void StopDrivers(const CanMessageStopMovement& msg, size_t dataLength) noexcept;
 
 	uint32_t GetClocksNeeded() const noexcept { return clocksNeeded; }
 	uint32_t GetMoveFinishTime() const noexcept { return afterPrepare.moveStartTime + clocksNeeded; }
@@ -108,20 +108,20 @@ public:
 #endif
 	static constexpr uint32_t WakeupTime = (100 * StepTimer::StepClockRate)/1000000;				// stop resting 100us before the move is due to end
 
-	static void PrintMoves();										// print saved moves for debugging
+	static void PrintMoves();											// print saved moves for debugging
 
 #if USE_TC_FOR_STEP
-	static uint32_t lastStepHighTime;								// when we last started a step pulse to a slow driver
+	static uint32_t lastStepHighTime;									// when we last started a step pulse to a slow driver
 #else
-	static uint32_t lastStepLowTime;								// when we last completed a step pulse to a slow driver
+	static uint32_t lastStepLowTime;									// when we last completed a step pulse to a slow driver
 #endif
-	static uint32_t lastDirChangeTime;								// when we last change the DIR signal to a slow driver
+	static uint32_t lastDirChangeTime;									// when we last change the DIR signal to a slow driver
 
 	static uint32_t stepsRequested[NumDrivers], stepsDone[NumDrivers];
 
 private:
-	void StopDrive(size_t drive) noexcept;							// stop movement of a drive and recalculate the endpoint
-	uint32_t WhenNextInterruptDue() const noexcept;					// return when the next interrupt is due relative to the move start time
+	void StopDrive(size_t drive, int32_t desiredNetSteps) noexcept;	// stop movement of a drive and recalculate the endpoint
+	uint32_t WhenNextInterruptDue() const noexcept;						// return when the next interrupt is due relative to the move start time
 
 #if !SINGLE_DRIVER
 	void InsertDM(DriveMovement *dm) noexcept SPEED_CRITICAL;
@@ -139,11 +139,11 @@ private:
 	{
 		struct
 		{
-			uint16_t isPrintingMove : 1,			// True if this is a printing move and any of our extruders is moving
-					 goingSlow : 1,					// True if we have slowed the movement because the Z probe is approaching its threshold
-					 hadHiccup : 1;					// True if we had a hiccup while executing this move
+			uint16_t isPrintingMove : 1,	// True if this is a printing move and any of our extruders is moving
+					 goingSlow : 1,			// True if we have slowed the movement because the Z probe is approaching its threshold
+					 hadHiccup : 1;			// True if we had a hiccup while executing this move
 		} flags;
-		uint16_t all;								// so that we can print all the flags at once for debugging
+		uint16_t all;						// so that we can print all the flags at once for debugging
 	};
 
 	int32_t endPoint[NumDrivers];  			// Machine coordinates in steps of the endpoint

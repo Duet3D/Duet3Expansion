@@ -418,7 +418,7 @@ CanMessageBuffer *CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf) no
 			return nullptr;
 
 		case CanMessageType::stopMovement:
-			moveInstance->StopDrivers(buf->msg.stopMovement.whichDrives);
+			moveInstance->StopDrivers(buf->msg.stopMovement, buf->dataLength);
 # if 1
 			//DEBUG
 			lastMoveEndedAt = 0;

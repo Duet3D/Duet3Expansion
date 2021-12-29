@@ -14,6 +14,7 @@
 #include "Kinematics/LinearDeltaKinematics.h"		// for DELTA_AXES
 #include "CanMessageFormats.h"
 #include <CAN/CanInterface.h>
+#include <limits>
 
 #ifdef DUET_NG
 # define DDA_MOVE_DEBUG	(0)
@@ -562,14 +563,24 @@ void DDA::StepDrivers(uint32_t now)
 
 #endif
 
-// Stop a drive and re-calculate the corresponding endpoint.
+// Stop a drive and re-calculate the corresponding endpoint. Return the number of net steps taken.
 // For extruder drivers, we need to be able to calculate how much of the extrusion was completed after calling this.
-void DDA::StopDrive(size_t drive)
+void DDA::StopDrive(size_t drive, int32_t desiredNetSteps)
 {
 	DriveMovement& dm = ddms[drive];
 	if (dm.state == DMState::moving)
 	{
 		dm.state = DMState::idle;
+		if (desiredNetSteps != std::numeric_limits<int32_t>::min())
+		{
+			const int32_t ns = dm.GetNetStepsTaken();
+			if (   (ns > desiredNetSteps && desiredNetSteps > 0)
+				|| (ns < desiredNetSteps && desiredNetSteps < 0)
+			   )
+			{
+				moveInstance->SaveAdjustment(drive, desiredNetSteps - ns);
+			}
+		}
 #if SINGLE_DRIVER
 		state = completed;
 #else
@@ -582,30 +593,20 @@ void DDA::StopDrive(size_t drive)
 	}
 }
 
-// This is called when we abort a move because we have hit an endstop or we are doing an emergency pause.
-// It stop all drives and adjusts the end points of the current move to account for how far through the move we got.
-// The caller must call MoveCompleted at some point after calling this.
-void DDA::MoveAborted()
+void DDA::StopDrivers(const CanMessageStopMovement& msg, size_t dataLength)
 {
 	if (state == executing)
 	{
+		const uint16_t whichDrivers = msg.whichDrives;
+		size_t index = 0;
 		for (size_t drive = 0; drive < NumDrivers; ++drive)
 		{
-			StopDrive(drive);
-		}
-	}
-	state = completed;
-}
-
-void DDA::StopDrivers(uint16_t whichDrivers)
-{
-	if (state == executing)
-	{
-		for (size_t drive = 0; drive < NumDrivers; ++drive)
-		{
-			if (whichDrivers & (1 << drive))
+			if (whichDrivers & (1u << drive))
 			{
-				StopDrive(drive);
+				const int32_t desiredStopSteps = (dataLength >= msg.GetActualDataLength(index + 1))
+													? msg.finalStepCounts[index++]
+														: std::numeric_limits<int32_t>::min();
+				StopDrive(drive, desiredStopSteps);
 			}
 		}
 	}

@@ -336,7 +336,8 @@ int32_t Move::GetPosition(size_t driver) const
 	return ddaRingAddPointer->GetPrevious()->GetPosition(driver);
 }
 
-void Move::StopDrivers(uint16_t whichDrivers)
+// Stop some or all of the moving drivers
+void Move::StopDrivers(const CanMessageStopMovement& msg, size_t dataLength)
 {
 #if SAME5x
 	const uint32_t oldPrio = ChangeBasePriority(NvicPriorityStep);
@@ -348,7 +349,7 @@ void Move::StopDrivers(uint16_t whichDrivers)
 	DDA *cdda = currentDda;				// capture volatile
 	if (cdda != nullptr)
 	{
-		cdda->StopDrivers(whichDrivers);
+		cdda->StopDrivers(msg, dataLength);
 		if (cdda->GetState() == DDA::completed)
 		{
 			CurrentMoveCompleted();					// tell the DDA ring that the current move is complete
