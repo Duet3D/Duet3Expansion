@@ -64,7 +64,7 @@ public:
 	// Filament monitor support
 	int32_t GetStepsTaken(size_t drive) const noexcept;
 
-	void StopDrivers(const CanMessageStopMovement& msg, size_t dataLength) noexcept;
+	void StopDrivers(uint16_t whichDrives) noexcept;
 
 	uint32_t GetClocksNeeded() const noexcept { return clocksNeeded; }
 	uint32_t GetMoveFinishTime() const noexcept { return afterPrepare.moveStartTime + clocksNeeded; }
@@ -120,7 +120,7 @@ public:
 	static uint32_t stepsRequested[NumDrivers], stepsDone[NumDrivers];
 
 private:
-	void StopDrive(size_t drive, int32_t desiredNetSteps) noexcept;	// stop movement of a drive and recalculate the endpoint
+	void StopDrive(size_t drive) noexcept;								// stop movement of a drive and recalculate the endpoint
 	uint32_t WhenNextInterruptDue() const noexcept;						// return when the next interrupt is due relative to the move start time
 
 #if !SINGLE_DRIVER

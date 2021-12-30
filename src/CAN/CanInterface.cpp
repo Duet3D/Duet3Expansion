@@ -365,7 +365,7 @@ CanMessageBuffer *CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf) no
 			}
 
 			//TODO if we haven't established time sync yet then we should defer this
-# if 1
+# if 0
 			//DEBUG
 			static uint32_t lastMoveEndedAt = 0;
 			if (lastMoveEndedAt != 0)
@@ -418,14 +418,58 @@ CanMessageBuffer *CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf) no
 			return nullptr;
 
 		case CanMessageType::stopMovement:
-			moveInstance->StopDrivers(buf->msg.stopMovement, buf->dataLength);
-# if 1
+			moveInstance->StopDrivers(buf->msg.stopMovement.whichDrives);
+# if 0
 			//DEBUG
 			lastMoveEndedAt = 0;
 # endif
 			Platform::OnProcessingCanMessage();
 			break;
 #endif
+
+		case CanMessageType::revertPosition:
+			{
+				// Generate a regular movement message from this revert message. First, extract the data so that we can use the same buffer, in case we are short of buffers.
+				int32_t stepsToTake[NumDrivers];
+				size_t index = 0;
+				const volatile int32_t * const lastMoveStepsTaken = moveInstance->GetLastMoveStepsTaken();
+				for (size_t driver = 0; driver < NumDrivers; ++driver)
+				{
+					if (buf->msg.revertPosition.whichDrives & (1u << driver))
+					{
+						const int32_t stepsWanted = buf->msg.revertPosition.finalStepCounts[index++];
+						const int32_t stepsTaken = lastMoveStepsTaken[driver];
+						stepsToTake[driver] = ((stepsWanted >= 0 && stepsTaken > stepsWanted) || (stepsWanted <= 0 && stepsTaken < stepsWanted))
+												? stepsWanted - stepsTaken
+													: 0;
+					}
+					else
+					{
+						stepsToTake[driver] = 0;
+					}
+				}
+
+				// Now we can re-use the buffer to build a regular movement message
+				auto msg = buf->SetupRequestMessage<CanMessageMovementLinear>(0, GetCurrentMasterAddress(), GetCanAddress());
+				for (size_t driver = 0; driver < NumDrivers; ++driver)
+				{
+					msg->perDrive[driver].steps = stepsToTake[driver];
+				}
+
+				// Set up some reasonable parameters for this move. The move must be shorter than AllowedDriverPositionRevertMillis less some time to allow for CAN latency.
+				// When writing this, AllowedDriverPositionRevertMillis was 50ms. We allow 5ms delay time, 5ms acceleration time, 25ms steady time and 5ms deceleration time,
+				// which leaves 10ms for CAN latency.
+				msg->accelerationClocks = msg->decelClocks = (AllowedDriverPositionRevertMillis * StepTimer::StepClockRate)/(10 * 1000);
+				msg->steadyClocks = (AllowedDriverPositionRevertMillis * StepTimer::StepClockRate)/(2 * 1000);
+				msg->whenToExecute = StepTimer::GetTimerTicks() + (AllowedDriverPositionRevertMillis * StepTimer::StepClockRate)/(10 * 1000);
+				msg->numDrivers = NumDrivers;
+				msg->pressureAdvanceDrives = 0;
+				msg->seq = 0;
+				msg->initialSpeedFraction = msg->finalSpeedFraction = 0.0;
+			}
+			PendingMoves.AddMessage(buf);
+			Platform::OnProcessingCanMessage();
+			return nullptr;
 
 		case CanMessageType::emergencyStop:
 			Platform::EmergencyStop();
