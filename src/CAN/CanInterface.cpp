@@ -425,7 +425,6 @@ CanMessageBuffer *CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf) no
 # endif
 			Platform::OnProcessingCanMessage();
 			break;
-#endif
 
 		case CanMessageType::revertPosition:
 			{
@@ -449,6 +448,8 @@ CanMessageBuffer *CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf) no
 					}
 				}
 
+				const uint32_t clocksAllowed = buf->msg.revertPosition.clocksAllowed;
+
 				// Now we can re-use the buffer to build a regular movement message
 				auto msg = buf->SetupRequestMessage<CanMessageMovementLinear>(0, GetCurrentMasterAddress(), GetCanAddress());
 				for (size_t driver = 0; driver < NumDrivers; ++driver)
@@ -459,9 +460,9 @@ CanMessageBuffer *CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf) no
 				// Set up some reasonable parameters for this move. The move must be shorter than AllowedDriverPositionRevertMillis less some time to allow for CAN latency.
 				// When writing this, AllowedDriverPositionRevertMillis was 50ms. We allow 5ms delay time, 5ms acceleration time, 25ms steady time and 5ms deceleration time,
 				// which leaves 10ms for CAN latency.
-				msg->accelerationClocks = msg->decelClocks = (AllowedDriverPositionRevertMillis * StepTimer::StepClockRate)/(10 * 1000);
-				msg->steadyClocks = (AllowedDriverPositionRevertMillis * StepTimer::StepClockRate)/(2 * 1000);
-				msg->whenToExecute = StepTimer::GetTimerTicks() + (AllowedDriverPositionRevertMillis * StepTimer::StepClockRate)/(10 * 1000);
+				msg->accelerationClocks = msg->decelClocks = clocksAllowed/4;
+				msg->steadyClocks = clocksAllowed/2;
+				msg->whenToExecute = StepTimer::GetTimerTicks() + StepTimer::StepClockRate/1000;	// start 1ms from now
 				msg->numDrivers = NumDrivers;
 				msg->pressureAdvanceDrives = 0;
 				msg->seq = 0;
@@ -470,6 +471,7 @@ CanMessageBuffer *CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf) no
 			PendingMoves.AddMessage(buf);
 			Platform::OnProcessingCanMessage();
 			return nullptr;
+#endif
 
 		case CanMessageType::emergencyStop:
 			Platform::EmergencyStop();
