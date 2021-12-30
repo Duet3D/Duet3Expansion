@@ -8,7 +8,7 @@
 #ifndef MOVE_H_
 #define MOVE_H_
 
-#include "RepRapFirmware.h"
+#include <RepRapFirmware.h>
 
 #if SUPPORT_DRIVERS
 
@@ -18,44 +18,46 @@
 // Define the number of DDAs
 const unsigned int DdaRingLength = 50;
 
+struct CanMessageStopMovement;
+
 /**
  * This is the master movement class.  It controls all movement in the machine.
  */
 class Move
 {
 public:
-	Move();
-	void Init();																	// Start me up
-	void Exit();																	// Shut down
-	void Diagnostics(const StringRef& reply);										// Report useful stuff
+	Move() noexcept;
+	void Init() noexcept;															// Start me up
+	void Exit() noexcept;															// Shut down
+	void Diagnostics(const StringRef& reply) noexcept;								// Report useful stuff
 
-	void Interrupt() SPEED_CRITICAL;												// Timer callback for step generation
-	void StopDrivers(uint16_t whichDrivers);
-	void CurrentMoveCompleted() SPEED_CRITICAL;										// Signal that the current move has just been completed
+	void Interrupt() noexcept SPEED_CRITICAL;										// Timer callback for step generation
+	void StopDrivers(uint16_t whichDrives) noexcept;
+	void CurrentMoveCompleted() noexcept SPEED_CRITICAL;							// Signal that the current move has just been completed
 
 #if SUPPORT_DELTA_MOVEMENT
 	// Kinematics and related functions
-	Kinematics& GetKinematics() const { return *kinematics; }
-	bool SetKinematics(KinematicsType k);											// Set kinematics, return true if successful
+	Kinematics& GetKinematics() const noexcept { return *kinematics; }
+	bool SetKinematics(KinematicsType k) noexcept;									// Set kinematics, return true if successful
 #endif
 
-	static void TimerCallback(CallbackParameter cb)
+	static void TimerCallback(CallbackParameter cb) noexcept
 	{
 		static_cast<Move*>(cb.vp)->Interrupt();
 	}
 
-	void PrintCurrentDda() const;													// For debugging
+	void PrintCurrentDda() const noexcept;											// For debugging
 
-	void ResetMoveCounters() { scheduledMoves = completedMoves = 0; }
+	void ResetMoveCounters() noexcept { scheduledMoves = completedMoves = 0; }
 
-	int32_t GetPosition(size_t driver) const;
+	int32_t GetPosition(size_t driver) const noexcept;
 
 	// Filament monitor support
 	int32_t GetAccumulatedExtrusion(size_t driver, bool& isPrinting) noexcept;		// Return and reset the accumulated commanded extrusion amount
 	uint32_t ExtruderPrintingSince() const noexcept { return extrudersPrintingSince; }	// When we started doing normal moves after the most recent extruder-only move
 
 #if HAS_SMART_DRIVERS
-	uint32_t GetStepInterval(size_t axis, uint32_t microstepShift) const;			// Get the current step interval for this axis or extruder
+	uint32_t GetStepInterval(size_t axis, uint32_t microstepShift) const noexcept;	// Get the current step interval for this axis or extruder
 	bool SetMicrostepping(size_t driver, unsigned int microsteps, bool interpolate) noexcept;
 #endif
 
@@ -67,10 +69,11 @@ public:
 	void GetCurrentMotion(MotionParameters& mParams) const noexcept;				// get the net full steps taken, including in the current move so far, also speed and acceleration
 #endif
 
+	const volatile int32_t *GetLastMoveStepsTaken() const noexcept { return lastMoveStepsTaken; }
 private:
-	bool DDARingAdd();																// Add a processed look-ahead entry to the DDA ring
-	DDA* DDARingGet();																// Get the next DDA ring entry to be run
-	void StartNextMove(DDA *cdda, uint32_t startTime);								// Start a move
+	bool DDARingAdd() noexcept;														// Add a processed look-ahead entry to the DDA ring
+	DDA* DDARingGet() noexcept;														// Get the next DDA ring entry to be run
+	void StartNextMove(DDA *cdda, uint32_t startTime) noexcept;						// Start a move
 
 	// Variables that are in the DDARing class in RepRapFirmware (we have only one DDARing so they are here)
 	DDA* volatile currentDda;
@@ -79,6 +82,7 @@ private:
 	DDA* ddaRingCheckPointer;
 
 	StepTimer timer;
+	volatile int32_t lastMoveStepsTaken[NumDrivers];								// how many steps were taken in the last move we did
 	volatile int32_t movementAccumulators[NumDrivers]; 								// Accumulated motor steps
 	volatile uint32_t extrudersPrintingSince;										// The milliseconds clock time when extrudersPrinting was set to true
 	volatile bool extrudersPrinting;												// Set whenever an extruder starts a printing move, cleared by a non-printing extruder move
@@ -108,7 +112,7 @@ private:
 
 // Get the current step interval for this axis or extruder, or 0 if it is not moving
 // This is called from the stepper drivers SPI interface ISR
-inline uint32_t Move::GetStepInterval(size_t axis, uint32_t microstepShift) const
+inline uint32_t Move::GetStepInterval(size_t axis, uint32_t microstepShift) const noexcept
 {
 	const DDA * const cdda = currentDda;		// capture volatile variable
 	return (cdda != nullptr) ? cdda->GetStepInterval(axis, microstepShift) : 0;

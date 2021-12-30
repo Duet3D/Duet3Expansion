@@ -307,15 +307,17 @@ void Move::CurrentMoveCompleted()
 		DDA *cdda = currentDda;						// capture volatile variable
 		AtomicCriticalSectionLocker lock;			// disable interrupts while we are updating the move accumulators, until we set currentDda to null
 #if SINGLE_DRIVER
-	const int32_t stepsTaken = cdda->GetStepsTaken(0);
-	movementAccumulators[0] += stepsTaken;
+		const int32_t stepsTaken = cdda->GetStepsTaken(0);
+		movementAccumulators[0] += stepsTaken;
 # if SUPPORT_CLOSED_LOOP
-	netMicrostepsTaken += stepsTaken;
+		netMicrostepsTaken += stepsTaken;
 # endif
 #else
 		for (size_t driver = 0; driver < NumDrivers; ++driver)
 		{
-			movementAccumulators[driver] += cdda->GetStepsTaken(driver);
+			const int32_t stepsTaken = cdda->GetStepsTaken(driver);
+			lastMoveStepsTaken[driver] = stepsTaken;
+			movementAccumulators[driver] += stepsTaken;
 		}
 #endif
 		currentDda = nullptr;
@@ -336,7 +338,8 @@ int32_t Move::GetPosition(size_t driver) const
 	return ddaRingAddPointer->GetPrevious()->GetPosition(driver);
 }
 
-void Move::StopDrivers(uint16_t whichDrivers)
+// Stop some or all of the moving drivers
+void Move::StopDrivers(uint16_t whichDrives)
 {
 #if SAME5x
 	const uint32_t oldPrio = ChangeBasePriority(NvicPriorityStep);
@@ -345,10 +348,10 @@ void Move::StopDrivers(uint16_t whichDrivers)
 #else
 # error Unsupported processor
 #endif
-	DDA *cdda = currentDda;				// capture volatile
+	DDA *cdda = currentDda;							// capture volatile
 	if (cdda != nullptr)
 	{
-		cdda->StopDrivers(whichDrivers);
+		cdda->StopDrivers(whichDrives);
 		if (cdda->GetState() == DDA::completed)
 		{
 			CurrentMoveCompleted();					// tell the DDA ring that the current move is complete

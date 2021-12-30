@@ -14,6 +14,7 @@
 #include "Kinematics/LinearDeltaKinematics.h"		// for DELTA_AXES
 #include "CanMessageFormats.h"
 #include <CAN/CanInterface.h>
+#include <limits>
 
 #ifdef DUET_NG
 # define DDA_MOVE_DEBUG	(0)
@@ -562,7 +563,7 @@ void DDA::StepDrivers(uint32_t now)
 
 #endif
 
-// Stop a drive and re-calculate the corresponding endpoint.
+// Stop a drive and re-calculate the corresponding endpoint. Return the number of net steps taken.
 // For extruder drivers, we need to be able to calculate how much of the extrusion was completed after calling this.
 void DDA::StopDrive(size_t drive)
 {
@@ -582,28 +583,13 @@ void DDA::StopDrive(size_t drive)
 	}
 }
 
-// This is called when we abort a move because we have hit an endstop or we are doing an emergency pause.
-// It stop all drives and adjusts the end points of the current move to account for how far through the move we got.
-// The caller must call MoveCompleted at some point after calling this.
-void DDA::MoveAborted()
+void DDA::StopDrivers(uint16_t whichDrives)
 {
 	if (state == executing)
 	{
 		for (size_t drive = 0; drive < NumDrivers; ++drive)
 		{
-			StopDrive(drive);
-		}
-	}
-	state = completed;
-}
-
-void DDA::StopDrivers(uint16_t whichDrivers)
-{
-	if (state == executing)
-	{
-		for (size_t drive = 0; drive < NumDrivers; ++drive)
-		{
-			if (whichDrivers & (1 << drive))
+			if (whichDrives & (1u << drive))
 			{
 				StopDrive(drive);
 			}
