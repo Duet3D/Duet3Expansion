@@ -17,7 +17,7 @@ class TmcDriverTemperatureSensor : public TemperatureSensor
 public:
 	TmcDriverTemperatureSensor(unsigned int sensorNum);
 
-	static constexpr const char *TypeName = "drivertemp";
+	static constexpr const char *TypeName = "drivers";
 
 	void Poll() override;
 };
