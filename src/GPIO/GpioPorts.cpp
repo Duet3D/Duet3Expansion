@@ -38,7 +38,7 @@ GCodeResult GpioPorts::HandleM950Gpio(const CanMessageGeneric &msg, const String
 	const bool seenFreq = parser.GetUintParam('Q', freq);
 	if (!seenFreq)
 	{
-		freq = (isServo) ? ServoRefreshFrequency : DefaultPinWritePwmFreq;
+		freq = (isServo) ? DefaultServoRefreshFrequency : DefaultPinWritePwmFreq;
 	}
 
 	PwmPort& port = ports[gpioNumber];
