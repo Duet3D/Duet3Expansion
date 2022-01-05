@@ -47,10 +47,16 @@ GCodeResult LinearAnalogSensor::Configure(const CanMessageGenericParser& parser,
 
 	if (seen)
 	{
+		const bool wasFiltered = filtered;
 		CalcDerivedParameters();
 		if (adcFilterChannel >= 0)
 		{
 			Platform::GetAdcFilter(adcFilterChannel)->Init(0);
+		}
+		else if (wasFiltered)
+		{
+			reply.copy("filtering not supported on this port");
+			return GCodeResult::warning;
 		}
 	}
 	else
@@ -85,6 +91,10 @@ void LinearAnalogSensor::Poll()
 void LinearAnalogSensor::CalcDerivedParameters()
 {
 	adcFilterChannel = Platform::GetAveragingFilterIndex(port);
+	if (adcFilterChannel < 0)
+	{
+		filtered = false;
+	}
 	linearIncreasePerCount = (highTemp - lowTemp)/((filtered) ? FilteredAdcRange : UnfilteredAdcRange);
 }
 

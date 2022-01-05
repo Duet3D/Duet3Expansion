@@ -1231,7 +1231,7 @@ void Platform::SpinMinimal()
 // Get the index of the averaging filter for an analog port
 int Platform::GetAveragingFilterIndex(const IoPort& port)
 {
-	for (size_t i = 0; i < NumThermistorFilters; ++i)
+	for (size_t i = 0; i < ARRAY_SIZE(TempSensePins); ++i)
 	{
 		if (port.GetPin() == TempSensePins[i])
 		{
