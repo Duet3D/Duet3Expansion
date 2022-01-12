@@ -36,7 +36,7 @@ namespace CanInterface
 	uint16_t GetTimeStampPeriod() noexcept;
 #endif
 
-	void SendAnnounce(CanMessageBuffer *buf) noexcept;
+	bool SendAnnounce(CanMessageBuffer *buf) noexcept;
 	void RaiseEvent(EventType type, uint16_t param, uint8_t device, const char *format, va_list vargs) noexcept;
 
 	void WakeAsyncSenderFromIsr() noexcept;

@@ -269,9 +269,6 @@ void Heat::Exit()
 		const uint32_t startTime = millis();
 		if ((int32_t)(startTime - nextWakeTime) >= 0)
 		{
-			// Announce ourselves to the main board, if it hasn't acknowledged us already
-			CanInterface::SendAnnounce(&buf);
-
 			{
 				// Walk the sensor list and poll all sensors
 				// Also prepare to broadcast our sensor temperatures
@@ -379,8 +376,10 @@ void Heat::Exit()
 			}
 #endif
 
-			// Send a board health message
+			// Announce ourselves to the main board, if it hasn't acknowledged us already
+			if (!CanInterface::SendAnnounce(&buf))
 			{
+				// We didn't need to send an announcement so send a board health message instead
 				CanMessageBoardStatus * const boardStatusMsg = buf.SetupStatusMessage<CanMessageBoardStatus>(CanInterface::GetCanAddress(), CanInterface::GetCurrentMasterAddress());
 				boardStatusMsg->Clear();
 

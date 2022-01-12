@@ -536,22 +536,25 @@ void CanInterface::Diagnostics(const StringRef& reply) noexcept
 #endif
 }
 
-// Send an announcement message if we haven't had an announce acknowledgement from a main board. On return the buffer is available to use again.
-void CanInterface::SendAnnounce(CanMessageBuffer *buf) noexcept
+// Send an announcement message if we need to, returning true if we sent one. On return the buffer is available to use again.
+bool CanInterface::SendAnnounce(CanMessageBuffer *buf) noexcept
 {
-	if (!mainBoardAcknowledgedAnnounce)
+	if (mainBoardAcknowledgedAnnounce)
 	{
-		auto msg = buf->SetupBroadcastMessage<CanMessageAnnounceNew>(boardAddress);
-		msg->timeSinceStarted = millis();
-		msg->numDrivers = NumDrivers;
-		msg->zero = 0;
-		memcpy(msg->uniqueId, Platform::GetUniqueId().GetRaw(), sizeof(msg->uniqueId));
-		// Note, board type name, firmware version, firmware date and firmware time are limited to 43 characters in the new
-		// We use vertical-bar to separate the three fields: board type, firmware version, date/time
-		SafeSnprintf(msg->boardTypeAndFirmwareVersion, ARRAY_SIZE(msg->boardTypeAndFirmwareVersion), "%s|%s|%s%.6s", BOARD_TYPE_NAME, VERSION, IsoDate, TIME_SUFFIX);
-		buf->dataLength = msg->GetActualDataLength();
-		Send(buf);
+		return false;
 	}
+
+	auto msg = buf->SetupStatusMessage<CanMessageAnnounceNew>(boardAddress, currentMasterAddress);
+	msg->timeSinceStarted = millis();
+	msg->numDrivers = NumDrivers;
+	msg->zero = 0;
+	memcpy(msg->uniqueId, Platform::GetUniqueId().GetRaw(), sizeof(msg->uniqueId));
+	// Note, board type name, firmware version, firmware date and firmware time are limited to 43 characters in the new format
+	// We use vertical-bar to separate the three fields: board type, firmware version, date/time
+	SafeSnprintf(msg->boardTypeAndFirmwareVersion, ARRAY_SIZE(msg->boardTypeAndFirmwareVersion), "%s|%s|%s%.6s", BOARD_TYPE_NAME, VERSION, IsoDate, TIME_SUFFIX);
+	buf->dataLength = msg->GetActualDataLength();
+	Send(buf);
+	return true;
 }
 
 void CanInterface::WakeAsyncSenderFromIsr() noexcept
