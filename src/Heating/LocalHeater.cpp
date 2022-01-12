@@ -380,7 +380,7 @@ void LocalHeater::Spin()
 				if (GetModel().UsePid())
 				{
 					// Using PID mode. Determine the PID parameters to use.
-					const bool inLoadMode = (mode == HeaterMode::stable) || fabsf(error) < 3.0;		// use standard PID when maintaining temperature
+					const bool inLoadMode = (mode == HeaterMode::stable) || (fabsf(error) < 3.0);		// use standard PID when maintaining temperature
 					const PidParameters& params = GetModel().GetPidParameters(inLoadMode);
 
 					// If the P and D terms together demand that the heater is full on or full off, disregard the I term to reduce integral windup
@@ -464,7 +464,8 @@ void LocalHeater::Spin()
 
 		// Set the heater power and update the average PWM
 		SetHeater(lastPwm);
-		averagePWM = averagePWM * (1.0 - HeatSampleIntervalMillis/(HeatPwmAverageTime * SecondsToMillis)) + lastPwm;
+		constexpr float avgFactor = HeatSampleIntervalMillis/(HeatPwmAverageTime * SecondsToMillis);
+		averagePWM = (averagePWM * (1.0 - avgFactor)) + (lastPwm * avgFactor);
 
 		// For temperature sensors which do not require frequent sampling and averaging,
 		// their temperature is read here and error/safety handling performed.  However,
@@ -490,7 +491,7 @@ void LocalHeater::ResetFault()
 
 float LocalHeater::GetAveragePWM() const
 {
-	return averagePWM * HeatSampleIntervalMillis/(HeatPwmAverageTime * SecondsToMillis);
+	return averagePWM;
 }
 
 // Get a conservative estimate of the expected heating rate at the current temperature and average PWM. The result may be negative.
