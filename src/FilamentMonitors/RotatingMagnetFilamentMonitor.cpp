@@ -68,8 +68,7 @@ GCodeResult RotatingMagnetFilamentMonitor::Configure(const CanMessageGenericPars
 {
 	bool seen = false;
 	const GCodeResult rslt = CommonConfigure(parser, reply, InterruptMode::change, seen);
-
-	if (rslt <= GCodeResult::warning)
+	if (Succeeded(rslt))
 	{
 		if (seen)
 		{

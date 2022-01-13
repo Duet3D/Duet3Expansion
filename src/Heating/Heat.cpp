@@ -448,7 +448,7 @@ GCodeResult Heat::ConfigureHeater(const CanMessageGeneric& msg, const StringRef&
 
 		Heater *newHeater = new LocalHeater(heater);
 		const GCodeResult rslt = newHeater->ConfigurePortAndSensor(pinName.c_str(), freq, sensorNumber, reply);
-		if (rslt == GCodeResult::ok || rslt == GCodeResult::warning)
+		if (Succeeded(rslt))
 		{
 			heaters[heater] = newHeater;
 		}
@@ -509,7 +509,7 @@ GCodeResult Heat::ProcessM308(const CanMessageGeneric& msg, const StringRef& rep
 				}
 
 				const GCodeResult rslt = newSensor->Configure(parser, reply);
-				if (rslt == GCodeResult::ok || rslt == GCodeResult::warning)
+				if (Succeeded(rslt))
 				{
 					InsertSensor(newSensor);
 				}

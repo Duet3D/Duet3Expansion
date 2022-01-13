@@ -65,7 +65,7 @@ GCodeResult PulsedFilamentMonitor::Configure(const CanMessageGenericParser& pars
 {
 	bool seen = false;
 	const GCodeResult rslt = CommonConfigure(parser, reply, InterruptMode::rising, seen);
-	if (rslt <= GCodeResult::warning)
+	if (Succeeded(rslt))
 	{
 		if (parser.GetFloatParam('L', mmPerPulse))
 		{

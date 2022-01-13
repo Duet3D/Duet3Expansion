@@ -23,7 +23,7 @@ GCodeResult SimpleFilamentMonitor::Configure(const CanMessageGenericParser& pars
 {
 	bool seen = false;
 	const GCodeResult rslt = CommonConfigure(parser, reply, InterruptMode::none, seen);
-	if (rslt <= GCodeResult::warning)
+	if (Succeeded(rslt))
 	{
 		uint16_t temp;
 		if (parser.GetUintParam('S', temp))
