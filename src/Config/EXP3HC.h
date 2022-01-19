@@ -60,6 +60,7 @@ constexpr size_t MaxPortsPerHeater = 3;
 
 constexpr size_t NumThermistorInputs = 3;
 constexpr float DefaultThermistorSeriesR = 2200.0;
+constexpr float VrefTopResistor = 15.0;
 constexpr float MinVrefLoadR = (DefaultThermistorSeriesR / NumThermistorInputs) * 4700.0/((DefaultThermistorSeriesR / NumThermistorInputs) + 4700.0);
 																			// there are 3 temperature sensing channels and a 4K7 load resistor
 constexpr Pin GlobalTmc51xxEnablePin = PortBPin(23);

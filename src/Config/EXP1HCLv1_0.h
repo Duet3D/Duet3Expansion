@@ -79,8 +79,9 @@ constexpr bool UseAlternateCanPins = true;
 
 constexpr size_t MaxPortsPerHeater = 1;
 
-constexpr size_t NumThermistorInputs = 1;
+constexpr size_t NumThermistorInputs = 2;
 constexpr float DefaultThermistorSeriesR = 2200.0;
+constexpr float VrefTopResistor = 27.0;
 constexpr float MinVrefLoadR = (DefaultThermistorSeriesR / NumThermistorInputs) * 4700.0/((DefaultThermistorSeriesR / NumThermistorInputs) + 4700.0);
 
 constexpr Pin VrefPin = PortAPin(4);
@@ -98,7 +99,7 @@ constexpr float VinDividerRatio = (60.4 + 4.7)/4.7;
 constexpr float VinMonitorVoltageRange = VinDividerRatio * 3.3;
 constexpr float V12MonitorVoltageRange = VinMonitorVoltageRange;				// we use the same resistors on both dividers
 
-constexpr Pin TempSensePins[NumThermistorInputs] = { PortBPin(8) };
+constexpr Pin TempSensePins[NumThermistorInputs] = { PortBPin(8), PortAPin(7) };
 constexpr Pin ButtonPins[] = { PortAPin(20) };
 
 // Encoder and quadrature decoder interface
