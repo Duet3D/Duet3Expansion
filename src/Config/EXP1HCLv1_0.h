@@ -95,9 +95,10 @@ constexpr bool LedActiveHigh = false;
 
 constexpr Pin VinMonitorPin = PortAPin(2);
 constexpr Pin V12MonitorPin = PortAPin(6);
-constexpr float VinDividerRatio = (60.4 + 4.7)/4.7;
+constexpr float VinDividerRatio = (100.0 + 5.1)/5.1;
+constexpr float V12DividerRatio = (60.4 + 4.7)/4.7;
 constexpr float VinMonitorVoltageRange = VinDividerRatio * 3.3;
-constexpr float V12MonitorVoltageRange = VinMonitorVoltageRange;				// we use the same resistors on both dividers
+constexpr float V12MonitorVoltageRange = V12DividerRatio * 3.3;
 
 constexpr Pin TempSensePins[NumThermistorInputs] = { PortBPin(8), PortAPin(7) };
 constexpr Pin ButtonPins[] = { PortAPin(20) };
