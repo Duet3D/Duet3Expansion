@@ -100,7 +100,7 @@ enum class DriversState : uint8_t
 
 static DriversState driversState = DriversState::shutDown;
 
-#if TMC22xx_USE_SLAVEADDR
+#if TMC22xx_USE_SLAVEADDR && TMC22xx_HAS_MUX
 static bool currentMuxState;
 #endif
 
@@ -947,7 +947,7 @@ pre(!driversPowered)
 	IoPort::SetPinMode(p_diagPin, INPUT_PULLUP);
 #endif
 
-#if !(TMC22xx_HAS_MUX || TMC22xx_SINGLE_DRIVER)
+#if !(TMC22xx_HAS_MUX || TMC22xx_SINGLE_DRIVER || TMC22xx_USE_SLAVEADDR)
 # if TMC22xx_USES_SERCOM
 	sercom = TMC22xxSercoms[p_driverNumber];
 	sercomNumber = TMC22xxSercomNumbers[p_driverNumber];
@@ -1550,7 +1550,7 @@ inline void TmcDriverState::UartTmcHandler() noexcept
 	TransferDone();										// tidy up after the transfer we just completed
 }
 
-#if TMC22xx_HAS_MUX || TMC22xx_SINGLE_DRIVER
+#if TMC22xx_HAS_MUX || TMC22xx_SINGLE_DRIVER || TMC22xx_USE_SLAVEADDR
 
 # if TMC22xx_USES_SERCOM
 
@@ -1948,7 +1948,7 @@ void SmartDrivers::Init() noexcept
 void SmartDrivers::Exit() noexcept
 {
 	IoPort::SetPinMode(GlobalTmc22xxEnablePin, OUTPUT_HIGH);
-#if TMC22xx_HAS_MUX || TMC22xx_SINGLE_DRIVER
+#if TMC22xx_HAS_MUX || TMC22xx_SINGLE_DRIVER || TMC22xx_USE_SLAVEADDR
 # if TMC22xx_USES_SERCOM
 	DmacManager::SetInterruptCallback(DmacChanTmcRx, nullptr, CallbackParameter(nullptr));
 # else
