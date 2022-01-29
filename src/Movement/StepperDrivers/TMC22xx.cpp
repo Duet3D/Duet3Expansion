@@ -1855,9 +1855,9 @@ void SmartDrivers::Init() noexcept
 	// Make sure the ENN pins are high
 	IoPort::SetPinMode(GlobalTmc22xxEnablePin, OUTPUT_HIGH);
 
-#if TMC22xx_HAS_MUX || TMC22xx_SINGLE_DRIVER
-# if TMC22xx_USES_SERCOM
+#if TMC22xx_HAS_MUX || TMC22xx_SINGLE_DRIVER || TMC22xx_USE_SLAVEADDR
 	// Set up the single UART that communicates with all TMC22xx drivers
+# if TMC22xx_USES_SERCOM
 	SetPinFunction(TMC22xxSercomTxPin, TMC22xxSercomTxPinPeriphMode);
 	SetPinFunction(TMC22xxSercomRxPin, TMC22xxSercomRxPinPeriphMode);
 
@@ -1868,7 +1868,6 @@ void SmartDrivers::Init() noexcept
 		);
 	DmacManager::SetInterruptCallback(DmacChanTmcRx, TransferCompleteCallback, CallbackParameter(0));
 # else
-	// Set up the single UART that communicates with all TMC22xx drivers
 	SetPinFunction(TMC22xxUartTxPin, TMC22xxUartPeriphMode);
 	SetPinFunction(TMC22xxUartRxPin, TMC22xxUartPeriphMode);
 	EnablePullup(TMC22xxUartRxPin);
@@ -1902,7 +1901,8 @@ void SmartDrivers::Init() noexcept
 	driversState = DriversState::noPower;
 	for (size_t drive = 0; drive < GetNumTmcDrivers(); ++drive)
 	{
-#if !(TMC22xx_HAS_MUX || TMC22xx_SINGLE_DRIVER)
+#if !(TMC22xx_HAS_MUX || TMC22xx_SINGLE_DRIVER || TMC22xx_USE_SLAVEADDR)
+		// Set up the individual UARTs that communicate with each of the TMC22xx drivers
 # if TMC22xx_USES_SERCOM
 		// Initialise the SERCOM that controls this driver
 		gpio_set_pin_function(TMC22xxSercomTxPins[drive], TMC22xxSercomTxPinPeriphModes[drive]);
@@ -1911,8 +1911,7 @@ void SmartDrivers::Init() noexcept
 		Serial::InitUart(TMC22xxUarts[drive], TMC22xxSercomNumbers[drive], DriversBaudRate);
 		NVIC_EnableIRQ(TMC22xxSercomIRQns[drive]);
 # else
-		// Initialise the UART that controls this driver
-		// The pins are already set up for UART use in the pins table
+		// Initialise the UART that controls this driver. The pins are already set up for UART use in the pins table
 		ConfigurePin(TMC22xxUartPins[drive]);
 
 		// Enable the clock to the UART
