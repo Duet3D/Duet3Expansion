@@ -10,6 +10,7 @@
 
 #include "RepRapFirmware.h"
 #include <RTOSIface/RTOSIface.h>
+#include <new>			// for std::align_val_t
 
 [[noreturn]] void AppMain() noexcept;
 
