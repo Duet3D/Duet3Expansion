@@ -457,7 +457,7 @@ static ptrdiff_t GetHandlerFreeStack() noexcept
 	{
 		++stack_lwm;
 	}
-	return stack_lwm - heapLimit;
+	return stack_lwm - sysStackLimit;
 }
 
 ptrdiff_t Tasks::GetNeverUsedRam() noexcept
