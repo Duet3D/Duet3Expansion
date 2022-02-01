@@ -1807,6 +1807,8 @@ float Platform::GetTmcDriversTemperature()
 				: 0.0;
 }
 
+#  if HAS_STALL_DETECT
+
 void Platform::SetOrResetEventOnStall(DriversBitmap drivers, bool enable) noexcept
 {
 	if (enable)
@@ -1818,6 +1820,8 @@ void Platform::SetOrResetEventOnStall(DriversBitmap drivers, bool enable) noexce
 		eventOnStallDrivers &= ~drivers;
 	}
 }
+
+#  endif
 
 # else
 

@@ -593,7 +593,7 @@ static GCodeResult HandleSetDriverStates(const CanMessageMultipleDrivesRequest<D
 
 static GCodeResult ProcessM915(const CanMessageGeneric& msg, const StringRef& reply)
 {
-#if HAS_SMART_DRIVERS
+#if HAS_SMART_DRIVERS && HAS_STALL_DETECT
 	CanMessageGenericParser parser(msg, M915Params);
 	uint16_t driverBits;
 	if (!parser.GetUintParam('d', driverBits))
