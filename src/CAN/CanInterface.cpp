@@ -487,6 +487,10 @@ CanMessageBuffer *CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf) no
 			{
 				Platform::EmergencyStop();
 			}
+			else
+			{
+				mainBoardAcknowledgedAnnounce = false;	// we've recently started up, so no need to reset; but assume that we need to announce ourselves
+			}
 			Platform::OnProcessingCanMessage();
 			break;
 
