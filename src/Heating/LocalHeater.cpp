@@ -195,8 +195,8 @@ GCodeResult LocalHeater::SwitchOn(const StringRef& reply) noexcept
 	}
 
 	const float target = GetTargetTemperature();
-	const HeaterMode newMode = (temperature + TEMPERATURE_CLOSE_ENOUGH < target) ? HeaterMode::heating
-					: (temperature > target + TEMPERATURE_CLOSE_ENOUGH) ? HeaterMode::cooling
+	const HeaterMode newMode = (temperature + TemperatureCloseEnough < target) ? HeaterMode::heating
+					: (temperature > target + TemperatureCloseEnough) ? HeaterMode::cooling
 						: HeaterMode::stable;
 	if (newMode != mode)
 	{
@@ -285,7 +285,7 @@ void LocalHeater::Spin()
 			switch(mode)
 			{
 			case HeaterMode::heating:
-				if (error <= TEMPERATURE_CLOSE_ENOUGH)
+				if (error <= TemperatureCloseEnough)
 				{
 					mode = HeaterMode::stable;
 					heatingFaultCount = 0;
@@ -352,7 +352,7 @@ void LocalHeater::Spin()
 				break;
 
 			case HeaterMode::cooling:
-				if (-error <= TEMPERATURE_CLOSE_ENOUGH && targetTemperature > MaxAmbientTemperature)
+				if (-error <= TemperatureCloseEnough && targetTemperature > MaxAmbientTemperature)
 				{
 					// We have cooled to close to the target temperature, so we should now maintain that temperature
 					mode = HeaterMode::stable;
