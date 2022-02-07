@@ -81,6 +81,7 @@ constexpr size_t MaxPortsPerHeater = 1;
 
 constexpr size_t NumThermistorInputs = 1;
 constexpr float DefaultThermistorSeriesR = 2200.0;
+constexpr float VrefTopResistor = 27.0;
 constexpr float MinVrefLoadR = (DefaultThermistorSeriesR / NumThermistorInputs) * 4700.0/((DefaultThermistorSeriesR / NumThermistorInputs) + 4700.0);
 
 constexpr Pin VrefPin = PortAPin(4);
