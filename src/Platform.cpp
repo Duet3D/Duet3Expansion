@@ -224,18 +224,32 @@ namespace Platform
 
 #if HAS_VOLTAGE_MONITOR
 
-	inline constexpr float AdcReadingToPowerVoltage(uint16_t adcVal)
+	inline constexpr float AdcReadingToVinVoltage(uint16_t adcVal)
 	{
 		return adcVal * (VinMonitorVoltageRange/(1u << AnalogIn::AdcBits));
 	}
 
-	inline constexpr uint16_t PowerVoltageToAdcReading(float voltage)
+	inline constexpr uint16_t VinVoltageToAdcReading(float voltage)
 	{
 		return (uint16_t)(voltage * ((1u << AnalogIn::AdcBits)/VinMonitorVoltageRange));
 	}
 
-	constexpr uint16_t driverPowerOnAdcReading = PowerVoltageToAdcReading(10.0);			// minimum voltage at which we initialise the drivers
-	constexpr uint16_t driverPowerOffAdcReading = PowerVoltageToAdcReading(9.5);			// voltages below this flag the drivers as unusable
+	constexpr uint16_t driverPowerOnAdcReading = VinVoltageToAdcReading(10.0);			// minimum voltage at which we initialise the drivers
+	constexpr uint16_t driverPowerOffAdcReading = VinVoltageToAdcReading(9.5);			// voltages below this flag the drivers as unusable
+
+#endif
+
+#if HAS_12V_MONITOR
+
+	inline constexpr float AdcReadingToV12Voltage(uint16_t adcVal)
+	{
+		return adcVal * (V12MonitorVoltageRange/(1u << AnalogIn::AdcBits));
+	}
+
+	inline constexpr uint16_t V12VoltageToAdcReading(float voltage)
+	{
+		return (uint16_t)(voltage * ((1u << AnalogIn::AdcBits)/V12MonitorVoltageRange));
+	}
 
 #endif
 
@@ -2115,9 +2129,9 @@ bool Platform::WasDeliberateError() noexcept
 MinCurMax Platform::GetPowerVoltages(bool resetMinMax) noexcept
 {
 	MinCurMax result;
-	result.minimum = AdcReadingToPowerVoltage(lowestVin);
-	result.current = AdcReadingToPowerVoltage(currentVin);
-	result.maximum = AdcReadingToPowerVoltage(highestVin);
+	result.minimum = AdcReadingToVinVoltage(lowestVin);
+	result.current = AdcReadingToVinVoltage(currentVin);
+	result.maximum = AdcReadingToVinVoltage(highestVin);
 	if (resetMinMax)
 	{
 		lowestVin = highestVin = currentVin;
@@ -2127,7 +2141,7 @@ MinCurMax Platform::GetPowerVoltages(bool resetMinMax) noexcept
 
 float Platform::GetCurrentVinVoltage() noexcept
 {
-	return AdcReadingToPowerVoltage(currentVin);
+	return AdcReadingToVinVoltage(currentVin);
 }
 
 #endif
@@ -2137,9 +2151,9 @@ float Platform::GetCurrentVinVoltage() noexcept
 MinCurMax Platform::GetV12Voltages(bool resetMinMax) noexcept
 {
 	MinCurMax result;
-	result.minimum = AdcReadingToPowerVoltage(lowestV12);
-	result.current = AdcReadingToPowerVoltage(currentV12);
-	result.maximum = AdcReadingToPowerVoltage(highestV12);
+	result.minimum = AdcReadingToV12Voltage(lowestV12);
+	result.current = AdcReadingToV12Voltage(currentV12);
+	result.maximum = AdcReadingToV12Voltage(highestV12);
 	if (resetMinMax)
 	{
 		lowestV12 = highestV12 = currentV12;
@@ -2149,7 +2163,7 @@ MinCurMax Platform::GetV12Voltages(bool resetMinMax) noexcept
 
 float Platform::GetCurrentV12Voltage() noexcept
 {
-	return AdcReadingToPowerVoltage(currentV12);
+	return AdcReadingToV12Voltage(currentV12);
 }
 
 #endif
