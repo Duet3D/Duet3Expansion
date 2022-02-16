@@ -309,6 +309,7 @@ void Move::CurrentMoveCompleted()
 #if SINGLE_DRIVER
 		const int32_t stepsTaken = cdda->GetStepsTaken(0);
 		movementAccumulators[0] += stepsTaken;
+		lastMoveStepsTaken[0] = stepsTaken;
 # if SUPPORT_CLOSED_LOOP
 		netMicrostepsTaken += stepsTaken;
 # endif

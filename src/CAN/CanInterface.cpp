@@ -431,21 +431,27 @@ CanMessageBuffer *CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf) no
 				// Generate a regular movement message from this revert message. First, extract the data so that we can use the same buffer, in case we are short of buffers.
 				int32_t stepsToTake[NumDrivers];
 				size_t index = 0;
+				bool needSteps = false;
 				const volatile int32_t * const lastMoveStepsTaken = moveInstance->GetLastMoveStepsTaken();
 				for (size_t driver = 0; driver < NumDrivers; ++driver)
 				{
+					int32_t steps = 0;
 					if (buf->msg.revertPosition.whichDrives & (1u << driver))
 					{
 						const int32_t stepsWanted = buf->msg.revertPosition.finalStepCounts[index++];
 						const int32_t stepsTaken = lastMoveStepsTaken[driver];
-						stepsToTake[driver] = ((stepsWanted >= 0 && stepsTaken > stepsWanted) || (stepsWanted <= 0 && stepsTaken < stepsWanted))
-												? stepsWanted - stepsTaken
-													: 0;
+						if (((stepsWanted >= 0 && stepsTaken > stepsWanted) || (stepsWanted <= 0 && stepsTaken < stepsWanted)))
+						{
+							steps = stepsWanted - stepsTaken;
+							needSteps = true;
+						}
 					}
-					else
-					{
-						stepsToTake[driver] = 0;
-					}
+					stepsToTake[driver] = steps;
+				}
+
+				if (!needSteps)
+				{
+					break;
 				}
 
 				const uint32_t clocksAllowed = buf->msg.revertPosition.clocksAllowed;
@@ -457,12 +463,12 @@ CanMessageBuffer *CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf) no
 					msg->perDrive[driver].steps = stepsToTake[driver];
 				}
 
-				// Set up some reasonable parameters for this move. The move must be shorter than AllowedDriverPositionRevertMillis less some time to allow for CAN latency.
-				// When writing this, AllowedDriverPositionRevertMillis was 50ms. We allow 5ms delay time, 5ms acceleration time, 25ms steady time and 5ms deceleration time,
-				// which leaves 10ms for CAN latency.
+				// Set up some reasonable parameters for this move. The move must be shorter than clocksAllowed.
+				// When writing this, clocksAllowed was equivalent to 40ms.
+				// We allow 10ms delay time to allow the motor to stop and reverse direction, 10ms acceleration time, 5ms steady time and 10ms deceleration time.
 				msg->accelerationClocks = msg->decelClocks = clocksAllowed/4;
-				msg->steadyClocks = clocksAllowed/2;
-				msg->whenToExecute = StepTimer::GetTimerTicks() + StepTimer::StepClockRate/1000;	// start 1ms from now
+				msg->steadyClocks = clocksAllowed/8;
+				msg->whenToExecute = StepTimer::GetTimerTicks() + clocksAllowed/4;
 				msg->numDrivers = NumDrivers;
 				msg->pressureAdvanceDrives = 0;
 				msg->seq = 0;
