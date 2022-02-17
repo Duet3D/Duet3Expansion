@@ -399,8 +399,9 @@ void Heat::Exit()
 #endif
 #if SUPPORT_I2C_SENSORS && SUPPORT_LIS3DH
 				boardStatusMsg->hasAccelerometer = AccelerometerHandler::IsPresent();
-#else
-				boardStatusMsg->hasAccelerometer = false;
+#endif
+#if SUPPORT_CLOSED_LOOP
+				boardStatusMsg->hasClosedLoop = true;
 #endif
 				buf.dataLength = boardStatusMsg->GetActualDataLength();
 				CanInterface::Send(&buf);
