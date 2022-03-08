@@ -66,8 +66,6 @@ public:
 	uint8_t GetModeByte() const { return (uint8_t)GetMode(); }
 
 protected:
-	static constexpr float FeedForwardMultiplier = 1.3;			// how much we over-compensate feedforward to allow for heat reservoirs during tuning
-
 	virtual void ResetHeater() noexcept = 0;
 	virtual HeaterMode GetMode() const noexcept = 0;
 	virtual GCodeResult SwitchOn(const StringRef& reply) noexcept = 0;

@@ -535,7 +535,7 @@ GCodeResult LocalHeater::FeedForwardAdjustment(float fanPwmChange, float extrusi
 {
 	if (mode == HeaterMode::stable)
 	{
-		const float boost = GetModel().GetPwmCorrectionForFan(GetTargetTemperature() - NormalAmbientTemperature, fanPwmChange) * FeedForwardMultiplier;
+		const float boost = GetModel().GetPwmCorrectionForFan(GetTargetTemperature() - NormalAmbientTemperature, fanPwmChange) * FanFeedForwardMultiplier;
 		TaskCriticalSectionLocker lock;
 		iAccumulator += boost;
 	}
