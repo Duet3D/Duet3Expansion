@@ -429,7 +429,7 @@ void DDA::StepDrivers(uint32_t now)
 				now = StepTimer::GetTimerTicks();
 			}
 			StepGenTc->CTRLBSET.reg = TC_CTRLBSET_CMD_RETRIGGER;
-			lastStepHighTime = StepTimer::GetTimerTicks();				//TODO adjust lastStepLowTime to allow for the pulse length
+			lastStepHighTime = StepTimer::GetTimerTicks();
 			hasMoreSteps = ddms[0].CalcNextStepTime(*this);
 #  else
 			uint32_t lastStepPulseTime = lastStepLowTime;
@@ -455,9 +455,9 @@ void DDA::StepDrivers(uint32_t now)
 			hasMoreSteps = ddms[0].CalcNextStepTime(*this);
 # else
 #  if SUPPORT_CLOSED_LOOP
+			ClosedLoop::TakeStep();											//TODO remove this when in closed loop mode and ClosedLoop calls GetCurrentMotion instead of relying on TakeStep
 			if (ClosedLoop::GetClosedLoopEnabled())
 			{
-				ClosedLoop::TakeStep();										//TODO remove this when ClosedLoop calls GetCurrentMotion instead of relying on TakeStep
 				hasMoreSteps = ddms[0].CalcNextStepTime(*this);				//TODO remove this when we refactor the code to not generate step interrupts when in closed loop mode
 			}
 			else

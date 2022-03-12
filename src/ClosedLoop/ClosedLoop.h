@@ -71,9 +71,10 @@ namespace ClosedLoop
 	StandardDriverStatus ReadLiveStatus() noexcept;
 	void SetStepDirection(bool) noexcept;
 	bool GetClosedLoopEnabled() noexcept;
-	bool SetClosedLoopEnabled(uint8_t drive, bool enabled, const StringRef &reply) noexcept;
-	void DriverSwitchedToClosedLoop(uint8_t drive) noexcept;
+	bool SetClosedLoopEnabled(size_t driver, bool enabled, const StringRef &reply) noexcept;
+	void DriverSwitchedToClosedLoop(size_t driver) noexcept;
 	void ResetError(size_t driver) noexcept;
+	StandardDriverStatus ModifyDriverStatus(size_t driver, StandardDriverStatus originalStatus) noexcept;
 
 	// Methods called by the encoders
 	void EnableEncodersSpi() noexcept;

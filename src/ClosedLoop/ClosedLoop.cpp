@@ -80,6 +80,7 @@ namespace ClosedLoop
 	};
 
 	// Variables private to this module
+	float	recipEncoderPulsesPerStep;					// Reciprocal of the encoder pulses per step, to avoid FP division when calculating the error
 
 	// Control variables, set by the user to determine how the closed loop controller works
 	bool 	closedLoopEnabled = false;					// Has closed loop been enabled by the user?
@@ -341,7 +342,7 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 
 	// Set default parameters
 	uint8_t tempEncoderType = GetEncoderType().ToBaseType();
-	float tempCPR = encoderPulsePerStep;		// TODO: Use countPerStepToExternalUnits() here
+	float tempCPR;
 	float tempKp = Kp;
 	float tempKi = Ki;
 	float tempKd = Kd;
@@ -367,7 +368,7 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 		const char* const units = (tempEncoderType == EncoderType::rotaryQuadrature) ? "encoder pulses/step"
 									: (tempEncoderType == EncoderType::AS5047) ? "motor degrees/step"
 										: "encoder CPR";
-		reply.catf(", %s: %.2f", units, (double)PulsePerStepToExternalUnits(tempCPR, tempEncoderType));
+		reply.catf(", %s: %.2f", units, (double)PulsePerStepToExternalUnits(encoderPulsePerStep, tempEncoderType));
 
 		if (encoder != nullptr)
 		{
@@ -378,19 +379,32 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 	}
 
 	// Validate the new params
-	if (tempEncoderType > EncoderType::NumValues) {reply.copy("Invalid T value. Valid values are 0 and 1"); return GCodeResult::error;}
-	if ((seen & (0x1 << 5)) && tempErrorThresholds[0] < 0) {reply.copy("Error threshold value must be greater than zero"); return GCodeResult::error;}
-	if ((seen & (0x1 << 5)) && tempErrorThresholds[1] < 0) {reply.copy("Error threshold value must be greater than zero"); return GCodeResult::error;}
-
-	// Convert external units to internal units
-	if (seen & (0x1 << 1)) {
-		tempCPR = ExternalUnitsToPulsePerStep(tempCPR, tempEncoderType);
+	if (tempEncoderType > EncoderType::NumValues)
+	{
+		reply.copy("Invalid T value. Valid values are 0 and 1");
+		return GCodeResult::error;
+	}
+	if ((seen & (0x1 << 5)) && (tempErrorThresholds[0] < 0 || tempErrorThresholds[1] < 0))
+	{
+		reply.copy("Error threshold value must be greater than zero");
+		return GCodeResult::error;
+	}
+	if ((seen & (0x1 << 1)) && tempCPR < 1.0)
+	{
+		reply.copy("Encoder counts per step most be positive");
+		return GCodeResult::error;
 	}
 
 	// Set the new params
 	TaskCriticalSectionLocker lock;			// don't allow the closed loop task to see an inconsistent combination of these values
 
-	encoderPulsePerStep = tempCPR;
+	if (seen & (0x1 << 1))
+	{
+		// Convert external units to internal units
+		encoderPulsePerStep = ExternalUnitsToPulsePerStep(tempCPR, tempEncoderType);
+		recipEncoderPulsesPerStep = 1.0/encoderPulsePerStep;
+	}
+
 	Kp = tempKp;
 	Ki = tempKi;
 	Kd = tempKd;
@@ -667,7 +681,7 @@ void ClosedLoop::FinishedBasicTuning() noexcept
 		{
 			const float averageOffset = (forwardTuningResults.revisedOrigin + reverseTuningResults.revisedOrigin) * 0.5;
 			((RelativeEncoder*)encoder)->SetOffset(-lrintf(averageOffset));					// in future, subtract this offset so that zero reading means zero phase
-			targetEncoderReading = lrintf(desiredStepPhase * fabsf(averageSlope));		// the encoder reading we ought to be getting now if there is no hysteresis
+			targetEncoderReading = lrintf(desiredStepPhase * fabsf(averageSlope));			// the encoder reading we ought to be getting now if there is no hysteresis
 			targetMotorSteps = currentMotorSteps = targetEncoderReading / encoderPulsePerStep;
 #if BASIC_TUNING_DEBUG
 			originalAssumedEncoderReading = desiredStepPhase * averageSlope + averageOffset;
@@ -705,29 +719,38 @@ void ClosedLoop::ControlLoop() noexcept
 	ReadState();
 
 	// Calculate and store the current error
-	currentError = (float)(targetEncoderReading - currentEncoderReading)/encoderPulsePerStep;	//TODO eliminate this division
+	currentError = (float)(targetEncoderReading - currentEncoderReading) * recipEncoderPulsesPerStep;
 	derivativeFilter.ProcessReading(currentError, loopCallTime);
 
-	if (!closedLoopEnabled) {
+	if (!closedLoopEnabled)
+	{
 		// If closed loop disabled, do nothing
-	} else if (tuning != 0) {										// if we need to tune, tune
+	}
+	else if (tuning != 0)											// if we need to tune, do it
+	{
 		// Limit the rate at which we command tuning steps Need to do signed comparison because initially, whenLastTuningStepTaken is in the future.
 		const int32_t timeSinceLastTuningStep = (int32_t)(loopCallTime - whenLastTuningStepTaken);
 		if (timeSinceLastTuningStep >= (int32_t)stepTicksPerTuningStep)
 		{
 			whenLastTuningStepTaken = loopCallTime;
 			PerformTune();
-			if (tuning == 0) {
-				Platform::DriveEnableOverride(0, false);
-			}		// If that was the last tuning move, release the override
+			if (tuning == 0)
+			{
+				Platform::DriveEnableOverride(0, false);			// If that was the last tuning move, release the override
+			}
 		}
-		else if (samplingMode == RecordingMode::OnNextMove && timeSinceLastTuningStep + (int32_t)DataCollectionIdleStepTicks >= 0) {
+		else if (samplingMode == RecordingMode::OnNextMove && timeSinceLastTuningStep + (int32_t)DataCollectionIdleStepTicks >= 0)
+		{
 			dataCollectionStartTicks = whenNextSampleDue = loopCallTime;
 			samplingMode = RecordingMode::Immediate;
 		}
-	} else if (tuningError) {
+	}
+	else if (tuningError)
+	{
 		// Don't do anything if there is a tuning error
-	} else {
+	}
+	else
+	{
 		ControlMotorCurrents(loopCallTime);							// otherwise control those motor currents!
 	}
 
@@ -874,7 +897,8 @@ void ClosedLoop::ControlMotorCurrents(StepTimer::Ticks loopStartTime) noexcept
 	preStall = errorThresholds[0] > 0 && fabsf(currentError) > errorThresholds[0];
 	const bool alreadyStalled = stall;
 	stall 	 = errorThresholds[1] > 0 && fabsf(currentError) > errorThresholds[1];
-	if (stall && !alreadyStalled) {
+	if (stall && !alreadyStalled)
+	{
 		Platform::NewDriverFault();
 	}
 
@@ -1016,17 +1040,18 @@ void ClosedLoop::ResetError(size_t driver) noexcept
 # endif
 }
 
-// This is called before the driver mode is changed
-bool ClosedLoop::SetClosedLoopEnabled(uint8_t drive, bool enabled, const StringRef &reply) noexcept
+// This is called before the driver mode is changed. Return true if success.
+bool ClosedLoop::SetClosedLoopEnabled(size_t driver, bool enabled, const StringRef &reply) noexcept
 {
+	// Trying to enable closed loop
+	if (driver != 0)
+	{
+		reply.copy("Invalid driver number");
+		return false;
+	}
+
 	if (enabled && !closedLoopEnabled)
 	{
-		// Trying to enable closed loop
-		if (drive != 0)
-		{
-			reply.copy("Invalid driver number");
-			return false;
-		}
 		if (encoder == nullptr)
 		{
 			reply.copy("No encoder specified for closed loop drive mode");
@@ -1063,12 +1088,31 @@ bool ClosedLoop::SetClosedLoopEnabled(uint8_t drive, bool enabled, const StringR
 }
 
 // This is called just after the driver has switched into closed loop mode (it may have been in closed loop mode already)
-void ClosedLoop::DriverSwitchedToClosedLoop(uint8_t drive) noexcept
+void ClosedLoop::DriverSwitchedToClosedLoop(size_t driver) noexcept
 {
-	delay(3);															// allow time for the switch to complete and a few control loop iterations to be done
-	SetMotorPhase(desiredStepPhase, SmartDrivers::GetStandstillCurrentPercent(0) * 0.01);	// set the motor currents to match the initial position using the open loop standstill current
-	PIDITerm = 0.0;														// clear the integral term accumulator
-	ResetMonitoringVariables();											// the first loop iteration will have recorded a higher than normal loop call interval, so start again
+	if (driver == 0)
+	{
+		delay(3);														// allow time for the switch to complete and a few control loop iterations to be done
+		SetMotorPhase(desiredStepPhase, SmartDrivers::GetStandstillCurrentPercent(0) * 0.01);	// set the motor currents to match the initial position using the open loop standstill current
+		PIDITerm = 0.0;													// clear the integral term accumulator
+		ResetMonitoringVariables();										// the first loop iteration will have recorded a higher than normal loop call interval, so start again
+	}
+}
+
+// If we are in closed loop modify the driver status appropriately
+StandardDriverStatus ClosedLoop::ModifyDriverStatus(size_t driver, StandardDriverStatus originalStatus) noexcept
+{
+	if (closedLoopEnabled && driver == 0)
+	{
+		originalStatus.stall = 0;										// ignore stall detection in open loop mode
+		originalStatus.standstill = 0;									// ignore standstill detection in closed loop mode
+		originalStatus.closedLoopNotTuned = ((tuningError & minimalTunes[encoder->GetType().ToBaseType()]) != 0);
+		originalStatus.closedLoopIllegalMove = 0;						//TODO implement this or remove it
+		originalStatus.closedLoopPositionWarning = preStall;
+		originalStatus.closedLoopPositionNotMaintained = stall;
+		originalStatus.closedLoopTuningError = ((tuningError & TUNE_ERR_TUNING_FAILURE) != 0);
+	}
+	return originalStatus;
 }
 
 #endif

@@ -1558,9 +1558,9 @@ void Platform::SetDirection(bool direction)
 # endif
 
 # if SUPPORT_CLOSED_LOOP
+	ClosedLoop::SetStepDirection(d);
 	if (ClosedLoop::GetClosedLoopEnabled())
 	{
-		ClosedLoop::SetStepDirection(d);
 		return;
 	}
 # endif

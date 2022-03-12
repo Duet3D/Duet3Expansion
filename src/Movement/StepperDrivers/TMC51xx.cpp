@@ -1721,12 +1721,14 @@ GCodeResult SmartDrivers::SetAnyRegister(size_t driver, const StringRef& reply, 
 
 StandardDriverStatus SmartDrivers::GetStatus(size_t driver, bool accumulated, bool clearAccumulated) noexcept
 {
+	StandardDriverStatus rslt;						// default constructor sets all bits to zero
 	if (driver < numTmc51xxDrivers)
 	{
-		return driverStates[driver].GetStatus(accumulated, clearAccumulated);
+		rslt = driverStates[driver].GetStatus(accumulated, clearAccumulated);
+#if SUPPORT_CLOSED_LOOP
+		rslt = ClosedLoop::ModifyDriverStatus(driver, rslt);
+#endif
 	}
-	StandardDriverStatus rslt;
-	rslt.all = 0;
 	return rslt;
 }
 
