@@ -451,7 +451,7 @@ extern "C" [[noreturn]] void UpdateBootloaderTask(void *pvParameters) noexcept
 // Return the amount of free handler stack space
 static ptrdiff_t GetHandlerFreeStack() noexcept
 {
-	const char * const ramend = &_estack;
+	const char * const ramend = (const char*)&_estack;
 	const char * stack_lwm = sysStackLimit;
 	while (stack_lwm < ramend && *stack_lwm == memPattern)
 	{
