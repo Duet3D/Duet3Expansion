@@ -754,6 +754,15 @@ void ClosedLoop::ControlLoop() noexcept
 		ControlMotorCurrents(loopCallTime);							// otherwise control those motor currents!
 	}
 
+	// Look for a stall or pre-stall
+	preStall = errorThresholds[0] > 0 && fabsf(currentError) > errorThresholds[0];
+	const bool alreadyStalled = stall;
+	stall 	 = errorThresholds[1] > 0 && fabsf(currentError) > errorThresholds[1];
+	if (stall && !alreadyStalled)
+	{
+		Platform::NewDriverFault();
+	}
+
 	// Collect a sample, if we need to
 	if (samplingMode == RecordingMode::Immediate && (int32_t)(loopCallTime - whenNextSampleDue) >= 0)
 	{
@@ -892,15 +901,6 @@ void ClosedLoop::ControlMotorCurrents(StepTimer::Ticks loopStartTime) noexcept
 {
 	// Get the time delta in seconds
 	const float timeDelta = (float)(loopStartTime - prevControlLoopCallTime) * (1.0/(float)StepTimer::StepClockRate);
-
-	// Look for a stall or pre-stall
-	preStall = errorThresholds[0] > 0 && fabsf(currentError) > errorThresholds[0];
-	const bool alreadyStalled = stall;
-	stall 	 = errorThresholds[1] > 0 && fabsf(currentError) > errorThresholds[1];
-	if (stall && !alreadyStalled)
-	{
-		Platform::NewDriverFault();
-	}
 
 	// Use a PID controller to calculate the required 'torque' - the control signal
 	// We choose to use a PID control signal in the range -256 to +256. This is rather arbitrary.
@@ -1108,10 +1108,16 @@ StandardDriverStatus ClosedLoop::ModifyDriverStatus(size_t driver, StandardDrive
 		originalStatus.standstill = 0;									// ignore standstill detection in closed loop mode
 		originalStatus.closedLoopNotTuned = ((tuningError & minimalTunes[encoder->GetType().ToBaseType()]) != 0);
 		originalStatus.closedLoopIllegalMove = 0;						//TODO implement this or remove it
-		originalStatus.closedLoopPositionWarning = preStall;
-		originalStatus.closedLoopPositionNotMaintained = stall;
 		originalStatus.closedLoopTuningError = ((tuningError & TUNE_ERR_TUNING_FAILURE) != 0);
 	}
+
+	if (!originalStatus.closedLoopNotTuned)
+	{
+		// Report position warnings and errors even in open loop mode, if tuning has been done
+		originalStatus.closedLoopPositionWarning = preStall;
+		originalStatus.closedLoopPositionNotMaintained = stall;
+	}
+
 	return originalStatus;
 }
 
