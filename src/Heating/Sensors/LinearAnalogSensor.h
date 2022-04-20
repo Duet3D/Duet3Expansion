@@ -10,8 +10,7 @@
 
 #include "SensorWithPort.h"
 
-#if SUPPORT_THERMISTORS
-
+// We now support linear analog sensors even if thermistors are not supported, for the ATE IOMB
 class LinearAnalogSensor : public SensorWithPort
 {
 public:
@@ -37,7 +36,5 @@ private:
 	static constexpr float DefaultLowTemp = 0.0;
 	static constexpr float DefaultHighTemp = 100.0;
 };
-
-#endif	//SUPPORT_THERMISTORS
 
 #endif /* SRC_HEATING_SENSORS_LINEARANALOGSENSOR_H_ */

@@ -7,8 +7,6 @@
 
 #include "LinearAnalogSensor.h"
 
-#if SUPPORT_THERMISTORS
-
 #include "Platform.h"
 #include "CanMessageGenericParser.h"
 
@@ -40,15 +38,19 @@ GCodeResult LinearAnalogSensor::Configure(const CanMessageGenericParser& parser,
 	{
 		seen = true;
 	}
+#if SUPPORT_THERMISTORS
 	if (parser.GetBoolParam('F', filtered))
 	{
 		seen = true;
 	}
-
+#endif
 	if (seen)
 	{
+#if SUPPORT_THERMISTORS
 		const bool wasFiltered = filtered;
+#endif
 		CalcDerivedParameters();
+#if SUPPORT_THERMISTORS
 		if (adcFilterChannel >= 0)
 		{
 			Platform::GetAdcFilter(adcFilterChannel)->Init(0);
@@ -58,6 +60,7 @@ GCodeResult LinearAnalogSensor::Configure(const CanMessageGenericParser& parser,
 			reply.copy("filtering not supported on this port");
 			return GCodeResult::warning;
 		}
+#endif
 	}
 	else
 	{
@@ -69,6 +72,7 @@ GCodeResult LinearAnalogSensor::Configure(const CanMessageGenericParser& parser,
 
 void LinearAnalogSensor::Poll()
 {
+#if SUPPORT_THERMISTORS
 	if (filtered && adcFilterChannel >= 0)
 	{
 		const volatile ThermistorAveragingFilter * const tempFilter = Platform::GetAdcFilter(adcFilterChannel);
@@ -83,6 +87,7 @@ void LinearAnalogSensor::Poll()
 		}
 	}
 	else
+#endif
 	{
 		SetResult((port.ReadAnalog() * linearIncreasePerCount) + lowTemp, TemperatureError::success);
 	}
@@ -90,14 +95,17 @@ void LinearAnalogSensor::Poll()
 
 void LinearAnalogSensor::CalcDerivedParameters()
 {
+#if SUPPORT_THERMISTORS
 	adcFilterChannel = Platform::GetAveragingFilterIndex(port);
 	if (adcFilterChannel < 0)
 	{
 		filtered = false;
 	}
+#else
+	adcFilterChannel = -1;
+	filtered = false;
+#endif
 	linearIncreasePerCount = (highTemp - lowTemp)/((filtered) ? FilteredAdcRange : UnfilteredAdcRange);
 }
-
-#endif	//SUPPORT_THERMISTORS
 
 // End

@@ -97,8 +97,14 @@ void TemperatureSensor::UpdateRemoteTemperature(CanAddress src, const CanSensorR
 TemperatureSensor *TemperatureSensor::Create(unsigned int sensorNum, const char *typeName, const StringRef& reply)
 {
 	TemperatureSensor *ts;
+
+	// We now always support linear analog sensors to make it easier to test analog inputs on the ATE IOMB
+	if (ReducedStringEquals(typeName, LinearAnalogSensor::TypeName))
+	{
+		ts = new LinearAnalogSensor(sensorNum);
+	}
 #if SUPPORT_THERMISTORS
-	if (ReducedStringEquals(typeName, Thermistor::TypeNameThermistor))
+	else if (ReducedStringEquals(typeName, Thermistor::TypeNameThermistor))
 	{
 		ts = new Thermistor(sensorNum, false);
 	}
@@ -106,14 +112,9 @@ TemperatureSensor *TemperatureSensor::Create(unsigned int sensorNum, const char 
 	{
 		ts = new Thermistor(sensorNum, true);
 	}
-	else if (ReducedStringEquals(typeName, LinearAnalogSensor::TypeName))
-	{
-		ts = new LinearAnalogSensor(sensorNum);
-	}
-	else
 #endif
 #if SUPPORT_SPI_SENSORS
-	if (ReducedStringEquals(typeName, ThermocoupleSensor31855::TypeName))
+	else if (ReducedStringEquals(typeName, ThermocoupleSensor31855::TypeName))
 	{
 		ts = new ThermocoupleSensor31855(sensorNum);
 	}
@@ -129,7 +130,6 @@ TemperatureSensor *TemperatureSensor::Create(unsigned int sensorNum, const char 
 	{
 		ts = new CurrentLoopTemperatureSensor(sensorNum);
 	}
-	else
 #endif
 #if SUPPORT_DHT_SENSOR
 	else if (ReducedStringEquals(typeName, DhtTemperatureSensor::TypeName))
@@ -140,22 +140,20 @@ TemperatureSensor *TemperatureSensor::Create(unsigned int sensorNum, const char 
 	{
 		ts = new DhtHumiditySensor(sensorNum);
 	}
-	else
 #endif
 #if HAS_CPU_TEMP_SENSOR
-	if (ReducedStringEquals(typeName, CpuTemperatureSensor::TypeName))
+	else if (ReducedStringEquals(typeName, CpuTemperatureSensor::TypeName))
 	{
 		ts = new CpuTemperatureSensor(sensorNum);
 	}
-	else
 #endif
 #if HAS_SMART_DRIVERS
-	if (ReducedStringEquals(typeName, TmcDriverTemperatureSensor::TypeName))
+	else if (ReducedStringEquals(typeName, TmcDriverTemperatureSensor::TypeName))
 	{
 		ts = new TmcDriverTemperatureSensor(sensorNum);
 	}
-	else
 #endif
+	else
 	{
 		ts = nullptr;
 		reply.printf("Unknown sensor type name \"%s\"", typeName);
