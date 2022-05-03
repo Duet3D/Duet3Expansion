@@ -101,8 +101,8 @@ constexpr size_t MaxPortsPerHeater = 1;
 constexpr size_t NumThermistorInputs = 2;
 constexpr float DefaultThermistorSeriesR = 2200.0;
 constexpr float VrefTopResistor = 10.0;
-constexpr float MinVrefLoadR = (DefaultThermistorSeriesR / NumThermistorInputs) * 2200.0/((DefaultThermistorSeriesR / NumThermistorInputs) + 2200.0);
-																			// there are 2 temperature sensing channels and a 2K2 load resistor
+constexpr float MinVrefLoadR = (DefaultThermistorSeriesR / NumThermistorInputs) * 1000.0/((DefaultThermistorSeriesR / NumThermistorInputs) + 1000.0);
+																			// there are 2 temperature sensing channels and a 1K load resistor (2K2 prior to version 1.3)
 constexpr Pin BoardTypePin = PortAPin(5);
 
 constexpr Pin VinMonitorPin = PortAPin(8);
