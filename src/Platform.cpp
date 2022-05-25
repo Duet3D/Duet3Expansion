@@ -89,7 +89,7 @@ namespace Platform
 
 	UniqueIdBase uniqueId;
 	bool isPrinting = false;
-#ifdef TOOL1LC
+#if defined(EXP3HC) || defined(TOOL1LC)
 	static uint8_t boardVariant = 0;
 #endif
 
@@ -224,29 +224,28 @@ namespace Platform
 
 #if HAS_VOLTAGE_MONITOR
 
-	inline constexpr float AdcReadingToVinVoltage(uint16_t adcVal)
+	inline float AdcReadingToVinVoltage(uint16_t adcVal) noexcept
 	{
+# ifdef EXP3HC
+		return adcVal * ((boardVariant == 1)
+							? VinMonitorVoltageRange102AndLater/(1u << AnalogIn::AdcBits)
+								: VinMonitorVoltageRangePre102/(1u << AnalogIn::AdcBits)
+						);
+# else
 		return adcVal * (VinMonitorVoltageRange/(1u << AnalogIn::AdcBits));
+# endif
 	}
-
-	inline constexpr uint16_t VinVoltageToAdcReading(float voltage)
-	{
-		return (uint16_t)(voltage * ((1u << AnalogIn::AdcBits)/VinMonitorVoltageRange));
-	}
-
-	constexpr uint16_t driverPowerOnAdcReading = VinVoltageToAdcReading(10.0);			// minimum voltage at which we initialise the drivers
-	constexpr uint16_t driverPowerOffAdcReading = VinVoltageToAdcReading(9.5);			// voltages below this flag the drivers as unusable
 
 #endif
 
 #if HAS_12V_MONITOR
 
-	inline constexpr float AdcReadingToV12Voltage(uint16_t adcVal)
+	inline constexpr float AdcReadingToV12Voltage(uint16_t adcVal) noexcept
 	{
 		return adcVal * (V12MonitorVoltageRange/(1u << AnalogIn::AdcBits));
 	}
 
-	inline constexpr uint16_t V12VoltageToAdcReading(float voltage)
+	inline constexpr uint16_t V12VoltageToAdcReading(float voltage) noexcept
 	{
 		return (uint16_t)(voltage * ((1u << AnalogIn::AdcBits)/V12MonitorVoltageRange));
 	}
@@ -254,7 +253,7 @@ namespace Platform
 #endif
 
 #if HAS_SMART_DRIVERS
-	static void UpdateMotorCurrent(size_t driver)
+	static void UpdateMotorCurrent(size_t driver) noexcept
 	{
 		SmartDrivers::SetCurrent(driver, (driverAtIdleCurrent[driver]) ? motorCurrents[driver] * idleCurrentFactor[driver] : motorCurrents[driver]);
 	}
@@ -583,12 +582,17 @@ void Platform::Init()
 {
 	IoPort::Init();
 
-#ifdef TOOL1LC
+#if defined(TOOL1LC)
 	// On the board detect pin:
 	// Tool board V1.0 and earlier has 1K lower resistor, 10K upper, so will read as low
 	// Tool board V1.1 has 10K lower resistor, 1K upper, so will read as high
 	pinMode(BoardTypePin, INPUT);
 	boardVariant = (digitalRead(BoardTypePin)) ? 1 : 0;
+#elif defined(EXP3HC)
+	// Version 1.02 board has a pulldown resistor on BoardTypePins[1], earlier versions do not
+	pinMode(BoardTypePins[1], INPUT_PULLUP);
+	delayMicroseconds(10);
+	boardVariant = (digitalRead(BoardTypePins[1])) ? 0 : 1;
 #endif
 
 	InitLeds();
@@ -2170,9 +2174,13 @@ float Platform::GetCurrentV12Voltage() noexcept
 
 void Platform::AppendBoardAndFirmwareDetails(const StringRef& reply) noexcept
 {
-#ifdef TOOL1LC
+#if defined(TOOL1LC)
 	reply.lcatf("Duet " BOARD_TYPE_NAME " rev %s firmware version " VERSION " (%s%s)",
 				(boardVariant == 1) ? "1.1 or later" : "1.0 or earlier",
+				IsoDate, TIME_SUFFIX);
+#elif defined(EXP3HC)
+	reply.lcatf("Duet " BOARD_TYPE_NAME " rev %s firmware version " VERSION " (%s%s)",
+				(boardVariant == 1) ? "1.02 or later" : "1.01 or earlier",
 				IsoDate, TIME_SUFFIX);
 #else
 	reply.lcatf("Duet " BOARD_TYPE_NAME " firmware version " VERSION " (%s%s)",

@@ -88,12 +88,16 @@ constexpr Pin LedPins[] = { PortCPin(10), PortCPin(7) };
 constexpr bool LedActiveHigh = true;
 
 constexpr Pin VinMonitorPin = PortAPin(10);
-constexpr float VinDividerRatio = (60.4 + 4.7)/4.7;
-constexpr float VinMonitorVoltageRange = VinDividerRatio * 3.3;		// We use the 3.3V supply as the voltage reference
+
+constexpr float VinDividerRatioPre102 = (60.4 + 4.7)/4.7;
+constexpr float VinMonitorVoltageRangePre102 = VinDividerRatioPre102 * 3.3;				// We use the 3.3V supply as the voltage reference
+
+constexpr float VinDividerRatio102AndLater = (100.0 + 5.1)/5.1;
+constexpr float VinMonitorVoltageRange102AndLater = VinDividerRatio102AndLater * 3.3;	// We use the 3.3V supply as the voltage reference
 
 constexpr Pin V12MonitorPin = PortBPin(5);
 constexpr float V12DividerRatio = (60.4 + 4.7)/4.7;
-constexpr float V12MonitorVoltageRange = V12DividerRatio * 3.3;		// We use the 3.3V supply as the voltage reference
+constexpr float V12MonitorVoltageRange = V12DividerRatio * 3.3;							// We use the 3.3V supply as the voltage reference
 
 constexpr Pin VrefPin = PortBPin(4);
 constexpr Pin VssaPin = PortBPin(6);
