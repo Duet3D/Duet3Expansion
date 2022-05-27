@@ -22,7 +22,7 @@ public:
 	void operator delete(void* p) noexcept { FreelistManager::Release<QuadratureEncoderPdec>(p); }
 
 	inline QuadratureEncoderPdec() noexcept : RelativeEncoder(), lastCount(0), counterHigh(0) {}
-	inline ~QuadratureEncoderPdec() { Disable(); }
+	inline ~QuadratureEncoderPdec() { QuadratureEncoderPdec::Disable(); }
 
 	EncoderType GetType() const noexcept override { return EncoderType::rotaryQuadrature; }
 	GCodeResult Init(const StringRef& reply) noexcept override;
