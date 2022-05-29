@@ -541,16 +541,6 @@ void IoPort::AppendPinName(const StringRef& str, bool includeBoardAddress) const
 	AnalogOut::Write(p, pwm, frequency);
 }
 
-#if SAMC21
-
-// Set high driver strength on an output pin
-/*static*/ void IoPort::SetHighDriveStrength(Pin p)
-{
-	PORT->Group[GpioPortNumber(p)].PINCFG[GpioPinNumber(p)].reg |= PORT_PINCFG_DRVSTR;
-}
-
-#endif
-
 // Members of class PwmPort
 PwmPort::PwmPort()
 {

@@ -91,11 +91,6 @@ public:
 	static void WriteDigital(Pin p, bool high);
 	static void WriteAnalog(Pin p, float pwm, uint16_t frequency);
 
-#if SAMC21
-	// Set high driver strength on an output pin
-	static void SetHighDriveStrength(Pin p);
-#endif
-
 protected:
 	bool Allocate(const char *pinName, const StringRef& reply, PinUsedBy neededFor, PinAccess access);
 

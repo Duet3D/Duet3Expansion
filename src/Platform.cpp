@@ -613,7 +613,7 @@ void Platform::Init()
 			{
 #if SAMC21
 				// Set high driver strength on the output pins because they drive the heater and fan mosfets directly
-				IoPort::SetHighDriveStrength(pin);
+				SetHighDriveStrength(pin);
 #endif
 
 #ifdef TOOL1LC
@@ -635,7 +635,7 @@ void Platform::Init()
 #ifdef ATEIO
 			else if (StringStartsWith(p.pinNames, "!rsel") || StringStartsWith(p.pinNames, "!tsel"))
 			{
-				IoPort::SetHighDriveStrength(pin);
+				SetHighDriveStrength(pin);
 				IoPort::SetPinMode(pin, OUTPUT_HIGH);
 			}
 #endif
@@ -736,9 +736,9 @@ void Platform::Init()
 # if DIFFERENTIAL_STEPPER_OUTPUTS
 		// Step pins
 		IoPort::SetPinMode(StepPins[i], OUTPUT_LOW);
-		IoPort::SetHighDriveStrength(StepPins[i]);
+		SetHighDriveStrength(StepPins[i]);
 		IoPort::SetPinMode(InvertedStepPins[i], OUTPUT_HIGH);
-		IoPort::SetHighDriveStrength(InvertedStepPins[i]);
+		SetHighDriveStrength(InvertedStepPins[i]);
 
 		// Set up the CCL to invert the step output from PB10 to the inverted output on PA11
 		MCLK->APBCMASK.reg |= MCLK_APBCMASK_CCL;
@@ -785,15 +785,15 @@ void Platform::Init()
 
 		// Direction pins
 		IoPort::SetPinMode(DirectionPins[i], OUTPUT_LOW);
-		IoPort::SetHighDriveStrength(DirectionPins[i]);
+		SetHighDriveStrength(DirectionPins[i]);
 		IoPort::SetPinMode(InvertedDirectionPins[i], OUTPUT_HIGH);
-		IoPort::SetHighDriveStrength(InvertedDirectionPins[i]);
+		SetHighDriveStrength(InvertedDirectionPins[i]);
 
 		// Enable pins
 		IoPort::SetPinMode(EnablePins[i], OUTPUT_LOW);
-		IoPort::SetHighDriveStrength(EnablePins[i]);
+		SetHighDriveStrength(EnablePins[i]);
 		IoPort::SetPinMode(InvertedEnablePins[i], OUTPUT_HIGH);
-		IoPort::SetHighDriveStrength(InvertedEnablePins[i]);
+		SetHighDriveStrength(InvertedEnablePins[i]);
 		enableValues[i] = 1;
 		driverIsEnabled[i] = false;
 # else
@@ -804,7 +804,7 @@ void Platform::Init()
 		IoPort::SetPinMode(StepPins[i], OUTPUT_HIGH);
 #  endif
 #  if !HAS_SMART_DRIVERS
-		IoPort::SetHighDriveStrength(StepPins[i]);
+		SetHighDriveStrength(StepPins[i]);
 #  endif
 
 		// Direction pins
@@ -814,7 +814,7 @@ void Platform::Init()
 		IoPort::SetPinMode(DirectionPins[i], OUTPUT_HIGH);
 #  endif
 #  if !HAS_SMART_DRIVERS
-		IoPort::SetHighDriveStrength(DirectionPins[i]);
+		SetHighDriveStrength(DirectionPins[i]);
 #  endif
 
 #  if !HAS_SMART_DRIVERS
@@ -826,7 +826,7 @@ void Platform::Init()
 		IoPort::SetPinMode(EnablePins[i], OUTPUT_HIGH);
 		enableValues[i] = 0;
 #   endif
-		IoPort::SetHighDriveStrength(EnablePins[i]);
+		SetHighDriveStrength(EnablePins[i]);
 		driverIsEnabled[i] = false;
 #  endif
 # endif
