@@ -69,7 +69,7 @@ constexpr PinDescription PinTable[] =
 	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_7,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"ain3"		},	// PA07 Ain3
 	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_8,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"ain4"		},	// PA08 Ain4
 	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_9,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"ain5"		},	// PA09 Ain5
-	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_10,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"ain6"		},	// PA10 Ain6
+	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_10,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"ain6,cs6"	},	// PA10 Ain6 or current sense
 	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_11,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"ain7"		},	// PA11 Ain7
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"din6" 		},	// PA12 Din6
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PA13 unused
