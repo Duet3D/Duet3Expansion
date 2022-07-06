@@ -32,8 +32,9 @@ static uint16_t AdcTransfer(uint16_t dataOut) noexcept
 {
 	const uint8_t wb[2] = { (uint8_t)(dataOut >> 8), (uint8_t)(dataOut & 255) };
 	uint8_t rb[2];
+	delayNanoseconds(100);
 	device->TransceivePacket(wb, rb, 2);
-	delayMicroseconds(1);
+	delayNanoseconds(100);
 	return ((uint16_t)rb[0] << 8) | rb[1];
 }
 
@@ -44,16 +45,12 @@ void ExtendedAnalog::Init(SharedSpiDevice& sharedSpi) noexcept
 	device->SetCsPin(ExtendedAdcCsPin);
 
 	device->Select(TaskBase::TimeoutUnlimited);
-	delayMicroseconds(1);
 
 	// Write the two range registers, select 0V to +10V range
 	(void)AdcTransfer((1 << 15) | (1 << 13) | (3 << 11) | (3 << 9) | (3 << 7) | (3 << 5));
-
 	digitalWrite(ExtendedAdcCsPin, true);
 	delayMicroseconds(1);
 	digitalWrite(ExtendedAdcCsPin, false);
-	delayMicroseconds(1);
-
 	(void)AdcTransfer((1 << 15) | (2 << 13) | (3 << 11) | (3 << 9) | (3 << 7) | (3 << 5));
 
 	for (uint16_t chan = 0; chan < 8; ++chan)
@@ -61,14 +58,12 @@ void ExtendedAnalog::Init(SharedSpiDevice& sharedSpi) noexcept
 		digitalWrite(ExtendedAdcCsPin, true);
 		delayMicroseconds(1);
 		digitalWrite(ExtendedAdcCsPin, false);
-		delayMicroseconds(1);
 
 		// Write the control register, select single ended input for this channel, internal reference, sequencer not used
 		(void)AdcTransfer(ControlRegisterValue | (chan << 10));
 	}
 
 	device->Deselect();
-	delayMicroseconds(1);
 }
 
 // Read an ADC channel
@@ -76,18 +71,13 @@ uint16_t ExtendedAnalog::AnalogIn(unsigned int chan) noexcept
 {
 	if (device->Select(200))
 	{
-		delayMicroseconds(1);
 		(void)AdcTransfer(ControlRegisterValue | ((chan & 7) << 10));	// set channel to sample next
-
 		// We need to pulse CS low and high again to get the ADC to convert the channel we just selected
 		digitalWrite(ExtendedAdcCsPin, true);
-		delayMicroseconds(1);
+		delayMicroseconds(5);											// the ADC data acquisition time is this delay plus about 1.5clock cycles
 		digitalWrite(ExtendedAdcCsPin, false);
-		delayMicroseconds(1);
-
 		const uint16_t rslt = AdcTransfer(0);
 		device->Deselect();
-		delayMicroseconds(1);
 		if ((rslt >> 13) == chan)										// if the result is for the channel we asked for
 		{
 			static_assert(AnalogIn::AdcBits >= 14);
