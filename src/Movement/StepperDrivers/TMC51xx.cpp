@@ -65,7 +65,7 @@ constexpr uint32_t DefaultThigh = 200;
 constexpr uint32_t DefaultTmcClockSpeed = 12000000;			// the default rate at which the TMC driver is clocked internally
 
 #if SUPPORT_CLOSED_LOOP
-constexpr size_t TmcTaskStackWords = 430;					// we need extra stack to handle closed loop tuning and writing t NVM
+constexpr size_t TmcTaskStackWords = 430;					// we need extra stack to handle closed loop tuning and writing to NVM
 #else
 constexpr size_t TmcTaskStackWords = 140;					// with 100 stack words, deckingman's M122 on the main board after a major axis shift showed just 10 words left
 #endif
