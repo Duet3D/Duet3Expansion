@@ -892,7 +892,10 @@ void CommandProcessor::Spin()
 	CanMessageBuffer *buf = CanInterface::GetCanCommand(0);
 	if (buf != nullptr)
 	{
-		Platform::OnProcessingCanMessage();
+		if (buf->id.Dst() != CanId::BroadcastAddress)
+		{
+			Platform::OnProcessingCanMessage();
+		}
 		String<StringLength500> reply;
 		const StringRef& replyRef = reply.GetRef();
 		const CanMessageType id = buf->id.MsgType();
