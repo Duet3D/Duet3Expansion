@@ -70,6 +70,7 @@ public:
 #endif
 
 	const volatile int32_t *GetLastMoveStepsTaken() const noexcept { return lastMoveStepsTaken; }
+
 private:
 	bool DDARingAdd() noexcept;														// Add a processed look-ahead entry to the DDA ring
 	DDA* DDARingGet() noexcept;														// Get the next DDA ring entry to be run
