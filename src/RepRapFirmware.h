@@ -10,7 +10,13 @@
 
 #include <CoreIO.h>
 
-typedef double floatc_t;
+// Define floating point type to use for calculations where we would like high precision in matrix calculations
+#if SAME70
+typedef double floatc_t;						// type of matrix element used for calibration
+#else
+// We are more memory-constrained on the other processors and they don't support double precision
+typedef float floatc_t;							// type of matrix element used for calibration
+#endif
 
 #include <Config/BoardDef.h>
 #include "Configuration.h"
