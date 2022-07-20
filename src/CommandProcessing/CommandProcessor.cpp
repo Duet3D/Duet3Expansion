@@ -681,6 +681,10 @@ static GCodeResult InitiateFirmwareUpdate(const CanMessageUpdateYourFirmware& ms
 		Platform::StartBootloaderUpdate();
 #endif
 		break;
+
+	default:
+		reply.copy("unknown firmware module number");
+		return GCodeResult::error;
 	}
 	return GCodeResult::ok;
 }
