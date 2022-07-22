@@ -233,6 +233,7 @@ bool DDA::Init(const CanMessageMovementLinear& msg)
 	flags.hadHiccup = false;
 	flags.goingSlow = false;
 
+	// Calculate the speeds and accelerations assuming unit movement length
 	topSpeed = 2.0/(2 * msg.steadyClocks + (msg.initialSpeedFraction + 1.0) * msg.accelerationClocks + (msg.finalSpeedFraction + 1.0) * msg.decelClocks);
 	startSpeed = topSpeed * msg.initialSpeedFraction;
 	endSpeed = topSpeed * msg.finalSpeedFraction;
@@ -240,6 +241,7 @@ bool DDA::Init(const CanMessageMovementLinear& msg)
 	acceleration = (msg.accelerationClocks == 0) ? 1.0 : (topSpeed * (1.0 - msg.initialSpeedFraction))/msg.accelerationClocks;
 	deceleration = (msg.decelClocks == 0) ? 1.0 : (topSpeed * (1.0 - msg.finalSpeedFraction))/msg.decelClocks;
 
+	// Calculate the distances as a fraction of the total movement length
 	accelDistance = (msg.accelerationClocks == 0) ? 0.0
 						: (msg.accelerationClocks == clocksNeeded) ? 1.0
 							: topSpeed * (1.0 + msg.initialSpeedFraction) * msg.accelerationClocks * 0.5;
