@@ -352,6 +352,6 @@ inline void DriveMovement::GetCurrentMotion(MotionParameters& mParams, int32_t n
 
 #endif
 
-	#endif	// SUPPORT_DRIVERS
+#endif	// SUPPORT_DRIVERS
 
 #endif /* DRIVEMOVEMENT_H_ */

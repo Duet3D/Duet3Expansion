@@ -32,7 +32,7 @@ RotatingMagnetFilamentMonitor::RotatingMagnetFilamentMonitor(unsigned int extrud
 void RotatingMagnetFilamentMonitor::Init() noexcept
 {
 	dataReceived = false;
-	sensorValue = 0;
+	sensorValue = lastKnownPosition = 0;
 	parityErrorCount = framingErrorCount = overrunErrorCount = polarityErrorCount = overdueCount = 0;
 	lastMeasurementTime = 0;
 	lastErrorCode = 0;
@@ -178,12 +178,6 @@ GCodeResult RotatingMagnetFilamentMonitor::Configure(const CanMessageGenericPars
 	return rslt;
 }
 
-// Return the current wheel angle
-float RotatingMagnetFilamentMonitor::GetCurrentPosition() const noexcept
-{
-	return (sensorValue & TypeMagnetAngleMask) * (360.0/1024.0);
-}
-
 // Deal with any received data
 void RotatingMagnetFilamentMonitor::HandleIncomingData() noexcept
 {
@@ -294,6 +288,7 @@ void RotatingMagnetFilamentMonitor::HandleIncomingData() noexcept
 		if (receivedPositionReport)
 		{
 			// We have a completed a position report
+			lastKnownPosition = sensorValue & TypeMagnetAngleMask;
 			const uint16_t angleChange = (val - sensorValue) & TypeMagnetAngleMask;			// angle change in range 0..1023
 			const int32_t movement = (angleChange <= 512) ? (int32_t)angleChange : (int32_t)angleChange - 1024;
 			movementMeasuredSinceLastSync += (float)movement/1024;
@@ -475,7 +470,7 @@ void RotatingMagnetFilamentMonitor::Diagnostics(const StringRef& reply) noexcept
 	reply.lcatf("Driver %u: ", GetDriver());
 	if (dataReceived)
 	{
-		reply.catf("pos %.2f", (double)GetCurrentPosition());
+		reply.catf("pos %.2f", (double)(float)(sensorValue * (360.0/1024.0)));
 	}
 	else
 	{
