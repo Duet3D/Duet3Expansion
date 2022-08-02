@@ -12,7 +12,7 @@
 #include <Cache.h>
 
 // Perform a software reset. 'stk' points to the exception stack (r0 r1 r2 r3 r12 lr pc xPSR) if the cause is an exception, otherwise it is nullptr.
-void SoftwareReset(SoftwareResetReason initialReason, const uint32_t *stk) noexcept
+void SoftwareReset(SoftwareResetReason initialReason, const uint32_t *_ecv_array null stk) noexcept
 {
 	uint16_t fullReason = (uint16_t)initialReason;
 	IrqDisable();								// disable interrupts before we call any flash functions. We don't enable them again.
