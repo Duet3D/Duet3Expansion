@@ -910,6 +910,7 @@ void CommandProcessor::Spin()
 		switch (id)
 		{
 		case CanMessageType::sensorTemperaturesReport:
+			requestId = CanRequestIdNoReplyNeeded;
 			Heat::ProcessRemoteSensorsReport(buf->id.Src(), buf->msg.sensorTemperaturesBroadcast);
 			break;
 
