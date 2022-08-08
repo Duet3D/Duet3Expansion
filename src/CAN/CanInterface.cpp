@@ -56,7 +56,7 @@ constexpr CanDevice::Config Can0Config =
 	.txFifoSize = 10,								// enough to send a 512-byte response broken into 60-byte fragments
 	.numRxBuffers = 1,								// we use a dedicated buffer for the clock sync messages
 	.rxFifo0Size = 32,
-	.rxFifo1Size = 0,
+	.rxFifo1Size = 0,								// we don't use FIFO 1
 	.numShortFilterElements = 0,
 	.numExtendedFilterElements = 3,
 	.txEventFifoSize = 2
@@ -515,8 +515,13 @@ CanMessageBuffer *CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf) no
 			break;
 		}
 	}
+	else if (buf->id.Dst() == CanId::BroadcastAddress && buf->id.MsgType() == CanMessageType::sensorTemperaturesReport && buf->id.IsRequest())
+	{
+		PendingCommands.AddMessage(buf);				// it's a broadcast message that we are interested in, so queue it for processing
+		return nullptr;
+	}
 
-	return buf;
+	return buf;											// ignore the message, reuse the buffer
 }
 
 void CanInterface::Diagnostics(const StringRef& reply) noexcept
