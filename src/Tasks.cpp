@@ -252,7 +252,8 @@ static FirmwareFlashErrorCode RequestBootloaderBlock(uint32_t fileOffset, uint32
 	SafeStrncpy(msg->boardType, BOOTLOADER_NAME, sizeof(msg->boardType));
 	msg->boardVersion = 0;
 	msg->bootloaderVersion = CanMessageFirmwareUpdateRequest::BootloaderVersion0;
-	msg->fileWanted = 3;
+	msg->uf2Format = false;
+	msg->fileWanted = (uint32_t)FirmwareModule::bootloader;
 	msg->fileOffset = fileOffset;
 	msg->lengthRequested = numBytes;
 	buf.dataLength = msg->GetActualDataLength();
