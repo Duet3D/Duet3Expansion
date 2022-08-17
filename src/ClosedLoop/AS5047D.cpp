@@ -166,7 +166,7 @@ void AS5047D::AppendDiagnostics(const StringRef &reply) noexcept
 {
 	reply.catf(", encoder full rotations %d", (int) fullRotations);
 	reply.catf(", encoder last angle %d", (int) lastAngle);
-	reply.catf(", zero crossing index=%d, zero crossing offset=%d", zeroCrossingIndex, zeroCrossingOffset);
+	reply.catf(", zero crossing index=%d, zero crossing offset=%d, minCorrection=%.1f, maxCorrection=%.1f", zeroCrossingIndex, zeroCrossingOffset, (double)minCorrection, (double)maxCorrection);
 	DiagnosticRegisters regs;
 	if (GetDiagnosticRegisters(regs))
 	{

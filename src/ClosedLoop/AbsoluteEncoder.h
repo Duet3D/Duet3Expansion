@@ -60,8 +60,8 @@ protected:
 	bool LUTLoaded;
 	int zeroCrossingIndex;
 	int zeroCrossingOffset;
+	float minCorrection = 0.0, maxCorrection = 0.0;
 	float correctionLUT[MAX / LUT_RESOLUTION];
-
 };
 
 # include <Hardware/NonVolatileMemory.h>
@@ -109,16 +109,20 @@ bool AbsoluteEncoder<MAX, LUT_RESOLUTION>::LoadLUT() noexcept {
 
 	NonVolatileMemory mem(NvmPage::closedLoop);
 	if (!mem.GetClosedLoopDataWritten()) {return false;}
-	float* fourierAngles = mem.GetClosedLoopLUTHarmonicAngles();
-	float* fourierMagnitudes = mem.GetClosedLoopLUTHarmonicMagnitudes();
+	const float* const fourierAngles = mem.GetClosedLoopLUTHarmonicAngles();
+	const float* const fourierMagnitudes = mem.GetClosedLoopLUTHarmonicMagnitudes();
 
-	// TODO: Read back LUT from NVRAM (fourier transform -> array)
+	// Read back LUT from NVRAM (Fourier transform -> array)
+	minCorrection = maxCorrection = 0.0;
 	const size_t LUTLength = MAX / LUT_RESOLUTION;
-	for (size_t index=0; index<LUTLength; index++) {
-		correctionLUT[index] = index * LUT_RESOLUTION;
+	for (size_t index = 0; index < LUTLength; index++) {
+		float correction = 0.0;
 		for (size_t harmonic=0; harmonic<NUM_HARMONICS; harmonic++) {
-			correctionLUT[index] -= fourierMagnitudes[harmonic] * sinf(harmonic * TwoPi * index / LUTLength + fourierAngles[harmonic]);
+			correction += fourierMagnitudes[harmonic] * sinf(harmonic * TwoPi * index / LUTLength + fourierAngles[harmonic]);
 		}
+		correctionLUT[index] = (float)(index * LUT_RESOLUTION) - correction;
+		if (correction < minCorrection) { minCorrection = correction; }
+		else if (correction > maxCorrection) { maxCorrection = correction; }
 	}
 
 	// Find the zero-crossing index and offset
@@ -141,9 +145,9 @@ template<unsigned int MAX, unsigned int LUT_RESOLUTION>
 void AbsoluteEncoder<MAX, LUT_RESOLUTION>::StoreLUT() noexcept {
 	// TODO: Verify all LUT values are present
 
-	// TODO: Store LUT to NVRAM (as Fourier transform)
+	// Store LUT to NVRAM (as Fourier transform)
 	NonVolatileMemory mem(NvmPage::closedLoop);
-	for (size_t harmonic=0; harmonic<NUM_HARMONICS; harmonic++) {
+	for (size_t harmonic = 0; harmonic < NUM_HARMONICS; harmonic++) {
 		float sum1 = 0.0, sum2 = 0.0;
 		const size_t LUTLength = MAX / LUT_RESOLUTION;
 		for (size_t i = 0; i < LUTLength; ++i)
@@ -164,11 +168,13 @@ void AbsoluteEncoder<MAX, LUT_RESOLUTION>::StoreLUT() noexcept {
 template<unsigned int MAX, unsigned int LUT_RESOLUTION>
 void AbsoluteEncoder<MAX, LUT_RESOLUTION>::ClearLUT() noexcept {
 	LUTLoaded = false;
+	minCorrection = maxCorrection = 0.0;
 }
 
 template<unsigned int MAX, unsigned int LUT_RESOLUTION>
 void AbsoluteEncoder<MAX, LUT_RESOLUTION>::ScrubLUT() noexcept {
 	// TODO: Remove LUT from NVRAM
+	ClearLUT();
 }
 
 template<unsigned int MAX, unsigned int LUT_RESOLUTION>
