@@ -9,9 +9,18 @@
 #define SRC_HARDWARE_DEVICES_H_
 
 #include <RepRapFirmware.h>
+
+#if RP2040
+
+//TODO expose the USB interface as a serial device
+
+#else
+
 #include <AsyncSerial.h>
 
 extern AsyncSerial uart0;
+
+#endif
 
 void DeviceInit() noexcept;
 

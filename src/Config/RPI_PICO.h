@@ -15,7 +15,7 @@
 
 // General features
 #define HAS_VREF_MONITOR		0
-#define HAS_VOLTAGE_MONITOR		0
+#define HAS_VOLTAGE_MONITOR		1
 #define HAS_12V_MONITOR			0
 #define HAS_CPU_TEMP_SENSOR		1
 #define HAS_ADDRESS_SWITCHES	0
@@ -53,26 +53,35 @@ constexpr Pin DirectionPins[NumDrivers] = { PortAPin(10) };
 
 #define SUPPORT_THERMISTORS		1
 #define SUPPORT_SPI_SENSORS		0
-#define SUPPORT_I2C_SENSORS		0
-#define SUPPORT_LIS3DH			0
+#define SUPPORT_I2C_SENSORS		1
+#define SUPPORT_LIS3DH			1
 #define SUPPORT_DHT_SENSOR		0
 
 #define USE_MPU					0
 #define USE_CACHE				0
+
+#define PIN_TODO	GpioPin(NoPin)	//TEMPORARY! Used when we haven't assigned a pin yet.
+
+constexpr bool UseAlternateCanPins = false;
 
 constexpr size_t MaxPortsPerHeater = 1;
 
 constexpr size_t NumThermistorInputs = 2;
 constexpr float DefaultThermistorSeriesR = 2200.0;
 
-constexpr Pin TempSensePins[NumThermistorInputs] = { PortAPin(2), PortAPin(3) };
+constexpr Pin TempSensePins[NumThermistorInputs] = { GpioPin(26), GpioPin(27) };
 
-constexpr Pin CanStandbyPin = PortAPin(27);
+constexpr Pin CanStandbyPin = PIN_TODO;
 
-constexpr Pin ButtonPins[] = { PortBPin(9) };
+constexpr Pin ButtonPins[] = { PIN_TODO };
+
+// VSYS voltage monitor
+constexpr Pin VinMonitorPin = GpioPin(29);
+constexpr float VinDividerRatio = (200.0 + 100.0)/100.0;
+constexpr float VinMonitorVoltageRange = VinDividerRatio * 3.3;				// the Pico uses the 3.3V supply as the voltage reference
 
 // Diagnostic LEDs
-constexpr Pin LedPins[] = { PortAPin(28) };
+constexpr Pin LedPins[] = { GpioPin(25) };
 constexpr bool LedActiveHigh = true;
 
 #if SUPPORT_SPI_SENSORS
@@ -81,28 +90,28 @@ constexpr bool LedActiveHigh = true;
 constexpr uint8_t SspiSercomNumber = 1;
 constexpr uint32_t SspiDataInPad = 2;
 constexpr Pin SSPIMosiPin = PortAPin(16);
-constexpr GpioPinFunction SSPIMosiPinPeriphMode = GpioPinFunction::C;
+constexpr GpioPinFunction SSPIMosiPinPeriphMode = GpioPinFunction::Spi;
 constexpr Pin SSPISclkPin = PortAPin(17);
-constexpr GpioPinFunction SSPISclkPinPeriphMode = GpioPinFunction::C;
+constexpr GpioPinFunction SSPISclkPinPeriphMode = GpioPinFunction::Spi;
 constexpr Pin SSPIMisoPin = PortAPin(18);
-constexpr GpioPinFunction SSPIMisoPinPeriphMode = GpioPinFunction::C;
+constexpr GpioPinFunction SSPIMisoPinPeriphMode = GpioPinFunction::Spi;
 
 #endif
 
 #if SUPPORT_I2C_SENSORS
 
-// I2C using pins PA22,23. If changing this, also change the available pins in the pin table.
-constexpr uint8_t I2CSercomNumber = 3;
-constexpr Pin I2CSDAPin = PortAPin(22);
-constexpr GpioPinFunction I2CSDAPinPeriphMode = GpioPinFunction::C;
-constexpr Pin I2CSCLPin = PortAPin(23);
-constexpr GpioPinFunction I2CSCLPinPeriphMode = GpioPinFunction::C;
-#define I2C_HANDLER		SERCOM3_Handler
+// I2C using pins GPIO8,9. If changing this, also change the available pins in the pin table.
+constexpr uint8_t I2CSercomNumber = 0;			// the I2C unit number we use
+constexpr Pin I2CSDAPin = GpioPin(8);
+constexpr GpioPinFunction I2CSDAPinPeriphMode = GpioPinFunction::I2c;
+constexpr Pin I2CSCLPin = GpioPin(9);
+constexpr GpioPinFunction I2CSCLPinPeriphMode = GpioPinFunction::I2c;
+//#define I2C_HANDLER		SERCOM3_Handler
 
 #endif
 
 #if SUPPORT_LIS3DH
-constexpr Pin Lis3dhInt1Pin = PortAPin(13);
+constexpr Pin Lis3dhInt1Pin = GpioPin(10);
 #endif
 
 // Table of pin functions that we are allowed to use
@@ -110,17 +119,26 @@ constexpr PinDescription PinTable[] =
 {
 	//	PWM					ADC				PinName
 	// Port A
-	{ PwmOutput::none,	AdcInput::none,		"gpio0"		},	// GPIO00
-	{ PwmOutput::none,	AdcInput::none,		"gpio1"		},	// GPIO01
-	{ PwmOutput::none,	AdcInput::adc0_0,	"gpio2"		},	// GPIO02
-	{ PwmOutput::none,	AdcInput::adc0_1,	"gpio3"		},	// GPIO03
-	{ PwmOutput::none,	AdcInput::adc0_4,	"gpio4"		},	// GPIO04
-	{ PwmOutput::none,	AdcInput::adc0_5,	"gpio5"		},	// GPIO05
-	{ PwmOutput::none,	AdcInput::adc0_6,	"gpio6"		},	// GPIO06
-	{ PwmOutput::none,	AdcInput::adc0_7,	"gpio7"		},	// GPIO07
-	{ PwmOutput::none,	AdcInput::adc0_8,	"gpio8"		},	// GPIO08
-	{ PwmOutput::none,	AdcInput::adc0_9,	"gpio9"		},	// GPIO09
+	{ PwmOutput::none,	AdcInput::none,		"gpio0"		},	// GPIO0
+	{ PwmOutput::none,	AdcInput::none,		"gpio1"		},	// GPIO1
+	{ PwmOutput::none,	AdcInput::none,		"gpio2"		},	// GPIO2
+	{ PwmOutput::none,	AdcInput::none,		"gpio3"		},	// GPIO3
+	{ PwmOutput::none,	AdcInput::none,		"gpio4"		},	// GPIO4
+	{ PwmOutput::none,	AdcInput::none,		"gpio5"		},	// GPIO5
+	{ PwmOutput::none,	AdcInput::none,		"gpio6"		},	// GPIO6
+	{ PwmOutput::none,	AdcInput::none,		"gpio7"		},	// GPIO7
+#if SUPPORT_I2C_SENSORS
+	{ PwmOutput::none,	AdcInput::none,		nullptr		},	// GPIO8 reserved for I2C SDA
+	{ PwmOutput::none,	AdcInput::none,		nullptr		},	// GPIO9 reserved for I2C SCL
+#else
+	{ PwmOutput::none,	AdcInput::none,		"gpio8"		},	// GPIO8
+	{ PwmOutput::none,	AdcInput::none,		"gpio9"		},	// GPIO9
+#endif
+#if SUPPORT_LIS3DH
+	{ PwmOutput::none,	AdcInput::none,		nullptr		},	// GPIO10 reserved for LIS3DH INT1
+#else
 	{ PwmOutput::none,	AdcInput::none,		"gpio10"	},	// GPIO10
+#endif
 	{ PwmOutput::none,	AdcInput::none,		"gpio11"	},	// GPIO11
 	{ PwmOutput::none,	AdcInput::none,		"gpio12" 	},	// GPIO12
 	{ PwmOutput::none,	AdcInput::none,		"gpio13"	},	// GPIO13
@@ -133,13 +151,13 @@ constexpr PinDescription PinTable[] =
 	{ PwmOutput::none,	AdcInput::none,		"gpio20"	},	// GPIO20
 	{ PwmOutput::none,	AdcInput::none,		"gpio21"	},	// GPIO21
 	{ PwmOutput::none,	AdcInput::none,		"gpio22"	},	// GPIO22
-	{ PwmOutput::none,	AdcInput::none,		"gpio23"	},	// GPIO23
-	{ PwmOutput::none,	AdcInput::none,		"gpio24"	},	// GPIO24
-	{ PwmOutput::none,	AdcInput::none,		"gpio25"	},	// GPIO25
-	{ PwmOutput::none,	AdcInput::none,		"gpio26"	},	// GPIO26
-	{ PwmOutput::none,	AdcInput::none,		"gpio27"	},	// GPIO27
-	{ PwmOutput::none,	AdcInput::none,		"gpio28"	},	// GPIO28
-	{ PwmOutput::none,	AdcInput::none,		"gpio29"	},	// GPIO29
+	{ PwmOutput::none,	AdcInput::none,		nullptr		},	// GPIO23 used to control the voltage regulator on the Pico
+	{ PwmOutput::none,	AdcInput::none,		nullptr		},	// GPIO24 used to detect VBUS on the Pico
+	{ PwmOutput::none,	AdcInput::none,		nullptr		},	// GPIO25 on-board LED which we use as the STATUS LED
+	{ PwmOutput::none,	AdcInput::adc0_0,	"gpio26"	},	// GPIO26
+	{ PwmOutput::none,	AdcInput::adc0_1,	"gpio27"	},	// GPIO27
+	{ PwmOutput::none,	AdcInput::adc0_2,	"gpio28"	},	// GPIO28
+	{ PwmOutput::none,	AdcInput::adc0_3,	nullptr		},	// GPIO29 used to measure VSYS on the Pico
 };
 
 static constexpr size_t NumPins = ARRAY_SIZE(PinTable);

@@ -28,6 +28,10 @@
 #include <Math/Isqrt.h>
 #include <Version.h>
 
+#if SUPPORT_I2C_SENSORS
+# include <Hardware/SharedI2cMaster.h>
+#endif
+
 #if SUPPORT_I2C_SENSORS && SUPPORT_LIS3DH
 # include <CommandProcessing/AccelerometerHandler.h>
 #endif
@@ -40,7 +44,9 @@
 # include <Hardware/ATEIO/ExtendedAnalog.h>
 #endif
 
-#include <hpl_user_area.h>
+#if !RP2040
+# include <hpl_user_area.h>
+#endif
 
 #if SAME5x
 
@@ -62,6 +68,8 @@ constexpr uint32_t FirmwareFlashStart = FLASH_ADDR + FlashBlockSize;	// we reser
 # include <hri_tc_c21.h>
 #endif
 
+#elif RP2040
+// TODO
 #else
 # error Unsupported processor
 #endif
@@ -197,10 +205,8 @@ namespace Platform
 #if SAME5x
 	static AdcAveragingFilter<McuTempReadingsAveraged> tpFilter;
 	static AdcAveragingFilter<McuTempReadingsAveraged> tcFilter;
-#elif SAMC21
+#elif SAMC21 || RP2040
 	static AdcAveragingFilter<McuTempReadingsAveraged> tsensFilter;
-#else
-# error Unsupported processor
 #endif
 
 #if SUPPORT_DRIVERS
@@ -327,9 +333,9 @@ namespace Platform
 	static void InitialiseInterrupts()
 	{
 		// Note, I2C interrupt priority is set up in the I2C driver
-		NVIC_SetPriority(StepTcIRQn, NvicPriorityStep);
 
 #if SAME5x
+		NVIC_SetPriority(StepTcIRQn, NvicPriorityStep);
 # if defined(EXP3HC)
 		NVIC_SetPriority(CAN1_IRQn, NvicPriorityCan);
 # elif defined(EXP1HCLv0_3) || defined(EXP1HCLv1_0)
@@ -345,17 +351,21 @@ namespace Platform
 		SetInterruptPriority(DMAC_0_IRQn, 5, NvicPriorityDmac);
 		SetInterruptPriority(EIC_0_IRQn, 16, NvicPriorityPins);
 #elif SAMC21
+		NVIC_SetPriority(StepTcIRQn, NvicPriorityStep);
 		NVIC_SetPriority(CAN0_IRQn, NvicPriorityCan);
 # if NUM_SERIAL_PORTS >= 1
 		NVIC_SetPriority(Serial0_IRQn, NvicPriorityUart);
 # endif
 		NVIC_SetPriority(DMAC_IRQn, NvicPriorityDmac);
 		NVIC_SetPriority(EIC_IRQn, NvicPriorityPins);
+#elif RP2040
+		//TODO
 #else
 # error Undefined processor
 #endif
 	}
 
+	// Erase the firmware (but not the bootloader) and reset the processor
 	[[noreturn]] RAMFUNC static void EraseAndReset()
 	{
 #if SAME5x
@@ -389,6 +399,8 @@ namespace Platform
 
 		while (!hri_nvmctrl_get_interrupt_READY_bit(NVMCTRL)) { }
 		hri_nvmctrl_clear_STATUS_reg(NVMCTRL, NVMCTRL_STATUS_MASK);
+#elif RP2040
+		//TODO
 #else
 # error Unsupported processor
 #endif
@@ -434,7 +446,7 @@ namespace Platform
 			NVIC->ICER[i] = 0xFFFFFFFF;					// Disable IRQs
 			NVIC->ICPR[i] = 0xFFFFFFFF;					// Clear pending IRQs
 		}
-#elif SAMC21
+#elif SAMC21 || RP2040
 		NVIC->ICER[0] = 0xFFFFFFFF;						// Disable IRQs
 		NVIC->ICPR[0] = 0xFFFFFFFF;						// Clear pending IRQs
 #else
@@ -444,10 +456,14 @@ namespace Platform
 		EraseAndReset();
 	}
 
+	// Update the CAN bootloader
 	[[noreturn]] static void DoBootloadereUpdate()
 	{
 		ShutdownAll();									// turn everything off
 
+#if RP2040
+		//TODO
+#else
 		// Remove the bootloader protection and set the bootloader update flag
 		// On the SAME5x the first 8x 32-bit words are reserved. We store the bootloader flag in the 10th word.
 		// On the SAMC21 the first 2x 32-bit words are reserved. We store the bootloader flag in the 10th word.
@@ -469,6 +485,8 @@ namespace Platform
 
 		// If we reset immediately then the user area write doesn't complete and the bits get set to all 1s.
 		delayMicroseconds(10000);
+#endif
+
 		ResetProcessor();
 	}
 
@@ -493,7 +511,7 @@ namespace Platform
 		return (switches == 0) ? CanId::ExpansionBoardFirmwareUpdateAddress : switches;
 #elif defined(TOOL1LC)
 		return CanId::ToolBoardDefaultAddress;
-#elif defined(SAMMYC21)
+#elif defined(SAMMYC21) || defined(RPI_PICO)
 		return CanId::SammyC21DefaultAddress;
 #elif defined(EXP1XD)
 		return CanId::Exp1XDBoardDefaultAddress;
@@ -709,7 +727,7 @@ void Platform::Init()
 	AnalogIn::EnableTemperatureSensor(0, tpFilter.CallbackFeedIntoFilter, CallbackParameter(&tpFilter), 1, 0);
 	tcFilter.Init(0);
 	AnalogIn::EnableTemperatureSensor(1, tcFilter.CallbackFeedIntoFilter, CallbackParameter(&tcFilter), 1, 0);
-#elif SAMC21
+#elif SAMC21 || RP2040
 	tsensFilter.Init(0);
 	AnalogIn::EnableTemperatureSensor(tsensFilter.CallbackFeedIntoFilter, CallbackParameter(&tsensFilter), 1);
 #else
@@ -940,7 +958,13 @@ void Platform::Spin()
 
 		case DeferredCommand::testUnalignedMemoryAccess:
 			deliberateError = true;
-			(void)Tasks::DoMemoryRead(reinterpret_cast<const uint32_t*>(HSRAM_ADDR + 1));
+			(void)Tasks::DoMemoryRead(reinterpret_cast<const uint32_t*>(
+#if RP2040
+										SRAM_BASE
+#else
+										HSRAM_ADDR
+#endif
+													+ 1));
 			__ISB();
 			deliberateError = false;
 			break;
@@ -1117,6 +1141,11 @@ void Platform::Spin()
 		{
 			const int16_t temperatureTimes100 = (int16_t)((uint16_t)(tsensFilter.GetSum()/tsensFilter.NumAveraged()) ^ (1u << 15));
 			mcuTemperature.current = (float)temperatureTimes100 * 0.01;
+#elif RP2040
+			if (tsensFilter.IsValid())
+			{
+				const float tempSensorAdcVoltage = (tsensFilter.GetSum()/tsensFilter.NumAveraged()) * (3.3/(float)(1u << AnalogIn::AdcBits));
+				mcuTemperature.current = 27.0 - ((tempSensorAdcVoltage - 0.706) * (1.0/0.001721));
 #else
 # error Unsupported processor
 #endif

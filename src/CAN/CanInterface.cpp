@@ -142,11 +142,16 @@ void CanInterface::Init(CanAddress defaultBoardAddress, bool useAlternatePins, b
 	// Create the mutex
 	txFifoMutex.Create("CANtx");
 
+	CanTiming timing;
+
+#if RP2040
+	//TODO read timing data from flash
+	timing.SetDefaults_1Mb();
+#else
 	// Read the CAN timing data from the top part of the NVM User Row
 	canConfigData = *reinterpret_cast<CanUserAreaData*>(NVMCTRL_USER + CanUserAreaDataOffset);
-
-	CanTiming timing;
 	canConfigData.GetTiming(timing);
+#endif
 
 	// Set up the CAN pins
 #if SAME5x
@@ -604,12 +609,18 @@ GCodeResult CanInterface::ChangeAddressAndDataRate(const CanMessageSetAddressAnd
 
 		if (seen)
 		{
+#if RP2040
+			//TODO
+			reply.copy("Flash write not yet implemented on RP2040");
+			return GCodeResult::error;
+#else
 			const int32_t rc = _user_area_write(reinterpret_cast<void*>(NVMCTRL_USER), CanUserAreaDataOffset, reinterpret_cast<const uint8_t*>(&canConfigData), sizeof(canConfigData));
 			if (rc != 0)
 			{
 				reply.printf("Failed to write NVM user area, code %" PRIi32, rc);
 				return GCodeResult::error;
 			}
+#endif
 		}
 		else
 		{

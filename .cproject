@@ -2040,6 +2040,7 @@
 									<listOptionValue builtIn="false" value="&quot;${PicoSdkPath}/src/common/pico_base/include&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${PicoSdkPath}/src/rp2_common/cmsis/include&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${PicoSdkPath}/src/rp2_common/hardware_base/include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${PicoSdkPath}/src/rp2_common/hardware_dma/Include&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${PicoSdkPath}/src/rp2_common/hardware_gpio/include&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${PicoSdkPath}/src/rp2_common/hardware_irq/include&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${PicoSdkPath}/src/rp2_common/hardware_timer/include&quot;"/>

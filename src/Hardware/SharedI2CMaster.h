@@ -40,7 +40,12 @@ private:
 	bool InternalTransfer(uint16_t address, uint8_t firstByte, uint8_t *buffer, size_t numToWrite, size_t numToRead) noexcept;
 	void ProtocolError()  noexcept;
 
+#if RP2040
+	//TODO
+#else
 	Sercom * const hardware;
+#endif
+
 	TaskHandle taskWaiting;
 	Mutex mutex;
 

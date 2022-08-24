@@ -28,13 +28,20 @@
 #include <task.h>
 #include <freertos_task_additions.h>
 
-#include <hpl_user_area.h>
+#if RP2040
+# include <hardware/dma.h>
+# include <hardware/watchdog.h>
+#else
+# include <hpl_user_area.h>
+#endif
 
 #if SAME5x
 # include <hri_wdt_e54.h>
 constexpr uint32_t FlashBlockSize = 0x00010000;					// the erase size we assume for flash, and the bootloader size (64K)
 #elif SAMC21
 # include <hri_wdt_c21.h>
+constexpr uint32_t FlashBlockSize = 0x00004000;					// the erase size we assume for flash, and the bootloader size (16K)
+#elif RP2040
 constexpr uint32_t FlashBlockSize = 0x00004000;					// the erase size we assume for flash, and the bootloader size (16K)
 #endif
 
@@ -136,6 +143,9 @@ void *Tasks::GetNVMBuffer(const uint32_t *_ecv_array null stk) noexcept
 
 #ifndef DEBUG
 
+# if RP2040
+	//TODO
+# else
 	// Check that the bootloader is protected and EEPROM is configured
 	union
 	{
@@ -145,19 +155,19 @@ void *Tasks::GetNVMBuffer(const uint32_t *_ecv_array null stk) noexcept
 
 	memcpy(&nvmUserRow, reinterpret_cast<const void*>(NVMCTRL_USER), sizeof(nvmUserRow));
 
-# if SAME5x
+#  if SAME5x
 	uint64_t& nvmUserRow0 = nvmUserRow.b64[0];
 	constexpr uint64_t mask =     ((uint64_t)0x0F << 32) | ((uint64_t)0x07 << 36) | (0x0F << 26);	// we just want NVM_BOOT (bits 26-29), SEE.SBLK (bits 32-35) and SEE.PSZ (bits 36:38)
 	constexpr uint64_t reqValue = ((uint64_t)0x01 << 32) | ((uint64_t)0x03 << 36) | (0x07 << 26);	// 4K SMART EEPROM and 64K bootloader (SBLK=1 PSZ=3 NVM_BOOT=0x07)
 	constexpr uint64_t bootprotMask = (0x0F << 26);													// mask for bootloader protection only
 	constexpr uint64_t reqValueNoBootprot = (0x0F << 26);											// value for no bootloader protection
-# elif SAMC21
+#  elif SAMC21
 	uint32_t& nvmUserRow0 = nvmUserRow.b32[0];
 	constexpr uint32_t mask =     NVMCTRL_FUSES_EEPROM_SIZE_Msk | NVMCTRL_FUSES_BOOTPROT_Msk;		// we just want BOOTPROT (bits 0-2) and EEPROM (bits 4-6)
 	constexpr uint32_t reqValue = (0x02 << NVMCTRL_FUSES_EEPROM_SIZE_Pos) | (0x01 << NVMCTRL_FUSES_BOOTPROT_Pos);	// 4K EEPROM and 16K bootloader
 	constexpr uint32_t bootprotMask = NVMCTRL_FUSES_BOOTPROT_Msk;									// mask for bootloader protection only
 	constexpr uint32_t reqValueNoBootprot = (0x07 << NVMCTRL_FUSES_BOOTPROT_Pos);					// value for no bootloader protection
-# endif
+#  endif
 
 	if (nvmUserRow.b32[UpdateBootloaderMagicWordIndex] == UpdateBootloaderMagicValue && (nvmUserRow0 & bootprotMask) == reqValueNoBootprot)
 	{
@@ -176,6 +186,7 @@ void *Tasks::GetNVMBuffer(const uint32_t *_ecv_array null stk) noexcept
 		delayMicroseconds(10000);
 		Platform::ResetProcessor();
 	}
+# endif
 #endif
 
 	// Fill the free memory with a pattern so that we can check for stack usage and memory corruption
@@ -189,7 +200,7 @@ void *Tasks::GetNVMBuffer(const uint32_t *_ecv_array null stk) noexcept
 	CoreInit();
 	DeviceInit();
 
-#if !SAMC21		// SAMC21 has a DIVAS unit, but that does not have an interrupt
+#if !SAMC21 && !RP2040		// SAMC21 has a DIVAS unit, but that does not have an interrupt. RP2040 has a divide unit, also without an interrupt.
 	// Trap integer divide-by-zero.
 	// We could also trap unaligned memory access, if we change the gcc options to not generate code that uses unaligned memory access.
 	SCB->CCR |= SCB_CCR_DIV_0_TRP_Msk;
@@ -216,7 +227,9 @@ void *Tasks::GetNVMBuffer(const uint32_t *_ecv_array null stk) noexcept
 
 	// Initialise watchdog clock
 	WatchdogInit();
+#if !RP2040
 	NVIC_EnableIRQ(WDT_IRQn);		// enable the watchdog early warning interrupt
+#endif
 
 	StepTimer::Init();				// initialise the step pulse timer now because we use it for measuring task CPU usage
 	vTaskStartScheduler();			// doesn't return
@@ -244,6 +257,11 @@ extern "C" [[noreturn]] void MainTask(void *pvParameters) noexcept
 #endif
 	}
 }
+
+#if RP2040
+//TODO implement flashing the CAN bootloader
+
+#else
 
 // Request a block of the bootloader, returning true if successful
 static FirmwareFlashErrorCode RequestBootloaderBlock(uint32_t fileOffset, uint32_t numBytes, CanMessageBuffer& buf)
@@ -330,6 +348,8 @@ static FirmwareFlashErrorCode GetBootloaderBlock(uint8_t *blockBuffer)
 	return FirmwareFlashErrorCode::ok;
 }
 
+#endif	// !RP2040
+
 static void ReportFlashError(FirmwareFlashErrorCode err)
 {
 	for (unsigned int i = 0; i < (unsigned int)err; ++i)
@@ -347,18 +367,35 @@ static void ReportFlashError(FirmwareFlashErrorCode err)
 // This assumes the caller has exclusive use of the DMAC
 uint32_t ComputeCRC32(const uint32_t *start, const uint32_t *end)
 {
-#if SAME5x
-	DMAC->CRCCTRL.reg = DMAC_CRCCTRL_CRCBEATSIZE_WORD | DMAC_CRCCTRL_CRCSRC_DISABLE | DMAC_CRCCTRL_CRCPOLY_CRC32;	// disable the CRC unit
-#elif SAMC21
-	DMAC->CTRL.bit.CRCENABLE = 0;
+#if RP2040
+	const unsigned int chan = dma_claim_unused_channel(true);
+	dma_channel_config config;
+	config.ctrl = (0x3f << 15)				// unpaced transfer
+				| (1u << 4)					// increment read address
+				| (2u << 2);				// data size = 32-bit word
+	uint32_t dummyWord;
+	dma_channel_configure(chan, &config, &dummyWord, start, end - start, false);
+	dma_sniffer_enable(chan, 0x01, true);	// CRC32 with bit-reversed data
+	dma_hw->sniff_data = 0xFFFFFFFF;		// initial CRC
+	dma_channel_start(chan);
+	dma_channel_wait_for_finish_blocking(chan);
+	const uint32_t crc = dma_hw->sniff_data;
+	dma_sniffer_disable();
+	dma_channel_unclaim(chan);
+	return crc;
 #else
-# error Unsupported processor
-#endif
+# if SAME5x
+	DMAC->CRCCTRL.reg = DMAC_CRCCTRL_CRCBEATSIZE_WORD | DMAC_CRCCTRL_CRCSRC_DISABLE | DMAC_CRCCTRL_CRCPOLY_CRC32;	// disable the CRC unit
+# elif SAMC21
+	DMAC->CTRL.bit.CRCENABLE = 0;
+# else
+#  error Unsupported processor
+# endif
 	DMAC->CRCCHKSUM.reg = 0xFFFFFFFF;
 	DMAC->CRCCTRL.reg = DMAC_CRCCTRL_CRCBEATSIZE_WORD | DMAC_CRCCTRL_CRCSRC_IO | DMAC_CRCCTRL_CRCPOLY_CRC32;
-#if SAMC21
+# if SAMC21
 	DMAC->CTRL.bit.CRCENABLE = 1;
-#endif
+# endif
 	while (start < end)
 	{
 		DMAC->CRCDATAIN.reg = *start++;
@@ -369,6 +406,7 @@ uint32_t ComputeCRC32(const uint32_t *start, const uint32_t *end)
 	DMAC->CRCSTATUS.reg = DMAC_CRCSTATUS_CRCBUSY;
 	asm volatile("nop");
 	return DMAC->CRCCHKSUM.reg;
+#endif
 }
 
 // Check that the bootloader we have been passed has a valid CRC
@@ -382,6 +420,8 @@ bool CheckCRC(uint32_t *blockBuffer) noexcept
 	const uint32_t expectedCRC = blockBuffer[crcOffset/4];
 	return ComputeCRC32(blockBuffer, blockBuffer + crcOffset/4) == expectedCRC;
 }
+
+#if !RP2040
 
 // The task that runs to update the bootloader
 extern "C" [[noreturn]] void UpdateBootloaderTask(void *pvParameters) noexcept
@@ -449,6 +489,8 @@ extern "C" [[noreturn]] void UpdateBootloaderTask(void *pvParameters) noexcept
 	delayMicroseconds(10000);
 	Platform::ResetProcessor();
 }
+
+#endif
 
 // Return the amount of free handler stack space
 static ptrdiff_t GetHandlerFreeStack() noexcept
@@ -543,6 +585,15 @@ void Tasks::Diagnostics(const StringRef& reply) noexcept
 	const uint32_t now = (uint32_t)(millis64()/1000u);		// get up time in seconds
 	reply.lcatf("Last reset %02d:%02d:%02d ago, cause: ", (unsigned int)(now/3600), (unsigned int)((now % 3600)/60), (unsigned int)(now % 60));
 
+#if RP2040
+	switch (watchdog_hw->reason & 0x03)
+	{
+	case 0:	reply.cat("hardware reset"); break;
+	case 1: reply.cat("watchdog timer"); break;
+	case 2: reply.cat("watchdog force"); break;
+	case 3: reply.cat("watchdog force and timer"); break;
+	}
+#else
 	const uint8_t resetCause = RSTC->RCAUSE.reg;
 	switch (resetCause)
 	{
@@ -558,6 +609,7 @@ void Tasks::Diagnostics(const StringRef& reply) noexcept
 #endif
 	default:					reply.catf("%u", resetCause); break;
 	}
+#endif
 }
 
 // Allocate memory permanently. Using this saves about 8 bytes per object. You must not call free() on the returned object.
