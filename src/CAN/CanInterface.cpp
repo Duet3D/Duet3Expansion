@@ -175,6 +175,8 @@ void CanInterface::Init(CanAddress defaultBoardAddress, bool useAlternatePins, b
 		SetPinFunction(PortAPin(24), GpioPinFunction::G);
 	}
 	const unsigned int whichPort = 0;							// we always use CAN0 on the SAMC21
+#elif RP2040
+	const unsigned int whichPort = 0;							// we only provide one CAN interface on the RP2040
 #endif
 
 	// Initialise the CAN hardware, using the timing data if it was valid

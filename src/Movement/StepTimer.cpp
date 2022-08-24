@@ -36,7 +36,7 @@ void StepTimer::Init()
 {
 #if RP2040
 	// Reprogram the tick generator to run at 750kHz instead of 1MHz. We use a 12MHz crystal, so we need a divisor of 16.
-	watchdog_start_tick(16);
+	watchdog_start_tick((XOSC_MHZ * 4)/3);
 #else
 	// We use StepTcNumber+1 as the slave for 32-bit mode so we need to clock that one too
 	EnableTcClock(StepTcNumber, GclkNum48MHz);
