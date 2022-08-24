@@ -429,7 +429,7 @@ static bool ZieglerNichols(bool firstIteration) noexcept
  *
  */
 
-// This is called from every iteration of the closed loop control loop if tuning is enabled
+// This is called from the closed loop control loop every (1/tuningStepsPerSecond) seconds if tuning is enabled, currently every 0.5ms
 void ClosedLoop::PerformTune() noexcept
 {
 	static bool newTuningMove = true;						// indicates if a tuning move has just finished
