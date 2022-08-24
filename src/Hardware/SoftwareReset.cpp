@@ -64,7 +64,7 @@ void SoftwareResetData::Populate(uint16_t reason, const uint32_t *stk) noexcept
 	when = (uint32_t)Platform::GetDateTime();
 	neverUsedRam = Tasks::GetNeverUsedRam();
 	icsr = SCB->ICSR;
-#if SAMC21
+#if SAMC21 || RP2040
 	// ARM Cortex M0+ doesn't have these registers
 	hfsr = cfsr = bfar = 0;
 # else

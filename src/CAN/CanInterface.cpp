@@ -23,7 +23,10 @@
 #include <CanDevice.h>
 #include <Hardware/IoPorts.h>
 #include <Version.h>
-#include <hpl_user_area.h>
+
+#if !RP2040
+# include <hpl_user_area.h>
+#endif
 
 #define OOS_DEBUG		0				// debug for out-of-sequence errors
 

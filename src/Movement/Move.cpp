@@ -344,7 +344,7 @@ void Move::StopDrivers(uint16_t whichDrives)
 {
 #if SAME5x
 	const uint32_t oldPrio = ChangeBasePriority(NvicPriorityStep);
-#elif SAMC21
+#elif SAMC21 || RP2040
 	const irqflags_t flags = IrqSave();
 #else
 # error Unsupported processor
@@ -360,7 +360,7 @@ void Move::StopDrivers(uint16_t whichDrives)
 	}
 #if SAME5x
 	RestoreBasePriority(oldPrio);
-#elif SAMC21
+#elif SAMC21 || RP2040
 	IrqRestore(flags);
 #else
 # error Unsupported processor

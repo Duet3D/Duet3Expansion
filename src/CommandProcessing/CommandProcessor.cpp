@@ -20,7 +20,11 @@
 #include <Tasks.h>
 #include <AnalogIn.h>
 #include <Hardware/NonVolatileMemory.h>
-#include <hpl_user_area.h>
+
+#if !RP2040
+# include <hpl_user_area.h>
+#endif
+
 #include <cctype>				// for tolower()
 
 #if SUPPORT_DRIVERS

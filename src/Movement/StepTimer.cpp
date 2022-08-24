@@ -32,6 +32,9 @@ unsigned int StepTimer::numTimeoutResyncs = 0;
 
 void StepTimer::Init()
 {
+#if RP2040
+	//TODO
+#else
 	// We use StepTcNumber+1 as the slave for 32-bit mode so we need to clock that one too
 	EnableTcClock(StepTcNumber, GclkNum48MHz);
 	EnableTcClock(StepTcNumber + 1, GclkNum48MHz);
@@ -57,6 +60,7 @@ void StepTimer::Init()
 	NVIC_DisableIRQ(StepTcIRQn);
 	NVIC_ClearPendingIRQ(StepTcIRQn);
 	NVIC_EnableIRQ(StepTcIRQn);
+#endif
 }
 
 /*static*/ bool StepTimer::IsSynced()
@@ -169,17 +173,25 @@ inline bool StepTimer::ScheduleTimerInterrupt(uint32_t tim)
 		return true;												// tell the caller to simulate an interrupt instead
 	}
 
+#if RP2040
+	//TODO
+#else
 	StepTc->CC[0].reg = tim;
 	while (StepTc->SYNCBUSY.reg & TC_SYNCBUSY_CC0) { }
 	StepTc->INTFLAG.reg = TC_INTFLAG_MC0;							// clear any existing compare match
 	StepTc->INTENSET.reg = TC_INTFLAG_MC0;
+#endif
 	return false;
 }
 
 // Make sure we get no timer interrupts
 void StepTimer::DisableTimerInterrupt()
 {
+#if RP2040
+	//TODO
+#else
 	StepTc->INTENCLR.reg = TC_INTFLAG_MC0;
+#endif
 }
 
 // The guts of the ISR
@@ -215,18 +227,22 @@ extern "C" void STEP_TC_HANDLER() SPEED_CRITICAL;
 
 void STEP_TC_HANDLER()
 {
+#if RP2040
+	//TODO
+#else
 	uint8_t tcsr = StepTc->INTFLAG.reg;								// read the status register, which clears the status bits
 	tcsr &= StepTc->INTENSET.reg;									// select only enabled interrupts
 
 	if ((tcsr & TC_INTFLAG_MC0) != 0)								// the step interrupt uses MC0 compare
 	{
 		StepTc->INTENCLR.reg = TC_INTFLAG_MC0;						// disable the interrupt (no need to clear it, we do that before we re-enable it)
-#ifdef TIMER_DEBUG
+# ifdef TIMER_DEBUG
 		++numInterruptsExecuted;
 		lastInterruptTime = GetInterruptClocks();
-#endif
+# endif
 		StepTimer::Interrupt();										// this will re-enable the interrupt if necessary
 	}
+#endif
 }
 
 StepTimer::StepTimer() : next(nullptr), callback(nullptr), active(false)
@@ -339,6 +355,9 @@ void StepTimer::CancelCallback()
 	}
 	else
 	{
+#if RP2040
+	//TODO
+#else
 		reply.catf("next step interrupt due in %" PRIu32 " ticks, %s",
 					pst->whenDue - GetTimerTicks(),
 					((StepTc->INTENSET.reg & TC_INTFLAG_MC0) == 0) ? "disabled" : "enabled");
@@ -346,6 +365,7 @@ void StepTimer::CancelCallback()
 		{
 			reply.cat(", CC0 mismatch!!");
 		}
+#endif
 	}
 }
 
