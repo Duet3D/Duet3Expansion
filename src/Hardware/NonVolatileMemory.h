@@ -15,7 +15,7 @@
 // On most Duets there is a 512-byte User Page that we use for this.
 // The SAMC21 and SAME5x processors already store various data in the user page, however both those processor families support EEPROM emulation so we use 512 bytes of that instead.
 
-enum class NvmPage : uint8_t { common, closedLoop };
+enum class NvmPage : uint8_t { common = 0, closedLoop };
 
 class NonVolatileMemory
 {

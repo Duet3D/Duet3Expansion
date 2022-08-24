@@ -10,10 +10,15 @@
 #if SAM4E || SAM4S || SAME70
 # include <Cache.h>
 # include <flash_efc.h>
-#endif
-#if SAMC21
+#elif SAMC21
 # include <Flash.h>
 constexpr uint32_t RWW_ADDR = FLASH_ADDR + 0x00400000;
+#elif RP2040
+// We allocate one sector for each type of non-volatile memory page. We store the page within the sector using wear levelling.
+constexpr uint32_t FlashSectorSize = 4096;									// the flash chip has 4K sectors
+constexpr uint32_t FlashSize = 2 * 1024 * 1024;								// the flash chip size in bytes (2Mbytes = 16Mbits)
+constexpr uint32_t NvmPage0Offset = FlashSize - FlashSectorSize;			// the offset into flash memory where we store page 0 of the non-volatile data
+constexpr uint32_t NvmPage0Addr = XIP_BASE + FlashSize - FlashSectorSize;	// the address where we can read page 0 of the non-volatile data
 #endif
 
 NonVolatileMemory::NonVolatileMemory(NvmPage whichPage) noexcept : state(NvmState::notRead), page(whichPage)
@@ -28,6 +33,9 @@ void NonVolatileMemory::EnsureRead() noexcept
 		memcpyu32(reinterpret_cast<uint32_t *>(&buffer), reinterpret_cast<const uint32_t *>(SEEPROM_ADDR + (512 * (unsigned int)page)), sizeof(buffer)/sizeof(uint32_t));
 #elif SAMC21
 		memcpyu32(reinterpret_cast<uint32_t *>(&buffer), reinterpret_cast<const uint32_t *>(RWW_ADDR + (512 * (unsigned int)page)), sizeof(buffer)/sizeof(uint32_t));
+#elif RP2040
+		//TODO don't just read the first page in the sector, search for the most recent one written
+		memcpyu32(reinterpret_cast<uint32_t *>(&buffer), reinterpret_cast<const uint32_t *>(NvmPage0Addr - (FlashSectorSize * (unsigned int)page)), sizeof(buffer)/sizeof(uint32_t));
 #else
 # error Unsupported processor
 #endif
@@ -35,7 +43,7 @@ void NonVolatileMemory::EnsureRead() noexcept
 		{
 //			debugPrintf("Invalid user area\n");
 			memset(&buffer, 0xFF, sizeof(buffer));
-			buffer.commonPage.magic =GetMagicValue();
+			buffer.commonPage.magic = GetMagicValue();
 			state = NvmState::eraseAndWriteNeeded;
 		}
 		else
@@ -67,6 +75,18 @@ void NonVolatileMemory::EnsureWritten() noexcept
 	if (state == NvmState::writeNeeded)
 	{
 		Flash::RwwWrite(RWW_ADDR + (512 * (unsigned int)page), 512, (uint8_t*)&buffer);
+		state = NvmState::clean;
+	}
+#elif RP2040
+	if (state == NvmState::eraseAndWriteNeeded)
+	{
+		//TODO allocate a new page in the sector, if there is one, else erase the sector
+		state = NvmState::writeNeeded;
+	}
+
+	if (state == NvmState::writeNeeded)
+	{
+		//TODO write the page
 		state = NvmState::clean;
 	}
 #else
