@@ -10,6 +10,10 @@
 
 #include "RepRapFirmware.h"
 
+#if RP2040
+# include <hardware/structs/timer.h>
+#endif
+
 class CanMessageTimeSync;
 
 // Class to implement a software timer with a few microseconds resolution
@@ -99,16 +103,20 @@ private:
 
 inline __attribute__((always_inline)) StepTimer::Ticks StepTimer::GetTimerTicks()
 {
+#if RP2040
+	return timer_hw->timerawl;													// read lower 32 bits of hardware timer
+#else
 	StepTc->CTRLBSET.reg = TC_CTRLBSET_CMD_READSYNC;
-#if SAMC21
+# if SAMC21
 	// Tony's tests suggest that the following nop is not needed, but including it makes it faster
 	asm volatile("nop");														// allow time for the peripheral to react to the command (faster than DMB instruction)
-#else
+# else
 	// On the SAME5x it isn't enough just to wait for SYNCBUSY.COUNT here, nor is it enough just to use a DSB instruction
 	while (StepTc->CTRLBSET.bit.CMD != 0) { }
-#endif
+# endif
 	while (StepTc->SYNCBUSY.bit.COUNT) { }
 	return StepTc->COUNT.reg;
+#endif
 }
 
 #endif /* SRC_MOVEMENT_STEPTIMER_H_ */

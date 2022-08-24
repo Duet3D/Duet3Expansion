@@ -55,7 +55,7 @@ void HardFault_Handler() noexcept
 {
 	__asm volatile
 	(
-#if SAMC21
+#if SAMC21 || RP2040
 		" mrs r0, msp												\n"
 		" mov r1, lr												\n"
 		" movs r2, #4												\n"
@@ -86,7 +86,7 @@ void WDT_Handler() noexcept
 {
 	__asm volatile
 	(
-#if SAMC21
+#if SAMC21 || RP2040
 		" mrs r0, msp												\n"
 		" mov r1, lr												\n"
 		" movs r2, #4												\n"
@@ -119,7 +119,7 @@ void OtherFault_Handler() noexcept
 {
 	__asm volatile
 	(
-#if SAMC21
+#if SAMC21 || RP2040
 		" mrs r0, msp												\n"
 		" mov r1, lr												\n"
 		" movs r2, #4												\n"
