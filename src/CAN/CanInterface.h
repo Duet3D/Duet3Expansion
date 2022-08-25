@@ -31,7 +31,7 @@ namespace CanInterface
 	bool SendAndFree(CanMessageBuffer *buf) noexcept;
 	CanMessageBuffer *GetCanCommand(uint32_t timeout) noexcept;
 
-#if !SAME70
+#if !SAME70 && !RP2040
 	uint16_t GetTimeStampCounter() noexcept;
 	uint16_t GetTimeStampPeriod() noexcept;
 #endif

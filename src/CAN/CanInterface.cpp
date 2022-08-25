@@ -644,6 +644,8 @@ bool CanInterface::GetCanMessage(CanMessageBuffer *buf) noexcept
 	return can0dev->ReceiveMessage(CanDevice::RxBufferNumber::fifo0, 0, buf);
 }
 
+#if !RP2040
+
 uint16_t CanInterface::GetTimeStampCounter() noexcept
 {
 	return can0dev->ReadTimeStampCounter();
@@ -653,6 +655,8 @@ uint16_t CanInterface::GetTimeStampPeriod() noexcept
 {
 	return can0dev->GetTimeStampPeriod();
 }
+
+#endif
 
 // Send an event. The text will be truncated if it is longer than 55 characters.
 void CanInterface::RaiseEvent(EventType type, uint16_t param, uint8_t device, const char *format, va_list vargs) noexcept

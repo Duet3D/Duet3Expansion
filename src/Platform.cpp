@@ -2073,6 +2073,7 @@ GCodeResult Platform::DoDiagnosticTest(const CanMessageDiagnosticTest& msg, cons
 			reply.printf("Reading step timer 100 times took %.2fus", (double)((1'000'000.0f * (float)tim1)/(float)SystemCoreClock));
 		}
 
+#if !RP2040
 		// Also check the correspondence between the CAN timestamp timer and the step clock
 		{
 			uint32_t startClocks, endClocks;
@@ -2091,6 +2092,7 @@ GCodeResult Platform::DoDiagnosticTest(const CanMessageDiagnosticTest& msg, cons
 			const uint32_t tsDiff = (((endTimeStamp - startTimeStamp) & 0xFFFF) * CanInterface::GetTimeStampPeriod()) >> 6;
 			reply.lcatf("Clock diff %" PRIu32 ", ts diff %" PRIu32, endClocks - startClocks, tsDiff);
 		}
+#endif
 		return GCodeResult::ok;
 
 #if SAME5x

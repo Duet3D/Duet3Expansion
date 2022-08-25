@@ -83,6 +83,11 @@ void StepTimer::Init()
 
 /*static*/ void StepTimer::ProcessTimeSyncMessage(const CanMessageTimeSync& msg, size_t msgLen, uint16_t timeStamp) noexcept
 {
+#if RP2040
+	// On the RP2040 the timestamp counter is the same as the step counter
+	const uint32_t localTimeNow = StepTimer::GetTimerTicks();
+	const uint32_t timeStampDelay = localTimeNow - timeStamp;
+#else
 	uint32_t localTimeNow;
 	uint16_t timeStampNow;
 	{
@@ -94,6 +99,7 @@ void StepTimer::Init()
 	// The time stamp counter runs at the CAN normal bit rate, but the step clock runs at 48MHz/64. Calculate the delay to in step clocks.
 	// Datasheet suggests that on the SAMC21 only 15 bits of timestamp counter are readable, but Microchip confirmed this is a documentation error (case 00625843)
 	const uint32_t timeStampDelay = ((uint32_t)((timeStampNow - timeStamp) & 0xFFFF) * CanInterface::GetTimeStampPeriod()) >> 6;	// timestamp counter is 16 bits
+#endif
 
 	// Save the peak timestamp delay for diagnostic purposes
 	if (timeStampDelay > peakReceiveDelay)
