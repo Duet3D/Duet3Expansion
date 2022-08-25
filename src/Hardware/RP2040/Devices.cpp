@@ -24,7 +24,7 @@ void DeviceInit() noexcept
 #if defined(EXP1HCLv0_3) || defined(EXP1HCLv1_0)
 	pinMode(ClockGenPin, OUTPUT_LOW);			// default the TMC clock to its internal clock until we program the clock generator
 #endif
-	AnalogIn::Init(NvicPriorityAdc);
+	AnalogIn::Init(DmacChanAdcRx, DmacPrioAdcRx);
 	AnalogOut::Init();
 	analogInTask.Create(AnalogIn::TaskLoop, "AIN", nullptr, TaskPriority::AinPriority);
 }

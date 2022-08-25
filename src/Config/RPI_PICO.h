@@ -173,15 +173,17 @@ static_assert(NumPins == 30);		// 30 GPIO pins on RP2040
 // DMA channel assignments
 constexpr DmaChannel DmacChanTmcTx = 0;
 constexpr DmaChannel DmacChanTmcRx = 1;
-constexpr DmaChannel DmacChanAdc0Rx = 2;
+constexpr DmaChannel DmacChanAdcRx = 2;
+constexpr DmaChannel DmacChanCRC = 3;
 
-constexpr unsigned int NumDmaChannelsUsed = 4;			// must be at least the number of channels used, may be larger. Max 12 on the SAMC21.
+constexpr unsigned int NumDmaChannelsUsed = 4;			// must be at least the number of channels used, may be larger. Max 12 on the RP2040.
 
+// DMA priorities, higher is better. RP2040 has only 0 and 1.
 constexpr DmaPriority DmacPrioTmcTx = 0;
-constexpr DmaPriority DmacPrioTmcRx = 3;
-constexpr DmaPriority DmacPrioAdcRx = 2;
+constexpr DmaPriority DmacPrioTmcRx = 1;
+constexpr DmaPriority DmacPrioAdcRx = 1;
 
-// Interrupt priorities, lower means higher priority. 0 can't make RTOS calls.
+// Interrupt priorities, lower means higher priority. 0 can't make RTOS calls. Only 0 to 3 are available.
 const NvicPriority NvicPriorityStep = 1;				// step interrupt is next highest, it can preempt most other interrupts
 const NvicPriority NvicPriorityUart = 2;				// serial driver makes RTOS calls
 const NvicPriority NvicPriorityPins = 2;				// priority for GPIO pin interrupts

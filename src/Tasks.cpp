@@ -368,20 +368,20 @@ static void ReportFlashError(FirmwareFlashErrorCode err)
 uint32_t ComputeCRC32(const uint32_t *start, const uint32_t *end)
 {
 #if RP2040
-	const unsigned int chan = dma_claim_unused_channel(true);
+	dma_channel_claim(DmacChanCRC);
 	dma_channel_config config;
 	config.ctrl = (0x3f << 15)				// unpaced transfer
 				| (1u << 4)					// increment read address
 				| (2u << 2);				// data size = 32-bit word
 	uint32_t dummyWord;
-	dma_channel_configure(chan, &config, &dummyWord, start, end - start, false);
-	dma_sniffer_enable(chan, 0x01, true);	// CRC32 with bit-reversed data
+	dma_channel_configure(DmacChanCRC, &config, &dummyWord, start, end - start, false);
+	dma_sniffer_enable(DmacChanCRC, 0x01, true);	// CRC32 with bit-reversed data
 	dma_hw->sniff_data = 0xFFFFFFFF;		// initial CRC
-	dma_channel_start(chan);
-	dma_channel_wait_for_finish_blocking(chan);
+	dma_channel_start(DmacChanCRC);
+	dma_channel_wait_for_finish_blocking(DmacChanCRC);
 	const uint32_t crc = dma_hw->sniff_data;
 	dma_sniffer_disable();
-	dma_channel_unclaim(chan);
+	dma_channel_unclaim(DmacChanCRC);
 	return crc;
 #else
 # if SAME5x
