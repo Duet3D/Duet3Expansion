@@ -44,7 +44,6 @@ constexpr Pin EnablePins[NumDrivers] = { PortAPin(9) };
 constexpr Pin StepPins[NumDrivers] = { PortAPin(11) };
 constexpr Pin DirectionPins[NumDrivers] = { PortAPin(10) };
 
-// The SAMC21 can sink more current than it can source, therefore we use active low signals to drive external drivers
 #define ACTIVE_HIGH_STEP		0		// 1 = active high, 0 = active low
 #define ACTIVE_HIGH_DIR			0		// 1 = active high, 0 = active low
 #define ACTIVE_HIGH_ENABLE		0		// 1 = active high, 0 = active low
@@ -53,8 +52,8 @@ constexpr Pin DirectionPins[NumDrivers] = { PortAPin(10) };
 
 #define SUPPORT_THERMISTORS		1
 #define SUPPORT_SPI_SENSORS		0
-#define SUPPORT_I2C_SENSORS		1
-#define SUPPORT_LIS3DH			1
+#define SUPPORT_I2C_SENSORS		0	//temporary
+#define SUPPORT_LIS3DH			0	//temporary
 #define SUPPORT_DHT_SENSOR		0
 
 #define USE_MPU					0
@@ -115,48 +114,49 @@ constexpr Pin Lis3dhInt1Pin = GpioPin(10);
 #endif
 
 // Table of pin functions that we are allowed to use
+//TODO restrict each of pwm0 to pwm7 to just one output, to prevent users trying to use the same PWM unit for more than one pin
 constexpr PinDescription PinTable[] =
 {
 	//	PWM					ADC				PinName
 	// Port A
-	{ PwmOutput::none,	AdcInput::none,		"gpio0"		},	// GPIO0
-	{ PwmOutput::none,	AdcInput::none,		"gpio1"		},	// GPIO1
-	{ PwmOutput::none,	AdcInput::none,		"gpio2"		},	// GPIO2
-	{ PwmOutput::none,	AdcInput::none,		"gpio3"		},	// GPIO3
-	{ PwmOutput::none,	AdcInput::none,		"gpio4"		},	// GPIO4
-	{ PwmOutput::none,	AdcInput::none,		"gpio5"		},	// GPIO5
-	{ PwmOutput::none,	AdcInput::none,		"gpio6"		},	// GPIO6
-	{ PwmOutput::none,	AdcInput::none,		"gpio7"		},	// GPIO7
+	{ PwmOutput::pwm0a,	AdcInput::none,		"gpio0"		},	// GPIO0
+	{ PwmOutput::pwm0b,	AdcInput::none,		"gpio1"		},	// GPIO1
+	{ PwmOutput::pwm1a,	AdcInput::none,		"gpio2"		},	// GPIO2
+	{ PwmOutput::pwm1b,	AdcInput::none,		"gpio3"		},	// GPIO3
+	{ PwmOutput::pwm2a,	AdcInput::none,		"gpio4"		},	// GPIO4
+	{ PwmOutput::pwm2b,	AdcInput::none,		"gpio5"		},	// GPIO5
+	{ PwmOutput::pwm3a,	AdcInput::none,		"gpio6"		},	// GPIO6
+	{ PwmOutput::pwm3b,	AdcInput::none,		"gpio7"		},	// GPIO7
 #if SUPPORT_I2C_SENSORS
 	{ PwmOutput::none,	AdcInput::none,		nullptr		},	// GPIO8 reserved for I2C SDA
 	{ PwmOutput::none,	AdcInput::none,		nullptr		},	// GPIO9 reserved for I2C SCL
 #else
-	{ PwmOutput::none,	AdcInput::none,		"gpio8"		},	// GPIO8
-	{ PwmOutput::none,	AdcInput::none,		"gpio9"		},	// GPIO9
+	{ PwmOutput::pwm4a,	AdcInput::none,		"gpio8"		},	// GPIO8
+	{ PwmOutput::pwm4b,	AdcInput::none,		"gpio9"		},	// GPIO9
 #endif
 #if SUPPORT_LIS3DH
 	{ PwmOutput::none,	AdcInput::none,		nullptr		},	// GPIO10 reserved for LIS3DH INT1
 #else
-	{ PwmOutput::none,	AdcInput::none,		"gpio10"	},	// GPIO10
+	{ PwmOutput::pwm5a,	AdcInput::none,		"gpio10"	},	// GPIO10
 #endif
-	{ PwmOutput::none,	AdcInput::none,		"gpio11"	},	// GPIO11
-	{ PwmOutput::none,	AdcInput::none,		"gpio12" 	},	// GPIO12
-	{ PwmOutput::none,	AdcInput::none,		"gpio13"	},	// GPIO13
-	{ PwmOutput::none,	AdcInput::none,		"gpio14"	},	// GPIO14
-	{ PwmOutput::none,	AdcInput::none,		"gpio15"	},	// GPIO15
-	{ PwmOutput::none,	AdcInput::none,		"gpio16"	},	// GPIO16
-	{ PwmOutput::none,	AdcInput::none,		"gpio17"	},	// GPIO17
-	{ PwmOutput::none,	AdcInput::none,		"gpio18" 	},	// GPIO18
-	{ PwmOutput::none,	AdcInput::none,		"gpio19"	},	// GPIO19
-	{ PwmOutput::none,	AdcInput::none,		"gpio20"	},	// GPIO20
-	{ PwmOutput::none,	AdcInput::none,		"gpio21"	},	// GPIO21
-	{ PwmOutput::none,	AdcInput::none,		"gpio22"	},	// GPIO22
+	{ PwmOutput::pwm5b,	AdcInput::none,		"gpio11"	},	// GPIO11
+	{ PwmOutput::pwm6a,	AdcInput::none,		"gpio12" 	},	// GPIO12
+	{ PwmOutput::pwm6b,	AdcInput::none,		"gpio13"	},	// GPIO13
+	{ PwmOutput::pwm7a,	AdcInput::none,		"gpio14"	},	// GPIO14
+	{ PwmOutput::pwm7b,	AdcInput::none,		"gpio15"	},	// GPIO15
+	{ PwmOutput::pwm0a,	AdcInput::none,		"gpio16"	},	// GPIO16
+	{ PwmOutput::pwm0b,	AdcInput::none,		"gpio17"	},	// GPIO17
+	{ PwmOutput::pwm1a,	AdcInput::none,		"gpio18" 	},	// GPIO18
+	{ PwmOutput::pwm1b,	AdcInput::none,		"gpio19"	},	// GPIO19
+	{ PwmOutput::pwm2a,	AdcInput::none,		"gpio20"	},	// GPIO20
+	{ PwmOutput::pwm2b,	AdcInput::none,		"gpio21"	},	// GPIO21
+	{ PwmOutput::pwm3a,	AdcInput::none,		"gpio22"	},	// GPIO22
 	{ PwmOutput::none,	AdcInput::none,		nullptr		},	// GPIO23 used to control the voltage regulator on the Pico
 	{ PwmOutput::none,	AdcInput::none,		nullptr		},	// GPIO24 used to detect VBUS on the Pico
 	{ PwmOutput::none,	AdcInput::none,		nullptr		},	// GPIO25 on-board LED which we use as the STATUS LED
-	{ PwmOutput::none,	AdcInput::adc0_0,	"gpio26"	},	// GPIO26
-	{ PwmOutput::none,	AdcInput::adc0_1,	"gpio27"	},	// GPIO27
-	{ PwmOutput::none,	AdcInput::adc0_2,	"gpio28"	},	// GPIO28
+	{ PwmOutput::pwm5a,	AdcInput::adc0_0,	"gpio26"	},	// GPIO26
+	{ PwmOutput::pwm5b,	AdcInput::adc0_1,	"gpio27"	},	// GPIO27
+	{ PwmOutput::pwm6a,	AdcInput::adc0_2,	"gpio28"	},	// GPIO28
 	{ PwmOutput::none,	AdcInput::adc0_3,	nullptr		},	// GPIO29 used to measure VSYS on the Pico
 };
 
