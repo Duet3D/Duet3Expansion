@@ -226,11 +226,12 @@ constexpr DmaChannel DmacChanSdadcRx = 3;
 
 constexpr unsigned int NumDmaChannelsUsed = 4;			// must be at least the number of channels used, may be larger. Max 12 on the SAMC21.
 
+// DMA priorities, higher is better. 0 to 3 are available.
 constexpr DmaPriority DmacPrioTmcTx = 0;
 constexpr DmaPriority DmacPrioTmcRx = 3;
 constexpr DmaPriority DmacPrioAdcRx = 2;
 
-// Interrupt priorities, lower means higher priority. 0 can't make RTOS calls.
+// Interrupt priorities, lower means higher priority. 0 can't make RTOS calls. Only 0 to 3 are available.
 const NvicPriority NvicPriorityStep = 1;				// step interrupt is next highest, it can preempt most other interrupts
 const NvicPriority NvicPriorityUart = 2;				// serial driver makes RTOS calls
 const NvicPriority NvicPriorityPins = 2;				// priority for GPIO pin interrupts
