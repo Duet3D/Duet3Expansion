@@ -203,7 +203,8 @@ SECTIONS
         *(COMMON)
         . = ALIGN(4);
         __bss_end__ = .;
-    } > RAM
+		_end = . ;			/* dc42 added */
+   } > RAM
 
     .heap (COPY):
     {
@@ -242,6 +243,7 @@ SECTIONS
     __StackOneBottom = __StackOneTop - SIZEOF(.stack1_dummy);
     __StackBottom = __StackTop - SIZEOF(.stack_dummy);
     PROVIDE(__stack = __StackTop);
+    PROVIDE(_estack = __StackTop);		/* dc42 addition */
 
     /* Check if data + heap + stack exceeds RAM limit */
     ASSERT(__StackLimit >= __HeapLimit, "region RAM overflowed")
