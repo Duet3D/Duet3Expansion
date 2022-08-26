@@ -7,6 +7,8 @@
 
 #include <Hardware/Devices.h>
 
+#if RP2040
+
 #include <AnalogIn.h>
 #include <AnalogOut.h>
 #include <TaskPriorities.h>
@@ -28,5 +30,7 @@ void DeviceInit() noexcept
 	AnalogOut::Init();
 	analogInTask.Create(AnalogIn::TaskLoop, "AIN", nullptr, TaskPriority::AinPriority);
 }
+
+#endif
 
 // End

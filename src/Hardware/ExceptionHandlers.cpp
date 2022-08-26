@@ -50,8 +50,13 @@ extern "C" [[noreturn]] void hardFaultDispatcher(const uint32_t *pulFaultStackAd
 }
 
 // The fault handler implementation calls a function called hardFaultDispatcher()
+#if RP2040
+extern "C" void isr_hardfault() noexcept __attribute__((naked));
+void isr_hardfault() noexcept
+#else
 extern "C" void HardFault_Handler() noexcept __attribute__((naked));
 void HardFault_Handler() noexcept
+#endif
 {
 	__asm volatile
 	(
@@ -76,6 +81,8 @@ void HardFault_Handler() noexcept
 	);
 }
 
+#if !RP2040
+
 extern "C" [[noreturn]] void wdtFaultDispatcher(const uint32_t *pulFaultStackAddress)
 {
 	SoftwareReset(SoftwareResetReason::wdtFault, pulFaultStackAddress);
@@ -86,7 +93,7 @@ void WDT_Handler() noexcept
 {
 	__asm volatile
 	(
-#if SAMC21 || RP2040
+#if SAMC21
 		" mrs r0, msp												\n"
 		" mov r1, lr												\n"
 		" movs r2, #4												\n"
@@ -107,13 +114,15 @@ void WDT_Handler() noexcept
 	);
 }
 
+#endif
+
 extern "C" [[noreturn]] void otherFaultDispatcher(const uint32_t *pulFaultStackAddress) noexcept
 {
 	SoftwareReset(SoftwareResetReason::otherFault, pulFaultStackAddress + 5);
 }
 
-	// 2017-05-25: A user is getting 'otherFault' reports, so now we do a stack dump for those too.
-	// The fault handler implementation calls a function called otherFaultDispatcher()
+// 2017-05-25: A user is getting 'otherFault' reports, so now we do a stack dump for those too.
+// The fault handler implementation calls a function called otherFaultDispatcher()
 extern "C" [[noreturn]] void OtherFault_Handler() noexcept __attribute__((naked));
 void OtherFault_Handler() noexcept
 {
@@ -142,7 +151,11 @@ void OtherFault_Handler() noexcept
 
 // We could set up the following fault handlers to retrieve the program counter in the same way as for a Hard Fault,
 // however these exceptions are unlikely to occur, so for now we just report the exception type.
+#if RP2040
+extern "C" [[noreturn]] void isr_nmi() noexcept
+#else
 extern "C" [[noreturn]] void NMI_Handler() noexcept
+#endif
 {
 	SoftwareReset(SoftwareResetReason::NMI);
 }
