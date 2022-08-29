@@ -57,9 +57,17 @@ constexpr CanDevice::Config Can0Config =
 	.dataSize = 64,									// must be one of: 8, 12, 16, 20, 24, 32, 48, 64
 	.numTxBuffers = 0,
 	.txFifoSize = 10,								// enough to send a 512-byte response broken into 60-byte fragments
+#if RP2040
+	.numRxBuffers = 0,								// RP2040 implementation doesn't support receive buffers
+#else
 	.numRxBuffers = 1,								// we use a dedicated buffer for the clock sync messages
+#endif
 	.rxFifo0Size = 32,
+#if RP2040
+	.rxFifo1Size = 1,								// we use FIFO 1 instead of a dedicated receive buffer to receive CAN clock messages
+#else
 	.rxFifo1Size = 0,								// we don't use FIFO 1
+#endif
 	.numShortFilterElements = 0,
 	.numExtendedFilterElements = 3,
 	.txEventFifoSize = 0
@@ -206,7 +214,12 @@ void CanInterface::Init(CanAddress defaultBoardAddress, bool useAlternatePins, b
 	if (full)
 	{
 		// Set up a CAN receive filter to receive clock sync messages in buffer 0
-		can0dev->SetExtendedFilterElement(1, CanDevice::RxBufferNumber::buffer0,
+		can0dev->SetExtendedFilterElement(1,
+#if RP2040
+											CanDevice::RxBufferNumber::fifo1,
+#else
+											CanDevice::RxBufferNumber::buffer0,
+#endif
 											((uint32_t)CanMessageType::timeSync << CanId::MessageTypeShift) | ((uint32_t)CanId::BroadcastAddress << CanId::DstAddressShift),
 											1);					// mask is unused when using a dedicated Rx buffer, but must be nonzero to enable the element
 
@@ -684,7 +697,13 @@ extern "C" [[noreturn]] void CanClockLoop(void *) noexcept
 	for (;;)
 	{
 		CanMessageBuffer buf(nullptr);
-		can0dev->ReceiveMessage( CanDevice::RxBufferNumber::buffer0, TaskBase::TimeoutUnlimited, &buf);
+		can0dev->ReceiveMessage(
+#if RP2040
+								CanDevice::RxBufferNumber::fifo1,
+#else
+								CanDevice::RxBufferNumber::buffer0,
+#endif
+									TaskBase::TimeoutUnlimited, &buf);
 		if (buf.id.MsgType() == CanMessageType::timeSync
 #if defined(ATEIO) || defined(ATECM)
 			&& (buf.id.Src() == CanId::ATEMasterAddress))			// ATE boards only respond to the ATE master, because a main board under test may also transmit when it starts up
