@@ -1232,6 +1232,7 @@ void Platform::Spin()
 # if defined(SAMMYC21)
 		while (uart0.available() != 0)
 # elif defined(RPI_PICO)
+		serialUSB.Spin();
 		while (serialUSB.available() != 0)
 # endif
 		{
