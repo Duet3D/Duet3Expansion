@@ -1223,45 +1223,45 @@ void Platform::Spin()
 					   );
 #endif
 		}
+	}
 
 #if defined(SAMMYC21) || defined(RPI_PICO)
-		//debugPrintf("IR=%" PRIx32 " ERR=%" PRIx32 " RXF0S=%" PRIx32 " RXF1S=%" PRIx32 " PSR=%" PRIx32 " CCCR=%" PRIx32 "\n",
-		//	CAN0->IR.reg, CAN0->ECR.reg, CAN0->RXF0S.reg, CAN0->RXF1S.reg, CAN0->PSR.reg, CAN0->CCCR.reg);
+	//debugPrintf("IR=%" PRIx32 " ERR=%" PRIx32 " RXF0S=%" PRIx32 " RXF1S=%" PRIx32 " PSR=%" PRIx32 " CCCR=%" PRIx32 "\n",
+	//	CAN0->IR.reg, CAN0->ECR.reg, CAN0->RXF0S.reg, CAN0->RXF1S.reg, CAN0->PSR.reg, CAN0->CCCR.reg);
 
-		// If D is received from the USB port, output some diagnostics
-# if defined(SAMMYC21)
-		while (uart0.available() != 0)
-# elif defined(RPI_PICO)
-		serialUSB.Spin();
-		while (serialUSB.available() != 0)
+	// If D is received from the USB port, output some diagnostics
+# if defined(RPI_PICO)
+	serialUSB.Spin();
+	while (serialUSB.available() != 0)
+# elif defined(SAMMYC21)
+	while (uart0.available() != 0)
 # endif
+	{
+# if defined(SAMMYC21)
+		const char c = uart0.read();
+# elif defined(RPI_PICO)
+		const char c = serialUSB.read();
+# endif
+		if (c == 'D')
 		{
-# if defined(SAMMYC21)
-			const char c = uart0.read();
-# elif defined(RPI_PICO)
-			const char c = serialUSB.read();
-# endif
-			if (c == 'D')
-			{
-				String<StringLength256> reply;
-				Tasks::Diagnostics(reply.GetRef());
-				debugPrintf("%s\n", reply.c_str());
-				reply.Clear();
-				CanInterface::Diagnostics(reply.GetRef());
-				debugPrintf("%s\n", reply.c_str());
-				reply.Clear();
+			String<StringLength256> reply;
+			Tasks::Diagnostics(reply.GetRef());
+			debugPrintf("%s\n", reply.c_str());
+			reply.Clear();
+			CanInterface::Diagnostics(reply.GetRef());
+			debugPrintf("%s\n", reply.c_str());
+			reply.Clear();
 # if SUPPORT_DRIVERS
-				moveInstance->Diagnostics(reply.GetRef());
+			moveInstance->Diagnostics(reply.GetRef());
 # endif
-				debugPrintf("%s\n", reply.c_str());
-				//moveInstance->DebugPrintCdda();
+			debugPrintf("%s\n", reply.c_str());
+			//moveInstance->DebugPrintCdda();
 # if SUPPORT_I2C_SENSORS && SUPPORT_LIS3DH
-				debugPrintf("LIS3DH detected: %s", AccelerometerHandler::IsPresent() ? "yes" : "no");
+			debugPrintf("LIS3DH detected: %s", AccelerometerHandler::IsPresent() ? "yes" : "no");
 # endif
-			}
 		}
-#endif
 	}
+#endif
 }
 
 void Platform::SpinMinimal()
