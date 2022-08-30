@@ -2038,11 +2038,14 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/RP2040}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${PicoSdkPath}/src/boards/include&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${PicoSdkPath}/src/common/pico_base/include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${PicoSdkPath}/src/common/pico_sync/include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${PicoSdkPath}/src/common/pico_time/include&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${PicoSdkPath}/src/rp2_common/cmsis/include&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${PicoSdkPath}/src/rp2_common/hardware_base/include&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${PicoSdkPath}/src/rp2_common/hardware_dma/Include&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${PicoSdkPath}/src/rp2_common/hardware_gpio/include&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${PicoSdkPath}/src/rp2_common/hardware_irq/include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${PicoSdkPath}/src/rp2_common/hardware_sync/include&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${PicoSdkPath}/src/rp2_common/hardware_timer/include&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${PicoSdkPath}/src/rp2_common/hardware_watchdog/include&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${PicoSdkPath}/src/rp2_common/pico_platform/include&quot;"/>

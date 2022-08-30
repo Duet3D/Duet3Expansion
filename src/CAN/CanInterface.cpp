@@ -19,7 +19,7 @@
 #include <Movement/Move.h>
 #include <General/SafeVsnprintf.h>
 
-#define SUPPORT_CAN		1				// needed by CanDriver.h
+#define SUPPORT_CAN		1				// needed by CanDevice.h
 #include <CanDevice.h>
 #include <Hardware/IoPorts.h>
 #include <Version.h>

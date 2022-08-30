@@ -12,7 +12,10 @@
 
 #if RP2040
 
-//TODO expose the USB interface as a serial device
+#define SUPPORT_USB		1		// needed by SerialCDC.h
+#include <SerialCDC.h>
+
+extern SerialCDC serialUSB;
 
 #else
 
