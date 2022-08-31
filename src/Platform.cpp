@@ -1251,10 +1251,16 @@ void Platform::Spin()
 			CanInterface::Diagnostics(reply.GetRef());
 			debugPrintf("%s\n", reply.c_str());
 			reply.Clear();
+			StepTimer::Diagnostics(reply.GetRef());
+			debugPrintf("%s\n", reply.c_str());
+			reply.Clear();
+
 # if SUPPORT_DRIVERS
 			moveInstance->Diagnostics(reply.GetRef());
-# endif
 			debugPrintf("%s\n", reply.c_str());
+			reply.Clear();
+# endif
+
 			//moveInstance->DebugPrintCdda();
 # if SUPPORT_I2C_SENSORS && SUPPORT_LIS3DH
 			debugPrintf("LIS3DH detected: %s", AccelerometerHandler::IsPresent() ? "yes" : "no");

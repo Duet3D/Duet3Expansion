@@ -79,11 +79,23 @@ static_assert(Can0Config.IsValid());
 static uint32_t can0Memory[Can0Config.GetMemorySize()] __attribute__ ((section (".CanMessage")));
 
 // CanClock task
-constexpr size_t CanClockTaskStackWords = 130;
+constexpr size_t CanClockTaskStackWords =
+#if RP2040
+										400;		// to allow calls to debugPrintf
+#else
+										130;
+#endif
+
 static Task<CanClockTaskStackWords> canClockTask;
 
 // CanReceiver management task
-constexpr size_t CanReceiverTaskStackWords = 120;
+constexpr size_t CanReceiverTaskStackWords =
+#if RP2040
+										400;		// to allow calls to debugPrintf
+#else
+										120;
+#endif
+
 static Task<CanReceiverTaskStackWords> canReceiverTask;
 
 // Async sender task
@@ -221,7 +233,12 @@ void CanInterface::Init(CanAddress defaultBoardAddress, bool useAlternatePins, b
 											CanDevice::RxBufferNumber::buffer0,
 #endif
 											((uint32_t)CanMessageType::timeSync << CanId::MessageTypeShift) | ((uint32_t)CanId::BroadcastAddress << CanId::DstAddressShift),
-											1);					// mask is unused when using a dedicated Rx buffer, but must be nonzero to enable the element
+#if RP2040
+											(CanId::MessageTypeMask << CanId::MessageTypeShift) | (CanId::BoardAddressMask << CanId::DstAddressShift)
+#else
+											1					// mask is unused when using a dedicated Rx buffer, but must be nonzero to enable the element
+#endif
+											);
 
 		// Set up a filter for all other broadcast messages in FIFO 0
 		can0dev->SetExtendedFilterElement(2, CanDevice::RxBufferNumber::fifo0,
@@ -558,8 +575,17 @@ void CanInterface::Diagnostics(const StringRef& reply) noexcept
 {
 	unsigned int messagesQueuedForSending, messagesReceived, messagesLost, busOffCount;
 	can0dev->GetAndClearStats(messagesQueuedForSending, messagesReceived, messagesLost, busOffCount);
+#if RP2040
+	reply.lcatf("CAN messages queued %u, send timeouts %u, received %u, free buffers %u, min %u",
+					messagesQueuedForSending, txTimeouts, messagesReceived, CanMessageBuffer::GetFreeBuffers(), CanMessageBuffer::GetAndClearMinFreeBuffers());
+	CanErrorCounts errs;
+	can0dev->GetAndClearErrorCounts(errs);
+	reply.lcatf("Lost0 %" PRIu32 ", lost1 %" PRIu32 ", wt %" PRIu32 ", scp %" PRIu32 ", wsc %" PRIu32 ", wcrc %" PRIu32 ", mcd %" PRIu32 ", mad %" PRIu32 ", meof %" PRIu32,
+				errs.rxFifoOverlow[0], errs.rxFifoOverlow[1], errs.wrongMessageType, errs.stuffCountParity, errs.wrongStuffCount, errs.wrongCrc, errs.missingCrcDelimiter, errs.missingAckDelimiter, errs.missingEofBit);
+#else
 	reply.lcatf("CAN messages queued %u, send timeouts %u, received %u, lost %u, free buffers %u, min %u, error reg %" PRIx32,
 					messagesQueuedForSending, txTimeouts, messagesReceived, messagesLost, CanMessageBuffer::GetFreeBuffers(), CanMessageBuffer::GetAndClearMinFreeBuffers(), can0dev->GetErrorRegister());
+#endif
 	txTimeouts = 0;
 	if (lastCancelledId != 0)
 	{

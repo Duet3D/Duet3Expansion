@@ -86,7 +86,7 @@ void StepTimer::Init()
 #if RP2040
 	// On the RP2040 the timestamp counter is the same as the step counter
 	const uint32_t localTimeNow = StepTimer::GetTimerTicks();
-	const uint32_t timeStampDelay = localTimeNow - timeStamp;
+	const uint32_t timeStampDelay = (localTimeNow - timeStamp) & 0xFFFF;
 #else
 	uint32_t localTimeNow;
 	uint16_t timeStampNow;
@@ -117,6 +117,9 @@ void StepTimer::Init()
 	if (locSyncCount == 0)											// we can't sync until we have previous message details
 	{
 		syncCount = 1;
+#if RP2040
+		debugPrintf("1sy sync\n");
+#endif
 	}
 	else if (msg.lastTimeSent == oldMasterTime && msg.lastTimeAcknowledgeDelay != 0)
 	{
@@ -132,12 +135,18 @@ void StepTimer::Init()
 		{
 			syncCount = 0;
 			++numJitterResyncs;
+#if RP2040
+			debugPrintf("diff %" PRIi32 "\n", diff);
+#endif
 		}
 		else
 		{
 			whenLastSynced = millis();
 			if (locSyncCount == MaxSyncCount)
 			{
+#if RP2040
+				debugPrintf("synced\n");
+#endif
 				if (!gotJitter)
 				{
 					peakPosJitter = peakNegJitter = diff;
@@ -160,12 +169,18 @@ void StepTimer::Init()
 			else
 			{
 				syncCount = locSyncCount + 1;
+#if RP2040
+				debugPrintf("inc sync ct\n");
+#endif
 			}
 		}
 	}
 	else
 	{
 		// Looks like we missed a time sync message. Ignore it.
+#if RP2040
+		debugPrintf("missed ts msg, prev=%" PRIu32 " old=%" PRIu32 "\n", msg.lastTimeSent, oldMasterTime);
+#endif
 	}
 }
 
