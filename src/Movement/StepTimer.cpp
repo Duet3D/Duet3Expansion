@@ -117,7 +117,7 @@ void StepTimer::Init()
 	if (locSyncCount == 0)											// we can't sync until we have previous message details
 	{
 		syncCount = 1;
-#if RP2040
+#if 0 //RP2040
 		debugPrintf("1sy sync\n");
 #endif
 	}
@@ -135,7 +135,7 @@ void StepTimer::Init()
 		{
 			syncCount = 0;
 			++numJitterResyncs;
-#if RP2040
+#if 0 //RP2040
 			debugPrintf("diff %" PRIi32 "\n", diff);
 #endif
 		}
@@ -144,7 +144,7 @@ void StepTimer::Init()
 			whenLastSynced = millis();
 			if (locSyncCount == MaxSyncCount)
 			{
-#if RP2040
+#if 0 //RP2040
 				debugPrintf("synced\n");
 #endif
 				if (!gotJitter)
@@ -169,7 +169,7 @@ void StepTimer::Init()
 			else
 			{
 				syncCount = locSyncCount + 1;
-#if RP2040
+#if 0 //RP2040
 				debugPrintf("inc sync ct\n");
 #endif
 			}
@@ -178,7 +178,7 @@ void StepTimer::Init()
 	else
 	{
 		// Looks like we missed a time sync message. Ignore it.
-#if RP2040
+#if 0 //RP2040
 		debugPrintf("missed ts msg, prev=%" PRIu32 " old=%" PRIu32 "\n", msg.lastTimeSent, oldMasterTime);
 #endif
 	}
