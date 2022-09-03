@@ -580,9 +580,10 @@ void CanInterface::Diagnostics(const StringRef& reply) noexcept
 					messagesQueuedForSending, txTimeouts, messagesReceived, CanMessageBuffer::GetFreeBuffers(), CanMessageBuffer::GetAndClearMinFreeBuffers());
 	CanErrorCounts errs;
 	can0dev->GetAndClearErrorCounts(errs);
-	reply.lcatf("Lost0 %" PRIu32 ", lost1 %" PRIu32 ", wt %" PRIu32 ", bs %" PRIu32 ", scp %" PRIu32 ", wsc %" PRIu32 ", wcrc %" PRIu32 ", mcd %" PRIu32 ", mad %" PRIu32 ", meof %" PRIu32,
+	reply.lcatf("Lost0 %" PRIu32 ", lost1 %" PRIu32 ", wt %" PRIu32 ", bs %" PRIu32 ", scp %" PRIu32 ", wsc %" PRIu32
+					", wcrc %" PRIu32 ", mcd %" PRIu32 ", mad %" PRIu32 ", meof1 %" PRIu32 ", meof2 %" PRIu32 ", lack %" PRIu32,
 					errs.rxFifoOverlow[0], errs.rxFifoOverlow[1], errs.wrongMessageType, errs.badStuffing, errs.stuffCountParity, errs.wrongStuffCount,
-						errs.wrongCrc, errs.missingCrcDelimiter, errs.missingAckDelimiter, errs.missingEofBit);
+						errs.wrongCrc, errs.missingCrcDelimiter, errs.missingAckDelimiter, errs.missingEofBit1, errs.missingEofBit2, errs.tooLateToAck);
 #else
 	reply.lcatf("CAN messages queued %u, send timeouts %u, received %u, lost %u, free buffers %u, min %u, error reg %" PRIx32,
 					messagesQueuedForSending, txTimeouts, messagesReceived, messagesLost, CanMessageBuffer::GetFreeBuffers(), CanMessageBuffer::GetAndClearMinFreeBuffers(), can0dev->GetErrorRegister());
