@@ -173,12 +173,13 @@ static_assert(NumPins == 30);		// 30 GPIO pins on RP2040
 //constexpr IRQn Serial0_IRQn = SERCOM5_IRQn;
 
 // DMA channel assignments
-constexpr DmaChannel DmacChanTmcTx = 0;
-constexpr DmaChannel DmacChanTmcRx = 1;
-constexpr DmaChannel DmacChanAdcRx = 2;
-constexpr DmaChannel DmacChanCRC = 3;
+constexpr DmaChannel DmacChanCAN = 0;					// this must match the value used in the RP2040 CAN driver in CoreN2G!
+constexpr DmaChannel DmacChanAdcRx = 1;
+constexpr DmaChannel DmacChanTmcTx = 2;
+constexpr DmaChannel DmacChanTmcRx = 3;
+constexpr DmaChannel DmacChanCRC = 4;
 
-constexpr unsigned int NumDmaChannelsUsed = 4;			// must be at least the number of channels used, may be larger. Max 12 on the RP2040.
+constexpr unsigned int NumDmaChannelsUsed = 5;			// must be at least the number of channels used, may be larger. Max 12 on the RP2040.
 
 // DMA priorities, higher is better. RP2040 has only 0 and 1.
 constexpr DmaPriority DmacPrioTmcTx = 0;
