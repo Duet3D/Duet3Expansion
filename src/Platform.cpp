@@ -1255,6 +1255,10 @@ void Platform::Spin()
 			debugPrintf("%s\n", reply.c_str());
 			reply.Clear();
 
+			uint32_t conversionsStarted, conversionsCompleted, conversionTimeouts, errors;
+			AnalogIn::GetDebugInfo(conversionsStarted, conversionsCompleted, conversionTimeouts, errors);
+			debugPrintf("ADC conversions started %" PRIu32 ", completed %" PRIu32 ", timed out %" PRIu32 ", errs %" PRIu32 "\n",
+						conversionsStarted, conversionsCompleted, conversionTimeouts, errors);
 # if SUPPORT_DRIVERS
 			moveInstance->Diagnostics(reply.GetRef());
 			debugPrintf("%s\n", reply.c_str());
