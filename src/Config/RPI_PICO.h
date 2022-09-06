@@ -72,7 +72,6 @@ constexpr Pin TempSensePins[NumThermistorInputs] = { GpioPin(26), GpioPin(27) };
 
 constexpr Pin CanTxPin = GpioPin(5);
 constexpr Pin CanRxPin = GpioPin(4);
-const unsigned int CanPioNumber = 0;
 
 constexpr Pin ButtonPins[] = { PIN_TODO };
 

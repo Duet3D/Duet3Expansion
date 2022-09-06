@@ -205,7 +205,7 @@ void CanInterface::Init(CanAddress defaultBoardAddress, bool useAlternatePins, b
 	// Initialise the CAN hardware, using the timing data if it was valid
 	can0dev = CanDevice::Init(
 #if RP2040
-								CanTxPin, CanRxPin, CanPioNumber,
+								CanTxPin, CanRxPin,
 #else
 								0, whichPort,
 #endif
