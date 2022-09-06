@@ -68,6 +68,7 @@ SECTIONS
         /* bit of a hack right now to exclude all floating point and time critical (e.g. memset, memcpy) code from
          * FLASH ... we will include any thing excluded here in .data below by default */
         *(.init)
+		. = ALIGN(8);		/* to allow us to align fnctions on XIP cache line boundaries */
         *(EXCLUDE_FILE(*libgcc.a: *libc.a:*lib_a-mem*.o *libm.a:) .text*)
         *(.fini)
         /* Pull all c'tors into .text */
@@ -203,7 +204,6 @@ SECTIONS
         *(COMMON)
         . = ALIGN(4);
         __bss_end__ = .;
-		_end = . ;			/* dc42 added */
    } > RAM
 
     .heap (COPY):
@@ -212,6 +212,7 @@ SECTIONS
         end = __end__;
         *(.heap*)
         __HeapLimit = .;
+		_end = . ;			/* dc42 added */
     } > RAM
 
     /* .stack*_dummy section doesn't contains any symbols. It is only
