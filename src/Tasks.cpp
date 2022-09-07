@@ -31,6 +31,7 @@
 #if RP2040
 # include <hardware/dma.h>
 # include <hardware/watchdog.h>
+# include <hardware/structs/vreg_and_chip_reset.h>
 #else
 # include <hpl_user_area.h>
 #endif
@@ -586,12 +587,33 @@ void Tasks::Diagnostics(const StringRef& reply) noexcept
 	reply.lcatf("Last reset %02d:%02d:%02d ago, cause: ", (unsigned int)(now/3600), (unsigned int)((now % 3600)/60), (unsigned int)(now % 60));
 
 #if RP2040
-	switch (watchdog_hw->reason & 0x03)
 	{
-	case 0:	reply.cat("hardware reset"); break;
-	case 1: reply.cat("watchdog timer"); break;
-	case 2: reply.cat("watchdog force"); break;
-	case 3: reply.cat("watchdog force and timer"); break;
+		const uint32_t reason = watchdog_hw->reason & 0x03;
+		if (reason != 0 && watchdog_enable_caused_reboot())
+		{
+			switch (reason)
+			{
+			case 1: reply.cat("watchdog timer"); break;
+			case 2: reply.cat("watchdog force"); break;
+			case 3: reply.cat("watchdog force and timer"); break;
+			}
+		}
+		else
+		{
+			const uint32_t reason2 = vreg_and_chip_reset_hw->chip_reset;
+			if (reason2 & 0x0100)
+			{
+				reply.cat("power up or brownout");
+			}
+			else if (reason2 & 0x00010000)
+			{
+				reply.cat("RUN pin");
+			}
+			else
+			{
+				reply.cat("debugger");
+			}
+		}
 	}
 #else
 	const uint8_t resetCause = RSTC->RCAUSE.reg;
