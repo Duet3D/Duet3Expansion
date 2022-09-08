@@ -37,6 +37,7 @@
 #define SUPPORT_TMC2160			0
 #define SUPPORT_TMC2660			0
 #define SUPPORT_TMC22xx			1
+#define SUPPORT_TMC2240			0
 
 constexpr size_t NumDrivers = 1;
 constexpr size_t MaxSmartDrivers = 1;
@@ -47,7 +48,6 @@ constexpr size_t MaxSmartDrivers = 1;
 #define TMC22xx_HAS_ENABLE_PINS			0
 #define TMC22xx_VARIABLE_NUM_DRIVERS	0
 #define TMC22xx_USE_SLAVEADDR			0
-#define TMC22xx_DEFAULT_STEALTHCHOP		0
 
 constexpr Pin GlobalTmc22xxEnablePin = PortBPin(2);
 

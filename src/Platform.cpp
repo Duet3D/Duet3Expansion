@@ -631,7 +631,7 @@ void Platform::Init()
 			{
 #if SAMC21
 				// Set high driver strength on the output pins because they drive the heater and fan mosfets directly
-				SetHighDriveStrength(pin);
+				SetDriveStrength(pin, 1);
 #endif
 
 #ifdef TOOL1LC
