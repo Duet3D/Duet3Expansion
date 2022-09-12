@@ -9,8 +9,8 @@
 
 #if SUPPORT_DRIVERS
 
-#include "Platform.h"
-#include "Movement/Move.h"
+#include <Platform/Platform.h>
+#include <Movement/Move.h>
 #include <CanMessageFormats.h>
 #include <CanMessageGenericParser.h>
 

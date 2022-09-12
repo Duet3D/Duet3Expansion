@@ -18,7 +18,7 @@
 #endif
 
 #include "StepTimer.h"
-#include "Platform.h"
+#include <Platform/Platform.h>
 
 // Prepare this DM for a Cartesian axis move
 void DriveMovement::PrepareCartesianAxis(const DDA& dda, const PrepParams& params)

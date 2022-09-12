@@ -24,8 +24,8 @@
 
 #if SUPPORT_DRIVERS
 
-#include "Platform.h"
-#include "Movement/StepTimer.h"
+#include <Platform/Platform.h>
+#include <Movement/StepTimer.h>
 
 // Constructors
 Duet3DFilamentMonitor::Duet3DFilamentMonitor(unsigned int extruder, unsigned int pType) noexcept

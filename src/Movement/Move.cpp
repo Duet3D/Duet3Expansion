@@ -38,11 +38,11 @@
 #if SUPPORT_DRIVERS
 
 #include "StepTimer.h"
-#include "Platform.h"
+#include <Platform/Platform.h>
 #include <CAN/CanInterface.h>
 #include <CanMessageFormats.h>
 #include <CanMessageBuffer.h>
-#include <TaskPriorities.h>
+#include <Platform/TaskPriorities.h>
 
 #if HAS_SMART_DRIVERS
 # include "StepperDrivers/TMC51xx.h"

@@ -6,7 +6,7 @@
  */
 
 #include "CpuTemperatureSensor.h"
-#include "Platform.h"
+#include <Platform/Platform.h>
 
 #if HAS_CPU_TEMP_SENSOR
 

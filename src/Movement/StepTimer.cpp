@@ -6,7 +6,7 @@
  */
 
 #include "StepTimer.h"
-#include <Platform.h>
+#include <Platform/Platform.h>
 #include <RTOSIface/RTOSIface.h>
 #include <CanMessageFormats.h>
 #include <CAN/CanInterface.h>

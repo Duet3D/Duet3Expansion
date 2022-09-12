@@ -6,8 +6,8 @@
  */
 
 #include "Tasks.h"
-#include <Platform.h>
-#include <TaskPriorities.h>
+#include <Platform/Platform.h>
+#include <Platform/TaskPriorities.h>
 #include <Movement/Move.h>
 #include <Heating/Heat.h>
 #include <InputMonitors/InputMonitor.h>

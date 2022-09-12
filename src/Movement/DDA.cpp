@@ -9,10 +9,10 @@
 
 #if SUPPORT_DRIVERS
 
-#include "Platform.h"
+#include <Platform/Platform.h>
 #include "Move.h"
 #include "Kinematics/LinearDeltaKinematics.h"		// for DELTA_AXES
-#include "CanMessageFormats.h"
+#include <CanMessageFormats.h>
 #include <CAN/CanInterface.h>
 #include <limits>
 

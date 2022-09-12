@@ -12,8 +12,8 @@
 #include <RTOSIface/RTOSIface.h>
 #include <Hardware/LIS3DH.h>
 #include <CanMessageFormats.h>
-#include <Platform.h>
-#include <TaskPriorities.h>
+#include <Platform/Platform.h>
+#include <Platform/TaskPriorities.h>
 #include <CanMessageBuffer.h>
 #include <CAN/CanInterface.h>
 #include <CanMessageGenericParser.h>

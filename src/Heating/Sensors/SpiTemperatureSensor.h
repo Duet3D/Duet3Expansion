@@ -12,7 +12,7 @@
 
 #if SUPPORT_SPI_SENSORS
 
-#include <Platform.h>
+#include <Platform/Platform.h>
 #include <Hardware/SharedSpiClient.h>
 
 class SpiTemperatureSensor : public SensorWithPort
@@ -23,6 +23,7 @@ protected:
 	void InitSpi();
 	TemperatureError DoSpiTransaction(const uint8_t dataOut[], size_t nbytes, uint32_t& rslt) const
 		pre(nbytes <= 8);
+	TemperatureError DoSpiTransaction(const uint8_t dataOut[], uint8_t dataIn[], size_t nbytes) const noexcept;
 
 	SharedSpiClient device;
 };

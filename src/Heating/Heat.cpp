@@ -20,8 +20,8 @@ Licence: GPL
 
 #include "Heat.h"
 #include "Heater.h"
-#include <Platform.h>
-#include <TaskPriorities.h>
+#include <Platform/Platform.h>
+#include <Platform/TaskPriorities.h>
 #include "Sensors/TemperatureSensor.h"
 #include "Sensors/RemoteSensor.h"
 #include <CanMessageGenericParser.h>
@@ -46,7 +46,7 @@ Licence: GPL
 # include <CommandProcessing/AccelerometerHandler.h>
 #endif
 
-#include "Tasks.h"
+#include <Platform/Tasks.h>
 
 // The task stack size must be large enough for calls to debugPrintf when a heater fault occurs.
 // Currently (2020-12-03) it needs at least 144 words when handling a heater fault, if debugPrintf calls vuprintf but the underlying putchar function throws the character away.

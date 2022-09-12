@@ -7,8 +7,8 @@
 
 #include "LinearDeltaKinematics.h"
 
-#include "Movement/Move.h"
-#include "Platform.h"
+#include <Movement/Move.h>
+#include <Platform/Platform.h>
 
 LinearDeltaKinematics::LinearDeltaKinematics() : Kinematics(KinematicsType::linearDelta, -1.0, 0.0, true), numTowers(UsualNumTowers)
 {

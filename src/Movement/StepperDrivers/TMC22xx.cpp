@@ -38,7 +38,7 @@
 #define RESET_MICROSTEP_COUNTERS_AT_INIT	0		// Duets use pulldown resistors on the step pins, so we don't get phantom microsteps at power up
 #define USE_FAST_CRC	1
 
-#include <TaskPriorities.h>
+#include <Platform/TaskPriorities.h>
 #include <Movement/Move.h>
 #include <Movement/StepTimer.h>
 #include <Cache.h>
@@ -2395,7 +2395,7 @@ StandardDriverStatus SmartDrivers::GetStatus(size_t driver, bool accumulated, bo
 
 #endif
 
-#if RP2040
+#if 0 //RP2040
 // The following is work-in progress!
 
 // PIO program to wait for IRQ 4, then start receiving bytes, packing them into 32-bit words, and pushing them through the FIFO
@@ -2506,6 +2506,8 @@ static inline void uart_tx_program_init(PIO pio, uint sm, uint offset, uint pin_
 	pio_sm_init(pio, sm, offset, &c);
 	pio_sm_set_enabled(pio, sm, true);
 }
+
+#endif
 
 #endif
 

@@ -11,7 +11,7 @@
 
 #include <AnalogIn.h>
 #include <AnalogOut.h>
-#include <TaskPriorities.h>
+#include <Platform/TaskPriorities.h>
 
 // Analog input support
 constexpr size_t AnalogInTaskStackWords = 300;

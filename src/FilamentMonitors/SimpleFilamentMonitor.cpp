@@ -9,7 +9,7 @@
 
 #if SUPPORT_DRIVERS
 
-#include "Platform.h"
+#include <Platform/Platform.h>
 #include <CanMessageFormats.h>
 #include <CanMessageGenericParser.h>
 

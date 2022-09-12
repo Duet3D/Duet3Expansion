@@ -6,11 +6,11 @@
  */
 
 #include "LocalFan.h"
-#include "Hardware/IoPorts.h"
-#include "Movement/StepTimer.h"
-#include "Platform.h"
-#include "Heating/Heat.h"
-#include "Heating/Sensors/TemperatureSensor.h"
+#include <Hardware/IoPorts.h>
+#include <Movement/StepTimer.h>
+#include <Platform/Platform.h>
+#include <Heating/Heat.h>
+#include <Heating/Sensors/TemperatureSensor.h>
 
 void FanInterrupt(CallbackParameter cb) noexcept
 {

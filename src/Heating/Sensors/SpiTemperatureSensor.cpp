@@ -9,7 +9,7 @@
 
 #if SUPPORT_SPI_SENSORS
 
-#include "Tasks.h"
+#include <Platform/Tasks.h>
 
 SpiTemperatureSensor::SpiTemperatureSensor(unsigned int sensorNum, const char *name, SpiMode spiMode, uint32_t clockFreq)
 	: SensorWithPort(sensorNum, name), device(Platform::GetSharedSpi(), clockFreq, spiMode, false)
@@ -54,6 +54,29 @@ TemperatureError SpiTemperatureSensor::DoSpiTransaction(const uint8_t dataOut[],
 	{
 		rslt <<= 8;
 		rslt |= rawBytes[i];
+	}
+
+	return TemperatureError::success;
+}
+
+// Send and receive data
+TemperatureError SpiTemperatureSensor::DoSpiTransaction(const uint8_t dataOut[], uint8_t dataIn[], size_t nbytes) const noexcept
+{
+	if (!device.Select(10))
+	{
+		return TemperatureError::busBusy;
+	}
+
+	delayMicroseconds(1);
+	const bool ok = device.TransceivePacket(dataOut, dataIn, nbytes);
+	delayMicroseconds(1);
+
+	device.Deselect();
+	delayMicroseconds(1);
+
+	if (!ok)
+	{
+		return TemperatureError::timeout;
 	}
 
 	return TemperatureError::success;

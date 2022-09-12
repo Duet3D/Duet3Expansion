@@ -9,7 +9,7 @@
 #define DDA_H_
 
 #include <RepRapFirmware.h>
-#include <Tasks.h>
+#include <Platform/Tasks.h>
 
 #if SUPPORT_DRIVERS
 

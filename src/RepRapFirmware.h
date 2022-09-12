@@ -19,7 +19,7 @@ typedef float floatc_t;							// type of matrix element used for calibration
 #endif
 
 #include <Config/BoardDef.h>
-#include "Configuration.h"
+#include <Config/Configuration.h>
 #include <General/String.h>
 #include <General/StringFunctions.h>
 #include <General/Bitmap.h>

@@ -11,7 +11,7 @@
 
 #include <AnalogIn.h>
 #include <AnalogOut.h>
-#include <TaskPriorities.h>
+#include <Platform/TaskPriorities.h>
 #include <RTOSIface/RTOSIface.h>
 #include <RP2040USB.h>
 

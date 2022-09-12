@@ -10,8 +10,8 @@
 
 #if SUPPORT_THERMISTORS
 
-#include "Platform.h"
-#include "CanMessageGenericParser.h"
+#include <Platform/Platform.h>
+#include <CanMessageGenericParser.h>
 
 #if HAS_VREF_MONITOR
 # include <Hardware/NonVolatileMemory.h>

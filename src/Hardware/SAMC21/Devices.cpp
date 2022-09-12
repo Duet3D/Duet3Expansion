@@ -6,7 +6,7 @@
  */
 
 #include <Hardware/Devices.h>
-#include <TaskPriorities.h>
+#include <Platform/TaskPriorities.h>
 
 #if SAMC21
 

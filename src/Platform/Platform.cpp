@@ -653,7 +653,7 @@ void Platform::Init()
 #ifdef ATEIO
 			else if (StringStartsWith(p.pinNames, "!rsel") || StringStartsWith(p.pinNames, "!tsel"))
 			{
-				SetHighDriveStrength(pin);
+				SetDriveStrength(pin, 2);
 				IoPort::SetPinMode(pin, OUTPUT_HIGH);
 			}
 #endif
@@ -756,9 +756,9 @@ void Platform::Init()
 # if DIFFERENTIAL_STEPPER_OUTPUTS
 		// Step pins
 		IoPort::SetPinMode(StepPins[i], OUTPUT_LOW);
-		SetHighDriveStrength(StepPins[i]);
+		SetDriveStrength(StepPins[i], 2);
 		IoPort::SetPinMode(InvertedStepPins[i], OUTPUT_HIGH);
-		SetHighDriveStrength(InvertedStepPins[i]);
+		SetDriveStrength(InvertedStepPins[i], 2);
 
 		// Set up the CCL to invert the step output from PB10 to the inverted output on PA11
 		MCLK->APBCMASK.reg |= MCLK_APBCMASK_CCL;
@@ -805,15 +805,15 @@ void Platform::Init()
 
 		// Direction pins
 		IoPort::SetPinMode(DirectionPins[i], OUTPUT_LOW);
-		SetHighDriveStrength(DirectionPins[i]);
+		SetDriveStrength(DirectionPins[i], 2);
 		IoPort::SetPinMode(InvertedDirectionPins[i], OUTPUT_HIGH);
-		SetHighDriveStrength(InvertedDirectionPins[i]);
+		SetDriveStrength(InvertedDirectionPins[i], 2);
 
 		// Enable pins
 		IoPort::SetPinMode(EnablePins[i], OUTPUT_LOW);
-		SetHighDriveStrength(EnablePins[i]);
+		SetDriveStrength(EnablePins[i], 2);
 		IoPort::SetPinMode(InvertedEnablePins[i], OUTPUT_HIGH);
-		SetHighDriveStrength(InvertedEnablePins[i]);
+		SetDriveStrength(InvertedEnablePins[i], 2);
 		enableValues[i] = 1;
 		driverIsEnabled[i] = false;
 # else
@@ -824,7 +824,7 @@ void Platform::Init()
 		IoPort::SetPinMode(StepPins[i], OUTPUT_HIGH);
 #  endif
 #  if !HAS_SMART_DRIVERS
-		SetHighDriveStrength(StepPins[i]);
+		SetDriveStrength(StepPins[i], 2);
 #  endif
 
 		// Direction pins
@@ -834,7 +834,7 @@ void Platform::Init()
 		IoPort::SetPinMode(DirectionPins[i], OUTPUT_HIGH);
 #  endif
 #  if !HAS_SMART_DRIVERS
-		SetHighDriveStrength(DirectionPins[i]);
+		SetDriveStrength(DirectionPins[i], 2);
 #  endif
 
 #  if !HAS_SMART_DRIVERS
@@ -846,7 +846,7 @@ void Platform::Init()
 		IoPort::SetPinMode(EnablePins[i], OUTPUT_HIGH);
 		enableValues[i] = 0;
 #   endif
-		SetHighDriveStrength(EnablePins[i]);
+		SetDriveStrength(EnablePins[i], 2);
 		driverIsEnabled[i] = false;
 #  endif
 # endif

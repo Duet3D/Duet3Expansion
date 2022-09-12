@@ -6,7 +6,7 @@
  */
 
 #include "Heater.h"
-#include "Platform.h"
+#include <Platform/Platform.h>
 #include "Heat.h"
 #include "Sensors/TemperatureSensor.h"
 

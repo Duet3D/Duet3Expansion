@@ -7,8 +7,8 @@
 
 #include "LinearAnalogSensor.h"
 
-#include "Platform.h"
-#include "CanMessageGenericParser.h"
+#include <Platform/Platform.h>
+#include <CanMessageGenericParser.h>
 
 // ADC resolution
 // For the theory behind ADC oversampling, see http://www.atmel.com/Images/doc8003.pdf

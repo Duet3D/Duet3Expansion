@@ -6,8 +6,8 @@
  */
 
 #include "SoftwareReset.h"
-#include <Tasks.h>
-#include <Platform.h>
+#include <Platform/Tasks.h>
+#include <Platform/Platform.h>
 #include <General/Portability.h>
 #include <ctime>
 

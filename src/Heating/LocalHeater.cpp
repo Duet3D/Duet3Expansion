@@ -7,7 +7,7 @@
 
 #include "LocalHeater.h"
 #include "Heat.h"
-#include <Platform.h>
+#include <Platform/Platform.h>
 #include <CanMessageBuffer.h>
 #include <CanMessageGenericParser.h>
 #include <CAN/CanInterface.h>

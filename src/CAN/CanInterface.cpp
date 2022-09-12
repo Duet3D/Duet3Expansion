@@ -11,8 +11,8 @@
 #include <CanSettings.h>
 #include <CanMessageFormats.h>
 #include <CanMessageBuffer.h>
-#include <Platform.h>
-#include <TaskPriorities.h>
+#include <Platform/Platform.h>
+#include <Platform/TaskPriorities.h>
 #include <Movement/StepTimer.h>
 #include <RTOSIface/RTOSIface.h>
 #include <InputMonitors/InputMonitor.h>

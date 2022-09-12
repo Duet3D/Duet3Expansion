@@ -55,4 +55,8 @@
 constexpr size_t NumDrivers = 0;
 #endif
 
+#if !defined(SUPPORT_BME280)
+# define SUPPORT_BME280					(SUPPORT_SPI_SENSORS)
+#endif
+
 #endif /* SRC_CONFIG_BOARDDEF_H_ */

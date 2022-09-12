@@ -6,7 +6,7 @@
  */
 
 #include "TmcDriverTemperatureSensor.h"
-#include "Platform.h"
+#include <Platform/Platform.h>
 
 #if HAS_SMART_DRIVERS
 

@@ -12,10 +12,10 @@
 #if SUPPORT_TMC51xx || SUPPORT_TMC2160
 
 #include <RTOSIface/RTOSIface.h>
-#include <Platform.h>
+#include <Platform/Platform.h>
 #include <Movement/Move.h>
 #include <DmacManager.h>
-#include <TaskPriorities.h>
+#include <Platform/TaskPriorities.h>
 #include <General/Portability.h>
 
 #if SUPPORT_CLOSED_LOOP

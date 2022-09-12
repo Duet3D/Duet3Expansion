@@ -6,8 +6,8 @@
  */
 
 #include "RepRapFirmware.h"
-#include "Platform.h"
-#include "RTOSIface/RTOSIface.h"
+#include <Platform/Platform.h>
+#include <RTOSIface/RTOSIface.h>
 #include "Version.h"
 #include <General/SafeVsnprintf.h>
 

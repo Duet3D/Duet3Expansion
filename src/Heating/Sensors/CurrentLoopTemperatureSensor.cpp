@@ -9,8 +9,8 @@
 
 #if SUPPORT_SPI_SENSORS
 
-#include "Platform.h"
-#include "CanMessageGenericParser.h"
+#include <Platform/Platform.h>
+#include <CanMessageGenericParser.h>
 
 const uint32_t MCP3204_Frequency = 1000000;		// maximum for MCP3204 is 1MHz @ 2.7V, will be slightly higher at 3.3V
 

@@ -31,8 +31,11 @@ public:
 	// Update the temperature, if it is a remote sensor. Overridden in class RemoteSensor.
 	virtual void UpdateRemoteTemperature(CanAddress src, const CanSensorReport& report) noexcept;
 
-	// Get the latest temperature reading
-	TemperatureError GetLatestTemperature(float& t);
+	// Try to get a temperature reading
+	virtual TemperatureError GetLatestTemperature(float& t, uint8_t outputNumber = 0) noexcept;
+
+	// How many additional outputs does this sensor have
+	virtual const uint8_t GetNumAdditionalOutputs() const noexcept { return 0; }
 
 	// Get the most recent reading without checking for timeout
 	float GetStoredReading() const noexcept { return lastTemperature; }
@@ -52,6 +55,9 @@ public:
 	// Get/set the next sensor in the linked list
 	TemperatureSensor *GetNext() const { return next; }
 	void SetNext(TemperatureSensor *n) { next = n; }
+
+	// Get the time of the last reading
+	uint32_t GetLastReadingTime() const noexcept { return whenLastRead; }
 
 	// Factory method
 	static TemperatureSensor *Create(unsigned int sensorNum, const char *typeName, const StringRef& reply);

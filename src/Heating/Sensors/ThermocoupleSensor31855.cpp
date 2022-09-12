@@ -49,8 +49,8 @@
 
 #if SUPPORT_SPI_SENSORS
 
-#include "Platform.h"
-#include "CanMessageFormats.h"
+#include <Platform/Platform.h>
+#include <CanMessageFormats.h>
 
 const uint32_t MAX31855_Frequency = 4000000;	// maximum for MAX31855 is 5MHz
 

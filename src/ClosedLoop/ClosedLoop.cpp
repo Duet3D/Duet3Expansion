@@ -18,9 +18,9 @@ using std::numeric_limits;
 # include <ClosedLoop/DerivativeAveragingFilter.h>
 
 # include <math.h>
-# include <Platform.h>
+# include <Platform/Platform.h>
 # include <General/Bitmap.h>
-# include <TaskPriorities.h>
+# include <Platform/TaskPriorities.h>
 # include <CAN/CanInterface.h>
 # include <CanMessageBuffer.h>
 # include <CanMessageFormats.h>

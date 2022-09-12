@@ -6,8 +6,8 @@
  */
 
 #include "ExceptionHandlers.h"
-#include <Platform.h>
-#include <Tasks.h>
+#include <Platform/Platform.h>
+#include <Platform/Tasks.h>
 #include <Hardware/NonVolatileMemory.h>
 #include <Cache.h>
 

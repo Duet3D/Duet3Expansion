@@ -15,9 +15,9 @@
 #include <CanMessageGenericTables.h>
 #include <InputMonitors/InputMonitor.h>
 #include <GPIO/GpioPorts.h>
-#include <Platform.h>
+#include <Platform/Platform.h>
 #include <Movement/Move.h>
-#include <Tasks.h>
+#include <Platform/Tasks.h>
 #include <AnalogIn.h>
 #include <Hardware/NonVolatileMemory.h>
 

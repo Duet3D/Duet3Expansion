@@ -16,7 +16,7 @@
 #endif
 
 #ifdef TOOL1LC
-# include <Platform.h>
+# include <Platform/Platform.h>
 #endif
 
 // Members of class IoPort
