@@ -133,9 +133,13 @@ TemperatureSensor *TemperatureSensor::Create(unsigned int sensorNum, const char 
 	}
 #endif
 #if SUPPORT_DHT_SENSOR
-	else if (ReducedStringEquals(typeName, DhtTemperatureSensor::TypeName))
+	else if (ReducedStringEquals(typeName, DhtTemperatureSensor::TypeNameDht21))
 	{
-		ts = new DhtTemperatureSensor(sensorNum);
+		ts = new DhtTemperatureSensor(sensorNum, DhtSensorType::Dht21);
+	}
+	else if (ReducedStringEquals(typeName, DhtTemperatureSensor::TypeNameDht22))
+	{
+		ts = new DhtTemperatureSensor(sensorNum, DhtSensorType::Dht22);
 	}
 	else if (ReducedStringEquals(typeName, DhtHumiditySensor::TypeName))
 	{

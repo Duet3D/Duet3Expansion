@@ -202,11 +202,6 @@ void Heat::Init()
 	// Set up the temperature (and other) sensors
 	sensorsRoot = nullptr;
 
-#if SUPPORT_DHT_SENSOR
-	// Initialise static fields of the DHT sensor
-	DhtSensorHardwareInterface::InitStatic();
-#endif
-
 	extrusionMinTemp = DefaultMinExtrusionTemperature;
 	retractionMinTemp = DefaultMinRetractionTemperature;
 	coldExtrude = false;

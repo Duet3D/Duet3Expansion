@@ -12,85 +12,60 @@
 
 #if SUPPORT_DHT_SENSOR
 
-#ifndef RTOS
-# error DHT sensors are only supported in RTOS builds
-#endif
-
-# include "TemperatureSensor.h"
-# include "RTOSIface/RTOSIface.h"
+# include "AdditionalOutputSensor.h"
+# include "SensorWithPort.h"
+# include <RTOSIface/RTOSIface.h>
 
 enum class DhtSensorType
 {
-	none,
-	Dht11,
 	Dht21,
 	Dht22
 };
 
-// This class represents a DHT sensor attached to a particular SPI CS pin
-class DhtSensorHardwareInterface
+// This class represents a DHT temperature sensor
+class DhtTemperatureSensor : public SensorWithPort
 {
 public:
-	static GCodeResult Configure(TemperatureSensor *ts, unsigned int relativeChannel, unsigned int heater, const CanMessageM305& msg, const StringRef& reply);
-	void Interrupt();
+	DhtTemperatureSensor(unsigned int sensorNum, DhtSensorType t) noexcept;
+	~DhtTemperatureSensor() noexcept;
 
-	static DhtSensorHardwareInterface *Create(unsigned int relativeChannel);
-	static TemperatureError GetTemperatureOrHumidity(unsigned int relativeChannel, float& t, bool wantHumidity);
-	static void InitStatic();
-	static void SensorTask();
+	GCodeResult Configure(const CanMessageGenericParser& parser, const StringRef& reply) noexcept override;
+	TemperatureError GetLatestTemperature(float& t, uint8_t outputNumber = 0) noexcept override;
+	const uint8_t GetNumAdditionalOutputs() const noexcept override { return 1; }
+	void Poll() noexcept override;
+
+	void Interrupt() noexcept;
+	void TakeReading() noexcept;
+	TemperatureError ProcessReadings(float& t, float& h) noexcept;
+
+	static constexpr const char *TypeNameDht21 = "dht21";
+	static constexpr const char *TypeNameDht22 = "dht22";
 
 private:
-	DhtSensorHardwareInterface(Pin p_pin);
 
-	GCodeResult ConfigureType(const CanMessageM305& msg, const StringRef& reply);
-	TemperatureError GetTemperatureOrHumidity(float& t, bool wantHumidity) const;
-	void TakeReading();
-	TemperatureError ProcessReadings();
+#if SAME5x
+	// On the SAME5c we need a separate port to get the interrupt, because the output ports don't support interrupts
+	IoPort interruptPort;
+#endif
 
-	static constexpr unsigned int DhtTaskStackWords = 100;		// task stack size in dwords. 80 was not enough. Use 300 if debugging is enabled.
-	static Mutex dhtMutex;
-	static Task<DhtTaskStackWords> *dhtTask;
-	static DhtSensorHardwareInterface *activeSensors[MaxSpiTempSensors];
-
-	Pin sensorPin;
 	DhtSensorType type;
-	TemperatureError lastResult;
-	float lastTemperature, lastHumidity;
-	size_t badTemperatureCount;
 
-	volatile uint32_t lastPulseTime;
-	volatile size_t numPulses;
+	float lastHumidity;
+	uint8_t badTemperatureCount;
+
+	volatile uint16_t lastPulseTime;
+	volatile uint8_t numPulses;
 	uint16_t pulses[41];			// 1 start bit + 40 data bits
 };
 
-// This class represents a DHT temperature sensor
-class DhtTemperatureSensor : public TemperatureSensor
-{
-public:
-	DhtTemperatureSensor(unsigned int sensorNum);
-	~DhtTemperatureSensor();
-
-	GCodeResult Configure(unsigned int heater, const CanMessageM305& msg, const StringRef& reply) override;
-	void Init() override;
-
-	static constexpr const char *TypeName = "dhttemp";
-
-	TemperatureError Poll() override;
-};
-
 // This class represents a DHT humidity sensor
-class DhtHumiditySensor : public TemperatureSensor
+class DhtHumiditySensor : public AdditionalOutputSensor
 {
 public:
-	DhtHumiditySensor(unsigned int sensorNum);
-	~DhtHumiditySensor();
-
-	GCodeResult Configure(unsigned int heater, const CanMessageM305& msg, const StringRef& reply) override;
-	void Init() override;
+	DhtHumiditySensor(unsigned int sensorNum) noexcept;
+	~DhtHumiditySensor() noexcept;
 
 	static constexpr const char *TypeName = "dhthumidity";
-
-	TemperatureError Poll() override;
 };
 
 #endif
