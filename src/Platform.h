@@ -230,6 +230,7 @@ namespace Platform
 	float GetTmcDriversTemperature();
 #  if HAS_STALL_DETECT
 	void SetOrResetEventOnStall(DriversBitmap drivers, bool enable) noexcept;
+	bool GetEventOnStall(unsigned int driver) noexcept;
 #  endif
 # else
 	StandardDriverStatus GetStandardDriverStatus(size_t driver);

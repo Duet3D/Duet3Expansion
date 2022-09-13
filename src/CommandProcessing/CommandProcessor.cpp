@@ -647,6 +647,8 @@ static GCodeResult ProcessM915(const CanMessageGeneric& msg, const StringRef& re
 									{
 										reply.lcatf("Driver %u.%u: ", CanInterface::GetCanAddress(), drive);
 										SmartDrivers::AppendStallConfig(drive, reply);
+										reply.cat(", event on stall: ");
+										reply.cat((Platform::GetEventOnStall(drive)) ? "yes" : "no");
 									}
 					   );
 	}

@@ -1841,6 +1841,11 @@ void Platform::SetOrResetEventOnStall(DriversBitmap drivers, bool enable) noexce
 	}
 }
 
+bool Platform::GetEventOnStall(unsigned int driver) noexcept
+{
+	return eventOnStallDrivers.IsBitSet(driver);
+}
+
 #  endif
 
 # else
