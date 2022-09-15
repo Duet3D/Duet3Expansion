@@ -29,11 +29,11 @@ typedef float floatc_t;							// type of matrix element used for calibration
 // Warn of what's to come, so we can use pointers to classes without including the entire header files
 #if SUPPORT_DRIVERS
 class Move;
-#endif
-
 class DDA;
 class DriveMovement;
 class Kinematics;
+#endif
+
 class TemperatureSensor;
 class FilamentMonitor;
 

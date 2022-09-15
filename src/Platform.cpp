@@ -2179,6 +2179,7 @@ float Platform::GetCurrentV12Voltage() noexcept
 
 void Platform::AppendBoardAndFirmwareDetails(const StringRef& reply) noexcept
 {
+	// This must be formatted in a specific way for the ATE
 #if defined(TOOL1LC)
 	reply.lcatf("Duet " BOARD_TYPE_NAME " rev %s firmware version " VERSION " (%s%s)",
 				(boardVariant == 1) ? "1.1 or later" : "1.0 or earlier",

@@ -706,6 +706,7 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 	{
 	case CanMessageReturnInfo::typeFirmwareVersion:
 	default:
+		// This must be formatted in a specific way for the ATE
 		Platform::AppendBoardAndFirmwareDetails(reply);
 		break;
 
