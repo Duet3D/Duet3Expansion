@@ -2000,18 +2000,18 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/RP2040}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${PicoSdkPath}/src/boards/include&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${PicoSdkPath}/src/common/pico_base/include&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${PicoSdkPath}/src/rp2_common/cmsis/include&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${PicoSdkPath}/src/rp2_common/hardware_base/include&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${PicoSdkPath}/src/rp2_common/hardware_gpio/include&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${PicoSdkPath}/src/rp2_common/hardware_irq/include&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${PicoSdkPath}/src/rp2_common/hardware_timer/include&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${PicoSdkPath}/src/rp2_common/pico_platform/include&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${PicoSdkPath}/src/rp2040/hardware_regs/include&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${PicoSdkPath}/src/rp2040/hardware_structs/include&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${PicoSdkPath}/src/rp2_common/cmsis/stub/CMSIS/Core/include&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${PicoSdkPath}/src/rp2_common/cmsis/stub/CMSIS/Device/RaspberryPi/RP2040/Include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/RP2040/pico-sdk/src/boards/include}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/RP2040/pico-sdk}/src/common/pico_base/include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/RP2040/pico-sdk}/src/rp2_common/cmsis/include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/RP2040/pico-sdk}/src/rp2_common/hardware_base/include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/RP2040/pico-sdk}/src/rp2_common/hardware_gpio/include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/RP2040/pico-sdk}/src/rp2_common/hardware_irq/include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/RP2040/pico-sdk}/src/rp2_common/hardware_timer/include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/RP2040/pico-sdk}/src/rp2_common/pico_platform/include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/RP2040/pico-sdk}/src/rp2040/hardware_regs/include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/RP2040/pico-sdk}/src/rp2040/hardware_structs/include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/RP2040/pico-sdk}/src/rp2_common/cmsis/stub/CMSIS/Core/include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/RP2040/pico-sdk}/src/rp2_common/cmsis/stub/CMSIS/Device/RaspberryPi/RP2040/Include&quot;"/>
 								</option>
 								<option id="gnu.c.compiler.option.misc.pic.2082465971" name="Position Independent Code (-fPIC)" superClass="gnu.c.compiler.option.misc.pic" useByScannerDiscovery="false" value="true" valueType="boolean"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1441164227" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
@@ -2036,23 +2036,23 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/Hardware/RP2040}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/RP2040}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${PicoSdkPath}/src/boards/include&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${PicoSdkPath}/src/common/pico_base/include&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${PicoSdkPath}/src/common/pico_sync/include&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${PicoSdkPath}/src/common/pico_time/include&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${PicoSdkPath}/src/rp2_common/cmsis/include&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${PicoSdkPath}/src/rp2_common/hardware_base/include&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${PicoSdkPath}/src/rp2_common/hardware_dma/Include&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${PicoSdkPath}/src/rp2_common/hardware_gpio/include&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${PicoSdkPath}/src/rp2_common/hardware_irq/include&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${PicoSdkPath}/src/rp2_common/hardware_sync/include&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${PicoSdkPath}/src/rp2_common/hardware_timer/include&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${PicoSdkPath}/src/rp2_common/hardware_watchdog/include&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${PicoSdkPath}/src/rp2_common/pico_platform/include&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${PicoSdkPath}/src/rp2040/hardware_regs/include&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${PicoSdkPath}/src/rp2040/hardware_structs/include&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${PicoSdkPath}/src/rp2_common/cmsis/stub/CMSIS/Core/include&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${PicoSdkPath}/src/rp2_common/cmsis/stub/CMSIS/Device/RaspberryPi/RP2040/Include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/RP2040/pico-sdk}/src/boards/include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/RP2040/pico-sdk}/src/common/pico_base/include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/RP2040/pico-sdk}/src/common/pico_sync/include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/RP2040/pico-sdk}/src/common/pico_time/include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/RP2040/pico-sdk}/src/rp2_common/cmsis/include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/RP2040/pico-sdk}/src/rp2_common/hardware_base/include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/RP2040/pico-sdk}/src/rp2_common/hardware_dma/Include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/RP2040/pico-sdk}/src/rp2_common/hardware_gpio/include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/RP2040/pico-sdk}/src/rp2_common/hardware_irq/include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/RP2040/pico-sdk}/src/rp2_common/hardware_sync/include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/RP2040/pico-sdk}/src/rp2_common/hardware_timer/include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/RP2040/pico-sdk}/src/rp2_common/hardware_watchdog/include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/RP2040/pico-sdk}/src/rp2_common/pico_platform/include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/RP2040/pico-sdk}/src/rp2040/hardware_regs/include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/RP2040/pico-sdk}/src/rp2040/hardware_structs/include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/RP2040/pico-sdk}/src/rp2_common/cmsis/stub/CMSIS/Core/include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/RP2040/pico-sdk}/src/rp2_common/cmsis/stub/CMSIS/Device/RaspberryPi/RP2040/Include&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CANlib/src}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS/src/include}&quot;"/>
@@ -2076,7 +2076,7 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CANlib/RP2040_RTOS}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries/RP2040_RTOS}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS/RP2040}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/RP2040/pico/lib}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/src/RP2040/Tools/Build-pico-sdk/build}&quot;"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.674555655" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
