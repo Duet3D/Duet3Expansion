@@ -475,7 +475,7 @@ static inline constexpr uint8_t SlowReflect(uint8_t b) noexcept
 // Reverse the order of the bits
 static inline uint8_t Reflect(uint8_t b) noexcept
 {
-#if SAMC21 || RP2040
+#if SAMC21 || RP2040			// ARM Cortex M0 doesn't support the 'rbit' instruction
 	return SlowReflect(b);
 #else
 	uint32_t temp = b;
