@@ -1713,7 +1713,11 @@ void Platform::InternalEnableDrive(size_t driver)
 #  endif
 	}
 # endif
-	brakePorts[driver].WriteDigital(true);					// energise the brake solenoid to release the brake
+	if (brakePorts[driver].IsValid() && !brakePorts[driver].ReadDigital())
+	{
+		delay(50);											//TODO make the delay configurable
+		brakePorts[driver].WriteDigital(true);				// energise the brake solenoid to release the brake
+	}
 }
 
 void Platform::DisableDrive(size_t driver)
@@ -1729,7 +1733,11 @@ void Platform::DisableDrive(size_t driver)
 
 void Platform::InternalDisableDrive(size_t driver)
 {
-	brakePorts[driver].WriteDigital(false);					// de-energise the brake solenoid to apply the brake
+	if (brakePorts[driver].IsValid() && brakePorts[driver].ReadDigital())
+	{
+		brakePorts[driver].WriteDigital(false);				// de-energise the brake solenoid to apply the brake
+		delay(100);											//TODO make this delay configurable
+	}
 # if HAS_SMART_DRIVERS
 	SmartDrivers::EnableDrive(driver, false);
 # else
