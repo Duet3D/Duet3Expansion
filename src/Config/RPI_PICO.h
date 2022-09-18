@@ -37,6 +37,7 @@
 #define SUPPORT_TMC2160			0
 #define SUPPORT_TMC2660			0
 #define SUPPORT_TMC22xx			1
+#define SUPPORT_TMC2240			1		// Duet3D boards using the RP2040 will likely use the TMC2240 stepper driver
 
 constexpr size_t NumDrivers = 1;
 constexpr size_t MaxSmartDrivers = 1;
