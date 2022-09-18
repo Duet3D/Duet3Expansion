@@ -1772,7 +1772,11 @@ void Platform::InternalEnableDrive(size_t driver)
 #  endif
 	}
 # endif
-	brakePorts[driver].WriteDigital(true);					// energise the brake solenoid to release the brake
+	if (brakePorts[driver].IsValid() && !brakePorts[driver].ReadDigital())
+	{
+		delay(50);											//TODO make the delay configurable
+		brakePorts[driver].WriteDigital(true);				// energise the brake solenoid to release the brake
+	}
 }
 
 void Platform::DisableDrive(size_t driver)
@@ -1788,7 +1792,11 @@ void Platform::DisableDrive(size_t driver)
 
 void Platform::InternalDisableDrive(size_t driver)
 {
-	brakePorts[driver].WriteDigital(false);					// de-energise the brake solenoid to apply the brake
+	if (brakePorts[driver].IsValid() && brakePorts[driver].ReadDigital())
+	{
+		brakePorts[driver].WriteDigital(false);				// de-energise the brake solenoid to apply the brake
+		delay(100);											//TODO make this delay configurable
+	}
 # if HAS_SMART_DRIVERS
 	SmartDrivers::EnableDrive(driver, false);
 # else
@@ -2240,6 +2248,7 @@ float Platform::GetCurrentV12Voltage() noexcept
 
 void Platform::AppendBoardAndFirmwareDetails(const StringRef& reply) noexcept
 {
+	// This must be formatted in a specific way for the ATE
 #if defined(TOOL1LC)
 	reply.lcatf("Duet " BOARD_TYPE_NAME " rev %s firmware version " VERSION " (%s%s)",
 				(boardVariant == 1) ? "1.1 or later" : "1.0 or earlier",
