@@ -433,11 +433,17 @@ CanMessageBuffer *CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf) no
 
 			// Track how much processing delay there was
 			{
+#if RP2040
+				// RP2040 uses the low 16 bits of the step counter for the time stamp
+				const uint16_t timeStampNow = StepTimer::GetTimerTicks();
+				const uint32_t timeStampDelay = (uint32_t)((timeStampNow - buf->timeStamp) & 0xFFFF);	// the delay in step clocks
+#else
 				const uint16_t timeStampNow = CanInterface::GetTimeStampCounter();
 
 				// The time stamp counter runs at the CAN normal bit rate, but the step clock runs at 48MHz/64. Calculate the delay to in step clocks.
 				// Datasheet suggests that on the SAMC21 only 15 bits of timestamp counter are readable, but Microchip confirmed this is a documentation error (case 00625843)
 				const uint32_t timeStampDelay = ((uint32_t)((timeStampNow - buf->timeStamp) & 0xFFFF) * CanInterface::GetTimeStampPeriod()) >> 6;	// timestamp counter is 16 bits
+#endif
 				if (timeStampDelay > maxMotionProcessingDelay)
 				{
 					maxMotionProcessingDelay = timeStampDelay;

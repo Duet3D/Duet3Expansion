@@ -22,31 +22,56 @@
 #define HAS_BUTTONS				1
 
 // Drivers configuration
-#define SUPPORT_DRIVERS			0	// temporary!
+#define SUPPORT_DRIVERS			1	// temporary!
 
 #if SUPPORT_DRIVERS
 
-#define HAS_SMART_DRIVERS		0
-#define HAS_STALL_DETECT		0
+#define HAS_SMART_DRIVERS		1
+#define HAS_STALL_DETECT		1
 #define SINGLE_DRIVER			1
-#define SUPPORT_SLOW_DRIVERS	1
+#define SUPPORT_SLOW_DRIVERS	0
 #define SUPPORT_DELTA_MOVEMENT	0
 #define USE_EVEN_STEPS			1
 
 #define SUPPORT_TMC51xx			0
 #define SUPPORT_TMC2160			0
 #define SUPPORT_TMC2660			0
-#define SUPPORT_TMC22xx			0
+#define SUPPORT_TMC22xx			1
 
 constexpr size_t NumDrivers = 1;
+constexpr size_t MaxSmartDrivers = 1;
 
-constexpr Pin EnablePins[NumDrivers] = { PortAPin(9) };
-constexpr Pin StepPins[NumDrivers] = { PortAPin(11) };
-constexpr Pin DirectionPins[NumDrivers] = { PortAPin(10) };
+#define TMC22xx_HAS_MUX					0
+#define TMC22xx_SINGLE_DRIVER			1
+#define TMC22xx_HAS_ENABLE_PINS			0
+#define TMC22xx_VARIABLE_NUM_DRIVERS	0
+#define TMC22xx_USE_SLAVEADDR			0
 
-#define ACTIVE_HIGH_STEP		0		// 1 = active high, 0 = active low
-#define ACTIVE_HIGH_DIR			0		// 1 = active high, 0 = active low
-#define ACTIVE_HIGH_ENABLE		0		// 1 = active high, 0 = active low
+// Define the baud rate used to send/receive data to/from the drivers.
+// If we assume a worst case clock frequency of 8MHz then the maximum baud rate is 8MHz/16 = 500kbaud.
+// We send data via a 1K series resistor. Even if we assume a 200pF load on the shared UART line, this gives a 200ns time constant, which is much less than the 2us bit time @ 500kbaud.
+// To write a register we need to send 8 bytes. To read a register we send 4 bytes and receive 8 bytes after a programmable delay.
+// So at 500kbaud it takes about 128us to write a register, and 192us+ to read a register.
+// In testing I found that 500kbaud was not reliable on the Duet Maestro, so now using 200kbaud.
+constexpr uint32_t DriversBaudRate = 200000;
+constexpr uint32_t TransferTimeout = 10;									// any transfer should complete within 10 ticks @ 1ms/tick
+
+constexpr float DriverSenseResistor = 0.11 + 0.02;							// in ohms
+constexpr float DriverVRef = 180.0;											// in mV
+constexpr float DriverFullScaleCurrent = DriverVRef/DriverSenseResistor;	// in mA
+constexpr float DriverCsMultiplier = 32.0/DriverFullScaleCurrent;
+constexpr float MaximumMotorCurrent = 1600.0;
+constexpr float MaximumStandstillCurrent = 1200.0;
+constexpr uint32_t DefaultStandstillCurrentPercent = 75;
+
+constexpr Pin GlobalTmc22xxEnablePin = GpioPin(0);							// this is different from the Fly board because GPIO25 on the Pico is the LED
+
+constexpr Pin StepPins[NumDrivers] = { GpioPin(24) };
+constexpr Pin DirectionPins[NumDrivers] = { GpioPin(23) };
+constexpr Pin DriverDiagPins[NumDrivers] = { GpioPin(22) };
+
+#define ACTIVE_HIGH_STEP		1		// 1 = active high, 0 = active low
+#define ACTIVE_HIGH_DIR			1		// 1 = active high, 0 = active low
 
 #endif
 

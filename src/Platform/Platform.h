@@ -27,6 +27,10 @@
 # include <Hardware/LIS3DH.h>
 #endif
 
+#if RP2040
+# include <hardware/structs/sio.h>
+#endif
+
 class CanMessageDiagnosticTest;
 class CanMessageBuffer;
 
@@ -167,7 +171,11 @@ namespace Platform
 	inline void StepDriverLow()
 	{
 #  if DIFFERENTIAL_STEPPER_OUTPUTS || ACTIVE_HIGH_STEP
+#   if RP2040
+		sio_hw->gpio_clr = DriverBit;
+#   else
 		StepPio->OUTCLR.reg = DriverBit;
+#   endif
 #  else
 		StepPio->OUTSET.reg = DriverBit;
 #  endif
@@ -176,7 +184,11 @@ namespace Platform
 	inline void StepDriverHigh()
 	{
 #  if DIFFERENTIAL_STEPPER_OUTPUTS || ACTIVE_HIGH_STEP
+#   if RP2040
+		sio_hw->gpio_set = DriverBit;
+#   else
 		StepPio->OUTSET.reg = DriverBit;
+#   endif
 #  else
 		StepPio->OUTCLR.reg = DriverBit;
 #  endif
@@ -187,7 +199,11 @@ namespace Platform
 	inline void StepDriversLow()
 	{
 #  if DIFFERENTIAL_STEPPER_OUTPUTS || ACTIVE_HIGH_STEP
+#   if RP2040
+		sio_hw->gpio_clr = allDriverBits;
+#   else
 		StepPio->OUTCLR.reg = allDriverBits;
+#   endif
 #  else
 		StepPio->OUTSET.reg = allDriverBits;
 #  endif
@@ -196,7 +212,11 @@ namespace Platform
 	inline void StepDriversHigh(uint32_t driverMap)
 	{
 #  if DIFFERENTIAL_STEPPER_OUTPUTS || ACTIVE_HIGH_STEP
+#   if RP2040
+		sio_hw->gpio_set = driverMap;
+#   else
 		StepPio->OUTSET.reg = driverMap;
+#   endif
 #  else
 		StepPio->OUTCLR.reg = driverMap;
 #  endif

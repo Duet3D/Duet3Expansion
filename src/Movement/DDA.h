@@ -95,7 +95,7 @@ public:
 	// Therefore, where the step interval falls below 60us, we don't calculate on every step.
 	// Note: the above measurements were taken some time ago, before some firmware optimisations.
 	// The system clock of the SAME70 is running at 150MHz. Use the same defaults as for the SAM4E for now.
-#if SAMC21
+#if SAMC21 || RP2040
 	static constexpr uint32_t MinCalcIntervalDelta = (100 * StepTimer::StepClockRate)/1000000; 		// the smallest sensible interval between calculations (40us) in step timer clocks
 	static constexpr uint32_t MinCalcIntervalCartesian = (100 * StepTimer::StepClockRate)/1000000;	// same as delta for now, but could be lower
 	static constexpr uint32_t HiccupTime = (50 * StepTimer::StepClockRate)/1000000;					// how long we hiccup for

@@ -826,6 +826,9 @@ void Platform::Init()
 #  if !HAS_SMART_DRIVERS
 		SetDriveStrength(StepPins[i], 2);
 #  endif
+#  if RP2040
+		SetPinFunction(StepPins[i], GpioPinFunction::Sio);			// enable fast stepping - must do this after the call to SetPinMode
+#  endif
 
 		// Direction pins
 #  if ACTIVE_HIGH_DIR
