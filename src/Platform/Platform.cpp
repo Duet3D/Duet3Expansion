@@ -1231,7 +1231,6 @@ void Platform::Spin()
 
 	// If D is received from the USB port, output some diagnostics
 # if defined(RPI_PICO)
-	serialUSB.Spin();
 	while (serialUSB.available() != 0)
 # elif defined(SAMMYC21)
 	while (uart0.available() != 0)

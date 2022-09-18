@@ -13,6 +13,7 @@ namespace TaskPriority
 {
 	static constexpr unsigned int SpinPriority = 1;							// priority for tasks that rarely block
 	static constexpr unsigned int HeatPriority = 2;
+	static constexpr unsigned int UsbPriority = 2;
 	static constexpr unsigned int TmcOpenLoop = 2;							// priority of the TMC task when in open loop modes
 	static constexpr unsigned int AinPriority = 2;
 	static constexpr unsigned int CanReceiverPriority = 3;
