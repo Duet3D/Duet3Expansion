@@ -549,10 +549,16 @@ static void Platform::InitLeds()
 #ifdef TOOL1LC
 	if (boardVariant == 1)
 	{
-		for (Pin pin : LedPinsV11)
+		// The LEDs are connected to the SWDIO and SWCLK pins, so don't activate them in a debug build or if a debugger is attached
+# ifndef DEBUG
+		if (!DSU->STATUSB.bit.DBGPRES)
 		{
-			IoPort::SetPinMode(pin, (LedActiveHighV11) ? OUTPUT_LOW : OUTPUT_HIGH);
+			for (Pin pin : LedPinsV11)
+			{
+				IoPort::SetPinMode(pin, (LedActiveHighV11) ? OUTPUT_LOW : OUTPUT_HIGH);
+			}
 		}
+# endif
 	}
 	else
 	{
