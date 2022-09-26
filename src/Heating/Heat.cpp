@@ -86,8 +86,7 @@ namespace Heat
 
 	static ReadLockedPointer<Heater> FindHeater(int heater)
 	{
-		ReadLocker locker(heatersLock);
-		return ReadLockedPointer<Heater>(locker, (heater < 0 || heater >= (int)MaxHeaters) ? nullptr : heaters[heater]);
+		return ReadLockedPointer<Heater>(heatersLock, (heater < 0 || heater >= (int)MaxHeaters) ? nullptr : heaters[heater]);
 	}
 
 	// Delete a sensor, if there is one. Must write-lock the sensors lock before calling this.

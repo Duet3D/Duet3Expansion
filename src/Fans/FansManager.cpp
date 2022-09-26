@@ -22,8 +22,7 @@ static Fan *fans[MaxFans] = { 0 };
 // Lock the fan system before calling this, so that the fan can't be deleted while we are accessing it.
 static ReadLockedPointer<Fan> FindFan(uint32_t fanNum)
 {
-	ReadLocker locker(fansLock);
-	return ReadLockedPointer<Fan>(locker, (fanNum < ARRAY_SIZE(fans)) ? fans[fanNum] : nullptr);
+	return ReadLockedPointer<Fan>(fansLock, (fanNum < ARRAY_SIZE(fans)) ? fans[fanNum] : nullptr);
 }
 
 // Create and return a local fan. if it fails, return nullptr with the error message in 'reply'.
