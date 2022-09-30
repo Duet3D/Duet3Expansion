@@ -25,6 +25,10 @@ GCodeResult Heater::SetFaultDetectionParameters(const CanMessageSetHeaterFaultDe
 {
 	maxTempExcursion = msg.maxTempExcursion;
 	maxHeatingFaultTime = msg.maxFaultTime;
+	if (msg.version35)
+	{
+		maxBadTemperatureCount = msg.maxBadTemperatureCount;
+	}
 	return GCodeResult::ok;
 }
 
