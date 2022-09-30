@@ -20,6 +20,7 @@ class CanMessageSetHeaterTemperature;
 class CanMessageHeaterModelNewNew;
 class CanMessageSetHeaterMonitors;
 class CanMessageHeaterTuningCommand;
+class CanMessageSetHeaterFaultDetectionParameters;
 
 class Heater
 {
@@ -46,10 +47,7 @@ public:
 
 	unsigned int GetHeaterNumber() const { return heaterNumber; }
 
-	void GetFaultDetectionParameters(float& pMaxTempExcursion, float& pMaxFaultTime) const
-		{ pMaxTempExcursion = maxTempExcursion; pMaxFaultTime = maxHeatingFaultTime; }
-
-	GCodeResult SetFaultDetectionParameters(float pMaxTempExcursion, float pMaxFaultTime);
+	GCodeResult SetFaultDetectionParameters(const CanMessageSetHeaterFaultDetectionParameters& msg, const StringRef& reply);
 	GCodeResult SetHeaterMonitors(const CanMessageSetHeaterMonitors& msg, const StringRef& reply);
 
 	float GetHighestTemperatureLimit() const;					// Get the highest temperature limit
@@ -75,6 +73,7 @@ protected:
 	void SetSensorNumber(int sn) noexcept { sensorNumber = sn; }
 	float GetMaxTemperatureExcursion() const noexcept { return maxTempExcursion; }
 	float GetMaxHeatingFaultTime() const noexcept { return maxHeatingFaultTime; }
+	unsigned int GetMaxBadTemperatureCount() const noexcept { return maxBadTemperatureCount; }
 	float GetTargetTemperature() const noexcept { return requestedTemperature; }
 	bool IsBedOrChamber() const noexcept { return isBedOrChamber; }
 
@@ -88,6 +87,7 @@ private:
 	float requestedTemperature;						// the required temperature
 	float maxTempExcursion;							// the maximum temperature excursion permitted while maintaining the setpoint
 	float maxHeatingFaultTime;						// how long a heater fault is permitted to persist before a heater fault is raised
+	unsigned int maxBadTemperatureCount;			// the number of consecutive bad sensor readings we allow before raising a fault
 	bool isBedOrChamber;							// true if this was a bed or chamber heater when it was switched on
 };
 

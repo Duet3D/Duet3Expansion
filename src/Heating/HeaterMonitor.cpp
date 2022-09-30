@@ -16,7 +16,7 @@ HeaterMonitor::HeaterMonitor() noexcept
 }
 
 // Check if any action needs to be taken. Returns true if everything is OK
-bool HeaterMonitor::Check() noexcept
+bool HeaterMonitor::Check(unsigned int maxBadTemperatureCount) noexcept
 {
 	if (sensorNumber >= 0 && trigger != HeaterMonitorTrigger::Disabled)
 	{
@@ -26,7 +26,7 @@ bool HeaterMonitor::Check() noexcept
 		if (err != TemperatureError::success)
 		{
 			badTemperatureCount++;
-			if (badTemperatureCount > MaxBadTemperatureCount)
+			if (badTemperatureCount > maxBadTemperatureCount)
 			{
 				debugPrintf("Temperature reading error on sensor %d\n", sensorNumber);
 				return false;

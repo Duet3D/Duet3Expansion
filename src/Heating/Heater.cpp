@@ -12,7 +12,7 @@
 
 Heater::Heater(unsigned int num)
 	: heaterNumber(num), sensorNumber(-1), requestedTemperature(0.0),
-	  maxTempExcursion(DefaultMaxTempExcursion), maxHeatingFaultTime(DefaultMaxHeatingFaultTime),
+	  maxTempExcursion(DefaultMaxTempExcursion), maxHeatingFaultTime(DefaultMaxHeatingFaultTime), maxBadTemperatureCount(DefaultMaxBadTemperatureCount),
 	  isBedOrChamber(false)
 {
 }
@@ -21,10 +21,10 @@ Heater::~Heater()
 {
 }
 
-GCodeResult Heater::SetFaultDetectionParameters(float pMaxTempExcursion, float pMaxFaultTime)
+GCodeResult Heater::SetFaultDetectionParameters(const CanMessageSetHeaterFaultDetectionParameters& msg, const StringRef& reply)
 {
-	maxTempExcursion = pMaxTempExcursion;
-	maxHeatingFaultTime = pMaxFaultTime;
+	maxTempExcursion = msg.maxTempExcursion;
+	maxHeatingFaultTime = msg.maxFaultTime;
 	return GCodeResult::ok;
 }
 

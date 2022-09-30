@@ -542,7 +542,7 @@ GCodeResult Heat::SetFaultDetection(const CanMessageSetHeaterFaultDetectionParam
 {
 	const auto h = FindHeater(msg.heater);
 	return (h.IsNotNull())
-			? h->SetFaultDetectionParameters(msg.maxTempExcursion, msg.maxFaultTime)
+			? h->SetFaultDetectionParameters(msg, reply)
 				: UnknownHeater(msg.heater, reply);
 }
 
