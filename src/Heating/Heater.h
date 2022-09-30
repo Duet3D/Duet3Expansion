@@ -73,7 +73,7 @@ protected:
 	void SetSensorNumber(int sn) noexcept { sensorNumber = sn; }
 	float GetMaxTemperatureExcursion() const noexcept { return maxTempExcursion; }
 	float GetMaxHeatingFaultTime() const noexcept { return maxHeatingFaultTime; }
-	unsigned int GetMaxBadTemperatureCount() const noexcept { return maxBadTemperatureCount; }
+	uint32_t GetMaxBadTemperatureCount() const noexcept { return maxBadTemperatureCount; }
 	float GetTargetTemperature() const noexcept { return requestedTemperature; }
 	bool IsBedOrChamber() const noexcept { return isBedOrChamber; }
 
@@ -87,7 +87,7 @@ private:
 	float requestedTemperature;						// the required temperature
 	float maxTempExcursion;							// the maximum temperature excursion permitted while maintaining the setpoint
 	float maxHeatingFaultTime;						// how long a heater fault is permitted to persist before a heater fault is raised
-	unsigned int maxBadTemperatureCount;			// the number of consecutive bad sensor readings we allow before raising a fault
+	uint32_t maxBadTemperatureCount;				// the number of consecutive bad sensor readings we allow before raising a fault
 	bool isBedOrChamber;							// true if this was a bed or chamber heater when it was switched on
 };
 
