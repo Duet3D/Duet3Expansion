@@ -111,7 +111,7 @@ namespace Platform
 	constexpr unsigned int TcPrescaler = 4;															// use prescaler 4
 	constexpr uint32_t TcPrescalerRegVal = TC_CTRLA_PRESCALER_DIV4;									// use prescaler 4
 	constexpr float StepPulseClocksPerMicrosecond = 48.0/TcPrescaler;								// we clock the TC from the 48MHz clock
-	constexpr unsigned int StepClocksToStepTCClocks = 64/TcPrescaler;								// step clock uses the same 48MHx clcok and x64 prescaler
+	constexpr unsigned int StepClocksToStepTCClocks = 64/TcPrescaler;								// step clock uses the same 48MHz clock and x64 prescaler
 	constexpr float MinimumStepHighMicroseconds = 0.2;
 
 	uint32_t slowDriverStepTimingClocks[4] = { 2 * StepClocksToStepTCClocks, 4, 2, 4 };				// default to slower timing for external drivers (2 clocks = 2.67us)
