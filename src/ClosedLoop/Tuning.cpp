@@ -207,29 +207,36 @@ static bool EncoderCalibration(bool firstIteration) noexcept
 	static int targetPosition;
 	static int positionCounter;
 
-	if (ClosedLoop::encoder->GetPositioningType() == EncoderPositioningType::relative)
+	if (ClosedLoop::encoder->GetType() != EncoderType::AS5047)
 	{
 		return true;			// we don't do this tuning for relative encoders
 	}
 
-	AS5047D* absoluteEncoder = (AS5047D*) ClosedLoop::encoder;
-	if (firstIteration) {
+	AS5047D* const absoluteEncoder = (AS5047D*) ClosedLoop::encoder;
+	if (firstIteration)
+	{
 		absoluteEncoder->ClearLUT();
 		targetPosition = 0;
 		positionCounter = 0;
 	}
 
-	if (ClosedLoop::currentEncoderReading < targetPosition) {
+	if (ClosedLoop::currentEncoderReading < targetPosition)
+	{
 		positionCounter += 1;
-	} else if (ClosedLoop::currentEncoderReading > targetPosition) {
+	}
+	else if (ClosedLoop::currentEncoderReading > targetPosition)
+	{
 		positionCounter -= 1;
-	} else {
+	}
+	else
+	{
 		const float realWorldPos = absoluteEncoder->GetMaxValue() * positionCounter / (1024 * (360.0 / ClosedLoop::PulsePerStepToExternalUnits(ClosedLoop::encoderPulsePerStep, EncoderType::AS5047)));
-		absoluteEncoder->StoreLUTValueForPosition(ClosedLoop::currentEncoderReading, realWorldPos);
+		absoluteEncoder->SetLUTValueForPosition(ClosedLoop::currentEncoderReading, realWorldPos);
 		targetPosition += absoluteEncoder->GetLUTResolution();
 	}
 
-	if ((unsigned int) targetPosition >= absoluteEncoder->GetMaxValue()) {
+	if ((unsigned int) targetPosition >= absoluteEncoder->GetMaxValue())
+	{
 		// We are finished
 		absoluteEncoder->StoreLUT();
 		return true;
@@ -435,16 +442,19 @@ void ClosedLoop::PerformTune() noexcept
 	static bool newTuningMove = true;						// indicates if a tuning move has just finished
 
 	// Check we are in direct drive mode and we have an encoder
-	if (SmartDrivers::GetDriverMode(0) != DriverMode::direct || encoder == nullptr ) {
+	if (SmartDrivers::GetDriverMode(0) != DriverMode::direct || encoder == nullptr)
+	{
 		tuningError |= TUNE_ERR_SYSTEM_ERROR;
 		tuning = 0;
 		return;
 	}
 
 	// Run one iteration of the one, highest priority, tuning move
-	if (tuning & BASIC_TUNING_MANOEUVRE) {
-		if (encoder->GetPositioningType() == EncoderPositioningType::absolute && (tuning & ENCODER_CALIBRATION_MANOEUVRE)) {
-			((AS5047D*)encoder)->ClearLUT();				//TODO this assumes that any absolute encoder is a AS5047D. Make ClearLUT a virtual method?
+	if (tuning & BASIC_TUNING_MANOEUVRE)
+	{
+		if (encoder->GetType() == EncoderType::AS5047 && (tuning & ENCODER_CALIBRATION_MANOEUVRE))
+		{
+			((AS5047D*)encoder)->ClearLUT();
 		}
 		newTuningMove = BasicTuning(newTuningMove);
 		if (newTuningMove) {

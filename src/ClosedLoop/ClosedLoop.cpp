@@ -288,8 +288,19 @@ void ClosedLoop::ReportTuningErrors(uint8_t tuningErrorBitmask, const StringRef 
 	if (tuningErrorBitmask & TUNE_ERR_NOT_CALIBRATED) 		{ reply.cat(" The drive has not been calibrated."); }
 	if (tuningErrorBitmask & TUNE_ERR_SYSTEM_ERROR) 		{ reply.cat(" A system error occurred while tuning."); }
 	if (tuningErrorBitmask & TUNE_ERR_INCONSISTENT_MOTION)	{ reply.cat(" The measured motion was inconsistent."); }
-	if (tuningErrorBitmask & TUNE_ERR_TOO_LITTLE_MOTION)	{ reply.catf(" The measured motion was less than expected; counts/step is about %.2f.", (double)(measuredCountsPerStep * 0.25)); }
-	if (tuningErrorBitmask & TUNE_ERR_TOO_MUCH_MOTION)		{ reply.catf(" The measured motion was more than expected; counts/step is about %.2f.", (double)(measuredCountsPerStep * 0.25)); }
+	if (tuningErrorBitmask & TUNE_ERR_TOO_LITTLE_MOTION)	{ reply.cat(" The measured motion was less than expected; "); }
+	if (tuningErrorBitmask & TUNE_ERR_TOO_MUCH_MOTION)		{ reply.cat(" The measured motion was more than expected; "); }
+	if (tuningErrorBitmask & (TUNE_ERR_TOO_LITTLE_MOTION | TUNE_ERR_TOO_MUCH_MOTION))
+	{
+		if (GetEncoderType() == EncoderType::AS5047)
+		{
+			reply.catf("degrees/step is about %.2f.", (double)(measuredCountsPerStep * (360.0/(4096.0 * 4.0))));
+		}
+		else
+		{
+			reply.catf("counts/step is about %.2f.", (double)(measuredCountsPerStep * 0.25));
+		}
+	}
 }
 
 // Helper function to set the motor to a given phase and magnitude
@@ -591,6 +602,12 @@ GCodeResult ClosedLoop::ProcessM569Point6(const CanMessageGeneric &msg, const St
 		return GCodeResult::warning;
 	}
 
+	if (desiredTuning == 0 || desiredTuning > 2)
+	{
+		reply.copy("Invalid tuning mode");
+		return GCodeResult::error;
+	}
+
 	// Here if this is a new command to start a tuning move
 	// Check we are in direct drive mode
 	if (SmartDrivers::GetDriverMode(0) != DriverMode::direct)
@@ -598,15 +615,6 @@ GCodeResult ClosedLoop::ProcessM569Point6(const CanMessageGeneric &msg, const St
 		reply.copy("Drive is not in closed loop mode");
 		return GCodeResult::error;
 	}
-
-#if 0	//TODO when we have redefined the V parameter values, validate the parameter
-	// Validate the V parameter
-	if (desiredTuning > FULL_TUNE)
-	{
-		reply.printf("Invalid 'V' parameter value. V may be 0-%d", FULL_TUNE);
-		return GCodeResult::error;
-	}
-#endif
 
 	prevTuningError = tuningError;
 	StartTuning(desiredTuning);

@@ -41,7 +41,7 @@ public:
 	void StoreLUT() noexcept;
 	void ClearLUT() noexcept;
 	void ScrubLUT() noexcept;
-	void StoreLUTValueForPosition(int16_t encoder_reading, float real_world_position) noexcept;
+	void SetLUTValueForPosition(int16_t encoder_reading, float real_world_position) noexcept;
 
 	// Constants
 	static constexpr unsigned int GetMaxValue() noexcept { return MAX; }
@@ -178,7 +178,7 @@ void AbsoluteEncoder<MAX, LUT_RESOLUTION>::ScrubLUT() noexcept {
 }
 
 template<unsigned int MAX, unsigned int LUT_RESOLUTION>
-void AbsoluteEncoder<MAX, LUT_RESOLUTION>::StoreLUTValueForPosition(int16_t encoder_reading, float real_world_position) noexcept {
+void AbsoluteEncoder<MAX, LUT_RESOLUTION>::SetLUTValueForPosition(int16_t encoder_reading, float real_world_position) noexcept {
 	correctionLUT[encoder_reading / LUT_RESOLUTION] = real_world_position;
 }
 
