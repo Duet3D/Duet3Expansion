@@ -602,7 +602,7 @@ GCodeResult ClosedLoop::ProcessM569Point6(const CanMessageGeneric &msg, const St
 		return GCodeResult::warning;
 	}
 
-	if (desiredTuning == 0 || desiredTuning > 2)
+	if (desiredTuning == 0 || (desiredTuning > 3 && desiredTuning != 64))
 	{
 		reply.copy("Invalid tuning mode");
 		return GCodeResult::error;

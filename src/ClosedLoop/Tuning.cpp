@@ -457,18 +457,25 @@ void ClosedLoop::PerformTune() noexcept
 			((AS5047D*)encoder)->ClearLUT();
 		}
 		newTuningMove = BasicTuning(newTuningMove);
-		if (newTuningMove) {
+		if (newTuningMove)
+		{
 			tuningError &= ~TUNE_ERR_NOT_DONE_BASIC;
 			tuning &= ~BASIC_TUNING_MANOEUVRE;				// we can do encoder calibration after basic tuning
 		}
-	} else if (tuning & ENCODER_CALIBRATION_MANOEUVRE) {
+	}
+	else if (tuning & ENCODER_CALIBRATION_MANOEUVRE)
+	{
 		newTuningMove = EncoderCalibration(newTuningMove);
-		if (newTuningMove) {
+		if (newTuningMove)
+		{
 			tuning = 0;
 		}
-	} else if (tuning & STEP_MANOEUVRE) {
+	}
+	else if (tuning & STEP_MANOEUVRE)
+	{
 		newTuningMove = Step(newTuningMove);
-		if (newTuningMove) {
+		if (newTuningMove)
+		{
 			tuning = 0;
 		}
 #if 0	// not implemented
@@ -483,7 +490,9 @@ void ClosedLoop::PerformTune() noexcept
 			tuning = 0;
 		}
 #endif
-	} else {
+	}
+	else
+	{
 		tuning = 0;
 		newTuningMove = true;								// ready for next time
 	}
