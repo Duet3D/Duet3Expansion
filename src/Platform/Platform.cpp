@@ -316,20 +316,6 @@ namespace Platform
 	}
 #endif
 
-#if SAME5x
-	// Set a contiguous range of interrupts to the specified priority
-	static void SetInterruptPriority(IRQn base, unsigned int num, uint32_t prio)
-	{
-		do
-		{
-			NVIC_SetPriority(base, prio);
-			base = (IRQn)(base + 1);
-			--num;
-		}
-		while (num != 0);
-	}
-#endif
-
 	static void InitialiseInterrupts()
 	{
 		// Note, I2C interrupt priority is set up in the I2C driver
@@ -338,7 +324,7 @@ namespace Platform
 		NVIC_SetPriority(StepTcIRQn, NvicPriorityStep);
 # if defined(EXP3HC)
 		NVIC_SetPriority(CAN1_IRQn, NvicPriorityCan);
-# elif defined(EXP1HCLv0_3) || defined(EXP1HCLv1_0)
+# elif defined(EXP1HCLv1_0)
 		NVIC_SetPriority(CAN0_IRQn, NvicPriorityCan);
 # endif
 		// Set UART interrupt priority. Each SERCOM has up to 4 interrupts, numbered sequentially.
@@ -515,7 +501,7 @@ namespace Platform
 		return CanId::SammyC21DefaultAddress;
 #elif defined(EXP1XD)
 		return CanId::Exp1XDBoardDefaultAddress;
-#elif defined(EXP1HCE) || defined(EXP1HCLv0_3) || defined(EXP1HCLv1_0)
+#elif defined(EXP1HCLv1_0)
 		return CanId::Exp1HCEBoardDefaultAddress;
 #elif defined(ATECM)
 		return CanId::ATECMBoardDefaultAddress;
@@ -567,13 +553,13 @@ static void Platform::InitLeds()
 			IoPort::SetPinMode(pin, (LedActiveHighV10) ? OUTPUT_LOW : OUTPUT_HIGH);
 		}
 	}
-#else
+#elif !(defined(EXP1HCLv1_0) && defined(DEBUG))		// EXP1HCL has the LEDs connected to the SWD pins
 	for (Pin pin : LedPins)
 	{
 		IoPort::SetPinMode(pin, (LedActiveHigh) ? OUTPUT_LOW : OUTPUT_HIGH);
 	}
 #endif
-	Platform::WriteLed(0, true);				// turn LED on for debugging
+	Platform::WriteLed(0, true);					// turn LED on for debugging
 }
 
 void Platform::WriteLed(uint8_t ledNumber, bool turnOn)
@@ -1368,11 +1354,6 @@ void Platform::KickHeatTaskWatchdog()
 uint32_t Platform::GetHeatTaskIdleTicks()
 {
 	return heatTaskIdleTicks;
-}
-
-void Platform::HandleHeaterFault(unsigned int heater)
-{
-	//TODO report the heater fault to the main board
 }
 
 // Output a character to the debug channel
@@ -2207,6 +2188,22 @@ bool Platform::WasDeliberateError() noexcept
 {
 	return deliberateError;
 }
+
+#if SAME5x
+
+// Set a contiguous range of interrupts to the specified priority
+void Platform::SetInterruptPriority(IRQn base, unsigned int num, uint32_t prio)
+{
+	do
+	{
+		NVIC_SetPriority(base, prio);
+		base = (IRQn)(base + 1);
+		--num;
+	}
+	while (num != 0);
+}
+
+#endif
 
 #if HAS_VOLTAGE_MONITOR
 

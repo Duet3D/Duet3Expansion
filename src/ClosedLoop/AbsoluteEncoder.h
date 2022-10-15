@@ -31,7 +31,7 @@ template<unsigned int MAX, unsigned int LUT_RESOLUTION>
 class AbsoluteEncoder : public Encoder
 {
 public:
-	AbsoluteEncoder() noexcept : lastAngle(0), fullRotations(0), LUTLoaded(false) {};
+	AbsoluteEncoder() noexcept {}
 
 	// Get the current reading
 	int32_t GetReading() noexcept;
@@ -53,13 +53,13 @@ protected:
 	virtual uint32_t GetAbsolutePosition(bool& error) noexcept = 0;
 
 	// For calculating the relative position
-	int32_t lastAngle;
-	int32_t fullRotations;
+	int32_t lastAngle = 0;
+	int32_t fullRotations = 0;
 
 	// LUT vars
-	bool LUTLoaded;
-	int zeroCrossingIndex;
-	int zeroCrossingOffset;
+	bool LUTLoaded = false;
+	unsigned int zeroCrossingIndex = 0;
+	unsigned int zeroCrossingOffset = 0;
 	float minCorrection = 0.0, maxCorrection = 0.0;
 	float correctionLUT[MAX / LUT_RESOLUTION];
 };
@@ -67,25 +67,28 @@ protected:
 # include <Hardware/NonVolatileMemory.h>
 
 template<unsigned int MAX, unsigned int LUT_RESOLUTION>
-int32_t AbsoluteEncoder<MAX, LUT_RESOLUTION>::GetReading() noexcept {
-
+int32_t AbsoluteEncoder<MAX, LUT_RESOLUTION>::GetReading() noexcept
+{
 	bool error;
-	int32_t currentAngle = GetAbsolutePosition(error);
+	uint32_t currentAngle = GetAbsolutePosition(error);
 
-	if (error) {
+	if (error)
+	{
 		//TODO how to report an error?
 		return fullRotations * MAX + lastAngle;
 	}
 
 	// Apply LUT correction (if the LUT is loaded)
-	// (These divisions should be efficient because LUT_RESOLUTION is a power of 2)
-	if (LUTLoaded) {
-		int windowStartIndex = currentAngle / LUT_RESOLUTION;
+	// These divisions should be efficient because LUT_RESOLUTION is a power of 2
+	if (LUTLoaded)
+	{
+		const size_t windowStartIndex = currentAngle / LUT_RESOLUTION;
 		float windowStart = correctionLUT[windowStartIndex];
-		int windowOffset = currentAngle % LUT_RESOLUTION;
+		unsigned int windowOffset = currentAngle % LUT_RESOLUTION;
 
 		// Handle the zero-crossing
-		if (windowStartIndex == zeroCrossingIndex && zeroCrossingOffset >= windowOffset) {
+		if (windowStartIndex == zeroCrossingIndex && zeroCrossingOffset >= windowOffset)
+		{
 			windowStart = 0;
 			windowOffset -= zeroCrossingOffset;
 		}
@@ -95,7 +98,8 @@ int32_t AbsoluteEncoder<MAX, LUT_RESOLUTION>::GetReading() noexcept {
 
 	// Accumulate the full rotations if one has occurred
 	int32_t difference = currentAngle - lastAngle;
-	if (abs(difference) > (int32_t)MAX/2) {
+	if (abs(difference) > (int32_t)MAX/2)
+	{
 		fullRotations += (difference < 0) - (difference > 0);	// Add -1 if diff > 0, +1 if diff < 0
 	}
 	lastAngle = currentAngle;
@@ -105,19 +109,21 @@ int32_t AbsoluteEncoder<MAX, LUT_RESOLUTION>::GetReading() noexcept {
 }
 
 template<unsigned int MAX, unsigned int LUT_RESOLUTION>
-bool AbsoluteEncoder<MAX, LUT_RESOLUTION>::LoadLUT() noexcept {
-
+bool AbsoluteEncoder<MAX, LUT_RESOLUTION>::LoadLUT() noexcept
+{
 	NonVolatileMemory mem(NvmPage::closedLoop);
-	if (!mem.GetClosedLoopDataWritten()) {return false;}
+	if (!mem.GetClosedLoopDataWritten()) { return false; }
 	const float* const fourierAngles = mem.GetClosedLoopLUTHarmonicAngles();
 	const float* const fourierMagnitudes = mem.GetClosedLoopLUTHarmonicMagnitudes();
 
 	// Read back LUT from NVRAM (Fourier transform -> array)
 	minCorrection = maxCorrection = 0.0;
 	const size_t LUTLength = MAX / LUT_RESOLUTION;
-	for (size_t index = 0; index < LUTLength; index++) {
+	for (size_t index = 0; index < LUTLength; index++)
+	{
 		float correction = 0.0;
-		for (size_t harmonic=0; harmonic<NUM_HARMONICS; harmonic++) {
+		for (size_t harmonic=0; harmonic<NUM_HARMONICS; harmonic++)
+		{
 			correction += fourierMagnitudes[harmonic] * sinf(harmonic * TwoPi * index / LUTLength + fourierAngles[harmonic]);
 		}
 		correctionLUT[index] = (float)(index * LUT_RESOLUTION) - correction;
@@ -127,9 +133,11 @@ bool AbsoluteEncoder<MAX, LUT_RESOLUTION>::LoadLUT() noexcept {
 
 	// Find the zero-crossing index and offset
 	float prevVal = correctionLUT[0];
-	for (unsigned int i = 1; i<(MAX/LUT_RESOLUTION); i++) {
+	for (unsigned int i = 1; i<(MAX/LUT_RESOLUTION); i++)
+	{
 		float curVal = correctionLUT[i];
-		if (abs(prevVal - curVal) > MAX/2) {
+		if (abs(prevVal - curVal) > MAX/2)
+		{
 			zeroCrossingIndex = i-1;
 			zeroCrossingOffset = round(MAX - prevVal);
 			break;
@@ -142,12 +150,14 @@ bool AbsoluteEncoder<MAX, LUT_RESOLUTION>::LoadLUT() noexcept {
 }
 
 template<unsigned int MAX, unsigned int LUT_RESOLUTION>
-void AbsoluteEncoder<MAX, LUT_RESOLUTION>::StoreLUT() noexcept {
+void AbsoluteEncoder<MAX, LUT_RESOLUTION>::StoreLUT() noexcept
+{
 	// TODO: Verify all LUT values are present
 
 	// Store LUT to NVRAM (as Fourier transform)
 	NonVolatileMemory mem(NvmPage::closedLoop);
-	for (size_t harmonic = 0; harmonic < NUM_HARMONICS; harmonic++) {
+	for (size_t harmonic = 0; harmonic < NUM_HARMONICS; harmonic++)
+	{
 		float sum1 = 0.0, sum2 = 0.0;
 		const size_t LUTLength = MAX / LUT_RESOLUTION;
 		for (size_t i = 0; i < LUTLength; ++i)
@@ -166,19 +176,22 @@ void AbsoluteEncoder<MAX, LUT_RESOLUTION>::StoreLUT() noexcept {
 }
 
 template<unsigned int MAX, unsigned int LUT_RESOLUTION>
-void AbsoluteEncoder<MAX, LUT_RESOLUTION>::ClearLUT() noexcept {
+void AbsoluteEncoder<MAX, LUT_RESOLUTION>::ClearLUT() noexcept
+{
 	LUTLoaded = false;
 	minCorrection = maxCorrection = 0.0;
 }
 
 template<unsigned int MAX, unsigned int LUT_RESOLUTION>
-void AbsoluteEncoder<MAX, LUT_RESOLUTION>::ScrubLUT() noexcept {
+void AbsoluteEncoder<MAX, LUT_RESOLUTION>::ScrubLUT() noexcept
+{
 	// TODO: Remove LUT from NVRAM
 	ClearLUT();
 }
 
 template<unsigned int MAX, unsigned int LUT_RESOLUTION>
-void AbsoluteEncoder<MAX, LUT_RESOLUTION>::SetLUTValueForPosition(int16_t encoder_reading, float real_world_position) noexcept {
+void AbsoluteEncoder<MAX, LUT_RESOLUTION>::SetLUTValueForPosition(int16_t encoder_reading, float real_world_position) noexcept
+{
 	correctionLUT[encoder_reading / LUT_RESOLUTION] = real_world_position;
 }
 

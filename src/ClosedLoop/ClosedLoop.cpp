@@ -47,6 +47,7 @@ uint16_t	ClosedLoop::desiredStepPhase = 0;			// The desired position of the moto
 int32_t		ClosedLoop::currentEncoderReading;			// The raw reading taken from the encoder
 														// TODO no good for an extruder, use int32_t instead to count 1/256 microsteps and handle overflow
 float 		ClosedLoop::encoderPulsePerStep;			// How many encoder readings do we get per step?
+uint32_t	ClosedLoop::currentMotorPhase;				// the phase (0 to 4095) that the driver is set to
 
 namespace ClosedLoop
 {
@@ -256,20 +257,22 @@ static void ResetMonitoringVariables() {
 
 // Helper function to convert between the internal representation of encoderCountPerStep, and the appropriate external representation (e.g. CPR)
 //TODO make this a virtual function member of the encoder?
-float ClosedLoop::PulsePerStepToExternalUnits(float pps, uint8_t encoderType) noexcept {
+float ClosedLoop::PulsePerStepToExternalUnits(float pps, uint8_t encoderType) noexcept
+{
 	switch (encoderType)
 	{
 	case EncoderType::rotaryQuadrature:
-		return pps / 4;															// Output count per step
+		return pps / 4;															// Output pulses (not transitions) per full step
 	case EncoderType::AS5047:
-		return (360.0 / ((AS5047D*) ClosedLoop::encoder)->GetMaxValue()) * pps;	// Output degree per step
+		return (360.0 / ((AS5047D*) ClosedLoop::encoder)->GetMaxValue()) * pps;	// Output degrees per full step
 	default:
-		return pps;																// Output pulse per step
+		return pps;																// Output pulses per step
 	}
 }
 
 //TODO make this a virtual function member of the encoder?
-float ClosedLoop::ExternalUnitsToPulsePerStep(float externalUnits, uint8_t encoderType) noexcept {
+float ClosedLoop::ExternalUnitsToPulsePerStep(float externalUnits, uint8_t encoderType) noexcept
+{
 	switch (encoderType)
 	{
 	case EncoderType::rotaryQuadrature:
@@ -307,6 +310,7 @@ void ClosedLoop::ReportTuningErrors(uint8_t tuningErrorBitmask, const StringRef 
 // The phase is normally in the range 0 to 4095 but when tuning it can be 0 to somewhat over 8192. We must take it modulo 4096 when computing the currents.
 void ClosedLoop::SetMotorPhase(uint16_t phase, float magnitude) noexcept
 {
+	currentMotorPhase = phase;
 	float sine, cosine;
 	Trigonometry::FastSinCos(phase, sine, cosine);
 	coilA = (int16_t)lrintf(cosine * magnitude);

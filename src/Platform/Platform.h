@@ -275,8 +275,6 @@ namespace Platform
 
 	const MinCurMax& GetMcuTemperatures();
 
-	void HandleHeaterFault(unsigned int heater);
-
 	void KickHeatTaskWatchdog();
 	uint32_t GetHeatTaskIdleTicks();
 
@@ -317,6 +315,10 @@ namespace Platform
 	uint32_t GetDateTime() noexcept;
 	void SetDateTime(uint32_t tim) noexcept;
 	bool WasDeliberateError() noexcept;
+
+#if SAME5x
+	void SetInterruptPriority(IRQn base, unsigned int num, uint32_t prio) noexcept;
+#endif
 
 	void AppendBoardAndFirmwareDetails(const StringRef& reply) noexcept;
 	void AppendDiagnostics(const StringRef& reply) noexcept;

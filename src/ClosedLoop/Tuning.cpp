@@ -204,45 +204,63 @@ static bool BasicTuning(bool firstIteration) noexcept
 
 static bool EncoderCalibration(bool firstIteration) noexcept
 {
-	static int targetPosition;
-	static int positionCounter;
+	static uint32_t targetReading;				// this goes from 0 up to GetMaxValue() which is 1 << 14 for the AS5047D
+	static int32_t positionsPerRev;				// this gets set to 1024 * the number of full steps per revolution, i.e. 204800 or 409600
+	static int32_t positionCounter;				// stepper driver phase position, from 0 to +/- positions_per_rev
+	static float positionsPerEncoderCount;		// how many positions correspond to each unit change in the encoder reading, typically 204800/2e14 = 12.5
 
 	if (ClosedLoop::encoder->GetType() != EncoderType::AS5047)
 	{
-		return true;			// we don't do this tuning for relative encoders
+		return true;							// we don't do this tuning for relative encoders
 	}
 
-	AS5047D* const absoluteEncoder = (AS5047D*) ClosedLoop::encoder;
+	AS5047D* const absoluteEncoder = (AS5047D*)ClosedLoop::encoder;
 	if (firstIteration)
 	{
-		absoluteEncoder->ClearLUT();
-		targetPosition = 0;
-		positionCounter = 0;
+		targetReading = 0;
+		positionCounter = ClosedLoop::currentMotorPhase;
+		const float degreesPerStep = ClosedLoop::PulsePerStepToExternalUnits(ClosedLoop::encoderPulsePerStep, EncoderType::AS5047);
+		positionsPerRev = lrintf((1024 * 360.0)/degreesPerStep);
+		positionsPerEncoderCount = (float)positionsPerRev/(float)absoluteEncoder->GetMaxValue();
 	}
 
-	if (ClosedLoop::currentEncoderReading < targetPosition)
+	const uint32_t maxValue = absoluteEncoder->GetMaxValue();											// get the maximum encoder reading plus one, we'll need it several times
+	const uint32_t currentReading = (int32_t)((uint32_t)ClosedLoop::currentEncoderReading % maxValue);	// get the current position in 0..(maxValue - 1) ignoring the number of full rotations
+	int32_t error = (int32_t)targetReading - (int32_t)currentReading;									// calculate the difference between target and current reading
+	if (error > (int32_t)maxValue/2) { error -= (int32_t)maxValue; }									// check whether it's shorter to go the other way
+	else if (error < -(int32_t)maxValue/2) { error += (int32_t)maxValue; }
+
+#ifdef DEBUG
+	const int32_t oldPos = positionCounter;																// save this for later
+#endif
+
+	if (error > 0)
 	{
-		positionCounter += 1;
+		positionCounter += constrain<int32_t>(lrintf((float)error * positionsPerEncoderCount * 0.5), 1, 64);	// move by half the error but at least 1/1024 full step and at most 1/4 full step
 	}
-	else if (ClosedLoop::currentEncoderReading > targetPosition)
+	else if (error < 0)
 	{
-		positionCounter -= 1;
+		positionCounter -= constrain<int32_t>(lrintf((float)-error * positionsPerEncoderCount * 0.5), 1, 64);	// move by half the error but at least 1/1024 full step and at most 1/4 full step
 	}
 	else
 	{
-		const float realWorldPos = absoluteEncoder->GetMaxValue() * positionCounter / (1024 * (360.0 / ClosedLoop::PulsePerStepToExternalUnits(ClosedLoop::encoderPulsePerStep, EncoderType::AS5047)));
-		absoluteEncoder->SetLUTValueForPosition(ClosedLoop::currentEncoderReading, realWorldPos);
-		targetPosition += absoluteEncoder->GetLUTResolution();
+		const float realWorldPos = ((int32_t)maxValue * (int64_t)positionCounter)/positionsPerRev;
+		absoluteEncoder->SetLUTValueForPosition(currentReading, realWorldPos);
+		targetReading += absoluteEncoder->GetLUTResolution();
 	}
 
-	if ((unsigned int) targetPosition >= absoluteEncoder->GetMaxValue())
+#ifdef DEBUG
+	debugPrintf("target %d actual %d err %d oldpos %d adjustment %d\n", (int)targetReading, (int)ClosedLoop::currentEncoderReading, (int)error, (int)oldPos, (int)(positionCounter - oldPos));
+#endif
+
+	if ((unsigned int) targetReading >= maxValue)
 	{
 		// We are finished
 		absoluteEncoder->StoreLUT();
 		return true;
 	}
 
-	ClosedLoop::desiredStepPhase = (positionCounter > 0 ? 0 : 4096) + positionCounter % 4096;
+	ClosedLoop::desiredStepPhase = (unsigned int)(positionCounter) % 4096u;
 	ClosedLoop::SetMotorPhase(ClosedLoop::desiredStepPhase, 1);
 	return false;
 }
@@ -459,16 +477,23 @@ void ClosedLoop::PerformTune() noexcept
 		newTuningMove = BasicTuning(newTuningMove);
 		if (newTuningMove)
 		{
-			tuningError &= ~TUNE_ERR_NOT_DONE_BASIC;
 			tuning &= ~BASIC_TUNING_MANOEUVRE;				// we can do encoder calibration after basic tuning
 		}
 	}
 	else if (tuning & ENCODER_CALIBRATION_MANOEUVRE)
 	{
-		newTuningMove = EncoderCalibration(newTuningMove);
-		if (newTuningMove)
+		if (tuningError & (TUNE_ERR_TOO_MUCH_MOTION | TUNE_ERR_TOO_LITTLE_MOTION | TUNE_ERR_INCONSISTENT_MOTION | TUNE_ERR_NOT_DONE_BASIC))
 		{
+			// Basic tuning failed, so don't attempt encoder calibration because it may not complete
 			tuning = 0;
+		}
+		else
+		{
+			newTuningMove = EncoderCalibration(newTuningMove);
+			if (newTuningMove)
+			{
+				tuning = 0;
+			}
 		}
 	}
 	else if (tuning & STEP_MANOEUVRE)

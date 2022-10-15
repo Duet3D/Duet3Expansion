@@ -55,6 +55,7 @@ namespace ClosedLoop
 	extern uint16_t desiredStepPhase;				// The desired position of the motor
 	extern int32_t currentEncoderReading;			// The latest reading taken from the encoder
 	extern float encoderPulsePerStep;				// How many encoder readings do we get per step?
+	extern uint32_t currentMotorPhase;				// the phase (0 to 4095) that the driver is set to
 
 	// Closed loop public methods
 	void Init() noexcept;
@@ -93,7 +94,7 @@ namespace ClosedLoop
 	void PerformTune() noexcept;
 }
 
-#  if defined(EXP1HCLv0_3) || defined(EXP1HCLv1_0)
+#  if defined(EXP1HCLv1_0)
 // The encoder uses the standard shared SPI device, so we don't need to enable/disable it
 inline void ClosedLoop::EnableEncodersSpi() noexcept { }
 inline void ClosedLoop::DisableEncodersSpi() noexcept { }

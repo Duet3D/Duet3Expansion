@@ -17,8 +17,6 @@
 # include "TOOL1LC.h"
 #elif defined(EXP1XD)
 # include "EXP1XD.h"
-#elif defined(EXP1HCLv0_3)
-# include "EXP1HCLv0_3.h"
 #elif defined(EXP1HCLv1_0)
 # include "EXP1HCLv1_0.h"
 #elif defined(SAMMYC21)

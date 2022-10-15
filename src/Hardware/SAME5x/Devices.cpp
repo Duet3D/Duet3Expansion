@@ -12,6 +12,7 @@
 #include <AnalogIn.h>
 #include <AnalogOut.h>
 #include <Platform/TaskPriorities.h>
+#include <Platform/Platform.h>
 
 // Analog input support
 constexpr size_t AnalogInTaskStackWords = 300;
@@ -52,8 +53,9 @@ extern "C" void SERCOM3_3_Handler()
 	uart0.Interrupt3();
 }
 
-#elif defined(EXP1HCLv0_3) || defined(EXP1HCLv1_0)
+#elif defined(EXP1HCLv1_0)
 
+// Set up an optional serial port on the IO1 port via SERCOM2
 void SerialPortInit(AsyncSerial*) noexcept
 {
 	SetPinFunction(PortAPin(12), GpioPinFunction::C);		// TxD
@@ -91,12 +93,16 @@ extern "C" void SERCOM2_3_Handler()
 
 void DeviceInit() noexcept
 {
-#if defined(EXP1HCLv0_3) || defined(EXP1HCLv1_0)
+#if defined(EXP1HCLv1_0)
 	pinMode(ClockGenPin, OUTPUT_LOW);			// default the TMC clock to its internal clock until we program the clock generator
 #endif
 	AnalogIn::Init(NvicPriorityAdc);
 	AnalogOut::Init();
 	analogInTask.Create(AnalogIn::TaskLoop, "AIN", nullptr, TaskPriority::AinPriority);
+
+#if defined(EXP1HCLv1_0) && defined(DEBUG)
+	Platform::SetInterruptPriority(SERCOM2_0_IRQn, 4, NvicPriorityUart);
+#endif
 }
 
 #endif
