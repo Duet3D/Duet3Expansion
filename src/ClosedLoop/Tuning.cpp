@@ -197,71 +197,108 @@ static bool BasicTuning(bool firstIteration) noexcept
  * ----------------------------
  *
  * Absolute:
- * 	- Move to a number of 'target positions'
- * 	- At each target position, record the current encoder reading
- * 	- Store this reading in the encoder LUT
+ * 	- Move forwards somewhat (to counter any backlash) and then to the next full step position (to give (hopefully) consistent results)
+ * 	- Move forwards at a constant rate. At each position, take the current encoder reading and update the Fourier coefficients
+ * 	- Store the Fourier coefficients in the encoder LUT
  */
 
 static bool EncoderCalibration(bool firstIteration) noexcept
 {
-	static uint32_t targetReading;				// this goes from 0 up to GetMaxValue() which is 1 << 14 for the AS5047D
-	static int32_t positionsPerRev;				// this gets set to 1024 * the number of full steps per revolution, i.e. 204800 or 409600
-	static int32_t positionCounter;				// stepper driver phase position, from 0 to +/- positions_per_rev
-	static float positionsPerEncoderCount;		// how many positions correspond to each unit change in the encoder reading, typically 204800/2e14 = 12.5
+	enum class EncoderCalibrationState { setup = 0, running };
 
-	if (ClosedLoop::encoder->GetType() != EncoderType::AS5047)
+	static EncoderCalibrationState state = EncoderCalibrationState::setup;
+	static uint32_t positionsPerRev;			// this gets set to 1024 * the number of full steps per revolution, i.e. 204800 or 409600
+	static uint32_t positionsTillStart;			// the position we advance to before we start tuning proper
+	static uint32_t positionIncrement;			// how much we increase the phase position by on each movement
+	static uint32_t positionCounter;			// how many positions we have moved
+	static uint32_t virtualStartPosition;		// the virtual motor phase position we started at, calculated from the initial encoder reading
+
+	if (!ClosedLoop::encoder->IsAbsolute())
 	{
 		return true;							// we don't do this tuning for relative encoders
 	}
 
-	AS5047D* const absoluteEncoder = (AS5047D*)ClosedLoop::encoder;
+	AbsoluteEncoder* const absoluteEncoder = (AbsoluteEncoder*)ClosedLoop::encoder;
+	const uint32_t maxValue = absoluteEncoder->GetMaxValue();								// get the maximum encoder reading plus one, we'll need it several times
+	const uint32_t currentPosition = ClosedLoop::currentMotorPhase;
+
 	if (firstIteration)
 	{
-		targetReading = 0;
-		positionCounter = ClosedLoop::currentMotorPhase;
+		// Set up some variables
+		state = EncoderCalibrationState::setup;
+		absoluteEncoder->ClearLUT();
 		const float degreesPerStep = ClosedLoop::PulsePerStepToExternalUnits(ClosedLoop::encoderPulsePerStep, EncoderType::AS5047);
+		//uint32_t stepsPerRev = lrintf(360.0/degreesPerStep);
 		positionsPerRev = lrintf((1024 * 360.0)/degreesPerStep);
-		positionsPerEncoderCount = (float)positionsPerRev/(float)absoluteEncoder->GetMaxValue();
+		const float positionsPerEncoderCount = (float)positionsPerRev/(float)absoluteEncoder->GetMaxValue();
+
+		// Decide how many phase positions to advance at a time. If we always advance by just one phase position, calibration can take a long time.
+		// To speed things up, advance several phase positions at a time, but by less than one expected encoder count.
+		// Keep the advance a power of 2 phase positions so that it is a factor of positionsPerRev
+		// The AS5047 and TLI5012B both have 14-bit precision, so positionsPerEncoderCount is 12.5 for a 1.8deg motor and 25 for a 0.9deg motor
+		positionIncrement = (positionsPerEncoderCount >= 16.0) ? 8
+							: (positionsPerEncoderCount >= 8.0) ? 4
+								: (positionsPerEncoderCount >= 4.0) ? 2
+									: 1;
+
+		// To counter any backlash, start by advancing a bit. Then advance to the next position which is a multiple of 4 full steps so that the phase position is zero.
+		positionsTillStart = 4096 - currentPosition;
+		if (positionsTillStart < 256)
+		{
+			positionsTillStart += 4096;
+		}
 	}
 
-	const uint32_t maxValue = absoluteEncoder->GetMaxValue();											// get the maximum encoder reading plus one, we'll need it several times
-	const uint32_t currentReading = (int32_t)((uint32_t)ClosedLoop::currentEncoderReading % maxValue);	// get the current position in 0..(maxValue - 1) ignoring the number of full rotations
-	int32_t error = (int32_t)targetReading - (int32_t)currentReading;									// calculate the difference between target and current reading
-	if (error > (int32_t)maxValue/2) { error -= (int32_t)maxValue; }									// check whether it's shorter to go the other way
-	else if (error < -(int32_t)maxValue/2) { error += (int32_t)maxValue; }
+	const uint32_t currentReading = (uint32_t)ClosedLoop::currentEncoderReading % maxValue;	// get the current position in 0..(maxValue - 1) ignoring the number of full rotations
 
-#ifdef DEBUG
-	const int32_t oldPos = positionCounter;																// save this for later
-#endif
-
-	if (error > 0)
+	switch (state)
 	{
-		positionCounter += constrain<int32_t>(lrintf((float)error * positionsPerEncoderCount * 0.5), 1, 64);	// move by half the error but at least 1/1024 full step and at most 1/4 full step
-	}
-	else if (error < 0)
-	{
-		positionCounter -= constrain<int32_t>(lrintf((float)-error * positionsPerEncoderCount * 0.5), 1, 64);	// move by half the error but at least 1/1024 full step and at most 1/4 full step
-	}
-	else
-	{
-		const float realWorldPos = ((int32_t)maxValue * (int64_t)positionCounter)/positionsPerRev;
-		absoluteEncoder->SetLUTValueForPosition(currentReading, realWorldPos);
-		targetReading += absoluteEncoder->GetLUTResolution();
-	}
+	case EncoderCalibrationState::setup:
+		// Advancing to a suitable full step position
+		if (positionsTillStart != 0)
+		{
+			const uint32_t phaseChange = (positionsTillStart % positionIncrement) + positionIncrement;
+			positionsTillStart -= phaseChange;
+			ClosedLoop::SetMotorPhase(currentPosition + phaseChange, 1.0);
+			return false;
+		}
 
-#ifdef DEBUG
-	debugPrintf("target %d actual %d err %d oldpos %d adjustment %d\n", (int)targetReading, (int)ClosedLoop::currentEncoderReading, (int)error, (int)oldPos, (int)(positionCounter - oldPos));
-#endif
+		// Take a reading to calculate the approximate offset
+		virtualStartPosition = ((uint64_t)currentReading * positionsPerRev)/maxValue;			// get the position we expect for this encoder reading to use as a reference
+		positionCounter = 0;
+		state = EncoderCalibrationState::running;
+		// no break
 
-	if ((unsigned int) targetReading >= maxValue)
-	{
-		// We are finished
-		absoluteEncoder->StoreLUT();
-		return true;
+	case EncoderCalibrationState::running:
+		// Advancing slowly and recording positions
+		if (positionCounter == positionsPerRev)
+		{
+			// We are finished
+			absoluteEncoder->StoreLUT(virtualStartPosition, positionsPerRev/positionIncrement);
+			ClosedLoop::FinishedEncoderCalibration();			// set target position to current position
+			return true;
+		}
+
+		// Record the current data point
+		// To avoid rounding error (caused by subtracting large values from each other repeatedly) in calculating the Fourier components, just calculate them from the error
+		{
+			const uint32_t position = (positionCounter + virtualStartPosition) % positionsPerRev;
+			const float expectedReading = ((float)position * (float)absoluteEncoder->GetMaxValue())/(float)positionsPerRev;
+			float error = (float)currentReading - expectedReading;
+
+			// Allow for wrap around, e.g. expected reading = 16383, actual reading = 0 or vice versa
+			if (error > (float)maxValue/2) { error -= (float)maxValue; }
+			else if (error < -(float)maxValue/2) { error += (float)maxValue; }
+
+			const float angle = (TwoPi * position)/positionsPerRev;
+			absoluteEncoder->RecordDataPoint(angle, error);
+		}
+
+		// Move to the next position
+		ClosedLoop::SetMotorPhase(currentPosition + positionIncrement, 1.0);
+		positionCounter += positionIncrement;
+		break;
 	}
-
-	ClosedLoop::desiredStepPhase = (unsigned int)(positionCounter) % 4096u;
-	ClosedLoop::SetMotorPhase(ClosedLoop::desiredStepPhase, 1);
 	return false;
 }
 
@@ -470,9 +507,9 @@ void ClosedLoop::PerformTune() noexcept
 	// Run one iteration of the one, highest priority, tuning move
 	if (tuning & BASIC_TUNING_MANOEUVRE)
 	{
-		if (encoder->GetType() == EncoderType::AS5047 && (tuning & ENCODER_CALIBRATION_MANOEUVRE))
+		if (encoder->IsAbsolute() && (tuning & ENCODER_CALIBRATION_MANOEUVRE))
 		{
-			((AS5047D*)encoder)->ClearLUT();
+			((AbsoluteEncoder*)encoder)->ClearLUT();
 		}
 		newTuningMove = BasicTuning(newTuningMove);
 		if (newTuningMove)

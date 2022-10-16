@@ -23,17 +23,24 @@
 class RelativeEncoder : public Encoder
 {
 public:
+	// Constructors
 	RelativeEncoder() noexcept : offset(0) {}
+
+	// Overridden virtual functions
+
+	// Return true if this is an absolute encoder
+	bool IsAbsolute() const noexcept override { return false; }
+
+	// Get the current reading
+	int32_t GetReading() noexcept override
+	{
+		bool error;	// TODO: How to handle error?
+		return GetRelativePosition(error) + offset;
+	}
 
 	// Offset management
 	void SetOffset(int32_t newOffset) noexcept { offset += newOffset; }
 	void ClearOffset() noexcept { offset = 0; }
-
-	// Get the current reading
-	int32_t GetReading() noexcept {
-		bool error;	// TODO: How to handle error?
-		return GetRelativePosition(error) + offset;
-	}
 
 	// Constants
 	EncoderPositioningType GetPositioningType() const noexcept override { return EncoderPositioningType::relative; }

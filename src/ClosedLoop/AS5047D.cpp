@@ -12,6 +12,8 @@
 #include <Hardware/IoPorts.h>
 #include <ClosedLoop/ClosedLoop.h>
 
+constexpr unsigned int AS5047DResolutionBits = 14;
+
 constexpr uint16_t AS5047RegNop = 0x0000;
 constexpr uint16_t AS5047RegErrfl = 0x0001;
 constexpr uint16_t AS5047RegProg = 0x0003;
@@ -61,7 +63,7 @@ static inline bool CheckResponse(uint16_t response) noexcept
 
 AS5047D::AS5047D(SharedSpiDevice& spiDev, Pin p_csPin) noexcept
 	: SpiEncoder(spiDev, AS5047ClockFrequency, SpiMode::mode1, false, p_csPin),
-	  AbsoluteEncoder()
+	  AbsoluteEncoder(AS5047DResolutionBits)
 {
 }
 
@@ -121,6 +123,7 @@ void AS5047D::Disable() noexcept
 	ClosedLoop::DisableEncodersSpi();
 }
 
+// Return the current position as reported by the encoder
 uint32_t AS5047D::GetAbsolutePosition(bool& error) noexcept
 {
 	if (spi.Select(0))			// get the mutex and set the clock rate
@@ -134,7 +137,7 @@ uint32_t AS5047D::GetAbsolutePosition(bool& error) noexcept
 		{
 			response &= 0x3FFF;
 			error = false;
-			return ((response & 0x2000) ? response | 0xFFFFC000 : response) + AS5047D_ABS_READING_OFFSET;
+			return ((response & 0x2000) ? response | 0xFFFFC000 : response) + (1u << (AS5047DResolutionBits - 1));
 		}
 	}
 
@@ -166,7 +169,7 @@ void AS5047D::AppendDiagnostics(const StringRef &reply) noexcept
 {
 	reply.catf(", encoder full rotations %d", (int) fullRotations);
 	reply.catf(", encoder last angle %d", (int) lastAngle);
-	reply.catf(", zero crossing index=%d, zero crossing offset=%d, minCorrection=%.1f, maxCorrection=%.1f", zeroCrossingIndex, zeroCrossingOffset, (double)minCorrection, (double)maxCorrection);
+	reply.catf(", zero crossing index=%" PRIu32 ", zero crossing offset=%" PRIu32 ", minCorrection=%.1f, maxCorrection=%.1f", zeroCrossingIndex, zeroCrossingOffset, (double)minLUTCorrection, (double)maxLUTCorrection);
 	DiagnosticRegisters regs;
 	if (GetDiagnosticRegisters(regs))
 	{

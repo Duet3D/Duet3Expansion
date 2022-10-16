@@ -45,6 +45,9 @@ public:
 
 	// Append brief encoder status as a string
 	virtual void AppendStatus(const StringRef& reply) noexcept = 0;
+
+	// Return true if this is an absolute encoder
+	virtual bool IsAbsolute() const noexcept = 0;
 };
 
 #endif

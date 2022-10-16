@@ -15,10 +15,8 @@
 
 #include <General/FreelistManager.h>
 
-constexpr int16_t TLI5012B_READING_RANGE = 0x1 << 14;
-
 // TODO: Fill out MAX parameter in MagneticEncoder below
-class TLI5012B : public SpiEncoder, public AbsoluteEncoder<TLI5012B_READING_RANGE, 16>
+class TLI5012B : public SpiEncoder, public AbsoluteEncoder
 {
 public:
 	void* operator new(size_t sz) noexcept { return FreelistManager::Allocate<TLI5012B>(); }

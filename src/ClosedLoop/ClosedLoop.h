@@ -87,8 +87,9 @@ namespace ClosedLoop
 	void SetMotorPhase(uint16_t phase, float magnitude) noexcept;
 	void SetForwardPolarity() noexcept;
 	void SaveBasicTuningResult(float slope, float origin, float xMean, bool reverse) noexcept;
-	void FinishedBasicTuning() noexcept;			// call this when we have stopped basic tuning movement and are ready to switch to closed loop control
-	void AdjustTargetMotorSteps(float amount) noexcept;	// called by tuning to execute a step
+	void FinishedBasicTuning() noexcept;					// call this when we have stopped basic tuning movement and are ready to switch to closed loop control
+	void FinishedEncoderCalibration() noexcept;				// call this when we have finished calibrating an absolute encoder
+	void AdjustTargetMotorSteps(float amount) noexcept;		// called by tuning to execute a step
 
 	// Methods in the tuning module
 	void PerformTune() noexcept;

@@ -32,16 +32,13 @@ public:
 	void SetThermistorLowCalibration(unsigned int inputNumber, int8_t val) noexcept pre(page == NvmPage::common);
 	void SetThermistorHighCalibration(unsigned int inputNumber, int8_t val) noexcept pre(page == NvmPage::common);
 	bool GetClosedLoopDataWritten() noexcept pre(page == NvmPage::closedLoop);
-	float* GetClosedLoopLUTHarmonicAngles() noexcept pre(page == NvmPage::closedLoop);
-	float* GetClosedLoopLUTHarmonicMagnitudes() noexcept pre(page == NvmPage::closedLoop);
-	void SetClosedLoopLUTHarmonicAngle(size_t harmonic, float value) noexcept pre(page == NvmPage::closedLoop);
-	void SetClosedLoopLUTHarmonicMagnitude(size_t harmonic, float value) noexcept pre(page == NvmPage::closedLoop);
+	const float *GetClosedLoopHarmonicValues() noexcept pre(page == NvmPage::closedLoop);
+	void SetClosedLoopHarmonicValue(size_t index, float value) noexcept pre(page == NvmPage::closedLoop; index < MaxHarmonicDataSlots);
 
 private:
 	void EnsureRead() noexcept;
 	int8_t GetThermistorCalibration(unsigned int inputNumber, uint8_t *calibArray) noexcept pre(page == NvmPage::common);
 	void SetThermistorCalibration(unsigned int inputNumber, int8_t val, uint8_t *calibArray) noexcept pre(page == NvmPage::common);
-	void SetClosedLoopLUTHarmonicValue(float* harmonicArray, size_t harmonic, float value) noexcept pre(page == NvmPage::closedLoop);
 
 	// In the following structs, the magic value must always be the first 2 bytes
 	struct CommonPage
@@ -59,17 +56,16 @@ private:
 
 	struct ClosedLoopPage
 	{
-		static constexpr unsigned int MaxHarmonics = 17;
+		static constexpr unsigned int MaxHarmonicDataSlots = 40;
 
-		uint16_t magic;
+		uint16_t closedLoopMagic;
 		// define your data here and pad it out to 510 bytes
 		// start with 2 bytes of padding if you will be using 32-bit quantities, so as to 4-byte align them
 		uint16_t neverWritten : 1,		// Will be 1 if no calibration values are present (will be initialised to 1)
 				 zero : 15;
-		float absEncoderLUTHarmonicAngles[MaxHarmonics];
-		float absEncoderLUTHarmonicMagnitudes[MaxHarmonics];
+		float harmonicData[MaxHarmonicDataSlots];
 
-		uint8_t spare[508 - 8*MaxHarmonics];
+		uint8_t spare[512 - 4 - sizeof(harmonicData)];
 	};
 
 	union NVM

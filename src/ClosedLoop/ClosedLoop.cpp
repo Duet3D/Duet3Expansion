@@ -404,7 +404,7 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 		reply.copy("Error threshold value must be greater than zero");
 		return GCodeResult::error;
 	}
-	if ((seen & (0x1 << 1)) && tempCPR < 1.0)
+	if ((seen & (0x1 << 1)) && tempCPR < 0.8)	// C parameter will be 0.9 for 0.9deg motors
 	{
 		reply.copy("Encoder counts per step most be positive");
 		return GCodeResult::error;
@@ -694,7 +694,7 @@ void ClosedLoop::FinishedBasicTuning() noexcept
 			const float averageOffset = (forwardTuningResults.revisedOrigin + reverseTuningResults.revisedOrigin) * 0.5;
 			((RelativeEncoder*)encoder)->SetOffset(-lrintf(averageOffset));					// in future, subtract this offset so that zero reading means zero phase
 			targetEncoderReading = lrintf(desiredStepPhase * fabsf(averageSlope));			// the encoder reading we ought to be getting now if there is no hysteresis
-			targetMotorSteps = currentMotorSteps = targetEncoderReading / encoderPulsePerStep;
+			targetMotorSteps = currentMotorSteps = (float)targetEncoderReading / encoderPulsePerStep;
 #if BASIC_TUNING_DEBUG
 			originalAssumedEncoderReading = desiredStepPhase * averageSlope + averageOffset;
 			originalDesiredEncoderReading = desiredEncoderReading;
@@ -710,6 +710,13 @@ void ClosedLoop::FinishedBasicTuning() noexcept
 	}
 
 	tuningError &= ~TUNE_ERR_NOT_DONE_BASIC;
+}
+
+// Call this when we have finished calibrating an absolute encoder
+void ClosedLoop::FinishedEncoderCalibration() noexcept
+{
+	targetEncoderReading = encoder->GetReading();
+	targetMotorSteps = currentMotorSteps = (float)targetEncoderReading / encoderPulsePerStep;
 }
 
 // This is called by tuning to execute a step
