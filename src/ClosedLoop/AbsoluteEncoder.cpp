@@ -21,31 +21,36 @@ AbsoluteEncoder::AbsoluteEncoder(float p_stepAngle, unsigned int p_resolutionBit
 int32_t AbsoluteEncoder::GetReading(bool& err) noexcept
 {
 	uint32_t currentAngle = GetRawReading(err);
-	if (err)
+	if (!err)
 	{
-		return fullRotations * GetMaxValue() + lastAngle;
-	}
+		// Apply LUT correction (if the LUT is loaded)
+		if (LUTLoaded)
+		{
+			const size_t windowStartIndex = currentAngle >> resolutionToLutShiftFactor;
+			const float windowStart = correctionLUT[windowStartIndex];
+			const uint32_t windowOffset = currentAngle & (1u << (resolutionToLutShiftFactor - 1));
+			//TODO use linear interpolation between bottom and top of window
+			currentAngle = lrintf(windowStart + windowOffset);
+		}
 
-	// Apply LUT correction (if the LUT is loaded)
-	if (LUTLoaded)
-	{
-		const size_t windowStartIndex = currentAngle >> resolutionToLutShiftFactor;
-		const float windowStart = correctionLUT[windowStartIndex];
-		const uint32_t windowOffset = currentAngle & (1u << (resolutionToLutShiftFactor - 1));
-		//TODO use linear interpolation between bottom and top of window
-		currentAngle = lrintf(windowStart + windowOffset);
-	}
+		// Accumulate the full rotations if one has occurred
+		const int32_t difference = (int32_t)currentAngle - (int32_t)lastAngle;
+		if (difference > (int32_t)(GetMaxValue()/2))
+		{
+			// Gone from a low value to a high value, so going down and wrapped round
+			--fullRotations;
+		}
+		else if (difference < -(int32_t)(GetMaxValue()/2))
+		{
+			// Gone from a high value to a low value, to going up and wrapped round
+			++fullRotations;
+		}
 
-	// Accumulate the full rotations if one has occurred
-	const int32_t difference = (int32_t)currentAngle - (int32_t)lastAngle;
-	if (abs(difference) > (int32_t)(GetMaxValue()/2))
-	{
-		fullRotations += (difference < 0) - (difference > 0);	// Add -1 if diff > 0, +1 if diff < 0
+		lastAngle = currentAngle;
 	}
-	lastAngle = currentAngle;
 
 	// Return the position plus the accumulated rotations
-	return (fullRotations * GetMaxValue() + lastAngle);
+	return (fullRotations * (int)GetMaxValue()) + (int32_t)lastAngle + offset;
 }
 
 // Get the raw reading accounting for reverse polarity but not he correction table or the offset

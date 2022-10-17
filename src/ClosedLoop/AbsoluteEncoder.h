@@ -70,7 +70,7 @@ protected:
 	void PopulateLUT(NonVolatileMemory& mem) noexcept;
 
 	// For calculating the relative position
-	int32_t lastAngle = 0;
+	uint32_t lastAngle = 0;
 	int32_t fullRotations = 0;
 	float stepAngle;
 
