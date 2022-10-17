@@ -48,6 +48,7 @@ int32_t		ClosedLoop::currentEncoderReading;			// The raw reading taken from the 
 														// TODO no good for an extruder, use int32_t instead to count 1/256 microsteps and handle overflow
 float 		ClosedLoop::encoderPulsePerStep;			// How many encoder readings do we get per step?
 uint32_t	ClosedLoop::currentMotorPhase;				// the phase (0 to 4095) that the driver is set to
+int32_t		ClosedLoop::reversePolarityMultiplier = 1;	// +1 if encoder direction is forwards, -1 if it is reverse
 
 namespace ClosedLoop
 {
@@ -91,8 +92,6 @@ namespace ClosedLoop
 	float 	holdCurrentFraction = DefaultHoldCurrentFraction;			// The minimum holding current when stationary
 	float	recipHoldCurrentFraction = 1.0/DefaultHoldCurrentFraction;	// The reciprocal of the minimum holding current
 	float	holdCurrentFractionTimesMinPhaseShift = MinimumPhaseShift * DefaultHoldCurrentFraction;
-
-	int32_t	reversePolarityMultiplier = 1;				// +1 if encoder direction is forwards, -1 if it is reverse
 
 	float 	Kp = 100;									// The proportional constant for the PID controller
 	float 	Ki = 0;										// The proportional constant for the PID controller
@@ -689,22 +688,19 @@ void ClosedLoop::FinishedBasicTuning() noexcept
 #endif
 		reversePolarityMultiplier = (averageSlope < 0.0) ? -1 : 1;
 
-		if (encoder->GetPositioningType() == EncoderPositioningType::relative)
-		{
-			const float averageOffset = (forwardTuningResults.revisedOrigin + reverseTuningResults.revisedOrigin) * 0.5;
-			((RelativeEncoder*)encoder)->SetOffset(-lrintf(averageOffset));					// in future, subtract this offset so that zero reading means zero phase
-			targetEncoderReading = lrintf(desiredStepPhase * fabsf(averageSlope));			// the encoder reading we ought to be getting now if there is no hysteresis
-			targetMotorSteps = currentMotorSteps = (float)targetEncoderReading / encoderPulsePerStep;
+		const float averageOffset = (forwardTuningResults.revisedOrigin + reverseTuningResults.revisedOrigin) * 0.5;
+		encoder->AdjustOffset(-lrintf(averageOffset));									// in future, subtract this offset so that zero reading means zero phase
+		targetEncoderReading = lrintf(desiredStepPhase * fabsf(averageSlope));			// the encoder reading we ought to be getting now if there is no hysteresis
+		targetMotorSteps = currentMotorSteps = (float)targetEncoderReading / encoderPulsePerStep;
 #if BASIC_TUNING_DEBUG
-			originalAssumedEncoderReading = desiredStepPhase * averageSlope + averageOffset;
-			originalDesiredEncoderReading = desiredEncoderReading;
-			offsetCorrectionMade = -lrintf(averageOffset);
-			ReadState();
-			finalRawEncoderReading = rawEncoderReading;
-			finalMeasuredStepPhase = measuredStepPhase;
-			finalCurrentMotorSteps = currentMotorSteps;
+		originalAssumedEncoderReading = desiredStepPhase * averageSlope + averageOffset;
+		originalDesiredEncoderReading = desiredEncoderReading;
+		offsetCorrectionMade = -lrintf(averageOffset);
+		ReadState();
+		finalRawEncoderReading = rawEncoderReading;
+		finalMeasuredStepPhase = measuredStepPhase;
+		finalCurrentMotorSteps = currentMotorSteps;
 #endif
-		}
 
 		tuningError &= ~(TUNE_ERR_TOO_MUCH_MOTION | TUNE_ERR_TOO_LITTLE_MOTION | TUNE_ERR_INCONSISTENT_MOTION);
 	}
@@ -1080,13 +1076,11 @@ bool ClosedLoop::SetClosedLoopEnabled(size_t driver, bool enabled, const StringR
 		delay(3);														// delay long enough for the TMC driver to have read the microstep counter since the end of the last movement
 		const uint16_t initialStepPhase = SmartDrivers::GetMicrostepPosition(0) * 4;	// get the current coil A microstep position as 0..4095
 		reversePolarityMultiplier = 1;									// assume the encoder reads forwards
-		if (encoder->GetPositioningType() == EncoderPositioningType::relative)
-		{
-			// Temporarily calibrate the encoder zero position
-			// We assume that the motor is at the position given by its microstep counter. This may not be true e.g. if it has a brake.
-			ReadState();												// set up currentMotorSteps and measuredStepPhase
-			((RelativeEncoder*)encoder)->SetOffset(lrintf(((int32_t)initialStepPhase - (int32_t)measuredStepPhase) * encoderPulsePerStep / 1024.0));	// set the new zero position
-		}
+
+		// Temporarily calibrate the encoder zero position
+		// We assume that the motor is at the position given by its microstep counter. This may not be true e.g. if it has a brake that has not been disengaged.
+		ReadState();													// set up currentMotorSteps and measuredStepPhase
+		encoder->AdjustOffset(lrintf(((int32_t)initialStepPhase - (int32_t)measuredStepPhase) * encoderPulsePerStep / 1024.0));	// set the new zero position
 
 		desiredStepPhase = initialStepPhase;							// set this to be picked up later in DriverSwitchedToClosedLoop
 

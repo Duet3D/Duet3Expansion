@@ -24,7 +24,7 @@ class RelativeEncoder : public Encoder
 {
 public:
 	// Constructors
-	RelativeEncoder() noexcept : offset(0) {}
+	RelativeEncoder() noexcept {}
 
 	// Overridden virtual functions
 
@@ -38,19 +38,9 @@ public:
 		return GetRelativePosition(error) + offset;
 	}
 
-	// Offset management
-	void SetOffset(int32_t newOffset) noexcept { offset += newOffset; }
-	void ClearOffset() noexcept { offset = 0; }
-
-	// Constants
-	EncoderPositioningType GetPositioningType() const noexcept override { return EncoderPositioningType::relative; }
-
 protected:
 	// Get the relative position since the start
 	virtual int32_t GetRelativePosition(bool& error) noexcept = 0;
-
-	// For calculating the raw reading
-	int32_t offset;
 };
 
 # endif

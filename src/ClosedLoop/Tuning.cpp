@@ -230,7 +230,7 @@ static bool EncoderCalibration(bool firstIteration) noexcept
 		const float degreesPerStep = ClosedLoop::PulsePerStepToExternalUnits(ClosedLoop::encoderPulsePerStep, EncoderType::AS5047);
 		//uint32_t stepsPerRev = lrintf(360.0/degreesPerStep);
 		positionsPerRev = lrintf((1024 * 360.0)/degreesPerStep);
-		const float positionsPerEncoderCount = (float)positionsPerRev/(float)absoluteEncoder->GetMaxValue();
+		const float positionsPerEncoderCount = (float)positionsPerRev/(float)maxValue;
 
 		// Decide how many phase positions to advance at a time. If we always advance by just one phase position, calibration can take a long time.
 		// To speed things up, advance several phase positions at a time, but by less than one expected encoder count.
@@ -249,7 +249,13 @@ static bool EncoderCalibration(bool firstIteration) noexcept
 		}
 	}
 
-	const uint32_t currentReading = (uint32_t)ClosedLoop::currentEncoderReading % maxValue;	// get the current position in 0..(maxValue - 1) ignoring the number of full rotations
+	bool err;
+	uint32_t currentReading = absoluteEncoder->GetAbsolutePosition(err);		// get the current position in 0..(maxValue - 1)
+	//TODO handle error
+	if (ClosedLoop::reversePolarityMultiplier < 0)
+	{
+		currentReading = maxValue - 1 - currentReading;
+	}
 
 	switch (state)
 	{
@@ -263,7 +269,7 @@ static bool EncoderCalibration(bool firstIteration) noexcept
 			return false;
 		}
 
-		// Take a reading to calculate the approximate offset
+		// Calculate the approximate offset
 		virtualStartPosition = ((uint64_t)currentReading * positionsPerRev)/maxValue;			// get the position we expect for this encoder reading to use as a reference
 		positionCounter = 0;
 		state = EncoderCalibrationState::running;

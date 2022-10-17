@@ -28,7 +28,7 @@ public:
 	GCodeResult Init(const StringRef& reply) noexcept override;
 	void Enable() noexcept override;
 	void Disable() noexcept override;
-	uint32_t GetAbsolutePosition(bool& error) noexcept;
+	uint32_t GetAbsolutePosition(bool& error) noexcept override;
 	void AppendDiagnostics(const StringRef& reply) noexcept override;
 	void AppendStatus(const StringRef& reply) noexcept override;
 

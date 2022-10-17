@@ -56,6 +56,7 @@ namespace ClosedLoop
 	extern int32_t currentEncoderReading;			// The latest reading taken from the encoder
 	extern float encoderPulsePerStep;				// How many encoder readings do we get per step?
 	extern uint32_t currentMotorPhase;				// the phase (0 to 4095) that the driver is set to
+	extern int32_t reversePolarityMultiplier;		// +1 or -1 depending on which way the encoder counts
 
 	// Closed loop public methods
 	void Init() noexcept;

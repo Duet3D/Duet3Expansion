@@ -33,16 +33,18 @@ class AbsoluteEncoder : public Encoder
 public:
 	// Constructors
 	AbsoluteEncoder(unsigned int p_resolutionBits) noexcept
-	: resolutionBits(p_resolutionBits), resolutionToLutShiftFactor((p_resolutionBits < LutResolutionBits) ? 0 : p_resolutionBits - LutResolutionBits)
+		: resolutionBits(p_resolutionBits), resolutionToLutShiftFactor((p_resolutionBits < LutResolutionBits) ? 0 : p_resolutionBits - LutResolutionBits)
 	{}
 
 	// Overridden virtual functions
 	// Return true if this is an absolute encoder
 	bool IsAbsolute() const noexcept override { return true; }
-	EncoderPositioningType GetPositioningType() const noexcept override { return EncoderPositioningType::absolute; }
 
 	// Get the current reading
-	int32_t GetReading() noexcept;
+	int32_t GetReading() noexcept override;
+
+	// This ust be defined to return a value between 0 and one below GetMaxValue()
+	virtual uint32_t GetAbsolutePosition(bool& error) noexcept = 0;
 
 	// Lookup table (LUT) management
 	void RecordDataPoint(float angle, float error) noexcept;
@@ -60,9 +62,6 @@ protected:
 	static constexpr unsigned int NumHarmonics = 17;				// store harmonics 0-16
 	static constexpr unsigned int LutResolutionBits = 10;
 	static constexpr size_t NumLutEntries = 1ul << LutResolutionBits;
-
-	// Must be defined to return a value between 0 and one below GetMaxValue()
-	virtual uint32_t GetAbsolutePosition(bool& error) noexcept = 0;
 
 	// Populate the LUT when we already have the nonvolatile data
 	void PopulateLUT(NonVolatileMemory& mem) noexcept;

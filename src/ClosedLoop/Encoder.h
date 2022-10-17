@@ -14,8 +14,6 @@
 
 #include <GCodeResult.h>
 
-NamedEnum(EncoderPositioningType, uint8_t, absolute, relative);
-
 class Encoder
 {
 public:
@@ -24,9 +22,6 @@ public:
 
 	// Get the type of this encoder
 	virtual EncoderType GetType() const noexcept = 0;
-
-	// Get the positioning type of this encoder (absolute or relative)
-	virtual EncoderPositioningType GetPositioningType() const noexcept = 0;
 
 	// Initialise the encoder and enable it if successful. If there are any warnings or errors, put the corresponding message text in 'reply'.
 	virtual GCodeResult Init(const StringRef& reply) noexcept = 0;
@@ -37,7 +32,7 @@ public:
 	// Disable the encoder
 	virtual void Disable() noexcept = 0;
 
-	// Get the current reading
+	// Get the current reading after correcting it and adding the offset
 	virtual int32_t GetReading() noexcept = 0;
 
 	// Get diagnostic information and append it to a string
@@ -46,8 +41,16 @@ public:
 	// Append brief encoder status as a string
 	virtual void AppendStatus(const StringRef& reply) noexcept = 0;
 
-	// Return true if this is an absolute encoder
+	// Return true if this is an absolute encoder, false if it is relative
 	virtual bool IsAbsolute() const noexcept = 0;
+
+	// Offset management
+	void AdjustOffset(int32_t newOffset) noexcept { offset += newOffset; }
+
+protected:
+
+	// For calculating the raw reading
+	int32_t offset = 0;
 };
 
 #endif

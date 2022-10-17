@@ -135,9 +135,8 @@ uint32_t AS5047D::GetAbsolutePosition(bool& error) noexcept
 		spi.Deselect();			// release the mutex
 		if (ok && CheckResponse(response))
 		{
-			response &= 0x3FFF;
 			error = false;
-			return ((response & 0x2000) ? response | 0xFFFFC000 : response) + (1u << (AS5047DResolutionBits - 1));
+			return response & 0x3FFF;
 		}
 	}
 
