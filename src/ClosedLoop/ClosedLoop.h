@@ -54,9 +54,7 @@ namespace ClosedLoop
 	extern uint16_t measuredStepPhase;				// The measured position of the motor
 	extern uint16_t desiredStepPhase;				// The desired position of the motor
 	extern int32_t currentEncoderReading;			// The latest reading taken from the encoder
-	extern float encoderPulsePerStep;				// How many encoder readings do we get per step?
 	extern uint32_t currentMotorPhase;				// the phase (0 to 4095) that the driver is set to
-	extern int32_t reversePolarityMultiplier;		// +1 or -1 depending on which way the encoder counts
 
 	// Closed loop public methods
 	void Init() noexcept;
@@ -86,7 +84,6 @@ namespace ClosedLoop
 	float PulsePerStepToExternalUnits(float pps, uint8_t encoderType) noexcept;
 	float ExternalUnitsToPulsePerStep(float externalUnits, uint8_t encoderType) noexcept;
 	void SetMotorPhase(uint16_t phase, float magnitude) noexcept;
-	void SetForwardPolarity() noexcept;
 	void SaveBasicTuningResult(float slope, float origin, float xMean, bool reverse) noexcept;
 	void FinishedBasicTuning() noexcept;					// call this when we have stopped basic tuning movement and are ready to switch to closed loop control
 	void FinishedEncoderCalibration() noexcept;				// call this when we have finished calibrating an absolute encoder

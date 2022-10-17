@@ -17,7 +17,7 @@
 class Encoder
 {
 public:
-	Encoder() noexcept { }
+	Encoder(float p_countsPerStep) noexcept : countsPerStep(p_countsPerStep) { }
 	virtual ~Encoder() { }
 
 	// Get the type of this encoder
@@ -33,7 +33,7 @@ public:
 	virtual void Disable() noexcept = 0;
 
 	// Get the current reading after correcting it and adding the offset
-	virtual int32_t GetReading() noexcept = 0;
+	virtual int32_t GetReading(bool& err) noexcept = 0;
 
 	// Get diagnostic information and append it to a string
 	virtual void AppendDiagnostics(const StringRef& reply) noexcept = 0;
@@ -47,10 +47,20 @@ public:
 	// Offset management
 	void AdjustOffset(int32_t newOffset) noexcept { offset += newOffset; }
 
-protected:
+	// Encoder polarity. Changing this will change subsequent encoder readings, so call AdjustOffset afterwards.
+	void SetBackwards(bool backwards) noexcept { reversePolarityMultiplier = (backwards) ? -1 : 1; }
 
-	// For calculating the raw reading
+	// Return the encoder polarity
+	bool IsBackwards() const noexcept { return reversePolarityMultiplier < 0; }
+
+	// Return the number of encoder counts per step
+	float GetCountsPerStep() const noexcept { return countsPerStep; }
+
+protected:
+	// For adjusting the reading
 	int32_t offset = 0;
+	int32_t reversePolarityMultiplier = 1;
+	float countsPerStep;
 };
 
 #endif

@@ -7,47 +7,52 @@
 
 #include "AbsoluteEncoder.h"
 
-# include <Hardware/NonVolatileMemory.h>
+#if SUPPORT_CLOSED_LOOP
 
-int32_t AbsoluteEncoder::GetReading() noexcept
+#include <Hardware/NonVolatileMemory.h>
+
+AbsoluteEncoder::AbsoluteEncoder(float p_stepAngle, unsigned int p_resolutionBits) noexcept
+	: Encoder((1u << p_resolutionBits) * p_stepAngle/360.0),
+	  stepAngle(p_stepAngle),
+	  resolutionBits(p_resolutionBits),
+	  resolutionToLutShiftFactor((p_resolutionBits < LutResolutionBits) ? 0 : p_resolutionBits - LutResolutionBits)
+{}
+
+int32_t AbsoluteEncoder::GetReading(bool& err) noexcept
 {
-	bool error;
-	uint32_t currentAngle = GetAbsolutePosition(error);
-
-	if (error)
+	uint32_t currentAngle = GetRawReading(err);
+	if (err)
 	{
-		//TODO how to report an error?
 		return fullRotations * GetMaxValue() + lastAngle;
 	}
 
 	// Apply LUT correction (if the LUT is loaded)
-	// These divisions should be efficient because LUT_RESOLUTION is a power of 2
 	if (LUTLoaded)
 	{
-		const size_t windowStartIndex = currentAngle >> GetResolutionToLutShiftFactor();
-		float windowStart = correctionLUT[windowStartIndex];
-		uint32_t windowOffset = currentAngle & (1u << (GetResolutionToLutShiftFactor() - 1));
-
-		// Handle the zero-crossing
-		if (windowStartIndex == zeroCrossingIndex && zeroCrossingOffset >= windowOffset)
-		{
-			windowStart = 0;
-			windowOffset -= zeroCrossingOffset;
-		}
-
-		currentAngle = windowStart + windowOffset;
+		const size_t windowStartIndex = currentAngle >> resolutionToLutShiftFactor;
+		const float windowStart = correctionLUT[windowStartIndex];
+		const uint32_t windowOffset = currentAngle & (1u << (resolutionToLutShiftFactor - 1));
+		//TODO use linear interpolation between bottom and top of window
+		currentAngle = lrintf(windowStart + windowOffset);
 	}
 
 	// Accumulate the full rotations if one has occurred
-	int32_t difference = currentAngle - lastAngle;
-	if (abs(difference) > (int32_t)GetMaxValue()/2)
+	const int32_t difference = (int32_t)currentAngle - (int32_t)lastAngle;
+	if (abs(difference) > (int32_t)(GetMaxValue()/2))
 	{
 		fullRotations += (difference < 0) - (difference > 0);	// Add -1 if diff > 0, +1 if diff < 0
 	}
 	lastAngle = currentAngle;
 
 	// Return the position plus the accumulated rotations
-	return fullRotations * GetMaxValue() + lastAngle;
+	return (fullRotations * GetMaxValue() + lastAngle);
+}
+
+// Get the raw reading accounting for reverse polarity but not he correction table or the offset
+uint32_t AbsoluteEncoder::GetRawReading(bool& err) noexcept
+{
+	const uint32_t reading = GetAbsolutePosition(err);
+	return (IsBackwards()) ? GetMaxValue() - 1 - reading : reading;
 }
 
 bool AbsoluteEncoder::LoadLUT() noexcept
@@ -62,25 +67,6 @@ bool AbsoluteEncoder::LoadLUT() noexcept
 // Populate the LUT when we already have the nonvolatile data
 void AbsoluteEncoder::PopulateLUT(NonVolatileMemory& mem) noexcept
 {
-	const size_t LUTLength = GetNumLUTEntries();
-
-	// Find the average value and the zero-crossing index and offset
-	//TODO
-#if 0
-	float prevVal = correctionLUT[0];
-	for (unsigned int i = 1; i < LUTLength; i++)
-	{
-		const float curVal = correctionLUT[i];
-		if (abs(prevVal - curVal) > GetMaxValue()/2)
-		{
-			zeroCrossingIndex = i-1;
-			zeroCrossingOffset = round(GetMaxValue() - prevVal);
-			break;
-		}
-		prevVal = curVal;
-	}
-#endif
-
 	// Read back the table of harmonics from NVRAM and construct the lookup table.
 	// The table maps actual position to encoder reading using the following mapping:
 	//  angleRead = angleExpected + sum[i = 0 to (NumHarmonics - 1)](Si * sin(angleExpected * i) + Ci * cos(angleExpected * i))
@@ -89,6 +75,7 @@ void AbsoluteEncoder::PopulateLUT(NonVolatileMemory& mem) noexcept
 	// We want the inverse mapping, i.e. angleExpected = g(angleRead) where g is the inverse of f
 	// Start by using the approximation: angleExpected = angleRead - sum[i = 0 to (NumHarmonics - 1)](Si * sin(angleExpected * i) + Ci * cos(angleExpected * i))
 	// Then iterate until the correction converges or the maximum number of iterations is reached. In tests
+	const size_t LUTLength = GetNumLUTEntries();
 	constexpr unsigned int MaxIterations = 5;
 	unsigned int actualMaxIterationNumber = 0;
 	const float *harmonicData = mem.GetClosedLoopHarmonicValues();
@@ -120,7 +107,8 @@ void AbsoluteEncoder::PopulateLUT(NonVolatileMemory& mem) noexcept
 				break;
 			}
 		}
-		correctionLUT[index] = lastCorrection;
+		const int32_t temp = lrintf(lastCorrection + (float)(index << resolutionToLutShiftFactor));
+		correctionLUT[index] = (uint16_t)temp & ((1u << resolutionBits) - 1);
 		if (index != 0)
 		{
 			if (lastCorrection < minLUTCorrection) { minLUTCorrection = lastCorrection; }
@@ -196,5 +184,7 @@ void AbsoluteEncoder::RecordDataPoint(float angle, float error) noexcept
 		cosines[i] += error * cosf(angle * i);
 	}
 }
+
+#endif
 
 // End

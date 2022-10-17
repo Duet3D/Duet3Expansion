@@ -61,9 +61,9 @@ static inline bool CheckResponse(uint16_t response) noexcept
 	return CheckEvenParity(response) && (response & 0x4000) == 0;
 }
 
-AS5047D::AS5047D(SharedSpiDevice& spiDev, Pin p_csPin) noexcept
+AS5047D::AS5047D(float stepAngle, SharedSpiDevice& spiDev, Pin p_csPin) noexcept
 	: SpiEncoder(spiDev, AS5047ClockFrequency, SpiMode::mode1, false, p_csPin),
-	  AbsoluteEncoder(AS5047DResolutionBits)
+	  AbsoluteEncoder(stepAngle, AS5047DResolutionBits)
 {
 }
 
@@ -168,7 +168,7 @@ void AS5047D::AppendDiagnostics(const StringRef &reply) noexcept
 {
 	reply.catf(", encoder full rotations %d", (int) fullRotations);
 	reply.catf(", encoder last angle %d", (int) lastAngle);
-	reply.catf(", zero crossing index=%" PRIu32 ", zero crossing offset=%" PRIu32 ", minCorrection=%.1f, maxCorrection=%.1f", zeroCrossingIndex, zeroCrossingOffset, (double)minLUTCorrection, (double)maxLUTCorrection);
+	reply.catf(", minCorrection=%.1f, maxCorrection=%.1f", (double)minLUTCorrection, (double)maxLUTCorrection);
 	DiagnosticRegisters regs;
 	if (GetDiagnosticRegisters(regs))
 	{
@@ -239,6 +239,7 @@ void AS5047D::AppendDiagnostics(const StringRef &reply) noexcept
 // Append short form status to a string. If there is an error then the user can use M122 to get more details.
 void AS5047D::AppendStatus(const StringRef& reply) noexcept
 {
+	reply.catf("motor degrees/step: %.2f", (double)stepAngle);
 	DiagnosticRegisters regs;
 	if (GetDiagnosticRegisters(regs))
 	{
@@ -253,7 +254,7 @@ void AS5047D::AppendStatus(const StringRef& reply) noexcept
 	}
 	else
 	{
-		reply.cat(", sensor comms error");
+		reply.cat(", sensor comm error");
 	}
 }
 

@@ -91,7 +91,7 @@ static bool BasicTuning(bool firstIteration) noexcept
 	{
 		state = BasicTuningState::forwardInitial;
 		stepCounter = 0;
-		ClosedLoop::SetForwardPolarity();
+		ClosedLoop::encoder->SetBackwards(false);
 	}
 
 	switch (state)
@@ -113,7 +113,9 @@ static bool BasicTuning(bool firstIteration) noexcept
 	case BasicTuningState::forwards:
 		// Collect data and move forwards, until we have moved 4 full steps
 		{
-			const int32_t reading = ClosedLoop::encoder->GetReading();
+			bool err;
+			const int32_t reading = ClosedLoop::encoder->GetReading(err);
+			//TODO handle error
 			if (stepCounter == 0)
 			{
 				initialEncoderReading = reading;			// to reduce rounding error, get rid of any large constant offset when accumulating
@@ -159,7 +161,9 @@ static bool BasicTuning(bool firstIteration) noexcept
 	case BasicTuningState::reverse:
 		// Collect data and move backwards, until we have moved 4 full steps
 		{
-			const int32_t reading = ClosedLoop::encoder->GetReading();
+			bool err;
+			const int32_t reading = ClosedLoop::encoder->GetReading(err);
+			//TODO handle error
 			if (stepCounter == 0)
 			{
 				initialEncoderReading = reading;			// to reduce rounding error, get rid of any large constant offset when accumulating
@@ -227,8 +231,7 @@ static bool EncoderCalibration(bool firstIteration) noexcept
 		// Set up some variables
 		state = EncoderCalibrationState::setup;
 		absoluteEncoder->ClearLUT();
-		const float degreesPerStep = ClosedLoop::PulsePerStepToExternalUnits(ClosedLoop::encoderPulsePerStep, EncoderType::AS5047);
-		//uint32_t stepsPerRev = lrintf(360.0/degreesPerStep);
+		const float degreesPerStep = absoluteEncoder->GetDegreesPerStep();
 		positionsPerRev = lrintf((1024 * 360.0)/degreesPerStep);
 		const float positionsPerEncoderCount = (float)positionsPerRev/(float)maxValue;
 
@@ -250,12 +253,8 @@ static bool EncoderCalibration(bool firstIteration) noexcept
 	}
 
 	bool err;
-	uint32_t currentReading = absoluteEncoder->GetAbsolutePosition(err);		// get the current position in 0..(maxValue - 1)
+	uint32_t currentReading = absoluteEncoder->GetRawReading(err);		// get the current position in 0..(maxValue - 1)
 	//TODO handle error
-	if (ClosedLoop::reversePolarityMultiplier < 0)
-	{
-		currentReading = maxValue - 1 - currentReading;
-	}
 
 	switch (state)
 	{

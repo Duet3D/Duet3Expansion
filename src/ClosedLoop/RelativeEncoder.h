@@ -24,7 +24,7 @@ class RelativeEncoder : public Encoder
 {
 public:
 	// Constructors
-	RelativeEncoder() noexcept {}
+	RelativeEncoder(float p_countsPerStep) noexcept : Encoder(p_countsPerStep) {}
 
 	// Overridden virtual functions
 
@@ -32,10 +32,9 @@ public:
 	bool IsAbsolute() const noexcept override { return false; }
 
 	// Get the current reading
-	int32_t GetReading() noexcept override
+	int32_t GetReading(bool& err) noexcept override
 	{
-		bool error;	// TODO: How to handle error?
-		return GetRelativePosition(error) + offset;
+		return GetRelativePosition(err) + offset;
 	}
 
 protected:
