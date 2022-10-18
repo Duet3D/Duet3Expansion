@@ -50,10 +50,10 @@ int32_t AbsoluteEncoder::GetReading(bool& err) noexcept
 	}
 
 	// Return the position plus the accumulated rotations
-	return (fullRotations * (int)GetMaxValue()) + (int32_t)lastAngle + offset;
+	return (fullRotations * (int32_t)GetMaxValue()) + (int32_t)lastAngle + offset;
 }
 
-// Get the raw reading accounting for reverse polarity but not he correction table or the offset
+// Get the raw reading accounting for reverse polarity but not the correction table or the offset
 uint32_t AbsoluteEncoder::GetRawReading(bool& err) noexcept
 {
 	const uint32_t reading = GetAbsolutePosition(err);

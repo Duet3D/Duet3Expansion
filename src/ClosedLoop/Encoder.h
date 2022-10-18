@@ -17,7 +17,7 @@
 class Encoder
 {
 public:
-	Encoder(float p_countsPerStep) noexcept : countsPerStep(p_countsPerStep) { }
+	Encoder(float p_countsPerStep) noexcept : countsPerStep(p_countsPerStep), recipCountsPerStep(1.0/p_countsPerStep) { }
 	virtual ~Encoder() { }
 
 	// Get the type of this encoder
@@ -56,11 +56,15 @@ public:
 	// Return the number of encoder counts per step
 	float GetCountsPerStep() const noexcept { return countsPerStep; }
 
+	// Return the reciprocal of the number of encoder counts per step
+	float GetRecipCountsPerStep() const noexcept { return recipCountsPerStep; }
+
 protected:
 	// For adjusting the reading
 	int32_t offset = 0;
 	int32_t reversePolarityMultiplier = 1;
 	float countsPerStep;
+	float recipCountsPerStep;
 };
 
 #endif

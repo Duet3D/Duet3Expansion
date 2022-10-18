@@ -72,7 +72,7 @@ void QuadratureEncoderPdec::AppendDiagnostics(const StringRef &reply) noexcept
 
 void QuadratureEncoderPdec::AppendStatus(const StringRef& reply) noexcept
 {
-	reply.catf("encoder pulses/step: %.2f", (double)(countsPerStep / 4));
+	reply.catf(", encoder pulses/step: %.2f", (double)(countsPerStep / 4));
 }
 
 // Get the current position relative to the starting position
