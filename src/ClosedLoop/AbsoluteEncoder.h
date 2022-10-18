@@ -69,8 +69,7 @@ protected:
 	// Populate the LUT when we already have the nonvolatile data
 	void PopulateLUT(NonVolatileMemory& mem) noexcept;
 
-	// For calculating the relative position
-	uint32_t lastAngle = 0;
+	// For calculating the relative position (also lastAngle which is stored in the base class)
 	int32_t fullRotations = 0;
 	float stepAngle;
 

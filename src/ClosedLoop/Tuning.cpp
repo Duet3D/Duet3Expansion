@@ -208,7 +208,7 @@ static bool BasicTuning(bool firstIteration) noexcept
 
 static bool EncoderCalibration(bool firstIteration) noexcept
 {
-	enum class EncoderCalibrationState { setup = 0, running };
+	enum class EncoderCalibrationState { setup = 0, forwards, backwards };
 
 	static EncoderCalibrationState state = EncoderCalibrationState::setup;
 	static uint32_t positionsPerRev;			// this gets set to 1024 * the number of full steps per revolution, i.e. 204800 or 409600
@@ -271,22 +271,15 @@ static bool EncoderCalibration(bool firstIteration) noexcept
 		// Calculate the approximate offset
 		virtualStartPosition = ((uint64_t)currentReading * positionsPerRev)/maxValue;			// get the position we expect for this encoder reading to use as a reference
 		positionCounter = 0;
-		state = EncoderCalibrationState::running;
+		state = EncoderCalibrationState::forwards;
 		// no break
 
-	case EncoderCalibrationState::running:
+	case EncoderCalibrationState::forwards:
 		// Advancing slowly and recording positions
-		if (positionCounter == positionsPerRev)
+		if (positionCounter < positionsPerRev)
 		{
-			// We are finished
-			absoluteEncoder->StoreLUT(virtualStartPosition, positionsPerRev/positionIncrement);
-			ClosedLoop::FinishedEncoderCalibration();			// set target position to current position
-			return true;
-		}
-
-		// Record the current data point
-		// To avoid rounding error (caused by subtracting large values from each other repeatedly) in calculating the Fourier components, just calculate them from the error
-		{
+			// Record the current data point
+			// To avoid rounding error (caused by subtracting large values from each other repeatedly) in calculating the Fourier components, just calculate them from the error
 			const uint32_t position = (positionCounter + virtualStartPosition) % positionsPerRev;
 			const float expectedReading = ((float)position * (float)absoluteEncoder->GetMaxValue())/(float)positionsPerRev;
 			float error = (float)currentReading - expectedReading;
@@ -299,9 +292,46 @@ static bool EncoderCalibration(bool firstIteration) noexcept
 			absoluteEncoder->RecordDataPoint(angle, error);
 		}
 
-		// Move to the next position
+		// Move to the next position. After a complete revolution we continue another 256 positions without recording data, ready for the reverse pass.
 		ClosedLoop::SetMotorPhase(currentPosition + positionIncrement, 1.0);
 		positionCounter += positionIncrement;
+		if (positionCounter == positionsPerRev + 256)
+		{
+			state = EncoderCalibrationState::backwards;
+		}
+		break;
+
+	case EncoderCalibrationState::backwards:
+		if (positionCounter < positionsPerRev)
+		{
+			// Record the current data point
+			// To avoid rounding error (caused by subtracting large values from each other repeatedly) in calculating the Fourier components, just calculate them from the error
+			{
+				const uint32_t position = (positionCounter + virtualStartPosition) % positionsPerRev;
+				const float expectedReading = ((float)position * (float)absoluteEncoder->GetMaxValue())/(float)positionsPerRev;
+				float error = (float)currentReading - expectedReading;
+
+				// Allow for wrap around, e.g. expected reading = 16383, actual reading = 0 or vice versa
+				if (error > (float)maxValue/2) { error -= (float)maxValue; }
+				else if (error < -(float)maxValue/2) { error += (float)maxValue; }
+
+				const float angle = (TwoPi * position)/positionsPerRev;
+				absoluteEncoder->RecordDataPoint(angle, error);
+			}
+
+			// Retreating slowly and recording positions
+			if (positionCounter == 0)
+			{
+				// We are finished
+				absoluteEncoder->StoreLUT(virtualStartPosition, (2 * positionsPerRev)/positionIncrement);
+				ClosedLoop::FinishedEncoderCalibration();			// set target position to current position
+				return true;
+			}
+		}
+
+		// Move to the next position
+		ClosedLoop::SetMotorPhase(currentPosition - positionIncrement, 1.0);
+		positionCounter -= positionIncrement;
 		break;
 	}
 	return false;

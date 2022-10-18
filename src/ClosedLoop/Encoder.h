@@ -59,10 +59,14 @@ public:
 	// Return the reciprocal of the number of encoder counts per step
 	float GetRecipCountsPerStep() const noexcept { return recipCountsPerStep; }
 
+	// Get the angle within a rotation from the most recent reading
+	float GetLastAngle() const noexcept { return lastAngle; }
+
 protected:
 	// For adjusting the reading
 	int32_t offset = 0;
 	int32_t reversePolarityMultiplier = 1;
+	uint32_t lastAngle = 0;
 	float countsPerStep;
 	float recipCountsPerStep;
 };

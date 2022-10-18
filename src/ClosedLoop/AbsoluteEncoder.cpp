@@ -27,10 +27,23 @@ int32_t AbsoluteEncoder::GetReading(bool& err) noexcept
 		if (LUTLoaded)
 		{
 			const size_t windowStartIndex = currentAngle >> resolutionToLutShiftFactor;
-			const float windowStart = correctionLUT[windowStartIndex];
-			const uint32_t windowOffset = currentAngle & (1u << (resolutionToLutShiftFactor - 1));
-			//TODO use linear interpolation between bottom and top of window
-			currentAngle = lrintf(windowStart + windowOffset);
+			if (resolutionToLutShiftFactor == 0)
+			{
+				currentAngle = correctionLUT[windowStartIndex];
+			}
+			else
+			{
+				const uint32_t windowOffset = currentAngle & (1u << (resolutionToLutShiftFactor - 1));
+				if (windowOffset <= (1u << (resolutionToLutShiftFactor - 1)))
+				{
+					currentAngle = correctionLUT[windowStartIndex] + windowOffset;
+				}
+				else
+				{
+					currentAngle = correctionLUT[windowStartIndex + 1] - (1u << resolutionToLutShiftFactor) + windowOffset;
+				}
+				currentAngle &= ((1u << resolutionBits) - 1);
+			}
 		}
 
 		// Accumulate the full rotations if one has occurred
@@ -142,8 +155,8 @@ void AbsoluteEncoder::StoreLUT(uint32_t virtualStartPosition, uint32_t numReadin
 	NonVolatileMemory mem(NvmPage::closedLoop);
 	for (size_t harmonic = 0; harmonic < NumHarmonics; harmonic++)
 	{
-		const float sineCoefficient = sines[harmonic]/numReadingsTaken;
-		const float cosineCoefficient = cosines[harmonic]/numReadingsTaken;
+		const float sineCoefficient = 2.0 * sines[harmonic]/numReadingsTaken;
+		const float cosineCoefficient = (harmonic == 0) ? cosines[harmonic]/numReadingsTaken : 2.0 * cosines[harmonic]/numReadingsTaken;
 		mem.SetClosedLoopHarmonicValue(harmonic * 2, sineCoefficient);
 		mem.SetClosedLoopHarmonicValue(harmonic * 2 + 1, cosineCoefficient);
 #ifdef DEBUG
