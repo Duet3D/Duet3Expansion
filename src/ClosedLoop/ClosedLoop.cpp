@@ -135,6 +135,7 @@ namespace ClosedLoop
 
 	float	phaseShift;									// The desired shift in the position of the motor, where 1024 = 1 full step
 
+	uint16_t motorPhaseAtZeroReading;					// The motor phase when the (corrected) encoder reading prior to adding offset and full revolutions is zero
 	int16_t coilA;										// The current to run through coil A
 	int16_t coilB;										// The current to run through coil A
 
@@ -440,15 +441,16 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 		tuningError = minimalTunes[encoder->GetType().ToBaseType()];
 	}
 
-	//TODO need to get a lock here in case there is any movement
 	if (seenT)
 	{
+		//TODO do we need to get a lock here in case there is any movement?
+		SetClosedLoopEnabled(0, false, reply);
 		DeleteObject(encoder);
 		switch (tempEncoderType)
 		{
 		case EncoderType::none:
 		default:
-			encoder = nullptr;
+			// encoder is already nullptr
 			break;
 
 		case EncoderType::AS5047:
@@ -463,6 +465,7 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 			encoder = new TLI5012B(tempCPR, *Platform::sharedSpi, EncoderCsPin);
 			break;
 
+#if defined(EXP1HCLv1_0)
 		case EncoderType::linearQuadrature:
 			encoder = new QuadratureEncoderPdec(tempCPR);
 			break;
@@ -470,6 +473,7 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 		case EncoderType::rotaryQuadrature:
 			encoder = new QuadratureEncoderPdec(tempCPR);
 			break;
+#endif
 		}
 
 		if (encoder != nullptr)
@@ -704,7 +708,10 @@ void ClosedLoop::FinishedEncoderCalibration() noexcept
 	targetEncoderReading = encoder->GetReading(err);
 	//TODO handle error
 	targetMotorSteps = currentMotorSteps = (float)targetEncoderReading / encoder->GetCountsPerStep();
+//	encoder->AdjustOffset(qq);
 	PIDITerm = 0.0;																		// clear the integral term accumulator
+	//TODO set zero phase
+//	qq;
 }
 
 // This is called by tuning to execute a step
@@ -961,8 +968,8 @@ void ClosedLoop::ControlMotorCurrents(StepTimer::Ticks loopStartTime) noexcept
 	if (count < 100)
 	{
 		++count;
-		debugPrintf("target %" PRIi32 " actual %" PRIi32 " error %.1f P %.2f I %.2f D %.2f ps %.2f phase %u frac %.2f\n",
-			targetEncoderReading, currentEncoderReading, (double)currentError, (double)PIDPTerm, (double)PIDITerm, (double)PIDDTerm, (double)phaseShift, desiredStepPhase, (double)currentFraction);
+		debugPrintf("target %" PRIi32 " actual %" PRIi32 " error %.1f P %.2f I %.2f D %.2f ps %.2f msp %u phase %u frac %.2f\n",
+			targetEncoderReading, currentEncoderReading, (double)currentError, (double)PIDPTerm, (double)PIDITerm, (double)PIDDTerm, (double)phaseShift, measuredStepPhase, desiredStepPhase, (double)currentFraction);
 	}
 #endif
 }
@@ -1068,7 +1075,7 @@ void ClosedLoop::ResetError(size_t driver) noexcept
 # endif
 }
 
-// This is called before the driver mode is changed. Return true if success.
+// This is called before the driver mode is changed. Return true if success. Always succeeds if we are disabling closed loop.
 bool ClosedLoop::SetClosedLoopEnabled(size_t driver, bool enabled, const StringRef &reply) noexcept
 {
 	// Trying to enable closed loop

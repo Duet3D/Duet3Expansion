@@ -163,7 +163,7 @@ namespace Platform
 	static void InternalSetDriverIdle(size_t driver);
 #endif
 
-#if SUPPORT_SPI_SENSORS || defined(ATEIO)
+#if SUPPORT_SPI_SENSORS || SUPPORT_CLOSED_LOOP || defined(ATEIO)
 	SharedSpiDevice *sharedSpi = nullptr;
 #endif
 
@@ -870,7 +870,7 @@ void Platform::Init()
 # endif
 #endif	//SUPPORT_DRIVERS
 
-#if SUPPORT_SPI_SENSORS || defined(ATEIO)
+#if SUPPORT_SPI_SENSORS || SUPPORT_CLOSED_LOOP || defined(ATEIO)
 	// Set the pin functions
 	SetPinFunction(SSPIMosiPin, SSPIMosiPinPeriphMode);
 	SetPinFunction(SSPISclkPin, SSPISclkPinPeriphMode);

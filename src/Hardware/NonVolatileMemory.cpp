@@ -188,7 +188,7 @@ bool NonVolatileMemory::GetClosedLoopDataWritten() noexcept
 	return !buffer.closedLoopPage.neverWritten;
 }
 
-const float *NonVolatileMemory::GetClosedLoopHarmonicValues() noexcept
+const NonVolatileMemory::HarmonicDataElement *NonVolatileMemory::GetClosedLoopHarmonicValues() noexcept
 {
 	EnsureRead();
 	return buffer.closedLoopPage.harmonicData;
@@ -197,15 +197,15 @@ const float *NonVolatileMemory::GetClosedLoopHarmonicValues() noexcept
 void NonVolatileMemory::SetClosedLoopHarmonicValue(size_t index, float value) noexcept
 {
 	EnsureRead();
-	const float oldValue = buffer.closedLoopPage.harmonicData[index];
+	const float oldValue = buffer.closedLoopPage.harmonicData[index].f;
 	if (oldValue != value)
 	{
 		buffer.closedLoopPage.neverWritten = 0;
-		const uint32_t oldBits = *((uint32_t*)&buffer.closedLoopPage.harmonicData[index]);
-		buffer.closedLoopPage.harmonicData[index] = value;
+		const uint32_t oldBits = buffer.closedLoopPage.harmonicData[index].u;
+		buffer.closedLoopPage.harmonicData[index].f = value;
 
 		// If we are only changing 1s to 0s then we don't need to erase
-		const uint32_t newBits = *((uint32_t*)&buffer.closedLoopPage.harmonicData[index]);
+		const uint32_t newBits = buffer.closedLoopPage.harmonicData[index].u;
 		if ((~oldBits & newBits) != 0)
 		{
 			state = NvmState::eraseAndWriteNeeded;

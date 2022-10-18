@@ -7,7 +7,7 @@
 
 #include <RepRapFirmware.h>
 
-#if SUPPORT_CLOSED_LOOP && (defined(EXP1HCLv1_0) || defined(M23CL))
+#if SUPPORT_CLOSED_LOOP && defined(EXP1HCLv1_0)
 
 #include "QuadratureEncoderPdec.h"
 #include <hri_mclk_e54.h>

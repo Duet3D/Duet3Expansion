@@ -20,6 +20,15 @@ enum class NvmPage : uint8_t { common = 0, closedLoop };
 class NonVolatileMemory
 {
 public:
+	union HarmonicDataElement
+	{
+		float f;
+		uint32_t u;
+	};
+	
+	static_assert(sizeof(HarmonicDataElement) == sizeof(float));
+	static_assert(sizeof(HarmonicDataElement) == sizeof(uint32_t));
+
 	NonVolatileMemory(NvmPage whichPage) noexcept;
 
 	void *operator new(size_t, void *p) noexcept { return p; }			// for placement new
@@ -32,7 +41,7 @@ public:
 	void SetThermistorLowCalibration(unsigned int inputNumber, int8_t val) noexcept pre(page == NvmPage::common);
 	void SetThermistorHighCalibration(unsigned int inputNumber, int8_t val) noexcept pre(page == NvmPage::common);
 	bool GetClosedLoopDataWritten() noexcept pre(page == NvmPage::closedLoop);
-	const float *GetClosedLoopHarmonicValues() noexcept pre(page == NvmPage::closedLoop);
+	const HarmonicDataElement *GetClosedLoopHarmonicValues() noexcept pre(page == NvmPage::closedLoop);
 	void SetClosedLoopHarmonicValue(size_t index, float value) noexcept pre(page == NvmPage::closedLoop; index < MaxHarmonicDataSlots);
 
 private:
@@ -63,7 +72,7 @@ private:
 		// start with 2 bytes of padding if you will be using 32-bit quantities, so as to 4-byte align them
 		uint16_t neverWritten : 1,		// Will be 1 if no calibration values are present (will be initialised to 1)
 				 zero : 15;
-		float harmonicData[MaxHarmonicDataSlots];
+		HarmonicDataElement harmonicData[MaxHarmonicDataSlots];
 
 		uint8_t spare[512 - 4 - sizeof(harmonicData)];
 	};

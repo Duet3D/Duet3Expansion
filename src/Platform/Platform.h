@@ -18,7 +18,7 @@
 # include "ClosedLoop/ClosedLoop.h"
 #endif
 
-#if SUPPORT_SPI_SENSORS || defined(ATEIO)
+#if SUPPORT_SPI_SENSORS || SUPPORT_CLOSED_LOOP || defined(ATEIO)
 # include <Hardware/SharedSpiDevice.h>
 #endif
 
@@ -134,7 +134,7 @@ namespace Platform
 #endif	//SUPPORT_DRIVERS
 
 	// Public functions
-#if SUPPORT_SPI_SENSORS || defined(ATEIO)
+#if SUPPORT_SPI_SENSORS || SUPPORT_CLOSED_LOOP || defined(ATEIO)
 	extern SharedSpiDevice *sharedSpi;
 	inline SharedSpiDevice& GetSharedSpi() noexcept { return *sharedSpi; }
 #endif

@@ -10,7 +10,7 @@
 
 #include "RelativeEncoder.h"
 
-#if SUPPORT_CLOSED_LOOP && (defined(EXP1HCLv1_0) || defined(M23CL))
+#if SUPPORT_CLOSED_LOOP && defined(EXP1HCLv1_0)
 
 #include <General/FreelistManager.h>
 

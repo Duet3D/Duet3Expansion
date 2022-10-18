@@ -96,7 +96,7 @@ void AbsoluteEncoder::PopulateLUT(NonVolatileMemory& mem) noexcept
 	const size_t LUTLength = GetNumLUTEntries();
 	constexpr unsigned int MaxIterations = 5;
 	unsigned int actualMaxIterationNumber = 0;
-	const float *harmonicData = mem.GetClosedLoopHarmonicValues();
+	const NonVolatileMemory::HarmonicDataElement *harmonicData = mem.GetClosedLoopHarmonicValues();
 	minLUTCorrection = std::numeric_limits<float>::infinity();
 	maxLUTCorrection = -std::numeric_limits<float>::infinity();
 	for (size_t index = 0; index < LUTLength; index++)
@@ -113,8 +113,8 @@ void AbsoluteEncoder::PopulateLUT(NonVolatileMemory& mem) noexcept
 			float correction = 0.0;
 			for (size_t harmonic = 0; harmonic<NumHarmonics; harmonic++)
 			{
-				const float sineCoefficient = harmonicData[2 * harmonic];
-				const float cosineCoefficient = harmonicData[2 * harmonic + 1];
+				const float sineCoefficient = harmonicData[2 * harmonic].f;
+				const float cosineCoefficient = harmonicData[2 * harmonic + 1].f;
 				const float angle = harmonic * basicAngle;
 				correction -= sineCoefficient * sinf(angle + correctionAngle) + cosineCoefficient * cosf(angle + correctionAngle);
 			}
