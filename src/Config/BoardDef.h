@@ -27,6 +27,8 @@
 # include "ATEIO.h"
 #elif defined(RPI_PICO)
 # include "RPI_PICO.h"
+#elif defined(M23CL)
+# include "M23CL.h"
 #else
 # error Board type not defined
 #endif

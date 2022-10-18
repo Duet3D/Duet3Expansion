@@ -53,7 +53,7 @@ extern "C" void SERCOM3_3_Handler()
 	uart0.Interrupt3();
 }
 
-#elif defined(EXP1HCLv1_0)
+#elif defined(EXP1HCLv1_0) || defined(M23CL)
 
 // Set up an optional serial port on the IO1 port via SERCOM2
 void SerialPortInit(AsyncSerial*) noexcept
@@ -93,14 +93,14 @@ extern "C" void SERCOM2_3_Handler()
 
 void DeviceInit() noexcept
 {
-#if defined(EXP1HCLv1_0)
+#if defined(EXP1HCLv1_0) || defined(M23CL)
 	pinMode(ClockGenPin, OUTPUT_LOW);			// default the TMC clock to its internal clock until we program the clock generator
 #endif
 	AnalogIn::Init(NvicPriorityAdc);
 	AnalogOut::Init();
 	analogInTask.Create(AnalogIn::TaskLoop, "AIN", nullptr, TaskPriority::AinPriority);
 
-#if defined(EXP1HCLv1_0) && defined(DEBUG)
+#if (defined(EXP1HCLv1_0) || defined(M23CL)) && defined(DEBUG)
 	Platform::SetInterruptPriority(SERCOM2_0_IRQn, 4, NvicPriorityUart);
 #endif
 }

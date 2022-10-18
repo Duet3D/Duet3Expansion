@@ -324,7 +324,7 @@ namespace Platform
 		NVIC_SetPriority(StepTcIRQn, NvicPriorityStep);
 # if defined(EXP3HC)
 		NVIC_SetPriority(CAN1_IRQn, NvicPriorityCan);
-# elif defined(EXP1HCLv1_0)
+# elif defined(EXP1HCLv1_0) || defined(M23CL)
 		NVIC_SetPriority(CAN0_IRQn, NvicPriorityCan);
 # endif
 		// Set UART interrupt priority. Each SERCOM has up to 4 interrupts, numbered sequentially.
@@ -501,7 +501,7 @@ namespace Platform
 		return CanId::SammyC21DefaultAddress;
 #elif defined(EXP1XD)
 		return CanId::Exp1XDBoardDefaultAddress;
-#elif defined(EXP1HCLv1_0)
+#elif defined(EXP1HCLv1_0) || defined(M23CL)
 		return CanId::Exp1HCEBoardDefaultAddress;
 #elif defined(ATECM)
 		return CanId::ATECMBoardDefaultAddress;
@@ -553,7 +553,7 @@ static void Platform::InitLeds()
 			IoPort::SetPinMode(pin, (LedActiveHighV10) ? OUTPUT_LOW : OUTPUT_HIGH);
 		}
 	}
-#elif !(defined(EXP1HCLv1_0) && defined(DEBUG))		// EXP1HCL has the LEDs connected to the SWD pins
+#elif !((defined(EXP1HCLv1_0) || defined(M23CL)) && defined(DEBUG))		// EXP1HCL has the LEDs connected to the SWD pins
 	for (Pin pin : LedPins)
 	{
 		IoPort::SetPinMode(pin, (LedActiveHigh) ? OUTPUT_LOW : OUTPUT_HIGH);

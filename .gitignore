@@ -35,8 +35,6 @@
 /.settings/
 
 # Output folders
-/EXP1HCE/
-/EXP1HCE-Debug/
 /EXP1XD/
 /EXP1XD-Debug/
 /EXP3HC/
@@ -50,6 +48,7 @@
 /ATECM/
 /ATEIO/
 /EXP1HCL/
-/EXP1HCL_Debug/
-/EXP1HCLv0_3/
+/EXP1HCL-Debug/
 /RPiPico/
+/M23CL/
+/M23CL-Debug/
