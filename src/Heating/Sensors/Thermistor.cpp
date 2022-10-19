@@ -28,7 +28,12 @@
 // Create an instance with default values
 Thermistor::Thermistor(unsigned int sensorNum, bool p_isPT1000)
 	: SensorWithPort(sensorNum, (p_isPT1000) ? "PT1000" : "Thermistor"), adcFilterChannel(-1),
-	  r25(DefaultThermistorR25), beta(DefaultThermistorBeta), shC(DefaultThermistorC), seriesR(DefaultThermistorSeriesR),
+#if defined(M23CL)
+	  r25(DefaultThermistorR25_M23CL), beta(DefaultThermistorBeta_M23CL), shC(DefaultThermistorC_M23CL),
+#else
+	  r25(DefaultThermistorR25), beta(DefaultThermistorBeta), shC(DefaultThermistorC),
+#endif
+	  seriesR(DefaultThermistorSeriesR),
 	  isPT1000(p_isPT1000), adcLowOffset(0), adcHighOffset(0)
 {
 	CalcDerivedParameters();
