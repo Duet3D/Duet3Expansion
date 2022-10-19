@@ -48,6 +48,7 @@ constexpr float Tmc5160SenseResistor = 0.082;
 
 constexpr Pin GlobalTmc51xxEnablePin = PortAPin(5);
 constexpr Pin GlobalTmc51xxCSPin = PortAPin(10);
+constexpr Pin DriverSdModePin = PortAPin(20);
 
 #define TMC51xx_USES_SERCOM	1
 Sercom * const SERCOM_TMC51xx = SERCOM0;
@@ -64,7 +65,6 @@ PortGroup * const StepPio = &(PORT->Group[1]);				// the PIO that all the step p
 constexpr Pin StepPins[NumDrivers] = { PortBPin(23) };
 constexpr Pin DirectionPins[NumDrivers] = { PortAPin(27) };
 constexpr Pin DiagPins[NumDrivers] = { PortAPin(21) };
-constexpr Pin DriverSdModePin = PortAPin(20);
 
 #define SUPPORT_THERMISTORS		1
 #define SUPPORT_SPI_SENSORS		0							// we have no SPI temperature sensors but we need the SharedSPI channel for the encoder

@@ -1395,6 +1395,10 @@ void SmartDrivers::Init() noexcept
 	pinMode(GlobalTmc51xxEnablePin, OUTPUT_HIGH);
 	pinMode(GlobalTmc51xxCSPin, OUTPUT_HIGH);
 
+#if defined(M23CL)
+	pinMode(DriverSdModePin, OUTPUT_HIGH);									// high selects step/dir, low selects ramp generator
+#endif
+
 	SetPinFunction(TMC51xxMosiPin, TMC51xxMosiPinPeriphMode);
 	SetPinFunction(TMC51xxMisoPin, TMC51xxMisoPinPeriphMode);
 	SetPinFunction(TMC51xxSclkPin, TMC51xxSclkPinPeriphMode);
