@@ -11,43 +11,48 @@
 
 #include <Hardware/NonVolatileMemory.h>
 
-AbsoluteEncoder::AbsoluteEncoder(float p_stepAngle, unsigned int p_resolutionBits) noexcept
-	: Encoder((1u << p_resolutionBits) * p_stepAngle/360.0),
-	  stepAngle(p_stepAngle),
+AbsoluteEncoder::AbsoluteEncoder(uint32_t p_stepsPerRev, unsigned int p_resolutionBits) noexcept
+	: Encoder(p_stepsPerRev, (1u << p_resolutionBits) / (float)p_stepsPerRev),
 	  resolutionBits(p_resolutionBits),
 	  resolutionToLutShiftFactor((p_resolutionBits < LutResolutionBits) ? 0 : p_resolutionBits - LutResolutionBits)
 {}
 
-int32_t AbsoluteEncoder::GetReading(bool& err) noexcept
+// Take a reading and store currentCount, currentPhasePosition, rawAngle and currentAngle. Return true if success.
+bool AbsoluteEncoder::TakeReading() noexcept
 {
-	uint32_t currentAngle = GetRawReading(err);
+	bool err = GetRawReading();
 	if (!err)
 	{
+		rawAngle = (IsBackwards()) ? GetMaxValue() - 1 - rawReading : rawReading;
+		uint32_t newAngle = rawAngle;
+
 		// Apply LUT correction (if the LUT is loaded)
 		if (LUTLoaded)
 		{
-			const size_t windowStartIndex = currentAngle >> resolutionToLutShiftFactor;
+			const size_t windowStartIndex = newAngle >> resolutionToLutShiftFactor;
 			if (resolutionToLutShiftFactor == 0)
 			{
-				currentAngle = correctionLUT[windowStartIndex];
+				newAngle = correctionLUT[windowStartIndex];
 			}
 			else
 			{
-				const uint32_t windowOffset = currentAngle & (1u << (resolutionToLutShiftFactor - 1));
+				const uint32_t windowOffset = newAngle & (1u << (resolutionToLutShiftFactor - 1));
 				if (windowOffset <= (1u << (resolutionToLutShiftFactor - 1)))
 				{
-					currentAngle = correctionLUT[windowStartIndex] + windowOffset;
+					newAngle = correctionLUT[windowStartIndex] + windowOffset;
 				}
 				else
 				{
-					currentAngle = correctionLUT[windowStartIndex + 1] - (1u << resolutionToLutShiftFactor) + windowOffset;
+					newAngle = correctionLUT[windowStartIndex + 1] - (1u << resolutionToLutShiftFactor) + windowOffset;
 				}
-				currentAngle &= ((1u << resolutionBits) - 1);
+				newAngle &= ((1u << resolutionBits) - 1);
 			}
 		}
 
+		currentPhasePosition = (((newAngle * stepsPerRev * 1024u) >> resolutionBits) + zeroCountPhasePosition) & 4095u;
+
 		// Accumulate the full rotations if one has occurred
-		const int32_t difference = (int32_t)currentAngle - (int32_t)lastAngle;
+		const int32_t difference = (int32_t)newAngle - (int32_t)currentAngle;
 		if (difference > (int32_t)(GetMaxValue()/2))
 		{
 			// Gone from a low value to a high value, so going down and wrapped round
@@ -59,24 +64,33 @@ int32_t AbsoluteEncoder::GetReading(bool& err) noexcept
 			++fullRotations;
 		}
 
-		lastAngle = currentAngle;
+		currentAngle = newAngle;
+		currentCount = (fullRotations * (int32_t)GetMaxValue()) + (int32_t)currentAngle;
 	}
 
-	// Return the position plus the accumulated rotations
-	return (fullRotations * (int32_t)GetMaxValue()) + (int32_t)lastAngle + offset;
+	return err;
 }
 
-// Get the raw reading accounting for reverse polarity but not the correction table or the offset
-uint32_t AbsoluteEncoder::GetRawReading(bool& err) noexcept
+// Clear the accumulated full rotations so as to get the count back to a smaller number
+void AbsoluteEncoder::ClearFullRevs() noexcept
 {
-	const uint32_t reading = GetAbsolutePosition(err);
-	return (IsBackwards()) ? GetMaxValue() - 1 - reading : reading;
+	fullRotations = 0;
+	currentCount = (int32_t)currentAngle;
+}
+
+// Tell the encoder what the step phase is at a particular count
+void AbsoluteEncoder::SetKnownPhaseAtCount(uint32_t phase, int32_t count) noexcept
+{
+	count %= (int32_t)GetCountsPerRev();
+	if (count < 0) { count += (int32_t)GetCountsPerRev(); }
+	const uint32_t relativePhasePosition = ((uint32_t)count * stepsPerRev * 1024u) >> resolutionBits;
+	zeroCountPhasePosition = (phase - relativePhasePosition) & 4095u;
 }
 
 bool AbsoluteEncoder::LoadLUT() noexcept
 {
 	NonVolatileMemory mem(NvmPage::closedLoop);
-	if (!mem.GetClosedLoopDataWritten()) { return false; }
+	if (!mem.GetClosedLoopDataValid()) { return false; }
 
 	PopulateLUT(mem);
 	return true;
@@ -144,9 +158,6 @@ void AbsoluteEncoder::PopulateLUT(NonVolatileMemory& mem) noexcept
 
 void AbsoluteEncoder::StoreLUT(uint32_t virtualStartPosition, uint32_t numReadingsTaken) noexcept
 {
-	// Update the sine coefficient for the zero'th harmonic (i.e. constant term) to account for where we started
-	//TODO
-
 #ifdef DEBUG
 	debugPrintf("Min/max errors [%.1f %.1f]\nSin/cos coefficients:", (double)minCalibrationError, (double)maxCalibrationError);
 #endif
@@ -163,6 +174,7 @@ void AbsoluteEncoder::StoreLUT(uint32_t virtualStartPosition, uint32_t numReadin
 		debugPrintf(" [%.3f %.3f]", (double)sineCoefficient, (double)cosineCoefficient);
 #endif
 	}
+	mem.SetClosedLoopDataValid(true);
 #ifdef DEBUG
 	debugPrintf("\n");
 #endif
@@ -187,7 +199,9 @@ void AbsoluteEncoder::ClearLUT() noexcept
 void AbsoluteEncoder::ScrubLUT() noexcept
 {
 	ClearLUT();
-	StoreLUT(0, 1);
+	NonVolatileMemory mem(NvmPage::closedLoop);
+	mem.SetClosedLoopDataValid(false);
+	mem.EnsureWritten();
 }
 
 void AbsoluteEncoder::RecordDataPoint(float angle, float error) noexcept

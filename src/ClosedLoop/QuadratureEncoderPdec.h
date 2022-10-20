@@ -21,7 +21,7 @@ public:
 	void* operator new(size_t sz) noexcept { return FreelistManager::Allocate<QuadratureEncoderPdec>(); }
 	void operator delete(void* p) noexcept { FreelistManager::Release<QuadratureEncoderPdec>(p); }
 
-	QuadratureEncoderPdec(float p_countsPerStep) noexcept : RelativeEncoder(p_countsPerStep), lastCount(0), counterHigh(0) {}
+	QuadratureEncoderPdec(uint32_t p_stepsPerRev, uint32_t p_countsPerRev) noexcept : RelativeEncoder(p_stepsPerRev, p_countsPerRev), lastCount(0), counterHigh(0) {}
 	~QuadratureEncoderPdec() { QuadratureEncoderPdec::Disable(); }
 
 	EncoderType GetType() const noexcept override { return EncoderType::rotaryQuadrature; }

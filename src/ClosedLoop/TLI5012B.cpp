@@ -35,10 +35,10 @@ void TLI5012B::Disable() noexcept
 	//TODO
 }
 
-uint32_t TLI5012B::GetAbsolutePosition(bool& error) noexcept
+bool TLI5012B::GetRawReading() noexcept
 {
 	//TODO
-	return 0;
+	return false;
 }
 
 void TLI5012B::AppendDiagnostics(const StringRef &reply) noexcept

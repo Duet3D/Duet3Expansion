@@ -32,17 +32,29 @@ class AbsoluteEncoder : public Encoder
 {
 public:
 	// Constructors
-	AbsoluteEncoder(float p_stepAngle, unsigned int p_resolutionBits) noexcept;
+	AbsoluteEncoder(uint32_t p_stepsPerRev, unsigned int p_resolutionBits) noexcept;
 
 	// Overridden virtual functions
 	// Return true if this is an absolute encoder
 	bool IsAbsolute() const noexcept override { return true; }
 
 	// Get the current reading
-	int32_t GetReading(bool& err) noexcept override;
+	bool TakeReading() noexcept override;
 
-	// Get the raw reading accounting for reverse polarity but not he correction table or the offset
-	uint32_t GetRawReading(bool& err) noexcept;
+	// Tell the encoder what the step phase is at a particular count
+	void SetKnownPhaseAtCount(uint32_t phase, int32_t count) noexcept override;
+
+	// Clear the accumulated full rotations so as to get the count back to a smaller number
+	void ClearFullRevs() noexcept override;
+
+	// Get the angle within a rotation from the most recent reading, corrected for direction only
+	uint32_t GetRawAngle() const noexcept { return rawAngle; }
+
+	// Get the corrected angle within a rotation from the most recent reading
+	uint32_t GetCurrentAngle() const noexcept { return currentAngle; }
+
+	// Get the counts per revolution
+	uint32_t GetCountsPerRev() const noexcept { return 1u << resolutionBits; }
 
 	// Lookup table (LUT) management
 	void RecordDataPoint(float angle, float error) noexcept;
@@ -56,33 +68,36 @@ public:
 	unsigned int GetResolutionBits() const noexcept { return resolutionBits; }
 	unsigned int GetResolutionToLutShiftFactor() const noexcept { return resolutionToLutShiftFactor; }
 
-	float GetDegreesPerStep() const noexcept { return stepAngle; }
-
 protected:
+	// This must be defined to set rawReading to a value between 0 and one below GetMaxValue()
+	virtual bool GetRawReading() noexcept = 0;
+
+	uint32_t rawReading = 0;				// the value read from the encoder
+	uint32_t rawAngle = 0;					// the value after correcting for direction
+	uint32_t currentAngle = 0;				// the value after correcting for eccentricity
+	int32_t fullRotations = 0;				// the number of full rotations counted
+	float stepAngle;
+
+	// For diagnostics
+	float minLUTCorrection = 0.0, maxLUTCorrection = 0.0;			// min and max corrections, for reporting in diagnostics
+
+private:
 	static constexpr unsigned int NumHarmonics = 17;				// store harmonics 0-16
 	static constexpr unsigned int LutResolutionBits = 10;
 	static constexpr size_t NumLutEntries = 1ul << LutResolutionBits;
 
-	// This must be defined to return a value between 0 and one below GetMaxValue()
-	virtual uint32_t GetAbsolutePosition(bool& error) noexcept = 0;
-
 	// Populate the LUT when we already have the nonvolatile data
 	void PopulateLUT(NonVolatileMemory& mem) noexcept;
 
-	// For calculating the relative position (also lastAngle which is stored in the base class)
-	int32_t fullRotations = 0;
-	float stepAngle;
-
-	// LUT vars
-	bool LUTLoaded = false;
-	float minCalibrationError = 0.0, maxCalibrationError = 0.0;		// min and max corrections, for reporting in diagnostics
-	float minLUTCorrection = 0.0, maxLUTCorrection = 0.0;			// min and max corrections, for reporting in diagnostics
-	uint16_t correctionLUT[NumLutEntries];							// mapping from raw encoder reading to corrected reading
-	float sines[NumHarmonics], cosines[NumHarmonics];
-
-private:
+	// General variables
 	const unsigned int resolutionBits;								// encoder has (2 ** resolutionShiftFactor) counts/revolution
 	const unsigned int resolutionToLutShiftFactor;					// shift the resolution right by this number of bits to get the LUT resolution
+
+	// LUT variables
+	bool LUTLoaded = false;
+	float minCalibrationError = 0.0, maxCalibrationError = 0.0;		// min and max corrections, for reporting in diagnostics
+	uint16_t correctionLUT[NumLutEntries];							// mapping from raw encoder reading to corrected reading
+	float sines[NumHarmonics], cosines[NumHarmonics];
 };
 
 # endif

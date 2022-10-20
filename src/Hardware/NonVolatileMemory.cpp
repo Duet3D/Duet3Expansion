@@ -182,10 +182,28 @@ void NonVolatileMemory::SetThermistorCalibration(unsigned int inputNumber, int8_
 	}
 }
 
-bool NonVolatileMemory::GetClosedLoopDataWritten() noexcept
+bool NonVolatileMemory::GetClosedLoopDataValid() noexcept
 {
 	EnsureRead();
-	return !buffer.closedLoopPage.neverWritten;
+	return !buffer.closedLoopPage.notValid;
+}
+
+void NonVolatileMemory::SetClosedLoopDataValid(bool valid) noexcept
+{
+	EnsureRead();
+	if (valid)
+	{
+		if (buffer.closedLoopPage.notValid)
+		{
+			buffer.closedLoopPage.notValid = 0;
+			state = NvmState::writeNeeded;
+		}
+	}
+	else if (!buffer.closedLoopPage.notValid)
+	{
+		buffer.closedLoopPage.notValid = 1;
+		state = NvmState::eraseAndWriteNeeded;
+	}
 }
 
 const NonVolatileMemory::HarmonicDataElement *NonVolatileMemory::GetClosedLoopHarmonicValues() noexcept
@@ -200,7 +218,7 @@ void NonVolatileMemory::SetClosedLoopHarmonicValue(size_t index, float value) no
 	const float oldValue = buffer.closedLoopPage.harmonicData[index].f;
 	if (oldValue != value)
 	{
-		buffer.closedLoopPage.neverWritten = 0;
+		buffer.closedLoopPage.notValid = 0;
 		const uint32_t oldBits = buffer.closedLoopPage.harmonicData[index].u;
 		buffer.closedLoopPage.harmonicData[index].f = value;
 

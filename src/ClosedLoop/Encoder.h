@@ -17,7 +17,8 @@
 class Encoder
 {
 public:
-	Encoder(float p_countsPerStep) noexcept : countsPerStep(p_countsPerStep), recipCountsPerStep(1.0/p_countsPerStep) { }
+	Encoder(uint32_t p_stepsPerRev, float p_countsPerStep) noexcept : stepsPerRev(p_stepsPerRev), countsPerStep(p_countsPerStep), stepsPerCount(1.0/p_countsPerStep) { }
+
 	virtual ~Encoder() { }
 
 	// Get the type of this encoder
@@ -33,7 +34,7 @@ public:
 	virtual void Disable() noexcept = 0;
 
 	// Get the current reading after correcting it and adding the offset
-	virtual int32_t GetReading(bool& err) noexcept = 0;
+	virtual bool TakeReading() noexcept = 0;
 
 	// Get diagnostic information and append it to a string
 	virtual void AppendDiagnostics(const StringRef& reply) noexcept = 0;
@@ -44,8 +45,14 @@ public:
 	// Return true if this is an absolute encoder, false if it is relative
 	virtual bool IsAbsolute() const noexcept = 0;
 
-	// Offset management
-	void AdjustOffset(int32_t newOffset) noexcept { offset += newOffset; }
+	// Tell the encoder what the step phase is at a particular count
+	virtual void SetKnownPhaseAtCount(uint32_t phase, int32_t count) noexcept = 0;
+
+	// Clear the accumulated full rotations so as to get the count back to a smaller number
+	virtual void ClearFullRevs() noexcept = 0;
+
+	// Get the accumulated count
+	int32_t GetCurrentCount() const noexcept { return currentCount; }
 
 	// Encoder polarity. Changing this will change subsequent encoder readings, so call AdjustOffset afterwards.
 	void SetBackwards(bool backwards) noexcept { reversePolarityMultiplier = (backwards) ? -1 : 1; }
@@ -56,19 +63,23 @@ public:
 	// Return the number of encoder counts per step
 	float GetCountsPerStep() const noexcept { return countsPerStep; }
 
-	// Return the reciprocal of the number of encoder counts per step
-	float GetRecipCountsPerStep() const noexcept { return recipCountsPerStep; }
+	// Return the number of encoder steps per count
+	float GetStepsPerCount() const noexcept { return stepsPerCount; }
 
-	// Get the angle within a rotation from the most recent reading
-	float GetLastAngle() const noexcept { return lastAngle; }
+	// Return the number of steps per revolution
+	uint32_t GetStepsPerRev() const noexcept { return stepsPerRev; }
+
+	// Get the current phase position from the last reading - this may be more accurate that the fractional part of GetCurrentMotorSteps()
+	uint32_t GetCurrentPhasePosition() const noexcept { return currentPhasePosition; }
 
 protected:
-	// For adjusting the reading
-	int32_t offset = 0;
+	uint32_t stepsPerRev;
 	int32_t reversePolarityMultiplier = 1;
-	uint32_t lastAngle = 0;
+	uint32_t currentPhasePosition = 0;
+	int32_t currentCount = 0;
+	uint32_t zeroCountPhasePosition = 0;
 	float countsPerStep;
-	float recipCountsPerStep;
+	float stepsPerCount;
 };
 
 #endif

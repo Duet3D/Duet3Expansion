@@ -61,9 +61,9 @@ static inline bool CheckResponse(uint16_t response) noexcept
 	return CheckEvenParity(response) && (response & 0x4000) == 0;
 }
 
-AS5047D::AS5047D(float stepAngle, SharedSpiDevice& spiDev, Pin p_csPin) noexcept
+AS5047D::AS5047D(float p_stepAngle, SharedSpiDevice& spiDev, Pin p_csPin) noexcept
 	: SpiEncoder(spiDev, AS5047ClockFrequency, SpiMode::mode1, false, p_csPin),
-	  AbsoluteEncoder(stepAngle, AS5047DResolutionBits)
+	  AbsoluteEncoder(p_stepAngle, AS5047DResolutionBits)
 {
 }
 
@@ -124,7 +124,7 @@ void AS5047D::Disable() noexcept
 }
 
 // Return the current position as reported by the encoder
-uint32_t AS5047D::GetAbsolutePosition(bool& error) noexcept
+bool AS5047D::GetRawReading() noexcept
 {
 	if (spi.Select(0))			// get the mutex and set the clock rate
 	{
@@ -135,13 +135,12 @@ uint32_t AS5047D::GetAbsolutePosition(bool& error) noexcept
 		spi.Deselect();			// release the mutex
 		if (ok && CheckResponse(response))
 		{
-			error = false;
-			return response & 0x3FFF;
+			rawReading = response & 0x3FFF;
+			return false;
 		}
 	}
 
-	error = true;
-	return 0;
+	return true;
 }
 
 // Get the diagnostic register and the error flags register
@@ -166,8 +165,8 @@ bool AS5047D::GetDiagnosticRegisters(DiagnosticRegisters& regs) noexcept
 // Get diagnostic information and append it to a string
 void AS5047D::AppendDiagnostics(const StringRef &reply) noexcept
 {
-	reply.catf(", encoder full rotations %d", (int) fullRotations);
-	reply.catf(", encoder last angle %d", (int) lastAngle);
+	reply.catf(", encoder full rotations %" PRIi32, fullRotations);
+	reply.catf(", encoder last angle %" PRIu32, currentAngle);
 	reply.catf(", minCorrection=%.1f, maxCorrection=%.1f", (double)minLUTCorrection, (double)maxLUTCorrection);
 	DiagnosticRegisters regs;
 	if (GetDiagnosticRegisters(regs))
