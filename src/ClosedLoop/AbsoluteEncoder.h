@@ -70,6 +70,7 @@ public:
 	unsigned int GetResolutionBits() const noexcept { return resolutionBits; }
 	unsigned int GetResolutionToLutShiftFactor() const noexcept { return resolutionToLutShiftFactor; }
 
+	void ReportCalibrationResult(const StringRef& reply) const noexcept;
 	void ReportCalibrationCheckResult(const StringRef& reply) const noexcept;
 
 protected:
@@ -85,6 +86,7 @@ protected:
 	// For diagnostics
 	float minLUTCorrection = 0.0, maxLUTCorrection = 0.0;			// min and max corrections, for reporting in diagnostics
 	float minLUTError = 0.0, maxLUTError = 0.0;						// min and max errors when the calibration was checked, for reporting in diagnostics
+	float meanCorrection = 0.0, meanError = 0.0;
 	float rmsCorrection = 0.0, rmsError = 0.0;
 
 private:

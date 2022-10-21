@@ -161,7 +161,8 @@ namespace ClosedLoop
 
 	bool 	stall = false;								// Has the closed loop error threshold been exceeded?
 	bool 	preStall = false;							// Has the closed loop warning threshold been exceeded?
-	bool haveNewCalibrationCheckResult = false;
+	bool	haveNewCalibrationResult = false;
+	bool	haveNewCalibrationCheckResult = false;
 
 	float measuredCountsPerStep;
 	float tuningHysteresis;
@@ -419,6 +420,7 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 		Ki = tempKi;
 		Kd = tempKd;
 		PIDITerm = 0.0;
+		derivativeFilter.Reset();
 	}
 
 	if (seenH)
@@ -556,10 +558,18 @@ GCodeResult ClosedLoop::ProcessM569Point6(const CanMessageGeneric &msg, const St
 		}
 
 		// If we were checking the calibration, report the result
-		if (haveNewCalibrationCheckResult && encoder->IsAbsolute())
+		if (encoder->IsAbsolute())
 		{
-			((const AbsoluteEncoder*)encoder)->ReportCalibrationCheckResult(reply);
-			haveNewCalibrationCheckResult = false;
+			if (haveNewCalibrationResult)
+			{
+				((const AbsoluteEncoder*)encoder)->ReportCalibrationResult(reply);
+				haveNewCalibrationResult = false;
+			}
+			if (haveNewCalibrationCheckResult)
+			{
+				((const AbsoluteEncoder*)encoder)->ReportCalibrationCheckResult(reply);
+				haveNewCalibrationCheckResult = false;
+			}
 		}
 
 #if BASIC_TUNING_DEBUG
@@ -574,13 +584,13 @@ GCodeResult ClosedLoop::ProcessM569Point6(const CanMessageGeneric &msg, const St
 		if (tuningError == 0)
 		{
 #if BASIC_TUNING_DEBUG
-			reply.catf("OER %" PRIi32 " AER %.1f DER %.1f DSP %u OMSP %u OCMS %.3f\n",
+			reply.lcatf("OER %" PRIi32 " AER %.1f DER %.1f DSP %u OMSP %u OCMS %.3f",
 						originalRawEncoderReading, (double)originalAssumedEncoderReading, (double)originalDesiredEncoderReading,
 							originalDesiredStepPhase, originalMeasuredStepPhase, (double)originalCurrentMotorSteps);
-			reply.catf("OCM %" PRIi32 " FER %" PRIi32 " FMSP %u FCMS %.3f\n",
+			reply.lcatf("OCM %" PRIi32 " FER %" PRIi32 " FMSP %u FCMS %.3f",
 						offsetCorrectionMade, finalRawEncoderReading, finalMeasuredStepPhase, (double)finalCurrentMotorSteps);
 #endif
-			reply.catf("Driver %u.0 tuned successfully, measured hysteresis %.2f step", CanInterface::GetCanAddress(), (double)tuningHysteresis);
+			reply.lcatf("Driver %u.0 tuned successfully, measured hysteresis %.2f step", CanInterface::GetCanAddress(), (double)tuningHysteresis);
 			if (tuningHysteresis <= MaxSafeHysteresis)
 			{
 				return GCodeResult::ok;
@@ -592,7 +602,7 @@ GCodeResult ClosedLoop::ProcessM569Point6(const CanMessageGeneric &msg, const St
 		// Tuning failed so report the errors
 		if ((~prevTuningError & tuningError) != 0)
 		{
-			reply.catf("Driver %u.0 new tuning error(s):", CanInterface::GetCanAddress());
+			reply.lcatf("Driver %u.0 new tuning error(s):", CanInterface::GetCanAddress());
 			ReportTuningErrors(~prevTuningError & tuningError, reply);
 		}
 		if ((prevTuningError & tuningError) != 0)
@@ -653,7 +663,12 @@ void ClosedLoop::StartTuning(uint8_t tuningMode) noexcept
 // Call this when we have stopped basic tuning movement and are ready to switch to closed loop control
 void ClosedLoop::FinishedBasicTuning(float forwardSlope, float reverseSlope, float forwardOrigin, float reverseOrigin, float forwardXmean, float reverseXmean) noexcept
 {
+	tuningError &= ~(TUNE_ERR_TOO_MUCH_MOTION | TUNE_ERR_TOO_LITTLE_MOTION | TUNE_ERR_INCONSISTENT_MOTION);
+	prevTuningError &= ~(TUNE_ERR_TOO_MUCH_MOTION | TUNE_ERR_TOO_LITTLE_MOTION | TUNE_ERR_INCONSISTENT_MOTION | TUNE_ERR_NOT_DONE_BASIC);
+
+#ifdef DEBUG
 	debugPrintf("forward slope %.4f reverse %.4f\n", (double)forwardSlope, (double)reverseSlope);
+#endif
 
 	// Check that the forward and reverse slopes are similar and a good match to the configured counts per step
 	const float averageSlope = (forwardSlope + reverseSlope) * 0.5;
@@ -667,23 +682,22 @@ void ClosedLoop::FinishedBasicTuning(float forwardSlope, float reverseSlope, flo
 
 	if (fabsf(averageSlope) < MinimumSlope || fabsf(forwardSlope - reverseSlope) > MaxSlopeMismatch * 2 * fabsf(averageSlope))
 	{
-		debugPrintf("forward slope %.4f reverse %.4f\n", (double)forwardSlope, (double)reverseSlope);
 		tuningError |= TUNE_ERR_INCONSISTENT_MOTION;
 	}
 	else if (measuredCountsPerStep > encoder->GetCountsPerStep() * 1.05)
 	{
-		debugPrintf("measured %.2f configured %.2f\n", (double)measuredCountsPerStep, (double)encoder->GetCountsPerStep());
 		tuningError |= TUNE_ERR_TOO_MUCH_MOTION;
 	}
 	else if (measuredCountsPerStep < encoder->GetCountsPerStep() * 0.95)
 	{
-		debugPrintf("measured %.2f configured %.2f\n", (double)measuredCountsPerStep, (double)encoder->GetCountsPerStep());
 		tuningError |= TUNE_ERR_TOO_LITTLE_MOTION;
 	}
 	else
 	{
 		// Tuning succeeded
+#ifdef DEBUG
 		debugPrintf("basic tuning succeeded\n");
+#endif
 #if BASIC_TUNING_DEBUG
 		ReadState();
 		originalRawEncoderReading = rawEncoderReading;
@@ -693,10 +707,12 @@ void ClosedLoop::FinishedBasicTuning(float forwardSlope, float reverseSlope, flo
 #endif
 
 		const int32_t averageZeroPhaseCount = lrintf((forwardOrigin + reverseOrigin) * 0.5);
+#ifdef DEBUG
 		debugPrintf("zph %" PRIi32 " current rdg %" PRIi32 " current phase %u\n", averageZeroPhaseCount, encoder->GetCurrentCount(), desiredStepPhase);
-		encoder->SetKnownPhaseAtCount(0, averageZeroPhaseCount);						// tell the encoder that the phase is zero when the count is this
+#endif
+		encoder->SetKnownPhaseAtCount(averageZeroPhaseCount, 0);						// tell the encoder that the phase is zero when the count is this
 		encoder->SetBackwards(averageSlope < 0.0);
-		const bool err = encoder->TakeReading();		// SetBackwards changes the reading
+		const bool err = encoder->TakeReading();										// SetBackwards changes the reading
 		(void)err;		//TODO error handling
 		targetEncoderReading = encoder->GetCurrentCount();
 		targetMotorSteps = (float)targetEncoderReading / encoder->GetCountsPerStep();
@@ -710,9 +726,8 @@ void ClosedLoop::FinishedBasicTuning(float forwardSlope, float reverseSlope, flo
 		finalCurrentMotorSteps = currentMotorSteps;
 #endif
 
-		tuningError &= ~(TUNE_ERR_TOO_MUCH_MOTION | TUNE_ERR_TOO_LITTLE_MOTION | TUNE_ERR_INCONSISTENT_MOTION);
-		prevTuningError &= ~(TUNE_ERR_TOO_MUCH_MOTION | TUNE_ERR_TOO_LITTLE_MOTION | TUNE_ERR_INCONSISTENT_MOTION);
 		PIDITerm = 0.0;																	// clear the integral term accumulator
+		derivativeFilter.Reset();
 	}
 
 	tuningError &= ~TUNE_ERR_NOT_DONE_BASIC;
@@ -724,11 +739,17 @@ void ClosedLoop::FinishedEncoderCalibration() noexcept
 	targetEncoderReading = encoder->GetCurrentCount();
 	targetMotorSteps = (float)targetEncoderReading / encoder->GetCountsPerStep();
 	PIDITerm = 0.0;																		// clear the integral term accumulator
+	derivativeFilter.Reset();
+	haveNewCalibrationResult = true;
 }
 
 // Call this to report calibration results
 void ClosedLoop::ReportEncoderCalibrationCheckResult() noexcept
 {
+	targetEncoderReading = encoder->GetCurrentCount();
+	targetMotorSteps = (float)targetEncoderReading / encoder->GetCountsPerStep();
+	PIDITerm = 0.0;																		// clear the integral term accumulator
+	derivativeFilter.Reset();
 	haveNewCalibrationCheckResult = true;
 }
 
@@ -975,16 +996,6 @@ void ClosedLoop::ControlMotorCurrents(StepTimer::Ticks loopStartTime) noexcept
 
 	// Assert the required motor currents
 	SetMotorPhase(desiredStepPhase, currentFraction);
-
-#ifdef DEBUG
-	static uint32_t count = 0;
-	if (count < 100)
-	{
-		++count;
-		debugPrintf("target %" PRIi32 " actual %" PRIi32 " error %.1f P %.2f I %.2f D %.2f ps %.2f msp %" PRIu32 " phase %u frac %.2f\n",
-			targetEncoderReading, encoder->GetCurrentCount(), (double)currentError, (double)PIDPTerm, (double)PIDITerm, (double)PIDDTerm, (double)phaseShift, measuredStepPhase, desiredStepPhase, (double)currentFraction);
-	}
-#endif
 }
 
 void ClosedLoop::Diagnostics(const StringRef& reply) noexcept
@@ -1140,6 +1151,7 @@ void ClosedLoop::DriverSwitchedToClosedLoop(size_t driver) noexcept
 		delay(3);														// allow time for the switch to complete and a few control loop iterations to be done
 		SetMotorPhase(desiredStepPhase, SmartDrivers::GetStandstillCurrentPercent(0) * 0.01);	// set the motor currents to match the initial position using the open loop standstill current
 		PIDITerm = 0.0;													// clear the integral term accumulator
+		derivativeFilter.Reset();
 		ResetMonitoringVariables();										// the first loop iteration will have recorded a higher than normal loop call interval, so start again
 	}
 }

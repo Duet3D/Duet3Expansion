@@ -143,9 +143,10 @@ void AbsoluteEncoder::PopulateLUT(NonVolatileMemory& mem) noexcept
 		correctionLUT[index] = (uint16_t)temp & ((1u << resolutionBits) - 1);
 		if (lastCorrection < minLUTCorrection) { minLUTCorrection = lastCorrection; }
 		if (lastCorrection > maxLUTCorrection) { maxLUTCorrection = lastCorrection; }
-		rmsCorrection += fsquare(lastCorrection);
+		rmsCorrection += fsquare(lastCorrection + harmonicData[1].f);				// ignore the mean when computing the RMC
 	}
 	rmsCorrection = sqrtf(rmsCorrection/LUTLength);
+	meanCorrection = -harmonicData[1].f;
 
 #ifdef DEBUG
 	debugPrintf("Actual max iterations %u, minCorrection %.1f, maxCorrection %.1f, RMS correction %.1f\n", actualMaxIterationNumber + 1, (double)minLUTCorrection, (double)maxLUTCorrection, (double)rmsCorrection);
@@ -217,9 +218,10 @@ void AbsoluteEncoder::CheckLUT(uint32_t virtualStartPosition, uint32_t numReadin
 		}
 		if (correction < minLUTError) { minLUTError = correction; }
 		if (correction > maxLUTError) { maxLUTError = correction; }
-		rmsError += fsquare(correction);
+		rmsError += fsquare(correction + cosines[0]);					// ignore the mean when computing the RMS error
 	}
 	rmsError = sqrtf(rmsError/LUTLength);
+	meanError = -cosines[0];
 }
 
 // Clear the LUT. We may be about to calibrate the encoder, so clear the calibration values too.
@@ -259,9 +261,14 @@ void AbsoluteEncoder::RecordDataPoint(float angle, float error) noexcept
 	}
 }
 
+void AbsoluteEncoder::ReportCalibrationResult(const StringRef& reply) const noexcept
+{
+	reply.lcatf("Calibration corrections: min %.1f, max %.1f, mean %.1f, deviation %.1f", (double)minLUTCorrection, (double)maxLUTCorrection, (double)meanCorrection, (double)rmsCorrection);
+}
+
 void AbsoluteEncoder::ReportCalibrationCheckResult(const StringRef& reply) const noexcept
 {
-	reply.lcatf("Calibration error: min %.1f, max %.1f, rms %.1f\n", (double)minLUTError, (double)maxLUTError, (double)rmsError);
+	reply.lcatf("Calibration error: min %.1f, max %.1f, mean %.1f, deviation %.1f", (double)minLUTError, (double)maxLUTError, (double)meanError, (double)rmsError);
 }
 
 #endif
