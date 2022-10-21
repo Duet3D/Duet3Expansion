@@ -165,8 +165,8 @@ bool AS5047D::GetDiagnosticRegisters(DiagnosticRegisters& regs) noexcept
 // Get diagnostic information and append it to a string
 void AS5047D::AppendDiagnostics(const StringRef &reply) noexcept
 {
-	reply.catf(", encoder full rotations %" PRIi32, fullRotations);
-	reply.catf(", encoder last angle %" PRIu32, currentAngle);
+	reply.catf("Encoder full rotations %" PRIi32, fullRotations);
+	reply.catf(", last angle %" PRIu32, currentAngle);
 	reply.catf(", minCorrection=%.1f, maxCorrection=%.1f", (double)minLUTCorrection, (double)maxLUTCorrection);
 	DiagnosticRegisters regs;
 	if (GetDiagnosticRegisters(regs))

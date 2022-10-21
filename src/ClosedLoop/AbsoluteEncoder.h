@@ -60,13 +60,17 @@ public:
 	void RecordDataPoint(float angle, float error) noexcept;
 	bool LoadLUT() noexcept;
 	void StoreLUT(uint32_t virtualStartPosition, uint32_t numReadingsTaken) noexcept;
+	void CheckLUT(uint32_t virtualStartPosition, uint32_t numReadingsTaken) noexcept;
 	void ClearLUT() noexcept;
 	void ScrubLUT() noexcept;
+	void ClearHarmonics() noexcept;
 
 	unsigned int GetMaxValue() const noexcept { return 1ul << resolutionBits; }
 	unsigned int GetNumLUTEntries() const noexcept { return 1u << (resolutionBits - resolutionToLutShiftFactor); }
 	unsigned int GetResolutionBits() const noexcept { return resolutionBits; }
 	unsigned int GetResolutionToLutShiftFactor() const noexcept { return resolutionToLutShiftFactor; }
+
+	void ReportCalibrationCheckResult(const StringRef& reply) const noexcept;
 
 protected:
 	// This must be defined to set rawReading to a value between 0 and one below GetMaxValue()
@@ -80,6 +84,8 @@ protected:
 
 	// For diagnostics
 	float minLUTCorrection = 0.0, maxLUTCorrection = 0.0;			// min and max corrections, for reporting in diagnostics
+	float minLUTError = 0.0, maxLUTError = 0.0;						// min and max errors when the calibration was checked, for reporting in diagnostics
+	float rmsCorrection = 0.0, rmsError = 0.0;
 
 private:
 	static constexpr unsigned int NumHarmonics = 17;				// store harmonics 0-16

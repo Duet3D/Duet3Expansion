@@ -197,8 +197,8 @@ static bool BasicTuning(bool firstIteration) noexcept
 
 
 /*
- * Magnetic encoder calibration
- * ----------------------------
+ * Magnetic encoder calibration or calibration check
+ * -------------------------------------------------
  *
  * Absolute:
  * 	- Move forwards somewhat (to counter any backlash) and then to the next full step position (to give (hopefully) consistent results)
@@ -230,7 +230,11 @@ static bool EncoderCalibration(bool firstIteration) noexcept
 	{
 		// Set up some variables
 		state = EncoderCalibrationState::setup;
-		absoluteEncoder->ClearLUT();
+		if (ClosedLoop::tuning & ClosedLoop::ENCODER_CALIBRATION_MANOEUVRE)
+		{
+			absoluteEncoder->ClearLUT();
+		}
+		absoluteEncoder->ClearHarmonics();
 		positionsPerRev = absoluteEncoder->GetStepsPerRev() * 1024u;
 		const float positionsPerEncoderCount = (float)positionsPerRev/(float)maxValue;
 
@@ -251,7 +255,7 @@ static bool EncoderCalibration(bool firstIteration) noexcept
 		}
 	}
 
-	const uint32_t currentReading = absoluteEncoder->GetRawAngle();		// get the current position in 0..(maxValue - 1)
+	const uint32_t currentReading = absoluteEncoder->GetCurrentAngle();		// get the current position in 0..(maxValue - 1)
 
 	switch (state)
 	{
@@ -320,8 +324,18 @@ static bool EncoderCalibration(bool firstIteration) noexcept
 			if (positionCounter == 0)
 			{
 				// We are finished
-				absoluteEncoder->StoreLUT(virtualStartPosition, (2 * positionsPerRev)/positionIncrement);
-				ClosedLoop::FinishedEncoderCalibration();			// set target position to current position
+				if (ClosedLoop::tuning & ClosedLoop::ENCODER_CALIBRATION_MANOEUVRE)
+				{
+					// Calibrating the encoder
+					absoluteEncoder->StoreLUT(virtualStartPosition, (2 * positionsPerRev)/positionIncrement);
+					ClosedLoop::FinishedEncoderCalibration();			// set target position to current position
+				}
+				else
+				{
+					// Checking the calibration
+					absoluteEncoder->CheckLUT(virtualStartPosition, (2 * positionsPerRev)/positionIncrement);
+					ClosedLoop::ReportEncoderCalibrationCheckResult();
+				}
 				return true;
 			}
 		}
@@ -539,7 +553,7 @@ void ClosedLoop::PerformTune() noexcept
 	// Run one iteration of the one, highest priority, tuning move
 	if (tuning & BASIC_TUNING_MANOEUVRE)
 	{
-		if (encoder->IsAbsolute() && (tuning & ENCODER_CALIBRATION_MANOEUVRE))
+		if (newTuningMove && encoder->IsAbsolute() && (tuning & ENCODER_CALIBRATION_MANOEUVRE))
 		{
 			((AbsoluteEncoder*)encoder)->ClearLUT();
 		}
@@ -549,7 +563,7 @@ void ClosedLoop::PerformTune() noexcept
 			tuning &= ~BASIC_TUNING_MANOEUVRE;				// we can do encoder calibration after basic tuning
 		}
 	}
-	else if (tuning & ENCODER_CALIBRATION_MANOEUVRE)
+	else if (tuning & (ENCODER_CALIBRATION_MANOEUVRE | ENCODER_CALIBRATION_CHECK))
 	{
 		if (tuningError & (TUNE_ERR_TOO_MUCH_MOTION | TUNE_ERR_TOO_LITTLE_MOTION | TUNE_ERR_INCONSISTENT_MOTION | TUNE_ERR_NOT_DONE_BASIC))
 		{
@@ -561,7 +575,15 @@ void ClosedLoop::PerformTune() noexcept
 			newTuningMove = EncoderCalibration(newTuningMove);
 			if (newTuningMove)
 			{
-				tuning = BASIC_TUNING_MANOEUVRE;			// run basic tuning again
+				if (tuning & ENCODER_CALIBRATION_MANOEUVRE)
+				{
+					tuning &= ~ENCODER_CALIBRATION_MANOEUVRE;
+					tuning |= BASIC_TUNING_MANOEUVRE;			// run basic tuning again
+				}
+				else
+				{
+					tuning = 0;
+				}
 			}
 		}
 	}

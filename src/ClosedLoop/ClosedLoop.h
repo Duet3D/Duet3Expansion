@@ -40,6 +40,7 @@ namespace ClosedLoop
 	// Tuning manoeuvres
 	constexpr uint8_t BASIC_TUNING_MANOEUVRE 				= 1u << 0;		// this measures the polarity, check that the CPR looks OK, and for relative encoders sets the zero position
 	constexpr uint8_t ENCODER_CALIBRATION_MANOEUVRE 		= 1u << 1;		// this calibrates an absolute encoder
+	constexpr uint8_t ENCODER_CALIBRATION_CHECK				= 1u << 2;		// this checks the calibration
 	constexpr uint8_t STEP_MANOEUVRE 						= 1u << 6;		// this does a sudden step change in the requested position for PID tuning
 
 #if 0	// The remainder are not currently implemented
@@ -85,6 +86,7 @@ namespace ClosedLoop
 	void FinishedBasicTuning(float forwardSlope, float reverseSlope, float forwardOrigin, float reverseOrigin, float forwardXmean, float reverseXmean) noexcept;
 															// call this when we have stopped basic tuning movement and are ready to switch to closed loop control
 	void FinishedEncoderCalibration() noexcept;				// call this when we have finished calibrating an absolute encoder
+	void ReportEncoderCalibrationCheckResult() noexcept;	// call this to report calibration results
 	void AdjustTargetMotorSteps(float amount) noexcept;		// called by tuning to execute a step
 
 	// Methods in the tuning module

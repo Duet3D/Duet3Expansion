@@ -161,6 +161,7 @@ namespace ClosedLoop
 
 	bool 	stall = false;								// Has the closed loop error threshold been exceeded?
 	bool 	preStall = false;							// Has the closed loop warning threshold been exceeded?
+	bool haveNewCalibrationCheckResult = false;
 
 	float measuredCountsPerStep;
 	float tuningHysteresis;
@@ -554,6 +555,13 @@ GCodeResult ClosedLoop::ProcessM569Point6(const CanMessageGeneric &msg, const St
 			return GCodeResult::notFinished;
 		}
 
+		// If we were checking the calibration, report the result
+		if (haveNewCalibrationCheckResult && encoder->IsAbsolute())
+		{
+			((const AbsoluteEncoder*)encoder)->ReportCalibrationCheckResult(reply);
+			haveNewCalibrationCheckResult = false;
+		}
+
 #if BASIC_TUNING_DEBUG
 		forwardTuningResults.Print("Forward", reply);
 		reverseTuningResults.Print("Reverse", reply);
@@ -596,15 +604,15 @@ GCodeResult ClosedLoop::ProcessM569Point6(const CanMessageGeneric &msg, const St
 		return GCodeResult::warning;
 	}
 
-	if (desiredTuning == 0 || (desiredTuning > 4 && desiredTuning != 64))
+	if (desiredTuning == 0 || (desiredTuning > 8 && desiredTuning != 64))
 	{
 		reply.copy("Invalid tuning mode");
 		return GCodeResult::error;
 	}
 
-	if (desiredTuning == 4)
+	if (desiredTuning == 8)
 	{
-		// Tuning move 4 just clears the lookup table
+		// Tuning move 8 just clears the lookup table
 		if (encoder != nullptr && encoder->IsAbsolute())
 		{
 			((AbsoluteEncoder*)encoder)->ScrubLUT();
@@ -716,6 +724,12 @@ void ClosedLoop::FinishedEncoderCalibration() noexcept
 	targetEncoderReading = encoder->GetCurrentCount();
 	targetMotorSteps = (float)targetEncoderReading / encoder->GetCountsPerStep();
 	PIDITerm = 0.0;																		// clear the integral term accumulator
+}
+
+// Call this to report calibration results
+void ClosedLoop::ReportEncoderCalibrationCheckResult() noexcept
+{
+	haveNewCalibrationCheckResult = true;
 }
 
 // This is called by tuning to execute a step
@@ -981,13 +995,13 @@ void ClosedLoop::Diagnostics(const StringRef& reply) noexcept
 	if (encoder != nullptr)
 	{
 		reply.catf(", reverse polarity: %s", (encoder->IsBackwards()) ? "yes" : "no");
-		if (!encoder->TakeReading())
+		if (encoder->TakeReading())
 		{
-			reply.cat("error reading encoder");
+			reply.cat(", error reading encoder\n");
 		}
 		else
 		{
-			reply.catf(", position %" PRIi32, encoder->GetCurrentCount());
+			reply.catf(", position %" PRIi32 "\n", encoder->GetCurrentCount());
 		}
 		encoder->AppendDiagnostics(reply);
 	}

@@ -125,7 +125,7 @@ void AbsoluteEncoder::PopulateLUT(NonVolatileMemory& mem) noexcept
 			}
 			const float correctionAngle = lastCorrection * TwoPi/GetMaxValue();
 			float correction = 0.0;
-			for (size_t harmonic = 0; harmonic<NumHarmonics; harmonic++)
+			for (size_t harmonic = 0; harmonic < NumHarmonics; harmonic++)
 			{
 				const float sineCoefficient = harmonicData[2 * harmonic].f;
 				const float cosineCoefficient = harmonicData[2 * harmonic + 1].f;
@@ -141,15 +141,14 @@ void AbsoluteEncoder::PopulateLUT(NonVolatileMemory& mem) noexcept
 		}
 		const int32_t temp = lrintf(lastCorrection + (float)(index << resolutionToLutShiftFactor));
 		correctionLUT[index] = (uint16_t)temp & ((1u << resolutionBits) - 1);
-		if (index != 0)
-		{
-			if (lastCorrection < minLUTCorrection) { minLUTCorrection = lastCorrection; }
-			if (lastCorrection > maxLUTCorrection) { maxLUTCorrection = lastCorrection; }
-		}
+		if (lastCorrection < minLUTCorrection) { minLUTCorrection = lastCorrection; }
+		if (lastCorrection > maxLUTCorrection) { maxLUTCorrection = lastCorrection; }
+		rmsCorrection += fsquare(lastCorrection);
 	}
+	rmsCorrection = sqrtf(rmsCorrection/LUTLength);
 
 #ifdef DEBUG
-	debugPrintf("Actual max iterations %u, minCorrection %.1f, maxCorrection %.1f\n", actualMaxIterationNumber + 1, (double)minLUTCorrection, (double)maxLUTCorrection);
+	debugPrintf("Actual max iterations %u, minCorrection %.1f, maxCorrection %.1f, RMS correction %.1f\n", actualMaxIterationNumber + 1, (double)minLUTCorrection, (double)maxLUTCorrection, (double)rmsCorrection);
 #endif
 
 	// Mark the LUT as loaded
@@ -159,7 +158,7 @@ void AbsoluteEncoder::PopulateLUT(NonVolatileMemory& mem) noexcept
 void AbsoluteEncoder::StoreLUT(uint32_t virtualStartPosition, uint32_t numReadingsTaken) noexcept
 {
 #ifdef DEBUG
-	debugPrintf("Min/max errors [%.1f %.1f]\nSin/cos coefficients:", (double)minCalibrationError, (double)maxCalibrationError);
+	debugPrintf("Calibration min/max errors [%.1f %.1f]\nSin/cos coefficients:", (double)minCalibrationError, (double)maxCalibrationError);
 #endif
 
 	// Store the table of harmonics to nonvolatile memory
@@ -184,16 +183,59 @@ void AbsoluteEncoder::StoreLUT(uint32_t virtualStartPosition, uint32_t numReadin
 	PopulateLUT(mem);
 }
 
+void AbsoluteEncoder::CheckLUT(uint32_t virtualStartPosition, uint32_t numReadingsTaken) noexcept
+{
+#ifdef DEBUG
+	debugPrintf("Calibration check min/max errors [%.1f %.1f]\nSin/cos coefficients:", (double)minCalibrationError, (double)maxCalibrationError);
+#endif
+	for (size_t harmonic = 0; harmonic < NumHarmonics; harmonic++)
+	{
+		sines[harmonic] = 2.0 * sines[harmonic]/numReadingsTaken;
+		cosines[harmonic] = (harmonic == 0) ? cosines[harmonic]/numReadingsTaken : 2.0 * cosines[harmonic]/numReadingsTaken;
+#ifdef DEBUG
+		debugPrintf(" [%.3f %.3f]", (double)sines[harmonic], (double)cosines[harmonic]);
+#endif
+	}
+#ifdef DEBUG
+	debugPrintf("\n");
+#endif
+
+	const size_t LUTLength = GetNumLUTEntries();
+	minLUTError = std::numeric_limits<float>::infinity();
+	maxLUTError = -std::numeric_limits<float>::infinity();
+	rmsError = 0.0;
+	for (size_t index = 0; index < LUTLength; index++)
+	{
+		const float basicAngle = TwoPi * index / LUTLength;
+		float correction = 0.0;
+		for (size_t harmonic = 0; harmonic < NumHarmonics; harmonic++)
+		{
+			const float sineCoefficient = sines[harmonic];
+			const float cosineCoefficient = cosines[harmonic];
+			const float angle = harmonic * basicAngle;
+			correction -= sineCoefficient * sinf(angle) + cosineCoefficient * cosf(angle);
+		}
+		if (correction < minLUTError) { minLUTError = correction; }
+		if (correction > maxLUTError) { maxLUTError = correction; }
+		rmsError += fsquare(correction);
+	}
+	rmsError = sqrtf(rmsError/LUTLength);
+}
+
 // Clear the LUT. We may be about to calibrate the encoder, so clear the calibration values too.
 void AbsoluteEncoder::ClearLUT() noexcept
 {
 	LUTLoaded = false;
-	minCalibrationError = std::numeric_limits<float>::infinity();
-	maxCalibrationError = -std::numeric_limits<float>::infinity();
+}
+
+void AbsoluteEncoder::ClearHarmonics() noexcept
+{
 	for (size_t i = 0; i < NumHarmonics; ++i)
 	{
 		sines[i] = cosines[i] = 0.0;
 	}
+	minCalibrationError = std::numeric_limits<float>::infinity();
+	maxCalibrationError = -std::numeric_limits<float>::infinity();
 }
 
 void AbsoluteEncoder::ScrubLUT() noexcept
@@ -215,6 +257,11 @@ void AbsoluteEncoder::RecordDataPoint(float angle, float error) noexcept
 		sines[i] += error * sinf(angle * i);
 		cosines[i] += error * cosf(angle * i);
 	}
+}
+
+void AbsoluteEncoder::ReportCalibrationCheckResult(const StringRef& reply) const noexcept
+{
+	reply.lcatf("Calibration error: min %.1f, max %.1f, rms %.1f\n", (double)minLUTError, (double)maxLUTError, (double)rmsError);
 }
 
 #endif

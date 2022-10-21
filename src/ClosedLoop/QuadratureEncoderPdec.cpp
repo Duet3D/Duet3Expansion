@@ -66,7 +66,7 @@ void QuadratureEncoderPdec::AppendDiagnostics(const StringRef &reply) noexcept
 	PDEC->CTRLBSET.reg = PDEC_CTRLBSET_CMD_READSYNC;
 	while (PDEC->SYNCBUSY.reg & (PDEC_SYNCBUSY_CTRLB | PDEC_SYNCBUSY_COUNT)) { }
 	const uint16_t count = PDEC->COUNT.reg;
-	reply.catf(", raw count = %u", count);
+	reply.catf("Encoder raw count %u", count);
 #endif
 }
 
