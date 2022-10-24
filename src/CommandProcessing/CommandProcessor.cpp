@@ -583,7 +583,7 @@ static GCodeResult HandleSetDriverStates(const CanMessageMultipleDrivesRequest<D
 				break;
 
 			case DriverStateControl::driverIdle:
-				Platform::SetDriverIdle(driver, msg.values[count].idlePercent);
+				Platform::SetDriverIdle(driver, msg.values[count].idlePercentOrDelayAfterBrakeOn >> 4);
 				break;
 
 			case DriverStateControl::driverDisabled:

@@ -857,7 +857,7 @@ void Platform::Init()
 		idleCurrentFactor[i] = 0.3;
 		motorCurrents[i] = 0.0;
 		pressureAdvanceClocks[i] = 0.0;
-		driverStates[i] = DriverStateControl(DriverStateControl::driverDisabled);
+		driverStates[i] = DriverStateControl(DriverStateControl::driverDisabled, 0);
 		// We can't set microstepping here because moveInstance hasn't been created yet
 	}
 
@@ -1729,7 +1729,7 @@ void Platform::DriveEnableOverride(size_t driver, bool doOverride)
 
 void Platform::EnableDrive(size_t driver)
 {
-	driverStates[driver] = DriverStateControl(DriverStateControl::driverActive);
+	driverStates[driver] = DriverStateControl(DriverStateControl::driverActive, 0);
 #if SUPPORT_CLOSED_LOOP
 	if (!driverEnableOverride[driver])						// if the override flag is set, the driver is already enabled
 #endif
@@ -1768,7 +1768,7 @@ void Platform::InternalEnableDrive(size_t driver)
 
 void Platform::DisableDrive(size_t driver)
 {
-	driverStates[driver] = DriverStateControl::driverDisabled;
+	driverStates[driver] = DriverStateControl(DriverStateControl::driverDisabled, 0);
 #if SUPPORT_CLOSED_LOOP
 	if (!driverEnableOverride[driver])						// if the override flag is set, don't disable the driver, just flag is as disabled
 #endif
@@ -1800,7 +1800,7 @@ void Platform::InternalDisableDrive(size_t driver)
 void Platform::SetDriverIdle(size_t driver, uint16_t idlePercent)
 {
 	idleCurrentFactor[driver] = (float)idlePercent * 0.01;
-	driverStates[driver] = DriverStateControl::driverIdle;
+	driverStates[driver] = DriverStateControl(DriverStateControl::driverIdle, 0);
 #if SUPPORT_CLOSED_LOOP
 	if (!driverEnableOverride)
 #endif
