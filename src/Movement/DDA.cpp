@@ -272,7 +272,7 @@ bool DDA::Init(const CanMessageMovementLinear& msg)
 		DriveMovement& dm = ddms[drive];
 		if (dm.state == DMState::moving)
 		{
-			Platform::EnableDrive(drive);
+			Platform::EnableDrive(drive, 0);
 			if ((msg.pressureAdvanceDrives & (1u << drive)) != 0)
 			{
 				// If there is any extruder jerk in this move, in theory that means we need to instantly extrude or retract some amount of filament.

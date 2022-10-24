@@ -235,13 +235,13 @@ namespace Platform
 	bool GetDirectionValue(size_t driver);
 	void SetEnableValue(size_t driver, int8_t eVal);
 	int8_t GetEnableValue(size_t driver);
-#if SUPPORT_CLOSED_LOOP
-	void DriveEnableOverride(size_t driver, bool doOverride);
-#endif
-	void EnableDrive(size_t driver);
-	void DisableDrive(size_t driver);
+	void EnableDrive(size_t driver, uint16_t brakeOffDelay);
+	void DisableDrive(size_t driver, uint16_t motorOffDelay);
 	void DisableAllDrives();
 	void SetDriverIdle(size_t driver, uint16_t idlePercent);
+# if SUPPORT_CLOSED_LOOP
+	bool IsDriverEnabled(size_t driver);
+# endif
 
 	GCodeResult ProcessM569Point7(const CanMessageGeneric& msg, const StringRef& reply);
 

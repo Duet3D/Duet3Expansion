@@ -127,7 +127,7 @@ void AbsoluteEncoder::PopulateLUT(NonVolatileMemory& mem) noexcept
 			float correction = 0.0;
 			for (size_t harmonic = 0; harmonic < NumHarmonics; harmonic++)
 			{
-				const float sineCoefficient = harmonicData[2 * harmonic].f;
+				const float sineCoefficient = (harmonic == 0) ? 0.0 : harmonicData[2 * harmonic].f;
 				const float cosineCoefficient = harmonicData[2 * harmonic + 1].f;
 				const float angle = harmonic * basicAngle;
 				correction -= sineCoefficient * sinf(angle + correctionAngle) + cosineCoefficient * cosf(angle + correctionAngle);
@@ -166,14 +166,18 @@ void AbsoluteEncoder::StoreLUT(uint32_t virtualStartPosition, uint32_t numReadin
 	NonVolatileMemory mem(NvmPage::closedLoop);
 	for (size_t harmonic = 0; harmonic < NumHarmonics; harmonic++)
 	{
-		const float sineCoefficient = 2.0 * sines[harmonic]/numReadingsTaken;
+		if (harmonic != 0)				// the zero-order sine coefficient is always zero, so we store the zero count phase there instead
+		{
+			const float sineCoefficient = 2.0 * sines[harmonic]/numReadingsTaken;
+			mem.SetClosedLoopHarmonicValue(harmonic * 2, sineCoefficient);
+		}
 		const float cosineCoefficient = (harmonic == 0) ? cosines[harmonic]/numReadingsTaken : 2.0 * cosines[harmonic]/numReadingsTaken;
-		mem.SetClosedLoopHarmonicValue(harmonic * 2, sineCoefficient);
 		mem.SetClosedLoopHarmonicValue(harmonic * 2 + 1, cosineCoefficient);
 #ifdef DEBUG
 		debugPrintf(" [%.3f %.3f]", (double)sineCoefficient, (double)cosineCoefficient);
 #endif
 	}
+	mem.SetClosedLoopZeroCountPhase(0xFFFFFFFF);
 	mem.SetClosedLoopDataValid(true);
 #ifdef DEBUG
 	debugPrintf("\n");

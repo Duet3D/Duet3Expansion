@@ -640,6 +640,12 @@ GCodeResult ClosedLoop::ProcessM569Point6(const CanMessageGeneric &msg, const St
 		return GCodeResult::error;
 	}
 
+	if (!Platform::IsDriverEnabled(0))
+	{
+		reply.copy("Drive is not enabled");
+		return GCodeResult::error;
+	}
+
 	prevTuningError = tuningError;
 	StartTuning(desiredTuning);
 
@@ -650,7 +656,6 @@ void ClosedLoop::StartTuning(uint8_t tuningMode) noexcept
 {
 	if (tuningMode != 0)
 	{
-		Platform::DriveEnableOverride(0, true);					// enable the motor and prevent it becoming idle
 		if (tuningMode & ENCODER_CALIBRATION_MANOEUVRE)
 		{
 			tuningMode |= BASIC_TUNING_MANOEUVRE;				// always run basic tuning before encoder calibration
@@ -787,10 +792,6 @@ void ClosedLoop::ControlLoop() noexcept
 		{
 			whenLastTuningStepTaken = loopCallTime;
 			PerformTune();
-			if (tuning == 0)
-			{
-				Platform::DriveEnableOverride(0, false);			// If that was the last tuning move, release the override
-			}
 		}
 		else if (samplingMode == RecordingMode::OnNextMove && timeSinceLastTuningStep + (int32_t)DataCollectionIdleStepTicks >= 0)
 		{
@@ -1116,13 +1117,13 @@ bool ClosedLoop::SetClosedLoopEnabled(size_t driver, bool enabled, const StringR
 			return false;
 		}
 
-		delay(3);														// delay long enough for the TMC driver to have read the microstep counter since the end of the last movement
+		delay(10);														// delay long enough for the TMC driver to have read the microstep counter since the end of the last movement
 		const uint16_t initialStepPhase = SmartDrivers::GetMicrostepPosition(0) * 4;	// get the current coil A microstep position as 0..4095
 		encoder->SetBackwards(false);
 
 		// Temporarily calibrate the encoder zero position
 		// We assume that the motor is at the position given by its microstep counter. This may not be true e.g. if it has a brake that has not been disengaged.
-		ReadState();
+		ReadState();													// SetBackwards changes the reading
 		encoder->SetKnownPhaseAtCount(initialStepPhase, encoder->GetCurrentCount());
 
 		desiredStepPhase = initialStepPhase;							// set this to be picked up later in DriverSwitchedToClosedLoop

@@ -579,7 +579,7 @@ static GCodeResult HandleSetDriverStates(const CanMessageMultipleDrivesRequest<D
 			switch (msg.values[count].mode)
 			{
 			case DriverStateControl::driverActive:
-				Platform::EnableDrive(driver);
+				Platform::EnableDrive(driver, msg.values[count].idlePercentOrDelayAfterBrakeOn);
 				break;
 
 			case DriverStateControl::driverIdle:
@@ -588,7 +588,10 @@ static GCodeResult HandleSetDriverStates(const CanMessageMultipleDrivesRequest<D
 
 			case DriverStateControl::driverDisabled:
 			default:
-				Platform::DisableDrive(driver);
+				{
+					const uint16_t delay = msg.values[count].idlePercentOrDelayAfterBrakeOn;
+					Platform::DisableDrive(driver, (delay == 0) ? DefaultDelayAfterBrakeOn : delay);
+				}
 				break;
 			}
 		});

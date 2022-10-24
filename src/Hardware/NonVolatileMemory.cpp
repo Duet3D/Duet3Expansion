@@ -235,4 +235,22 @@ void NonVolatileMemory::SetClosedLoopHarmonicValue(size_t index, float value) no
 	}
 }
 
+void NonVolatileMemory::SetClosedLoopZeroCountPhase(uint32_t phase) noexcept
+{
+	EnsureRead();
+	const uint32_t oldPhase = buffer.closedLoopPage.harmonicData[0].u;
+	if (oldPhase != phase)
+	{
+		buffer.closedLoopPage.harmonicData[0].u = phase;
+		if ((phase & ~oldPhase) != 0)
+		{
+			state = NvmState::eraseAndWriteNeeded;
+		}
+		else
+		{
+			state = NvmState::writeNeeded;
+		}
+	}
+}
+
 // End

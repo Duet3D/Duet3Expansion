@@ -109,6 +109,7 @@ constexpr Pin ButtonPins[] = { PortAPin(0) };		// CAN reset jumper
 // Brake
 constexpr Pin BrakeOnPin = PortBPin(10);
 constexpr Pin BrakePwmPin = PortAPin(1);
+constexpr PwmFrequency BrakePwmFrequency = 500;
 
 // Encoder and quadrature decoder interface
 constexpr Pin EncoderCsPin = PortAPin(18);

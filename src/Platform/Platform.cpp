@@ -148,19 +148,21 @@ namespace Platform
 	static bool directions[NumDrivers];
 	static bool driverAtIdleCurrent[NumDrivers];
 	static int8_t enableValues[NumDrivers] = { 0 };
+#if !defined(M23CL)
 	IoPort brakePorts[NumDrivers];
-	static DriverStateControl driverStates[NumDrivers];
-#if SUPPORT_CLOSED_LOOP
-	static bool driverEnableOverride[NumDrivers] = { 0 };
 #endif
+	static uint8_t driverStates[NumDrivers];
 	static float stepsPerMm[NumDrivers];
 	static float motorCurrents[NumDrivers];
 	static float pressureAdvanceClocks[NumDrivers];
 	static float idleCurrentFactor[NumDrivers];
 
-	static void InternalEnableDrive(size_t driver);
+	static MillisTimer brakeOffTimers[NumDrivers];
+	static MillisTimer motorOffTimers[NumDrivers];
+	static uint16_t brakeOffDelays[NumDrivers];
+	static uint16_t motorOffDelays[NumDrivers];
+
 	static void InternalDisableDrive(size_t driver);
-	static void InternalSetDriverIdle(size_t driver);
 #endif
 
 #if SUPPORT_SPI_SENSORS || SUPPORT_CLOSED_LOOP || defined(ATEIO)
@@ -264,6 +266,35 @@ namespace Platform
 		SmartDrivers::SetCurrent(driver, (driverAtIdleCurrent[driver]) ? motorCurrents[driver] * idleCurrentFactor[driver] : motorCurrents[driver]);
 	}
 #endif
+
+#ifdef M23CL
+	static float currentBrakePwm = 0.0;
+#endif
+
+	// Turn the brake solenoid on to disengage the brake
+	static void DisengageBrake(size_t driver) noexcept
+	{
+#ifdef M23CL
+		// Set the PWM to deliver 24V regardless of the VIN voltage
+		currentBrakePwm = min<float>(24.0/AdcReadingToVinVoltage(max<int16_t>(currentVin, 1)), 1.0);
+		AnalogOut::Write(BrakePwmPin, currentBrakePwm, BrakePwmFrequency);
+		digitalWrite(BrakeOnPin, true);
+#else
+		brakePorts[driver].WriteDigital(true);
+#endif
+	}
+
+	// Turn the brake solenoid off to re-engage the brake
+	static void EngageBrake(size_t driver) noexcept
+	{
+#ifdef M23CL
+		currentBrakePwm = 0.0;
+		digitalWrite(BrakePwmPin, false);
+		digitalWrite(BrakeOnPin, false);
+#else
+		brakePorts[driver].WriteDigital(false);
+#endif
+	}
 
 #if SAME5x
 	static int32_t tempCalF1, tempCalF2, tempCalF3, tempCalF4;		// temperature calibration factors
@@ -857,7 +888,9 @@ void Platform::Init()
 		idleCurrentFactor[i] = 0.3;
 		motorCurrents[i] = 0.0;
 		pressureAdvanceClocks[i] = 0.0;
-		driverStates[i] = DriverStateControl(DriverStateControl::driverDisabled, 0);
+		driverStates[i] = DriverStateControl::driverDisabled;
+		brakeOffDelays[i] = 0;
+		motorOffDelays[i] = DefaultDelayAfterBrakeOn;
 		// We can't set microstepping here because moveInstance hasn't been created yet
 	}
 
@@ -1018,6 +1051,34 @@ void Platform::Spin()
 	{
 		powered = false;
 	}
+#endif
+
+	// Check whether we need to turn any brake solenoids or motors off
+	for (size_t driver = 0; driver < NumDrivers; ++driver)
+	{
+		if (brakeOffTimers[driver].Check(brakeOffDelays[driver]))
+		{
+			DisengageBrake(driver);
+		}
+		if (motorOffTimers[driver].Check(motorOffDelays[driver]))
+		{
+			InternalDisableDrive(driver);
+		}
+	}
+
+#ifdef M23CL
+
+	// If the brake solenoid is activated, adjust the PWM if necessary
+	if (currentBrakePwm != 0.0 && voltsVin > 0.0)
+	{
+		const float newBrakePwm = min<float>(24.0/voltsVin, 1.0);
+		if (fabsf(newBrakePwm - currentBrakePwm >= 0.05))
+		{
+			AnalogOut::Write(BrakePwmPin, newBrakePwm, BrakePwmFrequency);
+			currentBrakePwm = newBrakePwm;
+		}
+	}
+
 #endif
 
 #if HAS_SMART_DRIVERS
@@ -1672,7 +1733,6 @@ void Platform::SetDirection(size_t driver, bool direction)
 
 #endif
 
-// The following don't do anything yet
 void Platform::SetEnableValue(size_t driver, int8_t eVal)
 {
 	if (driver < NumDrivers)
@@ -1681,11 +1741,11 @@ void Platform::SetEnableValue(size_t driver, int8_t eVal)
 # if !HAS_SMART_DRIVERS
 		if (driverIsEnabled[driver])
 		{
-			EnableDrive(driver);
+			EnableDrive(driver, 0);
 		}
 		else
 		{
-			DisableDrive(driver);
+			DisableDrive(driver, 0);
 		}
 # endif
 	}
@@ -1696,82 +1756,67 @@ int8_t Platform::GetEnableValue(size_t driver)
 	return (driver < NumDrivers) ? enableValues[driver] : 0;
 }
 
-#if SUPPORT_CLOSED_LOOP
-
-void Platform::DriveEnableOverride(size_t driver, bool doOverride)
+void Platform::EnableDrive(size_t driver, uint16_t brakeOffDelay)
 {
-	if (doOverride)
+	if (driverStates[driver] != DriverStateControl::driverActive)
 	{
-		driverEnableOverride[driver] = true;
-		InternalEnableDrive(driver);
-	}
-	else if (driverEnableOverride[driver])
-	{
-		driverEnableOverride[driver] = false;				// do this before calling InternalSetDriverIdle
-		switch (driverStates[driver].mode)
+		motorOffTimers[driver].Stop();
+		driverStates[driver] = DriverStateControl::driverActive;
+		brakeOffDelays[driver] = brakeOffDelay;
+
+# if HAS_SMART_DRIVERS
+		if (driverAtIdleCurrent[driver])
 		{
-		case DriverStateControl::driverActive:
-			break;											// driver is already enabled
+			driverAtIdleCurrent[driver] = false;
+#  if SUPPORT_CLOSED_LOOP
+			ClosedLoop::ResetError(driver);
+#  endif
+			UpdateMotorCurrent(driver);
+		}
+		SmartDrivers::EnableDrive(driver, true);
+# else
+		if (enableValues[driver] >= 0)
+		{
+			digitalWrite(EnablePins[driver], enableValues[driver] != 0);
+#  if DIFFERENTIAL_STEPPER_OUTPUTS
+			digitalWrite(InvertedEnablePins[driver], enableValues[driver] == 0);
+#  endif
+		}
+# endif
 
-		case DriverStateControl::driverIdle:
-			InternalSetDriverIdle(driver);
-			break;
-
-		case DriverStateControl::driverDisabled:
-		default:
-			InternalDisableDrive(driver);
-			break;
+# ifdef M23CL
+		if (!digitalRead(BrakeOnPin))
+# else
+		if (brakePorts[driver].IsValid() && !brakePorts[driver].ReadDigital())
+# endif
+		{
+			if (brakeOffDelay != 0)
+			{
+				brakeOffTimers[driver].Start();
+			}
+			else
+			{
+				DisengageBrake(driver);
+			}
 		}
 	}
 }
 
-#endif
-
-void Platform::EnableDrive(size_t driver)
+void Platform::DisableDrive(size_t driver, uint16_t motorOffDelay)
 {
-	driverStates[driver] = DriverStateControl(DriverStateControl::driverActive, 0);
-#if SUPPORT_CLOSED_LOOP
-	if (!driverEnableOverride[driver])						// if the override flag is set, the driver is already enabled
+	brakeOffTimers[driver].Stop();
+	driverStates[driver] = DriverStateControl::driverDisabled;
+#ifdef M23CL
+	if (motorOffDelay != 0 && digitalRead(BrakeOnPin))
+#else
+	if (motorOffDelay != 0 && brakePorts[driver].IsValid() && brakePorts[driver].ReadDigital())
 #endif
 	{
-		InternalEnableDrive(driver);
+		motorOffDelays[driver] = motorOffDelay;
+		EngageBrake(driver);
+		motorOffTimers[driver].Start();
 	}
-}
-
-void Platform::InternalEnableDrive(size_t driver)
-{
-# if HAS_SMART_DRIVERS
-	if (driverAtIdleCurrent[driver])
-	{
-		driverAtIdleCurrent[driver] = false;
-#  if SUPPORT_CLOSED_LOOP
-		ClosedLoop::ResetError(driver);
-#  endif
-		UpdateMotorCurrent(driver);
-	}
-	SmartDrivers::EnableDrive(driver, true);
-# else
-	if (enableValues[driver] >= 0)
-	{
-		digitalWrite(EnablePins[driver], enableValues[driver] != 0);
-#  if DIFFERENTIAL_STEPPER_OUTPUTS
-		digitalWrite(InvertedEnablePins[driver], enableValues[driver] == 0);
-#  endif
-	}
-# endif
-	if (brakePorts[driver].IsValid() && !brakePorts[driver].ReadDigital())
-	{
-		delay(50);											//TODO make the delay configurable
-		brakePorts[driver].WriteDigital(true);				// energise the brake solenoid to release the brake
-	}
-}
-
-void Platform::DisableDrive(size_t driver)
-{
-	driverStates[driver] = DriverStateControl(DriverStateControl::driverDisabled, 0);
-#if SUPPORT_CLOSED_LOOP
-	if (!driverEnableOverride[driver])						// if the override flag is set, don't disable the driver, just flag is as disabled
-#endif
+	else
 	{
 		InternalDisableDrive(driver);
 	}
@@ -1779,38 +1824,23 @@ void Platform::DisableDrive(size_t driver)
 
 void Platform::InternalDisableDrive(size_t driver)
 {
-	if (brakePorts[driver].IsValid() && brakePorts[driver].ReadDigital())
-	{
-		brakePorts[driver].WriteDigital(false);				// de-energise the brake solenoid to apply the brake
-		delay(100);											//TODO make this delay configurable
-	}
-# if HAS_SMART_DRIVERS
+#if HAS_SMART_DRIVERS
 	SmartDrivers::EnableDrive(driver, false);
-# else
+#else
 	if (enableValues[driver] >= 0)
 	{
 		digitalWrite(EnablePins[driver], enableValues[driver] == 0);
-#  if DIFFERENTIAL_STEPPER_OUTPUTS
+# if DIFFERENTIAL_STEPPER_OUTPUTS
 		digitalWrite(InvertedEnablePins[driver], enableValues[driver] != 0);
-#  endif
-	}
 # endif
+	}
+#endif
 }
 
 void Platform::SetDriverIdle(size_t driver, uint16_t idlePercent)
 {
 	idleCurrentFactor[driver] = (float)idlePercent * 0.01;
-	driverStates[driver] = DriverStateControl(DriverStateControl::driverIdle, 0);
-#if SUPPORT_CLOSED_LOOP
-	if (!driverEnableOverride)
-#endif
-	{
-		InternalSetDriverIdle(driver);
-	}
-}
-
-void Platform::InternalSetDriverIdle(size_t driver)
-{
+	driverStates[driver] = DriverStateControl::driverIdle;
 	if (idleCurrentFactor[driver] == 0.0)
 	{
 		InternalDisableDrive(driver);
@@ -1831,13 +1861,26 @@ void Platform::DisableAllDrives()
 # if HAS_SMART_DRIVERS
 		SmartDrivers::EnableDrive(driver, false);
 # else
-		DisableDrive(driver);
+		DisableDrive(driver, 0);
 # endif
 	}
 }
 
+#if SUPPORT_CLOSED_LOOP
+
+bool Platform::IsDriverEnabled(size_t driver)
+{
+	return driverStates[driver] == DriverStateControl::driverActive;
+}
+
+#endif
+
 GCodeResult Platform::ProcessM569Point7(const CanMessageGeneric& msg, const StringRef& reply)
 {
+#ifdef M23CL
+	reply.copy("Not supported by this board");
+	return GCodeResult::error;
+#else
 	CanMessageGenericParser parser(msg, M569Point7Params);
 	uint8_t drive;
 	if (!parser.GetUintParam('P', drive))
@@ -1862,6 +1905,7 @@ GCodeResult Platform::ProcessM569Point7(const CanMessageGeneric& msg, const Stri
 	reply.printf("Driver %u.%u uses brake port ", CanInterface::GetCanAddress(), drive);
 	brakePorts[drive].AppendPinName(reply);
 	return GCodeResult::ok;
+#endif
 }
 
 # if HAS_SMART_DRIVERS
