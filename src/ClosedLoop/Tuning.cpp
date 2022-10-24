@@ -86,7 +86,7 @@ static bool BasicTuning(bool firstIteration) noexcept
 	constexpr unsigned int NumDummySteps = 8;						// how many steps to take before we start collecting data
 	constexpr uint16_t PhaseIncrement = 8;							// how much to increment the phase by on each step, must be a factor of 4096
 	static_assert(4096 % PhaseIncrement == 0);
-	constexpr unsigned int NumSamples = 4096/PhaseIncrement;		// the number of samples we take to d the linear regression
+	constexpr unsigned int NumSamples = 4096/PhaseIncrement;		// the number of samples we take to do the linear regression
 	constexpr float HalfNumSamplesMinusOne = (float)(NumSamples - 1) * 0.5;
 	constexpr float Denominator = (float)PhaseIncrement * (fcube((float)NumSamples) - (float)NumSamples)/12.0;
 
@@ -213,9 +213,9 @@ static bool EncoderCalibration(bool firstIteration) noexcept
 	static EncoderCalibrationState state = EncoderCalibrationState::setup;
 	static uint32_t positionsPerRev;			// this gets set to 1024 * the number of full steps per revolution, i.e. 204800 or 409600
 	static uint32_t positionsTillStart;			// the position we advance to before we start tuning proper
-	static uint32_t positionIncrement;			// how much we increase the phase position by on each movement
+	static unsigned int phaseIncrementShift;	// we increase the phase position by one << this value for each sample
 	static uint32_t positionCounter;			// how many positions we have moved
-	static uint32_t virtualStartPosition;		// the virtual motor phase position we started at, calculated from the initial encoder reading
+	static int32_t initialCount;				// the initial encoder reading
 
 	if (!ClosedLoop::encoder->IsAbsolute())
 	{
@@ -223,7 +223,6 @@ static bool EncoderCalibration(bool firstIteration) noexcept
 	}
 
 	AbsoluteEncoder* const absoluteEncoder = (AbsoluteEncoder*)ClosedLoop::encoder;
-	const uint32_t maxValue = absoluteEncoder->GetMaxValue();								// get the maximum encoder reading plus one, we'll need it several times
 	const uint32_t currentPosition = ClosedLoop::currentMotorPhase;
 
 	if (firstIteration)
@@ -234,18 +233,15 @@ static bool EncoderCalibration(bool firstIteration) noexcept
 		{
 			absoluteEncoder->ClearLUT();
 		}
-		absoluteEncoder->ClearHarmonics();
+		absoluteEncoder->ClearDataCollection();
 		positionsPerRev = absoluteEncoder->GetStepsPerRev() * 1024u;
-		const float positionsPerEncoderCount = (float)positionsPerRev/(float)maxValue;
 
-		// Decide how many phase positions to advance at a time. If we always advance by just one phase position, calibration can take a long time.
-		// To speed things up, advance several phase positions at a time, but by less than one expected encoder count.
-		// Keep the advance a power of 2 phase positions so that it is a factor of positionsPerRev
-		// The AS5047 and TLI5012B both have 14-bit precision, so positionsPerEncoderCount is 12.5 for a 1.8deg motor and 25 for a 0.9deg motor
-		positionIncrement = (positionsPerEncoderCount >= 16.0) ? 8
-							: (positionsPerEncoderCount >= 8.0) ? 4
-								: (positionsPerEncoderCount >= 4.0) ? 2
-									: 1;
+		// Decide how many phase positions to advance at a time. This is down to the steps/rev ands the size of our calibration data storage array.
+		phaseIncrementShift = 0;
+		while ((absoluteEncoder->GetPhasePositionsPerRev() >> phaseIncrementShift) > AbsoluteEncoder::NumDataPoints)
+		{
+			++phaseIncrementShift;
+		}
 
 		// To counter any backlash, start by advancing a bit. Then advance to the next position which is a multiple of 4 full steps so that the phase position is zero.
 		positionsTillStart = 4096 - currentPosition;
@@ -255,7 +251,7 @@ static bool EncoderCalibration(bool firstIteration) noexcept
 		}
 	}
 
-	const uint32_t currentReading = absoluteEncoder->GetCurrentAngle();		// get the current position in 0..(maxValue - 1)
+	const int32_t currentCount = absoluteEncoder->GetCurrentCount();
 
 	switch (state)
 	{
@@ -263,14 +259,13 @@ static bool EncoderCalibration(bool firstIteration) noexcept
 		// Advancing to a suitable full step position
 		if (positionsTillStart != 0)
 		{
-			const uint32_t phaseChange = (positionsTillStart % positionIncrement) + positionIncrement;
+			const uint32_t phaseChange = (positionsTillStart % (1u << phaseIncrementShift)) + (1u << phaseIncrementShift);
 			positionsTillStart -= phaseChange;
 			ClosedLoop::SetMotorPhase(currentPosition + phaseChange, 1.0);
 			return false;
 		}
 
-		// Calculate the approximate offset
-		virtualStartPosition = ((uint64_t)currentReading * positionsPerRev)/maxValue;			// get the position we expect for this encoder reading to use as a reference
+		initialCount = currentCount;
 		positionCounter = 0;
 		state = EncoderCalibrationState::forwards;
 		// no break
@@ -279,23 +274,12 @@ static bool EncoderCalibration(bool firstIteration) noexcept
 		// Advancing slowly and recording positions
 		if (positionCounter < positionsPerRev)
 		{
-			// Record the current data point
-			// To avoid rounding error (caused by subtracting large values from each other repeatedly) in calculating the Fourier components, just calculate them from the error
-			const uint32_t position = (positionCounter + virtualStartPosition) % positionsPerRev;
-			const float expectedReading = ((float)position * (float)absoluteEncoder->GetMaxValue())/(float)positionsPerRev;
-			float error = (float)currentReading - expectedReading;
-
-			// Allow for wrap around, e.g. expected reading = 16383, actual reading = 0 or vice versa
-			if (error > (float)maxValue/2) { error -= (float)maxValue; }
-			else if (error < -(float)maxValue/2) { error += (float)maxValue; }
-
-			const float angle = (TwoPi * position)/positionsPerRev;
-			absoluteEncoder->RecordDataPoint(angle, error);
+			absoluteEncoder->RecordDataPoint(positionCounter >> phaseIncrementShift, (int16_t)(currentCount - initialCount), false);
 		}
 
 		// Move to the next position. After a complete revolution we continue another 256 positions without recording data, ready for the reverse pass.
-		ClosedLoop::SetMotorPhase(currentPosition + positionIncrement, 1.0);
-		positionCounter += positionIncrement;
+		ClosedLoop::SetMotorPhase(currentPosition + (1u << phaseIncrementShift), 1.0);
+		positionCounter += 1u << phaseIncrementShift;
 		if (positionCounter == positionsPerRev + 256)
 		{
 			state = EncoderCalibrationState::backwards;
@@ -305,35 +289,23 @@ static bool EncoderCalibration(bool firstIteration) noexcept
 	case EncoderCalibrationState::backwards:
 		if (positionCounter < positionsPerRev)
 		{
-			// Record the current data point
-			// To avoid rounding error (caused by subtracting large values from each other repeatedly) in calculating the Fourier components, just calculate them from the error
-			{
-				const uint32_t position = (positionCounter + virtualStartPosition) % positionsPerRev;
-				const float expectedReading = ((float)position * (float)absoluteEncoder->GetMaxValue())/(float)positionsPerRev;
-				float error = (float)currentReading - expectedReading;
+			absoluteEncoder->RecordDataPoint(positionCounter >> phaseIncrementShift, (int16_t)(currentCount - initialCount), true);
 
-				// Allow for wrap around, e.g. expected reading = 16383, actual reading = 0 or vice versa
-				if (error > (float)maxValue/2) { error -= (float)maxValue; }
-				else if (error < -(float)maxValue/2) { error += (float)maxValue; }
-
-				const float angle = (TwoPi * position)/positionsPerRev;
-				absoluteEncoder->RecordDataPoint(angle, error);
-			}
-
-			// Retreating slowly and recording positions
 			if (positionCounter == 0)
 			{
 				// We are finished
 				if (ClosedLoop::tuning & ClosedLoop::ENCODER_CALIBRATION_MANOEUVRE)
 				{
 					// Calibrating the encoder
-					absoluteEncoder->StoreLUT(virtualStartPosition, (2 * positionsPerRev)/positionIncrement);
-					ClosedLoop::FinishedEncoderCalibration();			// set target position to current position
+					absoluteEncoder->Calibrate(initialCount, positionsPerRev >> phaseIncrementShift, true);
+					absoluteEncoder->StoreLUT(initialCount, positionsPerRev >> phaseIncrementShift);
+					ClosedLoop::FinishedEncoderCalibration();
 				}
 				else
 				{
 					// Checking the calibration
-					absoluteEncoder->CheckLUT(virtualStartPosition, (2 * positionsPerRev)/positionIncrement);
+					absoluteEncoder->Calibrate(initialCount, positionsPerRev >> phaseIncrementShift, false);
+					absoluteEncoder->CheckLUT(initialCount, (2 * positionsPerRev) >> phaseIncrementShift);
 					ClosedLoop::ReportEncoderCalibrationCheckResult();
 				}
 				return true;
@@ -341,8 +313,8 @@ static bool EncoderCalibration(bool firstIteration) noexcept
 		}
 
 		// Move to the next position
-		ClosedLoop::SetMotorPhase(currentPosition - positionIncrement, 1.0);
-		positionCounter -= positionIncrement;
+		ClosedLoop::SetMotorPhase(currentPosition - (1u << phaseIncrementShift), 1.0);
+		positionCounter -= 1u << phaseIncrementShift;
 		break;
 	}
 	return false;

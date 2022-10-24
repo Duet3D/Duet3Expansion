@@ -57,7 +57,7 @@ bool AbsoluteEncoder::TakeReading() noexcept
 		{
 			rawAngle = rawReading;
 		}
-		currentPhasePosition = (((newAngle * stepsPerRev * 1024u) >> resolutionBits) + zeroCountPhasePosition) & 4095u;
+		currentPhasePosition = (((newAngle * GetPhasePositionsPerRev()) >> resolutionBits) + zeroCountPhasePosition) & 4095u;
 
 		// Accumulate the full rotations if one has occurred
 		const int32_t difference = (int32_t)newAngle - (int32_t)currentAngle;
@@ -91,7 +91,7 @@ void AbsoluteEncoder::SetKnownPhaseAtCount(uint32_t phase, int32_t count) noexce
 {
 	count %= (int32_t)GetCountsPerRev();
 	if (count < 0) { count += (int32_t)GetCountsPerRev(); }
-	const uint32_t relativePhasePosition = ((uint32_t)count * stepsPerRev * 1024u) >> resolutionBits;
+	const uint32_t relativePhasePosition = ((uint32_t)count * GetPhasePositionsPerRev()) >> resolutionBits;
 	zeroCountPhasePosition = (phase - relativePhasePosition) & 4095u;
 }
 
@@ -180,6 +180,7 @@ void AbsoluteEncoder::PopulateLUT(NonVolatileMemory& mem) noexcept
 
 void AbsoluteEncoder::StoreLUT(uint32_t virtualStartPosition, uint32_t numReadingsTaken) noexcept
 {
+#if 0
 #ifdef DEBUG
 	debugPrintf("Calibration min/max errors [%.1f %.1f]\nSin/cos coefficients:", (double)minCalibrationError, (double)maxCalibrationError);
 #endif
@@ -208,10 +209,12 @@ void AbsoluteEncoder::StoreLUT(uint32_t virtualStartPosition, uint32_t numReadin
 
 	// Populate the LUT from the coefficients
 	PopulateLUT(mem);
+#endif
 }
 
 void AbsoluteEncoder::CheckLUT(uint32_t virtualStartPosition, uint32_t numReadingsTaken) noexcept
 {
+#if 0
 #ifdef DEBUG
 	debugPrintf("Calibration check min/max errors [%.1f %.1f]\nSin/cos coefficients:", (double)minCalibrationError, (double)maxCalibrationError);
 #endif
@@ -248,6 +251,7 @@ void AbsoluteEncoder::CheckLUT(uint32_t virtualStartPosition, uint32_t numReadin
 	}
 	rmsError = sqrtf(rmsError/LUTLength);
 	meanError = -cosines[0];
+#endif
 }
 
 // Clear the LUT. We may be about to calibrate the encoder, so clear the calibration values too.
@@ -256,12 +260,9 @@ void AbsoluteEncoder::ClearLUT() noexcept
 	LUTLoaded = false;
 }
 
-void AbsoluteEncoder::ClearHarmonics() noexcept
+void AbsoluteEncoder::ClearDataCollection() noexcept
 {
-	for (size_t i = 0; i < NumHarmonics; ++i)
-	{
-		sines[i] = cosines[i] = 0.0;
-	}
+	hysteresisSum = dataSum = 0;
 	minCalibrationError = std::numeric_limits<float>::infinity();
 	maxCalibrationError = -std::numeric_limits<float>::infinity();
 }
@@ -274,17 +275,126 @@ void AbsoluteEncoder::ScrubLUT() noexcept
 	mem.EnsureWritten();
 }
 
-void AbsoluteEncoder::RecordDataPoint(float angle, float error) noexcept
+void AbsoluteEncoder::RecordDataPoint(size_t index, int16_t data, bool backwards) noexcept
 {
-	if (error < minCalibrationError) { minCalibrationError = error; }
-	if (error > maxCalibrationError) { maxCalibrationError = error; }
+	dataSum += data;
+	if (backwards)
+	{
+		hysteresisSum += calibrationData[index] - data;
+		calibrationData[index] += data;
+	}
+	else
+	{
+		calibrationData[index] = data;
+	}
+}
 
-	// Update the harmonic series coefficients
+// Analyse the calibration data and optionally store it. We have the specified number of data points but we read each point twice, once while rotating forwards and once backwards.
+void AbsoluteEncoder::Calibrate(int32_t initialCount, size_t numDataPoints, bool store) noexcept
+{
+	// Normalise initialCount to be within 0..GetMaxValue()
+	const uint32_t normalisedInitialCount = (uint32_t)initialCount % GetMaxValue();
+
+	// dataSum is the sum of all the readings. If it is negative then the encoder is running backwards.
+	const float twiceExpectedMidPointDifference = (float)dataSum/(float)numDataPoints;
+
+	// expectedMidPointDifference should be close to half the encoder counts/rev
+	const float ratio = twiceExpectedMidPointDifference/GetMaxValue();
+	bool runningBackwards = false;
+	if (ratio >= 0.95 && ratio <= 1.05)
+	{
+		// running forwards
+		debugPrintf("forwards\n");
+	}
+	else if (ratio <= -0.95 && ratio >= -1.05)
+	{
+		debugPrintf("backwards\n");
+		runningBackwards = true;
+	}
+	else
+	{
+		debugPrintf("bad encoder, ratio = %.2f\n", (double)ratio);
+		//TODO report bad encoder and quit
+	}
+
+	const float expectedMidPointReading = twiceExpectedMidPointDifference/2.0 + (float)normalisedInitialCount;
+	float phaseCorrection = (expectedMidPointReading * (float)GetPhasePositionsPerRev()/(float)GetMaxValue()) - (float)(GetPhasePositionsPerRev()/2);
+	if (runningBackwards)
+	{
+		phaseCorrection = -phaseCorrection;
+	}
+	while (phaseCorrection >  (float)(GetPhasePositionsPerRev()/2)) { phaseCorrection -= (float)GetPhasePositionsPerRev(); }
+	while (phaseCorrection < -(float)(GetPhasePositionsPerRev()/2)) { phaseCorrection += (float)GetPhasePositionsPerRev(); }
+	debugPrintf("exp mid pt rdg %.1f, init count %" PRIi32 ", norm init count %" PRIu32 ", phase corr %.1f\n", (double)expectedMidPointReading, initialCount, normalisedInitialCount, (double)phaseCorrection);
+
+	int32_t expectedZeroReadingPhase = -(int32_t)phaseCorrection % 4096;
+	if (expectedZeroReadingPhase < 0) { expectedZeroReadingPhase += 4096; }
+
+	// Now Fourier analyse the data, using the expected zero reading phase to set the angle origin
+	minCalibrationError = std::numeric_limits<float>::infinity();
+	maxCalibrationError = -std::numeric_limits<float>::infinity();
+
+	// Do an initial Fourier analysis of the data, assuming the origin is (0, 0)
+	float sines[NumHarmonics], cosines[NumHarmonics];
 	for (size_t i = 0; i < NumHarmonics; ++i)
 	{
-		sines[i] += error * sinf(angle * i);
-		cosines[i] += error * cosf(angle * i);
+		sines[i] = cosines[i] = 0.0;
 	}
+	const float correctionRevFraction = phaseCorrection/GetPhasePositionsPerRev();
+	debugPrintf("crf=%.3f hyst=%.2f\n", (double)correctionRevFraction, (double)((float)hysteresisSum/(float)numDataPoints));
+	float rmsErrorAcc = 0.0;
+	float sinSteps = 0.0;
+	float cosSteps = 0.0;
+	for (size_t i = 0; i < numDataPoints; ++i)
+	{
+		const float revFraction = (float)i/(float)numDataPoints + correctionRevFraction;
+		const float angle = TwoPi * revFraction;
+		float expectedValue = revFraction * GetMaxValue() * 2;		// *2 because we stored 2 values for each data point
+		if (runningBackwards)
+		{
+			expectedValue = -expectedValue;
+		}
+		float error = expectedValue - (float)((uint32_t)calibrationData[i] + (2 * initialCount));
+		while (error >  (float)(GetMaxValue())) { error -= (float)(2 * GetMaxValue()); }
+		while (error < -(float)(GetMaxValue())) { error += (float)(2 * GetMaxValue()); }
+
+//		if ((i & 127) == 0)
+//		{
+//			debugPrintf("exp %.1f calib %.1f err %.1f\n", (double)expectedValue, (double)((uint32_t)calibrationData[i] + (2 * initialCount)), (double)error);
+//		}
+		if (error < minCalibrationError) { minCalibrationError = error; }
+		if (error > maxCalibrationError) { maxCalibrationError = error; }
+		rmsErrorAcc += fsquare(error);
+
+		for (size_t j = 0; j < NumHarmonics; ++j)
+		{
+			sines[j] += error * sinf(angle * j);
+			cosines[j] += error * cosf(angle * j);
+		}
+
+		sinSteps += error * sinf(TwoPi * (float)(i * stepsPerRev)/(float)numDataPoints);
+		cosSteps += error * cosf(TwoPi * (float)(i * stepsPerRev)/(float)numDataPoints);
+	}
+
+	minCalibrationError *= 0.5;
+	maxCalibrationError *= 0.5;
+	rmsErrorAcc = 0.5 * sqrtf(rmsErrorAcc/numDataPoints);
+
+#ifdef DEBUG
+	debugPrintf("Calibration zrp %" PRIi32 " min/max/rms errors [%.1f %.1f %.1f] sin/cos steps [%.2f %.2f]\nSin/cos coefficients:",
+				expectedZeroReadingPhase, (double)minCalibrationError, (double)maxCalibrationError, (double)rmsErrorAcc, (double)(sinSteps/numDataPoints), (double)(cosSteps/numDataPoints));
+#endif
+	for (size_t harmonic = 0; harmonic < NumHarmonics; harmonic++)
+	{
+		sines[harmonic] = sines[harmonic]/numDataPoints;
+		cosines[harmonic] = (harmonic == 0) ? 0.5 * cosines[harmonic]/numDataPoints : cosines[harmonic]/numDataPoints;
+#ifdef DEBUG
+		debugPrintf(" [%.3f %.3f]", (double)sines[harmonic], (double)cosines[harmonic]);
+#endif
+	}
+#ifdef DEBUG
+	debugPrintf("\n");
+#endif
 }
 
 void AbsoluteEncoder::ReportCalibrationResult(const StringRef& reply) const noexcept

@@ -163,6 +163,7 @@ namespace ClosedLoop
 	bool 	preStall = false;							// Has the closed loop warning threshold been exceeded?
 	bool	haveNewCalibrationResult = false;
 	bool	haveNewCalibrationCheckResult = false;
+	bool	haveNewBasicTuningResult = false;
 
 	float measuredCountsPerStep;
 	float tuningHysteresis;
@@ -557,6 +558,23 @@ GCodeResult ClosedLoop::ProcessM569Point6(const CanMessageGeneric &msg, const St
 			return GCodeResult::notFinished;
 		}
 
+		bool warn = false;
+
+		// Tuning has finished - there are now 3 scenarios
+		// 1. No tuning errors exist (!tuningError)							= OK
+		// 2. No new tuning errors exist !(~prevTuningError & tuningError)	= WARNING
+		// 3. A new tuning error has been introduced (else)					= WARNING
+		if (haveNewBasicTuningResult)
+		{
+			reply.lcatf("Driver %u.0 tuned successfully, measured hysteresis %.2f step", CanInterface::GetCanAddress(), (double)tuningHysteresis);
+			if (tuningHysteresis >= MaxSafeHysteresis)
+			{
+				reply.lcat("Measured hysteresis is high");
+				warn = true;
+			}
+			haveNewBasicTuningResult = false;
+		}
+
 		// If we were checking the calibration, report the result
 		if (encoder->IsAbsolute())
 		{
@@ -572,46 +590,21 @@ GCodeResult ClosedLoop::ProcessM569Point6(const CanMessageGeneric &msg, const St
 			}
 		}
 
-#if BASIC_TUNING_DEBUG
-		forwardTuningResults.Print("Forward", reply);
-		reverseTuningResults.Print("Reverse", reply);
-#endif
-
-		// Tuning has finished - there are now 3 scenarios
-		// 1. No tuning errors exist (!tuningError)							= OK
-		// 2. No new tuning errors exist !(~prevTuningError & tuningError)	= WARNING
-		// 3. A new tuning error has been introduced (else)					= WARNING
-		if (tuningError == 0)
-		{
-#if BASIC_TUNING_DEBUG
-			reply.lcatf("OER %" PRIi32 " AER %.1f DER %.1f DSP %u OMSP %u OCMS %.3f",
-						originalRawEncoderReading, (double)originalAssumedEncoderReading, (double)originalDesiredEncoderReading,
-							originalDesiredStepPhase, originalMeasuredStepPhase, (double)originalCurrentMotorSteps);
-			reply.lcatf("OCM %" PRIi32 " FER %" PRIi32 " FMSP %u FCMS %.3f",
-						offsetCorrectionMade, finalRawEncoderReading, finalMeasuredStepPhase, (double)finalCurrentMotorSteps);
-#endif
-			reply.lcatf("Driver %u.0 tuned successfully, measured hysteresis %.2f step", CanInterface::GetCanAddress(), (double)tuningHysteresis);
-			if (tuningHysteresis <= MaxSafeHysteresis)
-			{
-				return GCodeResult::ok;
-			}
-			reply.lcat("Measured hysteresis is high");
-			return GCodeResult::warning;
-		}
-
-		// Tuning failed so report the errors
+		// Report any errors
 		if ((~prevTuningError & tuningError) != 0)
 		{
+			warn = true;
 			reply.lcatf("Driver %u.0 new tuning error(s):", CanInterface::GetCanAddress());
 			ReportTuningErrors(~prevTuningError & tuningError, reply);
 		}
 		if ((prevTuningError & tuningError) != 0)
 		{
+			warn = true;
 			reply.lcatf("Driver %u.0 un-cleared previous tuning error(s):", CanInterface::GetCanAddress());
 			ReportTuningErrors(prevTuningError & tuningError, reply);
 		}
 
-		return GCodeResult::warning;
+		return (warn) ? GCodeResult::warning : GCodeResult::ok;
 	}
 
 	if (desiredTuning == 0 || (desiredTuning > 8 && desiredTuning != 64))
@@ -734,6 +727,7 @@ void ClosedLoop::FinishedBasicTuning(float forwardSlope, float reverseSlope, flo
 	}
 
 	tuningError &= ~TUNE_ERR_NOT_DONE_BASIC;
+	haveNewBasicTuningResult = true;
 }
 
 // Call this when we have finished calibrating an absolute encoder

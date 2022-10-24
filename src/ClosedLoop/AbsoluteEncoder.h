@@ -63,13 +63,15 @@ public:
 	uint32_t GetCountsPerRev() const noexcept { return 1u << resolutionBits; }
 
 	// Lookup table (LUT) management
-	void RecordDataPoint(float angle, float error) noexcept;
+	void RecordDataPoint(size_t index, int16_t data, bool backwards) noexcept;
+	void Calibrate(int32_t initialCount, size_t numDataPoints, bool store) noexcept;
+
 	bool LoadLUT() noexcept;
 	void StoreLUT(uint32_t virtualStartPosition, uint32_t numReadingsTaken) noexcept;
 	void CheckLUT(uint32_t virtualStartPosition, uint32_t numReadingsTaken) noexcept;
 	void ClearLUT() noexcept;
 	void ScrubLUT() noexcept;
-	void ClearHarmonics() noexcept;
+	void ClearDataCollection() noexcept;
 
 	unsigned int GetMaxValue() const noexcept { return 1ul << resolutionBits; }
 	unsigned int GetNumLUTEntries() const noexcept { return 1u << (resolutionBits - resolutionToLutShiftFactor); }
@@ -78,6 +80,8 @@ public:
 
 	void ReportCalibrationResult(const StringRef& reply) const noexcept;
 	void ReportCalibrationCheckResult(const StringRef& reply) const noexcept;
+
+	static constexpr size_t NumDataPoints = 200 * 64;				// support up to 64 data points per full step
 
 protected:
 	// This must be defined to set rawReading to a value between 0 and one below GetMaxValue()
@@ -111,8 +115,10 @@ private:
 	bool LUTLoaded = false;
 	bool isBackwards = false;
 	float minCalibrationError = 0.0, maxCalibrationError = 0.0;		// min and max corrections, for reporting in diagnostics
+	int16_t calibrationData[NumDataPoints];
+	int32_t dataSum;
+	int32_t hysteresisSum;
 	uint16_t correctionLUT[NumLutEntries];							// mapping from raw encoder reading to corrected reading
-	float sines[NumHarmonics], cosines[NumHarmonics];
 };
 
 # endif
