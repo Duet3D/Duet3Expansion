@@ -715,10 +715,8 @@ void ClosedLoop::FinishedBasicTuning(float forwardSlope, float reverseSlope, flo
 #ifdef DEBUG
 		debugPrintf("zph %" PRIi32 " current rdg %" PRIi32 " current phase %u\n", averageZeroPhaseCount, encoder->GetCurrentCount(), desiredStepPhase);
 #endif
-		encoder->SetKnownPhaseAtCount(averageZeroPhaseCount, 0);						// tell the encoder that the phase is zero when the count is this
 		encoder->SetBackwards(averageSlope < 0.0);
-		const bool err = encoder->TakeReading();										// SetBackwards changes the reading
-		(void)err;		//TODO error handling
+		encoder->SetKnownPhaseAtCount(averageZeroPhaseCount, 0);						// tell the encoder that the phase is zero when the count is this
 		targetEncoderReading = encoder->GetCurrentCount();
 		targetMotorSteps = (float)targetEncoderReading / encoder->GetCountsPerStep();
 #if BASIC_TUNING_DEBUG

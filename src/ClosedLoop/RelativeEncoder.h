@@ -40,12 +40,19 @@ public:
 	// Clear the accumulated full rotations so as to get the count back to a smaller number
 	void ClearFullRevs() noexcept override { currentCount %= (int32_t)countsPerRev; }
 
+	// Encoder polarity. Changing this will change the encoder reading.
+	void SetBackwards(bool backwards) noexcept override;
+
+	// Return the encoder polarity
+	bool IsBackwards() const noexcept override { return reversePolarityMultiplier < 0; }
+
 protected:
 	// Get the relative position since the start
 	virtual int32_t GetRelativePosition(bool& error) noexcept = 0;
 
 private:
 	uint32_t countsPerRev;
+	int32_t reversePolarityMultiplier = 1;
 };
 
 #endif

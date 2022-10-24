@@ -349,8 +349,6 @@ static FirmwareFlashErrorCode GetBootloaderBlock(uint8_t *blockBuffer)
 	return FirmwareFlashErrorCode::ok;
 }
 
-#endif	// !RP2040
-
 static void ReportFlashError(FirmwareFlashErrorCode err)
 {
 	for (unsigned int i = 0; i < (unsigned int)err; ++i)
@@ -363,6 +361,8 @@ static void ReportFlashError(FirmwareFlashErrorCode err)
 
 	delay(1000);
 }
+
+#endif	// !RP2040
 
 // Compute the CRC32 of a dword-aligned block of memory
 // This assumes the caller has exclusive use of the DMAC

@@ -23,8 +23,7 @@ bool AbsoluteEncoder::TakeReading() noexcept
 	bool err = GetRawReading();
 	if (!err)
 	{
-		rawAngle = (IsBackwards()) ? GetMaxValue() - 1 - rawReading : rawReading;
-		uint32_t newAngle = rawAngle;
+		uint32_t newAngle = rawReading;
 
 		// Apply LUT correction (if the LUT is loaded)
 		if (LUTLoaded)
@@ -49,6 +48,15 @@ bool AbsoluteEncoder::TakeReading() noexcept
 			}
 		}
 
+		if (IsBackwards())
+		{
+			newAngle = (GetMaxValue() - newAngle) & (GetMaxValue() - 1);
+			rawAngle = (GetMaxValue() - rawReading) & (GetMaxValue() - 1);
+		}
+		else
+		{
+			rawAngle = rawReading;
+		}
 		currentPhasePosition = (((newAngle * stepsPerRev * 1024u) >> resolutionBits) + zeroCountPhasePosition) & 4095u;
 
 		// Accumulate the full rotations if one has occurred
@@ -85,6 +93,20 @@ void AbsoluteEncoder::SetKnownPhaseAtCount(uint32_t phase, int32_t count) noexce
 	if (count < 0) { count += (int32_t)GetCountsPerRev(); }
 	const uint32_t relativePhasePosition = ((uint32_t)count * stepsPerRev * 1024u) >> resolutionBits;
 	zeroCountPhasePosition = (phase - relativePhasePosition) & 4095u;
+}
+
+// Encoder polarity. Changing this will change the encoder reading.
+void AbsoluteEncoder::SetBackwards(bool backwards) noexcept
+{
+	if (isBackwards != backwards)
+	{
+		rawAngle = (GetMaxValue() - rawAngle) & (GetMaxValue() - 1);
+		const uint32_t oldCurrentAngle = currentAngle;
+		currentAngle = (GetMaxValue() - currentAngle) & (GetMaxValue() - 1);
+		const int32_t angleChange = (int32_t)currentAngle - (int32_t)oldCurrentAngle;
+		currentCount += angleChange;
+		isBackwards = backwards;
+	}
 }
 
 bool AbsoluteEncoder::LoadLUT() noexcept
@@ -166,9 +188,9 @@ void AbsoluteEncoder::StoreLUT(uint32_t virtualStartPosition, uint32_t numReadin
 	NonVolatileMemory mem(NvmPage::closedLoop);
 	for (size_t harmonic = 0; harmonic < NumHarmonics; harmonic++)
 	{
+		const float sineCoefficient = 2.0 * sines[harmonic]/numReadingsTaken;
 		if (harmonic != 0)				// the zero-order sine coefficient is always zero, so we store the zero count phase there instead
 		{
-			const float sineCoefficient = 2.0 * sines[harmonic]/numReadingsTaken;
 			mem.SetClosedLoopHarmonicValue(harmonic * 2, sineCoefficient);
 		}
 		const float cosineCoefficient = (harmonic == 0) ? cosines[harmonic]/numReadingsTaken : 2.0 * cosines[harmonic]/numReadingsTaken;

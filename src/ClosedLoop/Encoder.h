@@ -54,11 +54,11 @@ public:
 	// Get the accumulated count
 	int32_t GetCurrentCount() const noexcept { return currentCount; }
 
-	// Encoder polarity. Changing this will change subsequent encoder readings, so call AdjustOffset afterwards.
-	void SetBackwards(bool backwards) noexcept { reversePolarityMultiplier = (backwards) ? -1 : 1; }
+	// Encoder polarity. Changing this will change the encoder reading.
+	virtual void SetBackwards(bool backwards) noexcept = 0;
 
 	// Return the encoder polarity
-	bool IsBackwards() const noexcept { return reversePolarityMultiplier < 0; }
+	virtual bool IsBackwards() const noexcept = 0;
 
 	// Return the number of encoder counts per step
 	float GetCountsPerStep() const noexcept { return countsPerStep; }
@@ -74,7 +74,6 @@ public:
 
 protected:
 	uint32_t stepsPerRev;
-	int32_t reversePolarityMultiplier = 1;
 	uint32_t currentPhasePosition = 0;
 	int32_t currentCount = 0;
 	uint32_t zeroCountPhasePosition = 0;

@@ -47,6 +47,12 @@ public:
 	// Clear the accumulated full rotations so as to get the count back to a smaller number
 	void ClearFullRevs() noexcept override;
 
+	// Encoder polarity. Changing this will change the encoder reading.
+	void SetBackwards(bool backwards) noexcept override;
+
+	// Return the encoder polarity
+	bool IsBackwards() const noexcept override { return isBackwards; }
+
 	// Get the angle within a rotation from the most recent reading, corrected for direction only
 	uint32_t GetRawAngle() const noexcept { return rawAngle; }
 
@@ -103,6 +109,7 @@ private:
 
 	// LUT variables
 	bool LUTLoaded = false;
+	bool isBackwards = false;
 	float minCalibrationError = 0.0, maxCalibrationError = 0.0;		// min and max corrections, for reporting in diagnostics
 	uint16_t correctionLUT[NumLutEntries];							// mapping from raw encoder reading to corrected reading
 	float sines[NumHarmonics], cosines[NumHarmonics];
