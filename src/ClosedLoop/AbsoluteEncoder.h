@@ -25,6 +25,8 @@
 
 # if SUPPORT_CLOSED_LOOP
 
+#include "TuningErrors.h"
+
 class NonVolatileMemory;
 
 // Base class for absolute encoders. The encoder resolution(counts/revolution) must be a power of two.
@@ -65,7 +67,7 @@ public:
 	// Lookup table (LUT) management
 	void ClearDataCollection(size_t p_numDataPoints) noexcept;
 	void RecordDataPoint(size_t index, int32_t data, bool backwards) noexcept;
-	void Calibrate(bool store) noexcept;
+	TuningErrors Calibrate(bool store) noexcept;
 
 	bool LoadLUT() noexcept;
 	void StoreLUT(uint32_t virtualStartPosition, uint32_t numReadingsTaken) noexcept;
@@ -100,7 +102,7 @@ protected:
 	float rmsCorrection = 0.0, rmsError = 0.0;
 
 private:
-	static constexpr unsigned int NumHarmonics = 17;				// store harmonics 0-16
+	static constexpr unsigned int NumHarmonics = 10;				// store harmonics 0-9
 	static constexpr unsigned int LutResolutionBits = 10;
 	static constexpr size_t NumLutEntries = 1ul << LutResolutionBits;
 
@@ -123,6 +125,7 @@ private:
 	int32_t initialCount;
 	int32_t dataBias;
 	size_t numDataPoints;
+	unsigned int calibrationPhase;
 	int16_t calibrationData[MaxDataPoints];
 };
 

@@ -20,6 +20,8 @@
 
 #if SUPPORT_CLOSED_LOOP
 
+#include "TuningErrors.h"
+
 class RelativeEncoder : public Encoder
 {
 public:
@@ -46,6 +48,15 @@ public:
 	// Return the encoder polarity
 	bool IsBackwards() const noexcept override { return reversePolarityMultiplier < 0; }
 
+	// Set the forward tuning results
+	void SetForwardTuningResults(float slope, float origin, float xMean) noexcept { forwardSlope = slope; forwardOrigin = origin; forwardXmean = xMean; }
+
+	// Set the reverse tuning results
+	void SetReverseTuningResults(float slope, float origin, float xMean) noexcept { reverseSlope = slope; reverseOrigin = origin; reverseXmean = xMean; }
+
+	// Process the tuning data
+	TuningErrors ProcessTuningData() noexcept;
+
 protected:
 	// Get the relative position since the start
 	virtual int32_t GetRelativePosition(bool& error) noexcept = 0;
@@ -53,6 +64,14 @@ protected:
 private:
 	uint32_t countsPerRev;
 	int32_t reversePolarityMultiplier = 1;
+
+	// Tuning data
+	float forwardSlope;
+	float reverseSlope;
+	float forwardOrigin;
+	float reverseOrigin;
+	float forwardXmean;
+	float reverseXmean;
 };
 
 #endif

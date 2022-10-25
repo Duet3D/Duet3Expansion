@@ -64,15 +64,17 @@ using std::numeric_limits;
 // Variables that are used by both the ClosedLoop and the Tuning modules
 
 Encoder*	ClosedLoop::encoder = nullptr;				// Pointer to the encoder object in use
-uint8_t		ClosedLoop::tuning = 0;						// Bitmask of any tuning manoeuvres that have been requested
-uint8_t		ClosedLoop::tuningError;					// Flags for any tuning errors
+volatile uint8_t ClosedLoop::tuning = 0;				// Bitmask of any tuning manoeuvres that have been requested
+TuningErrors ClosedLoop::tuningError;					// Flags for any tuning errors
 uint16_t	ClosedLoop::desiredStepPhase = 0;			// The desired position of the motor
 uint32_t	ClosedLoop::currentMotorPhase;				// the phase (0 to 4095) that the driver is set to
 
 namespace ClosedLoop
 {
 	// Constants private to this module
-	constexpr size_t TaskStackWords = 200;				// Size of the stack for all closed loop tasks
+	constexpr size_t DataCollectionTaskStackWords = 200;		// Size of the stack for all closed loop tasks
+	constexpr size_t EncoderCalibrationTaskStackWords = 300;	// Size of the stack for all closed loop tasks
+
 	constexpr unsigned int derivativeFilterSize = 8;	// The range of the derivative filter (use a power of 2 for efficiency)
 	constexpr unsigned int DataBufferSize = 2000 * 14;	// When collecting samples we can accommodate 2000 readings of up to 13 variables + timestamp
 	constexpr unsigned int tuningStepsPerSecond = 2000;	// the rate at which we send 1/256 microsteps during tuning, slow enough for high-inertia motors
@@ -85,9 +87,8 @@ namespace ClosedLoop
 	constexpr float MinimumDegreesPhaseShift = 15.0;	// the phase shift at which we start reducing current instead of reducing the phase shift, where 90deg is one full step
 	constexpr float MinimumPhaseShift = (MinimumDegreesPhaseShift/360.0) * 4096;	// the same in units where 4096 is a complete circle
 
-	constexpr float MaxSlopeMismatch = 0.1;				// we want the forward and reverse measured CPS each to be within 10% of the average
-	constexpr float MinimumSlope = 7.5/1024;			// we require at least 8 transitions (8 pulses) per step, but we may measure slightly lower than the true value
-	constexpr float MaxSafeHysteresis = 0.2;			// the maximum hysteresis in full steps that we are happy with - warn if there is more
+	constexpr float MaxSafeHysteresis = 0.2;			// the maximum hysteresis in full steps that we can use - error if there is more
+	constexpr float MaxGoodHysteresis = 0.1;			// the maximum hysteresis in full steps that we are happy with - warn if there is more
 
 	constexpr float PIDIlimit = 80.0;
 
@@ -102,7 +103,6 @@ namespace ClosedLoop
 
 	// Control variables, set by the user to determine how the closed loop controller works
 	bool 	closedLoopEnabled = false;					// Has closed loop been enabled by the user?
-	uint8_t prevTuningError;							// Used to see what errors have been introduced by tuning
 
 	// Holding current, and variables derived from it
 	float 	holdCurrentFraction = DefaultHoldCurrentFraction;			// The minimum holding current when stationary
@@ -161,12 +161,16 @@ namespace ClosedLoop
 
 	bool 	stall = false;								// Has the closed loop error threshold been exceeded?
 	bool 	preStall = false;							// Has the closed loop warning threshold been exceeded?
-	bool	haveNewCalibrationResult = false;
-	bool	haveNewCalibrationCheckResult = false;
-	bool	haveNewBasicTuningResult = false;
 
-	float measuredCountsPerStep;
-	float tuningHysteresis;
+	// Basic tuning synchronisation
+	volatile bool basicTuningDataReady = false;
+
+	// Encoder calibration synchronisation
+	enum class CalibrationState : uint8_t { notReady = 0, dataReady, complete };
+	volatile CalibrationState calibrationState = CalibrationState::notReady;
+	volatile bool calibrateNotCheck = false;
+	volatile TuningErrors calibrationErrors;
+
 	StepTimer::Ticks whenLastTuningStepTaken;			// when the control loop last called the tuning code
 
 #if BASIC_TUNING_DEBUG
@@ -187,13 +191,13 @@ namespace ClosedLoop
 		// None
 		0,
 		// linearQuadrature
-		TUNE_ERR_NOT_DONE_BASIC,
+		TuningError::NeedsBasicTuning,
 		// rotaryQuadrature
-		TUNE_ERR_NOT_DONE_BASIC,
+		TuningError::NeedsBasicTuning,
 		// AS5047
-		TUNE_ERR_NOT_CALIBRATED,
+		TuningError::NotCalibrated,
 		// TLI5012
-		TUNE_ERR_NOT_CALIBRATED,
+		TuningError::NotCalibrated,
 	};
 
 	// Monitoring variables
@@ -217,14 +221,18 @@ namespace ClosedLoop
 	void CollectSample() noexcept;
 	void ControlMotorCurrents(StepTimer::Ticks loopStartTime) noexcept;
 	void StartTuning(uint8_t tuningType) noexcept;
+	GCodeResult ProcessBasicTuningResult(const StringRef& reply) noexcept;
+	GCodeResult ProcessCalibrationResult(const StringRef& reply) noexcept;
 	void ReportTuningErrors(uint8_t tuningErrorBitmask, const StringRef& reply) noexcept;
 
 	extern "C" [[noreturn]] void DataTransmissionLoop(void *param) noexcept;
+	extern "C" [[noreturn]] void EncoderCalibrationLoop(void *param) noexcept;
 
 }	// end namespace
 
 // Tasks and task loops
-static Task<ClosedLoop::TaskStackWords> *dataTransmissionTask;		// Data transmission task - handles sending back the buffered sample data
+static Task<ClosedLoop::DataCollectionTaskStackWords> *dataTransmissionTask = nullptr;		// Data transmission task - handles sending back the buffered sample data
+static Task<ClosedLoop::EncoderCalibrationTaskStackWords> *encoderCalibrationTask = nullptr;		// Encoder calibration task - handles calibrating the encoder in the background
 
 // Helper function to count the number of variables being collected by a given filter
 static inline unsigned int CountVariablesCollected(uint16_t filter)
@@ -282,23 +290,13 @@ float ClosedLoop::ExternalUnitsToPulsePerStep(float externalUnits, uint8_t encod
 // Helper function to cat all the current tuning errors onto a reply in human-readable form
 void ClosedLoop::ReportTuningErrors(uint8_t tuningErrorBitmask, const StringRef &reply)
 {
-	if (tuningErrorBitmask & TUNE_ERR_NOT_DONE_BASIC) 		{ reply.cat(" The drive has not had basic tuning done."); }
-	if (tuningErrorBitmask & TUNE_ERR_NOT_CALIBRATED) 		{ reply.cat(" The drive has not been calibrated."); }
-	if (tuningErrorBitmask & TUNE_ERR_SYSTEM_ERROR) 		{ reply.cat(" A system error occurred while tuning."); }
-	if (tuningErrorBitmask & TUNE_ERR_INCONSISTENT_MOTION)	{ reply.cat(" The measured motion was inconsistent."); }
-	if (tuningErrorBitmask & TUNE_ERR_TOO_LITTLE_MOTION)	{ reply.cat(" The measured motion was less than expected; "); }
-	if (tuningErrorBitmask & TUNE_ERR_TOO_MUCH_MOTION)		{ reply.cat(" The measured motion was more than expected; "); }
-	if (tuningErrorBitmask & (TUNE_ERR_TOO_LITTLE_MOTION | TUNE_ERR_TOO_MUCH_MOTION))
-	{
-		if (GetEncoderType() == EncoderType::AS5047)
-		{
-			reply.catf("degrees/step is about %.2f.", (double)(measuredCountsPerStep * (360.0/(4096.0 * 4.0))));
-		}
-		else
-		{
-			reply.catf("counts/step is about %.2f.", (double)(measuredCountsPerStep * 0.25));
-		}
-	}
+	if (tuningErrorBitmask & TuningError::NeedsBasicTuning) 	{ reply.cat(", the drive has not had basic tuning done"); }
+	if (tuningErrorBitmask & TuningError::NotCalibrated) 		{ reply.cat(", the drive has not been calibrated"); }
+	if (tuningErrorBitmask & TuningError::SystemError) 			{ reply.cat(", a system error occurred while tuning"); }
+	if (tuningErrorBitmask & TuningError::CalibrationInProgress){ reply.cat(", encoder calibration is in progress"); }
+	if (tuningErrorBitmask & TuningError::InconsistentMotion)	{ reply.cat(", the measured motion was inconsistent"); }
+	if (tuningErrorBitmask & TuningError::TooLittleMotion)		{ reply.cat(", the measured motion was less than expected"); }
+	if (tuningErrorBitmask & TuningError::TooMuchMotion)		{ reply.cat(", the measured motion was more than expected"); }
 }
 
 // Helper function to set the motor to a given phase and magnitude
@@ -342,7 +340,7 @@ void ClosedLoop::Init() noexcept
 	derivativeFilter.Reset();
 
 	// Set up the data transmission task
-	dataTransmissionTask = new Task<ClosedLoop::TaskStackWords>;
+	dataTransmissionTask = new Task<ClosedLoop::DataCollectionTaskStackWords>;
 	dataTransmissionTask->Create(DataTransmissionLoop, "CLSend", nullptr, TaskPriority::ClosedLoopDataTransmission);
 }
 
@@ -457,14 +455,28 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 
 		case EncoderType::AS5047:
 			encoder = new AS5047D(lrintf(360.0/tempCPR), *Platform::sharedSpi, EncoderCsPin);
-			if (((AS5047D*) encoder)->LoadLUT())
+			if (((AbsoluteEncoder*)encoder)->LoadLUT())
 			{
-				minimalTunes[EncoderType::AS5047] &= ~TUNE_ERR_NOT_CALIBRATED;
+				minimalTunes[EncoderType::AS5047] &= ~TuningError::NotCalibrated;
+			}
+			if (encoderCalibrationTask == nullptr)
+			{
+				encoderCalibrationTask = new Task<ClosedLoop::EncoderCalibrationTaskStackWords>;
+				encoderCalibrationTask->Create(EncoderCalibrationLoop, "EncCal", nullptr, TaskPriority::SpinPriority);		// must be same priority as main task
 			}
 			break;
 
 		case EncoderType::TLI5012:
 			encoder = new TLI5012B(lrintf(360.0/tempCPR), *Platform::sharedSpi, EncoderCsPin);
+			if (((AbsoluteEncoder*)encoder)->LoadLUT())
+			{
+				minimalTunes[EncoderType::AS5047] &= ~TuningError::NotCalibrated;
+			}
+			if (encoderCalibrationTask == nullptr)
+			{
+				encoderCalibrationTask = new Task<ClosedLoop::EncoderCalibrationTaskStackWords>;
+				encoderCalibrationTask->Create(EncoderCalibrationLoop, "EncCal", nullptr, TaskPriority::SpinPriority);		// must be same priority as main task
+			}
 			break;
 
 #if defined(EXP1HCLv1_0)
@@ -545,6 +557,143 @@ GCodeResult ClosedLoop::ProcessM569Point5(const CanMessageStartClosedLoopDataCol
 	return GCodeResult::ok;
 }
 
+// This is called when tuning has finished and we have a relative encoder
+GCodeResult ClosedLoop::ProcessBasicTuningResult(const StringRef& reply) noexcept
+{
+	// Tuning has finished - there are now 3 scenarios
+	// 1. No tuning errors exist (!tuningError)							= OK
+	// 2. No new tuning errors exist !(~prevTuningError & tuningError)	= WARNING
+	// 3. A new tuning error has been introduced (else)					= WARNING
+	reply.printf("Driver %u.0 basic tuning ", CanInterface::GetCanAddress());
+	if (!basicTuningDataReady)
+	{
+		reply.cat("failed (no reason available)");
+		return GCodeResult::error;
+	}
+
+	basicTuningDataReady = false;
+
+	const TuningErrors newTuningErrors = ((RelativeEncoder*)encoder)->ProcessTuningData();
+	if (newTuningErrors != 0)
+	{
+		reply.cat("failed");
+		tuningError = (tuningError & ~(TuningError::TooMuchMotion | TuningError::TooLittleMotion | TuningError::InconsistentMotion)) | newTuningErrors;
+		ReportTuningErrors(newTuningErrors, reply);
+		if (newTuningErrors & (TuningError::TooMuchMotion | TuningError::TooLittleMotion))
+		{
+			reply.catf(", measured counts/step is about %.1f", (double)encoder->GetMeasuredCountsPerStep());
+		}
+		return GCodeResult::error;
+	}
+
+	PIDITerm = 0.0;
+	derivativeFilter.Reset();
+	targetEncoderReading = encoder->GetCurrentCount();
+	targetMotorSteps = (float)targetEncoderReading / encoder->GetCountsPerStep();
+
+	const float hyst = encoder->GetMeasuredHysteresis();
+	if (hyst >= MaxSafeHysteresis)
+	{
+		tuningError = TuningError::HysteresisTooHigh;
+		reply.lcatf("failed, measured hysteresis (%.2f step) is too high", (double)hyst);
+		return GCodeResult::error;
+	}
+	else if (hyst >= MaxGoodHysteresis)
+	{
+		reply.lcatf("succeeded but measured hysteresis (%.2f step) is high", (double)hyst);
+		tuningError = 0;
+		return GCodeResult::ok;
+	}
+	else
+	{
+		reply.lcatf("succeeded, measured hysteresis %.2f step", (double)hyst);
+		tuningError = 0;
+		return GCodeResult::ok;
+	}
+}
+
+void ClosedLoop::EncoderCalibrationLoop(void *param) noexcept
+{
+	for (;;)
+	{
+		TaskBase::Take();
+		if (encoder != nullptr && encoder->IsAbsolute() && calibrationState == CalibrationState::dataReady)
+		{
+			calibrationErrors = ((AbsoluteEncoder*)encoder)->Calibrate(calibrateNotCheck);
+			calibrationState = CalibrationState::complete;
+		}
+	}
+}
+
+GCodeResult ClosedLoop::ProcessCalibrationResult(const StringRef& reply) noexcept
+{
+	if (calibrationState == CalibrationState::dataReady)
+	{
+		// Waiting for the main task to finish processing the calibration via our Spin() function
+		return GCodeResult::notFinished;
+	}
+
+	reply.printf("Driver %u.0 calibration ", CanInterface::GetCanAddress());
+	if (calibrationState != CalibrationState::complete)
+	{
+		reply.cat("failed (no reason available)");
+		return GCodeResult::error;
+	}
+
+	// Must have calibrationState == CalibrationState::complete
+	calibrationState = CalibrationState::notReady;
+	if (!calibrateNotCheck)
+	{
+		reply.cat("check ");
+	}
+	if (calibrationErrors != 0)
+	{
+		reply.cat("failed");
+		if (calibrateNotCheck)
+		{
+			tuningError = (tuningError & ~(TuningError::TooMuchMotion | TuningError::TooLittleMotion | TuningError::InconsistentMotion | TuningError::CalibrationInProgress)) | calibrationErrors;
+		}
+		else
+		{
+			tuningError &= ~TuningError::CalibrationInProgress;
+		}
+		ReportTuningErrors(calibrationErrors, reply);
+		if (calibrationErrors & (TuningError::TooMuchMotion | TuningError::TooLittleMotion))
+		{
+			reply.catf(", measured counts/step is about %.1f", (double)encoder->GetMeasuredCountsPerStep());
+		}
+		return GCodeResult::error;
+	}
+
+	PIDITerm = 0.0;
+	derivativeFilter.Reset();
+	targetEncoderReading = encoder->GetCurrentCount();
+	targetMotorSteps = (float)targetEncoderReading / encoder->GetCountsPerStep();
+
+	const float hyst = encoder->GetMeasuredHysteresis();
+	if (hyst >= MaxSafeHysteresis)
+	{
+		if (calibrateNotCheck) { tuningError = TuningError::HysteresisTooHigh; }
+		else { tuningError &= ~TuningError::CalibrationInProgress; }
+		reply.lcatf("failed, measured hysteresis (%.2f step) is too high", (double)hyst);
+		return GCodeResult::error;
+	}
+	else if (hyst >= MaxGoodHysteresis)
+	{
+		if (calibrateNotCheck) { tuningError = 0; }
+		else { tuningError &= ~TuningError::CalibrationInProgress; }
+		reply.lcatf("succeeded but measured hysteresis (%.2f step) is high", (double)hyst);
+		return GCodeResult::ok;
+	}
+	else
+	{
+		if (calibrateNotCheck) { tuningError = 0; }
+		else { tuningError &= ~TuningError::CalibrationInProgress; }
+		reply.lcatf("succeeded, measured hysteresis is %.2f step", (double)hyst);
+		return GCodeResult::ok;
+	}
+}
+
 GCodeResult ClosedLoop::ProcessM569Point6(const CanMessageGeneric &msg, const StringRef &reply) noexcept
 {
 	CanMessageGenericParser parser(msg, M569Point6Params);
@@ -558,64 +707,19 @@ GCodeResult ClosedLoop::ProcessM569Point6(const CanMessageGeneric &msg, const St
 			return GCodeResult::notFinished;
 		}
 
-		bool warn = false;
-
-		// Tuning has finished - there are now 3 scenarios
-		// 1. No tuning errors exist (!tuningError)							= OK
-		// 2. No new tuning errors exist !(~prevTuningError & tuningError)	= WARNING
-		// 3. A new tuning error has been introduced (else)					= WARNING
-		if (haveNewBasicTuningResult)
-		{
-			reply.lcatf("Driver %u.0 tuned successfully, measured hysteresis %.2f step", CanInterface::GetCanAddress(), (double)tuningHysteresis);
-			if (tuningHysteresis >= MaxSafeHysteresis)
-			{
-				reply.lcat("Measured hysteresis is high");
-				warn = true;
-			}
-			haveNewBasicTuningResult = false;
-		}
-
 		// If we were checking the calibration, report the result
-		if (encoder->IsAbsolute())
-		{
-			if (haveNewCalibrationResult)
-			{
-				((const AbsoluteEncoder*)encoder)->ReportCalibrationResult(reply);
-				haveNewCalibrationResult = false;
-			}
-			if (haveNewCalibrationCheckResult)
-			{
-				((const AbsoluteEncoder*)encoder)->ReportCalibrationCheckResult(reply);
-				haveNewCalibrationCheckResult = false;
-			}
-		}
-
-		// Report any errors
-		if ((~prevTuningError & tuningError) != 0)
-		{
-			warn = true;
-			reply.lcatf("Driver %u.0 new tuning error(s):", CanInterface::GetCanAddress());
-			ReportTuningErrors(~prevTuningError & tuningError, reply);
-		}
-		if ((prevTuningError & tuningError) != 0)
-		{
-			warn = true;
-			reply.lcatf("Driver %u.0 un-cleared previous tuning error(s):", CanInterface::GetCanAddress());
-			ReportTuningErrors(prevTuningError & tuningError, reply);
-		}
-
-		return (warn) ? GCodeResult::warning : GCodeResult::ok;
+		return (encoder->IsAbsolute()) ? ProcessCalibrationResult(reply) : ProcessBasicTuningResult(reply);
 	}
 
-	if (desiredTuning == 0 || (desiredTuning > 8 && desiredTuning != 64))
+	if (desiredTuning == 0 || (desiredTuning > 4 && desiredTuning != 64))
 	{
 		reply.copy("Invalid tuning mode");
 		return GCodeResult::error;
 	}
 
-	if (desiredTuning == 8)
+	if (desiredTuning == 4)
 	{
-		// Tuning move 8 just clears the lookup table
+		// Tuning move 4 just clears the lookup table
 		if (encoder != nullptr && encoder->IsAbsolute())
 		{
 			((AbsoluteEncoder*)encoder)->ScrubLUT();
@@ -639,7 +743,6 @@ GCodeResult ClosedLoop::ProcessM569Point6(const CanMessageGeneric &msg, const St
 		return GCodeResult::error;
 	}
 
-	prevTuningError = tuningError;
 	StartTuning(desiredTuning);
 
 	return GCodeResult::notFinished;
@@ -650,100 +753,30 @@ void ClosedLoop::StartTuning(uint8_t tuningMode) noexcept
 	if (tuningMode != 0)
 	{
 		whenLastTuningStepTaken = StepTimer::GetTimerTicks() + stepTicksBeforeTuning;	// delay the start to allow brake release and motor current buildup
-		tuning = tuningMode;
+		tuning = (tuningMode == 1) ? BASIC_TUNING_MANOEUVRE
+					: (tuningMode == 2) ? ENCODER_CALIBRATION_MANOEUVRE
+						: (tuningMode == 4) ? ENCODER_CALIBRATION_CHECK
+							: (tuningMode == 64) ? STEP_MANOEUVRE
+								: 0;
 	}
 }
 
 // Call this when we have stopped basic tuning movement and are ready to switch to closed loop control
-void ClosedLoop::FinishedBasicTuning(float forwardSlope, float reverseSlope, float forwardOrigin, float reverseOrigin, float forwardXmean, float reverseXmean) noexcept
+void ClosedLoop::FinishedBasicTuning() noexcept
 {
-	tuningError &= ~(TUNE_ERR_TOO_MUCH_MOTION | TUNE_ERR_TOO_LITTLE_MOTION | TUNE_ERR_INCONSISTENT_MOTION);
-	prevTuningError &= ~(TUNE_ERR_TOO_MUCH_MOTION | TUNE_ERR_TOO_LITTLE_MOTION | TUNE_ERR_INCONSISTENT_MOTION | TUNE_ERR_NOT_DONE_BASIC);
-
-#ifdef DEBUG
-	debugPrintf("forward slope %.4f reverse %.4f\n", (double)forwardSlope, (double)reverseSlope);
-#endif
-
-	// Check that the forward and reverse slopes are similar and a good match to the configured counts per step
-	const float averageSlope = (forwardSlope + reverseSlope) * 0.5;
-
-	// We sometimes read different forwards and reverse counts, so instead of taking an average of the origin, average the origin w.r.t. the mid points of the tuning moves
-	forwardOrigin += (forwardSlope - averageSlope) * forwardXmean;
-	reverseOrigin += (reverseSlope - averageSlope) * reverseXmean;
-
-	measuredCountsPerStep = fabsf(averageSlope) * 1024;
-	tuningHysteresis = fabsf(forwardOrigin - reverseOrigin)/measuredCountsPerStep;
-
-	if (fabsf(averageSlope) < MinimumSlope || fabsf(forwardSlope - reverseSlope) > MaxSlopeMismatch * 2 * fabsf(averageSlope))
-	{
-		tuningError |= TUNE_ERR_INCONSISTENT_MOTION;
-	}
-	else if (measuredCountsPerStep > encoder->GetCountsPerStep() * 1.05)
-	{
-		tuningError |= TUNE_ERR_TOO_MUCH_MOTION;
-	}
-	else if (measuredCountsPerStep < encoder->GetCountsPerStep() * 0.95)
-	{
-		tuningError |= TUNE_ERR_TOO_LITTLE_MOTION;
-	}
-	else
-	{
-		// Tuning succeeded
-#ifdef DEBUG
-		debugPrintf("basic tuning succeeded\n");
-#endif
-#if BASIC_TUNING_DEBUG
-		ReadState();
-		originalRawEncoderReading = rawEncoderReading;
-		originalDesiredStepPhase = desiredStepPhase;
-		originalMeasuredStepPhase = measuredStepPhase;
-		originalCurrentMotorSteps = currentMotorSteps;
-#endif
-
-		const int32_t averageZeroPhaseCount = lrintf((forwardOrigin + reverseOrigin) * 0.5);
-#ifdef DEBUG
-		debugPrintf("zph %" PRIi32 " current rdg %" PRIi32 " current phase %u\n", averageZeroPhaseCount, encoder->GetCurrentCount(), desiredStepPhase);
-#endif
-		encoder->SetBackwards(averageSlope < 0.0);
-		encoder->SetKnownPhaseAtCount(averageZeroPhaseCount, 0);						// tell the encoder that the phase is zero when the count is this
-		targetEncoderReading = encoder->GetCurrentCount();
-		targetMotorSteps = (float)targetEncoderReading / encoder->GetCountsPerStep();
-#if BASIC_TUNING_DEBUG
-		originalAssumedEncoderReading = desiredStepPhase * averageSlope + averageOffset;
-		originalDesiredEncoderReading = desiredEncoderReading;
-		offsetCorrectionMade = -lrintf(averageOffset);
-		ReadState();
-		finalRawEncoderReading = rawEncoderReading;
-		finalMeasuredStepPhase = measuredStepPhase;
-		finalCurrentMotorSteps = currentMotorSteps;
-#endif
-
-		PIDITerm = 0.0;																	// clear the integral term accumulator
-		derivativeFilter.Reset();
-	}
-
-	tuningError &= ~TUNE_ERR_NOT_DONE_BASIC;
-	haveNewBasicTuningResult = true;
+	basicTuningDataReady = true;
 }
 
-// Call this when we have finished calibrating an absolute encoder
-void ClosedLoop::FinishedEncoderCalibration() noexcept
+// Call this when encoder calibration has finished collecting data
+void ClosedLoop::ReadyToCalibrate(bool store) noexcept
 {
-	targetEncoderReading = encoder->GetCurrentCount();
-	targetMotorSteps = (float)targetEncoderReading / encoder->GetCountsPerStep();
-	PIDITerm = 0.0;																		// clear the integral term accumulator
-	derivativeFilter.Reset();
-	haveNewCalibrationResult = true;
-}
-
-// Call this to report calibration results
-void ClosedLoop::ReportEncoderCalibrationCheckResult() noexcept
-{
-	targetEncoderReading = encoder->GetCurrentCount();
-	targetMotorSteps = (float)targetEncoderReading / encoder->GetCountsPerStep();
-	PIDITerm = 0.0;																		// clear the integral term accumulator
-	derivativeFilter.Reset();
-	haveNewCalibrationCheckResult = true;
+	calibrateNotCheck = store;
+	if (encoderCalibrationTask != nullptr)
+	{
+		calibrationState = CalibrationState::dataReady;
+		tuningError |= TuningError::CalibrationInProgress;			// to prevent movement in case we are re-calibrating
+		encoderCalibrationTask->Give();
+	}
 }
 
 // This is called by tuning to execute a step
@@ -1057,7 +1090,7 @@ StandardDriverStatus ClosedLoop::ReadLiveStatus() noexcept
 	result.closedLoopPositionNotMaintained = stall;
 	result.closedLoopPositionWarning = preStall;
 	result.closedLoopNotTuned = ((tuningError & minimalTunes[encoder->GetType().ToBaseType()]) != 0);
-	result.closedLoopTuningError = ((tuningError & TUNE_ERR_TUNING_FAILURE) != 0);
+	result.closedLoopTuningError = ((tuningError & TuningError::AnyTuningFailure) != 0);
 	return result;
 }
 
@@ -1154,7 +1187,7 @@ StandardDriverStatus ClosedLoop::ModifyDriverStatus(size_t driver, StandardDrive
 		originalStatus.standstill = 0;									// ignore standstill detection in closed loop mode
 		originalStatus.closedLoopNotTuned = ((tuningError & minimalTunes[encoder->GetType().ToBaseType()]) != 0);
 		originalStatus.closedLoopIllegalMove = 0;						//TODO implement this or remove it
-		originalStatus.closedLoopTuningError = ((tuningError & TUNE_ERR_TUNING_FAILURE) != 0);
+		originalStatus.closedLoopTuningError = ((tuningError & TuningError::AnyTuningFailure) != 0);
 	}
 
 	if (!originalStatus.closedLoopNotTuned)

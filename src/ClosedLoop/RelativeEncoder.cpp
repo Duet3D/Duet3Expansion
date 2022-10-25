@@ -9,6 +9,9 @@
 
 #if SUPPORT_CLOSED_LOOP
 
+constexpr float MaxSlopeMismatch = 0.1;				// we want the forward and reverse measured CPS each to be within 10% of the average
+constexpr float MinimumSlope = 7.5/1024;			// we require at least 8 transitions (8 pulses) per step, but we may measure slightly lower than the true value
+
 // Take a reading and store currentCount, currentPhasePosition. Return true if success.
 bool RelativeEncoder::TakeReading() noexcept
 {
@@ -41,6 +44,45 @@ void RelativeEncoder::SetBackwards(bool backwards) noexcept
 	{
 		reversePolarityMultiplier = newMultiplier;
 	}
+}
+
+// Process the tuning data
+uint8_t RelativeEncoder::ProcessTuningData() noexcept
+{
+	uint8_t result;
+
+#ifdef DEBUG
+	debugPrintf("forward slope %.4f reverse %.4f\n", (double)forwardSlope, (double)reverseSlope);
+#endif
+
+	// Check that the forward and reverse slopes are similar and a good match to the configured counts per step
+	const float averageSlope = (forwardSlope + reverseSlope) * 0.5;
+
+	// We sometimes read different forwards and reverse counts, so instead of taking an average of the origin, average the origin w.r.t. the mid points of the tuning moves
+	forwardOrigin += (forwardSlope - averageSlope) * forwardXmean;
+	reverseOrigin += (reverseSlope - averageSlope) * reverseXmean;
+
+	measuredCountsPerStep = fabsf(averageSlope) * 1024;
+	measuredHysteresis = fabsf(forwardOrigin - reverseOrigin)/measuredCountsPerStep;
+
+	if (fabsf(averageSlope) < MinimumSlope || fabsf(forwardSlope - reverseSlope) > MaxSlopeMismatch * 2 * fabsf(averageSlope))
+	{
+		result = TuningError::InconsistentMotion;
+	}
+	else if (measuredCountsPerStep > GetCountsPerStep() * 1.05)
+	{
+		result = TuningError::TooMuchMotion;
+	}
+	else if (measuredCountsPerStep < GetCountsPerStep() * 0.95)
+	{
+		result = TuningError::TooLittleMotion;
+	}
+	else
+	{
+		result = 0;
+	}
+
+	return result;
 }
 
 #endif

@@ -79,9 +79,6 @@ static bool BasicTuning(bool firstIteration) noexcept
 	static uint32_t initialCount;
 	static float regressionAccumulator;
 	static float readingAccumulator;
-	static float forwardSlope;
-	static float forwardOrigin;
-	static float forwardXmean;
 
 	constexpr unsigned int NumDummySteps = 8;						// how many steps to take before we start collecting data
 	constexpr uint16_t PhaseIncrement = 8;							// how much to increment the phase by on each step, must be a factor of 4096
@@ -89,6 +86,13 @@ static bool BasicTuning(bool firstIteration) noexcept
 	constexpr unsigned int NumSamples = 4096/PhaseIncrement;		// the number of samples we take to do the linear regression
 	constexpr float HalfNumSamplesMinusOne = (float)(NumSamples - 1) * 0.5;
 	constexpr float Denominator = (float)PhaseIncrement * (fcube((float)NumSamples) - (float)NumSamples)/12.0;
+
+	if (ClosedLoop::encoder->IsAbsolute())
+	{
+		return true;
+	}
+
+	RelativeEncoder *relativeEncoder = (RelativeEncoder*)ClosedLoop::encoder;
 
 	if (firstIteration)
 	{
@@ -117,7 +121,7 @@ static bool BasicTuning(bool firstIteration) noexcept
 	case BasicTuningState::forwards:
 		// Collect data and move forwards, until we have moved 4 full steps
 		{
-			int32_t reading = ClosedLoop::encoder->GetCurrentCount();
+			int32_t reading = relativeEncoder->GetCurrentCount();
 			if (stepCounter == 0)
 			{
 				initialCount = reading;
@@ -131,11 +135,11 @@ static bool BasicTuning(bool firstIteration) noexcept
 		if (stepCounter == NumSamples)
 		{
 			// Save the accumulated data
-			forwardSlope = regressionAccumulator / Denominator;											// the average encoder counts per phase position
-			forwardXmean = (float)initialStepPhase + (float)PhaseIncrement * HalfNumSamplesMinusOne;	// the average phase
-			const float forwardYmean = readingAccumulator/NumSamples + (float)initialCount;				// the average count
-			forwardOrigin = forwardYmean - forwardSlope * forwardXmean;									// the encoder reading at zero phase
-
+			const float slope = regressionAccumulator / Denominator;										// the average encoder counts per phase position
+			const float xMean = (float)initialStepPhase + (float)PhaseIncrement * HalfNumSamplesMinusOne;	// the average phase
+			const float yMean = readingAccumulator/NumSamples + (float)initialCount;						// the average count
+			const float origin = yMean - slope * xMean;														// the encoder reading at zero phase
+			relativeEncoder->SetForwardTuningResults(slope, origin, xMean);
 			stepCounter = 0;
 			state = BasicTuningState::reverseInitial;
 		}
@@ -163,7 +167,7 @@ static bool BasicTuning(bool firstIteration) noexcept
 	case BasicTuningState::reverse:
 		// Collect data and move backwards, until we have moved 4 full steps
 		{
-			int32_t reading = ClosedLoop::encoder->GetCurrentCount();
+			int32_t reading = relativeEncoder->GetCurrentCount();
 			if (stepCounter == 0)
 			{
 				initialCount = reading;
@@ -177,11 +181,12 @@ static bool BasicTuning(bool firstIteration) noexcept
 		if (stepCounter == NumSamples)
 		{
 			// Save the accumulated data
-			const float reverseSlope = regressionAccumulator / (-Denominator);			// negate the denominator because the phase increment was negative this time
-			const float reverseXmean = (float)initialStepPhase - (float)PhaseIncrement * HalfNumSamplesMinusOne;
-			const float reverseYmean = readingAccumulator/NumSamples + (float)initialCount;
-			const float reverseOrigin = reverseYmean - reverseSlope * reverseXmean;
-			ClosedLoop::FinishedBasicTuning(forwardSlope, reverseSlope, forwardOrigin, reverseOrigin, forwardXmean, reverseXmean);
+			const float slope = regressionAccumulator / (-Denominator);			// negate the denominator because the phase increment was negative this time
+			const float xMean = (float)initialStepPhase - (float)PhaseIncrement * HalfNumSamplesMinusOne;
+			const float yMean = readingAccumulator/NumSamples + (float)initialCount;
+			const float origin = yMean - slope * xMean;
+			relativeEncoder->SetReverseTuningResults(slope, origin, xMean);
+			ClosedLoop::FinishedBasicTuning();
 			return true;																// finished tuning
 		}
 		else
@@ -297,20 +302,7 @@ static bool EncoderCalibration(bool firstIteration) noexcept
 			if (positionCounter == 0)
 			{
 				// We are finished
-				if (ClosedLoop::tuning & ClosedLoop::ENCODER_CALIBRATION_MANOEUVRE)
-				{
-					// Calibrating the encoder
-					absoluteEncoder->Calibrate(true);
-//					absoluteEncoder->StoreLUT(initialCount, positionsPerRev >> phaseIncrementShift);
-					ClosedLoop::FinishedEncoderCalibration();
-				}
-				else
-				{
-					// Checking the calibration
-					absoluteEncoder->Calibrate(false);
-//					absoluteEncoder->CheckLUT(initialCount, (2 * positionsPerRev) >> phaseIncrementShift);
-					ClosedLoop::ReportEncoderCalibrationCheckResult();
-				}
+				ClosedLoop::ReadyToCalibrate(ClosedLoop::tuning & ClosedLoop::ENCODER_CALIBRATION_MANOEUVRE);
 				return true;
 			}
 		}
@@ -520,7 +512,7 @@ void ClosedLoop::PerformTune() noexcept
 	// Check we are in direct drive mode and we have an encoder
 	if (SmartDrivers::GetDriverMode(0) != DriverMode::direct || encoder == nullptr)
 	{
-		tuningError |= TUNE_ERR_SYSTEM_ERROR;
+		tuningError |= TuningError::SystemError;
 		tuning = 0;
 		return;
 	}
@@ -540,7 +532,7 @@ void ClosedLoop::PerformTune() noexcept
 	}
 	else if (tuning & (ENCODER_CALIBRATION_MANOEUVRE | ENCODER_CALIBRATION_CHECK))
 	{
-		if (tuningError & (TUNE_ERR_TOO_MUCH_MOTION | TUNE_ERR_TOO_LITTLE_MOTION | TUNE_ERR_INCONSISTENT_MOTION))
+		if (tuningError & (TuningError::TooMuchMotion | TuningError::TooLittleMotion | TuningError::InconsistentMotion))
 		{
 			// Basic tuning failed, so don't attempt encoder calibration because it may not complete
 			tuning = 0;

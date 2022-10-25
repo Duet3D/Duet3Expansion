@@ -18,6 +18,7 @@
 # include <ClosedLoop/Trigonometry.h>
 # include <Hardware/SharedSpiDevice.h>
 # include <ClosedLoop/DerivativeAveragingFilter.h>
+# include "TuningErrors.h"
 
 class Encoder;
 class SpiEncoder;
@@ -25,17 +26,6 @@ class SpiEncoder;
 namespace ClosedLoop
 {
 	// Constants and variables that are used by both the ClosedLoop and the Tuning modules
-
-	// Possible tuning errors
-	constexpr uint8_t TUNE_ERR_NOT_DONE_BASIC				= 1u << 0;
-	constexpr uint8_t TUNE_ERR_NOT_CALIBRATED				= 1u << 1;
-	constexpr uint8_t TUNE_ERR_TOO_LITTLE_MOTION			= 1u << 2;
-	constexpr uint8_t TUNE_ERR_TOO_MUCH_MOTION				= 1u << 3;
-	constexpr uint8_t TUNE_ERR_INCONSISTENT_MOTION			= 1u << 4;
-	constexpr uint8_t TUNE_ERR_SYSTEM_ERROR					= 1u << 5;
-
-	constexpr uint8_t TUNE_ERR_TUNING_FAILURE 				= TUNE_ERR_NOT_CALIBRATED | TUNE_ERR_SYSTEM_ERROR
-															| TUNE_ERR_TOO_LITTLE_MOTION | TUNE_ERR_TOO_MUCH_MOTION | TUNE_ERR_INCONSISTENT_MOTION;
 
 	// Tuning manoeuvres
 	constexpr uint8_t BASIC_TUNING_MANOEUVRE 				= 1u << 0;		// this measures the polarity, check that the CPR looks OK, and for relative encoders sets the zero position
@@ -50,8 +40,8 @@ namespace ClosedLoop
 
 	//TODO reduce the number of these public variables, preferably to zero. Use a cleaner interface between the tuning module and the main closed loop module.
 	extern Encoder *encoder;						// Pointer to the encoder object in use
-	extern uint8_t tuning;							// Bitmask of any tuning manoeuvres that have been requested
-	extern uint8_t tuningError;						// Flags for any tuning errors
+	extern volatile uint8_t tuning;					// Bitmask of any tuning manoeuvres that have been requested
+	extern TuningErrors tuningError;				// Flags for any tuning errors
 	extern uint16_t desiredStepPhase;				// The desired position of the motor
 	extern uint32_t currentMotorPhase;				// the phase (0 to 4095) that the driver is set to
 
@@ -83,10 +73,9 @@ namespace ClosedLoop
 	float PulsePerStepToExternalUnits(float pps, uint8_t encoderType) noexcept;
 	float ExternalUnitsToPulsePerStep(float externalUnits, uint8_t encoderType) noexcept;
 	void SetMotorPhase(uint16_t phase, float magnitude) noexcept;
-	void FinishedBasicTuning(float forwardSlope, float reverseSlope, float forwardOrigin, float reverseOrigin, float forwardXmean, float reverseXmean) noexcept;
+	void FinishedBasicTuning() noexcept;
 															// call this when we have stopped basic tuning movement and are ready to switch to closed loop control
-	void FinishedEncoderCalibration() noexcept;				// call this when we have finished calibrating an absolute encoder
-	void ReportEncoderCalibrationCheckResult() noexcept;	// call this to report calibration results
+	void ReadyToCalibrate(bool store) noexcept;				// call this when encoder calibration has finished collecting data
 	void AdjustTargetMotorSteps(float amount) noexcept;		// called by tuning to execute a step
 
 	// Methods in the tuning module

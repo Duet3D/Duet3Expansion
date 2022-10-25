@@ -266,6 +266,7 @@ void AbsoluteEncoder::ClearDataCollection(size_t p_numDataPoints) noexcept
 	hysteresisSum = dataSum = dataBias = 0;
 	minCalibrationError = std::numeric_limits<float>::infinity();
 	maxCalibrationError = -std::numeric_limits<float>::infinity();
+	calibrationPhase = 0;
 }
 
 void AbsoluteEncoder::ScrubLUT() noexcept
@@ -306,29 +307,26 @@ void AbsoluteEncoder::RecordDataPoint(size_t index, int32_t data, bool backwards
 }
 
 // Analyse the calibration data and optionally store it. We have the specified number of data points but we read each point twice, once while rotating forwards and once backwards.
-void AbsoluteEncoder::Calibrate(bool store) noexcept
+// This takes a long time so it must be done by a low priority task
+TuningErrors AbsoluteEncoder::Calibrate(bool store) noexcept
 {
 	// dataSum is the sum of all the readings. If it is negative then the encoder is running backwards.
 	const float twiceExpectedMidPointDifference = (float)dataSum/(float)numDataPoints;
 
 	// expectedMidPointDifference should be close to half the encoder counts/rev
 	const float ratio = twiceExpectedMidPointDifference/GetMaxValue();
-	bool runningBackwards = false;
-	if (ratio >= 0.95 && ratio <= 1.05)
+	measuredCountsPerStep = fabsf(twiceExpectedMidPointDifference)/stepsPerRev;
+	measuredHysteresis = (float)hysteresisSum/((float)numDataPoints * countsPerStep);
+
+	if (fabsf(ratio) > 1.05)
 	{
-		// running forwards
-		debugPrintf("forwards\n");
+		return TuningError::TooMuchMotion;
 	}
-	else if (ratio <= -0.95 && ratio >= -1.05)
+	if (fabsf(ratio) < 0.95)
 	{
-		debugPrintf("backwards\n");
-		runningBackwards = true;
+		return TuningError::TooLittleMotion;
 	}
-	else
-	{
-		debugPrintf("bad encoder, ratio = %.2f\n", (double)ratio);
-		//TODO report bad encoder and quit
-	}
+	const bool rotationReversed = (ratio < 0.0);
 
 	// Normalise initialCount to be within -GetMaxValue()..GetMaxValue()
 	initialCount %= (int32_t)GetMaxValue();
@@ -339,7 +337,7 @@ void AbsoluteEncoder::Calibrate(bool store) noexcept
 
 	const float expectedMidPointReading = twiceExpectedMidPointDifference/2.0 + (float)initialCount;
 	float phaseCorrection = expectedMidPointReading * (float)GetPhasePositionsPerRev()/(float)GetMaxValue();
-	if (runningBackwards)
+	if (rotationReversed)
 	{
 		phaseCorrection = -phaseCorrection;
 	}
@@ -360,7 +358,7 @@ void AbsoluteEncoder::Calibrate(bool store) noexcept
 		sines[i] = cosines[i] = 0.0;
 	}
 	const float correctionRevFraction = phaseCorrection/GetPhasePositionsPerRev();
-	debugPrintf("crf=%.3f hyst=%.2f\n", (double)correctionRevFraction, (double)((float)hysteresisSum/(float)numDataPoints));
+	debugPrintf("crf=%.3f hyst=%.2f\n", (double)correctionRevFraction, (double)measuredHysteresis);
 	float rmsErrorAcc = 0.0;
 	float sinSteps = 0.0;
 	float cosSteps = 0.0;
@@ -369,17 +367,19 @@ void AbsoluteEncoder::Calibrate(bool store) noexcept
 		const float revFraction = (float)i/(float)numDataPoints + correctionRevFraction;
 		const float angle = TwoPi * revFraction;
 		float expectedValue = revFraction * GetMaxValue() * 2;		// *2 because we stored 2 values for each data point
-		if (runningBackwards)
+		if (rotationReversed)
 		{
 			expectedValue = -expectedValue;
 		}
 		const int32_t actualValue = (int32_t)calibrationData[i] + dataBias + (2 * initialCount);
 		const float error = expectedValue - (float)actualValue;
 
+#if 0
 		if ((i & 127) == 0 /*|| fabsf(error) > (float)GetMaxValue()*/)
 		{
 			debugPrintf("exp %.1f calib %" PRIi32 " err %.1f\n", (double)expectedValue, actualValue, (double)error);
 		}
+#endif
 		if (error < minCalibrationError) { minCalibrationError = error; }
 		if (error > maxCalibrationError) { maxCalibrationError = error; }
 		rmsErrorAcc += fsquare(error);
@@ -413,6 +413,17 @@ void AbsoluteEncoder::Calibrate(bool store) noexcept
 #ifdef DEBUG
 	debugPrintf("\n");
 #endif
+
+	if (store)
+	{
+		if (rotationReversed)
+		{
+			SetBackwards(true);
+		}
+		//TODO correct this for the error at zero count
+		zeroCountPhasePosition = (uint32_t)expectedZeroReadingPhase;
+	}
+	return 0;
 }
 
 void AbsoluteEncoder::ReportCalibrationResult(const StringRef& reply) const noexcept

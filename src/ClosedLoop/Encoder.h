@@ -75,6 +75,12 @@ public:
 	// Get the current phase position from the last reading - this may be more accurate that the fractional part of GetCurrentMotorSteps()
 	uint32_t GetCurrentPhasePosition() const noexcept { return currentPhasePosition; }
 
+	// Return the measured counts per step after tuning or calibration
+	float GetMeasuredCountsPerStep() const noexcept { return measuredCountsPerStep; }
+
+	// Return the measured hysteresis after tuning or calibration
+	float GetMeasuredHysteresis() const noexcept { return measuredHysteresis; }
+
 protected:
 	uint32_t stepsPerRev;
 	uint32_t currentPhasePosition = 0;
@@ -82,6 +88,8 @@ protected:
 	uint32_t zeroCountPhasePosition = 0;
 	float countsPerStep;
 	float stepsPerCount;
+	float measuredCountsPerStep;
+	float measuredHysteresis;
 };
 
 #endif
