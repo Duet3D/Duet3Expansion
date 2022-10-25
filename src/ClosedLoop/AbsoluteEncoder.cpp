@@ -153,7 +153,7 @@ void AbsoluteEncoder::PopulateLUT(NonVolatileMemory& mem) noexcept
 				const float sineCoefficient = harmonicData[2 * harmonic].f;
 				const float cosineCoefficient = harmonicData[2 * harmonic + 1].f;
 				const float angle = harmonic * basicAngle;
-				correction -= sineCoefficient * sinf(angle + correctionAngle) + cosineCoefficient * cosf(angle + correctionAngle);
+				correction += sineCoefficient * sinf(angle + correctionAngle) + cosineCoefficient * cosf(angle + correctionAngle);
 			}
 			const float diff = fabsf(correction - lastCorrection);
 			lastCorrection = correction;
@@ -284,19 +284,19 @@ TuningErrors AbsoluteEncoder::Calibrate(bool store) noexcept
 		sines[i] = cosines[i] = 0.0;
 	}
 	const float correctionRevFraction = phaseCorrection/GetPhasePositionsPerRev();
-	debugPrintf("crf=%.3f hyst=%.2f\n", (double)correctionRevFraction, (double)measuredHysteresis);
+	debugPrintf("crf=%.3f hyst=%.3f\n", (double)correctionRevFraction, (double)measuredHysteresis);
 	float rmsErrorAcc = 0.0;
 	float sinSteps = 0.0;
 	float cosSteps = 0.0;
 	for (size_t i = 0; i < numDataPoints; ++i)
 	{
-		const float revFraction = (float)i/(float)numDataPoints + correctionRevFraction;
-		const float angle = TwoPi * revFraction;
-		float expectedValue = revFraction * GetMaxValue() * 2;		// *2 because we stored 2 values for each data point
+		float revFraction = (float)i/(float)numDataPoints + correctionRevFraction;
 		if (rotationReversed)
 		{
-			expectedValue = -expectedValue;
+			revFraction = -revFraction;
 		}
+		const float angle = TwoPi * revFraction;
+		float expectedValue = revFraction * GetMaxValue() * 2;		// *2 because we stored 2 values for each data point
 		const int32_t actualValue = (int32_t)calibrationData[i] + dataBias + (2 * initialCount);
 		const float error = expectedValue - (float)actualValue;
 

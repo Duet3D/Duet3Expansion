@@ -592,18 +592,18 @@ GCodeResult ClosedLoop::ProcessBasicTuningResult(const StringRef& reply) noexcep
 	if (hyst >= MaxSafeHysteresis)
 	{
 		tuningError = TuningError::HysteresisTooHigh;
-		reply.catf("failed, measured hysteresis (%.2f step) is too high", (double)hyst);
+		reply.catf("failed, measured hysteresis (%.3f step) is too high", (double)hyst);
 		return GCodeResult::error;
 	}
 	else if (hyst >= MaxGoodHysteresis)
 	{
-		reply.catf("succeeded but measured hysteresis (%.2f step) is high", (double)hyst);
+		reply.catf("succeeded but measured hysteresis (%.3f step) is high", (double)hyst);
 		tuningError = 0;
 		return GCodeResult::ok;
 	}
 	else
 	{
-		reply.catf("succeeded, measured hysteresis %.2f step", (double)hyst);
+		reply.catf("succeeded, measured hysteresis %.3f step", (double)hyst);
 		tuningError = 0;
 		return GCodeResult::ok;
 	}
@@ -675,21 +675,21 @@ GCodeResult ClosedLoop::ProcessCalibrationResult(const StringRef& reply) noexcep
 	{
 		if (calibrateNotCheck) { tuningError = TuningError::HysteresisTooHigh; }
 		else { tuningError &= ~TuningError::CalibrationInProgress; }
-		reply.catf("failed, measured hysteresis (%.2f step) is too high", (double)hyst);
+		reply.catf("failed, measured hysteresis (%.3f step) is too high", (double)hyst);
 		return GCodeResult::error;
 	}
 	else if (hyst >= MaxGoodHysteresis)
 	{
 		if (calibrateNotCheck) { tuningError = 0; }
 		else { tuningError &= ~TuningError::CalibrationInProgress; }
-		reply.catf("succeeded but measured hysteresis (%.2f step) is high", (double)hyst);
+		reply.catf("succeeded but measured hysteresis (%.3f step) is high", (double)hyst);
 		return GCodeResult::ok;
 	}
 	else
 	{
 		if (calibrateNotCheck) { tuningError = 0; }
 		else { tuningError &= ~TuningError::CalibrationInProgress; }
-		reply.catf("succeeded, measured hysteresis is %.2f step", (double)hyst);
+		reply.catf("succeeded, measured hysteresis is %.3f step", (double)hyst);
 		return GCodeResult::ok;
 	}
 }

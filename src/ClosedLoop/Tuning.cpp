@@ -247,6 +247,7 @@ static bool EncoderCalibration(bool firstIteration) noexcept
 		if (ClosedLoop::tuning & ClosedLoop::ENCODER_CALIBRATION_MANOEUVRE)
 		{
 			absoluteEncoder->ClearLUT();
+			absoluteEncoder->SetBackwards(false);
 		}
 
 		// To counter any backlash, start by advancing a bit. Then advance to the next position which is a multiple of 4 full steps so that the phase position is zero.
@@ -256,7 +257,6 @@ static bool EncoderCalibration(bool firstIteration) noexcept
 			positionsTillStart += 4096;
 		}
 
-		absoluteEncoder->SetBackwards(false);
 		state = EncoderCalibrationState::setup;
 	}
 
