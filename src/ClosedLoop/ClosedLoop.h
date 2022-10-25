@@ -70,8 +70,6 @@ namespace ClosedLoop
 	void DisableEncodersSpi() noexcept;
 
 	// Methods used only by closed loop and by the tuning module
-	float PulsePerStepToExternalUnits(float pps, uint8_t encoderType) noexcept;
-	float ExternalUnitsToPulsePerStep(float externalUnits, uint8_t encoderType) noexcept;
 	void SetMotorPhase(uint16_t phase, float magnitude) noexcept;
 	void FinishedBasicTuning() noexcept;
 															// call this when we have stopped basic tuning movement and are ready to switch to closed loop control

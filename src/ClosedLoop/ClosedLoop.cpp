@@ -186,7 +186,7 @@ namespace ClosedLoop
 
 	// The bitmask of a minimal tuning error for each encoder type
 	// This is an array so that ZEROING_MANOEUVRE can be removed from the magnetic encoders if the LUT is in NVM
-	uint8_t minimalTunes[5] =
+	constexpr uint8_t minimalTunes[5] =
 	{
 		// None
 		0,
@@ -241,50 +241,24 @@ static inline unsigned int CountVariablesCollected(uint16_t filter)
 }
 
 // Helper function to convert a time period (expressed in StepTimer::Ticks) to ms
-static inline float TickPeriodToTimePeriod(StepTimer::Ticks tickPeriod) {
+static inline float TickPeriodToTimePeriod(StepTimer::Ticks tickPeriod)
+{
 	return tickPeriod * StepTimer::StepClocksToMillis;
 }
 
 // Helper function to convert a time period (expressed in StepTimer::Ticks) to a frequency in Hz
-static inline float TickPeriodToFreq(StepTimer::Ticks tickPeriod) {
+static inline float TickPeriodToFreq(StepTimer::Ticks tickPeriod)
+{
 	return 1000.0l / TickPeriodToTimePeriod(tickPeriod);
 }
 
 // Helper function to reset the 'monitoring variables' as defined above
-static void ResetMonitoringVariables() {
+static void ResetMonitoringVariables()
+{
 	ClosedLoop::minControlLoopRuntime = numeric_limits<StepTimer::Ticks>::max();
 	ClosedLoop::maxControlLoopRuntime = numeric_limits<StepTimer::Ticks>::min();
 	ClosedLoop::minControlLoopCallInterval = numeric_limits<StepTimer::Ticks>::max();
 	ClosedLoop::maxControlLoopCallInterval = numeric_limits<StepTimer::Ticks>::min();
-}
-
-// Helper function to convert between the internal representation of encoderCountPerStep, and the appropriate external representation (e.g. CPR)
-//TODO make this a virtual function member of the encoder?
-float ClosedLoop::PulsePerStepToExternalUnits(float pps, uint8_t encoderType) noexcept
-{
-	switch (encoderType)
-	{
-	case EncoderType::rotaryQuadrature:
-		return pps / 4;															// Output pulses (not transitions) per full step
-	case EncoderType::AS5047:
-		return (360.0 / ((AS5047D*) ClosedLoop::encoder)->GetMaxValue()) * pps;	// Output degrees per full step
-	default:
-		return pps;																// Output pulses per step
-	}
-}
-
-//TODO make this a virtual function member of the encoder?
-float ClosedLoop::ExternalUnitsToPulsePerStep(float externalUnits, uint8_t encoderType) noexcept
-{
-	switch (encoderType)
-	{
-	case EncoderType::rotaryQuadrature:
-		return externalUnits * 4;												// Input is count per step
-	case EncoderType::AS5047:
-		return (((AS5047D*) ClosedLoop::encoder)->GetMaxValue() / 360.0) * externalUnits;	// Input is degree per step
-	default:
-		return externalUnits;													// Input is pulse per step
-	}
 }
 
 // Helper function to cat all the current tuning errors onto a reply in human-readable form
@@ -337,6 +311,7 @@ void ClosedLoop::Init() noexcept
 	// Initialise the monitoring variables
 	ResetMonitoringVariables();
 
+	PIDITerm = 0.0;
 	derivativeFilter.Reset();
 
 	// Set up the data transmission task
@@ -455,10 +430,6 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 
 		case EncoderType::AS5047:
 			encoder = new AS5047D(lrintf(360.0/tempCPR), *Platform::sharedSpi, EncoderCsPin);
-			if (((AbsoluteEncoder*)encoder)->LoadLUT())
-			{
-				minimalTunes[EncoderType::AS5047] &= ~TuningError::NotCalibrated;
-			}
 			if (encoderCalibrationTask == nullptr)
 			{
 				encoderCalibrationTask = new Task<ClosedLoop::EncoderCalibrationTaskStackWords>;
@@ -468,10 +439,6 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 
 		case EncoderType::TLI5012:
 			encoder = new TLI5012B(lrintf(360.0/tempCPR), *Platform::sharedSpi, EncoderCsPin);
-			if (((AbsoluteEncoder*)encoder)->LoadLUT())
-			{
-				minimalTunes[EncoderType::AS5047] &= ~TuningError::NotCalibrated;
-			}
 			if (encoderCalibrationTask == nullptr)
 			{
 				encoderCalibrationTask = new Task<ClosedLoop::EncoderCalibrationTaskStackWords>;
@@ -493,7 +460,12 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 		if (encoder != nullptr)
 		{
 			tuningError = minimalTunes[encoder->GetType().ToBaseType()];
-			return encoder->Init(reply);
+			const GCodeResult rslt = encoder->Init(reply);
+			if (rslt == GCodeResult::ok && encoder->IsAbsolute() && ((AbsoluteEncoder*)encoder)->LoadLUT())
+			{
+				tuningError &= ~TuningError::NotCalibrated;
+			}
+			return rslt;
 		}
 	}
 
@@ -1161,20 +1133,27 @@ bool ClosedLoop::SetClosedLoopEnabled(size_t driver, bool enabled, const StringR
 
 		delay(10);														// delay long enough for the TMC driver to have read the microstep counter since the end of the last movement
 		const uint16_t initialStepPhase = SmartDrivers::GetMicrostepPosition(0) * 4;	// get the current coil A microstep position as 0..4095
-		encoder->SetBackwards(false);
 
 		// Temporarily calibrate the encoder zero position
 		// We assume that the motor is at the position given by its microstep counter. This may not be true e.g. if it has a brake that has not been disengaged.
 		ReadState();													// SetBackwards changes the reading
-		encoder->SetKnownPhaseAtCount(initialStepPhase, encoder->GetCurrentCount());
+		if (!encoder->IsAbsolute())
+		{
+			encoder->SetBackwards(false);
+			((RelativeEncoder*)encoder)->SetKnownPhaseAtCount(initialStepPhase, encoder->GetCurrentCount());
+
+			// Reset the tuning
+			tuningError = minimalTunes[encoder->GetType().ToBaseType()];
+		}
 
 		desiredStepPhase = initialStepPhase;							// set this to be picked up later in DriverSwitchedToClosedLoop
+		PIDITerm = 0.0;
+		derivativeFilter.Reset();
+		targetEncoderReading = encoder->GetCurrentCount();
+		targetMotorSteps = (float)targetEncoderReading / encoder->GetCountsPerStep();
 
 		// Set the target position to the current position
 		ResetError(0);													// this calls ReadState again and sets up targetMotorSteps
-
-		// Reset the tuning (We have already checked encoder != nullptr)
-		tuningError = minimalTunes[encoder->GetType().ToBaseType()];
 
 		ResetMonitoringVariables();										// to avoid getting stupid values
 		prevControlLoopCallTime = StepTimer::GetTimerTicks();			// to avoid huge integral term windup

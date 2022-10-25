@@ -44,13 +44,25 @@ void NonVolatileMemory::EnsureRead() noexcept
 //			debugPrintf("Invalid user area\n");
 			memset(&buffer, 0xFF, sizeof(buffer));
 			buffer.commonPage.magic = GetMagicValue();
-			state = NvmState::eraseAndWriteNeeded;
+			SetDirty(true);
 		}
 		else
 		{
 			state = NvmState::clean;
 //			debugPrintf("user area valid\n");
 		}
+	}
+}
+
+void NonVolatileMemory::SetDirty(bool eraseNeeded) noexcept
+{
+	if (eraseNeeded && state < NvmState::eraseAndWriteNeeded)
+	{
+		state = NvmState::eraseAndWriteNeeded;
+	}
+	else if (state < NvmState::writeNeeded)
+	{
+		state = NvmState::writeNeeded;
 	}
 }
 
@@ -116,10 +128,7 @@ SoftwareResetData* NonVolatileMemory::AllocateResetDataSlot() noexcept
 	{
 		if (buffer.commonPage.resetData[i].IsVacant())
 		{
-			if (state == NvmState::clean)			// need this test because state may already be EraseAndWriteNeeded after EnsureRead
-			{
-				state = NvmState::writeNeeded;		// assume the caller will write to the allocated slot
-			}
+			SetDirty(false);
 			return &buffer.commonPage.resetData[i];
 		}
 	}
@@ -129,7 +138,7 @@ SoftwareResetData* NonVolatileMemory::AllocateResetDataSlot() noexcept
 	{
 		buffer.commonPage.resetData[i].Clear();
 	}
-	state = NvmState::eraseAndWriteNeeded;
+	SetDirty(true);
 	return &buffer.commonPage.resetData[0];
 }
 
@@ -170,14 +179,7 @@ void NonVolatileMemory::SetThermistorCalibration(unsigned int inputNumber, int8_
 		{
 			// If we are only changing 1 bits to 0 then we don't need to erase
 			calibArray[inputNumber] = newVal;
-			if ((newVal & ~oldVal) != 0)
-			{
-				state = NvmState::eraseAndWriteNeeded;
-			}
-			else if (state == NvmState::clean)
-			{
-				state = NvmState::writeNeeded;
-			}
+			SetDirty((newVal & ~oldVal) != 0);
 		}
 	}
 }
@@ -196,7 +198,7 @@ void NonVolatileMemory::SetClosedLoopDataValid(bool valid) noexcept
 		if (buffer.closedLoopPage.notValid)
 		{
 			buffer.closedLoopPage.notValid = 0;
-			state = NvmState::writeNeeded;
+			SetDirty(false);
 		}
 	}
 	else if (!buffer.closedLoopPage.notValid)
@@ -208,7 +210,7 @@ void NonVolatileMemory::SetClosedLoopDataValid(bool valid) noexcept
 		{
 			buffer.closedLoopPage.harmonicData[i].u = 0xFFFFFFFF;
 		}
-		state = NvmState::eraseAndWriteNeeded;
+		SetDirty(true);
 	}
 }
 
@@ -230,32 +232,24 @@ void NonVolatileMemory::SetClosedLoopHarmonicValue(size_t index, float value) no
 
 		// If we are only changing 1s to 0s then we don't need to erase
 		const uint32_t newBits = buffer.closedLoopPage.harmonicData[index].u;
-		if ((~oldBits & newBits) != 0)
-		{
-			state = NvmState::eraseAndWriteNeeded;
-		}
-		else
-		{
-			state = NvmState::writeNeeded;
-		}
+		SetDirty((~oldBits & newBits) != 0);
 	}
 }
 
-void NonVolatileMemory::SetClosedLoopZeroCountPhase(uint32_t phase) noexcept
+void NonVolatileMemory::SetClosedLoopZeroCountPhaseAndPolarity(uint32_t phase, uint32_t flags) noexcept
 {
 	EnsureRead();
 	const uint32_t oldPhase = buffer.closedLoopPage.harmonicData[0].u;
 	if (oldPhase != phase)
 	{
 		buffer.closedLoopPage.harmonicData[0].u = phase;
-		if ((phase & ~oldPhase) != 0)
-		{
-			state = NvmState::eraseAndWriteNeeded;
-		}
-		else
-		{
-			state = NvmState::writeNeeded;
-		}
+		SetDirty((phase & ~oldPhase) != 0);
+	}
+	const uint32_t oldFlags = buffer.closedLoopPage.harmonicData[1].u;
+	if (oldFlags != flags)
+	{
+		buffer.closedLoopPage.harmonicData[1].u = flags;
+		SetDirty((flags & ~oldFlags) != 0);
 	}
 }
 

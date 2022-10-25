@@ -86,25 +86,15 @@ void AbsoluteEncoder::ClearFullRevs() noexcept
 	currentCount = (int32_t)currentAngle;
 }
 
-// Tell the encoder what the step phase is at a particular count
-void AbsoluteEncoder::SetKnownPhaseAtCount(uint32_t phase, int32_t count) noexcept
-{
-	count %= (int32_t)GetCountsPerRev();
-	if (count < 0) { count += (int32_t)GetCountsPerRev(); }
-	const uint32_t relativePhasePosition = ((uint32_t)count * GetPhasePositionsPerRev()) >> resolutionBits;
-	zeroCountPhasePosition = (phase - relativePhasePosition) & 4095u;
-}
-
 // Encoder polarity. Changing this will change the encoder reading.
 void AbsoluteEncoder::SetBackwards(bool backwards) noexcept
 {
 	if (isBackwards != backwards)
 	{
+		ClearFullRevs();
 		rawAngle = (GetMaxValue() - rawAngle) & (GetMaxValue() - 1);
-		const uint32_t oldCurrentAngle = currentAngle;
 		currentAngle = (GetMaxValue() - currentAngle) & (GetMaxValue() - 1);
-		const int32_t angleChange = (int32_t)currentAngle - (int32_t)oldCurrentAngle;
-		currentCount += angleChange;
+		ClearFullRevs();
 		isBackwards = backwards;
 	}
 }
@@ -170,6 +160,7 @@ void AbsoluteEncoder::PopulateLUT(NonVolatileMemory& mem) noexcept
 	rmsCorrection = sqrtf(rmsCorrection/LUTLength);
 
 	zeroCountPhasePosition = harmonicData[0].u;
+	SetBackwards(harmonicData[1].u & 0x01);
 
 #ifdef DEBUG
 	debugPrintf("Actual max iterations %u, minCorrection %.1f, maxCorrection %.1f, RMS correction %.1f, zrp %" PRIu32 "\n",
@@ -365,7 +356,7 @@ TuningErrors AbsoluteEncoder::Calibrate(bool store) noexcept
 			mem.SetClosedLoopHarmonicValue(harmonic * 2, sines[harmonic]);
 			mem.SetClosedLoopHarmonicValue(harmonic * 2 + 1, cosines[harmonic]);
 		}
-		mem.SetClosedLoopZeroCountPhase((uint32_t)expectedZeroReadingPhase);
+		mem.SetClosedLoopZeroCountPhaseAndPolarity((uint32_t)expectedZeroReadingPhase, (rotationReversed) ? 0xFFFFFFFF : 0xFFFFFFFE);
 		mem.SetClosedLoopDataValid(true);
 		mem.EnsureWritten();
 

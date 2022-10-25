@@ -45,9 +45,6 @@ public:
 	// Return true if this is an absolute encoder, false if it is relative
 	virtual bool IsAbsolute() const noexcept = 0;
 
-	// Tell the encoder what the step phase is at a particular count
-	virtual void SetKnownPhaseAtCount(uint32_t phase, int32_t count) noexcept = 0;
-
 	// Clear the accumulated full rotations so as to get the count back to a smaller number
 	virtual void ClearFullRevs() noexcept = 0;
 

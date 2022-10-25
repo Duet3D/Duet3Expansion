@@ -43,9 +43,6 @@ public:
 	// Get the current reading
 	bool TakeReading() noexcept override;
 
-	// Tell the encoder what the step phase is at a particular count
-	void SetKnownPhaseAtCount(uint32_t phase, int32_t count) noexcept override;
-
 	// Clear the accumulated full rotations so as to get the count back to a smaller number
 	void ClearFullRevs() noexcept override;
 

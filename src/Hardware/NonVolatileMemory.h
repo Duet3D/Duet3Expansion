@@ -44,10 +44,12 @@ public:
 	void SetClosedLoopDataValid(bool valid) noexcept pre(page == NvmPage::closedLoop);
 	const HarmonicDataElement *GetClosedLoopHarmonicValues() noexcept pre(page == NvmPage::closedLoop);
 	void SetClosedLoopHarmonicValue(size_t index, float value) noexcept pre(page == NvmPage::closedLoop; index < MaxHarmonicDataSlots);
-	void SetClosedLoopZeroCountPhase(uint32_t phase) noexcept;
+	void SetClosedLoopZeroCountPhaseAndPolarity(uint32_t phase, uint32_t flags) noexcept;
 
 private:
 	void EnsureRead() noexcept;
+	void SetDirty(bool eraseNeeded) noexcept pre(state != NvmState::notRead);
+
 	int8_t GetThermistorCalibration(unsigned int inputNumber, uint8_t *calibArray) noexcept pre(page == NvmPage::common);
 	void SetThermistorCalibration(unsigned int inputNumber, int8_t val, uint8_t *calibArray) noexcept pre(page == NvmPage::common);
 
