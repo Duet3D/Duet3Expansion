@@ -228,19 +228,21 @@ static bool EncoderCalibration(bool firstIteration) noexcept
 	if (firstIteration)
 	{
 		// Set up some variables
-		state = EncoderCalibrationState::setup;
-		if (ClosedLoop::tuning & ClosedLoop::ENCODER_CALIBRATION_MANOEUVRE)
-		{
-			absoluteEncoder->ClearLUT();
-		}
-		absoluteEncoder->ClearDataCollection();
-		positionsPerRev = absoluteEncoder->GetStepsPerRev() * 1024u;
+		positionsPerRev = absoluteEncoder->GetPhasePositionsPerRev();
 
 		// Decide how many phase positions to advance at a time. This is down to the steps/rev ands the size of our calibration data storage array.
 		phaseIncrementShift = 0;
-		while ((absoluteEncoder->GetPhasePositionsPerRev() >> phaseIncrementShift) > AbsoluteEncoder::NumDataPoints)
+		while ((positionsPerRev >> phaseIncrementShift) > AbsoluteEncoder::MaxDataPoints)
 		{
 			++phaseIncrementShift;
+		}
+
+		absoluteEncoder->ClearDataCollection(positionsPerRev >> phaseIncrementShift);
+
+		// If calibrating (not checking), clear the mapping table
+		if (ClosedLoop::tuning & ClosedLoop::ENCODER_CALIBRATION_MANOEUVRE)
+		{
+			absoluteEncoder->ClearLUT();
 		}
 
 		// To counter any backlash, start by advancing a bit. Then advance to the next position which is a multiple of 4 full steps so that the phase position is zero.
@@ -249,6 +251,8 @@ static bool EncoderCalibration(bool firstIteration) noexcept
 		{
 			positionsTillStart += 4096;
 		}
+
+		state = EncoderCalibrationState::setup;
 	}
 
 	const int32_t currentCount = absoluteEncoder->GetCurrentCount();
@@ -297,14 +301,14 @@ static bool EncoderCalibration(bool firstIteration) noexcept
 				if (ClosedLoop::tuning & ClosedLoop::ENCODER_CALIBRATION_MANOEUVRE)
 				{
 					// Calibrating the encoder
-					absoluteEncoder->Calibrate(initialCount, positionsPerRev >> phaseIncrementShift, true);
+					absoluteEncoder->Calibrate(initialCount, true);
 					absoluteEncoder->StoreLUT(initialCount, positionsPerRev >> phaseIncrementShift);
 					ClosedLoop::FinishedEncoderCalibration();
 				}
 				else
 				{
 					// Checking the calibration
-					absoluteEncoder->Calibrate(initialCount, positionsPerRev >> phaseIncrementShift, false);
+					absoluteEncoder->Calibrate(initialCount, false);
 					absoluteEncoder->CheckLUT(initialCount, (2 * positionsPerRev) >> phaseIncrementShift);
 					ClosedLoop::ReportEncoderCalibrationCheckResult();
 				}

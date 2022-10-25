@@ -260,9 +260,10 @@ void AbsoluteEncoder::ClearLUT() noexcept
 	LUTLoaded = false;
 }
 
-void AbsoluteEncoder::ClearDataCollection() noexcept
+void AbsoluteEncoder::ClearDataCollection(size_t p_numDataPoints) noexcept
 {
-	hysteresisSum = dataSum = 0;
+	numDataPoints = p_numDataPoints;
+	hysteresisSum = dataSum = dataBias = 0;
 	minCalibrationError = std::numeric_limits<float>::infinity();
 	maxCalibrationError = -std::numeric_limits<float>::infinity();
 }
@@ -280,8 +281,16 @@ void AbsoluteEncoder::RecordDataPoint(size_t index, int16_t data, bool backwards
 	dataSum += data;
 	if (backwards)
 	{
+		if (index + 1 == numDataPoints)
+		{
+			// This is the first data point collected during reverse motion.
+			// It sometimes happens that the encoder appears to travel slightly more than a full rotation.
+			// When using a 14-bit encoder and storing signed 16-bit values with two readings per point, this causes the data to overflow.
+			// To avoid this, after collecting the first set of data points we bias the data by subtracting the average value.
+			dataBias = dataSum/numDataPoints;
+		}
 		hysteresisSum += calibrationData[index] - data;
-		calibrationData[index] += data;
+		calibrationData[index] = (int32_t)calibrationData[index] + (int32_t)data - dataBias;
 	}
 	else
 	{
@@ -290,10 +299,10 @@ void AbsoluteEncoder::RecordDataPoint(size_t index, int16_t data, bool backwards
 }
 
 // Analyse the calibration data and optionally store it. We have the specified number of data points but we read each point twice, once while rotating forwards and once backwards.
-void AbsoluteEncoder::Calibrate(int32_t initialCount, size_t numDataPoints, bool store) noexcept
+void AbsoluteEncoder::Calibrate(int32_t initialCount, bool store) noexcept
 {
-	// Normalise initialCount to be within 0..GetMaxValue()
-	const uint32_t normalisedInitialCount = (uint32_t)initialCount % GetMaxValue();
+	// Normalise initialCount to be within -GetMaxValue()..GetMaxValue()
+	const int32_t normalisedInitialCount = initialCount % (int32_t)GetMaxValue();
 
 	// dataSum is the sum of all the readings. If it is negative then the encoder is running backwards.
 	const float twiceExpectedMidPointDifference = (float)dataSum/(float)numDataPoints;
@@ -323,8 +332,6 @@ void AbsoluteEncoder::Calibrate(int32_t initialCount, size_t numDataPoints, bool
 	{
 		phaseCorrection = -phaseCorrection;
 	}
-	while (phaseCorrection >  (float)(GetPhasePositionsPerRev()/2)) { phaseCorrection -= (float)GetPhasePositionsPerRev(); }
-	while (phaseCorrection < -(float)(GetPhasePositionsPerRev()/2)) { phaseCorrection += (float)GetPhasePositionsPerRev(); }
 	debugPrintf("exp mid pt rdg %.1f, init count %" PRIi32 ", norm init count %" PRIu32 ", phase corr %.1f\n", (double)expectedMidPointReading, initialCount, normalisedInitialCount, (double)phaseCorrection);
 
 	int32_t expectedZeroReadingPhase = -(int32_t)phaseCorrection % 4096;
@@ -334,7 +341,7 @@ void AbsoluteEncoder::Calibrate(int32_t initialCount, size_t numDataPoints, bool
 	minCalibrationError = std::numeric_limits<float>::infinity();
 	maxCalibrationError = -std::numeric_limits<float>::infinity();
 
-	// Do an initial Fourier analysis of the data, assuming the origin is (0, 0)
+	// Do a Fourier analysis of the data
 	float sines[NumHarmonics], cosines[NumHarmonics];
 	for (size_t i = 0; i < NumHarmonics; ++i)
 	{
@@ -354,14 +361,15 @@ void AbsoluteEncoder::Calibrate(int32_t initialCount, size_t numDataPoints, bool
 		{
 			expectedValue = -expectedValue;
 		}
-		float error = expectedValue - (float)((uint32_t)calibrationData[i] + (2 * initialCount));
-		while (error >  (float)(GetMaxValue())) { error -= (float)(2 * GetMaxValue()); }
-		while (error < -(float)(GetMaxValue())) { error += (float)(2 * GetMaxValue()); }
+		const int32_t actualValue = (int32_t)calibrationData[i] + dataBias + (2 * initialCount);
+		float error = expectedValue - (float)actualValue;
+		if (error >  (float)GetMaxValue()) { error -= (float)(2 * GetMaxValue()); }
+		else if (error < -(float)GetMaxValue()) { error += (float)(2 * GetMaxValue()); }
 
-//		if ((i & 127) == 0)
-//		{
-//			debugPrintf("exp %.1f calib %.1f err %.1f\n", (double)expectedValue, (double)((uint32_t)calibrationData[i] + (2 * initialCount)), (double)error);
-//		}
+		if ((i & 127) == 0 || fabsf(error) > (float)GetMaxValue())
+		{
+			debugPrintf("exp %.1f calib %" PRIi32 " err %.1f\n", (double)expectedValue, actualValue, (double)error);
+		}
 		if (error < minCalibrationError) { minCalibrationError = error; }
 		if (error > maxCalibrationError) { maxCalibrationError = error; }
 		rmsErrorAcc += fsquare(error);
