@@ -215,7 +215,6 @@ static bool EncoderCalibration(bool firstIteration) noexcept
 	static uint32_t positionsTillStart;			// the position we advance to before we start tuning proper
 	static unsigned int phaseIncrementShift;	// we increase the phase position by one << this value for each sample
 	static uint32_t positionCounter;			// how many positions we have moved
-	static int32_t initialCount;				// the initial encoder reading
 
 	if (!ClosedLoop::encoder->IsAbsolute())
 	{
@@ -252,6 +251,7 @@ static bool EncoderCalibration(bool firstIteration) noexcept
 			positionsTillStart += 4096;
 		}
 
+		absoluteEncoder->SetBackwards(false);
 		state = EncoderCalibrationState::setup;
 	}
 
@@ -269,7 +269,6 @@ static bool EncoderCalibration(bool firstIteration) noexcept
 			return false;
 		}
 
-		initialCount = currentCount;
 		positionCounter = 0;
 		state = EncoderCalibrationState::forwards;
 		// no break
@@ -278,7 +277,7 @@ static bool EncoderCalibration(bool firstIteration) noexcept
 		// Advancing slowly and recording positions
 		if (positionCounter < positionsPerRev)
 		{
-			absoluteEncoder->RecordDataPoint(positionCounter >> phaseIncrementShift, (int16_t)(currentCount - initialCount), false);
+			absoluteEncoder->RecordDataPoint(positionCounter >> phaseIncrementShift, currentCount, false);
 		}
 
 		// Move to the next position. After a complete revolution we continue another 256 positions without recording data, ready for the reverse pass.
@@ -293,7 +292,7 @@ static bool EncoderCalibration(bool firstIteration) noexcept
 	case EncoderCalibrationState::backwards:
 		if (positionCounter < positionsPerRev)
 		{
-			absoluteEncoder->RecordDataPoint(positionCounter >> phaseIncrementShift, (int16_t)(currentCount - initialCount), true);
+			absoluteEncoder->RecordDataPoint(positionCounter >> phaseIncrementShift, currentCount, true);
 
 			if (positionCounter == 0)
 			{
@@ -301,15 +300,15 @@ static bool EncoderCalibration(bool firstIteration) noexcept
 				if (ClosedLoop::tuning & ClosedLoop::ENCODER_CALIBRATION_MANOEUVRE)
 				{
 					// Calibrating the encoder
-					absoluteEncoder->Calibrate(initialCount, true);
-					absoluteEncoder->StoreLUT(initialCount, positionsPerRev >> phaseIncrementShift);
+					absoluteEncoder->Calibrate(true);
+//					absoluteEncoder->StoreLUT(initialCount, positionsPerRev >> phaseIncrementShift);
 					ClosedLoop::FinishedEncoderCalibration();
 				}
 				else
 				{
 					// Checking the calibration
-					absoluteEncoder->Calibrate(initialCount, false);
-					absoluteEncoder->CheckLUT(initialCount, (2 * positionsPerRev) >> phaseIncrementShift);
+					absoluteEncoder->Calibrate(false);
+//					absoluteEncoder->CheckLUT(initialCount, (2 * positionsPerRev) >> phaseIncrementShift);
 					ClosedLoop::ReportEncoderCalibrationCheckResult();
 				}
 				return true;
@@ -541,7 +540,7 @@ void ClosedLoop::PerformTune() noexcept
 	}
 	else if (tuning & (ENCODER_CALIBRATION_MANOEUVRE | ENCODER_CALIBRATION_CHECK))
 	{
-		if (tuningError & (TUNE_ERR_TOO_MUCH_MOTION | TUNE_ERR_TOO_LITTLE_MOTION | TUNE_ERR_INCONSISTENT_MOTION | TUNE_ERR_NOT_DONE_BASIC))
+		if (tuningError & (TUNE_ERR_TOO_MUCH_MOTION | TUNE_ERR_TOO_LITTLE_MOTION | TUNE_ERR_INCONSISTENT_MOTION))
 		{
 			// Basic tuning failed, so don't attempt encoder calibration because it may not complete
 			tuning = 0;
@@ -551,15 +550,7 @@ void ClosedLoop::PerformTune() noexcept
 			newTuningMove = EncoderCalibration(newTuningMove);
 			if (newTuningMove)
 			{
-				if (tuning & ENCODER_CALIBRATION_MANOEUVRE)
-				{
-					tuning &= ~ENCODER_CALIBRATION_MANOEUVRE;
-					tuning |= BASIC_TUNING_MANOEUVRE;			// run basic tuning again
-				}
-				else
-				{
-					tuning = 0;
-				}
+				tuning = 0;
 			}
 		}
 	}

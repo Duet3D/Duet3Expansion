@@ -276,9 +276,9 @@ void AbsoluteEncoder::ScrubLUT() noexcept
 	mem.EnsureWritten();
 }
 
-void AbsoluteEncoder::RecordDataPoint(size_t index, int16_t data, bool backwards) noexcept
+// Record a data point. The first forwards data point must be index zero, and the first backwards data point must be index (numDataPoints - 1).
+void AbsoluteEncoder::RecordDataPoint(size_t index, int32_t data, bool backwards) noexcept
 {
-	dataSum += data;
 	if (backwards)
 	{
 		if (index + 1 == numDataPoints)
@@ -287,22 +287,29 @@ void AbsoluteEncoder::RecordDataPoint(size_t index, int16_t data, bool backwards
 			// It sometimes happens that the encoder appears to travel slightly more than a full rotation.
 			// When using a 14-bit encoder and storing signed 16-bit values with two readings per point, this causes the data to overflow.
 			// To avoid this, after collecting the first set of data points we bias the data by subtracting the average value.
-			dataBias = dataSum/numDataPoints;
+			dataBias = dataSum/(int32_t)numDataPoints;
 		}
+		data -= initialCount;
 		hysteresisSum += calibrationData[index] - data;
-		calibrationData[index] = (int32_t)calibrationData[index] + (int32_t)data - dataBias;
+		calibrationData[index] = (int32_t)calibrationData[index] + data - dataBias;
 	}
 	else
 	{
+		if (index == 0)
+		{
+			initialCount = data;
+		}
+		data -= initialCount;
 		calibrationData[index] = data;
 	}
+	dataSum += data;
 }
 
 // Analyse the calibration data and optionally store it. We have the specified number of data points but we read each point twice, once while rotating forwards and once backwards.
-void AbsoluteEncoder::Calibrate(int32_t initialCount, bool store) noexcept
+void AbsoluteEncoder::Calibrate(bool store) noexcept
 {
 	// Normalise initialCount to be within -GetMaxValue()..GetMaxValue()
-	const int32_t normalisedInitialCount = initialCount % (int32_t)GetMaxValue();
+	initialCount %= (int32_t)GetMaxValue();
 
 	// dataSum is the sum of all the readings. If it is negative then the encoder is running backwards.
 	const float twiceExpectedMidPointDifference = (float)dataSum/(float)numDataPoints;
@@ -326,13 +333,14 @@ void AbsoluteEncoder::Calibrate(int32_t initialCount, bool store) noexcept
 		//TODO report bad encoder and quit
 	}
 
-	const float expectedMidPointReading = twiceExpectedMidPointDifference/2.0 + (float)normalisedInitialCount;
-	float phaseCorrection = (expectedMidPointReading * (float)GetPhasePositionsPerRev()/(float)GetMaxValue()) - (float)(GetPhasePositionsPerRev()/2);
+	const float expectedMidPointReading = twiceExpectedMidPointDifference/2.0 + (float)initialCount;
+	float phaseCorrection = expectedMidPointReading * (float)GetPhasePositionsPerRev()/(float)GetMaxValue();
 	if (runningBackwards)
 	{
 		phaseCorrection = -phaseCorrection;
 	}
-	debugPrintf("exp mid pt rdg %.1f, init count %" PRIi32 ", norm init count %" PRIu32 ", phase corr %.1f\n", (double)expectedMidPointReading, initialCount, normalisedInitialCount, (double)phaseCorrection);
+	phaseCorrection -= (float)(GetPhasePositionsPerRev()/2);
+	debugPrintf("exp mid pt rdg %.1f, init count %" PRIi32 ", phase corr %.1f, bias %" PRIi32 "\n", (double)expectedMidPointReading, initialCount, (double)phaseCorrection, dataBias);
 
 	int32_t expectedZeroReadingPhase = -(int32_t)phaseCorrection % 4096;
 	if (expectedZeroReadingPhase < 0) { expectedZeroReadingPhase += 4096; }
@@ -363,10 +371,10 @@ void AbsoluteEncoder::Calibrate(int32_t initialCount, bool store) noexcept
 		}
 		const int32_t actualValue = (int32_t)calibrationData[i] + dataBias + (2 * initialCount);
 		float error = expectedValue - (float)actualValue;
-		if (error >  (float)GetMaxValue()) { error -= (float)(2 * GetMaxValue()); }
-		else if (error < -(float)GetMaxValue()) { error += (float)(2 * GetMaxValue()); }
+//		if (error >  (float)GetMaxValue()) { error -= (float)(2 * GetMaxValue()); }
+//		else if (error < -(float)GetMaxValue()) { error += (float)(2 * GetMaxValue()); }
 
-		if ((i & 127) == 0 || fabsf(error) > (float)GetMaxValue())
+		if ((i & 127) == 0 /*|| fabsf(error) > (float)GetMaxValue()*/)
 		{
 			debugPrintf("exp %.1f calib %" PRIi32 " err %.1f\n", (double)expectedValue, actualValue, (double)error);
 		}

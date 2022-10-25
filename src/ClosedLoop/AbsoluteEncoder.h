@@ -64,8 +64,8 @@ public:
 
 	// Lookup table (LUT) management
 	void ClearDataCollection(size_t p_numDataPoints) noexcept;
-	void RecordDataPoint(size_t index, int16_t data, bool backwards) noexcept;
-	void Calibrate(int32_t initialCount, bool store) noexcept;
+	void RecordDataPoint(size_t index, int32_t data, bool backwards) noexcept;
+	void Calibrate(bool store) noexcept;
 
 	bool LoadLUT() noexcept;
 	void StoreLUT(uint32_t virtualStartPosition, uint32_t numReadingsTaken) noexcept;
@@ -120,6 +120,7 @@ private:
 	float minCalibrationError = 0.0, maxCalibrationError = 0.0;		// min and max corrections, for reporting in diagnostics
 	int32_t dataSum;
 	int32_t hysteresisSum;
+	int32_t initialCount;
 	int32_t dataBias;
 	size_t numDataPoints;
 	int16_t calibrationData[MaxDataPoints];

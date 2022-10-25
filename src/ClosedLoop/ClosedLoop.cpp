@@ -191,9 +191,9 @@ namespace ClosedLoop
 		// rotaryQuadrature
 		TUNE_ERR_NOT_DONE_BASIC,
 		// AS5047
-		TUNE_ERR_NOT_DONE_BASIC | TUNE_ERR_NOT_CALIBRATED,
+		TUNE_ERR_NOT_CALIBRATED,
 		// TLI5012
-		TUNE_ERR_NOT_DONE_BASIC | TUNE_ERR_NOT_CALIBRATED,
+		TUNE_ERR_NOT_CALIBRATED,
 	};
 
 	// Monitoring variables
@@ -649,10 +649,6 @@ void ClosedLoop::StartTuning(uint8_t tuningMode) noexcept
 {
 	if (tuningMode != 0)
 	{
-		if (tuningMode & ENCODER_CALIBRATION_MANOEUVRE)
-		{
-			tuningMode |= BASIC_TUNING_MANOEUVRE;				// always run basic tuning before encoder calibration
-		}
 		whenLastTuningStepTaken = StepTimer::GetTimerTicks() + stepTicksBeforeTuning;	// delay the start to allow brake release and motor current buildup
 		tuning = tuningMode;
 	}
