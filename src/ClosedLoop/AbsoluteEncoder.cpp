@@ -308,9 +308,6 @@ void AbsoluteEncoder::RecordDataPoint(size_t index, int32_t data, bool backwards
 // Analyse the calibration data and optionally store it. We have the specified number of data points but we read each point twice, once while rotating forwards and once backwards.
 void AbsoluteEncoder::Calibrate(bool store) noexcept
 {
-	// Normalise initialCount to be within -GetMaxValue()..GetMaxValue()
-	initialCount %= (int32_t)GetMaxValue();
-
 	// dataSum is the sum of all the readings. If it is negative then the encoder is running backwards.
 	const float twiceExpectedMidPointDifference = (float)dataSum/(float)numDataPoints;
 
@@ -332,6 +329,13 @@ void AbsoluteEncoder::Calibrate(bool store) noexcept
 		debugPrintf("bad encoder, ratio = %.2f\n", (double)ratio);
 		//TODO report bad encoder and quit
 	}
+
+	// Normalise initialCount to be within -GetMaxValue()..GetMaxValue()
+	initialCount %= (int32_t)GetMaxValue();
+
+	// Further normalise initialCount to keep the angles small, preferably we want the count to cross zero and back.
+	if (dataSum > 0 && initialCount > 0) { initialCount -= (int32_t)GetMaxValue(); }
+	else if (dataSum < 0 && initialCount < 0) { initialCount += (int32_t)GetMaxValue(); }
 
 	const float expectedMidPointReading = twiceExpectedMidPointDifference/2.0 + (float)initialCount;
 	float phaseCorrection = expectedMidPointReading * (float)GetPhasePositionsPerRev()/(float)GetMaxValue();
@@ -370,9 +374,7 @@ void AbsoluteEncoder::Calibrate(bool store) noexcept
 			expectedValue = -expectedValue;
 		}
 		const int32_t actualValue = (int32_t)calibrationData[i] + dataBias + (2 * initialCount);
-		float error = expectedValue - (float)actualValue;
-//		if (error >  (float)GetMaxValue()) { error -= (float)(2 * GetMaxValue()); }
-//		else if (error < -(float)GetMaxValue()) { error += (float)(2 * GetMaxValue()); }
+		const float error = expectedValue - (float)actualValue;
 
 		if ((i & 127) == 0 /*|| fabsf(error) > (float)GetMaxValue()*/)
 		{
