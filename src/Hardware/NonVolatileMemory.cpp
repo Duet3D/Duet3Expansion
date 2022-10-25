@@ -201,7 +201,13 @@ void NonVolatileMemory::SetClosedLoopDataValid(bool valid) noexcept
 	}
 	else if (!buffer.closedLoopPage.notValid)
 	{
+		// Set the data to all 0xFF so that we will be able to write it without erasing again
 		buffer.closedLoopPage.notValid = 1;
+		buffer.closedLoopPage.zero = 0x7FFF;
+		for (size_t i = 0; i < ClosedLoopPage::MaxHarmonicDataSlots; ++i)
+		{
+			buffer.closedLoopPage.harmonicData[i].u = 0xFFFFFFFF;
+		}
 		state = NvmState::eraseAndWriteNeeded;
 	}
 }

@@ -70,8 +70,6 @@ public:
 	TuningErrors Calibrate(bool store) noexcept;
 
 	bool LoadLUT() noexcept;
-	void StoreLUT(uint32_t virtualStartPosition, uint32_t numReadingsTaken) noexcept;
-	void CheckLUT(uint32_t virtualStartPosition, uint32_t numReadingsTaken) noexcept;
 	void ClearLUT() noexcept;
 	void ScrubLUT() noexcept;
 
@@ -98,7 +96,6 @@ protected:
 	// For diagnostics
 	float minLUTCorrection = 0.0, maxLUTCorrection = 0.0;			// min and max corrections, for reporting in diagnostics
 	float minLUTError = 0.0, maxLUTError = 0.0;						// min and max errors when the calibration was checked, for reporting in diagnostics
-	float meanCorrection = 0.0, meanError = 0.0;
 	float rmsCorrection = 0.0, rmsError = 0.0;
 
 private:
@@ -119,7 +116,7 @@ private:
 	bool isBackwards = false;
 
 	// Calibration variables
-	float minCalibrationError = 0.0, maxCalibrationError = 0.0;		// min and max corrections, for reporting in diagnostics
+	float minCalibrationError = 0.0, maxCalibrationError = 0.0, rmsCalibrationError = 0.0;	// min, max and RMS corrections, for reporting in diagnostics
 	int32_t dataSum;
 	int32_t hysteresisSum;
 	int32_t initialCount;

@@ -73,7 +73,7 @@ namespace ClosedLoop
 {
 	// Constants private to this module
 	constexpr size_t DataCollectionTaskStackWords = 200;		// Size of the stack for all closed loop tasks
-	constexpr size_t EncoderCalibrationTaskStackWords = 300;	// Size of the stack for all closed loop tasks
+	constexpr size_t EncoderCalibrationTaskStackWords = 500;	// Size of the stack for all closed loop tasks
 
 	constexpr unsigned int derivativeFilterSize = 8;	// The range of the derivative filter (use a power of 2 for efficiency)
 	constexpr unsigned int DataBufferSize = 2000 * 14;	// When collecting samples we can accommodate 2000 readings of up to 13 variables + timestamp
@@ -776,7 +776,7 @@ void ClosedLoop::StartTuning(uint8_t tuningMode) noexcept
 		whenLastTuningStepTaken = StepTimer::GetTimerTicks() + stepTicksBeforeTuning;	// delay the start to allow brake release and motor current buildup
 		tuning = (tuningMode == 1) ? BASIC_TUNING_MANOEUVRE
 					: (tuningMode == 2) ? ENCODER_CALIBRATION_MANOEUVRE
-						: (tuningMode == 4) ? ENCODER_CALIBRATION_CHECK
+						: (tuningMode == 3) ? ENCODER_CALIBRATION_CHECK
 							: (tuningMode == 64) ? STEP_MANOEUVRE
 								: 0;
 	}
