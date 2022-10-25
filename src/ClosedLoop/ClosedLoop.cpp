@@ -500,8 +500,6 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 	return GCodeResult::ok;
 }
 
-static float startRecordingTrigger;
-
 GCodeResult ClosedLoop::ProcessM569Point5(const CanMessageStartClosedLoopDataCollection& msg, const StringRef& reply) noexcept
 {
 	if (encoder == nullptr || msg.deviceNumber != 0)
@@ -548,7 +546,6 @@ GCodeResult ClosedLoop::ProcessM569Point5(const CanMessageStartClosedLoopDataCol
 	sampleBufferOverflowed = false;
 	filterRequested = msg.filter;
 	samplesRequested = msg.numSamples;
-	startRecordingTrigger = targetMotorSteps;					// mark the current number of steps in case we are using RecordingMode::OnNextMove
 	dataCollectionIntervalTicks = (msg.rate == 0) ? 1 : StepTimer::StepClockRate/msg.rate;
 	dataCollectionStartTicks = whenNextSampleDue = StepTimer::GetTimerTicks();
 	samplingMode = (RecordingMode)requestedMode;				// do this one last, it triggers data collection
@@ -595,23 +592,26 @@ GCodeResult ClosedLoop::ProcessBasicTuningResult(const StringRef& reply) noexcep
 	if (hyst >= MaxSafeHysteresis)
 	{
 		tuningError = TuningError::HysteresisTooHigh;
-		reply.lcatf("failed, measured hysteresis (%.2f step) is too high", (double)hyst);
+		reply.catf("failed, measured hysteresis (%.2f step) is too high", (double)hyst);
 		return GCodeResult::error;
 	}
 	else if (hyst >= MaxGoodHysteresis)
 	{
-		reply.lcatf("succeeded but measured hysteresis (%.2f step) is high", (double)hyst);
+		reply.catf("succeeded but measured hysteresis (%.2f step) is high", (double)hyst);
 		tuningError = 0;
 		return GCodeResult::ok;
 	}
 	else
 	{
-		reply.lcatf("succeeded, measured hysteresis %.2f step", (double)hyst);
+		reply.catf("succeeded, measured hysteresis %.2f step", (double)hyst);
 		tuningError = 0;
 		return GCodeResult::ok;
 	}
 }
 
+// This function is run by the encoder calibration task.
+// Its purpose is to wait for encoder calibration data to become available and process it.
+// Processing to takes several seconds, so we need to do it in a separate task to avoid the main board timing out awaiting CAN responses.
 void ClosedLoop::EncoderCalibrationLoop(void *param) noexcept
 {
 	for (;;)
@@ -629,7 +629,7 @@ GCodeResult ClosedLoop::ProcessCalibrationResult(const StringRef& reply) noexcep
 {
 	if (calibrationState == CalibrationState::dataReady)
 	{
-		// Waiting for the main task to finish processing the calibration via our Spin() function
+		// Waiting for the calibration task to finish processing the calibration via our Spin() function
 		return GCodeResult::notFinished;
 	}
 
@@ -675,27 +675,33 @@ GCodeResult ClosedLoop::ProcessCalibrationResult(const StringRef& reply) noexcep
 	{
 		if (calibrateNotCheck) { tuningError = TuningError::HysteresisTooHigh; }
 		else { tuningError &= ~TuningError::CalibrationInProgress; }
-		reply.lcatf("failed, measured hysteresis (%.2f step) is too high", (double)hyst);
+		reply.catf("failed, measured hysteresis (%.2f step) is too high", (double)hyst);
 		return GCodeResult::error;
 	}
 	else if (hyst >= MaxGoodHysteresis)
 	{
 		if (calibrateNotCheck) { tuningError = 0; }
 		else { tuningError &= ~TuningError::CalibrationInProgress; }
-		reply.lcatf("succeeded but measured hysteresis (%.2f step) is high", (double)hyst);
+		reply.catf("succeeded but measured hysteresis (%.2f step) is high", (double)hyst);
 		return GCodeResult::ok;
 	}
 	else
 	{
 		if (calibrateNotCheck) { tuningError = 0; }
 		else { tuningError &= ~TuningError::CalibrationInProgress; }
-		reply.lcatf("succeeded, measured hysteresis is %.2f step", (double)hyst);
+		reply.catf("succeeded, measured hysteresis is %.2f step", (double)hyst);
 		return GCodeResult::ok;
 	}
 }
 
 GCodeResult ClosedLoop::ProcessM569Point6(const CanMessageGeneric &msg, const StringRef &reply) noexcept
 {
+	if (encoder == nullptr)
+	{
+		reply.copy("no encoder configured");
+		return GCodeResult::error;
+	}
+
 	CanMessageGenericParser parser(msg, M569Point6Params);
 
 	uint8_t desiredTuning;
@@ -711,22 +717,38 @@ GCodeResult ClosedLoop::ProcessM569Point6(const CanMessageGeneric &msg, const St
 		return (encoder->IsAbsolute()) ? ProcessCalibrationResult(reply) : ProcessBasicTuningResult(reply);
 	}
 
-	if (desiredTuning == 0 || (desiredTuning > 4 && desiredTuning != 64))
+	switch (desiredTuning)
 	{
-		reply.copy("Invalid tuning mode");
+	default:
+		reply.copy("invalid tuning mode");
 		return GCodeResult::error;
-	}
 
-	if (desiredTuning == 4)
-	{
-		// Tuning move 4 just clears the lookup table
-		if (encoder != nullptr && encoder->IsAbsolute())
+	case 1:		// basic calibration
+		if (encoder->IsAbsolute())
 		{
+			reply.copy("basic tuning is not applicable to absolute encoders");
+			return GCodeResult::error;
+		}
+		break;
+
+	case 2:
+	case 3:
+	case 4:
+		if (!encoder->IsAbsolute())
+		{
+			reply.copy("calibration is not applicable to relative encoders");
+			return GCodeResult::error;
+		}
+		if (desiredTuning == 4)
+		{
+			// Tuning move 4 just clears the lookup table
 			((AbsoluteEncoder*)encoder)->ScrubLUT();
 			return GCodeResult::ok;
 		}
-		reply.copy("No absolute encoder configured");
-		return GCodeResult::error;
+		break;
+
+	case 64:
+		break;
 	}
 
 	// Here if this is a new command to start a tuning move
@@ -737,14 +759,13 @@ GCodeResult ClosedLoop::ProcessM569Point6(const CanMessageGeneric &msg, const St
 		return GCodeResult::error;
 	}
 
-	if (!Platform::IsDriverEnabled(0))
+	if (!Platform::EnableIfIdle(0))
 	{
 		reply.copy("Drive is not enabled");
 		return GCodeResult::error;
 	}
 
 	StartTuning(desiredTuning);
-
 	return GCodeResult::notFinished;
 }
 

@@ -307,7 +307,7 @@ void AbsoluteEncoder::RecordDataPoint(size_t index, int32_t data, bool backwards
 }
 
 // Analyse the calibration data and optionally store it. We have the specified number of data points but we read each point twice, once while rotating forwards and once backwards.
-// This takes a long time so it must be done by a low priority task
+// This takes a long time so it must be called by a low priority task
 TuningErrors AbsoluteEncoder::Calibrate(bool store) noexcept
 {
 	// dataSum is the sum of all the readings. If it is negative then the encoder is running backwards.

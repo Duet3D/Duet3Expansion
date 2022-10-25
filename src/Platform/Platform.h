@@ -240,7 +240,7 @@ namespace Platform
 	void DisableAllDrives();
 	void SetDriverIdle(size_t driver, uint16_t idlePercent);
 # if SUPPORT_CLOSED_LOOP
-	bool IsDriverEnabled(size_t driver);
+	bool EnableIfIdle(size_t driver);						// if the driver is idle, enable it; return true if driver enabled on return
 # endif
 
 	GCodeResult ProcessM569Point7(const CanMessageGeneric& msg, const StringRef& reply);
