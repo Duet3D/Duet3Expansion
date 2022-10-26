@@ -832,15 +832,15 @@ void ClosedLoop::ControlLoop() noexcept
 	else
 	{
 		ControlMotorCurrents(loopCallTime);							// otherwise control those motor currents!
-	}
 
-	// Look for a stall or pre-stall
-	preStall = errorThresholds[0] > 0 && fabsf(currentError) > errorThresholds[0];
-	const bool alreadyStalled = stall;
-	stall 	 = errorThresholds[1] > 0 && fabsf(currentError) > errorThresholds[1];
-	if (stall && !alreadyStalled)
-	{
-		Platform::NewDriverFault();
+		// Look for a stall or pre-stall
+		preStall = errorThresholds[0] > 0 && fabsf(currentError) > errorThresholds[0];
+		const bool alreadyStalled = stall;
+		stall 	 = errorThresholds[1] > 0 && fabsf(currentError) > errorThresholds[1];
+		if (stall && !alreadyStalled)
+		{
+			Platform::NewDriverFault();
+		}
 	}
 
 	// Collect a sample, if we need to
