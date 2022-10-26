@@ -304,9 +304,9 @@ void ClosedLoop::Init() noexcept
 
 	GenerateTmcClock();															// generate the clock for the TMC2160A
 
-	// Initialise to no error thresholds
-	errorThresholds[0] = 0;
-	errorThresholds[1] = 0;
+	// Initialise to default error thresholds
+	errorThresholds[0] = DefaultClosedLoopPositionWarningThreshold;
+	errorThresholds[1] = DefaultClosedLoopPositionErrorThreshold;
 
 	// Initialise the monitoring variables
 	ResetMonitoringVariables();
@@ -421,6 +421,7 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 		//TODO do we need to get a lock here in case there is any movement?
 		SetClosedLoopEnabled(0, false, reply);
 		DeleteObject(encoder);
+
 		switch (tempEncoderType)
 		{
 		case EncoderType::none:
