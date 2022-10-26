@@ -75,8 +75,8 @@ public:
 	unsigned int GetResolutionBits() const noexcept { return resolutionBits; }
 	unsigned int GetResolutionToLutShiftFactor() const noexcept { return resolutionToLutShiftFactor; }
 
-	void ReportCalibrationResult(const StringRef& reply) const noexcept;
-	void ReportCalibrationCheckResult(const StringRef& reply) const noexcept;
+	void AppendLUTCorrections(const StringRef& reply) const noexcept;
+	void AppendCalibrationErrors(const StringRef& reply) const noexcept;
 
 	static constexpr size_t MaxDataPoints = 200 * 64;				// support up to 64 data points per full step, uses about 25K RAM
 
@@ -92,8 +92,7 @@ protected:
 
 	// For diagnostics
 	float minLUTCorrection = 0.0, maxLUTCorrection = 0.0;			// min and max corrections, for reporting in diagnostics
-	float minLUTError = 0.0, maxLUTError = 0.0;						// min and max errors when the calibration was checked, for reporting in diagnostics
-	float rmsCorrection = 0.0, rmsError = 0.0;
+	float rmsCorrection = 0.0;
 
 private:
 	static constexpr unsigned int NumHarmonics = 10;				// store harmonics 0-9

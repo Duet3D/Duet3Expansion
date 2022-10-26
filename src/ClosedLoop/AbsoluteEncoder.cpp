@@ -156,6 +156,7 @@ void AbsoluteEncoder::PopulateLUT(NonVolatileMemory& mem) noexcept
 		correctionLUT[index] = (uint16_t)temp & ((1u << resolutionBits) - 1);
 		if (lastCorrection < minLUTCorrection) { minLUTCorrection = lastCorrection; }
 		if (lastCorrection > maxLUTCorrection) { maxLUTCorrection = lastCorrection; }
+		rmsCorrection += fsquare(lastCorrection);
 	}
 	rmsCorrection = sqrtf(rmsCorrection/LUTLength);
 
@@ -209,7 +210,7 @@ void AbsoluteEncoder::RecordDataPoint(size_t index, int32_t data, bool backwards
 		}
 		data -= initialCount;
 		hysteresisSum += calibrationData[index] - data;
-		calibrationData[index] = (int32_t)calibrationData[index] + data - dataBias;
+		calibrationData[index] = (int16_t)((int32_t)calibrationData[index] + data - dataBias);
 	}
 	else
 	{
@@ -218,7 +219,7 @@ void AbsoluteEncoder::RecordDataPoint(size_t index, int32_t data, bool backwards
 			initialCount = data;
 		}
 		data -= initialCount;
-		calibrationData[index] = data;
+		calibrationData[index] = (int16_t)data;
 	}
 	dataSum += data;
 }
@@ -232,8 +233,9 @@ TuningErrors AbsoluteEncoder::Calibrate(bool store) noexcept
 
 	// expectedMidPointDifference should be close to half the encoder counts/rev
 	const float ratio = twiceExpectedMidPointDifference/GetMaxValue();
-	measuredCountsPerStep = fabsf(twiceExpectedMidPointDifference)/stepsPerRev;
-	measuredHysteresis = (float)hysteresisSum/((float)numDataPoints * countsPerStep);
+	const float rotationDirection = (ratio < 0.0) ? -1.0 : 1.0;
+	measuredCountsPerStep = (twiceExpectedMidPointDifference * rotationDirection)/stepsPerRev;
+	measuredHysteresis = ((float)hysteresisSum * rotationDirection)/((float)numDataPoints * countsPerStep);
 
 	if (fabsf(ratio) > 1.05)
 	{
@@ -243,7 +245,6 @@ TuningErrors AbsoluteEncoder::Calibrate(bool store) noexcept
 	{
 		return TuningError::TooLittleMotion;
 	}
-	const bool rotationReversed = (ratio < 0.0);
 
 	// Normalise initialCount to be within -GetMaxValue()..GetMaxValue()
 	initialCount %= (int32_t)GetMaxValue();
@@ -252,16 +253,11 @@ TuningErrors AbsoluteEncoder::Calibrate(bool store) noexcept
 	if (dataSum > 0 && initialCount > 0) { initialCount -= (int32_t)GetMaxValue(); }
 	else if (dataSum < 0 && initialCount < 0) { initialCount += (int32_t)GetMaxValue(); }
 
-	const float expectedMidPointReading = twiceExpectedMidPointDifference/2.0 + (float)initialCount;
-	float phaseCorrection = expectedMidPointReading * (float)GetPhasePositionsPerRev()/(float)GetMaxValue();
-	if (rotationReversed)
-	{
-		phaseCorrection = -phaseCorrection;
-	}
-	phaseCorrection -= (float)(GetPhasePositionsPerRev()/2);
+	const float expectedMidPointReading = twiceExpectedMidPointDifference * 0.5 + (float)initialCount;
+	const float phaseCorrection = (expectedMidPointReading * rotationDirection * (float)GetPhasePositionsPerRev())/(float)GetMaxValue() - (float)(GetPhasePositionsPerRev() - 1) * 0.5;
 	debugPrintf("exp mid pt rdg %.1f, init count %" PRIi32 ", phase corr %.1f, bias %" PRIi32 "\n", (double)expectedMidPointReading, initialCount, (double)phaseCorrection, dataBias);
 
-	int32_t expectedZeroReadingPhase = -(int32_t)phaseCorrection % 4096;
+	int32_t expectedZeroReadingPhase = -(lrintf(phaseCorrection)) % 4096;
 	if (expectedZeroReadingPhase < 0) { expectedZeroReadingPhase += 4096; }
 
 	// Now Fourier analyse the data, using the expected zero reading phase to set the angle origin
@@ -281,13 +277,9 @@ TuningErrors AbsoluteEncoder::Calibrate(bool store) noexcept
 	float cosSteps = 0.0;
 	for (size_t i = 0; i < numDataPoints; ++i)
 	{
-		float revFraction = (float)i/(float)numDataPoints + correctionRevFraction;
-		if (rotationReversed)
-		{
-			revFraction = -revFraction;
-		}
+		const float revFraction = ((float)i/(float)numDataPoints + correctionRevFraction) * rotationDirection;
 		const float angle = TwoPi * revFraction;
-		float expectedValue = revFraction * GetMaxValue() * 2;		// *2 because we stored 2 values for each data point
+		const float expectedValue = revFraction * (float)(GetMaxValue() * 2);		// *2 because we stored 2 values for each data point
 		const int32_t actualValue = (int32_t)calibrationData[i] + dataBias + (2 * initialCount);
 		const float error = expectedValue - (float)actualValue;
 
@@ -344,10 +336,7 @@ TuningErrors AbsoluteEncoder::Calibrate(bool store) noexcept
 
 	if (store)
 	{
-		if (rotationReversed)
-		{
-			SetBackwards(true);
-		}
+		SetBackwards(rotationDirection < 0.0);
 
 		// Store the table of harmonics to nonvolatile memory
 		NonVolatileMemory mem(NvmPage::closedLoop);
@@ -356,7 +345,7 @@ TuningErrors AbsoluteEncoder::Calibrate(bool store) noexcept
 			mem.SetClosedLoopHarmonicValue(harmonic * 2, sines[harmonic]);
 			mem.SetClosedLoopHarmonicValue(harmonic * 2 + 1, cosines[harmonic]);
 		}
-		mem.SetClosedLoopZeroCountPhaseAndPolarity((uint32_t)expectedZeroReadingPhase, (rotationReversed) ? 0xFFFFFFFF : 0xFFFFFFFE);
+		mem.SetClosedLoopZeroCountPhaseAndPolarity((uint32_t)expectedZeroReadingPhase, (rotationDirection < 0.0) ? 0xFFFFFFFF : 0xFFFFFFFE);
 		mem.SetClosedLoopDataValid(true);
 		mem.EnsureWritten();
 
@@ -366,14 +355,14 @@ TuningErrors AbsoluteEncoder::Calibrate(bool store) noexcept
 	return 0;
 }
 
-void AbsoluteEncoder::ReportCalibrationResult(const StringRef& reply) const noexcept
+void AbsoluteEncoder::AppendLUTCorrections(const StringRef& reply) const noexcept
 {
-	reply.lcatf("Calibration corrections: min %.1f, max %.1f, rms %.1f", (double)minLUTCorrection, (double)maxLUTCorrection, (double)rmsCorrection);
+	reply.catf("min %.1f, max %.1f, rms %.1f", (double)minLUTCorrection, (double)maxLUTCorrection, (double)rmsCorrection);
 }
 
-void AbsoluteEncoder::ReportCalibrationCheckResult(const StringRef& reply) const noexcept
+void AbsoluteEncoder::AppendCalibrationErrors(const StringRef& reply) const noexcept
 {
-	reply.lcatf("Calibration error: min %.1f, max %.1f, rms %.1f", (double)minLUTError, (double)maxLUTError, (double)rmsError);
+	reply.catf("min %.1f, max %.1f, rms %.1f", (double)minCalibrationError, (double)maxCalibrationError, (double)rmsCalibrationError);
 }
 
 #endif

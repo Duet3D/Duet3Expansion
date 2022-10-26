@@ -655,15 +655,24 @@ GCodeResult ClosedLoop::ProcessCalibrationResult(const StringRef& reply) noexcep
 		if (calibrateNotCheck) { tuningError = 0; }
 		else { tuningError &= ~TuningError::CalibrationInProgress; }
 		reply.catf("succeeded but measured hysteresis (%.3f step) is high", (double)hyst);
-		return GCodeResult::ok;
 	}
 	else
 	{
 		if (calibrateNotCheck) { tuningError = 0; }
 		else { tuningError &= ~TuningError::CalibrationInProgress; }
 		reply.catf("succeeded, measured hysteresis is %.3f step", (double)hyst);
-		return GCodeResult::ok;
 	}
+
+	// Report the calibration errors and corrections
+	reply.lcatf("%s encoder reading errors: ", (calibrateNotCheck) ? "Original" : "Residual");
+	((AbsoluteEncoder*)encoder)->AppendCalibrationErrors(reply);
+	if (calibrateNotCheck)
+	{
+		reply.lcatf("Corrections made: ");
+		((AbsoluteEncoder*)encoder)->AppendLUTCorrections(reply);
+	}
+
+	return GCodeResult::ok;
 }
 
 GCodeResult ClosedLoop::ProcessM569Point6(const CanMessageGeneric &msg, const StringRef &reply) noexcept
@@ -715,6 +724,8 @@ GCodeResult ClosedLoop::ProcessM569Point6(const CanMessageGeneric &msg, const St
 		{
 			// Tuning move 4 just clears the lookup table
 			((AbsoluteEncoder*)encoder)->ScrubLUT();
+			reply.copy("Encoder calibration cleared");
+			tuningError |= TuningError::NotCalibrated;
 			return GCodeResult::ok;
 		}
 		break;
