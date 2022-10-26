@@ -209,7 +209,7 @@ void AbsoluteEncoder::RecordDataPoint(size_t index, int32_t data, bool backwards
 			dataBias = dataSum/(int32_t)numDataPoints;
 		}
 		data -= initialCount;
-		hysteresisSum += calibrationData[index] - data;
+		hysteresisSum += data - calibrationData[index];
 		calibrationData[index] = (int16_t)((int32_t)calibrationData[index] + data - dataBias);
 	}
 	else
@@ -254,7 +254,9 @@ TuningErrors AbsoluteEncoder::Calibrate(bool store) noexcept
 	else if (dataSum < 0 && initialCount < 0) { initialCount += (int32_t)GetMaxValue(); }
 
 	const float expectedMidPointReading = twiceExpectedMidPointDifference * 0.5 + (float)initialCount;
-	const float phaseCorrection = (expectedMidPointReading * rotationDirection * (float)GetPhasePositionsPerRev())/(float)GetMaxValue() - (float)(GetPhasePositionsPerRev() - 1) * 0.5;
+	const float revFractionAtMidPoint = (float)(numDataPoints - 1)/(float)(2 * numDataPoints);
+	const float correctionRevFraction = (expectedMidPointReading * rotationDirection)/(float)GetMaxValue() - revFractionAtMidPoint;
+	const float phaseCorrection = correctionRevFraction * (float)GetPhasePositionsPerRev();
 	debugPrintf("exp mid pt rdg %.1f, init count %" PRIi32 ", phase corr %.1f, bias %" PRIi32 "\n", (double)expectedMidPointReading, initialCount, (double)phaseCorrection, dataBias);
 
 	int32_t expectedZeroReadingPhase = -(lrintf(phaseCorrection)) % 4096;
@@ -270,7 +272,6 @@ TuningErrors AbsoluteEncoder::Calibrate(bool store) noexcept
 	{
 		sines[i] = cosines[i] = 0.0;
 	}
-	const float correctionRevFraction = phaseCorrection/GetPhasePositionsPerRev();
 	debugPrintf("crf=%.3f hyst=%.3f\n", (double)correctionRevFraction, (double)measuredHysteresis);
 	float rmsErrorAcc = 0.0;
 	float sinSteps = 0.0;
