@@ -107,7 +107,7 @@ private:
 	const unsigned int resolutionToLutShiftFactor;					// shift the resolution right by this number of bits to get the LUT resolution
 
 	// LUT variables
-	uint16_t correctionLUT[NumLutEntries];							// mapping from raw encoder reading to corrected reading
+	uint16_t correctionLUT[NumLutEntries + 1];						// mapping from raw encoder reading to corrected reading. The extra entry is a duplicate of the first entry.
 	bool LUTLoaded = false;
 	bool isBackwards = false;
 

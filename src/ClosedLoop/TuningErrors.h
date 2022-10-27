@@ -24,7 +24,8 @@ namespace TuningError
 	constexpr TuningErrors SystemError				= 1u << 6;
 	constexpr TuningErrors CalibrationInProgress	= 1u << 7;
 
-	constexpr TuningErrors AnyTuningFailure 		= NotCalibrated | SystemError | HysteresisTooHigh
+	// The following covers any situation in which tuning or calibration was attempted but failed
+	constexpr TuningErrors AnyTuningFailure 		= SystemError | HysteresisTooHigh
 													| TooLittleMotion | TooMuchMotion | InconsistentMotion;
 }
 

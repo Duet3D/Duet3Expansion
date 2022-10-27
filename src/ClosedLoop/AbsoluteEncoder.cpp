@@ -35,16 +35,17 @@ bool AbsoluteEncoder::TakeReading() noexcept
 			}
 			else
 			{
-				const uint32_t windowOffset = newAngle & (1u << (resolutionToLutShiftFactor - 1));
+				const uint32_t windowOffset = newAngle & ((1u << resolutionToLutShiftFactor) - 1);
 				if (windowOffset <= (1u << (resolutionToLutShiftFactor - 1)))
 				{
 					newAngle = correctionLUT[windowStartIndex] + windowOffset;
 				}
 				else
 				{
+					// Note that we store an duplicate of correctionLUT[0] at the end to avoid having to wrap when we add 1 to windowStartIndex
 					newAngle = correctionLUT[windowStartIndex + 1] - (1u << resolutionToLutShiftFactor) + windowOffset;
 				}
-				newAngle &= ((1u << resolutionBits) - 1);
+				newAngle &= (GetMaxValue() - 1);
 			}
 		}
 
@@ -68,7 +69,7 @@ bool AbsoluteEncoder::TakeReading() noexcept
 		}
 		else if (difference < -(int32_t)(GetMaxValue()/2))
 		{
-			// Gone from a high value to a low value, to going up and wrapped round
+			// Gone from a high value to a low value, so going up and wrapped round
 			++fullRotations;
 		}
 
@@ -126,6 +127,9 @@ void AbsoluteEncoder::PopulateLUT(NonVolatileMemory& mem) noexcept
 	minLUTCorrection = std::numeric_limits<float>::infinity();
 	maxLUTCorrection = -std::numeric_limits<float>::infinity();
 	rmsCorrection = 0.0;
+#ifdef DEBUG
+	int32_t totalCorrection = 0;
+#endif
 	for (size_t index = 0; index < LUTLength; index++)
 	{
 		const float basicAngle = TwoPi * index / LUTLength;
@@ -152,20 +156,24 @@ void AbsoluteEncoder::PopulateLUT(NonVolatileMemory& mem) noexcept
 				break;
 			}
 		}
-		const int32_t temp = lrintf(lastCorrection + (float)(index << resolutionToLutShiftFactor));
+		const int32_t temp = lrintf(lastCorrection) + (int32_t)(index << resolutionToLutShiftFactor);
 		correctionLUT[index] = (uint16_t)temp & ((1u << resolutionBits) - 1);
 		if (lastCorrection < minLUTCorrection) { minLUTCorrection = lastCorrection; }
 		if (lastCorrection > maxLUTCorrection) { maxLUTCorrection = lastCorrection; }
 		rmsCorrection += fsquare(lastCorrection);
+#ifdef DEBUG
+		totalCorrection += lrintf(lastCorrection);
+#endif
 	}
+	correctionLUT[LUTLength] = correctionLUT[0];			// extra duplicate entry at end
 	rmsCorrection = sqrtf(rmsCorrection/LUTLength);
 
 	zeroCountPhasePosition = harmonicData[0].u;
 	SetBackwards(harmonicData[1].u & 0x01);
 
 #ifdef DEBUG
-	debugPrintf("Actual max iterations %u, minCorrection %.1f, maxCorrection %.1f, RMS correction %.1f, zrp %" PRIu32 "\n",
-					actualMaxIterationNumber + 1, (double)minLUTCorrection, (double)maxLUTCorrection, (double)rmsCorrection, zeroCountPhasePosition);
+	debugPrintf("Actual max iterations %u, minCorrection %.1f, maxCorrection %.1f, RMS correction %.1f, zrp %" PRIu32 " totalCorr %" PRIi32 "\n",
+					actualMaxIterationNumber + 1, (double)minLUTCorrection, (double)maxLUTCorrection, (double)rmsCorrection, zeroCountPhasePosition, totalCorrection);
 #endif
 
 	// Mark the LUT as loaded
@@ -257,10 +265,13 @@ TuningErrors AbsoluteEncoder::Calibrate(bool store) noexcept
 	const float revFractionAtMidPoint = (float)(numDataPoints - 1)/(float)(2 * numDataPoints);
 	const float correctionRevFraction = (expectedMidPointReading * rotationDirection)/(float)GetMaxValue() - revFractionAtMidPoint;
 	const float phaseCorrection = correctionRevFraction * (float)GetPhasePositionsPerRev();
-	debugPrintf("exp mid pt rdg %.1f, init count %" PRIi32 ", phase corr %.1f, bias %" PRIi32 "\n", (double)expectedMidPointReading, initialCount, (double)phaseCorrection, dataBias);
-
 	int32_t expectedZeroReadingPhase = -(lrintf(phaseCorrection)) % 4096;
 	if (expectedZeroReadingPhase < 0) { expectedZeroReadingPhase += 4096; }
+
+#ifdef DEBUG
+	debugPrintf("dataSum %" PRIi32 ", empr %.5f, init count %" PRIi32 ", crf %.5f, phase corr %.1f, bias %" PRIi32 ", zrp %" PRIu32 "\n",
+					dataSum, (double)expectedMidPointReading, initialCount, (double)correctionRevFraction, (double)phaseCorrection, dataBias, expectedZeroReadingPhase);
+#endif
 
 	// Now Fourier analyse the data, using the expected zero reading phase to set the angle origin
 	float minError = std::numeric_limits<float>::infinity();
@@ -272,7 +283,6 @@ TuningErrors AbsoluteEncoder::Calibrate(bool store) noexcept
 	{
 		sines[i] = cosines[i] = 0.0;
 	}
-	debugPrintf("crf=%.3f hyst=%.3f\n", (double)correctionRevFraction, (double)measuredHysteresis);
 	float rmsErrorAcc = 0.0;
 	float sinSteps = 0.0;
 	float cosSteps = 0.0;
@@ -312,8 +322,8 @@ TuningErrors AbsoluteEncoder::Calibrate(bool store) noexcept
 	rmsCalibrationError = 0.5 * sqrtf(rmsErrorAcc/numDataPoints);
 
 #ifdef DEBUG
-	debugPrintf("Calibration zrp %" PRIi32 " min/max/rms errors [%.1f %.1f %.1f] sin/cos steps [%.2f %.2f]\nSin/cos coefficients:",
-				expectedZeroReadingPhase, (double)minCalibrationError, (double)maxCalibrationError, (double)rmsCalibrationError, (double)(sinSteps/numDataPoints), (double)(cosSteps/numDataPoints));
+	debugPrintf("min/max/rms errors [%.1f %.1f %.1f] sin/cos steps [%.2f %.2f]\nSin/cos coefficients:",
+				(double)minCalibrationError, (double)maxCalibrationError, (double)rmsCalibrationError, (double)(sinSteps/numDataPoints), (double)(cosSteps/numDataPoints));
 #endif
 
 	for (size_t harmonic = 0; harmonic < NumHarmonics; harmonic++)
