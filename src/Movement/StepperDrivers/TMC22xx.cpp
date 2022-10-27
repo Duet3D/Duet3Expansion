@@ -901,8 +901,8 @@ inline void TmcDriverState::SetupDMASend(uint8_t regNum, uint32_t regVal) noexce
 	Cache::FlushBeforeDMAReceive(receiveData, sizeof(receiveData));
 
 #if RP2040
-	TmcUartInterface::SetTxData(reinterpret_cast<const volatile uint32_t*>(sendData), 12/4);
-	TmcUartInterface::SetRxData(reinterpret_cast<volatile uint32_t*>(receiveData + 12), (20 - 12)/4);
+	TmcUartInterface::SetTxData(sendData, 12);
+	TmcUartInterface::SetRxData(receiveData, 20);
 #elif TMC22xx_USES_SERCOM
 	DmacManager::SetSourceAddress(DmacChanTmcTx, sendData);
 	DmacManager::SetDestinationAddress(DmacChanTmcTx, &(sercom->USART.DATA));
@@ -970,8 +970,8 @@ inline void TmcDriverState::SetupDMARead(uint8_t regNum) noexcept
 	Cache::FlushBeforeDMAReceive(receiveData, sizeof(receiveData));
 
 #if RP2040
-	TmcUartInterface::SetTxData(reinterpret_cast<const volatile uint32_t*>(sendData), 4/4);
-	TmcUartInterface::SetRxData(reinterpret_cast<volatile uint32_t*>(receiveData + 4), (12 - 4)/4);
+	TmcUartInterface::SetTxData(sendData, 4);
+	TmcUartInterface::SetRxData(receiveData, 12);
 #elif TMC22xx_USES_SERCOM
 	DmacManager::SetSourceAddress(DmacChanTmcTx, sendData);
 	DmacManager::SetDestinationAddress(DmacChanTmcTx, &(sercom->USART.DATA));
@@ -2105,7 +2105,7 @@ void SmartDrivers::Init() noexcept
 #if TMC22xx_SINGLE_UART
 	// Set up the single UART that communicates with all TMC22xx drivers
 # if RP2040
-	TmcUartInterface::Init(Tmc22xxUartPin, DriversBaudRate);
+	TmcUartInterface::Init(Tmc22xxUartPin, DriversBaudRate, DmacChanTmcTx);
 # elif TMC22xx_USES_SERCOM
 	SetPinFunction(TMC22xxSercomTxPin, TMC22xxSercomTxPinPeriphMode);
 	SetPinFunction(TMC22xxSercomRxPin, TMC22xxSercomRxPinPeriphMode);
