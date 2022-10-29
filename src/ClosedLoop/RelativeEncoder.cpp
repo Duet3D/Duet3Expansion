@@ -20,7 +20,7 @@ bool RelativeEncoder::TakeReading() noexcept
 	if (!err)
 	{
 		currentCount = pos * reversePolarityMultiplier;
-		uint32_t currentAngle = pos % (int32_t)countsPerRev;
+		int32_t currentAngle = pos % (int32_t)countsPerRev;
 		if (currentAngle < 0) { currentAngle += countsPerRev; }
 		currentPhasePosition = (uint32_t)lrintf((currentAngle * stepsPerCount * 1024u) + zeroCountPhasePosition) % 4095u;
 	}
@@ -43,42 +43,56 @@ void RelativeEncoder::SetBackwards(bool backwards) noexcept
 	if (newMultiplier != reversePolarityMultiplier)
 	{
 		reversePolarityMultiplier = newMultiplier;
+		currentCount = -currentCount;
 	}
 }
 
 // Process the tuning data
-uint8_t RelativeEncoder::ProcessTuningData() noexcept
+TuningErrors RelativeEncoder::ProcessTuningData() noexcept
 {
-	uint8_t result;
+	TuningErrors result;
 
 #ifdef DEBUG
-	debugPrintf("forward slope %.4f reverse %.4f\n", (double)forwardSlope, (double)reverseSlope);
+	debugPrintf("slope %.5f %.5f, mean phase %.1f %.1f, mean reading %.3f %.3f, \n",
+					(double)forwardSlope, (double)reverseSlope, (double)forwardXmean, (double)reverseXmean, (double)forwardYmean, (double)reverseYmean);
 #endif
 
 	// Check that the forward and reverse slopes are similar and a good match to the configured counts per step
 	const float averageSlope = (forwardSlope + reverseSlope) * 0.5;
-
-	// We sometimes read different forwards and reverse counts, so instead of taking an average of the origin, average the origin w.r.t. the mid points of the tuning moves
-	forwardOrigin += (forwardSlope - averageSlope) * forwardXmean;
-	reverseOrigin += (reverseSlope - averageSlope) * reverseXmean;
-
 	measuredCountsPerStep = fabsf(averageSlope) * 1024;
-	measuredHysteresis = fabsf(forwardOrigin - reverseOrigin)/measuredCountsPerStep;
 
 	if (fabsf(averageSlope) < MinimumSlope || fabsf(forwardSlope - reverseSlope) > MaxSlopeMismatch * 2 * fabsf(averageSlope))
 	{
 		result = TuningError::InconsistentMotion;
 	}
-	else if (measuredCountsPerStep > GetCountsPerStep() * 1.05)
+	else if (measuredCountsPerStep > countsPerStep * 1.05)
 	{
 		result = TuningError::TooMuchMotion;
 	}
-	else if (measuredCountsPerStep < GetCountsPerStep() * 0.95)
+	else if (measuredCountsPerStep < countsPerStep * 0.95)
 	{
 		result = TuningError::TooLittleMotion;
 	}
 	else
 	{
+		const float slopeMultiplier = (averageSlope < 0.0) ? -1.0 : 1.0;
+		const float forwardOrigin = forwardYmean - forwardXmean * countsPerStep * slopeMultiplier/1024.0;
+		const float reverseOrigin = reverseYmean - reverseXmean * countsPerStep * slopeMultiplier/1024.0;
+		measuredHysteresis = fabsf(forwardOrigin - reverseOrigin)/countsPerStep;
+		const float forwardZeroPhase = forwardYmean * -slopeMultiplier * 1024.0/countsPerStep + forwardXmean;
+		const float reverseZeroPhase = reverseYmean * -slopeMultiplier * 1024.0/countsPerStep + reverseXmean;
+#ifdef DEBUG
+		debugPrintf("count %" PRIi32 "\n", currentCount);
+#endif
+		SetBackwards(averageSlope < 0.0);
+		const int32_t zcp = lrintf((forwardZeroPhase + reverseZeroPhase) * 0.5) % 4095;
+		zeroCountPhasePosition = (uint32_t)((zcp < 0) ? zcp + 4096 : zcp);
+#ifdef DEBUG
+		debugPrintf("origins %.3f %.3f zph %.1f %.1f diff %.1f zcp %" PRIi32 " zcpp %" PRIu32 "\n",
+					(double)forwardOrigin, (double) reverseOrigin, (double)forwardZeroPhase, (double)reverseZeroPhase, (double)fabsf(forwardZeroPhase - reverseZeroPhase),
+					zcp, zeroCountPhasePosition);
+		debugPrintf("count %" PRIi32 "\n", currentCount);
+#endif
 		result = 0;
 	}
 

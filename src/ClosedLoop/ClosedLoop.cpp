@@ -66,7 +66,6 @@ using std::numeric_limits;
 Encoder*	ClosedLoop::encoder = nullptr;				// Pointer to the encoder object in use
 volatile uint8_t ClosedLoop::tuning = 0;				// Bitmask of any tuning manoeuvres that have been requested
 TuningErrors ClosedLoop::tuningError;					// Flags for any tuning errors
-uint16_t	ClosedLoop::desiredStepPhase = 0;			// The desired position of the motor
 uint32_t	ClosedLoop::currentMotorPhase;				// the phase (0 to 4095) that the driver is set to
 
 namespace ClosedLoop
@@ -156,6 +155,7 @@ namespace ClosedLoop
 
 	float	phaseShift;									// The desired shift in the position of the motor, where 1024 = 1 full step
 
+	uint16_t desiredStepPhase = 0;						// The desired position of the motor
 	int16_t coilA;										// The current to run through coil A
 	int16_t coilB;										// The current to run through coil A
 
@@ -172,17 +172,6 @@ namespace ClosedLoop
 	volatile TuningErrors calibrationErrors;
 
 	StepTimer::Ticks whenLastTuningStepTaken;			// when the control loop last called the tuning code
-
-#if BASIC_TUNING_DEBUG
-	int32_t originalRawEncoderReading = 0;
-	uint16_t originalDesiredStepPhase = 0, originalMeasuredStepPhase = 0;
-	float originalCurrentMotorSteps = 0.0;
-	float originalAssumedEncoderReading = 0.0, originalDesiredEncoderReading = 0.0;
-	int32_t offsetCorrectionMade = 0;
-	int32_t finalRawEncoderReading = 0;
-	uint16_t finalMeasuredStepPhase = 0;
-	float finalCurrentMotorSteps = 0.0;
-#endif
 
 	// The bitmask of a minimal tuning error for each encoder type
 	// This is an array so that ZEROING_MANOEUVRE can be removed from the magnetic encoders if the LUT is in NVM
@@ -223,7 +212,7 @@ namespace ClosedLoop
 	void StartTuning(uint8_t tuningType) noexcept;
 	GCodeResult ProcessBasicTuningResult(const StringRef& reply) noexcept;
 	GCodeResult ProcessCalibrationResult(const StringRef& reply) noexcept;
-	void ReportTuningErrors(uint8_t tuningErrorBitmask, const StringRef& reply) noexcept;
+	void ReportTuningErrors(TuningErrors tuningErrorBitmask, const StringRef& reply) noexcept;
 
 	extern "C" [[noreturn]] void DataTransmissionLoop(void *param) noexcept;
 	extern "C" [[noreturn]] void EncoderCalibrationLoop(void *param) noexcept;
@@ -262,7 +251,7 @@ static void ResetMonitoringVariables()
 }
 
 // Helper function to cat all the current tuning errors onto a reply in human-readable form
-void ClosedLoop::ReportTuningErrors(uint8_t tuningErrorBitmask, const StringRef &reply)
+void ClosedLoop::ReportTuningErrors(TuningErrors tuningErrorBitmask, const StringRef &reply)
 {
 	if (tuningErrorBitmask & TuningError::NeedsBasicTuning) 	{ reply.cat(", the drive has not had basic tuning done"); }
 	if (tuningErrorBitmask & TuningError::NotCalibrated) 		{ reply.cat(", the drive has not been calibrated"); }
@@ -274,7 +263,8 @@ void ClosedLoop::ReportTuningErrors(uint8_t tuningErrorBitmask, const StringRef 
 }
 
 // Helper function to set the motor to a given phase and magnitude
-// The phase is normally in the range 0 to 4095 but when tuning it can be 0 to somewhat over 8192. We must take it modulo 4096 when computing the currents.
+// The phase is normally in the range 0 to 4095 but when tuning it can be 0 to somewhat over 8192.
+// We must take it modulo 4096 when computing the currents. Funtion Trigonometry::FastSinCos does that.
 void ClosedLoop::SetMotorPhase(uint16_t phase, float magnitude) noexcept
 {
 	currentMotorPhase = phase;
@@ -329,6 +319,7 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 	float tempKp = Kp;
 	float tempKi = Ki;
 	float tempKd = Kd;
+	uint16_t tempStepsPerRev = 200;
 	size_t numThresholds = 2;
 	float tempErrorThresholds[numThresholds];
 	float holdingCurrentPercent;
@@ -339,6 +330,7 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 	const bool seenPid = parser.GetFloatParam('R', tempKp) | parser.GetFloatParam('I', tempKi)  | parser.GetFloatParam('D', tempKd);
 	const bool seenE = parser.GetFloatArrayParam('E', numThresholds, tempErrorThresholds);
 	const bool seenH = parser.GetFloatParam('H', holdingCurrentPercent);
+	const bool seenS = parser.GetUintParam('S', tempStepsPerRev);
 
 	// Report back if no parameters to change
 	if (!(seenT || seenC || seenPid || seenE || seenH))
@@ -362,26 +354,26 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 		return GCodeResult::error;
 	}
 
-	if (seenC && !seenT)
+	if ((seenC || seenS) && !seenT)
 	{
-		reply.copy("M569.1 C parameter not permitted without T parameter");
+		reply.copy("M569.1 C and S parameters not permitted without T parameter");
 		return GCodeResult::error;
 	}
 
 	// Validate the new params
 	if (tempEncoderType > EncoderType::NumValues)
 	{
-		reply.copy("Invalid T value. Valid values are 0 and 1");
+		reply.copy("Invalid T value. Valid values are 2 and 3");
 		return GCodeResult::error;
 	}
 	if (seenE && (tempErrorThresholds[0] < 0 || tempErrorThresholds[1] < 0))
 	{
-		reply.copy("Error threshold value must be greater than zero");
+		reply.copy("Error threshold value must nor be less than zero");
 		return GCodeResult::error;
 	}
-	if (seenC && tempCPR < 0.8)	// C parameter will be 0.9 for 0.9deg motors
+	if (seenC && tempCPR < 4 * tempStepsPerRev)
 	{
-		reply.copy("Encoder counts per step most be positive");
+		reply.copy("Encoder counts/rev must be at least four times steps/rev");
 		return GCodeResult::error;
 	}
 
@@ -410,12 +402,6 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 		errorThresholds[1] = tempErrorThresholds[1];
 	}
 
-	// If encoder count per steps has changed, we need to re-tune
-	if (seenC && encoder != nullptr)
-	{
-		tuningError = minimalTunes[encoder->GetType().ToBaseType()];
-	}
-
 	if (seenT)
 	{
 		//TODO do we need to get a lock here in case there is any movement?
@@ -430,7 +416,7 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 			break;
 
 		case EncoderType::AS5047:
-			encoder = new AS5047D(lrintf(360.0/tempCPR), *Platform::sharedSpi, EncoderCsPin);
+			encoder = new AS5047D(tempStepsPerRev, *Platform::sharedSpi, EncoderCsPin);
 			if (encoderCalibrationTask == nullptr)
 			{
 				encoderCalibrationTask = new Task<ClosedLoop::EncoderCalibrationTaskStackWords>;
@@ -439,7 +425,7 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 			break;
 
 		case EncoderType::TLI5012:
-			encoder = new TLI5012B(lrintf(360.0/tempCPR), *Platform::sharedSpi, EncoderCsPin);
+			encoder = new TLI5012B(tempStepsPerRev, *Platform::sharedSpi, EncoderCsPin);
 			if (encoderCalibrationTask == nullptr)
 			{
 				encoderCalibrationTask = new Task<ClosedLoop::EncoderCalibrationTaskStackWords>;
@@ -449,11 +435,11 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 
 #if defined(EXP1HCLv1_0)
 		case EncoderType::linearQuadrature:
-			encoder = new QuadratureEncoderPdec(200, 200 * tempCPR);
+			encoder = new QuadratureEncoderPdec(tempStepsPerRev, tempCPR);
 			break;
 
 		case EncoderType::rotaryQuadrature:
-			encoder = new QuadratureEncoderPdec(200, 200 * tempCPR);
+			encoder = new QuadratureEncoderPdec(tempStepsPerRev, tempCPR);
 			break;
 #endif
 		}
@@ -537,6 +523,7 @@ GCodeResult ClosedLoop::ProcessBasicTuningResult(const StringRef& reply) noexcep
 	reply.printf("Driver %u.0 basic tuning ", CanInterface::GetCanAddress());
 	if (!basicTuningDataReady)
 	{
+		tuningError &= ~TuningError::CalibrationInProgress;
 		reply.cat("failed (no reason available)");
 		return GCodeResult::error;
 	}
@@ -546,20 +533,27 @@ GCodeResult ClosedLoop::ProcessBasicTuningResult(const StringRef& reply) noexcep
 	const TuningErrors newTuningErrors = ((RelativeEncoder*)encoder)->ProcessTuningData();
 	if (newTuningErrors != 0)
 	{
+		tuningError &= ~TuningError::CalibrationInProgress;
 		reply.cat("failed");
 		tuningError = (tuningError & ~(TuningError::TooMuchMotion | TuningError::TooLittleMotion | TuningError::InconsistentMotion)) | newTuningErrors;
 		ReportTuningErrors(newTuningErrors, reply);
 		if (newTuningErrors & (TuningError::TooMuchMotion | TuningError::TooLittleMotion))
 		{
-			reply.catf(", measured counts/step is about %.1f", (double)encoder->GetMeasuredCountsPerStep());
+			reply.catf(", measured counts/rev is about %.1f", (double)((encoder->GetMeasuredCountsPerStep() * encoder->GetStepsPerRev()) * 0.25));
 		}
 		return GCodeResult::error;
 	}
 
+#ifdef DEBUG
+	debugPrintf("commanded phase %" PRIu32 " measured phase %" PRIu32 "\n", currentMotorPhase, encoder->GetCurrentPhasePosition());
+	encoder->TakeReading();
+	debugPrintf("commanded phase %" PRIu32 " measured phase %" PRIu32 "\n", currentMotorPhase, encoder->GetCurrentPhasePosition());
+#endif
 	PIDITerm = 0.0;
 	derivativeFilter.Reset();
 	targetEncoderReading = encoder->GetCurrentCount();
 	targetMotorSteps = (float)targetEncoderReading / encoder->GetCountsPerStep();
+	tuningError &= ~TuningError::CalibrationInProgress;
 
 	const float hyst = encoder->GetMeasuredHysteresis();
 	if (hyst >= MaxSafeHysteresis)
@@ -572,7 +566,7 @@ GCodeResult ClosedLoop::ProcessBasicTuningResult(const StringRef& reply) noexcep
 	{
 		reply.catf("succeeded but measured hysteresis (%.3f step) is high", (double)hyst);
 		tuningError = 0;
-		return GCodeResult::ok;
+		return GCodeResult::warning;
 	}
 	else
 	{
@@ -770,6 +764,7 @@ void ClosedLoop::StartTuning(uint8_t tuningMode) noexcept
 void ClosedLoop::FinishedBasicTuning() noexcept
 {
 	basicTuningDataReady = true;
+	tuningError |= TuningError::CalibrationInProgress;				// to prevent movement until we are dne tuning
 }
 
 // Call this when encoder calibration has finished collecting data
@@ -827,7 +822,7 @@ void ClosedLoop::ControlLoop() noexcept
 	}
 	else if (tuningError)
 	{
-		// Don't do anything if there is a tuning error
+		// Don't do anything if there is a tuning error, or calibration is in progress after tuning
 	}
 	else
 	{

@@ -21,13 +21,15 @@ public:
 	void* operator new(size_t sz) noexcept { return FreelistManager::Allocate<QuadratureEncoderPdec>(); }
 	void operator delete(void* p) noexcept { FreelistManager::Release<QuadratureEncoderPdec>(p); }
 
-	QuadratureEncoderPdec(uint32_t p_stepsPerRev, uint32_t p_countsPerRev) noexcept : RelativeEncoder(p_stepsPerRev, p_countsPerRev), lastCount(0), counterHigh(0) {}
+	QuadratureEncoderPdec(uint32_t p_stepsPerRev, uint32_t p_countsPerRev) noexcept
+		: RelativeEncoder(p_stepsPerRev, 4 * p_countsPerRev), lastCount(0), counterHigh(0) {}
 	~QuadratureEncoderPdec() { QuadratureEncoderPdec::Disable(); }
 
 	EncoderType GetType() const noexcept override { return EncoderType::rotaryQuadrature; }
 	GCodeResult Init(const StringRef& reply) noexcept override;
 	void Enable() noexcept override;				// Enable the decoder and reset the counter to zero
 	void Disable() noexcept override;				// Disable the decoder. Call this during initialisation. Can also be called later if necessary.
+	void ClearFullRevs() noexcept override;
 	void AppendDiagnostics(const StringRef& reply) noexcept override;
 	void AppendStatus(const StringRef& reply) noexcept override;
 

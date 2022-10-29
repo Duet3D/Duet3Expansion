@@ -42,7 +42,6 @@ namespace ClosedLoop
 	extern Encoder *encoder;						// Pointer to the encoder object in use
 	extern volatile uint8_t tuning;					// Bitmask of any tuning manoeuvres that have been requested
 	extern TuningErrors tuningError;				// Flags for any tuning errors
-	extern uint16_t desiredStepPhase;				// The desired position of the motor
 	extern uint32_t currentMotorPhase;				// the phase (0 to 4095) that the driver is set to
 
 	// Closed loop public methods

@@ -76,14 +76,14 @@ static bool BasicTuning(bool firstIteration) noexcept
 	static BasicTuningState state;									// state machine control
 	static uint16_t initialStepPhase;								// the step phase we started at
 	static unsigned int stepCounter;								// a counter to use within a state
-	static uint32_t initialCount;
+	static int32_t initialCount;
 	static float regressionAccumulator;
 	static float readingAccumulator;
 
-	constexpr unsigned int NumDummySteps = 8;						// how many steps to take before we start collecting data
-	constexpr uint16_t PhaseIncrement = 8;							// how much to increment the phase by on each step, must be a factor of 4096
+	constexpr uint16_t PhaseIncrement = 4;							// how much to increment the phase by on each step, must be a factor of 4096
 	static_assert(4096 % PhaseIncrement == 0);
-	constexpr unsigned int NumSamples = 4096/PhaseIncrement;		// the number of samples we take to do the linear regression
+	constexpr unsigned int NumDummySteps = 256/PhaseIncrement;		// how many phase increments to take before we start collecting data = 1/4 step
+	constexpr unsigned int NumSamples = 4096/PhaseIncrement;		// the number of samples we take to do the linear regression (4 full steps)
 	constexpr float HalfNumSamplesMinusOne = (float)(NumSamples - 1) * 0.5;
 	constexpr float Denominator = (float)PhaseIncrement * (fcube((float)NumSamples) - (float)NumSamples)/12.0;
 
@@ -102,18 +102,18 @@ static bool BasicTuning(bool firstIteration) noexcept
 		ClosedLoop::encoder->ClearFullRevs();
 	}
 
+	const uint32_t currentPosition = ClosedLoop::currentMotorPhase;
+
 	switch (state)
 	{
 	case BasicTuningState::forwardInitial:
 		// In this state we move forwards a few microsteps to allow the motor to settle down
-		ClosedLoop::desiredStepPhase += PhaseIncrement;
-		ClosedLoop::SetMotorPhase(ClosedLoop::desiredStepPhase, 1.0);
+		ClosedLoop::SetMotorPhase(currentPosition + PhaseIncrement, 1.0);
 		++stepCounter;
 		if (stepCounter == NumDummySteps)
 		{
 			regressionAccumulator = readingAccumulator = 0.0;
 			stepCounter = 0;
-			initialStepPhase = ClosedLoop::desiredStepPhase;
 			state = BasicTuningState::forwards;
 		}
 		break;
@@ -125,6 +125,7 @@ static bool BasicTuning(bool firstIteration) noexcept
 			if (stepCounter == 0)
 			{
 				initialCount = reading;
+				initialStepPhase = currentPosition;
 			}
 			reading -= initialCount;
 			readingAccumulator += (float)reading;
@@ -138,28 +139,27 @@ static bool BasicTuning(bool firstIteration) noexcept
 			const float slope = regressionAccumulator / Denominator;										// the average encoder counts per phase position
 			const float xMean = (float)initialStepPhase + (float)PhaseIncrement * HalfNumSamplesMinusOne;	// the average phase
 			const float yMean = readingAccumulator/NumSamples + (float)initialCount;						// the average count
-			const float origin = yMean - slope * xMean;														// the encoder reading at zero phase
-			relativeEncoder->SetForwardTuningResults(slope, origin, xMean);
+#ifdef DEBUG
+			debugPrintf("forwardYmean %.2f ic %" PRIi32 "\n", (double)yMean, initialCount);
+#endif
+			relativeEncoder->SetForwardTuningResults(slope, xMean, yMean);
 			stepCounter = 0;
 			state = BasicTuningState::reverseInitial;
 		}
 		else
 		{
-			ClosedLoop::desiredStepPhase += PhaseIncrement;
-			ClosedLoop::SetMotorPhase(ClosedLoop::desiredStepPhase, 1.0);
+			ClosedLoop::SetMotorPhase(currentPosition + PhaseIncrement, 1.0);
 		}
 		break;
 
 	case BasicTuningState::reverseInitial:
 		// In this state we move backwards a few microsteps to allow the motor to settle down
-		ClosedLoop::desiredStepPhase -= PhaseIncrement;
-		ClosedLoop::SetMotorPhase(ClosedLoop::desiredStepPhase, 1.0);
+		ClosedLoop::SetMotorPhase(currentPosition - PhaseIncrement, 1.0);
 		++stepCounter;
 		if (stepCounter == NumDummySteps)
 		{
 			regressionAccumulator = readingAccumulator = 0.0;
 			stepCounter = 0;
-			initialStepPhase = ClosedLoop::desiredStepPhase;
 			state = BasicTuningState::reverse;
 		}
 		break;
@@ -171,6 +171,7 @@ static bool BasicTuning(bool firstIteration) noexcept
 			if (stepCounter == 0)
 			{
 				initialCount = reading;
+				initialStepPhase = currentPosition;
 			}
 			reading -= initialCount;
 			readingAccumulator += (float)reading;
@@ -184,15 +185,16 @@ static bool BasicTuning(bool firstIteration) noexcept
 			const float slope = regressionAccumulator / (-Denominator);			// negate the denominator because the phase increment was negative this time
 			const float xMean = (float)initialStepPhase - (float)PhaseIncrement * HalfNumSamplesMinusOne;
 			const float yMean = readingAccumulator/NumSamples + (float)initialCount;
-			const float origin = yMean - slope * xMean;
-			relativeEncoder->SetReverseTuningResults(slope, origin, xMean);
+#ifdef DEBUG
+			debugPrintf("reverseYmean %.2f ic %" PRIi32 "\n", (double)yMean, initialCount);
+#endif
+			relativeEncoder->SetReverseTuningResults(slope, xMean, yMean);
 			ClosedLoop::FinishedBasicTuning();
 			return true;																// finished tuning
 		}
 		else
 		{
-			ClosedLoop::desiredStepPhase -= PhaseIncrement;
-			ClosedLoop::SetMotorPhase(ClosedLoop::desiredStepPhase, 1.0);
+			ClosedLoop::SetMotorPhase(currentPosition - PhaseIncrement, 1.0);
 		}
 		break;
 	}

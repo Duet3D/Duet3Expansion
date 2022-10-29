@@ -69,7 +69,7 @@ public:
 	// Return the number of phase positions per revolution
 	uint32_t GetPhasePositionsPerRev() const noexcept { return stepsPerRev * 1024u; }
 
-	// Get the current phase position from the last reading - this may be more accurate that the fractional part of GetCurrentMotorSteps()
+	// Get the current phase position from the last reading - this may be more accurate than the fractional part of GetCurrentMotorSteps()
 	uint32_t GetCurrentPhasePosition() const noexcept { return currentPhasePosition; }
 
 	// Return the measured counts per step after tuning or calibration

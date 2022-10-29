@@ -59,6 +59,12 @@ void QuadratureEncoderPdec::Disable() noexcept
 	while (PDEC->SYNCBUSY.bit.ENABLE) { }
 }
 
+void QuadratureEncoderPdec::ClearFullRevs() noexcept
+{
+	counterHigh = (lastCount & 0x8000) ? 0xFFFF : 0;
+	(void)TakeReading();
+}
+
 void QuadratureEncoderPdec::AppendDiagnostics(const StringRef &reply) noexcept
 {
 	// Nothing needed here yet
@@ -72,7 +78,7 @@ void QuadratureEncoderPdec::AppendDiagnostics(const StringRef &reply) noexcept
 
 void QuadratureEncoderPdec::AppendStatus(const StringRef& reply) noexcept
 {
-	reply.catf(", encoder pulses/step: %.2f", (double)(countsPerStep / 4));
+	reply.catf(", encoder pulses/rev: %.2f", (double)(countsPerRev / 4));
 }
 
 // Get the current position relative to the starting position
@@ -82,7 +88,7 @@ int32_t QuadratureEncoderPdec::GetRelativePosition(bool& error) noexcept
 	while (PDEC->SYNCBUSY.reg & (PDEC_SYNCBUSY_CTRLB | PDEC_SYNCBUSY_COUNT)) { }
 	const uint16_t count = PDEC->COUNT.reg;
 
-	// Handle wrap around of the high position bits or the low revolution bits
+	// Handle wrap around of the high position bits
 	const uint16_t currentHighBits = count >> 14;
 	const uint16_t lastHighBits = lastCount >> 14;
 	if (currentHighBits == 3 && lastHighBits == 0)
