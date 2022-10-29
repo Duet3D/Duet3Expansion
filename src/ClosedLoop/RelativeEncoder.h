@@ -27,7 +27,10 @@ class RelativeEncoder : public Encoder
 public:
 	// Constructors
 	RelativeEncoder(uint32_t p_stepsPerRev, uint32_t p_countsPerRev) noexcept
-		: Encoder(p_stepsPerRev, (float)p_countsPerRev/(float)p_stepsPerRev), countsPerRev(p_countsPerRev) {}
+		: Encoder(p_stepsPerRev, (float)p_countsPerRev/(float)p_stepsPerRev), countsPerRev(p_countsPerRev)
+	{
+		phasesPerCount = 1024.0 * stepsPerCount;
+	}
 
 	// Overridden virtual functions
 
@@ -63,6 +66,7 @@ protected:
 
 private:
 	int32_t reversePolarityMultiplier = 1;
+	float phasesPerCount;
 
 	// Tuning data
 	float forwardSlope;
