@@ -348,7 +348,7 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 		return GCodeResult::ok;
 	}
 
-	if (seenT && !seenC)
+	if (seenT && !seenC && (tempEncoderType == EncoderType::rotaryQuadrature || tempEncoderType == EncoderType::linearQuadrature))
 	{
 		reply.copy("Missing C parameter");
 		return GCodeResult::error;
