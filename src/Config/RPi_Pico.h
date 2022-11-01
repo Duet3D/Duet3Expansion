@@ -10,8 +10,8 @@
 
 #include <Hardware/PinDescription.h>
 
-#define BOARD_TYPE_NAME		"RPI_PICO"
-#define BOOTLOADER_NAME		"RPI_PICO"
+#define BOARD_TYPE_NAME		"RPi_Pico"
+#define BOOTLOADER_NAME		"RPi_Pico"
 
 // General features
 #define HAS_VREF_MONITOR		0
@@ -22,7 +22,7 @@
 #define HAS_BUTTONS				1
 
 // Drivers configuration
-#define SUPPORT_DRIVERS			1	// temporary!
+#define SUPPORT_DRIVERS			1
 
 #if SUPPORT_DRIVERS
 

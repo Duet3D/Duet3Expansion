@@ -26,7 +26,7 @@
 #elif defined(ATEIO)
 # include "ATEIO.h"
 #elif defined(RPI_PICO)
-# include "RPI_PICO.h"
+# include "RPi_Pico.h"
 #elif defined(M23CL)
 # include "M23CL.h"
 #else
