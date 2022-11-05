@@ -32,9 +32,6 @@ public:
 
 	// Overridden virtual functions
 
-	// Return true if this is an absolute encoder
-	bool IsAbsolute() const noexcept override { return false; }
-
 	// Get the current reading
 	bool TakeReading() noexcept override;
 
@@ -74,8 +71,17 @@ public:
 	// Clear the calibration lookup table. Only applicable if the encoder supports calibration.
 	void ClearLUT() noexcept override { }
 
+	// Clear the calibration lookup table and delete it from NVRAM. Only applicable if the encoder supports calibration.
+	void ScrubLUT() noexcept override { }
+
 	// Calibrate the encoder using the recorded data points. Only applicable if the encoder supports calibration.
 	TuningErrors Calibrate(bool store) noexcept override { return TuningError::SystemError; }
+
+	// Append a summary of calibration lookup table corrections to a string. Only applicable if the encoder supports calibration.
+	void AppendLUTCorrections(const StringRef& reply) const noexcept override { }
+
+	// Append a summary of measured calibration errors to a string. Only applicable if the encoder supports calibration.
+	void AppendCalibrationErrors(const StringRef& reply) const noexcept override { }
 
 protected:
 	// Get the relative position since the start

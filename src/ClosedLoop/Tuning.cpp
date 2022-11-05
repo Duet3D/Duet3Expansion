@@ -87,7 +87,7 @@ static bool BasicTuning(bool firstIteration) noexcept
 	constexpr float HalfNumSamplesMinusOne = (float)(NumSamples - 1) * 0.5;
 	constexpr float Denominator = (float)PhaseIncrement * (fcube((float)NumSamples) - (float)NumSamples)/12.0;
 
-	if (ClosedLoop::encoder->IsAbsolute())
+	if (!ClosedLoop::encoder->UsesBasicTuning())
 	{
 		return true;
 	}
@@ -221,7 +221,7 @@ static bool EncoderCalibration(bool firstIteration) noexcept
 	static unsigned int phaseIncrementShift;	// we increase the phase position by one << this value for each sample
 	static uint32_t positionCounter;			// how many positions we have moved
 
-	if (!ClosedLoop::encoder->IsAbsolute())
+	if (!ClosedLoop::encoder->UsesCalibration())
 	{
 		return true;							// we don't do this tuning for relative encoders
 	}
@@ -519,10 +519,6 @@ void ClosedLoop::PerformTune() noexcept
 	// Run one iteration of the one, highest priority, tuning move
 	if (tuning & BASIC_TUNING_MANOEUVRE)
 	{
-		if (newTuningMove && encoder->IsAbsolute() && (tuning & ENCODER_CALIBRATION_MANOEUVRE))
-		{
-			((AbsoluteRotaryEncoder*)encoder)->ClearLUT();
-		}
 		newTuningMove = BasicTuning(newTuningMove);
 		if (newTuningMove)
 		{

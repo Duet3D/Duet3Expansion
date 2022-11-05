@@ -46,9 +46,6 @@ public:
 	// Append brief encoder status as a string
 	virtual void AppendStatus(const StringRef& reply) noexcept = 0;
 
-	// Return true if this is an absolute encoder, false if it is relative
-	virtual bool IsAbsolute() const noexcept = 0;
-
 	// Clear the accumulated full rotations so as to get the count back to a smaller number
 	virtual void ClearFullRevs() noexcept = 0;
 
@@ -85,8 +82,17 @@ public:
 	// Clear the calibration lookup table. Only applicable if the encoder supports calibration.
 	virtual void ClearLUT() noexcept = 0;
 
+	// Clear the calibration lookup table and delete it from NVRAM. Only applicable if the encoder supports calibration.
+	virtual void ScrubLUT() noexcept = 0;
+
 	// Calibrate the encoder using the recorded data points. Only applicable if the encoder supports calibration.
 	virtual TuningErrors Calibrate(bool store) noexcept = 0;
+
+	// Append a summary of calibration lookup table corrections to a string. Only applicable if the encoder supports calibration.
+	virtual void AppendLUTCorrections(const StringRef& reply) const noexcept = 0;
+
+	// Append a summary of measured calibration errors to a string. Only applicable if the encoder supports calibration.
+	virtual void AppendCalibrationErrors(const StringRef& reply) const noexcept = 0;
 
 	// Get the initial set of tuning errors for this encoder
 	TuningErrors MinimalTuningNeeded() const noexcept;

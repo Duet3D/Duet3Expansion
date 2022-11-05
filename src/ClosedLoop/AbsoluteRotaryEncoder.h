@@ -35,8 +35,6 @@ public:
 	AbsoluteRotaryEncoder(uint32_t p_stepsPerRev, unsigned int p_resolutionBits) noexcept;
 
 	// Overridden virtual functions
-	// Return true if this is an absolute encoder
-	bool IsAbsolute() const noexcept override { return true; }
 
 	// Get the current reading
 	bool TakeReading() noexcept override;
@@ -92,15 +90,19 @@ public:
 	// Clear the calibration lookup table. Only applicable if the encoder supports calibration.
 	void ClearLUT() noexcept override;
 
-	void ScrubLUT() noexcept;
+	// Clear the calibration lookup table and delete it from NVRAM. Only applicable if the encoder supports calibration.
+	void ScrubLUT() noexcept override;
+
+	// Append a summary of calibration lookup table corrections to a string. Only applicable if the encoder supports calibration.
+	void AppendLUTCorrections(const StringRef& reply) const noexcept override;
+
+	// Append a summary of measured calibration errors to a string. Only applicable if the encoder supports calibration.
+	void AppendCalibrationErrors(const StringRef& reply) const noexcept override;
 
 	unsigned int GetMaxValue() const noexcept { return 1ul << resolutionBits; }
 	unsigned int GetNumLUTEntries() const noexcept { return 1u << (resolutionBits - resolutionToLutShiftFactor); }
 	unsigned int GetResolutionBits() const noexcept { return resolutionBits; }
 	unsigned int GetResolutionToLutShiftFactor() const noexcept { return resolutionToLutShiftFactor; }
-
-	void AppendLUTCorrections(const StringRef& reply) const noexcept;
-	void AppendCalibrationErrors(const StringRef& reply) const noexcept;
 
 	static constexpr size_t MaxDataPoints = 200 * 64;				// support up to 64 data points per full step, uses about 25K RAM
 
