@@ -49,6 +49,12 @@ public:
 	// Return the encoder polarity
 	bool IsBackwards() const noexcept override { return reversePolarityMultiplier < 0; }
 
+	// Return true if rotary absolute encoder calibration is applicable to this encoder
+	bool UsesCalibration() const noexcept override { return false; }
+
+	// Return true if basic tuning is applicable to this encoder
+	bool UsesBasicTuning() const noexcept override { return true; }
+
 	// Set the forward tuning results
 	void SetForwardTuningResults(float slope, float xMean, float yMean) noexcept { forwardSlope = slope; forwardXmean = xMean; forwardYmean = yMean; }
 

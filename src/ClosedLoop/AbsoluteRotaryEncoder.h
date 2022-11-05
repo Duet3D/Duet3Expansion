@@ -18,8 +18,8 @@
  *  - Plus all the virtual functions required by the Encoder class
  */
 
-#ifndef SRC_CLOSEDLOOP_ABSOLUTEENCODER_H_
-# define SRC_CLOSEDLOOP_ABSOLUTEENCODER_H_
+#ifndef SRC_CLOSEDLOOP_ABSOLUTEROTARYENCODER_H_
+# define SRC_CLOSEDLOOP_ABSOLUTEROTARYENCODER_H_
 
 # include "Encoder.h"
 
@@ -30,11 +30,11 @@
 class NonVolatileMemory;
 
 // Base class for absolute encoders. The encoder resolution(counts/revolution) must be a power of two.
-class AbsoluteEncoder : public Encoder
+class AbsoluteRotaryEncoder : public Encoder
 {
 public:
 	// Constructors
-	AbsoluteEncoder(uint32_t p_stepsPerRev, unsigned int p_resolutionBits) noexcept;
+	AbsoluteRotaryEncoder(uint32_t p_stepsPerRev, unsigned int p_resolutionBits) noexcept;
 
 	// Overridden virtual functions
 	// Return true if this is an absolute encoder
@@ -51,6 +51,12 @@ public:
 
 	// Return the encoder polarity
 	bool IsBackwards() const noexcept override { return isBackwards; }
+
+	// Return true if rotary absolute encoder calibration is applicable to this encoder
+	bool UsesCalibration() const noexcept override { return true; }
+
+	// Return true if basic tuning is applicable to this encoder
+	bool UsesBasicTuning() const noexcept override { return false; }
 
 	// Get the angle within a rotation from the most recent reading, corrected for direction only
 	uint32_t GetRawAngle() const noexcept { return rawAngle; }
@@ -124,4 +130,4 @@ private:
 
 # endif
 
-#endif /* SRC_CLOSEDLOOP_ABSOLUTEENCODER_H_ */
+#endif /* SRC_CLOSEDLOOP_ABSOLUTEROTARYENCODER_H_ */

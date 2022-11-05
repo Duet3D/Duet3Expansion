@@ -4,7 +4,7 @@
 #if SUPPORT_CLOSED_LOOP
 
 # include "AS5047D.h"
-# include "AbsoluteEncoder.h"
+# include <ClosedLoop/AbsoluteRotaryEncoder.h>
 # include "RelativeEncoder.h"
 
 # if SUPPORT_TMC2160
@@ -228,7 +228,7 @@ static bool EncoderCalibration(bool firstIteration) noexcept
 		return true;							// we don't do this tuning for relative encoders
 	}
 
-	AbsoluteEncoder* const absoluteEncoder = (AbsoluteEncoder*)ClosedLoop::encoder;
+	AbsoluteRotaryEncoder* const absoluteEncoder = (AbsoluteRotaryEncoder*)ClosedLoop::encoder;
 	const uint32_t currentPosition = ClosedLoop::currentMotorPhase;
 
 	if (firstIteration)
@@ -238,7 +238,7 @@ static bool EncoderCalibration(bool firstIteration) noexcept
 
 		// Decide how many phase positions to advance at a time. This is down to the steps/rev ands the size of our calibration data storage array.
 		phaseIncrementShift = 0;
-		while ((positionsPerRev >> phaseIncrementShift) > AbsoluteEncoder::MaxDataPoints)
+		while ((positionsPerRev >> phaseIncrementShift) > AbsoluteRotaryEncoder::MaxDataPoints)
 		{
 			++phaseIncrementShift;
 		}
@@ -524,7 +524,7 @@ void ClosedLoop::PerformTune() noexcept
 	{
 		if (newTuningMove && encoder->IsAbsolute() && (tuning & ENCODER_CALIBRATION_MANOEUVRE))
 		{
-			((AbsoluteEncoder*)encoder)->ClearLUT();
+			((AbsoluteRotaryEncoder*)encoder)->ClearLUT();
 		}
 		newTuningMove = BasicTuning(newTuningMove);
 		if (newTuningMove)

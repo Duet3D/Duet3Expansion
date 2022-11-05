@@ -8,14 +8,14 @@
 #ifndef SRC_CLOSEDLOOP_AS5047D_H_
 #define SRC_CLOSEDLOOP_AS5047D_H_
 
-#include <ClosedLoop/AbsoluteEncoder.h>
+#include <ClosedLoop/AbsoluteRotaryEncoder.h>
 #include <ClosedLoop/SpiEncoder.h>
 
 #if SUPPORT_CLOSED_LOOP
 
 #include <General/FreelistManager.h>
 
-class AS5047D : public SpiEncoder, public AbsoluteEncoder
+class AS5047D : public SpiEncoder, public AbsoluteRotaryEncoder
 {
 public:
 	void* operator new(size_t sz) noexcept { return FreelistManager::Allocate<AS5047D>(); }

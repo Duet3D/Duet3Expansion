@@ -48,14 +48,20 @@ public:
 	// Clear the accumulated full rotations so as to get the count back to a smaller number
 	virtual void ClearFullRevs() noexcept = 0;
 
-	// Get the accumulated count
-	int32_t GetCurrentCount() const noexcept { return currentCount; }
-
 	// Encoder polarity. Changing this will change the encoder reading.
 	virtual void SetBackwards(bool backwards) noexcept = 0;
 
 	// Return the encoder polarity
 	virtual bool IsBackwards() const noexcept = 0;
+
+	// Return true if rotary absolute encoder calibration is applicable to this encoder
+	virtual bool UsesCalibration() const noexcept = 0;
+
+	// Return true if basic tuning is applicable to this encoder
+	virtual bool UsesBasicTuning() const noexcept = 0;
+
+	// Get the accumulated count
+	int32_t GetCurrentCount() const noexcept { return currentCount; }
 
 	// Return the number of encoder counts per step
 	float GetCountsPerStep() const noexcept { return countsPerStep; }

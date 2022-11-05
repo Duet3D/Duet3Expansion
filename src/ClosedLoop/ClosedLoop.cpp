@@ -448,7 +448,7 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 		{
 			tuningError = minimalTunes[encoder->GetType().ToBaseType()];
 			const GCodeResult rslt = encoder->Init(reply);
-			if (rslt == GCodeResult::ok && encoder->IsAbsolute() && ((AbsoluteEncoder*)encoder)->LoadLUT())
+			if (rslt == GCodeResult::ok && encoder->IsAbsolute() && ((AbsoluteRotaryEncoder*)encoder)->LoadLUT())
 			{
 				tuningError &= ~TuningError::NotCalibrated;
 			}
@@ -586,7 +586,7 @@ void ClosedLoop::EncoderCalibrationLoop(void *param) noexcept
 		TaskBase::Take();
 		if (encoder != nullptr && encoder->IsAbsolute() && calibrationState == CalibrationState::dataReady)
 		{
-			calibrationErrors = ((AbsoluteEncoder*)encoder)->Calibrate(calibrateNotCheck);
+			calibrationErrors = ((AbsoluteRotaryEncoder*)encoder)->Calibrate(calibrateNotCheck);
 			calibrationState = CalibrationState::complete;
 		}
 	}
@@ -660,11 +660,11 @@ GCodeResult ClosedLoop::ProcessCalibrationResult(const StringRef& reply) noexcep
 
 	// Report the calibration errors and corrections
 	reply.lcatf("%s encoder reading errors: ", (calibrateNotCheck) ? "Original" : "Residual");
-	((AbsoluteEncoder*)encoder)->AppendCalibrationErrors(reply);
+	((AbsoluteRotaryEncoder*)encoder)->AppendCalibrationErrors(reply);
 	if (calibrateNotCheck)
 	{
 		reply.lcatf("Corrections made: ");
-		((AbsoluteEncoder*)encoder)->AppendLUTCorrections(reply);
+		((AbsoluteRotaryEncoder*)encoder)->AppendLUTCorrections(reply);
 	}
 
 	return GCodeResult::ok;
@@ -718,7 +718,7 @@ GCodeResult ClosedLoop::ProcessM569Point6(const CanMessageGeneric &msg, const St
 		if (desiredTuning == 4)
 		{
 			// Tuning move 4 just clears the lookup table
-			((AbsoluteEncoder*)encoder)->ScrubLUT();
+			((AbsoluteRotaryEncoder*)encoder)->ScrubLUT();
 			reply.copy("Encoder calibration cleared");
 			tuningError |= TuningError::NotCalibrated;
 			return GCodeResult::ok;

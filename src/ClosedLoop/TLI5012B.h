@@ -8,7 +8,7 @@
 #ifndef SRC_CLOSEDLOOP_TLI5012B_H_
 #define SRC_CLOSEDLOOP_TLI5012B_H_
 
-#include <ClosedLoop/AbsoluteEncoder.h>
+#include <ClosedLoop/AbsoluteRotaryEncoder.h>
 #include <ClosedLoop/SpiEncoder.h>
 
 #if SUPPORT_CLOSED_LOOP
@@ -16,7 +16,7 @@
 #include <General/FreelistManager.h>
 
 // TODO: Fill out MAX parameter in MagneticEncoder below
-class TLI5012B : public SpiEncoder, public AbsoluteEncoder
+class TLI5012B : public SpiEncoder, public AbsoluteRotaryEncoder
 {
 public:
 	void* operator new(size_t sz) noexcept { return FreelistManager::Allocate<TLI5012B>(); }

@@ -5,20 +5,20 @@
  *      Author: David
  */
 
-#include "AbsoluteEncoder.h"
+#include <ClosedLoop/AbsoluteRotaryEncoder.h>
 
 #if SUPPORT_CLOSED_LOOP
 
 #include <Hardware/NonVolatileMemory.h>
 
-AbsoluteEncoder::AbsoluteEncoder(uint32_t p_stepsPerRev, unsigned int p_resolutionBits) noexcept
+AbsoluteRotaryEncoder::AbsoluteRotaryEncoder(uint32_t p_stepsPerRev, unsigned int p_resolutionBits) noexcept
 	: Encoder(p_stepsPerRev, (1u << p_resolutionBits) / (float)p_stepsPerRev),
 	  resolutionBits(p_resolutionBits),
 	  resolutionToLutShiftFactor((p_resolutionBits < LutResolutionBits) ? 0 : p_resolutionBits - LutResolutionBits)
 {}
 
 // Take a reading and store currentCount, currentPhasePosition, rawAngle and currentAngle. Return true if success.
-bool AbsoluteEncoder::TakeReading() noexcept
+bool AbsoluteRotaryEncoder::TakeReading() noexcept
 {
 	bool err = GetRawReading();
 	if (!err)
@@ -81,14 +81,14 @@ bool AbsoluteEncoder::TakeReading() noexcept
 }
 
 // Clear the accumulated full rotations so as to get the count back to a smaller number
-void AbsoluteEncoder::ClearFullRevs() noexcept
+void AbsoluteRotaryEncoder::ClearFullRevs() noexcept
 {
 	fullRotations = 0;
 	currentCount = (int32_t)currentAngle;
 }
 
 // Encoder polarity. Changing this will change the encoder reading.
-void AbsoluteEncoder::SetBackwards(bool backwards) noexcept
+void AbsoluteRotaryEncoder::SetBackwards(bool backwards) noexcept
 {
 	if (isBackwards != backwards)
 	{
@@ -100,7 +100,7 @@ void AbsoluteEncoder::SetBackwards(bool backwards) noexcept
 	}
 }
 
-bool AbsoluteEncoder::LoadLUT() noexcept
+bool AbsoluteRotaryEncoder::LoadLUT() noexcept
 {
 	NonVolatileMemory mem(NvmPage::closedLoop);
 	if (!mem.GetClosedLoopDataValid()) { return false; }
@@ -110,7 +110,7 @@ bool AbsoluteEncoder::LoadLUT() noexcept
 }
 
 // Populate the LUT when we already have the nonvolatile data
-void AbsoluteEncoder::PopulateLUT(NonVolatileMemory& mem) noexcept
+void AbsoluteRotaryEncoder::PopulateLUT(NonVolatileMemory& mem) noexcept
 {
 	// Read back the table of harmonics from NVRAM and construct the lookup table.
 	// The table maps actual position to encoder reading using the following mapping:
@@ -181,12 +181,12 @@ void AbsoluteEncoder::PopulateLUT(NonVolatileMemory& mem) noexcept
 }
 
 // Clear the LUT. We may be about to calibrate the encoder, so clear the calibration values too.
-void AbsoluteEncoder::ClearLUT() noexcept
+void AbsoluteRotaryEncoder::ClearLUT() noexcept
 {
 	LUTLoaded = false;
 }
 
-void AbsoluteEncoder::ClearDataCollection(size_t p_numDataPoints) noexcept
+void AbsoluteRotaryEncoder::ClearDataCollection(size_t p_numDataPoints) noexcept
 {
 	numDataPoints = p_numDataPoints;
 	hysteresisSum = dataSum = dataBias = 0;
@@ -195,7 +195,7 @@ void AbsoluteEncoder::ClearDataCollection(size_t p_numDataPoints) noexcept
 	calibrationPhase = 0;
 }
 
-void AbsoluteEncoder::ScrubLUT() noexcept
+void AbsoluteRotaryEncoder::ScrubLUT() noexcept
 {
 	ClearLUT();
 	NonVolatileMemory mem(NvmPage::closedLoop);
@@ -204,7 +204,7 @@ void AbsoluteEncoder::ScrubLUT() noexcept
 }
 
 // Record a data point. The first forwards data point must be index zero, and the first backwards data point must be index (numDataPoints - 1).
-void AbsoluteEncoder::RecordDataPoint(size_t index, int32_t data, bool backwards) noexcept
+void AbsoluteRotaryEncoder::RecordDataPoint(size_t index, int32_t data, bool backwards) noexcept
 {
 	if (backwards)
 	{
@@ -234,7 +234,7 @@ void AbsoluteEncoder::RecordDataPoint(size_t index, int32_t data, bool backwards
 
 // Analyse the calibration data and optionally store it. We have the specified number of data points but we read each point twice, once while rotating forwards and once backwards.
 // This takes a long time so it must be called by a low priority task
-TuningErrors AbsoluteEncoder::Calibrate(bool store) noexcept
+TuningErrors AbsoluteRotaryEncoder::Calibrate(bool store) noexcept
 {
 	// dataSum is the sum of all the readings. If it is negative then the encoder is running backwards.
 	const float twiceExpectedMidPointDifference = (float)dataSum/(float)numDataPoints;
@@ -366,12 +366,12 @@ TuningErrors AbsoluteEncoder::Calibrate(bool store) noexcept
 	return 0;
 }
 
-void AbsoluteEncoder::AppendLUTCorrections(const StringRef& reply) const noexcept
+void AbsoluteRotaryEncoder::AppendLUTCorrections(const StringRef& reply) const noexcept
 {
 	reply.catf("min %.1f, max %.1f, rms %.1f", (double)minLUTCorrection, (double)maxLUTCorrection, (double)rmsCorrection);
 }
 
-void AbsoluteEncoder::AppendCalibrationErrors(const StringRef& reply) const noexcept
+void AbsoluteRotaryEncoder::AppendCalibrationErrors(const StringRef& reply) const noexcept
 {
 	reply.catf("min %.1f, max %.1f, rms %.1f", (double)minCalibrationError, (double)maxCalibrationError, (double)rmsCalibrationError);
 }
