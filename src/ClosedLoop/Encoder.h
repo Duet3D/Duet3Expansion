@@ -13,6 +13,7 @@
 #if SUPPORT_CLOSED_LOOP
 
 #include <GCodeResult.h>
+#include "TuningErrors.h"
 
 class Encoder
 {
@@ -35,6 +36,9 @@ public:
 
 	// Get the current reading after correcting it and adding the offset
 	virtual bool TakeReading() noexcept = 0;
+
+	// Tell the encoder what the step phase is at the current count. Only applicable to relative encoders.
+	virtual void SetKnownPhaseAtCurrentCount(uint32_t phase) noexcept = 0;
 
 	// Get diagnostic information and append it to a string
 	virtual void AppendDiagnostics(const StringRef& reply) noexcept = 0;
@@ -59,6 +63,33 @@ public:
 
 	// Return true if basic tuning is applicable to this encoder
 	virtual bool UsesBasicTuning() const noexcept = 0;
+
+	// Set the forward tuning results. Only applicable if the encoder supports basic tuning.
+	virtual void SetForwardTuningResults(float slope, float xMean, float yMean) noexcept;
+
+	// Set the reverse tuning results. Only applicable if the encoder supports basic tuning.
+	virtual void SetReverseTuningResults(float slope, float xMean, float yMean) noexcept;
+
+	// Process the tuning data. Only applicable if the encoder supports basic tuning.
+	virtual TuningErrors ProcessTuningData() noexcept = 0;
+
+	// Clear the encoder data collection. Only applicable if the encoder supports calibration.
+	virtual void ClearDataCollection(size_t p_numDataPoints) noexcept = 0;
+
+	// Record a calibration data point. Only applicable if the encoder supports calibration.
+	virtual void RecordDataPoint(size_t index, int32_t data, bool backwards) noexcept = 0;
+
+	// Load the calibration lookup table. Return true if successful or if the encoder type doesn't support calibration.
+	virtual bool LoadLUT() noexcept = 0;
+
+	// Clear the calibration lookup table. Only applicable if the encoder supports calibration.
+	virtual void ClearLUT() noexcept = 0;
+
+	// Calibrate the encoder using the recorded data points. Only applicable if the encoder supports calibration.
+	virtual TuningErrors Calibrate(bool store) noexcept = 0;
+
+	// Get the initial set of tuning errors for this encoder
+	TuningErrors MinimalTuningNeeded() const noexcept;
 
 	// Get the accumulated count
 	int32_t GetCurrentCount() const noexcept { return currentCount; }

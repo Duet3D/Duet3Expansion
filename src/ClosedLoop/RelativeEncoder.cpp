@@ -28,9 +28,9 @@ bool RelativeEncoder::TakeReading() noexcept
 }
 
 // Tell the encoder what the step phase is at a particular count, so that if currentCount was 'count' then currentPhasePosition would be calculated as 'phase'
-void RelativeEncoder::SetKnownPhaseAtCount(uint32_t phase, int32_t count) noexcept
+void RelativeEncoder::SetKnownPhaseAtCurrentCount(uint32_t phase) noexcept
 {
-	count %= (int32_t)countsPerRev;
+	int32_t count = currentCount % (int32_t)countsPerRev;
 	if (count < 0) { count += countsPerRev; }
 	const uint32_t relativePhasePosition = (uint32_t)lrintf(count * phasesPerCount);
 	zeroCountPhasePosition = (phase - relativePhasePosition) & 4095u;

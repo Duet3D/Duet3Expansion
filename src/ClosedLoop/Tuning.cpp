@@ -92,8 +92,6 @@ static bool BasicTuning(bool firstIteration) noexcept
 		return true;
 	}
 
-	RelativeEncoder *relativeEncoder = (RelativeEncoder*)ClosedLoop::encoder;
-
 	if (firstIteration)
 	{
 		state = BasicTuningState::forwardInitial;
@@ -121,7 +119,7 @@ static bool BasicTuning(bool firstIteration) noexcept
 	case BasicTuningState::forwards:
 		// Collect data and move forwards, until we have moved 4 full steps
 		{
-			int32_t reading = relativeEncoder->GetCurrentCount();
+			int32_t reading = ClosedLoop::encoder->GetCurrentCount();
 			if (stepCounter == 0)
 			{
 				initialCount = reading;
@@ -142,7 +140,7 @@ static bool BasicTuning(bool firstIteration) noexcept
 #ifdef DEBUG
 			debugPrintf("forwardYmean %.2f ic %" PRIi32 "\n", (double)yMean, initialCount);
 #endif
-			relativeEncoder->SetForwardTuningResults(slope, xMean, yMean);
+			ClosedLoop::encoder->SetForwardTuningResults(slope, xMean, yMean);
 			stepCounter = 0;
 			state = BasicTuningState::reverseInitial;
 		}
@@ -167,7 +165,7 @@ static bool BasicTuning(bool firstIteration) noexcept
 	case BasicTuningState::reverse:
 		// Collect data and move backwards, until we have moved 4 full steps
 		{
-			int32_t reading = relativeEncoder->GetCurrentCount();
+			int32_t reading = ClosedLoop::encoder->GetCurrentCount();
 			if (stepCounter == 0)
 			{
 				initialCount = reading;
@@ -188,7 +186,7 @@ static bool BasicTuning(bool firstIteration) noexcept
 #ifdef DEBUG
 			debugPrintf("reverseYmean %.2f ic %" PRIi32 "\n", (double)yMean, initialCount);
 #endif
-			relativeEncoder->SetReverseTuningResults(slope, xMean, yMean);
+			ClosedLoop::encoder->SetReverseTuningResults(slope, xMean, yMean);
 			ClosedLoop::FinishedBasicTuning();
 			return true;																// finished tuning
 		}
@@ -228,13 +226,12 @@ static bool EncoderCalibration(bool firstIteration) noexcept
 		return true;							// we don't do this tuning for relative encoders
 	}
 
-	AbsoluteRotaryEncoder* const absoluteEncoder = (AbsoluteRotaryEncoder*)ClosedLoop::encoder;
 	const uint32_t currentPosition = ClosedLoop::currentMotorPhase;
 
 	if (firstIteration)
 	{
 		// Set up some variables
-		positionsPerRev = absoluteEncoder->GetPhasePositionsPerRev();
+		positionsPerRev = ClosedLoop::encoder->GetPhasePositionsPerRev();
 
 		// Decide how many phase positions to advance at a time. This is down to the steps/rev ands the size of our calibration data storage array.
 		phaseIncrementShift = 0;
@@ -243,13 +240,13 @@ static bool EncoderCalibration(bool firstIteration) noexcept
 			++phaseIncrementShift;
 		}
 
-		absoluteEncoder->ClearDataCollection(positionsPerRev >> phaseIncrementShift);
+		ClosedLoop::encoder->ClearDataCollection(positionsPerRev >> phaseIncrementShift);
 
 		// If calibrating (not checking), clear the mapping table
 		if (ClosedLoop::tuning & ClosedLoop::ENCODER_CALIBRATION_MANOEUVRE)
 		{
-			absoluteEncoder->ClearLUT();
-			absoluteEncoder->SetBackwards(false);
+			ClosedLoop::encoder->ClearLUT();
+			ClosedLoop::encoder->SetBackwards(false);
 		}
 
 		// To counter any backlash, start by advancing a bit. Then advance to the next position which is a multiple of 4 full steps so that the phase position is zero.
@@ -262,7 +259,7 @@ static bool EncoderCalibration(bool firstIteration) noexcept
 		state = EncoderCalibrationState::setup;
 	}
 
-	const int32_t currentCount = absoluteEncoder->GetCurrentCount();
+	const int32_t currentCount = ClosedLoop::encoder->GetCurrentCount();
 
 	switch (state)
 	{
@@ -284,7 +281,7 @@ static bool EncoderCalibration(bool firstIteration) noexcept
 		// Advancing slowly and recording positions
 		if (positionCounter < positionsPerRev)
 		{
-			absoluteEncoder->RecordDataPoint(positionCounter >> phaseIncrementShift, currentCount, false);
+			ClosedLoop::encoder->RecordDataPoint(positionCounter >> phaseIncrementShift, currentCount, false);
 		}
 
 		// Move to the next position. After a complete revolution we continue another 256 positions without recording data, ready for the reverse pass.
@@ -299,7 +296,7 @@ static bool EncoderCalibration(bool firstIteration) noexcept
 	case EncoderCalibrationState::backwards:
 		if (positionCounter < positionsPerRev)
 		{
-			absoluteEncoder->RecordDataPoint(positionCounter >> phaseIncrementShift, currentCount, true);
+			ClosedLoop::encoder->RecordDataPoint(positionCounter >> phaseIncrementShift, currentCount, true);
 
 			if (positionCounter == 0)
 			{

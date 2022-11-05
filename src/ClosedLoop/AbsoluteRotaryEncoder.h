@@ -25,8 +25,6 @@
 
 # if SUPPORT_CLOSED_LOOP
 
-#include "TuningErrors.h"
-
 class NonVolatileMemory;
 
 // Base class for absolute encoders. The encoder resolution(counts/revolution) must be a power of two.
@@ -43,6 +41,9 @@ public:
 	// Get the current reading
 	bool TakeReading() noexcept override;
 
+	// Tell the encoder what the step phase is at the current count. Only applicable to relative encoders.
+	void SetKnownPhaseAtCurrentCount(uint32_t phase) noexcept override { }
+
 	// Clear the accumulated full rotations so as to get the count back to a smaller number
 	void ClearFullRevs() noexcept override;
 
@@ -58,6 +59,15 @@ public:
 	// Return true if basic tuning is applicable to this encoder
 	bool UsesBasicTuning() const noexcept override { return false; }
 
+	// Set the forward tuning results. Only applicable if the encoder supports basic tuning.
+	void SetForwardTuningResults(float slope, float xMean, float yMean) noexcept override { }
+
+	// Set the reverse tuning results. Only applicable if the encoder supports basic tuning.
+	void SetReverseTuningResults(float slope, float xMean, float yMean) noexcept override { }
+
+	// Process the tuning data. Only applicable if the encoder supports basic tuning.
+	TuningErrors ProcessTuningData() noexcept override { return TuningError::SystemError; }
+
 	// Get the angle within a rotation from the most recent reading, corrected for direction only
 	uint32_t GetRawAngle() const noexcept { return rawAngle; }
 
@@ -67,13 +77,21 @@ public:
 	// Get the counts per revolution
 	uint32_t GetCountsPerRev() const noexcept { return 1u << resolutionBits; }
 
-	// Lookup table (LUT) management
-	void ClearDataCollection(size_t p_numDataPoints) noexcept;
-	void RecordDataPoint(size_t index, int32_t data, bool backwards) noexcept;
-	TuningErrors Calibrate(bool store) noexcept;
+	// Clear the encoder data collection. Only applicable if the encoder supports calibration.
+	void ClearDataCollection(size_t p_numDataPoints) noexcept override;
 
-	bool LoadLUT() noexcept;
-	void ClearLUT() noexcept;
+	// Record a calibration data point. Only applicable if the encoder supports calibration.
+	void RecordDataPoint(size_t index, int32_t data, bool backwards) noexcept override;
+
+	// Calibrate the encoder using the recorded data points. Only applicable if the encoder supports calibration.
+	TuningErrors Calibrate(bool store) noexcept override;
+
+	// Load the calibration lookup table. Return true if successful or if the encoder type doesn't support calibration.
+	bool LoadLUT() noexcept override;
+
+	// Clear the calibration lookup table. Only applicable if the encoder supports calibration.
+	void ClearLUT() noexcept override;
+
 	void ScrubLUT() noexcept;
 
 	unsigned int GetMaxValue() const noexcept { return 1ul << resolutionBits; }

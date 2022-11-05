@@ -173,22 +173,6 @@ namespace ClosedLoop
 
 	StepTimer::Ticks whenLastTuningStepTaken;			// when the control loop last called the tuning code
 
-	// The bitmask of a minimal tuning error for each encoder type
-	// This is an array so that ZEROING_MANOEUVRE can be removed from the magnetic encoders if the LUT is in NVM
-	constexpr uint8_t minimalTunes[5] =
-	{
-		// None
-		0,
-		// linearQuadrature
-		TuningError::NeedsBasicTuning,
-		// rotaryQuadrature
-		TuningError::NeedsBasicTuning,
-		// AS5047
-		TuningError::NotCalibrated,
-		// TLI5012
-		TuningError::NotCalibrated,
-	};
-
 	// Monitoring variables
 	// These variables monitor how fast the PID loop is running etc.
 	StepTimer::Ticks prevControlLoopCallTime;			// The last time the control loop was called
@@ -446,9 +430,9 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 
 		if (encoder != nullptr)
 		{
-			tuningError = minimalTunes[encoder->GetType().ToBaseType()];
+			tuningError = encoder->MinimalTuningNeeded();
 			const GCodeResult rslt = encoder->Init(reply);
-			if (rslt == GCodeResult::ok && encoder->IsAbsolute() && ((AbsoluteRotaryEncoder*)encoder)->LoadLUT())
+			if (rslt == GCodeResult::ok && encoder->LoadLUT())
 			{
 				tuningError &= ~TuningError::NotCalibrated;
 			}
@@ -530,7 +514,7 @@ GCodeResult ClosedLoop::ProcessBasicTuningResult(const StringRef& reply) noexcep
 
 	basicTuningDataReady = false;
 
-	const TuningErrors newTuningErrors = ((RelativeEncoder*)encoder)->ProcessTuningData();
+	const TuningErrors newTuningErrors = encoder->ProcessTuningData();
 	if (newTuningErrors != 0)
 	{
 		tuningError &= ~TuningError::CalibrationInProgress;
@@ -1089,7 +1073,7 @@ StandardDriverStatus ClosedLoop::ReadLiveStatus() noexcept
 	result.all = 0;
 	result.closedLoopPositionNotMaintained = stall;
 	result.closedLoopPositionWarning = preStall;
-	result.closedLoopNotTuned = ((tuningError & minimalTunes[encoder->GetType().ToBaseType()]) != 0);
+	result.closedLoopNotTuned = ((tuningError & encoder->MinimalTuningNeeded()) != 0);
 	result.closedLoopTuningError = ((tuningError & TuningError::AnyTuningFailure) != 0);
 	return result;
 }
@@ -1147,10 +1131,10 @@ bool ClosedLoop::SetClosedLoopEnabled(size_t driver, bool enabled, const StringR
 		if (!encoder->IsAbsolute())
 		{
 			encoder->SetBackwards(false);
-			((RelativeEncoder*)encoder)->SetKnownPhaseAtCount(initialStepPhase, encoder->GetCurrentCount());
+			encoder->SetKnownPhaseAtCurrentCount(initialStepPhase);
 
 			// Reset the tuning
-			tuningError = minimalTunes[encoder->GetType().ToBaseType()];
+			tuningError = encoder->MinimalTuningNeeded();
 		}
 
 		desiredStepPhase = initialStepPhase;							// set this to be picked up later in DriverSwitchedToClosedLoop
@@ -1192,7 +1176,7 @@ StandardDriverStatus ClosedLoop::ModifyDriverStatus(size_t driver, StandardDrive
 	{
 		originalStatus.stall = 0;										// ignore stall detection in open loop mode
 		originalStatus.standstill = 0;									// ignore standstill detection in closed loop mode
-		originalStatus.closedLoopNotTuned = ((tuningError & minimalTunes[encoder->GetType().ToBaseType()]) != 0);
+		originalStatus.closedLoopNotTuned = ((tuningError & encoder->MinimalTuningNeeded()) != 0);
 		originalStatus.closedLoopIllegalMove = 0;						//TODO implement this or remove it
 		originalStatus.closedLoopTuningError = ((tuningError & TuningError::AnyTuningFailure) != 0);
 	}

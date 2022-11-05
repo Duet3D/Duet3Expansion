@@ -20,8 +20,6 @@
 
 #if SUPPORT_CLOSED_LOOP
 
-#include "TuningErrors.h"
-
 class RelativeEncoder : public Encoder
 {
 public:
@@ -40,8 +38,8 @@ public:
 	// Get the current reading
 	bool TakeReading() noexcept override;
 
-	// Tell the encoder what the step phase is at a particular count
-	void SetKnownPhaseAtCount(uint32_t phase, int32_t count) noexcept;
+	// Tell the encoder what the step phase is at the current count. Only applicable to relative encoders.
+	void SetKnownPhaseAtCurrentCount(uint32_t phase) noexcept override;
 
 	// Encoder polarity. Changing this will change the encoder reading.
 	void SetBackwards(bool backwards) noexcept override;
@@ -56,13 +54,28 @@ public:
 	bool UsesBasicTuning() const noexcept override { return true; }
 
 	// Set the forward tuning results
-	void SetForwardTuningResults(float slope, float xMean, float yMean) noexcept { forwardSlope = slope; forwardXmean = xMean; forwardYmean = yMean; }
+	void SetForwardTuningResults(float slope, float xMean, float yMean) noexcept override { forwardSlope = slope; forwardXmean = xMean; forwardYmean = yMean; }
 
 	// Set the reverse tuning results
-	void SetReverseTuningResults(float slope, float xMean, float yMean) noexcept { reverseSlope = slope; reverseXmean = xMean; reverseYmean = yMean; }
+	void SetReverseTuningResults(float slope, float xMean, float yMean) noexcept override { reverseSlope = slope; reverseXmean = xMean; reverseYmean = yMean; }
 
 	// Process the tuning data
-	TuningErrors ProcessTuningData() noexcept;
+	TuningErrors ProcessTuningData() noexcept override;
+
+	// Clear the encoder data collection. Only applicable if the encoder supports calibration.
+	void ClearDataCollection(size_t p_numDataPoints) noexcept override { }
+
+	// Record a calibration data point. Only applicable if the encoder supports calibration.
+	void RecordDataPoint(size_t index, int32_t data, bool backwards) noexcept override { }
+
+	// Load the calibration lookup table. Return true if successful or if the encoder type doesn't support calibration.
+	bool LoadLUT() noexcept override { return true; }
+
+	// Clear the calibration lookup table. Only applicable if the encoder supports calibration.
+	void ClearLUT() noexcept override { }
+
+	// Calibrate the encoder using the recorded data points. Only applicable if the encoder supports calibration.
+	TuningErrors Calibrate(bool store) noexcept override { return TuningError::SystemError; }
 
 protected:
 	// Get the relative position since the start
