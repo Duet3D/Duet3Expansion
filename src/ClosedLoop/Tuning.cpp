@@ -80,8 +80,9 @@ static bool BasicTuning(bool firstIteration) noexcept
 
 	constexpr uint16_t PhaseIncrement = 4;							// how much to increment the phase by on each step, must be a factor of 4096
 	static_assert(4096 % PhaseIncrement == 0);
-	const unsigned int NumDummySteps = (256 * ClosedLoop::basicTuningIterationMultiplier)/PhaseIncrement;	// how many phase increments to take before we start collecting data = 1/4 step
-	const unsigned int NumSamples = (4096 * ClosedLoop::basicTuningIterationMultiplier)/PhaseIncrement;		// the number of samples we take to do the linear regression (4 full steps)
+	const unsigned int iterationMultipler = (ClosedLoop::encoder->GetType() == EncoderType::linearComposite) ? 10 : 1;
+	const unsigned int NumDummySteps = (256 * iterationMultipler)/PhaseIncrement;	// how many phase increments to take before we start collecting data = 1/4 step
+	const unsigned int NumSamples = (4096 * iterationMultipler)/PhaseIncrement;		// the number of samples we take to do the linear regression (4 full steps)
 	const float HalfNumSamplesMinusOne = (float)(NumSamples - 1) * 0.5;
 	const float Denominator = (float)PhaseIncrement * (fcube((float)NumSamples) - (float)NumSamples)/12.0;
 

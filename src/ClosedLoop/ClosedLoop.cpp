@@ -67,7 +67,6 @@ Encoder*	ClosedLoop::encoder = nullptr;						// Pointer to the encoder object in
 volatile uint8_t ClosedLoop::tuning = 0;						// Bitmask of any tuning manoeuvres that have been requested
 TuningErrors ClosedLoop::tuningError;							// Flags for any tuning errors
 uint32_t	ClosedLoop::currentMotorPhase;						// the phase (0 to 4095) that the driver is set to
-unsigned int ClosedLoop::basicTuningIterationMultiplier = 10;	//**TEMPORARY value!** we multiply the number of steps we do by this constant, default 1
 
 namespace ClosedLoop
 {
@@ -527,7 +526,7 @@ GCodeResult ClosedLoop::ProcessBasicTuningResult(const StringRef& reply) noexcep
 	tuningError &= ~TuningError::TuningOrCalibrationInProgress;
 
 	const float hyst = encoder->GetMeasuredHysteresis();
-	if (hyst >= MaxSafeHysteresis)
+	if (hyst >= MaxSafeHysteresis && encoder->GetType() != EncoderType::linearComposite)
 	{
 		tuningError = TuningError::HysteresisTooHigh;
 		reply.catf("failed, measured hysteresis (%.3f step) is too high", (double)hyst);

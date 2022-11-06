@@ -43,7 +43,6 @@ namespace ClosedLoop
 	extern volatile uint8_t tuning;							// Bitmask of any tuning manoeuvres that have been requested
 	extern TuningErrors tuningError;						// Flags for any tuning errors
 	extern uint32_t currentMotorPhase;						// the phase (0 to 4095) that the driver is set to
-	extern unsigned int basicTuningIterationMultiplier;		// we multiply the number of steps we do by this constant, default 1
 
 	// Closed loop public methods
 	void Init() noexcept;
