@@ -259,7 +259,7 @@ static bool EncoderCalibration(bool firstIteration) noexcept
 		state = EncoderCalibrationState::setup;
 	}
 
-	const int32_t currentCount = ClosedLoop::encoder->GetCurrentCount();
+	const int32_t currentCount = ClosedLoop::encoder->GetCurrentShaftCount();
 
 	switch (state)
 	{

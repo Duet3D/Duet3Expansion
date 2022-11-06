@@ -62,10 +62,10 @@ public:
 	virtual bool UsesBasicTuning() const noexcept = 0;
 
 	// Set the forward tuning results. Only applicable if the encoder supports basic tuning.
-	virtual void SetForwardTuningResults(float slope, float xMean, float yMean) noexcept;
+	virtual void SetForwardTuningResults(float slope, float xMean, float yMean) noexcept = 0;
 
 	// Set the reverse tuning results. Only applicable if the encoder supports basic tuning.
-	virtual void SetReverseTuningResults(float slope, float xMean, float yMean) noexcept;
+	virtual void SetReverseTuningResults(float slope, float xMean, float yMean) noexcept = 0;
 
 	// Process the tuning data. Only applicable if the encoder supports basic tuning.
 	virtual TuningErrors ProcessTuningData() noexcept = 0;
@@ -93,6 +93,9 @@ public:
 
 	// Append a summary of measured calibration errors to a string. Only applicable if the encoder supports calibration.
 	virtual void AppendCalibrationErrors(const StringRef& reply) const noexcept = 0;
+
+	// Get the count if the shaft encoder. Only used by calibration. Normally the same as GetCurrentCount except for combination encoders.
+	virtual int32_t GetCurrentShaftCount() const noexcept { return currentCount; }
 
 	// Get the initial set of tuning errors for this encoder
 	TuningErrors MinimalTuningNeeded() const noexcept;
