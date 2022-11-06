@@ -11,9 +11,9 @@
 
 constexpr unsigned int TLI5012BResolutionBits = 14;
 
-TLI5012B::TLI5012B(float stepAngle, SharedSpiDevice& spiDev, Pin p_csPin) noexcept
+TLI5012B::TLI5012B(uint32_t p_stepsPerRev, SharedSpiDevice& spiDev, Pin p_csPin) noexcept
 	: SpiEncoder(spiDev, 60000, SpiMode::mode1, false, p_csPin),	//TODO use correct frequency and mode
-	  AbsoluteRotaryEncoder(stepAngle, TLI5012BResolutionBits)
+	  AbsoluteRotaryEncoder(p_stepsPerRev, TLI5012BResolutionBits)
 {
 }
 

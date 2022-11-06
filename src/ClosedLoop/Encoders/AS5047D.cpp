@@ -61,9 +61,9 @@ static inline bool CheckResponse(uint16_t response) noexcept
 	return CheckEvenParity(response) && (response & 0x4000) == 0;
 }
 
-AS5047D::AS5047D(float p_stepAngle, SharedSpiDevice& spiDev, Pin p_csPin) noexcept
+AS5047D::AS5047D(uint32_t p_stepsPerRev, SharedSpiDevice& spiDev, Pin p_csPin) noexcept
 	: SpiEncoder(spiDev, AS5047ClockFrequency, SpiMode::mode1, false, p_csPin),
-	  AbsoluteRotaryEncoder(p_stepAngle, AS5047DResolutionBits)
+	  AbsoluteRotaryEncoder(p_stepsPerRev, AS5047DResolutionBits)
 {
 }
 

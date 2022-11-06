@@ -39,6 +39,7 @@ using std::numeric_limits;
 # include "Encoders/AS5047D.h"
 # include "Encoders/TLI5012B.h"
 # include "Encoders/QuadratureEncoderPdec.h"
+# include "Encoders/LinearCompositeEncoder.h"
 
 # include <ClosedLoop/DerivativeAveragingFilter.h>
 
@@ -331,7 +332,7 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 		return GCodeResult::ok;
 	}
 
-	if (seenT && !seenC && (tempEncoderType == EncoderType::rotaryQuadrature || tempEncoderType == EncoderType::linearQuadrature))
+	if (seenT && !seenC && (tempEncoderType == EncoderType::rotaryQuadrature || tempEncoderType == EncoderType::linearComposite))
 	{
 		reply.copy("Missing C parameter");
 		return GCodeResult::error;
@@ -416,15 +417,13 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 			}
 			break;
 
-#if defined(EXP1HCLv1_0)
-		case EncoderType::linearQuadrature:
-			encoder = new QuadratureEncoderPdec(tempStepsPerRev, tempCPR);
+		case EncoderType::linearComposite:
+			encoder = new LinearCompositeEncoder(tempStepsPerRev, tempCPR, *Platform::sharedSpi, EncoderCsPin);
 			break;
 
 		case EncoderType::rotaryQuadrature:
 			encoder = new QuadratureEncoderPdec(tempStepsPerRev, tempCPR);
 			break;
-#endif
 		}
 
 		if (encoder != nullptr)
