@@ -21,7 +21,7 @@ public:
 	void* operator new(size_t sz) noexcept { return FreelistManager::Allocate<LinearCompositeEncoder>(); }
 	void operator delete(void* p) noexcept { FreelistManager::Release<LinearCompositeEncoder>(p); }
 
-	LinearCompositeEncoder(float p_countsPerMm, uint32_t p_stepsPerRev, SharedSpiDevice& spiDev, Pin p_csPin) noexcept;
+	LinearCompositeEncoder(float p_countsPerRev, uint32_t p_stepsPerRev, SharedSpiDevice& spiDev, Pin p_csPin) noexcept;
 	~LinearCompositeEncoder();
 
 	// Overridden virtual functions
@@ -35,11 +35,11 @@ public:
 	// Clear the accumulated full rotations so as to get the count back to a smaller number
 	void ClearFullRevs() noexcept override;
 
-	// Encoder polarity. Changing this will change the encoder reading.
-	void SetBackwards(bool backwards) noexcept override;
+	// Encoder polarity for basic tuning purposes. Changing this will change the encoder reading.
+	void SetTuningBackwards(bool backwards) noexcept override;
 
-	// Return the encoder polarity
-	bool IsBackwards() const noexcept override { return isBackwards; }
+	// Encoder polarity for calibration purposes. Changing this will change the encoder reading.
+	void SetCalibrationBackwards(bool backwards) noexcept override;
 
 	// Return true if rotary absolute encoder calibration is applicable to this encoder
 	bool UsesCalibration() const noexcept override { return true; }

@@ -399,7 +399,7 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 			// encoder is already nullptr
 			break;
 
-		case EncoderType::AS5047:
+		case EncoderType::rotaryAS5047:
 			encoder = new AS5047D(tempStepsPerRev, *Platform::sharedSpi, EncoderCsPin);
 			if (encoderCalibrationTask == nullptr)
 			{
@@ -408,7 +408,7 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 			}
 			break;
 
-		case EncoderType::TLI5012:
+		case EncoderType::rotaryTLI5012:
 			encoder = new TLI5012B(tempStepsPerRev, *Platform::sharedSpi, EncoderCsPin);
 			if (encoderCalibrationTask == nullptr)
 			{
@@ -1002,7 +1002,6 @@ void ClosedLoop::Diagnostics(const StringRef& reply) noexcept
 	reply.catf(", encoder type %s", GetEncoderType().ToString());
 	if (encoder != nullptr)
 	{
-		reply.catf(", reverse polarity: %s", (encoder->IsBackwards()) ? "yes" : "no");
 		if (encoder->TakeReading())
 		{
 			reply.cat(", error reading encoder\n");
@@ -1017,7 +1016,7 @@ void ClosedLoop::Diagnostics(const StringRef& reply) noexcept
 	// The rest is only relevant if we are in closed loop mode
 	if (closedLoopEnabled)
 	{
-		reply.catf(", tuning mode: %#x, tuning error: %#x", tuning, tuningError);
+		reply.lcatf("Tuning mode: %#x, tuning error: %#x", tuning, tuningError);
 		reply.catf(", collecting data: %s", CollectingData() ? "yes" : "no");
 		if (CollectingData())
 		{
@@ -1121,7 +1120,7 @@ bool ClosedLoop::SetClosedLoopEnabled(size_t driver, bool enabled, const StringR
 		ReadState();													// SetBackwards changes the reading
 		if (encoder->UsesBasicTuning())
 		{
-			encoder->SetBackwards(false);
+			encoder->SetTuningBackwards(false);
 			encoder->SetKnownPhaseAtCurrentCount(initialStepPhase);
 			tuningError = encoder->MinimalTuningNeeded();				// reset the tuning needed
 		}

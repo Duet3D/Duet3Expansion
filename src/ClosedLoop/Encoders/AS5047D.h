@@ -24,7 +24,7 @@ public:
 	AS5047D(uint32_t p_stepsPerRev, SharedSpiDevice& spiDev, Pin p_csPin) noexcept;
 	~AS5047D() { AS5047D::Disable(); }
 
-	EncoderType GetType() const noexcept override { return EncoderType::AS5047; }
+	EncoderType GetType() const noexcept override { return EncoderType::rotaryAS5047; }
 	GCodeResult Init(const StringRef& reply) noexcept override;
 	void Enable() noexcept override;
 	void Disable() noexcept override;

@@ -25,7 +25,7 @@ public:
 	TLI5012B(uint32_t p_stepsPerRev, SharedSpiDevice& spiDev, Pin p_csPin) noexcept;
 	~TLI5012B() { TLI5012B::Disable(); }
 
-	EncoderType GetType() const noexcept override { return EncoderType::TLI5012; }
+	EncoderType GetType() const noexcept override { return EncoderType::rotaryTLI5012; }
 	GCodeResult Init(const StringRef& reply) noexcept override;
 	void Enable() noexcept override;
 	void Disable() noexcept override;

@@ -94,7 +94,7 @@ static bool BasicTuning(bool firstIteration) noexcept
 	{
 		state = BasicTuningState::forwardInitial;
 		stepCounter = 0;
-		ClosedLoop::encoder->SetBackwards(false);
+		ClosedLoop::encoder->SetTuningBackwards(false);
 		ClosedLoop::encoder->ClearFullRevs();
 	}
 
@@ -244,7 +244,7 @@ static bool EncoderCalibration(bool firstIteration) noexcept
 		if (ClosedLoop::tuning & ClosedLoop::ENCODER_CALIBRATION_MANOEUVRE)
 		{
 			ClosedLoop::encoder->ClearLUT();
-			ClosedLoop::encoder->SetBackwards(false);
+			ClosedLoop::encoder->SetCalibrationBackwards(false);
 		}
 
 		// To counter any backlash, start by advancing a bit. Then advance to the next position which is a multiple of 4 full steps so that the phase position is zero.

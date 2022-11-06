@@ -49,11 +49,11 @@ public:
 	// Clear the accumulated full rotations so as to get the count back to a smaller number
 	virtual void ClearFullRevs() noexcept = 0;
 
-	// Encoder polarity. Changing this will change the encoder reading.
-	virtual void SetBackwards(bool backwards) noexcept = 0;
+	// Encoder polarity for basic tuning purposes. Changing this will change the encoder reading.
+	virtual void SetTuningBackwards(bool backwards) noexcept = 0;
 
-	// Return the encoder polarity
-	virtual bool IsBackwards() const noexcept = 0;
+	// Encoder polarity for calibration purposes. Changing this will change the encoder reading.
+	virtual void SetCalibrationBackwards(bool backwards) noexcept = 0;
 
 	// Return true if rotary absolute encoder calibration is applicable to this encoder
 	virtual bool UsesCalibration() const noexcept = 0;

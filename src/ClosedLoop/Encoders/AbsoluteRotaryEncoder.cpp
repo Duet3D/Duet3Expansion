@@ -49,7 +49,7 @@ bool AbsoluteRotaryEncoder::TakeReading() noexcept
 			}
 		}
 
-		if (IsBackwards())
+		if (isBackwards)
 		{
 			newAngle = (GetMaxValue() - newAngle) & (GetMaxValue() - 1);
 			rawAngle = (GetMaxValue() - rawReading) & (GetMaxValue() - 1);
@@ -88,7 +88,7 @@ void AbsoluteRotaryEncoder::ClearFullRevs() noexcept
 }
 
 // Encoder polarity. Changing this will change the encoder reading.
-void AbsoluteRotaryEncoder::SetBackwards(bool backwards) noexcept
+void AbsoluteRotaryEncoder::SetCalibrationBackwards(bool backwards) noexcept
 {
 	if (isBackwards != backwards)
 	{
@@ -169,7 +169,7 @@ void AbsoluteRotaryEncoder::PopulateLUT(NonVolatileMemory& mem) noexcept
 	rmsCorrection = sqrtf(rmsCorrection/LUTLength);
 
 	zeroCountPhasePosition = harmonicData[0].u;
-	SetBackwards(harmonicData[1].u & 0x01);
+	SetCalibrationBackwards(harmonicData[1].u & 0x01);
 
 #ifdef DEBUG
 	debugPrintf("Actual max iterations %u, minCorrection %.1f, maxCorrection %.1f, RMS correction %.1f, zrp %" PRIu32 " totalCorr %" PRIi32 "\n",
@@ -347,7 +347,7 @@ TuningErrors AbsoluteRotaryEncoder::Calibrate(bool store) noexcept
 
 	if (store)
 	{
-		SetBackwards(rotationDirection < 0.0);
+		SetCalibrationBackwards(rotationDirection < 0.0);
 
 		// Store the table of harmonics to nonvolatile memory
 		NonVolatileMemory mem(NvmPage::closedLoop);

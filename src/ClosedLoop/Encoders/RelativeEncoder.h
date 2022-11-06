@@ -38,11 +38,11 @@ public:
 	// Tell the encoder what the step phase is at the current count. Only applicable to relative encoders.
 	void SetKnownPhaseAtCurrentCount(uint32_t phase) noexcept override;
 
-	// Encoder polarity. Changing this will change the encoder reading.
-	void SetBackwards(bool backwards) noexcept override;
+	// Encoder polarity for basic tuning purposes. Changing this will change the encoder reading.
+	void SetTuningBackwards(bool backwards) noexcept override;
 
-	// Return the encoder polarity
-	bool IsBackwards() const noexcept override { return reversePolarityMultiplier < 0; }
+	// Encoder polarity for calibration purposes. Changing this will change the encoder reading.
+	void SetCalibrationBackwards(bool backwards) noexcept override { }
 
 	// Return true if rotary absolute encoder calibration is applicable to this encoder
 	bool UsesCalibration() const noexcept override { return false; }
@@ -88,9 +88,9 @@ protected:
 	virtual int32_t GetRelativePosition(bool& error) noexcept = 0;
 
 	uint32_t countsPerRev;
+	int32_t reversePolarityMultiplier = 1;
 
 private:
-	int32_t reversePolarityMultiplier = 1;
 	float phasesPerCount;
 
 	// Tuning data

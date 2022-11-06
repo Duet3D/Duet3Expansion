@@ -37,7 +37,7 @@ void RelativeEncoder::SetKnownPhaseAtCurrentCount(uint32_t phase) noexcept
 }
 
 // Encoder polarity. Changing this will change the encoder reading.
-void RelativeEncoder::SetBackwards(bool backwards) noexcept
+void RelativeEncoder::SetTuningBackwards(bool backwards) noexcept
 {
 	const int32_t newMultiplier = (backwards) ? -1 : 1;
 	if (newMultiplier != reversePolarityMultiplier)
@@ -87,7 +87,7 @@ TuningErrors RelativeEncoder::ProcessTuningData() noexcept
 #ifdef DEBUG
 		debugPrintf("count %" PRIi32 " ppc %.3f\n", currentCount, (double)phasesPerCount);
 #endif
-		SetBackwards(averageSlope < 0.0);
+		SetTuningBackwards(averageSlope < 0.0);
 		const int32_t zcp = lrintf((forwardZeroPhase + reverseZeroPhase) * 0.5) % 4095;
 		zeroCountPhasePosition = (uint32_t)((zcp < 0) ? zcp + 4096 : zcp);
 #ifdef DEBUG

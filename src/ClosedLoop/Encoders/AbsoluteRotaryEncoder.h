@@ -45,11 +45,11 @@ public:
 	// Clear the accumulated full rotations so as to get the count back to a smaller number
 	void ClearFullRevs() noexcept override;
 
-	// Encoder polarity. Changing this will change the encoder reading.
-	void SetBackwards(bool backwards) noexcept override;
+	// Encoder polarity for basic tuning purposes. Changing this will change the encoder reading.
+	void SetTuningBackwards(bool backwards) noexcept override { }
 
-	// Return the encoder polarity
-	bool IsBackwards() const noexcept override { return isBackwards; }
+	// Encoder polarity for calibration purposes. Changing this will change the encoder reading.
+	void SetCalibrationBackwards(bool backwards) noexcept override;
 
 	// Return true if rotary absolute encoder calibration is applicable to this encoder
 	bool UsesCalibration() const noexcept override { return true; }
@@ -103,6 +103,7 @@ public:
 	unsigned int GetNumLUTEntries() const noexcept { return 1u << (resolutionBits - resolutionToLutShiftFactor); }
 	unsigned int GetResolutionBits() const noexcept { return resolutionBits; }
 	unsigned int GetResolutionToLutShiftFactor() const noexcept { return resolutionToLutShiftFactor; }
+	bool IsReversed() const noexcept { return isBackwards; }
 
 protected:
 	// This must be defined to set rawReading to a value between 0 and one below GetMaxValue()

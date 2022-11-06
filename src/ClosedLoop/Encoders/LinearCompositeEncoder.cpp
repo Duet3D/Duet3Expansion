@@ -9,8 +9,8 @@
 
 #if SUPPORT_CLOSED_LOOP
 
-LinearCompositeEncoder::LinearCompositeEncoder(float p_countsPerMm, uint32_t p_stepsPerRev, SharedSpiDevice &spiDev, Pin p_csPin) noexcept
-	: Encoder(p_stepsPerRev, p_countsPerStep)
+LinearCompositeEncoder::LinearCompositeEncoder(float p_countsPerRev, uint32_t p_stepsPerRev, SharedSpiDevice &spiDev, Pin p_csPin) noexcept
+	: Encoder(p_stepsPerRev, p_countsPerRev)
 {
 	shaftEncoder = new AS5047D(p_stepsPerRev, spiDev, p_csPin);
 	linEncoder = new QuadratureEncoderPdec(p_stepsPerRev, p_countsPerRev);
@@ -59,20 +59,29 @@ void LinearCompositeEncoder::Disable() noexcept
 void LinearCompositeEncoder::ClearFullRevs() noexcept
 {
 	shaftEncoder->ClearFullRevs();
-	//TODO copy modified counts across
+	//TODO copy modified counts down
 }
 
-void LinearCompositeEncoder::SetBackwards(bool backwards) noexcept
+// Encoder polarity for basic tuning purposes. Changing this will change the encoder reading.
+void LinearCompositeEncoder::SetTuningBackwards(bool backwards) noexcept
 {
-	//TODO
+	linEncoder->SetTuningBackwards(backwards);
+	//TODO copy data down if needed
+}
+
+// Encoder polarity for calibration purposes. Changing this will change the encoder reading.
+void LinearCompositeEncoder::SetCalibrationBackwards(bool backwards) noexcept
+{
+	shaftEncoder->SetCalibrationBackwards(backwards);
+	//TODO copy data down if needed
 }
 
 void LinearCompositeEncoder::AppendDiagnostics(const StringRef &reply) noexcept
 {
 	//TODO sort out the formatting
-	reply.lcat("Shaft");
+	reply.cat("Shaft: ");
 	shaftEncoder->AppendDiagnostics(reply);
-	reply.lcat("Lin");
+	reply.lcat("Lin: ");
 	linEncoder->AppendDiagnostics(reply);
 }
 
