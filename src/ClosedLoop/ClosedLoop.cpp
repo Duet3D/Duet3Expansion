@@ -36,9 +36,10 @@
 using std::atomic;
 using std::numeric_limits;
 
-# include "AS5047D.h"
-# include "TLI5012B.h"
-# include "SpiEncoder.h"
+# include "Encoders/AS5047D.h"
+# include "Encoders/TLI5012B.h"
+# include "Encoders/QuadratureEncoderPdec.h"
+
 # include <ClosedLoop/DerivativeAveragingFilter.h>
 
 # include <math.h>
@@ -50,8 +51,6 @@ using std::numeric_limits;
 # include <CanMessageFormats.h>
 # include <CanMessageGenericParser.h>
 # include <CanMessageGenericTables.h>
-
-# include "QuadratureEncoderPdec.h"
 
 # if SUPPORT_TMC2160
 #  include "Movement/StepperDrivers/TMC51xx.h"

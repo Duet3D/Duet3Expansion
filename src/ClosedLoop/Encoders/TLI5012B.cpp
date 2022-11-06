@@ -5,7 +5,7 @@
  *      Author: David
  */
 
-#include <ClosedLoop/TLI5012B.h>
+#include "TLI5012B.h"
 
 #if SUPPORT_CLOSED_LOOP
 

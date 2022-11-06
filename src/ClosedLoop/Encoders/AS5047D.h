@@ -8,8 +8,8 @@
 #ifndef SRC_CLOSEDLOOP_AS5047D_H_
 #define SRC_CLOSEDLOOP_AS5047D_H_
 
-#include <ClosedLoop/AbsoluteRotaryEncoder.h>
-#include <ClosedLoop/SpiEncoder.h>
+#include "AbsoluteRotaryEncoder.h"
+#include "SpiEncoder.h"
 
 #if SUPPORT_CLOSED_LOOP
 

@@ -5,7 +5,7 @@
  *      Author: David
  */
 
-#include <ClosedLoop/AbsoluteRotaryEncoder.h>
+#include "AbsoluteRotaryEncoder.h"
 
 #if SUPPORT_CLOSED_LOOP
 

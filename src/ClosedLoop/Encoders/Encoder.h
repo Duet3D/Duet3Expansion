@@ -13,7 +13,7 @@
 #if SUPPORT_CLOSED_LOOP
 
 #include <GCodeResult.h>
-#include "TuningErrors.h"
+#include "../TuningErrors.h"
 
 class Encoder
 {
@@ -123,6 +123,9 @@ public:
 
 	// Return the measured hysteresis after tuning or calibration
 	float GetMeasuredHysteresis() const noexcept { return measuredHysteresis; }
+
+	// Define the maximum number of calibration data points we can store. Currently this is the same for all encoders that support calibration.
+	static constexpr size_t MaxCalibrationDataPoints = 200 * 64;				// support up to 64 data points per full step, uses about 25K RAM
 
 protected:
 	uint32_t stepsPerRev;

@@ -5,7 +5,7 @@
  *      Author: David
  */
 
-#include <ClosedLoop/AS5047D.h>
+#include "AS5047D.h"
 
 #if SUPPORT_CLOSED_LOOP
 

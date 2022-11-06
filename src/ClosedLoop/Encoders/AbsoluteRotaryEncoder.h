@@ -104,8 +104,6 @@ public:
 	unsigned int GetResolutionBits() const noexcept { return resolutionBits; }
 	unsigned int GetResolutionToLutShiftFactor() const noexcept { return resolutionToLutShiftFactor; }
 
-	static constexpr size_t MaxDataPoints = 200 * 64;				// support up to 64 data points per full step, uses about 25K RAM
-
 protected:
 	// This must be defined to set rawReading to a value between 0 and one below GetMaxValue()
 	virtual bool GetRawReading() noexcept = 0;
@@ -145,7 +143,7 @@ private:
 	int32_t dataBias;
 	size_t numDataPoints;
 	unsigned int calibrationPhase;
-	int16_t calibrationData[MaxDataPoints];
+	int16_t calibrationData[MaxCalibrationDataPoints];
 };
 
 # endif

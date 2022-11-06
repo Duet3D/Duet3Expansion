@@ -3,9 +3,7 @@
 
 #if SUPPORT_CLOSED_LOOP
 
-# include "AS5047D.h"
-# include <ClosedLoop/AbsoluteRotaryEncoder.h>
-# include "RelativeEncoder.h"
+#include "Encoders/Encoder.h"
 
 # if SUPPORT_TMC2160
 #  include "Movement/StepperDrivers/TMC51xx.h"
@@ -235,7 +233,7 @@ static bool EncoderCalibration(bool firstIteration) noexcept
 
 		// Decide how many phase positions to advance at a time. This is down to the steps/rev ands the size of our calibration data storage array.
 		phaseIncrementShift = 0;
-		while ((positionsPerRev >> phaseIncrementShift) > AbsoluteRotaryEncoder::MaxDataPoints)
+		while ((positionsPerRev >> phaseIncrementShift) > Encoder::MaxCalibrationDataPoints)
 		{
 			++phaseIncrementShift;
 		}
