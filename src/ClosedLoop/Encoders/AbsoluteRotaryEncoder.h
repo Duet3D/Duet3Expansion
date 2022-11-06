@@ -36,7 +36,7 @@ public:
 
 	// Overridden virtual functions
 
-	// Get the current reading
+	// Take a reading and store at least currentCount and currentPhasePosition. Return true if error, false if success.
 	bool TakeReading() noexcept override;
 
 	// Tell the encoder what the step phase is at the current count. Only applicable to relative encoders.
@@ -113,6 +113,7 @@ protected:
 	uint32_t rawAngle = 0;					// the value after correcting for direction
 	uint32_t currentAngle = 0;				// the value after correcting for eccentricity
 	int32_t fullRotations = 0;				// the number of full rotations counted
+	uint32_t zeroCountPhasePosition = 0;
 	float stepAngle;
 
 	// For diagnostics

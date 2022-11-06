@@ -26,7 +26,7 @@ public:
 
 	// Overridden virtual functions
 
-	// Get the current reading
+	// Take a reading and store at least currentCount and currentPhasePosition. Return true if error, false if success.
 	bool TakeReading() noexcept override;
 
 	// Tell the encoder what the step phase is at the current count. Only applicable to relative encoders.
@@ -61,7 +61,7 @@ public:
 	void SetReverseTuningResults(float slope, float xMean, float yMean) noexcept override { linEncoder->SetReverseTuningResults(slope, xMean, yMean); }
 
 	// Process the tuning data. Only applicable if the encoder supports basic tuning.
-	TuningErrors ProcessTuningData() noexcept override { return linEncoder->ProcessTuningData(); }
+	TuningErrors ProcessTuningData() noexcept override;
 
 	// Clear the encoder data collection. Only applicable if the encoder supports calibration.
 	void ClearDataCollection(size_t p_numDataPoints) noexcept override { return shaftEncoder->ClearDataCollection(p_numDataPoints); }
@@ -70,7 +70,7 @@ public:
 	void RecordDataPoint(size_t index, int32_t data, bool backwards) noexcept override { return shaftEncoder->RecordDataPoint(index, data, backwards); }
 
 	// Calibrate the encoder using the recorded data points. Only applicable if the encoder supports calibration.
-	TuningErrors Calibrate(bool store) noexcept override { return shaftEncoder->Calibrate(store); }
+	TuningErrors Calibrate(bool store) noexcept override;
 
 	// Load the calibration lookup table. Return true if successful or if the encoder type doesn't support calibration.
 	bool LoadLUT() noexcept override { return shaftEncoder->LoadLUT(); }
@@ -86,6 +86,9 @@ public:
 
 	// Append a summary of measured calibration errors to a string. Only applicable if the encoder supports calibration.
 	void AppendCalibrationErrors(const StringRef& reply) const noexcept override{ return shaftEncoder->AppendCalibrationErrors(reply); }
+
+	// Get the count if the shaft encoder. Only used by calibration. Normally the same as GetCurrentCount except for combination encoders.
+	int32_t GetCurrentShaftCount() const noexcept override { return shaftEncoder->GetCurrentCount(); }
 
 private:
 	QuadratureEncoderPdec *linEncoder;

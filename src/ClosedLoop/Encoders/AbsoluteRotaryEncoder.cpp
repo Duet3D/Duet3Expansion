@@ -12,12 +12,12 @@
 #include <Hardware/NonVolatileMemory.h>
 
 AbsoluteRotaryEncoder::AbsoluteRotaryEncoder(uint32_t p_stepsPerRev, unsigned int p_resolutionBits) noexcept
-	: Encoder(p_stepsPerRev, (1u << p_resolutionBits) / (float)p_stepsPerRev),
+	: Encoder((1u << p_resolutionBits) / (float)p_stepsPerRev, p_stepsPerRev),
 	  resolutionBits(p_resolutionBits),
 	  resolutionToLutShiftFactor((p_resolutionBits < LutResolutionBits) ? 0 : p_resolutionBits - LutResolutionBits)
 {}
 
-// Take a reading and store currentCount, currentPhasePosition, rawAngle and currentAngle. Return true if success.
+// Take a reading and store at least currentCount and currentPhasePosition. Return true if error, false if success.
 bool AbsoluteRotaryEncoder::TakeReading() noexcept
 {
 	bool err = GetRawReading();

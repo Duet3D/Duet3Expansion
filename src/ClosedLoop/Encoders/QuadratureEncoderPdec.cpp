@@ -73,13 +73,13 @@ void QuadratureEncoderPdec::AppendDiagnostics(const StringRef &reply) noexcept
 	PDEC->CTRLBSET.reg = PDEC_CTRLBSET_CMD_READSYNC;
 	while (PDEC->SYNCBUSY.reg & (PDEC_SYNCBUSY_CTRLB | PDEC_SYNCBUSY_COUNT)) { }
 	const uint16_t count = PDEC->COUNT.reg;
-	reply.catf("Encoder raw count %u", count);
+	reply.catf(", raw count %u", count);
 #endif
 }
 
 void QuadratureEncoderPdec::AppendStatus(const StringRef& reply) noexcept
 {
-	reply.catf(", encoder pulses/rev: %.2f", (double)(countsPerRev / 4));
+	reply.lcatf("Quadrature encoder pulses/rev: %.2f", (double)(countsPerRev / 4));
 }
 
 // Get the current position relative to the starting position

@@ -24,15 +24,15 @@ class RelativeEncoder : public Encoder
 {
 public:
 	// Constructors
-	RelativeEncoder(uint32_t p_stepsPerRev, uint32_t p_countsPerRev) noexcept
-		: Encoder(p_stepsPerRev, (float)p_countsPerRev/(float)p_stepsPerRev), countsPerRev(p_countsPerRev)
+	RelativeEncoder(float p_countsPerRev, uint32_t p_stepsPerRev) noexcept
+		: Encoder(p_countsPerRev/(float)p_stepsPerRev, p_stepsPerRev), countsPerRev(lrintf(p_countsPerRev))
 	{
 		phasesPerCount = 1024.0 * stepsPerCount;
 	}
 
 	// Overridden virtual functions
 
-	// Get the current reading
+	// Take a reading and store at least currentCount and currentPhasePosition. Return true if error, false if success.
 	bool TakeReading() noexcept override;
 
 	// Tell the encoder what the step phase is at the current count. Only applicable to relative encoders.
@@ -89,6 +89,7 @@ protected:
 
 	uint32_t countsPerRev;
 	int32_t reversePolarityMultiplier = 1;
+	uint32_t zeroCountPhasePosition = 0;
 
 private:
 	float phasesPerCount;

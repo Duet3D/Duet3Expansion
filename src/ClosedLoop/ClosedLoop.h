@@ -39,10 +39,11 @@ namespace ClosedLoop
 #endif
 
 	//TODO reduce the number of these public variables, preferably to zero. Use a cleaner interface between the tuning module and the main closed loop module.
-	extern Encoder *encoder;						// Pointer to the encoder object in use
-	extern volatile uint8_t tuning;					// Bitmask of any tuning manoeuvres that have been requested
-	extern TuningErrors tuningError;				// Flags for any tuning errors
-	extern uint32_t currentMotorPhase;				// the phase (0 to 4095) that the driver is set to
+	extern Encoder *encoder;								// Pointer to the encoder object in use
+	extern volatile uint8_t tuning;							// Bitmask of any tuning manoeuvres that have been requested
+	extern TuningErrors tuningError;						// Flags for any tuning errors
+	extern uint32_t currentMotorPhase;						// the phase (0 to 4095) that the driver is set to
+	extern unsigned int basicTuningIterationMultiplier;		// we multiply the number of steps we do by this constant, default 1
 
 	// Closed loop public methods
 	void Init() noexcept;

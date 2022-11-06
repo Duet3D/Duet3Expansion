@@ -9,6 +9,11 @@
 
 #if SUPPORT_CLOSED_LOOP
 
+Encoder::Encoder(float p_countsPerStep, uint32_t p_stepsPerRev) noexcept
+	: stepsPerRev(p_stepsPerRev), countsPerStep(p_countsPerStep), stepsPerCount(1.0/p_countsPerStep)
+{
+}
+
 // Get the initial set of tuning errors for this encoder
 TuningErrors Encoder::MinimalTuningNeeded() const noexcept
 {

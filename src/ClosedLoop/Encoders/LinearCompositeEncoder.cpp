@@ -10,10 +10,10 @@
 #if SUPPORT_CLOSED_LOOP
 
 LinearCompositeEncoder::LinearCompositeEncoder(float p_countsPerRev, uint32_t p_stepsPerRev, SharedSpiDevice &spiDev, Pin p_csPin) noexcept
-	: Encoder(p_stepsPerRev, p_countsPerRev)
+	: Encoder(p_countsPerRev, p_stepsPerRev)
 {
 	shaftEncoder = new AS5047D(p_stepsPerRev, spiDev, p_csPin);
-	linEncoder = new QuadratureEncoderPdec(p_stepsPerRev, p_countsPerRev);
+	linEncoder = new QuadratureEncoderPdec(p_countsPerRev, p_stepsPerRev);
 }
 
 LinearCompositeEncoder::~LinearCompositeEncoder()
@@ -22,16 +22,18 @@ LinearCompositeEncoder::~LinearCompositeEncoder()
 	delete shaftEncoder;
 }
 
+// Take a reading and store at least currentCount and currentPhasePosition. Return true if error, false if success.
 bool LinearCompositeEncoder::TakeReading() noexcept
 {
-	const bool shaftOk = shaftEncoder->TakeReading();
-	const bool linOk = linEncoder->TakeReading();
-	if (shaftOk && linOk)
+	const bool shaftErr = shaftEncoder->TakeReading();
+	const bool linErr = linEncoder->TakeReading();
+	if (!shaftErr && !linErr)
 	{
-		//TODO copy counts etc. across
-		return true;
+		currentCount = linEncoder->GetCurrentCount();
+		currentPhasePosition = shaftEncoder->GetCurrentPhasePosition();
+		return false;
 	}
-	return false;
+	return true;
 }
 
 GCodeResult LinearCompositeEncoder::Init(const StringRef &reply) noexcept
@@ -39,7 +41,7 @@ GCodeResult LinearCompositeEncoder::Init(const StringRef &reply) noexcept
 	GCodeResult ret = shaftEncoder->Init(reply);
 	if (ret == GCodeResult::ok)
 	{
-		linEncoder->Init(reply);
+		ret = linEncoder->Init(reply);
 	}
 	return ret;
 }
@@ -52,33 +54,49 @@ void LinearCompositeEncoder::Enable() noexcept
 
 void LinearCompositeEncoder::Disable() noexcept
 {
-	shaftEncoder->Disable();
 	linEncoder->Disable();
+	shaftEncoder->Disable();
 }
 
 void LinearCompositeEncoder::ClearFullRevs() noexcept
 {
 	shaftEncoder->ClearFullRevs();
-	//TODO copy modified counts down
 }
 
 // Encoder polarity for basic tuning purposes. Changing this will change the encoder reading.
 void LinearCompositeEncoder::SetTuningBackwards(bool backwards) noexcept
 {
 	linEncoder->SetTuningBackwards(backwards);
-	//TODO copy data down if needed
+	currentCount = linEncoder->GetCurrentCount();
+}
+
+// Process the tuning data. Only applicable if the encoder supports basic tuning.
+TuningErrors LinearCompositeEncoder::ProcessTuningData() noexcept
+{
+	const TuningErrors rslt = linEncoder->ProcessTuningData();
+	measuredCountsPerStep = linEncoder->GetMeasuredCountsPerStep();
+	measuredHysteresis = linEncoder->GetMeasuredHysteresis();
+	return rslt;
 }
 
 // Encoder polarity for calibration purposes. Changing this will change the encoder reading.
 void LinearCompositeEncoder::SetCalibrationBackwards(bool backwards) noexcept
 {
 	shaftEncoder->SetCalibrationBackwards(backwards);
-	//TODO copy data down if needed
+	currentPhasePosition = shaftEncoder->GetCurrentPhasePosition();
+}
+
+// Calibrate the encoder using the recorded data points. Only applicable if the encoder supports calibration.
+TuningErrors LinearCompositeEncoder::Calibrate(bool store) noexcept
+{
+	const TuningErrors rslt = shaftEncoder->Calibrate(store);
+	measuredCountsPerStep = shaftEncoder->GetMeasuredCountsPerStep();
+	measuredHysteresis = shaftEncoder->GetMeasuredHysteresis();
+	return rslt;
 }
 
 void LinearCompositeEncoder::AppendDiagnostics(const StringRef &reply) noexcept
 {
-	//TODO sort out the formatting
 	reply.cat("Shaft: ");
 	shaftEncoder->AppendDiagnostics(reply);
 	reply.lcat("Lin: ");
@@ -87,10 +105,7 @@ void LinearCompositeEncoder::AppendDiagnostics(const StringRef &reply) noexcept
 
 void LinearCompositeEncoder::AppendStatus(const StringRef &reply) noexcept
 {
-	//TODO sort out the formatting
-	reply.lcat("Shaft");
 	shaftEncoder->AppendStatus(reply);
-	reply.lcat("Lin");
 	linEncoder->AppendStatus(reply);
 }
 

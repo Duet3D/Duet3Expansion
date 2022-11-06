@@ -12,7 +12,7 @@
 constexpr float MaxSlopeMismatch = 0.1;				// we want the forward and reverse measured CPS each to be within 10% of the average
 constexpr float MinimumSlope = 7.5/1024;			// we require at least 8 transitions (8 pulses) per step, but we may measure slightly lower than the true value
 
-// Take a reading and store currentCount, currentPhasePosition. Return true if success.
+// Take a reading and store at least currentCount and currentPhasePosition. Return true if error, false if success.
 bool RelativeEncoder::TakeReading() noexcept
 {
 	bool err;
@@ -53,8 +53,6 @@ void RelativeEncoder::SetTuningBackwards(bool backwards) noexcept
 // Process the tuning data
 TuningErrors RelativeEncoder::ProcessTuningData() noexcept
 {
-	TuningErrors result;
-
 #ifdef DEBUG
 	debugPrintf("slope %.5f %.5f, mean phase %.1f %.1f, mean reading %.3f %.3f, \n",
 					(double)forwardSlope, (double)reverseSlope, (double)forwardXmean, (double)reverseXmean, (double)forwardYmean, (double)reverseYmean);
@@ -63,6 +61,8 @@ TuningErrors RelativeEncoder::ProcessTuningData() noexcept
 	// Check that the forward and reverse slopes are similar and a good match to the configured counts per step
 	const float averageSlope = (forwardSlope + reverseSlope) * 0.5;
 	measuredCountsPerStep = fabsf(averageSlope) * 1024;
+
+	TuningErrors result;
 
 	if (fabsf(averageSlope) < MinimumSlope || fabsf(forwardSlope - reverseSlope) > MaxSlopeMismatch * 2 * fabsf(averageSlope))
 	{

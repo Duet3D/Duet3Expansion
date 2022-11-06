@@ -18,7 +18,7 @@
 class Encoder
 {
 public:
-	Encoder(uint32_t p_stepsPerRev, float p_countsPerStep) noexcept : stepsPerRev(p_stepsPerRev), countsPerStep(p_countsPerStep), stepsPerCount(1.0/p_countsPerStep) { }
+	Encoder(float p_countsPerStep, uint32_t p_stepsPerRev) noexcept;
 
 	virtual ~Encoder() { }
 
@@ -34,7 +34,7 @@ public:
 	// Disable the encoder
 	virtual void Disable() noexcept = 0;
 
-	// Get the current reading after correcting it and adding the offset
+	// Take a reading and store at least currentCount and currentPhasePosition. Return true if error, false if success.
 	virtual bool TakeReading() noexcept = 0;
 
 	// Tell the encoder what the step phase is at the current count. Only applicable to relative encoders.
@@ -131,7 +131,6 @@ protected:
 	uint32_t stepsPerRev;
 	uint32_t currentPhasePosition = 0;
 	int32_t currentCount = 0;
-	uint32_t zeroCountPhasePosition = 0;
 	float countsPerStep;
 	float stepsPerCount;
 	float measuredCountsPerStep;

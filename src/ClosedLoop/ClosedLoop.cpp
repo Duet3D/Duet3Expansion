@@ -63,10 +63,11 @@ using std::numeric_limits;
 
 // Variables that are used by both the ClosedLoop and the Tuning modules
 
-Encoder*	ClosedLoop::encoder = nullptr;				// Pointer to the encoder object in use
-volatile uint8_t ClosedLoop::tuning = 0;				// Bitmask of any tuning manoeuvres that have been requested
-TuningErrors ClosedLoop::tuningError;					// Flags for any tuning errors
-uint32_t	ClosedLoop::currentMotorPhase;				// the phase (0 to 4095) that the driver is set to
+Encoder*	ClosedLoop::encoder = nullptr;						// Pointer to the encoder object in use
+volatile uint8_t ClosedLoop::tuning = 0;						// Bitmask of any tuning manoeuvres that have been requested
+TuningErrors ClosedLoop::tuningError;							// Flags for any tuning errors
+uint32_t	ClosedLoop::currentMotorPhase;						// the phase (0 to 4095) that the driver is set to
+unsigned int ClosedLoop::basicTuningIterationMultiplier = 10;	//**TEMPORARY value!** we multiply the number of steps we do by this constant, default 1
 
 namespace ClosedLoop
 {
@@ -74,20 +75,20 @@ namespace ClosedLoop
 	constexpr size_t DataCollectionTaskStackWords = 200;		// Size of the stack for all closed loop tasks
 	constexpr size_t EncoderCalibrationTaskStackWords = 500;	// Size of the stack for all closed loop tasks
 
-	constexpr unsigned int derivativeFilterSize = 8;	// The range of the derivative filter (use a power of 2 for efficiency)
-	constexpr unsigned int DataBufferSize = 2000 * 14;	// When collecting samples we can accommodate 2000 readings of up to 13 variables + timestamp
-	constexpr unsigned int tuningStepsPerSecond = 2000;	// the rate at which we send 1/256 microsteps during tuning, slow enough for high-inertia motors
+	constexpr unsigned int derivativeFilterSize = 8;			// The range of the derivative filter (use a power of 2 for efficiency)
+	constexpr unsigned int DataBufferSize = 2000 * 14;			// When collecting samples we can accommodate 2000 readings of up to 13 variables + timestamp
+	constexpr unsigned int tuningStepsPerSecond = 2000;			// the rate at which we send 1/256 microsteps during tuning, slow enough for high-inertia motors
 	constexpr StepTimer::Ticks stepTicksPerTuningStep = StepTimer::StepClockRate/tuningStepsPerSecond;
 	constexpr StepTimer::Ticks stepTicksBeforeTuning = StepTimer::StepClockRate/10;
-														// 1/10 sec delay between enabling the driver and starting tuning, to allow for brake release and current buildup
+																// 1/10 sec delay between enabling the driver and starting tuning, to allow for brake release and current buildup
 	constexpr StepTimer::Ticks DataCollectionIdleStepTicks = StepTimer::StepClockRate/200;
-														// start collecting tuning data 5ms before the start of the tuning move
-	constexpr float DefaultHoldCurrentFraction = 0.25;	// the minimum fraction of the requested current that we apply when holding position
-	constexpr float MinimumDegreesPhaseShift = 15.0;	// the phase shift at which we start reducing current instead of reducing the phase shift, where 90deg is one full step
+																// start collecting tuning data 5ms before the start of the tuning move
+	constexpr float DefaultHoldCurrentFraction = 0.25;			// the minimum fraction of the requested current that we apply when holding position
+	constexpr float MinimumDegreesPhaseShift = 15.0;			// the phase shift at which we start reducing current instead of reducing the phase shift, where 90deg is one full step
 	constexpr float MinimumPhaseShift = (MinimumDegreesPhaseShift/360.0) * 4096;	// the same in units where 4096 is a complete circle
 
-	constexpr float MaxSafeHysteresis = 0.2;			// the maximum hysteresis in full steps that we can use - error if there is more
-	constexpr float MaxGoodHysteresis = 0.1;			// the maximum hysteresis in full steps that we are happy with - warn if there is more
+	constexpr float MaxSafeHysteresis = 0.2;					// the maximum hysteresis in full steps that we can use - error if there is more
+	constexpr float MaxGoodHysteresis = 0.1;					// the maximum hysteresis in full steps that we are happy with - warn if there is more
 
 	constexpr float PIDIlimit = 80.0;
 
@@ -101,27 +102,27 @@ namespace ClosedLoop
 	};
 
 	// Control variables, set by the user to determine how the closed loop controller works
-	bool 	closedLoopEnabled = false;					// Has closed loop been enabled by the user?
+	bool 	closedLoopEnabled = false;							// Has closed loop been enabled by the user?
 
 	// Holding current, and variables derived from it
-	float 	holdCurrentFraction = DefaultHoldCurrentFraction;			// The minimum holding current when stationary
+	float 	holdCurrentFraction = DefaultHoldCurrentFraction;	// The minimum holding current when stationary
 	float	recipHoldCurrentFraction = 1.0/DefaultHoldCurrentFraction;	// The reciprocal of the minimum holding current
 	float	holdCurrentFractionTimesMinPhaseShift = MinimumPhaseShift * DefaultHoldCurrentFraction;
 
-	float 	Kp = 100;									// The proportional constant for the PID controller
-	float 	Ki = 0;										// The proportional constant for the PID controller
-	float 	Kd = 0;										// The proportional constant for the PID controller
+	float 	Kp = 100;											// The proportional constant for the PID controller
+	float 	Ki = 0;												// The proportional constant for the PID controller
+	float 	Kd = 0;												// The proportional constant for the PID controller
 
-	float 	errorThresholds[2];							// The error thresholds. [0] is pre-stall, [1] is stall
+	float 	errorThresholds[2];									// The error thresholds. [0] is pre-stall, [1] is stall
 
-	float 	ultimateGain = 0;							// The ultimate gain of the controller (used for tuning)
-	float 	oscillationPeriod = 0;						// The oscillation period when Kp = ultimate gain
+	float 	ultimateGain = 0;									// The ultimate gain of the controller (used for tuning)
+	float 	oscillationPeriod = 0;								// The oscillation period when Kp = ultimate gain
 
 	// Data collection variables
 	// Input variables
 	volatile RecordingMode samplingMode = RecordingMode::None;	// What mode did they request? Volatile because we care about when it is written.
-	uint8_t 	movementRequested;						// Which calibration movement did they request? 0=none, 1=polarity, 2=continuous
-	uint16_t	filterRequested;						// What filter did they request?
+	uint8_t 	movementRequested;								// Which calibration movement did they request? 0=none, 1=polarity, 2=continuous
+	uint16_t	filterRequested;								// What filter did they request?
 	volatile uint16_t samplesRequested;
 
 	// Derived variables
@@ -293,6 +294,8 @@ void ClosedLoop::Init() noexcept
 	dataTransmissionTask->Create(DataTransmissionLoop, "CLSend", nullptr, TaskPriority::ClosedLoopDataTransmission);
 }
 
+static void CreateCalibrationTask() noexcept;		// forward declaration
+
 GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const StringRef &reply) noexcept
 {
 	CanMessageGenericParser parser(msg, M569Point1Params);
@@ -355,7 +358,7 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 		reply.copy("Error threshold value must nor be less than zero");
 		return GCodeResult::error;
 	}
-	if (seenC && tempCPR < 4 * tempStepsPerRev)
+	if (seenC && tempCPR < 4 * tempStepsPerRev && tempEncoderType != EncoderType::linearComposite)
 	{
 		reply.copy("Encoder counts/rev must be at least four times steps/rev");
 		return GCodeResult::error;
@@ -401,28 +404,21 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 
 		case EncoderType::rotaryAS5047:
 			encoder = new AS5047D(tempStepsPerRev, *Platform::sharedSpi, EncoderCsPin);
-			if (encoderCalibrationTask == nullptr)
-			{
-				encoderCalibrationTask = new Task<ClosedLoop::EncoderCalibrationTaskStackWords>;
-				encoderCalibrationTask->Create(EncoderCalibrationLoop, "EncCal", nullptr, TaskPriority::SpinPriority);		// must be same priority as main task
-			}
+			CreateCalibrationTask();
 			break;
 
 		case EncoderType::rotaryTLI5012:
 			encoder = new TLI5012B(tempStepsPerRev, *Platform::sharedSpi, EncoderCsPin);
-			if (encoderCalibrationTask == nullptr)
-			{
-				encoderCalibrationTask = new Task<ClosedLoop::EncoderCalibrationTaskStackWords>;
-				encoderCalibrationTask->Create(EncoderCalibrationLoop, "EncCal", nullptr, TaskPriority::SpinPriority);		// must be same priority as main task
-			}
+			CreateCalibrationTask();
 			break;
 
 		case EncoderType::linearComposite:
-			encoder = new LinearCompositeEncoder(tempStepsPerRev, tempCPR, *Platform::sharedSpi, EncoderCsPin);
+			CreateCalibrationTask();
+			encoder = new LinearCompositeEncoder(tempCPR, tempStepsPerRev, *Platform::sharedSpi, EncoderCsPin);
 			break;
 
 		case EncoderType::rotaryQuadrature:
-			encoder = new QuadratureEncoderPdec(tempStepsPerRev, tempCPR);
+			encoder = new QuadratureEncoderPdec(tempCPR, tempStepsPerRev);
 			break;
 		}
 
@@ -564,6 +560,15 @@ void ClosedLoop::EncoderCalibrationLoop(void *param) noexcept
 			calibrationErrors = encoder->Calibrate(calibrateNotCheck);
 			calibrationState = CalibrationState::complete;
 		}
+	}
+}
+
+static void CreateCalibrationTask() noexcept
+{
+	if (encoderCalibrationTask == nullptr)
+	{
+		encoderCalibrationTask = new Task<ClosedLoop::EncoderCalibrationTaskStackWords>;
+		encoderCalibrationTask->Create(ClosedLoop::EncoderCalibrationLoop, "EncCal", nullptr, TaskPriority::SpinPriority);		// must be same priority as main task
 	}
 }
 
