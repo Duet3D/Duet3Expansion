@@ -7,7 +7,7 @@
 
 #include <ClosedLoop/Encoders/LinearCompositeEncoder.h>
 
-#if SUPPORT_CLOSED_LOOP
+#if SUPPORT_CLOSED_LOOP && (defined(EXP1HCLv1_0) || defined(M23CL))
 
 LinearCompositeEncoder::LinearCompositeEncoder(float p_countsPerRev, uint32_t p_stepsPerRev, SharedSpiDevice &spiDev, Pin p_csPin) noexcept
 	: Encoder((4 * p_countsPerRev)/(float)p_stepsPerRev, p_stepsPerRev)

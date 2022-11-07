@@ -88,7 +88,6 @@ enum class DeferredCommand : uint8_t
 
 static volatile DeferredCommand deferredCommand = DeferredCommand::none;
 static volatile uint32_t whenDeferredCommandRequested;
-static uint32_t realTime = 0;
 static bool deliberateError = false;
 
 namespace Platform
@@ -97,6 +96,8 @@ namespace Platform
 
 	UniqueIdBase uniqueId;
 	bool isPrinting = false;
+	uint32_t realTime = 0;
+
 #if defined(EXP3HC) || defined(TOOL1LC)
 	static uint8_t boardVariant = 0;
 #endif
@@ -2230,16 +2231,6 @@ GCodeResult Platform::DoDiagnosticTest(const CanMessageDiagnosticTest& msg, cons
 		reply.printf("Unknown test type %u", msg.testType);
 		return GCodeResult::error;
 	}
-}
-
-uint32_t Platform::GetDateTime() noexcept
-{
-	return realTime;
-}
-
-void Platform::SetDateTime(uint32_t tim) noexcept
-{
-	realTime = tim;
 }
 
 bool Platform::WasDeliberateError() noexcept

@@ -118,7 +118,7 @@ void StepTimer::Init()
 	{
 		syncCount = 1;
 #if 0 //RP2040
-		debugPrintf("1sy sync\n");
+		debugPrintf("1st sync\n");
 #endif
 	}
 	else if (msg.lastTimeSent == oldMasterTime && msg.lastTimeAcknowledgeDelay != 0)

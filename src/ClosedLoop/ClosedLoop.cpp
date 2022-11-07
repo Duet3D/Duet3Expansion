@@ -86,9 +86,6 @@ namespace ClosedLoop
 	constexpr float MinimumDegreesPhaseShift = 15.0;			// the phase shift at which we start reducing current instead of reducing the phase shift, where 90deg is one full step
 	constexpr float MinimumPhaseShift = (MinimumDegreesPhaseShift/360.0) * 4096;	// the same in units where 4096 is a complete circle
 
-	constexpr float MaxSafeHysteresis = 0.2;					// the maximum hysteresis in full steps that we can use - error if there is more
-	constexpr float MaxGoodHysteresis = 0.1;					// the maximum hysteresis in full steps that we are happy with - warn if there is more
-
 	constexpr float PIDIlimit = 80.0;
 
 	// Enumeration of closed loop recording modes
@@ -526,13 +523,14 @@ GCodeResult ClosedLoop::ProcessBasicTuningResult(const StringRef& reply) noexcep
 	tuningError &= ~TuningError::TuningOrCalibrationInProgress;
 
 	const float hyst = encoder->GetMeasuredHysteresis();
-	if (hyst >= MaxSafeHysteresis && encoder->GetType() != EncoderType::linearComposite)
+	const unsigned int increaseFactor = (encoder->GetType() == EncoderType::linearComposite) ? LinearEncoderIncreaseFactor : 1;
+	if (hyst >= MaxSafeBacklash * increaseFactor)
 	{
 		tuningError = TuningError::HysteresisTooHigh;
 		reply.catf("failed, measured backlash (%.3f step) is too high", (double)hyst);
 		return GCodeResult::error;
 	}
-	else if (hyst >= MaxGoodHysteresis)
+	else if (hyst >= MaxGoodBacklash * increaseFactor)
 	{
 		reply.catf("succeeded but measured backlash (%.3f step) is high", (double)hyst);
 		tuningError = 0;
@@ -617,14 +615,14 @@ GCodeResult ClosedLoop::ProcessCalibrationResult(const StringRef& reply) noexcep
 	targetMotorSteps = (float)targetEncoderReading / encoder->GetCountsPerStep();
 
 	const float hyst = encoder->GetMeasuredHysteresis();
-	if (hyst >= MaxSafeHysteresis)
+	if (hyst >= MaxSafeBacklash)
 	{
 		if (calibrateNotCheck) { tuningError = TuningError::HysteresisTooHigh; }
 		else { tuningError &= ~TuningError::TuningOrCalibrationInProgress; }
 		reply.catf("failed, measured backlash (%.3f step) is too high", (double)hyst);
 		return GCodeResult::error;
 	}
-	else if (hyst >= MaxGoodHysteresis)
+	else if (hyst >= MaxGoodBacklash)
 	{
 		if (calibrateNotCheck) { tuningError = 0; }
 		else { tuningError &= ~TuningError::TuningOrCalibrationInProgress; }
@@ -773,72 +771,71 @@ void ClosedLoop::ControlLoop() noexcept
 	minControlLoopCallInterval = min<StepTimer::Ticks>(minControlLoopCallInterval, timeElapsed);
 	maxControlLoopCallInterval = max<StepTimer::Ticks>(maxControlLoopCallInterval, timeElapsed);
 
-	if (encoder != nullptr)
+	// Read the current state of the drive. Do this even if we are not in closed loop mode.
+	if (encoder != nullptr && !encoder->TakeReading())
 	{
-		// Read the current state of the drive. Do this even if we are not in closed loop mode.
-		const bool err = encoder->TakeReading();
-		if (!err)
-		{
-			// Calculate and store the current error in full steps
-			currentError = (float)(targetEncoderReading - encoder->GetCurrentCount()) * encoder->GetStepsPerCount();
-			derivativeFilter.ProcessReading(currentError, loopCallTime);
+		// Calculate and store the current error in full steps
+		currentError = (float)(targetEncoderReading - encoder->GetCurrentCount()) * encoder->GetStepsPerCount();
+		derivativeFilter.ProcessReading(currentError, loopCallTime);
 
-			if (!closedLoopEnabled)
+		if (!closedLoopEnabled)
+		{
+			// If closed loop disabled, do nothing
+		}
+		else if (tuning != 0)											// if we need to tune, do it
+		{
+			// Limit the rate at which we command tuning steps Need to do signed comparison because initially, whenLastTuningStepTaken is in the future.
+			const int32_t timeSinceLastTuningStep = (int32_t)(loopCallTime - whenLastTuningStepTaken);
+			if (timeSinceLastTuningStep >= (int32_t)stepTicksPerTuningStep)
 			{
-				// If closed loop disabled, do nothing
+				whenLastTuningStepTaken = loopCallTime;
+				PerformTune();
 			}
-			else if (tuning != 0)											// if we need to tune, do it
+			else if (samplingMode == RecordingMode::OnNextMove && timeSinceLastTuningStep + (int32_t)DataCollectionIdleStepTicks >= 0)
 			{
-				// Limit the rate at which we command tuning steps Need to do signed comparison because initially, whenLastTuningStepTaken is in the future.
-				const int32_t timeSinceLastTuningStep = (int32_t)(loopCallTime - whenLastTuningStepTaken);
-				if (timeSinceLastTuningStep >= (int32_t)stepTicksPerTuningStep)
-				{
-					whenLastTuningStepTaken = loopCallTime;
-					PerformTune();
-				}
-				else if (samplingMode == RecordingMode::OnNextMove && timeSinceLastTuningStep + (int32_t)DataCollectionIdleStepTicks >= 0)
-				{
-					dataCollectionStartTicks = whenNextSampleDue = loopCallTime;
-					samplingMode = RecordingMode::Immediate;
-				}
+				dataCollectionStartTicks = whenNextSampleDue = loopCallTime;
+				samplingMode = RecordingMode::Immediate;
 			}
-			else if (tuningError)
+		}
+		else if (tuningError)
+		{
+			// Don't do anything if there is a tuning error, or calibration is in progress after tuning
+		}
+		else
+		{
+			ControlMotorCurrents(loopCallTime);							// otherwise control those motor currents!
+
+			// Look for a stall or pre-stall
+			const float positionErr = fabsf(currentError);
+			if (stall)
 			{
-				// Don't do anything if there is a tuning error, or calibration is in progress after tuning
+				// Reset the stall flag when the position error falls to below half the tolerance, to avoid generating too many stall events
+				//TODO do we need a minimum delay before resetting too?
+				if (errorThresholds[1] <= 0 || positionErr < errorThresholds[1]/2)
+				{
+					stall = false;
+				}
 			}
 			else
 			{
-				ControlMotorCurrents(loopCallTime);							// otherwise control those motor currents!
-
-				// Look for a stall or pre-stall
-				preStall = errorThresholds[0] > 0 && fabsf(currentError) > errorThresholds[0];
-				const float positionErr = fabsf(currentError);
+				stall = errorThresholds[1] > 0 && positionErr > errorThresholds[1];
 				if (stall)
 				{
-					// Reset the stall flag when the position error falls to below half the tolerance, to avoid generating too many stall events
-					//TODO do we need a minimum delay before resetting too?
-					if (errorThresholds[1] <= 0 || positionErr < errorThresholds[1]/2)
-					{
-						stall = false;
-					}
+					Platform::NewDriverFault();
 				}
 				else
 				{
-					stall = errorThresholds[1] > 0 && positionErr > errorThresholds[1];
-					if (stall)
-					{
-						Platform::NewDriverFault();
-					}
+					preStall = errorThresholds[0] > 0 && positionErr > errorThresholds[0];
 				}
 			}
+		}
 
-			// Collect a sample, if we need to
-			if (samplingMode == RecordingMode::Immediate && (int32_t)(loopCallTime - whenNextSampleDue) >= 0)
-			{
-				// It's time to take a sample
-				CollectSample();
-				whenNextSampleDue += dataCollectionIntervalTicks;
-			}
+		// Collect a sample, if we need to
+		if (samplingMode == RecordingMode::Immediate && (int32_t)(loopCallTime - whenNextSampleDue) >= 0)
+		{
+			// It's time to take a sample
+			CollectSample();
+			whenNextSampleDue += dataCollectionIntervalTicks;
 		}
 	}
 

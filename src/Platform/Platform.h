@@ -144,7 +144,9 @@ namespace Platform
 	inline SharedI2CMaster& GetSharedI2C() noexcept { return *sharedI2C; }
 #endif
 
+	// We don't really want the following to be writable, but we've no choice because we want to inline functions that access them
 	extern bool isPrinting;
+	extern uint32_t realTime;
 
 	void Init();
 	void InitMinimal();
@@ -312,8 +314,8 @@ namespace Platform
 	float GetCurrentV12Voltage() noexcept;
 #endif
 
-	uint32_t GetDateTime() noexcept;
-	void SetDateTime(uint32_t tim) noexcept;
+	inline uint32_t GetDateTime() noexcept { return realTime; }
+	inline void SetDateTime(uint32_t tim) noexcept { realTime = tim; }
 	bool WasDeliberateError() noexcept;
 
 #if SAME5x

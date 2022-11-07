@@ -126,6 +126,10 @@ constexpr GpioPinFunction SSPISclkPinPeriphMode = GpioPinFunction::C;
 constexpr Pin SSPIMisoPin = PortAPin(19);
 constexpr GpioPinFunction SSPIMisoPinPeriphMode = GpioPinFunction::C;
 
+// Position decoder
+constexpr Pin PositionDecoderPins[] = { PortAPin(24), PortAPin(25), PortBPin(22) };
+constexpr GpioPinFunction PositionDecoderPinFunction = GpioPinFunction::G;
+
 // Clock generator pin for TMC2160
 constexpr uint8_t ClockGenGclkNumber = 5;
 constexpr Pin ClockGenPin = PortBPin(11);

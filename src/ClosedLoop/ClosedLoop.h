@@ -20,6 +20,10 @@
 # include <ClosedLoop/DerivativeAveragingFilter.h>
 # include "TuningErrors.h"
 
+constexpr float MaxSafeBacklash = 0.22;					// the maximum backlash in full steps that we can use - error if there is more
+constexpr float MaxGoodBacklash = 0.15;					// the maximum backlash in full steps that we are happy with - warn if there is more
+constexpr unsigned int LinearEncoderIncreaseFactor = 4;	// this should be a power of 2. Allowed backlash is increased by this amount for linear composite encoders.
+
 class Encoder;
 class SpiEncoder;
 
