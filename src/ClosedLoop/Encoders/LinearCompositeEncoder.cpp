@@ -10,7 +10,7 @@
 #if SUPPORT_CLOSED_LOOP
 
 LinearCompositeEncoder::LinearCompositeEncoder(float p_countsPerRev, uint32_t p_stepsPerRev, SharedSpiDevice &spiDev, Pin p_csPin) noexcept
-	: Encoder(p_countsPerRev/(float)p_stepsPerRev, p_stepsPerRev)
+	: Encoder((4 * p_countsPerRev)/(float)p_stepsPerRev, p_stepsPerRev)
 {
 	shaftEncoder = new AS5047D(p_stepsPerRev, spiDev, p_csPin);
 	linEncoder = new QuadratureEncoderPdec(p_countsPerRev, p_stepsPerRev);

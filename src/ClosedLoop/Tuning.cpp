@@ -78,9 +78,8 @@ static bool BasicTuning(bool firstIteration) noexcept
 	static float regressionAccumulator;
 	static float readingAccumulator;
 
-	constexpr uint16_t PhaseIncrement = 4;							// how much to increment the phase by on each step, must be a factor of 4096
-	static_assert(4096 % PhaseIncrement == 0);
-	const unsigned int iterationMultipler = (ClosedLoop::encoder->GetType() == EncoderType::linearComposite) ? 10 : 1;
+	const unsigned int iterationMultipler = (ClosedLoop::encoder->GetType() == EncoderType::linearComposite) ? 4 : 1;
+	const uint16_t PhaseIncrement = 4 * iterationMultipler;							// how much to increment the phase by on each step, should be a factor of 4096
 	const unsigned int NumDummySteps = (256 * iterationMultipler)/PhaseIncrement;	// how many phase increments to take before we start collecting data = 1/4 step
 	const unsigned int NumSamples = (4096 * iterationMultipler)/PhaseIncrement;		// the number of samples we take to do the linear regression (4 full steps)
 	const float HalfNumSamplesMinusOne = (float)(NumSamples - 1) * 0.5;

@@ -239,7 +239,7 @@ void AS5047D::AppendDiagnostics(const StringRef &reply) noexcept
 // Append short form status to a string. If there is an error then the user can use M122 to get more details.
 void AS5047D::AppendStatus(const StringRef& reply) noexcept
 {
-	reply.lcatf("Magnetic encoder motor degrees/step: %.2f", (double)stepAngle);
+	reply.lcatf("Magnetic encoder motor steps/rev %" PRIu32, stepsPerRev);
 	DiagnosticRegisters regs;
 	if (GetDiagnosticRegisters(regs))
 	{

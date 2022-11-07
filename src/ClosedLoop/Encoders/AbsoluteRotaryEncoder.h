@@ -114,7 +114,6 @@ protected:
 	uint32_t currentAngle = 0;				// the value after correcting for eccentricity
 	int32_t fullRotations = 0;				// the number of full rotations counted
 	uint32_t zeroCountPhasePosition = 0;
-	float stepAngle;
 
 	// For diagnostics
 	float minLUTCorrection = 0.0, maxLUTCorrection = 0.0;			// min and max corrections, for reporting in diagnostics
