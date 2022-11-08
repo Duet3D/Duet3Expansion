@@ -40,11 +40,17 @@ public:
 	int8_t GetThermistorHighCalibration(unsigned int inputNumber) noexcept pre(page == NvmPage::common);
 	void SetThermistorLowCalibration(unsigned int inputNumber, int8_t val) noexcept pre(page == NvmPage::common);
 	void SetThermistorHighCalibration(unsigned int inputNumber, int8_t val) noexcept pre(page == NvmPage::common);
-	bool GetClosedLoopDataValid() noexcept pre(page == NvmPage::closedLoop);
-	void SetClosedLoopDataValid(bool valid) noexcept pre(page == NvmPage::closedLoop);
+
+	bool GetClosedLoopCalibrationDataValid() noexcept pre(page == NvmPage::closedLoop);
 	const HarmonicDataElement *GetClosedLoopHarmonicValues() noexcept pre(page == NvmPage::closedLoop);
+	void GetClosedLoopZeroCountPhaseAndDirection(uint32_t& phase, bool& backwards) noexcept pre(page == NvmPage::closedLoop);
+
+	void SetClosedLoopCalibrationDataNotValid() noexcept pre(page == NvmPage::closedLoop);
 	void SetClosedLoopHarmonicValue(size_t index, float value) noexcept pre(page == NvmPage::closedLoop; index < MaxHarmonicDataSlots);
-	void SetClosedLoopZeroCountPhaseAndPolarity(uint32_t phase, uint32_t flags) noexcept;
+	void SetClosedLoopZeroCountPhaseAndDirection(uint32_t phase, bool backwards) noexcept;
+
+	bool GetClosedLoopQuadratureDirection(bool& backwards) noexcept pre(page == NvmPage::closedLoop);
+	void SetClosedLoopQuadratureDirection(bool backwards) noexcept pre(page == NvmPage::closedLoop);
 
 private:
 	void EnsureRead() noexcept;
@@ -74,11 +80,16 @@ private:
 		uint16_t closedLoopMagic;
 		// define your data here and pad it out to 510 bytes
 		// start with 2 bytes of padding if you will be using 32-bit quantities, so as to 4-byte align them
-		uint16_t notValid : 1,											// will be 1 if no calibration values are present (will be initialised to 1)
-				 zero : 15;
+		uint16_t calibrationNotValid : 1,								// will be 1 if no magnetic encoder calibration values are present
+				 quadratureDirectionNotValid : 1,						// will be 1 if the direction of the quadrature encoder has not been set
+				 unusedAllOnes : 14;
+		uint32_t magneticEncoderZeroCountPhase;
+		uint32_t magneticEncoderBackwards : 1,
+				 quadratureEncoderBackwards : 1,
+				 unusedAllOnes2 : 30;
 		HarmonicDataElement harmonicData[MaxHarmonicDataSlots];
 
-		uint8_t spare[512 - 4 - sizeof(harmonicData)];
+		uint8_t spare[512 - 4 - 8 - sizeof(harmonicData)];
 	};
 
 	union NVM

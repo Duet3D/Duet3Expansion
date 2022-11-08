@@ -103,13 +103,13 @@ void AbsoluteRotaryEncoder::SetCalibrationBackwards(bool backwards) noexcept
 bool AbsoluteRotaryEncoder::LoadLUT() noexcept
 {
 	NonVolatileMemory mem(NvmPage::closedLoop);
-	if (!mem.GetClosedLoopDataValid()) { return false; }
+	if (!mem.GetClosedLoopCalibrationDataValid()) { return false; }
 
 	PopulateLUT(mem);
 	return true;
 }
 
-// Populate the LUT when we already have the nonvolatile data
+// Populate the LUT when we already have the nonvolatile data and we have checked that it is valid
 void AbsoluteRotaryEncoder::PopulateLUT(NonVolatileMemory& mem) noexcept
 {
 	// Read back the table of harmonics from NVRAM and construct the lookup table.
@@ -144,8 +144,8 @@ void AbsoluteRotaryEncoder::PopulateLUT(NonVolatileMemory& mem) noexcept
 			float correction = 0.0;
 			for (size_t harmonic = 1; harmonic < NumHarmonics; harmonic++)
 			{
-				const float sineCoefficient = harmonicData[2 * harmonic].f;
-				const float cosineCoefficient = harmonicData[2 * harmonic + 1].f;
+				const float sineCoefficient = harmonicData[2 * harmonic - 2].f;
+				const float cosineCoefficient = harmonicData[2 * harmonic - 1].f;
 				const float angle = harmonic * basicAngle;
 				correction += sineCoefficient * sinf(angle + correctionAngle) + cosineCoefficient * cosf(angle + correctionAngle);
 			}
@@ -168,8 +168,9 @@ void AbsoluteRotaryEncoder::PopulateLUT(NonVolatileMemory& mem) noexcept
 	correctionLUT[LUTLength] = correctionLUT[0];			// extra duplicate entry at end
 	rmsCorrection = sqrtf(rmsCorrection/LUTLength);
 
-	zeroCountPhasePosition = harmonicData[0].u;
-	SetCalibrationBackwards(harmonicData[1].u & 0x01);
+	bool backwards;
+	mem.GetClosedLoopZeroCountPhaseAndDirection(zeroCountPhasePosition, backwards);
+	SetCalibrationBackwards(backwards);
 
 #ifdef DEBUG
 	debugPrintf("Actual max iterations %u, minCorrection %.1f, maxCorrection %.1f, RMS correction %.1f, zrp %" PRIu32 " totalCorr %" PRIi32 "\n",
@@ -199,7 +200,7 @@ void AbsoluteRotaryEncoder::ScrubLUT() noexcept
 {
 	ClearLUT();
 	NonVolatileMemory mem(NvmPage::closedLoop);
-	mem.SetClosedLoopDataValid(false);
+	mem.SetClosedLoopCalibrationDataNotValid();
 	mem.EnsureWritten();
 }
 
@@ -353,11 +354,10 @@ TuningErrors AbsoluteRotaryEncoder::Calibrate(bool store) noexcept
 		NonVolatileMemory mem(NvmPage::closedLoop);
 		for (size_t harmonic = 1; harmonic < NumHarmonics; harmonic++)
 		{
-			mem.SetClosedLoopHarmonicValue(harmonic * 2, sines[harmonic]);
-			mem.SetClosedLoopHarmonicValue(harmonic * 2 + 1, cosines[harmonic]);
+			mem.SetClosedLoopHarmonicValue(harmonic * 2 - 2, sines[harmonic]);
+			mem.SetClosedLoopHarmonicValue(harmonic * 2 - 1, cosines[harmonic]);
 		}
-		mem.SetClosedLoopZeroCountPhaseAndPolarity((uint32_t)expectedZeroReadingPhase, (rotationDirection < 0.0) ? 0xFFFFFFFF : 0xFFFFFFFE);
-		mem.SetClosedLoopDataValid(true);
+		mem.SetClosedLoopZeroCountPhaseAndDirection((uint32_t)expectedZeroReadingPhase, (rotationDirection < 0.0));		// this also flags the NVM data as valid
 		mem.EnsureWritten();
 
 		// Populate the LUT from the coefficients

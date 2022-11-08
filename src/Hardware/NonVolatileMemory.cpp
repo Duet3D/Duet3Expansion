@@ -184,28 +184,26 @@ void NonVolatileMemory::SetThermistorCalibration(unsigned int inputNumber, int8_
 	}
 }
 
-bool NonVolatileMemory::GetClosedLoopDataValid() noexcept
+bool NonVolatileMemory::GetClosedLoopCalibrationDataValid() noexcept
 {
 	EnsureRead();
-	return !buffer.closedLoopPage.notValid;
+	return !buffer.closedLoopPage.calibrationNotValid;
 }
 
-void NonVolatileMemory::SetClosedLoopDataValid(bool valid) noexcept
+
+void NonVolatileMemory::SetClosedLoopCalibrationDataNotValid()
 {
 	EnsureRead();
-	if (valid)
-	{
-		if (buffer.closedLoopPage.notValid)
-		{
-			buffer.closedLoopPage.notValid = 0;
-			SetDirty(false);
-		}
-	}
-	else if (!buffer.closedLoopPage.notValid)
+	if (!buffer.closedLoopPage.calibrationNotValid || !buffer.closedLoopPage.quadratureDirectionNotValid)
 	{
 		// Set the data to all 0xFF so that we will be able to write it without erasing again
-		buffer.closedLoopPage.notValid = 1;
-		buffer.closedLoopPage.zero = 0x7FFF;
+		buffer.closedLoopPage.calibrationNotValid = true;
+		buffer.closedLoopPage.quadratureDirectionNotValid = true;
+		buffer.closedLoopPage.unusedAllOnes = 0x3FFF;
+		buffer.closedLoopPage.magneticEncoderZeroCountPhase = 0xFFFFFFFF;
+		buffer.closedLoopPage.magneticEncoderBackwards = true;
+		buffer.closedLoopPage.quadratureEncoderBackwards = true;
+		buffer.closedLoopPage.unusedAllOnes2 = 0x3FFFFFFF;
 		for (size_t i = 0; i < ClosedLoopPage::MaxHarmonicDataSlots; ++i)
 		{
 			buffer.closedLoopPage.harmonicData[i].u = 0xFFFFFFFF;
@@ -226,7 +224,7 @@ void NonVolatileMemory::SetClosedLoopHarmonicValue(size_t index, float value) no
 	const float oldValue = buffer.closedLoopPage.harmonicData[index].f;
 	if (oldValue != value)
 	{
-		buffer.closedLoopPage.notValid = 0;
+		buffer.closedLoopPage.calibrationNotValid = 0;
 		const uint32_t oldBits = buffer.closedLoopPage.harmonicData[index].u;
 		buffer.closedLoopPage.harmonicData[index].f = value;
 
@@ -236,20 +234,59 @@ void NonVolatileMemory::SetClosedLoopHarmonicValue(size_t index, float value) no
 	}
 }
 
-void NonVolatileMemory::SetClosedLoopZeroCountPhaseAndPolarity(uint32_t phase, uint32_t flags) noexcept
+// Get the zero count phase and direction. Check that the data is flagged as valid before calling this.
+void NonVolatileMemory::GetClosedLoopZeroCountPhaseAndDirection(uint32_t& phase, bool& backwards) noexcept
 {
 	EnsureRead();
-	const uint32_t oldPhase = buffer.closedLoopPage.harmonicData[0].u;
+	phase = buffer.closedLoopPage.magneticEncoderZeroCountPhase;
+	backwards = buffer.closedLoopPage.magneticEncoderBackwards;
+}
+
+// Set the zero count phase and direction. Also flags the calibration data as valid, so the harmonic data should be set first.
+void NonVolatileMemory::SetClosedLoopZeroCountPhaseAndDirection(uint32_t phase, bool backwards) noexcept
+{
+	EnsureRead();
+	const uint32_t oldPhase = buffer.closedLoopPage.magneticEncoderZeroCountPhase;
 	if (oldPhase != phase)
 	{
-		buffer.closedLoopPage.harmonicData[0].u = phase;
+		buffer.closedLoopPage.magneticEncoderZeroCountPhase = phase;
 		SetDirty((phase & ~oldPhase) != 0);
 	}
-	const uint32_t oldFlags = buffer.closedLoopPage.harmonicData[1].u;
-	if (oldFlags != flags)
+	if (backwards != buffer.closedLoopPage.magneticEncoderBackwards)
 	{
-		buffer.closedLoopPage.harmonicData[1].u = flags;
-		SetDirty((flags & ~oldFlags) != 0);
+		buffer.closedLoopPage.magneticEncoderBackwards = backwards;
+		SetDirty(backwards);
+	}
+	if (buffer.closedLoopPage.calibrationNotValid)
+	{
+		buffer.closedLoopPage.calibrationNotValid = false;
+		SetDirty(false);
+	}
+}
+
+// Get the closed loop quadrature encoder direction, if available. If successful, return true with 'backwards' set; else return false.
+bool NonVolatileMemory::GetClosedLoopQuadratureDirection(bool& backwards) noexcept
+{
+	EnsureRead();
+	if (buffer.closedLoopPage.quadratureDirectionNotValid)
+	{
+		return false;
+	}
+	backwards = buffer.closedLoopPage.quadratureEncoderBackwards;
+	return true;
+}
+
+void NonVolatileMemory::SetClosedLoopQuadratureDirection(bool backwards) noexcept
+{
+	if (backwards != buffer.closedLoopPage.quadratureEncoderBackwards)
+	{
+		buffer.closedLoopPage.quadratureEncoderBackwards = backwards;
+		SetDirty(backwards);
+	}
+	if (buffer.closedLoopPage.quadratureDirectionNotValid)
+	{
+		buffer.closedLoopPage.quadratureDirectionNotValid = false;
+		SetDirty(false);
 	}
 }
 
