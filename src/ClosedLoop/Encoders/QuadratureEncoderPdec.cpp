@@ -67,7 +67,7 @@ void QuadratureEncoderPdec::ClearFullRevs() noexcept
 
 void QuadratureEncoderPdec::AppendDiagnostics(const StringRef &reply) noexcept
 {
-	reply.catf("Encoder reverse polarity: %s", (reversePolarityMultiplier < 0) ? "yes" : "no");
+	reply.catf("Encoder reverse polarity: %s", (IsBackwards()) ? "yes" : "no");
 
 #if 1	//debug
 	PDEC->CTRLBSET.reg = PDEC_CTRLBSET_CMD_READSYNC;

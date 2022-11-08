@@ -65,8 +65,8 @@ public:
 	// Record a calibration data point. Only applicable if the encoder supports calibration.
 	void RecordDataPoint(size_t index, int32_t data, bool backwards) noexcept override { }
 
-	// Load the calibration lookup table. Return true if successful or if the encoder type doesn't support calibration.
-	bool LoadLUT() noexcept override { return true; }
+	// Load the calibration lookup table and clear bits TuningError:NeedsBasicTuning and/or TuningError::NotCalibrated in tuningNeeded as appropriate.
+	void LoadLUT(TuningErrors& tuningNeeded) noexcept override { }
 
 	// Clear the calibration lookup table. Only applicable if the encoder supports calibration.
 	void ClearLUT() noexcept override { }
@@ -82,6 +82,9 @@ public:
 
 	// Append a summary of measured calibration errors to a string. Only applicable if the encoder supports calibration.
 	void AppendCalibrationErrors(const StringRef& reply) const noexcept override { }
+
+	// Report whether we reverse the encoder direction
+	bool IsBackwards() const noexcept { return reversePolarityMultiplier < 0.0; }
 
 protected:
 	// Get the relative position since the start

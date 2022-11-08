@@ -100,13 +100,15 @@ void AbsoluteRotaryEncoder::SetCalibrationBackwards(bool backwards) noexcept
 	}
 }
 
-bool AbsoluteRotaryEncoder::LoadLUT() noexcept
+// Load the calibration lookup table and clear bits TuningError:NeedsBasicTuning and/or TuningError::NotCalibrated in tuningNeeded as appropriate.
+void AbsoluteRotaryEncoder::LoadLUT(TuningErrors& tuningNeeded) noexcept
 {
 	NonVolatileMemory mem(NvmPage::closedLoop);
-	if (!mem.GetClosedLoopCalibrationDataValid()) { return false; }
-
-	PopulateLUT(mem);
-	return true;
+	if (mem.GetClosedLoopCalibrationDataValid())
+	{
+		PopulateLUT(mem);
+		tuningNeeded &= ~TuningError::NotCalibrated;
+	}
 }
 
 // Populate the LUT when we already have the nonvolatile data and we have checked that it is valid

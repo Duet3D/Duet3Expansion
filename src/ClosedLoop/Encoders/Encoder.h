@@ -76,8 +76,8 @@ public:
 	// Record a calibration data point. Only applicable if the encoder supports calibration.
 	virtual void RecordDataPoint(size_t index, int32_t data, bool backwards) noexcept = 0;
 
-	// Load the calibration lookup table. Return true if successful or if the encoder type doesn't support calibration.
-	virtual bool LoadLUT() noexcept = 0;
+	// Load the calibration lookup table and clear bits TuningError:NeedsBasicTuning and/or TuningError::NotCalibrated in tuningNeeded as appropriate.
+	virtual void LoadLUT(TuningErrors& tuningNeeded) noexcept = 0;
 
 	// Clear the calibration lookup table. Only applicable if the encoder supports calibration.
 	virtual void ClearLUT() noexcept = 0;

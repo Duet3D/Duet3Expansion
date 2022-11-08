@@ -9,6 +9,8 @@
 
 #if SUPPORT_CLOSED_LOOP && (defined(EXP1HCLv1_0) || defined(M23CL))
 
+#include <Hardware/NonVolatileMemory.h>
+
 LinearCompositeEncoder::LinearCompositeEncoder(float p_countsPerRev, uint32_t p_stepsPerRev, SharedSpiDevice &spiDev, Pin p_csPin) noexcept
 	: Encoder((4 * p_countsPerRev)/(float)p_stepsPerRev, p_stepsPerRev)
 {
@@ -76,6 +78,16 @@ TuningErrors LinearCompositeEncoder::ProcessTuningData() noexcept
 	const TuningErrors rslt = linEncoder->ProcessTuningData();
 	measuredCountsPerStep = linEncoder->GetMeasuredCountsPerStep();
 	measuredHysteresis = linEncoder->GetMeasuredHysteresis();
+	if (rslt == 0)
+	{
+		// Save the direction in NVM if calibration data has already been saved
+		NonVolatileMemory mem(NvmPage::closedLoop);
+		if (mem.GetClosedLoopCalibrationDataValid())
+		{
+			mem.SetClosedLoopQuadratureDirection(linEncoder->IsBackwards());
+			mem.EnsureWritten();
+		}
+	}
 	return rslt;
 }
 
@@ -93,6 +105,26 @@ TuningErrors LinearCompositeEncoder::Calibrate(bool store) noexcept
 	measuredCountsPerStep = shaftEncoder->GetMeasuredCountsPerStep();
 	measuredHysteresis = shaftEncoder->GetMeasuredHysteresis();
 	return rslt;
+}
+
+// Load the quadrature encoder direction from NVM
+// Do not inline this function, if we do then LoadLUT would need enough stack space to hold the NVM page twice
+void LinearCompositeEncoder::LoadQuadratureDirectionFromNVM(TuningErrors& tuningNeeded) noexcept
+{
+	NonVolatileMemory mem(NvmPage::closedLoop);
+	bool backwards;
+	if (mem.GetClosedLoopQuadratureDirection(backwards))
+	{
+		SetTuningBackwards(backwards);
+		tuningNeeded &= ~TuningError::NeedsBasicTuning;
+	}
+}
+
+// Load the calibration lookup table and clear bits TuningError:NeedsBasicTuning and/or TuningError::NotCalibrated in tuningNeeded as appropriate.
+void LinearCompositeEncoder::LoadLUT(TuningErrors& tuningNeeded) noexcept
+{
+	shaftEncoder->LoadLUT(tuningNeeded);
+	LoadQuadratureDirectionFromNVM(tuningNeeded);
 }
 
 void LinearCompositeEncoder::AppendDiagnostics(const StringRef &reply) noexcept

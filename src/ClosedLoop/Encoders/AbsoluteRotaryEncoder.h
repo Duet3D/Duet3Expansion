@@ -84,8 +84,8 @@ public:
 	// Calibrate the encoder using the recorded data points. Only applicable if the encoder supports calibration.
 	TuningErrors Calibrate(bool store) noexcept override;
 
-	// Load the calibration lookup table. Return true if successful or if the encoder type doesn't support calibration.
-	bool LoadLUT() noexcept override;
+	// Load the calibration lookup table and clear bits TuningError:NeedsBasicTuning and/or TuningError::NotCalibrated in tuningNeeded as appropriate.
+	void LoadLUT(TuningErrors& tuningNeeded) noexcept override;
 
 	// Clear the calibration lookup table. Only applicable if the encoder supports calibration.
 	void ClearLUT() noexcept override;

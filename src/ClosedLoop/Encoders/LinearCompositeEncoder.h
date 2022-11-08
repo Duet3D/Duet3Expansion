@@ -72,8 +72,8 @@ public:
 	// Calibrate the encoder using the recorded data points. Only applicable if the encoder supports calibration.
 	TuningErrors Calibrate(bool store) noexcept override;
 
-	// Load the calibration lookup table. Return true if successful or if the encoder type doesn't support calibration.
-	bool LoadLUT() noexcept override { return shaftEncoder->LoadLUT(); }
+	// Load the calibration lookup table and clear bits TuningError:NeedsBasicTuning and/or TuningError::NotCalibrated in tuningNeeded as appropriate.
+	void LoadLUT(TuningErrors& tuningNeeded) noexcept override;
 
 	// Clear the calibration lookup table. Only applicable if the encoder supports calibration.
 	void ClearLUT() noexcept override { return shaftEncoder->ClearLUT(); }
@@ -91,6 +91,9 @@ public:
 	int32_t GetCurrentShaftCount() const noexcept override { return shaftEncoder->GetCurrentCount(); }
 
 private:
+	// Load the quadrature encoder direction from NVM
+	__attribute__((noinline)) void LoadQuadratureDirectionFromNVM(TuningErrors& tuningNeeded) noexcept;
+
 	QuadratureEncoderPdec *linEncoder;
 	AS5047D *shaftEncoder;
 };

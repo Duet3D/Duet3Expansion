@@ -242,7 +242,7 @@ void NonVolatileMemory::GetClosedLoopZeroCountPhaseAndDirection(uint32_t& phase,
 	backwards = buffer.closedLoopPage.magneticEncoderBackwards;
 }
 
-// Set the zero count phase and direction. Also flags the calibration data as valid, so the harmonic data should be set first.
+// Set the zero count phase and direction. Also flags the calibration data as valid, so the harmonic data should be set first. Call EnsureWritten after this to save it to NVM.
 void NonVolatileMemory::SetClosedLoopZeroCountPhaseAndDirection(uint32_t phase, bool backwards) noexcept
 {
 	EnsureRead();
@@ -276,8 +276,10 @@ bool NonVolatileMemory::GetClosedLoopQuadratureDirection(bool& backwards) noexce
 	return true;
 }
 
+// Set the closed loop quadrature encoder direction and mark it as valid. Call EnsureWritten after this to save it to NVM.
 void NonVolatileMemory::SetClosedLoopQuadratureDirection(bool backwards) noexcept
 {
+	EnsureRead();
 	if (backwards != buffer.closedLoopPage.quadratureEncoderBackwards)
 	{
 		buffer.closedLoopPage.quadratureEncoderBackwards = backwards;

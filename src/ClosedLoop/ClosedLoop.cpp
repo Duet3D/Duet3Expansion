@@ -422,9 +422,9 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 		{
 			tuningError = encoder->MinimalTuningNeeded();
 			const GCodeResult rslt = encoder->Init(reply);
-			if (rslt == GCodeResult::ok && encoder->LoadLUT())
+			if (rslt == GCodeResult::ok)
 			{
-				tuningError &= ~TuningError::NotCalibrated;
+				encoder->LoadLUT(tuningError);
 			}
 			return rslt;
 		}
@@ -1134,11 +1134,10 @@ bool ClosedLoop::SetClosedLoopEnabled(size_t driver, bool enabled, const StringR
 			return false;
 		}
 
-		if (encoder->UsesBasicTuning())
+		if (encoder->UsesBasicTuning() && (tuningError & TuningError::NeedsBasicTuning) != 0)
 		{
 			encoder->SetTuningBackwards(false);
 			encoder->SetKnownPhaseAtCurrentCount(initialStepPhase);
-			tuningError = encoder->MinimalTuningNeeded();				// reset the tuning needed
 		}
 
 		desiredStepPhase = initialStepPhase;							// set this to be picked up later in DriverSwitchedToClosedLoop
