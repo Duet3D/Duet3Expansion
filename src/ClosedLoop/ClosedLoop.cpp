@@ -244,7 +244,8 @@ void ClosedLoop::ReportTuningErrors(TuningErrors tuningErrorBitmask, const Strin
 
 // Helper function to set the motor to a given phase and magnitude
 // The phase is normally in the range 0 to 4095 but when tuning it can be 0 to somewhat over 8192.
-// We must take it modulo 4096 when computing the currents. Funtion Trigonometry::FastSinCos does that.
+// We must take it modulo 4096 when computing the currents. Function Trigonometry::FastSinCos does that.
+// 'magnitude' must be in range 0.0..1.0
 void ClosedLoop::SetMotorPhase(uint16_t phase, float magnitude) noexcept
 {
 	currentMotorPhase = phase;
