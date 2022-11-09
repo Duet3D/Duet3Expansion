@@ -902,6 +902,12 @@ void Platform::Init()
 # if HAS_SMART_DRIVERS && HAS_VOLTAGE_MONITOR
 	warnDriversNotPowered = false;
 # endif
+
+# ifdef M23CL
+	// Set the brake control pins to outputs, leaving the brake engaged
+	pinMode(BrakeOnPin, OUTPUT_LOW);
+	pinMode(BrakePwmPin, OUTPUT_LOW);
+# endif
 #endif	//SUPPORT_DRIVERS
 
 #if SUPPORT_SPI_SENSORS || SUPPORT_CLOSED_LOOP || defined(ATEIO)
