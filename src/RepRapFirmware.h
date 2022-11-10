@@ -80,7 +80,7 @@ public:
 	MillisTimer() { running = false; }
 	void Start();
 	void Stop() { running = false; }
-	bool Check(uint32_t timeoutMillis) const;
+	bool CheckNoStop(uint32_t timeoutMillis) const;
 	bool CheckAndStop(uint32_t timeoutMillis);
 	bool IsRunning() const { return running; }
 

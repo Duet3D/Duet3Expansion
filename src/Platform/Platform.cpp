@@ -277,7 +277,7 @@ namespace Platform
 	{
 #ifdef M23CL
 		// Set the PWM to deliver 24V regardless of the VIN voltage
-		currentBrakePwm = min<float>(24.0/AdcReadingToVinVoltage(max<int16_t>(currentVin, 1)), 1.0);
+		currentBrakePwm = min<float>(24.0/AdcReadingToVinVoltage(max<uint16_t>(currentVin, 1)), 1.0);
 		AnalogOut::Write(BrakePwmPin, currentBrakePwm, BrakePwmFrequency);
 		digitalWrite(BrakeOnPin, true);
 #else
@@ -1063,11 +1063,11 @@ void Platform::Spin()
 	// Check whether we need to turn any brake solenoids or motors off
 	for (size_t driver = 0; driver < NumDrivers; ++driver)
 	{
-		if (brakeOffTimers[driver].Check(brakeOffDelays[driver]))
+		if (brakeOffTimers[driver].CheckAndStop(brakeOffDelays[driver]))
 		{
 			DisengageBrake(driver);
 		}
-		if (motorOffTimers[driver].Check(motorOffDelays[driver]))
+		if (motorOffTimers[driver].CheckAndStop(motorOffDelays[driver]))
 		{
 			InternalDisableDrive(driver);
 		}
@@ -1123,7 +1123,7 @@ void Platform::Spin()
 		{
 			if (timer.IsRunning())
 			{
-				if (!timer.Check(OpenLoadTimeout))
+				if (!timer.CheckNoStop(OpenLoadTimeout))
 				{
 					stat.ClearOpenLoadBits();
 				}
