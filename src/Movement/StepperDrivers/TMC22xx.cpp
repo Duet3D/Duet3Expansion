@@ -902,7 +902,7 @@ inline void TmcDriverState::SetupDMASend(uint8_t regNum, uint32_t regVal) noexce
 
 #if RP2040
 	TmcUartInterface::SetTxData(sendData, 12);
-	TmcUartInterface::SetRxData(receiveData, 20);
+	TmcUartInterface::SetRxData(receiveData + 12, 8);
 #elif TMC22xx_USES_SERCOM
 	DmacManager::SetSourceAddress(DmacChanTmcTx, sendData);
 	DmacManager::SetDestinationAddress(DmacChanTmcTx, &(sercom->USART.DATA));
@@ -971,7 +971,7 @@ inline void TmcDriverState::SetupDMARead(uint8_t regNum) noexcept
 
 #if RP2040
 	TmcUartInterface::SetTxData(sendData, 4);
-	TmcUartInterface::SetRxData(receiveData, 12);
+	TmcUartInterface::SetRxData(receiveData + 4, 8);
 #elif TMC22xx_USES_SERCOM
 	DmacManager::SetSourceAddress(DmacChanTmcTx, sendData);
 	DmacManager::SetDestinationAddress(DmacChanTmcTx, &(sercom->USART.DATA));
