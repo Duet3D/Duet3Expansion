@@ -15,7 +15,7 @@
 
 // General features
 #define HAS_VREF_MONITOR		0
-#define HAS_VOLTAGE_MONITOR		1
+#define HAS_VOLTAGE_MONITOR		0	//TEMP!
 #define HAS_12V_MONITOR			0
 #define HAS_CPU_TEMP_SENSOR		1
 #define HAS_ADDRESS_SWITCHES	0
@@ -37,7 +37,7 @@
 #define SUPPORT_TMC2160			0
 #define SUPPORT_TMC2660			0
 #define SUPPORT_TMC22xx			1
-#define SUPPORT_TMC2240			1		// Duet3D boards using the RP2040 will likely use the TMC2240 stepper driver
+#define SUPPORT_TMC2240			0		// TEMP! Duet3D boards using the RP2040 will likely use the TMC2240 stepper driver
 
 constexpr size_t NumDrivers = 1;
 constexpr size_t MaxSmartDrivers = 1;

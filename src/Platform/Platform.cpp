@@ -1089,7 +1089,11 @@ void Platform::Spin()
 #endif
 
 #if HAS_SMART_DRIVERS
+# if HAS_VOLTAGE_MONITOR
 	SmartDrivers::Spin(powered);
+# else
+	SmartDrivers::Spin(true);
+# endif
 
 	// Check one TMC driver for warnings and errors
 	if (enableValues[nextDriveToPoll] >= 0)				// don't poll driver if it is flagged "no poll"
