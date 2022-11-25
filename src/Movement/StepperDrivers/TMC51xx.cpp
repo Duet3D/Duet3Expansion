@@ -343,7 +343,7 @@ public:
 	DriverMode GetDriverMode() const noexcept;
 	void SetCurrent(float current) noexcept;
 	void Enable(bool en) noexcept;
-	bool UpdatePending() const noexcept { return (registersToUpdate | newRegistersToUpdate) != 0; }
+	bool UpdatePending() const noexcept { return (registersToUpdate | newRegistersToUpdate.load()) != 0; }
 	void SetStallDetectThreshold(int sgThreshold) noexcept;
 	void SetStallDetectFilter(bool sgFilter) noexcept;
 	void SetStallMinimumStepsPerSecond(unsigned int stepsPerSecond) noexcept;
@@ -424,7 +424,7 @@ private:
 	uint32_t configuredChopConfReg;							// the configured chopper control register, in the Enabled state, without the microstepping bits
 	uint32_t maxStallStepInterval;							// maximum interval between full steps to take any notice of stall detection
 
-	volatile uint32_t newRegistersToUpdate;					// bitmap of register indices whose values need to be sent to the driver chip
+	std::atomic<uint32_t> newRegistersToUpdate;				// bitmap of register indices whose values need to be sent to the driver chip
 	uint32_t registersToUpdate;								// bitmap of register indices whose values need to be sent to the driver chip
 	DriversBitmap driverBit;								// a bitmap containing just this driver number
 	uint32_t axisNumber;									// the axis number of this driver as used to index the DriveMovements in the DDA
@@ -482,7 +482,8 @@ pre(!driversPowered)
 	axisNumber = p_driverNumber;										// axes are mapped straight through to drivers initially
 	driverBit = DriversBitmap::MakeFromBits(p_driverNumber);
 	enabled = false;
-	registersToUpdate = newRegistersToUpdate = 0;
+	registersToUpdate = 0;
+	newRegistersToUpdate.store(0);
 	specialReadRegisterNumber = specialWriteRegisterNumber = 0xFF;
 	motorCurrent = 0;
 	standstillCurrentFraction = (uint16_t)min<uint32_t>((DefaultStandstillCurrentPercent * 256)/100, 256);
@@ -519,7 +520,7 @@ pre(!driversPowered)
 void TmcDriverState::UpdateRegister(size_t regIndex, uint32_t regVal) noexcept
 {
 	writeRegisters[regIndex] = regVal;
-	newRegistersToUpdate |= (1u << regIndex);							// flag it for sending
+	newRegistersToUpdate.fetch_or(1u << regIndex);						// flag it for sending
 }
 
 // Calculate the chopper control register and flag it for sending
@@ -532,13 +533,13 @@ void TmcDriverState::SetStallDetectThreshold(int sgThreshold) noexcept
 {
 	const uint32_t sgVal = ((uint32_t)constrain<int>(sgThreshold, -64, 63)) & 127u;
 	writeRegisters[WriteCoolConf] = (writeRegisters[WriteCoolConf] & ~COOLCONF_SGT_MASK) | (sgVal << COOLCONF_SGT_SHIFT);
-	newRegistersToUpdate |= 1u << WriteCoolConf;
+	newRegistersToUpdate.fetch_or(1u << WriteCoolConf);
 }
 
 // Write all registers. This is called when the drivers are known to be powered up.
 inline void TmcDriverState::WriteAll() noexcept
 {
-	newRegistersToUpdate = (1u << NumWriteRegisters) - 1;
+	newRegistersToUpdate.store((1u << NumWriteRegisters) - 1);
 }
 
 float TmcDriverState::GetStandstillCurrentPercent() const noexcept
@@ -906,7 +907,7 @@ void TmcDriverState::SetStallDetectFilter(bool sgFilter) noexcept
 	{
 		writeRegisters[WriteCoolConf] &= ~COOLCONF_SGFILT;
 	}
-	newRegistersToUpdate |= 1u << WriteCoolConf;
+	newRegistersToUpdate.fetch_or(1u << WriteCoolConf);
 }
 
 void TmcDriverState::SetStallMinimumStepsPerSecond(unsigned int stepsPerSecond) noexcept
@@ -936,12 +937,7 @@ void TmcDriverState::AppendStallConfig(const StringRef& reply) const noexcept
 void TmcDriverState::GetSpiCommand(uint8_t *sendDataBlock) noexcept
 {
 	// Find which register to send. The common case is when no registers need to be updated.
-	{
-		TaskCriticalSectionLocker lock;
-		registersToUpdate |= newRegistersToUpdate;
-		newRegistersToUpdate = 0;
-	}
-
+	registersToUpdate |= newRegistersToUpdate.exchange(0);
 	if (registersToUpdate == 0)
 	{
 		// Read a register
