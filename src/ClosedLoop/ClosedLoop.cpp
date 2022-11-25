@@ -74,7 +74,7 @@ namespace ClosedLoop
 	constexpr size_t DataCollectionTaskStackWords = 200;		// Size of the stack for all closed loop tasks
 	constexpr size_t EncoderCalibrationTaskStackWords = 500;	// Size of the stack for all closed loop tasks
 
-	constexpr unsigned int derivativeFilterSize = 8;			// The range of the derivative filter (use a power of 2 for efficiency)
+	constexpr unsigned int DerivativeFilterSize = 8;			// The range of the derivative filter (use a power of 2 for efficiency)
 	constexpr unsigned int DataBufferSize = 2000 * 14;			// When collecting samples we can accommodate 2000 readings of up to 13 variables + timestamp
 	constexpr unsigned int tuningStepsPerSecond = 2000;			// the rate at which we send 1/256 microsteps during tuning, slow enough for high-inertia motors
 	constexpr StepTimer::Ticks stepTicksPerTuningStep = StepTimer::StepClockRate/tuningStepsPerSecond;
@@ -143,7 +143,7 @@ namespace ClosedLoop
 	int32_t targetEncoderReading;						// The encoder reading we want, calculated from targetMotorSteps
 	float 	currentError;								// The current error
 
-	DerivativeAveragingFilter<derivativeFilterSize> derivativeFilter;	// An averaging filter to smooth the derivative of the error
+	DerivativeAveragingFilter<DerivativeFilterSize> derivativeFilter;	// An averaging filter to smooth the derivative of the error
 
 	float 	PIDPTerm;									// Proportional term
 	float 	PIDITerm = 0.0;								// Integral accumulator
@@ -188,7 +188,7 @@ namespace ClosedLoop
 	inline bool CollectingData() noexcept { return samplingMode != RecordingMode::None; }
 
 	void CollectSample() noexcept;
-	void ControlMotorCurrents(StepTimer::Ticks loopStartTime) noexcept;
+	void ControlMotorCurrents(StepTimer::Ticks ticksSinceLastCall) noexcept;
 	void StartTuning(uint8_t tuningType) noexcept;
 	GCodeResult ProcessBasicTuningResult(const StringRef& reply) noexcept;
 	GCodeResult ProcessCalibrationResult(const StringRef& reply) noexcept;
@@ -804,7 +804,7 @@ void ClosedLoop::ControlLoop() noexcept
 		}
 		else
 		{
-			ControlMotorCurrents(loopCallTime);							// otherwise control those motor currents!
+			ControlMotorCurrents(timeElapsed);			// otherwise control those motor currents!
 
 			// Look for a stall or pre-stall
 			const float positionErr = fabsf(currentError);
@@ -953,13 +953,13 @@ void ClosedLoop::CollectSample() noexcept
 	dataTransmissionTask->Give();
 }
 
-void ClosedLoop::ControlMotorCurrents(StepTimer::Ticks loopStartTime) noexcept
+inline void ClosedLoop::ControlMotorCurrents(StepTimer::Ticks ticksSinceLastCall) noexcept
 {
 	// Get the time delta in seconds
-	const float timeDelta = (float)(loopStartTime - prevControlLoopCallTime) * (1.0/(float)StepTimer::StepClockRate);
+	const float timeDelta = (float)ticksSinceLastCall * (1.0/(float)StepTimer::StepClockRate);
 
 	// Use a PID controller to calculate the required 'torque' - the control signal
-	// We choose to use a PID control signal in the range -256 to +256. This is rather arbitrary.
+	// We choose to use a PID control signal in the range -256 to +256. This is arbitrary.
 	PIDPTerm = Kp * currentError;
 	PIDITerm = constrain<float>(PIDITerm + Ki * currentError * timeDelta, -PIDIlimit, PIDIlimit);	// constrain I to prevent it running away
 	PIDDTerm = constrain<float>(Kd * derivativeFilter.GetDerivative(), -256.0, 256.0);		// constrain D so that we can graph it more sensibly after a sudden step input

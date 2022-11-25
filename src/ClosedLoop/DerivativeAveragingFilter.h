@@ -10,9 +10,8 @@
 
 #include "RepRapFirmware.h"
 
-// Class that takes in readings and timestamps
-// and outputs the current derivative
-// n should be a power of 2 for best efficiency
+// Class that takes in readings and timestamps and outputs the current derivative
+// N should be a power of 2 for best efficiency
 template<size_t N> class DerivativeAveragingFilter
 {
 public:
