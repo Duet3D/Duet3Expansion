@@ -36,7 +36,7 @@ namespace Trigonometry
 	void FastSinCos(uint16_t phase, float& sine, float& cosine) noexcept;
 }
 
-// Calculate 248 * the sine and cosine of the phase value passed, where phase is between 0 and 4095, and 4096 would correspond to 2*pi
+// Calculate 248 times the sine and cosine of the phase value passed, where phase is between 0 and 4095, and 4096 would correspond to 2*pi
 // The phase is normally in the range 0 to 4095 but when tuning it can be 0 to somewhat over 8192. We must take it modulo 4096.
 // The reason for using 248 not 255 is this paragraph from section 16.2 of the TMC2160A data sheet:
 // "The maximum resulting swing of the wave should be adjusted to a range of -248 to 248, in order to give the best possible resolution while
@@ -44,29 +44,16 @@ namespace Trigonometry
 inline void Trigonometry::FastSinCos(uint16_t phase, float& sine, float& cosine) noexcept
 post(fabsf(sin) <= 248.0; fabsf(cosine) <= 248.0)
 {
-	const unsigned int index = phase % Resolution;
-	const float r1 = lookupTable[index];
-	const float r2 = lookupTable[Resolution - index];
-	const unsigned int quadrant = (phase / Resolution) & 3;
-	switch (quadrant)
+	unsigned int index = phase % Resolution;
+	const unsigned int quadrant = phase / Resolution;			// the bottom 3 bits are the quadrant number
+	if ((quadrant & 1u) != 0)
 	{
-	case 0:
-		sine = r1;
-		cosine = r2;
-		break;
-	case 1:
-		sine = r2;
-		cosine = -r1;
-		break;
-	case 2:
-		sine = -r1;
-		cosine = -r2;
-		break;
-	case 3:
-		sine = -r2;
-		cosine = r1;
-		break;
+		index = Resolution - index;								// swap sine and cosine if in quadrant 1 or 3
 	}
+	const float r1 = lookupTable[index];						// get the sine (or cosine if swapped)
+	const float r2 = lookupTable[Resolution - index];			// get the cosine (or sine if swapped)
+	sine = ((quadrant & 2u) != 0) ? -r1 : r1;					// if quadrant 2 or 3 then invert the sine
+	cosine = (((quadrant - 1u) & 2u) == 0) ? -r2 : r2;			// if quadrant 1 or 2 then invert the cosine
 }
 
 #endif /* SRC_CLOSEDLOOP_TRIGONOMETRY_H_ */
