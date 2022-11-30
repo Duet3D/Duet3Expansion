@@ -24,52 +24,52 @@ public:
 	typedef uint32_t Ticks;
 	typedef void (*TimerCallbackFunction)(CallbackParameter);
 
-	StepTimer();
+	StepTimer() noexcept;
 
 	// Set up the callback function and parameter
-	void SetCallback(TimerCallbackFunction cb, CallbackParameter param);
+	void SetCallback(TimerCallbackFunction cb, CallbackParameter param) noexcept;
 
 	// Schedule a callback at a particular tick count, returning true if it was not scheduled because it is already due or imminent
-	bool ScheduleCallback(Ticks when);
+	bool ScheduleCallback(Ticks when) noexcept;
 
 	// As ScheduleCallback but base priority >= NvicPriorityStep when called
-	bool ScheduleCallbackFromIsr(Ticks when);
+	bool ScheduleCallbackFromIsr(Ticks when) noexcept;
 
 	// Cancel any scheduled callbacks
-	void CancelCallback();
+	void CancelCallback() noexcept;
 
 	// As CancelCallback but base priority >= NvicPriorityStep when called
-	void CancelCallbackFromIsr();
+	void CancelCallbackFromIsr() noexcept;
 
 	// Initialise the timer system
-	static void Init();
+	static void Init() noexcept;
 
 	// Disable the timer interrupt. Called when we shut down the system.
-	static void DisableTimerInterrupt();
+	static void DisableTimerInterrupt() noexcept;
 
 	// Get the current tick count
-	static Ticks GetTimerTicks() SPEED_CRITICAL;
+	static Ticks GetTimerTicks() noexcept SPEED_CRITICAL;
 
 	// Get the tick rate (can also access it directly as StepClockRate)
-	static uint32_t GetTickRate() { return StepClockRate; }
+	static uint32_t GetTickRate() noexcept { return StepClockRate; }
 
 	// Convert a number of step timer ticks to microseconds
 	// Our tick rate is a multiple of 1000 so instead of multiplying n by 1000000 and risking overflow, we multiply by 1000 and divide by StepClockRate/1000
-	static uint32_t TicksToIntegerMicroseconds(uint32_t n) { return (n * 1000)/(StepClockRate/1000); }
-	static float TicksToFloatMicroseconds(uint32_t n) { return (float)n * (1000000.0f/StepClockRate); }
+	static uint32_t TicksToIntegerMicroseconds(uint32_t n) noexcept { return (n * 1000)/(StepClockRate/1000); }
+	static float TicksToFloatMicroseconds(uint32_t n) noexcept { return (float)n * (1000000.0f/StepClockRate); }
 
 	// ISR called from StepTimer. May sometimes get called prematurely.
-	static void Interrupt() SPEED_CRITICAL;
+	static void Interrupt() noexcept SPEED_CRITICAL;
 
-	static uint32_t GetLocalTimeOffset() { return localTimeOffset; }
+	static uint32_t GetLocalTimeOffset() noexcept { return localTimeOffset; }
 	static void ProcessTimeSyncMessage(const CanMessageTimeSync& msg, size_t msgLen, uint16_t timeStamp) noexcept;
-	static uint32_t ConvertToLocalTime(uint32_t masterTime) { return masterTime + localTimeOffset; }
-	static uint32_t ConvertToMasterTime(uint32_t localTime) { return localTime - localTimeOffset; }
-	static uint32_t GetMasterTime() { return ConvertToMasterTime(GetTimerTicks()); }
+	static uint32_t ConvertToLocalTime(uint32_t masterTime) noexcept { return masterTime + localTimeOffset; }
+	static uint32_t ConvertToMasterTime(uint32_t localTime) noexcept { return localTime - localTimeOffset; }
+	static uint32_t GetMasterTime() noexcept { return ConvertToMasterTime(GetTimerTicks()); }
 
-	static bool IsSynced();
+	static bool IsSynced() noexcept;
 
-	static void Diagnostics(const StringRef& reply);
+	static void Diagnostics(const StringRef& reply) noexcept;
 
 	static constexpr uint32_t StepClockRate = 48000000/64;						// 48MHz divided by 64
 	static constexpr uint64_t StepClockRateSquared = (uint64_t)StepClockRate * StepClockRate;
@@ -101,7 +101,7 @@ private:
 	static constexpr unsigned int MaxSyncCount = 10;
 };
 
-inline __attribute__((always_inline)) StepTimer::Ticks StepTimer::GetTimerTicks()
+inline __attribute__((always_inline)) StepTimer::Ticks StepTimer::GetTimerTicks() noexcept
 {
 #if RP2040
 	return timer_hw->timerawl;													// read lower 32 bits of hardware timer

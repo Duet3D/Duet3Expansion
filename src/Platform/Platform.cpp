@@ -377,7 +377,7 @@ namespace Platform
 		NVIC_SetPriority(DMAC_IRQn, NvicPriorityDmac);
 		NVIC_SetPriority(EIC_IRQn, NvicPriorityPins);
 #elif RP2040
-		//TODO
+		NVIC_SetPriority((IRQn_Type)StepTcIRQn, NvicPriorityStep);
 #else
 # error Undefined processor
 #endif

@@ -192,7 +192,8 @@ static constexpr size_t NumPins = ARRAY_SIZE(PinTable);
 static_assert(NumPins == 30);		// 30 GPIO pins on RP2040
 
 // Timer/counter used to generate step pulses and other sub-millisecond timings
-//TODO
+constexpr unsigned int StepTimerAlarmNumber = 0;
+constexpr unsigned int StepTcIRQn = TIMER_IRQ_0;
 
 // Available UART ports
 #define NUM_SERIAL_PORTS		1

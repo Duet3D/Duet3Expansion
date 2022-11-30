@@ -17,6 +17,7 @@
 # include <hri_tc_c21.h>
 #elif RP2040
 # include <hardware/watchdog.h>
+# include <hardware/timer.h>
 #endif
 
 StepTimer * volatile StepTimer::pendingList = nullptr;
@@ -32,11 +33,21 @@ volatile unsigned int StepTimer::syncCount = 0;
 unsigned int StepTimer::numJitterResyncs = 0;
 unsigned int StepTimer::numTimeoutResyncs = 0;
 
-void StepTimer::Init()
+extern "C" void STEP_TC_HANDLER() noexcept SPEED_CRITICAL;
+
+void StepTimer::Init() noexcept
 {
 #if RP2040
 	// Reprogram the tick generator to run at 750kHz instead of 1MHz. We use a 12MHz crystal, so we need a divisor of 16.
 	watchdog_start_tick((XOSC_MHZ * 4)/3);
+	// Claim timer 0 because we use it as the step timer
+	hardware_alarm_claim(StepTimerAlarmNumber);
+	// Claim the associated interrupt
+	irq_set_exclusive_handler(StepTcIRQn, STEP_TC_HANDLER);
+	// Clear and enable the interrupt
+	NVIC_DisableIRQ((IRQn_Type)StepTcIRQn);
+	NVIC_ClearPendingIRQ((IRQn_Type)StepTcIRQn);
+	NVIC_EnableIRQ((IRQn_Type)StepTcIRQn);
 #else
 	// We use StepTcNumber+1 as the slave for 32-bit mode so we need to clock that one too
 	EnableTcClock(StepTcNumber, GclkNum48MHz);
@@ -59,14 +70,13 @@ void StepTimer::Init()
 	hri_tc_write_WAVE_reg(StepTc, TC_WAVE_WAVEGEN_NFRQ);
 
 	hri_tc_set_CTRLA_ENABLE_bit(StepTc);
-
 	NVIC_DisableIRQ(StepTcIRQn);
 	NVIC_ClearPendingIRQ(StepTcIRQn);
 	NVIC_EnableIRQ(StepTcIRQn);
 #endif
 }
 
-/*static*/ bool StepTimer::IsSynced()
+/*static*/ bool StepTimer::IsSynced() noexcept
 {
 	if (syncCount == MaxSyncCount)
 	{
@@ -186,7 +196,7 @@ void StepTimer::Init()
 
 // Schedule an interrupt at the specified clock count, or return true if that time is imminent or has passed already.
 // On entry, interrupts must be disabled or the base priority must be <= step interrupt priority.
-inline bool StepTimer::ScheduleTimerInterrupt(uint32_t tim)
+inline bool StepTimer::ScheduleTimerInterrupt(uint32_t tim) noexcept
 {
 	// We need to disable all interrupts, because once we read the current step clock we have only 6us to set up the interrupt, or we will miss it
 	AtomicCriticalSectionLocker lock;
@@ -198,7 +208,8 @@ inline bool StepTimer::ScheduleTimerInterrupt(uint32_t tim)
 	}
 
 #if RP2040
-	//TODO
+	hw_set_bits(&timer_hw->inte, 1u << StepTimerAlarmNumber);		// enable the interrupt
+	timer_hw->alarm[StepTimerAlarmNumber] = tim;					// writing the value arms the timer
 #else
 	StepTc->CC[0].reg = tim;
 	while (StepTc->SYNCBUSY.reg & TC_SYNCBUSY_CC0) { }
@@ -209,17 +220,17 @@ inline bool StepTimer::ScheduleTimerInterrupt(uint32_t tim)
 }
 
 // Make sure we get no timer interrupts
-void StepTimer::DisableTimerInterrupt()
+void StepTimer::DisableTimerInterrupt() noexcept
 {
 #if RP2040
-	//TODO
+	hw_clear_bits(&timer_hw->inte, 1u << StepTimerAlarmNumber);		// disable the interrupt
 #else
 	StepTc->INTENCLR.reg = TC_INTFLAG_MC0;
 #endif
 }
 
 // The guts of the ISR
-/*static*/ inline void StepTimer::Interrupt()
+/*static*/ inline void StepTimer::Interrupt() noexcept
 {
 	StepTimer * tmr = pendingList;
 	if (tmr != nullptr)
@@ -247,12 +258,11 @@ void StepTimer::DisableTimerInterrupt()
 }
 
 // Step pulse timer interrupt
-extern "C" void STEP_TC_HANDLER() SPEED_CRITICAL;
-
-void STEP_TC_HANDLER()
+void STEP_TC_HANDLER() noexcept
 {
 #if RP2040
-	//TODO
+	hw_clear_bits(&timer_hw->intr, 1u << StepTimerAlarmNumber);		// clear the alarm interrupt
+	StepTimer::Interrupt();											// this will re-enable the interrupt if necessary
 #else
 	uint8_t tcsr = StepTc->INTFLAG.reg;								// read the status register, which clears the status bits
 	tcsr &= StepTc->INTENSET.reg;									// select only enabled interrupts
@@ -269,19 +279,19 @@ void STEP_TC_HANDLER()
 #endif
 }
 
-StepTimer::StepTimer() : next(nullptr), callback(nullptr), active(false)
+StepTimer::StepTimer() noexcept : next(nullptr), callback(nullptr), active(false)
 {
 }
 
 // Set up the callback function and parameter
-void StepTimer::SetCallback(TimerCallbackFunction cb, CallbackParameter param)
+void StepTimer::SetCallback(TimerCallbackFunction cb, CallbackParameter param) noexcept
 {
 	callback = cb;
 	cbParam = param;
 }
 
 // Schedule a callback at a particular tick count, returning true if it was not scheduled because it is already due or imminent.
-bool StepTimer::ScheduleCallbackFromIsr(Ticks when)
+bool StepTimer::ScheduleCallbackFromIsr(Ticks when) noexcept
 {
 	whenDue = when;
 	StepTimer* pst;
@@ -339,14 +349,14 @@ bool StepTimer::ScheduleCallbackFromIsr(Ticks when)
 	return false;
 }
 
-bool StepTimer::ScheduleCallback(Ticks when)
+bool StepTimer::ScheduleCallback(Ticks when) noexcept
 {
 	AtomicCriticalSectionLocker lock;
 	return ScheduleCallbackFromIsr(when);
 }
 
 // Cancel any scheduled callback for this timer. Harmless if there is no callback scheduled.
-void StepTimer::CancelCallbackFromIsr()
+void StepTimer::CancelCallbackFromIsr() noexcept
 {
 	for (StepTimer** ppst = const_cast<StepTimer**>(&pendingList); *ppst != nullptr; ppst = &((*ppst)->next))
 	{
@@ -360,7 +370,7 @@ void StepTimer::CancelCallbackFromIsr()
 	active = false;
 }
 
-void StepTimer::CancelCallback()
+void StepTimer::CancelCallback() noexcept
 {
 	AtomicCriticalSectionLocker lock;
 	CancelCallbackFromIsr();
@@ -381,6 +391,10 @@ void StepTimer::CancelCallback()
 	else
 	{
 #if RP2040
+		reply.catf("next step interrupt due in %" PRIu32 " ticks, %s",
+					timer_hw->alarm[StepTimerAlarmNumber] - GetTimerTicks(),
+					(timer_hw->inte & (1u << StepTimerAlarmNumber)) ? "enabled" : "disabled");
+
 	//TODO
 #else
 		reply.catf("next step interrupt due in %" PRIu32 " ticks, %s",
