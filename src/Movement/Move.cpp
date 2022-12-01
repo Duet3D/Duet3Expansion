@@ -400,13 +400,13 @@ void Move::Interrupt()
 	{
 		// Generate a step for the current move
 		DDA* cdda = currentDda;										// capture volatile variable
-		if (cdda == nullptr)
+		if (unlikely(cdda == nullptr))
 		{
 			return;													// no current  move, so no steps needed
 		}
 
 		cdda->StepDrivers(now);
-		if (cdda->GetState() == DDA::completed)
+		if (unlikely(cdda->GetState() == DDA::completed))
 		{
 			const uint32_t finishTime = cdda->GetMoveFinishTime();	// calculate when this move should finish
 			CurrentMoveCompleted();									// tell the DDA ring that the current move is complete and set currentDda to nullptr

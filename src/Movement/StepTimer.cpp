@@ -244,7 +244,7 @@ void StepTimer::DisableTimerInterrupt() noexcept
 			tmr->callback(tmr->cbParam);							// execute its callback. This may schedule another callback and hence change the pending list.
 
 			tmr = pendingList;
-			if (tmr != nextTimer || tmr == nullptr)					// tmr != nextTimer is the common case of a new step interrupt scheduled, so test that first
+			if (likely(tmr != nextTimer) || tmr == nullptr)	// tmr != nextTimer is the common case of a new step interrupt scheduled, so test that first
 			{
 				break;												// no more timers, or another timer has been inserted and an interrupt scheduled
 			}
@@ -267,7 +267,7 @@ void STEP_TC_HANDLER() noexcept
 	uint8_t tcsr = StepTc->INTFLAG.reg;								// read the status register, which clears the status bits
 	tcsr &= StepTc->INTENSET.reg;									// select only enabled interrupts
 
-	if ((tcsr & TC_INTFLAG_MC0) != 0)								// the step interrupt uses MC0 compare
+	if (likely((tcsr & TC_INTFLAG_MC0) != 0))						// the step interrupt uses MC0 compare
 	{
 		StepTc->INTENCLR.reg = TC_INTFLAG_MC0;						// disable the interrupt (no need to clear it, we do that before we re-enable it)
 # ifdef TIMER_DEBUG
@@ -300,7 +300,7 @@ bool StepTimer::ScheduleCallbackFromIsr(Ticks when) noexcept
 		pst = pendingList;
 
 		// Optimise the common case of no other timer in the list
-		if (pst == nullptr)
+		if (likely(pst == nullptr))
 		{
 			// No other callbacks are scheduled
 			if (ScheduleTimerInterrupt(when))

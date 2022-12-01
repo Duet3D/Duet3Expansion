@@ -193,7 +193,7 @@ inline uint32_t DDA::WhenNextInterruptDue() const noexcept
 {
 	return
 #if SINGLE_DRIVER
-			(ddms[0].state == DMState::moving) ? ddms[0].nextStepTime
+			(likely(ddms[0].state == DMState::moving)) ? ddms[0].nextStepTime
 #else
 			(activeDMs != nullptr) ? activeDMs->nextStepTime
 #endif
@@ -205,7 +205,7 @@ inline uint32_t DDA::WhenNextInterruptDue() const noexcept
 // Base priority must be >= NvicPriorityStep or interrupts disabled when calling this
 inline bool DDA::ScheduleNextStepInterrupt(StepTimer& timer) const noexcept
 {
-	if (state == executing)
+	if (likely(state == executing))
 	{
 		return timer.ScheduleCallbackFromIsr(WhenNextInterruptDue() + afterPrepare.moveStartTime);
 	}
