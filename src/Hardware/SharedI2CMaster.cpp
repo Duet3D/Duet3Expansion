@@ -144,7 +144,7 @@ bool SharedI2CMaster::InternalTransfer(uint16_t address, uint8_t firstByte, uint
 	hardware->I2CM.STATUS.reg = SERCOM_I2CM_STATUS_BUSERR | SERCOM_I2CM_STATUS_RXNACK | SERCOM_I2CM_STATUS_ARBLOST;		// clear all status bits
 	hardware->I2CM.CTRLB.reg = SERCOM_I2CM_CTRLB_SMEN;						// make sure the ACKACT bit is clear
 
-	TaskBase::ClearNotifyCount();
+	TaskBase::ClearCurrentTaskNotifyCount();
 	taskWaiting = TaskBase::GetCallerTaskHandle();
 
 	// Send the address
