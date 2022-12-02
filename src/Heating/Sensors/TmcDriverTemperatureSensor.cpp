@@ -17,7 +17,7 @@ TmcDriverTemperatureSensor::TmcDriverTemperatureSensor(unsigned int sensorNum)
 
 void TmcDriverTemperatureSensor::Poll()
 {
-	SetResult(Platform::GetTmcDriversTemperature(), TemperatureError::success);
+	SetResult(Platform::GetTmcDriversTemperature(), TemperatureError::ok);
 }
 
 #endif

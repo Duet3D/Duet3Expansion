@@ -16,7 +16,7 @@ CpuTemperatureSensor::CpuTemperatureSensor(unsigned int sensorNum) : Temperature
 
 void CpuTemperatureSensor::Poll()
 {
-	SetResult(Platform::GetMcuTemperatures().current, TemperatureError::success);
+	SetResult(Platform::GetMcuTemperatures().current, TemperatureError::ok);
 }
 
 #endif

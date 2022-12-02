@@ -42,12 +42,12 @@ GCodeResult CurrentLoopTemperatureSensor::Configure(const CanMessageGenericParse
 		// Initialise the sensor
 		InitSpi();
 
-		TemperatureError rslt;
+		TemperatureError rslt(TemperatureError::unknownError);
 		float t;
 		for (unsigned int i = 0; i < 3; ++i)		// try 3 times
 		{
 			rslt = TryGetLinearAdcTemperature(t);
-			if (rslt == TemperatureError::success)
+			if (rslt == TemperatureError::ok)
 			{
 				break;
 			}
@@ -55,9 +55,9 @@ GCodeResult CurrentLoopTemperatureSensor::Configure(const CanMessageGenericParse
 		}
 		SetResult(t, rslt);
 
-		if (rslt != TemperatureError::success)
+		if (rslt != TemperatureError::ok)
 		{
-			reply.printf("Failed to initialise daughter board ADC: %s", TemperatureErrorString(rslt));
+			reply.printf("Failed to initialise daughter board ADC: %s", rslt.ToString());
 			return GCodeResult::error;
 		}
 	}
@@ -115,7 +115,7 @@ TemperatureError CurrentLoopTemperatureSensor::TryGetLinearAdcTemperature(float&
 	TemperatureError rslt = DoSpiTransaction(adcData, 3, rawVal);
 	//debugPrintf("ADC data %u\n", rawVal);
 
-	if (rslt == TemperatureError::success)
+	if (rslt == TemperatureError::ok)
 	{
 		const uint32_t adcVal1 = (rawVal >> 5) & ((1 << 13) - 1);
 		const uint32_t adcVal2 = ((rawVal & 1) << 5) | ((rawVal & 2) << 3) | ((rawVal & 4) << 1) | ((rawVal & 8) >> 1) | ((rawVal & 16) >> 3) | ((rawVal & 32) >> 5);

@@ -56,7 +56,7 @@ TemperatureError SpiTemperatureSensor::DoSpiTransaction(const uint8_t dataOut[],
 		rslt |= rawBytes[i];
 	}
 
-	return TemperatureError::success;
+	return TemperatureError::ok;
 }
 
 // Send and receive data
@@ -79,7 +79,7 @@ TemperatureError SpiTemperatureSensor::DoSpiTransaction(const uint8_t dataOut[],
 		return TemperatureError::timeout;
 	}
 
-	return TemperatureError::success;
+	return TemperatureError::ok;
 }
 
 #endif

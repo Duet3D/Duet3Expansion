@@ -318,7 +318,7 @@ void Thermistor::Poll()
 					}
 					else
 					{
-						SetResult(temp, TemperatureError::success);
+						SetResult(temp, TemperatureError::ok);
 					}
 				}
 			}

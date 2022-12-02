@@ -92,11 +92,11 @@ GCodeResult RtdSensor31865::Configure(const CanMessageGenericParser& parser, con
 		// Initialise the sensor
 		InitSpi();
 
-		TemperatureError rslt;
+		TemperatureError rslt(TemperatureError::unknownError);
 		for (unsigned int i = 0; i < 3; ++i)		// try 3 times
 		{
 			rslt = TryInitRtd();
-			if (rslt == TemperatureError::success)
+			if (rslt == TemperatureError::ok)
 			{
 				break;
 			}
@@ -105,9 +105,9 @@ GCodeResult RtdSensor31865::Configure(const CanMessageGenericParser& parser, con
 
 		SetResult(0.0, rslt);
 
-		if (rslt != TemperatureError::success)
+		if (rslt != TemperatureError::ok)
 		{
-			reply.printf("Failed to initialise RTD: %s", TemperatureErrorString(rslt));
+			reply.printf("Failed to initialise RTD: %s", rslt.ToString());
 			return GCodeResult::error;
 		}
 
@@ -127,7 +127,7 @@ TemperatureError RtdSensor31865::TryInitRtd() const
 	uint32_t rawVal;
 	TemperatureError sts = DoSpiTransaction(modeData, ARRAY_SIZE(modeData), rawVal);
 
-	if (sts == TemperatureError::success)
+	if (sts == TemperatureError::ok)
 	{
 		delayMicroseconds(1);
 		static const uint8_t readData[2] = { 0x00, 0x00 };	// read register 0
@@ -135,7 +135,7 @@ TemperatureError RtdSensor31865::TryInitRtd() const
 	}
 
 	//debugPrintf("Status %d data %04x\n", (int)sts, rawVal);
-	if (sts == TemperatureError::success && (rawVal & Cr0ReadMask) != (cr0 & Cr0ReadMask))
+	if (sts == TemperatureError::ok && (rawVal & Cr0ReadMask) != (cr0 & Cr0ReadMask))
 	{
 		sts = TemperatureError::badResponse;
 	}
@@ -149,7 +149,7 @@ void RtdSensor31865::Poll()
 	uint32_t rawVal;
 	TemperatureError sts = DoSpiTransaction(dataOut, ARRAY_SIZE(dataOut), rawVal);
 
-	if (sts != TemperatureError::success)
+	if (sts != TemperatureError::ok)
 	{
 		SetResult(sts);
 	}
@@ -160,7 +160,7 @@ void RtdSensor31865::Poll()
 		   )
 		{
 			static const uint8_t faultDataOut[2] = {0x07, 0x55};
-			if (DoSpiTransaction(faultDataOut, ARRAY_SIZE(faultDataOut), rawVal) == TemperatureError::success)	// read the fault register
+			if (DoSpiTransaction(faultDataOut, ARRAY_SIZE(faultDataOut), rawVal) == TemperatureError::ok)	// read the fault register
 			{
 				sts = (rawVal & 0x04) ? TemperatureError::overOrUnderVoltage
 							: (rawVal & 0x18) ? TemperatureError::openCircuit

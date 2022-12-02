@@ -24,7 +24,7 @@
 
 // Constructor
 TemperatureSensor::TemperatureSensor(unsigned int sensorNum, const char *t)
-	: next(nullptr), sensorNumber(sensorNum), sensorType(t), whenLastRead(0), lastResult(TemperatureError::notReady), lastRealError(TemperatureError::success) {}
+	: next(nullptr), sensorNumber(sensorNum), sensorType(t), whenLastRead(0), lastResult(TemperatureError::notReady), lastRealError(TemperatureError::ok) {}
 
 // Virtual destructor
 TemperatureSensor::~TemperatureSensor()
@@ -60,7 +60,8 @@ GCodeResult TemperatureSensor::Configure(const CanMessageGenericParser& parser, 
 
 void TemperatureSensor::CopyBasicDetails(const StringRef& reply) const
 {
-	reply.printf("type %s, reading %.1f, last error: %s", sensorType, (double)GetStoredReading(), TemperatureErrorString(lastRealError));
+	const TemperatureError err = lastRealError;		// capture volatile variable
+	reply.printf("type %s, reading %.1f, last error: %s", sensorType, (double)GetStoredReading(), err.ToString());
 }
 
 void TemperatureSensor::SetResult(float t, TemperatureError rslt)
@@ -68,7 +69,7 @@ void TemperatureSensor::SetResult(float t, TemperatureError rslt)
 	lastResult = rslt;
 	lastTemperature = t;
 	whenLastRead = millis();
-	if (rslt != TemperatureError::success)
+	if (rslt != TemperatureError::ok)
 	{
 		lastRealError = rslt;
 	}
@@ -77,7 +78,8 @@ void TemperatureSensor::SetResult(float t, TemperatureError rslt)
 // This version is used for unsuccessful readings only
 void TemperatureSensor::SetResult(TemperatureError rslt)
 {
-	lastResult = lastRealError = rslt;
+	lastResult = rslt;
+	lastRealError = rslt;
 	lastTemperature = BadErrorTemperature;
 	whenLastRead = millis();
 }
@@ -252,7 +254,7 @@ const size_t NumTempTableEntries = sizeof(tempTable)/sizeof(tempTable[0]);
 	t = CelsiusInterval * (low - 1 + temperatureFraction) + CelsiusMin;
 
 	//debugPrintf("raw %f low %u temp %f\n", ohmsx100, low, t);
-	return TemperatureError::success;
+	return TemperatureError::ok;
 }
 
 // End

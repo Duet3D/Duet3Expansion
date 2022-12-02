@@ -286,7 +286,7 @@ void Heat::Exit()
 							{
 								sensorTempsMsg->whichSensors |= (uint64_t)1u << sn;
 								float temperature;
-								sensorTempsMsg->temperatureReports[sensorsFound].errorCode = (uint8_t)(currentSensor->GetLatestTemperature(temperature));
+								sensorTempsMsg->temperatureReports[sensorsFound].errorCode = (uint8_t)(currentSensor->GetLatestTemperature(temperature).ToBaseType());
 								sensorTempsMsg->temperatureReports[sensorsFound].SetTemperature(temperature);
 								++sensorsFound;
 								nextUnreportedSensor = sn + 1;
