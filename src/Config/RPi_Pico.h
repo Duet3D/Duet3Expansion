@@ -213,7 +213,7 @@ constexpr DmaPriority DmacPrioTmcTx = 0;
 constexpr DmaPriority DmacPrioTmcRx = 1;
 constexpr DmaPriority DmacPrioAdcRx = 1;
 
-// Interrupt priorities, lower means higher priority. 0 can't make RTOS calls. Only 0 to 3 are available.
+// Interrupt priorities, lower means higher priority. Only 0 to 3 are available.
 const NvicPriority NvicPriorityStep = 1;				// step interrupt is next highest, it can preempt most other interrupts
 const NvicPriority NvicPriorityUart = 2;				// serial driver makes RTOS calls
 const NvicPriority NvicPriorityPins = 2;				// priority for GPIO pin interrupts
@@ -221,5 +221,6 @@ const NvicPriority NvicPriorityI2C = 2;
 const NvicPriority NvicPriorityCan = 3;
 const NvicPriority NvicPriorityDmac = 3;				// priority for DMA complete interrupts
 const NvicPriority NvicPriorityAdc = 3;
+const NvicPriority NvicPriorityUSB = 3;
 
 #endif /* SRC_CONFIG_RPI_PICO_H_ */

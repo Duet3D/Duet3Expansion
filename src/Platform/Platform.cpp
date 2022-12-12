@@ -687,7 +687,7 @@ void Platform::Init()
 #if defined(SAMMYC21)
 	uart0.begin(115200);						// set up the UART with the same baud rate as the bootloader
 #elif defined(RPI_PICO)
-	serialUSB.Start();
+	serialUSB.Start(NoPin);
 #elif defined(DEBUG)
 	// Set up the UART to send to PanelDue for debugging
 	// CAUTION! This sends data to pin io0.out on a tool board, which interferes with a BLTouch connected to that pin. So don't do it in normal use.
