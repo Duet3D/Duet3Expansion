@@ -268,34 +268,38 @@ namespace Platform
 	}
 #endif
 
-#ifdef M23CL
+#if SUPPORT_DRIVERS
+
+# ifdef M23CL
 	static float currentBrakePwm = 0.0;
-#endif
+# endif
 
 	// Turn the brake solenoid on to disengage the brake
 	static void DisengageBrake(size_t driver) noexcept
 	{
-#ifdef M23CL
+# ifdef M23CL
 		// Set the PWM to deliver 24V regardless of the VIN voltage
 		currentBrakePwm = min<float>(24.0/AdcReadingToVinVoltage(max<uint16_t>(currentVin, 1)), 1.0);
 		AnalogOut::Write(BrakePwmPin, currentBrakePwm, BrakePwmFrequency);
 		digitalWrite(BrakeOnPin, true);
-#else
+# else
 		brakePorts[driver].WriteDigital(true);
-#endif
+# endif
 	}
 
 	// Turn the brake solenoid off to re-engage the brake
 	static void EngageBrake(size_t driver) noexcept
 	{
-#ifdef M23CL
+# ifdef M23CL
 		currentBrakePwm = 0.0;
 		digitalWrite(BrakePwmPin, false);
 		digitalWrite(BrakeOnPin, false);
-#else
+# else
 		brakePorts[driver].WriteDigital(false);
-#endif
+# endif
 	}
+
+#endif	// SUPPORT_DRIVERS
 
 #if SAME5x
 	static int32_t tempCalF1, tempCalF2, tempCalF3, tempCalF4;		// temperature calibration factors
@@ -1060,6 +1064,7 @@ void Platform::Spin()
 	}
 #endif
 
+#if SUPPORT_DRIVERS
 	// Check whether we need to turn any brake solenoids or motors off
 	for (size_t driver = 0; driver < NumDrivers; ++driver)
 	{
@@ -1073,7 +1078,7 @@ void Platform::Spin()
 		}
 	}
 
-#ifdef M23CL
+# ifdef M23CL
 
 	// If the brake solenoid is activated, adjust the PWM if necessary
 	if (currentBrakePwm != 0.0 && voltsVin > 0.0)
@@ -1086,7 +1091,8 @@ void Platform::Spin()
 		}
 	}
 
-#endif
+# endif
+#endif	// SUPPORT_DRIVERS
 
 #if HAS_SMART_DRIVERS
 # if HAS_VOLTAGE_MONITOR
