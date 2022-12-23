@@ -413,6 +413,9 @@ constexpr uint32_t DefaultPwmConfReg = 0xC10D0024;			// this is the reset defaul
 constexpr uint8_t REGNUM_PWM_SCALE = 0x71;
 constexpr uint8_t REGNUM_PWM_AUTO = 0x72;
 
+static constexpr uint32_t MaxValidSgLoadRegister = 1023;
+static constexpr uint32_t InvalidSgLoadRegister = 1024;
+
 // Send/receive data and CRC stuff
 
 // Data format to write a driver register:
@@ -601,10 +604,11 @@ private:
 	void UpdateRegister(size_t regIndex, uint32_t regVal) noexcept;
 	void UpdateCurrent() noexcept;
 	void UpdateMaxOpenLoadStepInterval() noexcept;
+
 #if HAS_STALL_DETECT
 	void ResetLoadRegisters() noexcept
 	{
-		minSgLoadRegister = 9999;							// values read from the driver are in the range 0 to 1023, so 9999 indicates that it hasn't been read
+		minSgLoadRegister = InvalidSgLoadRegister;					// value InvalidSgLoadRegister indicates that it hasn't been read
 	}
 #endif
 
@@ -1510,7 +1514,7 @@ void TmcDriverState::AppendDriverStatus(const StringRef& reply) noexcept
 #endif
 
 #if HAS_STALL_DETECT
-	if (minSgLoadRegister <= 1023)
+	if (minSgLoadRegister <= MaxValidSgLoadRegister)
 	{
 		reply.catf(", SG min %u", minSgLoadRegister);
 	}
