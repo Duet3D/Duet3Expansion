@@ -10,8 +10,8 @@
 
 #include <Hardware/PinDescription.h>
 
-#define BOARD_TYPE_NAME		"RPi_Pico"
-#define BOOTLOADER_NAME		"RPi_Pico"
+#define BOARD_TYPE_NAME		"Fly36RRF"
+#define BOOTLOADER_NAME		"Fly36RRF"
 
 // General features
 #define HAS_VREF_MONITOR		0
