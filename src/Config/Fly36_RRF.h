@@ -93,7 +93,7 @@ constexpr bool UseAlternateCanPins = false;
 constexpr size_t MaxPortsPerHeater = 1;
 
 constexpr size_t NumThermistorInputs = 2;
-constexpr float DefaultThermistorSeriesR = 2200.0;		// TEMP0 has 2K2 pullup but chamber thermistor has 4K7
+constexpr float DefaultThermistorSeriesR = 4700.0;		// TEMP0 has 1k or 4k7 pullup, chamber thermistor has 4K7
 
 constexpr Pin TempSensePins[NumThermistorInputs] = { GpioPin(26), GpioPin(27) };
 
@@ -159,20 +159,20 @@ constexpr PinDescription PinTable[] =
 	{ PwmOutput::pwm4b,	AdcInput::none,		nullptr		},	// GPIO9 accelerometer CS
 	{ PwmOutput::pwm5a,	AdcInput::none,		nullptr		},	// GPIO10 SPI SCLK
 	{ PwmOutput::pwm5b,	AdcInput::none,		nullptr		},	// GPIO11 SPI MOSI
-	{ PwmOutput::pwm6a,	AdcInput::none,		nullptr 	},	// GPIO12 SPI MAX31856 CS
-	{ PwmOutput::pwm6b,	AdcInput::none,		"out2"		},	// GPIO13 FAN1
-	{ PwmOutput::pwm7a,	AdcInput::none,		"out1"		},	// GPIO14 FAN0
-	{ PwmOutput::pwm7b,	AdcInput::none,		nullptr		},	// GPIO15 SPI0 MISO
-	{ PwmOutput::pwm0a,	AdcInput::none,		nullptr		},	// GPIO16 SPI0 AS5047D CS
-	{ PwmOutput::pwm0b,	AdcInput::none,		nullptr		},	// GPIO17 SPI0 SCLK
-	{ PwmOutput::pwm1a,	AdcInput::none,		nullptr 	},	// GPIO18 SPI0 MOSI
-	{ PwmOutput::pwm1b,	AdcInput::none,		"gpio19"	},	// GPIO19 not connected
+	{ PwmOutput::pwm6a,	AdcInput::none,		nullptr 	},	// GPIO12 SPI MISO
+	{ PwmOutput::pwm6b,	AdcInput::none,		nullptr		},	// GPIO13 SPI MAX31856 CS
+	{ PwmOutput::pwm7a,	AdcInput::none,		"out2"		},	// GPIO14 FAN1
+	{ PwmOutput::pwm7b,	AdcInput::none,		"out1"		},	// GPIO15 FAN0
+	{ PwmOutput::pwm0a,	AdcInput::none,		nullptr		},	// GPIO16 SPI0 MISO
+	{ PwmOutput::pwm0b,	AdcInput::none,		nullptr		},	// GPIO17 SPI0 AS5047D CS
+	{ PwmOutput::pwm1a,	AdcInput::none,		nullptr 	},	// GPIO18 SPI0 SCLK
+	{ PwmOutput::pwm1b,	AdcInput::none,		nullptr		},	// GPIO19 SPI0 MOSI
 	{ PwmOutput::pwm2a,	AdcInput::none,		nullptr		},	// GPIO20 status LED
 	{ PwmOutput::pwm2b,	AdcInput::none,		"io1.in"	},	// GPIO21 ENDSTOP1
-	{ PwmOutput::pwm3a,	AdcInput::none,		nullptr		},	// GPIO22 DIR
-	{ PwmOutput::none,	AdcInput::none,		nullptr		},	// GPIO23 STEP
-	{ PwmOutput::none,	AdcInput::none,		nullptr		},	// GPIO24 EN
-	{ PwmOutput::none,	AdcInput::none,		"gpio25"	},	// GPIO25 not connected
+	{ PwmOutput::pwm3a,	AdcInput::none,		nullptr		},	// GPIO22 DIAG
+	{ PwmOutput::none,	AdcInput::none,		nullptr		},	// GPIO23 DIR
+	{ PwmOutput::none,	AdcInput::none,		nullptr		},	// GPIO24 STEP
+	{ PwmOutput::none,	AdcInput::none,		nullptr		},	// GPIO25 EN
 	{ PwmOutput::pwm5a,	AdcInput::adc0_0,	"temp0"		},	// GPIO26 T0_TEMP
 	{ PwmOutput::pwm5b,	AdcInput::adc0_1,	"temp1"		},	// GPIO27 CHAMBER_TEMP
 	{ PwmOutput::pwm6a,	AdcInput::adc0_2,	nullptr		},	// GPIO28 VIN ADC
