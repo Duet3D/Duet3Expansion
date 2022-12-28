@@ -19,7 +19,6 @@
 # include <hri_sercom_c21.h>
 #endif
 
-constexpr uint32_t DefaultSharedSpiClockFrequency = 2000000;
 constexpr uint32_t SpiTimeout = 10000;
 
 // SharedSpiDevice members
@@ -84,12 +83,6 @@ void SharedSpiDevice::Disable() const noexcept
 	hri_sercomspi_wait_for_sync(hardware, SERCOM_SPI_CTRLA_ENABLE);
 }
 
-inline void SharedSpiDevice::Enable() const noexcept
-{
-	hardware->SPI.CTRLA.bit.ENABLE = 1;
-	hri_sercomspi_wait_for_sync(hardware, SERCOM_SPI_CTRLA_ENABLE);
-}
-
 // Wait for transmitter ready returning true if timed out
 inline bool SharedSpiDevice::waitForTxReady() const noexcept
 {
@@ -148,7 +141,9 @@ void SharedSpiDevice::SetClockFrequencyAndMode(uint32_t freq, SpiMode mode) cons
 		regCtrlA |= SERCOM_SPI_CTRLA_CPHA;
 	}
 	hri_sercomspi_write_CTRLA_reg(hardware, regCtrlA);
-	Enable();
+
+	hardware->SPI.CTRLA.bit.ENABLE = 1;
+	hri_sercomspi_wait_for_sync(hardware, SERCOM_SPI_CTRLA_ENABLE);
 }
 
 bool SharedSpiDevice::TransceivePacket(const uint8_t* tx_data, uint8_t* rx_data, size_t len) const noexcept

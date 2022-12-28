@@ -41,17 +41,20 @@ public:
 	bool Take(uint32_t timeout) noexcept { return mutex.Take(timeout); }					// get ownership of this SPI, return true if successful
 	void Release() noexcept { mutex.Release(); }
 
+	static constexpr uint32_t DefaultSharedSpiClockFrequency = 2000000;
+
 private:
-	void Enable() const;
+
+#if SAME5x || SAMC21
 	bool waitForTxReady() const noexcept;
 	bool waitForTxEmpty() const noexcept;
 	bool waitForRxReady() const noexcept;
 
-#if SAME5x || SAMC21
 	Sercom * const hardware;
 #elif RP2040
 	spi_inst_t *hardware;
 #endif
+
 	Mutex mutex;
 };
 
