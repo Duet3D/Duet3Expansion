@@ -83,7 +83,13 @@ private:
 	uint8_t currentAxis;
 	uint8_t ctrlReg_0x20;
 	Pin int1Pin;
+
+# if ACCELEROMETER_USES_SPI
+	alignas(2) uint8_t transferBuffer[2 + (6 * 32)];			// 1 dummy byte for alignment, one register address byte, 192 data bytes to read entire FIFO
+	uint8_t* const dataBuffer = transferBuffer + 2;
+# else
 	alignas(2) uint8_t dataBuffer[6 * 32];
+#endif
 };
 
 #endif
