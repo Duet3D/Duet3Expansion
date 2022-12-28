@@ -12,6 +12,7 @@
 SharedSpiDevice::SharedSpiDevice(uint8_t spiInstanceNum) noexcept
 	: hardware((spiInstanceNum == 0) ? spi0 : spi1)
 {
+	mutex.Create("SPI");
 }
 
 void SharedSpiDevice::Disable() const noexcept
