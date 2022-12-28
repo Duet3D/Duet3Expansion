@@ -10,7 +10,7 @@
 
 #include <RepRapFirmware.h>
 
-#if SUPPORT_I2C_SENSORS && SUPPORT_LIS3DH
+#if SUPPORT_LIS3DH
 
 class CanMessageGeneric;
 class CanMessageStartAccelerometer;

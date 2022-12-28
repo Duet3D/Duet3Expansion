@@ -80,7 +80,7 @@ constexpr Pin DriverDiagPins[NumDrivers] = { GpioPin(22) };
 #define SUPPORT_THERMISTORS		1
 #define SUPPORT_SPI_SENSORS		1
 #define SUPPORT_I2C_SENSORS		0
-#define SUPPORT_LIS3DH			0	//temporary
+#define SUPPORT_LIS3DH			1
 #define SUPPORT_DHT_SENSOR		0
 
 #define USE_MPU					0
@@ -125,7 +125,11 @@ constexpr GpioPinFunction SSPIMisoPinPeriphMode = GpioPinFunction::Spi;
 #endif
 
 #if SUPPORT_LIS3DH
+
+#define ACCELEROMETER_USES_SPI			(1)					// 0 if the accelerometer is connected via I2C, 1 if via SPI
+constexpr Pin Lis3dhCsPin = GpioPin(9);
 constexpr Pin Lis3dhInt1Pin = GpioPin(29);
+
 #endif
 
 // Table of pin functions that we are allowed to use
@@ -147,7 +151,7 @@ constexpr PinDescription PinTable[] =
 	{ PwmOutput::pwm5a,	AdcInput::none,		nullptr		},	// GPIO10 SPI SCLK
 	{ PwmOutput::pwm5b,	AdcInput::none,		nullptr		},	// GPIO11 SPI MOSI
 	{ PwmOutput::pwm6a,	AdcInput::none,		nullptr 	},	// GPIO12 SPI MISO
-	{ PwmOutput::pwm6b,	AdcInput::none,		nullptr		},	// GPIO13 SPI MAX31856 CS
+	{ PwmOutput::pwm6b,	AdcInput::none,		"max31865cs" },	// GPIO13 SPI MAX31856 CS
 	{ PwmOutput::pwm7a,	AdcInput::none,		"out2"		},	// GPIO14 FAN1
 	{ PwmOutput::pwm7b,	AdcInput::none,		"out1"		},	// GPIO15 FAN0
 	{ PwmOutput::pwm0a,	AdcInput::none,		nullptr		},	// GPIO16 SPI0 MISO

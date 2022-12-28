@@ -10,7 +10,17 @@
 
 #include <RepRapFirmware.h>
 
-#if SUPPORT_I2C_SENSORS && SUPPORT_LIS3DH
+#if SUPPORT_LIS3DH
+
+# if ACCELEROMETER_USES_SPI
+
+#include "SharedSpiClient.h"
+
+class LIS3DH : public SharedSpiClient
+{
+public:
+	LIS3DH(SharedSpiDevice& dev, Pin p_csPin, Pin p_int1Pin) noexcept;
+# else
 
 #include "SharedI2CClient.h"
 
@@ -18,6 +28,7 @@ class LIS3DH : public SharedI2CClient
 {
 public:
 	LIS3DH(SharedI2CMaster& dev, Pin p_int1Pin) noexcept;
+# endif
 
 	// Do a quick test to check whether the accelerometer is present, returning true if it is
 	bool CheckPresent() noexcept;

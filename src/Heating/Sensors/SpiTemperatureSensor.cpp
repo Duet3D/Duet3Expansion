@@ -12,7 +12,7 @@
 #include <Platform/Tasks.h>
 
 SpiTemperatureSensor::SpiTemperatureSensor(unsigned int sensorNum, const char *name, SpiMode spiMode, uint32_t clockFreq)
-	: SensorWithPort(sensorNum, name), device(Platform::GetSharedSpi(), clockFreq, spiMode, false)
+	: SensorWithPort(sensorNum, name), device(Platform::GetSharedSpi(), clockFreq, spiMode, NoPin, false)
 {
 }
 
@@ -25,7 +25,6 @@ bool SpiTemperatureSensor::ConfigurePort(const CanMessageGenericParser& parser, 
 
 void SpiTemperatureSensor::InitSpi()
 {
-	device.InitMaster();
 }
 
 // Send and receive 1 to 8 bytes of data and return the result as a single 32-bit word

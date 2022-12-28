@@ -39,7 +39,7 @@
 # endif
 #endif
 
-#if SUPPORT_I2C_SENSORS && SUPPORT_LIS3DH
+#if SUPPORT_LIS3DH
 # include "AccelerometerHandler.h"
 #endif
 
@@ -1126,7 +1126,7 @@ void CommandProcessor::Spin()
 			break;
 #endif
 
-#if SUPPORT_I2C_SENSORS && SUPPORT_LIS3DH
+#if SUPPORT_LIS3DH
 		case CanMessageType::accelerometerConfig:
 			requestId = buf->msg.generic.requestId;
 			rslt = AccelerometerHandler::ProcessConfigRequest(buf->msg.generic, replyRef);

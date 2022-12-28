@@ -7,7 +7,7 @@
 
 #include "AccelerometerHandler.h"
 
-#if SUPPORT_I2C_SENSORS && SUPPORT_LIS3DH
+#if SUPPORT_LIS3DH
 
 #include <RTOSIface/RTOSIface.h>
 #include <Hardware/LIS3DH.h>
@@ -218,7 +218,12 @@ static bool TranslateOrientation(uint8_t input) noexcept
 // Interface functions called by the main task
 void AccelerometerHandler::Init() noexcept
 {
+#if ACCELEROMETER_USES_SPI
+	LIS3DH *temp = new LIS3DH(Platform::GetSharedSpi(), Lis3dhCsPin, Lis3dhInt1Pin);
+#else
 	LIS3DH *temp = new LIS3DH(Platform::GetSharedI2C(), Lis3dhInt1Pin);
+#endif
+
 	if (temp->CheckPresent())
 	{
 		temp->Configure(samplingRate, resolution);

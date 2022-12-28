@@ -7,7 +7,7 @@
 
 #include "LIS3DH.h"
 
-#if SUPPORT_I2C_SENSORS && SUPPORT_LIS3DH
+#if SUPPORT_LIS3DH
 
 #include <Hardware/IoPorts.h>
 #include <Movement/StepTimer.h>
@@ -20,24 +20,42 @@ constexpr uint16_t LisAddresses[] =
 	0b0011101						// LIS3DSH with SEL connected to Vcc
 };
 
+constexpr uint32_t DefaultAccelerometerSpiFrequency = 2000000;
+const SpiMode lisMode = SpiMode::mode3;
 constexpr uint32_t Lis3dI2CTimeout = 25;
 constexpr uint8_t FifoInterruptLevel = 24;							// how full the FIFO must get before we want an interrupt
 
 static constexpr uint8_t WhoAmIValue_3DH = 0x33;
 static constexpr uint8_t WhoAmIValue_3DSH = 0x3F;
 
+#if ACCELEROMETER_USES_SPI
+
+LIS3DH::LIS3DH(SharedSpiDevice& dev, Pin p_csPin, Pin p_int1Pin) noexcept
+	: SharedSpiClient(dev, DefaultAccelerometerSpiFrequency, lisMode, p_csPin, false),
+	  taskWaiting(nullptr), int1Pin(p_int1Pin)
+{
+	SetCsPin(p_csPin);
+}
+
+#else
+
 LIS3DH::LIS3DH(SharedI2CMaster& dev, Pin p_int1Pin) noexcept
 	: SharedI2CClient(dev, LisAddresses[0]), taskWaiting(nullptr), int1Pin(p_int1Pin)
 {
 }
 
+#endif
+
 // Do a quick test to check whether the accelerometer is present, returning true if it is
 bool LIS3DH::CheckPresent() noexcept
 {
 	interruptError = false;
+
+#if !ACCELEROMETER_USES_SPI
 	for (uint16_t addr : LisAddresses)
 	{
 		SetAddress(addr);
+#endif
 		uint8_t val;
 		if (ReadRegister(LisRegister::WhoAmI, val))
 		{
@@ -52,7 +70,10 @@ bool LIS3DH::CheckPresent() noexcept
 				return true;
 			}
 		}
+#if !ACCELEROMETER_USES_SPI
 	}
+#endif
+
 	return false;
 }
 

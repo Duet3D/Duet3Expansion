@@ -42,7 +42,7 @@ Licence: GPL
 # include <Movement/StepperDrivers/TMC51xx.h>
 #endif
 
-#if SUPPORT_I2C_SENSORS && SUPPORT_LIS3DH
+#if SUPPORT_LIS3DH
 # include <CommandProcessing/AccelerometerHandler.h>
 #endif
 
@@ -395,7 +395,7 @@ void Heat::Exit()
 				boardStatusMsg->values[index++] = Platform::GetMcuTemperatures();
 				boardStatusMsg->hasMcuTemp = true;
 #endif
-#if SUPPORT_I2C_SENSORS && SUPPORT_LIS3DH
+#if SUPPORT_LIS3DH
 				boardStatusMsg->hasAccelerometer = AccelerometerHandler::IsPresent();
 #endif
 #if SUPPORT_CLOSED_LOOP
