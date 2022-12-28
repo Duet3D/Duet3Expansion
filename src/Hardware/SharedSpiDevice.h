@@ -17,6 +17,10 @@
 
 #include <RTOSIface/RTOSIface.h>
 
+#if RP2040
+# include "hardware/spi.h"
+#endif
+
 enum class SpiMode : uint8_t
 {
 	mode0 = 0, mode1, mode2, mode3
@@ -25,7 +29,11 @@ enum class SpiMode : uint8_t
 class SharedSpiDevice
 {
 public:
+#if SAME5x || SAMC21
 	SharedSpiDevice(uint8_t sercomNum, uint32_t dataInPad) noexcept;
+#elif RP2040
+	SharedSpiDevice(uint8_t spiInstanceNum) noexcept;
+#endif
 
 	void Disable() const noexcept;
 	void SetClockFrequencyAndMode(uint32_t freq, SpiMode mode) const noexcept;
@@ -39,7 +47,11 @@ private:
 	bool waitForTxEmpty() const noexcept;
 	bool waitForRxReady() const noexcept;
 
+#if SAME5x || SAMC21
 	Sercom * const hardware;
+#elif RP2040
+	spi_inst_t *hardware;
+#endif
 	Mutex mutex;
 };
 

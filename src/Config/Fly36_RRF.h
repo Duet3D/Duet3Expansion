@@ -37,7 +37,7 @@
 #define SUPPORT_TMC2160			0
 #define SUPPORT_TMC2660			0
 #define SUPPORT_TMC22xx			1
-#define SUPPORT_TMC2240			0		// TEMP! Duet3D boards using the RP2040 will likely use the TMC2240 stepper driver
+#define SUPPORT_TMC2240			0
 
 constexpr size_t NumDrivers = 1;
 constexpr size_t MaxSmartDrivers = 1;
@@ -78,8 +78,8 @@ constexpr Pin DriverDiagPins[NumDrivers] = { GpioPin(22) };
 #endif
 
 #define SUPPORT_THERMISTORS		1
-#define SUPPORT_SPI_SENSORS		0
-#define SUPPORT_I2C_SENSORS		0	//temporary
+#define SUPPORT_SPI_SENSORS		1
+#define SUPPORT_I2C_SENSORS		0
 #define SUPPORT_LIS3DH			0	//temporary
 #define SUPPORT_DHT_SENSOR		0
 
@@ -93,7 +93,7 @@ constexpr bool UseAlternateCanPins = false;
 constexpr size_t MaxPortsPerHeater = 1;
 
 constexpr size_t NumThermistorInputs = 2;
-constexpr float DefaultThermistorSeriesR = 4700.0;		// TEMP0 has 1k or 4k7 pullup, chamber thermistor has 4K7
+constexpr float DefaultThermistorSeriesR = 4700.0;		// TEMP0 has 1K or 4K7 pullup, chamber thermistor has 4K7
 
 constexpr Pin TempSensePins[NumThermistorInputs] = { GpioPin(26), GpioPin(27) };
 
@@ -113,32 +113,19 @@ constexpr bool LedActiveHigh = false;
 
 #if SUPPORT_SPI_SENSORS
 
-// Shared SPI using pins PA16,17,18. If changing this, also change the available pins in the pin table.
-constexpr uint8_t SspiSercomNumber = 1;
-constexpr uint32_t SspiDataInPad = 2;
-constexpr Pin SSPIMosiPin = PortAPin(16);
+// Shared SPI pin connections
+constexpr uint8_t SspiSpiInstanceNumber = 1;
+constexpr Pin SSPIMosiPin = GpioPin(11);
 constexpr GpioPinFunction SSPIMosiPinPeriphMode = GpioPinFunction::Spi;
-constexpr Pin SSPISclkPin = PortAPin(17);
+constexpr Pin SSPISclkPin = GpioPin(10);
 constexpr GpioPinFunction SSPISclkPinPeriphMode = GpioPinFunction::Spi;
-constexpr Pin SSPIMisoPin = PortAPin(18);
+constexpr Pin SSPIMisoPin = GpioPin(12);
 constexpr GpioPinFunction SSPIMisoPinPeriphMode = GpioPinFunction::Spi;
 
 #endif
 
-#if SUPPORT_I2C_SENSORS
-
-// I2C using pins GPIO8,9. If changing this, also change the available pins in the pin table.
-constexpr uint8_t I2CSercomNumber = 0;			// the I2C unit number we use
-constexpr Pin I2CSDAPin = GpioPin(8);
-constexpr GpioPinFunction I2CSDAPinPeriphMode = GpioPinFunction::I2c;
-constexpr Pin I2CSCLPin = GpioPin(9);
-constexpr GpioPinFunction I2CSCLPinPeriphMode = GpioPinFunction::I2c;
-//#define I2C_HANDLER		SERCOM3_Handler
-
-#endif
-
 #if SUPPORT_LIS3DH
-constexpr Pin Lis3dhInt1Pin = GpioPin(10);
+constexpr Pin Lis3dhInt1Pin = GpioPin(29);
 #endif
 
 // Table of pin functions that we are allowed to use

@@ -5,11 +5,11 @@
  *      Author: David
  */
 
-#include "SharedSpiDevice.h"
+#include <Hardware/SharedSpiDevice.h>
 
 #if SUPPORT_SPI_SENSORS || SUPPORT_CLOSED_LOOP || defined(ATEIO)
 
-#include "IoPorts.h"
+#include <Hardware/IoPorts.h>
 #include "DmacManager.h"
 #include "Serial.h"
 

@@ -919,7 +919,13 @@ void Platform::Init()
 	SetPinFunction(SSPIMosiPin, SSPIMosiPinPeriphMode);
 	SetPinFunction(SSPISclkPin, SSPISclkPinPeriphMode);
 	SetPinFunction(SSPIMisoPin, SSPIMisoPinPeriphMode);
+# if SAME5x || SAMC21
 	sharedSpi = new SharedSpiDevice(SspiSercomNumber, SspiDataInPad);
+# elif RP2040
+	sharedSpi = new SharedSpiDevice(SspiSpiInstanceNumber);
+# else
+# error Unsupported processor
+# endif
 #endif
 
 #if SUPPORT_I2C_SENSORS

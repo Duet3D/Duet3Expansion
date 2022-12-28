@@ -5,7 +5,7 @@
  *      Author: David
  */
 
-#include "SharedI2CMaster.h"
+#include <Hardware/SharedI2CMaster.h>
 
 #if SUPPORT_I2C_SENSORS && !RP2040
 
