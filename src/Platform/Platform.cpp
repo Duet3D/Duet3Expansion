@@ -382,6 +382,7 @@ namespace Platform
 		NVIC_SetPriority(EIC_IRQn, NvicPriorityPins);
 #elif RP2040
 		NVIC_SetPriority((IRQn_Type)StepTcIRQn, NvicPriorityStep);
+		NVIC_SetPriority(IO_IRQ_BANK0_IRQn, NvicPriorityPins);
 #else
 # error Undefined processor
 #endif

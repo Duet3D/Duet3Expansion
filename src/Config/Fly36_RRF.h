@@ -151,7 +151,7 @@ constexpr PinDescription PinTable[] =
 	{ PwmOutput::pwm5a,	AdcInput::none,		nullptr		},	// GPIO10 SPI SCLK
 	{ PwmOutput::pwm5b,	AdcInput::none,		nullptr		},	// GPIO11 SPI MOSI
 	{ PwmOutput::pwm6a,	AdcInput::none,		nullptr 	},	// GPIO12 SPI MISO
-	{ PwmOutput::pwm6b,	AdcInput::none,		"max31865cs" },	// GPIO13 SPI MAX31856 CS
+	{ PwmOutput::pwm6b,	AdcInput::none,		"max31865cs,rtdcs" },	// GPIO13 SPI MAX31856 CS
 	{ PwmOutput::pwm7a,	AdcInput::none,		"out2"		},	// GPIO14 FAN1
 	{ PwmOutput::pwm7b,	AdcInput::none,		"out1"		},	// GPIO15 FAN0
 	{ PwmOutput::pwm0a,	AdcInput::none,		nullptr		},	// GPIO16 SPI0 MISO
