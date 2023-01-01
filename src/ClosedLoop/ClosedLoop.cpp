@@ -141,7 +141,7 @@ namespace ClosedLoop
 	bool 	stepDirection = true;						// The direction the motor is attempting to take steps in
 	float	targetMotorSteps;							// The number of steps the motor should have taken relative to it's zero position
 	int32_t targetEncoderReading;						// The encoder reading we want, calculated from targetMotorSteps
-	float 	currentError;								// The current error
+	float 	currentError;								// The current error in full steps
 
 	DerivativeAveragingFilter<DerivativeFilterSize> derivativeFilter;	// An averaging filter to smooth the derivative of the error
 

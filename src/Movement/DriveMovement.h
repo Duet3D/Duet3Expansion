@@ -140,6 +140,11 @@ public:
 
 	DriveMovement() { };
 
+	void* operator new(size_t count) { return Tasks::AllocPermanent(count); }
+	void* operator new(size_t count, std::align_val_t align) { return Tasks::AllocPermanent(count, align); }
+	void operator delete(void* ptr) noexcept {}
+	void operator delete(void* ptr, std::align_val_t align) noexcept {}
+
 	bool CalcNextStepTime(const DDA &dda) SPEED_CRITICAL;
 	void PrepareCartesianAxis(const DDA& dda, const PrepParams& params) SPEED_CRITICAL;
 	void PrepareDeltaAxis(const DDA& dda, const PrepParams& params) SPEED_CRITICAL;
