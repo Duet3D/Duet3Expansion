@@ -12,6 +12,8 @@
 
 #if SUPPORT_DRIVERS
 
+#include <Platform/Tasks.h>
+
 #if SUPPORT_CLOSED_LOOP
 
 // Struct to pass data back to the ClosedLoop module

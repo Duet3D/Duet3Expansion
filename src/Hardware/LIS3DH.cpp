@@ -20,16 +20,16 @@ constexpr uint16_t LisAddresses[] =
 	0b0011101						// LIS3DSH with SEL connected to Vcc
 };
 
-constexpr uint32_t DefaultAccelerometerSpiFrequency = 2000000;
-const SpiMode lisMode = SpiMode::mode3;
-constexpr uint32_t Lis3dSpiTimeout = 25;							// timeout while waiting for the SPI bus
-constexpr uint32_t Lis3dI2CTimeout = 25;
 constexpr uint8_t FifoInterruptLevel = 24;							// how full the FIFO must get before we want an interrupt
 
 static constexpr uint8_t WhoAmIValue_3DH = 0x33;
 static constexpr uint8_t WhoAmIValue_3DSH = 0x3F;
 
 #if ACCELEROMETER_USES_SPI
+
+constexpr uint32_t DefaultAccelerometerSpiFrequency = 2000000;
+constexpr SpiMode lisMode = SpiMode::mode3;
+constexpr uint32_t Lis3dSpiTimeout = 25;							// timeout while waiting for the SPI bus
 
 LIS3DH::LIS3DH(SharedSpiDevice& dev, Pin p_csPin, Pin p_int1Pin) noexcept
 	: SharedSpiClient(dev, DefaultAccelerometerSpiFrequency, lisMode, p_csPin, false),
@@ -39,6 +39,8 @@ LIS3DH::LIS3DH(SharedSpiDevice& dev, Pin p_csPin, Pin p_int1Pin) noexcept
 }
 
 #else
+
+constexpr uint32_t Lis3dI2CTimeout = 25;
 
 LIS3DH::LIS3DH(SharedI2CMaster& dev, Pin p_int1Pin) noexcept
 	: SharedI2CClient(dev, LisAddresses[0]), taskWaiting(nullptr), int1Pin(p_int1Pin)

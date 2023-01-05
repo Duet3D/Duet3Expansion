@@ -41,8 +41,7 @@ static uint16_t AdcTransfer(uint16_t dataOut) noexcept
 void ExtendedAnalog::Init(SharedSpiDevice& sharedSpi) noexcept
 {
 	pinMode(ExtendedAdcCsPin, PinMode::OUTPUT_HIGH);
-	device = new SharedSpiClient(sharedSpi, AdcClockFrequency, AdcSpiMode, false);
-	device->SetCsPin(ExtendedAdcCsPin);
+	device = new SharedSpiClient(sharedSpi, AdcClockFrequency, AdcSpiMode, ExtendedAdcCsPin, false);
 
 	device->Select(TaskBase::TimeoutUnlimited);
 
