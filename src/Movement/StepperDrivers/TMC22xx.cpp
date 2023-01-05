@@ -1863,6 +1863,7 @@ bool DoTransaction(size_t driverNumber)
 #else
 	dmaFinished = false;
 #endif
+	TaskBase::ClearCurrentTaskNotifyCount();
 	currentDriver->StartTransfer();
 
 	// Wait for the end-of-transfer interrupt
