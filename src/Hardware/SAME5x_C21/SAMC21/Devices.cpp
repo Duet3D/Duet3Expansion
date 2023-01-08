@@ -30,14 +30,14 @@ void SerialPortDeinit(AsyncSerial*) noexcept
 	pinMode(PortBPin(2), INPUT_PULLUP);
 }
 
-AsyncSerial uart0(5, 1, 512, 512, SerialPortInit, SerialPortDeinit);
+AsyncSerial uart0(5, 1, 32, 128, SerialPortInit, SerialPortDeinit);
 
 extern "C" void SERCOM5_Handler()
 {
 	uart0.Interrupt();
 }
 
-#else
+# elif defined(DEBUG)
 
 void SerialPortInit(AsyncSerial*) noexcept
 {
@@ -49,14 +49,14 @@ void SerialPortDeinit(AsyncSerial*) noexcept
 	pinMode(PortAPin(12), INPUT_PULLUP);
 }
 
-AsyncSerial uart0(4, 3, 512, 512, SerialPortInit, SerialPortDeinit);
+AsyncSerial uart0(4, 3, 32, 128, SerialPortInit, SerialPortDeinit);
 
 extern "C" void SERCOM4_Handler()
 {
 	uart0.Interrupt();
 }
 
-#endif
+# endif
 
 void DeviceInit() noexcept
 {
