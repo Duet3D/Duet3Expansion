@@ -64,9 +64,6 @@ extern "C" [[noreturn]] void MoveLoop(void * param) noexcept
 
 Move::Move()
 	: currentDda(nullptr), extrudersPrinting(false), taskWaitingForMoveToComplete(nullptr), scheduledMoves(0), completedMoves(0), numHiccups(0)
-#if SUPPORT_CLOSED_LOOP
-	, netMicrostepsTaken(0), driver0MicrostepShift(-4)					// default to x16 microstepping
-#endif
 {
 	kinematics = Kinematics::Create(KinematicsType::cartesian);			// default to Cartesian
 
@@ -87,6 +84,9 @@ Move::Move()
 	for (size_t i = 0; i < NumDrivers; ++i)
 	{
 		movementAccumulators[i] = 0;
+#if SUPPORT_CLOSED_LOOP
+		netMicrostepsTaken[i] = 0;
+#endif
 	}
 }
 
@@ -311,7 +311,7 @@ void Move::CurrentMoveCompleted()
 		movementAccumulators[0] += stepsTaken;
 		lastMoveStepsTaken[0] = stepsTaken;
 # if SUPPORT_CLOSED_LOOP
-		netMicrostepsTaken += stepsTaken;
+		netMicrostepsTaken[0] += stepsTaken;
 # endif
 #else
 		for (size_t driver = 0; driver < NumDrivers; ++driver)
@@ -319,6 +319,9 @@ void Move::CurrentMoveCompleted()
 			const int32_t stepsTaken = cdda->GetStepsTaken(driver);
 			lastMoveStepsTaken[driver] = stepsTaken;
 			movementAccumulators[driver] += stepsTaken;
+# if SUPPORT_CLOSED_LOOP
+			netMicrostepsTaken[driver] += stepsTaken;
+# endif
 		}
 #endif
 		currentDda = nullptr;
@@ -460,14 +463,7 @@ void Move::DebugPrintCdda() const noexcept
 
 bool Move::SetMicrostepping(size_t driver, unsigned int microsteps, bool interpolate) noexcept
 {
-	const bool ret = SmartDrivers::SetMicrostepping(driver, microsteps, interpolate);
-# if SUPPORT_CLOSED_LOOP
-	if (ret && driver == 0)
-	{
-		driver0MicrostepShift = -(int)SmartDrivers::GetMicrostepShift(0);
-	}
-# endif
-	return ret;
+	return SmartDrivers::SetMicrostepping(driver, microsteps, interpolate);
 }
 
 #endif
