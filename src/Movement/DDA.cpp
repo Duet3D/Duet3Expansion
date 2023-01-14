@@ -228,7 +228,15 @@ bool DDA::Init(const CanMessageMovementLinear& msg)
 
 	// 3. Store some values
 	afterPrepare.moveStartTime = msg.whenToExecute;
+
+#if SUPPORT_CLOSED_LOOP
+	accelClocks = msg.accelerationClocks;
+	accelPlusSteadyClocks = msg.accelerationClocks + msg.steadyClocks;
+	clocksNeeded = accelPlusSteadyClocks + msg.decelClocks;
+#else
 	clocksNeeded = msg.accelerationClocks + msg.steadyClocks + msg.decelClocks;
+#endif
+
 	flags.isPrintingMove = (msg.pressureAdvanceDrives != 0);
 	flags.hadHiccup = false;
 	flags.goingSlow = false;

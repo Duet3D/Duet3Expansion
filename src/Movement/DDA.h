@@ -76,7 +76,7 @@ public:
 #endif
 
 #if SUPPORT_CLOSED_LOOP
-	void GetCurrentMotion(MotionParameters& mParams, int32_t netMicrostepsTaken, int microstepShift) const noexcept;
+	void GetCurrentMotion(size_t driver, uint32_t when, MotionParameters& mParams) const noexcept;
 #endif
 
 	void DebugPrint() const noexcept;												// print the DDA only
@@ -159,6 +159,10 @@ private:
 	float decelDistance;
 
 	uint32_t clocksNeeded;
+#if SUPPORT_CLOSED_LOOP
+	uint32_t accelClocks;
+	uint32_t accelPlusSteadyClocks;
+#endif
 
 	// Values that are not set or accessed before Prepare is called
 	struct
@@ -252,9 +256,34 @@ inline uint32_t DDA::GetStepInterval(size_t axis, uint32_t microstepShift) const
 #if SUPPORT_CLOSED_LOOP
 
 // Get the current position, speed and acceleration
-inline void DDA::GetCurrentMotion(MotionParameters& mParams, int32_t netMicrostepsTaken, int microstepShift) const noexcept
+inline void DDA::GetCurrentMotion(size_t driver, uint32_t when, MotionParameters& mParams) const noexcept
 {
-	return ddms[0].GetCurrentMotion(mParams, netMicrostepsTaken, microstepShift);
+	when -= afterPrepare.moveStartTime;
+	float pos, speed, acc;
+	if (when < accelClocks)
+	{
+		pos = (startSpeed + 0.5 * acceleration * (float)when) * (float)when;
+		speed = startSpeed + acceleration * (float)when;
+		acc = acceleration;
+	}
+	else if (when < accelPlusSteadyClocks)
+	{
+		pos = accelDistance + topSpeed * (float)(when - accelClocks);
+		speed = topSpeed;
+		acc = 0.0;
+	}
+	else
+	{
+		const float timeDecelerating = (float)(when - accelPlusSteadyClocks);
+		pos = (1.0 - decelDistance) + (topSpeed - 0.5 * deceleration * timeDecelerating) * timeDecelerating;
+		speed = topSpeed - timeDecelerating * deceleration;
+		acc = -deceleration;
+	}
+
+	const DriveMovement& dm = ddms[driver];
+	mParams.position = pos * (float)dm.totalSteps;
+	mParams.speed = speed * (float)dm.totalSteps;
+	mParams.acceleration = acc * (float)dm.totalSteps;
 }
 
 #endif
