@@ -15,6 +15,10 @@
 #include "DDA.h"								// needed because of our inline functions
 #include "Kinematics/Kinematics.h"
 
+#if SUPPORT_CLOSED_LOOP
+# include "StepperDrivers/TMC51xx.h"				// for SmartDrivers::GetMicrostepShift
+#endif
+
 // Define the number of DDAs
 const unsigned int DdaRingLength = 50;
 
@@ -67,7 +71,7 @@ public:
 
 #if SUPPORT_CLOSED_LOOP
 	void GetCurrentMotion(size_t driver, uint32_t when, bool closedLoopEnabled, MotionParameters& mParams) noexcept;	// get the net full steps taken, including in the current move so far, also speed and acceleration
-	void SetCurrentMotorSteps(size_t driver, int32_t steps) noexcept;
+	void SetCurrentMotorSteps(size_t driver, float fullSteps) noexcept;
 #endif
 
 	const volatile int32_t *GetLastMoveStepsTaken() const noexcept { return lastMoveStepsTaken; }
@@ -136,7 +140,12 @@ inline void Move::GetCurrentMotion(size_t driver, uint32_t when, bool closedLoop
 		{
 			// This move is executing
 			cdda->GetCurrentMotion(driver, clocksSinceMoveStart, mParams);
-			mParams.position += (float)netMicrostepsTaken[driver];
+
+			// Convert microsteps to full steps. We use ldexpf to avoid a division.
+			const int negMicrostepShift = -(int)SmartDrivers::GetMicrostepShift(driver);
+			mParams.position = ldexpf(mParams.position + (float)netMicrostepsTaken[driver], negMicrostepShift);
+			mParams.speed = ldexp(mParams.speed, negMicrostepShift);
+			mParams.acceleration = ldexp(mParams.acceleration, negMicrostepShift);
 			return;
 		}
 
@@ -167,13 +176,13 @@ inline void Move::GetCurrentMotion(size_t driver, uint32_t when, bool closedLoop
 	}
 
 	// Here when there is no current move
-	mParams.position = netMicrostepsTaken[driver];
+	mParams.position = ldexpf((float)netMicrostepsTaken[driver], -(int)SmartDrivers::GetMicrostepShift(driver));
 	mParams.speed = mParams.acceleration = 0.0;
 }
 
-inline void Move::SetCurrentMotorSteps(size_t driver, int32_t steps) noexcept
+inline void Move::SetCurrentMotorSteps(size_t driver, float fullSteps) noexcept
 {
-	netMicrostepsTaken[driver] = steps;
+	netMicrostepsTaken[driver] = lrintf(ldexpf(fullSteps, (int)SmartDrivers::GetMicrostepShift(driver)));
 }
 
 #endif

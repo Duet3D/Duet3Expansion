@@ -195,8 +195,7 @@ namespace ClosedLoop
 	void SetTargetToCurrentPosition() noexcept
 	{
 		targetMotorSteps = (float)encoder->GetCurrentCount() / encoder->GetCountsPerStep();
-		bool dummy;
-		moveInstance->SetCurrentMotorSteps(0, lrintf(targetMotorSteps * SmartDrivers::GetMicrostepping(0, dummy)));
+		moveInstance->SetCurrentMotorSteps(0, targetMotorSteps);
 	}
 
 	extern "C" [[noreturn]] void DataTransmissionLoop(void *param) noexcept;
@@ -781,10 +780,7 @@ void ClosedLoop::ControlLoop() noexcept
 		// Calculate and store the current error in full steps
 		MotionParameters mParams;
 		moveInstance->GetCurrentMotion(0, loopCallTime, closedLoopEnabled, mParams);
-		{
-			bool dummy;
-			targetMotorSteps = mParams.position/(float)SmartDrivers::GetMicrostepping(0, dummy);
-		}
+		targetMotorSteps = mParams.position;
 
 		const float targetEncoderReading = rintf(targetMotorSteps * encoder->GetCountsPerStep());
 		currentError = (float)(targetEncoderReading - encoder->GetCurrentCount()) * encoder->GetStepsPerCount();
