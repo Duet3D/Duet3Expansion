@@ -39,21 +39,21 @@ struct MoveParameters
 	uint32_t endstopChecks;
 	uint16_t flags;
 
-	MoveParameters()
+	MoveParameters() noexcept
 	{
 		accelDistance = steadyDistance = decelDistance = requestedSpeed = startSpeed = topSpeed = endSpeed = targetNextSpeed = 0.0;
 		endstopChecks = 0;
 		flags = 0;
 	}
 
-	void DebugPrint() const
+	void DebugPrint() const noexcept
 	{
 		Platform::MessageF(DebugMessage, "%f,%f,%f,%f,%f,%f,%f,%f,%08" PRIX32 ",%04x\n",
 								(double)accelDistance, (double)steadyDistance, (double)decelDistance, (double)requestedSpeed, (double)startSpeed, (double)topSpeed, (double)endSpeed,
 								(double)targetNextSpeed, endstopChecks, flags);
 	}
 
-	static void PrintHeading()
+	static void PrintHeading() noexcept
 	{
 		Platform::Message(DebugMessage,
 									"accelDistance,steadyDistance,decelDistance,requestedSpeed,startSpeed,topSpeed,endSpeed,"
@@ -67,7 +67,7 @@ static MoveParameters savedMoves[NumSavedMoves];
 static size_t savedMovePointer = 0;
 
 // Print the saved moves in CSV format for analysis
-/*static*/ void DDA::PrintMoves()
+/*static*/ void DDA::PrintMoves() noexcept
 {
 	// Print the saved moved in CSV format
 	MoveParameters::PrintHeading();
@@ -80,7 +80,7 @@ static size_t savedMovePointer = 0;
 
 #else
 
-/*static*/ void DDA::PrintMoves() { }
+/*static*/ void DDA::PrintMoves() noexcept { }
 
 #endif
 
@@ -91,7 +91,7 @@ uint32_t DDA::maxOverdueIncrement = 0;
 uint32_t DDA::stepsRequested[NumDrivers];
 uint32_t DDA::stepsDone[NumDrivers];
 
-DDA::DDA(DDA* n) : next(n), prev(nullptr), state(empty)
+DDA::DDA(DDA* n) noexcept : next(n), prev(nullptr), state(empty)
 {
 	for (size_t i = 0; i < NumDrivers; ++i)
 	{
@@ -104,7 +104,7 @@ DDA::DDA(DDA* n) : next(n), prev(nullptr), state(empty)
 // Return the number of clocks this DDA still needs to execute.
 // This could be slightly negative, if the move is overdue for completion.
 int32_t DDA::GetTimeLeft() const
-pre(state == executing || state == frozen || state == completed)
+pre(state == executing || state == frozen || state == completed) noexcept
 {
 	return (state == completed) ? 0
 			: (state == executing) ? (int32_t)(afterPrepare.moveStartTime + clocksNeeded - StepTimer::GetTimerTicks())
@@ -116,7 +116,7 @@ pre(state == executing || state == frozen || state == completed)
 // Insert the specified drive into the step list, in step time order.
 // We insert the drive before any existing entries with the same step time for best performance. Now that we generate step pulses
 // for multiple motors simultaneously, there is no need to preserve round-robin order.
-inline void DDA::InsertDM(DriveMovement *dm)
+inline void DDA::InsertDM(DriveMovement *dm) noexcept
 {
 	DriveMovement **dmp = &activeDMs;
 	while (*dmp != nullptr && (*dmp)->nextStepTime < dm->nextStepTime)
@@ -129,7 +129,7 @@ inline void DDA::InsertDM(DriveMovement *dm)
 
 // Remove this drive from the list of drives with steps due
 // Called from the step ISR only.
-void DDA::RemoveDM(size_t drive)
+void DDA::RemoveDM(size_t drive) noexcept
 {
 	DriveMovement **dmp = &activeDMs;
 	while (*dmp != nullptr)
@@ -146,7 +146,7 @@ void DDA::RemoveDM(size_t drive)
 
 #endif
 
-void DDA::DebugPrintVector(const char *name, const float *vec, size_t len) const
+void DDA::DebugPrintVector(const char *name, const float *vec, size_t len) const noexcept
 {
 	debugPrintf("%s=", name);
 	for (size_t i = 0; i < len; ++i)
@@ -157,7 +157,7 @@ void DDA::DebugPrintVector(const char *name, const float *vec, size_t len) const
 }
 
 // Print the text followed by the DDA only
-void DDA::DebugPrint() const
+void DDA::DebugPrint() const noexcept
 {
 	debugPrintf("DDA: a=%e d=%e startv=%e topv=%e endv=%e sa=%f sd=%f\n"
 				"cks=%" PRIu32 " sstcda=%" PRIu32 " tstcddpdsc=%" PRIu32 " exac=%" PRIi32 "\n",
@@ -166,7 +166,7 @@ void DDA::DebugPrint() const
 }
 
 // Print the DDA and active DMs
-void DDA::DebugPrintAll() const
+void DDA::DebugPrintAll() const noexcept
 {
 	DebugPrint();
 	for (size_t axis = 0; axis < NumDrivers; ++axis)
@@ -176,7 +176,7 @@ void DDA::DebugPrintAll() const
 }
 
 // This is called by Move to initialize all DDAs
-void DDA::Init()
+void DDA::Init() noexcept
 {
 	state = empty;
 	for (DriveMovement& ddm : ddms)
@@ -187,7 +187,7 @@ void DDA::Init()
 
 // Set up a real move. Return true if it represents real movement, else false.
 // Return true if it is a real move
-bool DDA::Init(const CanMessageMovementLinear& msg)
+bool DDA::Init(const CanMessageMovementLinear& msg) noexcept
 {
 	// 0. Initialise the endpoints, which are used for diagnostic purposes, and set up the DriveMovement objects
 	bool realMove = false;
@@ -202,11 +202,14 @@ bool DDA::Init(const CanMessageMovementLinear& msg)
 		dm.nextDM = nullptr;
 #endif
 		const int32_t delta = (drive < numDrivers) ? msg.perDrive[drive].steps : 0;
+#if SUPPORT_CLOSED_LOOP
+		dm.netSteps = delta;
+#endif
 		if (delta != 0)
 		{
 			realMove = true;
 			dm.totalSteps = labs(delta);				// for now this is the number of net steps, but gets adjusted later if there is a reverse in direction
-			dm.direction = (delta >= 0);				// for now this is the direction of net movement, but gets adjusted later if it is a delta movement
+			dm.direction = (delta >= 0);				// for now this is the direction of net movement, but it gets adjusted later if it is a delta movement
 			stepsRequested[drive] += labs(delta);
 			dm.state = DMState::moving;
 		}
@@ -425,13 +428,19 @@ uint32_t DDA::lastDirChangeTime = 0;
 // It returns true if it needs to be called again on the DDA of the new current move, otherwise false.
 // This must be as fast as possible, because it determines the maximum movement speed.
 // This may occasionally get called prematurely, so it must check that a step is actually due before generating one.
-void DDA::StepDrivers(uint32_t now)
+void DDA::StepDrivers(uint32_t now) noexcept
 {
+#if SUPPORT_CLOSED_LOOP && COUNT_STEPS == 0
+	if (ClosedLoop::GetClosedLoopEnabled(0))
+	{
+		return;
+	}
+#endif
+
 	// Determine whether the driver is due for stepping, overdue, or will be due very shortly
 	if (ddms[0].state == DMState::moving && (now - afterPrepare.moveStartTime) + StepTimer::MinInterruptInterval >= ddms[0].nextStepTime)	// if the next step is due
 	{
 		// Step the driver
-		bool hasMoreSteps;
 
 # if SUPPORT_SLOW_DRIVERS
 		if (Platform::IsSlowDriver())									// if using a slow driver
@@ -444,7 +453,7 @@ void DDA::StepDrivers(uint32_t now)
 			}
 			StepGenTc->CTRLBSET.reg = TC_CTRLBSET_CMD_RETRIGGER;
 			lastStepHighTime = StepTimer::GetTimerTicks();
-			hasMoreSteps = ddms[0].CalcNextStepTime(*this);
+			ddms[0].CalcNextStepTime(*this);
 #  else
 			uint32_t lastStepPulseTime = lastStepLowTime;
 			while (now - lastStepPulseTime < Platform::GetSlowDriverStepLowClocks() || now - lastDirChangeTime < Platform::GetSlowDriverDirSetupClocks())
@@ -469,25 +478,27 @@ void DDA::StepDrivers(uint32_t now)
 			hasMoreSteps = ddms[0].CalcNextStepTime(*this);
 # else
 #  if SUPPORT_CLOSED_LOOP
-#   if COUNT_STEPS
+#   if COUNT_STEPS == 2
 			ClosedLoop::TakeStep();											//TODO remove this when in closed loop mode and ClosedLoop calls GetCurrentMotion instead of relying on TakeStep
 #   endif
+#   if COUNT_STEPS != 0
 			if (ClosedLoop::GetClosedLoopEnabled(0))
 			{
-				hasMoreSteps = ddms[0].CalcNextStepTime(*this);				//TODO remove this when we refactor the code to not generate step interrupts when in closed loop mode
+				ddms[0].CalcNextStepTime(*this);				//TODO remove this when we refactor the code to not generate step interrupts when in closed loop mode
 			}
 			else
+#   endif
 #  endif
 			{
 				Platform::StepDriverHigh();									// generate the step
-				hasMoreSteps = ddms[0].CalcNextStepTime(*this);
+				ddms[0].CalcNextStepTime(*this);
 				Platform::StepDriverLow();									// set the step pin low
 			}
 # endif
 		}
 
 		++stepsDone[0];
-		if (hasMoreSteps && ddms[0].directionChanged)
+		if (ddms[0].directionChanged)
 		{
 			ddms[0].directionChanged = false;
 			Platform::SetDirection(ddms[0].direction);
@@ -507,7 +518,7 @@ void DDA::StepDrivers(uint32_t now)
 // It returns true if it needs to be called again on the DDA of the new current move, otherwise false.
 // This must be as fast as possible, because it determines the maximum movement speed.
 // This may occasionally get called prematurely, so it must check that a step is actually due before generating one.
-void DDA::StepDrivers(uint32_t now)
+void DDA::StepDrivers(uint32_t now) noexcept
 {
 	// 1. There is no step 1.
 	// 2. Determine which drivers are due for stepping, overdue, or will be due very shortly
@@ -581,7 +592,7 @@ void DDA::StepDrivers(uint32_t now)
 
 // Stop a drive and re-calculate the corresponding endpoint. Return the number of net steps taken.
 // For extruder drivers, we need to be able to calculate how much of the extrusion was completed after calling this.
-void DDA::StopDrive(size_t drive)
+void DDA::StopDrive(size_t drive) noexcept
 {
 	DriveMovement& dm = ddms[drive];
 	if (dm.state == DMState::moving)
@@ -599,7 +610,7 @@ void DDA::StopDrive(size_t drive)
 	}
 }
 
-void DDA::StopDrivers(uint16_t whichDrives)
+void DDA::StopDrivers(uint16_t whichDrives) noexcept
 {
 	if (state == executing)
 	{
@@ -613,7 +624,7 @@ void DDA::StopDrivers(uint16_t whichDrives)
 	}
 }
 
-bool DDA::HasStepError() const
+bool DDA::HasStepError() const noexcept
 {
 #if 0	//debug
 	if (hadHiccup)

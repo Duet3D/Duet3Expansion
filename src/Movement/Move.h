@@ -66,7 +66,7 @@ public:
 	[[noreturn]] void TaskLoop() noexcept;
 
 #if SUPPORT_CLOSED_LOOP
-	void GetCurrentMotion(size_t driver, uint32_t when, MotionParameters& mParams) const noexcept;	// get the net full steps taken, including in the current move so far, also speed and acceleration
+	void GetCurrentMotion(size_t driver, uint32_t when, bool closedLoopEnabled, MotionParameters& mParams) noexcept;	// get the net full steps taken, including in the current move so far, also speed and acceleration
 	void SetCurrentMotorSteps(size_t driver, int32_t steps) noexcept;
 #endif
 
@@ -120,20 +120,62 @@ inline uint32_t Move::GetStepInterval(size_t axis, uint32_t microstepShift) cons
 
 // Get the motor position in the current move so far, also speed and acceleration
 // Inlined because it is only called from one place
-inline void Move::GetCurrentMotion(size_t driver, uint32_t when, MotionParameters& mParams) const noexcept
+inline void Move::GetCurrentMotion(size_t driver, uint32_t when, bool closedLoopEnabled, MotionParameters& mParams) noexcept
 {
 	AtomicCriticalSectionLocker lock;				// we don't want an interrupt changing currentDda or netMicrostepsTaken while we execute this
-	const DDA * const cdda = currentDda;			// capture volatile variable
-	if (cdda != nullptr)
+	for (;;)
 	{
-		cdda->GetCurrentMotion(driver, when, mParams);
-		mParams.position += netMicrostepsTaken[driver];
+		DDA * cdda = currentDda;					// capture volatile variable
+		if (cdda == nullptr)
+		{
+			break;
+		}
+
+		const uint32_t clocksSinceMoveStart = when - cdda->GetStartTime();
+		if (clocksSinceMoveStart <= cdda->GetClocksNeeded())
+		{
+			// This move is executing
+			cdda->GetCurrentMotion(driver, clocksSinceMoveStart, mParams);
+			mParams.position += (float)netMicrostepsTaken[driver];
+			return;
+		}
+
+		// If the machine has been idle, a move is made current a little ahead of when it is due, so check whether the move hasn't started yet
+		if ((int32_t)clocksSinceMoveStart < 0)
+		{
+			break;
+		}
+
+#if COUNT_STEPS == 0
+		// This move has finished. If we are running in closed loop mode, mark it as completed because there will be no interrupt to do that.
+		if (!closedLoopEnabled)
+		{
+			break;
+		}
+
+		const uint32_t finishTime = cdda->GetMoveFinishTime();	// calculate when this move should finish
+		cdda->SetCompleted();
+		CurrentMoveCompleted();
+
+		// Start the next move if one is ready
+		cdda = ddaRingGetPointer;
+		if (cdda->GetState() != DDA::frozen)
+		{
+			break;
+		}
+
+		StartNextMove(cdda, finishTime);
+#else
+		// This move has finished
+		cdda->GetCurrentMotion(driver, cdda->GetClocksNeeded(), mParams);
+		mParams.position += (float)netMicrostepsTaken[driver];
+		return;
+#endif
 	}
-	else
-	{
-		mParams.position = netMicrostepsTaken[driver];
-		mParams.speed = mParams.acceleration = 0.0;
-	}
+
+	// Here when there is no current move
+	mParams.position = netMicrostepsTaken[driver];
+	mParams.speed = mParams.acceleration = 0.0;
 }
 
 inline void Move::SetCurrentMotorSteps(size_t driver, int32_t steps) noexcept

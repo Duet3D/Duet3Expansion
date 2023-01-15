@@ -16,6 +16,8 @@
 
 #if SUPPORT_CLOSED_LOOP
 
+# include <ClosedLoop/ClosedLoop.h>
+
 // Struct to pass data back to the ClosedLoop module
 struct MotionParameters
 {
@@ -33,7 +35,7 @@ class DDA;
 #define ROUND_TO_NEAREST	(0)			// 1 for round to nearest (as used in 1.20beta10), 0 for round down (as used prior to 1.20beta10)
 
 // Rounding functions, to improve code clarity. Also allows a quick switch between round-to-nearest and round down in the movement code.
-inline uint32_t roundU32(float f)
+inline uint32_t roundU32(float f) noexcept
 {
 #if ROUND_TO_NEAREST
 	return (uint32_t)lrintf(f);
@@ -42,7 +44,7 @@ inline uint32_t roundU32(float f)
 #endif
 }
 
-inline uint32_t roundU32(double d)
+inline uint32_t roundU32(double d) noexcept
 {
 #if ROUND_TO_NEAREST
 	return lrint(d);
@@ -51,7 +53,7 @@ inline uint32_t roundU32(double d)
 #endif
 }
 
-inline int32_t roundS32(float f)
+inline int32_t roundS32(float f) noexcept
 {
 #if ROUND_TO_NEAREST
 	return lrintf(f);
@@ -60,7 +62,7 @@ inline int32_t roundS32(float f)
 #endif
 }
 
-inline int32_t roundS32(double d)
+inline int32_t roundS32(double d) noexcept
 {
 #if ROUND_TO_NEAREST
 	return lrint(d);
@@ -69,7 +71,7 @@ inline int32_t roundS32(double d)
 #endif
 }
 
-inline uint64_t roundU64(float f)
+inline uint64_t roundU64(float f) noexcept
 {
 #if ROUND_TO_NEAREST
 	return (uint64_t)llrintf(f);
@@ -78,7 +80,7 @@ inline uint64_t roundU64(float f)
 #endif
 }
 
-inline uint64_t roundU64(double d)
+inline uint64_t roundU64(double d) noexcept
 {
 #if ROUND_TO_NEAREST
 	return (uint64_t)llrint(d);
@@ -87,7 +89,7 @@ inline uint64_t roundU64(double d)
 #endif
 }
 
-inline int64_t roundS64(float f)
+inline int64_t roundS64(float f) noexcept
 {
 #if ROUND_TO_NEAREST
 	return llrintf(f);
@@ -96,7 +98,7 @@ inline int64_t roundS64(float f)
 #endif
 }
 
-inline int64_t roundS64(double d)
+inline int64_t roundS64(double d) noexcept
 {
 #if ROUND_TO_NEAREST
 	return llrint(d);
@@ -140,24 +142,24 @@ class DriveMovement
 public:
 	friend class DDA;
 
-	DriveMovement() { };
+	DriveMovement() noexcept { };
 
-	void* operator new(size_t count) { return Tasks::AllocPermanent(count); }
-	void* operator new(size_t count, std::align_val_t align) { return Tasks::AllocPermanent(count, align); }
+	void* operator new(size_t count) noexcept { return Tasks::AllocPermanent(count); }
+	void* operator new(size_t count, std::align_val_t align) noexcept { return Tasks::AllocPermanent(count, align); }
 	void operator delete(void* ptr) noexcept {}
 	void operator delete(void* ptr, std::align_val_t align) noexcept {}
 
-	bool CalcNextStepTime(const DDA &dda) SPEED_CRITICAL;
-	void PrepareCartesianAxis(const DDA& dda, const PrepParams& params) SPEED_CRITICAL;
-	void PrepareDeltaAxis(const DDA& dda, const PrepParams& params) SPEED_CRITICAL;
-	void PrepareExtruder(const DDA& dda, const PrepParams& params, float speedChange) SPEED_CRITICAL;
-	void DebugPrint(char c) const;
-	int32_t GetNetStepsLeft() const;
-	int32_t GetNetStepsTaken() const;
-	bool IsDeltaMovement() const { return isDeltaMovement; }
+	bool CalcNextStepTime(const DDA &dda) noexcept SPEED_CRITICAL;
+	void PrepareCartesianAxis(const DDA& dda, const PrepParams& params) noexcept SPEED_CRITICAL;
+	void PrepareDeltaAxis(const DDA& dda, const PrepParams& params) noexcept SPEED_CRITICAL;
+	void PrepareExtruder(const DDA& dda, const PrepParams& params, float speedChange) noexcept SPEED_CRITICAL;
+	void DebugPrint(char c) const noexcept;
+	int32_t GetNetStepsLeft() const noexcept;
+	int32_t GetNetStepsTaken() const noexcept;
+	bool IsDeltaMovement() const noexcept { return isDeltaMovement; }
 
 #if HAS_SMART_DRIVERS
-	uint32_t GetStepInterval(uint32_t msShift) const;	// Get the current full step interval for this axis or extruder
+	uint32_t GetStepInterval(uint32_t msShift) const noexcept;	// Get the current full step interval for this axis or extruder
 #endif
 
 #if SUPPORT_CLOSED_LOOP
@@ -165,9 +167,9 @@ public:
 #endif
 
 private:
-	bool CalcNextStepTimeCartesianFull(const DDA &dda) SPEED_CRITICAL;
+	bool CalcNextStepTimeCartesianFull(const DDA &dda) noexcept SPEED_CRITICAL;
 #if SUPPORT_DELTA_MOVEMENT
-	bool CalcNextStepTimeDeltaFull(const DDA &dda) SPEED_CRITICAL;
+	bool CalcNextStepTimeDeltaFull(const DDA &dda) noexcept SPEED_CRITICAL;
 #endif
 
 	static DriveMovement *freeList;
@@ -188,6 +190,9 @@ private:
 	uint8_t stepsTillRecalc;							// how soon we need to recalculate
 
 	uint32_t totalSteps;								// total number of steps for this move
+#if SUPPORT_CLOSED_LOOP
+	int32_t netSteps;
+#endif
 
 	// These values change as the step is executed, except for reverseStartStep
 	uint32_t nextStep;									// number of steps already done
@@ -273,7 +278,7 @@ private:
 // Return true if there are more steps to do. When finished, leave nextStep == totalSteps + 1 and state == DMState::idle.
 // This is also used for extruders on delta machines.
 // We inline this part to speed things up when we are doing double/quad/octal stepping.
-inline bool DriveMovement::CalcNextStepTime(const DDA &dda)
+inline bool DriveMovement::CalcNextStepTime(const DDA &dda) noexcept
 {
 	++nextStep;
 	if (nextStep <= totalSteps)
@@ -299,7 +304,7 @@ inline bool DriveMovement::CalcNextStepTime(const DDA &dda)
 
 // Return the number of net steps left for the move in the forwards direction.
 // We have already taken nextSteps - 1 steps, unless nextStep is zero.
-inline int32_t DriveMovement::GetNetStepsLeft() const
+inline int32_t DriveMovement::GetNetStepsLeft() const noexcept
 {
 	int32_t netStepsLeft;
 	if (reverseStartStep > totalSteps)		// if no reverse phase
@@ -320,8 +325,15 @@ inline int32_t DriveMovement::GetNetStepsLeft() const
 
 // Return the number of net steps already taken for the move in the forwards direction.
 // We have already taken nextSteps - 1 steps, unless nextStep is zero.
-inline int32_t DriveMovement::GetNetStepsTaken() const
+inline int32_t DriveMovement::GetNetStepsTaken() const noexcept
 {
+#if SUPPORT_CLOSED_LOOP
+	if (ClosedLoop::GetClosedLoopEnabled(drive))
+	{
+		return netSteps;
+	}
+#endif
+
 	int32_t netStepsTaken;
 	if (nextStep < reverseStartStep || reverseStartStep > totalSteps)				// if no reverse phase, or not started it yet
 	{
@@ -337,7 +349,7 @@ inline int32_t DriveMovement::GetNetStepsTaken() const
 #if HAS_SMART_DRIVERS
 
 // Get the current full step interval for this axis or extruder
-inline uint32_t DriveMovement::GetStepInterval(uint32_t microstepShift) const
+inline uint32_t DriveMovement::GetStepInterval(uint32_t microstepShift) const noexcept
 {
 	return ((nextStep >> microstepShift) != 0)		// if at least 1 full step done
 		? stepInterval << microstepShift			// return the interval between steps converted to full steps

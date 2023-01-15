@@ -139,7 +139,7 @@ void Move::Exit()
 // Must be called with base priority greater than or equal to the step interrupt, to avoid a race with the step ISR.
 // startTime is the earliest that we can start the move, but we must not start it before its planned time
 // After calling this, the first interrupt must be scheduled
-inline void Move::StartNextMove(DDA *cdda, uint32_t startTime)
+void Move::StartNextMove(DDA *cdda, uint32_t startTime) noexcept
 {
 	if (!cdda->IsPrintingMove())
 	{
@@ -301,7 +301,7 @@ bool Move::SetKinematics(KinematicsType k)
 
 // This is called from the step ISR when the current move has been completed
 // The state field of currentDda must be set to DDAState::completed before calling this
-void Move::CurrentMoveCompleted()
+void Move::CurrentMoveCompleted() noexcept
 {
 	{
 		DDA *const cdda = currentDda;				// capture volatile variable

@@ -139,7 +139,10 @@ namespace ClosedLoop
 
 	// Working variables
 	// These variables are all used to calculate the required motor currents. They are declared here so they can be reported on by the data collection task
+#if COUNT_STEPS == 2
 	bool 	stepDirection = true;						// The direction the motor is attempting to take steps in
+#endif
+
 	float	targetMotorSteps;							// The number of steps the motor should have taken relative to it's zero position
 	float 	currentError;								// The current error in full steps
 
@@ -196,7 +199,8 @@ namespace ClosedLoop
 	void SetTargetToCurrentPosition() noexcept
 	{
 		targetMotorSteps = (float)encoder->GetCurrentCount() / encoder->GetCountsPerStep();
-		moveInstance->SetCurrentMotorSteps(0, lrintf(targetMotorSteps));
+		bool dummy;
+		moveInstance->SetCurrentMotorSteps(0, lrintf(targetMotorSteps * SmartDrivers::GetMicrostepping(0, dummy)));
 	}
 
 	extern "C" [[noreturn]] void DataTransmissionLoop(void *param) noexcept;
@@ -764,6 +768,7 @@ void ClosedLoop::ReadyToCalibrate(bool store) noexcept
 void ClosedLoop::AdjustTargetMotorSteps(float amount) noexcept
 {
 	targetMotorSteps += amount;
+	moveInstance->SetCurrentMotorSteps(0, lrintf(targetMotorSteps));
 }
 
 void ClosedLoop::ControlLoop() noexcept
@@ -778,6 +783,14 @@ void ClosedLoop::ControlLoop() noexcept
 	if (encoder != nullptr && !encoder->TakeReading())
 	{
 		// Calculate and store the current error in full steps
+#if COUNT_STEPS < 2
+		MotionParameters mParams;
+		moveInstance->GetCurrentMotion(0, loopCallTime, closedLoopEnabled, mParams);
+		{
+			bool dummy;
+			targetMotorSteps = mParams.position/(float)SmartDrivers::GetMicrostepping(0, dummy);
+		}
+#endif
 		const float targetEncoderReading = rintf(targetMotorSteps * encoder->GetCountsPerStep());
 		currentError = (float)(targetEncoderReading - encoder->GetCurrentCount()) * encoder->GetStepsPerCount();
 		derivativeFilter.ProcessReading(currentError, loopCallTime);
@@ -1050,7 +1063,8 @@ void ClosedLoop::Diagnostics(const StringRef& reply) noexcept
 	//reply.catf(", event status 0x%08" PRIx32 ", TCC2 CTRLA 0x%08" PRIx32 ", TCC2 EVCTRL 0x%08" PRIx32, EVSYS->CHSTATUS.reg, QuadratureTcc->CTRLA.reg, QuadratureTcc->EVCTRL.reg);
 }
 
-#if COUNT_STEPS
+#if COUNT_STEPS == 2
+
 // TODO: Instead of having this take step, why not use the current DDA to calculate where we need to be?
 void ClosedLoop::TakeStep() noexcept
 {
@@ -1063,6 +1077,12 @@ void ClosedLoop::TakeStep() noexcept
 #  error Cannot support closed loop with the specified hardware
 # endif
 }
+
+void ClosedLoop::SetStepDirection(bool dir) noexcept
+{
+	stepDirection = dir;
+}
+
 #endif
 
 void ClosedLoop::StartingMove() noexcept
@@ -1083,11 +1103,6 @@ StandardDriverStatus ClosedLoop::ReadLiveStatus() noexcept
 	result.closedLoopNotTuned = ((tuningError & encoder->MinimalTuningNeeded()) != 0);
 	result.closedLoopTuningError = ((tuningError & TuningError::AnyTuningFailure) != 0);
 	return result;
-}
-
-void ClosedLoop::SetStepDirection(bool dir) noexcept
-{
-	stepDirection = dir;
 }
 
 bool ClosedLoop::GetClosedLoopEnabled(size_t driver) noexcept

@@ -21,7 +21,7 @@
 #include <Platform/Platform.h>
 
 // Prepare this DM for a Cartesian axis move
-void DriveMovement::PrepareCartesianAxis(const DDA& dda, const PrepParams& params)
+void DriveMovement::PrepareCartesianAxis(const DDA& dda, const PrepParams& params) noexcept
 {
 	isDeltaMovement = false;
 
@@ -78,7 +78,7 @@ void DriveMovement::PrepareCartesianAxis(const DDA& dda, const PrepParams& param
 
 // Prepare this DM for a Delta axis move
 //TODO convert this to normalised coordinates like we did for Cartesian drives
-void DriveMovement::PrepareDeltaAxis(const DDA& dda, const PrepParams& params)
+void DriveMovement::PrepareDeltaAxis(const DDA& dda, const PrepParams& params) noexcept
 {
 	isDeltaMovement = true;
 
@@ -191,7 +191,7 @@ void DriveMovement::PrepareDeltaAxis(const DDA& dda, const PrepParams& params)
 #endif
 
 // Prepare this DM for an extruder move. The caller has already checked that pressure advance is enabled.
-void DriveMovement::PrepareExtruder(const DDA& dda, const PrepParams& params, float speedChange)
+void DriveMovement::PrepareExtruder(const DDA& dda, const PrepParams& params, float speedChange) noexcept
 {
 	// Calculate the pressure advance parameters
 	const float compensationClocks = Platform::GetPressureAdvanceClocks(drive);
@@ -206,7 +206,7 @@ void DriveMovement::PrepareExtruder(const DDA& dda, const PrepParams& params, fl
 
 	// Recalculate the net total step count to allow for compensation. It may be negative.
 	const int32_t extraSteps = (dda.endSpeed - dda.startSpeed) * compensationClocks * totalSteps;
-	int32_t netSteps = (int32_t)totalSteps + extraSteps;
+	int32_t netStepsNeeded = (int32_t)totalSteps + extraSteps;
 
 	// Calculate the acceleration phase parameters
 	const float accelCompensationDistance = compensationClocks * (dda.topSpeed - dda.startSpeed);
@@ -234,7 +234,7 @@ void DriveMovement::PrepareExtruder(const DDA& dda, const PrepParams& params, fl
 	// First check whether there is any deceleration at all, otherwise we may get strange results because of rounding errors
 	if (dda.decelDistance * totalSteps < 0.5)		// if less than 1 deceleration step
 	{
-		newTotalSteps = (uint32_t)max<int32_t>(netSteps, 0);
+		newTotalSteps = (uint32_t)max<int32_t>(netStepsNeeded, 0);
 		mp.cart.decelStartStep = reverseStartStep = newTotalSteps + 1;
 #if DM_USE_FPU
 		mp.cart.fFourMaxStepDistanceMinusTwoDistanceToStopTimesCsquaredDivD = 0.0;
@@ -268,10 +268,10 @@ void DriveMovement::PrepareExtruder(const DDA& dda, const PrepParams& params, fl
 #else
 											: twoDistanceToStopTimesCsquaredDivD/twoCsquaredTimesMmPerStepDivD;
 #endif
-		if (dda.endSpeed < compensationSpeedChange && (int32_t)stepsBeforeReverse > netSteps)
+		if (dda.endSpeed < compensationSpeedChange && (int32_t)stepsBeforeReverse > netStepsNeeded)
 		{
 			reverseStartStep = stepsBeforeReverse + 1;
-			newTotalSteps = (uint32_t)((int32_t)(2 * stepsBeforeReverse) - netSteps);
+			newTotalSteps = (uint32_t)((int32_t)(2 * stepsBeforeReverse) - netStepsNeeded);
 #if DM_USE_FPU
 			mp.cart.fFourMaxStepDistanceMinusTwoDistanceToStopTimesCsquaredDivD = (2 * stepsBeforeReverse) * fTwoCsquaredTimesMmPerStepDivD - fTwoDistanceToStopTimesCsquaredDivD;
 #else
@@ -282,11 +282,11 @@ void DriveMovement::PrepareExtruder(const DDA& dda, const PrepParams& params, fl
 		else
 		{
 			// There is no reverse phase. Check that we can actually do the last step requested.
-			if (netSteps > (int32_t)stepsBeforeReverse)
+			if (netStepsNeeded > (int32_t)stepsBeforeReverse)
 			{
-				netSteps = (int32_t)stepsBeforeReverse;
+				netStepsNeeded = (int32_t)stepsBeforeReverse;
 			}
-			newTotalSteps = (uint32_t)max<int32_t>(netSteps, 0);
+			newTotalSteps = (uint32_t)max<int32_t>(netStepsNeeded, 0);
 			reverseStartStep = newTotalSteps + 1;
 #if DM_USE_FPU
 			mp.cart.fFourMaxStepDistanceMinusTwoDistanceToStopTimesCsquaredDivD = 0.0;
@@ -359,7 +359,7 @@ void DriveMovement::DebugPrint(char c) const
 // Calculate and store the time since the start of the move when the next step for the specified DriveMovement is due.
 // Return true if there are more steps to do.
 // This is also used for extruders on delta machines.
-bool DriveMovement::CalcNextStepTimeCartesianFull(const DDA &dda)
+bool DriveMovement::CalcNextStepTimeCartesianFull(const DDA &dda) noexcept
 pre(nextStep < totalSteps; stepsTillRecalc == 0)
 {
 	// Work out how many steps to calculate at a time.
@@ -487,7 +487,7 @@ pre(nextStep < totalSteps; stepsTillRecalc == 0)
 
 // Calculate the time since the start of the move when the next step for the specified DriveMovement is due
 // Return true if there are more steps to do
-bool DriveMovement::CalcNextStepTimeDeltaFull(const DDA &dda)
+bool DriveMovement::CalcNextStepTimeDeltaFull(const DDA &dda) noexcept
 pre(nextStep < totalSteps; stepsTillRecalc == 0)
 {
 	// Work out how many steps to calculate at a time.

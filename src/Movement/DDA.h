@@ -13,8 +13,12 @@
 
 #if SUPPORT_DRIVERS
 
-#include "DriveMovement.h"
-#include "StepTimer.h"
+# include "DriveMovement.h"
+# include "StepTimer.h"
+
+# if SUPPORT_CLOSED_LOOP
+#  include <ClosedLoop/ClosedLoop.h>
+# endif
 
 struct CanMessageMovementLinear;
 struct CanMessageStopMovement;
@@ -72,15 +76,17 @@ public:
 	int32_t GetPosition(size_t driver) const noexcept { return endPoint[driver]; }
 
 #if HAS_SMART_DRIVERS
-	uint32_t GetStepInterval(size_t axis, uint32_t microstepShift) const noexcept;	// Get the current full step interval for this axis or extruder
+	uint32_t GetStepInterval(size_t axis, uint32_t microstepShift) const noexcept;					// Get the current full step interval for this axis or extruder
 #endif
 
 #if SUPPORT_CLOSED_LOOP
-	void GetCurrentMotion(size_t driver, uint32_t when, MotionParameters& mParams) const noexcept;
+	void GetCurrentMotion(size_t driver, uint32_t ticksSinceStart, MotionParameters& mParams) const noexcept;	// get the current desired position, speed and acceleration
+	uint32_t GetStartTime() const noexcept { return afterPrepare.moveStartTime; }
+	void SetCompleted() noexcept { state = completed; }
 #endif
 
-	void DebugPrint() const noexcept;												// print the DDA only
-	void DebugPrintAll() const noexcept;												// print the DDA and active DMs
+	void DebugPrint() const noexcept;																// print the DDA only
+	void DebugPrintAll() const noexcept;															// print the DDA and active DMs
 
 	static unsigned int GetAndClearStepErrors() noexcept;
 	static uint32_t GetAndClearMaxTicksOverdue() noexcept;
@@ -209,9 +215,14 @@ inline uint32_t DDA::WhenNextInterruptDue() const noexcept
 // Base priority must be >= NvicPriorityStep or interrupts disabled when calling this
 inline bool DDA::ScheduleNextStepInterrupt(StepTimer& timer) const noexcept
 {
-	if (likely(state == executing))
+#if SUPPORT_CLOSED_LOOP && COUNT_STEPS == 0
+	if (!ClosedLoop::GetClosedLoopEnabled(0))
+#endif
 	{
-		return timer.ScheduleCallbackFromIsr(WhenNextInterruptDue() + afterPrepare.moveStartTime);
+		if (likely(state == executing))
+		{
+			return timer.ScheduleCallbackFromIsr(WhenNextInterruptDue() + afterPrepare.moveStartTime);
+		}
 	}
 	return false;
 }
@@ -231,7 +242,7 @@ inline void DDA::InsertHiccup(uint32_t now) noexcept
 }
 
 // Return the number of net steps already taken in this move by a particular drive
-inline int32_t DDA::GetStepsTaken(size_t drive) const
+inline int32_t DDA::GetStepsTaken(size_t drive) const noexcept
 {
 	return ddms[drive].GetNetStepsTaken();
 }
@@ -256,34 +267,35 @@ inline uint32_t DDA::GetStepInterval(size_t axis, uint32_t microstepShift) const
 #if SUPPORT_CLOSED_LOOP
 
 // Get the current position, speed and acceleration. Interrupts are disabled on entry and must remain disabled.
-inline void DDA::GetCurrentMotion(size_t driver, uint32_t when, MotionParameters& mParams) const noexcept
+// Return true if successful, false if no move is in progress.
+inline void DDA::GetCurrentMotion(size_t driver, uint32_t ticksSinceStart, MotionParameters& mParams) const noexcept
 {
-	when -= afterPrepare.moveStartTime;
+	//TODO allow for pressure advance
 	float pos, speed, acc;
-	if (when < accelClocks)
+	if (ticksSinceStart < accelClocks)
 	{
-		pos = (startSpeed + 0.5 * acceleration * (float)when) * (float)when;
-		speed = startSpeed + acceleration * (float)when;
+		pos = (startSpeed + 0.5 * acceleration * (float)ticksSinceStart) * (float)ticksSinceStart;
+		speed = startSpeed + acceleration * (float)ticksSinceStart;
 		acc = acceleration;
 	}
-	else if (when < accelPlusSteadyClocks)
+	else if (ticksSinceStart < accelPlusSteadyClocks)
 	{
-		pos = accelDistance + topSpeed * (float)(when - accelClocks);
+		pos = accelDistance + topSpeed * (float)(ticksSinceStart - accelClocks);
 		speed = topSpeed;
 		acc = 0.0;
 	}
 	else
 	{
-		const float timeDecelerating = (float)(when - accelPlusSteadyClocks);
+		const float timeDecelerating = (float)(ticksSinceStart - accelPlusSteadyClocks);
 		pos = (1.0 - decelDistance) + (topSpeed - 0.5 * deceleration * timeDecelerating) * timeDecelerating;
 		speed = topSpeed - timeDecelerating * deceleration;
 		acc = -deceleration;
 	}
 
 	const DriveMovement& dm = ddms[driver];
-	mParams.position = pos * (float)dm.totalSteps;
-	mParams.speed = speed * (float)dm.totalSteps;
-	mParams.acceleration = acc * (float)dm.totalSteps;
+	mParams.position = pos * (float)dm.netSteps;
+	mParams.speed = speed * (float)dm.netSteps;
+	mParams.acceleration = acc * (float)dm.netSteps;
 }
 
 #endif
