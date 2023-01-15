@@ -67,6 +67,7 @@ public:
 
 #if SUPPORT_CLOSED_LOOP
 	void GetCurrentMotion(size_t driver, uint32_t when, MotionParameters& mParams) const noexcept;	// get the net full steps taken, including in the current move so far, also speed and acceleration
+	void SetCurrentMotorSteps(size_t driver, int32_t steps) noexcept;
 #endif
 
 	const volatile int32_t *GetLastMoveStepsTaken() const noexcept { return lastMoveStepsTaken; }
@@ -121,7 +122,7 @@ inline uint32_t Move::GetStepInterval(size_t axis, uint32_t microstepShift) cons
 // Inlined because it is only called from one place
 inline void Move::GetCurrentMotion(size_t driver, uint32_t when, MotionParameters& mParams) const noexcept
 {
-	AtomicCriticalSectionLocker lock;
+	AtomicCriticalSectionLocker lock;				// we don't want an interrupt changing currentDda or netMicrostepsTaken while we execute this
 	const DDA * const cdda = currentDda;			// capture volatile variable
 	if (cdda != nullptr)
 	{
@@ -133,6 +134,11 @@ inline void Move::GetCurrentMotion(size_t driver, uint32_t when, MotionParameter
 		mParams.position = netMicrostepsTaken[driver];
 		mParams.speed = mParams.acceleration = 0.0;
 	}
+}
+
+inline void Move::SetCurrentMotorSteps(size_t driver, int32_t steps) noexcept
+{
+	netMicrostepsTaken[driver] = steps;
 }
 
 #endif

@@ -1694,7 +1694,7 @@ void Platform::SetDirection(bool direction)
 
 # if SUPPORT_CLOSED_LOOP
 	ClosedLoop::SetStepDirection(d);
-	if (ClosedLoop::GetClosedLoopEnabled())
+	if (ClosedLoop::GetClosedLoopEnabled(0))
 	{
 		return;
 	}

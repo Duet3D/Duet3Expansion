@@ -822,7 +822,7 @@ void TmcDriverState::UpdateCurrent() noexcept
 	constexpr uint32_t MaxStandstillCurrentTimes256 = 256 * (uint32_t)MaximumStandstillCurrent;
 	const uint16_t desiredStandstillCurrentFraction =
 #if SUPPORT_CLOSED_LOOP
-		(ClosedLoop::GetClosedLoopEnabled()) ? 256 : standstillCurrentFraction;
+		(ClosedLoop::GetClosedLoopEnabled(axisNumber)) ? 256 : standstillCurrentFraction;
 #else
 		standstillCurrentFraction;
 #endif

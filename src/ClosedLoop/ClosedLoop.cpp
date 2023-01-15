@@ -45,6 +45,7 @@ using std::numeric_limits;
 
 # include <math.h>
 # include <Platform/Platform.h>
+# include <Movement/Move.h>
 # include <General/Bitmap.h>
 # include <Platform/TaskPriorities.h>
 # include <CAN/CanInterface.h>
@@ -140,7 +141,6 @@ namespace ClosedLoop
 	// These variables are all used to calculate the required motor currents. They are declared here so they can be reported on by the data collection task
 	bool 	stepDirection = true;						// The direction the motor is attempting to take steps in
 	float	targetMotorSteps;							// The number of steps the motor should have taken relative to it's zero position
-	int32_t targetEncoderReading;						// The encoder reading we want, calculated from targetMotorSteps
 	float 	currentError;								// The current error in full steps
 
 	DerivativeAveragingFilter<DerivativeFilterSize> derivativeFilter;	// An averaging filter to smooth the derivative of the error
@@ -193,6 +193,11 @@ namespace ClosedLoop
 	GCodeResult ProcessBasicTuningResult(const StringRef& reply) noexcept;
 	GCodeResult ProcessCalibrationResult(const StringRef& reply) noexcept;
 	void ReportTuningErrors(TuningErrors tuningErrorBitmask, const StringRef& reply) noexcept;
+	void SetTargetToCurrentPosition() noexcept
+	{
+		targetMotorSteps = (float)encoder->GetCurrentCount() / encoder->GetCountsPerStep();
+		moveInstance->SetCurrentMotorSteps(0, lrintf(targetMotorSteps));
+	}
 
 	extern "C" [[noreturn]] void DataTransmissionLoop(void *param) noexcept;
 	extern "C" [[noreturn]] void EncoderCalibrationLoop(void *param) noexcept;
@@ -519,8 +524,7 @@ GCodeResult ClosedLoop::ProcessBasicTuningResult(const StringRef& reply) noexcep
 #endif
 	PIDITerm = 0.0;
 	derivativeFilter.Reset();
-	targetEncoderReading = encoder->GetCurrentCount();
-	targetMotorSteps = (float)targetEncoderReading / encoder->GetCountsPerStep();
+	SetTargetToCurrentPosition();
 	tuningError &= ~TuningError::TuningOrCalibrationInProgress;
 
 	const float hyst = encoder->GetMeasuredHysteresis();
@@ -612,8 +616,7 @@ GCodeResult ClosedLoop::ProcessCalibrationResult(const StringRef& reply) noexcep
 
 	PIDITerm = 0.0;
 	derivativeFilter.Reset();
-	targetEncoderReading = encoder->GetCurrentCount();
-	targetMotorSteps = (float)targetEncoderReading / encoder->GetCountsPerStep();
+	SetTargetToCurrentPosition();
 
 	const float hyst = encoder->GetMeasuredHysteresis();
 	if (hyst >= MaxSafeBacklash)
@@ -761,7 +764,6 @@ void ClosedLoop::ReadyToCalibrate(bool store) noexcept
 void ClosedLoop::AdjustTargetMotorSteps(float amount) noexcept
 {
 	targetMotorSteps += amount;
-	targetEncoderReading = lrintf(targetMotorSteps * encoder->GetCountsPerStep());
 }
 
 void ClosedLoop::ControlLoop() noexcept
@@ -776,6 +778,7 @@ void ClosedLoop::ControlLoop() noexcept
 	if (encoder != nullptr && !encoder->TakeReading())
 	{
 		// Calculate and store the current error in full steps
+		const float targetEncoderReading = rintf(targetMotorSteps * encoder->GetCountsPerStep());
 		currentError = (float)(targetEncoderReading - encoder->GetCurrentCount()) * encoder->GetStepsPerCount();
 		derivativeFilter.ProcessReading(currentError, loopCallTime);
 
@@ -1047,6 +1050,7 @@ void ClosedLoop::Diagnostics(const StringRef& reply) noexcept
 	//reply.catf(", event status 0x%08" PRIx32 ", TCC2 CTRLA 0x%08" PRIx32 ", TCC2 EVCTRL 0x%08" PRIx32, EVSYS->CHSTATUS.reg, QuadratureTcc->CTRLA.reg, QuadratureTcc->EVCTRL.reg);
 }
 
+#if COUNT_STEPS
 // TODO: Instead of having this take step, why not use the current DDA to calculate where we need to be?
 void ClosedLoop::TakeStep() noexcept
 {
@@ -1055,16 +1059,19 @@ void ClosedLoop::TakeStep() noexcept
 	const unsigned int microsteps = SmartDrivers::GetMicrostepping(0, dummy);
 	const float microstepAngle = (microsteps == 0) ? 1.0 : 1.0/microsteps;
 	targetMotorSteps += (stepDirection ? -microstepAngle : +microstepAngle);
-	targetEncoderReading = lrintf(targetMotorSteps * encoder->GetCountsPerStep());
+# else
+#  error Cannot support closed loop with the specified hardware
+# endif
+}
+#endif
 
+void ClosedLoop::StartingMove() noexcept
+{
 	if (samplingMode == RecordingMode::OnNextMove)
 	{
 		dataCollectionStartTicks = whenNextSampleDue = StepTimer::GetTimerTicks();
 		samplingMode = RecordingMode::Immediate;
 	}
-# else
-#  error Cannot support closed loop with the specified hardware
-# endif
 }
 
 StandardDriverStatus ClosedLoop::ReadLiveStatus() noexcept
@@ -1083,9 +1090,13 @@ void ClosedLoop::SetStepDirection(bool dir) noexcept
 	stepDirection = dir;
 }
 
-bool ClosedLoop::GetClosedLoopEnabled() noexcept
+bool ClosedLoop::GetClosedLoopEnabled(size_t driver) noexcept
 {
+ #if SINGLE_DRIVER
 	return closedLoopEnabled;
+ #else
+#  error Cannot support closed loop with the specified hardware
+# endif
 }
 
 void ClosedLoop::ResetError(size_t driver) noexcept
@@ -1097,8 +1108,7 @@ void ClosedLoop::ResetError(size_t driver) noexcept
 		const bool err = encoder->TakeReading();
 		(void)err;		//TODO handle error
 		derivativeFilter.Reset();
-		targetEncoderReading = encoder->GetCurrentCount();
-		targetMotorSteps = targetEncoderReading * encoder->GetStepsPerCount();
+		SetTargetToCurrentPosition();
 	}
 # else
 #  error Cannot support closed loop with the specified hardware
@@ -1144,8 +1154,7 @@ bool ClosedLoop::SetClosedLoopEnabled(size_t driver, bool enabled, const StringR
 		desiredStepPhase = initialStepPhase;							// set this to be picked up later in DriverSwitchedToClosedLoop
 		PIDITerm = 0.0;
 		derivativeFilter.Reset();
-		targetEncoderReading = encoder->GetCurrentCount();
-		targetMotorSteps = (float)targetEncoderReading / encoder->GetCountsPerStep();
+		SetTargetToCurrentPosition();
 
 		// Set the target position to the current position
 		ResetError(0);													// this calls ReadState again and sets up targetMotorSteps

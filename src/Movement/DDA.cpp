@@ -365,7 +365,7 @@ bool DDA::Init(const CanMessageMovementLinear& msg)
 // Start executing this move. Must be called with interrupts disabled, to avoid a race condition.
 // startTime is the earliest that we can start the move, but we must not start it before its planned time
 // After calling this, the first interrupt must be scheduled
-void DDA::Start(uint32_t tim)
+void DDA::Start(uint32_t tim) noexcept
 {
 	const int32_t ticksOverdue = (int32_t)(tim - afterPrepare.moveStartTime);
 	if (ticksOverdue > 0)
@@ -405,6 +405,10 @@ void DDA::Start(uint32_t tim)
 			}
 		}
 	}
+#endif
+
+#if SUPPORT_CLOSED_LOOP
+	ClosedLoop::StartingMove();
 #endif
 }
 
@@ -465,8 +469,10 @@ void DDA::StepDrivers(uint32_t now)
 			hasMoreSteps = ddms[0].CalcNextStepTime(*this);
 # else
 #  if SUPPORT_CLOSED_LOOP
+#   if COUNT_STEPS
 			ClosedLoop::TakeStep();											//TODO remove this when in closed loop mode and ClosedLoop calls GetCurrentMotion instead of relying on TakeStep
-			if (ClosedLoop::GetClosedLoopEnabled())
+#   endif
+			if (ClosedLoop::GetClosedLoopEnabled(0))
 			{
 				hasMoreSteps = ddms[0].CalcNextStepTime(*this);				//TODO remove this when we refactor the code to not generate step interrupts when in closed loop mode
 			}
