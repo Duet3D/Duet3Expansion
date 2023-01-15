@@ -146,7 +146,6 @@ inline void Move::GetCurrentMotion(size_t driver, uint32_t when, bool closedLoop
 			break;
 		}
 
-#if COUNT_STEPS == 0
 		// This move has finished. If we are running in closed loop mode, mark it as completed because there will be no interrupt to do that.
 		if (!closedLoopEnabled)
 		{
@@ -165,12 +164,6 @@ inline void Move::GetCurrentMotion(size_t driver, uint32_t when, bool closedLoop
 		}
 
 		StartNextMove(cdda, finishTime);
-#else
-		// This move has finished
-		cdda->GetCurrentMotion(driver, cdda->GetClocksNeeded(), mParams);
-		mParams.position += (float)netMicrostepsTaken[driver];
-		return;
-#endif
 	}
 
 	// Here when there is no current move

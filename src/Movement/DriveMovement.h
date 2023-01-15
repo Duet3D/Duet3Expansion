@@ -163,7 +163,7 @@ public:
 #endif
 
 #if SUPPORT_CLOSED_LOOP
-	void GetCurrentMotion(MotionParameters& mParams, int32_t netMicrostepsTaken, int microstepShift) const noexcept;
+	void AdjustNetSteps(float proportion) noexcept;
 #endif
 
 private:
@@ -360,13 +360,9 @@ inline uint32_t DriveMovement::GetStepInterval(uint32_t microstepShift) const no
 
 #if SUPPORT_CLOSED_LOOP
 
-// This is called on the current DDA with interrupts disabled, to report the current position, speed and acceleration
-// netMicrostepsTaken is the position in microsteps at the start of this move
-inline void DriveMovement::GetCurrentMotion(MotionParameters& mParams, int32_t netMicrostepsTaken, int microstepShift) const noexcept
+inline void DriveMovement::AdjustNetSteps(float proportion) noexcept
 {
-	// When we switch to a segment-based approach we will calculate the position directly.
-	mParams.position = ldexp(netMicrostepsTaken + GetNetStepsTaken(), microstepShift);
-	mParams.speed = mParams.acceleration = 0;
+	netSteps = lrintf((float)netSteps * proportion);
 }
 
 #endif

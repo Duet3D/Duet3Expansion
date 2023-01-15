@@ -12,8 +12,6 @@
 
 #if SUPPORT_CLOSED_LOOP
 
-#define COUNT_STEPS		1		// 0 to use new code, 1 to use new code but still generate interrupts, 2 to use old code
-
 # include <CanMessageFormats.h>
 # include <General/NamedEnum.h>
 # include <Movement/StepTimer.h>
@@ -61,10 +59,6 @@ namespace ClosedLoop
 
 	// Methods called by the motion system
 	void ControlLoop() noexcept;
-#if COUNT_STEPS == 2
-	void TakeStep() noexcept;
-	void SetStepDirection(bool) noexcept;
-#endif
 	void StartingMove() noexcept;
 	StandardDriverStatus ReadLiveStatus() noexcept;
 	bool GetClosedLoopEnabled(size_t driver) noexcept;

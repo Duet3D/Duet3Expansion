@@ -430,12 +430,10 @@ uint32_t DDA::lastDirChangeTime = 0;
 // This may occasionally get called prematurely, so it must check that a step is actually due before generating one.
 void DDA::StepDrivers(uint32_t now) noexcept
 {
-#if SUPPORT_CLOSED_LOOP && COUNT_STEPS == 0
 	if (ClosedLoop::GetClosedLoopEnabled(0))
 	{
 		return;
 	}
-#endif
 
 	// Determine whether the driver is due for stepping, overdue, or will be due very shortly
 	if (ddms[0].state == DMState::moving && (now - afterPrepare.moveStartTime) + StepTimer::MinInterruptInterval >= ddms[0].nextStepTime)	// if the next step is due
@@ -477,23 +475,9 @@ void DDA::StepDrivers(uint32_t now) noexcept
 			StepGenTc->CTRLBSET.reg = TC_CTRLBSET_CMD_RETRIGGER;
 			hasMoreSteps = ddms[0].CalcNextStepTime(*this);
 # else
-#  if SUPPORT_CLOSED_LOOP
-#   if COUNT_STEPS == 2
-			ClosedLoop::TakeStep();											//TODO remove this when in closed loop mode and ClosedLoop calls GetCurrentMotion instead of relying on TakeStep
-#   endif
-#   if COUNT_STEPS != 0
-			if (ClosedLoop::GetClosedLoopEnabled(0))
-			{
-				ddms[0].CalcNextStepTime(*this);				//TODO remove this when we refactor the code to not generate step interrupts when in closed loop mode
-			}
-			else
-#   endif
-#  endif
-			{
-				Platform::StepDriverHigh();									// generate the step
-				ddms[0].CalcNextStepTime(*this);
-				Platform::StepDriverLow();									// set the step pin low
-			}
+			Platform::StepDriverHigh();									// generate the step
+			ddms[0].CalcNextStepTime(*this);
+			Platform::StepDriverLow();									// set the step pin low
 # endif
 		}
 
@@ -590,35 +574,57 @@ void DDA::StepDrivers(uint32_t now) noexcept
 
 #endif
 
-// Stop a drive and re-calculate the corresponding endpoint. Return the number of net steps taken.
-// For extruder drivers, we need to be able to calculate how much of the extrusion was completed after calling this.
-void DDA::StopDrive(size_t drive) noexcept
-{
-	DriveMovement& dm = ddms[drive];
-	if (dm.state == DMState::moving)
-	{
-		dm.state = DMState::idle;
-#if SINGLE_DRIVER
-		state = completed;
-#else
-		RemoveDM(drive);
-		if (activeDMs == nullptr)
-		{
-			state = completed;
-		}
-#endif
-	}
-}
-
 void DDA::StopDrivers(uint16_t whichDrives) noexcept
 {
 	if (state == executing)
 	{
+#if SUPPORT_CLOSED_LOOP
+		const uint32_t ticksSinceStart = StepTimer::GetTimerTicks() - afterPrepare.moveStartTime;
+		float pos;
+		if ((int32_t)ticksSinceStart <= 0)
+		{
+			pos = 0.0;
+		}
+		else if (ticksSinceStart < accelClocks)
+		{
+			pos = (startSpeed + 0.5 * acceleration * (float)ticksSinceStart) * (float)ticksSinceStart;
+		}
+		else if (ticksSinceStart < accelPlusSteadyClocks)
+		{
+			pos = accelDistance + topSpeed * (float)(ticksSinceStart - accelClocks);
+		}
+		else if (ticksSinceStart < clocksNeeded)
+		{
+			const float timeDecelerating = (float)(ticksSinceStart - accelPlusSteadyClocks);
+			pos = (1.0 - decelDistance) + (topSpeed - 0.5 * deceleration * timeDecelerating) * timeDecelerating;
+		}
+		else
+		{
+			pos = 1.0;
+		}
+#endif
 		for (size_t drive = 0; drive < NumDrivers; ++drive)
 		{
 			if (whichDrives & (1u << drive))
 			{
-				StopDrive(drive);
+				DriveMovement& dm = ddms[drive];
+				if (dm.state == DMState::moving)
+				{
+					dm.state = DMState::idle;
+#if SUPPORT_CLOSED_LOOP
+					dm.AdjustNetSteps(pos);				// adjust netSteps to be the amount actually moved
+#endif
+
+#if SINGLE_DRIVER
+					state = completed;
+#else
+					RemoveDM(drive);
+					if (activeDMs == nullptr)
+					{
+						state = completed;
+					}
+#endif
+				}
 			}
 		}
 	}

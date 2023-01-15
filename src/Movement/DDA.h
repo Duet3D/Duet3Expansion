@@ -126,7 +126,6 @@ public:
 	static uint32_t stepsRequested[NumDrivers], stepsDone[NumDrivers];
 
 private:
-	void StopDrive(size_t drive) noexcept;								// stop movement of a drive and recalculate the endpoint
 	uint32_t WhenNextInterruptDue() const noexcept;						// return when the next interrupt is due relative to the move start time
 
 #if !SINGLE_DRIVER
@@ -215,9 +214,7 @@ inline uint32_t DDA::WhenNextInterruptDue() const noexcept
 // Base priority must be >= NvicPriorityStep or interrupts disabled when calling this
 inline bool DDA::ScheduleNextStepInterrupt(StepTimer& timer) const noexcept
 {
-#if SUPPORT_CLOSED_LOOP && COUNT_STEPS == 0
 	if (!ClosedLoop::GetClosedLoopEnabled(0))
-#endif
 	{
 		if (likely(state == executing))
 		{

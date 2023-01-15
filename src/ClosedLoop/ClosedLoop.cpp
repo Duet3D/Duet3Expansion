@@ -139,10 +139,6 @@ namespace ClosedLoop
 
 	// Working variables
 	// These variables are all used to calculate the required motor currents. They are declared here so they can be reported on by the data collection task
-#if COUNT_STEPS == 2
-	bool 	stepDirection = true;						// The direction the motor is attempting to take steps in
-#endif
-
 	float	targetMotorSteps;							// The number of steps the motor should have taken relative to it's zero position
 	float 	currentError;								// The current error in full steps
 
@@ -783,14 +779,13 @@ void ClosedLoop::ControlLoop() noexcept
 	if (encoder != nullptr && !encoder->TakeReading())
 	{
 		// Calculate and store the current error in full steps
-#if COUNT_STEPS < 2
 		MotionParameters mParams;
 		moveInstance->GetCurrentMotion(0, loopCallTime, closedLoopEnabled, mParams);
 		{
 			bool dummy;
 			targetMotorSteps = mParams.position/(float)SmartDrivers::GetMicrostepping(0, dummy);
 		}
-#endif
+
 		const float targetEncoderReading = rintf(targetMotorSteps * encoder->GetCountsPerStep());
 		currentError = (float)(targetEncoderReading - encoder->GetCurrentCount()) * encoder->GetStepsPerCount();
 		derivativeFilter.ProcessReading(currentError, loopCallTime);
@@ -1062,28 +1057,6 @@ void ClosedLoop::Diagnostics(const StringRef& reply) noexcept
 	//DEBUG
 	//reply.catf(", event status 0x%08" PRIx32 ", TCC2 CTRLA 0x%08" PRIx32 ", TCC2 EVCTRL 0x%08" PRIx32, EVSYS->CHSTATUS.reg, QuadratureTcc->CTRLA.reg, QuadratureTcc->EVCTRL.reg);
 }
-
-#if COUNT_STEPS == 2
-
-// TODO: Instead of having this take step, why not use the current DDA to calculate where we need to be?
-void ClosedLoop::TakeStep() noexcept
-{
-# if SUPPORT_TMC2160 && SINGLE_DRIVER
-	bool dummy;			// this receives the interpolation, but we don't use it
-	const unsigned int microsteps = SmartDrivers::GetMicrostepping(0, dummy);
-	const float microstepAngle = (microsteps == 0) ? 1.0 : 1.0/microsteps;
-	targetMotorSteps += (stepDirection ? -microstepAngle : +microstepAngle);
-# else
-#  error Cannot support closed loop with the specified hardware
-# endif
-}
-
-void ClosedLoop::SetStepDirection(bool dir) noexcept
-{
-	stepDirection = dir;
-}
-
-#endif
 
 void ClosedLoop::StartingMove() noexcept
 {
