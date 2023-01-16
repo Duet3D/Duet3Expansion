@@ -393,13 +393,11 @@ private:
 	static constexpr unsigned int Write5160ShortConf = 8;	// short circuit detection configuration
 	static constexpr unsigned int Write5160DrvConf = 9;		// driver timing
 	static constexpr unsigned int Write5160GlobalScaler = 10; // motor current scaling
-
-# if TMC_TYPE == 5160
-	static constexpr unsigned int NumWriteRegisters = 11;	// the number of registers that we write to
-# else
-	static constexpr unsigned int Write2160XDirect = 11;	// coil current values for direct mode
-
+# if SUPPORT_CLOSED_LOOP
+	static constexpr unsigned int Write5160XDirect = 11;	// coil current values for direct mode
 	static constexpr unsigned int NumWriteRegisters = 12;	// the number of registers that we write to
+# else
+	static constexpr unsigned int NumWriteRegisters = 11;	// the number of registers that we write to
 # endif
 #else
 	static constexpr unsigned int NumWriteRegisters = 8;	// the number of registers that we write to
@@ -522,7 +520,7 @@ pre(!driversPowered)
 }
 
 // Set a register value and flag it for updating
-void TmcDriverState::UpdateRegister(size_t regIndex, uint32_t regVal) noexcept
+inline void TmcDriverState::UpdateRegister(size_t regIndex, uint32_t regVal) noexcept
 {
 	writeRegisters[regIndex] = regVal;
 	newRegistersToUpdate.fetch_or(1u << regIndex);						// flag it for sending
@@ -619,7 +617,7 @@ bool TmcDriverState::SetRegister(SmartDriverRegister reg, uint32_t regVal) noexc
 
 inline void TmcDriverState::SetXdirect(uint32_t regVal) noexcept
 {
-	UpdateRegister(Write2160XDirect, regVal);
+	UpdateRegister(Write5160XDirect, regVal);
 }
 
 #endif
