@@ -214,7 +214,9 @@ inline uint32_t DDA::WhenNextInterruptDue() const noexcept
 // Base priority must be >= NvicPriorityStep or interrupts disabled when calling this
 inline bool DDA::ScheduleNextStepInterrupt(StepTimer& timer) const noexcept
 {
+#if SUPPORT_CLOSED_LOOP
 	if (!ClosedLoop::GetClosedLoopEnabled(0))
+#endif
 	{
 		if (likely(state == executing))
 		{

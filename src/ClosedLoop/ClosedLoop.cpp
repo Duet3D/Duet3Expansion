@@ -976,8 +976,8 @@ inline void ClosedLoop::ControlMotorCurrents(StepTimer::Ticks ticksSinceLastCall
 	// Calculate the offset required to produce the torque in the correct direction
 	// i.e. if we are moving in the positive direction, we must apply currents with a positive phase shift
 	// The max abs value of phase shift we want is 1 full step i.e. 25%.
-	// Given that PIDControlSignal is -255 .. 255 and phase is 0 .. 4095
-	// and that 25% of 4095 ~= 1024, our max phase shift ~= 4 * PIDControlSignal
+	// Given that PIDControlSignal is -256 .. 256 and phase is 0 .. 4095
+	// and that 25% of 4096 = 1024, our max phase shift = 4 * PIDControlSignal
 	phaseShift = PIDControlSignal * 4.0;
 
 	// New control algorithm:
