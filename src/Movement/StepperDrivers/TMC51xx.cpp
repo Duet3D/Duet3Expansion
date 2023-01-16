@@ -341,6 +341,7 @@ public:
 #if SUPPORT_CLOSED_LOOP
 	unsigned int GetMicrostepShift() const noexcept { return microstepShiftFactor; }
 	uint16_t GetMicrostepPosition() const noexcept { return readRegisters[ReadMsCnt] & 1023; }
+	void SetXdirect(uint32_t regVal) noexcept;
 #endif
 	bool SetDriverMode(unsigned int mode) noexcept;
 	DriverMode GetDriverMode() const noexcept;
@@ -608,17 +609,20 @@ bool TmcDriverState::SetRegister(SmartDriverRegister reg, uint32_t regVal) noexc
 		UpdateRegister (WriteTcoolthrs, regVal & ((1u << 20) - 1));
 		return true;
 
-#if SUPPORT_TMC2160
-	case SmartDriverRegister::xDirect:
-		UpdateRegister(Write2160XDirect, regVal);
-		return true;
-#endif
-
 	case SmartDriverRegister::hdec:
 	default:
 		return false;
 	}
 }
+
+#if SUPPORT_CLOSED_LOOP
+
+inline void TmcDriverState::SetXdirect(uint32_t regVal) noexcept
+{
+	UpdateRegister(Write2160XDirect, regVal);
+}
+
+#endif
 
 uint32_t TmcDriverState::GetRegister(SmartDriverRegister reg) const noexcept
 {
@@ -1599,6 +1603,11 @@ unsigned int SmartDrivers::GetMicrostepShift(size_t driver) noexcept
 uint16_t SmartDrivers::GetMicrostepPosition(size_t driver) noexcept
 {
 	return (driver < numTmc51xxDrivers) ? driverStates[driver].GetMicrostepPosition() : 0;
+}
+
+void SmartDrivers::SetMotorCurrents(size_t driver, uint32_t regVal) noexcept
+{
+	driverStates[driver].SetXdirect(regVal);
 }
 
 #endif

@@ -259,7 +259,7 @@ void ClosedLoop::SetMotorPhase(uint16_t phase, float magnitude) noexcept
 	coilB = (int16_t)lrintf(sine * magnitude);
 
 # if SUPPORT_TMC2160 && SINGLE_DRIVER
-	SmartDrivers::SetRegister(0, SmartDriverRegister::xDirect, (((uint32_t)(uint16_t)coilB << 16) | (uint32_t)(uint16_t)coilA) & 0x01FF01FF);
+	SmartDrivers::SetMotorCurrents(0, (((uint32_t)(uint16_t)coilB << 16) | (uint32_t)(uint16_t)coilA) & 0x01FF01FF);
 # else
 #  error Cannot support closed loop with the specified hardware
 # endif
@@ -267,7 +267,8 @@ void ClosedLoop::SetMotorPhase(uint16_t phase, float magnitude) noexcept
 
 static void GenerateTmcClock()
 {
-	// Currently we program DPLL0 to generate 120MHz output, so to get 15MHz we divide by 8
+	// Currently we program DPLL0 to generate 120MHz output, so to get 15MHz with 1:1 ratio we divide by 8.
+	// We could divide by 7 instead giving 17.143MHz with 25ns and 33.3ns times. TMC2160A max is 18MHz, minimum 16ns and 16ns low.
 	ConfigureGclk(ClockGenGclkNumber, GclkSource::dpll0, 8, true);
 	SetPinFunction(ClockGenPin, ClockGenPinPeriphMode);
 	SmartDrivers::SetTmcExternalClock(15000000);

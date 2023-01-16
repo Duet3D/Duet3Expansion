@@ -44,9 +44,6 @@ enum class SmartDriverRegister : unsigned int
 	mstepPos,
 	pwmScale,
 	pwmAuto,
-#if SUPPORT_TMC2160
-	xDirect,
-#endif
 };
 
 #endif /* SRC_MOVEMENT_STEPPERDRIVERS_DRIVERMODE_H_ */
