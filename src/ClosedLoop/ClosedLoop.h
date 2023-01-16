@@ -59,7 +59,6 @@ namespace ClosedLoop
 
 	// Methods called by the motion system
 	void ControlLoop() noexcept;
-	void StartingMove() noexcept;
 	StandardDriverStatus ReadLiveStatus() noexcept;
 	bool GetClosedLoopEnabled(size_t driver) noexcept;
 	bool SetClosedLoopEnabled(size_t driver, bool enabled, const StringRef &reply) noexcept;

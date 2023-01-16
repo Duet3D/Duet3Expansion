@@ -70,7 +70,8 @@ public:
 	[[noreturn]] void TaskLoop() noexcept;
 
 #if SUPPORT_CLOSED_LOOP
-	void GetCurrentMotion(size_t driver, uint32_t when, bool closedLoopEnabled, MotionParameters& mParams) noexcept;	// get the net full steps taken, including in the current move so far, also speed and acceleration
+	bool GetCurrentMotion(size_t driver, uint32_t when, bool closedLoopEnabled, MotionParameters& mParams) noexcept;
+																					// get the net full steps taken, including in the current move so far, also speed and acceleration; return true if moving
 	void SetCurrentMotorSteps(size_t driver, float fullSteps) noexcept;
 #endif
 
@@ -124,7 +125,7 @@ inline uint32_t Move::GetStepInterval(size_t axis, uint32_t microstepShift) cons
 
 // Get the motor position in the current move so far, also speed and acceleration
 // Inlined because it is only called from one place
-inline void Move::GetCurrentMotion(size_t driver, uint32_t when, bool closedLoopEnabled, MotionParameters& mParams) noexcept
+inline bool Move::GetCurrentMotion(size_t driver, uint32_t when, bool closedLoopEnabled, MotionParameters& mParams) noexcept
 {
 	AtomicCriticalSectionLocker lock;				// we don't want an interrupt changing currentDda or netMicrostepsTaken while we execute this
 	for (;;)
@@ -146,7 +147,7 @@ inline void Move::GetCurrentMotion(size_t driver, uint32_t when, bool closedLoop
 			mParams.position = ldexpf(mParams.position + (float)netMicrostepsTaken[driver], negMicrostepShift);
 			mParams.speed = ldexp(mParams.speed, negMicrostepShift);
 			mParams.acceleration = ldexp(mParams.acceleration, negMicrostepShift);
-			return;
+			return true;
 		}
 
 		// If the machine has been idle, a move is made current a little ahead of when it is due, so check whether the move hasn't started yet
@@ -178,6 +179,7 @@ inline void Move::GetCurrentMotion(size_t driver, uint32_t when, bool closedLoop
 	// Here when there is no current move
 	mParams.position = ldexpf((float)netMicrostepsTaken[driver], -(int)SmartDrivers::GetMicrostepShift(driver));
 	mParams.speed = mParams.acceleration = 0.0;
+	return false;
 }
 
 inline void Move::SetCurrentMotorSteps(size_t driver, float fullSteps) noexcept

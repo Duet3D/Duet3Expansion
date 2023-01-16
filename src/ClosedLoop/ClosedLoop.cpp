@@ -214,15 +214,21 @@ static inline unsigned int CountVariablesCollected(uint16_t filter)
 }
 
 // Helper function to convert a time period (expressed in StepTimer::Ticks) to ms
-static inline float TickPeriodToTimePeriod(StepTimer::Ticks tickPeriod)
+static inline float TickPeriodToMillis(StepTimer::Ticks tickPeriod)
 {
 	return tickPeriod * StepTimer::StepClocksToMillis;
+}
+
+// Helper function to convert a time period (expressed in StepTimer::Ticks) to us
+static inline uint32_t TickPeriodToMicroseconds(StepTimer::Ticks tickPeriod)
+{
+	return (tickPeriod * 1000)/(StepTimer::GetTickRate()/1000);
 }
 
 // Helper function to convert a time period (expressed in StepTimer::Ticks) to a frequency in Hz
 static inline float TickPeriodToFreq(StepTimer::Ticks tickPeriod)
 {
-	return 1000.0l / TickPeriodToTimePeriod(tickPeriod);
+	return 1000.0l / TickPeriodToMillis(tickPeriod);
 }
 
 // Helper function to reset the 'monitoring variables' as defined above
@@ -780,8 +786,13 @@ void ClosedLoop::ControlLoop() noexcept
 	{
 		// Calculate and store the current error in full steps
 		MotionParameters mParams;
-		moveInstance->GetCurrentMotion(0, loopCallTime, closedLoopEnabled, mParams);
+		const bool moving = moveInstance->GetCurrentMotion(0, loopCallTime, closedLoopEnabled, mParams);
 		targetMotorSteps = mParams.position;
+		if (moving && samplingMode == RecordingMode::OnNextMove)
+		{
+			dataCollectionStartTicks = whenNextSampleDue = StepTimer::GetTimerTicks();
+			samplingMode = RecordingMode::Immediate;
+		}
 
 		const float targetEncoderReading = rintf(targetMotorSteps * encoder->GetCountsPerStep());
 		currentError = (float)(targetEncoderReading - encoder->GetCurrentCount()) * encoder->GetStepsPerCount();
@@ -934,7 +945,7 @@ void ClosedLoop::CollectSample() noexcept
 	}
 	else
 	{
-		sampleBuffer[wp++] = TickPeriodToTimePeriod(StepTimer::GetTimerTicks() - dataCollectionStartTicks);		// always collect this
+		sampleBuffer[wp++] = TickPeriodToMillis(StepTimer::GetTimerTicks() - dataCollectionStartTicks);		// always collect this
 
 		if (filterRequested & CL_RECORD_RAW_ENCODER_READING) 	{ sampleBuffer[wp++] = (float)encoder->GetCurrentCount(); }
 		if (filterRequested & CL_RECORD_CURRENT_MOTOR_STEPS) 	{ sampleBuffer[wp++] = (float)encoder->GetCurrentCount() * encoder->GetStepsPerCount(); }
@@ -1044,8 +1055,8 @@ void ClosedLoop::Diagnostics(const StringRef& reply) noexcept
 #if 0	// DC disabled this because it doesn't work yet and the driver diagnostics were too long for the reply buffer
 		reply.catf(", ultimateGain=%f, oscillationPeriod=%f", (double) ultimateGain, (double) oscillationPeriod);
 #endif
-		reply.lcatf("Control loop runtime (ms): min=%.3f, max=%.3f, frequency (Hz): min=%ld, max=%ld",
-					(double) TickPeriodToTimePeriod(minControlLoopRuntime), (double)TickPeriodToTimePeriod(maxControlLoopRuntime),
+		reply.lcatf("Control loop runtime (us): min=%" PRIu32 ", max=%" PRIu32 ", frequency (Hz): min=%ld, max=%ld",
+					TickPeriodToMicroseconds(minControlLoopRuntime), TickPeriodToMicroseconds(maxControlLoopRuntime),
 					lrintf(TickPeriodToFreq(maxControlLoopCallInterval)), lrintf(TickPeriodToFreq(minControlLoopCallInterval)));
 
 		ResetMonitoringVariables();
@@ -1053,15 +1064,6 @@ void ClosedLoop::Diagnostics(const StringRef& reply) noexcept
 
 	//DEBUG
 	//reply.catf(", event status 0x%08" PRIx32 ", TCC2 CTRLA 0x%08" PRIx32 ", TCC2 EVCTRL 0x%08" PRIx32, EVSYS->CHSTATUS.reg, QuadratureTcc->CTRLA.reg, QuadratureTcc->EVCTRL.reg);
-}
-
-void ClosedLoop::StartingMove() noexcept
-{
-	if (samplingMode == RecordingMode::OnNextMove)
-	{
-		dataCollectionStartTicks = whenNextSampleDue = StepTimer::GetTimerTicks();
-		samplingMode = RecordingMode::Immediate;
-	}
 }
 
 StandardDriverStatus ClosedLoop::ReadLiveStatus() noexcept

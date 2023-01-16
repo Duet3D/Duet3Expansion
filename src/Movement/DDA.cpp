@@ -409,10 +409,6 @@ void DDA::Start(uint32_t tim) noexcept
 		}
 	}
 #endif
-
-#if SUPPORT_CLOSED_LOOP
-	ClosedLoop::StartingMove();
-#endif
 }
 
 #if USE_TC_FOR_STEP
