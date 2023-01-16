@@ -430,10 +430,12 @@ uint32_t DDA::lastDirChangeTime = 0;
 // This may occasionally get called prematurely, so it must check that a step is actually due before generating one.
 void DDA::StepDrivers(uint32_t now) noexcept
 {
+# if SUPPORT_CLOSED_LOOP
 	if (ClosedLoop::GetClosedLoopEnabled(0))
 	{
 		return;
 	}
+# endif
 
 	// Determine whether the driver is due for stepping, overdue, or will be due very shortly
 	if (ddms[0].state == DMState::moving && (now - afterPrepare.moveStartTime) + StepTimer::MinInterruptInterval >= ddms[0].nextStepTime)	// if the next step is due
@@ -473,7 +475,7 @@ void DDA::StepDrivers(uint32_t now) noexcept
 		{
 # if USE_TC_FOR_STEP
 			StepGenTc->CTRLBSET.reg = TC_CTRLBSET_CMD_RETRIGGER;
-			hasMoreSteps = ddms[0].CalcNextStepTime(*this);
+			ddms[0].CalcNextStepTime(*this);
 # else
 			Platform::StepDriverHigh();									// generate the step
 			ddms[0].CalcNextStepTime(*this);
