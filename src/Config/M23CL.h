@@ -39,6 +39,7 @@
 #define SUPPORT_TMC2660			0
 #define SUPPORT_TMC22xx			0
 #define SUPPORT_CLOSED_LOOP		1
+#define SUPPORT_BRAKE_PWM		1
 
 constexpr size_t NumDrivers = 1;
 constexpr size_t MaxSmartDrivers = 1;
@@ -109,7 +110,6 @@ constexpr Pin ButtonPins[] = { PortAPin(0) };		// CAN reset jumper
 // Brake
 constexpr Pin BrakeOnPin = PortBPin(10);
 constexpr Pin BrakePwmPin = PortAPin(1);
-constexpr PwmFrequency BrakePwmFrequency = 500;
 
 // Encoder and quadrature decoder interface
 constexpr Pin EncoderCsPin = PortAPin(18);

@@ -149,9 +149,20 @@ namespace Platform
 	static bool directions[NumDrivers];
 	static bool driverAtIdleCurrent[NumDrivers];
 	static int8_t enableValues[NumDrivers] = { 0 };
-#if !defined(M23CL)
-	IoPort brakePorts[NumDrivers];
+
+#if SUPPORT_BRAKE_PWM
+# if defined(M23CL)
+	constexpr float M23CLBrakeVoltage = 24.0;
+# else
+	static PwmPort brakePorts[NumDrivers];
+	static float brakeVoltages[NumDrivers];
+	constexpr float FullyOnBrakeVoltage = 100.0;			// this value means always use full voltage (don't PWM)
+# endif
+	static float currentBrakePwm[NumDrivers];
+#else
+	static IoPort brakePorts[NumDrivers];
 #endif
+
 	static uint8_t driverStates[NumDrivers];
 	static float stepsPerMm[NumDrivers];
 	static float motorCurrents[NumDrivers];
@@ -270,18 +281,24 @@ namespace Platform
 
 #if SUPPORT_DRIVERS
 
-# ifdef M23CL
-	static float currentBrakePwm = 0.0;
-# endif
-
 	// Turn the brake solenoid on to disengage the brake
 	static void DisengageBrake(size_t driver) noexcept
 	{
-# ifdef M23CL
-		// Set the PWM to deliver 24V regardless of the VIN voltage
-		currentBrakePwm = min<float>(24.0/AdcReadingToVinVoltage(max<uint16_t>(currentVin, 1)), 1.0);
-		AnalogOut::Write(BrakePwmPin, currentBrakePwm, BrakePwmFrequency);
+# if SUPPORT_BRAKE_PWM
+		// Set the PWM to deliver the requested voltage regardless of the VIN voltage
+		const float requestedVoltage =
+#  ifdef M23CL
+										M23CLBrakeVoltage;
+#  else
+										brakeVoltages[driver];
+#  endif
+		currentBrakePwm[driver] = min<float>(requestedVoltage/AdcReadingToVinVoltage(max<uint16_t>(currentVin, 1)), 1.0);
+#  ifdef M23CL
+		AnalogOut::Write(BrakePwmPin, currentBrakePwm[driver], BrakePwmFrequency);
 		digitalWrite(BrakeOnPin, true);
+#  else
+		brakePorts[driver].WriteAnalog(currentBrakePwm[driver]);
+#  endif
 # else
 		brakePorts[driver].WriteDigital(true);
 # endif
@@ -290,8 +307,10 @@ namespace Platform
 	// Turn the brake solenoid off to re-engage the brake
 	static void EngageBrake(size_t driver) noexcept
 	{
+# if SUPPORT_BRAKE_PWM
+		currentBrakePwm[driver] = 0.0;
+# endif
 # ifdef M23CL
-		currentBrakePwm = 0.0;
 		digitalWrite(BrakePwmPin, false);
 		digitalWrite(BrakeOnPin, false);
 # else
@@ -893,6 +912,12 @@ void Platform::Init()
 		driverAtIdleCurrent[i] = false;
 		idleCurrentFactor[i] = 0.3;
 		motorCurrents[i] = 0.0;
+# if SUPPORT_BRAKE_PWM
+		currentBrakePwm[i] = 0.0;
+#  if !defined(M23CL)
+		brakeVoltages[i] = FullyOnBrakeVoltage;
+#  endif
+# endif
 		pressureAdvanceClocks[i] = 0.0;
 		driverStates[i] = DriverStateControl::driverDisabled;
 		brakeOffDelays[i] = 0;
@@ -1072,7 +1097,7 @@ void Platform::Spin()
 #endif
 
 #if SUPPORT_DRIVERS
-	// Check whether we need to turn any brake solenoids or motors off
+	// Check whether we need to turn any brake solenoids or motors off, or adjust brake PWM
 	for (size_t driver = 0; driver < NumDrivers; ++driver)
 	{
 		if (brakeOffTimers[driver].CheckAndStop(brakeOffDelays[driver]))
@@ -1083,22 +1108,24 @@ void Platform::Spin()
 		{
 			InternalDisableDrive(driver);
 		}
-	}
 
-# ifdef M23CL
-
-	// If the brake solenoid is activated, adjust the PWM if necessary
-	if (currentBrakePwm != 0.0 && voltsVin > 0.0)
-	{
-		const float newBrakePwm = min<float>(24.0/voltsVin, 1.0);
-		if (fabsf(newBrakePwm - currentBrakePwm >= 0.05))
+# if SUPPORT_BRAKE_PWM
+		// If the brake solenoid is activated, adjust the PWM if necessary
+		if (currentBrakePwm[driver] != 0.0 && voltsVin > 0.0)
 		{
-			AnalogOut::Write(BrakePwmPin, newBrakePwm, BrakePwmFrequency);
-			currentBrakePwm = newBrakePwm;
+			const float newBrakePwm = min<float>(24.0/voltsVin, 1.0);
+			if (fabsf(newBrakePwm - currentBrakePwm[driver] >= 0.05))
+			{
+#  ifdef M23CL
+				AnalogOut::Write(BrakePwmPin, newBrakePwm, BrakePwmFrequency);
+#  else
+				brakePorts[driver].WriteAnalog(newBrakePwm);
+#  endif
+				currentBrakePwm[driver] = newBrakePwm;
+			}
 		}
-	}
-
 # endif
+	}
 #endif	// SUPPORT_DRIVERS
 
 #if HAS_SMART_DRIVERS
@@ -1928,19 +1955,51 @@ GCodeResult Platform::ProcessM569Point7(const CanMessageGeneric& msg, const Stri
 		return GCodeResult::error;
 	}
 
+# if !SUPPORT_BRAKE_PWM
+	if (parser.HasParameter('V'))
+	{
+		// Don't allow a brake port to be configured if the user specified a voltage and we don't support PWM
+		reply.copy("Brake PWM not supported by this board");
+		return GCodeResult::error;
+	}
+# endif
+
+	bool seen = false;
 	if (parser.HasParameter('C'))
 	{
 		String<StringLength20> portName;
 		parser.GetStringParam('C', portName.GetRef());
-		return GetGCodeResultFromSuccess(	brakePorts[drive].AssignPort
-												(	portName.c_str(), reply, PinUsedBy::gpout,
-													(driverStates[drive] == DriverStateControl::driverDisabled) ? PinAccess::write0 : PinAccess::write1
-												)
-										);
+		if (!brakePorts[drive].AssignPort(	portName.c_str(), reply, PinUsedBy::gpout,
+											(driverStates[drive] == DriverStateControl::driverDisabled) ? PinAccess::write0 : PinAccess::write1
+										 )
+		   )
+		{
+			return GCodeResult::error;
+		}
+		seen = true;
+# if SUPPORT_BRAKE_PWM
+		brakePorts[drive].SetFrequency(BrakePwmFrequency);
+# endif
 	}
 
-	reply.printf("Driver %u.%u uses brake port ", CanInterface::GetCanAddress(), drive);
-	brakePorts[drive].AppendPinName(reply);
+# if SUPPORT_BRAKE_PWM
+	if (parser.GetFloatParam('V', brakeVoltages[drive]))
+	{
+		seen = true;
+	}
+#endif
+
+	if (!seen)
+	{
+		reply.printf("Driver %u.%u uses brake port ", CanInterface::GetCanAddress(), drive);
+		brakePorts[drive].AppendPinName(reply);
+# if SUPPORT_BRAKE_PWM
+		if (brakeVoltages[drive] < FullyOnBrakeVoltage)
+		{
+			reply.catf(" with voltage limited to %.1f by PWM", (double)brakeVoltages[drive]);
+		}
+# endif
+	}
 	return GCodeResult::ok;
 #endif
 }
