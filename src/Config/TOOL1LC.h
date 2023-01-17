@@ -29,7 +29,6 @@
 #define SUPPORT_SLOW_DRIVERS	0
 #define SUPPORT_DELTA_MOVEMENT	0
 #define USE_EVEN_STEPS			0
-#define SUPPORT_BRAKE_PWM		1
 
 #define ACTIVE_HIGH_STEP		1		// 1 = active high, 0 = active low
 #define ACTIVE_HIGH_DIR			0		// 1 = active high, 0 = active low

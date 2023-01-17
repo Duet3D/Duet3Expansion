@@ -48,6 +48,10 @@
 # define SUPPORT_CLOSED_LOOP			0
 #endif
 
+#ifndef SUPPORT_BRAKE_PWM
+# define SUPPORT_BRAKE_PWM				0
+#endif
+
 #if !SUPPORT_DRIVERS
 # define HAS_SMART_DRIVERS				0
 # define SUPPORT_TMC22xx				0
