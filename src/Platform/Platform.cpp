@@ -1113,7 +1113,13 @@ void Platform::Spin()
 		// If the brake solenoid is activated, adjust the PWM if necessary
 		if (currentBrakePwm[driver] != 0.0 && voltsVin > 0.0)
 		{
-			const float newBrakePwm = min<float>(24.0/voltsVin, 1.0);
+			const float requestedVoltage =
+#  ifdef M23CL
+											M23CLBrakeVoltage;
+#  else
+											brakeVoltages[driver];
+#  endif
+			const float newBrakePwm = min<float>(requestedVoltage/voltsVin, 1.0);
 			if (fabsf(newBrakePwm - currentBrakePwm[driver] >= 0.05))
 			{
 #  ifdef M23CL
