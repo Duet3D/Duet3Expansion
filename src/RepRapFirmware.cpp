@@ -18,7 +18,7 @@ extern const char VersionText[] = "Duet " BOARD_TYPE_NAME " firmware version " V
 Move *moveInstance;
 #endif
 
-void debugPrintf(const char* fmt, ...)
+void debugPrintf(const char* fmt, ...) noexcept
 {
 #if defined(DEBUG) || defined(SAMMYC21) || defined(RPI_PICO) || defined(FLY36RRF)	// save on stack usage by not calling vuprintf if debugging is disabled
 	va_list vargs;
@@ -28,17 +28,24 @@ void debugPrintf(const char* fmt, ...)
 #endif
 }
 
+void debugVprintf(const char *fmt, va_list vargs) noexcept
+{
+#if defined(DEBUG) || defined(SAMMYC21) || defined(RPI_PICO) || defined(FLY36RRF)	// save on stack usage by not calling vuprintf if debugging is disabled
+	vuprintf(Platform::DebugPutc, fmt, vargs);
+#endif
+}
+
 // class MillisTimer members
 
 // Start or restart the timer
-void MillisTimer::Start()
+void MillisTimer::Start() noexcept
 {
 	whenStarted = millis();
 	running = true;
 }
 
 // Check whether the timer is running and a timeout has expired, but don't stop it
-bool MillisTimer::CheckNoStop(uint32_t timeoutMillis) const
+bool MillisTimer::CheckNoStop(uint32_t timeoutMillis) const noexcept
 {
 	return running && millis() - whenStarted >= timeoutMillis;
 }

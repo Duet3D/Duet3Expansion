@@ -32,6 +32,15 @@
  * Interface documentation refer to malloc.c.
  */
 
+#if defined(__RP2040__)
+
+// This version doesn't work on the RP2040, probably because of the wrapper functions in the Pico SDK, so use the standard version in newlib.
+// It costs us some RAM for the reent structure, which is otherwise not needed.
+
+#else
+
+// Use this version of malloc to avoid pulling in the reent struct
+
 #if 0	// DC we don't want to pull in stdio
 #include <stdio.h>
 #endif
@@ -113,11 +122,11 @@ extern void *_sbrk(ptrdiff_t i);
 
 #if 1	//dc42
 
-extern void GetMallocMutex();
-extern void ReleaseMallocMutex();
+extern void __malloc_lock (struct _reent *_r);
+extern void __malloc_unlock (struct _reent *_r);
 
-#define MALLOC_LOCK		GetMallocMutex()
-#define MALLOC_UNLOCK	ReleaseMallocMutex()
+#define MALLOC_LOCK		__malloc_lock(NULL)
+#define MALLOC_UNLOCK	__malloc_unlock(NULL)
 #else
 #define MALLOC_LOCK
 #define MALLOC_UNLOCK
@@ -693,6 +702,8 @@ void* _malloc_r(struct _reent *reent_ptr, size_t n)
 {
 	return malloc(n);
 }
+
+#endif
 
 #endif
 

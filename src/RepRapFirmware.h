@@ -38,7 +38,9 @@ class TemperatureSensor;
 class FilamentMonitor;
 
 // Debugging support
-extern "C" void debugPrintf(const char* fmt, ...) __attribute__ ((format (printf, 1, 2)));
+extern "C" void debugPrintf(const char* fmt, ...) noexcept __attribute__ ((format (printf, 1, 2)));
+extern "C" void debugVprintf(const char *fmt, va_list vargs) noexcept;
+
 #define DEBUG_HERE do { } while (false)
 //#define DEBUG_HERE do { debugPrintf("At " __FILE__ " line %d\n", __LINE__); delay(50); } while (false)
 
@@ -50,10 +52,10 @@ extern "C" void debugPrintf(const char* fmt, ...) __attribute__ ((format (printf
 template<class T> class SimpleRangeIterator
 {
 public:
-	SimpleRangeIterator(T value_) : val(value_) {}
-    bool operator != (SimpleRangeIterator<T> const& other) const { return val != other.val;     }
-    T const& operator*() const { return val; }
-    SimpleRangeIterator& operator++() { ++val; return *this; }
+	SimpleRangeIterator(T value_) noexcept : val(value_) {}
+    bool operator != (SimpleRangeIterator<T> const& other) const noexcept { return val != other.val;     }
+    T const& operator*() const noexcept { return val; }
+    SimpleRangeIterator& operator++() noexcept { ++val; return *this; }
 
 private:
     T val;
@@ -62,9 +64,9 @@ private:
 template<class T> class SimpleRange
 {
 public:
-	SimpleRange(T limit) : _end(limit) {}
-	SimpleRangeIterator<T> begin() const { return SimpleRangeIterator<T>(0); }
-	SimpleRangeIterator<T> end() const { return SimpleRangeIterator<T>(_end); 	}
+	SimpleRange(T limit) noexcept : _end(limit) {}
+	SimpleRangeIterator<T> begin() const noexcept { return SimpleRangeIterator<T>(0); }
+	SimpleRangeIterator<T> end() const noexcept { return SimpleRangeIterator<T>(_end); 	}
 
 private:
 	const T _end;
@@ -77,12 +79,12 @@ private:
 class MillisTimer
 {
 public:
-	MillisTimer() { running = false; }
-	void Start();
-	void Stop() { running = false; }
-	bool CheckNoStop(uint32_t timeoutMillis) const;
-	bool CheckAndStop(uint32_t timeoutMillis);
-	bool IsRunning() const { return running; }
+	MillisTimer() noexcept { running = false; }
+	void Start() noexcept;
+	void Stop() noexcept { running = false; }
+	bool CheckNoStop(uint32_t timeoutMillis) const noexcept;
+	bool CheckAndStop(uint32_t timeoutMillis) noexcept;
+	bool IsRunning() const noexcept { return running; }
 
 private:
 	uint32_t whenStarted;

@@ -95,7 +95,7 @@ extern "C" [[noreturn]] void MainTask(void * pvParameters) noexcept;
 extern "C" [[noreturn]] void UpdateBootloaderTask(void * pvParameters) noexcept;
 
 // We need to make malloc/free thread safe. We must use a recursive mutex for it.
-extern "C" void GetMallocMutex() noexcept
+extern "C" void __malloc_lock (struct _reent *_r) noexcept
 {
 	if (xTaskGetSchedulerState() == taskSCHEDULER_RUNNING)		// don't take mutex if scheduler not started or suspended
 	{
@@ -103,7 +103,7 @@ extern "C" void GetMallocMutex() noexcept
 	}
 }
 
-extern "C" void ReleaseMallocMutex() noexcept
+extern "C" void __malloc_unlock (struct _reent *_r) noexcept
 {
 	if (xTaskGetSchedulerState() == taskSCHEDULER_RUNNING)		// don't release mutex if scheduler not started or suspended
 	{
@@ -638,9 +638,9 @@ void Tasks::Diagnostics(const StringRef& reply) noexcept
 // It doesn't try to allocate from the free list maintained by malloc, only from virgin memory.
 void *Tasks::AllocPermanent(size_t sz, std::align_val_t align) noexcept
 {
-	GetMallocMutex();
+	__malloc_lock(nullptr);
 	void * const ret = CoreAllocPermanent(sz, align);
-	ReleaseMallocMutex();
+	__malloc_unlock(nullptr);
 	return ret;
 }
 
