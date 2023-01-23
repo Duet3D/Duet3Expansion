@@ -163,16 +163,16 @@ namespace Platform
 	static IoPort brakePorts[NumDrivers];
 #endif
 
+	static MillisTimer brakeOffTimers[NumDrivers];
+	static MillisTimer motorOffTimers[NumDrivers];
+	static uint16_t brakeOffDelays[NumDrivers];
+	static uint16_t motorOffDelays[NumDrivers];
+
 	static uint8_t driverStates[NumDrivers];
 	static float stepsPerMm[NumDrivers];
 	static float motorCurrents[NumDrivers];
 	static float pressureAdvanceClocks[NumDrivers];
 	static float idleCurrentFactor[NumDrivers];
-
-	static MillisTimer brakeOffTimers[NumDrivers];
-	static MillisTimer motorOffTimers[NumDrivers];
-	static uint16_t brakeOffDelays[NumDrivers];
-	static uint16_t motorOffDelays[NumDrivers];
 
 	static void InternalDisableDrive(size_t driver);
 #endif
