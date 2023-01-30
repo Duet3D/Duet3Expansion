@@ -886,10 +886,10 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 
 	case CanMessageReturnInfo::typeDiagnosticsPart0 + 7:
 		extra = LastDiagnosticsPart;
-#if SUPPORT_I2C_SENSORS
-# if SUPPORT_LIS3DH
+#if SUPPORT_LIS3DH
 		AccelerometerHandler::Diagnostics(reply);
-# endif
+#endif
+#if SUPPORT_I2C_SENSORS
 		Platform::GetSharedI2C().Diagnostics(reply);
 #endif
 
