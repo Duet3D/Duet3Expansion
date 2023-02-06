@@ -1037,6 +1037,11 @@ void CommandProcessor::Spin()
 			requestId = buf->msg.multipleDrivesRequestFloat.requestId;
 			rslt = HandlePressureAdvance(buf->msg.multipleDrivesRequestFloat, buf->dataLength, replyRef);
 			break;
+
+		case CanMessageType::setInputShaping:
+			requestId = buf->msg.setInputShaping.requestId;
+			rslt = moveInstance->HandleInputShaping(buf->msg.setInputShaping, buf->dataLength, replyRef);
+			break;
 #endif
 
 		case CanMessageType::updateFirmware:

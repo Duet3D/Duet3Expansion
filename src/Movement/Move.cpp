@@ -62,7 +62,7 @@ extern "C" [[noreturn]] void MoveLoop(void * param) noexcept
 	static_cast<Move*>(param)->TaskLoop();
 }
 
-Move::Move()
+Move::Move() noexcept
 	: currentDda(nullptr), extrudersPrinting(false), taskWaitingForMoveToComplete(nullptr), scheduledMoves(0), completedMoves(0), numHiccups(0)
 {
 	kinematics = Kinematics::Create(KinematicsType::cartesian);			// default to Cartesian
@@ -90,7 +90,7 @@ Move::Move()
 	}
 }
 
-void Move::Init()
+void Move::Init() noexcept
 {
 	// Empty the ring
 	ddaRingGetPointer = ddaRingCheckPointer = ddaRingAddPointer;
@@ -115,7 +115,7 @@ void Move::Init()
 # endif
 }
 
-void Move::Exit()
+void Move::Exit() noexcept
 {
 	StepTimer::DisableTimerInterrupt();
 	moveTask->TerminateAndUnlink();
@@ -257,7 +257,7 @@ void Move::StartNextMove(DDA *cdda, uint32_t startTime) noexcept
 	}
 }
 
-void Move::Diagnostics(const StringRef& reply)
+void Move::Diagnostics(const StringRef& reply) noexcept
 {
 	reply.catf("Moves scheduled %" PRIu32 ", completed %" PRIu32 ", in progress %d, hiccups %" PRIu32 ", step errors %u, maxPrep %" PRIu32 ", maxOverdue %" PRIu32 ", maxInc %" PRIu32,
 					scheduledMoves, completedMoves, (int)(currentDda != nullptr), numHiccups, DDA::GetAndClearStepErrors(), maxPrepareTime, DDA::GetAndClearMaxTicksOverdue(), DDA::GetAndClearMaxOverdueIncrement());
@@ -268,21 +268,13 @@ void Move::Diagnostics(const StringRef& reply)
 #endif
 }
 
-# if 0
-// Try to push some babystepping through the lookahead queue
-float Move::PushBabyStepping(float amount)
-{
-	return ddaRingAddPointer->AdvanceBabyStepping(amount);
-}
-# endif
-
 #if SUPPORT_DELTA_MOVEMENT
 
 // Change the kinematics to the specified type if it isn't already
 // If it is already correct leave its parameters alone.
 // This violates our rule on no dynamic memory allocation after the initialisation phase,
 // however this function is normally called only when M665, M667 and M669 commands in config.g are processed.
-bool Move::SetKinematics(KinematicsType k)
+bool Move::SetKinematics(KinematicsType k) noexcept
 {
 	if (kinematics->GetKinematicsType() != k)
 	{
@@ -337,13 +329,13 @@ void Move::CurrentMoveCompleted() noexcept
 	}
 }
 
-int32_t Move::GetPosition(size_t driver) const
+int32_t Move::GetPosition(size_t driver) const noexcept
 {
 	return ddaRingAddPointer->GetPrevious()->GetPosition(driver);
 }
 
 // Stop some or all of the moving drivers
-void Move::StopDrivers(uint16_t whichDrives)
+void Move::StopDrivers(uint16_t whichDrives) noexcept
 {
 #if SAME5x
 	const uint32_t oldPrio = ChangeBasePriority(NvicPriorityStep);
@@ -370,6 +362,13 @@ void Move::StopDrivers(uint16_t whichDrives)
 #endif
 }
 
+// Input shaping support
+GCodeResult Move::HandleInputShaping(const CanMessageSetInputShaping& msg, size_t dataLength, const StringRef& reply) noexcept
+{
+	//TODO
+	return GCodeResult::ok;
+}
+
 // Filament monitor support
 // Get the accumulated extruder motor steps taken by an extruder since the last call. Used by the filament monitoring code.
 // Returns the number of motor steps moves since the last call, and isPrinting is true unless we are currently executing an extruding but non-printing move
@@ -385,7 +384,7 @@ int32_t Move::GetAccumulatedExtrusion(size_t driver, bool& isPrinting) noexcept
 }
 
 // For debugging
-void Move::PrintCurrentDda() const
+void Move::PrintCurrentDda() const noexcept
 {
 	if (currentDda != nullptr)
 	{
@@ -395,7 +394,7 @@ void Move::PrintCurrentDda() const
 
 // This is the function that is called by the timer interrupt to step the motors. It is also called form Move::Spin() if the first step for a move is due immediately.
 // This may occasionally get called prematurely.
-void Move::Interrupt()
+void Move::Interrupt() noexcept
 {
 	const uint32_t isrStartTime = StepTimer::GetTimerTicks();
 	uint32_t now = isrStartTime;

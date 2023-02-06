@@ -23,6 +23,7 @@
 const unsigned int DdaRingLength = 50;
 
 struct CanMessageStopMovement;
+struct CanMessageSetInputShaping;
 
 /**
  * This is the master movement class.  It controls all movement in the machine.
@@ -59,6 +60,9 @@ public:
 	// Filament monitor support
 	int32_t GetAccumulatedExtrusion(size_t driver, bool& isPrinting) noexcept;		// Return and reset the accumulated commanded extrusion amount
 	uint32_t ExtruderPrintingSince() const noexcept { return extrudersPrintingSince; }	// When we started doing normal moves after the most recent extruder-only move
+
+	// Input shaping support
+	GCodeResult HandleInputShaping(const CanMessageSetInputShaping& msg, size_t dataLength, const StringRef& reply) noexcept;
 
 #if HAS_SMART_DRIVERS
 	uint32_t GetStepInterval(size_t axis, uint32_t microstepShift) const noexcept;	// Get the current step interval for this axis or extruder
