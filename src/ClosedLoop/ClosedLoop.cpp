@@ -385,6 +385,7 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 		Kp = tempKp;
 		Ki = tempKi;
 		Kd = tempKd;
+		Kv = tempKv;
 		PIDITerm = 0.0;
 		derivativeFilter.Reset();
 	}
