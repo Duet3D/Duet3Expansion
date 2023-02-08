@@ -1704,13 +1704,28 @@ void Platform::SetDirectionValue(size_t drive, bool dVal)
 {
 	if (drive < NumDrivers)
 	{
+#if SUPPORT_CLOSED_LOOP
+		// We must prevent the closed loop task fetching the current position while we are changing the direction
+		if (directions[drive] != dVal)
+		{
+			TaskCriticalSectionLocker lock;
+			directions[drive] = dVal;
+			moveInstance->InvertCurrentMotorSteps(drive);
+		}
+#else
 		directions[drive] = dVal;
+#endif
 	}
 }
 
-bool Platform::GetDirectionValue(size_t driver)
+bool Platform::GetDirectionValue(size_t driver) noexcept
 {
 	return (driver < NumDrivers) && directions[driver];
+}
+
+bool Platform::GetDirectionValueNoCheck(size_t driver) noexcept
+{
+	return directions[driver];
 }
 
 #if SINGLE_DRIVER

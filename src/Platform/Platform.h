@@ -234,7 +234,8 @@ namespace Platform
 	void SetDirection(size_t driver, bool direction);
 # endif
 	void SetDirectionValue(size_t driver, bool dVal);
-	bool GetDirectionValue(size_t driver);
+	bool GetDirectionValue(size_t driver) noexcept;
+	bool GetDirectionValueNoCheck(size_t driver) noexcept;
 	void SetEnableValue(size_t driver, int8_t eVal);
 	int8_t GetEnableValue(size_t driver);
 	void EnableDrive(size_t driver, uint16_t brakeOffDelay);

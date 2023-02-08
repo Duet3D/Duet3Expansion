@@ -16,7 +16,8 @@
 #include "Kinematics/Kinematics.h"
 
 #if SUPPORT_CLOSED_LOOP
-# include "StepperDrivers/TMC51xx.h"				// for SmartDrivers::GetMicrostepShift
+# include "StepperDrivers/TMC51xx.h"			// for SmartDrivers::GetMicrostepShift
+# include <Platform/Platform.h>					// for GetDirectionValueNoCheck
 #endif
 
 // Define the number of DDAs
@@ -77,6 +78,7 @@ public:
 	bool GetCurrentMotion(size_t driver, uint32_t when, bool closedLoopEnabled, MotionParameters& mParams) noexcept;
 																					// get the net full steps taken, including in the current move so far, also speed and acceleration; return true if moving
 	void SetCurrentMotorSteps(size_t driver, float fullSteps) noexcept;
+	void InvertCurrentMotorSteps(size_t driver) noexcept;
 #endif
 
 	const volatile int32_t *GetLastMoveStepsTaken() const noexcept { return lastMoveStepsTaken; }
@@ -131,6 +133,7 @@ inline uint32_t Move::GetStepInterval(size_t axis, uint32_t microstepShift) cons
 // Inlined because it is only called from one place
 inline bool Move::GetCurrentMotion(size_t driver, uint32_t when, bool closedLoopEnabled, MotionParameters& mParams) noexcept
 {
+	const float multiplier = ldexp((Platform::GetDirectionValueNoCheck(driver)) ? -1.0 : 1.0, -(int)SmartDrivers::GetMicrostepShift(driver));
 	AtomicCriticalSectionLocker lock;				// we don't want an interrupt changing currentDda or netMicrostepsTaken while we execute this
 	for (;;)
 	{
@@ -146,11 +149,10 @@ inline bool Move::GetCurrentMotion(size_t driver, uint32_t when, bool closedLoop
 			// This move is executing
 			cdda->GetCurrentMotion(driver, clocksSinceMoveStart, mParams);
 
-			// Convert microsteps to full steps. We use ldexpf to avoid a division.
-			const int negMicrostepShift = -(int)SmartDrivers::GetMicrostepShift(driver);
-			mParams.position = ldexpf(mParams.position + (float)netMicrostepsTaken[driver], negMicrostepShift);
-			mParams.speed = ldexp(mParams.speed, negMicrostepShift);
-			mParams.acceleration = ldexp(mParams.acceleration, negMicrostepShift);
+			// Convert microsteps to full steps and account for possible reversal of the rotation direction. We use ldexp to avoid a division.
+			mParams.position = (mParams.position + (float)netMicrostepsTaken[driver]) * multiplier;
+			mParams.speed = mParams.speed * multiplier;
+			mParams.acceleration = mParams.acceleration * multiplier;
 			return true;
 		}
 
@@ -181,14 +183,21 @@ inline bool Move::GetCurrentMotion(size_t driver, uint32_t when, bool closedLoop
 	}
 
 	// Here when there is no current move
-	mParams.position = ldexpf((float)netMicrostepsTaken[driver], -(int)SmartDrivers::GetMicrostepShift(driver));
+	mParams.position = (float)netMicrostepsTaken[driver] * multiplier;
 	mParams.speed = mParams.acceleration = 0.0;
 	return false;
 }
 
 inline void Move::SetCurrentMotorSteps(size_t driver, float fullSteps) noexcept
 {
-	netMicrostepsTaken[driver] = lrintf(ldexpf(fullSteps, (int)SmartDrivers::GetMicrostepShift(driver)));
+	const float multiplier = ldexp((Platform::GetDirectionValueNoCheck(driver)) ? -1.0 : 1.0, (int)SmartDrivers::GetMicrostepShift(driver));
+	netMicrostepsTaken[driver] = lrintf(fullSteps * multiplier);
+}
+
+// Invert the current number of microsteps taken. Called when the driver direction control is changed.
+inline void Move::InvertCurrentMotorSteps(size_t driver) noexcept
+{
+	netMicrostepsTaken[driver] = -netMicrostepsTaken[driver];
 }
 
 #endif
