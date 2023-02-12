@@ -715,7 +715,7 @@ uint16_t CanInterface::GetTimeStampPeriod() noexcept
 // Send an event. The text will be truncated if it is longer than 55 characters.
 void CanInterface::RaiseEvent(EventType type, uint16_t param, uint8_t device, const char *format, va_list vargs) noexcept
 {
-	CanMessageBuffer buf(nullptr);
+	CanMessageBuffer buf;
 	auto msg = buf.SetupStatusMessage<CanMessageEvent>(GetCanAddress(), GetCurrentMasterAddress());
 	msg->eventType = type.ToBaseType();
 	msg->deviceNumber = device;
@@ -730,7 +730,7 @@ extern "C" [[noreturn]] void CanClockLoop(void *) noexcept
 {
 	for (;;)
 	{
-		CanMessageBuffer buf(nullptr);
+		CanMessageBuffer buf;
 		can0dev->ReceiveMessage(
 #if RP2040
 								CanDevice::RxBufferNumber::fifo1,

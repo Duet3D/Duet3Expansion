@@ -284,7 +284,7 @@ static FirmwareFlashErrorCode RequestBootloaderBlock(uint32_t fileOffset, uint32
 // Get a buffer of data from the host, returning true if successful
 static FirmwareFlashErrorCode GetBootloaderBlock(uint8_t *blockBuffer)
 {
-	CanMessageBuffer buf(nullptr);
+	CanMessageBuffer buf;
 	const FirmwareFlashErrorCode err = RequestBootloaderBlock(0, FlashBlockSize, buf);	// ask for 16K or 64K as a single block
 	if (err != FirmwareFlashErrorCode::ok)
 	{

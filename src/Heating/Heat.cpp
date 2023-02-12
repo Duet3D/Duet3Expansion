@@ -245,7 +245,7 @@ void Heat::Exit()
 		}
 		TaskBase::Take((uint32_t)delayTime);
 
-		CanMessageBuffer buf(nullptr);
+		CanMessageBuffer buf;
 
 #if SUPPORT_DRIVERS
 		// Check whether we have any urgent messages to send
