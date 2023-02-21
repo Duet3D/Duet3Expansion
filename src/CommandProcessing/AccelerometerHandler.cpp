@@ -28,6 +28,7 @@ constexpr size_t AccelerometerTaskStackWords = 130;
 static Task<AccelerometerTaskStackWords> *accelerometerTask;
 
 static LIS3DH *accelerometer = nullptr;
+static bool present = false;								// note that pressent => (accelerometer != nullptr)
 
 static uint16_t samplingRate = DefaultSamplingRate;
 static volatile uint32_t numSamplesRequested;
@@ -219,28 +220,33 @@ static bool TranslateOrientation(uint8_t input) noexcept
 void AccelerometerHandler::Init() noexcept
 {
 #if ACCELEROMETER_USES_SPI
-	LIS3DH *temp = new LIS3DH(Platform::GetSharedSpi(), Lis3dhCsPin, Lis3dhInt1Pin);
+	accelerometer = new LIS3DH(Platform::GetSharedSpi(), Lis3dhCsPin, Lis3dhInt1Pin);
 #else
-	LIS3DH *temp = new LIS3DH(Platform::GetSharedI2C(), Lis3dhInt1Pin);
+	accelerometer = new LIS3DH(Platform::GetSharedI2C(), Lis3dhInt1Pin);
 #endif
 
-	if (temp->CheckPresent())
+	if (accelerometer->CheckPresent())
 	{
-		temp->Configure(samplingRate, resolution);
-		accelerometer = temp;
+		accelerometer->Configure(samplingRate, resolution);
+		present = true;
 		(void)TranslateOrientation(orientation);
 		accelerometerTask = new Task<AccelerometerTaskStackWords>;
 		accelerometerTask->Create(AccelerometerTaskCode, "ACCEL", nullptr, TaskPriority::Accelerometer);
 	}
 	else
 	{
+#ifdef TOOL1LC
+		// The accelerometer should definitely be present. We will try to communicate with it at intervals to assist with hardware debugging.
+		// So don't delete the accelerometer object, but don't set the 'present' flag either.
+#else
 		delete temp;
+#endif
 	}
 }
 
 bool AccelerometerHandler::IsPresent() noexcept
 {
-	return accelerometer != nullptr;
+	return present;
 }
 
 // Translate the orientation from a 2-digit number to translation tables, returning true if successful, false if bad orientation
@@ -253,7 +259,7 @@ GCodeResult AccelerometerHandler::ProcessConfigRequest(const CanMessageGeneric& 
 		reply.copy("Bad M955 message");
 		return GCodeResult::error;
 	}
-	if (deviceNumber != 0 || accelerometer == nullptr)
+	if (deviceNumber != 0 || !present)
 	{
 		reply.printf("Accelerometer %u.%u not present", CanInterface::GetCanAddress(), deviceNumber);
 		return GCodeResult::error;
@@ -301,7 +307,7 @@ GCodeResult AccelerometerHandler::ProcessConfigRequest(const CanMessageGeneric& 
 
 GCodeResult AccelerometerHandler::ProcessStartRequest(const CanMessageStartAccelerometer& msg, const StringRef& reply) noexcept
 {
-	if (msg.deviceNumber != 0 || accelerometer == nullptr)
+	if (msg.deviceNumber != 0 || !present)
 	{
 		reply.printf("Accelerometer %u.%u not present", CanInterface::GetCanAddress(), msg.deviceNumber);
 		return GCodeResult::error;
@@ -339,8 +345,8 @@ GCodeResult AccelerometerHandler::ProcessStartRequest(const CanMessageStartAccel
 
 void AccelerometerHandler::Diagnostics(const StringRef& reply) noexcept
 {
-	reply.lcatf("Accelerometer: %s", (accelerometer != nullptr) ? accelerometer->GetTypeName() : "none");
-	if (accelerometer != nullptr)
+	reply.lcatf("Accelerometer: %s", (present) ? accelerometer->GetTypeName() : "none");
+	if (present)
 	{
 		reply.catf(", status: %02x", accelerometer->ReadStatus());
 		if (accelerometer->HasInterruptError())
