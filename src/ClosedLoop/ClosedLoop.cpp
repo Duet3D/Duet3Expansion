@@ -890,7 +890,7 @@ void ClosedLoop::ControlLoop() noexcept
 			do
 			{
 				// Set up a CAN message
-				CanMessageBuffer buf(nullptr);
+				CanMessageBuffer buf;
 				CanMessageClosedLoopData& msg = *(buf.SetupStatusMessage<CanMessageClosedLoopData>(CanInterface::GetCanAddress(), CanInterface::GetCurrentMasterAddress()));
 
 				// Populate the control fields
