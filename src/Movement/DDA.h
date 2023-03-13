@@ -9,7 +9,9 @@
 #define DDA_H_
 
 #include <RepRapFirmware.h>
+#include <InputShaperPlan.h>
 #include <Platform/Tasks.h>
+#include "MoveSegment.h"
 
 #if SUPPORT_DRIVERS
 
@@ -23,10 +25,48 @@
 struct CanMessageMovementLinear;
 struct CanMessageStopMovement;
 
+// Struct for passing parameters to the DriveMovement Prepare methods
+struct PrepParams
+{
+	// Parameters used for all types of motion
+	float totalDistance;
+	float accelDistance;
+	float decelStartDistance;
+	float accelClocks, steadyClocks, decelClocks;
+	float acceleration, deceleration;				// the acceleration and deceleration to use, both positive
+
+	InputShaperPlan shapingPlan;
+
+#if DM_USE_FPU
+	float fTopSpeedTimesCdivD;
+#else
+	uint32_t topSpeedTimesCdivD;
+#endif
+
+	// Parameters used only for delta moves
+	float initialX;
+	float initialY;
+	const LinearDeltaKinematics *dparams;
+	float a2plusb2;								// sum of the squares of the X and Y movement fractions
+	float dvecX, dvecY, dvecZ;
+
+	// Calculate the steady clocks and set the total clocks in the DDA
+	void Finalise(float topSpeed) noexcept;
+
+	// Get the total clocks needed
+	float TotalClocks() const noexcept { return accelClocks + steadyClocks + decelClocks; }
+
+	// Set up the parameters from the DDA, excluding steadyClocks because that may be affected by input shaping
+	void SetFromDDA(const DDA& dda) noexcept;
+};
+
 // This defines a single coordinated movement of one or several motors
 class DDA
 {
 	friend class DriveMovement;
+	friend class AxisShaper;
+	friend class ExtruderShaper;
+	friend class PrepParams;
 
 public:
 
@@ -162,6 +202,7 @@ private:
 	float topSpeed;
 	float accelDistance;
 	float decelDistance;
+	static constexpr float totalDistance = 1.0;		// we normalise all move to unit distance
 
 	uint32_t clocksNeeded;
 #if SUPPORT_CLOSED_LOOP
@@ -185,6 +226,8 @@ private:
 		int32_t cKc;						// the Z movement fraction multiplied by Kc and converted to integer
 #endif
 	} afterPrepare;
+
+	MoveSegment* segments;					// linked list of move segments used by axis DMs
 
 #if !SINGLE_DRIVER
     DriveMovement* activeDMs;				// list of contained DMs that need steps, in step time order

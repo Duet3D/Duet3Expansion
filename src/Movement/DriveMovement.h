@@ -29,6 +29,7 @@ struct MotionParameters
 #endif
 
 class LinearDeltaKinematics;
+class PrepParams;
 class DDA;
 
 #define DM_USE_FPU			(__FPU_USED)
@@ -106,28 +107,6 @@ inline int64_t roundS64(double d) noexcept
 	return (int64_t)d;
 #endif
 }
-
-// Struct for passing parameters to the DriveMovement Prepare methods
-struct PrepParams
-{
-	// Parameters used for all types of motion
-	float totalDistance;
-	float acceleration;
-	float deceleration;
-	float decelStartDistance;
-#if DM_USE_FPU
-	float fTopSpeedTimesCdivD;
-#else
-	uint32_t topSpeedTimesCdivD;
-#endif
-
-	// Parameters used only for delta moves
-	float initialX;
-	float initialY;
-	const LinearDeltaKinematics *dparams;
-	float a2plusb2;								// sum of the squares of the X and Y movement fractions
-	float dvecX, dvecY, dvecZ;
-};
 
 enum class DMState : uint8_t
 {
