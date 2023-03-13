@@ -71,10 +71,10 @@ SharedI2CMaster::SharedI2CMaster(uint8_t sercomNum) noexcept
 	NVIC_ClearPendingIRQ(irqn);
 	NVIC_EnableIRQ(irqn);
 #if SAME5x
-	NVIC_SetPriority(irqn + 1, NvicPriorityI2C);
-	NVIC_EnableIRQ(irqn + 1);
-	NVIC_SetPriority(irqn + 3, NvicPriorityI2C);
-	NVIC_EnableIRQ(irqn + 3);
+	NVIC_SetPriority((IRQn)(irqn + 1), NvicPriorityI2C);
+	NVIC_EnableIRQ((IRQn)(irqn + 1));
+	NVIC_SetPriority((IRQn)(irqn + 3), NvicPriorityI2C);
+	NVIC_EnableIRQ((IRQn)(irqn + 3));
 #endif
 
 	mutex.Create("I2C");

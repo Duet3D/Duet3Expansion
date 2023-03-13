@@ -72,6 +72,9 @@ void SerialPortDeinit(AsyncSerial*) noexcept
 # endif
 }
 
+# if !SUPPORT_I2C_SENSORS
+
+// Sercom2 on port io1 can be used as a UART if it is not being used for I2C
 AsyncSerial uart0(2, 1, 512, 512, SerialPortInit, SerialPortDeinit);
 
 extern "C" void SERCOM2_0_Handler()
@@ -88,6 +91,8 @@ extern "C" void SERCOM2_3_Handler()
 {
 	uart0.Interrupt3();
 }
+
+# endif
 
 #endif
 

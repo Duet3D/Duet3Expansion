@@ -68,7 +68,8 @@ constexpr Pin DiagPins[NumDrivers] = { PortAPin(21) };
 
 #define SUPPORT_THERMISTORS		1
 #define SUPPORT_SPI_SENSORS		1
-#define SUPPORT_I2C_SENSORS		0
+#define SUPPORT_I2C_SENSORS		1
+#define SUPPORT_LIS3DH			1
 #define SUPPORT_DHT_SENSOR		0
 #define SUPPORT_SDADC			0
 #define NUM_SERIAL_PORTS		0
@@ -106,6 +107,38 @@ constexpr Pin ButtonPins[] = { PortAPin(20) };
 
 // Encoder and quadrature decoder interface
 constexpr Pin EncoderCsPin = PortAPin(18);
+
+#if SUPPORT_I2C_SENSORS
+
+// I2C using pins PA12,13
+constexpr uint8_t I2CSercomNumber = 2;
+constexpr Pin I2CSDAPin = PortAPin(12);
+constexpr GpioPinFunction I2CSDAPinPeriphMode = GpioPinFunction::C;
+constexpr Pin I2CSCLPin = PortAPin(13);
+constexpr GpioPinFunction I2CSCLPinPeriphMode = GpioPinFunction::C;
+# define I2C_HANDLER0		SERCOM2_0_Handler
+# define I2C_HANDLER1		SERCOM2_1_Handler
+# define I2C_HANDLER2		SERCOM2_2_Handler
+# define I2C_HANDLER3		SERCOM2_3_Handler
+
+#endif
+
+#if SUPPORT_LIS3DH
+
+# if SUPPORT_I2C_SENSORS
+
+#  define ACCELEROMETER_USES_SPI			(0)				// accelerometer is connected via I2C
+constexpr Pin Lis3dhInt1Pin = PortAPin(20);					// same as io1.in
+
+# else
+
+#  define ACCELEROMETER_USES_SPI			(1)				// accelerometer is connected via SPI
+constexpr Pin Lis3dhCsPin = PortAPin(18);					// same as encoder CS pin
+constexpr Pin Lis3dhInt1Pin = PortAPin(13);					// same as io1.in
+
+# endif
+
+#endif
 
 // Shared SPI (used for interface to encoders, not for temperature sensors)
 constexpr uint8_t SspiSercomNumber = 1;
@@ -219,6 +252,7 @@ constexpr DmaPriority DmacPrioAdcRx = 2;
 // Interrupt priorities, lower means higher priority. 0-2 can't make RTOS calls.
 const NvicPriority NvicPriorityStep = 3;				// step interrupt is next highest, it can preempt most other interrupts
 const NvicPriority NvicPriorityUart = 3;				// serial driver makes RTOS calls
+const NvicPriority NvicPriorityI2C = 3;
 const NvicPriority NvicPriorityPins = 3;				// priority for GPIO pin interrupts
 const NvicPriority NvicPriorityCan = 4;
 const NvicPriority NvicPriorityDmac = 5;				// priority for DMA complete interrupts
