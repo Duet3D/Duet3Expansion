@@ -28,7 +28,7 @@ constexpr size_t AccelerometerTaskStackWords = 130;
 static Task<AccelerometerTaskStackWords> *accelerometerTask;
 
 static LIS3DH *accelerometer = nullptr;
-static bool present = false;								// note that pressent => (accelerometer != nullptr)
+static bool present = false;								// note that present => (accelerometer != nullptr)
 
 static uint16_t samplingRate = DefaultSamplingRate;
 static volatile uint32_t numSamplesRequested;
@@ -62,7 +62,7 @@ static uint8_t TranslateAxes(uint8_t axes) noexcept
 		if (running)
 		{
 			// Collect and send the samples
-			CanMessageBuffer buf(nullptr);
+			CanMessageBuffer buf;
 			CanMessageAccelerometerData& msg = *(buf.SetupStatusMessage<CanMessageAccelerometerData>(CanInterface::GetCanAddress(), CanInterface::GetCurrentMasterAddress()));
 			const unsigned int MaxSamplesInBuffer = msg.SetAxesAndResolution(axesRequested, resolution);
 
@@ -239,7 +239,7 @@ void AccelerometerHandler::Init() noexcept
 		// The accelerometer should definitely be present. We will try to communicate with it at intervals to assist with hardware debugging.
 		// So don't delete the accelerometer object, but don't set the 'present' flag either.
 #else
-		delete temp;
+		DeleteObject(accelerometer);
 #endif
 	}
 }
