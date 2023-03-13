@@ -14,6 +14,7 @@
 
 #include "DDA.h"								// needed because of our inline functions
 #include "Kinematics/Kinematics.h"
+#include "AxisShaper.h"
 
 #if SUPPORT_CLOSED_LOOP
 # include "StepperDrivers/TMC51xx.h"			// for SmartDrivers::GetMicrostepShift
@@ -63,7 +64,11 @@ public:
 	uint32_t ExtruderPrintingSince() const noexcept { return extrudersPrintingSince; }	// When we started doing normal moves after the most recent extruder-only move
 
 	// Input shaping support
-	GCodeResult HandleInputShaping(const CanMessageSetInputShaping& msg, size_t dataLength, const StringRef& reply) noexcept;
+	GCodeResult HandleInputShaping(const CanMessageSetInputShaping& msg, size_t dataLength, const StringRef& reply) noexcept
+	{
+		return axisShaper.EutSetInputShaping(msg, dataLength, reply);
+	}
+
 
 #if HAS_SMART_DRIVERS
 	uint32_t GetStepInterval(size_t axis, uint32_t microstepShift) const noexcept;	// Get the current step interval for this axis or extruder
@@ -107,6 +112,7 @@ private:
 
 	Kinematics *kinematics;															// What kinematics we are using
 
+	AxisShaper axisShaper;
 	uint32_t scheduledMoves;														// Move counters for the code queue
 	volatile uint32_t completedMoves;												// This one is modified by an ISR, hence volatile
 	uint32_t numHiccups;															// How many times we delayed an interrupt to avoid using too much CPU time in interrupts

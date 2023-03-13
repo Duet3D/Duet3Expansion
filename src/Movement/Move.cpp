@@ -362,13 +362,6 @@ void Move::StopDrivers(uint16_t whichDrives) noexcept
 #endif
 }
 
-// Input shaping support
-GCodeResult Move::HandleInputShaping(const CanMessageSetInputShaping& msg, size_t dataLength, const StringRef& reply) noexcept
-{
-	//TODO
-	return GCodeResult::ok;
-}
-
 // Filament monitor support
 // Get the accumulated extruder motor steps taken by an extruder since the last call. Used by the filament monitoring code.
 // Returns the number of motor steps moves since the last call, and isPrinting is true unless we are currently executing an extruding but non-printing move
