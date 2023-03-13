@@ -244,7 +244,7 @@ static GCodeResult HandlePressureAdvance(const CanMessageMultipleDrivesRequest<f
 							}
 							else
 							{
-								Platform::SetPressureAdvance(driver, msg.values[count]);
+								moveInstance->GetExtruderShaper(driver).SetKseconds(msg.values[count]);
 							}
 						}
 				   );

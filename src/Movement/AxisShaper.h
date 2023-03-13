@@ -9,6 +9,9 @@
 #define SRC_MOVEMENT_AXISSHAPER_H_
 
 #include <RepRapFirmware.h>
+
+#if SUPPORT_DRIVERS
+
 #include <InputShaperPlan.h>
 
 class DDA;
@@ -63,5 +66,7 @@ private:
 	float overlappedDeltaVPerA;							// the effective acceleration time (velocity change per unit acceleration) when we use overlapping, in step clocks
 	float overlappedDistancePerA;						// the distance needed by an overlapped acceleration or deceleration, less the initial velocity contribution
 };
+
+#endif
 
 #endif /* SRC_MOVEMENT_AXISSHAPER_H_ */

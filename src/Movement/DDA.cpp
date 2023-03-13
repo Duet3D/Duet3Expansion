@@ -159,10 +159,8 @@ void DDA::DebugPrintVector(const char *name, const float *vec, size_t len) const
 // Print the text followed by the DDA only
 void DDA::DebugPrint() const noexcept
 {
-	debugPrintf("DDA: a=%e d=%e startv=%e topv=%e endv=%e sa=%f sd=%f\n"
-				"cks=%" PRIu32 " sstcda=%" PRIu32 " tstcddpdsc=%" PRIu32 " exac=%" PRIi32 "\n",
-				(double)acceleration, (double)deceleration, (double)startSpeed, (double)topSpeed, (double)endSpeed, (double)accelDistance, (double)decelDistance,
-				clocksNeeded, afterPrepare.startSpeedTimesCdivA, afterPrepare.topSpeedTimesCdivDPlusDecelStartClocks, afterPrepare.extraAccelerationClocks);
+	debugPrintf("DDA: a=%e d=%e startv=%e topv=%e endv=%e sa=%f sd=%f cks=%" PRIu32 " fl=%u\n",
+				(double)acceleration, (double)deceleration, (double)startSpeed, (double)topSpeed, (double)endSpeed, (double)accelDistance, (double)decelDistance, clocksNeeded, flags.all);
 }
 
 // Print the DDA and active DMs
@@ -171,7 +169,16 @@ void DDA::DebugPrintAll() const noexcept
 	DebugPrint();
 	for (size_t axis = 0; axis < NumDrivers; ++axis)
 	{
-		ddms[axis].DebugPrint("ABCDEF"[axis]);
+		ddms[axis].DebugPrint();
+	}
+}
+
+// Set up the segments (without input shaping) if we haven't done so already
+void DDA::EnsureSegments(const PrepParams& params) noexcept
+{
+	if (segments == nullptr)
+	{
+		segments = AxisShaper::GetUnshapedSegments(*this, params);
 	}
 }
 
@@ -185,59 +192,11 @@ void DDA::Init() noexcept
 	}
 }
 
-// Set up a real move. Return true if it represents real movement, else false.
-// Return true if it is a real move
-bool DDA::Init(const CanMessageMovementLinearShaped& msg) noexcept
-{
-	//TODO
-	return false;
-}
-
-// Set up a real move. Return true if it represents real movement, else false.
-// Return true if it is a real move
+// Set up a remote move. Return true if it represents real movement, else false.
+// This one handles the old format movement message, used by older versions of RRF and the ATE
+// The whenToExecute field of the movement message has already bee converted to local time
 bool DDA::Init(const CanMessageMovementLinear& msg) noexcept
 {
-	// 0. Initialise the endpoints, which are used for diagnostic purposes, and set up the DriveMovement objects
-	bool realMove = false;
-
-	const size_t numDrivers = min<size_t>(msg.numDrivers, NumDrivers);
-	for (size_t drive = 0; drive < NumDrivers; drive++)
-	{
-		endPoint[drive] = prev->endPoint[drive];		// the steps for this move will be added later
-		DriveMovement& dm = ddms[drive];
-
-#if !SINGLE_DRIVER
-		dm.nextDM = nullptr;
-#endif
-		const int32_t delta = (drive < numDrivers) ? msg.perDrive[drive].steps : 0;
-#if SUPPORT_CLOSED_LOOP
-		dm.netSteps = delta;
-#endif
-		if (delta != 0)
-		{
-			realMove = true;
-			dm.totalSteps = labs(delta);				// for now this is the number of net steps, but gets adjusted later if there is a reverse in direction
-			dm.direction = (delta >= 0);				// for now this is the direction of net movement, but it gets adjusted later if it is a delta movement
-			stepsRequested[drive] += labs(delta);
-			dm.state = DMState::moving;
-		}
-		else
-		{
-			// Set up the steps so that GetStepsTaken will return zero
-			dm.totalSteps = 0;
-			dm.nextStep = 0;
-			dm.reverseStartStep = 1;
-			dm.state = DMState::idle;
-		}
-	}
-
-	// 2. Throw it away if there's no real movement.
-	if (!realMove)
-	{
-		return false;
-	}
-
-	// 3. Store some values
 	afterPrepare.moveStartTime = msg.whenToExecute;
 
 #if SUPPORT_CLOSED_LOOP
@@ -248,18 +207,18 @@ bool DDA::Init(const CanMessageMovementLinear& msg) noexcept
 	clocksNeeded = msg.accelerationClocks + msg.steadyClocks + msg.decelClocks;
 #endif
 
-	flags.isPrintingMove = (msg.pressureAdvanceDrives != 0);
-	flags.hadHiccup = false;
-	flags.goingSlow = false;
+	flags.all = 0;
+	flags.isPrintingMove = flags.usePressureAdvance = (msg.pressureAdvanceDrives != 0);
 
 	// Calculate the speeds and accelerations assuming unit movement length
 	topSpeed = 2.0/(2 * msg.steadyClocks + (msg.initialSpeedFraction + 1.0) * msg.accelerationClocks + (msg.finalSpeedFraction + 1.0) * msg.decelClocks);
 	startSpeed = topSpeed * msg.initialSpeedFraction;
 	endSpeed = topSpeed * msg.finalSpeedFraction;
 
-	acceleration = (msg.accelerationClocks == 0) ? 1.0 : (topSpeed * (1.0 - msg.initialSpeedFraction))/msg.accelerationClocks;
-	deceleration = (msg.decelClocks == 0) ? 1.0 : (topSpeed * (1.0 - msg.finalSpeedFraction))/msg.decelClocks;
+	acceleration = (msg.accelerationClocks == 0) ? 0.0 : (topSpeed * (1.0 - msg.initialSpeedFraction))/msg.accelerationClocks;
+	deceleration = (msg.decelClocks == 0) ? 0.0 : (topSpeed * (1.0 - msg.finalSpeedFraction))/msg.decelClocks;
 
+	// Set up the move parameters
 	// Calculate the distances as a fraction of the total movement length
 	accelDistance = (msg.accelerationClocks == 0) ? 0.0
 						: (msg.accelerationClocks == clocksNeeded) ? 1.0
@@ -268,108 +227,248 @@ bool DDA::Init(const CanMessageMovementLinear& msg) noexcept
 						: (msg.decelClocks == clocksNeeded) ? 1.0
 							: topSpeed * (1.0 + msg.finalSpeedFraction) * msg.decelClocks * 0.5;
 
-	PrepParams params;
-	// We must avoid getting negative distance in the following calculation because it messes up the calculation of twoDistanceToStopTimesCsquaredDivD in DriveMovement:Prepare
-	// The conditional code in calculating decelDistance should achieve that
+	accelDistance = topSpeed * (1.0 + msg.initialSpeedFraction) * msg.accelerationClocks * 0.5;
+	decelDistance = topSpeed * (1.0 + msg.finalSpeedFraction) * msg.decelClocks * 0.5;
+
+	// Prepare for movement
+	PrepParams params;											// the default constructor clears params.plan to 'no shaping'
+
 	params.decelStartDistance = 1.0 - decelDistance;
-	afterPrepare.startSpeedTimesCdivA = (uint32_t)roundU32(startSpeed/acceleration);
-#if DM_USE_FPU
-	params.fTopSpeedTimesCdivD = topSpeed/deceleration;
-	afterPrepare.topSpeedTimesCdivDPlusDecelStartClocks = (uint32_t)params.fTopSpeedTimesCdivD + msg.accelerationClocks + msg.steadyClocks;
-#else
-	params.topSpeedTimesCdivD = (uint32_t)roundU32(topSpeed/deceleration);
-	afterPrepare.topSpeedTimesCdivDPlusDecelStartClocks = params.topSpeedTimesCdivD + msg.accelerationClocks + msg.steadyClocks;
+	params.accelClocks = msg.accelerationClocks;
+	params.steadyClocks = msg.steadyClocks;
+	params.decelClocks = msg.decelClocks;
+	params.acceleration = acceleration;
+	params.deceleration = deceleration;
+
+	segments = nullptr;
+
+	const size_t numDrivers = min<size_t>(msg.numDrivers, NumDrivers);
+	bool realMove = false;
+	for (size_t drive = 0; drive < NumDrivers; drive++)
+	{
+		endPoint[drive] = prev->endPoint[drive];		// the steps for this move will be added later
+		DriveMovement& dm = ddms[drive];
+
+#if !SINGLE_DRIVER
+		dm.nextDM = nullptr;
 #endif
-	afterPrepare.extraAccelerationClocks = msg.accelerationClocks - roundS32(accelDistance/topSpeed);
+		const int32_t delta = (drive < numDrivers) ? msg.perDrive[drive].steps : 0;
+		directionVector[drive] = (float)delta;
+#if SUPPORT_CLOSED_LOOP
+		dm.netSteps = delta;
+#endif
+		if (delta != 0)
+		{
+			realMove = true;
+			EnsureSegments(params);						// we are probably going to need segments
+			dm.totalSteps = labs(delta);				// for now this is the number of net steps, but gets adjusted later if there is a reverse in direction
+			dm.direction = (delta >= 0);				// for now this is the direction of net movement, but it gets adjusted later if it is a delta movement
+			stepsRequested[drive] += labs(delta);
+			Platform::EnableDrive(drive, 0);
+			const bool stepsToDo = ((msg.pressureAdvanceDrives & (1u << drive)) != 0)
+									? dm.PrepareExtruder(*this, params, (float)delta)
+										: dm.PrepareCartesianAxis(*this, params);
+			if (stepsToDo)
+			{
+				realMove = true;
+				Platform::EnableDrive(drive, 0);
+				dm.directionChanged = dm.directionReversed = false;
+				const int32_t netSteps = (dm.reverseStartStep < dm.totalSteps) ? (2 * dm.reverseStartStep) - dm.totalSteps : dm.totalSteps;
+				if (dm.direction)
+				{
+					endPoint[drive] += netSteps;
+				}
+				else
+				{
+					endPoint[drive] -= netSteps;
+				}
+			}
+			else
+			{
+				dm.state = DMState::idle;
+#if SINGLE_DRIVER
+				// No steps to do, so set up the steps so that GetStepsTaken will return zero
+				dm.totalSteps = 0;
+				dm.nextStep = 0;
+				dm.reverseStartStep = 1;
+#endif
+			}
+		}
+		else
+		{
+			dm.state = DMState::idle;
+#if SINGLE_DRIVER
+			// Set up the steps so that GetStepsTaken will return zero
+			dm.totalSteps = 0;
+			dm.nextStep = 0;
+			dm.reverseStartStep = 1;
+#endif
+		}
+	}
+
+	// 2. Throw it away if there's no real movement.
+	if (!realMove)
+	{
+		// We may have set up the segments, in which case we must recycle them
+		for (MoveSegment* seg = segments; seg != nullptr; )
+		{
+			MoveSegment* const nextSeg = seg->GetNext();
+			MoveSegment::Release(seg);
+			seg = nextSeg;
+		}
+		segments = nullptr;
+		return false;
+	}
 
 #if !SINGLE_DRIVER
 	activeDMs = nullptr;
 #endif
 
-	for (size_t drive = 0; drive < numDrivers; ++drive)
+	state = frozen;					// must do this last so that the ISR doesn't start executing it before we have finished setting it up
+	return true;
+}
+
+// Set up a remote move. Return true if it represents real movement, else false.
+// All values have already been converted to step clocks and the total distance has been normalised to 1.0.
+// The whenToExecute field of the movement message has already bee converted to local time
+// This version handles the new movement message that includes the input shaping plan and passes extruder movement as distance, not steps
+bool DDA::Init(const CanMessageMovementLinearShaped& msg) noexcept
+{
+	afterPrepare.moveStartTime = msg.whenToExecute;
+	flags.all = 0;
+	flags.isPrintingMove = flags.usePressureAdvance = msg.usePressureAdvance;
+
+	// Prepare for movement
+	PrepParams params;
+	params.shapingPlan.condensedPlan = msg.shapingPlan;
+
+	// Normalise the move to unit distance
+	params.acceleration = acceleration = msg.acceleration;
+	params.deceleration = deceleration = msg.deceleration;
+	params.accelClocks = msg.accelerationClocks;
+	params.steadyClocks = msg.steadyClocks;
+	params.decelClocks = msg.decelClocks;
+	clocksNeeded = msg.accelerationClocks + msg.steadyClocks + msg.decelClocks;
+
+	// Set up the plan
+	segments = nullptr;
+	moveInstance->GetAxisShaper().GetRemoteSegments(*this, params);
+
+	const size_t numDrivers = min<size_t>(msg.numDrivers, NumDrivers);
+	bool realMove = false;
+	for (size_t drive = 0; drive < numDrivers; drive++)
 	{
+		endPoint[drive] = prev->endPoint[drive];					// the steps for this move will be added later
 		DriveMovement& dm = ddms[drive];
-		if (dm.state == DMState::moving)
+		if ((msg.extruderDrives & (1u << drive)) != 0)
 		{
-			Platform::EnableDrive(drive, 0);
-			if ((msg.pressureAdvanceDrives & (1u << drive)) != 0)
+			// It's an extruder
+			const float extrusionRequested = msg.perDrive[drive].extrusion;
+			directionVector[drive] = extrusionRequested;
+			if (extrusionRequested != 0)
 			{
-				// If there is any extruder jerk in this move, in theory that means we need to instantly extrude or retract some amount of filament.
-				// Pass the speed change to PrepareExtruder
-				// But PrepareExtruder doesn't use it currently, so don't bother
-				dm.PrepareExtruder(*this, params, 0.0);
-
-				// Check for sensible values, print them if they look dubious
-				if (Platform::Debug(moduleDda)
-					&& (   dm.totalSteps > 1000000
-						|| dm.reverseStartStep < dm.mp.cart.decelStartStep
-						|| (dm.reverseStartStep <= dm.totalSteps
-#if DM_USE_FPU
-							&& dm.mp.cart.fFourMaxStepDistanceMinusTwoDistanceToStopTimesCsquaredDivD > dm.fTwoCsquaredTimesMmPerStepDivD * dm.reverseStartStep
-#else
-							&& dm.mp.cart.fourMaxStepDistanceMinusTwoDistanceToStopTimesCsquaredDivD > (int64_t)(dm.twoCsquaredTimesMmPerStepDivD * dm.reverseStartStep)
+				dm.totalSteps = labs((float)extrusionRequested);	// for now this is the number of net steps, but gets adjusted later if there is a reverse in direction
+				dm.direction = (extrusionRequested >= 0.0);			// for now this is the direction of net movement, but gets adjusted later if it is a delta movement
+				Platform::EnableDrive(drive, 0);
+				const bool stepsToDo = dm.PrepareExtruder(*this, params, extrusionRequested);
+				if (stepsToDo)
+				{
+					dm.directionChanged = dm.directionReversed = false;
+					const int32_t netSteps = (dm.reverseStartStep < dm.totalSteps) ? (2 * dm.reverseStartStep) - dm.totalSteps : dm.totalSteps;
+					if (dm.direction)
+					{
+						endPoint[drive] += netSteps;
+					}
+					else
+					{
+						endPoint[drive] -= netSteps;
+					}
+				}
+				else
+				{
+					dm.state = DMState::idle;						// no steps to do
+#if SINGLE_DRIVER
+					// No steps to do, so set up the steps so that GetStepsTaken will return zero
+					dm.totalSteps = 0;
+					dm.nextStep = 0;
+					dm.reverseStartStep = 1;
 #endif
-						   )
-					   )
-				   )
-				{
-					DebugPrintAll();
 				}
 			}
 			else
 			{
-				dm.PrepareCartesianAxis(*this, params);
-
-				// Check for sensible values, print them if they look dubious
-				if (Platform::Debug(moduleDda) && dm.totalSteps > 1000000)
-				{
-					DebugPrintAll();
-				}
-			}
-
-			const uint32_t netSteps = (dm.reverseStartStep < dm.totalSteps) ? (2 * dm.reverseStartStep) - dm.totalSteps : dm.totalSteps;
-			if (dm.direction)
-			{
-				endPoint[drive] += netSteps;
-			}
-			else
-			{
-				endPoint[drive] -= netSteps;
-			}
-
-			// Prepare for the first step
-			dm.nextStep = 0;
-			dm.nextStepTime = 0;
-			dm.stepInterval = 999999;							// initialise to a large value so that we will calculate the time for just one step
-			dm.stepsTillRecalc = 0;							// so that we don't skip the calculation
-
-			const bool stepsToDo = dm.CalcNextStepTime(*this);
-			if (stepsToDo)
-			{
-				dm.directionChanged = false;
-#if !SINGLE_DRIVER
-				InsertDM(&dm);
+				dm.state = DMState::idle;						// no steps to do
+#if SINGLE_DRIVER
+				// No steps to do, so set up the steps so that GetStepsTaken will return zero
+				dm.totalSteps = 0;
+				dm.nextStep = 0;
+				dm.reverseStartStep = 1;
 #endif
 			}
+		}
+		else
+		{
+			const int32_t delta = msg.perDrive[drive].steps;
+			directionVector[drive] = (float)delta;
+			if (delta != 0)
+			{
+				EnsureSegments(params);								// we are going to need segments
+				dm.totalSteps = labs(delta);						// for now this is the number of net steps, but gets adjusted later if there is a reverse in direction
+				dm.direction = (delta >= 0);						// for now this is the direction of net movement, but gets adjusted later if it is a delta movement
+				Platform::EnableDrive(drive, 0);
+				const bool stepsToDo = dm.PrepareCartesianAxis(*this, params);
+				if (stepsToDo)
+				{
+					dm.directionChanged = dm.directionReversed = false;
+					const int32_t netSteps = (dm.reverseStartStep < dm.totalSteps) ? (2 * dm.reverseStartStep) - dm.totalSteps : dm.totalSteps;
+					if (dm.direction)
+					{
+						endPoint[drive] += netSteps;
+					}
+					else
+					{
+						endPoint[drive] -= netSteps;
+					}
+				}
+				else
+				{
+					dm.state = DMState::idle;						// no steps to do
+#if SINGLE_DRIVER
+					// No steps to do, so set up the steps so that GetStepsTaken will return zero
+					dm.totalSteps = 0;
+					dm.nextStep = 0;
+					dm.reverseStartStep = 1;
+#endif
+				}
+			}
 			else
 			{
-				if (dm.state == DMState::stepError)
-				{
-					DebugPrint();
-					dm.DebugPrint(drive + '0');
-					//msg.DebugPrint();
-				}
-				dm.state = DMState::idle;
+				dm.state = DMState::idle;							// no steps to do
+#if SINGLE_DRIVER
+				// No steps to do, so set up the steps so that GetStepsTaken will return zero
+				dm.totalSteps = 0;
+				dm.nextStep = 0;
+				dm.reverseStartStep = 1;
+#endif
 			}
 		}
 	}
 
-	if (Platform::Debug(moduleDda) && Platform::Debug(moduleMove))		// temp show the prepared DDA if debug enabled for both modules
+	// 2. Throw it away if there's no real movement.
+	if (!realMove)
 	{
-		DebugPrintAll();
+		// We may have set up the segments, in which case we must recycle them
+		for (MoveSegment* seg = segments; seg != nullptr; )
+		{
+			MoveSegment* const nextSeg = seg->GetNext();
+			MoveSegment::Release(seg);
+			seg = nextSeg;
+		}
+		segments = nullptr;
+		return false;
 	}
 
-	state = frozen;					// must do this last so that the ISR doesn't start executing it before we have finished setting it up
+	state = frozen;												// must do this last so that the ISR doesn't start executing it before we have finished setting it up
 	return true;
 }
 
@@ -400,7 +499,7 @@ void DDA::Start(uint32_t tim) noexcept
 	state = executing;
 
 #if SINGLE_DRIVER
-	if (ddms[0].state == DMState::moving)
+	if (ddms[0].state >= DMState::firstMotionState)
 	{
 		Platform::SetDirection(ddms[0].direction);
 	}
@@ -410,7 +509,7 @@ void DDA::Start(uint32_t tim) noexcept
 		for (size_t i = 0; i < NumDrivers; ++i)
 		{
 			DriveMovement& dm = ddms[i];
-			if (dm.state == DMState::moving)
+			if (dm.state >= DMState::firstMotionState)
 			{
 				Platform::SetDirection(dm.drive, dm.direction);
 			}
@@ -442,7 +541,7 @@ void DDA::StepDrivers(uint32_t now) noexcept
 # endif
 
 	// Determine whether the driver is due for stepping, overdue, or will be due very shortly
-	if (ddms[0].state == DMState::moving && (now - afterPrepare.moveStartTime) + StepTimer::MinInterruptInterval >= ddms[0].nextStepTime)	// if the next step is due
+	if (ddms[0].state >= DMState::firstMotionState && (now - afterPrepare.moveStartTime) + StepTimer::MinInterruptInterval >= ddms[0].nextStepTime)	// if the next step is due
 	{
 		// Step the driver
 
@@ -496,7 +595,7 @@ void DDA::StepDrivers(uint32_t now) noexcept
 	}
 
 	// If there are no more steps to do and the time for the move has nearly expired, flag the move as complete
-	if (ddms[0].state != DMState::moving && StepTimer::GetTimerTicks() - afterPrepare.moveStartTime + WakeupTime >= clocksNeeded)
+	if (ddms[0].state < DMState::firstMotionState && StepTimer::GetTimerTicks() - afterPrepare.moveStartTime + WakeupTime >= clocksNeeded)
 	{
 		state = completed;
 	}
@@ -559,7 +658,7 @@ void DDA::StepDrivers(uint32_t now) noexcept
 	while (dmToInsert != dm)										// note that both of these may be nullptr
 	{
 		DriveMovement * const nextToInsert = dmToInsert->nextDM;
-		if (dmToInsert->state == DMState::moving)
+		if (dmToInsert->state >= DMState::firstMotionState)
 		{
 			InsertDM(dmToInsert);
 			if (dmToInsert->directionChanged)
@@ -614,7 +713,7 @@ void DDA::StopDrivers(uint16_t whichDrives) noexcept
 			if (whichDrives & (1u << drive))
 			{
 				DriveMovement& dm = ddms[drive];
-				if (dm.state == DMState::moving)
+				if (dm.state >= DMState::firstMotionState)
 				{
 					dm.state = DMState::idle;
 #if SUPPORT_CLOSED_LOOP

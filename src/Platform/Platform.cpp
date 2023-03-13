@@ -171,7 +171,6 @@ namespace Platform
 	static uint8_t driverStates[NumDrivers];
 	static float stepsPerMm[NumDrivers];
 	static float motorCurrents[NumDrivers];
-	static float pressureAdvanceClocks[NumDrivers];
 	static float idleCurrentFactor[NumDrivers];
 
 	static void InternalDisableDrive(size_t driver);
@@ -918,7 +917,6 @@ void Platform::Init()
 		brakeVoltages[i] = FullyOnBrakeVoltage;
 #  endif
 # endif
-		pressureAdvanceClocks[i] = 0.0;
 		driverStates[i] = DriverStateControl::driverDisabled;
 		brakeOffDelays[i] = 0;
 		motorOffDelays[i] = DefaultDelayAfterBrakeOn;
@@ -1668,16 +1666,6 @@ void Platform::SetDriverStepTiming(size_t drive, const float timings[4])
 }
 
 # endif		// SUPPORT_SLOW_DRIVERS
-
-float Platform::GetPressureAdvanceClocks(size_t driver)
-{
-	return pressureAdvanceClocks[driver];
-}
-
-void Platform::SetPressureAdvance(size_t driver, float advance)
-{
-	pressureAdvanceClocks[driver] = advance * (float)StepTimer::StepClockRate;
-}
 
 #if 0	// not used yet and may never be
 // Send the status of drivers and filament monitors to the main board

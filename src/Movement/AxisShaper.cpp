@@ -7,6 +7,8 @@
 
 #include "AxisShaper.h"
 
+#if SUPPORT_DRIVERS
+
 #include "StepTimer.h"
 #include "DDA.h"
 #include "MoveSegment.h"
@@ -462,5 +464,7 @@ MoveSegment *AxisShaper::FinishShapedSegments(const DDA& dda, const PrepParams& 
 
 	return tempSegments;
 }
+
+#endif
 
 // End

@@ -23,13 +23,14 @@
 # endif
 
 struct CanMessageMovementLinear;
+struct CanMessageMovementLinearShaped;
 struct CanMessageStopMovement;
 
 // Struct for passing parameters to the DriveMovement Prepare methods
 struct PrepParams
 {
 	// Parameters used for all types of motion
-	float totalDistance;
+	static constexpr float totalDistance = 1.0;
 	float accelDistance;
 	float decelStartDistance;
 	float accelClocks, steadyClocks, decelClocks;
@@ -89,6 +90,7 @@ public:
 	void Init() noexcept;															// Set up initial positions for machine startup
 	bool Init(const CanMessageMovementLinear& msg) noexcept SPEED_CRITICAL;			// Set up a move from a CAN message
 	bool Init(const CanMessageMovementLinearShaped& msg) noexcept SPEED_CRITICAL;	// Set up a move from a CAN message
+	void EnsureSegments(const PrepParams& params) noexcept;
 	void Start(uint32_t tim) noexcept SPEED_CRITICAL;								// Start executing the DDA, i.e. move the move.
 	void StepDrivers(uint32_t now) noexcept SPEED_CRITICAL;							// Take one step of the DDA, called by timed interrupt.
 	bool ScheduleNextStepInterrupt(StepTimer& timer) const noexcept SPEED_CRITICAL;	// Schedule the next interrupt, returning true if we can't because it is already due
@@ -143,16 +145,13 @@ public:
 	// Note: the above measurements were taken some time ago, before some firmware optimisations.
 	// The system clock of the SAME70 is running at 150MHz. Use the same defaults as for the SAM4E for now.
 #if SAMC21 || RP2040
-	static constexpr uint32_t MinCalcIntervalDelta = (100 * StepTimer::StepClockRate)/1000000; 		// the smallest sensible interval between calculations (40us) in step timer clocks
-	static constexpr uint32_t MinCalcIntervalCartesian = (100 * StepTimer::StepClockRate)/1000000;	// same as delta for now, but could be lower
+	static constexpr uint32_t MinCalcInterval = (100 * StepTimer::StepClockRate)/1000000;			// the smallest sensible interval between calculations (40us) in step timer clocks
 	static constexpr uint32_t HiccupTime = (50 * StepTimer::StepClockRate)/1000000;					// how long we hiccup for
-	static constexpr uint32_t MaxStepInterruptTime = (80 * StepTimer::StepClockRate)/1000000;		// the maximum time we spend looping in the ISR in step clocks
 #elif SAME5x
-	static constexpr uint32_t MinCalcIntervalDelta = (50 * StepTimer::StepClockRate)/1000000; 		// the smallest sensible interval between calculations (40us) in step timer clocks
-	static constexpr uint32_t MinCalcIntervalCartesian = (50 * StepTimer::StepClockRate)/1000000;	// same as delta for now, but could be lower
+	static constexpr uint32_t MinCalcInterval = (50 * StepTimer::StepClockRate)/1000000; 			// the smallest sensible interval between calculations (40us) in step timer clocks
 	static constexpr uint32_t HiccupTime = (40 * StepTimer::StepClockRate)/1000000;					// how long we hiccup for
-	static constexpr uint32_t MaxStepInterruptTime = (80 * StepTimer::StepClockRate)/1000000;		// the maximum time we spend looping in the ISR in step clocks
 #endif
+	static constexpr uint32_t MaxStepInterruptTime = (80 * StepTimer::StepClockRate)/1000000;		// the maximum time we spend looping in the ISR in step clocks
 	static constexpr uint32_t WakeupTime = (100 * StepTimer::StepClockRate)/1000000;				// stop resting 100us before the move is due to end
 
 	static void PrintMoves();											// print saved moves for debugging
@@ -186,14 +185,15 @@ private:
 		struct
 		{
 			uint16_t isPrintingMove : 1,	// True if this is a printing move and any of our extruders is moving
-					 goingSlow : 1,			// True if we have slowed the movement because the Z probe is approaching its threshold
+			 	 	 usePressureAdvance : 1,	// True if pressure advance should be applied to any forward extrusion
 					 hadHiccup : 1;			// True if we had a hiccup while executing this move
-		} flags;
+		};
 		uint16_t all;						// so that we can print all the flags at once for debugging
-	};
+	} flags;
 
 	int32_t endPoint[NumDrivers];  			// Machine coordinates in steps of the endpoint
 
+	float directionVector[NumDrivers];		// How much each drive is moving
 	float acceleration;						// The acceleration to use
 	float deceleration;						// The deceleration to use
 
@@ -216,9 +216,6 @@ private:
 	{
 		// These are calculated from the above and used in the ISR, so they are set up by Prepare()
 		uint32_t moveStartTime;				// clock count at which the move was started
-		uint32_t startSpeedTimesCdivA;		// the number of clocks it would have taken to reach the start speed from rest
-		uint32_t topSpeedTimesCdivDPlusDecelStartClocks;
-		int32_t extraAccelerationClocks;	// the additional number of clocks needed because we started the move at less than topSpeed. Negative after ReduceHomingSpeed has been called.
 
 		// These are used only in delta calculations
 #if DM_USE_FPU
@@ -246,7 +243,7 @@ inline uint32_t DDA::WhenNextInterruptDue() const noexcept
 {
 	return
 #if SINGLE_DRIVER
-			(likely(ddms[0].state == DMState::moving)) ? ddms[0].nextStepTime
+			(likely(ddms[0].state >= DMState::firstMotionState)) ? ddms[0].nextStepTime
 #else
 			(activeDMs != nullptr) ? activeDMs->nextStepTime
 #endif
@@ -275,7 +272,7 @@ inline void DDA::InsertHiccup(uint32_t now) noexcept
 {
 	const uint32_t ticksDueAfterStart =
 #if SINGLE_DRIVER
-		(ddms[0].state == DMState::moving) ? ddms[0].nextStepTime
+		(ddms[0].state >= DMState::firstMotionState) ? ddms[0].nextStepTime
 #else
 									(activeDMs != nullptr) ? activeDMs->nextStepTime
 #endif
@@ -302,7 +299,7 @@ inline void DDA::Free()
 inline uint32_t DDA::GetStepInterval(size_t axis, uint32_t microstepShift) const noexcept
 {
 	const DriveMovement& dm = ddms[axis];
-	return dm.state == DMState::moving ? dm.GetStepInterval(microstepShift) : 0;
+	return dm.state >= DMState::firstMotionState ? dm.GetStepInterval(microstepShift) : 0;
 }
 
 #endif

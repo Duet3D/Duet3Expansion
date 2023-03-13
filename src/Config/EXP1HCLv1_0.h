@@ -28,7 +28,6 @@
 #define SINGLE_DRIVER			1
 #define SUPPORT_SLOW_DRIVERS	0
 #define SUPPORT_DELTA_MOVEMENT	1
-#define USE_EVEN_STEPS			1
 
 // The SAMC21 can sink more current than it can source, therefore we use active low signals to drive external drivers
 #define ACTIVE_HIGH_STEP		1		// 1 = active high, 0 = active low
