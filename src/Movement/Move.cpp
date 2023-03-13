@@ -225,15 +225,30 @@ void Move::StartNextMove(DDA *cdda, uint32_t startTime) noexcept
 		CanMessageBuffer *buf = CanInterface::GetCanMove(TaskBase::TimeoutUnlimited);
 #endif
 		MicrosecondsTimer prepareTimer;
-		if (ddaRingAddPointer->Init(buf->msg.moveLinear))
+		const CanMessageType msgType = buf->id.MsgType();
+		switch (msgType)
 		{
-			ddaRingAddPointer = ddaRingAddPointer->GetNext();
-			scheduledMoves++;
-		}
-		const uint32_t elapsedTime = prepareTimer.Read();
-		if (elapsedTime > Move::maxPrepareTime)
-		{
-			Move::maxPrepareTime = elapsedTime;
+		case CanMessageType::movementLinear:
+		case CanMessageType::movementLinearShaped:
+			{
+				const bool moveAdded = (msgType == CanMessageType::movementLinearShaped)
+										? ddaRingAddPointer->Init(buf->msg.moveLinearShaped)
+											: ddaRingAddPointer->Init(buf->msg.moveLinear);
+				if (moveAdded)
+				{
+					ddaRingAddPointer = ddaRingAddPointer->GetNext();
+					scheduledMoves++;
+				}
+				const uint32_t elapsedTime = prepareTimer.Read();
+				if (elapsedTime > Move::maxPrepareTime)
+				{
+					Move::maxPrepareTime = elapsedTime;
+				}
+			}
+			break;
+
+		default:				// should not happen
+			break;
 		}
 
 		CanMessageBuffer::Free(buf);

@@ -187,6 +187,14 @@ void DDA::Init() noexcept
 
 // Set up a real move. Return true if it represents real movement, else false.
 // Return true if it is a real move
+bool DDA::Init(const CanMessageMovementLinearShaped& msg) noexcept
+{
+	//TODO
+	return false;
+}
+
+// Set up a real move. Return true if it represents real movement, else false.
+// Return true if it is a real move
 bool DDA::Init(const CanMessageMovementLinear& msg) noexcept
 {
 	// 0. Initialise the endpoints, which are used for diagnostic purposes, and set up the DriveMovement objects
