@@ -123,7 +123,7 @@ public:
 #endif
 
 #if SUPPORT_CLOSED_LOOP
-	void GetCurrentMotion(size_t driver, uint32_t ticksSinceStart, MotionParameters& mParams) const noexcept;	// get the current desired position, speed and acceleration
+	void GetCurrentMotion(size_t driver, uint32_t ticksSinceStart, MotionParameters& mParams) noexcept;	// get the current desired position, speed and acceleration
 	uint32_t GetStartTime() const noexcept { return afterPrepare.moveStartTime; }
 	void SetCompleted() noexcept { state = completed; }
 #endif
@@ -201,28 +201,15 @@ private:
 	float startSpeed;
 	float endSpeed;
 	float topSpeed;
-	float accelDistance;
-	float decelDistance;
 	static constexpr float totalDistance = 1.0;		// we normalise all move to unit distance
 
 	uint32_t clocksNeeded;
-#if SUPPORT_CLOSED_LOOP
-	uint32_t accelClocks;
-	uint32_t accelPlusSteadyClocks;
-#endif
 
 	// Values that are not set or accessed before Prepare is called
 	struct
 	{
 		// These are calculated from the above and used in the ISR, so they are set up by Prepare()
 		uint32_t moveStartTime;				// clock count at which the move was started
-
-		// These are used only in delta calculations
-#if DM_USE_FPU
-		float zFraction;					// the Z movement fraction
-#else
-		int32_t cKc;						// the Z movement fraction multiplied by Kc and converted to integer
-#endif
 	} afterPrepare;
 
 	MoveSegment* segments;					// linked list of move segments used by axis DMs
@@ -306,36 +293,50 @@ inline uint32_t DDA::GetStepInterval(size_t axis, uint32_t microstepShift) const
 
 #if SUPPORT_CLOSED_LOOP
 
-// Get the current position, speed and acceleration. Interrupts are disabled on entry and must remain disabled.
-// Return true if successful, false if no move is in progress.
-inline void DDA::GetCurrentMotion(size_t driver, uint32_t ticksSinceStart, MotionParameters& mParams) const noexcept
+// Get the current position relative to the start of this move, speed and acceleration. Interrupts are disabled on entry and must remain disabled.
+inline void DDA::GetCurrentMotion(size_t driver, uint32_t ticksSinceStart, MotionParameters& mParams) noexcept
 {
-	//TODO allow for pressure advance
-	float pos, speed, acc;
-	if (ticksSinceStart < accelClocks)
+	DriveMovement& dm = ddms[driver];
+	const MoveSegment *ms = dm.currentSegment;
+	if (ms == nullptr)
 	{
-		pos = (startSpeed + 0.5 * acceleration * (float)ticksSinceStart) * (float)ticksSinceStart;
-		speed = startSpeed + acceleration * (float)ticksSinceStart;
-		acc = acceleration;
-	}
-	else if (ticksSinceStart < accelPlusSteadyClocks)
-	{
-		pos = accelDistance + topSpeed * (float)(ticksSinceStart - accelClocks);
-		speed = topSpeed;
-		acc = 0.0;
-	}
-	else
-	{
-		const float timeDecelerating = (float)(ticksSinceStart - accelPlusSteadyClocks);
-		pos = (1.0 - decelDistance) + (topSpeed - 0.5 * deceleration * timeDecelerating) * timeDecelerating;
-		speed = topSpeed - timeDecelerating * deceleration;
-		acc = -deceleration;
+		// Drive was not commanded to move
+		mParams.position = mParams.speed = mParams.acceleration = 0.0;
+		return;
 	}
 
-	const DriveMovement& dm = ddms[driver];
-	mParams.position = pos * (float)dm.netSteps;
-	mParams.speed = speed * (float)dm.netSteps;
-	mParams.acceleration = acc * (float)dm.netSteps;
+	for (;;)
+	{
+		const float segTimeRemaining = dm.timeSoFar - (float)ticksSinceStart;
+		if (segTimeRemaining >= 0.0 || ms->GetNext() == nullptr)
+		{
+			// The current move segment is still in progress, or it is the last move segment and it has only just finished
+			if (ms->IsLinear())
+			{
+				mParams.position = dm.distanceSoFar - segTimeRemaining * topSpeed;
+				mParams.speed = topSpeed;
+				mParams.acceleration = 0.0;
+			}
+			else
+			{
+				const float segmentEndSpeed = ms->GetNonlinearEndSpeed(dm.mp.cart.pressureAdvanceK);
+				const float speedIncreaseRemaining = ms->GetAcceleration() * segTimeRemaining;
+				mParams.position = dm.distanceSoFar - ((segmentEndSpeed - 0.5 * speedIncreaseRemaining) * segTimeRemaining);
+				mParams.speed = segmentEndSpeed - speedIncreaseRemaining;
+				mParams.acceleration = ms->GetAcceleration();
+			}
+			return;
+		}
+		dm.currentSegment = ms = ms->GetNext();
+		if (dm.isExtruder)
+		{
+			dm.NewExtruderSegment();
+		}
+		else
+		{
+			dm.NewCartesianSegment();
+		}
+	}
 }
 
 #endif

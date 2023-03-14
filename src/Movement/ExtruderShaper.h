@@ -15,7 +15,7 @@
 #include "StepTimer.h"
 
 // This class implements MoveSegment generation for extruders with pressure advance.
-// It also tracks extrusion that has be commanded but not implemented because less than one full step has been accumulated.
+// It also tracks extrusion that has been commanded but not implemented because less than one full step has been accumulated.
 // Currently it only supports linear pressure advance.
 class ExtruderShaper
 {

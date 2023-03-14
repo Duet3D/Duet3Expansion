@@ -159,8 +159,8 @@ void DDA::DebugPrintVector(const char *name, const float *vec, size_t len) const
 // Print the text followed by the DDA only
 void DDA::DebugPrint() const noexcept
 {
-	debugPrintf("DDA: a=%e d=%e startv=%e topv=%e endv=%e sa=%f sd=%f cks=%" PRIu32 " fl=%u\n",
-				(double)acceleration, (double)deceleration, (double)startSpeed, (double)topSpeed, (double)endSpeed, (double)accelDistance, (double)decelDistance, clocksNeeded, flags.all);
+	debugPrintf("DDA: a=%e d=%e startv=%e topv=%e endv=%e cks=%" PRIu32 " fl=%u\n",
+				(double)acceleration, (double)deceleration, (double)startSpeed, (double)topSpeed, (double)endSpeed, clocksNeeded, flags.all);
 }
 
 // Print the DDA and active DMs
@@ -198,15 +198,7 @@ void DDA::Init() noexcept
 bool DDA::Init(const CanMessageMovementLinear& msg) noexcept
 {
 	afterPrepare.moveStartTime = msg.whenToExecute;
-
-#if SUPPORT_CLOSED_LOOP
-	accelClocks = msg.accelerationClocks;
-	accelPlusSteadyClocks = msg.accelerationClocks + msg.steadyClocks;
-	clocksNeeded = accelPlusSteadyClocks + msg.decelClocks;
-#else
 	clocksNeeded = msg.accelerationClocks + msg.steadyClocks + msg.decelClocks;
-#endif
-
 	flags.all = 0;
 	flags.isPrintingMove = flags.usePressureAdvance = (msg.pressureAdvanceDrives != 0);
 
@@ -218,20 +210,17 @@ bool DDA::Init(const CanMessageMovementLinear& msg) noexcept
 	acceleration = (msg.accelerationClocks == 0) ? 0.0 : (topSpeed * (1.0 - msg.initialSpeedFraction))/msg.accelerationClocks;
 	deceleration = (msg.decelClocks == 0) ? 0.0 : (topSpeed * (1.0 - msg.finalSpeedFraction))/msg.decelClocks;
 
-	// Set up the move parameters
-	// Calculate the distances as a fraction of the total movement length
-	accelDistance = (msg.accelerationClocks == 0) ? 0.0
-						: (msg.accelerationClocks == clocksNeeded) ? 1.0
-							: topSpeed * (1.0 + msg.initialSpeedFraction) * msg.accelerationClocks * 0.5;
-	decelDistance = (msg.decelClocks == 0) ? 0.0
-						: (msg.decelClocks == clocksNeeded) ? 1.0
-							: topSpeed * (1.0 + msg.finalSpeedFraction) * msg.decelClocks * 0.5;
-
-	accelDistance = topSpeed * (1.0 + msg.initialSpeedFraction) * msg.accelerationClocks * 0.5;
-	decelDistance = topSpeed * (1.0 + msg.finalSpeedFraction) * msg.decelClocks * 0.5;
-
 	// Prepare for movement
 	PrepParams params;											// the default constructor clears params.plan to 'no shaping'
+
+	// Set up the move parameters
+	// Calculate the distances as a fraction of the total movement length
+	params.accelDistance = (msg.accelerationClocks == 0) ? 0.0
+						: (msg.accelerationClocks == clocksNeeded) ? 1.0
+							: topSpeed * (1.0 + msg.initialSpeedFraction) * msg.accelerationClocks * 0.5;
+	const float decelDistance = (msg.decelClocks == 0) ? 0.0
+						: (msg.decelClocks == clocksNeeded) ? 1.0
+							: topSpeed * (1.0 + msg.finalSpeedFraction) * msg.decelClocks * 0.5;
 
 	params.decelStartDistance = 1.0 - decelDistance;
 	params.accelClocks = msg.accelerationClocks;
@@ -685,28 +674,6 @@ void DDA::StopDrivers(uint16_t whichDrives) noexcept
 	{
 #if SUPPORT_CLOSED_LOOP
 		const uint32_t ticksSinceStart = StepTimer::GetTimerTicks() - afterPrepare.moveStartTime;
-		float pos;
-		if ((int32_t)ticksSinceStart <= 0)
-		{
-			pos = 0.0;
-		}
-		else if (ticksSinceStart < accelClocks)
-		{
-			pos = (startSpeed + 0.5 * acceleration * (float)ticksSinceStart) * (float)ticksSinceStart;
-		}
-		else if (ticksSinceStart < accelPlusSteadyClocks)
-		{
-			pos = accelDistance + topSpeed * (float)(ticksSinceStart - accelClocks);
-		}
-		else if (ticksSinceStart < clocksNeeded)
-		{
-			const float timeDecelerating = (float)(ticksSinceStart - accelPlusSteadyClocks);
-			pos = (1.0 - decelDistance) + (topSpeed - 0.5 * deceleration * timeDecelerating) * timeDecelerating;
-		}
-		else
-		{
-			pos = 1.0;
-		}
 #endif
 		for (size_t drive = 0; drive < NumDrivers; ++drive)
 		{
@@ -717,7 +684,9 @@ void DDA::StopDrivers(uint16_t whichDrives) noexcept
 				{
 					dm.state = DMState::idle;
 #if SUPPORT_CLOSED_LOOP
-					dm.AdjustNetSteps(pos);				// adjust netSteps to be the amount actually moved
+					MotionParameters mp;
+					GetCurrentMotion(drive, ticksSinceStart, mp);
+					dm.AdjustNetSteps(mp.position);				// adjust netSteps to be the amount actually moved
 #endif
 
 #if SINGLE_DRIVER

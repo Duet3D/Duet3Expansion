@@ -180,6 +180,9 @@ public:
 	// Return the C coefficient
 	float GetC() const noexcept { return c; }
 
+	// Return the acceleration, needed by closed loop builds
+	float GetAcceleration() const noexcept { return acceleration; }
+
 	void SetLinear(float pSegmentLength, float p_segTime, float p_c) noexcept post(IsLinear());
 	void SetNonLinear(float pSegmentLength, float p_segTime, float p_b, float p_c, float p_acceleration) noexcept post(!IsLinear());
 

@@ -160,10 +160,10 @@ inline bool Move::GetCurrentMotion(size_t driver, uint32_t when, bool closedLoop
 			// This move is executing
 			cdda->GetCurrentMotion(driver, clocksSinceMoveStart, mParams);
 
-			// Convert microsteps to full steps and account for possible reversal of the rotation direction. We use ldexp to avoid a division.
+			// Convert microsteps to full steps and account for possible reversal of the rotation direction
 			mParams.position = (mParams.position + (float)netMicrostepsTaken[driver]) * multiplier;
-			mParams.speed = mParams.speed * multiplier;
-			mParams.acceleration = mParams.acceleration * multiplier;
+			mParams.speed *= multiplier;
+			mParams.acceleration *= multiplier;
 			return true;
 		}
 
