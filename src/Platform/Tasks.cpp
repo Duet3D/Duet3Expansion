@@ -543,10 +543,10 @@ void Tasks::Diagnostics(const StringRef& reply) noexcept
 			stateText = "ready";
 			break;
 		case esNotifyWaiting:
-			stateText = "notifyWait";
+			stateText = "nWait";
 			break;
 		case esResourceWaiting:
-			stateText = "resourceWait:";
+			stateText = "rWait:";
 			break;
 		case esDelaying:
 			stateText = "delaying";
@@ -562,7 +562,7 @@ void Tasks::Diagnostics(const StringRef& reply) noexcept
 			break;
 		}
 
-		const char *mutexName = nullptr;
+		const char *mutexName = "";
 		if (taskDetails.eCurrentState == esResourceWaiting)
 		{
 			const Mutex *m = Mutex::GetMutexList();
