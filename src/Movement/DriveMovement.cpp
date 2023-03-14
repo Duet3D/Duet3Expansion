@@ -495,9 +495,9 @@ pre(nextStep <= totalSteps; stepsTillRecalc == 0)
 				nextStep -= 2 * (segmentStepLimit - reverseStartStep);	// set nextStep to the net steps taken (this may make nextStep negative)
 				if (!NewExtruderSegment())
 				{
-					ExtruderShaper& shaper = moveInstance->GetExtruderShaper(drive);
 					if (dda.flags.isPrintingMove)
 					{
+						ExtruderShaper& shaper = moveInstance->GetExtruderShaper(drive);
 						const int32_t netStepsDone = nextStep - 1;
 						shaper.SetExtrusionPending(distanceSoFar * mp.cart.effectiveStepsPerMm - (float)netStepsDone);
 					}

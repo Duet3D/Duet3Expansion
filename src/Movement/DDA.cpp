@@ -230,6 +230,9 @@ bool DDA::Init(const CanMessageMovementLinear& msg) noexcept
 	params.deceleration = deceleration;
 
 	segments = nullptr;
+#if !SINGLE_DRIVER
+	activeDMs = nullptr;
+#endif
 
 	const size_t numDrivers = min<size_t>(msg.numDrivers, NumDrivers);
 	bool realMove = false;
@@ -260,8 +263,10 @@ bool DDA::Init(const CanMessageMovementLinear& msg) noexcept
 			if (stepsToDo)
 			{
 				realMove = true;
-				Platform::EnableDrive(drive, 0);
 				dm.directionChanged = dm.directionReversed = false;
+#if !SINGLE_DRIVER
+				InsertDM(&dm);
+#endif
 				const int32_t netSteps = (dm.reverseStartStep < dm.totalSteps) ? (2 * dm.reverseStartStep) - dm.totalSteps : dm.totalSteps;
 				if (dm.direction)
 				{
@@ -309,10 +314,6 @@ bool DDA::Init(const CanMessageMovementLinear& msg) noexcept
 		return false;
 	}
 
-#if !SINGLE_DRIVER
-	activeDMs = nullptr;
-#endif
-
 	state = frozen;					// must do this last so that the ISR doesn't start executing it before we have finished setting it up
 	return true;
 }
@@ -342,6 +343,9 @@ bool DDA::Init(const CanMessageMovementLinearShaped& msg) noexcept
 	// Set up the plan
 	segments = nullptr;
 	moveInstance->GetAxisShaper().GetRemoteSegments(*this, params);
+#if !SINGLE_DRIVER
+	activeDMs = nullptr;
+#endif
 
 	const size_t numDrivers = min<size_t>(msg.numDrivers, NumDrivers);
 	bool realMove = false;
@@ -363,6 +367,9 @@ bool DDA::Init(const CanMessageMovementLinearShaped& msg) noexcept
 				if (stepsToDo)
 				{
 					dm.directionChanged = dm.directionReversed = false;
+#if !SINGLE_DRIVER
+					InsertDM(&dm);
+#endif
 					const int32_t netSteps = (dm.reverseStartStep < dm.totalSteps) ? (2 * dm.reverseStartStep) - dm.totalSteps : dm.totalSteps;
 					if (dm.direction)
 					{
@@ -409,6 +416,9 @@ bool DDA::Init(const CanMessageMovementLinearShaped& msg) noexcept
 				if (stepsToDo)
 				{
 					dm.directionChanged = dm.directionReversed = false;
+#if !SINGLE_DRIVER
+					InsertDM(&dm);
+#endif
 					const int32_t netSteps = (dm.reverseStartStep < dm.totalSteps) ? (2 * dm.reverseStartStep) - dm.totalSteps : dm.totalSteps;
 					if (dm.direction)
 					{

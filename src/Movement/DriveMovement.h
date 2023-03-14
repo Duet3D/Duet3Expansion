@@ -32,82 +32,6 @@ struct MotionParameters
 class LinearDeltaKinematics;
 class PrepParams;
 
-#define DM_USE_FPU			(__FPU_USED)
-#define ROUND_TO_NEAREST	(0)			// 1 for round to nearest (as used in 1.20beta10), 0 for round down (as used prior to 1.20beta10)
-
-// Rounding functions, to improve code clarity. Also allows a quick switch between round-to-nearest and round down in the movement code.
-inline uint32_t roundU32(float f) noexcept
-{
-#if ROUND_TO_NEAREST
-	return (uint32_t)lrintf(f);
-#else
-	return (uint32_t)f;
-#endif
-}
-
-inline uint32_t roundU32(double d) noexcept
-{
-#if ROUND_TO_NEAREST
-	return lrint(d);
-#else
-	return (uint32_t)d;
-#endif
-}
-
-inline int32_t roundS32(float f) noexcept
-{
-#if ROUND_TO_NEAREST
-	return lrintf(f);
-#else
-	return (int32_t)f;
-#endif
-}
-
-inline int32_t roundS32(double d) noexcept
-{
-#if ROUND_TO_NEAREST
-	return lrint(d);
-#else
-	return (int32_t)d;
-#endif
-}
-
-inline uint64_t roundU64(float f) noexcept
-{
-#if ROUND_TO_NEAREST
-	return (uint64_t)llrintf(f);
-#else
-	return (uint64_t)f;
-#endif
-}
-
-inline uint64_t roundU64(double d) noexcept
-{
-#if ROUND_TO_NEAREST
-	return (uint64_t)llrint(d);
-#else
-	return (uint64_t)d;
-#endif
-}
-
-inline int64_t roundS64(float f) noexcept
-{
-#if ROUND_TO_NEAREST
-	return llrintf(f);
-#else
-	return (int64_t)f;
-#endif
-}
-
-inline int64_t roundS64(double d) noexcept
-{
-#if ROUND_TO_NEAREST
-	return llrint(d);
-#else
-	return (int64_t)d;
-#endif
-}
-
 enum class DMState : uint8_t
 {
 	idle = 0,
@@ -232,14 +156,6 @@ private:
 			float extrusionBroughtForwards;				// the amount of extrusion brought forwards from previous moves. Only needed for debug output.
 		} cart;
 	} mp;
-
-	static constexpr uint32_t NoStepTime = 0xFFFFFFFF;	// value to indicate that no further steps are needed when calculating the next step time
-
-#if !DM_USE_FPU
-	static constexpr uint32_t K1 = 1024;				// a power of 2 used to multiply the value mmPerStepTimesCdivtopSpeed to reduce rounding errors
-	static constexpr uint32_t K2 = 512;					// a power of 2 used in delta calculations to reduce rounding errors (but too large makes things worse)
-	static constexpr int32_t Kc = 1024 * 1024;			// a power of 2 for scaling the Z movement fraction
-#endif
 };
 
 // Calculate and store the time since the start of the move when the next step for the specified DriveMovement is due.

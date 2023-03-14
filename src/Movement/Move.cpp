@@ -85,7 +85,7 @@ Move::Move() noexcept
 	{
 		movementAccumulators[i] = 0;
 #if SUPPORT_CLOSED_LOOP
-		netMicrostepsTaken[i] = 0;
+		netMicrostepsTaken[i] = 0.0;
 #endif
 	}
 }
@@ -318,7 +318,7 @@ void Move::CurrentMoveCompleted() noexcept
 		movementAccumulators[0] += stepsTaken;
 		lastMoveStepsTaken[0] = stepsTaken;
 # if SUPPORT_CLOSED_LOOP
-		netMicrostepsTaken[0] += stepsTaken;
+		netMicrostepsTaken[0] += cdda->GetFullDistance(0);
 # endif
 #else
 		for (size_t driver = 0; driver < NumDrivers; ++driver)
@@ -327,7 +327,7 @@ void Move::CurrentMoveCompleted() noexcept
 			lastMoveStepsTaken[driver] = stepsTaken;
 			movementAccumulators[driver] += stepsTaken;
 # if SUPPORT_CLOSED_LOOP
-			netMicrostepsTaken[driver] += stepsTaken;
+			netMicrostepsTaken[driver] += cdda->GetFullDistance(driver);
 # endif
 		}
 #endif

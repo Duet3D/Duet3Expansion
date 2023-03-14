@@ -38,12 +38,6 @@ struct PrepParams
 
 	InputShaperPlan shapingPlan;
 
-#if DM_USE_FPU
-	float fTopSpeedTimesCdivD;
-#else
-	uint32_t topSpeedTimesCdivD;
-#endif
-
 	// Parameters used only for delta moves
 	float initialX;
 	float initialY;
@@ -126,6 +120,7 @@ public:
 	void GetCurrentMotion(size_t driver, uint32_t ticksSinceStart, MotionParameters& mParams) noexcept;	// get the current desired position, speed and acceleration
 	uint32_t GetStartTime() const noexcept { return afterPrepare.moveStartTime; }
 	void SetCompleted() noexcept { state = completed; }
+	float GetFullDistance(size_t drive) const noexcept { return directionVector[drive]; }
 #endif
 
 	void DebugPrint() const noexcept;																// print the DDA only
@@ -293,7 +288,8 @@ inline uint32_t DDA::GetStepInterval(size_t axis, uint32_t microstepShift) const
 
 #if SUPPORT_CLOSED_LOOP
 
-// Get the current position relative to the start of this move, speed and acceleration. Interrupts are disabled on entry and must remain disabled.
+// Get the current position relative to the start of this move, speed and acceleration. Units are microsteps and step clocks.
+// Interrupts are disabled on entry and must remain disabled.
 inline void DDA::GetCurrentMotion(size_t driver, uint32_t ticksSinceStart, MotionParameters& mParams) noexcept
 {
 	DriveMovement& dm = ddms[driver];
@@ -330,11 +326,11 @@ inline void DDA::GetCurrentMotion(size_t driver, uint32_t ticksSinceStart, Motio
 		dm.currentSegment = ms = ms->GetNext();
 		if (dm.isExtruder)
 		{
-			dm.NewExtruderSegment();
+			(void)dm.NewExtruderSegment();
 		}
 		else
 		{
-			dm.NewCartesianSegment();
+			(void)dm.NewCartesianSegment();
 		}
 	}
 }
