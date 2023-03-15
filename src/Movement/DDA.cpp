@@ -245,9 +245,6 @@ bool DDA::Init(const CanMessageMovementLinear& msg) noexcept
 #endif
 		const int32_t delta = (drive < msg.numDrivers) ? msg.perDrive[drive].steps : 0;
 		directionVector[drive] = (float)delta;
-#if SUPPORT_CLOSED_LOOP
-		dm.netSteps = delta;
-#endif
 		if (delta != 0)
 		{
 			realMove = true;
@@ -690,6 +687,7 @@ void DDA::StepDrivers(uint32_t now) noexcept
 
 #endif
 
+// Stop some drivers. Caller sets base priority is high enough to shut out step interrupts
 void DDA::StopDrivers(uint16_t whichDrives) noexcept
 {
 	if (state == executing)
@@ -704,12 +702,12 @@ void DDA::StopDrivers(uint16_t whichDrives) noexcept
 				DriveMovement& dm = ddms[drive];
 				if (dm.state >= DMState::firstMotionState)
 				{
-					dm.state = DMState::idle;
 #if SUPPORT_CLOSED_LOOP
 					MotionParameters mp;
 					GetCurrentMotion(drive, ticksSinceStart, mp);
-					dm.AdjustNetSteps(mp.position);				// adjust netSteps to be the amount actually moved
+					directionVector[drive] = mp.position;				// adjust directionVector to be the amount actually moved so that it will be picked up when the move completes
 #endif
+					dm.state = DMState::idle;
 
 #if SINGLE_DRIVER
 					state = completed;

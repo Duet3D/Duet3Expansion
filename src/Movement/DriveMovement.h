@@ -79,8 +79,6 @@ public:
 #endif
 
 #if SUPPORT_CLOSED_LOOP
-	void AdjustNetSteps(float proportion) noexcept;
-
 	// Get the current position relative to the start of this move, speed and acceleration. Units are microsteps and step clocks.
 	// Interrupts are disabled on entry and must remain disabled. Segments are advanced as necessary.
 	void GetCurrentMotion(float topSpeed, uint32_t ticksSinceStart, MotionParameters& mParams) noexcept;
@@ -123,9 +121,6 @@ private:
 	uint8_t stepsTillRecalc;							// how soon we need to recalculate
 
 	int32_t totalSteps;									// total number of steps for this move
-#if SUPPORT_CLOSED_LOOP
-	int32_t netSteps;
-#endif
 
 	// These values change as the step is executed, except for reverseStartStep
 	int32_t nextStep;									// number of steps already done
@@ -230,11 +225,6 @@ inline uint32_t DriveMovement::GetStepInterval(uint32_t microstepShift) const no
 #endif
 
 #if SUPPORT_CLOSED_LOOP
-
-inline void DriveMovement::AdjustNetSteps(float proportion) noexcept
-{
-	netSteps = lrintf((float)netSteps * proportion);
-}
 
 // Get the current position relative to the start of this move, speed and acceleration. Units are microsteps and step clocks.
 // Interrupts are disabled on entry and must remain disabled.
