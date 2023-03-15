@@ -238,27 +238,27 @@ inline void DriveMovement::GetCurrentMotion(float topSpeed, uint32_t ticksSinceS
 		return;
 	}
 
+	const float timeSinceMoveStart = (float)ticksSinceStart;
 	for (;;)
 	{
-		const float segTimeRemaining = timeSoFar - (float)ticksSinceStart;
+		const float segTimeRemaining = timeSoFar - timeSinceMoveStart;
 		if (segTimeRemaining >= 0.0 || ms->GetNext() == nullptr)
 		{
 			// The current move segment is still in progress, or it is the last move segment and it has only just finished
 			const float multiplier = (direction != directionReversed) ? mp.cart.effectiveStepsPerMm : -mp.cart.effectiveStepsPerMm;
 			if (ms->IsLinear())
 			{
-				mParams.position = (distanceSoFar - segTimeRemaining * topSpeed) * multiplier;
-				mParams.speed = topSpeed * mp.cart.effectiveStepsPerMm;
+				const float effectiveSpeed = topSpeed * multiplier;
+				mParams.position = (timeSinceMoveStart - pB) * effectiveSpeed;
+				mParams.speed = effectiveSpeed;
 				mParams.acceleration = 0.0;
 			}
 			else
 			{
-				//TODO are the following correct for extruders with pressure advance?
-				const float segmentEndSpeed = ms->GetNonlinearEndSpeed(mp.cart.pressureAdvanceK);
-				const float speedIncreaseRemaining = ms->GetAcceleration() * segTimeRemaining;
-				mParams.position = (distanceSoFar - ((segmentEndSpeed - 0.5 * speedIncreaseRemaining) * segTimeRemaining)) * multiplier;
-				mParams.speed = (segmentEndSpeed - speedIncreaseRemaining) * multiplier;
-				mParams.acceleration = ms->GetAcceleration() * multiplier;
+				const float effectiveAcceleration = ms->GetAcceleration() * multiplier;
+				mParams.position = 0.5 * effectiveAcceleration * (fsquare(timeSinceMoveStart - pB) - pA);
+				mParams.speed = effectiveAcceleration * (timeSinceMoveStart - pB);
+				mParams.acceleration = effectiveAcceleration;
 			}
 			return;
 		}
@@ -285,21 +285,19 @@ inline int32_t DriveMovement::GetNetStepsTakenClosedLoop(float topSpeed, int32_t
 	}
 	else
 	{
-		const float segTimeRemaining = timeSoFar - (float)ticksSinceStart;
+		const float timeSinceMoveStart = (float)ticksSinceStart;
+		const float segTimeRemaining = timeSoFar - timeSinceMoveStart;
 		if (segTimeRemaining <= 0.0)
 		{
 			ret = distanceSoFar;
 		}
 		else if (ms->IsLinear())
 		{
-			ret = distanceSoFar - (segTimeRemaining * topSpeed);
+			ret = (timeSinceMoveStart - pB) * topSpeed;
 		}
 		else
 		{
-			//TODO are the following correct for extruders with pressure advance?
-			const float segmentEndSpeed = ms->GetNonlinearEndSpeed(mp.cart.pressureAdvanceK);
-			const float speedIncreaseRemaining = ms->GetAcceleration() * segTimeRemaining;
-			ret = distanceSoFar - ((segmentEndSpeed - 0.5 * speedIncreaseRemaining) * segTimeRemaining);
+			ret = 0.5 * ms->GetAcceleration() * (fsquare(timeSinceMoveStart - pB) - pA);
 		}
 	}
 	const float multiplier = (direction != directionReversed) ? mp.cart.effectiveStepsPerMm : -mp.cart.effectiveStepsPerMm;

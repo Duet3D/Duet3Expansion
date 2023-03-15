@@ -75,6 +75,7 @@
  *   B = u/d - k
  *   A = B^2 + 2*(S0 + EAD + p/f)/d = B^2 - C * (S0 + p/f)
  *   C = -2/d
+ *
  * For a linear segment:
  *   t = ts + B + C*n/(f*m)
  * where:
@@ -107,6 +108,13 @@
  * For linear segments:
  *   B' = -(Dprev + p/f)*C + ts
  *   C' = C * 1/(f*m)
+ *
+ * In closed loop mode we need to invert the above. For an acceleration or deceleration segment this gives:
+ *   s = ((t - B')^2 - A')/C
+ *     = 0.5 * a * ((t - B')^2 - A')
+ * For a linear segment:
+ *   s = (t - B')/C
+ *     = (t - B') * topSpeed
  *
  * When preparing a move we need to:
  *   Set up the axis and extruder move segments
