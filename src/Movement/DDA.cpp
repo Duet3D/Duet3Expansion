@@ -245,6 +245,7 @@ bool DDA::Init(const CanMessageMovementLinear& msg) noexcept
 #endif
 		const int32_t delta = (drive < msg.numDrivers) ? msg.perDrive[drive].steps : 0;
 		directionVector[drive] = (float)delta;
+		bool stepsToDo = false;
 		if (delta != 0)
 		{
 			realMove = true;
@@ -253,44 +254,32 @@ bool DDA::Init(const CanMessageMovementLinear& msg) noexcept
 			dm.direction = (delta >= 0);				// for now this is the direction of net movement, but it gets adjusted later if it is a delta movement
 			stepsRequested[drive] += labs(delta);
 			Platform::EnableDrive(drive, 0);
-			const bool stepsToDo = ((msg.pressureAdvanceDrives & (1u << drive)) != 0)
-									? dm.PrepareExtruder(*this, params, (float)delta)
-										: dm.PrepareCartesianAxis(*this, params);
-			if (stepsToDo)
-			{
-				realMove = true;
-				dm.directionChanged = dm.directionReversed = false;
+			stepsToDo = ((msg.pressureAdvanceDrives & (1u << drive)) != 0)
+							? dm.PrepareExtruder(*this, params, (float)delta)
+								: dm.PrepareCartesianAxis(*this, params);
+		}
+
+		if (stepsToDo)
+		{
+			realMove = true;
+			dm.directionChanged = dm.directionReversed = false;
 #if !SINGLE_DRIVER
-				InsertDM(&dm);
+			InsertDM(&dm);
 #endif
-				const int32_t netSteps = (dm.reverseStartStep < dm.totalSteps) ? (2 * dm.reverseStartStep) - dm.totalSteps : dm.totalSteps;
-				if (dm.direction)
-				{
-					endPoint[drive] += netSteps;
-				}
-				else
-				{
-					endPoint[drive] -= netSteps;
-				}
+			const int32_t netSteps = (dm.reverseStartStep < dm.totalSteps) ? (2 * dm.reverseStartStep) - dm.totalSteps : dm.totalSteps;
+			if (dm.direction)
+			{
+				endPoint[drive] += netSteps;
 			}
 			else
 			{
-				dm.state = DMState::idle;
-				dm.currentSegment = nullptr;
-				dm.distanceSoFar = 0.0;
-#if SINGLE_DRIVER
-				// No steps to do, so set up the steps so that GetStepsTaken will return zero
-				dm.totalSteps = 0;
-				dm.nextStep = 0;
-				dm.reverseStartStep = 1;
-#endif
+				endPoint[drive] -= netSteps;
 			}
 		}
 		else
 		{
 			dm.state = DMState::idle;
-			dm.currentSegment = nullptr;
-			dm.distanceSoFar = 0.0;
+			dm.currentSegment = 0;
 #if SINGLE_DRIVER
 			// Set up the steps so that GetStepsTaken will return zero
 			dm.totalSteps = 0;
@@ -356,59 +345,22 @@ bool DDA::Init(const CanMessageMovementLinearShaped& msg) noexcept
 		dm.nextDM = nullptr;
 #endif
 
+		bool stepsToDo = false;
 		if (drive >= msg.numDrivers)
 		{
 			directionVector[drive] = 0.0;
-			dm.distanceSoFar = 0.0;
-			dm.currentSegment = nullptr;
 		}
 		else if ((msg.extruderDrives & (1u << drive)) != 0)
 		{
 			// It's an extruder
 			const float extrusionRequested = msg.perDrive[drive].extrusion;
 			directionVector[drive] = extrusionRequested;
-			if (extrusionRequested != 0)
+			if (extrusionRequested != 0.0)
 			{
-				dm.totalSteps = labs((float)extrusionRequested);	// for now this is the number of net steps, but gets adjusted later if there is a reverse in direction
+				dm.totalSteps = labs(extrusionRequested);			// for now this is the number of net steps, but gets adjusted later if there is a reverse in direction
 				dm.direction = (extrusionRequested >= 0.0);			// for now this is the direction of net movement, but gets adjusted later if it is a delta movement
 				Platform::EnableDrive(drive, 0);
-				const bool stepsToDo = dm.PrepareExtruder(*this, params, extrusionRequested);
-				if (stepsToDo)
-				{
-					dm.directionChanged = dm.directionReversed = false;
-#if !SINGLE_DRIVER
-					InsertDM(&dm);
-#endif
-					const int32_t netSteps = (dm.reverseStartStep < dm.totalSteps) ? (2 * dm.reverseStartStep) - dm.totalSteps : dm.totalSteps;
-					if (dm.direction)
-					{
-						endPoint[drive] += netSteps;
-					}
-					else
-					{
-						endPoint[drive] -= netSteps;
-					}
-				}
-				else
-				{
-					dm.state = DMState::idle;						// no steps to do
-#if SINGLE_DRIVER
-					// No steps to do, so set up the steps so that GetStepsTaken will return zero
-					dm.totalSteps = 0;
-					dm.nextStep = 0;
-					dm.reverseStartStep = 1;
-#endif
-				}
-			}
-			else
-			{
-				dm.state = DMState::idle;						// no steps to do
-#if SINGLE_DRIVER
-				// No steps to do, so set up the steps so that GetStepsTaken will return zero
-				dm.totalSteps = 0;
-				dm.nextStep = 0;
-				dm.reverseStartStep = 1;
-#endif
+				stepsToDo = dm.PrepareExtruder(*this, params, extrusionRequested);
 			}
 		}
 		else
@@ -417,48 +369,40 @@ bool DDA::Init(const CanMessageMovementLinearShaped& msg) noexcept
 			directionVector[drive] = (float)delta;
 			if (delta != 0)
 			{
-				EnsureSegments(params);								// we are going to need segments
+				realMove = true;
 				dm.totalSteps = labs(delta);						// for now this is the number of net steps, but gets adjusted later if there is a reverse in direction
 				dm.direction = (delta >= 0);						// for now this is the direction of net movement, but gets adjusted later if it is a delta movement
 				Platform::EnableDrive(drive, 0);
-				const bool stepsToDo = dm.PrepareCartesianAxis(*this, params);
-				if (stepsToDo)
-				{
-					dm.directionChanged = dm.directionReversed = false;
+				stepsToDo = dm.PrepareCartesianAxis(*this, params);
+			}
+		}
+
+		if (stepsToDo)
+		{
+			dm.directionChanged = dm.directionReversed = false;
 #if !SINGLE_DRIVER
-					InsertDM(&dm);
+			InsertDM(&dm);
 #endif
-					const int32_t netSteps = (dm.reverseStartStep < dm.totalSteps) ? (2 * dm.reverseStartStep) - dm.totalSteps : dm.totalSteps;
-					if (dm.direction)
-					{
-						endPoint[drive] += netSteps;
-					}
-					else
-					{
-						endPoint[drive] -= netSteps;
-					}
-				}
-				else
-				{
-					dm.state = DMState::idle;						// no steps to do
-#if SINGLE_DRIVER
-					// No steps to do, so set up the steps so that GetStepsTaken will return zero
-					dm.totalSteps = 0;
-					dm.nextStep = 0;
-					dm.reverseStartStep = 1;
-#endif
-				}
+			const int32_t netSteps = (dm.reverseStartStep < dm.totalSteps) ? (2 * dm.reverseStartStep) - dm.totalSteps : dm.totalSteps;
+			if (dm.direction)
+			{
+				endPoint[drive] += netSteps;
 			}
 			else
 			{
-				dm.state = DMState::idle;							// no steps to do
-#if SINGLE_DRIVER
-				// No steps to do, so set up the steps so that GetStepsTaken will return zero
-				dm.totalSteps = 0;
-				dm.nextStep = 0;
-				dm.reverseStartStep = 1;
-#endif
+				endPoint[drive] -= netSteps;
 			}
+		}
+		else
+		{
+			dm.state = DMState::idle;							// no steps to do
+			dm.currentSegment = 0;
+#if SINGLE_DRIVER
+			// No steps to do, so set up the steps so that GetStepsTaken will return zero
+			dm.totalSteps = 0;
+			dm.nextStep = 0;
+			dm.reverseStartStep = 1;
+#endif
 		}
 	}
 
