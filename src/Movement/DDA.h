@@ -266,6 +266,12 @@ inline void DDA::InsertHiccup(uint32_t now) noexcept
 // Return the number of net steps already taken in this move by a particular drive
 inline int32_t DDA::GetStepsTaken(size_t drive) const noexcept
 {
+#if SUPPORT_CLOSED_LOOP
+	if (ClosedLoop::GetClosedLoopEnabled(drive))
+	{
+		return ddms[drive].GetNetStepsTakenClosedLoop(topSpeed, (int32_t)(StepTimer::GetTimerTicks() - afterPrepare.moveStartTime));
+	}
+#endif
 	return ddms[drive].GetNetStepsTaken();
 }
 
@@ -292,47 +298,7 @@ inline uint32_t DDA::GetStepInterval(size_t axis, uint32_t microstepShift) const
 // Interrupts are disabled on entry and must remain disabled.
 inline void DDA::GetCurrentMotion(size_t driver, uint32_t ticksSinceStart, MotionParameters& mParams) noexcept
 {
-	DriveMovement& dm = ddms[driver];
-	const MoveSegment *ms = dm.currentSegment;
-	if (ms == nullptr)
-	{
-		// Drive was not commanded to move
-		mParams.position = mParams.speed = mParams.acceleration = 0.0;
-		return;
-	}
-
-	for (;;)
-	{
-		const float segTimeRemaining = dm.timeSoFar - (float)ticksSinceStart;
-		if (segTimeRemaining >= 0.0 || ms->GetNext() == nullptr)
-		{
-			// The current move segment is still in progress, or it is the last move segment and it has only just finished
-			if (ms->IsLinear())
-			{
-				mParams.position = dm.distanceSoFar - segTimeRemaining * topSpeed;
-				mParams.speed = topSpeed;
-				mParams.acceleration = 0.0;
-			}
-			else
-			{
-				const float segmentEndSpeed = ms->GetNonlinearEndSpeed(dm.mp.cart.pressureAdvanceK);
-				const float speedIncreaseRemaining = ms->GetAcceleration() * segTimeRemaining;
-				mParams.position = dm.distanceSoFar - ((segmentEndSpeed - 0.5 * speedIncreaseRemaining) * segTimeRemaining);
-				mParams.speed = segmentEndSpeed - speedIncreaseRemaining;
-				mParams.acceleration = ms->GetAcceleration();
-			}
-			return;
-		}
-		dm.currentSegment = ms = ms->GetNext();
-		if (dm.isExtruder)
-		{
-			(void)dm.NewExtruderSegment();
-		}
-		else
-		{
-			(void)dm.NewCartesianSegment();
-		}
-	}
+	return ddms[driver].GetCurrentMotion(topSpeed, ticksSinceStart, mParams);
 }
 
 #endif

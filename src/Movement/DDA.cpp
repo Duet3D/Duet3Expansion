@@ -234,7 +234,6 @@ bool DDA::Init(const CanMessageMovementLinear& msg) noexcept
 	activeDMs = nullptr;
 #endif
 
-	const size_t numDrivers = min<size_t>(msg.numDrivers, NumDrivers);
 	bool realMove = false;
 	for (size_t drive = 0; drive < NumDrivers; drive++)
 	{
@@ -244,7 +243,7 @@ bool DDA::Init(const CanMessageMovementLinear& msg) noexcept
 #if !SINGLE_DRIVER
 		dm.nextDM = nullptr;
 #endif
-		const int32_t delta = (drive < numDrivers) ? msg.perDrive[drive].steps : 0;
+		const int32_t delta = (drive < msg.numDrivers) ? msg.perDrive[drive].steps : 0;
 		directionVector[drive] = (float)delta;
 #if SUPPORT_CLOSED_LOOP
 		dm.netSteps = delta;
@@ -280,6 +279,8 @@ bool DDA::Init(const CanMessageMovementLinear& msg) noexcept
 			else
 			{
 				dm.state = DMState::idle;
+				dm.currentSegment = nullptr;
+				dm.distanceSoFar = 0.0;
 #if SINGLE_DRIVER
 				// No steps to do, so set up the steps so that GetStepsTaken will return zero
 				dm.totalSteps = 0;
@@ -291,6 +292,8 @@ bool DDA::Init(const CanMessageMovementLinear& msg) noexcept
 		else
 		{
 			dm.state = DMState::idle;
+			dm.currentSegment = nullptr;
+			dm.distanceSoFar = 0.0;
 #if SINGLE_DRIVER
 			// Set up the steps so that GetStepsTaken will return zero
 			dm.totalSteps = 0;
@@ -343,17 +346,26 @@ bool DDA::Init(const CanMessageMovementLinearShaped& msg) noexcept
 	// Set up the plan
 	segments = nullptr;
 	moveInstance->GetAxisShaper().GetRemoteSegments(*this, params);
+
 #if !SINGLE_DRIVER
 	activeDMs = nullptr;
 #endif
-
-	const size_t numDrivers = min<size_t>(msg.numDrivers, NumDrivers);
 	bool realMove = false;
-	for (size_t drive = 0; drive < numDrivers; drive++)
+	for (size_t drive = 0; drive < NumDrivers; drive++)
 	{
 		endPoint[drive] = prev->endPoint[drive];					// the steps for this move will be added later
 		DriveMovement& dm = ddms[drive];
-		if ((msg.extruderDrives & (1u << drive)) != 0)
+#if !SINGLE_DRIVER
+		dm.nextDM = nullptr;
+#endif
+
+		if (drive >= msg.numDrivers)
+		{
+			directionVector[drive] = 0.0;
+			dm.distanceSoFar = 0.0;
+			dm.currentSegment = nullptr;
+		}
+		else if ((msg.extruderDrives & (1u << drive)) != 0)
 		{
 			// It's an extruder
 			const float extrusionRequested = msg.perDrive[drive].extrusion;

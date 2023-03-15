@@ -483,7 +483,6 @@ bool DriveMovement::CalcNextStepTimeFull(const DDA &dda) noexcept
 pre(nextStep <= totalSteps; stepsTillRecalc == 0)
 {
 	uint32_t shiftFactor = 0;										// assume single stepping
-
 	{
 		int32_t stepsToLimit = segmentStepLimit - nextStep;
 		// If there are no more steps left in this segment, skip to the next segment and use single stepping

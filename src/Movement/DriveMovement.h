@@ -80,6 +80,13 @@ public:
 
 #if SUPPORT_CLOSED_LOOP
 	void AdjustNetSteps(float proportion) noexcept;
+
+	// Get the current position relative to the start of this move, speed and acceleration. Units are microsteps and step clocks.
+	// Interrupts are disabled on entry and must remain disabled. Segments are advanced as necessary.
+	void GetCurrentMotion(float topSpeed, uint32_t ticksSinceStart, MotionParameters& mParams) noexcept;
+
+	// This is like getCurrentMotion but it just returns the distance and doesn't start new segments
+	int32_t GetNetStepsTakenClosedLoop(float topSpeed, int32_t ticksSinceStart) const noexcept;
 #endif
 
 private:
@@ -185,15 +192,9 @@ inline bool DriveMovement::CalcNextStepTime(const DDA &dda) noexcept
 
 // Return the number of net steps already taken for the move in the forwards direction.
 // We have already taken nextSteps - 1 steps, unless nextStep is zero.
+// This is called only when the driver is in open loop mode.
 inline int32_t DriveMovement::GetNetStepsTaken() const noexcept
 {
-#if SUPPORT_CLOSED_LOOP
-	if (ClosedLoop::GetClosedLoopEnabled(drive))
-	{
-		return netSteps;
-	}
-#endif
-
 	int32_t netStepsTaken;
 	if (nextStep < reverseStartStep || reverseStartStep > totalSteps)				// if no reverse phase, or not started it yet
 	{
@@ -235,7 +236,87 @@ inline void DriveMovement::AdjustNetSteps(float proportion) noexcept
 	netSteps = lrintf((float)netSteps * proportion);
 }
 
-#endif
+// Get the current position relative to the start of this move, speed and acceleration. Units are microsteps and step clocks.
+// Interrupts are disabled on entry and must remain disabled.
+inline void DriveMovement::GetCurrentMotion(float topSpeed, uint32_t ticksSinceStart, MotionParameters& mParams) noexcept
+{
+	const MoveSegment *ms = currentSegment;
+	if (ms == nullptr)
+	{
+		// Drive was not commanded to move
+		mParams.position = mParams.speed = mParams.acceleration = 0.0;
+		return;
+	}
+
+	for (;;)
+	{
+		const float segTimeRemaining = timeSoFar - (float)ticksSinceStart;
+		if (segTimeRemaining >= 0.0 || ms->GetNext() == nullptr)
+		{
+			// The current move segment is still in progress, or it is the last move segment and it has only just finished
+			const float multiplier = (direction != directionReversed) ? mp.cart.effectiveStepsPerMm : -mp.cart.effectiveStepsPerMm;
+			if (ms->IsLinear())
+			{
+				mParams.position = (distanceSoFar - segTimeRemaining * topSpeed) * multiplier;
+				mParams.speed = topSpeed * mp.cart.effectiveStepsPerMm;
+				mParams.acceleration = 0.0;
+			}
+			else
+			{
+				//TODO are the following correct for extruders with pressure advance?
+				const float segmentEndSpeed = ms->GetNonlinearEndSpeed(mp.cart.pressureAdvanceK);
+				const float speedIncreaseRemaining = ms->GetAcceleration() * segTimeRemaining;
+				mParams.position = (distanceSoFar - ((segmentEndSpeed - 0.5 * speedIncreaseRemaining) * segTimeRemaining)) * multiplier;
+				mParams.speed = (segmentEndSpeed - speedIncreaseRemaining) * multiplier;
+				mParams.acceleration = ms->GetAcceleration() * multiplier;
+			}
+			return;
+		}
+		currentSegment = ms = ms->GetNext();
+		if (isExtruder)
+		{
+			(void)NewExtruderSegment();
+		}
+		else
+		{
+			(void)NewCartesianSegment();
+		}
+	}
+}
+
+// This is like getCurrentMotion but it just returns the distance and doesn't start new segments
+inline int32_t DriveMovement::GetNetStepsTakenClosedLoop(float topSpeed, int32_t ticksSinceStart) const noexcept
+{
+	const MoveSegment *const ms = currentSegment;
+	float ret;
+	if (ms == nullptr)
+	{
+		ret = distanceSoFar;
+	}
+	else
+	{
+		const float segTimeRemaining = timeSoFar - (float)ticksSinceStart;
+		if (segTimeRemaining <= 0.0)
+		{
+			ret = distanceSoFar;
+		}
+		else if (ms->IsLinear())
+		{
+			ret = distanceSoFar - (segTimeRemaining * topSpeed);
+		}
+		else
+		{
+			//TODO are the following correct for extruders with pressure advance?
+			const float segmentEndSpeed = ms->GetNonlinearEndSpeed(mp.cart.pressureAdvanceK);
+			const float speedIncreaseRemaining = ms->GetAcceleration() * segTimeRemaining;
+			ret = distanceSoFar - ((segmentEndSpeed - 0.5 * speedIncreaseRemaining) * segTimeRemaining);
+		}
+	}
+	const float multiplier = (direction != directionReversed) ? mp.cart.effectiveStepsPerMm : -mp.cart.effectiveStepsPerMm;
+	return lrintf(ret * multiplier);
+}
+
+#endif	// SUPPORT_CLOSED_LOOP
 
 #endif	// SUPPORT_DRIVERS
 
