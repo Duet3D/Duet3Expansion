@@ -1708,7 +1708,7 @@ void Platform::SetDirectionValue(size_t drive, bool dVal)
 
 bool Platform::GetDirectionValue(size_t driver) noexcept
 {
-	return (driver < NumDrivers) && directions[driver];
+	return (driver >= NumDrivers) || directions[driver];
 }
 
 bool Platform::GetDirectionValueNoCheck(size_t driver) noexcept
