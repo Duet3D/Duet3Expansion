@@ -84,7 +84,6 @@ public:
 	void Init() noexcept;															// Set up initial positions for machine startup
 	bool Init(const CanMessageMovementLinear& msg) noexcept SPEED_CRITICAL;			// Set up a move from a CAN message
 	bool Init(const CanMessageMovementLinearShaped& msg) noexcept SPEED_CRITICAL;	// Set up a move from a CAN message
-	void EnsureSegments(const PrepParams& params) noexcept;
 	void Start(uint32_t tim) noexcept SPEED_CRITICAL;								// Start executing the DDA, i.e. move the move.
 	void StepDrivers(uint32_t now) noexcept SPEED_CRITICAL;							// Take one step of the DDA, called by timed interrupt.
 	bool ScheduleNextStepInterrupt(StepTimer& timer) const noexcept SPEED_CRITICAL;	// Schedule the next interrupt, returning true if we can't because it is already due
@@ -162,6 +161,8 @@ public:
 
 private:
 	uint32_t WhenNextInterruptDue() const noexcept;						// return when the next interrupt is due relative to the move start time
+	void EnsureSegments(const PrepParams& params) noexcept;
+	void ReleaseSegments() noexcept;
 
 #if !SINGLE_DRIVER
 	void InsertDM(DriveMovement *dm) noexcept SPEED_CRITICAL;
@@ -278,6 +279,7 @@ inline int32_t DDA::GetStepsTaken(size_t drive) const noexcept
 // Free up this DDA
 inline void DDA::Free()
 {
+	ReleaseSegments();
 	state = empty;
 }
 

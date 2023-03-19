@@ -182,6 +182,17 @@ void DDA::EnsureSegments(const PrepParams& params) noexcept
 	}
 }
 
+void DDA::ReleaseSegments() noexcept
+{
+	for (MoveSegment* seg = segments; seg != nullptr; )
+	{
+		MoveSegment* const nextSeg = seg->GetNext();
+		MoveSegment::Release(seg);
+		seg = nextSeg;
+	}
+	segments = nullptr;
+}
+
 // This is called by Move to initialize all DDAs
 void DDA::Init() noexcept
 {
@@ -198,36 +209,32 @@ void DDA::Init() noexcept
 bool DDA::Init(const CanMessageMovementLinear& msg) noexcept
 {
 	afterPrepare.moveStartTime = msg.whenToExecute;
-	clocksNeeded = msg.accelerationClocks + msg.steadyClocks + msg.decelClocks;
 	flags.all = 0;
 	flags.isPrintingMove = flags.usePressureAdvance = (msg.pressureAdvanceDrives != 0);
+	clocksNeeded = msg.accelerationClocks + msg.steadyClocks + msg.decelClocks;
 
 	// Calculate the speeds and accelerations assuming unit movement length
 	topSpeed = 2.0/(2 * msg.steadyClocks + (msg.initialSpeedFraction + 1.0) * msg.accelerationClocks + (msg.finalSpeedFraction + 1.0) * msg.decelClocks);
 	startSpeed = topSpeed * msg.initialSpeedFraction;
 	endSpeed = topSpeed * msg.finalSpeedFraction;
 
-	acceleration = (msg.accelerationClocks == 0) ? 0.0 : (topSpeed * (1.0 - msg.initialSpeedFraction))/msg.accelerationClocks;
-	deceleration = (msg.decelClocks == 0) ? 0.0 : (topSpeed * (1.0 - msg.finalSpeedFraction))/msg.decelClocks;
-
 	// Prepare for movement
 	PrepParams params;											// the default constructor clears params.plan to 'no shaping'
 
 	// Set up the move parameters
 	// Calculate the distances as a fraction of the total movement length
+	params.accelClocks = msg.accelerationClocks;
+	params.steadyClocks = msg.steadyClocks;
+	params.decelClocks = msg.decelClocks;
+	params.acceleration = acceleration = (msg.accelerationClocks == 0) ? 0.0 : (topSpeed * (1.0 - msg.initialSpeedFraction))/msg.accelerationClocks;
+	params.deceleration = deceleration = (msg.decelClocks == 0) ? 0.0 : (topSpeed * (1.0 - msg.finalSpeedFraction))/msg.decelClocks;
 	params.accelDistance = (msg.accelerationClocks == 0) ? 0.0
 						: (msg.accelerationClocks == clocksNeeded) ? 1.0
 							: topSpeed * (1.0 + msg.initialSpeedFraction) * msg.accelerationClocks * 0.5;
 	const float decelDistance = (msg.decelClocks == 0) ? 0.0
 						: (msg.decelClocks == clocksNeeded) ? 1.0
 							: topSpeed * (1.0 + msg.finalSpeedFraction) * msg.decelClocks * 0.5;
-
 	params.decelStartDistance = 1.0 - decelDistance;
-	params.accelClocks = msg.accelerationClocks;
-	params.steadyClocks = msg.steadyClocks;
-	params.decelClocks = msg.decelClocks;
-	params.acceleration = acceleration;
-	params.deceleration = deceleration;
 
 	segments = nullptr;
 #if !SINGLE_DRIVER
@@ -279,7 +286,7 @@ bool DDA::Init(const CanMessageMovementLinear& msg) noexcept
 		else
 		{
 			dm.state = DMState::idle;
-			dm.currentSegment = 0;
+			dm.currentSegment = nullptr;
 #if SINGLE_DRIVER
 			// Set up the steps so that GetStepsTaken will return zero
 			dm.totalSteps = 0;
@@ -292,14 +299,7 @@ bool DDA::Init(const CanMessageMovementLinear& msg) noexcept
 	// 2. Throw it away if there's no real movement.
 	if (!realMove)
 	{
-		// We may have set up the segments, in which case we must recycle them
-		for (MoveSegment* seg = segments; seg != nullptr; )
-		{
-			MoveSegment* const nextSeg = seg->GetNext();
-			MoveSegment::Release(seg);
-			seg = nextSeg;
-		}
-		segments = nullptr;
+		ReleaseSegments();			// we may have set up the segments, in which case we must recycle them
 		return false;
 	}
 
@@ -322,12 +322,12 @@ bool DDA::Init(const CanMessageMovementLinearShaped& msg) noexcept
 	params.shapingPlan.condensedPlan = msg.shapingPlan;
 
 	// Normalise the move to unit distance
-	params.acceleration = acceleration = msg.acceleration;
-	params.deceleration = deceleration = msg.deceleration;
 	params.accelClocks = msg.accelerationClocks;
 	params.steadyClocks = msg.steadyClocks;
 	params.decelClocks = msg.decelClocks;
 	clocksNeeded = msg.accelerationClocks + msg.steadyClocks + msg.decelClocks;
+	params.acceleration = acceleration = msg.acceleration;
+	params.deceleration = deceleration = msg.deceleration;
 
 	// Set up the plan
 	segments = nullptr;
@@ -344,7 +344,6 @@ bool DDA::Init(const CanMessageMovementLinearShaped& msg) noexcept
 #if !SINGLE_DRIVER
 		dm.nextDM = nullptr;
 #endif
-
 		bool stepsToDo = false;
 		if (drive >= msg.numDrivers)
 		{
@@ -357,7 +356,7 @@ bool DDA::Init(const CanMessageMovementLinearShaped& msg) noexcept
 			directionVector[drive] = extrusionRequested;
 			if (extrusionRequested != 0.0)
 			{
-				dm.totalSteps = labs(extrusionRequested);			// for now this is the number of net steps, but gets adjusted later if there is a reverse in direction
+				dm.totalSteps = 0;
 				dm.direction = (extrusionRequested >= 0.0);			// for now this is the direction of net movement, but gets adjusted later if it is a delta movement
 				Platform::EnableDrive(drive, 0);
 				stepsToDo = dm.PrepareExtruder(*this, params, extrusionRequested);
@@ -369,7 +368,6 @@ bool DDA::Init(const CanMessageMovementLinearShaped& msg) noexcept
 			directionVector[drive] = (float)delta;
 			if (delta != 0)
 			{
-				realMove = true;
 				dm.totalSteps = labs(delta);						// for now this is the number of net steps, but gets adjusted later if there is a reverse in direction
 				dm.direction = (delta >= 0);						// for now this is the direction of net movement, but gets adjusted later if it is a delta movement
 				Platform::EnableDrive(drive, 0);
@@ -379,6 +377,7 @@ bool DDA::Init(const CanMessageMovementLinearShaped& msg) noexcept
 
 		if (stepsToDo)
 		{
+			realMove = true;
 			dm.directionChanged = dm.directionReversed = false;
 #if !SINGLE_DRIVER
 			InsertDM(&dm);
@@ -396,7 +395,7 @@ bool DDA::Init(const CanMessageMovementLinearShaped& msg) noexcept
 		else
 		{
 			dm.state = DMState::idle;							// no steps to do
-			dm.currentSegment = 0;
+			dm.currentSegment = nullptr;
 #if SINGLE_DRIVER
 			// No steps to do, so set up the steps so that GetStepsTaken will return zero
 			dm.totalSteps = 0;
@@ -409,14 +408,7 @@ bool DDA::Init(const CanMessageMovementLinearShaped& msg) noexcept
 	// 2. Throw it away if there's no real movement.
 	if (!realMove)
 	{
-		// We may have set up the segments, in which case we must recycle them
-		for (MoveSegment* seg = segments; seg != nullptr; )
-		{
-			MoveSegment* const nextSeg = seg->GetNext();
-			MoveSegment::Release(seg);
-			seg = nextSeg;
-		}
-		segments = nullptr;
+		ReleaseSegments();			// we may have set up the segments, in which case we must recycle them
 		return false;
 	}
 
