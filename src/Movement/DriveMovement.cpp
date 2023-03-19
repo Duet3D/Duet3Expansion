@@ -411,6 +411,7 @@ bool DriveMovement::PrepareDeltaAxis(const DDA& dda, const PrepParams& params) n
 	timeSoFar = 0.0;
 
 	isDelta = true;
+	isExtruder = false;
 	currentSegment = dda.segments;
 
 	nextStep = 0;									// must do this before calling NewDeltaSegment
