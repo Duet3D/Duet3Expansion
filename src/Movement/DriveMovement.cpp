@@ -210,7 +210,7 @@ bool DriveMovement::NewExtruderSegment() noexcept
 			// Set up pB, pC such that for forward motion, time = pB + pC * stepNumber
 			pB = currentSegment->CalcLinearB(startDistance, startTime);
 			state = DMState::cartLinear;
-			reverseStartStep = segmentStepLimit = (uint32_t)(distanceSoFar * mp.cart.effectiveStepsPerMm) + 1;
+			reverseStartStep = segmentStepLimit = (distanceSoFar * mp.cart.effectiveStepsPerMm) + 1;
 		}
 		else
 		{
