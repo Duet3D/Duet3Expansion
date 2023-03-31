@@ -761,7 +761,11 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 		{
 			extra = LastDiagnosticsPart;
 			Platform::AppendBoardAndFirmwareDetails(reply);
+			// GCC 12.2 produces a spurious diagnostic for the following line of code, see https://gcc.gnu.org/bugzilla/show_bug.cgi?id=105523
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Warray-bounds"
 			const char *bootloaderVersionText = *reinterpret_cast<const char**>(0x20);		// offset of vectors.pvReservedM8
+#pragma GCC diagnostic pop
 			reply.lcatf("Bootloader ID: %s", (bootloaderVersionText == nullptr) ? "not available" : bootloaderVersionText);
 			Platform::AppendDiagnostics(reply);
 		}

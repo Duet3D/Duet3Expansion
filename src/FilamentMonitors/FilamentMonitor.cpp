@@ -294,9 +294,7 @@ GCodeResult FilamentMonitor::CommonConfigure(const CanMessageGenericParser& pars
 
 	for (FilamentMonitor *&f : filamentSensors)
 	{
-		FilamentMonitor *temp;
-		std::swap(temp, f);
-		delete temp;
+		DeleteObject(f);
 	}
 }
 
