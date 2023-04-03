@@ -147,8 +147,8 @@ void Move::StartNextMove(DDA *cdda, uint32_t startTime) noexcept
 	}
 	else if (!extrudersPrinting)
 	{
-		extrudersPrinting = true;
 		extrudersPrintingSince = millis();
+		extrudersPrinting = true;
 	}
 	currentDda = cdda;
 	cdda->Start(startTime);
