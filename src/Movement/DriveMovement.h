@@ -186,14 +186,14 @@ inline bool DriveMovement::CalcNextStepTime(const DDA &dda) noexcept
 }
 
 // Return the number of net steps already taken for the move in the forwards direction.
-// We have already taken nextSteps - 1 steps, unless nextStep is zero.
+// We have already taken nextSteps - 1 steps.
 // This is called only when the driver is in open loop mode.
 inline int32_t DriveMovement::GetNetStepsTaken() const noexcept
 {
 	int32_t netStepsTaken;
 	if (nextStep <= reverseStartStep)												// if no reverse phase, or not started it yet
 	{
-		netStepsTaken = (nextStep == 0) ? 0 : (int32_t)nextStep - 1;
+		netStepsTaken = nextStep - 1;
 	}
 	else
 	{
