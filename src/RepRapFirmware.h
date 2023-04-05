@@ -136,10 +136,6 @@ constexpr size_t UpdateBootloaderMagicWordIndex = 9;				// which word in the use
 // Macro to give us the highest valid index into an array i.e. one less than the size
 #define ARRAY_UPB(_x)	(ARRAY_SIZE(_x) - 1)
 
-// Branch prediction macros
-#define likely(x)		__builtin_expect(!!(x), 1)
-#define unlikely(x)		__builtin_expect(!!(x), 0)
-
 #if SUPPORT_DRIVERS
 extern Move *moveInstance;
 #endif
