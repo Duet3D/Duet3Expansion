@@ -11,6 +11,10 @@
 #include <CanMessageFormats.h>
 #include <CAN/CanInterface.h>
 
+#if DEDICATED_STEP_TIMER
+# include <Movement/Move.h>				// for Move::StepInterrupt
+#endif
+
 #if SAME5x
 # include <hri_tc_e54.h>
 #elif SAMC21
@@ -196,7 +200,7 @@ void StepTimer::Init() noexcept
 
 // Schedule an interrupt at the specified clock count, or return true if that time is imminent or has passed already.
 // On entry, interrupts must be disabled or the base priority must be <= step interrupt priority.
-inline bool StepTimer::ScheduleTimerInterrupt(uint32_t tim) noexcept
+inline /*static*/ bool StepTimer::ScheduleTimerInterrupt(Ticks tim) noexcept
 {
 	// We need to disable all interrupts, because once we read the current step clock we have only 6us to set up the interrupt, or we will miss it
 	AtomicCriticalSectionLocker lock;
@@ -219,17 +223,41 @@ inline bool StepTimer::ScheduleTimerInterrupt(uint32_t tim) noexcept
 	return false;
 }
 
+#if DEDICATED_STEP_TIMER
+
+// Schedule a step interrupt, returning true if it was not scheduled because it is already due or imminent.
+// On entry, interrupts must be disabled or the base priority must be <= step interrupt priority.
+/*static*/ bool StepTimer::ScheduleStepInterruptFromIsr(Ticks when) noexcept
+{
+	// We need to disable all interrupts, because once we read the current step clock we have only 6us to set up the interrupt, or we will miss it
+	AtomicCriticalSectionLocker lock;
+
+	const int32_t diff = (int32_t)(when - GetTimerTicks());			// see how long we have to go
+	if (diff < (int32_t)MinInterruptInterval)						// if less than about 6us or already passed
+	{
+		return true;												// tell the caller to simulate an interrupt instead
+	}
+
+	StepTc->CC[1].reg = when;
+	while (StepTc->SYNCBUSY.reg & TC_SYNCBUSY_CC1) { }
+	StepTc->INTFLAG.reg = TC_INTFLAG_MC1;							// clear any existing compare match
+	StepTc->INTENSET.reg = TC_INTFLAG_MC1;
+	return false;
+}
+
+#endif
+
 // Make sure we get no timer interrupts
 void StepTimer::DisableTimerInterrupt() noexcept
 {
 #if RP2040
 	hw_clear_bits(&timer_hw->inte, 1u << StepTimerAlarmNumber);		// disable the interrupt
 #else
-	StepTc->INTENCLR.reg = TC_INTFLAG_MC0;
+	StepTc->INTENCLR.reg = TC_INTFLAG_MC0 | TC_INTFLAG_MC1;
 #endif
 }
 
-// The guts of the ISR
+// The guts of the ISR for the generic timer
 /*static*/ inline void StepTimer::Interrupt() noexcept
 {
 	StepTimer * tmr = pendingList;
@@ -257,7 +285,7 @@ void StepTimer::DisableTimerInterrupt() noexcept
 	}
 }
 
-// Step pulse timer interrupt
+// Step pulse timer ISR
 void STEP_TC_HANDLER() noexcept
 {
 #if RP2040
@@ -267,7 +295,17 @@ void STEP_TC_HANDLER() noexcept
 	uint8_t tcsr = StepTc->INTFLAG.reg;								// read the status register, which clears the status bits
 	tcsr &= StepTc->INTENSET.reg;									// select only enabled interrupts
 
-	if (likely((tcsr & TC_INTFLAG_MC0) != 0))						// the step interrupt uses MC0 compare
+# if DEDICATED_STEP_TIMER
+	if (likely((tcsr & TC_INTFLAG_MC1) != 0))						// the dedicated step interrupt interrupt uses MC1 compare
+	{
+		StepTc->INTENCLR.reg = TC_INTFLAG_MC1;						// disable the interrupt (no need to clear it, we do that before we re-enable it)
+		moveInstance->Interrupt();
+	}
+
+	if (unlikely((tcsr & TC_INTFLAG_MC0) != 0))						// the generic timer interrupt uses MC0 compare
+# else
+	if (likely((tcsr & TC_INTFLAG_MC0) != 0))						// the generic timer interrupt uses MC0 compare
+# endif
 	{
 		StepTc->INTENCLR.reg = TC_INTFLAG_MC0;						// disable the interrupt (no need to clear it, we do that before we re-enable it)
 # ifdef TIMER_DEBUG
@@ -386,24 +424,27 @@ void StepTimer::CancelCallback() noexcept
 	StepTimer *pst = pendingList;
 	if (pst == nullptr)
 	{
-		reply.cat("no step interrupt scheduled");
+		reply.cat("no timer interrupt scheduled");
 	}
 	else
 	{
 #if RP2040
-		reply.catf("next step interrupt due in %" PRIu32 " ticks, %s",
+		reply.catf("next timer interrupt due in %" PRIu32 " ticks, %s",
 					timer_hw->alarm[StepTimerAlarmNumber] - GetTimerTicks(),
 					(timer_hw->inte & (1u << StepTimerAlarmNumber)) ? "enabled" : "disabled");
-
-	//TODO
 #else
-		reply.catf("next step interrupt due in %" PRIu32 " ticks, %s",
+		reply.catf("next timer interrupt due in %" PRIu32 " ticks, %s",
 					pst->whenDue - GetTimerTicks(),
 					((StepTc->INTENSET.reg & TC_INTFLAG_MC0) == 0) ? "disabled" : "enabled");
 		if (StepTc->CC[0].reg != pst->whenDue)
 		{
 			reply.cat(", CC0 mismatch!!");
 		}
+# if DEDICATED_STEP_TIMER
+		reply.catf(", next step interrupt due in %" PRIu32 " ticks, %s",
+					StepTc->CC[1].reg - GetTimerTicks(),
+					((StepTc->INTENSET.reg & TC_INTFLAG_MC1) == 0) ? "disabled" : "enabled");
+# endif
 #endif
 	}
 }

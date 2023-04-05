@@ -79,7 +79,9 @@ Move::Move() noexcept
 	ddaRingAddPointer->SetNext(dda);
 	dda->SetPrevious(ddaRingAddPointer);
 
+#if !DEDICATED_STEP_TIMER
 	timer.SetCallback(Move::TimerCallback, CallbackParameter(this));
+#endif
 
 	for (size_t i = 0; i < NumDrivers; ++i)
 	{
@@ -262,7 +264,11 @@ void Move::StartNextMove(DDA *cdda, uint32_t startTime) noexcept
 			{
 				IrqDisable();
 				StartNextMove(cdda, StepTimer::GetTimerTicks());
+#if DEDICATED_STEP_TIMER
+				if (cdda->ScheduleNextStepInterrupt())
+#else
 				if (cdda->ScheduleNextStepInterrupt(timer))
+#endif
 				{
 					Interrupt();
 				}
@@ -432,7 +438,11 @@ void Move::Interrupt() noexcept
 		}
 
 		// Schedule a callback at the time when the next step is due, and quit unless it is due immediately
+#if DEDICATED_STEP_TIMER
+		if (!cdda->ScheduleNextStepInterrupt())
+#else
 		if (!cdda->ScheduleNextStepInterrupt(timer))
+#endif
 		{
 			return;
 		}
@@ -448,7 +458,11 @@ void Move::Interrupt() noexcept
 			cdda->InsertHiccup(now);
 
 			// Reschedule the next step interrupt. This time it should succeed if the hiccup time was long enough.
+#if DEDICATED_STEP_TIMER
+			if (!cdda->ScheduleNextStepInterrupt())
+#else
 			if (!cdda->ScheduleNextStepInterrupt(timer))
+#endif
 			{
 				return;
 			}

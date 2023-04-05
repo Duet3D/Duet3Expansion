@@ -86,7 +86,12 @@ public:
 	bool Init(const CanMessageMovementLinearShaped& msg) noexcept SPEED_CRITICAL;	// Set up a move from a CAN message
 	void Start(uint32_t tim) noexcept SPEED_CRITICAL;								// Start executing the DDA, i.e. move the move.
 	void StepDrivers(uint32_t now) noexcept SPEED_CRITICAL;							// Take one step of the DDA, called by timed interrupt.
+
+#if DEDICATED_STEP_TIMER
+	bool ScheduleNextStepInterrupt() const noexcept SPEED_CRITICAL;					// Schedule the next interrupt, returning true if we can't because it is already due
+#else
 	bool ScheduleNextStepInterrupt(StepTimer& timer) const noexcept SPEED_CRITICAL;	// Schedule the next interrupt, returning true if we can't because it is already due
+#endif
 
 	void SetNext(DDA *n) noexcept { next = n; }
 	void SetPrevious(DDA *p) noexcept { prev = p; }
@@ -236,6 +241,24 @@ inline uint32_t DDA::WhenNextInterruptDue() const noexcept
 
 // Schedule the next interrupt, returning true if we can't because it is already due
 // Base priority must be >= NvicPriorityStep or interrupts disabled when calling this
+#if DEDICATED_STEP_TIMER
+
+inline bool DDA::ScheduleNextStepInterrupt() const noexcept
+{
+#if SUPPORT_CLOSED_LOOP
+	if (!ClosedLoop::GetClosedLoopEnabled(0))
+#endif
+	{
+		if (likely(state == executing))
+		{
+			return StepTimer::ScheduleStepInterruptFromIsr(WhenNextInterruptDue() + afterPrepare.moveStartTime);
+		}
+	}
+	return false;
+}
+
+#else
+
 inline bool DDA::ScheduleNextStepInterrupt(StepTimer& timer) const noexcept
 {
 #if SUPPORT_CLOSED_LOOP
@@ -249,6 +272,8 @@ inline bool DDA::ScheduleNextStepInterrupt(StepTimer& timer) const noexcept
 	}
 	return false;
 }
+
+#endif
 
 // Insert a hiccup long enough to guarantee that we will exit the ISR
 inline void DDA::InsertHiccup(uint32_t now) noexcept

@@ -26,8 +26,8 @@
 #define HAS_STALL_DETECT		1
 #define SINGLE_DRIVER			0
 #define SUPPORT_SLOW_DRIVERS	0
-#define SUPPORT_DELTA_MOVEMENT	1
-#define USE_EVEN_STEPS			0
+#define SUPPORT_DELTA_MOVEMENT	0
+#define DEDICATED_STEP_TIMER	1
 #define SUPPORT_BRAKE_PWM		1
 
 #define ACTIVE_HIGH_STEP		1		// 1 = active high, 0 = active low

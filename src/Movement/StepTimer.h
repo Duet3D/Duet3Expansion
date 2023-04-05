@@ -16,7 +16,8 @@
 
 class CanMessageTimeSync;
 
-// Class to implement a software timer with a few microseconds resolution
+// Class to implement a software timer with a few microseconds resolution.
+// This now supports a dedicated interrupt for the step pulse generator as well as the generic software timer.
 class StepTimer
 {
 public:
@@ -53,6 +54,11 @@ public:
 	// Get the tick rate (can also access it directly as StepClockRate)
 	static uint32_t GetTickRate() noexcept { return StepClockRate; }
 
+#if DEDICATED_STEP_TIMER
+	// Schedule the dedicated step interrupt. Caller must have base priority >= NvicPriorityStep.
+	static bool ScheduleStepInterruptFromIsr(Ticks when) noexcept;
+#endif
+
 	// Convert a number of step timer ticks to microseconds
 	// Our tick rate is a multiple of 1000 so instead of multiplying n by 1000000 and risking overflow, we multiply by 1000 and divide by StepClockRate/1000
 	static uint32_t TicksToIntegerMicroseconds(uint32_t n) noexcept { return (n * 1000)/(StepClockRate/1000); }
@@ -78,7 +84,7 @@ public:
 	static constexpr uint32_t MinSyncInterval = 2000;							// maximum interval in milliseconds between sync messages for us to remain synced
 																				// increased from 1000 because of workaround we added for bad Tx time stamps on SAME70
 private:
-	static bool ScheduleTimerInterrupt(uint32_t tim) SPEED_CRITICAL;			// schedule an interrupt at the specified clock count, or return true if it has passed already
+	static bool ScheduleTimerInterrupt(Ticks tim) SPEED_CRITICAL;				// schedule an interrupt at the specified clock count, or return true if it has passed already
 
 	StepTimer *next;
 	Ticks whenDue;
