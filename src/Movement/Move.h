@@ -206,7 +206,7 @@ inline bool Move::GetCurrentMotion(size_t driver, uint32_t when, bool closedLoop
 
 inline void Move::SetCurrentMotorSteps(size_t driver, float fullSteps) noexcept
 {
-	const float multiplier = ldexpf(1.0, (int)SmartDrivers::GetMicrostepShift(driver));
+	const float multiplier = ldexpf((Platform::GetDirectionValueNoCheck(driver)) ? -1.0 : 1.0, (int)SmartDrivers::GetMicrostepShift(driver));
 	netMicrostepsTaken[driver] = fullSteps * multiplier;
 }
 
