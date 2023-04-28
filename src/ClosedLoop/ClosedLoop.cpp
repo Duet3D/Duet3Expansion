@@ -110,6 +110,7 @@ namespace ClosedLoop
 	float 	Ki = 0.0;											// The proportional constant for the PID controller
 	float 	Kd = 0.0;											// The proportional constant for the PID controller
 	float	Kv = 0.0;											// The velocity feedforward constant
+	float	Ka = 0.0;											// The acceleration feedforward constant
 
 	float 	errorThresholds[2];									// The error thresholds. [0] is pre-stall, [1] is stall
 
@@ -142,6 +143,7 @@ namespace ClosedLoop
 	// These variables are all used to calculate the required motor currents. They are declared here so they can be reported on by the data collection task
 	float	targetMotorSteps;							// The number of steps the motor should have taken relative to it's zero position
 	float	targetSpeed = 0.0;							// The target motor speed
+	float	targetAcceleration = 0.0;					// the target motor acceleration
 	float 	currentError;								// The current error in full steps
 
 	DerivativeAveragingFilter<DerivativeFilterSize> derivativeFilter;	// An averaging filter to smooth the derivative of the error
@@ -150,6 +152,7 @@ namespace ClosedLoop
 	float 	PIDITerm = 0.0;								// Integral accumulator
 	float 	PIDDTerm;									// Derivative term
 	float	PIDVTerm;									// Velocity feedforward term
+	float	PIDATerm;									// Acceleration feedforward term
 	float	PIDControlSignal;							// The overall signal from the PID controller
 
 	float	phaseShift;									// The desired shift in the position of the motor, where 1024 = 1 full step
@@ -317,6 +320,7 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 	float tempKi = Ki;
 	float tempKd = Kd;
 	float tempKv = Kv;
+	float tempKa = Ka;
 	uint16_t tempStepsPerRev = 200;
 	size_t numThresholds = 2;
 	float tempErrorThresholds[numThresholds];
@@ -325,7 +329,8 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 	// Pull changed parameters
 	const bool seenT = parser.GetUintParam('T', tempEncoderType);
 	const bool seenC = parser.GetFloatParam('C', tempCPR);
-	const bool seenPid = parser.GetFloatParam('R', tempKp) | parser.GetFloatParam('I', tempKi)  | parser.GetFloatParam('D', tempKd) | parser.GetFloatParam('V', tempKv);
+	const bool seenPid = parser.GetFloatParam('R', tempKp) | parser.GetFloatParam('I', tempKi)  | parser.GetFloatParam('D', tempKd)
+						| parser.GetFloatParam('V', tempKv) | parser.GetFloatParam('A', tempKa);
 	const bool seenE = parser.GetFloatArrayParam('E', numThresholds, tempErrorThresholds);
 	const bool seenH = parser.GetFloatParam('H', holdingCurrentPercent);
 	const bool seenS = parser.GetUintParam('S', tempStepsPerRev);
@@ -341,8 +346,8 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 		{
 			reply.catf("Encoder type: %s", GetEncoderType().ToString());
 			encoder->AppendStatus(reply);
-			reply.lcatf("PID parameters P=%.1f I=%.3f D=%.3f V=%.1f, min. current %" PRIi32 "%%",
-						(double)Kp, (double)Ki, (double)Kd, (double)Kv, lrintf(holdCurrentFraction * 100.0));
+			reply.lcatf("PID parameters P=%.1f I=%.3f D=%.3f V=%.1f A=%.1f, min. current %" PRIi32 "%%",
+						(double)Kp, (double)Ki, (double)Kd, (double)Kv, (double)Ka, lrintf(holdCurrentFraction * 100.0));
 			reply.lcatf("Warning/error threshold %.2f/%.2f", (double)errorThresholds[0], (double)errorThresholds[1]);
 		}
 		return GCodeResult::ok;
@@ -386,6 +391,7 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 		Ki = tempKi;
 		Kd = tempKd;
 		Kv = tempKv;
+		Ka = tempKa;
 		PIDITerm = 0.0;
 		derivativeFilter.Reset();
 	}
@@ -795,6 +801,7 @@ void ClosedLoop::ControlLoop() noexcept
 		const bool moving = moveInstance->GetCurrentMotion(0, loopCallTime, closedLoopEnabled, mParams);
 		targetMotorSteps = mParams.position;
 		targetSpeed = mParams.speed;
+		targetAcceleration = mParams.acceleration;
 		if (moving && samplingMode == RecordingMode::OnNextMove)
 		{
 			dataCollectionStartTicks = whenNextSampleDue = StepTimer::GetTimerTicks();
@@ -990,7 +997,8 @@ inline void ClosedLoop::ControlMotorCurrents(StepTimer::Ticks ticksSinceLastCall
 	PIDITerm = constrain<float>(PIDITerm + Ki * currentError * timeDelta, -PIDIlimit, PIDIlimit);	// constrain I to prevent it running away
 	PIDDTerm = constrain<float>(Kd * derivativeFilter.GetDerivative(), -256.0, 256.0);				// constrain D so that we can graph it more sensibly after a sudden step input
 	PIDVTerm = targetSpeed * Kv * ticksSinceLastCall;
-	PIDControlSignal = constrain<float>(PIDPTerm + PIDITerm + PIDDTerm + PIDVTerm, -256.0, 256.0);	// clamp the sum between +/- 256
+	PIDATerm = targetAcceleration * Ka * ticksSinceLastCall;
+	PIDControlSignal = constrain<float>(PIDPTerm + PIDITerm + PIDDTerm + PIDVTerm + PIDATerm, -256.0, 256.0);	// clamp the sum between +/- 256
 
 	// Calculate the offset required to produce the torque in the correct direction
 	// i.e. if we are moving in the positive direction, we must apply currents with a positive phase shift
