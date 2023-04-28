@@ -474,7 +474,7 @@ CanMessageBuffer *CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf) no
 			// Check for duplicate and out-of-sequence message
 			// We can get out-of-sequence messages because of a bug in the CAN hardware; so use only the sequence number to detect duplicates
 			{
-				const int8_t seq = buf->msg.moveLinear.seq;
+				const int8_t seq = buf->msg.moveLinearShaped.seq;
 				if (((seq + 1) & CanMessageMovementLinearShaped::SeqMask) == expectedSeq)
 				{
 					++duplicateMotionMessages;
@@ -488,7 +488,7 @@ CanMessageBuffer *CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf) no
 					break;
 				}
 
-				lastMotionMessageScheduledTime = buf->msg.moveLinear.whenToExecute;
+				lastMotionMessageScheduledTime = buf->msg.moveLinearShaped.whenToExecute;
 				lastMotionMessageReceivedAt = millis();
 
 				if (seq != expectedSeq && expectedSeq != 0xFF)
@@ -548,7 +548,7 @@ CanMessageBuffer *CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf) no
 			}
 			lastMoveEndedAt = buf->msg.moveLinear.whenToExecute + buf->msg.moveLinear.accelerationClocks + buf->msg.moveLinear.steadyClocks + buf->msg.moveLinear.decelClocks;
 # endif
-			buf->msg.moveLinear.whenToExecute += StepTimer::GetLocalTimeOffset();
+			buf->msg.moveLinearShaped.whenToExecute += StepTimer::GetLocalTimeOffset();
 
 			// Track how much processing delay there was
 			{
@@ -571,7 +571,7 @@ CanMessageBuffer *CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf) no
 
 			// Track how much we are given moves in advance
 			{
-				const int32_t advance = (int32_t)(buf->msg.moveLinear.whenToExecute - StepTimer::GetTimerTicks());
+				const int32_t advance = (int32_t)(buf->msg.moveLinearShaped.whenToExecute - StepTimer::GetTimerTicks());
 				if (advance < minAdvance)
 				{
 					minAdvance = advance;
