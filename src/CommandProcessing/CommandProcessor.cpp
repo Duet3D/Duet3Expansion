@@ -15,6 +15,7 @@
 #include <CanMessageGenericTables.h>
 #include <InputMonitors/InputMonitor.h>
 #include <GPIO/GpioPorts.h>
+#include <LedStrips/LedStrips.h>
 #include <Platform/Platform.h>
 #include <Movement/Move.h>
 #include <Platform/Tasks.h>
@@ -976,6 +977,17 @@ void CommandProcessor::Spin()
 		case CanMessageType::writeGpio:
 			requestId = buf->msg.writeGpio.requestId;
 			rslt = GpioPorts::HandleGpioWrite(buf->msg.writeGpio, replyRef);
+			break;
+
+		// LED strip commands
+		case CanMessageType::m950Led:
+			requestId = buf->msg.generic.requestId;
+			rslt = LedStrips::HandleM950Led(buf->msg.generic, replyRef, extra);
+			break;
+
+		case CanMessageType::writeLedStrip:
+			requestId = buf->msg.generic.requestId;
+			rslt = LedStrips::HandleLedSetColours(buf->msg.generic, replyRef);
 			break;
 
 #if SUPPORT_DRIVERS
