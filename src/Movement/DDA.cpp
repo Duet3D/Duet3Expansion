@@ -269,7 +269,6 @@ bool DDA::Init(const CanMessageMovementLinear& msg) noexcept
 		if (stepsToDo)
 		{
 			realMove = true;
-			dm.directionChanged = dm.directionReversed = false;
 #if !SINGLE_DRIVER
 			InsertDM(&dm);
 #endif
@@ -375,7 +374,6 @@ bool DDA::Init(const CanMessageMovementLinearShaped& msg) noexcept
 		if (stepsToDo)
 		{
 			realMove = true;
-			dm.directionChanged = dm.directionReversed = false;
 #if !SINGLE_DRIVER
 			InsertDM(&dm);
 #endif
