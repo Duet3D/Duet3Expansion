@@ -822,7 +822,7 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 # endif
 				, driver, moveInstance->GetPosition(driver), (double)Platform::DriveStepsPerUnit(driver));
 # if HAS_SMART_DRIVERS
-			const StandardDriverStatus status = SmartDrivers::GetStatus(driver);
+			const StandardDriverStatus status = SmartDrivers::GetStatus(driver, false, false);
 			status.AppendText(reply, 0);
 			if (!status.notPresent)
 			{
