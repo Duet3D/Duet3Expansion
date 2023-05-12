@@ -434,6 +434,11 @@ bool DriveMovement::PrepareDeltaAxis(const DDA& dda, const PrepParams& params) n
 // If there are no steps to do, set nextStep = 0 so that DDARing::CurrentMoveCompleted doesn't add any steps to the movement accumulator
 // We have already generated the extruder segments and we know that there are some
 // effStepsPerMm is the number of extruder steps needed per mm of totalDistance before we apply pressure advance
+// A note on accumulating partial extruder steps:
+// We must only accumulate partial steps when the extrusion is forwards. If we try to accumulate partial steps on reverse extrusion too,
+// things go horribly wrong under particular circumstances. We use the pressure advance flag as a proxy for forward extrusion.
+// This means that partial extruder steps don't get accumulated on a reprime move, but that is probably a good thing because it will
+// behave in a similar way to a retraction move.
 bool DriveMovement::PrepareExtruder(const DDA& dda, const PrepParams& params, float signedEffStepsPerMm) noexcept
 {
 	const float effStepsPerMm = fabsf(signedEffStepsPerMm);
@@ -447,11 +452,11 @@ bool DriveMovement::PrepareExtruder(const DDA& dda, const PrepParams& params, fl
 #if 0	//DEBUG
 	debugPrintf("pending %.2f\n", (double)shaper.GetExtrusionPending());
 #endif
-	distanceSoFar =	mp.cart.extrusionBroughtForwards = shaper.GetExtrusionPending() * effMmPerStep;
+	distanceSoFar =	mp.cart.extrusionBroughtForwards = (dda.flags.usePressureAdvance) ? shaper.GetExtrusionPending() * effMmPerStep : 0.0;
 	timeSoFar = 0.0;
 
 	// Calculate the total forward and reverse movement distances
-	mp.cart.pressureAdvanceK = (dda.flags.usePressureAdvance && shaper.GetKclocks() > 0.0) ? shaper.GetKclocks() : 0.0;
+	mp.cart.pressureAdvanceK = (dda.flags.usePressureAdvance) ? shaper.GetKclocks() : 0.0;
 
 	currentSegment = dda.segments;
 	isDelta = false;
@@ -462,7 +467,10 @@ bool DriveMovement::PrepareExtruder(const DDA& dda, const PrepParams& params, fl
 
 	if (!NewExtruderSegment())						// if no steps to do
 	{
-		shaper.SetExtrusionPending(dda.totalDistance * effStepsPerMm);
+		if (dda.flags.usePressureAdvance)
+		{
+			shaper.AddExtrusionPending(effStepsPerMm);	// add the requested motion to the extrusion pending
+		}
 		return false;								// quit if no steps to do
 	}
 
@@ -501,7 +509,7 @@ pre(nextStep <= totalSteps; stepsTillRecalc == 0)
 				}
 				if (!NewExtruderSegment())
 				{
-					if (dda.flags.isPrintingMove)
+					if (dda.flags.usePressureAdvance)
 					{
 						ExtruderShaper& shaper = moveInstance->GetExtruderShaper(drive);
 						const int32_t netStepsDone = nextStep - 1;
