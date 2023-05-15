@@ -11,14 +11,13 @@
 
 #include "DDA.h"
 #include "Move.h"
-#include "Math/Isqrt.h"
+#include "StepTimer.h"
+#include <Math/Isqrt.h>
+#include <Platform/Platform.h>
 
 #if SUPPORT_DELTA_MOVEMENT
 # include "Kinematics/LinearDeltaKinematics.h"
 #endif
-
-#include "StepTimer.h"
-#include <Platform/Platform.h>
 
 void DriveMovement::DebugPrint() const noexcept
 {
@@ -210,7 +209,7 @@ bool DriveMovement::NewExtruderSegment() noexcept
 			// Set up pB, pC such that for forward motion, time = pB + pC * stepNumber
 			pB = currentSegment->CalcLinearB(startDistance, startTime);
 			state = DMState::cartLinear;
-			reverseStartStep = segmentStepLimit = (distanceSoFar * mp.cart.effectiveStepsPerMm) + 1;
+			reverseStartStep = segmentStepLimit = (int32_t)(distanceSoFar * mp.cart.effectiveStepsPerMm) + 1;
 		}
 		else
 		{
@@ -292,7 +291,7 @@ bool DriveMovement::PrepareCartesianAxis(const DDA& dda, const PrepParams& param
 	timeSoFar = 0.0;
 	mp.cart.pressureAdvanceK = 0.0;
 	// We can't use directionVector here because those values relate to Cartesian space, whereas we may be CoreXY etc.
-	mp.cart.effectiveStepsPerMm = (float)totalSteps/dda.totalDistance;
+	mp.cart.effectiveStepsPerMm = (float)totalSteps;	// because totalDistance = 1.0
 	mp.cart.effectiveMmPerStep = 1.0/mp.cart.effectiveStepsPerMm;
 	isDelta = false;
 	isExtruder = false;
@@ -446,12 +445,12 @@ bool DriveMovement::PrepareExtruder(const DDA& dda, const PrepParams& params, fl
 	const float effMmPerStep = 1.0/effStepsPerMm;
 	mp.cart.effectiveMmPerStep = effMmPerStep;
 
-	// distanceSoFar will accumulate the equivalent amount of totalDistance that the extruder moves forwards.
-	// It would be equal to totalDistance if there was no pressure advance and no extrusion pending.
 	ExtruderShaper& shaper = moveInstance->GetExtruderShaper(drive);
 #if 0	//DEBUG
 	debugPrintf("pending %.2f\n", (double)shaper.GetExtrusionPending());
 #endif
+	// distanceSoFar will accumulate the equivalent amount of totalDistance that the extruder moves forwards.
+	// It would be equal to totalDistance if there was no pressure advance and no extrusion pending.
 	distanceSoFar =	mp.cart.extrusionBroughtForwards = (dda.flags.usePressureAdvance) ? shaper.GetExtrusionPending() * effMmPerStep : 0.0;
 	timeSoFar = 0.0;
 
