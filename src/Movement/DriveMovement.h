@@ -8,7 +8,7 @@
 #ifndef DRIVEMOVEMENT_H_
 #define DRIVEMOVEMENT_H_
 
-#include "RepRapFirmware.h"
+#include <RepRapFirmware.h>
 
 #if SUPPORT_DRIVERS
 
@@ -75,7 +75,7 @@ public:
 	int32_t GetNetStepsTaken() const noexcept;
 
 #if HAS_SMART_DRIVERS
-	uint32_t GetStepInterval(uint32_t msShift) const noexcept;	// Get the current full step interval for this axis or extruder
+	uint32_t GetStepInterval(uint32_t microstepShift) const noexcept;	// Get the current full step interval for this axis or extruder
 #endif
 
 #if SUPPORT_CLOSED_LOOP
@@ -120,10 +120,10 @@ private:
 			stepsTakenThisSegment : 2;					// how many steps we have taken this phase, counts from 0 to 2. Last field in the byte so that we can increment it efficiently.
 	uint8_t stepsTillRecalc;							// how soon we need to recalculate
 
-	int32_t totalSteps;									// total number of steps for this move
+	int32_t totalSteps;									// total number of steps for this move, always positive, but zero for extruders
 
 	// These values change as the step is executed, except for reverseStartStep
-	int32_t nextStep;									// number of steps already done
+	int32_t nextStep;									// number of steps already done. For extruders this gets reset to the net steps already done at the start of each segment, so it can go negative.
 	int32_t segmentStepLimit;							// the first step number of the next phase, or the reverse start step if smaller
 	int32_t reverseStartStep;							// the step number for which we need to reverse direction due to pressure advance or delta movement
 	uint32_t nextStepTime;								// how many clocks after the start of this move the next step is due

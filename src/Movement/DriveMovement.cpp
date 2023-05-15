@@ -61,7 +61,7 @@ bool DriveMovement::NewCartesianSegment() noexcept
 		}
 
 		// Work out the movement limit in steps
-		pC = currentSegment->CalcC(mp.cart.effectiveMmPerStep);
+		pC = currentSegment->CalcCFromMmPerStep(mp.cart.effectiveMmPerStep);
 		if (currentSegment->IsLinear())
 		{
 			// Set up pB, pC such that for forward motion, time = pB + pC * stepNumber
@@ -110,7 +110,7 @@ bool DriveMovement::NewDeltaSegment(const DDA& dda) noexcept
 		}
 
 		const float stepsPerMm = Platform::DriveStepsPerUnit(drive);
-		pC = currentSegment->GetC()/stepsPerMm;		//TODO store the reciprocal to avoid the division
+		pC = currentSegment->CalcCFromStepsPerMm(stepsPerMm);			// should we store the reciprocal to avoid the division?
 		if (currentSegment->IsLinear())
 		{
 			// Set up pB, pC such that for forward motion, time = pB + pC * (distanceMoved * steps/mm)
@@ -204,7 +204,7 @@ bool DriveMovement::NewExtruderSegment() noexcept
 
 		distanceSoFar += currentSegment->GetSegmentLength();
 		timeSoFar += currentSegment->GetSegmentTime();
-		pC = currentSegment->CalcC(mp.cart.effectiveMmPerStep);
+		pC = currentSegment->CalcCFromMmPerStep(mp.cart.effectiveMmPerStep);
 		if (currentSegment->IsLinear())
 		{
 			// Set up pB, pC such that for forward motion, time = pB + pC * stepNumber
@@ -246,7 +246,7 @@ bool DriveMovement::NewExtruderSegment() noexcept
 					else
 					{
 						// This segment starts forwards and then reverses. Either or both of the forward and reverse segments may be small enough to need no steps.
-						const float segmentDistanceToReverse = fsquare(startSpeed) * currentSegment->GetC() * (-0.25);	// because (v^2-u^2) = 2as, so if v=0 then s=-u^2/2a = u^2/2d = -0.25*u^2*c
+						const float segmentDistanceToReverse = currentSegment->GetDistanceToReverse(startSpeed);
 						const float distanceToReverse = startDistance + segmentDistanceToReverse;
 						const int32_t netStepsToReverse = (int32_t)(distanceToReverse * mp.cart.effectiveStepsPerMm - 0.5);			// don't do the last step if we only overshoot it slightly, hence -0.5
 						reverseStartStep = netStepsToReverse + 1;

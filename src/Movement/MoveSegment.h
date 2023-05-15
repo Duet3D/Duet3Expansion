@@ -145,8 +145,8 @@
 class MoveSegment
 {
 public:
-	void* operator new(size_t count) { return Tasks::AllocPermanent(count); }
-	void* operator new(size_t count, std::align_val_t align) { return Tasks::AllocPermanent(count, align); }
+	void* operator new(size_t count) noexcept { return Tasks::AllocPermanent(count); }
+	void* operator new(size_t count, std::align_val_t align) noexcept { return Tasks::AllocPermanent(count, align); }
 	void operator delete(void* ptr) noexcept {}
 	void operator delete(void* ptr, std::align_val_t align) noexcept {}
 
@@ -183,10 +183,13 @@ public:
 	float CalcLinearB(float startDistance, float startTime) const noexcept pre(IsLinear());
 
 	// Calculate the move C coefficient in step_clocks/step for a linear move, or step_clocks^2/step for an accelerating or decelerating move
-	float CalcC(float mmPerStep) const noexcept;
+	float CalcCFromMmPerStep(float mmPerStep) const noexcept;
 
-	// Return the C coefficient
-	float GetC() const noexcept { return c; }
+	// Calculate the move C coefficient in step_clocks/step for a linear move, or step_clocks^2/step for an accelerating or decelerating move
+	float CalcCFromStepsPerMm(float stepsPerMm) const noexcept;
+
+	// For a decelerating move, calculate the distance before the move reverses
+	float GetDistanceToReverse(float startSpeed) const noexcept;
 
 	// Return the acceleration, needed by closed loop builds
 	float GetAcceleration() const noexcept { return acceleration; }
@@ -295,9 +298,23 @@ inline float MoveSegment::CalcLinearB(float startDistance, float startTime) cons
 	return startTime - (startDistance * c);
 }
 
-inline float MoveSegment::CalcC(float mmPerStep) const noexcept
+inline float MoveSegment::CalcCFromMmPerStep(float mmPerStep) const noexcept
 {
 	return c * mmPerStep;
+}
+
+// Calculate the move C coefficient in step_clocks/step for a linear move, or step_clocks^2/step for an accelerating or decelerating move
+inline float MoveSegment::CalcCFromStepsPerMm(float stepsPerMm) const noexcept
+{
+	return c/stepsPerMm;
+}
+
+// For a decelerating move, calculate the distance before the move reverses
+// From (v^2-u^2) = 2as, if v=0 then s=-u^2/2a = u^2/2d
+// But c = -2/d, so d = -2/c, so s = u^2/(-4/c) = 0.25 * u^2 * c.
+inline float MoveSegment::GetDistanceToReverse(float startSpeed) const noexcept
+{
+	return fsquare(startSpeed) * c * (-0.25);
 }
 
 inline void MoveSegment::SetLinear(float pSegmentLength, float p_segTime, float p_c) noexcept
