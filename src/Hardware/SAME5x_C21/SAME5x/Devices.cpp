@@ -105,7 +105,7 @@ void DeviceInit() noexcept
 	AnalogOut::Init();
 	analogInTask.Create(AnalogIn::TaskLoop, "AIN", nullptr, TaskPriority::AinPriority);
 
-#if (defined(EXP1HCLv1_0) || defined(M23CL)) && defined(DEBUG)
+#if (defined(EXP1HCLv1_0) || defined(M23CL)) && USE_SERIAL_DEBUG
 	Platform::SetInterruptPriority(SERCOM2_0_IRQn, 4, NvicPriorityUart);
 #endif
 }

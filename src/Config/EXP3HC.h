@@ -19,6 +19,7 @@
 #define HAS_CPU_TEMP_SENSOR		1
 #define HAS_ADDRESS_SWITCHES	1
 #define HAS_BUTTONS				0
+#define USE_SERIAL_DEBUG		defined(DEBUG)
 
 // Drivers configuration
 #define SUPPORT_DRIVERS			1

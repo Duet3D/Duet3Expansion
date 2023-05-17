@@ -31,6 +31,10 @@ namespace CanInterface
 	bool SendAndFree(CanMessageBuffer *buf) noexcept;
 	CanMessageBuffer *GetCanCommand(uint32_t timeout) noexcept;
 
+#if !USE_SERIAL_DEBUG
+	bool DebugPutc(char c) noexcept;
+#endif
+
 #if !SAME70 && !RP2040
 	uint16_t GetTimeStampCounter() noexcept;
 	uint16_t GetTimeStampPeriod() noexcept;
@@ -39,6 +43,7 @@ namespace CanInterface
 	bool SendAnnounce(CanMessageBuffer *buf) noexcept;
 	void RaiseEvent(EventType type, uint16_t param, uint8_t device, const char *format, va_list vargs) noexcept;
 
+	void WakeAsyncSender() noexcept;
 	void WakeAsyncSenderFromIsr() noexcept;
 }
 

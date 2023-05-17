@@ -22,6 +22,7 @@
 #define SUPPORT_CAN		1				// needed by CanDevice.h
 #include <CanDevice.h>
 #include <Hardware/IoPorts.h>
+#include <General/RingBuffer.h>
 #include <Version.h>
 
 #if !RP2040
@@ -99,7 +100,7 @@ constexpr size_t CanReceiverTaskStackWords =
 static Task<CanReceiverTaskStackWords> canReceiverTask;
 
 // Async sender task
-constexpr size_t CanAsyncSenderTaskStackWords = 100;
+constexpr size_t CanAsyncSenderTaskStackWords = 134;
 static Task<CanAsyncSenderTaskStackWords> canAsyncSenderTask;
 
 static bool mainBoardAcknowledgedAnnounce = false;	// true after the main board has acknowledged our announcement
@@ -755,6 +756,13 @@ bool CanInterface::SendAnnounce(CanMessageBuffer *buf) noexcept
 	return true;
 }
 
+// Wake the CAN sender task when we ar ot ni an ISR and scheduleing has not been suspended
+void CanInterface::WakeAsyncSender() noexcept
+{
+	canAsyncSenderTask.Give();
+}
+
+// Wake the CAN sender task from an ISR
 void CanInterface::WakeAsyncSenderFromIsr() noexcept
 {
 	canAsyncSenderTask.GiveFromISR();
@@ -899,18 +907,50 @@ extern "C" [[noreturn]] void CanReceiverLoop(void *) noexcept
 	}
 }
 
+#if !USE_SERIAL_DEBUG
+
+// Debugging support. We maintain a ring buffer of debug buffers, written by debugPrintf, read by the CAN Async Sender task.
+static RingBuffer<char> debugBuffer;
+constexpr size_t DebugBufferSize = 512;
+static_assert((DebugBufferSize & (DebugBufferSize - 1)) == 0);		// DebugBufferSize must be a power of 2
+volatile bool debugBufferBeingWritten = false;
+
+bool CanInterface::DebugPutc(char c) noexcept
+{
+	if (c != 0)
+	{
+		const bool b = debugBuffer.PutItem(c);
+		debugBufferBeingWritten = b;
+		return b;
+	}
+
+	debugBufferBeingWritten = false;
+	if (inInterrupt())
+	{
+		WakeAsyncSenderFromIsr();
+	}
+	else
+	{
+		WakeAsyncSender();
+	}
+	return true;
+}
+
+#endif
+
+// Code executed by the sync sender task
 extern "C" [[noreturn]] void CanAsyncSenderLoop(void *) noexcept
 {
-	CanMessageBuffer *buf;
-	while ((buf = CanMessageBuffer::Allocate()) == nullptr)
-	{
-		delay(1);
-	}
+#if !USE_SERIAL_DEBUG
+	debugBuffer.Init(DebugBufferSize);
+#endif
+
+	CanMessageBuffer buf;
 
 	for (;;)
 	{
 		// Set up a message ready
-		auto msg = buf->SetupStatusMessage<CanMessageInputChanged>(CanInterface::GetCanAddress(), currentMasterAddress);
+		auto msg = buf.SetupStatusMessage<CanMessageInputChanged>(CanInterface::GetCanAddress(), currentMasterAddress);
 		msg->states = 0;
 		msg->zero = 0;
 		msg->numHandles = 0;
@@ -918,9 +958,30 @@ extern "C" [[noreturn]] void CanAsyncSenderLoop(void *) noexcept
 		const uint32_t timeToWait = InputMonitor::AddStateChanges(msg);
 		if (msg->numHandles != 0)
 		{
-			buf->dataLength = msg->GetActualDataLength();
-			CanInterface::SendAsync(buf);					// this doesn't free the buffer, so we can re-use it
+			buf.dataLength = msg->GetActualDataLength();
+			CanInterface::SendAsync(&buf);					// this doesn't free the buffer, so we can re-use it
 		}
+
+#if !USE_SERIAL_DEBUG
+		size_t numChars;
+		while (!debugBufferBeingWritten && (numChars = debugBuffer.ItemsPresent()) != 0)
+		{
+			auto debugMsg = buf.SetupStatusMessage<CanMessageDebugText>(CanInterface::GetCanAddress(), currentMasterAddress);
+			size_t numToSend = min<size_t>(numChars, ARRAY_SIZE(debugMsg->text));
+			debugBuffer.GetBlock(debugMsg->text, numToSend);
+			if (debugMsg->text[numToSend - 1] == '\n')
+			{
+				debugMsg->text[numToSend - 1] = 0;
+			}
+			else if (numToSend < ARRAY_SIZE(debugMsg->text))
+			{
+				debugMsg->text[numToSend++] = 0;
+			}
+			buf.dataLength = numToSend;
+			CanInterface::Send(&buf);
+		}
+#endif
+
 		TaskBase::Take(timeToWait);							// wait until we are woken up because a message is available, or we time out
 	}
 }

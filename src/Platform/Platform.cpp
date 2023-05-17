@@ -1472,22 +1472,23 @@ uint32_t Platform::GetHeatTaskIdleTicks()
 	return heatTaskIdleTicks;
 }
 
+#if USE_SERIAL_DEBUG
+
 // Output a character to the debug channel
-bool Platform::DebugPutc(char c)
+bool Platform::DebugPutc(char c) noexcept
 {
+	if (c != 0)
+	{
 #if defined(RPI_PICO) || defined(FLY36RRF)
-	if (c != 0)
-	{
 		serialUSB.write(c);
-	}
-#elif defined(SAMMYC21) || defined(DEBUG)
-	if (c != 0)
-	{
+#else
 		uart0.write(c);
-	}
 #endif
+	}
 	return true;
 }
+
+#endif
 
 void Platform::LogError(ErrorCode e)
 {

@@ -73,4 +73,8 @@ constexpr size_t NumDrivers = 0;
 # define SUPPORT_LIS3DH					0
 #endif
 
+#if !defined(USE_SERIAL_DEBUG)
+# define USE_SERIAL_DEBUG				0
+#endif
+
 #endif /* SRC_CONFIG_BOARDDEF_H_ */

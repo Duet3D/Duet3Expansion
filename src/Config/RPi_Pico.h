@@ -20,6 +20,7 @@
 #define HAS_CPU_TEMP_SENSOR		1
 #define HAS_ADDRESS_SWITCHES	0
 #define HAS_BUTTONS				1
+#define USE_SERIAL_DEBUG		1
 
 // Drivers configuration
 #define SUPPORT_DRIVERS			1
@@ -36,7 +37,7 @@
 #define SUPPORT_TMC2160			0
 #define SUPPORT_TMC2660			0
 #define SUPPORT_TMC22xx			1
-#define SUPPORT_TMC2240			0		// TEMP! Duet3D boards using the RP2040 will likely use the TMC2240 stepper driver
+#define SUPPORT_TMC2240			0
 
 constexpr size_t NumDrivers = 1;
 constexpr size_t MaxSmartDrivers = 1;

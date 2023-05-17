@@ -10,6 +10,7 @@
 #include <RTOSIface/RTOSIface.h>
 #include "Version.h"
 #include <General/SafeVsnprintf.h>
+#include <CAN/CanInterface.h>
 
 // Version text, without the build date. One of the unused interrupt vectors declared in CoreN2G point to this.
 extern const char VersionText[] = "Duet " BOARD_TYPE_NAME " firmware version " VERSION;
@@ -20,18 +21,22 @@ Move *moveInstance;
 
 void debugPrintf(const char* fmt, ...) noexcept
 {
-#if defined(DEBUG) || defined(SAMMYC21) || defined(RPI_PICO) || defined(FLY36RRF)	// save on stack usage by not calling vuprintf if debugging is disabled
 	va_list vargs;
 	va_start(vargs, fmt);
+#if USE_SERIAL_DEBUG
 	vuprintf(Platform::DebugPutc, fmt, vargs);
-	va_end(vargs);
+#else
+	vuprintf(CanInterface::DebugPutc, fmt, vargs);
 #endif
+	va_end(vargs);
 }
 
 void debugVprintf(const char *fmt, va_list vargs) noexcept
 {
-#if defined(DEBUG) || defined(SAMMYC21) || defined(RPI_PICO) || defined(FLY36RRF)	// save on stack usage by not calling vuprintf if debugging is disabled
+#if USE_SERIAL_DEBUG
 	vuprintf(Platform::DebugPutc, fmt, vargs);
+#else
+	vuprintf(CanInterface::DebugPutc, fmt, vargs);
 #endif
 }
 

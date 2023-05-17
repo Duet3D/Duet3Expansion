@@ -18,6 +18,7 @@ constexpr size_t AnalogInTaskStackWords = 200;				// was 120 but we got a stack 
 static Task<AnalogInTaskStackWords> analogInTask;
 
 # ifdef SAMMYC21
+// SERCOM5 is connected to the USB port through the serial-to-USB converter
 
 void SerialPortInit(AsyncSerial*) noexcept
 {
@@ -37,7 +38,7 @@ extern "C" void SERCOM5_Handler()
 	uart0.Interrupt();
 }
 
-# elif defined(DEBUG)
+# elif USE_SERIAL_DEBUG
 
 void SerialPortInit(AsyncSerial*) noexcept
 {

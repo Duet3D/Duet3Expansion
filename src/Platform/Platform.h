@@ -160,7 +160,10 @@ namespace Platform
 	void LogError(ErrorCode e);
 	bool Debug(Module module);
 	void WriteLed(uint8_t ledNumber, bool turnOn);
+
+#if USE_SERIAL_DEBUG
 	bool DebugPutc(char c);
+#endif
 
 #if SUPPORT_DRIVERS
 	float DriveStepsPerUnit(size_t drive);
