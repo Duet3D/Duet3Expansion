@@ -90,7 +90,7 @@ public:
 private:
 	bool CalcNextStepTimeFull(const DDA &dda) noexcept SPEED_CRITICAL;
 	bool NewCartesianSegment() noexcept SPEED_CRITICAL;
-	bool NewExtruderSegment() noexcept SPEED_CRITICAL;
+	bool NewExtruderSegment(float distanceBroughtForwards) noexcept SPEED_CRITICAL;
 #if SUPPORT_DELTA_MOVEMENT
 	bool NewDeltaSegment(const DDA& dda) noexcept SPEED_CRITICAL;
 #endif

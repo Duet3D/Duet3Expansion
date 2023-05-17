@@ -288,7 +288,8 @@ bool DDA::Init(const CanMessageMovementLinear& msg) noexcept
 			dm.currentSegment = nullptr;
 			// Set up the steps so that GetStepsTaken will return zero
 			dm.totalSteps = 0;
-			dm.nextStep = dm.reverseStartStep = 1;
+			dm.nextStep = 0;
+			dm.reverseStartStep = 1;
 		}
 	}
 
@@ -393,7 +394,8 @@ bool DDA::Init(const CanMessageMovementLinearShaped& msg) noexcept
 			dm.currentSegment = nullptr;
 			// No steps to do, so set up the steps so that GetStepsTaken will return zero
 			dm.totalSteps = 0;
-			dm.nextStep = dm.reverseStartStep = 1;
+			dm.nextStep = 0;
+			dm.reverseStartStep = 1;
 		}
 	}
 

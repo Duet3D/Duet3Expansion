@@ -94,6 +94,9 @@ public:
 
 	const volatile int32_t *GetLastMoveStepsTaken() const noexcept { return lastMoveStepsTaken; }
 
+	//DEBUG
+	static float minExtrusionPending, maxExtrusionPending;
+	//ENDDB
 private:
 	bool DDARingAdd() noexcept;														// Add a processed look-ahead entry to the DDA ring
 	DDA* DDARingGet() noexcept;														// Get the next DDA ring entry to be run

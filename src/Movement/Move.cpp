@@ -54,7 +54,11 @@ unsigned int moveCompleteTimeoutErrs;
 unsigned int getCanMoveTimeoutErrs;
 #endif
 
-constexpr size_t MoveTaskStackWords = 200;
+//DEBUG
+float Move::minExtrusionPending = 0.0, Move::maxExtrusionPending = 0.0;
+//ENDDB
+
+constexpr size_t MoveTaskStackWords = 220;
 static Task<MoveTaskStackWords> *moveTask;
 
 extern "C" [[noreturn]] void MoveLoop(void * param) noexcept
@@ -287,6 +291,11 @@ void Move::Diagnostics(const StringRef& reply) noexcept
 #if 1	//debug
 	reply.catf(", mcErrs %u, gcmErrs %u", moveCompleteTimeoutErrs, getCanMoveTimeoutErrs);
 #endif
+#if 1	//debug
+	reply.catf(", minexp %.2f, maxxp %.2f",(double)minExtrusionPending, (double)maxExtrusionPending);
+	minExtrusionPending = maxExtrusionPending = 0.0;
+#endif
+
 }
 
 #if SUPPORT_DELTA_MOVEMENT
