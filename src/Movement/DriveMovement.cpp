@@ -218,6 +218,10 @@ bool DriveMovement::NewExtruderSegment(float distanceBroughtForwards) noexcept
 			pA = currentSegment->CalcNonlinearA(startDistance, mp.cart.pressureAdvanceK);
 			pB = currentSegment->CalcNonlinearB(startTime, mp.cart.pressureAdvanceK);
 			distanceSoFar += currentSegment->GetNonlinearSpeedChange() * mp.cart.pressureAdvanceK;		// add the extra extrusion due to pressure advance to the extrusion done at the end of this move
+// the following change fixes an issue whereby 2 segments may be skipped even though the brought-forward distance means that they shouldn't be;
+// however it then results in a lot more cases of the brought-forward steps being outside +/- 1.0
+//			const int32_t netStepsAtSegmentEnd = (int32_t)((distanceSoFar + distanceBroughtForwards) * mp.cart.effectiveStepsPerMm);
+// so for now use the original version:
 			const int32_t netStepsAtSegmentEnd = (int32_t)(distanceSoFar * mp.cart.effectiveStepsPerMm);
 			const float endSpeed = currentSegment->GetNonlinearEndSpeed(mp.cart.pressureAdvanceK);
 			if (currentSegment->IsAccelerating())
@@ -246,13 +250,12 @@ bool DriveMovement::NewExtruderSegment(float distanceBroughtForwards) noexcept
 					else
 					{
 						// This segment starts forwards and then reverses. Either or both of the forward and reverse segments may be small enough to need no steps.
-						const float segmentDistanceToReverse = currentSegment->GetDistanceToReverse(startSpeed);
-						const float distanceToReverse = startDistance + segmentDistanceToReverse;
-						const int32_t netStepsToReverse = (int32_t)(distanceToReverse * mp.cart.effectiveStepsPerMm - 0.5);			// don't do the last step if we only overshoot it slightly, hence -0.5
-						reverseStartStep = netStepsToReverse + 1;
-						if (nextStep < reverseStartStep)
+						const float distanceToReverse = currentSegment->GetDistanceToReverse(startSpeed);
+						const int32_t netStepsToReverse = (int32_t)(distanceToReverse * mp.cart.effectiveStepsPerMm);
+						if (nextStep <= netStepsToReverse)
 						{
 							// There is at least one step before we reverse
+							reverseStartStep = netStepsToReverse + 1;
 							state = DMState::cartDecelForwardsReversing;
 							CheckDirection(false);
 						}
@@ -298,7 +301,7 @@ bool DriveMovement::PrepareCartesianAxis(const DDA& dda, const PrepParams& param
 	isDelta = false;
 	isExtruder = false;
 	currentSegment = dda.segments;
-	nextStep = 0;									// must do this before calling NewCartesianSegment
+	nextStep = 1;									// must do this before calling NewCartesianSegment
 	directionChanged = directionReversed = false;	// must clear these before we call NewCartesianSegment
 
 	if (!NewCartesianSegment())
@@ -309,9 +312,8 @@ bool DriveMovement::PrepareCartesianAxis(const DDA& dda, const PrepParams& param
 	// Prepare for the first step
 	nextStepTime = 0;
 	stepsTakenThisSegment = 0;						// no steps taken yet since the start of the segment
-	stepsTillRecalc = 0;							// so that we don't skip the calculation
 	reverseStartStep = totalSteps + 1;				// no reverse phase
-	return CalcNextStepTime(dda);
+	return CalcNextStepTimeFull(dda);				// calculate the scheduled time of the first step
 }
 
 #if SUPPORT_DELTA_MOVEMENT
@@ -414,7 +416,7 @@ bool DriveMovement::PrepareDeltaAxis(const DDA& dda, const PrepParams& params) n
 	isDelta = true;
 	isExtruder = false;
 	currentSegment = dda.segments;
-	nextStep = 0;									// must do this before calling NewDeltaSegment
+	nextStep = 1;									// must do this before calling NewDeltaSegment
 	directionChanged = directionReversed = false;	// must clear these before we call NewDeltaSegment
 
 	if (!NewDeltaSegment(dda))
@@ -425,8 +427,7 @@ bool DriveMovement::PrepareDeltaAxis(const DDA& dda, const PrepParams& params) n
 	// Prepare for the first step
 	nextStepTime = 0;
 	stepsTakenThisSegment = 0;						// no steps taken yet since the start of the segment
-	stepsTillRecalc = 0;							// so that we don't skip the calculation
-	return CalcNextStepTime(dda);
+	return CalcNextStepTimeFull(dda);				// calculate the scheduled time of the first step
 }
 
 #endif	// SUPPORT_DELTA_MOVEMENT
@@ -484,7 +485,7 @@ bool DriveMovement::PrepareExtruder(const DDA& dda, const PrepParams& params, fl
 	currentSegment = dda.segments;
 	isDelta = false;
 	isExtruder = true;
-	nextStep = 0;									// must do this before calling NewExtruderSegment
+	nextStep = 1;									// must do this before calling NewExtruderSegment
 	totalSteps = 0;									// we don't use totalSteps but set it to 0 to avoid random values being printed by DebugPrint
 	directionChanged = directionReversed = false;	// must clear these before we call NewExtruderSegment
 
@@ -511,8 +512,7 @@ bool DriveMovement::PrepareExtruder(const DDA& dda, const PrepParams& params, fl
 	// Prepare for the first step
 	nextStepTime = 0;
 	stepsTakenThisSegment = 0;						// no steps taken yet since the start of the segment
-	stepsTillRecalc = 0;							// so that we don't skip the calculation
-	return CalcNextStepTime(dda);
+	return CalcNextStepTimeFull(dda);				// calculate the scheduled time of the first step
 }
 
 // Version of fastSqrtf that allows for slightly negative operands caused by rounding error
