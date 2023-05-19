@@ -27,18 +27,14 @@ void DriveMovement::DebugPrint() const noexcept
 		debugPrintf("DM%c%s dir=%c steps=%" PRIu32 " next=%" PRIu32 " rev=%" PRIu32 " interval=%" PRIu32 " ssl=%" PRIu32 " A=%.4e B=%.4e C=%.4e dsf=%.4e tsf=%.1f",
 						c, (state == DMState::stepError) ? " ERR:" : ":", (direction) ? 'F' : 'B', totalSteps, nextStep, reverseStartStep, stepInterval, segmentStepLimit,
 							(double)pA, (double)pB, (double)pC, (double)distanceSoFar, (double)timeSoFar);
-		if (isExtruder)
-		{
-			debugPrintf(" pa=%.3e ebf=%.3e\n", (double)mp.cart.pressureAdvanceK, (double)mp.cart.extrusionBroughtForwards);
-		}
 #if SUPPORT_DELTA_MOVEMENT
-		else if (isDelta)
+		if (isDelta)
 		{
 			debugPrintf(" hmz0s=%.4e minusAaPlusBbTimesS=%.4e dSquaredMinusAsquaredMinusBsquared=%.4e drev=%.4e\n",
 							(double)mp.delta.fHmz0s, (double)mp.delta.fMinusAaPlusBbTimesS, (double)mp.delta.fDSquaredMinusAsquaredMinusBsquaredTimesSsquared, (double)mp.delta.reverseStartDistance);
 		}
-#endif
 		else
+#endif
 		{
 			debugPrintf("\n");
 		}
@@ -189,7 +185,7 @@ bool DriveMovement::NewDeltaSegment(const DDA& dda) noexcept
 #endif // SUPPORT_LINEAR_DELTA
 
 // This is called for an extruder driver when currentSegment has just been changed to a new segment. Return true if there is a new segment to execute.
-bool DriveMovement::NewExtruderSegment(float distanceBroughtForwards) noexcept
+bool DriveMovement::NewExtruderSegment() noexcept
 {
 	while (true)
 	{
@@ -198,8 +194,7 @@ bool DriveMovement::NewExtruderSegment(float distanceBroughtForwards) noexcept
 			return false;
 		}
 
-		const float originalStartDistance = distanceSoFar;
-		const float startDistance = distanceSoFar + distanceBroughtForwards;
+		const float startDistance = distanceSoFar;
 		const float startTime = timeSoFar;
 
 		distanceSoFar += currentSegment->GetSegmentLength();
@@ -218,10 +213,6 @@ bool DriveMovement::NewExtruderSegment(float distanceBroughtForwards) noexcept
 			pA = currentSegment->CalcNonlinearA(startDistance, mp.cart.pressureAdvanceK);
 			pB = currentSegment->CalcNonlinearB(startTime, mp.cart.pressureAdvanceK);
 			distanceSoFar += currentSegment->GetNonlinearSpeedChange() * mp.cart.pressureAdvanceK;		// add the extra extrusion due to pressure advance to the extrusion done at the end of this move
-// the following change fixes an issue whereby 2 segments may be skipped even though the brought-forward distance means that they shouldn't be;
-// however it then results in a lot more cases of the brought-forward steps being outside +/- 1.0
-//			const int32_t netStepsAtSegmentEnd = (int32_t)((distanceSoFar + distanceBroughtForwards) * mp.cart.effectiveStepsPerMm);
-// so for now use the original version:
 			const int32_t netStepsAtSegmentEnd = (int32_t)(distanceSoFar * mp.cart.effectiveStepsPerMm);
 			const float endSpeed = currentSegment->GetNonlinearEndSpeed(mp.cart.pressureAdvanceK);
 			if (currentSegment->IsAccelerating())
@@ -250,7 +241,7 @@ bool DriveMovement::NewExtruderSegment(float distanceBroughtForwards) noexcept
 					else
 					{
 						// This segment starts forwards and then reverses. Either or both of the forward and reverse segments may be small enough to need no steps.
-						const float distanceToReverse = currentSegment->GetDistanceToReverse(startSpeed);
+						const float distanceToReverse = currentSegment->GetDistanceToReverse(startSpeed) + startDistance;
 						const int32_t netStepsToReverse = (int32_t)(distanceToReverse * mp.cart.effectiveStepsPerMm);
 						if (nextStep <= netStepsToReverse)
 						{
@@ -284,7 +275,6 @@ bool DriveMovement::NewExtruderSegment(float distanceBroughtForwards) noexcept
 			return true;
 		}
 
-		distanceBroughtForwards += distanceSoFar - originalStartDistance;	// add the distance we didn't do
 		currentSegment = currentSegment->GetNext();							// skip this segment
 	}
 }
@@ -448,40 +438,7 @@ bool DriveMovement::PrepareExtruder(const DDA& dda, const PrepParams& params, fl
 	const float effMmPerStep = 1.0/effStepsPerMm;
 	mp.cart.effectiveMmPerStep = effMmPerStep;
 
-	ExtruderShaper& shaper = moveInstance->GetExtruderShaper(drive);
-#if 0	//DEBUG
-	debugPrintf("pending %.2f\n", (double)shaper.GetExtrusionPending());
-#endif
-	//DEBUG
-	if (shaper.GetExtrusionPending() > Move::maxExtrusionPending)
-	{
-		Move::maxExtrusionPending = shaper.GetExtrusionPending();
-	}
-	else if (shaper.GetExtrusionPending() < Move::minExtrusionPending)
-	{
-		Move::minExtrusionPending = shaper.GetExtrusionPending();
-	}
-	//ENDDB
-	// distanceSoFar will accumulate the equivalent amount of totalDistance that the extruder moves forwards.
-	// It would be equal to totalDistance if there was no pressure advance and no extrusion pending.
-	distanceSoFar =	0.0;
 	timeSoFar = 0.0;
-
-	// Calculate the total forward and reverse movement distances
-	float distanceBroughtForwards;
-	if (dda.flags.usePressureAdvance)
-	{
-		mp.cart.pressureAdvanceK = shaper.GetKclocks();
-		mp.cart.extrusionBroughtForwards = shaper.GetExtrusionPending();
-		distanceBroughtForwards = mp.cart.extrusionBroughtForwards * effMmPerStep;
-	}
-	else
-	{
-		mp.cart.pressureAdvanceK = 0.0;
-		mp.cart.extrusionBroughtForwards = 0.0;
-		distanceBroughtForwards = 0.0;
-	}
-
 	currentSegment = dda.segments;
 	isDelta = false;
 	isExtruder = true;
@@ -489,14 +446,35 @@ bool DriveMovement::PrepareExtruder(const DDA& dda, const PrepParams& params, fl
 	totalSteps = 0;									// we don't use totalSteps but set it to 0 to avoid random values being printed by DebugPrint
 	directionChanged = directionReversed = false;	// must clear these before we call NewExtruderSegment
 
-	if (!NewExtruderSegment(distanceBroughtForwards))		// if no steps to do
+	ExtruderShaper& shaper = moveInstance->GetExtruderShaper(drive);
+
+	// distanceSoFar will accumulate the equivalent amount of totalDistance that the extruder moves forwards.
+	// It would be equal to totalDistance if there was no pressure advance and no extrusion pending.
+	if (dda.flags.usePressureAdvance)
+	{
+		const float extrusionPending = shaper.GetExtrusionPending();
+		moveInstance->UpdateExtrusionPendingLimits(extrusionPending);
+		distanceSoFar = extrusionPending * effMmPerStep;
+		mp.cart.pressureAdvanceK = shaper.GetKclocks();
+	}
+	else
+	{
+		mp.cart.pressureAdvanceK = 0.0;
+		distanceSoFar =	0.0;
+	}
+
+#if 0	//DEBUG
+	const float distanceBroughtForwards = distanceSoFar;	// for debug use only
+#endif
+	if (!NewExtruderSegment())						// if no steps to do
 	{
 		if (dda.flags.usePressureAdvance)
 		{
-			shaper.AddExtrusionPending(distanceSoFar * effStepsPerMm);				// distanceSoFar started as zero, so it is now the additional distance of the skipped segments
+			shaper.SetExtrusionPending(distanceSoFar * effStepsPerMm);
+#if 0	// DEBUG
 			if (shaper.GetExtrusionPending() > 1.0 || shaper.GetExtrusionPending() < -1.0)
 			{
-//				AtomicCriticalSectionLocker lock;
+				AtomicCriticalSectionLocker lock;
 				debugPrintf("pex xpend=%.2f effsm=%.2f dbf=%.3f\n", (double)shaper.GetExtrusionPending(), (double)effStepsPerMm, (double)distanceBroughtForwards);
 				char ch = '0';
 				for (const MoveSegment *seg = dda.segments; seg != nullptr; seg = seg->GetNext())
@@ -505,6 +483,7 @@ bool DriveMovement::PrepareExtruder(const DDA& dda, const PrepParams& params, fl
 					++ch;
 				}
 			}
+#endif
 		}
 		return false;								// quit if no steps to do
 	}
@@ -541,19 +520,23 @@ pre(nextStep <= totalSteps; stepsTillRecalc == 0)
 					nextStep = nextStep - 2 * (segmentStepLimit - reverseStartStep);		// set nextStep to the net steps taken in the original direction (this may make nextStep negative)
 					CheckDirection(false);													// so that GetNetStepsTaken returns the correct value
 				}
-				const int32_t netStepsDone = nextStep - 1;
-				const float distanceBroughtForwards = distanceSoFar - (float)netStepsDone * mp.cart.effectiveMmPerStep;
-				DMState oldState = state;			//DEBUG
-				if (!NewExtruderSegment(distanceBroughtForwards))
+#if 0	//DEBUG
+				DMState oldState = state;
+#endif
+				if (!NewExtruderSegment())
 				{
 					if (dda.flags.usePressureAdvance)
 					{
 						ExtruderShaper& shaper = moveInstance->GetExtruderShaper(drive);
-						shaper.SetExtrusionPending(distanceBroughtForwards * mp.cart.effectiveStepsPerMm);
-						if (shaper.GetExtrusionPending() > 1.0 || shaper.GetExtrusionPending() < -1.0)
+						const int32_t netStepsDone = nextStep - 1;
+						const float stepsCarriedForward = (distanceSoFar - (float)netStepsDone * mp.cart.effectiveMmPerStep) * mp.cart.effectiveStepsPerMm;
+						shaper.SetExtrusionPending(stepsCarriedForward);
+#if 0	//DEBUG
+						if (stepsCarriedForward > 1.0 || stepsCarriedForward < -1.0)
 						{
-							debugPrintf("calc xpend=%.2f s=%u\n", (double)shaper.GetExtrusionPending(), (unsigned int)oldState);
+							debugPrintf("calc xpend=%.2f s=%u\n", (double)stepsCarriedForward, (unsigned int)oldState);
 						}
+#endif
 					}
 					return false;
 				}

@@ -57,7 +57,7 @@ class DriveMovement
 public:
 	friend class DDA;
 
-	DriveMovement() noexcept { };
+	DriveMovement() noexcept { }
 
 	void* operator new(size_t count) noexcept { return Tasks::AllocPermanent(count); }
 	void* operator new(size_t count, std::align_val_t align) noexcept { return Tasks::AllocPermanent(count, align); }
@@ -90,7 +90,7 @@ public:
 private:
 	bool CalcNextStepTimeFull(const DDA &dda) noexcept SPEED_CRITICAL;
 	bool NewCartesianSegment() noexcept SPEED_CRITICAL;
-	bool NewExtruderSegment(float distanceBroughtForwards) noexcept SPEED_CRITICAL;
+	bool NewExtruderSegment() noexcept SPEED_CRITICAL;
 #if SUPPORT_DELTA_MOVEMENT
 	bool NewDeltaSegment(const DDA& dda) noexcept SPEED_CRITICAL;
 #endif
@@ -155,14 +155,12 @@ private:
 			float pressureAdvanceK;						// how much pressure advance is applied to this move
 			float effectiveStepsPerMm;					// the steps/mm multiplied by the movement fraction
 			float effectiveMmPerStep;					// reciprocal of [the steps/mm multiplied by the movement fraction]
-			float extrusionBroughtForwards;				// the amount of extrusion brought forwards from previous moves. Only needed for debug output.
 		} cart;
 	} mp;
 };
 
 // Calculate and store the time since the start of the move when the next step for the specified DriveMovement is due.
 // Return true if there are more steps to do. When finished, leave nextStep == totalSteps + 1 and state == DMState::idle.
-// This is also used for extruders on delta machines.
 // We inline this part to speed things up when we are doing double/quad/octal stepping.
 inline bool DriveMovement::CalcNextStepTime(const DDA &dda) noexcept
 {

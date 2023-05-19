@@ -59,6 +59,7 @@ public:
 	void PrintCurrentDda() const noexcept;											// For debugging
 
 	void ResetMoveCounters() noexcept { scheduledMoves = completedMoves = 0; }
+	void UpdateExtrusionPendingLimits(float extrusionPending) noexcept;
 
 	int32_t GetPosition(size_t driver) const noexcept;
 
@@ -74,7 +75,7 @@ public:
 	}
 
 	// Pressure advance
-	ExtruderShaper& GetExtruderShaper(size_t extruder) noexcept { return extruderShapers[extruder]; }
+	ExtruderShaper& GetExtruderShaper(size_t drive) noexcept { return extruderShapers[drive]; }
 
 #if HAS_SMART_DRIVERS
 	uint32_t GetStepInterval(size_t axis, uint32_t microstepShift) const noexcept;	// Get the current step interval for this axis or extruder
@@ -94,9 +95,6 @@ public:
 
 	const volatile int32_t *GetLastMoveStepsTaken() const noexcept { return lastMoveStepsTaken; }
 
-	//DEBUG
-	static float minExtrusionPending, maxExtrusionPending;
-	//ENDDB
 private:
 	bool DDARingAdd() noexcept;														// Add a processed look-ahead entry to the DDA ring
 	DDA* DDARingGet() noexcept;														// Get the next DDA ring entry to be run
@@ -130,9 +128,18 @@ private:
 	volatile uint32_t completedMoves;												// This one is modified by an ISR, hence volatile
 	uint32_t numHiccups;															// How many times we delayed an interrupt to avoid using too much CPU time in interrupts
 	uint32_t maxPrepareTime;
+	float minExtrusionPending = 0.0, maxExtrusionPending = 0.0;
 };
 
 //******************************************************************************************************
+
+// Update the min and max extrusion pending values. These are reported by M122 to assist with debugging print quality issues.
+// Inlined because this is only called from one place.
+inline void Move::UpdateExtrusionPendingLimits(float extrusionPending) noexcept
+{
+	if (extrusionPending > maxExtrusionPending) { maxExtrusionPending = extrusionPending; }
+	else if (extrusionPending < minExtrusionPending) { minExtrusionPending = extrusionPending; }
+}
 
 #if HAS_SMART_DRIVERS
 
