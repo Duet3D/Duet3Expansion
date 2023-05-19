@@ -288,7 +288,7 @@ void Move::Diagnostics(const StringRef& reply) noexcept
 	reply.catf(", mcErrs %u, gcmErrs %u", moveCompleteTimeoutErrs, getCanMoveTimeoutErrs);
 #endif
 #if 1	//debug
-	reply.catf(", minexp %.2f, maxxp %.2f", (double)minExtrusionPending, (double)maxExtrusionPending);
+	reply.catf(", ebfmin %.2f, ebfmax %.2f", (double)minExtrusionPending, (double)maxExtrusionPending);
 	minExtrusionPending = maxExtrusionPending = 0.0;
 #endif
 }
