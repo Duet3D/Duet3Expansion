@@ -235,15 +235,17 @@ void Heat::Exit()
 	{
 		// Wait until we are woken or it's time to send another regular broadcast. If we are really unlucky, we could end up waiting for one tick too long.
 		nextWakeTime += HeatSampleIntervalMillis;
-		const uint32_t now = millis();
-		int32_t delayTime = (int32_t)(nextWakeTime - now);
-		// If we're late (e.g. due to problems sending CAN messages), wait at least until the next tick to let other tasks run
-		if (delayTime < 1)
 		{
-			nextWakeTime = now + 1;
-			delayTime = 1;
+			const uint32_t now = millis();
+			int32_t delayTime = (int32_t)(nextWakeTime - now);
+			// If we're late (e.g. due to problems sending CAN messages), wait at least until the next tick to let other tasks run
+			if (delayTime < 1)
+			{
+				nextWakeTime = now + 1;
+				delayTime = 1;
+			}
+			TaskBase::Take((uint32_t)delayTime);
 		}
-		TaskBase::Take((uint32_t)delayTime);
 
 		CanMessageBuffer buf;
 
