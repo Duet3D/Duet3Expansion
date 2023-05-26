@@ -114,13 +114,13 @@ GCodeResult AS5047D::Init(const StringRef& reply) noexcept
 void AS5047D::Enable() noexcept
 {
 	IoPort::SetPinMode(csPin, OUTPUT_HIGH);
-	ClosedLoop::EnableEncodersSpi();
+	closedLoopInstance->EnableEncodersSpi();
 }
 
 void AS5047D::Disable() noexcept
 {
 	IoPort::SetPinMode(csPin, OUTPUT_HIGH);
-	ClosedLoop::DisableEncodersSpi();
+	closedLoopInstance->DisableEncodersSpi();
 }
 
 // Return the current position as reported by the encoder

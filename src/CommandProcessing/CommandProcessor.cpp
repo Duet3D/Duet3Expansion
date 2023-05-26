@@ -348,7 +348,7 @@ static GCodeResult ProcessM569(const CanMessageGeneric& msg, const StringRef& re
 			seen = true;
 # if SUPPORT_CLOSED_LOOP
 			// Enable/disabled closed loop control
-			if (!ClosedLoop::SetClosedLoopEnabled(drive, val == (uint32_t)DriverMode::direct, reply))
+			if (!closedLoopInstance->SetClosedLoopEnabled(drive, val == (uint32_t)DriverMode::direct, reply))
 			{
 				// reply.printf is done in ClosedLoop::SetClosedLoopEnabled()
 				return GCodeResult::error;
@@ -362,7 +362,7 @@ static GCodeResult ProcessM569(const CanMessageGeneric& msg, const StringRef& re
 # if SUPPORT_CLOSED_LOOP
 			if (val == (uint32_t) DriverMode::direct)
 			{
-				ClosedLoop::DriverSwitchedToClosedLoop(drive);
+				closedLoopInstance->DriverSwitchedToClosedLoop(drive);
 			}
 # endif
 		}
@@ -812,7 +812,7 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 		extra = LastDiagnosticsPart;
 #if SUPPORT_DRIVERS
 # if SUPPORT_CLOSED_LOOP
-		ClosedLoop::Diagnostics(reply);
+		closedLoopInstance->Diagnostics(reply);
 # endif
 		for (size_t driver = 0; driver < NumDrivers; ++driver)
 		{
@@ -1004,7 +1004,7 @@ void CommandProcessor::Spin()
 		case CanMessageType::m569p1:
 			requestId = buf->msg.generic.requestId;
 # if SUPPORT_CLOSED_LOOP
-			rslt = ClosedLoop::ProcessM569Point1(buf->msg.generic, replyRef);
+			rslt = closedLoopInstance->ProcessM569Point1(buf->msg.generic, replyRef);
 # else
 			rslt = GCodeResult::errorNotSupported;
 # endif
@@ -1018,7 +1018,7 @@ void CommandProcessor::Spin()
 		case CanMessageType::m569p6:
 			requestId = buf->msg.generic.requestId;
 # if SUPPORT_CLOSED_LOOP
-			rslt = ClosedLoop::ProcessM569Point6(buf->msg.generic, replyRef);
+			rslt = closedLoopInstance->ProcessM569Point6(buf->msg.generic, replyRef);
 # else
 			rslt = GCodeResult::errorNotSupported;
 # endif
@@ -1143,7 +1143,7 @@ void CommandProcessor::Spin()
 #if SUPPORT_CLOSED_LOOP
 		case CanMessageType::startClosedLoopDataCollection:
 			requestId = buf->msg.startClosedLoopDataCollection.requestId;
-			rslt = ClosedLoop::ProcessM569Point5(buf->msg.startClosedLoopDataCollection, replyRef);
+			rslt = closedLoopInstance->ProcessM569Point5(buf->msg.startClosedLoopDataCollection, replyRef);
 			break;
 #endif
 

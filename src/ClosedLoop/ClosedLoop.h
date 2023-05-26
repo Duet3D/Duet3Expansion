@@ -19,6 +19,8 @@
 # include <Hardware/SharedSpiDevice.h>
 # include <ClosedLoop/DerivativeAveragingFilter.h>
 # include "TuningErrors.h"
+# include "SampleBuffer.h"
+# include "Encoders/Encoder.h"
 
 constexpr float MaxSafeBacklash = 0.22;					// the maximum backlash in full steps that we can use - error if there is more
 constexpr float MaxGoodBacklash = 0.15;					// the maximum backlash in full steps that we are happy with - warn if there is more
@@ -27,15 +29,16 @@ constexpr unsigned int LinearEncoderIncreaseFactor = 4;	// this should be a powe
 class Encoder;
 class SpiEncoder;
 
-namespace ClosedLoop
+class ClosedLoop
 {
+public:
 	// Constants and variables that are used by both the ClosedLoop and the Tuning modules
 
 	// Tuning manoeuvres
-	constexpr uint8_t BASIC_TUNING_MANOEUVRE 				= 1u << 0;		// this measures the polarity, check that the CPR looks OK, and for relative encoders sets the zero position
-	constexpr uint8_t ENCODER_CALIBRATION_MANOEUVRE 		= 1u << 1;		// this calibrates an absolute encoder
-	constexpr uint8_t ENCODER_CALIBRATION_CHECK				= 1u << 2;		// this checks the calibration
-	constexpr uint8_t STEP_MANOEUVRE 						= 1u << 6;		// this does a sudden step change in the requested position for PID tuning
+	static constexpr uint8_t BASIC_TUNING_MANOEUVRE 				= 1u << 0;		// this measures the polarity, check that the CPR looks OK, and for relative encoders sets the zero position
+	static constexpr uint8_t ENCODER_CALIBRATION_MANOEUVRE 		= 1u << 1;		// this calibrates an absolute encoder
+	static constexpr uint8_t ENCODER_CALIBRATION_CHECK				= 1u << 2;		// this checks the calibration
+	static constexpr uint8_t STEP_MANOEUVRE 						= 1u << 6;		// this does a sudden step change in the requested position for PID tuning
 
 #if 0	// The remainder are not currently implemented
 	constexpr uint8_t CONTINUOUS_PHASE_INCREASE_MANOEUVRE 	= 1u << 5;
@@ -43,10 +46,10 @@ namespace ClosedLoop
 #endif
 
 	//TODO reduce the number of these public variables, preferably to zero. Use a cleaner interface between the tuning module and the main closed loop module.
-	extern Encoder *encoder;								// Pointer to the encoder object in use
-	extern volatile uint8_t tuning;							// Bitmask of any tuning manoeuvres that have been requested
-	extern TuningErrors tuningError;						// Flags for any tuning errors
-	extern uint32_t currentMotorPhase;						// the phase (0 to 4095) that the driver is set to
+	Encoder *encoder = nullptr;							// Pointer to the encoder object in use
+	volatile uint8_t tuning = 0;						// Bitmask of any tuning manoeuvres that have been requested
+	TuningErrors tuningError;							// Flags for any tuning errors
+	uint32_t currentMotorPhase;							// the phase (0 to 4095) that the driver is set to
 
 	// Closed loop public methods
 	void Init() noexcept;
@@ -79,7 +82,140 @@ namespace ClosedLoop
 
 	// Methods in the tuning module
 	void PerformTune() noexcept;
-}
+
+	// Functions run by tasks
+	[[noreturn]] void DataTransmissionTaskLoop() noexcept;
+	[[noreturn]] void EncoderCalibrationTaskLoop() noexcept;
+
+private:
+	// Constants private to this module
+	static constexpr unsigned int DerivativeFilterSize = 8;			// The range of the derivative filter (use a power of 2 for efficiency)
+	static constexpr unsigned int tuningStepsPerSecond = 2000;			// the rate at which we send 1/256 microsteps during tuning, slow enough for high-inertia motors
+	static constexpr StepTimer::Ticks stepTicksPerTuningStep = StepTimer::StepClockRate/tuningStepsPerSecond;
+	static constexpr StepTimer::Ticks stepTicksBeforeTuning = StepTimer::StepClockRate/10;
+																// 1/10 sec delay between enabling the driver and starting tuning, to allow for brake release and current buildup
+	static constexpr StepTimer::Ticks DataCollectionIdleStepTicks = StepTimer::StepClockRate/200;
+																// start collecting tuning data 5ms before the start of the tuning move
+	static constexpr float DefaultHoldCurrentFraction = 0.25;			// the minimum fraction of the requested current that we apply when holding position
+	static constexpr float MinimumDegreesPhaseShift = 15.0;			// the phase shift at which we start reducing current instead of reducing the phase shift, where 90deg is one full step
+	static constexpr float MinimumPhaseShift = (MinimumDegreesPhaseShift/360.0) * 4096;	// the same in units where 4096 is a complete circle
+
+	static constexpr float PIDIlimit = 80.0;
+
+	// Enumeration of closed loop recording modes
+	enum RecordingMode : uint8_t
+	{
+		None = 0,			// not collecting data
+		Immediate,			// collecting data now
+		OnNextMove,			// collect data when the next movement command starts executing
+		SendingData			// finished collecting data but still sending it to the main board
+	};
+
+	// Control variables, set by the user to determine how the closed loop controller works
+	bool 	closedLoopEnabled = false;							// Has closed loop been enabled by the user?
+
+	// Holding current, and variables derived from it
+	float 	holdCurrentFraction = DefaultHoldCurrentFraction;	// The minimum holding current when stationary
+	float	recipHoldCurrentFraction = 1.0/DefaultHoldCurrentFraction;	// The reciprocal of the minimum holding current
+	float	holdCurrentFractionTimesMinPhaseShift = MinimumPhaseShift * DefaultHoldCurrentFraction;
+
+	float 	Kp = 100;											// The proportional constant for the PID controller
+	float 	Ki = 0.0;											// The proportional constant for the PID controller
+	float 	Kd = 0.0;											// The proportional constant for the PID controller
+	float	Kv = 0.0;											// The velocity feedforward constant
+	float	Ka = 0.0;											// The acceleration feedforward constant
+
+	float 	errorThresholds[2];									// The error thresholds. [0] is pre-stall, [1] is stall
+
+	float 	ultimateGain = 0;									// The ultimate gain of the controller (used for tuning)
+	float 	oscillationPeriod = 0;								// The oscillation period when Kp = ultimate gain
+
+	// Data collection variables
+	// Input variables
+	volatile RecordingMode samplingMode = RecordingMode::None;	// What mode did they request? Volatile because we care about when it is written.
+	uint8_t  movementRequested;									// Which calibration movement did they request? 0=none, 1=polarity, 2=continuous
+	uint16_t filterRequested;									// What filter did they request?
+	volatile uint16_t samplesRequested;							// The number of samples requested
+
+	// Derived variables
+	volatile uint16_t samplesCollected = 0;
+	volatile uint16_t samplesSent = 0;
+	bool sampleBufferOverflowed = false;						// set if the buffer is full when we need to store a sample
+	StepTimer::Ticks dataCollectionStartTicks;					// At what tick did data collection start?
+	StepTimer::Ticks dataCollectionIntervalTicks;				// the requested interval between samples
+	StepTimer::Ticks whenNextSampleDue;							// when it will be time to take the next sample
+
+	SampleBuffer sampleBuffer;
+
+	// Working variables
+	// These variables are all used to calculate the required motor currents. They are declared here so they can be reported on by the data collection task
+	float	targetMotorSteps;							// The number of steps the motor should have taken relative to it's zero position
+	float	targetSpeed = 0.0;							// The target motor speed
+	float	targetAcceleration = 0.0;					// the target motor acceleration
+	float 	currentError;								// The current error in full steps
+
+	DerivativeAveragingFilter<DerivativeFilterSize> derivativeFilter;	// An averaging filter to smooth the derivative of the error
+
+	float 	PIDPTerm;									// Proportional term
+	float 	PIDITerm = 0.0;								// Integral accumulator
+	float 	PIDDTerm;									// Derivative term
+	float	PIDVTerm;									// Velocity feedforward term
+	float	PIDATerm;									// Acceleration feedforward term
+	float	PIDControlSignal;							// The overall signal from the PID controller
+
+	float	phaseShift;									// The desired shift in the position of the motor, where 1024 = 1 full step
+	float	currentFraction;
+
+	uint16_t desiredStepPhase = 0;						// The desired position of the motor
+	int16_t coilA;										// The current to run through coil A
+	int16_t coilB;										// The current to run through coil A
+
+	bool 	stall = false;								// Has the closed loop error threshold been exceeded?
+	bool 	preStall = false;							// Has the closed loop warning threshold been exceeded?
+
+	// Basic tuning synchronisation
+	volatile bool basicTuningDataReady = false;
+
+	// Encoder calibration synchronisation
+	enum class CalibrationState : uint8_t { notReady = 0, dataReady, complete };
+	volatile CalibrationState calibrationState = CalibrationState::notReady;
+	volatile bool calibrateNotCheck = false;
+	volatile TuningErrors calibrationErrors;
+
+	StepTimer::Ticks whenLastTuningStepTaken;			// when the control loop last called the tuning code
+
+	// Monitoring variables
+	// These variables monitor how fast the PID loop is running etc.
+	StepTimer::Ticks prevControlLoopCallTime;			// The last time the control loop was called
+	StepTimer::Ticks minControlLoopRuntime;				// The minimum time the control loop has taken to run
+	StepTimer::Ticks maxControlLoopRuntime;				// The maximum time the control loop has taken to run
+	StepTimer::Ticks minControlLoopCallInterval;		// The minimum interval between the control loop being called
+	StepTimer::Ticks maxControlLoopCallInterval;		// The maximum interval between the control loop being called
+
+	// Functions private to this module
+	EncoderType GetEncoderType() noexcept
+	{
+		return (encoder == nullptr) ? EncoderType::none : encoder->GetType();
+	}
+
+	// Return true if we are currently collecting data or primed to collect data or finishing sending data
+	inline bool CollectingData() noexcept { return samplingMode != RecordingMode::None; }
+
+	void CollectSample() noexcept;
+	void ControlMotorCurrents(StepTimer::Ticks ticksSinceLastCall) noexcept;
+	void StartTuning(uint8_t tuningType) noexcept;
+	GCodeResult ProcessBasicTuningResult(const StringRef& reply) noexcept;
+	GCodeResult ProcessCalibrationResult(const StringRef& reply) noexcept;
+	void ReportTuningErrors(TuningErrors tuningErrorBitmask, const StringRef& reply) noexcept;
+	void ResetMonitoringVariables() noexcept;
+	void SetTargetToCurrentPosition() noexcept;
+	void CreateCalibrationTask() noexcept;
+
+	// Tuning methods
+	bool BasicTuning(bool firstIteration) noexcept;
+	bool EncoderCalibration(bool firstIteration) noexcept;
+	bool Step(bool firstIteration) noexcept;
+};
 
 #  if defined(EXP1HCLv1_0) || defined(M23CL)
 // The encoder uses the standard shared SPI device, so we don't need to enable/disable it

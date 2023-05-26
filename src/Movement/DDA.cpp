@@ -472,7 +472,7 @@ uint32_t DDA::lastDirChangeTime = 0;
 void DDA::StepDrivers(uint32_t now) noexcept
 {
 # if SUPPORT_CLOSED_LOOP
-	if (ClosedLoop::GetClosedLoopEnabled(0))
+	if (closedLoopInstance->GetClosedLoopEnabled(0))
 	{
 		return;
 	}

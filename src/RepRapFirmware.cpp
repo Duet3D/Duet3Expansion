@@ -19,6 +19,10 @@ extern const char VersionText[] = "Duet " BOARD_TYPE_NAME " firmware version " V
 Move *moveInstance;
 #endif
 
+#if SUPPORT_CLOSED_LOOP
+ClosedLoop *closedLoopInstance;
+#endif
+
 void debugPrintf(const char* fmt, ...) noexcept
 {
 	va_list vargs;

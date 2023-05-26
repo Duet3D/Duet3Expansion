@@ -662,10 +662,6 @@ void Platform::Init()
 
 	InitLeds();
 
-#if SUPPORT_CLOSED_LOOP
-	ClosedLoop::Init();
-#endif
-
 	// Turn all outputs off
 	for (size_t pin = 0; pin < ARRAY_SIZE(PinTable); ++pin)
 	{
@@ -1730,7 +1726,7 @@ void Platform::SetDirection(bool direction)
 # endif
 
 # if SUPPORT_CLOSED_LOOP
-	if (ClosedLoop::GetClosedLoopEnabled(0))
+	if (closedLoopInstance->GetClosedLoopEnabled(0))
 	{
 		return;
 	}
@@ -1829,7 +1825,7 @@ void Platform::EnableDrive(size_t driver, uint16_t brakeOffDelay)
 		{
 			driverAtIdleCurrent[driver] = false;
 #  if SUPPORT_CLOSED_LOOP
-			ClosedLoop::ResetError(driver);
+			closedLoopInstance->ResetError(driver);
 #  endif
 			UpdateMotorCurrent(driver);
 		}

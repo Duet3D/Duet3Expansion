@@ -33,6 +33,10 @@ class DDA;
 class DriveMovement;
 class Kinematics;
 #endif
+#if SUPPORT_CLOSED_LOOP
+class ClosedLoop;
+#endif
+
 
 class TemperatureSensor;
 class FilamentMonitor;
@@ -138,6 +142,10 @@ constexpr size_t UpdateBootloaderMagicWordIndex = 9;				// which word in the use
 
 #if SUPPORT_DRIVERS
 extern Move *moveInstance;
+#endif
+
+#if SUPPORT_CLOSED_LOOP
+extern ClosedLoop *closedLoopInstance;
 #endif
 
 // Module numbers and names, used for diagnostics and debug

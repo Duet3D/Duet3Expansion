@@ -36,7 +36,6 @@
 using std::atomic;
 using std::numeric_limits;
 
-# include "SampleBuffer.h"
 # include "Encoders/AS5047D.h"
 # include "Encoders/TLI5012B.h"
 # include "Encoders/QuadratureEncoderPdec.h"
@@ -63,171 +62,45 @@ using std::numeric_limits;
 
 #define BASIC_TUNING_DEBUG	0
 
+constexpr size_t DataCollectionTaskStackWords = 200;		// Size of the stack for all closed loop tasks
+constexpr size_t EncoderCalibrationTaskStackWords = 500;	// Size of the stack for all closed loop tasks
+
 // Variables that are used by both the ClosedLoop and the Tuning modules
 
-Encoder*	ClosedLoop::encoder = nullptr;						// Pointer to the encoder object in use
-volatile uint8_t ClosedLoop::tuning = 0;						// Bitmask of any tuning manoeuvres that have been requested
-TuningErrors ClosedLoop::tuningError;							// Flags for any tuning errors
-uint32_t	ClosedLoop::currentMotorPhase;						// the phase (0 to 4095) that the driver is set to
-
-namespace ClosedLoop
+extern "C" [[noreturn]] void DataTransmissionTaskEntry(void *param) noexcept
 {
-	// Constants private to this module
-	constexpr size_t DataCollectionTaskStackWords = 200;		// Size of the stack for all closed loop tasks
-	constexpr size_t EncoderCalibrationTaskStackWords = 500;	// Size of the stack for all closed loop tasks
+	((ClosedLoop*)param)->DataTransmissionTaskLoop();
+}
 
-	constexpr unsigned int DerivativeFilterSize = 8;			// The range of the derivative filter (use a power of 2 for efficiency)
-	constexpr unsigned int tuningStepsPerSecond = 2000;			// the rate at which we send 1/256 microsteps during tuning, slow enough for high-inertia motors
-	constexpr StepTimer::Ticks stepTicksPerTuningStep = StepTimer::StepClockRate/tuningStepsPerSecond;
-	constexpr StepTimer::Ticks stepTicksBeforeTuning = StepTimer::StepClockRate/10;
-																// 1/10 sec delay between enabling the driver and starting tuning, to allow for brake release and current buildup
-	constexpr StepTimer::Ticks DataCollectionIdleStepTicks = StepTimer::StepClockRate/200;
-																// start collecting tuning data 5ms before the start of the tuning move
-	constexpr float DefaultHoldCurrentFraction = 0.25;			// the minimum fraction of the requested current that we apply when holding position
-	constexpr float MinimumDegreesPhaseShift = 15.0;			// the phase shift at which we start reducing current instead of reducing the phase shift, where 90deg is one full step
-	constexpr float MinimumPhaseShift = (MinimumDegreesPhaseShift/360.0) * 4096;	// the same in units where 4096 is a complete circle
-
-	constexpr float PIDIlimit = 80.0;
-
-	// Enumeration of closed loop recording modes
-	enum RecordingMode : uint8_t
-	{
-		None = 0,			// not collecting data
-		Immediate,			// collecting data now
-		OnNextMove,			// collect data when the next movement command starts executing
-		SendingData			// finished collecting data but still sending it to the main board
-	};
-
-	// Control variables, set by the user to determine how the closed loop controller works
-	bool 	closedLoopEnabled = false;							// Has closed loop been enabled by the user?
-
-	// Holding current, and variables derived from it
-	float 	holdCurrentFraction = DefaultHoldCurrentFraction;	// The minimum holding current when stationary
-	float	recipHoldCurrentFraction = 1.0/DefaultHoldCurrentFraction;	// The reciprocal of the minimum holding current
-	float	holdCurrentFractionTimesMinPhaseShift = MinimumPhaseShift * DefaultHoldCurrentFraction;
-
-	float 	Kp = 100;											// The proportional constant for the PID controller
-	float 	Ki = 0.0;											// The proportional constant for the PID controller
-	float 	Kd = 0.0;											// The proportional constant for the PID controller
-	float	Kv = 0.0;											// The velocity feedforward constant
-	float	Ka = 0.0;											// The acceleration feedforward constant
-
-	float 	errorThresholds[2];									// The error thresholds. [0] is pre-stall, [1] is stall
-
-	float 	ultimateGain = 0;									// The ultimate gain of the controller (used for tuning)
-	float 	oscillationPeriod = 0;								// The oscillation period when Kp = ultimate gain
-
-	// Data collection variables
-	// Input variables
-	volatile RecordingMode samplingMode = RecordingMode::None;	// What mode did they request? Volatile because we care about when it is written.
-	uint8_t  movementRequested;									// Which calibration movement did they request? 0=none, 1=polarity, 2=continuous
-	uint16_t filterRequested;									// What filter did they request?
-	volatile uint16_t samplesRequested;							// The number of samples requested
-
-	// Derived variables
-	volatile uint16_t samplesCollected = 0;
-	volatile uint16_t samplesSent = 0;
-	bool sampleBufferOverflowed = false;						// set if the buffer is full when we need to store a sample
-	StepTimer::Ticks dataCollectionStartTicks;					// At what tick did data collection start?
-	StepTimer::Ticks dataCollectionIntervalTicks;				// the requested interval between samples
-	StepTimer::Ticks whenNextSampleDue;							// when it will be time to take the next sample
-
-	SampleBuffer sampleBuffer;
-
-	// Working variables
-	// These variables are all used to calculate the required motor currents. They are declared here so they can be reported on by the data collection task
-	float	targetMotorSteps;							// The number of steps the motor should have taken relative to it's zero position
-	float	targetSpeed = 0.0;							// The target motor speed
-	float	targetAcceleration = 0.0;					// the target motor acceleration
-	float 	currentError;								// The current error in full steps
-
-	DerivativeAveragingFilter<DerivativeFilterSize> derivativeFilter;	// An averaging filter to smooth the derivative of the error
-
-	float 	PIDPTerm;									// Proportional term
-	float 	PIDITerm = 0.0;								// Integral accumulator
-	float 	PIDDTerm;									// Derivative term
-	float	PIDVTerm;									// Velocity feedforward term
-	float	PIDATerm;									// Acceleration feedforward term
-	float	PIDControlSignal;							// The overall signal from the PID controller
-
-	float	phaseShift;									// The desired shift in the position of the motor, where 1024 = 1 full step
-
-	uint16_t desiredStepPhase = 0;						// The desired position of the motor
-	int16_t coilA;										// The current to run through coil A
-	int16_t coilB;										// The current to run through coil A
-
-	bool 	stall = false;								// Has the closed loop error threshold been exceeded?
-	bool 	preStall = false;							// Has the closed loop warning threshold been exceeded?
-
-	// Basic tuning synchronisation
-	volatile bool basicTuningDataReady = false;
-
-	// Encoder calibration synchronisation
-	enum class CalibrationState : uint8_t { notReady = 0, dataReady, complete };
-	volatile CalibrationState calibrationState = CalibrationState::notReady;
-	volatile bool calibrateNotCheck = false;
-	volatile TuningErrors calibrationErrors;
-
-	StepTimer::Ticks whenLastTuningStepTaken;			// when the control loop last called the tuning code
-
-	// Monitoring variables
-	// These variables monitor how fast the PID loop is running etc.
-	StepTimer::Ticks prevControlLoopCallTime;			// The last time the control loop was called
-	StepTimer::Ticks minControlLoopRuntime;				// The minimum time the control loop has taken to run
-	StepTimer::Ticks maxControlLoopRuntime;				// The maximum time the control loop has taken to run
-	StepTimer::Ticks minControlLoopCallInterval;		// The minimum interval between the control loop being called
-	StepTimer::Ticks maxControlLoopCallInterval;		// The maximum interval between the control loop being called
-
-	// Functions private to this module
-	EncoderType GetEncoderType() noexcept
-	{
-		return (encoder == nullptr) ? EncoderType::none : encoder->GetType();
-	}
-
-	// Return true if we are currently collecting data or primed to collect data or finishing sending data
-	inline bool CollectingData() noexcept { return samplingMode != RecordingMode::None; }
-
-	void CollectSample() noexcept;
-	void ControlMotorCurrents(StepTimer::Ticks ticksSinceLastCall) noexcept;
-	void StartTuning(uint8_t tuningType) noexcept;
-	GCodeResult ProcessBasicTuningResult(const StringRef& reply) noexcept;
-	GCodeResult ProcessCalibrationResult(const StringRef& reply) noexcept;
-	void ReportTuningErrors(TuningErrors tuningErrorBitmask, const StringRef& reply) noexcept;
-	void SetTargetToCurrentPosition() noexcept
-	{
-		targetMotorSteps = (float)encoder->GetCurrentCount() / encoder->GetCountsPerStep();
-		moveInstance->SetCurrentMotorSteps(0, targetMotorSteps);
-	}
-
-	extern "C" [[noreturn]] void DataTransmissionLoop(void *param) noexcept;
-	extern "C" [[noreturn]] void EncoderCalibrationLoop(void *param) noexcept;
-
-}	// end namespace
+extern "C" [[noreturn]] void EncoderCalibrationTaskEntry(void *param) noexcept
+{
+	((ClosedLoop*)param)->EncoderCalibrationTaskLoop();
+}
 
 // Tasks and task loops
-static Task<ClosedLoop::DataCollectionTaskStackWords> *dataTransmissionTask = nullptr;		// Data transmission task - handles sending back the buffered sample data
-static Task<ClosedLoop::EncoderCalibrationTaskStackWords> *encoderCalibrationTask = nullptr;		// Encoder calibration task - handles calibrating the encoder in the background
+static Task<DataCollectionTaskStackWords> *dataTransmissionTask = nullptr;			// Data transmission task - handles sending back the buffered sample data
+static Task<EncoderCalibrationTaskStackWords> *encoderCalibrationTask = nullptr;	// Encoder calibration task - handles calibrating the encoder in the background
 
 // Helper function to convert a time period (expressed in StepTimer::Ticks) to ms
-static inline float TickPeriodToMillis(StepTimer::Ticks tickPeriod)
+static inline float TickPeriodToMillis(StepTimer::Ticks tickPeriod) noexcept
 {
 	return tickPeriod * StepTimer::StepClocksToMillis;
 }
 
 // Helper function to convert a time period (expressed in StepTimer::Ticks) to us
-static inline uint32_t TickPeriodToMicroseconds(StepTimer::Ticks tickPeriod)
+static inline uint32_t TickPeriodToMicroseconds(StepTimer::Ticks tickPeriod) noexcept
 {
 	return (tickPeriod * 1000)/(StepTimer::GetTickRate()/1000);
 }
 
 // Helper function to convert a time period (expressed in StepTimer::Ticks) to a frequency in Hz
-static inline float TickPeriodToFreq(StepTimer::Ticks tickPeriod)
+static inline float TickPeriodToFreq(StepTimer::Ticks tickPeriod) noexcept
 {
 	return 1000.0l / TickPeriodToMillis(tickPeriod);
 }
 
 // Helper function to reset the 'monitoring variables' as defined above
-static void ResetMonitoringVariables()
+void ClosedLoop::ResetMonitoringVariables() noexcept
 {
 	ClosedLoop::minControlLoopRuntime = numeric_limits<StepTimer::Ticks>::max();
 	ClosedLoop::maxControlLoopRuntime = numeric_limits<StepTimer::Ticks>::min();
@@ -236,7 +109,7 @@ static void ResetMonitoringVariables()
 }
 
 // Helper function to cat all the current tuning errors onto a reply in human-readable form
-void ClosedLoop::ReportTuningErrors(TuningErrors tuningErrorBitmask, const StringRef &reply)
+void ClosedLoop::ReportTuningErrors(TuningErrors tuningErrorBitmask, const StringRef &reply) noexcept
 {
 	if (tuningErrorBitmask & TuningError::NeedsBasicTuning) 			{ reply.cat(", the drive has not had basic tuning done"); }
 	if (tuningErrorBitmask & TuningError::NotCalibrated) 				{ reply.cat(", the drive has not been calibrated"); }
@@ -245,6 +118,12 @@ void ClosedLoop::ReportTuningErrors(TuningErrors tuningErrorBitmask, const Strin
 	if (tuningErrorBitmask & TuningError::InconsistentMotion)			{ reply.cat(", the measured motion was inconsistent"); }
 	if (tuningErrorBitmask & TuningError::TooLittleMotion)				{ reply.cat(", the measured motion was less than expected"); }
 	if (tuningErrorBitmask & TuningError::TooMuchMotion)				{ reply.cat(", the measured motion was more than expected"); }
+}
+
+void ClosedLoop::SetTargetToCurrentPosition() noexcept
+{
+	targetMotorSteps = (float)encoder->GetCurrentCount() / encoder->GetCountsPerStep();
+	moveInstance->SetCurrentMotorSteps(0, targetMotorSteps);
 }
 
 // Helper function to set the motor to a given phase and magnitude
@@ -292,11 +171,9 @@ void ClosedLoop::Init() noexcept
 	derivativeFilter.Reset();
 
 	// Set up the data transmission task
-	dataTransmissionTask = new Task<ClosedLoop::DataCollectionTaskStackWords>;
-	dataTransmissionTask->Create(DataTransmissionLoop, "CLSend", nullptr, TaskPriority::ClosedLoopDataTransmission);
+	dataTransmissionTask = new Task<DataCollectionTaskStackWords>;
+	dataTransmissionTask->Create(DataTransmissionTaskEntry, "CLSend", this, TaskPriority::ClosedLoopDataTransmission);
 }
-
-static void CreateCalibrationTask() noexcept;		// forward declaration
 
 GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const StringRef &reply) noexcept
 {
@@ -558,7 +435,7 @@ GCodeResult ClosedLoop::ProcessBasicTuningResult(const StringRef& reply) noexcep
 // This function is run by the encoder calibration task.
 // Its purpose is to wait for encoder calibration data to become available and process it.
 // Processing to takes several seconds, so we need to do it in a separate task to avoid the main board timing out awaiting CAN responses.
-void ClosedLoop::EncoderCalibrationLoop(void *param) noexcept
+void ClosedLoop::EncoderCalibrationTaskLoop() noexcept
 {
 	for (;;)
 	{
@@ -571,12 +448,12 @@ void ClosedLoop::EncoderCalibrationLoop(void *param) noexcept
 	}
 }
 
-static void CreateCalibrationTask() noexcept
+void ClosedLoop::CreateCalibrationTask() noexcept
 {
 	if (encoderCalibrationTask == nullptr)
 	{
-		encoderCalibrationTask = new Task<ClosedLoop::EncoderCalibrationTaskStackWords>;
-		encoderCalibrationTask->Create(ClosedLoop::EncoderCalibrationLoop, "EncCal", nullptr, TaskPriority::SpinPriority);		// must be same priority as main task
+		encoderCalibrationTask = new Task<EncoderCalibrationTaskStackWords>;
+		encoderCalibrationTask->Create(EncoderCalibrationTaskEntry, "EncCal", this, TaskPriority::SpinPriority);		// must be same priority as main task
 	}
 }
 
@@ -800,33 +677,32 @@ void ClosedLoop::ControlLoop() noexcept
 		currentError = (float)(targetEncoderReading - encoder->GetCurrentCount()) * encoder->GetStepsPerCount();
 		derivativeFilter.ProcessReading(currentError, loopCallTime);
 
-		if (!closedLoopEnabled)
+		if (closedLoopEnabled)
 		{
-			// If closed loop disabled, do nothing
-		}
-		else if (tuning != 0)											// if we need to tune, do it
-		{
-			// Limit the rate at which we command tuning steps Need to do signed comparison because initially, whenLastTuningStepTaken is in the future.
-			const int32_t timeSinceLastTuningStep = (int32_t)(loopCallTime - whenLastTuningStepTaken);
-			if (timeSinceLastTuningStep >= (int32_t)stepTicksPerTuningStep)
+			if (tuning != 0)											// if we need to tune, do it
 			{
-				whenLastTuningStepTaken = loopCallTime;
-				PerformTune();
+				// Limit the rate at which we command tuning steps Need to do signed comparison because initially, whenLastTuningStepTaken is in the future.
+				const int32_t timeSinceLastTuningStep = (int32_t)(loopCallTime - whenLastTuningStepTaken);
+				if (timeSinceLastTuningStep >= (int32_t)stepTicksPerTuningStep)
+				{
+					whenLastTuningStepTaken = loopCallTime;
+					PerformTune();
+				}
+				else if (samplingMode == RecordingMode::OnNextMove && timeSinceLastTuningStep + (int32_t)DataCollectionIdleStepTicks >= 0)
+				{
+					dataCollectionStartTicks = whenNextSampleDue = loopCallTime;
+					samplingMode = RecordingMode::Immediate;
+				}
 			}
-			else if (samplingMode == RecordingMode::OnNextMove && timeSinceLastTuningStep + (int32_t)DataCollectionIdleStepTicks >= 0)
+			else if (tuningError == 0)
 			{
-				dataCollectionStartTicks = whenNextSampleDue = loopCallTime;
-				samplingMode = RecordingMode::Immediate;
+				ControlMotorCurrents(timeElapsed);						// otherwise control those motor currents!
 			}
 		}
-		else if (tuningError)
-		{
-			// Don't do anything if there is a tuning error, or calibration is in progress after tuning
-		}
-		else
-		{
-			ControlMotorCurrents(timeElapsed);			// otherwise control those motor currents!
 
+		// We now always report position errors even when in open loop mode, if any calibration needed has been done and we are not executing a tuning move
+		if (tuningError == 0 && tuning == 0)
+		{
 			// Look for a stall or pre-stall
 			const float positionErr = fabsf(currentError);
 			if (stall)
@@ -869,7 +745,7 @@ void ClosedLoop::ControlLoop() noexcept
 }
 
 // Send data from the buffer to the main board over CAN
-[[noreturn]] void ClosedLoop::DataTransmissionLoop(void *param) noexcept
+[[noreturn]] void ClosedLoop::DataTransmissionTaskLoop() noexcept
 {
 	while (true)
 	{
@@ -956,6 +832,7 @@ void ClosedLoop::CollectSample() noexcept
 		if (filterRequested & CL_RECORD_PHASE_SHIFT)  			{ sampleBuffer.PutF16(phaseShift); }
 		if (filterRequested & CL_RECORD_COIL_A_CURRENT) 		{ sampleBuffer.PutI16(coilA); }
 		if (filterRequested & CL_RECORD_COIL_B_CURRENT) 		{ sampleBuffer.PutI16(coilB); }
+		if (filterRequested & CL_RECORD_MOTOR_CURRENT_FRACTION)	{ sampleBuffer.PutF16(currentFraction); }
 
 		sampleBuffer.FinishSample();
 		++samplesCollected;
@@ -979,7 +856,7 @@ inline void ClosedLoop::ControlMotorCurrents(StepTimer::Ticks ticksSinceLastCall
 	PIDITerm = constrain<float>(PIDITerm + Ki * currentError * timeDelta, -PIDIlimit, PIDIlimit);	// constrain I to prevent it running away
 	PIDDTerm = constrain<float>(Kd * derivativeFilter.GetDerivative(), -256.0, 256.0);				// constrain D so that we can graph it more sensibly after a sudden step input
 	PIDVTerm = targetSpeed * Kv * ticksSinceLastCall;
-	PIDATerm = targetAcceleration * Ka * ticksSinceLastCall;
+	PIDATerm = targetAcceleration * Ka * fsquare(ticksSinceLastCall);
 	PIDControlSignal = constrain<float>(PIDPTerm + PIDITerm + PIDDTerm + PIDVTerm + PIDATerm, -256.0, 256.0);	// clamp the sum between +/- 256
 
 	// Calculate the offset required to produce the torque in the correct direction
@@ -987,13 +864,18 @@ inline void ClosedLoop::ControlMotorCurrents(StepTimer::Ticks ticksSinceLastCall
 	// The max abs value of phase shift we want is 1 full step i.e. 25%.
 	// Given that PIDControlSignal is -256 .. 256 and phase is 0 .. 4095
 	// and that 25% of 4096 = 1024, our max phase shift = 4 * PIDControlSignal
+
+#if 1
+	// New algorithm: phase of motor current is always +/- 1 full step relative to current position, but motor current is adjusted according to the PID result
+	phaseShift = (PIDControlSignal < 0) ? -1024 : 1024;
+	currentFraction = fabsf(PIDControlSignal) * (1.0/256.0);
+#else
 	phaseShift = PIDControlSignal * 4.0;
 
 	// New control algorithm:
 	// - if the required phase shift is greater than about 15 degrees, apply it at maximum current
 	// - below 15 degrees, keep the phase shift at +/- 15 degrees and reduce the current, but not below the minimum holding current
 	// - after that, keep the current at the holding current and reduce the phase shift.
-	float currentFraction;
 	const float absPhaseShift = fabsf(phaseShift);
 	if (absPhaseShift >= MinimumPhaseShift)
 	{
@@ -1012,6 +894,7 @@ inline void ClosedLoop::ControlMotorCurrents(StepTimer::Ticks ticksSinceLastCall
 		currentFraction = holdCurrentFraction;
 		phaseShift *= recipHoldCurrentFraction;
 	}
+#endif
 
 	// Calculate the required motor currents to induce that torque and reduce it modulo 4096
 	// The following assumes that signed arithmetic is 2's complement
