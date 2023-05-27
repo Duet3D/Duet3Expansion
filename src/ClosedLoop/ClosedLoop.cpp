@@ -145,6 +145,8 @@ void ClosedLoop::SetMotorPhase(uint16_t phase, float magnitude) noexcept
 # endif
 }
 
+static_assert(ClockGenGclkNumber == GclkClosedLoop);							// check that this GCLK number has been reserved
+
 static void GenerateTmcClock()
 {
 	// Currently we program DPLL0 to generate 120MHz output, so to get 15MHz with 1:1 ratio we divide by 8.
