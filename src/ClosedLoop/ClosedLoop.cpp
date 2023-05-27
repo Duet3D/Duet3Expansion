@@ -122,8 +122,8 @@ void ClosedLoop::ReportTuningErrors(TuningErrors tuningErrorBitmask, const Strin
 
 void ClosedLoop::SetTargetToCurrentPosition() noexcept
 {
-	targetMotorSteps = (float)encoder->GetCurrentCount() / encoder->GetCountsPerStep();
-	moveInstance->SetCurrentMotorSteps(0, targetMotorSteps);
+	mParams.position = (float)encoder->GetCurrentCount() / encoder->GetCountsPerStep();
+	moveInstance->SetCurrentMotorSteps(0, mParams.position);
 }
 
 // Helper function to set the motor to a given phase and magnitude
@@ -646,8 +646,8 @@ void ClosedLoop::ReadyToCalibrate(bool store) noexcept
 // This is called by tuning to execute a step
 void ClosedLoop::AdjustTargetMotorSteps(float amount) noexcept
 {
-	targetMotorSteps += amount;
-	moveInstance->SetCurrentMotorSteps(0, lrintf(targetMotorSteps));
+	mParams.position += amount;
+	moveInstance->SetCurrentMotorSteps(0, lrintf(mParams.position));
 }
 
 void ClosedLoop::ControlLoop() noexcept
@@ -655,6 +655,7 @@ void ClosedLoop::ControlLoop() noexcept
 	// Record the control loop call interval
 	const StepTimer::Ticks loopCallTime = StepTimer::GetTimerTicks();
 	const StepTimer::Ticks timeElapsed = loopCallTime - prevControlLoopCallTime;
+	prevControlLoopCallTime = loopCallTime;
 	minControlLoopCallInterval = min<StepTimer::Ticks>(minControlLoopCallInterval, timeElapsed);
 	maxControlLoopCallInterval = max<StepTimer::Ticks>(maxControlLoopCallInterval, timeElapsed);
 
@@ -662,18 +663,14 @@ void ClosedLoop::ControlLoop() noexcept
 	if (encoder != nullptr && !encoder->TakeReading())
 	{
 		// Calculate and store the current error in full steps
-		MotionParameters mParams;
 		const bool moving = moveInstance->GetCurrentMotion(0, loopCallTime, closedLoopEnabled, mParams);
-		targetMotorSteps = mParams.position;
-		targetSpeed = mParams.speed;
-		targetAcceleration = mParams.acceleration;
 		if (moving && samplingMode == RecordingMode::OnNextMove)
 		{
 			dataCollectionStartTicks = whenNextSampleDue = StepTimer::GetTimerTicks();
 			samplingMode = RecordingMode::Immediate;
 		}
 
-		const float targetEncoderReading = rintf(targetMotorSteps * encoder->GetCountsPerStep());
+		const float targetEncoderReading = rintf(mParams.position * encoder->GetCountsPerStep());
 		currentError = (float)(targetEncoderReading - encoder->GetCurrentCount()) * encoder->GetStepsPerCount();
 		derivativeFilter.ProcessReading(currentError, loopCallTime);
 
@@ -697,33 +694,29 @@ void ClosedLoop::ControlLoop() noexcept
 			else if (tuningError == 0)
 			{
 				ControlMotorCurrents(timeElapsed);						// otherwise control those motor currents!
-			}
-		}
 
-		// We now always report position errors even when in open loop mode, if any calibration needed has been done and we are not executing a tuning move
-		if (tuningError == 0 && tuning == 0)
-		{
-			// Look for a stall or pre-stall
-			const float positionErr = fabsf(currentError);
-			if (stall)
-			{
-				// Reset the stall flag when the position error falls to below half the tolerance, to avoid generating too many stall events
-				//TODO do we need a minimum delay before resetting too?
-				if (errorThresholds[1] <= 0 || positionErr < errorThresholds[1]/2)
-				{
-					stall = false;
-				}
-			}
-			else
-			{
-				stall = errorThresholds[1] > 0 && positionErr > errorThresholds[1];
+				// Look for a stall or pre-stall
+				const float positionErr = fabsf(currentError);
 				if (stall)
 				{
-					Platform::NewDriverFault();
+					// Reset the stall flag when the position error falls to below half the tolerance, to avoid generating too many stall events
+					//TODO do we need a minimum delay before resetting too?
+					if (errorThresholds[1] <= 0 || positionErr < errorThresholds[1]/2)
+					{
+						stall = false;
+					}
 				}
 				else
 				{
-					preStall = errorThresholds[0] > 0 && positionErr > errorThresholds[0];
+					stall = errorThresholds[1] > 0 && positionErr > errorThresholds[1];
+					if (stall)
+					{
+						Platform::NewDriverFault();
+					}
+					else
+					{
+						preStall = errorThresholds[0] > 0 && positionErr > errorThresholds[0];
+					}
 				}
 			}
 		}
@@ -738,7 +731,6 @@ void ClosedLoop::ControlLoop() noexcept
 	}
 
 	// Record how long this has taken to run
-	prevControlLoopCallTime = loopCallTime;
 	const StepTimer::Ticks loopRuntime = StepTimer::GetTimerTicks() - loopCallTime;
 	minControlLoopRuntime = min<StepTimer::Ticks>(minControlLoopRuntime, loopRuntime);
 	maxControlLoopRuntime = max<StepTimer::Ticks>(maxControlLoopRuntime, loopRuntime);
@@ -819,7 +811,7 @@ void ClosedLoop::CollectSample() noexcept
 
 		if (filterRequested & CL_RECORD_RAW_ENCODER_READING) 	{ sampleBuffer.PutI32(encoder->GetCurrentCount()); }
 		if (filterRequested & CL_RECORD_CURRENT_MOTOR_STEPS) 	{ sampleBuffer.PutF32((float)encoder->GetCurrentCount() * encoder->GetStepsPerCount()); }
-		if (filterRequested & CL_RECORD_TARGET_MOTOR_STEPS)  	{ sampleBuffer.PutF32(targetMotorSteps); }
+		if (filterRequested & CL_RECORD_TARGET_MOTOR_STEPS)  	{ sampleBuffer.PutF32(mParams.position); }
 		if (filterRequested & CL_RECORD_CURRENT_ERROR) 			{ sampleBuffer.PutF32(currentError); }
 		if (filterRequested & CL_RECORD_PID_CONTROL_SIGNAL)  	{ sampleBuffer.PutF16(PIDControlSignal); }
 		if (filterRequested & CL_RECORD_PID_P_TERM)  			{ sampleBuffer.PutF16(PIDPTerm); }
@@ -855,8 +847,8 @@ inline void ClosedLoop::ControlMotorCurrents(StepTimer::Ticks ticksSinceLastCall
 	PIDPTerm = Kp * currentError;
 	PIDITerm = constrain<float>(PIDITerm + Ki * currentError * timeDelta, -PIDIlimit, PIDIlimit);	// constrain I to prevent it running away
 	PIDDTerm = constrain<float>(Kd * derivativeFilter.GetDerivative(), -256.0, 256.0);				// constrain D so that we can graph it more sensibly after a sudden step input
-	PIDVTerm = targetSpeed * Kv * ticksSinceLastCall;
-	PIDATerm = targetAcceleration * Ka * fsquare(ticksSinceLastCall);
+	PIDVTerm = mParams.speed * Kv * ticksSinceLastCall;
+	PIDATerm = mParams.acceleration * Ka * fsquare(ticksSinceLastCall);
 	PIDControlSignal = constrain<float>(PIDPTerm + PIDITerm + PIDDTerm + PIDVTerm + PIDATerm, -256.0, 256.0);	// clamp the sum between +/- 256
 
 	// Calculate the offset required to produce the torque in the correct direction

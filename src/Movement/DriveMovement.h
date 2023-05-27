@@ -16,17 +16,7 @@
 #include "MoveSegment.h"
 
 #if SUPPORT_CLOSED_LOOP
-
 # include <ClosedLoop/ClosedLoop.h>
-
-// Struct to pass data back to the ClosedLoop module
-struct MotionParameters
-{
-	float position;
-	float speed;
-	float acceleration;
-};
-
 #endif
 
 class LinearDeltaKinematics;

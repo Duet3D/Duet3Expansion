@@ -29,6 +29,14 @@ constexpr unsigned int LinearEncoderIncreaseFactor = 4;	// this should be a powe
 class Encoder;
 class SpiEncoder;
 
+// Struct to pass data back to the ClosedLoop module
+struct MotionParameters
+{
+	float position = 0.0;
+	float speed = 0.0;
+	float acceleration = 0.0;
+};
+
 class ClosedLoop
 {
 public:
@@ -90,13 +98,13 @@ public:
 private:
 	// Constants private to this module
 	static constexpr unsigned int DerivativeFilterSize = 8;			// The range of the derivative filter (use a power of 2 for efficiency)
-	static constexpr unsigned int tuningStepsPerSecond = 2000;			// the rate at which we send 1/256 microsteps during tuning, slow enough for high-inertia motors
+	static constexpr unsigned int tuningStepsPerSecond = 2000;		// the rate at which we send 1/256 microsteps during tuning, slow enough for high-inertia motors
 	static constexpr StepTimer::Ticks stepTicksPerTuningStep = StepTimer::StepClockRate/tuningStepsPerSecond;
 	static constexpr StepTimer::Ticks stepTicksBeforeTuning = StepTimer::StepClockRate/10;
-																// 1/10 sec delay between enabling the driver and starting tuning, to allow for brake release and current buildup
+																	// 1/10 sec delay between enabling the driver and starting tuning, to allow for brake release and current buildup
 	static constexpr StepTimer::Ticks DataCollectionIdleStepTicks = StepTimer::StepClockRate/200;
-																// start collecting tuning data 5ms before the start of the tuning move
-	static constexpr float DefaultHoldCurrentFraction = 0.25;			// the minimum fraction of the requested current that we apply when holding position
+																	// start collecting tuning data 5ms before the start of the tuning move
+	static constexpr float DefaultHoldCurrentFraction = 0.25;		// the minimum fraction of the requested current that we apply when holding position
 	static constexpr float MinimumDegreesPhaseShift = 15.0;			// the phase shift at which we start reducing current instead of reducing the phase shift, where 90deg is one full step
 	static constexpr float MinimumPhaseShift = (MinimumDegreesPhaseShift/360.0) * 4096;	// the same in units where 4096 is a complete circle
 
@@ -119,42 +127,18 @@ private:
 	float	recipHoldCurrentFraction = 1.0/DefaultHoldCurrentFraction;	// The reciprocal of the minimum holding current
 	float	holdCurrentFractionTimesMinPhaseShift = MinimumPhaseShift * DefaultHoldCurrentFraction;
 
-	float 	Kp = 100;											// The proportional constant for the PID controller
+	float 	Kp = 30.0;											// The proportional constant for the PID controller
 	float 	Ki = 0.0;											// The proportional constant for the PID controller
 	float 	Kd = 0.0;											// The proportional constant for the PID controller
-	float	Kv = 0.0;											// The velocity feedforward constant
+	float	Kv = 1000.0;										// The velocity feedforward constant
 	float	Ka = 0.0;											// The acceleration feedforward constant
 
 	float 	errorThresholds[2];									// The error thresholds. [0] is pre-stall, [1] is stall
 
-	float 	ultimateGain = 0;									// The ultimate gain of the controller (used for tuning)
-	float 	oscillationPeriod = 0;								// The oscillation period when Kp = ultimate gain
-
-	// Data collection variables
-	// Input variables
-	volatile RecordingMode samplingMode = RecordingMode::None;	// What mode did they request? Volatile because we care about when it is written.
-	uint8_t  movementRequested;									// Which calibration movement did they request? 0=none, 1=polarity, 2=continuous
-	uint16_t filterRequested;									// What filter did they request?
-	volatile uint16_t samplesRequested;							// The number of samples requested
-
-	// Derived variables
-	volatile uint16_t samplesCollected = 0;
-	volatile uint16_t samplesSent = 0;
-	bool sampleBufferOverflowed = false;						// set if the buffer is full when we need to store a sample
-	StepTimer::Ticks dataCollectionStartTicks;					// At what tick did data collection start?
-	StepTimer::Ticks dataCollectionIntervalTicks;				// the requested interval between samples
-	StepTimer::Ticks whenNextSampleDue;							// when it will be time to take the next sample
-
-	SampleBuffer sampleBuffer;
-
 	// Working variables
 	// These variables are all used to calculate the required motor currents. They are declared here so they can be reported on by the data collection task
-	float	targetMotorSteps;							// The number of steps the motor should have taken relative to it's zero position
-	float	targetSpeed = 0.0;							// The target motor speed
-	float	targetAcceleration = 0.0;					// the target motor acceleration
+	MotionParameters mParams;							// the target position, speed and acceleration
 	float 	currentError;								// The current error in full steps
-
-	DerivativeAveragingFilter<DerivativeFilterSize> derivativeFilter;	// An averaging filter to smooth the derivative of the error
 
 	float 	PIDPTerm;									// Proportional term
 	float 	PIDITerm = 0.0;								// Integral accumulator
@@ -191,6 +175,24 @@ private:
 	StepTimer::Ticks maxControlLoopRuntime;				// The maximum time the control loop has taken to run
 	StepTimer::Ticks minControlLoopCallInterval;		// The minimum interval between the control loop being called
 	StepTimer::Ticks maxControlLoopCallInterval;		// The maximum interval between the control loop being called
+
+	// Data collection variables
+	// Input variables
+	volatile RecordingMode samplingMode = RecordingMode::None;	// What mode did they request? Volatile because we care about when it is written.
+	uint8_t  movementRequested;									// Which calibration movement did they request? 0=none, 1=polarity, 2=continuous
+	uint16_t filterRequested;									// What filter did they request?
+	volatile uint16_t samplesRequested;							// The number of samples requested
+
+	// Derived variables
+	volatile uint16_t samplesCollected = 0;
+	volatile uint16_t samplesSent = 0;
+	bool sampleBufferOverflowed = false;						// set if the buffer is full when we need to store a sample
+	StepTimer::Ticks dataCollectionStartTicks;					// At what tick did data collection start?
+	StepTimer::Ticks dataCollectionIntervalTicks;				// the requested interval between samples
+	StepTimer::Ticks whenNextSampleDue;							// when it will be time to take the next sample
+
+	DerivativeAveragingFilter<DerivativeFilterSize> derivativeFilter;	// An averaging filter to smooth the derivative of the error
+	SampleBuffer sampleBuffer;									// buffer for collecting samples - declare this last because it is large
 
 	// Functions private to this module
 	EncoderType GetEncoderType() noexcept
