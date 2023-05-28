@@ -557,7 +557,7 @@ void TmcDriverState::SetStandstillCurrentPercent(float percent) noexcept
 	UpdateCurrent();
 }
 
-// Set the microstepping and microstep interpolation. The desired microstepping is (1 << shift).
+// Set the microstepping and microstep interpolation. The desired microstepping is (1 << shift) where shift is in 0..8.
 bool TmcDriverState::SetMicrostepping(uint32_t shift, bool interpolate) noexcept
 {
 	microstepShiftFactor = shift;
@@ -859,7 +859,8 @@ StandardDriverStatus TmcDriverState::GetStatus(bool accumulated, bool clearAccum
 	{
 		AtomicCriticalSectionLocker lock;
 
-		status = accumulatedDriveStatus;
+		// In the following we must or-in the current drive status, otherwise an error such as S2G may appear to go away between two successive calls
+		status = accumulatedDriveStatus | readRegisters[ReadDrvStat];
 		if (clearAccumulated)
 		{
 			// In the following we can't just copy readRegisters[ReadDrvStat] into accumulatedDriveStatus, because we only want to set bits in accumulatedDriveStatus
