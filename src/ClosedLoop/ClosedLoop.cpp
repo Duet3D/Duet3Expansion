@@ -25,7 +25,7 @@
  *    so the highest we can go without loss of resolution is +/- 32.768 metres.
  * 5. Since all motion commands sent to the board are relative, we could reset the step count and encoder count periodically by a whole number of revolutions,
  *    as long as we are careful to do it atomically. If/when we support linear encoders, this will not be necessary for those.
- * 6. When using an absolute encoder, although it cold be treated like a relative encoder fir the purposes of motor control,
+ * 6. When using an absolute encoder, although it could be treated like a relative encoder for the purposes of motor control,
  *    the angle information may be useful to compensate for leadscrew nut irregularities; so we should preserve the angle information.
  */
 
@@ -62,10 +62,12 @@ using std::numeric_limits;
 
 #define BASIC_TUNING_DEBUG	0
 
-constexpr size_t DataCollectionTaskStackWords = 200;		// Size of the stack for all closed loop tasks
-constexpr size_t EncoderCalibrationTaskStackWords = 500;	// Size of the stack for all closed loop tasks
+constexpr size_t DataCollectionTaskStackWords = 200;		// Size of the stack for the data collection task
+constexpr size_t EncoderCalibrationTaskStackWords = 500;	// Size of the stack for the encoder calibration task
 
-// Variables that are used by both the ClosedLoop and the Tuning modules
+// Tasks and task loops
+static Task<DataCollectionTaskStackWords> *dataTransmissionTask = nullptr;			// Data transmission task - handles sending back the buffered sample data
+static Task<EncoderCalibrationTaskStackWords> *encoderCalibrationTask = nullptr;	// Encoder calibration task - handles calibrating the encoder in the background
 
 extern "C" [[noreturn]] void DataTransmissionTaskEntry(void *param) noexcept
 {
@@ -76,10 +78,6 @@ extern "C" [[noreturn]] void EncoderCalibrationTaskEntry(void *param) noexcept
 {
 	((ClosedLoop*)param)->EncoderCalibrationTaskLoop();
 }
-
-// Tasks and task loops
-static Task<DataCollectionTaskStackWords> *dataTransmissionTask = nullptr;			// Data transmission task - handles sending back the buffered sample data
-static Task<EncoderCalibrationTaskStackWords> *encoderCalibrationTask = nullptr;	// Encoder calibration task - handles calibrating the encoder in the background
 
 // Helper function to convert a time period (expressed in StepTimer::Ticks) to ms
 static inline float TickPeriodToMillis(StepTimer::Ticks tickPeriod) noexcept
@@ -151,6 +149,7 @@ static void GenerateTmcClock()
 {
 	// Currently we program DPLL0 to generate 120MHz output, so to get 15MHz with 1:1 ratio we divide by 8.
 	// We could divide by 7 instead giving 17.143MHz with 25ns and 33.3ns times. TMC2160A max is 18MHz, minimum 16ns and 16ns low.
+	// Max SPI clock frequency is half this clock frequency.
 	ConfigureGclk(ClockGenGclkNumber, GclkSource::dpll0, 8, true);
 	SetPinFunction(ClockGenPin, ClockGenPinPeriphMode);
 	SmartDrivers::SetTmcExternalClock(15000000);

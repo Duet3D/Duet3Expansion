@@ -71,7 +71,7 @@ public:
 #if SUPPORT_CLOSED_LOOP
 	// Get the current position relative to the start of this move, speed and acceleration. Units are microsteps and step clocks.
 	// Interrupts are disabled on entry and must remain disabled. Segments are advanced as necessary.
-	void GetCurrentMotion(float topSpeed, uint32_t ticksSinceStart, MotionParameters& mParams) noexcept;
+	void GetCurrentMotion(const DDA& dda, uint32_t ticksSinceStart, MotionParameters& mParams) noexcept;
 
 	// This is like getCurrentMotion but it just returns the distance and doesn't start new segments
 	int32_t GetNetStepsTakenClosedLoop(float topSpeed, int32_t ticksSinceStart) const noexcept;
@@ -213,54 +213,6 @@ inline uint32_t DriveMovement::GetStepInterval(uint32_t microstepShift) const no
 #endif
 
 #if SUPPORT_CLOSED_LOOP
-
-// Get the current position relative to the start of this move, speed and acceleration. Units are microsteps and step clocks.
-// Interrupts are disabled on entry and must remain disabled.
-inline void DriveMovement::GetCurrentMotion(float topSpeed, uint32_t ticksSinceStart, MotionParameters& mParams) noexcept
-{
-	const MoveSegment *ms = currentSegment;
-	if (ms == nullptr)
-	{
-		// Drive was not commanded to move
-		mParams.position = mParams.speed = mParams.acceleration = 0.0;
-		return;
-	}
-
-	const float timeSinceMoveStart = (float)ticksSinceStart;
-	for (;;)
-	{
-		const float segTimeRemaining = timeSoFar - timeSinceMoveStart;
-		if (segTimeRemaining >= 0.0 || ms->GetNext() == nullptr)
-		{
-			// The current move segment is still in progress, or it is the last move segment and it has only just finished
-			const float multiplier = (direction != directionReversed) ? mp.cart.effectiveStepsPerMm : -mp.cart.effectiveStepsPerMm;
-			if (ms->IsLinear())
-			{
-				const float effectiveSpeed = topSpeed * multiplier;
-				mParams.position = (timeSinceMoveStart - pB) * effectiveSpeed;
-				mParams.speed = effectiveSpeed;
-				mParams.acceleration = 0.0;
-			}
-			else
-			{
-				const float effectiveAcceleration = ms->GetAcceleration() * multiplier;
-				mParams.position = 0.5 * effectiveAcceleration * (fsquare(timeSinceMoveStart - pB) - pA);
-				mParams.speed = effectiveAcceleration * (timeSinceMoveStart - pB);
-				mParams.acceleration = effectiveAcceleration;
-			}
-			return;
-		}
-		currentSegment = ms = ms->GetNext();
-		if (isExtruder)
-		{
-			(void)NewExtruderSegment();
-		}
-		else
-		{
-			(void)NewCartesianSegment();
-		}
-	}
-}
 
 // This is like getCurrentMotion but it just returns the distance and doesn't start new segments
 inline int32_t DriveMovement::GetNetStepsTakenClosedLoop(float topSpeed, int32_t ticksSinceStart) const noexcept

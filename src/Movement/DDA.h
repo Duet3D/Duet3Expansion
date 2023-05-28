@@ -325,7 +325,7 @@ inline uint32_t DDA::GetStepInterval(size_t axis, uint32_t microstepShift) const
 // Interrupts are disabled on entry and must remain disabled.
 inline void DDA::GetCurrentMotion(size_t driver, uint32_t ticksSinceStart, MotionParameters& mParams) noexcept
 {
-	return ddms[driver].GetCurrentMotion(topSpeed, ticksSinceStart, mParams);
+	return ddms[driver].GetCurrentMotion(*this, ticksSinceStart, mParams);
 }
 
 #endif

@@ -1384,6 +1384,7 @@ extern "C" [[noreturn]] void TmcLoop(void *) noexcept
 			// We run the SPI bus at high speeds so that motor currents get updated as quickly as possible.
 			// If we wake up as soon as the transfer has completed then we will use too much of the available CPU time.
 			// So schedule a wakeup call instead.
+			// At 6MHz SPI frequency the 5-byte transfer takes about 7us.
 			tmcTimer.ScheduleCallbackFromIsr(StepTimer::GetTimerTicks() + (StepTimer::StepClockRate * ClosedLoopSleepMicroseconds)/1000000);
 #endif
 		}
