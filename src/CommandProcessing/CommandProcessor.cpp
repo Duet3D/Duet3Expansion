@@ -818,7 +818,7 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 		{
 			reply.lcatf("Driver %u: pos %" PRIi32 ", %.1f steps/mm"
 # if HAS_SMART_DRIVERS
-				","
+				", "
 # endif
 				, driver, moveInstance->GetPosition(driver), (double)Platform::DriveStepsPerUnit(driver));
 # if HAS_SMART_DRIVERS
