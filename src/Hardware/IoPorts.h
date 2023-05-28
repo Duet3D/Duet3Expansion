@@ -64,9 +64,15 @@ public:
 	bool GetInvert() const;
 	void SetInvert(bool pInvert);
 	void ToggleInvert(bool pInvert);
+	bool GetTotalInvert() const noexcept { return totalInvert; }
 	bool UseAlternateConfig() const { return alternateConfig; }
 
 	void WriteDigital(bool high) const;
+
+	// Warning: for speed when bit-banging Neopixels, FastDigitalWriteHigh and FastDigitalWriteLow do not take account of pin inversion!
+	void FastDigitalWriteLow() const noexcept pre(IsValid()) { fastDigitalWriteLow(pin); }
+	void FastDigitalWriteHigh() const noexcept pre(IsValid()) { fastDigitalWriteHigh(pin); }
+
 	bool ReadDigital() const;
 	uint16_t ReadAnalog() const;
 
@@ -101,7 +107,7 @@ protected:
 	uint8_t hardwareInvert : 1,								// true if the hardware includes inversion
 			totalInvert : 1,								// true if the value should be inverted when reading/writing the pin
 			isSharedInput : 1,								// true if we are using this pin as a shared input
-			alternateConfig : 1;							// true if we are using the alternate configuration of this pin, e.g. SDADC instyead of ADC
+			alternateConfig : 1;							// true if we are using the alternate configuration of this pin, e.g. SDADC instead of ADC
 
 	static PinUsedBy portUsedBy[NumPins];					// the list of what each logical port is used by
 	static int8_t logicalPinModes[NumPins];					// what mode each logical pin is set to - would ideally be class PinMode not int8_t

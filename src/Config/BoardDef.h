@@ -77,4 +77,12 @@ constexpr size_t NumDrivers = 0;
 # define USE_SERIAL_DEBUG				0
 #endif
 
+#ifndef SUPPORT_LED_STRIPS
+# define SUPPORT_LED_STRIPS				1
+#endif
+
+#ifndef SUPPORT_DMA_NEOPIXEL
+# define SUPPORT_DMA_NEOPIXEL			0
+#endif
+
 #endif /* SRC_CONFIG_BOARDDEF_H_ */
