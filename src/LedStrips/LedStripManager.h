@@ -13,7 +13,7 @@
 #include <CanMessageGenericTables.h>
 #include <CanMessageGenericParser.h>
 
-namespace LedStrips
+namespace LedStripManager
 {
 	GCodeResult HandleM950Led(const CanMessageGeneric &msg, const StringRef& reply, uint8_t &extra) noexcept;
 	GCodeResult HandleLedSetColours(const CanMessageGeneric &msg, const StringRef& reply) noexcept;
