@@ -159,7 +159,7 @@ inline uint32_t Move::GetStepInterval(size_t axis, uint32_t microstepShift) cons
 // Inlined because it is only called from one place
 inline bool Move::GetCurrentMotion(size_t driver, uint32_t when, bool closedLoopEnabled, MotionParameters& mParams) noexcept
 {
-	const float multiplier = ldexp((Platform::GetDirectionValueNoCheck(driver)) ? -1.0 : 1.0, -(int)SmartDrivers::GetMicrostepShift(driver));
+	const float multiplier = ldexpf((Platform::GetDirectionValueNoCheck(driver)) ? -1.0 : 1.0, -(int)SmartDrivers::GetMicrostepShift(driver));
 	AtomicCriticalSectionLocker lock;				// we don't want an interrupt changing currentDda or netMicrostepsTaken while we execute this
 	for (;;)
 	{
