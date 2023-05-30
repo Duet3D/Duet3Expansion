@@ -367,6 +367,7 @@ public:
 	static void TransferTimedOut() noexcept { ++numTimeouts; }
 
 	void GetSpiCommand(uint8_t *sendDataBlock) noexcept;
+	void GetSpiReadCommand(uint8_t *sendDataBlock) noexcept;
 	void TransferSucceeded(const uint8_t *rcvDataBlock) noexcept;
 	void TransferFailed() noexcept;
 
@@ -440,7 +441,8 @@ private:
 
 	uint16_t standstillCurrentFraction;						// divide this by 256 to get the motor current standstill fraction
 	uint8_t regIndexBeingUpdated;							// which register we are sending
-	uint8_t regIndexRequested;								// the register we asked to read in the previous transaction, or 0xFF
+	uint8_t regIndexRequested;								// the register we asked to read in the previous transaction or are due to read next
+	uint8_t regIndexJustRequested;							// the register index we requested in the previous transaction, or 0xFF
 	uint8_t previousRegIndexRequested;						// the register we asked to read in the previous transaction, or 0xFF
 	volatile uint8_t specialReadRegisterNumber;
 	volatile uint8_t specialWriteRegisterNumber;
@@ -516,7 +518,7 @@ pre(!driversPowered)
 	accumulatedDriveStatus = 0;
 	ResetLoadRegisters();
 
-	regIndexBeingUpdated = regIndexRequested = previousRegIndexRequested = NoRegIndex;
+	regIndexBeingUpdated = regIndexRequested = regIndexJustRequested = previousRegIndexRequested = NoRegIndex;
 	numReads = numWrites = 0;
 }
 
@@ -941,8 +943,37 @@ void TmcDriverState::AppendStallConfig(const StringRef& reply) const noexcept
 				threshold, ((filtered) ? "on" : "off"), fullstepsPerSecond, (double)speed1, tcoolthrs, (double)speed2);
 }
 
+// Set up the send data block to read a register
+void TmcDriverState::GetSpiReadCommand(uint8_t *sendDataBlock) noexcept
+{
+	if (regIndexRequested >= ReadSpecial)
+	{
+		regIndexRequested = 0;
+	}
+	else
+	{
+		++regIndexRequested;
+		if (regIndexRequested == ReadSpecial && specialReadRegisterNumber >= 0x80)
+		{
+			regIndexRequested = 0;
+		}
+	}
+
+	sendDataBlock[0] = (regIndexRequested == ReadSpecial) ? specialReadRegisterNumber : ReadRegNumbers[regIndexRequested];
+#if SAME70 || SAMC21 || RP2040
+	sendDataBlock[1] = 0;
+	sendDataBlock[2] = 0;
+	sendDataBlock[3] = 0;
+	sendDataBlock[4] = 0;
+#else
+	*reinterpret_cast<uint32_t*>(sendDataBlock + 1) = 0;
+#endif
+	regIndexJustRequested = regIndexRequested;
+}
+
 // In the following, on the SAME70 only byte accesses to sendDataBlock are allowed, because accesses to non-cacheable memory must be aligned
-void TmcDriverState::GetSpiCommand(uint8_t *sendDataBlock) noexcept
+// Inline because it is only called from one place
+inline void TmcDriverState::GetSpiCommand(uint8_t *sendDataBlock) noexcept
 {
 	// Find which register to send. The common case is when no registers need to be updated.
 	registersToUpdate |= newRegistersToUpdate.exchange(0);
@@ -950,32 +981,12 @@ void TmcDriverState::GetSpiCommand(uint8_t *sendDataBlock) noexcept
 	{
 		// Read a register
 		regIndexBeingUpdated = NoRegIndex;
-		if (regIndexRequested >= ReadSpecial)
-		{
-			regIndexRequested = 0;
-		}
-		else
-		{
-			++regIndexRequested;
-			if (regIndexRequested == ReadSpecial && specialReadRegisterNumber >= 0x80)
-			{
-				regIndexRequested = 0;
-			}
-		}
-
-		sendDataBlock[0] = (regIndexRequested == ReadSpecial) ? specialReadRegisterNumber : ReadRegNumbers[regIndexRequested];
-#if SAME70 || SAMC21 || RP2040
-		sendDataBlock[1] = 0;
-		sendDataBlock[2] = 0;
-		sendDataBlock[3] = 0;
-		sendDataBlock[4] = 0;
-#else
-		*reinterpret_cast<uint32_t*>(sendDataBlock + 1) = 0;
-#endif
+		GetSpiReadCommand(sendDataBlock);
 	}
 	else
 	{
 		// Write a register
+		regIndexJustRequested = NoRegIndex;
 		const size_t regNum = LowestSetBit(registersToUpdate);
 		regIndexBeingUpdated = regNum;
 		sendDataBlock[0] = ((regNum == WriteSpecial) ? specialWriteRegisterNumber : WriteRegNumbers[regNum]) | 0x80;
@@ -1062,12 +1073,12 @@ void TmcDriverState::TransferSucceeded(const uint8_t *rcvDataBlock) noexcept
 		readRegisters[ReadDrvStat] &= ~TMC_RR_SG;
 	}
 
-	previousRegIndexRequested = (regIndexBeingUpdated == NoRegIndex) ? regIndexRequested : NoRegIndex;
+	previousRegIndexRequested = regIndexJustRequested;
 }
 
 void TmcDriverState::TransferFailed() noexcept
 {
-	regIndexRequested = previousRegIndexRequested = NoRegIndex;
+	regIndexJustRequested = previousRegIndexRequested = NoRegIndex;
 }
 
 // State structures for all drivers
@@ -1079,6 +1090,10 @@ static Task<TmcTaskStackWords> tmcTask;
 // On the SAME70 access to these DMA buffers must be correctly aligned because they are in non-cached memory.
 static volatile uint8_t sendData[5 * MaxSmartDrivers];
 static volatile uint8_t rcvData[5 * MaxSmartDrivers];
+
+#if SUPPORT_CLOSED_LOOP
+static volatile uint8_t altRcvData[5 * MaxSmartDrivers];
+#endif
 
 static volatile DmaCallbackReason dmaFinishedReason;
 
@@ -1092,7 +1107,11 @@ static uint32_t lastFailureDmaActiveStatus;
 #endif
 
 // Set up the PDC or DMAC to send a register and receive the status, but don't enable it yet
+#if SUPPORT_CLOSED_LOOP
+static void SetupDMA(bool useAltRcvData) noexcept
+#else
 static void SetupDMA() noexcept
+#endif
 {
 #if SAME70
 	/* From the data sheet:
@@ -1153,7 +1172,11 @@ static void SetupDMA() noexcept
 						| XDMAC_CC_PERID(TMC51xx_DmaRxPerid);
 		p_cfg.mbr_ubc = ARRAY_SIZE(rcvData);
 		p_cfg.mbr_sa = reinterpret_cast<uint32_t>(&(USART_TMC51xx->US_RHR));
+# if SUPPORT_CLOSED_LOOP
+		p_cfg.mbr_da = reinterpret_cast<uint32_t>((useAltRcvData) ? altRcvData : rcvData);
+# else
 		p_cfg.mbr_da = reinterpret_cast<uint32_t>(rcvData);
+# endif
 		xdmac_configure_transfer(XDMAC, DmacChanTmcRx, &p_cfg);
 	}
 
@@ -1180,13 +1203,20 @@ static void SetupDMA() noexcept
 #elif SAME5x || SAMC21
 	DmacManager::DisableChannel(DmacChanTmcRx);
 	DmacManager::DisableChannel(DmacChanTmcTx);
+# if SUPPORT_CLOSED_LOOP
+	DmacManager::SetDestinationAddress(DmacChanTmcRx, (useAltRcvData) ? altRcvData : rcvData);
+	DmacManager::SetDataLength(DmacChanTmcRx, ARRAY_SIZE(rcvData));
+# endif
 #else
 	spiPdc->PERIPH_PTCR = (PERIPH_PTCR_RXTDIS | PERIPH_PTCR_TXTDIS);		// disable the PDC
 
 	spiPdc->PERIPH_TPR = reinterpret_cast<uint32_t>(sendData);
 	spiPdc->PERIPH_TCR = ARRAY_SIZE(sendData);
-
+# if SUPPORT_COSED_LOOP
+	spiPdc->PERIPH_RPR = reinterpret_cast<uint32_t>((useAltRcvData) ? altRcvData : rcvData);
+# else
 	spiPdc->PERIPH_RPR = reinterpret_cast<uint32_t>(rcvData);
+# endif
 	spiPdc->PERIPH_RCR = ARRAY_SIZE(rcvData);
 #endif
 }
@@ -1278,7 +1308,23 @@ void RxDmaCompleteCallback(CallbackParameter param, DmaCallbackReason reason) no
 #endif
 	dmaFinishedReason = reason;
 	fastDigitalWriteHigh(GlobalTmc51xxCSPin);			// set CS high
-#if !SUPPORT_CLOSED_LOOP
+#if SUPPORT_CLOSED_LOOP
+	// When in closed loop node we send the motor currents every time.
+	// In order to keep the read registers up to data, send a read request after the write request.
+	if (sendData[0] == (REGNUM_2160_X_DIRECT | 0x80))							// if we just wrote the coil currents
+	{
+		const uint32_t start = GetCurrentCycles();
+		driverStates[0].GetSpiReadCommand(const_cast<uint8_t*>(sendData));
+		SetupDMA(true);										// set up the PDC or DMAC
+		dmaFinishedReason = DmaCallbackReason::none;
+		EnableEndOfTransferInterrupt();
+		DelayCycles(start, 2 * SystemCoreClockFreq/DriversSpiClockFrequency);	// keep CS high for 2 SPI clock cycles between transactions
+		fastDigitalWriteLow(GlobalTmc51xxCSPin);		// set CS low
+		ResetSpi();
+		EnableDma();
+		EnableSpi();
+	}
+#else
 	tmcTask.GiveFromISR();
 #endif
 }
@@ -1356,12 +1402,17 @@ extern "C" [[noreturn]] void TmcLoop(void *) noexcept
 		closedLoopInstance->ControlLoop();	// Allow closed-loop to set the motor currents before we write
 #endif
 		// Set up data to write. Driver 0 is the first in the SPI chain so we must write them in reverse order.
+
+#if SINGLE_DRIVER
+		driverStates[0].GetSpiCommand(const_cast<uint8_t*>(sendData));
+#else
 		volatile uint8_t *writeBufPtr = sendData + 5 * numTmc51xxDrivers;
 		for (size_t i = 0; i < numTmc51xxDrivers; ++i)
 		{
 			writeBufPtr -= 5;
 			driverStates[i].GetSpiCommand(const_cast<uint8_t*>(writeBufPtr));
 		}
+#endif
 
 		// Kick off a transfer.
 		// On the SAME5x the only way I have found to get reliable transfers and no timeouts is to disable SPI, enable DMA, and then enable SPI.
@@ -1370,7 +1421,11 @@ extern "C" [[noreturn]] void TmcLoop(void *) noexcept
 		{
 			TaskCriticalSectionLocker lock;
 
+#if SUPPORT_CLOSED_LOOP
+			SetupDMA(false);									// set up the PDC or DMAC
+#else
 			SetupDMA();											// set up the PDC or DMAC
+#endif
 			dmaFinishedReason = DmaCallbackReason::none;
 
 			AtomicCriticalSectionLocker lock2;
@@ -1439,7 +1494,7 @@ void SmartDrivers::Init() noexcept
 	pinMode(GlobalTmc51xxCSPin, OUTPUT_HIGH);
 
 #if defined(M23CL)
-	pinMode(DriverSdModePin, OUTPUT_HIGH);									// high selects step/dir, low selects ramp generator
+	pinMode(DriverSdModePin, OUTPUT_HIGH);									// on M23CL prototype boards high selects step/dir, low selects ramp generator
 #endif
 
 	SetPinFunction(TMC51xxMosiPin, TMC51xxMosiPinPeriphMode);
@@ -1487,8 +1542,10 @@ void SmartDrivers::Init() noexcept
 	DmacManager::SetBtctrl(DmacChanTmcRx, DMAC_BTCTRL_VALID | DMAC_BTCTRL_EVOSEL_DISABLE | DMAC_BTCTRL_BLOCKACT_INT | DMAC_BTCTRL_BEATSIZE_BYTE
 								| DMAC_BTCTRL_DSTINC | DMAC_BTCTRL_STEPSEL_DST | DMAC_BTCTRL_STEPSIZE_X1);
 	DmacManager::SetSourceAddress(DmacChanTmcRx, &(SERCOM_TMC51xx->SPI.DATA.reg));
+# if !SUPPORT_CLOSED_LOOP		// in closed loop mode we use two different eceive data blocks
 	DmacManager::SetDestinationAddress(DmacChanTmcRx, rcvData);
 	DmacManager::SetDataLength(DmacChanTmcRx, ARRAY_SIZE(rcvData));
+# endif
 	DmacManager::SetTriggerSourceSercomRx(DmacChanTmcRx, SERCOM_TMC51xx_NUMBER);
 
 	DmacManager::SetBtctrl(DmacChanTmcTx, DMAC_BTCTRL_VALID | DMAC_BTCTRL_EVOSEL_DISABLE | DMAC_BTCTRL_BLOCKACT_INT | DMAC_BTCTRL_BEATSIZE_BYTE
