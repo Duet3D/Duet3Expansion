@@ -86,7 +86,7 @@ constexpr float RecipFullScaleCurrent = Tmc5160SenseResistor/325.0;		// 1.0 divi
 // With a 2MHz SPI clock, on the 3HC the TMC task takes about 25% of the CPU time. So we now use 500kHz. This means the SPI transfer will complete in a little over 240us.
 #if SUPPORT_CLOSED_LOOP
 constexpr uint32_t DriversSpiClockFrequency = 6000000;		// 6MHz SPI clock (max is half the TMC clock; TMC clock is currently 15MHz)
-constexpr uint32_t ClosedLoopSleepMicroseconds = 40;		// how long the closed loop task sleeps for in each cycle
+constexpr uint32_t ClosedLoopSleepMicroseconds = 80;		// how long the closed loop task sleeps for in each cycle
 #else
 constexpr uint32_t DriversSpiClockFrequency = 500000;		// 500kHz SPI clock
 #endif
@@ -1093,6 +1093,8 @@ static volatile uint8_t rcvData[5 * MaxSmartDrivers];
 
 #if SUPPORT_CLOSED_LOOP
 static volatile uint8_t altRcvData[5 * MaxSmartDrivers];
+static uint32_t lastWakeupTime = 0;
+static StepTimer tmcTimer;
 #endif
 
 static volatile DmaCallbackReason dmaFinishedReason;
@@ -1311,11 +1313,11 @@ void RxDmaCompleteCallback(CallbackParameter param, DmaCallbackReason reason) no
 #if SUPPORT_CLOSED_LOOP
 	// When in closed loop node we send the motor currents every time.
 	// In order to keep the read registers up to data, send a read request after the write request.
-	if (sendData[0] == (REGNUM_2160_X_DIRECT | 0x80))							// if we just wrote the coil currents
+	if (sendData[0] == (REGNUM_2160_X_DIRECT | 0x80))	// if we just wrote the coil currents
 	{
-		const uint32_t start = GetCurrentCycles();
+		const uint32_t start = GetCurrentCycles();		// get the time now so we can time the CS high signal
 		driverStates[0].GetSpiReadCommand(const_cast<uint8_t*>(sendData));
-		SetupDMA(true);										// set up the PDC or DMAC
+		SetupDMA(true);									// set up the PDC or DMAC
 		dmaFinishedReason = DmaCallbackReason::none;
 		EnableEndOfTransferInterrupt();
 		DelayCycles(start, 2 * SystemCoreClockFreq/DriversSpiClockFrequency);	// keep CS high for 2 SPI clock cycles between transactions
@@ -1324,14 +1326,24 @@ void RxDmaCompleteCallback(CallbackParameter param, DmaCallbackReason reason) no
 		EnableDma();
 		EnableSpi();
 	}
+	else
+	{
+		// We run the SPI bus at high speeds so that motor currents get updated as quickly as possible.
+		// If we wake up as soon as the transfer has completed then we will use too much of the available CPU time.
+		// So schedule a wakeup call instead. Try to make the wakeup interval regular.
+		lastWakeupTime += (StepTimer::StepClockRate * ClosedLoopSleepMicroseconds)/1000000;
+		if (tmcTimer.ScheduleCallbackFromIsr(lastWakeupTime))
+		{
+			lastWakeupTime = StepTimer::GetTimerTicks();
+			tmcTask.GiveFromISR();
+		}
+	}
 #else
 	tmcTask.GiveFromISR();
 #endif
 }
 
 #if SUPPORT_CLOSED_LOOP
-static StepTimer tmcTimer;
-
 static void TmcTimerCallback(CallbackParameter) noexcept
 {
 	tmcTask.GiveFromISR();
@@ -1349,6 +1361,7 @@ extern "C" [[noreturn]] void TmcLoop(void *) noexcept
 		if (driversState == DriversState::noPower)
 		{
 			TaskBase::Take();
+			lastWakeupTime = StepTimer::GetTimerTicks();
 		}
 		else if (driversState == DriversState::notInitialised)
 		{
@@ -1436,13 +1449,6 @@ extern "C" [[noreturn]] void TmcLoop(void *) noexcept
 			ResetSpi();
 			EnableDma();
 			EnableSpi();
-#if SUPPORT_CLOSED_LOOP
-			// We run the SPI bus at high speeds so that motor currents get updated as quickly as possible.
-			// If we wake up as soon as the transfer has completed then we will use too much of the available CPU time.
-			// So schedule a wakeup call instead.
-			// At 6MHz SPI frequency the 5-byte transfer takes about 7us.
-			tmcTimer.ScheduleCallbackFromIsr(StepTimer::GetTimerTicks() + (StepTimer::StepClockRate * ClosedLoopSleepMicroseconds)/1000000);
-#endif
 		}
 
 		// Wait for the end-of-transfer interrupt
@@ -1479,6 +1485,7 @@ extern "C" [[noreturn]] void TmcLoop(void *) noexcept
 			{
 				driverStates[drive].TransferFailed();
 			}
+			lastWakeupTime = StepTimer::GetTimerTicks();
 		}
 	}
 }
