@@ -32,7 +32,7 @@ public:
 		{
 			const float readingDelta = reading - prevReading;
 			const uint32_t timestampDelta = timestamp - prevTimestamp;
-			derivative = readingDelta * (float)StepTimer::StepClockRate / (float)timestampDelta;
+			derivative = readingDelta / (float)timestampDelta;
 		}
 
 		index = (index + 1) % N;
