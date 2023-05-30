@@ -811,9 +811,6 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 	case CanMessageReturnInfo::typeDiagnosticsPart0 + 4:
 		extra = LastDiagnosticsPart;
 #if SUPPORT_DRIVERS
-# if SUPPORT_CLOSED_LOOP
-		closedLoopInstance->Diagnostics(reply);
-# endif
 		for (size_t driver = 0; driver < NumDrivers; ++driver)
 		{
 			reply.lcatf("Driver %u: pos %" PRIi32 ", %.1f steps/mm"
@@ -891,6 +888,9 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 
 	case CanMessageReturnInfo::typeDiagnosticsPart0 + 7:
 		extra = LastDiagnosticsPart;
+#if SUPPORT_CLOSED_LOOP
+		closedLoopInstance->Diagnostics(reply);
+#endif
 #if SUPPORT_LIS3DH
 		AccelerometerHandler::Diagnostics(reply);
 #endif
