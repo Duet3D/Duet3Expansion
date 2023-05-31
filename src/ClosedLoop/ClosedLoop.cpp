@@ -848,17 +848,17 @@ inline void ClosedLoop::ControlMotorCurrents(StepTimer::Ticks ticksSinceLastCall
 	const float timeDelta = (float)ticksSinceLastCall * (1.0/(float)StepTimer::StepClockRate);
 	float currentFraction;
 
+	// Use a PID controller to calculate the required 'torque' - the control signal
+	// We choose to use a PID control signal in the range -256 to +256. This is arbitrary.
+	PIDPTerm = constrain<float>(Kp * currentError, -256.0, 256.0);
+	PIDITerm = constrain<float>(PIDITerm + Ki * currentError * timeDelta, -PIDIlimit, PIDIlimit);	// constrain I to prevent it running away
+	PIDDTerm = constrain<float>(Kd * errorDerivativeFilter.GetDerivative() * StepTimer::StepClockRate, -256.0, 256.0);	// constrain D so that we can graph it more sensibly after a sudden step input
+	PIDVTerm = mParams.speed * Kv * ticksSinceLastCall;
+	PIDATerm = mParams.acceleration * Ka * fsquare(ticksSinceLastCall);
+	PIDControlSignal = constrain<float>(PIDPTerm + PIDITerm + PIDDTerm + PIDVTerm + PIDATerm, -256.0, 256.0);	// clamp the sum between +/- 256
+
 	if (currentMode == ClosedLoopMode::foc)
 	{
-		// Use a PID controller to calculate the required 'torque' - the control signal
-		// We choose to use a PID control signal in the range -256 to +256. This is arbitrary.
-		PIDPTerm = constrain<float>(Kp * currentError, -256.0, 256.0);
-		PIDITerm = constrain<float>(PIDITerm + Ki * currentError * timeDelta, -PIDIlimit, PIDIlimit);	// constrain I to prevent it running away
-		PIDDTerm = constrain<float>(Kd * errorDerivativeFilter.GetDerivative() * StepTimer::StepClockRate, -256.0, 256.0);	// constrain D so that we can graph it more sensibly after a sudden step input
-		PIDVTerm = mParams.speed * Kv * ticksSinceLastCall;
-		PIDATerm = mParams.acceleration * Ka * fsquare(ticksSinceLastCall);
-		PIDControlSignal = constrain<float>(PIDPTerm + PIDITerm + PIDDTerm + PIDVTerm + PIDATerm, -256.0, 256.0);	// clamp the sum between +/- 256
-
 		// Calculate the offset required to produce the torque in the correct direction
 		// i.e. if we are moving in the positive direction, we must apply currents with a positive phase shift
 		// The max abs value of phase shift we want is 1 full step i.e. 25%.
@@ -878,7 +878,8 @@ inline void ClosedLoop::ControlMotorCurrents(StepTimer::Ticks ticksSinceLastCall
 	}
 	else
 	{
-		currentFraction = 1.0;
+		constexpr float minCurrentFraction = 0.25;
+		currentFraction = minCurrentFraction + (1.0 - minCurrentFraction) * min<float>(fabsf(PIDControlSignal * (1.0/256.0)), 1.0);
 		const uint16_t stepPhase = (uint16_t)llrintf(mParams.position * 1024.0);
 		desiredStepPhase = (stepPhase + phaseOffset) & 4095;
 	}
@@ -945,10 +946,7 @@ void ClosedLoop::ResetError(size_t driver) noexcept
 		(void)err;		//TODO handle error
 		errorDerivativeFilter.Reset();
 		speedFilter.Reset();
-		if (currentMode == ClosedLoopMode::foc)
-		{
-			SetTargetToCurrentPosition();
-		}
+		SetTargetToCurrentPosition();
 	}
 # else
 #  error Cannot support closed loop with the specified hardware
@@ -965,7 +963,7 @@ bool ClosedLoop::SetClosedLoopEnabled(size_t driver, ClosedLoopMode mode, const 
 		return false;
 	}
 
-	if (mode != ClosedLoopMode::open && currentMode == ClosedLoopMode::open)
+	if (mode != ClosedLoopMode::open)
 	{
 		if (encoder == nullptr)
 		{
