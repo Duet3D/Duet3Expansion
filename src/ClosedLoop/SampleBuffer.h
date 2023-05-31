@@ -10,6 +10,8 @@
 
 #include <RepRapFirmware.h>
 
+constexpr size_t RoundUpToDword(size_t val) noexcept { return (val + 3) & (~3); }
+
 // Data collection buffer and related variables
 class SampleBuffer
 {
@@ -32,10 +34,11 @@ public:
 	bool FinishSample() noexcept;
 
 private:
-	static constexpr size_t DataBufferSize = 2000 * MaxClosedLoopSampleLength;	// When collecting data we can accommodate 2000 samples with up to 38 bytes per sample
+	static constexpr size_t DataBufferSize = 2000 * RoundUpToDword(MaxClosedLoopSampleLength);	// When collecting data we can accommodate 2000 samples with up to 38 bytes per sample
 
 	alignas(4) uint8_t data[DataBufferSize];	// Ring buffer to store the samples in
 	size_t numBytesPerSample;
+	size_t roundedUpBytesPerSample;
 	volatile size_t readPointer = 0;			// Send this sample next to the main board
 	size_t tempWritePointer = 0;
 	volatile size_t writePointer = 0;			// Store the next sample at this point in the buffer
@@ -44,23 +47,41 @@ private:
 	bool badSample = false;						// true if we collected data faster than we could send it
 };
 
+// All values we put are multiples of 2 bytes long, so it's safe to store 16-bit values directly
+inline void SampleBuffer::PutU16(uint16_t val) noexcept
+{
+	*reinterpret_cast<uint16_t*>(data + tempWritePointer) = val;
+	tempWritePointer += sizeof(uint16_t);
+}
+
+inline void SampleBuffer::PutU32(uint32_t val) noexcept
+{
+	*reinterpret_cast<uint32_t*>(data + tempWritePointer) = val;
+	tempWritePointer += sizeof(uint32_t);
+}
+
+inline void SampleBuffer::PutF16(float val) noexcept
+{
+	*reinterpret_cast<float16_t*>(data + tempWritePointer) = (float16_t)val;
+	tempWritePointer += sizeof(float16_t);
+}
+
 inline void SampleBuffer::PutI16(int16_t val) noexcept
 {
-	PutU16((uint16_t)val);
+	*reinterpret_cast<int16_t*>(data + tempWritePointer) = val;
+	tempWritePointer += sizeof(int16_t);
 }
 
 inline void SampleBuffer::PutI32(int32_t val) noexcept
 {
-	PutU32((uint32_t)val);
+	*reinterpret_cast<int32_t*>(data + tempWritePointer) = val;
+	tempWritePointer += sizeof(int32_t);
 }
 
 inline void SampleBuffer::PutF32(float val) noexcept
 {
-	static_assert(sizeof(float) == sizeof(uint32_t));
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wstrict-aliasing"
-	PutU32(*reinterpret_cast<const uint32_t*>(&val));
-#pragma GCC diagnostic pop
+	*reinterpret_cast<float*>(data + tempWritePointer) = val;
+	tempWritePointer += sizeof(float);
 }
 
 #endif /* SRC_CLOSEDLOOP_SAMPLEBUFFER_H_ */
