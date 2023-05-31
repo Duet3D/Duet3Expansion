@@ -158,6 +158,7 @@ private:
 	uint16_t phaseShift;								// The desired shift in the position of the motor, where 1024 = +1 full step
 
 	uint16_t desiredStepPhase = 0;						// The desired position of the motor
+	uint16_t phaseOffset = 0;							// The amount by which the phase should be offset when in semi-open-loop mode
 	int16_t coilA;										// The current to run through coil A
 	int16_t coilB;										// The current to run through coil A
 

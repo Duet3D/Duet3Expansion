@@ -880,7 +880,7 @@ inline void ClosedLoop::ControlMotorCurrents(StepTimer::Ticks ticksSinceLastCall
 	{
 		currentFraction = 1.0;
 		const int16_t stepPhase = lrintf(fmodf(mParams.position, 4.0) * 1024.0);
-		desiredStepPhase = (uint16_t)(stepPhase + 4096) & 4095;
+		desiredStepPhase = ((uint16_t)(stepPhase + 4096) + phaseOffset) & 4095;
 	}
 
 	// Assert the required motor currents
@@ -908,8 +908,7 @@ void ClosedLoop::Diagnostics(const StringRef& reply) noexcept
 	// The rest is only relevant if we are in closed loop mode
 	if (currentMode != ClosedLoopMode::open)
 	{
-		reply.lcatf("Tuning mode: %#x, tuning error: %#x", tuning, tuningError);
-		reply.catf(", collecting data: %s", CollectingData() ? "yes" : "no");
+		reply.lcatf("Tuning mode: %#x, tuning error: %#x, collecting data: %s", tuning, tuningError, CollectingData() ? "yes" : "no");
 		if (CollectingData())
 		{
 			reply.catf(" (filter: %#x, mode: %u, rate: %u, movement: %u)", filterRequested, samplingMode, (unsigned int)(StepTimer::StepClockRate/dataCollectionIntervalTicks), movementRequested);
@@ -946,7 +945,10 @@ void ClosedLoop::ResetError(size_t driver) noexcept
 		(void)err;		//TODO handle error
 		errorDerivativeFilter.Reset();
 		speedFilter.Reset();
-		SetTargetToCurrentPosition();
+		if (currentMode == ClosedLoopMode::foc)
+		{
+			SetTargetToCurrentPosition();
+		}
 	}
 # else
 #  error Cannot support closed loop with the specified hardware
@@ -1013,9 +1015,17 @@ void ClosedLoop::DriverSwitchedToClosedLoop(size_t driver) noexcept
 {
 	if (driver == 0)
 	{
-		delay(3);														// allow time for the switch to complete and a few control loop iterations to be done
-		SetMotorPhase(desiredStepPhase, SmartDrivers::GetStandstillCurrentPercent(0) * 0.01);	// set the motor currents to match the initial position using the open loop standstill current
-		PIDITerm = 0.0;													// clear the integral term accumulator
+		if (currentMode == ClosedLoopMode::foc)
+		{
+			delay(3);														// allow time for the switch to complete and a few control loop iterations to be done
+			SetMotorPhase(desiredStepPhase, SmartDrivers::GetStandstillCurrentPercent(0) * 0.01);	// set the motor currents to match the initial position using the open loop standstill current
+			PIDITerm = 0.0;													// clear the integral term accumulator
+		}
+		else
+		{
+			const int16_t stepPhase = lrintf(fmodf(mParams.position, 4.0) * 1024.0);
+			phaseOffset = (desiredStepPhase - (uint16_t)stepPhase) & 4095;
+		}
 		errorDerivativeFilter.Reset();
 		speedFilter.Reset();
 		ResetMonitoringVariables();										// the first loop iteration will have recorded a higher than normal loop call interval, so start again
