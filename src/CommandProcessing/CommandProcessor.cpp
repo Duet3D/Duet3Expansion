@@ -349,7 +349,7 @@ static GCodeResult ProcessM569(const CanMessageGeneric& msg, const StringRef& re
 # if SUPPORT_CLOSED_LOOP
 			// Enable/disabled closed loop control
 			const ClosedLoopMode mode = (val == (uint32_t)DriverMode::foc) ? ClosedLoopMode::foc
-										: (val == (uint32_t)ClosedLoopMode::semiOpen) ? ClosedLoopMode::semiOpen
+										: (val == (uint32_t)DriverMode::semiOpen) ? ClosedLoopMode::semiOpen
 											: ClosedLoopMode::open;
 			if (!closedLoopInstance->SetClosedLoopEnabled(drive, mode, reply))
 			{

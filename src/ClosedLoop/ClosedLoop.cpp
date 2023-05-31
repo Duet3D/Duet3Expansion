@@ -846,59 +846,42 @@ inline void ClosedLoop::ControlMotorCurrents(StepTimer::Ticks ticksSinceLastCall
 {
 	// Get the time delta in seconds
 	const float timeDelta = (float)ticksSinceLastCall * (1.0/(float)StepTimer::StepClockRate);
+	float currentFraction;
 
-	// Use a PID controller to calculate the required 'torque' - the control signal
-	// We choose to use a PID control signal in the range -256 to +256. This is arbitrary.
-	PIDPTerm = constrain<float>(Kp * currentError, -256.0, 256.0);
-	PIDITerm = constrain<float>(PIDITerm + Ki * currentError * timeDelta, -PIDIlimit, PIDIlimit);	// constrain I to prevent it running away
-	PIDDTerm = constrain<float>(Kd * errorDerivativeFilter.GetDerivative() * StepTimer::StepClockRate, -256.0, 256.0);	// constrain D so that we can graph it more sensibly after a sudden step input
-	PIDVTerm = mParams.speed * Kv * ticksSinceLastCall;
-	PIDATerm = mParams.acceleration * Ka * fsquare(ticksSinceLastCall);
-	PIDControlSignal = constrain<float>(PIDPTerm + PIDITerm + PIDDTerm + PIDVTerm + PIDATerm, -256.0, 256.0);	// clamp the sum between +/- 256
-
-	// Calculate the offset required to produce the torque in the correct direction
-	// i.e. if we are moving in the positive direction, we must apply currents with a positive phase shift
-	// The max abs value of phase shift we want is 1 full step i.e. 25%.
-	// Given that PIDControlSignal is -256 .. 256 and phase is 0 .. 4095
-	// and that 25% of 4096 = 1024, our max phase shift = 4 * PIDControlSignal
-
-#if 1
-	// New algorithm: phase of motor current is always +/- 1 full step relative to current position, but motor current is adjusted according to the PID result
-	const float PhaseFeedForwardFactor = 1000.0;
-	const int16_t phaseFeedForward = lrintf(constrain<float>(speedFilter.GetDerivative() * ticksSinceLastCall * PhaseFeedForwardFactor, -256.0, 256.0));
-	phaseShift = (PIDControlSignal < 0) ? phaseFeedForward + (3 * 1024) : phaseFeedForward + 1024;
-	const float currentFraction = fabsf(PIDControlSignal) * (1.0/256.0);
-#else
-	phaseShift = PIDControlSignal * 4.0;
-
-	// New control algorithm:
-	// - if the required phase shift is greater than about 15 degrees, apply it at maximum current
-	// - below 15 degrees, keep the phase shift at +/- 15 degrees and reduce the current, but not below the minimum holding current
-	// - after that, keep the current at the holding current and reduce the phase shift.
-	const float absPhaseShift = fabsf(phaseShift);
-	if (absPhaseShift >= MinimumPhaseShift)
+	if (currentMode == ClosedLoopMode::foc)
 	{
-		// Use the requested phase shift at full current
-		currentFraction = 1.0;
-	}
-	else if (absPhaseShift >= holdCurrentFractionTimesMinPhaseShift)
-	{
-		// Use the minimum phase shift but reduce the current
-		currentFraction = absPhaseShift * (1.0/MinimumPhaseShift);
-		phaseShift = (phaseShift >= 0) ? MinimumPhaseShift : -MinimumPhaseShift;
+		// Use a PID controller to calculate the required 'torque' - the control signal
+		// We choose to use a PID control signal in the range -256 to +256. This is arbitrary.
+		PIDPTerm = constrain<float>(Kp * currentError, -256.0, 256.0);
+		PIDITerm = constrain<float>(PIDITerm + Ki * currentError * timeDelta, -PIDIlimit, PIDIlimit);	// constrain I to prevent it running away
+		PIDDTerm = constrain<float>(Kd * errorDerivativeFilter.GetDerivative() * StepTimer::StepClockRate, -256.0, 256.0);	// constrain D so that we can graph it more sensibly after a sudden step input
+		PIDVTerm = mParams.speed * Kv * ticksSinceLastCall;
+		PIDATerm = mParams.acceleration * Ka * fsquare(ticksSinceLastCall);
+		PIDControlSignal = constrain<float>(PIDPTerm + PIDITerm + PIDDTerm + PIDVTerm + PIDATerm, -256.0, 256.0);	// clamp the sum between +/- 256
+
+		// Calculate the offset required to produce the torque in the correct direction
+		// i.e. if we are moving in the positive direction, we must apply currents with a positive phase shift
+		// The max abs value of phase shift we want is 1 full step i.e. 25%.
+		// Given that PIDControlSignal is -256 .. 256 and phase is 0 .. 4095
+		// and that 25% of 4096 = 1024, our max phase shift = 4 * PIDControlSignal
+
+		// New algorithm: phase of motor current is always +/- 1 full step relative to current position, but motor current is adjusted according to the PID result
+		const float PhaseFeedForwardFactor = 1000.0;
+		const int16_t phaseFeedForward = lrintf(constrain<float>(speedFilter.GetDerivative() * ticksSinceLastCall * PhaseFeedForwardFactor, -256.0, 256.0));
+		phaseShift = (PIDControlSignal < 0) ? phaseFeedForward + (3 * 1024) : phaseFeedForward + 1024;
+		currentFraction = fabsf(PIDControlSignal) * (1.0/256.0);
+
+		// Calculate the required motor currents to induce that torque and reduce it modulo 4096
+		// The following assumes that signed arithmetic is 2's complement
+		const uint32_t measuredStepPhase = encoder->GetCurrentPhasePosition();
+		desiredStepPhase = (uint16_t)((int16_t)measuredStepPhase + phaseShift) % 4096;
 	}
 	else
 	{
-		// Reduce the phase shift and keep the current the same
-		currentFraction = holdCurrentFraction;
-		phaseShift *= recipHoldCurrentFraction;
+		currentFraction = 1.0;
+		const int16_t stepPhase = lrintf(fmodf(mParams.position, 4.0) * 1024.0);
+		desiredStepPhase = (uint16_t)(stepPhase + 4096) & 4095;
 	}
-#endif
-
-	// Calculate the required motor currents to induce that torque and reduce it modulo 4096
-	// The following assumes that signed arithmetic is 2's complement
-	const uint32_t measuredStepPhase = encoder->GetCurrentPhasePosition();
-	desiredStepPhase = (uint16_t)((int16_t)measuredStepPhase + phaseShift) % 4096;
 
 	// Assert the required motor currents
 	SetMotorPhase(desiredStepPhase, currentFraction);
