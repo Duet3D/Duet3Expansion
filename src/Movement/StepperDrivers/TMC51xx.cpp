@@ -575,7 +575,7 @@ bool TmcDriverState::SetMicrostepping(uint32_t shift, bool interpolate) noexcept
 // Get microstepping or chopper control register
 unsigned int TmcDriverState::GetMicrostepping(bool& interpolation) const noexcept
 {
-	interpolation = (writeRegisters[WriteChopConf] & CHOPCONF_INTPOL) != 0;
+	interpolation = (configuredChopConfReg & CHOPCONF_INTPOL) != 0;
 	return 1u << microstepShiftFactor;
 }
 
@@ -727,6 +727,12 @@ bool TmcDriverState::SetDriverMode(unsigned int mode) noexcept
 	{
 	case (unsigned int)DriverMode::spreadCycle:
 		UpdateRegister(WriteGConf, writeRegisters[WriteGConf] & ~(GCONF_DIRECT_MODE | GCONF_STEALTHCHOP));
+#if TMC_TYPE == 5130
+		configuredChopConfReg = &= ~(CHOPCONF_CHM | CHOPCONF_5130_RNDTOFF);
+#else
+		configuredChopConfReg &= ~CHOPCONF_CHM;
+#endif
+		UpdateChopConfRegister();
 #if SUPPORT_CLOSED_LOOP
 		UpdateCurrent();		// if we are leaving closed loop mode then we need to update the standstill current
 #endif
@@ -734,20 +740,25 @@ bool TmcDriverState::SetDriverMode(unsigned int mode) noexcept
 
 	case (unsigned int)DriverMode::stealthChop:
 		UpdateRegister(WriteGConf, (writeRegisters[WriteGConf] & ~GCONF_DIRECT_MODE) | GCONF_STEALTHCHOP);
+#if TMC_TYPE == 5130
+		configuredChopConfReg = &= ~(CHOPCONF_CHM | CHOPCONF_5130_RNDTOFF);
+#else
+		configuredChopConfReg &= ~CHOPCONF_CHM;
+#endif
+		UpdateChopConfRegister();
 #if SUPPORT_CLOSED_LOOP
 		UpdateCurrent();		// if we are leaving closed loop mode then we need to update the standstill current
 #endif
 		return true;
 
 	case (unsigned int)DriverMode::constantOffTime:
-		UpdateRegister(WriteGConf, writeRegisters[WriteGConf]  & ~(GCONF_DIRECT_MODE | GCONF_STEALTHCHOP));
-		UpdateRegister(WriteChopConf,
+		UpdateRegister(WriteGConf, writeRegisters[WriteGConf] & ~(GCONF_DIRECT_MODE | GCONF_STEALTHCHOP));
 #if TMC_TYPE == 5130
-				(writeRegisters[WriteChopConf] | CHOPCONF_CHM) & ~CHOPCONF_5130_RNDTOFF
+		configuredChopConfReg = (configuredChopConfReg & ~CHOPCONF_5130_RNDTOFF) | CHOPCONF_CHM;
 #else
-				writeRegisters[WriteChopConf] | CHOPCONF_CHM
+		configuredChopConfReg |= CHOPCONF_CHM;
 #endif
-			);
+		UpdateChopConfRegister();
 #if SUPPORT_CLOSED_LOOP
 		UpdateCurrent();		// if we are leaving closed loop mode then we need to update the standstill current
 #endif
@@ -756,7 +767,8 @@ bool TmcDriverState::SetDriverMode(unsigned int mode) noexcept
 #if TMC_TYPE == 5130
 	case (unsigned int)DriverMode::randomOffTime:
 		UpdateRegister(WriteGConf, writeRegisters[WriteGConf] & ~GCONF_STEALTHCHOP);
-		UpdateRegister(WriteChopConf, writeRegisters[WriteChopConf] | CHOPCONF_CHM | CHOPCONF_5130_RNDTOFF);
+		configuredChopConfReg |= CHOPCONF_CHM | CHOPCONF_5130_RNDTOFF;
+		UpdateChopConfRegister();
 # if SUPPORT_CLOSED_LOOP
 		UpdateCurrent();		// in case we are leaving closed loop mode
 # endif
@@ -784,9 +796,9 @@ DriverMode TmcDriverState::GetDriverMode() const noexcept
 		  ((writeRegisters[WriteGConf] & GCONF_DIRECT_MODE) != 0) ? DriverMode::foc :
 #endif
 		  ((writeRegisters[WriteGConf] & GCONF_STEALTHCHOP) != 0) ? DriverMode::stealthChop
-		: ((writeRegisters[WriteChopConf] & CHOPCONF_CHM) == 0) ? DriverMode::spreadCycle
+		: ((configuredChopConfReg & CHOPCONF_CHM) == 0) ? DriverMode::spreadCycle
 #if TMC_TYPE == 5130
-			: ((writeRegisters[WriteChopConf] & CHOPCONF_5130_RNDTOFF) != 0) ? DriverMode::randomOffTime
+			: ((configuredChopConfReg & CHOPCONF_5130_RNDTOFF) != 0) ? DriverMode::randomOffTime
 #endif
 				: DriverMode::constantOffTime;
 }
@@ -923,7 +935,7 @@ void TmcDriverState::SetStallDetectFilter(bool sgFilter) noexcept
 
 void TmcDriverState::SetStallMinimumStepsPerSecond(unsigned int stepsPerSecond) noexcept
 {
-	maxStallStepInterval = StepTimer::StepClockRate/max<unsigned int>(stepsPerSecond, 1);
+	maxStallStepInterval = StepTimer::StepClockRate/max<unsigned int>(stepsPerSecond, 1u);
 	UpdateRegister(WriteTcoolthrs, (GetTmcClockSpeed() + (128 * stepsPerSecond))/(256 * stepsPerSecond));
 }
 
@@ -1817,7 +1829,7 @@ uint32_t SmartDrivers::GetRegister(size_t driver, SmartDriverRegister reg) noexc
 }
 
 // Read any register from a driver
-// This will return GCodeResult:notFinished for at least the first call, so it must be called repeatedly until it returns a different value.
+// This will return GCodeResult:notFinished for at least the first call if the driver number is valid, so it must be called repeatedly until it returns a different value.
 GCodeResult SmartDrivers::GetAnyRegister(size_t driver, const StringRef& reply, uint8_t regNum) noexcept
 {
 	if (driver < numTmc51xxDrivers)
