@@ -92,18 +92,18 @@ static inline uint32_t TickPeriodToMicroseconds(StepTimer::Ticks tickPeriod) noe
 }
 
 // Helper function to convert a time period (expressed in StepTimer::Ticks) to a frequency in Hz
-static inline float TickPeriodToFreq(StepTimer::Ticks tickPeriod) noexcept
+static inline uint32_t TickPeriodToFreq(StepTimer::Ticks tickPeriod) noexcept
 {
-	return 1000.0l / TickPeriodToMillis(tickPeriod);
+	return StepTimer::StepClockRate/tickPeriod;
 }
 
 // Helper function to reset the 'monitoring variables' as defined above
 void ClosedLoop::ResetMonitoringVariables() noexcept
 {
 	ClosedLoop::minControlLoopRuntime = numeric_limits<StepTimer::Ticks>::max();
-	ClosedLoop::maxControlLoopRuntime = numeric_limits<StepTimer::Ticks>::min();
+	ClosedLoop::maxControlLoopRuntime = 1;
 	ClosedLoop::minControlLoopCallInterval = numeric_limits<StepTimer::Ticks>::max();
-	ClosedLoop::maxControlLoopCallInterval = numeric_limits<StepTimer::Ticks>::min();
+	ClosedLoop::maxControlLoopCallInterval = 1;
 }
 
 // Helper function to cat all the current tuning errors onto a reply in human-readable form
@@ -169,7 +169,8 @@ void ClosedLoop::Init() noexcept
 	ResetMonitoringVariables();
 
 	PIDITerm = 0.0;
-	derivativeFilter.Reset();
+	errorDerivativeFilter.Reset();
+	speedFilter.Reset();
 
 	// Set up the data transmission task
 	dataTransmissionTask = new Task<DataCollectionTaskStackWords>;
@@ -260,7 +261,8 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 		Kv = tempKv;
 		Ka = tempKa;
 		PIDITerm = 0.0;
-		derivativeFilter.Reset();
+		errorDerivativeFilter.Reset();
+		speedFilter.Reset();
 	}
 
 	if (seenH)
@@ -407,7 +409,8 @@ GCodeResult ClosedLoop::ProcessBasicTuningResult(const StringRef& reply) noexcep
 	debugPrintf("commanded phase %" PRIu32 " measured phase %" PRIu32 "\n", currentMotorPhase, encoder->GetCurrentPhasePosition());
 #endif
 	PIDITerm = 0.0;
-	derivativeFilter.Reset();
+	errorDerivativeFilter.Reset();
+	speedFilter.Reset();
 	SetTargetToCurrentPosition();
 	tuningError &= ~TuningError::TuningOrCalibrationInProgress;
 
@@ -499,7 +502,8 @@ GCodeResult ClosedLoop::ProcessCalibrationResult(const StringRef& reply) noexcep
 	}
 
 	PIDITerm = 0.0;
-	derivativeFilter.Reset();
+	errorDerivativeFilter.Reset();
+	speedFilter.Reset();
 	SetTargetToCurrentPosition();
 
 	const float hyst = encoder->GetMeasuredHysteresis();
@@ -673,7 +677,8 @@ void ClosedLoop::ControlLoop() noexcept
 
 		const float targetEncoderReading = rintf(mParams.position * encoder->GetCountsPerStep());
 		currentError = (float)(targetEncoderReading - encoder->GetCurrentCount()) * encoder->GetStepsPerCount();
-		derivativeFilter.ProcessReading(currentError, loopCallTime);
+		errorDerivativeFilter.ProcessReading(currentError, loopCallTime);
+		speedFilter.ProcessReading(encoder->GetCurrentCount() * encoder->GetStepsPerCount(), loopCallTime);
 
 		if (closedLoopEnabled)
 		{
@@ -818,14 +823,13 @@ void ClosedLoop::CollectSample() noexcept
 		if (filterRequested & CL_RECORD_PID_P_TERM)  			{ sampleBuffer.PutF16(PIDPTerm); }
 		if (filterRequested & CL_RECORD_PID_I_TERM)  			{ sampleBuffer.PutF16(PIDITerm); }
 		if (filterRequested & CL_RECORD_PID_D_TERM)  			{ sampleBuffer.PutF16(PIDDTerm); }
-		if (filterRequested & CL_RECORD_PID_V_TERM)  			{ sampleBuffer.PutF16(PIDDTerm); }
-		if (filterRequested & CL_RECORD_PID_A_TERM)  			{ sampleBuffer.PutF16(PIDDTerm); }
+		if (filterRequested & CL_RECORD_PID_V_TERM)  			{ sampleBuffer.PutF16(PIDVTerm); }
+		if (filterRequested & CL_RECORD_PID_A_TERM)  			{ sampleBuffer.PutF16(PIDATerm); }
 		if (filterRequested & CL_RECORD_CURRENT_STEP_PHASE)  	{ sampleBuffer.PutU16(encoder->GetCurrentPhasePosition()); }
 		if (filterRequested & CL_RECORD_DESIRED_STEP_PHASE)  	{ sampleBuffer.PutU16(desiredStepPhase); }
-		if (filterRequested & CL_RECORD_PHASE_SHIFT)  			{ sampleBuffer.PutF16(phaseShift); }
+		if (filterRequested & CL_RECORD_PHASE_SHIFT)  			{ sampleBuffer.PutU16(phaseShift % 4096); }
 		if (filterRequested & CL_RECORD_COIL_A_CURRENT) 		{ sampleBuffer.PutI16(coilA); }
 		if (filterRequested & CL_RECORD_COIL_B_CURRENT) 		{ sampleBuffer.PutI16(coilB); }
-		if (filterRequested & CL_RECORD_MOTOR_CURRENT_FRACTION)	{ sampleBuffer.PutF16(currentFraction); }
 
 		sampleBuffer.FinishSample();
 		++samplesCollected;
@@ -845,9 +849,9 @@ inline void ClosedLoop::ControlMotorCurrents(StepTimer::Ticks ticksSinceLastCall
 
 	// Use a PID controller to calculate the required 'torque' - the control signal
 	// We choose to use a PID control signal in the range -256 to +256. This is arbitrary.
-	PIDPTerm = Kp * currentError;
+	PIDPTerm = constrain<float>(Kp * currentError, -256.0, 256.0);
 	PIDITerm = constrain<float>(PIDITerm + Ki * currentError * timeDelta, -PIDIlimit, PIDIlimit);	// constrain I to prevent it running away
-	PIDDTerm = constrain<float>(Kd * derivativeFilter.GetDerivative(), -256.0, 256.0);				// constrain D so that we can graph it more sensibly after a sudden step input
+	PIDDTerm = constrain<float>(Kd * errorDerivativeFilter.GetDerivative() * StepTimer::StepClockRate, -256.0, 256.0);	// constrain D so that we can graph it more sensibly after a sudden step input
 	PIDVTerm = mParams.speed * Kv * ticksSinceLastCall;
 	PIDATerm = mParams.acceleration * Ka * fsquare(ticksSinceLastCall);
 	PIDControlSignal = constrain<float>(PIDPTerm + PIDITerm + PIDDTerm + PIDVTerm + PIDATerm, -256.0, 256.0);	// clamp the sum between +/- 256
@@ -860,8 +864,10 @@ inline void ClosedLoop::ControlMotorCurrents(StepTimer::Ticks ticksSinceLastCall
 
 #if 1
 	// New algorithm: phase of motor current is always +/- 1 full step relative to current position, but motor current is adjusted according to the PID result
-	phaseShift = (PIDControlSignal < 0) ? -1024 : 1024;
-	currentFraction = fabsf(PIDControlSignal) * (1.0/256.0);
+	const float PhaseFeedForwardFactor = 1000.0;
+	const int16_t phaseFeedForward = lrintf(constrain<float>(speedFilter.GetDerivative() * ticksSinceLastCall * PhaseFeedForwardFactor, -256.0, 256.0));
+	phaseShift = (PIDControlSignal < 0) ? phaseFeedForward + (3 * 1024) : phaseFeedForward + 1024;
+	const float currentFraction = fabsf(PIDControlSignal) * (1.0/256.0);
 #else
 	phaseShift = PIDControlSignal * 4.0;
 
@@ -892,7 +898,7 @@ inline void ClosedLoop::ControlMotorCurrents(StepTimer::Ticks ticksSinceLastCall
 	// Calculate the required motor currents to induce that torque and reduce it modulo 4096
 	// The following assumes that signed arithmetic is 2's complement
 	const uint32_t measuredStepPhase = encoder->GetCurrentPhasePosition();
-	desiredStepPhase = (uint16_t)((int32_t)measuredStepPhase + lrintf(phaseShift)) % 4096;
+	desiredStepPhase = (uint16_t)((int16_t)measuredStepPhase + phaseShift) % 4096;
 
 	// Assert the required motor currents
 	SetMotorPhase(desiredStepPhase, currentFraction);
@@ -926,13 +932,9 @@ void ClosedLoop::Diagnostics(const StringRef& reply) noexcept
 			reply.catf(" (filter: %#x, mode: %u, rate: %u, movement: %u)", filterRequested, samplingMode, (unsigned int)(StepTimer::StepClockRate/dataCollectionIntervalTicks), movementRequested);
 		}
 
-#if 0	// DC disabled this because it doesn't work yet and the driver diagnostics were too long for the reply buffer
-		reply.catf(", ultimateGain=%f, oscillationPeriod=%f", (double) ultimateGain, (double) oscillationPeriod);
-#endif
-		reply.lcatf("Control loop runtime (us): min=%" PRIu32 ", max=%" PRIu32 ", frequency (Hz): min=%ld, max=%ld",
+		reply.lcatf("Control loop runtime (us): min=%" PRIu32 ", max=%" PRIu32 ", frequency (Hz): min=%" PRIu32 ", max=%" PRIu32,
 					TickPeriodToMicroseconds(minControlLoopRuntime), TickPeriodToMicroseconds(maxControlLoopRuntime),
-					lrintf(TickPeriodToFreq(maxControlLoopCallInterval)), lrintf(TickPeriodToFreq(minControlLoopCallInterval)));
-
+					TickPeriodToFreq(maxControlLoopCallInterval), TickPeriodToFreq(minControlLoopCallInterval));
 		ResetMonitoringVariables();
 	}
 
@@ -968,7 +970,8 @@ void ClosedLoop::ResetError(size_t driver) noexcept
 		// Set the target position to the current position
 		const bool err = encoder->TakeReading();
 		(void)err;		//TODO handle error
-		derivativeFilter.Reset();
+		errorDerivativeFilter.Reset();
+		speedFilter.Reset();
 		SetTargetToCurrentPosition();
 	}
 # else
@@ -1014,7 +1017,8 @@ bool ClosedLoop::SetClosedLoopEnabled(size_t driver, bool enabled, const StringR
 
 		desiredStepPhase = initialStepPhase;							// set this to be picked up later in DriverSwitchedToClosedLoop
 		PIDITerm = 0.0;
-		derivativeFilter.Reset();
+		errorDerivativeFilter.Reset();
+		speedFilter.Reset();
 		SetTargetToCurrentPosition();
 
 		// Set the target position to the current position
@@ -1038,7 +1042,8 @@ void ClosedLoop::DriverSwitchedToClosedLoop(size_t driver) noexcept
 		delay(3);														// allow time for the switch to complete and a few control loop iterations to be done
 		SetMotorPhase(desiredStepPhase, SmartDrivers::GetStandstillCurrentPercent(0) * 0.01);	// set the motor currents to match the initial position using the open loop standstill current
 		PIDITerm = 0.0;													// clear the integral term accumulator
-		derivativeFilter.Reset();
+		errorDerivativeFilter.Reset();
+		speedFilter.Reset();
 		ResetMonitoringVariables();										// the first loop iteration will have recorded a higher than normal loop call interval, so start again
 	}
 }

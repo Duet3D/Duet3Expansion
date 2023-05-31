@@ -38,60 +38,44 @@ size_t SampleBuffer::GetSample(uint8_t *dest) noexcept
 // All values we put are multiples of 2 bytes long, so it's safe to store 16-bit values directly
 void SampleBuffer::PutU16(uint16_t val) noexcept
 {
-	if (tempWritePointer - writePointer + sizeof(uint16_t) < limit)
+	const size_t newWritePointer = tempWritePointer + sizeof(uint16_t);
+	if (newWritePointer <= limit)
 	{
-		*(uint16_t*)(data + tempWritePointer) = val;
-		tempWritePointer += sizeof(uint16_t);
+		*reinterpret_cast<uint16_t*>(data + tempWritePointer) = val;
+		tempWritePointer = newWritePointer;
 	}
 	else
 	{
 		badSample = true;
 	}
-}
-
-void SampleBuffer::PutI16(int16_t val) noexcept
-{
-	PutU16((uint16_t)val);
 }
 
 void SampleBuffer::PutU32(uint32_t val) noexcept
 {
-	if (tempWritePointer - writePointer + sizeof(uint32_t) < limit)
+	const size_t newWritePointer = tempWritePointer + sizeof(uint32_t);
+	if (newWritePointer <= limit)
 	{
-		*((uint16_t*)(data + tempWritePointer)) = (uint16_t)val;
-		*((uint16_t*)(data + tempWritePointer + sizeof(uint16_t))) = (uint16_t)(val >> 16);
-		tempWritePointer += sizeof(uint32_t);
+#if SAMC21 || RP2040
+		*reinterpret_cast<uint16_t*>(data + tempWritePointer) = (uint16_t)val;
+		*reinterpret_cast<uint16_t*>(data + tempWritePointer + sizeof(uint16_t)) = (uint16_t)(val >> 16);
+#else
+		*reinterpret_cast<uint32_t*>(data + tempWritePointer) = val;
+#endif
+		tempWritePointer = newWritePointer;
 	}
 	else
 	{
 		badSample = true;
 	}
-}
-
-void SampleBuffer::PutI32(int32_t val) noexcept
-{
-	PutU32((uint32_t)val);
 }
 
 void SampleBuffer::PutF16(float val) noexcept
 {
-	if (tempWritePointer - writePointer + sizeof(float16_t) < limit)
+	const size_t newWritePointer = tempWritePointer + sizeof(float16_t);
+	if (newWritePointer <= limit)
 	{
-		*(float16_t*)(data + tempWritePointer) = (float16_t)val;
-		tempWritePointer += sizeof(float16_t);
-	}
-	else
-	{
-		badSample = true;
-	}
-}
-
-void SampleBuffer::PutF32(float val) noexcept
-{
-	if (tempWritePointer - writePointer + sizeof(float) < limit)
-	{
-		StoreLEF32(data + tempWritePointer, val);
-		tempWritePointer += sizeof(float);
+		*reinterpret_cast<float16_t*>(data + tempWritePointer) = (float16_t)val;
+		tempWritePointer = newWritePointer;
 	}
 	else
 	{

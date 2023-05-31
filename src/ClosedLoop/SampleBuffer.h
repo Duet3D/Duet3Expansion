@@ -8,9 +8,7 @@
 #ifndef SRC_CLOSEDLOOP_SAMPLEBUFFER_H_
 #define SRC_CLOSEDLOOP_SAMPLEBUFFER_H_
 
-#include <cstdint>
-#include <cstddef>
-#include <Duet3Common.h>
+#include <RepRapFirmware.h>
 
 // Data collection buffer and related variables
 class SampleBuffer
@@ -45,5 +43,24 @@ private:
 	bool full = false;
 	bool badSample = false;						// true if we collected data faster than we could send it
 };
+
+inline void SampleBuffer::PutI16(int16_t val) noexcept
+{
+	PutU16((uint16_t)val);
+}
+
+inline void SampleBuffer::PutI32(int32_t val) noexcept
+{
+	PutU32((uint32_t)val);
+}
+
+inline void SampleBuffer::PutF32(float val) noexcept
+{
+	static_assert(sizeof(float) == sizeof(uint32_t));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstrict-aliasing"
+	PutU32(*reinterpret_cast<const uint32_t*>(&val));
+#pragma GCC diagnostic pop
+}
 
 #endif /* SRC_CLOSEDLOOP_SAMPLEBUFFER_H_ */

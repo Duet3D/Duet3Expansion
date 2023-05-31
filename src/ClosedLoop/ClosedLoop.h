@@ -97,7 +97,8 @@ public:
 
 private:
 	// Constants private to this module
-	static constexpr unsigned int DerivativeFilterSize = 8;			// The range of the derivative filter (use a power of 2 for efficiency)
+	static constexpr unsigned int DerivativeFilterSize = 8;			// The range of the error derivative filter (use a power of 2 for efficiency)
+	static constexpr unsigned int SpeedFilterSize = 8;				// The range of the speed filter (use a power of 2 for efficiency)
 	static constexpr unsigned int tuningStepsPerSecond = 2000;		// the rate at which we send 1/256 microsteps during tuning, slow enough for high-inertia motors
 	static constexpr StepTimer::Ticks stepTicksPerTuningStep = StepTimer::StepClockRate/tuningStepsPerSecond;
 	static constexpr StepTimer::Ticks stepTicksBeforeTuning = StepTimer::StepClockRate/10;
@@ -147,8 +148,7 @@ private:
 	float	PIDATerm;									// Acceleration feedforward term
 	float	PIDControlSignal;							// The overall signal from the PID controller
 
-	float	phaseShift;									// The desired shift in the position of the motor, where 1024 = 1 full step
-	float	currentFraction;
+	uint16_t phaseShift;								// The desired shift in the position of the motor, where 1024 = +1 full step
 
 	uint16_t desiredStepPhase = 0;						// The desired position of the motor
 	int16_t coilA;										// The current to run through coil A
@@ -191,7 +191,8 @@ private:
 	StepTimer::Ticks dataCollectionIntervalTicks;				// the requested interval between samples
 	StepTimer::Ticks whenNextSampleDue;							// when it will be time to take the next sample
 
-	DerivativeAveragingFilter<DerivativeFilterSize> derivativeFilter;	// An averaging filter to smooth the derivative of the error
+	DerivativeAveragingFilter<DerivativeFilterSize> errorDerivativeFilter;	// An averaging filter to smooth the derivative of the error
+	DerivativeAveragingFilter<SpeedFilterSize> speedFilter;		// An averaging filter to smooth the actual speed
 	SampleBuffer sampleBuffer;									// buffer for collecting samples - declare this last because it is large
 
 	// Functions private to this module
