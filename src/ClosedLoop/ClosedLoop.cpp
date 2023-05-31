@@ -281,7 +281,7 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 	if (seenT)
 	{
 		//TODO do we need to get a lock here in case there is any movement?
-		SetClosedLoopEnabled(0, false, reply);
+		SetClosedLoopEnabled(0, ClosedLoopMode::open, reply);
 		DeleteObject(encoder);
 
 		switch (tempEncoderType)
@@ -600,7 +600,7 @@ GCodeResult ClosedLoop::ProcessM569Point6(const CanMessageGeneric &msg, const St
 
 	// Here if this is a new command to start a tuning move
 	// Check we are in direct drive mode
-	if (SmartDrivers::GetDriverMode(0) != DriverMode::direct)
+	if (SmartDrivers::GetDriverMode(0) != DriverMode::foc)
 	{
 		reply.copy("Drive is not in closed loop mode");
 		return GCodeResult::error;
@@ -668,7 +668,7 @@ void ClosedLoop::ControlLoop() noexcept
 	if (encoder != nullptr && !encoder->TakeReading())
 	{
 		// Calculate and store the current error in full steps
-		const bool moving = moveInstance->GetCurrentMotion(0, loopCallTime, closedLoopEnabled, mParams);
+		const bool moving = moveInstance->GetCurrentMotion(0, loopCallTime, currentMode != ClosedLoopMode::open, mParams);
 		if (moving && samplingMode == RecordingMode::OnNextMove)
 		{
 			dataCollectionStartTicks = whenNextSampleDue = StepTimer::GetTimerTicks();
@@ -680,7 +680,7 @@ void ClosedLoop::ControlLoop() noexcept
 		errorDerivativeFilter.ProcessReading(currentError, loopCallTime);
 		speedFilter.ProcessReading(encoder->GetCurrentCount() * encoder->GetStepsPerCount(), loopCallTime);
 
-		if (closedLoopEnabled)
+		if (currentMode != ClosedLoopMode::open)
 		{
 			if (tuning != 0)											// if we need to tune, do it
 			{
@@ -906,7 +906,7 @@ inline void ClosedLoop::ControlMotorCurrents(StepTimer::Ticks ticksSinceLastCall
 
 void ClosedLoop::Diagnostics(const StringRef& reply) noexcept
 {
-	reply.printf("Closed loop enabled: %s", closedLoopEnabled ? "yes" : "no");
+	reply.printf("Closed loop mode: %s", (currentMode == ClosedLoopMode::foc) ? "field-oriented control" : (currentMode == ClosedLoopMode::semiOpen) ? "semi-open-loop" : "open loop");
 	reply.catf(", pre-error threshold: %.2f, error threshold: %.2f", (double) errorThresholds[0], (double) errorThresholds[1]);
 	reply.catf(", encoder type %s", GetEncoderType().ToString());
 	if (encoder != nullptr)
@@ -923,7 +923,7 @@ void ClosedLoop::Diagnostics(const StringRef& reply) noexcept
 	}
 
 	// The rest is only relevant if we are in closed loop mode
-	if (closedLoopEnabled)
+	if (currentMode != ClosedLoopMode::open)
 	{
 		reply.lcatf("Tuning mode: %#x, tuning error: %#x", tuning, tuningError);
 		reply.catf(", collecting data: %s", CollectingData() ? "yes" : "no");
@@ -953,15 +953,6 @@ StandardDriverStatus ClosedLoop::ReadLiveStatus() noexcept
 	return result;
 }
 
-bool ClosedLoop::GetClosedLoopEnabled(size_t driver) noexcept
-{
- #if SINGLE_DRIVER
-	return closedLoopEnabled;
- #else
-#  error Cannot support closed loop with the specified hardware
-# endif
-}
-
 void ClosedLoop::ResetError(size_t driver) noexcept
 {
 # if SINGLE_DRIVER
@@ -980,7 +971,7 @@ void ClosedLoop::ResetError(size_t driver) noexcept
 }
 
 // This is called before the driver mode is changed. Return true if success. Always succeeds if we are disabling closed loop.
-bool ClosedLoop::SetClosedLoopEnabled(size_t driver, bool enabled, const StringRef &reply) noexcept
+bool ClosedLoop::SetClosedLoopEnabled(size_t driver, ClosedLoopMode mode, const StringRef &reply) noexcept
 {
 	// Trying to enable closed loop
 	if (driver != 0)
@@ -989,7 +980,7 @@ bool ClosedLoop::SetClosedLoopEnabled(size_t driver, bool enabled, const StringR
 		return false;
 	}
 
-	if (enabled && !closedLoopEnabled)
+	if (mode != ClosedLoopMode::open && currentMode == ClosedLoopMode::open)
 	{
 		if (encoder == nullptr)
 		{
@@ -1029,7 +1020,7 @@ bool ClosedLoop::SetClosedLoopEnabled(size_t driver, bool enabled, const StringR
 	}
 
 	// If we are disabling closed loop mode, we should ideally send steps to get the microstep counter to match the current phase here
-	closedLoopEnabled = enabled;
+	currentMode = mode;
 
 	return true;
 }
@@ -1051,7 +1042,7 @@ void ClosedLoop::DriverSwitchedToClosedLoop(size_t driver) noexcept
 // If we are in closed loop modify the driver status appropriately
 StandardDriverStatus ClosedLoop::ModifyDriverStatus(size_t driver, StandardDriverStatus originalStatus) noexcept
 {
-	if (closedLoopEnabled && driver == 0)
+	if (currentMode != ClosedLoopMode::open && driver == 0)
 	{
 		originalStatus.stall = 0;										// ignore stall detection in open loop mode
 		originalStatus.standstill = 0;									// ignore standstill detection in closed loop mode

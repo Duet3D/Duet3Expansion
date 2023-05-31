@@ -507,7 +507,7 @@ void ClosedLoop::PerformTune() noexcept
 	static bool newTuningMove = true;						// indicates if a tuning move has just finished
 
 	// Check we are in direct drive mode and we have an encoder
-	if (SmartDrivers::GetDriverMode(0) != DriverMode::direct || encoder == nullptr)
+	if (SmartDrivers::GetDriverMode(0) != DriverMode::foc || encoder == nullptr)
 	{
 		tuningError |= TuningError::SystemError;
 		tuning = 0;

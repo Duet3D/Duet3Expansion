@@ -348,7 +348,10 @@ static GCodeResult ProcessM569(const CanMessageGeneric& msg, const StringRef& re
 			seen = true;
 # if SUPPORT_CLOSED_LOOP
 			// Enable/disabled closed loop control
-			if (!closedLoopInstance->SetClosedLoopEnabled(drive, val == (uint32_t)DriverMode::direct, reply))
+			const ClosedLoopMode mode = (val == (uint32_t)DriverMode::foc) ? ClosedLoopMode::foc
+										: (val == (uint32_t)ClosedLoopMode::semiOpen) ? ClosedLoopMode::semiOpen
+											: ClosedLoopMode::open;
+			if (!closedLoopInstance->SetClosedLoopEnabled(drive, mode, reply))
 			{
 				// reply.printf is done in ClosedLoop::SetClosedLoopEnabled()
 				return GCodeResult::error;
@@ -360,7 +363,7 @@ static GCodeResult ProcessM569(const CanMessageGeneric& msg, const StringRef& re
 				return GCodeResult::error;
 			}
 # if SUPPORT_CLOSED_LOOP
-			if (val == (uint32_t) DriverMode::direct)
+			if (mode != ClosedLoopMode::open)
 			{
 				closedLoopInstance->DriverSwitchedToClosedLoop(drive);
 			}

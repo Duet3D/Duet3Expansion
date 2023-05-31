@@ -16,7 +16,8 @@ static const char * const DriverModeStrings[] =
 	"spreadCycle",
 	"stealthChop",
 #if SUPPORT_TMC2160
-	"direct (closed-loop)",
+	"foc (closed-loop)",
+	"semi-open-loop",
 #endif
 	"unknown"
 };

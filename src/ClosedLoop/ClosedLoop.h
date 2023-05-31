@@ -17,7 +17,7 @@
 # include <Movement/StepTimer.h>
 # include <ClosedLoop/Trigonometry.h>
 # include <Hardware/SharedSpiDevice.h>
-# include <ClosedLoop/DerivativeAveragingFilter.h>
+# include "DerivativeAveragingFilter.h"
 # include "TuningErrors.h"
 # include "SampleBuffer.h"
 # include "Encoders/Encoder.h"
@@ -35,6 +35,13 @@ struct MotionParameters
 	float position = 0.0;
 	float speed = 0.0;
 	float acceleration = 0.0;
+};
+
+enum class ClosedLoopMode
+{
+	open = 0,
+	foc,
+	semiOpen
 };
 
 class ClosedLoop
@@ -72,7 +79,7 @@ public:
 	void ControlLoop() noexcept;
 	StandardDriverStatus ReadLiveStatus() noexcept;
 	bool GetClosedLoopEnabled(size_t driver) noexcept;
-	bool SetClosedLoopEnabled(size_t driver, bool enabled, const StringRef &reply) noexcept;
+	bool SetClosedLoopEnabled(size_t driver, ClosedLoopMode mode, const StringRef &reply) noexcept;
 	void DriverSwitchedToClosedLoop(size_t driver) noexcept;
 	void ResetError(size_t driver) noexcept;
 	StandardDriverStatus ModifyDriverStatus(size_t driver, StandardDriverStatus originalStatus) noexcept;
@@ -121,7 +128,7 @@ private:
 	};
 
 	// Control variables, set by the user to determine how the closed loop controller works
-	bool 	closedLoopEnabled = false;							// Has closed loop been enabled by the user?
+	ClosedLoopMode currentMode = ClosedLoopMode::open;			// which mode the driver is in
 
 	// Holding current, and variables derived from it
 	float 	holdCurrentFraction = DefaultHoldCurrentFraction;	// The minimum holding current when stationary
@@ -219,6 +226,15 @@ private:
 	bool EncoderCalibration(bool firstIteration) noexcept;
 	bool Step(bool firstIteration) noexcept;
 };
+
+inline bool ClosedLoop::GetClosedLoopEnabled(size_t driver) noexcept
+{
+#  if SINGLE_DRIVER
+	return currentMode != ClosedLoopMode::open;
+#  else
+#   error Cannot support closed loop with the specified hardware
+#  endif
+}
 
 #  if defined(EXP1HCLv1_0) || defined(M23CL)
 // The encoder uses the standard shared SPI device, so we don't need to enable/disable it
