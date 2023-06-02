@@ -776,7 +776,8 @@ bool TmcDriverState::SetDriverMode(unsigned int mode) noexcept
 #endif
 
 #if SUPPORT_CLOSED_LOOP
-	case (unsigned int)DriverMode::direct:
+	case (unsigned int)DriverMode::foc:
+	case (unsigned int)DriverMode::semiOpen:
 		UpdateRegister(WriteGConf, (writeRegisters[WriteGConf] & ~GCONF_STEALTHCHOP) | GCONF_DIRECT_MODE);
 		UpdateCurrent();		// when entering closed loop mode we need to update the standstill current
 		return true;
@@ -792,7 +793,7 @@ DriverMode TmcDriverState::GetDriverMode() const noexcept
 {
 	return
 #if TMC_TYPE == 2160
-		  ((writeRegisters[WriteGConf] & GCONF_DIRECT_MODE) != 0) ? DriverMode::direct :
+		  ((writeRegisters[WriteGConf] & GCONF_DIRECT_MODE) != 0) ? DriverMode::foc :
 #endif
 		  ((writeRegisters[WriteGConf] & GCONF_STEALTHCHOP) != 0) ? DriverMode::stealthChop
 		: ((configuredChopConfReg & CHOPCONF_CHM) == 0) ? DriverMode::spreadCycle
@@ -1715,7 +1716,7 @@ bool SmartDrivers::SetDriverMode(size_t driver, unsigned int mode) noexcept
 	const bool ret = driver < numTmc51xxDrivers && driverStates[driver].SetDriverMode(mode);
 	if (ret && driver == 0)
 	{
-		tmcTask.SetPriority((mode == (unsigned int)DriverMode::direct) ? TaskPriority::TmcClosedLoop : TaskPriority::TmcOpenLoop);
+		tmcTask.SetPriority((mode >= (unsigned int)DriverMode::foc) ? TaskPriority::TmcClosedLoop : TaskPriority::TmcOpenLoop);
 	}
 	return ret;
 #else

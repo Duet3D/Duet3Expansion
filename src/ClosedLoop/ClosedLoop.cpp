@@ -268,8 +268,6 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 	if (seenH)
 	{
 		holdCurrentFraction = constrain<float>(holdingCurrentPercent, 10.0, 100.0) / 100.0;
-		holdCurrentFractionTimesMinPhaseShift = MinimumPhaseShift * holdCurrentFraction;
-		recipHoldCurrentFraction = 1.0/holdCurrentFraction;
 	}
 
 	if (seenE)
@@ -281,7 +279,7 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 	if (seenT)
 	{
 		//TODO do we need to get a lock here in case there is any movement?
-		SetClosedLoopEnabled(0, false, reply);
+		SetClosedLoopEnabled(0, ClosedLoopMode::open, reply);
 		DeleteObject(encoder);
 
 		switch (tempEncoderType)
@@ -600,7 +598,7 @@ GCodeResult ClosedLoop::ProcessM569Point6(const CanMessageGeneric &msg, const St
 
 	// Here if this is a new command to start a tuning move
 	// Check we are in direct drive mode
-	if (SmartDrivers::GetDriverMode(0) != DriverMode::direct)
+	if (SmartDrivers::GetDriverMode(0) != DriverMode::foc)
 	{
 		reply.copy("Drive is not in closed loop mode");
 		return GCodeResult::error;
@@ -668,7 +666,7 @@ void ClosedLoop::ControlLoop() noexcept
 	if (encoder != nullptr && !encoder->TakeReading())
 	{
 		// Calculate and store the current error in full steps
-		const bool moving = moveInstance->GetCurrentMotion(0, loopCallTime, closedLoopEnabled, mParams);
+		const bool moving = moveInstance->GetCurrentMotion(0, loopCallTime, currentMode != ClosedLoopMode::open, mParams);
 		if (moving && samplingMode == RecordingMode::OnNextMove)
 		{
 			dataCollectionStartTicks = whenNextSampleDue = StepTimer::GetTimerTicks();
@@ -680,7 +678,7 @@ void ClosedLoop::ControlLoop() noexcept
 		errorDerivativeFilter.ProcessReading(currentError, loopCallTime);
 		speedFilter.ProcessReading(encoder->GetCurrentCount() * encoder->GetStepsPerCount(), loopCallTime);
 
-		if (closedLoopEnabled)
+		if (currentMode != ClosedLoopMode::open)
 		{
 			if (tuning != 0)											// if we need to tune, do it
 			{
@@ -846,6 +844,7 @@ inline void ClosedLoop::ControlMotorCurrents(StepTimer::Ticks ticksSinceLastCall
 {
 	// Get the time delta in seconds
 	const float timeDelta = (float)ticksSinceLastCall * (1.0/(float)StepTimer::StepClockRate);
+	float currentFraction;
 
 	// Use a PID controller to calculate the required 'torque' - the control signal
 	// We choose to use a PID control signal in the range -256 to +256. This is arbitrary.
@@ -856,49 +855,31 @@ inline void ClosedLoop::ControlMotorCurrents(StepTimer::Ticks ticksSinceLastCall
 	PIDATerm = mParams.acceleration * Ka * fsquare(ticksSinceLastCall);
 	PIDControlSignal = constrain<float>(PIDPTerm + PIDITerm + PIDDTerm + PIDVTerm + PIDATerm, -256.0, 256.0);	// clamp the sum between +/- 256
 
-	// Calculate the offset required to produce the torque in the correct direction
-	// i.e. if we are moving in the positive direction, we must apply currents with a positive phase shift
-	// The max abs value of phase shift we want is 1 full step i.e. 25%.
-	// Given that PIDControlSignal is -256 .. 256 and phase is 0 .. 4095
-	// and that 25% of 4096 = 1024, our max phase shift = 4 * PIDControlSignal
-
-#if 1
-	// New algorithm: phase of motor current is always +/- 1 full step relative to current position, but motor current is adjusted according to the PID result
-	const float PhaseFeedForwardFactor = 1000.0;
-	const int16_t phaseFeedForward = lrintf(constrain<float>(speedFilter.GetDerivative() * ticksSinceLastCall * PhaseFeedForwardFactor, -256.0, 256.0));
-	phaseShift = (PIDControlSignal < 0) ? phaseFeedForward + (3 * 1024) : phaseFeedForward + 1024;
-	const float currentFraction = fabsf(PIDControlSignal) * (1.0/256.0);
-#else
-	phaseShift = PIDControlSignal * 4.0;
-
-	// New control algorithm:
-	// - if the required phase shift is greater than about 15 degrees, apply it at maximum current
-	// - below 15 degrees, keep the phase shift at +/- 15 degrees and reduce the current, but not below the minimum holding current
-	// - after that, keep the current at the holding current and reduce the phase shift.
-	const float absPhaseShift = fabsf(phaseShift);
-	if (absPhaseShift >= MinimumPhaseShift)
+	if (currentMode == ClosedLoopMode::foc)
 	{
-		// Use the requested phase shift at full current
-		currentFraction = 1.0;
-	}
-	else if (absPhaseShift >= holdCurrentFractionTimesMinPhaseShift)
-	{
-		// Use the minimum phase shift but reduce the current
-		currentFraction = absPhaseShift * (1.0/MinimumPhaseShift);
-		phaseShift = (phaseShift >= 0) ? MinimumPhaseShift : -MinimumPhaseShift;
+		// Calculate the offset required to produce the torque in the correct direction
+		// i.e. if we are moving in the positive direction, we must apply currents with a positive phase shift
+		// The max abs value of phase shift we want is 1 full step i.e. 25%.
+		// Given that PIDControlSignal is -256 .. 256 and phase is 0 .. 4095
+		// and that 25% of 4096 = 1024, our max phase shift = 4 * PIDControlSignal
+
+		// New algorithm: phase of motor current is always +/- 1 full step relative to current position, but motor current is adjusted according to the PID result
+		const float PhaseFeedForwardFactor = 1000.0;
+		const int16_t phaseFeedForward = lrintf(constrain<float>(speedFilter.GetDerivative() * ticksSinceLastCall * PhaseFeedForwardFactor, -256.0, 256.0));
+		phaseShift = (PIDControlSignal < 0) ? phaseFeedForward + (3 * 1024) : phaseFeedForward + 1024;
+		currentFraction = fabsf(PIDControlSignal) * (1.0/256.0);
+
+		// Calculate the required motor currents to induce that torque and reduce it modulo 4096
+		// The following assumes that signed arithmetic is 2's complement
+		const uint32_t measuredStepPhase = encoder->GetCurrentPhasePosition();
+		desiredStepPhase = (uint16_t)((int16_t)measuredStepPhase + phaseShift) % 4096;
 	}
 	else
 	{
-		// Reduce the phase shift and keep the current the same
-		currentFraction = holdCurrentFraction;
-		phaseShift *= recipHoldCurrentFraction;
+		currentFraction = holdCurrentFraction + (1.0 - holdCurrentFraction) * min<float>(fabsf(PIDControlSignal * (1.0/256.0)), 1.0);
+		const uint16_t stepPhase = (uint16_t)llrintf(mParams.position * 1024.0);
+		desiredStepPhase = (stepPhase + phaseOffset) & 4095;
 	}
-#endif
-
-	// Calculate the required motor currents to induce that torque and reduce it modulo 4096
-	// The following assumes that signed arithmetic is 2's complement
-	const uint32_t measuredStepPhase = encoder->GetCurrentPhasePosition();
-	desiredStepPhase = (uint16_t)((int16_t)measuredStepPhase + phaseShift) % 4096;
 
 	// Assert the required motor currents
 	SetMotorPhase(desiredStepPhase, currentFraction);
@@ -906,7 +887,7 @@ inline void ClosedLoop::ControlMotorCurrents(StepTimer::Ticks ticksSinceLastCall
 
 void ClosedLoop::Diagnostics(const StringRef& reply) noexcept
 {
-	reply.printf("Closed loop enabled: %s", closedLoopEnabled ? "yes" : "no");
+	reply.printf("Closed loop mode: %s", (currentMode == ClosedLoopMode::foc) ? "field-oriented control" : (currentMode == ClosedLoopMode::semiOpen) ? "semi-open-loop" : "open loop");
 	reply.catf(", pre-error threshold: %.2f, error threshold: %.2f", (double) errorThresholds[0], (double) errorThresholds[1]);
 	reply.catf(", encoder type %s", GetEncoderType().ToString());
 	if (encoder != nullptr)
@@ -923,10 +904,9 @@ void ClosedLoop::Diagnostics(const StringRef& reply) noexcept
 	}
 
 	// The rest is only relevant if we are in closed loop mode
-	if (closedLoopEnabled)
+	if (currentMode != ClosedLoopMode::open)
 	{
-		reply.lcatf("Tuning mode: %#x, tuning error: %#x", tuning, tuningError);
-		reply.catf(", collecting data: %s", CollectingData() ? "yes" : "no");
+		reply.lcatf("Tuning mode: %#x, tuning error: %#x, collecting data: %s", tuning, tuningError, CollectingData() ? "yes" : "no");
 		if (CollectingData())
 		{
 			reply.catf(" (filter: %#x, mode: %u, rate: %u, movement: %u)", filterRequested, samplingMode, (unsigned int)(StepTimer::StepClockRate/dataCollectionIntervalTicks), movementRequested);
@@ -953,15 +933,6 @@ StandardDriverStatus ClosedLoop::ReadLiveStatus() noexcept
 	return result;
 }
 
-bool ClosedLoop::GetClosedLoopEnabled(size_t driver) noexcept
-{
- #if SINGLE_DRIVER
-	return closedLoopEnabled;
- #else
-#  error Cannot support closed loop with the specified hardware
-# endif
-}
-
 void ClosedLoop::ResetError(size_t driver) noexcept
 {
 # if SINGLE_DRIVER
@@ -980,7 +951,7 @@ void ClosedLoop::ResetError(size_t driver) noexcept
 }
 
 // This is called before the driver mode is changed. Return true if success. Always succeeds if we are disabling closed loop.
-bool ClosedLoop::SetClosedLoopEnabled(size_t driver, bool enabled, const StringRef &reply) noexcept
+bool ClosedLoop::SetClosedLoopEnabled(size_t driver, ClosedLoopMode mode, const StringRef &reply) noexcept
 {
 	// Trying to enable closed loop
 	if (driver != 0)
@@ -989,7 +960,7 @@ bool ClosedLoop::SetClosedLoopEnabled(size_t driver, bool enabled, const StringR
 		return false;
 	}
 
-	if (enabled && !closedLoopEnabled)
+	if (mode != ClosedLoopMode::open)
 	{
 		if (encoder == nullptr)
 		{
@@ -1029,7 +1000,7 @@ bool ClosedLoop::SetClosedLoopEnabled(size_t driver, bool enabled, const StringR
 	}
 
 	// If we are disabling closed loop mode, we should ideally send steps to get the microstep counter to match the current phase here
-	closedLoopEnabled = enabled;
+	currentMode = mode;
 
 	return true;
 }
@@ -1040,7 +1011,13 @@ void ClosedLoop::DriverSwitchedToClosedLoop(size_t driver) noexcept
 	if (driver == 0)
 	{
 		delay(3);														// allow time for the switch to complete and a few control loop iterations to be done
-		SetMotorPhase(desiredStepPhase, SmartDrivers::GetStandstillCurrentPercent(0) * 0.01);	// set the motor currents to match the initial position using the open loop standstill current
+		const uint16_t currentPhasePosition = (uint16_t)encoder->GetCurrentPhasePosition();
+		if (currentMode == ClosedLoopMode::semiOpen)
+		{
+			const uint16_t stepPhase = (uint16_t)llrintf(mParams.position * 1024.0);
+			phaseOffset = (currentPhasePosition - stepPhase) & 4095;
+		}
+		SetMotorPhase(currentPhasePosition, SmartDrivers::GetStandstillCurrentPercent(0) * 0.01);	// set the motor currents to match the initial position using the open loop standstill current
 		PIDITerm = 0.0;													// clear the integral term accumulator
 		errorDerivativeFilter.Reset();
 		speedFilter.Reset();
@@ -1051,7 +1028,7 @@ void ClosedLoop::DriverSwitchedToClosedLoop(size_t driver) noexcept
 // If we are in closed loop modify the driver status appropriately
 StandardDriverStatus ClosedLoop::ModifyDriverStatus(size_t driver, StandardDriverStatus originalStatus) noexcept
 {
-	if (closedLoopEnabled && driver == 0)
+	if (currentMode != ClosedLoopMode::open && driver == 0)
 	{
 		originalStatus.stall = 0;										// ignore stall detection in open loop mode
 		originalStatus.standstill = 0;									// ignore standstill detection in closed loop mode

@@ -14,8 +14,9 @@ enum class DriverMode : unsigned int
 	randomOffTime,
 	spreadCycle,
 	stealthChop,			// includes stealthChop2
-#if SUPPORT_TMC2160
-	direct,
+#if SUPPORT_CLOSED_LOOP
+	foc,					// field-oriented control
+	semiOpen,
 #endif
 	unknown					// must be last!
 };

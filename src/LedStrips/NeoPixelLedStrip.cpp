@@ -137,6 +137,10 @@ constexpr uint32_t T1H = NanosecondsToCycles(800);
 constexpr uint32_t T1L = NanosecondsToCycles(475);
 
 // Send data to NeoPixel LEDs by bit banging
+#if RP2040
+// When bit-banging Neopixels we can't afford to wait for instructions to be fetched from flash memory
+[[gnu::optimize("03")]] __attribute__((section(".time_critical")))
+#endif
 GCodeResult NeoPixelLedStrip::BitBangNeoPixelData(const LedParams& params) noexcept
 {
 	const unsigned int bytesPerLed = (isRGBW) ? 4 : 3;
@@ -161,7 +165,7 @@ GCodeResult NeoPixelLedStrip::BitBangNeoPixelData(const LedParams& params) noexc
 		uint32_t nextDelay = T0L;
 
 		IrqDisable();
-		uint32_t lastTransitionTime = SysTick->VAL & 0x00FFFFFF;
+		uint32_t lastTransitionTime = GetCurrentCycles();
 		while (q < p)
 		{
 			uint8_t c = *q++;
