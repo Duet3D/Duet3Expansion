@@ -132,9 +132,6 @@ private:
 
 	// Holding current, and variables derived from it
 	float 	holdCurrentFraction = DefaultHoldCurrentFraction;	// The minimum holding current when stationary
-	float	recipHoldCurrentFraction = 1.0/DefaultHoldCurrentFraction;	// The reciprocal of the minimum holding current
-	float	holdCurrentFractionTimesMinPhaseShift = MinimumPhaseShift * DefaultHoldCurrentFraction;
-
 	float 	Kp = 30.0;											// The proportional constant for the PID controller
 	float 	Ki = 0.0;											// The proportional constant for the PID controller
 	float 	Kd = 0.0;											// The proportional constant for the PID controller

@@ -268,8 +268,6 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 	if (seenH)
 	{
 		holdCurrentFraction = constrain<float>(holdingCurrentPercent, 10.0, 100.0) / 100.0;
-		holdCurrentFractionTimesMinPhaseShift = MinimumPhaseShift * holdCurrentFraction;
-		recipHoldCurrentFraction = 1.0/holdCurrentFraction;
 	}
 
 	if (seenE)
@@ -878,8 +876,7 @@ inline void ClosedLoop::ControlMotorCurrents(StepTimer::Ticks ticksSinceLastCall
 	}
 	else
 	{
-		constexpr float minCurrentFraction = 0.25;
-		currentFraction = minCurrentFraction + (1.0 - minCurrentFraction) * min<float>(fabsf(PIDControlSignal * (1.0/256.0)), 1.0);
+		currentFraction = holdCurrentFraction + (1.0 - holdCurrentFraction) * min<float>(fabsf(PIDControlSignal * (1.0/256.0)), 1.0);
 		const uint16_t stepPhase = (uint16_t)llrintf(mParams.position * 1024.0);
 		desiredStepPhase = (stepPhase + phaseOffset) & 4095;
 	}
