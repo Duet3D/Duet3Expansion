@@ -412,6 +412,9 @@ void Move::PrintCurrentDda() const noexcept
 
 // This is the function that is called by the timer interrupt to step the motors. It is also called form Move::Spin() if the first step for a move is due immediately.
 // This may occasionally get called prematurely.
+#if SAMC21 || RP2040
+__attribute__((section(".time_critical")))
+#endif
 void Move::Interrupt() noexcept
 {
 	const uint32_t isrStartTime = StepTimer::GetTimerTicks();

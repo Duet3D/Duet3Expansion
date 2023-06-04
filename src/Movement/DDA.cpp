@@ -469,6 +469,9 @@ uint32_t DDA::lastDirChangeTime = 0;
 // It returns true if it needs to be called again on the DDA of the new current move, otherwise false.
 // This must be as fast as possible, because it determines the maximum movement speed.
 // This may occasionally get called prematurely, so it must check that a step is actually due before generating one.
+#if SAMC21 || RP2040
+__attribute__((section(".time_critical")))
+#endif
 void DDA::StepDrivers(uint32_t now) noexcept
 {
 # if SUPPORT_CLOSED_LOOP

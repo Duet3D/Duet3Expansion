@@ -46,6 +46,9 @@ void DriveMovement::DebugPrint() const noexcept
 }
 
 // This is called when currentSegment has just been changed to a new segment. Return true if there is a new segment to execute.
+#if SAMC21 || RP2040
+__attribute__((section(".time_critical")))
+#endif
 bool DriveMovement::NewCartesianSegment() noexcept
 {
 	while (true)
@@ -185,6 +188,9 @@ bool DriveMovement::NewDeltaSegment(const DDA& dda) noexcept
 #endif // SUPPORT_LINEAR_DELTA
 
 // This is called for an extruder driver when currentSegment has just been changed to a new segment. Return true if there is a new segment to execute.
+#if SAMC21 || RP2040
+__attribute__((section(".time_critical")))
+#endif
 bool DriveMovement::NewExtruderSegment() noexcept
 {
 	while (true)
@@ -497,12 +503,21 @@ bool DriveMovement::PrepareExtruder(const DDA& dda, const PrepParams& params, fl
 // Version of fastSqrtf that allows for slightly negative operands caused by rounding error
 static inline float fastLimSqrtf(float f) noexcept
 {
+#if 1
+	return fastSqrtf(f);							// the fastSqrtf function in RRFLibraries already returns zero if the operand is negative
+#else
 	return (f > 0.0) ? fastSqrtf(f) : 0.0;
+#endif
 }
 
 // Calculate and store the time since the start of the move when the next step for the specified DriveMovement is due.
 // We have already incremented nextStep and checked that it does not exceed totalSteps, so at least one more step is due
 // Return true if all OK, false to abort this move because the calculation has gone wrong
+#if SAMC21
+__attribute__((section(".ramfunc")))
+#elif RP2040
+__attribute__((section(".time_critical")))
+#endif
 bool DriveMovement::CalcNextStepTimeFull(const DDA &dda) noexcept
 pre(nextStep <= totalSteps; stepsTillRecalc == 0)
 {
