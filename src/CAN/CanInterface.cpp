@@ -37,7 +37,11 @@ constexpr uint32_t CanUserAreaDataOffset = 512 - sizeof(CanUserAreaData);
 constexpr uint32_t CanUserAreaDataOffset = 256 - sizeof(CanUserAreaData);
 #endif
 
+#if SAMC21
+constexpr unsigned int NumCanBuffers = 20;		// SAMC21-based boards have at most one driver, so allocate fewer message buffers to save RAM
+#else
 constexpr unsigned int NumCanBuffers = 40;
+#endif
 
 static CanDevice *can0dev = nullptr;
 static CanUserAreaData canConfigData;
