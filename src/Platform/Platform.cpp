@@ -2146,22 +2146,6 @@ void Platform::OnProcessingCanMessage()
 	WriteLed(1, true);				// turn the ACT LED on
 }
 
-// Execute a timed task that takes less than one millisecond
-static uint32_t TimedSqrt(uint64_t arg, uint32_t& timeAcc) noexcept
-{
-	IrqDisable();
-	asm volatile("":::"memory");
-	uint32_t now1 = SysTick->VAL;
-	const uint32_t ret = isqrt64(arg);
-	uint32_t now2 = SysTick->VAL;
-	asm volatile("":::"memory");
-	IrqEnable();
-	now1 &= 0x00FFFFFF;
-	now2 &= 0x00FFFFFF;
-	timeAcc += ((now1 > now2) ? now1 : now1 + (SysTick->LOAD & 0x00FFFFFF) + 1) - now2;
-	return ret;
-}
-
 GCodeResult Platform::DoDiagnosticTest(const CanMessageDiagnosticTest& msg, const StringRef& reply)
 {
 	if ((uint16_t)~msg.invertedTestType != msg.testType)
@@ -2174,34 +2158,8 @@ GCodeResult Platform::DoDiagnosticTest(const CanMessageDiagnosticTest& msg, cons
 	{
 	case 102:		// Show the square root calculation time. Caution: may disable interrupt for several tens of microseconds.
 		{
-			bool ok1 = true;
-			uint32_t tim1 = 0;
 			constexpr uint32_t iterations = 100;				// use a value that divides into one million
-			for (uint32_t i = 0; i < iterations; ++i)
-			{
-				const uint32_t num1 = 0x7fffffff - (67 * i);
-				const uint64_t sq = (uint64_t)num1 * num1;
-				const uint32_t num1a = TimedSqrt(sq, tim1);
-				if (num1a != num1)
-				{
-					ok1 = false;
-				}
-			}
-
-			bool ok2 = true;
-			uint32_t tim2 = 0;
-			for (uint32_t i = 0; i < iterations; ++i)
-			{
-				const uint32_t num2 = 0x0000ffff - (67 * i);
-				const uint64_t sq = (uint64_t)num2 * num2;
-				const uint32_t num2a = TimedSqrt(sq, tim2);
-				if (num2a != num2)
-				{
-					ok2 = false;
-				}
-			}
-
-			bool ok3 = true;
+			bool ok = true;
 			uint32_t tim3 = 0;
 			float val = 10000.0;
 			for (unsigned int i = 0; i < iterations; ++i)
@@ -2218,15 +2176,14 @@ GCodeResult Platform::DoDiagnosticTest(const CanMessageDiagnosticTest& msg, cons
 				tim3 += ((now1 > now2) ? now1 : now1 + (SysTick->LOAD & 0x00FFFFFF) + 1) - now2;
 				if (nval != sqrtf(val))
 				{
-					ok3 = false;
+					ok = false;
 				}
 				val = nval;
 			}
-			reply.printf("Square roots: 62-bit %.2fus %s, 32-bit %.2fus %s, float %.2fus %s",
-						(double)((float)(tim1 * (1'000'000/iterations))/SystemCoreClockFreq), (ok1) ? "ok" : "ERROR",
-							(double)((float)(tim2 * (1'000'000/iterations))/SystemCoreClockFreq), (ok2) ? "ok" : "ERROR",
-								(double)((float)(tim3 * (1'000'000/iterations))/SystemCoreClock), (ok3) ? "ok" : "ERROR");
-			return (ok1 && ok2 && ok3) ? GCodeResult::ok : GCodeResult::error;
+
+			reply.printf("Square roots: float %.2fus %s",
+							(double)((float)(tim3 * (1'000'000/iterations))/SystemCoreClock), (ok) ? "ok" : "ERROR");
+			return (ok) ? GCodeResult::ok : GCodeResult::error;
 		}
 
 	case 108:

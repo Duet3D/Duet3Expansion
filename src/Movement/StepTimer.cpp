@@ -227,6 +227,9 @@ inline /*static*/ bool StepTimer::ScheduleTimerInterrupt(Ticks tim) noexcept
 
 // Schedule a step interrupt, returning true if it was not scheduled because it is already due or imminent.
 // On entry, interrupts must be disabled or the base priority must be <= step interrupt priority.
+#if SAMC21 || RP2040
+__attribute__((section(".time_critical")))
+#endif
 /*static*/ bool StepTimer::ScheduleStepInterruptFromIsr(Ticks when) noexcept
 {
 	// We need to disable all interrupts, because once we read the current step clock we have only 6us to set up the interrupt, or we will miss it
@@ -286,6 +289,9 @@ void StepTimer::DisableTimerInterrupt() noexcept
 }
 
 // Step pulse timer ISR
+#if SAMC21 || RP2040
+__attribute__((section(".time_critical")))
+#endif
 void STEP_TC_HANDLER() noexcept
 {
 #if RP2040
