@@ -1374,7 +1374,9 @@ extern "C" [[noreturn]] void TmcLoop(void *) noexcept
 		if (driversState == DriversState::noPower)
 		{
 			TaskBase::Take();
+#if SUPPORT_CLOSED_LOOP
 			lastWakeupTime = StepTimer::GetTimerTicks();
+#endif
 		}
 		else if (driversState == DriversState::notInitialised)
 		{
@@ -1498,7 +1500,9 @@ extern "C" [[noreturn]] void TmcLoop(void *) noexcept
 			{
 				driverStates[drive].TransferFailed();
 			}
+#if SUPPORT_CLOSED_LOOP
 			lastWakeupTime = StepTimer::GetTimerTicks();
+#endif
 		}
 	}
 }
