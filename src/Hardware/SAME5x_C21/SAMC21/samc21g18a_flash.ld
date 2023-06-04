@@ -116,6 +116,7 @@ SECTIONS
     {
         . = ALIGN(4);
         _srelocate = .;
+        *(.time_critical .time_critical.*);
         *(.ramfunc .ramfunc.*);
         *(.data .data.*);
         . = ALIGN(4);
