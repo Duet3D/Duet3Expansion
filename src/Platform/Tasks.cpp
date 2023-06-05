@@ -592,7 +592,8 @@ void Tasks::Diagnostics(const StringRef& reply) noexcept
 
 		const float cpuPercent = (100 * (float)taskDetails.ulRunTimeCounter)/(float)timeSinceLastCall;
 		totalCpuPercent += cpuPercent;
-		reply.catf(" %s(%s%s,%.1f%%,%u)", taskDetails.pcTaskName, stateText, mutexName, (double)cpuPercent, (unsigned int)taskDetails.usStackHighWaterMark);
+		reply.catf(" %s(%u,%s%s,%.1f%%,%u)",
+					taskDetails.pcTaskName, (unsigned int)taskDetails.uxCurrentPriority, stateText, mutexName, (double)cpuPercent, (unsigned int)taskDetails.usStackHighWaterMark);
 	}
 	reply.catf(", total %.1f%%", (double)totalCpuPercent);
 

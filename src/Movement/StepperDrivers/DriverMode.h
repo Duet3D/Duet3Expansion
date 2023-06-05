@@ -30,7 +30,6 @@ inline const char* TranslateDriverMode(DriverMode mode) noexcept
 
 // Register codes used to implement M569 command parameters and closed-loop control.
 // This common set is used for all smart drivers. Not all are complete registers, some are just parts of registers.
-
 enum class SmartDriverRegister : unsigned int
 {
 	toff,

@@ -8,7 +8,7 @@
 #ifndef SRC_TASKPRIORITIES_H_
 #define SRC_TASKPRIORITIES_H_
 
-// Task priorities
+// Task priorities. These must all be less than configMAX_PRIORITIES defined in FreeRTOSConfig.g.
 namespace TaskPriority
 {
 	static constexpr unsigned int SpinPriority = 1;							// priority for tasks that rarely block
