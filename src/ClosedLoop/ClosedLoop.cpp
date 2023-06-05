@@ -598,7 +598,7 @@ GCodeResult ClosedLoop::ProcessM569Point6(const CanMessageGeneric &msg, const St
 
 	// Here if this is a new command to start a tuning move
 	// Check we are in direct drive mode
-	if (SmartDrivers::GetDriverMode(0) != DriverMode::foc)
+	if (SmartDrivers::GetDriverMode(0) < DriverMode::foc)
 	{
 		reply.copy("Drive is not in closed loop mode");
 		return GCodeResult::error;
@@ -876,6 +876,7 @@ inline void ClosedLoop::ControlMotorCurrents(StepTimer::Ticks ticksSinceLastCall
 	}
 	else
 	{
+		// Must be in semi-open-loop mode
 		currentFraction = holdCurrentFraction + (1.0 - holdCurrentFraction) * min<float>(fabsf(PIDControlSignal * (1.0/256.0)), 1.0);
 		const uint16_t stepPhase = (uint16_t)llrintf(mParams.position * 1024.0);
 		desiredStepPhase = (stepPhase + phaseOffset) & 4095;

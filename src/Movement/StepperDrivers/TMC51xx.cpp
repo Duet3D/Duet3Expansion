@@ -719,7 +719,7 @@ bool TmcDriverState::SetChopConf(uint32_t newVal) noexcept
 	return true;
 }
 
-// Set the driver mode
+// Set the driver mode, returning true if successful
 bool TmcDriverState::SetDriverMode(unsigned int mode) noexcept
 {
 	// In the following, on the closed loop node we need to clear GCONF_DIRECT_MODE when switching away from closed loop mode. It does not harm to do this on other boards too.
