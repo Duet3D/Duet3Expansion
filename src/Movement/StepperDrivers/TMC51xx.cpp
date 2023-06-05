@@ -1730,7 +1730,21 @@ bool SmartDrivers::SetDriverMode(size_t driver, unsigned int mode) noexcept
 
 DriverMode SmartDrivers::GetDriverMode(size_t driver) noexcept
 {
-	return (driver < numTmc51xxDrivers) ? driverStates[driver].GetDriverMode() : DriverMode::unknown;
+	if (driver < numTmc51xxDrivers)
+	{
+#if SUPPORT_CLOSED_LOOP
+		switch (closedLoopInstance->GetClosedLoopMode(driver))
+		{
+		case ClosedLoopMode::open:		return driverStates[driver].GetDriverMode();
+		case ClosedLoopMode::foc:		return DriverMode::foc;
+		case ClosedLoopMode::semiOpen:	return DriverMode::semiOpen;
+		default:						return DriverMode::unknown;
+		}
+#else
+		return driverStates[driver].GetDriverMode();
+#endif
+	}
+	return DriverMode::unknown;
 }
 
 // Flag that the the drivers have been powered up or down

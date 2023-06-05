@@ -77,8 +77,9 @@ public:
 
 	// Methods called by the motion system
 	void ControlLoop() noexcept;
-	StandardDriverStatus ReadLiveStatus() noexcept;
-	bool GetClosedLoopEnabled(size_t driver) noexcept;
+	StandardDriverStatus ReadLiveStatus() const noexcept;
+	bool GetClosedLoopEnabled(size_t driver) const noexcept;
+	ClosedLoopMode GetClosedLoopMode(size_t driver) const noexcept;
 	bool SetClosedLoopEnabled(size_t driver, ClosedLoopMode mode, const StringRef &reply) noexcept;
 	void DriverSwitchedToClosedLoop(size_t driver) noexcept;
 	void ResetError(size_t driver) noexcept;
@@ -225,10 +226,19 @@ private:
 	bool Step(bool firstIteration) noexcept;
 };
 
-inline bool ClosedLoop::GetClosedLoopEnabled(size_t driver) noexcept
+inline bool ClosedLoop::GetClosedLoopEnabled(size_t driver) const noexcept
 {
 #  if SINGLE_DRIVER
 	return currentMode != ClosedLoopMode::open;
+#  else
+#   error Cannot support closed loop with the specified hardware
+#  endif
+}
+
+inline ClosedLoopMode ClosedLoop::GetClosedLoopMode(size_t driver) const noexcept
+{
+#  if SINGLE_DRIVER
+	return currentMode;
 #  else
 #   error Cannot support closed loop with the specified hardware
 #  endif

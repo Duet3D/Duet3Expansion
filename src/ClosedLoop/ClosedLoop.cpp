@@ -922,7 +922,7 @@ void ClosedLoop::Diagnostics(const StringRef& reply) noexcept
 	//reply.catf(", event status 0x%08" PRIx32 ", TCC2 CTRLA 0x%08" PRIx32 ", TCC2 EVCTRL 0x%08" PRIx32, EVSYS->CHSTATUS.reg, QuadratureTcc->CTRLA.reg, QuadratureTcc->EVCTRL.reg);
 }
 
-StandardDriverStatus ClosedLoop::ReadLiveStatus() noexcept
+StandardDriverStatus ClosedLoop::ReadLiveStatus() const noexcept
 {
 	StandardDriverStatus result;
 	result.all = 0;
