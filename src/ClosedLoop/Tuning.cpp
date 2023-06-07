@@ -98,7 +98,7 @@ bool ClosedLoop::BasicTuning(bool firstIteration) noexcept
 		encoder->ClearFullRevs();
 	}
 
-	const uint32_t currentPosition = currentMotorPhase;
+	const uint32_t currentPosition = desiredStepPhase;
 
 	switch (state)
 	{
@@ -224,7 +224,7 @@ bool ClosedLoop::EncoderCalibration(bool firstIteration) noexcept
 		return true;							// we don't do this tuning for relative encoders
 	}
 
-	const uint32_t currentPosition = ClosedLoop::currentMotorPhase;
+	const uint32_t currentPosition = desiredStepPhase;
 
 	if (firstIteration)
 	{
@@ -507,7 +507,7 @@ void ClosedLoop::PerformTune() noexcept
 	static bool newTuningMove = true;						// indicates if a tuning move has just finished
 
 	// Check we are in direct drive mode and we have an encoder
-	if (SmartDrivers::GetDriverMode(0) < DriverMode::foc || encoder == nullptr)
+	if (SmartDrivers::GetDriverMode(0) != DriverMode::direct || encoder == nullptr)
 	{
 		tuningError |= TuningError::SystemError;
 		tuning = 0;

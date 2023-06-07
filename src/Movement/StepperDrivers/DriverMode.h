@@ -15,13 +15,12 @@ enum class DriverMode : unsigned int
 	spreadCycle,
 	stealthChop,			// includes stealthChop2
 #if SUPPORT_CLOSED_LOOP
-	foc,					// field-oriented control
-	semiOpen,
+	direct,					// field-oriented control
 #endif
 	unknown					// must be last!
 };
 
-const char* TranslateDriverMode(unsigned int mode) noexcept;
+const char *_ecv_array TranslateDriverMode(unsigned int mode) noexcept;
 
 inline const char* TranslateDriverMode(DriverMode mode) noexcept
 {

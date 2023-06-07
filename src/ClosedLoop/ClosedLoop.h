@@ -40,8 +40,8 @@ struct MotionParameters
 enum class ClosedLoopMode
 {
 	open = 0,
-	foc,
-	semiOpen
+	closed,
+	assistedOpen
 };
 
 class ClosedLoop
@@ -60,12 +60,6 @@ public:
 	constexpr uint8_t ZIEGLER_NICHOLS_MANOEUVRE 			= 1u << 7;
 #endif
 
-	//TODO reduce the number of these public variables, preferably to zero. Use a cleaner interface between the tuning module and the main closed loop module.
-	Encoder *encoder = nullptr;							// Pointer to the encoder object in use
-	volatile uint8_t tuning = 0;						// Bitmask of any tuning manoeuvres that have been requested
-	TuningErrors tuningError;							// Flags for any tuning errors
-	uint32_t currentMotorPhase;							// the phase (0 to 4095) that the driver is set to
-
 	// Closed loop public methods
 	void Init() noexcept;
 
@@ -73,31 +67,21 @@ public:
 	GCodeResult ProcessM569Point5(const CanMessageStartClosedLoopDataCollection&, const StringRef&) noexcept;
 	GCodeResult ProcessM569Point6(const CanMessageGeneric& msg, const StringRef& reply) noexcept;
 
+	const char *_ecv_array GetModeText() const noexcept;
 	void Diagnostics(const StringRef& reply) noexcept;
 
 	// Methods called by the motion system
 	void ControlLoop() noexcept;
 	StandardDriverStatus ReadLiveStatus() const noexcept;
-	bool GetClosedLoopEnabled(size_t driver) const noexcept;
-	ClosedLoopMode GetClosedLoopMode(size_t driver) const noexcept;
-	bool SetClosedLoopEnabled(size_t driver, ClosedLoopMode mode, const StringRef &reply) noexcept;
-	void DriverSwitchedToClosedLoop(size_t driver) noexcept;
-	void ResetError(size_t driver) noexcept;
-	StandardDriverStatus ModifyDriverStatus(size_t driver, StandardDriverStatus originalStatus) noexcept;
+	bool GetClosedLoopEnabled() const noexcept;
+	bool SetClosedLoopEnabled(ClosedLoopMode mode, const StringRef &reply) noexcept;
+	void DriverSwitchedToClosedLoop() noexcept;
+	void ResetError() noexcept;
+	StandardDriverStatus ModifyDriverStatus(StandardDriverStatus originalStatus) noexcept;
 
 	// Methods called by the encoders
 	void EnableEncodersSpi() noexcept;
 	void DisableEncodersSpi() noexcept;
-
-	// Methods used only by closed loop and by the tuning module
-	void SetMotorPhase(uint16_t phase, float magnitude) noexcept;
-	void FinishedBasicTuning() noexcept;
-															// call this when we have stopped basic tuning movement and are ready to switch to closed loop control
-	void ReadyToCalibrate(bool store) noexcept;				// call this when encoder calibration has finished collecting data
-	void AdjustTargetMotorSteps(float amount) noexcept;		// called by tuning to execute a step
-
-	// Methods in the tuning module
-	void PerformTune() noexcept;
 
 	// Functions run by tasks
 	[[noreturn]] void DataTransmissionTaskLoop() noexcept;
@@ -119,6 +103,17 @@ private:
 
 	static constexpr float PIDIlimit = 80.0;
 
+	// Methods used only by closed loop and by the tuning module
+	void SetMotorPhase(uint16_t phase, float magnitude) noexcept;
+	void SetSpecialMotorPhase(uint16_t phase, float magnitude) noexcept;
+	void FinishedBasicTuning() noexcept;
+															// call this when we have stopped basic tuning movement and are ready to switch to closed loop control
+	void ReadyToCalibrate(bool store) noexcept;				// call this when encoder calibration has finished collecting data
+	void AdjustTargetMotorSteps(float amount) noexcept;		// called by tuning to execute a step
+
+	// Methods in the tuning module
+	void PerformTune() noexcept;
+
 	// Enumeration of closed loop recording modes
 	enum RecordingMode : uint8_t
 	{
@@ -127,6 +122,10 @@ private:
 		OnNextMove,			// collect data when the next movement command starts executing
 		SendingData			// finished collecting data but still sending it to the main board
 	};
+
+	Encoder *encoder = nullptr;							// Pointer to the encoder object in use
+	volatile uint8_t tuning = 0;						// Bitmask of any tuning manoeuvres that have been requested
+	TuningErrors tuningError;							// Flags for any tuning errors
 
 	// Control variables, set by the user to determine how the closed loop controller works
 	ClosedLoopMode currentMode = ClosedLoopMode::open;			// which mode the driver is in
@@ -226,22 +225,9 @@ private:
 	bool Step(bool firstIteration) noexcept;
 };
 
-inline bool ClosedLoop::GetClosedLoopEnabled(size_t driver) const noexcept
+inline bool ClosedLoop::GetClosedLoopEnabled() const noexcept
 {
-#  if SINGLE_DRIVER
 	return currentMode != ClosedLoopMode::open;
-#  else
-#   error Cannot support closed loop with the specified hardware
-#  endif
-}
-
-inline ClosedLoopMode ClosedLoop::GetClosedLoopMode(size_t driver) const noexcept
-{
-#  if SINGLE_DRIVER
-	return currentMode;
-#  else
-#   error Cannot support closed loop with the specified hardware
-#  endif
 }
 
 #  if defined(EXP1HCLv1_0) || defined(M23CL)

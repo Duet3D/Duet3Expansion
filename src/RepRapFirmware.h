@@ -145,7 +145,11 @@ extern Move *moveInstance;
 #endif
 
 #if SUPPORT_CLOSED_LOOP
+# if SINGLE_DRIVER
 extern ClosedLoop *closedLoopInstance;
+# else
+#  error Multiple closed loop drivers not supported
+# endif
 #endif
 
 // Module numbers and names, used for diagnostics and debug

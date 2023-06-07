@@ -348,10 +348,10 @@ static GCodeResult ProcessM569(const CanMessageGeneric& msg, const StringRef& re
 			seen = true;
 # if SUPPORT_CLOSED_LOOP
 			// Enable/disabled closed loop control
-			const ClosedLoopMode mode = (val == (uint32_t)DriverMode::foc) ? ClosedLoopMode::foc
-										: (val == (uint32_t)DriverMode::semiOpen) ? ClosedLoopMode::semiOpen
+			const ClosedLoopMode mode = (val == (uint32_t)DriverMode::direct) ? ClosedLoopMode::closed
+										: (val == (uint32_t)DriverMode::direct + 1) ? ClosedLoopMode::assistedOpen
 											: ClosedLoopMode::open;
-			if (!closedLoopInstance->SetClosedLoopEnabled(drive, mode, reply))
+			if (!closedLoopInstance->SetClosedLoopEnabled(mode, reply))
 			{
 				// reply.printf is done in ClosedLoop::SetClosedLoopEnabled()
 				return GCodeResult::error;
@@ -365,7 +365,7 @@ static GCodeResult ProcessM569(const CanMessageGeneric& msg, const StringRef& re
 # if SUPPORT_CLOSED_LOOP
 			if (mode != ClosedLoopMode::open)
 			{
-				closedLoopInstance->DriverSwitchedToClosedLoop(drive);
+				closedLoopInstance->DriverSwitchedToClosedLoop();
 			}
 # endif
 		}
@@ -473,12 +473,19 @@ static GCodeResult ProcessM569(const CanMessageGeneric& msg, const StringRef& re
 
 #if HAS_SMART_DRIVERS
 		// It's a smart driver, so print the parameters common to all modes, except for the position
-		reply.catf(", mode %s, ccr 0x%05" PRIx32 ", toff %" PRIu32 ", tblank %" PRIu32,
-				TranslateDriverMode(SmartDrivers::GetDriverMode(drive)),
-				SmartDrivers::GetRegister(drive, SmartDriverRegister::chopperControl),
-				SmartDrivers::GetRegister(drive, SmartDriverRegister::toff),
-				SmartDrivers::GetRegister(drive, SmartDriverRegister::tblank)
-			);
+		const DriverMode dmode = SmartDrivers::GetDriverMode(drive);
+		reply.catf(", mode %s", TranslateDriverMode(dmode));
+# if SUPPORT_CLOSED_LOOP
+		if (dmode == DriverMode::direct)
+		{
+			reply.catf(" (%s)", closedLoopInstance->GetModeText());
+		}
+# endif
+		reply.catf(", ccr 0x%05" PRIx32 ", toff %" PRIu32 ", tblank %" PRIu32,
+					SmartDrivers::GetRegister(drive, SmartDriverRegister::chopperControl),
+					SmartDrivers::GetRegister(drive, SmartDriverRegister::toff),
+					SmartDrivers::GetRegister(drive, SmartDriverRegister::tblank)
+				  );
 
 # if SUPPORT_TMC51xx || SUPPORT_TMC2160
 		{

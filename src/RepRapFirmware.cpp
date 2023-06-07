@@ -20,7 +20,11 @@ Move *moveInstance;
 #endif
 
 #if SUPPORT_CLOSED_LOOP
+# if SINGLE_DRIVER
 ClosedLoop *closedLoopInstance;
+# else
+#  error Multiple closed loop drivers not supported
+# endif
 #endif
 
 void debugPrintf(const char* fmt, ...) noexcept
