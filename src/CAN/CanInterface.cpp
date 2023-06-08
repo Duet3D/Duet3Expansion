@@ -61,7 +61,7 @@ constexpr CanDevice::Config Can0Config =
 {
 	.dataSize = 64,									// must be one of: 8, 12, 16, 20, 24, 32, 48, 64
 	.numTxBuffers = 0,
-	.txFifoSize = 10,								// enough to send a 512-byte response broken into 60-byte fragments
+	.txFifoSize = 16,								// enough to send a 512-byte response broken into 60-byte fragments, plus status messages
 #if RP2040
 	.numRxBuffers = 0,								// RP2040 implementation doesn't support receive buffers
 #else
