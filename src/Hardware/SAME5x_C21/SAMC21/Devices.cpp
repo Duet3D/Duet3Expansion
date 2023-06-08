@@ -12,6 +12,7 @@
 
 #include <AnalogIn.h>
 #include <AnalogOut.h>
+#include <RTOSIface/RTOSIface.h>
 
 // Analog input support
 constexpr size_t AnalogInTaskStackWords = 200;				// was 120 but we got a stack overflow
