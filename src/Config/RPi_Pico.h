@@ -205,8 +205,9 @@ constexpr DmaChannel DmacChanAdcRx = 1;
 constexpr DmaChannel DmacChanTmcTx = 2;
 constexpr DmaChannel DmacChanTmcRx = 3;					// this must be one higher than DmacChanTmcTx for RP2040 build configurations
 constexpr DmaChannel DmacChanCRC = 4;
+constexpr DmaChannel DmaChanWS2812 = 5;
 
-constexpr unsigned int NumDmaChannelsUsed = 5;			// must be at least the number of channels used, may be larger. Max 12 on the RP2040.
+constexpr unsigned int NumDmaChannelsUsed = 6;			// must be at least the number of channels used, may be larger. Max 12 on the RP2040.
 
 // DMA priorities, higher is better. RP2040 has only 0 and 1.
 constexpr DmaPriority DmacPrioTmcTx = 0;

@@ -73,8 +73,10 @@ protected:
 	bool MustStopMovement() const noexcept override { return !useDma; }
 	virtual size_t GetBytesPerLed() const noexcept = 0;
 
-#if SUPPORT_DMA_NEOPIXEL
+#if SUPPORT_DMA_NEOPIXEL || SUPPORT_PIO_NEOPIXEL
 	bool UsesDma() const noexcept { return useDma; }
+#endif
+#if SUPPORT_DMA_NEOPIXEL
 	void DmaSendChunkBuffer(size_t numBytes) noexcept;					// DMA the data. Must be a multiple of 2 bytes if USE_16BIT_SPI is true.
 	bool DmaInProgress() noexcept;										// Return true if DMA to the LEDs is in progress
 	void SetupSpi() noexcept;											// Setup the SPI peripheral. Only call this when the busy flag is not set.
@@ -84,7 +86,7 @@ protected:
 	uint32_t frequency;													// the SPI frequency we are using
 	uint32_t whenTransferFinished = 0;									// the time in step clocks when we determined that the data transfer had finished
 
-#if SUPPORT_DMA_NEOPIXEL
+#if SUPPORT_DMA_NEOPIXEL || SUPPORT_PIO_NEOPIXEL
 	bool useDma;
 	bool dmaBusy = false;												// true if DMA was started and is not known to have finished
 #else

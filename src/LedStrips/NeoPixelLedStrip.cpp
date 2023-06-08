@@ -9,12 +9,22 @@
 
 #if SUPPORT_LED_STRIPS
 
-#include <Movement/StepTimer.h>
+#if SUPPORT_PIO_NEOPIXEL
+WS2812* NeoPixelLedStrip::ws2812Device = nullptr;
+#endif
 
 NeoPixelLedStrip::NeoPixelLedStrip(bool p_isRGBW) noexcept
 	: LocalLedStrip((p_isRGBW) ? LedStripType::NeoPixel_RGBW : LedStripType::NeoPixel_RGB, DefaultNeoPixelSpiClockFrequency),
 	  isRGBW(p_isRGBW)
 {
+#if SUPPORT_PIO_NEOPIXEL
+	// Create the PIO device if this is the first string
+	if (ws2812Device == nullptr)
+	{
+		ws2812Device = new WS2812(NoPin, false, DmaChanWS2812);
+	}
+	useDma = true;
+#endif
 }
 
 GCodeResult NeoPixelLedStrip::Configure(CanMessageGenericParser& parser, const StringRef& reply, uint8_t& extra) noexcept
@@ -54,6 +64,12 @@ GCodeResult NeoPixelLedStrip::HandleM150(CanMessageGenericParser& parser, const 
 		SpiSendNeoPixelData(params);
 	}
 	else
+#elif SUPPORT_PIO_NEOPIXEL
+	if (UsesDma())
+	{
+		PioSendNeoPixelData(params);
+	}
+	else
 #endif
 	{
 		BitBangNeoPixelData(params);
@@ -65,7 +81,12 @@ GCodeResult NeoPixelLedStrip::HandleM150(CanMessageGenericParser& parser, const 
 size_t NeoPixelLedStrip::GetBytesPerLed() const noexcept
 {
 	const size_t bytesPerLed = (isRGBW) ? 4 : 3;
+#if SUPPORT_PIO_NEOPIXEL
+	// PIO strings always use 4 bytes per pixel
+	return (useDma) ? 4 : bytesPerLed;
+#else
 	return (useDma) ? bytesPerLed * 4 : bytesPerLed;
+#endif
 }
 
 #if SUPPORT_DMA_NEOPIXEL
@@ -123,6 +144,38 @@ GCodeResult NeoPixelLedStrip::SpiSendNeoPixelData(const LedParams& params) noexc
 	}
 	return GCodeResult::ok;
 }
+
+#elif SUPPORT_PIO_NEOPIXEL
+
+// Send data to NeoPixel LEDs by DMA to SPI
+GCodeResult NeoPixelLedStrip::PioSendNeoPixelData(const LedParams& params) noexcept
+{
+	const unsigned int bytesPerLed = 4;
+	unsigned int numLeds = params.numLeds;
+	uint8_t *p = chunkBuffer + (bytesPerLed * numAlreadyInBuffer);
+	while (numLeds != 0 && p + bytesPerLed <= chunkBuffer + chunkBufferSize)
+	{
+		*p++ = isRGBW ? (uint8_t)params.white : 0;
+		*p++ = (uint8_t)params.blue;
+		*p++ = (uint8_t)params.red;
+		*p++ = (uint8_t)params.green;
+		--numLeds;
+		++numAlreadyInBuffer;
+	}
+	if (!params.following)
+	{
+		if (ws2812Device != nullptr)
+		{
+			ws2812Device->Configure(port.GetPin(), isRGBW);
+			ws2812Device->SendData((uint32_t *)chunkBuffer, numAlreadyInBuffer);
+		}
+		numAlreadyInBuffer = 0;
+		needStartDelay = true;
+	}
+	return GCodeResult::ok;
+
+}
+
 #endif
 
 // Bit bang data to Neopixels

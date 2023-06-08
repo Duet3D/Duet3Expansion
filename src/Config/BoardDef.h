@@ -85,4 +85,8 @@ constexpr size_t NumDrivers = 0;
 # define SUPPORT_DMA_NEOPIXEL			0
 #endif
 
+#ifndef SUPPORT_PIO_NEOPIXEL
+# define SUPPORT_PIO_NEOPIXEL			(SUPPORT_LED_STRIPS && RP2040)
+#endif
+
 #endif /* SRC_CONFIG_BOARDDEF_H_ */

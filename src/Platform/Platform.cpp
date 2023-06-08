@@ -48,6 +48,10 @@
 # include <hpl_user_area.h>
 #endif
 
+#if RP2040
+# include <hardware/structs/watchdog.h>
+#endif
+
 #if SAME5x
 
 # include <hri_nvmctrl_e54.h>
@@ -406,10 +410,11 @@ namespace Platform
 #endif
 	}
 
+#if !RP2040
 	// Erase the firmware (but not the bootloader) and reset the processor
 	[[noreturn]] RAMFUNC static void EraseAndReset()
 	{
-#if SAME5x
+# if SAME5x
 		while (!hri_nvmctrl_get_STATUS_READY_bit(NVMCTRL)) { }
 
 		// Unlock the block of flash
@@ -423,7 +428,7 @@ namespace Platform
 		hri_nvmctrl_write_CTRLB_reg(NVMCTRL, NVMCTRL_CTRLB_CMD_EB | NVMCTRL_CTRLB_CMDEX_KEY);
 
 		while (!hri_nvmctrl_get_STATUS_READY_bit(NVMCTRL)) { }
-#elif SAMC21
+# elif SAMC21
 		while (!hri_nvmctrl_get_interrupt_READY_bit(NVMCTRL)) { }
 		hri_nvmctrl_clear_STATUS_reg(NVMCTRL, NVMCTRL_STATUS_MASK);
 
@@ -440,13 +445,12 @@ namespace Platform
 
 		while (!hri_nvmctrl_get_interrupt_READY_bit(NVMCTRL)) { }
 		hri_nvmctrl_clear_STATUS_reg(NVMCTRL, NVMCTRL_STATUS_MASK);
-#elif RP2040
-		//TODO
-#else
-# error Unsupported processor
-#endif
+# else
+#  error Unsupported processor
+# endif
 		ResetProcessor();
 	}
+#endif
 
 	static void ShutdownAll()
 	{
@@ -487,14 +491,20 @@ namespace Platform
 			NVIC->ICER[i] = 0xFFFFFFFF;					// Disable IRQs
 			NVIC->ICPR[i] = 0xFFFFFFFF;					// Clear pending IRQs
 		}
-#elif SAMC21 || RP2040
+#elif SAMC21
 		NVIC->ICER[0] = 0xFFFFFFFF;						// Disable IRQs
 		NVIC->ICPR[0] = 0xFFFFFFFF;						// Clear pending IRQs
+#elif RP2040
+		// We reboot and update the firmware in a similar manner to bootloader updates on other boards
+		watchdog_hw->scratch[UpdateFirmwareMagicWordIndex] = UpdateFirmwareMagicValue;
+		ResetProcessor();
 #else
 # error Unsupported processor
 #endif
 
+#if !RP2040
 		EraseAndReset();
+#endif
 	}
 
 	// Update the CAN bootloader
@@ -503,7 +513,7 @@ namespace Platform
 		ShutdownAll();									// turn everything off
 
 #if RP2040
-		//TODO
+		// We don't need to update the bootloader
 #else
 		// Remove the bootloader protection and set the bootloader update flag
 		// On the SAME5x the first 8x 32-bit words are reserved. We store the bootloader flag in the 10th word.
@@ -986,6 +996,9 @@ void Platform::InitMinimal()
 	InitLeds();
 	InitVinMonitor();
 	InitialiseInterrupts();
+#if RP2040
+	serialUSB.Start(NoPin);
+#endif
 	CanInterface::Init(GetCanAddress(), UseAlternateCanPins, false);
 }
 
@@ -1350,6 +1363,7 @@ void Platform::Spin()
 # endif
 		if (c == 'D')
 		{
+			debugPrintf("Version %s\n", VERSION);
 			String<StringLength256> reply;
 			Tasks::Diagnostics(reply.GetRef());
 			debugPrintf("%s\n", reply.c_str());

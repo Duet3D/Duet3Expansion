@@ -13,6 +13,10 @@
 
 #if SUPPORT_LED_STRIPS
 
+#if SUPPORT_PIO_NEOPIXEL
+# include <WS2812.h>
+#endif
+
 class NeoPixelLedStrip : public LocalLedStrip
 {
 public:
@@ -32,6 +36,9 @@ private:
 
 #if SUPPORT_DMA_NEOPIXEL
 	GCodeResult SpiSendNeoPixelData(const LedParams& params) noexcept;
+#elif SUPPORT_PIO_NEOPIXEL
+	GCodeResult PioSendNeoPixelData(const LedParams& params) noexcept;
+	static WS2812* ws2812Device;
 #endif
 
 	unsigned int numAlreadyInBuffer = 0;												// number of pixels already store in the buffer

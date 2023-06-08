@@ -406,11 +406,6 @@ GCodeResult ClosedLoop::ProcessBasicTuningResult(const StringRef& reply) noexcep
 		return GCodeResult::error;
 	}
 
-#ifdef DEBUG
-	debugPrintf("commanded phase %" PRIu32 " measured phase %" PRIu32 "\n", currentMotorPhase, encoder->GetCurrentPhasePosition());
-	encoder->TakeReading();
-	debugPrintf("commanded phase %" PRIu32 " measured phase %" PRIu32 "\n", currentMotorPhase, encoder->GetCurrentPhasePosition());
-#endif
 	PIDITerm = 0.0;
 	errorDerivativeFilter.Reset();
 	speedFilter.Reset();
