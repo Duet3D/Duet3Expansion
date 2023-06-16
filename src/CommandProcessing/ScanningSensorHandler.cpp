@@ -13,7 +13,6 @@
 #include <Platform/Platform.h>
 
 static LDC1612 *sensor = nullptr;
-static bool present = false;								// note that present => (sensor != nullptr)
 
 void ScanningSensorHandler::Init() noexcept
 {
@@ -26,7 +25,6 @@ void ScanningSensorHandler::Init() noexcept
 
 	if (sensor->CheckPresent())
 	{
-		present = true;
 		sensor->SetDefaultConfiguration(0);
 	}
 	else
@@ -38,7 +36,7 @@ void ScanningSensorHandler::Init() noexcept
 
 bool ScanningSensorHandler::IsPresent() noexcept
 {
-	return present;
+	return sensor != nullptr;
 }
 
 uint16_t ScanningSensorHandler::GetReading() noexcept
@@ -55,6 +53,19 @@ uint16_t ScanningSensorHandler::GetReading() noexcept
 		}
 	}
 	return 0;
+}
+
+void ScanningSensorHandler::AppendDiagnostics(const StringRef& reply) noexcept
+{
+	reply.cat("Inductive sensor: ");
+	if (IsPresent())
+	{
+		sensor->AppendDiagnostics(reply);
+	}
+	else
+	{
+		reply.cat("not found");
+	}
 }
 
 #endif

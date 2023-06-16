@@ -44,6 +44,10 @@
 # include "AccelerometerHandler.h"
 #endif
 
+#if SUPPORT_LDC1612
+# include "ScanningSensorHandler.h"
+#endif
+
 #if HAS_VOLTAGE_MONITOR
 constexpr float MinVin = 11.0;
 constexpr float MaxVin = 32.0;
@@ -904,10 +908,12 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 #if SUPPORT_LIS3DH
 		AccelerometerHandler::Diagnostics(reply);
 #endif
+#if SUPPORT_LDC1612
+		ScanningSensorHandler::AppendDiagnostics(reply);
+#endif
 #if SUPPORT_I2C_SENSORS
 		Platform::GetSharedI2C().Diagnostics(reply);
 #endif
-
 #if SUPPORT_DRIVERS
 		FilamentMonitor::GetDiagnostics(reply);
 #endif

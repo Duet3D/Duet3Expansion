@@ -9,6 +9,9 @@
 #define SRC_HARDWARE_LDC1612_H_
 
 #include <RepRapFirmware.h>
+
+#if SUPPORT_LDC1612
+
 #include "SharedI2CClient.h"
 
 // LDC1612 class
@@ -23,9 +26,8 @@ public:
 	bool Reset() noexcept;
 	bool SetDefaultConfiguration(uint8_t channel) noexcept;
 	void SetLC(uint8_t channel, float uh, float pf) noexcept;
-	uint16_t GetStatus() noexcept;
-
 	bool GetChannelResult(uint8_t channel, uint32_t& result) noexcept;
+	void AppendDiagnostics(const StringRef& reply) noexcept;
 
 private:
 	static constexpr unsigned int NumChannels = 2;
@@ -52,6 +54,7 @@ private:
 		READ_DEVICE_ID = 0x7F
 	};
 
+	uint16_t GetStatus() noexcept;
 	bool SetConversionTime(uint8_t channel, uint16_t value) noexcept;
 	bool SetLCStabilizeTime(uint8_t channel, uint16_t value) noexcept;
 	bool SetConversionOffset(uint8_t channel, uint16_t value) noexcept;
@@ -69,5 +72,7 @@ private:
 	float inductance[NumChannels];
 	float capacitance[NumChannels];
 };
+
+#endif	// SUPPORT_LDC1612
 
 #endif /* SRC_HARDWARE_LDC1612_H_ */

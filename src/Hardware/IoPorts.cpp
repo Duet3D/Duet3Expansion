@@ -99,8 +99,8 @@ bool IoPort::SetMode(PinAccess access) noexcept
 			// nothing needed here
 		}
 		else
-		{
 #endif
+		{
 			const AnalogChannelNumber chan = PinToAdcChannel(pin);
 			if (chan != AdcInput::none)
 			{
@@ -167,8 +167,8 @@ uint16_t IoPort::ReadAnalog() const noexcept
 			return ScanningSensorHandler::GetReading();
 		}
 		else
-		{
 #endif
+		{
 			const AdcInput chan = PinTable[pin].adc;
 			if (chan != AdcInput::none)
 			{

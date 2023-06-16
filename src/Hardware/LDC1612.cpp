@@ -6,6 +6,9 @@
  */
 
 #include "LDC1612.h"
+
+#if SUPPORT_LDC1612
+
 #include <cmath>
 
 constexpr uint32_t LDCI2CTimeout = 25;
@@ -34,6 +37,7 @@ constexpr uint16_t CFG_INTB_DIS = 1u << 7;
 constexpr uint16_t CFG_HIGH_CURRENT_DRV = 1u << 6;
 constexpr uint16_t CFG_RESERVED_BITS = 0x0001;
 
+// MUX register configuration
 constexpr uint16_t MUX_AUTOSCAN_EN = 1u << 15;
 constexpr uint16_t MUX_RR_SEQUENCE = 1u << 13;
 constexpr uint16_t MUX_DEGLITCH_1MHZ = 1u << 0;
@@ -41,6 +45,12 @@ constexpr uint16_t MUX_DEGLITCH_3P3MHZ = 4u << 0;
 constexpr uint16_t MUX_DEGLITCH_10MHZ = 5u << 0;
 constexpr uint16_t MUX_DEGLITCH_33MHZ = 7u << 0;
 constexpr uint16_t MUX_RESERVED_BITS = 0b0'0010'0000'1000;
+
+// Conversion result error bits (shifted left by 28 bits)
+constexpr uint32_t ERR_UR0 = 1u << 3;
+constexpr uint32_t ERR_OR0 = 1u << 2;
+constexpr uint32_t ERR_WD0 = 1u << 1;
+constexpr uint32_t ERR_AE0 = 1u << 0;
 
 LDC1612::LDC1612(SharedI2CMaster& dev, uint16_t i2cAddress) noexcept
 	: SharedI2CClient(dev, i2cAddress)
@@ -65,6 +75,7 @@ bool LDC1612::SetDefaultConfiguration(uint8_t channel) noexcept
 		&& SetConversionTime(channel, 0x0546)
 		&& SetDriverCurrent(channel, 0xa000)
 		&& SetMuxConfiguration(MUX_RESERVED_BITS | MUX_DEGLITCH_1MHZ)			// single conversion
+		&& SetErrorConfiguration(UR_ERR2OUT | OR_ERR2OUT | WD_ERR2OUT | AH_ERR2OUT | AL_ERR2OUT)
 		&& UpdateConfiguration(DefaultConfigRegVal | (channel << 14));			// this also takes the device out of sleep mode
  }
 
@@ -191,6 +202,36 @@ uint16_t LDC1612::GetStatus() noexcept
     return value;
 }
 
+// Append diagnostic data to string
+void LDC1612::AppendDiagnostics(const StringRef& reply) noexcept
+{
+	uint32_t val;
+	if (GetChannelResult(0, val))
+	{
+		reply.catf("value %" PRIu32 "qq", val & 0x0FFFFFFF);
+		if ((val >> 28) & ERR_UR0)
+		{
+			reply.cat(", underrange error");
+		}
+		if ((val >> 28) & ERR_OR0)
+		{
+			reply.cat(", overrange error");
+		}
+		if ((val >> 28) & ERR_WD0)
+		{
+			reply.cat(", watchdog error");
+		}
+		if ((val >> 28) & ERR_AE0)
+		{
+			reply.cat(", amplitude error");
+		}
+	}
+	else
+	{
+		reply.cat("error retrieving data from LDC1612");
+	}
+}
+
 // Read a single 8-bit register
 bool LDC1612::ReadRegister(LDCRegister reg, uint8_t& val) noexcept
 {
@@ -220,5 +261,7 @@ bool LDC1612::Write16bits(LDCRegister reg, uint16_t val) noexcept
 	uint8_t data[2] = { (uint8_t)((val >> 8) & 0xff), (uint8_t)(val & 0xff) };
 	return Transfer((uint8_t)reg, data, 3, 0, LDCI2CTimeout);
 }
+
+#endif	// SUPPORT_LDC1612
 
 // End
