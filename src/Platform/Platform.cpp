@@ -36,6 +36,10 @@
 # include <CommandProcessing/AccelerometerHandler.h>
 #endif
 
+#if SUPPORT_LDC1612
+# include <CommandProcessing/ScanningSensorHandler.h>
+#endif
+
 #if SUPPORT_CLOSED_LOOP
 # include <ClosedLoop/ClosedLoop.h>
 #endif
@@ -983,6 +987,15 @@ void Platform::Init()
 # endif
 	{
 		AccelerometerHandler::Init();
+	}
+#endif
+
+#if SUPPORT_LDC1612
+# ifdef TOOL1LC
+	if (boardVariant != 0)
+# endif
+	{
+		ScanningSensorHandler::Init();
 	}
 #endif
 

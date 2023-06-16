@@ -403,6 +403,9 @@ void Heat::Exit()
 #if SUPPORT_CLOSED_LOOP
 				boardStatusMsg->hasClosedLoop = true;
 #endif
+#if SUPPORT_LDC1612
+				boardStatusMsg->hasInductiveSensor = true;
+#endif
 				buf.dataLength = boardStatusMsg->GetActualDataLength();
 				CanInterface::Send(&buf);
 			}

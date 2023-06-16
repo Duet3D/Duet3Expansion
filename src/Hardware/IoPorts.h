@@ -47,61 +47,61 @@ enum class PinUsedBy : uint8_t
 class IoPort
 {
 public:
-	IoPort();
+	IoPort() noexcept;
 	~IoPort() { Release(); }
 
-	bool SetMode(PinAccess access);
-	void Release();
-	void AppendBasicDetails(const StringRef& str) const;
+	bool SetMode(PinAccess access) noexcept;
+	void Release() noexcept;
+	void AppendBasicDetails(const StringRef& str) const noexcept;
 
-	Pin GetPin() const { return pin; }
+	Pin GetPin() const noexcept { return pin; }
 
-	static size_t AssignPorts(const char *pinNames, const StringRef& reply, PinUsedBy neededFor, size_t numPorts, IoPort * const ports[], const PinAccess access[]);
-	bool AssignPort(const char *pinName, const StringRef& reply, PinUsedBy neededFor, PinAccess access) { return Allocate(pinName, reply, neededFor, access); }
+	static size_t AssignPorts(const char *pinNames, const StringRef& reply, PinUsedBy neededFor, size_t numPorts, IoPort * const ports[], const PinAccess access[]) noexcept;
+	bool AssignPort(const char *pinName, const StringRef& reply, PinUsedBy neededFor, PinAccess access) noexcept { return Allocate(pinName, reply, neededFor, access); }
 
-	void AppendPinName(const StringRef& str, bool includeBoardAddress = true) const;
-	bool IsValid() const { return pin != NoPin; }
-	bool GetInvert() const;
-	void SetInvert(bool pInvert);
-	void ToggleInvert(bool pInvert);
+	void AppendPinName(const StringRef& str, bool includeBoardAddress = true) const noexcept;
+	bool IsValid() const noexcept { return pin != NoPin; }
+	bool GetInvert() const noexcept;
+	void SetInvert(bool pInvert) noexcept;
+	void ToggleInvert(bool pInvert) noexcept;
 	bool GetTotalInvert() const noexcept { return totalInvert; }
-	bool UseAlternateConfig() const { return alternateConfig; }
+	bool UseAlternateConfig() const noexcept { return alternateConfig; }
 
-	void WriteDigital(bool high) const;
+	void WriteDigital(bool high) const noexcept;
 
 	// Warning: for speed when bit-banging Neopixels, FastDigitalWriteHigh and FastDigitalWriteLow do not take account of pin inversion!
 	void FastDigitalWriteLow() const noexcept pre(IsValid()) { fastDigitalWriteLow(pin); }
 	void FastDigitalWriteHigh() const noexcept pre(IsValid()) { fastDigitalWriteHigh(pin); }
 
-	bool ReadDigital() const;
-	uint16_t ReadAnalog() const;
+	bool ReadDigital() const noexcept;
+	uint16_t ReadAnalog() const noexcept;
 
-	bool AttachInterrupt(StandardCallbackFunction callback, InterruptMode mode, CallbackParameter param) const;
-	void DetachInterrupt() const;
-	bool SetAnalogCallback(AnalogInCallbackFunction fn, CallbackParameter cbp, uint32_t ticksPerCall);
+	bool AttachInterrupt(StandardCallbackFunction callback, InterruptMode mode, CallbackParameter param) const noexcept;
+	void DetachInterrupt() const noexcept;
+	bool SetAnalogCallback(AnalogInCallbackFunction fn, CallbackParameter cbp, uint32_t ticksPerCall) noexcept;
 
 	// Initialise static data
-	static void Init();
+	static void Init() noexcept;
 
-	static void AppendPinNames(const StringRef& str, size_t numPorts, IoPort * const ports[]);
+	static void AppendPinNames(const StringRef& str, size_t numPorts, IoPort * const ports[]) noexcept;
 
 	// Look up a pin name in the pins table
-	static bool LookupPinName(const char*pn, Pin& returnedPin, bool& hardwareInverted, bool& pullupAlways);
+	static bool LookupPinName(const char*pn, Pin& returnedPin, bool& hardwareInverted, bool& pullupAlways) noexcept;
 
 	// Find the ADC channel associated with a pin
-	static AdcInput PinToAdcInput(Pin p, bool useAlternateAdc);
+	static AdcInput PinToAdcInput(Pin p, bool useAlternateAdc) noexcept;
 
 	// Low level port access
 	static void SetPinMode(Pin p, PinMode mode) noexcept { pinMode(p, mode); }
 
-	static bool ReadPin(Pin p);
-	static void WriteDigital(Pin p, bool high);
-	static void WriteAnalog(Pin p, float pwm, uint16_t frequency);
+	static bool ReadPin(Pin p) noexcept;
+	static void WriteDigital(Pin p, bool high) noexcept;
+	static void WriteAnalog(Pin p, float pwm, uint16_t frequency) noexcept;
 
 protected:
-	bool Allocate(const char *pinName, const StringRef& reply, PinUsedBy neededFor, PinAccess access);
+	bool Allocate(const char *pinName, const StringRef& reply, PinUsedBy neededFor, PinAccess access) noexcept;
 
-	static const char* TranslatePinAccess(PinAccess access);
+	static const char* TranslatePinAccess(PinAccess access) noexcept;
 
 	Pin pin;
 	uint8_t hardwareInvert : 1,								// true if the hardware includes inversion
@@ -121,10 +121,10 @@ class PwmPort : public IoPort
 public:
 	PwmPort();
 
-	void AppendFullDetails(const StringRef& str) const;
-	void AppendFrequency(const StringRef& str) const;		// append the frequency if the port is valid
-	void SetFrequency(PwmFrequency freq) { frequency = freq; }
-	void WriteAnalog(float pwm) const;
+	void AppendFullDetails(const StringRef& str) const noexcept;
+	void AppendFrequency(const StringRef& str) const noexcept;		// append the frequency if the port is valid
+	void SetFrequency(PwmFrequency freq) noexcept { frequency = freq; }
+	void WriteAnalog(float pwm) const noexcept;
 
 private:
 	PwmFrequency frequency;

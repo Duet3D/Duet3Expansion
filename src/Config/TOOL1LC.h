@@ -89,6 +89,7 @@ constexpr Pin DriverDiagPins[NumDrivers] = { PortBPin(3) };
 #define SUPPORT_LIS3DH			1
 #define SUPPORT_DHT_SENSOR		0
 #define SUPPORT_SDADC			1
+#define SUPPORT_LDC1612			1
 
 #define USE_MPU					0
 #define USE_CACHE				0
@@ -141,6 +142,10 @@ constexpr GpioPinFunction I2CSCLPinPeriphMode = GpioPinFunction::C;
 constexpr bool Lis3dhAddressLsb = true;
 constexpr Pin Lis3dhInt1Pin = PortAPin(0);
 
+#endif
+
+#if SUPPORT_LDC1612
+constexpr Pin LDC1612ClockGenPin = PortAPin(23);
 #endif
 
 // Table of pin functions that we are allowed to use
@@ -206,10 +211,25 @@ constexpr PinDescription PinTable[] =
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PB21 not on chip
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		6,	"!^button0"		},	// PB22 button0
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		7,	"!^button1"		},	// PB23 button1
+
+	// Virtual pins
+#if SUPPORT_LDC1612
+	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"ldc1612"		},	// LDC1612 sensor
+#endif
+
 };
 
-static constexpr size_t NumPins = ARRAY_SIZE(PinTable);
-static_assert(NumPins == 32 + 24);		// 32 pins on port A (some missing), 24 on port B
+constexpr size_t NumPins = ARRAY_SIZE(PinTable);
+constexpr size_t NumRealPins = 32 + 24;				// 32 pins on port A (some missing), 24 on port B
+
+#if SUPPORT_LDC1612
+constexpr size_t NumVirtualPins = 1;
+constexpr Pin Ldc1612VirtualPin = NumRealPins + 0;
+#else
+constexpr size_t NumVirtualPins = 0;
+#endif
+
+static_assert(NumPins == NumRealPins + NumVirtualPins);
 
 // Timer/counter used to generate step pulses and other sub-millisecond timings
 TcCount32 * const StepTc = &(TC2->COUNT32);

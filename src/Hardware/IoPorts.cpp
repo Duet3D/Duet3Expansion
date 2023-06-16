@@ -19,12 +19,16 @@
 # include <Platform/Platform.h>
 #endif
 
+#if SUPPORT_LDC1612
+# include <CommandProcessing/ScanningSensorHandler.h>
+#endif
+
 // Members of class IoPort
 
 PinUsedBy IoPort::portUsedBy[NumPins];
 int8_t IoPort::logicalPinModes[NumPins];	// what mode each logical pin is set to - would ideally be class PinMode not int8_t
 
-/*static*/ void IoPort::Init()
+/*static*/ void IoPort::Init() noexcept
 {
 	for (PinUsedBy& p : portUsedBy)
 	{
@@ -36,12 +40,12 @@ int8_t IoPort::logicalPinModes[NumPins];	// what mode each logical pin is set to
 	}
 }
 
-IoPort::IoPort() : pin(NoPin), hardwareInvert(false), totalInvert(false), isSharedInput(false)
+IoPort::IoPort() noexcept : pin(NoPin), hardwareInvert(false), totalInvert(false), isSharedInput(false)
 {
 }
 
 // Set the specified pin mode returning true if successful
-bool IoPort::SetMode(PinAccess access)
+bool IoPort::SetMode(PinAccess access) noexcept
 {
 	if (!IsValid())
 	{
@@ -89,32 +93,41 @@ bool IoPort::SetMode(PinAccess access)
 
 	if (logicalPinModes[pin] != (int8_t)desiredMode)
 	{
-		const AnalogChannelNumber chan = PinToAdcChannel(pin);
-		if (chan != AdcInput::none)
+#if SUPPORT_LDC1612
+		if (pin == Ldc1612VirtualPin && access == PinAccess::readAnalog)
 		{
-			if (access == PinAccess::readAnalog)
-			{
-				IoPort::SetPinMode(pin, AIN);		// SAME70 errata says we must disable the pullup resistor before enabling the AFEC channel
-				AnalogInEnableChannel(chan, true);
-				logicalPinModes[pin] = (int8_t)desiredMode;
-				return true;
-			}
-			else
-			{
-				AnalogInEnableChannel(chan, false);
-			}
+			// nothing needed here
 		}
-		else if (access == PinAccess::readAnalog)
+		else
 		{
-			return false;
+#endif
+			const AnalogChannelNumber chan = PinToAdcChannel(pin);
+			if (chan != AdcInput::none)
+			{
+				if (access == PinAccess::readAnalog)
+				{
+					IoPort::SetPinMode(pin, AIN);		// SAME70 errata says we must disable the pullup resistor before enabling the AFEC channel
+					AnalogInEnableChannel(chan, true);
+					logicalPinModes[pin] = (int8_t)desiredMode;
+					return true;
+				}
+				else
+				{
+					AnalogInEnableChannel(chan, false);
+				}
+			}
+			else if (access == PinAccess::readAnalog)
+			{
+				return false;
+			}
+			IoPort::SetPinMode(pin, desiredMode);
 		}
-		IoPort::SetPinMode(pin, desiredMode);
 		logicalPinModes[pin] = (int8_t)desiredMode;
 	}
 	return true;
 }
 
-void IoPort::Release()
+void IoPort::Release() noexcept
 {
 	if (IsValid() && !isSharedInput)
 	{
@@ -126,7 +139,7 @@ void IoPort::Release()
 	hardwareInvert = totalInvert = false;
 }
 
-void IoPort::WriteDigital(bool high) const
+void IoPort::WriteDigital(bool high) const noexcept
 {
 	if (IsValid())
 	{
@@ -134,7 +147,7 @@ void IoPort::WriteDigital(bool high) const
 	}
 }
 
-bool IoPort::ReadDigital() const
+bool IoPort::ReadDigital() const noexcept
 {
 	if (IsValid())
 	{
@@ -144,32 +157,41 @@ bool IoPort::ReadDigital() const
 	return false;
 }
 
-uint16_t IoPort::ReadAnalog() const
+uint16_t IoPort::ReadAnalog() const noexcept
 {
 	if (IsValid())
 	{
-		const AdcInput chan = PinTable[pin].adc;
-		if (chan != AdcInput::none)
+#if SUPPORT_LDC1612
+		if (pin == Ldc1612VirtualPin)
 		{
-			const uint16_t val =
-#ifdef ATEIO
-			(IsExtendedAnalogPin(pin))
-				? ExtendedAnalog::AnalogIn(GetInputNumber(chan)) :
+			return ScanningSensorHandler::GetReading();
+		}
+		else
+		{
 #endif
-				AnalogIn::ReadChannel(chan);
-			return (totalInvert) ? ((1u << AnalogIn::AdcBits) - 1) - val : val;
+			const AdcInput chan = PinTable[pin].adc;
+			if (chan != AdcInput::none)
+			{
+				const uint16_t val =
+#ifdef ATEIO
+				(IsExtendedAnalogPin(pin))
+					? ExtendedAnalog::AnalogIn(GetInputNumber(chan)) :
+#endif
+					AnalogIn::ReadChannel(chan);
+				return (totalInvert) ? ((1u << AnalogIn::AdcBits) - 1) - val : val;
+			}
 		}
 	}
 	return 0;
 }
 
 // Attach an interrupt to the pin. Nor permitted if we allocated the pin in shared input mode.
-bool IoPort::AttachInterrupt(StandardCallbackFunction callback, InterruptMode mode, CallbackParameter param) const
+bool IoPort::AttachInterrupt(StandardCallbackFunction callback, InterruptMode mode, CallbackParameter param) const noexcept
 {
 	return IsValid() && !isSharedInput && attachInterrupt(pin, callback, mode, param);
 }
 
-void IoPort::DetachInterrupt() const
+void IoPort::DetachInterrupt() const noexcept
 {
 	if (IsValid() && !isSharedInput)
 	{
@@ -177,13 +199,13 @@ void IoPort::DetachInterrupt() const
 	}
 }
 
-bool IoPort::SetAnalogCallback(AnalogInCallbackFunction fn, CallbackParameter cbp, uint32_t ticksPerCall)
+bool IoPort::SetAnalogCallback(AnalogInCallbackFunction fn, CallbackParameter cbp, uint32_t ticksPerCall) noexcept
 {
 	return AnalogIn::SetCallback(PinToAdcChannel(pin), fn, cbp, ticksPerCall, false);
 }
 
 // Try to assign ports, returning the number of ports successfully assigned
-/*static*/ size_t IoPort::AssignPorts(const char* pinNames, const StringRef& reply, PinUsedBy neededFor, size_t numPorts, IoPort* const ports[], const PinAccess access[])
+/*static*/ size_t IoPort::AssignPorts(const char* pinNames, const StringRef& reply, PinUsedBy neededFor, size_t numPorts, IoPort* const ports[], const PinAccess access[]) noexcept
 {
 	// Release any existing assignments
 	for (size_t i = 0; i < numPorts; ++i)
@@ -224,7 +246,7 @@ bool IoPort::SetAnalogCallback(AnalogInCallbackFunction fn, CallbackParameter cb
 }
 
 // Allocate the specified logical pin, returning true if successful
-bool IoPort::Allocate(const char *pn, const StringRef& reply, PinUsedBy neededFor, PinAccess access)
+bool IoPort::Allocate(const char *pn, const StringRef& reply, PinUsedBy neededFor, PinAccess access) noexcept
 {
 	Release();
 
@@ -303,17 +325,17 @@ bool IoPort::Allocate(const char *pn, const StringRef& reply, PinUsedBy neededFo
 	return true;
 }
 
-bool IoPort::GetInvert() const
+bool IoPort::GetInvert() const noexcept
 {
 	return (hardwareInvert) ? !totalInvert : totalInvert;
 }
 
-void IoPort::SetInvert(bool pInvert)
+void IoPort::SetInvert(bool pInvert) noexcept
 {
 	totalInvert = (hardwareInvert) ? !pInvert : pInvert;
 }
 
-void IoPort::ToggleInvert(bool pInvert)
+void IoPort::ToggleInvert(bool pInvert) noexcept
 {
 	if (pInvert)
 	{
@@ -321,7 +343,7 @@ void IoPort::ToggleInvert(bool pInvert)
 	}
 }
 
-void IoPort::AppendBasicDetails(const StringRef& str) const
+void IoPort::AppendBasicDetails(const StringRef& str) const noexcept
 {
 	if (IsValid())
 	{
@@ -343,7 +365,7 @@ void IoPort::AppendBasicDetails(const StringRef& str) const
 }
 
 // Append the names of the pin to a string, picking only those that have the correct hardware invert status
-void IoPort::AppendPinName(const StringRef& str, bool includeBoardAddress) const
+void IoPort::AppendPinName(const StringRef& str, bool includeBoardAddress) const noexcept
 {
 	if (IsValid())
 	{
@@ -406,7 +428,7 @@ void IoPort::AppendPinName(const StringRef& str, bool includeBoardAddress) const
 	}
 }
 
-/*static*/ void IoPort::AppendPinNames(const StringRef& str, size_t numPorts, IoPort * const ports[])
+/*static*/ void IoPort::AppendPinNames(const StringRef& str, size_t numPorts, IoPort * const ports[]) noexcept
 {
 	for (size_t i = 0; i < numPorts; ++i)
 	{
@@ -431,7 +453,7 @@ void IoPort::AppendPinName(const StringRef& str, bool includeBoardAddress) const
 
 // Function to look up a pin name pass back the corresponding index into the pin table
 // On this platform, the mapping from pin names to pins is fixed, so this is a simple lookup
-/*static*/ bool IoPort::LookupPinName(const char*pn, Pin& returnedPin, bool& hardwareInverted, bool& pullupAlways)
+/*static*/ bool IoPort::LookupPinName(const char*pn, Pin& returnedPin, bool& hardwareInverted, bool& pullupAlways) noexcept
 {
 	if (StringEqualsIgnoreCase(pn, NoPinName))
 	{
@@ -496,7 +518,7 @@ void IoPort::AppendPinName(const StringRef& str, bool includeBoardAddress) const
 	return false;
 }
 
-/*static*/ const char* IoPort::TranslatePinAccess(PinAccess access)
+/*static*/ const char* IoPort::TranslatePinAccess(PinAccess access) noexcept
 {
 	switch (access)
 	{
@@ -514,7 +536,7 @@ void IoPort::AppendPinName(const StringRef& str, bool includeBoardAddress) const
 // Low level pin access functions
 
 // Find the ADC channel associated with a pin
-/*static*/ AdcInput IoPort::PinToAdcInput(Pin p, bool useAlternateAdc)
+/*static*/ AdcInput IoPort::PinToAdcInput(Pin p, bool useAlternateAdc) noexcept
 {
 	return (p >= ARRAY_SIZE(PinTable)) ? AdcInput::none
 #if SAMC21
@@ -528,7 +550,7 @@ void IoPort::AppendPinName(const StringRef& str, bool includeBoardAddress) const
 	return (p != NoPin) && digitalRead(p);
 }
 
-/*static*/ void IoPort::WriteDigital(Pin p, bool high)
+/*static*/ void IoPort::WriteDigital(Pin p, bool high) noexcept
 {
 	if (p != NoPin)
 	{
@@ -536,19 +558,19 @@ void IoPort::AppendPinName(const StringRef& str, bool includeBoardAddress) const
 	}
 }
 
-/*static*/ void IoPort::WriteAnalog(Pin p, float pwm, uint16_t frequency)
+/*static*/ void IoPort::WriteAnalog(Pin p, float pwm, uint16_t frequency) noexcept
 {
 	AnalogOut::Write(p, pwm, frequency);
 }
 
 // Members of class PwmPort
-PwmPort::PwmPort()
+PwmPort::PwmPort() noexcept
 {
 	frequency = DefaultPinWritePwmFreq;
 }
 
 // Append the frequency if the port is valid
-void PwmPort::AppendFrequency(const StringRef& str) const
+void PwmPort::AppendFrequency(const StringRef& str) const noexcept
 {
 	if (IsValid())
 	{
@@ -556,13 +578,13 @@ void PwmPort::AppendFrequency(const StringRef& str) const
 	}
 }
 
-void PwmPort::AppendFullDetails(const StringRef& str) const
+void PwmPort::AppendFullDetails(const StringRef& str) const noexcept
 {
 	AppendBasicDetails(str);
 	AppendFrequency(str);
 }
 
-void PwmPort::WriteAnalog(float pwm) const
+void PwmPort::WriteAnalog(float pwm) const noexcept
 {
 	if (pin != NoPin)
 	{
