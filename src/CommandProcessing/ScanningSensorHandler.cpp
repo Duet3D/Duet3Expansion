@@ -39,7 +39,7 @@ bool ScanningSensorHandler::IsPresent() noexcept
 	return sensor != nullptr;
 }
 
-uint16_t ScanningSensorHandler::GetReading() noexcept
+uint32_t ScanningSensorHandler::GetReading() noexcept
 {
 	if (sensor != nullptr)
 	{
@@ -48,7 +48,7 @@ uint16_t ScanningSensorHandler::GetReading() noexcept
 		{
 			if ((val >> 28) == 0)				// if no error
 			{
-				return val >> 12;				// return top 16 bits of result
+				return val;						// return all 28 bits of result
 			}
 		}
 	}

@@ -61,7 +61,7 @@ void InputMonitor::Deactivate() noexcept
 }
 
 // Return the analog value of this input
-uint16_t InputMonitor::GetAnalogValue() const noexcept
+uint32_t InputMonitor::GetAnalogValue() const noexcept
 {
 	return (threshold != 0) ? port.ReadAnalog()
 			: port.ReadDigital() ? 0xFFFF
@@ -323,7 +323,7 @@ void InputMonitor::AnalogInterrupt(uint16_t reading) noexcept
 		if ((h->handle & mask) == pattern)
 		{
 			reply->results[count].handle.Set(h->handle);
-			reply->results[count].value = h->GetAnalogValue();
+			StoreLEU32(&reply->results[count].value, h->GetAnalogValue());
 			++count;
 		}
 		h = h->next;

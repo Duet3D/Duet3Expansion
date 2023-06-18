@@ -93,15 +93,15 @@ bool IoPort::SetMode(PinAccess access) noexcept
 
 	if (logicalPinModes[pin] != (int8_t)desiredMode)
 	{
+		const AnalogChannelNumber chan = PinToAdcChannel(pin);
 #if SUPPORT_LDC1612
-		if (pin == Ldc1612VirtualPin && access == PinAccess::readAnalog)
+		if (chan == AdcInput::ldc1612 && access == PinAccess::readAnalog)
 		{
 			// nothing needed here
 		}
 		else
 #endif
 		{
-			const AnalogChannelNumber chan = PinToAdcChannel(pin);
 			if (chan != AdcInput::none)
 			{
 				if (access == PinAccess::readAnalog)
@@ -161,25 +161,22 @@ uint16_t IoPort::ReadAnalog() const noexcept
 {
 	if (IsValid())
 	{
+		const AdcInput chan = PinTable[pin].adc;
 #if SUPPORT_LDC1612
-		if (pin == Ldc1612VirtualPin)
+		if (chan == AdcInput::ldc1612)
 		{
 			return ScanningSensorHandler::GetReading();
 		}
-		else
 #endif
+		if (chan != AdcInput::none)
 		{
-			const AdcInput chan = PinTable[pin].adc;
-			if (chan != AdcInput::none)
-			{
-				const uint16_t val =
+			const uint16_t val =
 #ifdef ATEIO
-				(IsExtendedAnalogPin(pin))
-					? ExtendedAnalog::AnalogIn(GetInputNumber(chan)) :
+			(IsExtendedAnalogPin(pin))
+				? ExtendedAnalog::AnalogIn(GetInputNumber(chan)) :
 #endif
-					AnalogIn::ReadChannel(chan);
-				return (totalInvert) ? ((1u << AnalogIn::AdcBits) - 1) - val : val;
-			}
+				AnalogIn::ReadChannel(chan);
+			return (totalInvert) ? ((1u << AnalogIn::AdcBits) - 1) - val : val;
 		}
 	}
 	return 0;

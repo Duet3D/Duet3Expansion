@@ -16,7 +16,7 @@ namespace ScanningSensorHandler
 {
 	void Init() noexcept;
 	bool IsPresent() noexcept;
-	uint16_t GetReading() noexcept;
+	uint32_t GetReading() noexcept;
 	void AppendDiagnostics(const StringRef& reply) noexcept;
 }
 
