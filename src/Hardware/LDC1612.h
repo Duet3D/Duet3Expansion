@@ -24,9 +24,10 @@ public:
 	// Do a quick test to check whether the accelerometer is present, returning true if it is
 	bool CheckPresent() noexcept;
 	bool Reset() noexcept;
-	bool SetDefaultConfiguration(uint8_t channel) noexcept;
+	bool SetDefaultConfiguration(uint8_t channel, bool calibrationMode = false) noexcept;
 	void SetLC(uint8_t channel, float uh, float pf) noexcept;
 	bool GetChannelResult(uint8_t channel, uint32_t& result) noexcept;
+	bool CalibrateCurrent(uint8_t channel) noexcept;
 	void AppendDiagnostics(const StringRef& reply) noexcept;
 
 private:
@@ -39,7 +40,7 @@ private:
 	static constexpr float DefaultCapacitance = 100.0;				// Seeed Grove 2-channel inductive sensor
 	static constexpr uint16_t DefaultLCStabilizeTime = 100;			// in microseconds
 	static constexpr uint16_t DefaultConversionTime = 500;			// in microseconds
-	static constexpr uint16_t DefaultDriveCurrentVal = 20;			// nominal sensor current 297uA, optimum Rp = 3.17 to 4.61kohms
+	static constexpr uint16_t DefaultDriveCurrentVal = 12;			// current setting for Seeed LDC1612 board with no target in range
 
 	enum class LDCRegister : uint8_t
 	{
@@ -66,6 +67,7 @@ private:
 	bool UpdateConfiguration(uint16_t value) noexcept;
 	bool SetMuxConfiguration(uint16_t value) noexcept;
 	bool SetDriverCurrent(uint8_t channel, uint16_t value) noexcept;
+	bool ReadInitCurrent(uint8_t channel, uint16_t& value) noexcept;
 	bool SetDivisors(uint8_t channel) noexcept;
 	float GetResonantFrequency(uint8_t channel) const noexcept;
 
@@ -76,6 +78,7 @@ private:
 
 	float inductance[NumChannels];
 	float capacitance[NumChannels];
+	uint16_t currentSetting[NumChannels];
 };
 
 #endif	// SUPPORT_LDC1612

@@ -55,6 +55,11 @@ constexpr uint32_t ERR_AE0 = 1u << 0;
 LDC1612::LDC1612(SharedI2CMaster& dev, uint16_t i2cAddress) noexcept
 	: SharedI2CClient(dev, i2cAddress)
 {
+	for (size_t channel = 0; channel < NumChannels; ++channel)
+	{
+		SetLC(channel, DefaultInductance, DefaultCapacitance);
+		currentSetting[channel] = DefaultDriveCurrentVal;
+	}
 }
 
 // Do a quick test to check whether the sensor is present, returning true if it is
@@ -66,20 +71,35 @@ bool LDC1612::CheckPresent() noexcept
 }
 
 // Set the default configuration for a channel and enable it
-bool LDC1612::SetDefaultConfiguration(uint8_t channel) noexcept
+bool LDC1612::SetDefaultConfiguration(uint8_t channel, bool calibrationMode) noexcept
 {
-	SetLC(channel, DefaultInductance, DefaultCapacitance);
-	constexpr uint16_t DefaultConfigRegVal = CFG_RP_OVERRIDE_EN | CFG_AUTO_AMP_DIS | CFG_REF_CLK_SRC | CFG_RESERVED_BITS;
-	return UpdateConfiguration(DefaultConfigRegVal | CFG_SLEEP_MODE_EN)				// put the device in sleep mode
+	uint16_t configRegVal = CFG_RP_OVERRIDE_EN | CFG_REF_CLK_SRC | CFG_RESERVED_BITS;
+	if (!calibrationMode)
+	{
+		configRegVal |= CFG_AUTO_AMP_DIS;
+	}
+	return UpdateConfiguration(configRegVal | CFG_SLEEP_MODE_EN)				// put the device in sleep mode
 		&& SetDivisors(channel)
 		&& SetLCStabilizeTime(channel, DefaultLCStabilizeTime)
 		&& SetConversionTime(channel, DefaultConversionTime)
-		&& SetDriverCurrent(channel, DefaultDriveCurrentVal << 11)
+		&& SetDriverCurrent(channel, currentSetting[channel])
 		&& SetMuxConfiguration(MUX_RESERVED_BITS | MUX_DEGLITCH_10MHZ)			// single conversion
 		&& SetErrorConfiguration(UR_ERR2OUT | OR_ERR2OUT | WD_ERR2OUT | AH_ERR2OUT | AL_ERR2OUT)
 		&& SetConversionOffset(channel, 0)
-		&& UpdateConfiguration(DefaultConfigRegVal | (channel << 14));			// this also takes the device out of sleep mode
- }
+		&& UpdateConfiguration(configRegVal | (channel << 14));			// this also takes the device out of sleep mode
+}
+
+// Use the auto calibration function to establish the correct drive current
+bool LDC1612::CalibrateCurrent(uint8_t channel) noexcept
+{
+	bool ok = SetDefaultConfiguration(channel, true);
+	if (ok)
+	{
+		delay(4);					// this assumes that the conversion time is set to less than 4ms
+		ok = ReadInitCurrent(channel, currentSetting[channel]) && SetDefaultConfiguration(channel, false);
+	}
+	return ok;
+}
 
 // Read the result register of a channel
 bool LDC1612::GetChannelResult(uint8_t channel, uint32_t& result) noexcept
@@ -154,9 +174,7 @@ bool LDC1612::SetMuxConfiguration(uint16_t value) noexcept
 	return Write16bits(LDCRegister::MUL_CONFIG_REG, value);
 }
 
-/** @brief reset sensor.
-
- * */
+// Reset the sensor
 bool LDC1612::Reset() noexcept
 {
 	return Write16bits(LDCRegister::SENSOR_RESET_REG, 0x8000);
@@ -167,7 +185,18 @@ bool LDC1612::Reset() noexcept
  * */
 bool LDC1612::SetDriverCurrent(uint8_t channel, uint16_t value) noexcept
 {
-	return Write16bits((LDCRegister)((uint8_t)LDCRegister::SET_DRIVER_CURRENT_REG + channel), value);
+	return Write16bits((LDCRegister)((uint8_t)LDCRegister::SET_DRIVER_CURRENT_REG + channel), value << 11);
+}
+
+bool LDC1612::ReadInitCurrent(uint8_t channel, uint16_t& value) noexcept
+{
+	uint16_t val;
+	const bool ok = Read16bits((LDCRegister)((uint8_t)LDCRegister::SET_DRIVER_CURRENT_REG + channel), val);
+	if (ok)
+	{
+		value = (val >> 6) & 0x1F;
+	}
+	return ok;
 }
 
 /** @brief Main config part of sensor.Contains select channel、start conversion、sleep mode、sensor activation mode、INT pin disable ..
@@ -214,7 +243,7 @@ void LDC1612::AppendDiagnostics(const StringRef& reply) noexcept
 	uint32_t val;
 	if (GetChannelResult(0, val))
 	{
-		reply.catf("value %" PRIu32, val & 0x0FFFFFFF);
+		reply.catf("value %" PRIu32 ", current setting %u", val & 0x0FFFFFFF, currentSetting[0]);
 		if ((val >> 28) == 0)
 		{
 			reply.cat(", ok");
@@ -238,6 +267,7 @@ void LDC1612::AppendDiagnostics(const StringRef& reply) noexcept
 				reply.cat(", amplitude error");
 			}
 		}
+		CalibrateCurrent(0);
 	}
 	else
 	{
