@@ -44,7 +44,7 @@ constexpr uint16_t MUX_DEGLITCH_1MHZ = 1u << 0;
 constexpr uint16_t MUX_DEGLITCH_3P3MHZ = 4u << 0;
 constexpr uint16_t MUX_DEGLITCH_10MHZ = 5u << 0;
 constexpr uint16_t MUX_DEGLITCH_33MHZ = 7u << 0;
-constexpr uint16_t MUX_RESERVED_BITS = 0b0'0010'0000'1000;
+constexpr uint16_t MUX_RESERVED_BITS = 0x41 << 3;
 
 // Conversion result error bits (shifted left by 28 bits)
 constexpr uint32_t ERR_UR0 = 1u << 3;
@@ -65,43 +65,49 @@ bool LDC1612::CheckPresent() noexcept
 		&& Read16bits(LDCRegister::READ_DEVICE_ID, val) && val == 0x3055;
 }
 
+// Set the default configuration for a channel and enable it
 bool LDC1612::SetDefaultConfiguration(uint8_t channel) noexcept
 {
 	SetLC(channel, DefaultInductance, DefaultCapacitance);
 	constexpr uint16_t DefaultConfigRegVal = CFG_RP_OVERRIDE_EN | CFG_AUTO_AMP_DIS | CFG_REF_CLK_SRC | CFG_RESERVED_BITS;
 	return UpdateConfiguration(DefaultConfigRegVal | CFG_SLEEP_MODE_EN)				// put the device in sleep mode
-		&& SetDivisors(channel, DefaultClockFrequency)
+		&& SetDivisors(channel)
 		&& SetLCStabilizeTime(channel, DefaultLCStabilizeTime)
-		&& SetConversionTime(channel, 0x0546)
-		&& SetDriverCurrent(channel, 0xa000)
-		&& SetMuxConfiguration(MUX_RESERVED_BITS | MUX_DEGLITCH_1MHZ)			// single conversion
+		&& SetConversionTime(channel, DefaultConversionTime)
+		&& SetDriverCurrent(channel, DefaultDriveCurrentVal << 11)
+		&& SetMuxConfiguration(MUX_RESERVED_BITS | MUX_DEGLITCH_10MHZ)			// single conversion
 		&& SetErrorConfiguration(UR_ERR2OUT | OR_ERR2OUT | WD_ERR2OUT | AH_ERR2OUT | AL_ERR2OUT)
+		&& SetConversionOffset(channel, 0)
 		&& UpdateConfiguration(DefaultConfigRegVal | (channel << 14));			// this also takes the device out of sleep mode
  }
 
-/** @brief read the raw channel result from register.
-    @param channel LDC1612 has total two channels.
-    @param result raw data
- * */
+// Read the result register of a channel
 bool LDC1612::GetChannelResult(uint8_t channel, uint32_t& result) noexcept
 {
 	uint16_t value;
 	bool ok = Read16bits((LDCRegister)((uint8_t)LDCRegister::CONVERSION_RESULT_REG_START + channel * 2), value);
 	if (ok)
 	{
-		const uint32_t raw_value = (uint32_t)value << 16;
+		const uint32_t msw = (uint32_t)value << 16;
 		ok = Read16bits((LDCRegister)((uint8_t)LDCRegister::CONVERSION_RESULT_REG_START + channel * 2 + 1), value);
 		if (ok)
 		{
-			result = (raw_value | (uint32_t)value) & 0x0fffffff;
+			result = msw | (uint32_t)value;
 		}
 	}
 	return ok;
 }
 
-// Set the conversion time in units of 16 divided reference clocks. Minimum is 5.
-bool LDC1612::SetConversionTime(uint8_t channel, uint16_t value) noexcept
+// Return the resonant frequency in MHz
+float LDC1612::GetResonantFrequency(uint8_t channel) const noexcept
 {
+	return 1.0e3/(TwoPi * sqrtf(inductance[channel] * capacitance[channel]));
+}
+
+// Set the conversion time in units of 16 divided reference clocks. Minimum is 5.
+bool LDC1612::SetConversionTime(uint8_t channel, uint16_t microseconds) noexcept
+{
+	const uint16_t value = max<uint16_t>((uint16_t)((microseconds * FRef) * (1.0/16.0)), 9);
     return Write16bits((LDCRegister)((uint8_t)LDCRegister::SET_CONVERSION_TIME_REG_START + channel), value);
 }
 
@@ -118,16 +124,16 @@ bool LDC1612::SetConversionOffset(uint8_t channel, uint16_t value) noexcept
     @param channel LDC1612 has total two channels.
     @param result The value to be set.
  * */
-bool LDC1612::SetLCStabilizeTime(uint8_t channel, uint16_t value) noexcept
+bool LDC1612::SetLCStabilizeTime(uint8_t channel, uint16_t microseconds) noexcept
 {
+	const uint16_t value = max<uint16_t>((uint16_t)((microseconds * FRef) * (1.0/16.0)), 4);
     return Write16bits((LDCRegister)((uint8_t)LDCRegister::SET_LC_STABILIZE_REG_START + channel), value);
 }
 
-bool LDC1612::SetDivisors(uint8_t channel, float clockFrequency) noexcept
+bool LDC1612::SetDivisors(uint8_t channel) noexcept
 {
-	const float resonantFrequency = 1 / (2 * 3.14 * sqrtf(inductance[channel] * capacitance[channel] * powf(10, -18))) * powf(10, -6);
-	const uint16_t FIN_DIV = (uint16_t)(resonantFrequency / 8.75 + 1);
-	const uint16_t FREF_DIV = (resonantFrequency * 4 < clockFrequency) ? 2 : 4;
+	const uint16_t FIN_DIV = (uint16_t)(GetResonantFrequency(channel) / 8.75 + 1);	// input frequency after division must be less than 8.75MHz
+	const uint16_t FREF_DIV = ClockDivisor;											// higher divisors are only needed for very low resonant frequencies
 	const uint16_t value = (FIN_DIV << 12) | FREF_DIV;
 	return Write16bits((LDCRegister)((uint8_t)LDCRegister::SET_FREQ_REG_START + channel), value);
 }
@@ -208,22 +214,29 @@ void LDC1612::AppendDiagnostics(const StringRef& reply) noexcept
 	uint32_t val;
 	if (GetChannelResult(0, val))
 	{
-		reply.catf("value %" PRIu32 "qq", val & 0x0FFFFFFF);
-		if ((val >> 28) & ERR_UR0)
+		reply.catf("value %" PRIu32, val & 0x0FFFFFFF);
+		if ((val >> 28) == 0)
 		{
-			reply.cat(", underrange error");
+			reply.cat(", ok");
 		}
-		if ((val >> 28) & ERR_OR0)
+		else
 		{
-			reply.cat(", overrange error");
-		}
-		if ((val >> 28) & ERR_WD0)
-		{
-			reply.cat(", watchdog error");
-		}
-		if ((val >> 28) & ERR_AE0)
-		{
-			reply.cat(", amplitude error");
+			if ((val >> 28) & ERR_UR0)
+			{
+				reply.cat(", under-range error");
+			}
+			if ((val >> 28) & ERR_OR0)
+			{
+				reply.cat(", over-range error");
+			}
+			if ((val >> 28) & ERR_WD0)
+			{
+				reply.cat(", watchdog error");
+			}
+			if ((val >> 28) & ERR_AE0)
+			{
+				reply.cat(", amplitude error");
+			}
 		}
 	}
 	else

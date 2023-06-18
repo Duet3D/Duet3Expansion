@@ -57,7 +57,7 @@ uint16_t ScanningSensorHandler::GetReading() noexcept
 
 void ScanningSensorHandler::AppendDiagnostics(const StringRef& reply) noexcept
 {
-	reply.cat("Inductive sensor: ");
+	reply.lcat("Inductive sensor: ");
 	if (IsPresent())
 	{
 		sensor->AppendDiagnostics(reply);

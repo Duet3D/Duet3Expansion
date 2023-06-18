@@ -30,12 +30,16 @@ public:
 	void AppendDiagnostics(const StringRef& reply) noexcept;
 
 private:
+	static constexpr float ClockFrequency = 40.0;					// External or internal clock frequency in MHz
+	static constexpr uint16_t ClockDivisor = 1;						// The divisor we use for the clock. Values greater than 1 are needed only for very low resonant frequencies.
+	static constexpr float FRef = ClockFrequency/ClockDivisor;
 	static constexpr unsigned int NumChannels = 2;
 	static constexpr uint16_t DefaultI2cAddress = 0x2B;
 	static constexpr float DefaultInductance = 18.147;				// Seeed Grove 2-channel inductive sensor, double sided 20-turn 16mm coil
 	static constexpr float DefaultCapacitance = 100.0;				// Seeed Grove 2-channel inductive sensor
-	static constexpr float DefaultClockFrequency = 40.0;			// External or internal clock frequency in MHz
-	static constexpr uint16_t DefaultLCStabilizeTime = 30;
+	static constexpr uint16_t DefaultLCStabilizeTime = 100;			// in microseconds
+	static constexpr uint16_t DefaultConversionTime = 500;			// in microseconds
+	static constexpr uint16_t DefaultDriveCurrentVal = 20;			// nominal sensor current 297uA, optimum Rp = 3.17 to 4.61kohms
 
 	enum class LDCRegister : uint8_t
 	{
@@ -55,14 +59,15 @@ private:
 	};
 
 	uint16_t GetStatus() noexcept;
-	bool SetConversionTime(uint8_t channel, uint16_t value) noexcept;
-	bool SetLCStabilizeTime(uint8_t channel, uint16_t value) noexcept;
+	bool SetConversionTime(uint8_t channel, uint16_t microseconds) noexcept;
+	bool SetLCStabilizeTime(uint8_t channel, uint16_t microseconds) noexcept;
 	bool SetConversionOffset(uint8_t channel, uint16_t value) noexcept;
 	bool SetErrorConfiguration(uint16_t value) noexcept;
 	bool UpdateConfiguration(uint16_t value) noexcept;
 	bool SetMuxConfiguration(uint16_t value) noexcept;
 	bool SetDriverCurrent(uint8_t channel, uint16_t value) noexcept;
-	bool SetDivisors(uint8_t, float clockFrequency) noexcept;
+	bool SetDivisors(uint8_t channel) noexcept;
+	float GetResonantFrequency(uint8_t channel) const noexcept;
 
 	bool ReadRegister(LDCRegister reg, uint8_t& val) noexcept;
 	bool WriteRegister(LDCRegister reg, uint8_t val) noexcept;
