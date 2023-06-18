@@ -130,12 +130,12 @@ constexpr PinDescription PinTable[] =
 };
 
 static constexpr size_t NumPins = ARRAY_SIZE(PinTable);
-static constexpr size_t NumPhysicalPins = 32 + 24;		// 32 pins on port A (some missing), 24 on port B
-static_assert(NumPins == NumPhysicalPins + 8);			// 8 virtual pins for extended ADC inputs
+static constexpr size_t NumRealPins = 32 + 24;		// 32 pins on port A (some missing), 24 on port B
+static_assert(NumPins == NumRealPins + 8);			// 8 virtual pins for extended ADC inputs
 
 static inline constexpr bool IsExtendedAnalogPin(Pin p) noexcept
 {
-	return p >= NumPhysicalPins && p < NumPhysicalPins + 8;
+	return p >= NumRealPins && p < NumRealPins + 8;
 }
 
 // Timer/counter used to generate step pulses and other sub-millisecond timings

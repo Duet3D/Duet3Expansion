@@ -54,7 +54,7 @@ bool IoPort::SetMode(PinAccess access) noexcept
 
 #ifdef ATEIO
 	// Check for extended analog pins
-	if (pin >= NumPhysicalPins)
+	if (pin >= NumRealPins)
 	{
 		return access == PinAccess::readAnalog;
 	}

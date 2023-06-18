@@ -41,9 +41,8 @@ bool InputMonitor::Activate() noexcept
 			}
 			else
 #endif
-			{
-				ok = port.SetAnalogCallback(CommonAnalogPortInterrupt, CallbackParameter(this), 1);
-			}
+			ok = !port.IsRealPort()					// don't try to set a callback on a virtual pin
+				|| port.SetAnalogCallback(CommonAnalogPortInterrupt, CallbackParameter(this), 1);
 		}
 		active = true;
 

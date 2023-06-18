@@ -61,6 +61,7 @@ public:
 
 	void AppendPinName(const StringRef& str, bool includeBoardAddress = true) const noexcept;
 	bool IsValid() const noexcept { return pin != NoPin; }
+	bool IsRealPort() const noexcept { return pin < NumRealPins; }
 	bool GetInvert() const noexcept;
 	void SetInvert(bool pInvert) noexcept;
 	void ToggleInvert(bool pInvert) noexcept;

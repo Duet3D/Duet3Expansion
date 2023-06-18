@@ -201,7 +201,8 @@ constexpr PinDescription PinTable[] =
 };
 
 static constexpr size_t NumPins = ARRAY_SIZE(PinTable);
-static_assert(NumPins == 32 + 24);		// 32 pins on port A (some missing), 24 on port B
+static constexpr size_t NumRealPins = 32 + 24;			// 32 pins on port A (some missing), 24 on port B
+static_assert(NumPins == NumRealPins);					// no virtual pins in this table
 
 // Timer/counter used to generate step pulses and other sub-millisecond timings
 TcCount32 * const StepTc = &(TC0->COUNT32);
