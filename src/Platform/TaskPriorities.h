@@ -23,6 +23,9 @@ namespace TaskPriority
 	static constexpr unsigned int TmcClosedLoop = 4;						// priority of the TMC task when in closed loop mode
 	static constexpr unsigned int CanAsyncSenderPriority = 5;
 	static constexpr unsigned int CanClockPriority = 5;
+
+	// Assert that the highest priority one isn't too high
+	static_assert(CanClockPriority < configMAX_PRIORITIES);
 }
 
 #endif /* SRC_TASKPRIORITIES_H_ */
