@@ -9,6 +9,7 @@
 #define SRC_ENDSTOPS_INPUTMONITOR_H_
 
 #include <RepRapFirmware.h>
+#include <Platform/Tasks.h>
 #include <Hardware/IoPorts.h>
 #include <RTOSIface/RTOSIface.h>
 
@@ -20,6 +21,11 @@ class CanMessageBuffer;
 class InputMonitor
 {
 public:
+	void* operator new(size_t count) noexcept { return Tasks::AllocPermanent(count); }
+	void* operator new(size_t count, std::align_val_t align) noexcept { return Tasks::AllocPermanent(count, align); }
+	void operator delete(void* ptr) noexcept {}
+	void operator delete(void* ptr, std::align_val_t align) noexcept {}
+
 	InputMonitor() noexcept { }
 
 	static void Init() noexcept;
