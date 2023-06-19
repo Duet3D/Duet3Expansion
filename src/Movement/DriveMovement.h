@@ -47,12 +47,9 @@ class DriveMovement
 public:
 	friend class DDA;
 
-	DriveMovement() noexcept { }
-
-	void* operator new(size_t count) noexcept { return Tasks::AllocPermanent(count); }
-	void* operator new(size_t count, std::align_val_t align) noexcept { return Tasks::AllocPermanent(count, align); }
-	void operator delete(void* ptr) noexcept {}
-	void operator delete(void* ptr, std::align_val_t align) noexcept {}
+	// We never create these dynamically, they are part of the DDA in expansion boards
+	void* operator new(size_t count) = delete;
+	void* operator new(size_t count, std::align_val_t align) = delete;
 
 	bool CalcNextStepTime(const DDA &dda) noexcept SPEED_CRITICAL;
 	bool PrepareCartesianAxis(const DDA& dda, const PrepParams& params) noexcept SPEED_CRITICAL;

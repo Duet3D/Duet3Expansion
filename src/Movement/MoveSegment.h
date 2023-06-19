@@ -242,7 +242,7 @@ private:
 	// The 'nextAndFlags' field is a MoveSegment pointer with two flag bits in the bottom two bits
 	uint32_t nextAndFlags;									// pointer to the next segment, plus flag bits
 	float segLength;										// the length of this segment before applying the movement fraction
-	float segTime;											// the time in step clocks at which this move ends
+	float segTime;											// the time in step clocks at which this segment ends
 	float c;												// the c move parameter, units are step_clocks/mm for linear moves, units are steps_clocks^2/mm for accelerating or decelerating moves
 	float b;												// the b move parameter, equal to -(u/a), units are step_clocks, not used by linear move segments
 	float acceleration;										// the acceleration during this segment, not used by linear move segments
