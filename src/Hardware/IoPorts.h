@@ -75,7 +75,7 @@ public:
 	void FastDigitalWriteHigh() const noexcept pre(IsValid()) { fastDigitalWriteHigh(pin); }
 
 	bool ReadDigital() const noexcept;
-	uint16_t ReadAnalog() const noexcept;
+	uint32_t ReadAnalog() const noexcept;
 
 	bool AttachInterrupt(StandardCallbackFunction callback, InterruptMode mode, CallbackParameter param) const noexcept;
 	void DetachInterrupt() const noexcept;

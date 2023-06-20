@@ -157,7 +157,7 @@ bool IoPort::ReadDigital() const noexcept
 	return false;
 }
 
-uint16_t IoPort::ReadAnalog() const noexcept
+uint32_t IoPort::ReadAnalog() const noexcept
 {
 	if (IsValid())
 	{
@@ -170,7 +170,7 @@ uint16_t IoPort::ReadAnalog() const noexcept
 #endif
 		if (chan != AdcInput::none)
 		{
-			const uint16_t val =
+			const uint32_t val =
 #ifdef ATEIO
 			(IsExtendedAnalogPin(pin))
 				? ExtendedAnalog::AnalogIn(GetInputNumber(chan)) :
