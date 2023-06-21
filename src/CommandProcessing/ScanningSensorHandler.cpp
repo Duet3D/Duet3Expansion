@@ -16,10 +16,14 @@ static LDC1612 *sensor = nullptr;
 
 void ScanningSensorHandler::Init() noexcept
 {
+#if defined(TOOL1LC)
 	// Set up the external clock to the LDC1612.
 	// The higher the better, but the maximum is 40MHz. We use the 96MHz DPLL output divided by 3 to get 32MHz.
 	ConfigureGclk(GclkNumPA23, GclkSource::dpll, 3, true);
 	SetPinFunction(LDC1612ClockGenPin, GpioPinFunction::H);
+#elif defined(SAMMMYC21)
+	// Assume we are using a LDC1612 breakout board with its own crystal, so we don't need to generate a clock
+#endif
 
 	sensor = new LDC1612(Platform::GetSharedI2C());
 
@@ -30,7 +34,9 @@ void ScanningSensorHandler::Init() noexcept
 	else
 	{
 		DeleteObject(sensor);
+#if defined(TOOL1LC)
 		ClearPinFunction(LDC1612ClockGenPin);
+#endif
 	}
 }
 
