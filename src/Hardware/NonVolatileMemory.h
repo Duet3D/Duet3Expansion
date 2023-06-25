@@ -11,6 +11,10 @@
 
 #include <Hardware/SoftwareReset.h>
 
+#if RP2040
+# include <CanSettings.h>
+#endif
+
 // This class manages nonvolatile settings that are specific to the board, and the software reset data that is stored by the crash handler.
 // On most Duets there is a 512-byte User Page that we use for this.
 // The SAMC21 and SAME5x processors already store various data in the user page, however both those processor families support EEPROM emulation so we use 512 bytes of that instead.
@@ -52,6 +56,11 @@ public:
 	bool GetClosedLoopQuadratureDirection(bool& backwards) noexcept pre(page == NvmPage::closedLoop);
 	void SetClosedLoopQuadratureDirection(bool backwards) noexcept pre(page == NvmPage::closedLoop);
 
+#if RP2040
+	bool GetCanSettings(CanUserAreaData& canSettings) noexcept pre(page == NvmPage::common);
+	void SetCanSettings(CanUserAreaData& canSettings) noexcept pre(page == NvmPage::common);
+#endif
+
 private:
 	void EnsureRead() noexcept;
 	void SetDirty(bool eraseNeeded) noexcept pre(state != NvmState::notRead);
@@ -68,7 +77,12 @@ private:
 		uint16_t magic;
 		uint8_t thermistorLowCalibration[MaxCalibratedThermistors];
 		uint8_t thermistorHighCalibration[MaxCalibratedThermistors];
+#if RP2040
+		CanUserAreaData canSettings;
+		uint8_t spare[38-16];
+#else
 		uint8_t spare[38];
+#endif
 		// 56 bytes up to here
 		SoftwareResetData resetData[NumberOfResetDataSlots];			// 3 slots of 152 bytes each
 	};

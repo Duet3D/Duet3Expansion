@@ -14,6 +14,7 @@
 # include <Flash.h>
 constexpr uint32_t RWW_ADDR = FLASH_ADDR + 0x00400000;
 #elif RP2040
+# include <hardware/flash.h>
 // We allocate one sector for each type of non-volatile memory page. We store the page within the sector using wear levelling.
 constexpr uint32_t FlashSectorSize = 4096;									// the flash chip has 4K sectors
 constexpr uint32_t FlashSize = 2 * 1024 * 1024;								// the flash chip size in bytes (2Mbytes = 16Mbits)
@@ -92,14 +93,23 @@ void NonVolatileMemory::EnsureWritten() noexcept
 #elif RP2040
 	if (state == NvmState::eraseAndWriteNeeded)
 	{
+		DisableCore1Processing();
+		IrqDisable();
+		flash_range_erase(NvmPage0Offset, FlashSectorSize);
+		IrqEnable();
 		//TODO allocate a new page in the sector, if there is one, else erase the sector
 		state = NvmState::writeNeeded;
+		EnableCore1Processing();
 	}
 
 	if (state == NvmState::writeNeeded)
 	{
-		//TODO write the page
+		DisableCore1Processing();
+		IrqDisable();
+		flash_range_program(NvmPage0Offset, (uint8_t *)&buffer, 512);
+		IrqEnable();
 		state = NvmState::clean;
+		EnableCore1Processing();
 	}
 #else
 # error Unsupported processor
@@ -292,4 +302,21 @@ void NonVolatileMemory::SetClosedLoopQuadratureDirection(bool backwards) noexcep
 	}
 }
 
-// End
+#if RP2040
+	bool NonVolatileMemory::GetCanSettings(CanUserAreaData& canSettings) noexcept
+	{
+		EnsureRead();
+		canSettings = buffer.commonPage.canSettings;
+		// TODO: Perform some sort of validation?
+		return true;
+	}
+
+	void NonVolatileMemory::SetCanSettings(CanUserAreaData& canSettings) noexcept
+	{
+		EnsureRead();
+		buffer.commonPage.canSettings = canSettings;
+		SetDirty(true);
+	}
+#endif
+
+	// End

@@ -25,7 +25,9 @@
 #include <General/RingBuffer.h>
 #include <Version.h>
 
-#if !RP2040
+#if RP2040
+# include <Hardware/NonVolatileMemory.h>
+#else
 # include <hpl_user_area.h>
 #endif
 
@@ -170,8 +172,11 @@ void CanInterface::Init(CanAddress defaultBoardAddress, bool useAlternatePins, b
 	CanTiming timing;
 
 #if RP2040
-	//TODO read timing data from flash
-	timing.SetDefaults_1Mb();
+	{
+		NonVolatileMemory mem(NvmPage::common);
+		mem.GetCanSettings(canConfigData);
+		canConfigData.GetTiming(timing);
+	}
 #else
 	// Read the CAN timing data from the top part of the NVM User Row
 	canConfigData = *reinterpret_cast<CanUserAreaData*>(NVMCTRL_USER + CanUserAreaDataOffset);
@@ -438,7 +443,7 @@ CanMessageBuffer *CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf) no
 
 			// Track how much processing delay there was
 			{
-#if RP2040
+#if RP2040 && !USE_SPICAN
 				// RP2040 uses the low 16 bits of the step counter for the time stamp
 				const uint16_t timeStampNow = StepTimer::GetTimerTicks();
 				const uint32_t timeStampDelay = (uint32_t)((timeStampNow - buf->timeStamp) & 0xFFFF);	// the delay in step clocks
@@ -557,7 +562,7 @@ CanMessageBuffer *CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf) no
 
 			// Track how much processing delay there was
 			{
-#if RP2040
+#if RP2040 && !USE_SPICAN
 				// RP2040 uses the low 16 bits of the step counter for the time stamp
 				const uint16_t timeStampNow = StepTimer::GetTimerTicks();
 				const uint32_t timeStampDelay = (uint32_t)((timeStampNow - buf->timeStamp) & 0xFFFF);	// the delay in step clocks
@@ -705,7 +710,7 @@ void CanInterface::Diagnostics(const StringRef& reply) noexcept
 {
 	unsigned int messagesQueuedForSending, messagesReceived, messagesLost, busOffCount;
 	can0dev->GetAndClearStats(messagesQueuedForSending, messagesReceived, messagesLost, busOffCount);
-#if RP2040
+#if RP2040 && !USE_SPICAN
 	reply.lcatf("CAN messages queued %u, send timeouts %u, received %u, free buffers %u, min %u",
 					messagesQueuedForSending, txTimeouts, messagesReceived, CanMessageBuffer::GetFreeBuffers(), CanMessageBuffer::GetAndClearMinFreeBuffers());
 	CanErrorCounts errs;
@@ -795,9 +800,9 @@ GCodeResult CanInterface::ChangeAddressAndDataRate(const CanMessageSetAddressAnd
 		if (seen)
 		{
 #if RP2040
-			//TODO
-			reply.copy("Flash write not yet implemented on RP2040");
-			return GCodeResult::error;
+			NonVolatileMemory mem(NvmPage::common);
+			mem.SetCanSettings(canConfigData);
+			mem.EnsureWritten();
 #else
 			const int32_t rc = _user_area_write(reinterpret_cast<void*>(NVMCTRL_USER), CanUserAreaDataOffset, reinterpret_cast<const uint8_t*>(&canConfigData), sizeof(canConfigData));
 			if (rc != 0)
@@ -829,7 +834,7 @@ bool CanInterface::GetCanMessage(CanMessageBuffer *buf) noexcept
 	return can0dev->ReceiveMessage(CanDevice::RxBufferNumber::fifo0, 0, buf);
 }
 
-#if !RP2040
+#if !RP2040 || USE_SPICAN
 
 uint16_t CanInterface::GetTimeStampCounter() noexcept
 {

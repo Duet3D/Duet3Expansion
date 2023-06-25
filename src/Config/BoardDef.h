@@ -93,4 +93,8 @@ constexpr size_t NumDrivers = 0;
 # define SUPPORT_LDC1612				0
 #endif
 
+#ifndef USE_SPICAN
+# define USE_SPICAN						0
+#endif
+
 #endif /* SRC_CONFIG_BOARDDEF_H_ */
