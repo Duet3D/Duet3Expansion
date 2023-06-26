@@ -106,7 +106,7 @@ namespace Platform
 	bool isPrinting = false;
 	uint32_t realTime = 0;
 
-#if defined(EXP3HC) || defined(TOOL1LC)
+#if defined(EXP3HC) || defined(TOOL1LC) || defined(EXP1HCLv1_0)
 	static uint8_t boardVariant = 0;
 #endif
 
@@ -162,7 +162,8 @@ namespace Platform
 # if defined(M23CL)
 	constexpr float M23CLBrakeVoltage = 24.0;
 # else
-	static PwmPort brakePorts[NumDrivers];
+	static PwmPort brakePwmPorts[NumDrivers];
+	static Pin brakeOnPins[NumDrivers];
 	static float brakeVoltages[NumDrivers];
 	constexpr float FullyOnBrakeVoltage = 100.0;			// this value means always use full voltage (don't PWM)
 # endif
@@ -304,7 +305,8 @@ namespace Platform
 		AnalogOut::Write(BrakePwmPin, currentBrakePwm[driver], BrakePwmFrequency);
 		digitalWrite(BrakeOnPin, true);
 #  else
-		brakePorts[driver].WriteAnalog(currentBrakePwm[driver]);
+		brakePwmPorts[driver].WriteAnalog(currentBrakePwm[driver]);
+		digitalWrite(brakeOnPins[driver], true);
 #  endif
 # else
 		brakePorts[driver].WriteDigital(true);
@@ -316,10 +318,13 @@ namespace Platform
 	{
 # if SUPPORT_BRAKE_PWM
 		currentBrakePwm[driver] = 0.0;
-# endif
-# ifdef M23CL
+#  ifdef M23CL
 		digitalWrite(BrakePwmPin, false);
 		digitalWrite(BrakeOnPin, false);
+#  else
+		brakePwmPorts[driver].WriteDigital(false);
+		digitalWrite(brakeOnPins[driver], false);
+#  endif
 # else
 		brakePorts[driver].WriteDigital(false);
 # endif
@@ -667,6 +672,24 @@ void Platform::Init()
 	// Tool board V1.1 has 10K lower resistor, 1K upper, so will read as high
 	pinMode(BoardTypePin, INPUT);
 	boardVariant = (digitalRead(BoardTypePin)) ? 1 : 0;
+#elif defined(EXP1HCLv1_0)
+	// EXP1HCL v1.0 has 10K lower resistor, 1K upper giving 3.0V on the board detect pin
+	// EXP1HCL v2.0 has 25.5K lower resistor, 16K upper giving 2.03V on the board detect pin
+	pinMode(BoardTypePin, AIN);
+	const AdcInput chan = PinToAdcChannel(BoardTypePin);
+	AnalogIn::EnableChannel(chan, nullptr, CallbackParameter(), 0);
+	constexpr float ratioV1 = 10.0/(10.0+1.0);
+	constexpr float ratioV2 = 25.5/(25.5+16.0);
+	constexpr float midRatio = (ratioV1 + ratioV2) * 0.5;
+	constexpr uint16_t threshold = (uint16_t)(midRatio * (1u << AnalogIn::AdcBits));
+	uint16_t res;
+	do
+	{
+		res = AnalogIn::ReadChannel(chan);
+	} while (res == 0);
+	static_assert(ratioV1 > ratioV2);
+	boardVariant = (res > threshold) ? 0 : 1;
+	AnalogIn::DisableChannel(chan);									// this does nothing currently, but might in future
 #elif defined(EXP3HC)
 	// Version 1.02 board has a pulldown resistor on BoardTypePins[1], earlier versions do not
 	pinMode(BoardTypePins[1], INPUT_PULLUP);
@@ -924,6 +947,7 @@ void Platform::Init()
 # if SUPPORT_BRAKE_PWM
 		currentBrakePwm[i] = 0.0;
 #  if !defined(M23CL)
+		brakeOnPins[i] = NoPin;
 		brakeVoltages[i] = FullyOnBrakeVoltage;
 #  endif
 # endif
@@ -1145,7 +1169,7 @@ void Platform::Spin()
 #  ifdef M23CL
 				AnalogOut::Write(BrakePwmPin, newBrakePwm, BrakePwmFrequency);
 #  else
-				brakePorts[driver].WriteAnalog(newBrakePwm);
+				brakePwmPorts[driver].WriteAnalog(newBrakePwm);
 #  endif
 				currentBrakePwm[driver] = newBrakePwm;
 			}
@@ -1867,8 +1891,13 @@ void Platform::EnableDrive(size_t driver, uint16_t brakeOffDelay)
 		}
 # endif
 
-# ifdef M23CL
-		if (!digitalRead(BrakeOnPin))
+		// If the brake is not already energised to disengage it, delay before disengaging it
+# if SUPPORT_BRAKE_PWM
+#  ifdef M23CL
+		if (currentBrakePwm[driver] == 0.0)
+#  else
+		if (brakePwmPorts[driver].IsValid() && currentBrakePwm[driver] == 0.0)
+#  endif
 # else
 		if (brakePorts[driver].IsValid() && !brakePorts[driver].ReadDigital())
 # endif
@@ -1889,11 +1918,15 @@ void Platform::DisableDrive(size_t driver, uint16_t motorOffDelay)
 {
 	brakeOffTimers[driver].Stop();
 	driverStates[driver] = DriverStateControl::driverDisabled;
-#ifdef M23CL
-	if (motorOffDelay != 0 && digitalRead(BrakeOnPin))
-#else
+# if SUPPORT_BRAKE_PWM
+#  ifdef M23CL
+	if (motorOffDelay != 0 && currentBrakePwm[driver] != 0.0)
+#  else
+	if (motorOffDelay != 0 && brakePwmPorts[driver].IsValid() && currentBrakePwm[driver] != 0.0)
+#  endif
+# else
 	if (motorOffDelay != 0 && brakePorts[driver].IsValid() && brakePorts[driver].ReadDigital())
-#endif
+# endif
 	{
 		motorOffDelays[driver] = motorOffDelay;
 		EngageBrake(driver);
@@ -1908,17 +1941,17 @@ void Platform::DisableDrive(size_t driver, uint16_t motorOffDelay)
 
 void Platform::InternalDisableDrive(size_t driver)
 {
-#if HAS_SMART_DRIVERS
+# if HAS_SMART_DRIVERS
 	SmartDrivers::EnableDrive(driver, false);
-#else
+# else
 	if (enableValues[driver] >= 0)
 	{
 		digitalWrite(EnablePins[driver], enableValues[driver] == 0);
-# if DIFFERENTIAL_STEPPER_OUTPUTS
+#  if DIFFERENTIAL_STEPPER_OUTPUTS
 		digitalWrite(InvertedEnablePins[driver], enableValues[driver] != 0);
-# endif
+#  endif
 	}
-#endif
+# endif
 }
 
 void Platform::SetDriverIdle(size_t driver, uint16_t idlePercent)
@@ -1950,30 +1983,30 @@ void Platform::DisableAllDrives()
 	}
 }
 
-#if SUPPORT_CLOSED_LOOP
+# if SUPPORT_CLOSED_LOOP
 
 bool Platform::EnableIfIdle(size_t driver)
 {
 	if (driverStates[driver] == DriverStateControl::driverIdle)
 	{
 		driverStates[driver] = DriverStateControl::driverActive;
-# if HAS_SMART_DRIVERS
+#  if HAS_SMART_DRIVERS
 		driverAtIdleCurrent[driver] = false;
 		UpdateMotorCurrent(driver);
-#endif
+#  endif
 	}
 
 	return driverStates[driver] == DriverStateControl::driverActive;
 }
 
-#endif
+# endif
 
 GCodeResult Platform::ProcessM569Point7(const CanMessageGeneric& msg, const StringRef& reply)
 {
-#ifdef M23CL
+# ifdef M23CL
 	reply.copy("Not supported by this board");
 	return GCodeResult::error;
-#else
+# else
 	CanMessageGenericParser parser(msg, M569Point7Params);
 	uint8_t drive;
 	if (!parser.GetUintParam('P', drive))
@@ -2002,7 +2035,12 @@ GCodeResult Platform::ProcessM569Point7(const CanMessageGeneric& msg, const Stri
 	{
 		String<StringLength20> portName;
 		parser.GetStringParam('C', portName.GetRef());
-		if (!brakePorts[drive].AssignPort(	portName.c_str(), reply, PinUsedBy::gpout,
+# if SUPPORT_BRAKE_PWM
+		if (!brakePwmPorts[drive].AssignPort(
+# else
+		if (!brakePorts[drive].AssignPort(
+# endif
+											portName.c_str(), reply, PinUsedBy::gpout,
 											(driverStates[drive] == DriverStateControl::driverDisabled) ? PinAccess::write0 : PinAccess::write1
 										 )
 		   )
@@ -2011,7 +2049,13 @@ GCodeResult Platform::ProcessM569Point7(const CanMessageGeneric& msg, const Stri
 		}
 		seen = true;
 # if SUPPORT_BRAKE_PWM
-		brakePorts[drive].SetFrequency(BrakePwmFrequency);
+		brakePwmPorts[drive].SetFrequency(BrakePwmFrequency);
+#  if defined(EXP1HCLv1_0)
+		if (boardVariant >= 1)
+		{
+			brakeOnPins[drive] = (brakePwmPorts[drive].GetPin() == BrakePwmPin) ? BrakeOnPin : NoPin;
+		}
+#  endif
 # endif
 	}
 
@@ -2020,17 +2064,19 @@ GCodeResult Platform::ProcessM569Point7(const CanMessageGeneric& msg, const Stri
 	{
 		seen = true;
 	}
-#endif
+# endif
 
 	if (!seen)
 	{
 		reply.printf("Driver %u.%u uses brake port ", CanInterface::GetCanAddress(), drive);
-		brakePorts[drive].AppendPinName(reply);
 # if SUPPORT_BRAKE_PWM
+		brakePwmPorts[drive].AppendPinName(reply);
 		if (brakeVoltages[drive] < FullyOnBrakeVoltage)
 		{
 			reply.catf(" with voltage limited to %.1f by PWM", (double)brakeVoltages[drive]);
 		}
+# else
+		brakePorts[drive].AppendPinName(reply);
 # endif
 	}
 	return GCodeResult::ok;
@@ -2375,6 +2421,10 @@ void Platform::AppendBoardAndFirmwareDetails(const StringRef& reply) noexcept
 #if defined(TOOL1LC)
 	reply.lcatf("Duet " BOARD_TYPE_NAME " rev %s firmware version " VERSION " (%s%s)",
 				(boardVariant == 1) ? "1.1 or later" : "1.0 or earlier",
+				IsoDate, TIME_SUFFIX);
+#elif defined(EXP1HCLv1_0)
+	reply.lcatf("Duet " BOARD_TYPE_NAME " rev %s firmware version " VERSION " (%s%s)",
+				(boardVariant == 1) ? "2.0 or later" : "1.0a or earlier",
 				IsoDate, TIME_SUFFIX);
 #elif defined(EXP3HC)
 	reply.lcatf("Duet " BOARD_TYPE_NAME " rev %s firmware version " VERSION " (%s%s)",
