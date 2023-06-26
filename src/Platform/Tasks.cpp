@@ -299,11 +299,11 @@ extern "C" [[noreturn]] void MainTask(void *pvParameters) noexcept
 	InputMonitor::Init();
 
 #if SUPPORT_DRIVERS
+# if SUPPORT_CLOSED_LOOP
+	ClosedLoop::Init();
+# endif
 	moveInstance = new Move();
 	moveInstance->Init();
-#endif
-#if SUPPORT_CLOSED_LOOP
-	ClosedLoop::Init();
 #endif
 
 	for (;;)

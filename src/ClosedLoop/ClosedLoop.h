@@ -252,7 +252,7 @@ inline void ClosedLoop::ControlLoop() noexcept
 {
 	for (ClosedLoop* instance : closedLoopInstances)
 	{
-		instance->ControlLoop();
+		instance->InstanceControlLoop();
 	}
 }
 
