@@ -355,7 +355,7 @@ static GCodeResult ProcessM569(const CanMessageGeneric& msg, const StringRef& re
 			const ClosedLoopMode mode = (val == (uint32_t)DriverMode::direct) ? ClosedLoopMode::closed
 										: (val == (uint32_t)DriverMode::direct + 1) ? ClosedLoopMode::assistedOpen
 											: ClosedLoopMode::open;
-			if (!closedLoopInstance->SetClosedLoopEnabled(mode, reply))
+			if (!ClosedLoop::GetClosedLoopInstance(drive)->SetClosedLoopEnabled(mode, reply))
 			{
 				// reply.printf is done in ClosedLoop::SetClosedLoopEnabled()
 				return GCodeResult::error;
@@ -369,7 +369,7 @@ static GCodeResult ProcessM569(const CanMessageGeneric& msg, const StringRef& re
 # if SUPPORT_CLOSED_LOOP
 			if (mode != ClosedLoopMode::open)
 			{
-				closedLoopInstance->DriverSwitchedToClosedLoop();
+				ClosedLoop::GetClosedLoopInstance(drive)->DriverSwitchedToClosedLoop();
 			}
 # endif
 		}
@@ -482,7 +482,7 @@ static GCodeResult ProcessM569(const CanMessageGeneric& msg, const StringRef& re
 # if SUPPORT_CLOSED_LOOP
 		if (dmode == DriverMode::direct)
 		{
-			reply.catf(" (%s)", closedLoopInstance->GetModeText());
+			reply.catf(" (%s)", ClosedLoop::GetClosedLoopInstance(drive)->GetModeText());
 		}
 # endif
 		reply.catf(", ccr 0x%05" PRIx32 ", toff %" PRIu32 ", tblank %" PRIu32,
@@ -903,7 +903,7 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 	case CanMessageReturnInfo::typeDiagnosticsPart0 + 7:
 		extra = LastDiagnosticsPart;
 #if SUPPORT_CLOSED_LOOP
-		closedLoopInstance->Diagnostics(reply);
+		ClosedLoop::Diagnostics(reply);
 #endif
 #if SUPPORT_LIS3DH
 		AccelerometerHandler::Diagnostics(reply);
@@ -1020,7 +1020,7 @@ void CommandProcessor::Spin()
 		case CanMessageType::m569p1:
 			requestId = buf->msg.generic.requestId;
 # if SUPPORT_CLOSED_LOOP
-			rslt = closedLoopInstance->ProcessM569Point1(buf->msg.generic, replyRef);
+			rslt = ClosedLoop::ProcessM569Point1(buf->msg.generic, replyRef);
 # else
 			rslt = GCodeResult::errorNotSupported;
 # endif
@@ -1031,10 +1031,19 @@ void CommandProcessor::Spin()
 			rslt = ProcessM569Point2(buf->msg.generic, replyRef);
 			break;
 
+		case CanMessageType::m569p4:		// set torque mode
+			requestId = buf->msg.generic.requestId;
+# if SUPPORT_CLOSED_LOOP
+			rslt = ClosedLoop::ProcessM569Point4(buf->msg.generic, replyRef);
+# else
+			rslt = GCodeResult::errorNotSupported;
+# endif
+			break;
+
 		case CanMessageType::m569p6:
 			requestId = buf->msg.generic.requestId;
 # if SUPPORT_CLOSED_LOOP
-			rslt = closedLoopInstance->ProcessM569Point6(buf->msg.generic, replyRef);
+			rslt = ClosedLoop::ProcessM569Point6(buf->msg.generic, replyRef);
 # else
 			rslt = GCodeResult::errorNotSupported;
 # endif
@@ -1159,7 +1168,7 @@ void CommandProcessor::Spin()
 #if SUPPORT_CLOSED_LOOP
 		case CanMessageType::startClosedLoopDataCollection:
 			requestId = buf->msg.startClosedLoopDataCollection.requestId;
-			rslt = closedLoopInstance->ProcessM569Point5(buf->msg.startClosedLoopDataCollection, replyRef);
+			rslt = ClosedLoop::ProcessM569Point5(buf->msg.startClosedLoopDataCollection, replyRef);
 			break;
 #endif
 

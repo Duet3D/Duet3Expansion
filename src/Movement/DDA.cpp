@@ -475,7 +475,7 @@ __attribute__((section(".time_critical")))
 void DDA::StepDrivers(uint32_t now) noexcept
 {
 # if SUPPORT_CLOSED_LOOP
-	if (closedLoopInstance->GetClosedLoopEnabled())
+	if (ClosedLoop::GetClosedLoopInstance(0)->IsClosedLoopEnabled())
 	{
 		return;
 	}

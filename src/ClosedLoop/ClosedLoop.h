@@ -28,6 +28,7 @@ constexpr unsigned int LinearEncoderIncreaseFactor = 4;	// this should be a powe
 
 class Encoder;
 class SpiEncoder;
+class CanMessageGenericParser;
 
 // Struct to pass data back to the ClosedLoop module
 struct MotionParameters
@@ -51,7 +52,7 @@ public:
 
 	// Tuning manoeuvres
 	static constexpr uint8_t BASIC_TUNING_MANOEUVRE 				= 1u << 0;		// this measures the polarity, check that the CPR looks OK, and for relative encoders sets the zero position
-	static constexpr uint8_t ENCODER_CALIBRATION_MANOEUVRE 		= 1u << 1;		// this calibrates an absolute encoder
+	static constexpr uint8_t ENCODER_CALIBRATION_MANOEUVRE 			= 1u << 1;		// this calibrates an absolute encoder
 	static constexpr uint8_t ENCODER_CALIBRATION_CHECK				= 1u << 2;		// this checks the calibration
 	static constexpr uint8_t STEP_MANOEUVRE 						= 1u << 6;		// this does a sudden step change in the requested position for PID tuning
 
@@ -61,27 +62,37 @@ public:
 #endif
 
 	// Closed loop public methods
-	void Init() noexcept;
+	void InitInstance() noexcept;
 
-	GCodeResult ProcessM569Point1(const CanMessageGeneric& msg, const StringRef& reply) noexcept;
-	GCodeResult ProcessM569Point5(const CanMessageStartClosedLoopDataCollection&, const StringRef&) noexcept;
-	GCodeResult ProcessM569Point6(const CanMessageGeneric& msg, const StringRef& reply) noexcept;
+	GCodeResult InstanceProcessM569Point1(CanMessageGenericParser& parser, const StringRef& reply) noexcept;
+	GCodeResult InstanceProcessM569Point4(CanMessageGenericParser& parser, const StringRef& reply) noexcept;
+	GCodeResult InstanceProcessM569Point5(const CanMessageStartClosedLoopDataCollection&, const StringRef& reply) noexcept;
+	GCodeResult InstanceProcessM569Point6(CanMessageGenericParser& parser, const StringRef& reply) noexcept;
 
 	const char *_ecv_array GetModeText() const noexcept;
-	void Diagnostics(const StringRef& reply) noexcept;
+	void InstanceDiagnostics(size_t driver, const StringRef& reply) noexcept;
 
 	// Methods called by the motion system
-	void ControlLoop() noexcept;
+	void InstanceControlLoop() noexcept;
 	StandardDriverStatus ReadLiveStatus() const noexcept;
-	bool GetClosedLoopEnabled() const noexcept;
+	bool IsClosedLoopEnabled() const noexcept;
 	bool SetClosedLoopEnabled(ClosedLoopMode mode, const StringRef &reply) noexcept;
 	void DriverSwitchedToClosedLoop() noexcept;
 	void ResetError() noexcept;
 	StandardDriverStatus ModifyDriverStatus(StandardDriverStatus originalStatus) noexcept;
 
 	// Methods called by the encoders
-	void EnableEncodersSpi() noexcept;
-	void DisableEncodersSpi() noexcept;
+	static void EnableEncodersSpi() noexcept;
+	static void DisableEncodersSpi() noexcept;
+
+	static void Init() noexcept;
+	static void ControlLoop() noexcept;
+	static ClosedLoop *_ecv_null GetClosedLoopInstance(size_t driver) noexcept;
+	static GCodeResult ProcessM569Point1(const CanMessageGeneric& msg, const StringRef& reply) noexcept;
+	static GCodeResult ProcessM569Point4(const CanMessageGeneric& msg, const StringRef& reply) noexcept;
+	static GCodeResult ProcessM569Point5(const CanMessageStartClosedLoopDataCollection&, const StringRef& reply) noexcept;
+	static GCodeResult ProcessM569Point6(const CanMessageGeneric& msg, const StringRef& reply) noexcept;
+	static void Diagnostics(const StringRef& reply) noexcept;
 
 	// Functions run by tasks
 	[[noreturn]] void DataTransmissionTaskLoop() noexcept;
@@ -98,8 +109,7 @@ private:
 	static constexpr StepTimer::Ticks DataCollectionIdleStepTicks = StepTimer::StepClockRate/200;
 																	// start collecting tuning data 5ms before the start of the tuning move
 	static constexpr float DefaultHoldCurrentFraction = 0.25;		// the minimum fraction of the requested current that we apply when holding position
-	static constexpr float MinimumDegreesPhaseShift = 15.0;			// the phase shift at which we start reducing current instead of reducing the phase shift, where 90deg is one full step
-	static constexpr float MinimumPhaseShift = (MinimumDegreesPhaseShift/360.0) * 4096;	// the same in units where 4096 is a complete circle
+	static constexpr float DefaultTorquePerAmp = 1.0;				// the torque per amp of motor current
 
 	static constexpr float PIDIlimit = 80.0;
 
@@ -107,9 +117,9 @@ private:
 	void SetMotorPhase(uint16_t phase, float magnitude) noexcept;
 	void SetSpecialMotorPhase(uint16_t phase, float magnitude) noexcept;
 	void FinishedBasicTuning() noexcept;
-															// call this when we have stopped basic tuning movement and are ready to switch to closed loop control
-	void ReadyToCalibrate(bool store) noexcept;				// call this when encoder calibration has finished collecting data
-	void AdjustTargetMotorSteps(float amount) noexcept;		// called by tuning to execute a step
+																// call this when we have stopped basic tuning movement and are ready to switch to closed loop control
+	void ReadyToCalibrate(bool store) noexcept;					// call this when encoder calibration has finished collecting data
+	void AdjustTargetMotorSteps(float amount) noexcept;			// called by tuning to execute a step
 
 	// Methods in the tuning module
 	void PerformTune() noexcept;
@@ -123,15 +133,18 @@ private:
 		SendingData			// finished collecting data but still sending it to the main board
 	};
 
-	Encoder *encoder = nullptr;							// Pointer to the encoder object in use
-	volatile uint8_t tuning = 0;						// Bitmask of any tuning manoeuvres that have been requested
-	TuningErrors tuningError;							// Flags for any tuning errors
+	static ClosedLoop *closedLoopInstances[NumDrivers];
+
+	Encoder *encoder = nullptr;									// Pointer to the encoder object in use
+	volatile uint8_t tuning = 0;								// Bitmask of any tuning manoeuvres that have been requested
+	TuningErrors tuningError;									// Flags for any tuning errors
 
 	// Control variables, set by the user to determine how the closed loop controller works
 	ClosedLoopMode currentMode = ClosedLoopMode::open;			// which mode the driver is in
 
 	// Holding current, and variables derived from it
 	float 	holdCurrentFraction = DefaultHoldCurrentFraction;	// The minimum holding current when stationary
+	float	torquePerAmp = DefaultTorquePerAmp;					// the torque per amp of configured current
 	float 	Kp = 30.0;											// The proportional constant for the PID controller
 	float 	Ki = 0.0;											// The proportional constant for the PID controller
 	float 	Kd = 0.0;											// The proportional constant for the PID controller
@@ -225,9 +238,22 @@ private:
 	bool Step(bool firstIteration) noexcept;
 };
 
-inline bool ClosedLoop::GetClosedLoopEnabled() const noexcept
+inline bool ClosedLoop::IsClosedLoopEnabled() const noexcept
 {
 	return currentMode != ClosedLoopMode::open;
+}
+
+inline ClosedLoop *ClosedLoop::GetClosedLoopInstance(size_t driver) noexcept
+{
+	return (driver < NumDrivers) ? closedLoopInstances[driver] : nullptr;
+}
+
+inline void ClosedLoop::ControlLoop() noexcept
+{
+	for (ClosedLoop* instance : closedLoopInstances)
+	{
+		instance->ControlLoop();
+	}
 }
 
 #  if defined(EXP1HCLv1_0) || defined(M23CL)

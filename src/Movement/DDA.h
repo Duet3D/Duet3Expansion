@@ -245,9 +245,9 @@ inline uint32_t DDA::WhenNextInterruptDue() const noexcept
 
 inline bool DDA::ScheduleNextStepInterrupt() const noexcept
 {
-#if SUPPORT_CLOSED_LOOP
-	if (!closedLoopInstance->GetClosedLoopEnabled())
-#endif
+# if SUPPORT_CLOSED_LOOP
+	if (!ClosedLoop::GetClosedLoopInstance(0)->IsClosedLoopEnabled())
+# endif
 	{
 		if (likely(state == executing))
 		{
@@ -261,9 +261,9 @@ inline bool DDA::ScheduleNextStepInterrupt() const noexcept
 
 inline bool DDA::ScheduleNextStepInterrupt(StepTimer& timer) const noexcept
 {
-#if SUPPORT_CLOSED_LOOP
+# if SUPPORT_CLOSED_LOOP
 	if (!ClosedLoop::GetClosedLoopEnabled(0))
-#endif
+# endif
 	{
 		if (likely(state == executing))
 		{
@@ -293,7 +293,7 @@ inline void DDA::InsertHiccup(uint32_t now) noexcept
 inline int32_t DDA::GetStepsTaken(size_t drive) const noexcept
 {
 #if SUPPORT_CLOSED_LOOP
-	if (closedLoopInstance->GetClosedLoopEnabled())
+	if (ClosedLoop::GetClosedLoopInstance(drive)->IsClosedLoopEnabled())
 	{
 		return ddms[drive].GetNetStepsTakenClosedLoop(topSpeed, (int32_t)(StepTimer::GetTimerTicks() - afterPrepare.moveStartTime));
 	}

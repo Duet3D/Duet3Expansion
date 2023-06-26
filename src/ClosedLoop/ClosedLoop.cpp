@@ -97,6 +97,9 @@ static inline uint32_t TickPeriodToFreq(StepTimer::Ticks tickPeriod) noexcept
 	return StepTimer::StepClockRate/tickPeriod;
 }
 
+// Table of pointers to closed loop instances
+ClosedLoop *ClosedLoop::closedLoopInstances[NumDrivers] = { 0 };
+
 // Helper function to reset the 'monitoring variables' as defined above
 void ClosedLoop::ResetMonitoringVariables() noexcept
 {
@@ -161,7 +164,17 @@ static void GenerateTmcClock()
 	SmartDrivers::SetTmcExternalClock(15000000);
 }
 
-void ClosedLoop::Init() noexcept
+// Module initialisation
+/*static*/ void ClosedLoop::Init() noexcept
+{
+	for (size_t i = 0; i < NumDrivers; ++i)
+	{
+		closedLoopInstances[i] = new ClosedLoop();
+		closedLoopInstances[i]->InitInstance();
+	}
+}
+
+void ClosedLoop::InitInstance() noexcept
 {
 	pinMode(EncoderCsPin, OUTPUT_HIGH);											// make sure that any attached SPI encoder is not selected
 
@@ -186,7 +199,22 @@ void ClosedLoop::Init() noexcept
 GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const StringRef &reply) noexcept
 {
 	CanMessageGenericParser parser(msg, M569Point1Params);
+	uint8_t drive;
+	if (!parser.GetUintParam('P', drive))
+	{
+		reply.copy("missing P parameter in CAN message");
+		return GCodeResult::error;
+	}
+	if (drive >= NumDrivers)
+	{
+		reply.copy("no such driver");
+		return GCodeResult::error;
+	}
+	return closedLoopInstances[drive]->InstanceProcessM569Point1(parser, reply);
+}
 
+GCodeResult ClosedLoop::InstanceProcessM569Point1(CanMessageGenericParser& parser, const StringRef& reply) noexcept
+{
 	// Set default parameters
 	uint8_t tempEncoderType = GetEncoderType().ToBaseType();
 	float tempCPR;
@@ -198,7 +226,7 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 	uint16_t tempStepsPerRev = 200;
 	size_t numThresholds = 2;
 	float tempErrorThresholds[numThresholds];
-	float holdingCurrentPercent;
+	float holdingCurrentPercent, tempTorquePerAmp;
 
 	// Pull changed parameters
 	const bool seenT = parser.GetUintParam('T', tempEncoderType);
@@ -208,9 +236,10 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 	const bool seenE = parser.GetFloatArrayParam('E', numThresholds, tempErrorThresholds);
 	const bool seenH = parser.GetFloatParam('H', holdingCurrentPercent);
 	const bool seenS = parser.GetUintParam('S', tempStepsPerRev);
+	const bool seenQ = parser.GetFloatParam('Q', tempTorquePerAmp);
 
 	// Report back if no parameters to change
-	if (!(seenT || seenC || seenPid || seenE || seenH))
+	if (!(seenT || seenC || seenPid || seenE || seenH || seenQ))
 	{
 		if (encoder == nullptr)
 		{
@@ -255,6 +284,11 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 		reply.copy("Encoder counts/rev must be at least four times steps/rev");
 		return GCodeResult::error;
 	}
+	if (seenQ && tempTorquePerAmp <= 0.0)
+	{
+		reply.copy("Torque per amp must be positive");
+		return GCodeResult::error;
+	}
 
 	// Set the new params
 	TaskCriticalSectionLocker lock;			// don't allow the closed loop task to see an inconsistent combination of these values
@@ -280,6 +314,11 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 	{
 		errorThresholds[0] = tempErrorThresholds[0];
 		errorThresholds[1] = tempErrorThresholds[1];
+	}
+
+	if (seenQ)
+	{
+		torquePerAmp = tempTorquePerAmp;
 	}
 
 	if (seenT)
@@ -329,9 +368,41 @@ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const St
 	return GCodeResult::ok;
 }
 
+GCodeResult ClosedLoop::ProcessM569Point4(const CanMessageGeneric& msg, const StringRef& reply) noexcept
+{
+	CanMessageGenericParser parser(msg, M569Point4Params);
+	uint8_t drive;
+	if (!parser.GetUintParam('P', drive))
+	{
+		reply.copy("missing P parameter in CAN message");
+		return GCodeResult::error;
+	}
+	if (drive >= NumDrivers)
+	{
+		reply.copy("no such driver");
+		return GCodeResult::error;
+	}
+	return closedLoopInstances[drive]->InstanceProcessM569Point4(parser, reply);
+}
+
+GCodeResult ClosedLoop::InstanceProcessM569Point4(CanMessageGenericParser& parser, const StringRef& reply) noexcept
+{
+	return GCodeResult::errorNotSupported;
+}
+
 GCodeResult ClosedLoop::ProcessM569Point5(const CanMessageStartClosedLoopDataCollection& msg, const StringRef& reply) noexcept
 {
-	if (encoder == nullptr || msg.deviceNumber != 0)
+	if (msg.deviceNumber >= NumDrivers)
+	{
+		reply.copy("no such driver");
+		return GCodeResult::error;
+	}
+	return closedLoopInstances[msg.deviceNumber]->InstanceProcessM569Point5(msg, reply);
+}
+
+GCodeResult ClosedLoop::InstanceProcessM569Point5(const CanMessageStartClosedLoopDataCollection& msg, const StringRef& reply) noexcept
+{
+	if (encoder == nullptr)
 	{
 		reply.copy("No encoder has been configured");
 		return GCodeResult::error;
@@ -380,6 +451,98 @@ GCodeResult ClosedLoop::ProcessM569Point5(const CanMessageStartClosedLoopDataCol
 		StartTuning(msg.movement);
 	}
 	return GCodeResult::ok;
+}
+
+GCodeResult ClosedLoop::ProcessM569Point6(const CanMessageGeneric &msg, const StringRef &reply) noexcept
+{
+	CanMessageGenericParser parser(msg, M569Point6Params);
+	uint8_t drive;
+	if (!parser.GetUintParam('P', drive))
+	{
+		reply.copy("missing P parameter in CAN message");
+		return GCodeResult::error;
+	}
+	if (drive >= NumDrivers)
+	{
+		reply.copy("no such driver");
+		return GCodeResult::error;
+	}
+	return closedLoopInstances[drive]->InstanceProcessM569Point6(parser, reply);
+}
+
+GCodeResult ClosedLoop::InstanceProcessM569Point6(CanMessageGenericParser& parser, const StringRef& reply) noexcept
+{
+	if (encoder == nullptr)
+	{
+		reply.copy("no encoder configured");
+		return GCodeResult::error;
+	}
+
+	uint8_t desiredTuning;
+	if (!parser.GetUintParam('V', desiredTuning))
+	{
+		// We have been called to return the status after the previous call returned "not finished"
+		if (tuning != 0)
+		{
+			return GCodeResult::notFinished;
+		}
+
+		// If we were checking the calibration, report the result
+		return (basicTuningDataReady) ? ProcessBasicTuningResult(reply) : ProcessCalibrationResult(reply);
+	}
+
+	switch (desiredTuning)
+	{
+	default:
+		reply.copy("invalid tuning mode");
+		return GCodeResult::error;
+
+	case 1:		// basic calibration
+		if (!encoder->UsesBasicTuning())
+		{
+			reply.copy("basic tuning is not applicable to absolute encoders");
+			return GCodeResult::error;
+		}
+		break;
+
+	case 2:
+	case 3:
+	case 4:
+		if (!encoder->UsesCalibration())
+		{
+			reply.copy("calibration is not applicable to the configured encoder type");
+			return GCodeResult::error;
+		}
+		if (desiredTuning == 4)
+		{
+			// Tuning move 4 just clears the lookup table
+			encoder->ScrubLUT();
+			reply.copy("Encoder calibration cleared");
+			tuningError |= TuningError::NotCalibrated;
+			return GCodeResult::ok;
+		}
+		break;
+
+	case 64:
+		break;
+	}
+
+	// Here if this is a new command to start a tuning move
+	// Check we are in direct drive mode
+	if (SmartDrivers::GetDriverMode(0) != DriverMode::direct)
+	{
+		reply.copy("Driver is not in direct mode");
+		return GCodeResult::error;
+	}
+
+	if (!Platform::EnableIfIdle(0))
+	{
+		reply.copy("Driver is not enabled");
+		return GCodeResult::error;
+	}
+
+	StartTuning(desiredTuning);
+	return GCodeResult::notFinished;
 }
 
 // This is called when tuning has finished and the basicTuningDataReady flag is set
@@ -537,83 +700,6 @@ GCodeResult ClosedLoop::ProcessCalibrationResult(const StringRef& reply) noexcep
 	return GCodeResult::ok;
 }
 
-GCodeResult ClosedLoop::ProcessM569Point6(const CanMessageGeneric &msg, const StringRef &reply) noexcept
-{
-	if (encoder == nullptr)
-	{
-		reply.copy("no encoder configured");
-		return GCodeResult::error;
-	}
-
-	CanMessageGenericParser parser(msg, M569Point6Params);
-
-	uint8_t desiredTuning;
-	if (!parser.GetUintParam('V', desiredTuning))
-	{
-		// We have been called to return the status after the previous call returned "not finished"
-		if (tuning != 0)
-		{
-			return GCodeResult::notFinished;
-		}
-
-		// If we were checking the calibration, report the result
-		return (basicTuningDataReady) ? ProcessBasicTuningResult(reply) : ProcessCalibrationResult(reply);
-	}
-
-	switch (desiredTuning)
-	{
-	default:
-		reply.copy("invalid tuning mode");
-		return GCodeResult::error;
-
-	case 1:		// basic calibration
-		if (!encoder->UsesBasicTuning())
-		{
-			reply.copy("basic tuning is not applicable to absolute encoders");
-			return GCodeResult::error;
-		}
-		break;
-
-	case 2:
-	case 3:
-	case 4:
-		if (!encoder->UsesCalibration())
-		{
-			reply.copy("calibration is not applicable to the configured encoder type");
-			return GCodeResult::error;
-		}
-		if (desiredTuning == 4)
-		{
-			// Tuning move 4 just clears the lookup table
-			encoder->ScrubLUT();
-			reply.copy("Encoder calibration cleared");
-			tuningError |= TuningError::NotCalibrated;
-			return GCodeResult::ok;
-		}
-		break;
-
-	case 64:
-		break;
-	}
-
-	// Here if this is a new command to start a tuning move
-	// Check we are in direct drive mode
-	if (SmartDrivers::GetDriverMode(0) != DriverMode::direct)
-	{
-		reply.copy("Driver is not in direct mode");
-		return GCodeResult::error;
-	}
-
-	if (!Platform::EnableIfIdle(0))
-	{
-		reply.copy("Driver is not enabled");
-		return GCodeResult::error;
-	}
-
-	StartTuning(desiredTuning);
-	return GCodeResult::notFinished;
-}
-
 void ClosedLoop::StartTuning(uint8_t tuningMode) noexcept
 {
 	if (tuningMode != 0)
@@ -653,7 +739,7 @@ void ClosedLoop::AdjustTargetMotorSteps(float amount) noexcept
 	moveInstance->SetCurrentMotorSteps(0, lrintf(mParams.position));
 }
 
-void ClosedLoop::ControlLoop() noexcept
+void ClosedLoop::InstanceControlLoop() noexcept
 {
 	// Record the control loop call interval
 	const StepTimer::Ticks loopCallTime = StepTimer::GetTimerTicks();
@@ -895,9 +981,9 @@ const char *_ecv_array ClosedLoop::GetModeText() const noexcept
 				: "open loop";
 }
 
-void ClosedLoop::Diagnostics(const StringRef& reply) noexcept
+void ClosedLoop::InstanceDiagnostics(size_t driver, const StringRef& reply) noexcept
 {
-	reply.printf("Closed loop driver mode: %s", GetModeText());
+	reply.printf("Closed loop driver %u mode: %s", driver, GetModeText());
 	reply.catf(", pre-error threshold: %.2f, error threshold: %.2f", (double) errorThresholds[0], (double) errorThresholds[1]);
 	reply.catf(", encoder type %s", GetEncoderType().ToString());
 	if (encoder != nullptr)
@@ -930,6 +1016,14 @@ void ClosedLoop::Diagnostics(const StringRef& reply) noexcept
 
 	//DEBUG
 	//reply.catf(", event status 0x%08" PRIx32 ", TCC2 CTRLA 0x%08" PRIx32 ", TCC2 EVCTRL 0x%08" PRIx32, EVSYS->CHSTATUS.reg, QuadratureTcc->CTRLA.reg, QuadratureTcc->EVCTRL.reg);
+}
+
+/*static*/ void ClosedLoop::Diagnostics(const StringRef& reply) noexcept
+{
+	for (size_t i = 0; i < NumDrivers; ++i)
+	{
+		closedLoopInstances[i]->InstanceDiagnostics(i, reply);
+	}
 }
 
 StandardDriverStatus ClosedLoop::ReadLiveStatus() const noexcept

@@ -1777,7 +1777,7 @@ void Platform::SetDirection(bool direction)
 # endif
 
 # if SUPPORT_CLOSED_LOOP
-	if (closedLoopInstance->GetClosedLoopEnabled())
+	if (ClosedLoop::GetClosedLoopInstance(0)->IsClosedLoopEnabled())
 	{
 		return;
 	}
@@ -1876,7 +1876,7 @@ void Platform::EnableDrive(size_t driver, uint16_t brakeOffDelay)
 		{
 			driverAtIdleCurrent[driver] = false;
 #  if SUPPORT_CLOSED_LOOP
-			closedLoopInstance->ResetError();
+			ClosedLoop::GetClosedLoopInstance(driver)->ResetError();
 #  endif
 			UpdateMotorCurrent(driver);
 		}

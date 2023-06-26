@@ -303,8 +303,7 @@ extern "C" [[noreturn]] void MainTask(void *pvParameters) noexcept
 	moveInstance->Init();
 #endif
 #if SUPPORT_CLOSED_LOOP
-	closedLoopInstance = new ClosedLoop();
-	closedLoopInstance->Init();
+	ClosedLoop::Init();
 #endif
 
 	for (;;)
