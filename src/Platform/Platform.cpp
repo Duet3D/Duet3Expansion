@@ -1164,7 +1164,7 @@ void Platform::Spin()
 											brakeVoltages[driver];
 #  endif
 			const float newBrakePwm = min<float>(requestedVoltage/voltsVin, 1.0);
-			if (fabsf(newBrakePwm - currentBrakePwm[driver] >= 0.05))
+			if (fabsf(newBrakePwm - currentBrakePwm[driver]) >= 0.05)
 			{
 #  ifdef M23CL
 				AnalogOut::Write(BrakePwmPin, newBrakePwm, BrakePwmFrequency);
