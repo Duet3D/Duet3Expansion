@@ -249,8 +249,8 @@ GCodeResult ClosedLoop::InstanceProcessM569Point1(CanMessageGenericParser& parse
 		{
 			reply.catf("Encoder type: %s", GetEncoderType().ToString());
 			encoder->AppendStatus(reply);
-			reply.lcatf("PID parameters P=%.1f I=%.3f D=%.3f V=%.1f A=%.1f, min. current %" PRIi32 "%%",
-						(double)Kp, (double)Ki, (double)Kd, (double)Kv, (double)Ka, lrintf(holdCurrentFraction * 100.0));
+			reply.lcatf("PID parameters P=%.1f I=%.3f D=%.3f V=%.1f A=%.1f, min. current %" PRIi32 "%%, torque constant %.2fNm/A",
+						(double)Kp, (double)Ki, (double)Kd, (double)Kv, (double)Ka, lrintf(holdCurrentFraction * 100.0), (double)torquePerAmp);
 			reply.lcatf("Warning/error threshold %.2f/%.2f", (double)errorThresholds[0], (double)errorThresholds[1]);
 		}
 		return GCodeResult::ok;
@@ -368,7 +368,8 @@ GCodeResult ClosedLoop::InstanceProcessM569Point1(CanMessageGenericParser& parse
 	return GCodeResult::ok;
 }
 
-GCodeResult ClosedLoop::ProcessM569Point4(const CanMessageGeneric& msg, const StringRef& reply) noexcept
+// M569.4 Set torque mode
+/*static*/ GCodeResult ClosedLoop::ProcessM569Point4(const CanMessageGeneric& msg, const StringRef& reply) noexcept
 {
 	CanMessageGenericParser parser(msg, M569Point4Params);
 	uint8_t drive;
@@ -385,9 +386,45 @@ GCodeResult ClosedLoop::ProcessM569Point4(const CanMessageGeneric& msg, const St
 	return closedLoopInstances[drive]->InstanceProcessM569Point4(parser, reply);
 }
 
+// M569.4 Set torque mode
 GCodeResult ClosedLoop::InstanceProcessM569Point4(CanMessageGenericParser& parser, const StringRef& reply) noexcept
 {
-	return GCodeResult::errorNotSupported;
+	float requestedTorque;
+	if (!parser.GetFloatParam('T', requestedTorque))
+	{
+		reply.copy("missing T parameter in CAN message");
+		return GCodeResult::error;
+	}
+	float maxSpeed = torqueModeMaxSpeed;
+	(void)parser.GetFloatParam('V', maxSpeed);
+
+	if (currentMode == ClosedLoopMode::open || tuning != 0 || tuningError != 0)
+	{
+		reply.copy("torque mode not available when driver is in open loop mode, has not been tuned, or is being tuned");
+		return GCodeResult::error;
+	}
+
+	if (requestedTorque == 0.0)					// if asking to exit torque mode
+	{
+		inTorqueMode = false;
+		return GCodeResult::ok;
+	}
+
+	{
+		TaskCriticalSectionLocker lock;
+
+		if (!hasMovementCommand)
+		{
+			torqueModeDirection = (Platform::GetDirectionValueNoCheck(0) == (requestedTorque > 0.0));
+			torqueModeCurrentFraction = min<float>(fabsf(requestedTorque)/(torquePerAmp * SmartDrivers::GetCurrent(0) * 0.001), 1.0);
+			torqueModeMaxSpeed = maxSpeed;
+			inTorqueMode = true;
+			return GCodeResult::ok;
+		}
+	}
+
+	reply.copy("cannot enter torque mode while moving");
+	return GCodeResult::error;
 }
 
 GCodeResult ClosedLoop::ProcessM569Point5(const CanMessageStartClosedLoopDataCollection& msg, const StringRef& reply) noexcept
@@ -752,11 +789,15 @@ void ClosedLoop::InstanceControlLoop() noexcept
 	if (encoder != nullptr && !encoder->TakeReading())
 	{
 		// Calculate and store the current error in full steps
-		const bool moving = moveInstance->GetCurrentMotion(0, loopCallTime, currentMode != ClosedLoopMode::open, mParams);
-		if (moving && samplingMode == RecordingMode::OnNextMove)
+		hasMovementCommand = moveInstance->GetCurrentMotion(0, loopCallTime, currentMode != ClosedLoopMode::open, mParams);
+		if (hasMovementCommand)
 		{
-			dataCollectionStartTicks = whenNextSampleDue = StepTimer::GetTimerTicks();
-			samplingMode = RecordingMode::Immediate;
+			inTorqueMode = false;
+			if (samplingMode == RecordingMode::OnNextMove)
+			{
+				dataCollectionStartTicks = whenNextSampleDue = StepTimer::GetTimerTicks();
+				samplingMode = RecordingMode::Immediate;
+			}
 		}
 
 		const float targetEncoderReading = rintf(mParams.position * encoder->GetCountsPerStep());
@@ -785,27 +826,34 @@ void ClosedLoop::InstanceControlLoop() noexcept
 			{
 				ControlMotorCurrents(timeElapsed);						// otherwise control those motor currents!
 
-				// Look for a stall or pre-stall
-				const float positionErr = fabsf(currentError);
-				if (stall)
+				if (inTorqueMode)
 				{
-					// Reset the stall flag when the position error falls to below half the tolerance, to avoid generating too many stall events
-					//TODO do we need a minimum delay before resetting too?
-					if (errorThresholds[1] <= 0 || positionErr < errorThresholds[1]/2)
-					{
-						stall = false;
-					}
+					stall = preStall = false;
 				}
 				else
 				{
-					stall = errorThresholds[1] > 0 && positionErr > errorThresholds[1];
+					// Look for a stall or pre-stall
+					const float positionErr = fabsf(currentError);
 					if (stall)
 					{
-						Platform::NewDriverFault();
+						// Reset the stall flag when the position error falls to below half the tolerance, to avoid generating too many stall events
+						//TODO do we need a minimum delay before resetting too?
+						if (errorThresholds[1] <= 0 || positionErr < errorThresholds[1]/2)
+						{
+							stall = false;
+						}
 					}
 					else
 					{
-						preStall = errorThresholds[0] > 0 && positionErr > errorThresholds[0];
+						stall = errorThresholds[1] > 0 && positionErr > errorThresholds[1];
+						if (stall)
+						{
+							Platform::NewDriverFault();
+						}
+						else
+						{
+							preStall = errorThresholds[0] > 0 && positionErr > errorThresholds[0];
+						}
 					}
 				}
 			}
@@ -911,7 +959,7 @@ void ClosedLoop::CollectSample() noexcept
 		if (filterRequested & CL_RECORD_PID_A_TERM)  			{ sampleBuffer.PutF16(PIDATerm); }
 		if (filterRequested & CL_RECORD_CURRENT_STEP_PHASE)  	{ sampleBuffer.PutU16(encoder->GetCurrentPhasePosition()); }
 		if (filterRequested & CL_RECORD_DESIRED_STEP_PHASE)  	{ sampleBuffer.PutU16(desiredStepPhase); }
-		if (filterRequested & CL_RECORD_PHASE_SHIFT)  			{ sampleBuffer.PutU16(phaseShift % 4096); }
+		if (filterRequested & CL_RECORD_PHASE_SHIFT)  			{ sampleBuffer.PutU16(0); }
 		if (filterRequested & CL_RECORD_COIL_A_CURRENT) 		{ sampleBuffer.PutI16(coilA); }
 		if (filterRequested & CL_RECORD_COIL_B_CURRENT) 		{ sampleBuffer.PutI16(coilB); }
 
@@ -931,46 +979,55 @@ inline void ClosedLoop::ControlMotorCurrents(StepTimer::Ticks ticksSinceLastCall
 	// Get the time delta in seconds
 	const float timeDelta = (float)ticksSinceLastCall * (1.0/(float)StepTimer::StepClockRate);
 
-	// Use a PID controller to calculate the required 'torque' - the control signal
-	// We choose to use a PID control signal in the range -256 to +256. This is arbitrary.
-	PIDPTerm = constrain<float>(Kp * currentError, -256.0, 256.0);
-	PIDDTerm = constrain<float>(Kd * errorDerivativeFilter.GetDerivative() * StepTimer::StepClockRate, -256.0, 256.0);	// constrain D so that we can graph it more sensibly after a sudden step input
-
-	if (currentMode == ClosedLoopMode::closed)
+	if (inTorqueMode)
 	{
-		PIDITerm = constrain<float>(PIDITerm + Ki * currentError * timeDelta, -PIDIlimit, PIDIlimit);	// constrain I to prevent it running away
-		PIDVTerm = mParams.speed * Kv * ticksSinceLastCall;
-		PIDATerm = mParams.acceleration * Ka * fsquare(ticksSinceLastCall);
-		PIDControlSignal = constrain<float>(PIDPTerm + PIDITerm + PIDDTerm + PIDVTerm + PIDATerm, -256.0, 256.0);	// clamp the sum between +/- 256
-
-		// Calculate the offset required to produce the torque in the correct direction
-		// i.e. if we are moving in the positive direction, we must apply currents with a positive phase shift
-		// The max abs value of phase shift we want is 1 full step i.e. 25%.
-		// Given that PIDControlSignal is -256 .. 256 and phase is 0 .. 4095
-		// and that 25% of 4096 = 1024, our max phase shift = 4 * PIDControlSignal
-
-		// New algorithm: phase of motor current is always +/- 1 full step relative to current position, but motor current is adjusted according to the PID result
-		// The following assumes that signed arithmetic is 2's complement
-		const float PhaseFeedForwardFactor = 1000.0;
-		const int16_t phaseFeedForward = lrintf(constrain<float>(speedFilter.GetDerivative() * ticksSinceLastCall * PhaseFeedForwardFactor, -256.0, 256.0));
 		const uint32_t measuredStepPhase = encoder->GetCurrentPhasePosition();
-		desiredStepPhase = (uint16_t)((int16_t)measuredStepPhase + phaseShift + phaseFeedForward) % 4096u;
-		const uint16_t commandedStepPhase = (((PIDControlSignal < 0.0) ? (3 * 1024) : 1024) + desiredStepPhase) % 4096u;
-		SetSpecialMotorPhase(commandedStepPhase, fabsf(PIDControlSignal) * (1.0/256.0));
+		const uint16_t commandedStepPhase = (uint16_t)((((torqueModeDirection) ? (3 * 1024) : 1024) + measuredStepPhase) % 4096u);
+		SetMotorPhase(commandedStepPhase, torqueModeCurrentFraction);
 	}
 	else
 	{
-		// Driver is in assisted open loop mode
-		// In this mode the I term is not used and the A and V terms are independent of the loop time.
-		constexpr float scalingFactor = 100.0;
-		PIDVTerm = mParams.speed * Kv * scalingFactor;
-		PIDATerm = mParams.acceleration * Ka * fsquare(scalingFactor);
-		PIDControlSignal = min<float>(fabsf(PIDPTerm + PIDDTerm) + fabsf(PIDVTerm) + fabsf(PIDATerm), 256.0);
+		// Use a PID controller to calculate the required 'torque' - the control signal
+		// We choose to use a PID control signal in the range -256 to +256. This is arbitrary.
+		PIDPTerm = constrain<float>(Kp * currentError, -256.0, 256.0);
+		PIDDTerm = constrain<float>(Kd * errorDerivativeFilter.GetDerivative() * StepTimer::StepClockRate, -256.0, 256.0);	// constrain D so that we can graph it more sensibly after a sudden step input
 
-		const uint16_t stepPhase = (uint16_t)llrintf(mParams.position * 1024.0);
-		desiredStepPhase = (stepPhase + phaseOffset) % 4096u;
-		const float currentFraction = holdCurrentFraction + (1.0 - holdCurrentFraction) * min<float>(PIDControlSignal * (1.0/256.0), 1.0);
-		SetMotorPhase(desiredStepPhase, currentFraction);
+		if (currentMode == ClosedLoopMode::closed)
+		{
+			PIDITerm = constrain<float>(PIDITerm + Ki * currentError * timeDelta, -PIDIlimit, PIDIlimit);	// constrain I to prevent it running away
+			PIDVTerm = mParams.speed * Kv * ticksSinceLastCall;
+			PIDATerm = mParams.acceleration * Ka * fsquare(ticksSinceLastCall);
+			PIDControlSignal = constrain<float>(PIDPTerm + PIDITerm + PIDDTerm + PIDVTerm + PIDATerm, -256.0, 256.0);	// clamp the sum between +/- 256
+
+			// Calculate the offset required to produce the torque in the correct direction
+			// i.e. if we are moving in the positive direction, we must apply currents with a positive phase shift
+			// The max abs value of phase shift we want is 1 full step i.e. 25%.
+			// Given that PIDControlSignal is -256 .. 256 and phase is 0 .. 4095
+			// and that 25% of 4096 = 1024, our max phase shift = 4 * PIDControlSignal
+
+			// New algorithm: phase of motor current is always +/- 1 full step relative to current position, but motor current is adjusted according to the PID result
+			// The following assumes that signed arithmetic is 2's complement
+			const float PhaseFeedForwardFactor = 1000.0;
+			const int16_t phaseFeedForward = lrintf(constrain<float>(speedFilter.GetDerivative() * ticksSinceLastCall * PhaseFeedForwardFactor, -256.0, 256.0));
+			const uint32_t measuredStepPhase = encoder->GetCurrentPhasePosition();
+			const uint16_t adjustedStepPhase = (uint16_t)((int16_t)measuredStepPhase + phaseFeedForward) % 4096u;
+			const uint16_t commandedStepPhase = (((PIDControlSignal < 0.0) ? (3 * 1024) : 1024) + adjustedStepPhase) % 4096u;
+			SetMotorPhase(commandedStepPhase, fabsf(PIDControlSignal) * (1.0/256.0));
+		}
+		else
+		{
+			// Driver is in assisted open loop mode
+			// In this mode the I term is not used and the A and V terms are independent of the loop time.
+			constexpr float scalingFactor = 100.0;
+			PIDVTerm = mParams.speed * Kv * scalingFactor;
+			PIDATerm = mParams.acceleration * Ka * fsquare(scalingFactor);
+			PIDControlSignal = min<float>(fabsf(PIDPTerm + PIDDTerm) + fabsf(PIDVTerm) + fabsf(PIDATerm), 256.0);
+
+			const uint16_t stepPhase = (uint16_t)llrintf(mParams.position * 1024.0);
+			const uint16_t commandedStepPhase = (stepPhase + phaseOffset) % 4096u;
+			const float currentFraction = holdCurrentFraction + (1.0 - holdCurrentFraction) * min<float>(PIDControlSignal * (1.0/256.0), 1.0);
+			SetMotorPhase(commandedStepPhase, currentFraction);
+		}
 	}
 }
 

@@ -343,6 +343,7 @@ public:
 	unsigned int GetMicrostepShift() const noexcept { return microstepShiftFactor; }
 	uint16_t GetMicrostepPosition() const noexcept { return readRegisters[ReadMsCnt] & 1023; }
 	void SetXdirect(uint32_t regVal) noexcept;
+	float GetCurrent() noexcept { return (float)motorCurrent; }
 #endif
 	bool SetDriverMode(unsigned int mode) noexcept;
 	DriverMode GetDriverMode() const noexcept;
@@ -1698,6 +1699,12 @@ unsigned int SmartDrivers::GetMicrostepping(size_t driver, bool& interpolation) 
 }
 
 #if SUPPORT_CLOSED_LOOP
+
+// Get the configured motor current in mA
+float SmartDrivers::GetCurrent(size_t driver) noexcept
+{
+	return (driver < numTmc51xxDrivers) ? driverStates[driver].GetCurrent() : 0.0;
+}
 
 // Get the amount we have to shift 1 left by to get the microstepping
 unsigned int SmartDrivers::GetMicrostepShift(size_t driver) noexcept

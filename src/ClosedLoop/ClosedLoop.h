@@ -153,6 +153,9 @@ private:
 
 	float 	errorThresholds[2];									// The error thresholds. [0] is pre-stall, [1] is stall
 
+	float torqueModeCurrentFraction = 0.0;				// when in torque mode, the requested torque
+	float torqueModeMaxSpeed = 0.0;						// when in torque mode, the maximum speed. Zero or negative means no limit.
+
 	// Working variables
 	// These variables are all used to calculate the required motor currents. They are declared here so they can be reported on by the data collection task
 	MotionParameters mParams;							// the target position, speed and acceleration
@@ -165,13 +168,14 @@ private:
 	float	PIDATerm;									// Acceleration feedforward term
 	float	PIDControlSignal;							// The overall signal from the PID controller
 
-	uint16_t phaseShift;								// The desired shift in the position of the motor, where 1024 = +1 full step
-
 	uint16_t desiredStepPhase = 0;						// The desired position of the motor
 	uint16_t phaseOffset = 0;							// The amount by which the phase should be offset when in semi-open-loop mode
 	int16_t coilA;										// The current to run through coil A
 	int16_t coilB;										// The current to run through coil A
 
+	bool	hasMovementCommand = false;					// true if a regular movement command is being executed
+	bool	inTorqueMode = false;
+	bool	torqueModeDirection;
 	bool 	stall = false;								// Has the closed loop error threshold been exceeded?
 	bool 	preStall = false;							// Has the closed loop warning threshold been exceeded?
 
