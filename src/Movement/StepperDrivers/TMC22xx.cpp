@@ -38,6 +38,7 @@
 #define RESET_MICROSTEP_COUNTERS_AT_INIT	0		// Duets use pulldown resistors on the step pins, so we don't get phantom microsteps at power up
 #define USE_FAST_CRC	1
 
+#include <RTOSIface/RTOSIface.h>
 #include <TaskPriorities.h>
 #include <Movement/Move.h>
 #include <Movement/StepTimer.h>
