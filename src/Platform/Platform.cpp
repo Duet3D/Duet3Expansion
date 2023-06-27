@@ -1956,19 +1956,24 @@ void Platform::InternalDisableDrive(size_t driver)
 
 void Platform::SetDriverIdle(size_t driver, uint16_t idlePercent)
 {
-	idleCurrentFactor[driver] = (float)idlePercent * 0.01;
-	driverStates[driver] = DriverStateControl::driverIdle;
-	if (idleCurrentFactor[driver] == 0.0)
+#if SUPPORT_CLOSED_LOOP
+	if (ClosedLoop::OkayToSetDriverIdle(driver))
+#endif
 	{
-		InternalDisableDrive(driver);
-	}
+		idleCurrentFactor[driver] = (float)idlePercent * 0.01;
+		driverStates[driver] = DriverStateControl::driverIdle;
+		if (idleCurrentFactor[driver] == 0.0)
+		{
+			InternalDisableDrive(driver);
+		}
 # if HAS_SMART_DRIVERS
-	else
-	{
-		driverAtIdleCurrent[driver] = true;
-		UpdateMotorCurrent(driver);
-	}
+		else
+		{
+			driverAtIdleCurrent[driver] = true;
+			UpdateMotorCurrent(driver);
+		}
 # endif
+	}
 }
 
 void Platform::DisableAllDrives()

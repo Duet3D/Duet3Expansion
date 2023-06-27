@@ -79,6 +79,7 @@ public:
 	bool SetClosedLoopEnabled(ClosedLoopMode mode, const StringRef &reply) noexcept;
 	void DriverSwitchedToClosedLoop() noexcept;
 	void ResetError() noexcept;
+	bool OkayToSetDriverIdle() const noexcept;
 	StandardDriverStatus ModifyDriverStatus(StandardDriverStatus originalStatus) noexcept;
 
 	// Methods called by the encoders
@@ -92,6 +93,7 @@ public:
 	static GCodeResult ProcessM569Point4(const CanMessageGeneric& msg, const StringRef& reply) noexcept;
 	static GCodeResult ProcessM569Point5(const CanMessageStartClosedLoopDataCollection&, const StringRef& reply) noexcept;
 	static GCodeResult ProcessM569Point6(const CanMessageGeneric& msg, const StringRef& reply) noexcept;
+	static bool OkayToSetDriverIdle(size_t driver) noexcept;
 	static void Diagnostics(const StringRef& reply) noexcept;
 
 	// Functions run by tasks
@@ -120,6 +122,7 @@ private:
 																// call this when we have stopped basic tuning movement and are ready to switch to closed loop control
 	void ReadyToCalibrate(bool store) noexcept;					// call this when encoder calibration has finished collecting data
 	void AdjustTargetMotorSteps(float amount) noexcept;			// called by tuning to execute a step
+	void ExitTorqueMode() noexcept;
 
 	// Methods in the tuning module
 	void PerformTune() noexcept;

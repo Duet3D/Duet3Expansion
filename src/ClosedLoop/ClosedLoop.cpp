@@ -196,7 +196,7 @@ void ClosedLoop::InitInstance() noexcept
 	dataTransmissionTask->Create(DataTransmissionTaskEntry, "CLSend", this, TaskPriority::ClosedLoopDataTransmission);
 }
 
-GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const StringRef &reply) noexcept
+/*static*/ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const StringRef &reply) noexcept
 {
 	CanMessageGenericParser parser(msg, M569Point1Params);
 	uint8_t drive;
@@ -404,14 +404,17 @@ GCodeResult ClosedLoop::InstanceProcessM569Point4(CanMessageGenericParser& parse
 		return GCodeResult::error;
 	}
 
-	if (requestedTorque == 0.0)					// if asking to exit torque mode
-	{
-		inTorqueMode = false;
-		return GCodeResult::ok;
-	}
-
 	{
 		TaskCriticalSectionLocker lock;
+
+		if (requestedTorque == 0.0)					// if asking to exit torque mode
+		{
+			if (inTorqueMode)
+			{
+				ExitTorqueMode();
+			}
+			return GCodeResult::ok;
+		}
 
 		if (!hasMovementCommand)
 		{
@@ -427,7 +430,7 @@ GCodeResult ClosedLoop::InstanceProcessM569Point4(CanMessageGenericParser& parse
 	return GCodeResult::error;
 }
 
-GCodeResult ClosedLoop::ProcessM569Point5(const CanMessageStartClosedLoopDataCollection& msg, const StringRef& reply) noexcept
+/*static*/ GCodeResult ClosedLoop::ProcessM569Point5(const CanMessageStartClosedLoopDataCollection& msg, const StringRef& reply) noexcept
 {
 	if (msg.deviceNumber >= NumDrivers)
 	{
@@ -490,7 +493,7 @@ GCodeResult ClosedLoop::InstanceProcessM569Point5(const CanMessageStartClosedLoo
 	return GCodeResult::ok;
 }
 
-GCodeResult ClosedLoop::ProcessM569Point6(const CanMessageGeneric &msg, const StringRef &reply) noexcept
+/*static*/ GCodeResult ClosedLoop::ProcessM569Point6(const CanMessageGeneric &msg, const StringRef &reply) noexcept
 {
 	CanMessageGenericParser parser(msg, M569Point6Params);
 	uint8_t drive;
@@ -580,6 +583,18 @@ GCodeResult ClosedLoop::InstanceProcessM569Point6(CanMessageGenericParser& parse
 
 	StartTuning(desiredTuning);
 	return GCodeResult::notFinished;
+}
+
+/*static*/ bool ClosedLoop::OkayToSetDriverIdle(size_t driver) noexcept
+{
+	const ClosedLoop *const p = GetClosedLoopInstance(driver);
+	return p == nullptr || p->OkayToSetDriverIdle();
+}
+
+bool ClosedLoop::OkayToSetDriverIdle() const noexcept
+{
+	//TODO should we forbid idle current in closed loop and assisted open loop modes too?
+	return !inTorqueMode;
 }
 
 // This is called when tuning has finished and the basicTuningDataReady flag is set
@@ -792,7 +807,10 @@ void ClosedLoop::InstanceControlLoop() noexcept
 		hasMovementCommand = moveInstance->GetCurrentMotion(0, loopCallTime, currentMode != ClosedLoopMode::open, mParams);
 		if (hasMovementCommand)
 		{
-			inTorqueMode = false;
+			if (inTorqueMode)
+			{
+				ExitTorqueMode();
+			}
 			if (samplingMode == RecordingMode::OnNextMove)
 			{
 				dataCollectionStartTicks = whenNextSampleDue = StepTimer::GetTimerTicks();
@@ -1099,12 +1117,15 @@ void ClosedLoop::ResetError() noexcept
 # if SINGLE_DRIVER
 	if (encoder != nullptr)
 	{
+		TaskCriticalSectionLocker lock;
+
 		// Set the target position to the current position
 		const bool err = encoder->TakeReading();
 		(void)err;		//TODO handle error
 		errorDerivativeFilter.Reset();
 		speedFilter.Reset();
 		SetTargetToCurrentPosition();
+		inTorqueMode = false;
 	}
 # else
 #  error Cannot support closed loop with the specified hardware
@@ -1202,6 +1223,16 @@ StandardDriverStatus ClosedLoop::ModifyDriverStatus(StandardDriverStatus origina
 	}
 
 	return originalStatus;
+}
+
+// Call this if (and only if) we are in torque mode and want to resume normal movement mode.
+// When not called from the closed loop/TMC task, task scheduling should be disabled before calling this.
+void ClosedLoop::ExitTorqueMode() noexcept
+{
+	errorDerivativeFilter.Reset();
+	speedFilter.Reset();
+	SetTargetToCurrentPosition();
+	inTorqueMode = false;
 }
 
 #endif
