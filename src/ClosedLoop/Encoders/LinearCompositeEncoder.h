@@ -10,7 +10,7 @@
 
 #include "Encoder.h"
 
-#if SUPPORT_CLOSED_LOOP && (defined(EXP1HCLv1_0) || defined(M23CL))
+#if SUPPORT_CLOSED_LOOP && SAME5x
 
 #include "QuadratureEncoderPdec.h"
 #include "AS5047D.h"

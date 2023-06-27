@@ -106,7 +106,7 @@ namespace Platform
 	bool isPrinting = false;
 	uint32_t realTime = 0;
 
-#if defined(EXP3HC) || defined(TOOL1LC) || defined(EXP1HCLv1_0)
+#if defined(EXP3HC) || defined(TOOL1LC) || defined(EXP1HCL)
 	static uint8_t boardVariant = 0;
 #endif
 
@@ -391,7 +391,7 @@ namespace Platform
 		NVIC_SetPriority(StepTcIRQn, NvicPriorityStep);
 # if defined(EXP3HC)
 		NVIC_SetPriority(CAN1_IRQn, NvicPriorityCan);
-# elif defined(EXP1HCLv1_0) || defined(M23CL)
+# elif defined(EXP1HCL) || defined(M23CL)
 		NVIC_SetPriority(CAN0_IRQn, NvicPriorityCan);
 # endif
 		// Set UART interrupt priority. Each SERCOM has up to 4 interrupts, numbered sequentially.
@@ -575,7 +575,7 @@ namespace Platform
 		return CanId::SammyC21DefaultAddress;
 #elif defined(EXP1XD)
 		return CanId::Exp1XDBoardDefaultAddress;
-#elif defined(EXP1HCLv1_0) || defined(M23CL)
+#elif defined(EXP1HCL) || defined(M23CL)
 		return CanId::Exp1HCEBoardDefaultAddress;
 #elif defined(ATECM)
 		return CanId::ATECMBoardDefaultAddress;
@@ -627,7 +627,7 @@ static void Platform::InitLeds()
 			IoPort::SetPinMode(pin, (LedActiveHighV10) ? OUTPUT_LOW : OUTPUT_HIGH);
 		}
 	}
-#elif !((defined(EXP1HCLv1_0) || defined(M23CL)) && defined(DEBUG))		// EXP1HCL has the LEDs connected to the SWD pins
+#elif !((defined(EXP1HCL) || defined(M23CL)) && defined(DEBUG))		// EXP1HCL has the LEDs connected to the SWD pins
 	for (Pin pin : LedPins)
 	{
 		IoPort::SetPinMode(pin, (LedActiveHigh) ? OUTPUT_LOW : OUTPUT_HIGH);
@@ -672,7 +672,7 @@ void Platform::Init()
 	// Tool board V1.1 has 10K lower resistor, 1K upper, so will read as high
 	pinMode(BoardTypePin, INPUT);
 	boardVariant = (digitalRead(BoardTypePin)) ? 1 : 0;
-#elif defined(EXP1HCLv1_0)
+#elif defined(EXP1HCL)
 	// EXP1HCL v1.0 has 10K lower resistor, 1K upper giving 3.0V on the board detect pin
 	// EXP1HCL v2.0 has 25.5K lower resistor, 16K upper giving 2.03V on the board detect pin
 	pinMode(BoardTypePin, AIN);
@@ -2050,7 +2050,7 @@ GCodeResult Platform::ProcessM569Point7(const CanMessageGeneric& msg, const Stri
 		seen = true;
 # if SUPPORT_BRAKE_PWM
 		brakePwmPorts[drive].SetFrequency(BrakePwmFrequency);
-#  if defined(EXP1HCLv1_0)
+#  if defined(EXP1HCL)
 		if (boardVariant >= 1)
 		{
 			brakeOnPins[drive] = (brakePwmPorts[drive].GetPin() == BrakePwmPin) ? BrakeOnPin : NoPin;
@@ -2422,7 +2422,7 @@ void Platform::AppendBoardAndFirmwareDetails(const StringRef& reply) noexcept
 	reply.lcatf("Duet " BOARD_TYPE_NAME " rev %s firmware version " VERSION " (%s%s)",
 				(boardVariant == 1) ? "1.1 or later" : "1.0 or earlier",
 				IsoDate, TIME_SUFFIX);
-#elif defined(EXP1HCLv1_0)
+#elif defined(EXP1HCL)
 	reply.lcatf("Duet " BOARD_TYPE_NAME " rev %s firmware version " VERSION " (%s%s)",
 				(boardVariant == 1) ? "2.0 or later" : "1.0a or earlier",
 				IsoDate, TIME_SUFFIX);
