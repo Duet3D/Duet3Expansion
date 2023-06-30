@@ -248,7 +248,7 @@ MoveSegment *AxisShaper::GetAccelerationSegments(const DDA& dda, PrepParams& par
 				const float segLen = (startSpeed + (0.5 * speedIncrease)) * segTime;
 				startDistance += segLen;
 				seg->SetNonLinear(segLen, segTime, b, c, acceleration);
-				if (i == 0)
+				if (startAccelSegs == nullptr)
 				{
 					startAccelSegs = seg;
 				}
@@ -359,7 +359,7 @@ MoveSegment *AxisShaper::GetDecelerationSegments(const DDA& dda, PrepParams& par
 				const float segLen = (startSpeed + (-0.5 * speedDecrease)) * segTime;
 				startDistance += segLen;
 				seg->SetNonLinear(segLen, segTime, b, c, -deceleration);
-				if (i == 0)
+				if (startDecelSegs == nullptr)
 				{
 					startDecelSegs = seg;
 				}

@@ -55,7 +55,7 @@ Licence: GPL
 #ifdef DEBUG
 constexpr uint32_t HeaterTaskStackWords = 230;					// task stack size in dwords
 #else
-constexpr uint32_t HeaterTaskStackWords = 200;					// task stack size in dwords
+constexpr uint32_t HeaterTaskStackWords = 180;					// task stack size in dwords
 #endif
 
 static Task<HeaterTaskStackWords> *heaterTask;

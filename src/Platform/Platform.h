@@ -35,12 +35,16 @@ class CanMessageDiagnosticTest;
 class CanMessageBuffer;
 
 #if HAS_CPU_TEMP_SENSOR
-constexpr size_t McuTempReadingsAveraged = 16;
+constexpr size_t McuTempReadingsAveraged = 8;
 #endif
 
 #if SUPPORT_THERMISTORS
 // Define the number of temperature readings we average for each thermistor. This should be a power of 2 and at least 4 ^ AD_OVERSAMPLE_BITS.
+#if SAMC21
+constexpr size_t ThermistorReadingsAveraged = 8;	// Reduced to save RAM. We already do x64 averaging in the ADC itself.
+#else
 constexpr size_t ThermistorReadingsAveraged = 64;
+#endif
 constexpr size_t ZProbeReadingsAveraged = 8;		// We average this number of readings with IR on, and the same number with IR off
 constexpr size_t VinReadingsAveraged = 8;
 

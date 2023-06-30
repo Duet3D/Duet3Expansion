@@ -54,7 +54,12 @@ unsigned int moveCompleteTimeoutErrs;
 unsigned int getCanMoveTimeoutErrs;
 #endif
 
+#if SAMC21 || RP2040
+constexpr size_t MoveTaskStackWords = 180;
+#else
 constexpr size_t MoveTaskStackWords = 220;
+#endif
+
 static Task<MoveTaskStackWords> *moveTask;
 
 extern "C" [[noreturn]] void MoveLoop(void * param) noexcept
@@ -280,15 +285,16 @@ void Move::StartNextMove(DDA *cdda, uint32_t startTime) noexcept
 
 void Move::Diagnostics(const StringRef& reply) noexcept
 {
-	reply.catf("Moves scheduled %" PRIu32 ", completed %" PRIu32 ", in progress %d, hiccups %" PRIu32 ", step errors %u, maxPrep %" PRIu32 ", maxOverdue %" PRIu32 ", maxInc %" PRIu32,
-					scheduledMoves, completedMoves, (int)(currentDda != nullptr), numHiccups, DDA::GetAndClearStepErrors(), maxPrepareTime, DDA::GetAndClearMaxTicksOverdue(), DDA::GetAndClearMaxOverdueIncrement());
+	reply.catf("Moves scheduled %" PRIu32 ", completed %" PRIu32 ", in progress %d, hiccups %" PRIu32 ", segs %u, step errors %u, maxPrep %" PRIu32 ", maxOverdue %" PRIu32 ", maxInc %" PRIu32,
+					scheduledMoves, completedMoves, (int)(currentDda != nullptr), numHiccups, MoveSegment::NumCreated(),
+					DDA::GetAndClearStepErrors(), maxPrepareTime, DDA::GetAndClearMaxTicksOverdue(), DDA::GetAndClearMaxOverdueIncrement());
 	numHiccups = 0;
 	maxPrepareTime = 0;
 #if 1	//debug
 	reply.catf(", mcErrs %u, gcmErrs %u", moveCompleteTimeoutErrs, getCanMoveTimeoutErrs);
 #endif
 #if 1	//debug
-	reply.catf(", ebfmin %.2f, ebfmax %.2f", (double)minExtrusionPending, (double)maxExtrusionPending);
+	reply.catf(", ebfmin %.2f max %.2f", (double)minExtrusionPending, (double)maxExtrusionPending);
 	minExtrusionPending = maxExtrusionPending = 0.0;
 #endif
 }
