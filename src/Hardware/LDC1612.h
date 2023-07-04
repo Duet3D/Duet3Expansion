@@ -40,7 +40,7 @@ private:
 	static constexpr float DefaultCapacitance = 100.0;				// Seeed Grove 2-channel inductive sensor
 	static constexpr uint16_t DefaultLCStabilizeTime = 100;			// in microseconds
 	static constexpr uint16_t DefaultConversionTime = 500;			// in microseconds
-	static constexpr uint16_t DefaultDriveCurrentVal = 12;			// current setting for Seeed LDC1612 board with no target in range
+	static constexpr uint16_t DefaultDriveCurrentVal = 13;			// current setting for Seeed LDC1612 board on toolchanger with flex bed plate at Z=1mm
 
 	enum class LDCRegister : uint8_t
 	{
