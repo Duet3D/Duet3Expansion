@@ -195,11 +195,21 @@ constexpr PinDescription PinTable[] =
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		8,	"pb08"		},	// PB08
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		9,	"!^button0"	},	// PB09 button recognised by bootloader
 	// PB22/23 are used for CAN0, PB10/11 for CAN1
+
+	// Virtual pins
+#if SUPPORT_LIS3DH
+	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,	Nx,	"i2c.lis3dh"		},	// LIS3DH sensor connected via I2C
+#endif
+#if SUPPORT_LDC1612
+	{ TcOutput::none,	TccOutput::none,	AdcInput::ldc1612,	AdcInput::none,		SercomIo::none,		SercomIo::none,	Nx,	"i2c.ldc1612"		},	// LDC1612 sensor connected via I2C
+#endif
 };
 
-static constexpr size_t NumPins = ARRAY_SIZE(PinTable);
-static constexpr size_t NumRealPins = 32 + 10;			// 32 pins on port A (some missing), only PB08 and PB09 are brought out on this board
-static_assert(NumPins == NumRealPins);					// no virtual pins
+constexpr size_t NumPins = ARRAY_SIZE(PinTable);
+constexpr size_t NumRealPins = 32 + 10;			// 32 pins on port A (some missing), only PB08 and PB09 are brought out on this board
+constexpr size_t NumVirtualPins = SUPPORT_LIS3DH + SUPPORT_LDC1612;
+
+static_assert(NumPins == NumRealPins + NumVirtualPins);
 
 // Timer/counter used to generate step pulses and other sub-millisecond timings
 TcCount32 * const StepTc = &(TC2->COUNT32);
