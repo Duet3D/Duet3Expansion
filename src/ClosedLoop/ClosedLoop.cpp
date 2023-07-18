@@ -279,9 +279,9 @@ GCodeResult ClosedLoop::InstanceProcessM569Point1(CanMessageGenericParser& parse
 		reply.copy("Error threshold value must nor be less than zero");
 		return GCodeResult::error;
 	}
-	if (seenC && tempCPR < 4 * tempStepsPerRev && tempEncoderType != EncoderType::linearComposite)
+	if (seenC && tempCPR < 2 * tempStepsPerRev && tempEncoderType != EncoderType::linearComposite)
 	{
-		reply.copy("Encoder counts/rev must be at least four times steps/rev");
+		reply.copy("Encoder counts/rev must be at least two times steps/rev");
 		return GCodeResult::error;
 	}
 	if (seenQ && tempTorquePerAmp <= 0.0)
