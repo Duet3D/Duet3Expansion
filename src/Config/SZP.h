@@ -102,8 +102,8 @@ constexpr PinDescription PinTable[] =
 	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_7,	AdcInput::sdadc_0,	SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA07 Temp0
 	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_8,	AdcInput::none,		SercomIo::none,		SercomIo::sercom2d,	Nx,	nullptr			},	// PA08 UART Tx
 	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_9,	AdcInput::none,		SercomIo::sercom2d,	SercomIo::none,		9,	nullptr			},	// PA09 UART Rx
-	{ TcOutput::none,	TccOutput::tcc0_2F,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		10,	"pa10"			},	// PA10 test pad
-	{ TcOutput::none,	TccOutput::tcc1_1E,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		11,	"pa11"			},	// PA11 test pad
+	{ TcOutput::none,	TccOutput::tcc0_2F,	AdcInput::adc0_10,	AdcInput::none,		SercomIo::none,		SercomIo::none,		10,	"pa10"			},	// PA10 test pad
+	{ TcOutput::none,	TccOutput::tcc1_1E,	AdcInput::adc0_11,	AdcInput::none,		SercomIo::none,		SercomIo::none,		11,	"pa11"			},	// PA11 test pad
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr 		},	// PA12 unused (not on SAMC21E)
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA13 unused (not on SAMC21E)
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA14 crystal
