@@ -45,6 +45,9 @@ public:
 	// Return the type of this sensor
 	unsigned int GetType() const noexcept { return type; }
 
+	// Return the enable state of this sensor
+	uint8_t GetEnableMode() const noexcept { return enableMode; }
+
 	// Static initialisation
 	static void InitStatic() noexcept;
 
@@ -112,6 +115,7 @@ private:
 	IoPort port;
 	uint8_t driver;
 
+	uint8_t enableMode;													// 0 = disabled, 1 = enabled when SD card printing, 2 = always enabled
 	bool isrWasPrinting;
 	bool haveIsrStepsCommanded;
 	FilamentSensorStatus lastStatus;

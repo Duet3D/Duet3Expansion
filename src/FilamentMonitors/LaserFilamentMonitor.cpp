@@ -23,7 +23,7 @@ LaserFilamentMonitor::LaserFilamentMonitor(unsigned int extruder, unsigned int m
 	: Duet3DFilamentMonitor(extruder, monitorType),
 	  calibrationFactor(1.0),
 	  minMovementAllowed(DefaultMinMovementAllowed), maxMovementAllowed(DefaultMaxMovementAllowed),
-	  minimumExtrusionCheckLength(DefaultMinimumExtrusionCheckLength), comparisonEnabled(false), checkNonPrintingMoves(false)
+	  minimumExtrusionCheckLength(DefaultMinimumExtrusionCheckLength), checkNonPrintingMoves(false)
 {
 	switchOpenMask = (monitorType == 6) ? TypeLaserSwitchOpenBitMask : 0;
 	Init();
@@ -98,12 +98,6 @@ GCodeResult LaserFilamentMonitor::Configure(const CanMessageGenericParser& parse
 		}
 
 		uint16_t temp;
-		if (parser.GetUintParam('S', temp))
-		{
-			seen = true;
-			comparisonEnabled = (temp > 0);
-		}
-
 		if (parser.GetUintParam('A', temp))
 		{
 			seen = true;
@@ -115,7 +109,7 @@ GCodeResult LaserFilamentMonitor::Configure(const CanMessageGenericParser& parse
 			reply.printf("Duet3D laser filament monitor v%u%s on pin ", version, (switchOpenMask != 0) ? " with switch" : "");
 			GetPort().AppendPinName(reply);
 			reply.catf(", %s, allow %ld%% to %ld%%, check %s moves every %.1fmm, calibration factor %.3f, ",
-						(comparisonEnabled) ? "enabled" : "disabled",
+						(GetEnableMode() != 0) ? "enabled" : "disabled",
 						ConvertToPercent(minMovementAllowed),
 						ConvertToPercent(maxMovementAllowed),
 						(checkNonPrintingMoves) ? "all" : "printing",
@@ -326,7 +320,7 @@ FilamentSensorStatus LaserFilamentMonitor::Check(bool isPrinting, bool fromIsr, 
 		extrusionCommandedThisSegment = extrusionCommandedSinceLastSync = movementMeasuredThisSegment = movementMeasuredSinceLastSync = 0.0;
 	}
 
-	return (comparisonEnabled) ? ret : FilamentSensorStatus::ok;
+	return (GetEnableMode() != 0) ? ret : FilamentSensorStatus::ok;
 }
 
 // Compare the amount commanded with the amount of extrusion measured, and set up for the next comparison
@@ -359,7 +353,7 @@ FilamentSensorStatus LaserFilamentMonitor::CheckFilament(float amountCommanded, 
 				totalMovementMeasured = -totalMovementMeasured;
 			}
 			minMovementRatio = maxMovementRatio = totalMovementMeasured/totalExtrusionCommanded;
-			if (comparisonEnabled)
+			if (GetEnableMode() != 0)
 			{
 				if (minMovementRatio < minMovementAllowed)
 				{
@@ -391,7 +385,7 @@ FilamentSensorStatus LaserFilamentMonitor::CheckFilament(float amountCommanded, 
 			{
 				minMovementRatio = ratio;
 			}
-			if (comparisonEnabled)
+			if (GetEnableMode() != 0)
 			{
 				if (ratio < minMovementAllowed)
 				{
@@ -415,7 +409,7 @@ FilamentSensorStatus LaserFilamentMonitor::Clear() noexcept
 	Reset();											// call this first so that haveStartBitData and synced are false when we call HandleIncomingData
 	HandleIncomingData();								// to keep the diagnostics up to date
 
-	return (!comparisonEnabled) ? FilamentSensorStatus::ok
+	return (GetEnableMode() == 0) ? FilamentSensorStatus::ok
 			: (!dataReceived) ? FilamentSensorStatus::noDataReceived
 				: (sensorError) ? FilamentSensorStatus::sensorError
 					: ((sensorValue & switchOpenMask) != 0) ? FilamentSensorStatus::noFilament

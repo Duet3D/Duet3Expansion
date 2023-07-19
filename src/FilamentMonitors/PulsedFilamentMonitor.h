@@ -42,7 +42,6 @@ private:
 	float mmPerPulse;
 	float minMovementAllowed, maxMovementAllowed;
 	float minimumExtrusionCheckLength;
-	bool comparisonEnabled;
 
 	// Other data
 	uint32_t sensorValue;									// how many pulses received

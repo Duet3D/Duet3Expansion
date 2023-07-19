@@ -64,7 +64,6 @@ private:
 	float mmPerRev;
 	float minMovementAllowed, maxMovementAllowed;
 	float minimumExtrusionCheckLength;
-	bool comparisonEnabled;
 	bool checkNonPrintingMoves;
 
 	// Other data

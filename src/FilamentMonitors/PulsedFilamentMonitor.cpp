@@ -23,7 +23,7 @@ PulsedFilamentMonitor::PulsedFilamentMonitor(unsigned int extruder, unsigned int
 	: FilamentMonitor(extruder, monitorType),
 	  mmPerPulse(DefaultMmPerPulse),
 	  minMovementAllowed(DefaultMinMovementAllowed), maxMovementAllowed(DefaultMaxMovementAllowed),
-	  minimumExtrusionCheckLength(DefaultMinimumExtrusionCheckLength), comparisonEnabled(false)
+	  minimumExtrusionCheckLength(DefaultMinimumExtrusionCheckLength)
 {
 	Init();
 }
@@ -91,13 +91,6 @@ GCodeResult PulsedFilamentMonitor::Configure(const CanMessageGenericParser& pars
 			}
 		}
 
-		uint16_t temp;
-		if (parser.GetUintParam('S', temp))
-		{
-			seen = true;
-			comparisonEnabled = (temp > 0);
-		}
-
 		if (seen)
 		{
 			Init();
@@ -107,7 +100,7 @@ GCodeResult PulsedFilamentMonitor::Configure(const CanMessageGenericParser& pars
 			reply.copy("Pulse-type filament monitor on pin ");
 			GetPort().AppendPinName(reply);
 			reply.catf(", %s, sensitivity %.3fmm/pulse, allowed movement %ld%% to %ld%%, check every %.1fmm, ",
-						(comparisonEnabled) ? "enabled" : "disabled",
+						(GetEnableMode() != 0) ? "enabled" : "disabled",
 						(double)mmPerPulse,
 						ConvertToPercent(minMovementAllowed),
 						ConvertToPercent(maxMovementAllowed),
@@ -214,7 +207,7 @@ FilamentSensorStatus PulsedFilamentMonitor::Check(bool isPrinting, bool fromIsr,
 		extrusionCommandedThisSegment = extrusionCommandedSinceLastSync = movementMeasuredThisSegment = movementMeasuredSinceLastSync = 0.0;
 	}
 
-	return (comparisonEnabled) ? ret : FilamentSensorStatus::ok;
+	return (GetEnableMode() != 0) ? ret : FilamentSensorStatus::ok;
 }
 
 // Compare the amount commanded with the amount of extrusion measured, and set up for the next comparison
@@ -236,7 +229,7 @@ FilamentSensorStatus PulsedFilamentMonitor::CheckFilament(float amountCommanded,
 		comparisonStarted = true;
 		calibrationStarted = false;
 	}
-	else if (comparisonEnabled)
+	else if (GetEnableMode() != 0)
 	{
 		const float minExtrusionExpected = (amountCommanded >= 0.0)
 											 ? amountCommanded * minMovementAllowed

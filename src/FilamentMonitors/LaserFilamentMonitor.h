@@ -76,7 +76,6 @@ private:
 	float calibrationFactor;
 	float minMovementAllowed, maxMovementAllowed;
 	float minimumExtrusionCheckLength;
-	bool comparisonEnabled;
 	bool checkNonPrintingMoves;
 
 	// Other data

@@ -28,7 +28,6 @@ private:
 
 	bool highWhenNoFilament;
 	bool filamentPresent;
-	bool enabled;
 };
 
 #endif

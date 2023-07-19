@@ -14,7 +14,7 @@
 #include <CanMessageGenericParser.h>
 
 SimpleFilamentMonitor::SimpleFilamentMonitor(unsigned int extruder, unsigned int monitorType) noexcept
-	: FilamentMonitor(extruder, monitorType), highWhenNoFilament(monitorType == 2), filamentPresent(false), enabled(false)
+	: FilamentMonitor(extruder, monitorType), highWhenNoFilament(monitorType == 2), filamentPresent(false)
 {
 }
 
@@ -25,14 +25,6 @@ GCodeResult SimpleFilamentMonitor::Configure(const CanMessageGenericParser& pars
 	const GCodeResult rslt = CommonConfigure(parser, reply, InterruptMode::none, seen);
 	if (Succeeded(rslt))
 	{
-		uint16_t temp;
-		if (parser.GetUintParam('S', temp))
-		{
-			seen = true;
-			enabled = (temp > 0);
-		}
-
-
 		if (seen)
 		{
 			Check(false, false, 0, 0.0);
@@ -42,7 +34,7 @@ GCodeResult SimpleFilamentMonitor::Configure(const CanMessageGenericParser& pars
 			reply.copy("Simple filament sensor on pin ");
 			GetPort().AppendPinName(reply);
 			reply.catf(", %s, output %s when no filament, filament present: %s",
-						(enabled) ? "enabled" : "disabled",
+						(GetEnableMode() != 0) ? "enabled" : "disabled",
 						(highWhenNoFilament) ? "high" : "low",
 						(filamentPresent) ? "yes" : "no");
 		}
@@ -70,14 +62,14 @@ void SimpleFilamentMonitor::Poll() noexcept
 FilamentSensorStatus SimpleFilamentMonitor::Check(bool isPrinting, bool fromIsr, uint32_t isrMillis, float filamentConsumed) noexcept
 {
 	Poll();
-	return (!enabled || filamentPresent) ? FilamentSensorStatus::ok : FilamentSensorStatus::noFilament;
+	return (GetEnableMode() == 0 || filamentPresent) ? FilamentSensorStatus::ok : FilamentSensorStatus::noFilament;
 }
 
 // Clear the measurement state - called when we are not printing a file. Return the present/not present status if available.
 FilamentSensorStatus SimpleFilamentMonitor::Clear() noexcept
 {
 	Poll();
-	return (!enabled || filamentPresent) ? FilamentSensorStatus::ok : FilamentSensorStatus::noFilament;
+	return (GetEnableMode() == 0 || filamentPresent) ? FilamentSensorStatus::ok : FilamentSensorStatus::noFilament;
 }
 
 // Print diagnostic info for this sensor

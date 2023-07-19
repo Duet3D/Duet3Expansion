@@ -30,7 +30,7 @@ uint32_t FilamentMonitor::minPollTime = 0xFFFFFFFF, FilamentMonitor::maxPollTime
 
 // Constructor
 FilamentMonitor::FilamentMonitor(uint8_t p_driver, unsigned int t) noexcept
-	: type(t), driver(p_driver), lastStatus(FilamentSensorStatus::noDataReceived)
+	: type(t), driver(p_driver), enableMode(0), lastStatus(FilamentSensorStatus::noDataReceived)
 {
 }
 
@@ -51,6 +51,15 @@ void FilamentMonitor::Disable() noexcept
 // For a remote filament monitor, this does the full configuration or query of the remote object instead, and we always return seen true because we don't need to report local status.
 GCodeResult FilamentMonitor::CommonConfigure(const CanMessageGenericParser& parser, const StringRef& reply, InterruptMode interruptMode, bool& seen) noexcept
 {
+	if (parser.GetUintParam('S', enableMode))
+	{
+		seen = true;
+		if (enableMode > 2)
+		{
+			enableMode = 2;
+		}
+	}
+
 	String<StringLength20> portName;
 	if (parser.GetStringParam('C', portName.GetRef()))
 	{

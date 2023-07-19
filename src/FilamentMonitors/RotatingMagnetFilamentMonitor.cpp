@@ -23,7 +23,7 @@ RotatingMagnetFilamentMonitor::RotatingMagnetFilamentMonitor(unsigned int extrud
 	: Duet3DFilamentMonitor(extruder, monitorType),
 	  mmPerRev(DefaultMmPerRev),
 	  minMovementAllowed(DefaultMinMovementAllowed), maxMovementAllowed(DefaultMaxMovementAllowed),
-	  minimumExtrusionCheckLength(DefaultMinimumExtrusionCheckLength), comparisonEnabled(false), checkNonPrintingMoves(false)
+	  minimumExtrusionCheckLength(DefaultMinimumExtrusionCheckLength), checkNonPrintingMoves(false)
 {
 	switchOpenMask = (monitorType == 4) ? TypeMagnetV1SwitchOpenMask : 0;
 	Init();
@@ -100,12 +100,6 @@ GCodeResult RotatingMagnetFilamentMonitor::Configure(const CanMessageGenericPars
 		}
 
 		uint16_t temp;
-		if (parser.GetUintParam('S', temp))
-		{
-			seen = true;
-			comparisonEnabled = (temp > 0);
-		}
-
 		if (parser.GetUintParam('A', temp))
 		{
 			seen = true;
@@ -117,7 +111,7 @@ GCodeResult RotatingMagnetFilamentMonitor::Configure(const CanMessageGenericPars
 			reply.printf("Duet3D rotating magnet filament monitor v%u%s on pin ", version, (switchOpenMask != 0) ? " with switch" : "");
 			GetPort().AppendPinName(reply);
 			reply.catf(", %s, sensitivity %.2fmm/rev, allow %ld%% to %ld%%, check %s moves every %.1fmm, ",
-						(comparisonEnabled) ? "enabled" : "disabled",
+						(GetEnableMode() != 0) ? "enabled" : "disabled",
 						(double)mmPerRev,
 						ConvertToPercent(minMovementAllowed),
 						ConvertToPercent(maxMovementAllowed),
@@ -364,7 +358,7 @@ FilamentSensorStatus RotatingMagnetFilamentMonitor::Check(bool isPrinting, bool 
 		extrusionCommandedThisSegment = extrusionCommandedSinceLastSync = movementMeasuredThisSegment = movementMeasuredSinceLastSync = 0.0;
 	}
 
-	return (comparisonEnabled) ? ret : FilamentSensorStatus::ok;
+	return (GetEnableMode() != 0) ? ret : FilamentSensorStatus::ok;
 }
 
 // Compare the amount commanded with the amount of extrusion measured, and set up for the next comparison
@@ -398,7 +392,7 @@ FilamentSensorStatus RotatingMagnetFilamentMonitor::CheckFilament(float amountCo
 			float ratio = totalMovementMeasured/totalExtrusionCommanded;
 			minMovementRatio = maxMovementRatio = ratio;
 
-			if (comparisonEnabled)
+			if (GetEnableMode() != 0)
 			{
 				ratio *= mmPerRev;
 				if (ratio < minMovementAllowed)
@@ -432,7 +426,7 @@ FilamentSensorStatus RotatingMagnetFilamentMonitor::CheckFilament(float amountCo
 				minMovementRatio = ratio;
 			}
 
-			if (comparisonEnabled)
+			if (GetEnableMode() != 0)
 			{
 				ratio *= mmPerRev;
 				if (ratio < minMovementAllowed)
@@ -457,7 +451,7 @@ FilamentSensorStatus RotatingMagnetFilamentMonitor::Clear() noexcept
 	Reset();											// call this first so that haveStartBitData and synced are false when we call HandleIncomingData
 	HandleIncomingData();								// to keep the diagnostics up to date
 
-	return (!comparisonEnabled) ? FilamentSensorStatus::ok
+	return (GetEnableMode() == 0) ? FilamentSensorStatus::ok
 			: (!dataReceived) ? FilamentSensorStatus::noDataReceived
 				: (sensorError) ? FilamentSensorStatus::sensorError
 					: ((sensorValue & switchOpenMask) != 0) ? FilamentSensorStatus::noFilament
