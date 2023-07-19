@@ -31,6 +31,8 @@
 # include "Fly36_RRF.h"
 #elif defined(M23CL)
 # include "M23CL.h"
+#elif defined(SZP)
+# include "SZP.h"
 #else
 # error Board type not defined
 #endif

@@ -581,6 +581,8 @@ namespace Platform
 		return CanId::ATECMBoardDefaultAddress;
 #elif defined(ATEIO)
 		return CanId::ATEIOBoardDefaultAddress;
+#elif defined(SZP)
+		return CanId::SZPDefaultAddress;
 #else
 # 	 error Unknown board
 #endif
@@ -627,7 +629,7 @@ static void Platform::InitLeds()
 			IoPort::SetPinMode(pin, (LedActiveHighV10) ? OUTPUT_LOW : OUTPUT_HIGH);
 		}
 	}
-#elif !((defined(EXP1HCL) || defined(M23CL)) && defined(DEBUG))		// EXP1HCL has the LEDs connected to the SWD pins
+#elif !((defined(EXP1HCL) || defined(M23CL) || defined(SZP)) && defined(DEBUG))		// EXP1HCL has the LEDs connected to the SWD pins
 	for (Pin pin : LedPins)
 	{
 		IoPort::SetPinMode(pin, (LedActiveHigh) ? OUTPUT_LOW : OUTPUT_HIGH);
@@ -787,7 +789,9 @@ void Platform::Init()
 # if SAMC21 && SUPPORT_SDADC
 	// Set up the SDADC input filters too (temp0 and Vref)
 	SetupThermistorFilter(TempSensePins[0], SdAdcTemp0FilterIndex, true);
+#  if HAS_VREF_MONITOR
 	SetupThermistorFilter(VrefPin, SdAdcVrefFilterIndex, true);
+#  endif
 # endif
 
 	// Set up the thermistor filters
