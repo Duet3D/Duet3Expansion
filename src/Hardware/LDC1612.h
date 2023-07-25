@@ -18,7 +18,7 @@
 class LDC1612 : public SharedI2CClient
 {
 public:
-	LDC1612(SharedI2CMaster& dev, uint16_t i2cAddress = DefaultI2cAddress) noexcept;
+	LDC1612(SharedI2CMaster& dev, uint16_t i2cAddress = LDC1612_I2cAddress) noexcept;
 	~LDC1612() noexcept {}
 
 	// Do a quick test to check whether the accelerometer is present, returning true if it is
@@ -35,7 +35,6 @@ private:
 	static constexpr uint16_t ClockDivisor = 1;						// The divisor we use for the clock. Values greater than 1 are needed only for very low resonant frequencies.
 	static constexpr float FRef = ClockFrequency/ClockDivisor;
 	static constexpr unsigned int NumChannels = 2;
-	static constexpr uint16_t DefaultI2cAddress = 0x2B;
 	static constexpr float DefaultInductance = 18.147;				// Seeed Grove 2-channel inductive sensor, double sided 20-turn 16mm coil
 	static constexpr float DefaultCapacitance = 100.0;				// Seeed Grove 2-channel inductive sensor
 	static constexpr uint16_t DefaultLCStabilizeTime = 100;			// in microseconds
