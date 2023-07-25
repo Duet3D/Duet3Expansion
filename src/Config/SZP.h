@@ -42,7 +42,7 @@
 #define USE_MPU					0
 #define USE_CACHE				0
 
-#define DIAG_SERCOM_NUMBER		4		// which SERCOM device we use for debugging output
+#define DIAG_SERCOM_NUMBER		0		// which SERCOM device we use for debugging output
 
 constexpr bool UseAlternateCanPins = false;
 
@@ -53,11 +53,15 @@ constexpr float DefaultThermistorSeriesR = 2200.0;
 
 constexpr Pin BoardTypePin = PortAPin(5);
 
-constexpr Pin VinMonitorPin = PortAPin(8);
-constexpr float VinDividerRatio = (60.4 + 4.7)/4.7;
+constexpr Pin VinMonitorPin = PortAPin(10);
+constexpr float VinDividerRatio = (10.0 + 4.7)/4.7;
 constexpr float VinMonitorVoltageRange = VinDividerRatio * 2.5;				// we use a 2.5V voltage reference
 
 constexpr Pin TempSensePins[NumThermistorInputs] = { PortAPin(7) };
+
+// Pins for future analog mode
+constexpr Pin AnalogModeSelectPin = PortAPin(27);
+constexpr Pin AnalogModeOutputPin = PortAPin(2);
 
 // Diagnostic LEDs
 constexpr Pin LedPins[] = { PortAPin(30), PortAPin(31) };
@@ -79,12 +83,13 @@ constexpr GpioPinFunction I2CSCLPinPeriphMode = GpioPinFunction::C;
 
 #define ACCELEROMETER_USES_SPI			(0)					// 0 if the accelerometer is connected via I2C, 1 if via SPI
 constexpr bool Lis3dhAddressLsb = true;
-constexpr Pin Lis3dhInt1Pin = PortAPin(27);
+constexpr Pin Lis3dhInt1Pin = PortAPin(19);
 
 #endif
 
 #if SUPPORT_LDC1612
 constexpr Pin LDC1612ClockGenPin = PortAPin(23);
+constexpr Pin LDC1612InterruptPin = PortAPin(22);
 #endif
 
 // Table of pin functions that we are allowed to use
@@ -92,9 +97,9 @@ constexpr PinDescription PinTable[] =
 {
 	//	TC					TCC					ADC					SDADC				SERCOM in			SERCOM out	  Exint PinName
 	// Port A
-	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::sercom0d,	0,	"pa00"			},	// PA00 test pad
-	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::sercom0d,	SercomIo::none,		1,	"pa01"			},	// PA01 test pad
-	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_0,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA02 5V monitor
+	{ TcOutput::none,	TccOutput::tcc2_0E,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::sercom0d,	0,	"pa00"			},	// PA00 test pad
+	{ TcOutput::none,	TccOutput::tcc2_1E,	AdcInput::none,		AdcInput::none,		SercomIo::sercom0d,	SercomIo::none,		1,	"pa01"			},	// PA01 test pad
+	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_0,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA02 DAC out for analog mode
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx, nullptr			},	// PA03 VREFA for ADC, tied to +2.5V
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA04 VREFB for SDADC, tied to +2.5V
 	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_5,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA05 board type (analog)
@@ -102,7 +107,7 @@ constexpr PinDescription PinTable[] =
 	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_7,	AdcInput::sdadc_0,	SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA07 Temp0
 	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_8,	AdcInput::none,		SercomIo::none,		SercomIo::sercom2d,	Nx,	nullptr			},	// PA08 UART Tx
 	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_9,	AdcInput::none,		SercomIo::sercom2d,	SercomIo::none,		9,	nullptr			},	// PA09 UART Rx
-	{ TcOutput::none,	TccOutput::tcc0_2F,	AdcInput::adc0_10,	AdcInput::none,		SercomIo::none,		SercomIo::none,		10,	"pa10"			},	// PA10 test pad
+	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_10,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA10 5V monitor
 	{ TcOutput::none,	TccOutput::tcc1_1E,	AdcInput::adc0_11,	AdcInput::none,		SercomIo::none,		SercomIo::none,		11,	"pa11"			},	// PA11 test pad
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr 		},	// PA12 unused (not on SAMC21E)
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA13 unused (not on SAMC21E)
@@ -111,15 +116,15 @@ constexpr PinDescription PinTable[] =
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA16 SDA
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA17 SCL
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr 		},	// PA18 CAN reset jumper
-	{ TcOutput::tc4_1,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		3,	nullptr			},	// PA19 LDC interrupt
+	{ TcOutput::tc4_1,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		3,	nullptr			},	// PA19 accelerometer interrupt
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA20 unused (not on SAMC21E)
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA21 unused (not on SAMC21E)
-	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA22 mode select solder bridge
+	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		6,	nullptr			},	// PA22 LDC interrupt
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA23 GCLK to LDC1612
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA24 CAN0 Tx
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA25 CAN0 Rx
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA26 not on chip
-	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		15,	nullptr			},	// PA27 accelerometer interrupt
+	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA27 analog mode select pad
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		8,	"pa28"			},	// PA28 test pad
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA29 not on chip
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA30 swclk, also LED0
