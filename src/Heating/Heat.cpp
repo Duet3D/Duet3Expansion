@@ -49,14 +49,7 @@ Licence: GPL
 #include <Platform/Tasks.h>
 
 // The task stack size must be large enough for calls to debugPrintf when a heater fault occurs.
-// Currently (2020-12-03) it needs at least 144 words when handling a heater fault, if debugPrintf calls vuprintf but the underlying putchar function throws the character away.
-// We now avoid calling vuprintf from debugPrintf unless this is a debug build
-
-#ifdef DEBUG
 constexpr uint32_t HeaterTaskStackWords = 230;					// task stack size in dwords
-#else
-constexpr uint32_t HeaterTaskStackWords = 180;					// task stack size in dwords
-#endif
 
 static Task<HeaterTaskStackWords> *heaterTask;
 
