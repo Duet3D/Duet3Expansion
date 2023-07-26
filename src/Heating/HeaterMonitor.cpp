@@ -28,7 +28,9 @@ bool HeaterMonitor::Check(uint32_t maxBadTemperatureCount) noexcept
 			badTemperatureCount++;
 			if (badTemperatureCount > maxBadTemperatureCount)
 			{
+#ifdef DEBUG
 				debugPrintf("Temperature reading error on sensor %d\n", sensorNumber);
+#endif
 				return false;
 			}
 		}

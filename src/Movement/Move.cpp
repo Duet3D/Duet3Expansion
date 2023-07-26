@@ -173,10 +173,12 @@ void Move::StartNextMove(DDA *cdda, uint32_t startTime) noexcept
 				// Check for step errors and record/print them if we have any, before we lose the DMs
 				if (ddaRingCheckPointer->HasStepError())
 				{
+#ifdef DEBUG
 					if (Platform::Debug(moduleMove))
 					{
 						ddaRingCheckPointer->DebugPrintAll();
 					}
+#endif
 					Platform::LogError(ErrorCode::BadMove);
 				}
 

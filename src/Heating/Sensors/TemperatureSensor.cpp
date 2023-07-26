@@ -41,7 +41,9 @@ TemperatureError TemperatureSensor::GetLatestTemperature(float& t, uint8_t outpu
 	{
 		lastTemperature = BadErrorTemperature;
 		lastResult = TemperatureError::timeout;
+#ifdef DEBUG
 		debugPrintf("temp timeout on sensor %u\n", sensorNumber);
+#endif
 	}
 	t = lastTemperature;
 	return lastResult;

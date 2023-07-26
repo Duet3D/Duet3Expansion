@@ -683,7 +683,9 @@ CanMessageBuffer *CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf) no
 			break;
 
 		case CanMessageType::controlledStop:
+#ifdef DEBUG
 			debugPrintf("Unsupported CAN message type %u\n", (unsigned int)(buf->id.MsgType()));
+#endif
 			Platform::OnProcessingCanMessage();
 			break;
 
@@ -910,7 +912,9 @@ extern "C" [[noreturn]] void CanReceiverLoop(void *) noexcept
 			}
 			else
 			{
+#ifdef DEBUG
 				debugPrintf("CAN read err\n");
+#endif
 			}
 		}
 	}
