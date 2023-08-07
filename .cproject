@@ -605,18 +605,20 @@
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.cross.c.linker.1023918790" name="Cross GCC Linker" superClass="cdt.managedbuild.tool.gnu.cross.c.linker"/>
 							<tool id="cdt.managedbuild.tool.gnu.cross.cpp.linker.512558905" name="Cross G++ Linker" superClass="cdt.managedbuild.tool.gnu.cross.cpp.linker">
-								<option id="gnu.cpp.link.option.flags.151090548" name="Linker flags" superClass="gnu.cpp.link.option.flags" useByScannerDiscovery="false" value="-Os --specs=nano.specs -Wl,--gc-sections -Wl,--entry=Reset_Handler -Wl,--fatal-warnings -Wl,--no-warn-rwx-segment -mcpu=cortex-m0plus -T&quot;${workspace_loc:/${ProjName}/src/Hardware/SAME5x_C21/SAMC21/samc21g18a_flash_with_bootloader.ld}&quot; -Wl,-Map,&quot;${workspace_loc:/${ProjName}/${ConfigName}}/${BuildArtifactFileBaseName}.map&quot;,--cref" valueType="string"/>
+								<option id="gnu.cpp.link.option.flags.151090548" name="Linker flags" superClass="gnu.cpp.link.option.flags" useByScannerDiscovery="false" value="-Os --specs=nano.specs -Wl,--gc-sections -Wl,--entry=Reset_Handler -Wl,--fatal-warnings -Wl,--no-warn-rwx-segment -mcpu=cortex-m0plus -T&quot;${workspace_loc:/${ProjName}/src/Hardware/SAME5x_C21/SAMC21/samc21g18a_flash_with_bootloader.ld}&quot; -Wl,-Map,&quot;${workspace_loc:/${ProjName}/${ConfigName}}/${BuildArtifactFileBaseName}.map&quot;,--cref -Wl,-wrap,__aeabi_fadd -Wl,-wrap,__aeabi_fsub -Wl,-wrap,__aeabi_fmul -Wl,-wrap,__aeabi_fdiv" valueType="string"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.libs.1549060929" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" useByScannerDiscovery="false" valueType="libs">
 									<listOptionValue builtIn="false" value="RRFLibraries"/>
 									<listOptionValue builtIn="false" value="CoreN2G"/>
 									<listOptionValue builtIn="false" value="CANlib"/>
 									<listOptionValue builtIn="false" value="FreeRTOS"/>
+									<listOptionValue builtIn="false" value="Qfplib-M0-full"/>
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.paths.1448929044" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" useByScannerDiscovery="false" valueType="libPaths">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/SAMC21_CAN_RTOS}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CANlib/SAMC21_RTOS}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries/SAMC21_RTOS}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS/SAMC21}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/Qfplib-M0-full/SAMC21}&quot;"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.1712134473" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
@@ -735,18 +737,20 @@
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.cross.c.linker.469316158" name="Cross GCC Linker" superClass="cdt.managedbuild.tool.gnu.cross.c.linker"/>
 							<tool id="cdt.managedbuild.tool.gnu.cross.cpp.linker.365070906" name="Cross G++ Linker" superClass="cdt.managedbuild.tool.gnu.cross.cpp.linker">
-								<option id="gnu.cpp.link.option.flags.1371801510" name="Linker flags" superClass="gnu.cpp.link.option.flags" useByScannerDiscovery="false" value="-Os --specs=nano.specs -Wl,--gc-sections -Wl,--entry=Reset_Handler -Wl,--fatal-warnings -Wl,--no-warn-rwx-segment -mcpu=cortex-m0plus -T&quot;${workspace_loc:/${ProjName}/src/Hardware/SAME5x_C21/SAMC21/samc21g18a_flash.ld}&quot; -Wl,-Map,&quot;${workspace_loc:/${ProjName}/${ConfigName}}/${BuildArtifactFileBaseName}.map&quot;,--cref" valueType="string"/>
+								<option id="gnu.cpp.link.option.flags.1371801510" name="Linker flags" superClass="gnu.cpp.link.option.flags" useByScannerDiscovery="false" value="-Os --specs=nano.specs -Wl,--gc-sections -Wl,--entry=Reset_Handler -Wl,--fatal-warnings -Wl,--no-warn-rwx-segment -mcpu=cortex-m0plus -T&quot;${workspace_loc:/${ProjName}/src/Hardware/SAME5x_C21/SAMC21/samc21g18a_flash.ld}&quot; -Wl,-Map,&quot;${workspace_loc:/${ProjName}/${ConfigName}}/${BuildArtifactFileBaseName}.map&quot;,--cref -Wl,-wrap,__aeabi_fadd -Wl,-wrap,__aeabi_fsub -Wl,-wrap,__aeabi_fmul -Wl,-wrap,__aeabi_fdiv" valueType="string"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.libs.265949901" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" useByScannerDiscovery="false" valueType="libs">
 									<listOptionValue builtIn="false" value="RRFLibraries"/>
 									<listOptionValue builtIn="false" value="CoreN2G"/>
 									<listOptionValue builtIn="false" value="CANlib"/>
 									<listOptionValue builtIn="false" value="FreeRTOS"/>
+									<listOptionValue builtIn="false" value="Qfplib-M0-full"/>
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.paths.1828652557" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" useByScannerDiscovery="false" valueType="libPaths">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/SAMC21_CAN_RTOS_Debug}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CANlib/SAMC21_RTOS_Debug}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries/SAMC21_RTOS_Debug}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS/SAMC21_Debug}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/Qfplib-M0-full/SAMC21}&quot;"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.2102146645" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
@@ -863,18 +867,20 @@
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.cross.c.linker.2033624884" name="Cross GCC Linker" superClass="cdt.managedbuild.tool.gnu.cross.c.linker"/>
 							<tool id="cdt.managedbuild.tool.gnu.cross.cpp.linker.1769984346" name="Cross G++ Linker" superClass="cdt.managedbuild.tool.gnu.cross.cpp.linker">
-								<option id="gnu.cpp.link.option.flags.349160376" name="Linker flags" superClass="gnu.cpp.link.option.flags" useByScannerDiscovery="false" value="-Os --specs=nano.specs -Wl,--gc-sections -Wl,--entry=Reset_Handler -Wl,--fatal-warnings -Wl,--no-warn-rwx-segment -mcpu=cortex-m0plus -T&quot;${workspace_loc:/${ProjName}/src/Hardware/SAME5x_C21/SAMC21/samc21g18a_flash_with_bootloader.ld}&quot; -Wl,-Map,&quot;${workspace_loc:/${ProjName}/${ConfigName}}/${BuildArtifactFileBaseName}.map&quot;,--cref" valueType="string"/>
+								<option id="gnu.cpp.link.option.flags.349160376" name="Linker flags" superClass="gnu.cpp.link.option.flags" useByScannerDiscovery="false" value="-Os --specs=nano.specs -Wl,--gc-sections -Wl,--entry=Reset_Handler -Wl,--fatal-warnings -Wl,--no-warn-rwx-segment -mcpu=cortex-m0plus -T&quot;${workspace_loc:/${ProjName}/src/Hardware/SAME5x_C21/SAMC21/samc21g18a_flash_with_bootloader.ld}&quot; -Wl,-Map,&quot;${workspace_loc:/${ProjName}/${ConfigName}}/${BuildArtifactFileBaseName}.map&quot;,--cref -Wl,-wrap,__aeabi_fadd -Wl,-wrap,__aeabi_fsub -Wl,-wrap,__aeabi_fmul -Wl,-wrap,__aeabi_fdiv" valueType="string"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.libs.101705773" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" useByScannerDiscovery="false" valueType="libs">
 									<listOptionValue builtIn="false" value="RRFLibraries"/>
 									<listOptionValue builtIn="false" value="CoreN2G"/>
 									<listOptionValue builtIn="false" value="CANlib"/>
 									<listOptionValue builtIn="false" value="FreeRTOS"/>
+									<listOptionValue builtIn="false" value="Qfplib-M0-full"/>
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.paths.1557325032" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" useByScannerDiscovery="false" valueType="libPaths">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/SAMC21_CAN_RTOS}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CANlib/SAMC21_RTOS}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries/SAMC21_RTOS}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS/SAMC21}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/Qfplib-M0-full/SAMC21}&quot;"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.141529718" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
@@ -993,12 +999,13 @@
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.cross.c.linker.1193365049" name="Cross GCC Linker" superClass="cdt.managedbuild.tool.gnu.cross.c.linker"/>
 							<tool id="cdt.managedbuild.tool.gnu.cross.cpp.linker.2089456145" name="Cross G++ Linker" superClass="cdt.managedbuild.tool.gnu.cross.cpp.linker">
-								<option id="gnu.cpp.link.option.flags.429030561" name="Linker flags" superClass="gnu.cpp.link.option.flags" useByScannerDiscovery="false" value="-Os --specs=nano.specs -Wl,--gc-sections -Wl,--entry=Reset_Handler -Wl,--fatal-warnings -Wl,--no-warn-rwx-segment -mcpu=cortex-m0plus -T&quot;${workspace_loc:/${ProjName}/src/Hardware/SAME5x_C21/SAMC21/samc21g18a_flash.ld}&quot; -Wl,-Map,&quot;${workspace_loc:/${ProjName}/${ConfigName}}/${BuildArtifactFileBaseName}.map&quot;,--cref" valueType="string"/>
+								<option id="gnu.cpp.link.option.flags.429030561" name="Linker flags" superClass="gnu.cpp.link.option.flags" useByScannerDiscovery="false" value="-Os --specs=nano.specs -Wl,--gc-sections -Wl,--entry=Reset_Handler -Wl,--fatal-warnings -Wl,--no-warn-rwx-segment -mcpu=cortex-m0plus -T&quot;${workspace_loc:/${ProjName}/src/Hardware/SAME5x_C21/SAMC21/samc21g18a_flash.ld}&quot; -Wl,-Map,&quot;${workspace_loc:/${ProjName}/${ConfigName}}/${BuildArtifactFileBaseName}.map&quot;,--cref -Wl,-wrap,__aeabi_fadd -Wl,-wrap,__aeabi_fsub -Wl,-wrap,__aeabi_fmul -Wl,-wrap,__aeabi_fdiv" valueType="string"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.libs.1918705244" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" useByScannerDiscovery="false" valueType="libs">
-									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="CoreN2G"/>
-									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="CANlib"/>
-									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="RRFLibraries"/>
+									<listOptionValue builtIn="false" value="CoreN2G"/>
+									<listOptionValue builtIn="false" value="CANlib"/>
+									<listOptionValue builtIn="false" value="RRFLibraries"/>
 									<listOptionValue builtIn="false" value="FreeRTOS"/>
+									<listOptionValue builtIn="false" value="Qfplib-M0-full"/>
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.paths.17768924" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" useByScannerDiscovery="false" valueType="libPaths">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/SAMC21_CAN_RTOS_Debug}&quot;"/>
@@ -1006,6 +1013,7 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries/SAMC21_RTOS_Debug}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS/SAMC21}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/SAMC21_CAN_RTOS}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/Qfplib-M0-full/SAMC21}&quot;"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.341524677" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
@@ -1123,18 +1131,20 @@
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.cross.c.linker.1176445470" name="Cross GCC Linker" superClass="cdt.managedbuild.tool.gnu.cross.c.linker"/>
 							<tool id="cdt.managedbuild.tool.gnu.cross.cpp.linker.1239657820" name="Cross G++ Linker" superClass="cdt.managedbuild.tool.gnu.cross.cpp.linker">
-								<option id="gnu.cpp.link.option.flags.1281402622" name="Linker flags" superClass="gnu.cpp.link.option.flags" useByScannerDiscovery="false" value="-Os --specs=nano.specs -Wl,--gc-sections -Wl,--entry=Reset_Handler -Wl,--fatal-warnings -Wl,--no-warn-rwx-segment -mcpu=cortex-m0plus -T&quot;${workspace_loc:/${ProjName}/src/Hardware/SAME5x_C21/SAMC21/samc21g18a_flash_with_bootloader.ld}&quot; -Wl,-Map,&quot;${workspace_loc:/${ProjName}/${ConfigName}}/${BuildArtifactFileBaseName}.map&quot;,--cref" valueType="string"/>
+								<option id="gnu.cpp.link.option.flags.1281402622" name="Linker flags" superClass="gnu.cpp.link.option.flags" useByScannerDiscovery="false" value="-Os --specs=nano.specs -Wl,--gc-sections -Wl,--entry=Reset_Handler -Wl,--fatal-warnings -Wl,--no-warn-rwx-segment -mcpu=cortex-m0plus -T&quot;${workspace_loc:/${ProjName}/src/Hardware/SAME5x_C21/SAMC21/samc21g18a_flash_with_bootloader.ld}&quot; -Wl,-Map,&quot;${workspace_loc:/${ProjName}/${ConfigName}}/${BuildArtifactFileBaseName}.map&quot;,--cref -Wl,-wrap,__aeabi_fadd -Wl,-wrap,__aeabi_fsub -Wl,-wrap,__aeabi_fmul -Wl,-wrap,__aeabi_fdiv" valueType="string"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.libs.1331443711" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" useByScannerDiscovery="false" valueType="libs">
 									<listOptionValue builtIn="false" value="RRFLibraries"/>
 									<listOptionValue builtIn="false" value="CoreN2G"/>
 									<listOptionValue builtIn="false" value="CANlib"/>
 									<listOptionValue builtIn="false" value="FreeRTOS"/>
+									<listOptionValue builtIn="false" value="Qfplib-M0-full"/>
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.paths.244021745" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" useByScannerDiscovery="false" valueType="libPaths">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/SAMC21_CAN_RTOS}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CANlib/SAMC21_RTOS}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries/SAMC21_RTOS}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS/SAMC21}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/Qfplib-M0-full/SAMC21}&quot;"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.1974128868" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
@@ -1254,18 +1264,20 @@
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.cross.c.linker.462826476" name="Cross GCC Linker" superClass="cdt.managedbuild.tool.gnu.cross.c.linker"/>
 							<tool id="cdt.managedbuild.tool.gnu.cross.cpp.linker.189000951" name="Cross G++ Linker" superClass="cdt.managedbuild.tool.gnu.cross.cpp.linker">
-								<option id="gnu.cpp.link.option.flags.1085925844" name="Linker flags" superClass="gnu.cpp.link.option.flags" useByScannerDiscovery="false" value="-Os --specs=nano.specs -Wl,--gc-sections -Wl,--entry=Reset_Handler -Wl,--fatal-warnings -Wl,--no-warn-rwx-segment -mcpu=cortex-m0plus -T&quot;${workspace_loc:/${ProjName}/src/Hardware/SAME5x_C21/SAMC21/samc21g18a_flash.ld}&quot; -Wl,-Map,&quot;${workspace_loc:/${ProjName}/${ConfigName}}/${BuildArtifactFileBaseName}.map&quot;,--cref" valueType="string"/>
+								<option id="gnu.cpp.link.option.flags.1085925844" name="Linker flags" superClass="gnu.cpp.link.option.flags" useByScannerDiscovery="false" value="-Os --specs=nano.specs -Wl,--gc-sections -Wl,--entry=Reset_Handler -Wl,--fatal-warnings -Wl,--no-warn-rwx-segment -mcpu=cortex-m0plus -T&quot;${workspace_loc:/${ProjName}/src/Hardware/SAME5x_C21/SAMC21/samc21g18a_flash.ld}&quot; -Wl,-Map,&quot;${workspace_loc:/${ProjName}/${ConfigName}}/${BuildArtifactFileBaseName}.map&quot;,--cref -Wl,-wrap,__aeabi_fadd -Wl,-wrap,__aeabi_fsub -Wl,-wrap,__aeabi_fmul -Wl,-wrap,__aeabi_fdiv" valueType="string"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.libs.675643039" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" useByScannerDiscovery="false" valueType="libs">
 									<listOptionValue builtIn="false" value="RRFLibraries"/>
 									<listOptionValue builtIn="false" value="CoreN2G"/>
 									<listOptionValue builtIn="false" value="CANlib"/>
 									<listOptionValue builtIn="false" value="FreeRTOS"/>
+									<listOptionValue builtIn="false" value="Qfplib-M0-full"/>
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.paths.2141152215" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" useByScannerDiscovery="false" valueType="libPaths">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/SAMC21_CAN_RTOS_Debug}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CANlib/SAMC21_RTOS_Debug}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries/SAMC21_RTOS_Debug}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS/SAMC21_Debug}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/Qfplib-M0-full/SAMC21}&quot;"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.517789773" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
@@ -2515,18 +2527,20 @@
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.cross.c.linker.228665873" name="Cross GCC Linker" superClass="cdt.managedbuild.tool.gnu.cross.c.linker"/>
 							<tool id="cdt.managedbuild.tool.gnu.cross.cpp.linker.648489149" name="Cross G++ Linker" superClass="cdt.managedbuild.tool.gnu.cross.cpp.linker">
-								<option id="gnu.cpp.link.option.flags.1996870095" name="Linker flags" superClass="gnu.cpp.link.option.flags" useByScannerDiscovery="false" value="-Os --specs=nano.specs -Wl,--gc-sections -Wl,--entry=Reset_Handler -Wl,--fatal-warnings -Wl,--no-warn-rwx-segment -mcpu=cortex-m0plus -T&quot;${workspace_loc:/${ProjName}/src/Hardware/SAME5x_C21/SAMC21/samc21g18a_flash_with_bootloader.ld}&quot; -Wl,-Map,&quot;${workspace_loc:/${ProjName}/${ConfigName}}/${BuildArtifactFileBaseName}.map&quot;,--cref" valueType="string"/>
+								<option id="gnu.cpp.link.option.flags.1996870095" name="Linker flags" superClass="gnu.cpp.link.option.flags" useByScannerDiscovery="false" value="-Os --specs=nano.specs -Wl,--gc-sections -Wl,--entry=Reset_Handler -Wl,--fatal-warnings -Wl,--no-warn-rwx-segment -mcpu=cortex-m0plus -T&quot;${workspace_loc:/${ProjName}/src/Hardware/SAME5x_C21/SAMC21/samc21g18a_flash_with_bootloader.ld}&quot; -Wl,-Map,&quot;${workspace_loc:/${ProjName}/${ConfigName}}/${BuildArtifactFileBaseName}.map&quot;,--cref -Wl,-wrap,__aeabi_fadd -Wl,-wrap,__aeabi_fsub -Wl,-wrap,__aeabi_fmul -Wl,-wrap,__aeabi_fdiv" valueType="string"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.libs.962051576" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" useByScannerDiscovery="false" valueType="libs">
 									<listOptionValue builtIn="false" value="RRFLibraries"/>
 									<listOptionValue builtIn="false" value="CoreN2G"/>
 									<listOptionValue builtIn="false" value="CANlib"/>
 									<listOptionValue builtIn="false" value="FreeRTOS"/>
+									<listOptionValue builtIn="false" value="Qfplib-M0-full"/>
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.paths.2013822043" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" useByScannerDiscovery="false" valueType="libPaths">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CoreN2G/SAMC21_CAN_RTOS}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CANlib/SAMC21_RTOS}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/RRFLibraries/SAMC21_RTOS}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FreeRTOS/SAMC21}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/Qfplib-M0-full/SAMC21}&quot;"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.774726774" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
