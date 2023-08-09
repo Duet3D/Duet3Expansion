@@ -78,6 +78,10 @@ public:
 	bool ReadDigital() const noexcept;
 	uint32_t ReadAnalog() const noexcept;
 
+#if SUPPORT_LDC1612
+	bool IsLdc1612() const noexcept { return PinTable[pin].adc == AdcInput::ldc1612; }
+#endif
+
 	bool AttachInterrupt(StandardCallbackFunction callback, InterruptMode mode, CallbackParameter param) const noexcept;
 	void DetachInterrupt() const noexcept;
 	bool SetAnalogCallback(AnalogInCallbackFunction fn, CallbackParameter cbp, uint32_t ticksPerCall) noexcept;

@@ -73,24 +73,24 @@ bool LDC1612::CheckPresent() noexcept
 // Set the default configuration for a channel and enable it
 bool LDC1612::SetDefaultConfiguration(uint8_t channel, bool calibrationMode) noexcept
 {
-	uint16_t configRegVal = CFG_RP_OVERRIDE_EN | CFG_REF_CLK_SRC | CFG_RESERVED_BITS;
+	uint16_t configRegVal = CFG_REF_CLK_SRC | CFG_AUTO_AMP_DIS | CFG_RESERVED_BITS;
 	if (!calibrationMode)
 	{
-		configRegVal |= CFG_AUTO_AMP_DIS;
+		configRegVal |= CFG_RP_OVERRIDE_EN;
 	}
 	return UpdateConfiguration(configRegVal | CFG_SLEEP_MODE_EN)				// put the device in sleep mode
 		&& SetDivisors(channel)
 		&& SetLCStabilizeTime(channel, DefaultLCStabilizeTime)
 		&& SetConversionTime(channel, DefaultConversionTime)
-		&& SetDriverCurrent(channel, currentSetting[channel])
+		&& SetDriveCurrent(channel, currentSetting[channel])
 		&& SetMuxConfiguration(MUX_RESERVED_BITS | MUX_DEGLITCH_10MHZ)			// single conversion
 		&& SetErrorConfiguration(UR_ERR2OUT | OR_ERR2OUT | WD_ERR2OUT | AH_ERR2OUT | AL_ERR2OUT)
 		&& SetConversionOffset(channel, 0)
-		&& UpdateConfiguration(configRegVal | (channel << 14));			// this also takes the device out of sleep mode
+		&& UpdateConfiguration(configRegVal | (channel << 14));					// this also takes the device out of sleep mode
 }
 
 // Use the auto calibration function to establish the correct drive current
-bool LDC1612::CalibrateCurrent(uint8_t channel) noexcept
+bool LDC1612::CalibrateDriveCurrent(uint8_t channel) noexcept
 {
 	bool ok = SetDefaultConfiguration(channel, true);
 	if (ok)
@@ -183,9 +183,15 @@ bool LDC1612::Reset() noexcept
 /** @brief set drive current of sensor.
     @param result The value to be set.
  * */
-bool LDC1612::SetDriverCurrent(uint8_t channel, uint16_t value) noexcept
+bool LDC1612::SetDriveCurrent(uint8_t channel, uint16_t value) noexcept
 {
-	return Write16bits((LDCRegister)((uint8_t)LDCRegister::SET_DRIVER_CURRENT_REG + channel), value << 11);
+	value &= 0x1F;
+	const bool ok = Write16bits((LDCRegister)((uint8_t)LDCRegister::SET_DRIVER_CURRENT_REG + channel), value << 11);
+	if (ok)
+	{
+		currentSetting[channel] = value;
+	}
+	return ok;
 }
 
 bool LDC1612::ReadInitCurrent(uint8_t channel, uint16_t& value) noexcept
@@ -267,7 +273,6 @@ void LDC1612::AppendDiagnostics(const StringRef& reply) noexcept
 				reply.cat(", amplitude error");
 			}
 		}
-		CalibrateCurrent(0);
 	}
 	else
 	{

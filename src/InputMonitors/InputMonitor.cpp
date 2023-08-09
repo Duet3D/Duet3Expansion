@@ -12,6 +12,10 @@
 #include <CAN/CanInterface.h>
 #include <CanMessageBuffer.h>
 
+#if SUPPORT_LDC1612
+# include <CommandProcessing/ScanningSensorHandler.h>
+#endif
+
 InputMonitor * volatile InputMonitor::monitorsList = nullptr;
 InputMonitor * volatile InputMonitor::freeList = nullptr;
 ReadWriteLock InputMonitor::listLock;
@@ -66,6 +70,20 @@ uint32_t InputMonitor::GetAnalogValue() const noexcept
 	return (threshold != 0) ? port.ReadAnalog()
 			: port.ReadDigital() ? 0xFFFF
 				: 0;
+}
+
+// Set the sensor drive current
+GCodeResult InputMonitor::SetDriveLevel(uint16_t param, const StringRef& reply, uint8_t& extra) noexcept
+{
+#if SUPPORT_LDC1612
+	if (port.IsLdc1612())
+	{
+		return ScanningSensorHandler::SetOrCalibrateCurrent(param, reply, extra);
+	}
+#endif
+
+	reply.copy("drive level not applicable to this port");
+	return GCodeResult::error;
 }
 
 void InputMonitor::DigitalInterrupt() noexcept
@@ -244,6 +262,10 @@ void InputMonitor::AnalogInterrupt(uint16_t reading) noexcept
 	case CanMessageChangeInputMonitor::actionChangeMinInterval:
 		m->minInterval = msg.param;
 		rslt = GCodeResult::ok;
+		break;
+
+	case CanMessageChangeInputMonitor::actionSetDriveLevel:
+		rslt = m->SetDriveLevel(msg.param, reply, extra);
 		break;
 
 	default:

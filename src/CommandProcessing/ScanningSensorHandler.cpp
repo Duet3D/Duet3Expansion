@@ -61,6 +61,43 @@ uint32_t ScanningSensorHandler::GetReading() noexcept
 	return 0;
 }
 
+GCodeResult ScanningSensorHandler::SetOrCalibrateCurrent(uint16_t param, const StringRef& reply, uint8_t& extra) noexcept
+{
+	if (sensor != nullptr)
+	{
+		if (param == 0xFFFF)
+		{
+			if (sensor->CalibrateDriveCurrent(0))
+			{
+				extra = sensor->GetDriveCurrent(0);
+				reply.printf("Calibration successful, sensor drive current is %u", extra);
+				return GCodeResult::ok;
+			}
+		}
+		else if (param == 0xFFFE)
+		{
+			extra = sensor->GetDriveCurrent(0);
+			reply.printf("Sensor drive current is %u", extra);
+			return GCodeResult::ok;
+		}
+		else
+		{
+			if (param > 31)
+			{
+				param = 31;
+			}
+			if (sensor->SetDriveCurrent(0, param))
+			{
+				extra = param;
+				return GCodeResult::ok;
+			}
+		}
+	}
+	reply.copy("failed to set sensor drive current");
+	extra = 0xFF;
+	return GCodeResult::error;
+}
+
 void ScanningSensorHandler::AppendDiagnostics(const StringRef& reply) noexcept
 {
 	reply.lcat("Inductive sensor: ");

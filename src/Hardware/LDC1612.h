@@ -27,7 +27,9 @@ public:
 	bool SetDefaultConfiguration(uint8_t channel, bool calibrationMode = false) noexcept;
 	void SetLC(uint8_t channel, float uh, float pf) noexcept;
 	bool GetChannelResult(uint8_t channel, uint32_t& result) noexcept;
-	bool CalibrateCurrent(uint8_t channel) noexcept;
+	bool CalibrateDriveCurrent(uint8_t channel) noexcept;
+	uint8_t GetDriveCurrent(uint8_t channel) noexcept { return currentSetting[channel]; }
+	bool SetDriveCurrent(uint8_t channel, uint16_t value) noexcept;
 	void AppendDiagnostics(const StringRef& reply) noexcept;
 
 private:
@@ -65,7 +67,6 @@ private:
 	bool SetErrorConfiguration(uint16_t value) noexcept;
 	bool UpdateConfiguration(uint16_t value) noexcept;
 	bool SetMuxConfiguration(uint16_t value) noexcept;
-	bool SetDriverCurrent(uint8_t channel, uint16_t value) noexcept;
 	bool ReadInitCurrent(uint8_t channel, uint16_t& value) noexcept;
 	bool SetDivisors(uint8_t channel) noexcept;
 	float GetResonantFrequency(uint8_t channel) const noexcept;

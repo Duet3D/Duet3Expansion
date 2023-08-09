@@ -45,6 +45,7 @@ private:
 	void DigitalInterrupt() noexcept;
 	void AnalogInterrupt(uint16_t reading) noexcept;
 	uint32_t GetAnalogValue() const noexcept;
+	GCodeResult SetDriveLevel(uint16_t param, const StringRef& reply, uint8_t& extra) noexcept;
 
 	static bool Delete(uint16_t hndl) noexcept;
 	static ReadLockedPointer<InputMonitor> Find(uint16_t hndl) noexcept;
