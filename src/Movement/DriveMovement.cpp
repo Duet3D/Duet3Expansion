@@ -48,6 +48,8 @@ void DriveMovement::DebugPrint() const noexcept
 // This is called when currentSegment has just been changed to a new segment. Return true if there is a new segment to execute.
 #if RP2040
 __attribute__((section(".time_critical")))
+#elif SAMC21
+__attribute__((aligned(8)))			// insufficient RAM to put it there, so align it on a flash cache line boundary
 #endif
 bool DriveMovement::NewCartesianSegment() noexcept
 {
@@ -98,6 +100,11 @@ bool DriveMovement::NewCartesianSegment() noexcept
 #if SUPPORT_DELTA_MOVEMENT
 
 // This is called when currentSegment has just been changed to a new segment. Return true if there is a new segment to execute.
+#if RP2040
+__attribute__((section(".time_critical")))
+#elif SAMC21
+__attribute__((aligned(8)))			// insufficient RAM to put it there, so align it on a flash cache line boundary
+#endif
 bool DriveMovement::NewDeltaSegment(const DDA& dda) noexcept
 {
 	while (true)
@@ -190,6 +197,8 @@ bool DriveMovement::NewDeltaSegment(const DDA& dda) noexcept
 // This is called for an extruder driver when currentSegment has just been changed to a new segment. Return true if there is a new segment to execute.
 #if RP2040
 __attribute__((section(".time_critical")))
+#elif SAMC21
+__attribute__((aligned(8)))			// insufficient RAM to put it there, so align it on a flash cache line boundary
 #endif
 bool DriveMovement::NewExtruderSegment() noexcept
 {
