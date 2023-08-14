@@ -183,10 +183,10 @@ bool LDC1612::Reset() noexcept
 /** @brief set drive current of sensor.
     @param result The value to be set.
  * */
-bool LDC1612::SetDriveCurrent(uint8_t channel, uint16_t value) noexcept
+bool LDC1612::SetDriveCurrent(uint8_t channel, uint32_t value) noexcept
 {
 	value &= 0x1F;
-	const bool ok = Write16bits((LDCRegister)((uint8_t)LDCRegister::SET_DRIVER_CURRENT_REG + channel), value << 11);
+	const bool ok = Write16bits((LDCRegister)((uint8_t)LDCRegister::SET_DRIVER_CURRENT_REG + channel), (uint16_t)(value << 11));
 	if (ok)
 	{
 		currentSetting[channel] = value;

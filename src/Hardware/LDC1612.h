@@ -29,7 +29,7 @@ public:
 	bool GetChannelResult(uint8_t channel, uint32_t& result) noexcept;
 	bool CalibrateDriveCurrent(uint8_t channel) noexcept;
 	uint8_t GetDriveCurrent(uint8_t channel) noexcept { return currentSetting[channel]; }
-	bool SetDriveCurrent(uint8_t channel, uint16_t value) noexcept;
+	bool SetDriveCurrent(uint8_t channel, uint32_t value) noexcept;
 	void AppendDiagnostics(const StringRef& reply) noexcept;
 
 private:

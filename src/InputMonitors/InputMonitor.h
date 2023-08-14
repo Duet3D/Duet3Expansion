@@ -13,8 +13,8 @@
 #include <Hardware/IoPorts.h>
 #include <RTOSIface/RTOSIface.h>
 
-struct CanMessageCreateInputMonitor;
-struct CanMessageChangeInputMonitor;
+struct CanMessageCreateInputMonitorNew;
+struct CanMessageChangeInputMonitorNew;
 struct CanMessageInputChanged;
 class CanMessageBuffer;
 
@@ -29,9 +29,10 @@ public:
 	InputMonitor() noexcept { }
 
 	static void Init() noexcept;
+	static void Spin() noexcept;
 
-	static GCodeResult Create(const CanMessageCreateInputMonitor& msg, size_t dataLength, const StringRef& reply, uint8_t& extra) noexcept;
-	static GCodeResult Change(const CanMessageChangeInputMonitor& msg, const StringRef& reply, uint8_t& extra) noexcept;
+	static GCodeResult Create(const CanMessageCreateInputMonitorNew& msg, size_t dataLength, const StringRef& reply, uint8_t& extra) noexcept;
+	static GCodeResult Change(const CanMessageChangeInputMonitorNew& msg, const StringRef& reply, uint8_t& extra) noexcept;
 
 	static uint32_t AddStateChanges(CanMessageInputChanged *msg) noexcept;
 	static void ReadInputs(CanMessageBuffer *buf) noexcept;
@@ -45,7 +46,7 @@ private:
 	void DigitalInterrupt() noexcept;
 	void AnalogInterrupt(uint16_t reading) noexcept;
 	uint32_t GetAnalogValue() const noexcept;
-	GCodeResult SetDriveLevel(uint16_t param, const StringRef& reply, uint8_t& extra) noexcept;
+	GCodeResult SetDriveLevel(uint32_t param, const StringRef& reply, uint8_t& extra) noexcept;
 
 	static bool Delete(uint16_t hndl) noexcept;
 	static ReadLockedPointer<InputMonitor> Find(uint16_t hndl) noexcept;
@@ -53,9 +54,9 @@ private:
 	InputMonitor *next;
 	IoPort port;
 	uint32_t whenLastSent;
+	uint32_t threshold;
 	uint16_t handle;
 	uint16_t minInterval;
-	uint16_t threshold;
 	bool active;
 	volatile bool state;
 	volatile bool sendDue;

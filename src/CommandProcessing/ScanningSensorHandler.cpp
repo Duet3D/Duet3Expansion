@@ -11,6 +11,7 @@
 
 #include <Hardware/LDC1612.h>
 #include <Platform/Platform.h>
+#include <CanMessageFormats.h>
 
 static LDC1612 *sensor = nullptr;
 
@@ -61,11 +62,11 @@ uint32_t ScanningSensorHandler::GetReading() noexcept
 	return 0;
 }
 
-GCodeResult ScanningSensorHandler::SetOrCalibrateCurrent(uint16_t param, const StringRef& reply, uint8_t& extra) noexcept
+GCodeResult ScanningSensorHandler::SetOrCalibrateCurrent(uint32_t param, const StringRef& reply, uint8_t& extra) noexcept
 {
 	if (sensor != nullptr)
 	{
-		if (param == 0xFFFF)
+		if (param == CanMessageChangeInputMonitorNew::paramAutoCalibrateDriveLevelAndReport)
 		{
 			if (sensor->CalibrateDriveCurrent(0))
 			{
@@ -74,7 +75,7 @@ GCodeResult ScanningSensorHandler::SetOrCalibrateCurrent(uint16_t param, const S
 				return GCodeResult::ok;
 			}
 		}
-		else if (param == 0xFFFE)
+		else if (param == CanMessageChangeInputMonitorNew::paramReportDriveLevel)
 		{
 			extra = sensor->GetDriveCurrent(0);
 			reply.printf("Sensor drive current is %u", extra);

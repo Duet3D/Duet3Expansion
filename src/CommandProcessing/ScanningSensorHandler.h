@@ -17,7 +17,7 @@ namespace ScanningSensorHandler
 	void Init() noexcept;
 	bool IsPresent() noexcept;
 	uint32_t GetReading() noexcept;
-	GCodeResult SetOrCalibrateCurrent(uint16_t param, const StringRef& reply, uint8_t& extra) noexcept;
+	GCodeResult SetOrCalibrateCurrent(uint32_t param, const StringRef& reply, uint8_t& extra) noexcept;
 	void AppendDiagnostics(const StringRef& reply) noexcept;
 }
 
