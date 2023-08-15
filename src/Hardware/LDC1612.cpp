@@ -5,6 +5,12 @@
  *      Author: David
  */
 
+// TI app note https://www.ti.com/lit/an/snoa944/snoa944.pdf contains important information how the resolution achieved
+// varies with RCOUNT (which sets the sampling time) and input frequency. We make the following choices:
+// fRef = 32MHz (this is available from the SAMC21 and is below the 35MHz limit for continuous sampling mode)
+// Sampling time = 1ms. This gives RCOUNT = 32000/16 = 2000 or approx. 0x800.
+// The app note says that for fsensor/fref = 0.1 and RCOUNT = 0x800 the resolution is approx. 8e-7 which is close to 1e-6 or 20 bits.
+
 #include "LDC1612.h"
 
 #if SUPPORT_LDC1612
@@ -205,6 +211,12 @@ bool LDC1612::ReadInitCurrent(uint8_t channel, uint16_t& value) noexcept
 	return ok;
 }
 
+// Return true if there is an unread conversion for the specified channel. Returns false if there was an error getting the status.
+bool LDC1612::IsChannelReady(uint8_t chan) noexcept
+{
+	return GetStatus() & (1u << (3 - chan));
+}
+
 /** @brief Main config part of sensor.Contains select channel、start conversion、sleep mode、sensor activation mode、INT pin disable ..
     @param result The value to be set.
  * */
@@ -219,23 +231,7 @@ void LDC1612::SetLC(uint8_t channel, float uh, float pf) noexcept
 	capacitance[channel] = pf;
 }
 
-constexpr const char* status_str[] =
-{
-	"conversion under range error",
-	"conversion over range error",
-	"watch dog timeout error",
-	"amplitude high error",
-	"amplitude low error",
-	"zero Count error",
-	"data ready",
-	"unread conversion is present for channel 0",
-	"unread conversion is present for Channel 1",
-	"unread conversion is present for Channel 2",
-	"unread conversion is present for Channel 3"
-};
-
-// Get sensor status
-
+// Get sensor status, returning 0 if an I2C error occurred
 uint16_t LDC1612::GetStatus() noexcept
 {
     uint16_t value = 0;
@@ -283,20 +279,20 @@ void LDC1612::AppendDiagnostics(const StringRef& reply) noexcept
 // Read a single 8-bit register
 bool LDC1612::ReadRegister(LDCRegister reg, uint8_t& val) noexcept
 {
-	return Transfer((uint8_t)reg, &val, 1, 1, LDCI2CTimeout);
+	return DoTransfer(reg, &val, 1, 1);
 }
 
 // Write a single 8-bit register
 bool LDC1612::WriteRegister(LDCRegister reg, uint8_t val) noexcept
 {
-	return Transfer((uint8_t)reg, &val, 2, 0, LDCI2CTimeout);
+	return DoTransfer(reg, &val, 2, 0);
 }
 
 // Read a pair of registers to give a 16-bit result, where the lower register is the MSB
 bool LDC1612::Read16bits(LDCRegister reg, uint16_t& val) noexcept
 {
 	uint8_t data[2];
-	const bool ok = Transfer((uint8_t)reg, data, 1, 2, LDCI2CTimeout);
+	const bool ok = DoTransfer(reg, data, 1, 2);
 	if (ok)
 	{
 		val = ((uint16_t)data[0] << 8) | (uint16_t)data[1];
@@ -307,7 +303,12 @@ bool LDC1612::Read16bits(LDCRegister reg, uint16_t& val) noexcept
 bool LDC1612::Write16bits(LDCRegister reg, uint16_t val) noexcept
 {
 	uint8_t data[2] = { (uint8_t)((val >> 8) & 0xff), (uint8_t)(val & 0xff) };
-	return Transfer((uint8_t)reg, data, 3, 0, LDCI2CTimeout);
+	return DoTransfer(reg, data, 3, 0);
+}
+
+bool LDC1612::DoTransfer(LDCRegister reg, uint8_t *data, size_t numToWrite, size_t numToRead) noexcept
+{
+	return Transfer((uint8_t)reg, data, numToWrite, numToRead, LDCI2CTimeout);
 }
 
 #endif	// SUPPORT_LDC1612
