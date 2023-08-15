@@ -21,7 +21,7 @@ constexpr uint32_t DefaultSharedI2CClockFrequency = 400000;
 constexpr uint32_t I2CTimeoutTicks = 100;
 
 SharedI2CMaster::SharedI2CMaster(uint8_t sercomNum) noexcept
-	: hardware(Serial::Sercoms[sercomNum]), taskWaiting(nullptr), busErrors(0), naks(0), otherErrors(0), state(I2cState::idle)
+	: hardware(Serial::Sercoms[sercomNum]), taskWaiting(nullptr), busErrors(0), naks(0), contentions(0), otherErrors(0), state(I2cState::idle)
 {
 	Serial::EnableSercomClock(sercomNum);
 
@@ -86,7 +86,7 @@ void SharedI2CMaster::SetClockFrequency(uint32_t freq) const noexcept
 {
 	// We have to disable SPI device in order to change the baud rate and mode
 	Disable();
-	hri_sercomspi_write_BAUD_reg(hardware, SERCOM_SPI_BAUD_BAUD(Serial::SercomFastGclkFreq/(2 * freq) - 1));
+	hri_sercomi2cm_write_BAUD_reg(hardware, SERCOM_I2CM_BAUD_BAUD(Serial::SercomFastGclkFreq/(2 * freq) - 1));
 	Enable();
 }
 
@@ -127,10 +127,26 @@ bool SharedI2CMaster::Transfer(uint16_t address, uint8_t firstByte, uint8_t *buf
 	return false;
 }
 
+// Get ownership of this I2C interface, return true if successful
+bool SharedI2CMaster::Take(uint32_t timeout) noexcept
+{
+	const bool success = mutex.Take(timeout);
+	if (!success)
+	{
+		++contentions;
+	}
+	return success;
+}
+
+void SharedI2CMaster::Release() noexcept
+{
+	mutex.Release();
+}
+
 void SharedI2CMaster::Diagnostics(const StringRef& reply) noexcept
 {
-	reply.lcatf("I2C bus errors %u, naks %u, other errors %u", busErrors, naks, otherErrors);
-	busErrors = naks = otherErrors = 0;
+	reply.lcatf("I2C bus errors %u, naks %u, contentions %u, other errors %u", busErrors, naks, contentions, otherErrors);
+	busErrors = naks = contentions = otherErrors = 0;
 }
 
 bool SharedI2CMaster::InternalTransfer(uint16_t address, uint8_t firstByte, uint8_t *buffer, size_t numToWrite, size_t numToRead) noexcept
