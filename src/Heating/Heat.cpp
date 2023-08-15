@@ -29,6 +29,7 @@ Licence: GPL
 #include <CanMessageGenericTables.h>
 #include <CAN/CanInterface.h>
 #include <Fans/FansManager.h>
+#include <InputMonitors/InputMonitor.h>
 
 #if SUPPORT_DHT_SENSOR
 # include "Sensors/DhtSensor.h"
@@ -399,6 +400,9 @@ void Heat::Exit()
 #if SUPPORT_LDC1612
 				boardStatusMsg->hasInductiveSensor = true;
 #endif
+				// Add the analog handle data
+				const size_t currentDataLength = boardStatusMsg->GetAnalogHandlesOffset();
+				boardStatusMsg->numAnalogHandles = InputMonitor::AddAnalogHandleData((uint8_t*)boardStatusMsg + currentDataLength, 64 - currentDataLength);
 				buf.dataLength = boardStatusMsg->GetActualDataLength();
 				CanInterface::Send(&buf);
 			}

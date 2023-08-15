@@ -37,10 +37,13 @@ public:
 	static uint32_t AddStateChanges(CanMessageInputChanged *msg) noexcept;
 	static void ReadInputs(CanMessageBuffer *buf) noexcept;
 
+	static unsigned int AddAnalogHandleData(uint8_t *buffer, size_t spaceLeft) noexcept;
+
 	static void CommonDigitalPortInterrupt(CallbackParameter cbp) noexcept;
 	static void CommonAnalogPortInterrupt(CallbackParameter cbp, uint16_t reading) noexcept;
 
 private:
+	bool IsDigital() const noexcept { return threshold == 0; }
 	bool Activate() noexcept;
 	void Deactivate() noexcept;
 	void DigitalInterrupt() noexcept;
