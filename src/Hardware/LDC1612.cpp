@@ -119,6 +119,7 @@ bool LDC1612::GetChannelResult(uint8_t channel, uint32_t& result) noexcept
 		if (ok)
 		{
 			result = msw | (uint32_t)value;
+			result = (result & 0xF0000000) | ((result & 0x0FFFFFFF) >> resultBitsDropped);
 		}
 	}
 	return ok;
