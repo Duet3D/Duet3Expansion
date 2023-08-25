@@ -141,7 +141,7 @@ void ClosedLoop::SetSpecialMotorPhase(uint16_t phase, float magnitude) noexcept
 # if SUPPORT_TMC2160 && SINGLE_DRIVER
 	SmartDrivers::SetMotorCurrents(0, (((uint32_t)(uint16_t)coilB << 16) | (uint32_t)(uint16_t)coilA) & 0x01FF01FF);
 # else
-#  error Cannot support closed loop with the specified hardware
+#  error Multi driver code not implemented
 # endif
 }
 
@@ -167,6 +167,8 @@ static void GenerateTmcClock()
 // Module initialisation
 /*static*/ void ClosedLoop::Init() noexcept
 {
+	GenerateTmcClock();															// generate the clock for the TMC2160A
+
 	for (size_t i = 0; i < NumDrivers; ++i)
 	{
 		closedLoopInstances[i] = new ClosedLoop();
@@ -178,8 +180,6 @@ void ClosedLoop::InitInstance() noexcept
 {
 	pinMode(EncoderCsPin, OUTPUT_HIGH);											// make sure that any attached SPI encoder is not selected
 
-	GenerateTmcClock();															// generate the clock for the TMC2160A
-
 	// Initialise to default error thresholds
 	errorThresholds[0] = DefaultClosedLoopPositionWarningThreshold;
 	errorThresholds[1] = DefaultClosedLoopPositionErrorThreshold;
@@ -190,6 +190,8 @@ void ClosedLoop::InitInstance() noexcept
 	PIDITerm = 0.0;
 	errorDerivativeFilter.Reset();
 	speedFilter.Reset();
+
+	UpdateStandstillCurrent();
 
 	// Set up the data transmission task
 	dataTransmissionTask = new Task<DataCollectionTaskStackWords>;
@@ -226,7 +228,7 @@ GCodeResult ClosedLoop::InstanceProcessM569Point1(CanMessageGenericParser& parse
 	uint16_t tempStepsPerRev = 200;
 	size_t numThresholds = 2;
 	float tempErrorThresholds[numThresholds];
-	float holdingCurrentPercent, tempTorquePerAmp;
+	float tempTorquePerAmp;
 
 	// Pull changed parameters
 	const bool seenT = parser.GetUintParam('T', tempEncoderType);
@@ -234,12 +236,11 @@ GCodeResult ClosedLoop::InstanceProcessM569Point1(CanMessageGenericParser& parse
 	const bool seenPid = parser.GetFloatParam('R', tempKp) | parser.GetFloatParam('I', tempKi)  | parser.GetFloatParam('D', tempKd)
 						| parser.GetFloatParam('V', tempKv) | parser.GetFloatParam('A', tempKa);
 	const bool seenE = parser.GetFloatArrayParam('E', numThresholds, tempErrorThresholds);
-	const bool seenH = parser.GetFloatParam('H', holdingCurrentPercent);
 	const bool seenS = parser.GetUintParam('S', tempStepsPerRev);
 	const bool seenQ = parser.GetFloatParam('Q', tempTorquePerAmp);
 
 	// Report back if no parameters to change
-	if (!(seenT || seenC || seenPid || seenE || seenH || seenQ))
+	if (!(seenT || seenC || seenPid || seenE || seenQ))
 	{
 		if (encoder == nullptr)
 		{
@@ -249,8 +250,8 @@ GCodeResult ClosedLoop::InstanceProcessM569Point1(CanMessageGenericParser& parse
 		{
 			reply.catf("Encoder type: %s", GetEncoderType().ToString());
 			encoder->AppendStatus(reply);
-			reply.lcatf("PID parameters P=%.1f I=%.3f D=%.3f V=%.1f A=%.1f, min. current %" PRIi32 "%%, torque constant %.2fNm/A",
-						(double)Kp, (double)Ki, (double)Kd, (double)Kv, (double)Ka, lrintf(holdCurrentFraction * 100.0), (double)torquePerAmp);
+			reply.lcatf("PID parameters P=%.1f I=%.3f D=%.3f V=%.1f A=%.1f, torque constant %.2fNm/A",
+						(double)Kp, (double)Ki, (double)Kd, (double)Kv, (double)Ka, (double)torquePerAmp);
 			reply.lcatf("Warning/error threshold %.2f/%.2f", (double)errorThresholds[0], (double)errorThresholds[1]);
 		}
 		return GCodeResult::ok;
@@ -303,11 +304,6 @@ GCodeResult ClosedLoop::InstanceProcessM569Point1(CanMessageGenericParser& parse
 		PIDITerm = 0.0;
 		errorDerivativeFilter.Reset();
 		speedFilter.Reset();
-	}
-
-	if (seenH)
-	{
-		holdCurrentFraction = constrain<float>(holdingCurrentPercent, 10.0, 100.0) / 100.0;
 	}
 
 	if (seenE)
@@ -595,6 +591,16 @@ bool ClosedLoop::OkayToSetDriverIdle() const noexcept
 {
 	//TODO should we forbid idle current in closed loop and assisted open loop modes too?
 	return !inTorqueMode;
+}
+
+// Update the standstill current fraction for this drive.
+void ClosedLoop::UpdateStandstillCurrent() noexcept
+{
+#if SINGLE_DRIVER
+	holdCurrentFraction = SmartDrivers::GetStandstillCurrentPercent(0) * 0.01;
+#else
+# error Multi driver code not implemented
+#endif
 }
 
 // This is called when tuning has finished and the basicTuningDataReady flag is set
@@ -1128,7 +1134,7 @@ void ClosedLoop::ResetError() noexcept
 		inTorqueMode = false;
 	}
 # else
-#  error Cannot support closed loop with the specified hardware
+#  error Multi driver code not implemented
 # endif
 }
 

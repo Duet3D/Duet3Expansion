@@ -189,6 +189,9 @@ static GCodeResult SetMotorCurrents(const CanMessageMultipleDrivesRequest<float>
 							else
 							{
 								Platform::SetMotorCurrent(driver, msg.values[count]);
+#if SUPPORT_CLOSED_LOOP
+								ClosedLoop::GetClosedLoopInstance(driver)->UpdateStandstillCurrent();
+#endif
 							}
 						}
 				   );
@@ -220,6 +223,9 @@ static GCodeResult SetStandstillCurrentFactor(const CanMessageMultipleDrivesRequ
 							else
 							{
 								SmartDrivers::SetStandstillCurrentPercent(driver, msg.values[count]);
+#if SUPPORT_CLOSED_LOOP
+								ClosedLoop::GetClosedLoopInstance(driver)->UpdateStandstillCurrent();
+#endif
 							}
 						}
 				   );

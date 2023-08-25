@@ -68,6 +68,7 @@ public:
 	GCodeResult InstanceProcessM569Point4(CanMessageGenericParser& parser, const StringRef& reply) noexcept;
 	GCodeResult InstanceProcessM569Point5(const CanMessageStartClosedLoopDataCollection&, const StringRef& reply) noexcept;
 	GCodeResult InstanceProcessM569Point6(CanMessageGenericParser& parser, const StringRef& reply) noexcept;
+	void UpdateStandstillCurrent() noexcept;
 
 	const char *_ecv_array GetModeText() const noexcept;
 	void InstanceDiagnostics(size_t driver, const StringRef& reply) noexcept;
