@@ -9,7 +9,7 @@
 
 #if SUPPORT_LED_STRIPS
 # include "NeoPixelLedStrip.h"
-# include <Can/CanInterface.h>
+# include <CAN/CanInterface.h>
 # include <RTOSIface/RTOSIface.h>
 
 namespace LedStripManager

@@ -29,7 +29,7 @@
 #include <Version.h>
 
 #if SUPPORT_I2C_SENSORS
-# include <Hardware/SharedI2cMaster.h>
+# include <Hardware/SharedI2CMaster.h>
 #endif
 
 #if SUPPORT_LIS3DH
