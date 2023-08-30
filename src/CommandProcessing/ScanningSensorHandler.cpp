@@ -42,7 +42,7 @@ static void LDC1612TaskHook() noexcept
 
 void ScanningSensorHandler::Init() noexcept
 {
-#if defined(SAMMMYC21)
+#if defined(SAMMYC21)
 	// Assume we are using a LDC1612 breakout board with its own crystal, so we don't need to generate a clock
 #elif defined(TOOL1LC) || defined(SZP)
 	// Set up the external clock to the LDC1612.
