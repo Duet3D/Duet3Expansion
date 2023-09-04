@@ -93,21 +93,21 @@ constexpr size_t CanClockTaskStackWords =
 										130;
 #endif
 
-static Task<CanClockTaskStackWords> canClockTask;
+static Task<CanClockTaskStackWords> *canClockTask = nullptr;				// allocated dynamically to save RAM when updating the bootloader
 
 // CanReceiver management task
 constexpr size_t CanReceiverTaskStackWords =
 #if RP2040
-										400;		// to allow calls to debugPrintf
+										400;								// to allow calls to debugPrintf
 #else
 										120;
 #endif
 
-static Task<CanReceiverTaskStackWords> canReceiverTask;
+static Task<CanReceiverTaskStackWords> *canReceiverTask = nullptr;			// allocated dynamically to save RAM when updating the bootloader
 
 // Async sender task
 constexpr size_t CanAsyncSenderTaskStackWords = 134;
-static Task<CanAsyncSenderTaskStackWords> canAsyncSenderTask;
+static Task<CanAsyncSenderTaskStackWords> *canAsyncSenderTask = nullptr;	// allocated dynamically to save RAM when updating the bootloader
 
 static bool mainBoardAcknowledgedAnnounce = false;	// true after the main board has acknowledged our announcement
 static bool isProgrammed = false;					// true after the main board has sent us any configuration commands
@@ -270,13 +270,16 @@ void CanInterface::Init(CanAddress defaultBoardAddress, bool useAlternatePins, b
 		CanMessageBuffer::Init(NumCanBuffers);
 
 		// Create the clock sync
-		canClockTask.Create(CanClockLoop, "CanClock", nullptr, TaskPriority::CanClockPriority);
+		canClockTask = new Task<CanClockTaskStackWords>;
+		canClockTask->Create(CanClockLoop, "CanClock", nullptr, TaskPriority::CanClockPriority);
 
 		// Create the task that receives CAN messages
-		canReceiverTask.Create(CanReceiverLoop, "CanRecv", nullptr, TaskPriority::CanReceiverPriority);
+		canReceiverTask = new Task<CanReceiverTaskStackWords>;
+		canReceiverTask->Create(CanReceiverLoop, "CanRecv", nullptr, TaskPriority::CanReceiverPriority);
 
 		// Create the task that send endstop etc. updates
-		canAsyncSenderTask.Create(CanAsyncSenderLoop, "CanAsync", nullptr, TaskPriority::CanAsyncSenderPriority);
+		canAsyncSenderTask = new Task<CanAsyncSenderTaskStackWords>;
+		canAsyncSenderTask->Create(CanAsyncSenderLoop, "CanAsync", nullptr, TaskPriority::CanAsyncSenderPriority);
 	}
 
 #if SUPPORT_DRIVERS
@@ -294,9 +297,9 @@ void CanInterface::Shutdown() noexcept
 		can0dev->DeInit();
 	}
 
-	// It's safe to terminate the tasks even if they haven't been created
-	canReceiverTask.TerminateAndUnlink();
-	canAsyncSenderTask.TerminateAndUnlink();
+	if (canReceiverTask != nullptr) { canReceiverTask->TerminateAndUnlink(); }
+	if (canAsyncSenderTask != nullptr) { canAsyncSenderTask->TerminateAndUnlink(); }
+	if (canClockTask != nullptr) { canClockTask->TerminateAndUnlink(); }
 }
 
 CanAddress CanInterface::GetCanAddress() noexcept
@@ -770,13 +773,13 @@ bool CanInterface::SendAnnounce(CanMessageBuffer *buf) noexcept
 // Wake the CAN sender task when we ar ot ni an ISR and scheduleing has not been suspended
 void CanInterface::WakeAsyncSender() noexcept
 {
-	canAsyncSenderTask.Give();
+	canAsyncSenderTask->Give();
 }
 
 // Wake the CAN sender task from an ISR
 void CanInterface::WakeAsyncSenderFromIsr() noexcept
 {
-	canAsyncSenderTask.GiveFromISR();
+	canAsyncSenderTask->GiveFromISR();
 }
 
 GCodeResult CanInterface::ChangeAddressAndDataRate(const CanMessageSetAddressAndNormalTiming &msg, const StringRef &reply) noexcept
