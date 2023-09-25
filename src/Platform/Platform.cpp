@@ -2173,17 +2173,25 @@ const UniqueIdBase& Platform::GetUniqueId() noexcept
 void Platform::SendDriversStatus(CanMessageBuffer& buf)
 {
 	CanMessageDriversStatus * const msg = buf.SetupStatusMessage<CanMessageDriversStatus>(CanInterface::GetCanAddress(), CanInterface::GetCurrentMasterAddress());
-# if HAS_SMART_DRIVERS
-	msg->SetStandardFields(MaxSmartDrivers);
-	for (size_t driver = 0; driver < MaxSmartDrivers; ++driver)
-	{
-		msg->openLoopData[driver] = SmartDrivers::GetStatus(driver, false, false).AsU32();
-	}
-# else
-	msg->SetStandardFields(NumDrivers);
+# if SUPPORT_CLOSED_LOOP
+	msg->SetStandardFields(NumDrivers, true);
 	for (size_t driver = 0; driver < NumDrivers; ++driver)
 	{
-		msg->data[driver] = Platform::GetStandardDriverStatus(driver).AsU32();
+		msg->closedLoopData[driver].status = SmartDrivers::GetStatus(driver, false, false).AsU32();
+		ClosedLoop::GetClosedLoopInstance(driver)->GetStatistics(msg->closedLoopData[driver]);
+	}
+# elif HAS_SMART_DRIVERS
+	// We currently assume that all drivers on this board are smart drivers. This isn't true on a Duet 3 Mini with external drivers connected to the expansion slot.
+	msg->SetStandardFields(MaxSmartDrivers, false);
+	for (size_t driver = 0; driver < MaxSmartDrivers; ++driver)
+	{
+		msg->openLoopData[driver].status = SmartDrivers::GetStatus(driver, false, false).AsU32();
+	}
+# else
+	msg->SetStandardFields(NumDrivers, false);
+	for (size_t driver = 0; driver < NumDrivers; ++driver)
+	{
+		msg->openLoopData[driver].status = Platform::GetStandardDriverStatus(driver).AsU32();
 	}
 # endif
 	buf.dataLength = msg->GetActualDataLength();

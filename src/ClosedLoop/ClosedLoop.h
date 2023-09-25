@@ -82,6 +82,7 @@ public:
 	void ResetError() noexcept;
 	bool OkayToSetDriverIdle() const noexcept;
 	StandardDriverStatus ModifyDriverStatus(StandardDriverStatus originalStatus) noexcept;
+	void GetStatistics(CanMessageDriversStatus::ClosedLoopStatus& stat) noexcept;
 
 	// Methods called by the encoders
 	static void EnableEncodersSpi() noexcept;
@@ -163,7 +164,12 @@ private:
 	// Working variables
 	// These variables are all used to calculate the required motor currents. They are declared here so they can be reported on by the data collection task
 	MotionParameters mParams;							// the target position, speed and acceleration
-	float 	currentError;								// The current error in full steps
+	float currentPositionError;							// the current position error in full steps
+	float periodMaxAbsPositionError = 0.0;				// the maximum value of the absolute position error
+	float periodSumOfPositionErrorSquares = 0.0;		// used to calculate the RMS error
+	float periodMaxCurrentFraction = 0.0;				// the maximum current fraction over this period
+	float periodSumOfCurrentFractions = 0.0;			// used to calculate the average current fraction
+	unsigned int periodNumSamples = 0;					// how many samples are in sumOfPositionErrorSquares
 
 	float 	PIDPTerm;									// Proportional term
 	float 	PIDITerm = 0.0;								// Integral accumulator
@@ -171,6 +177,7 @@ private:
 	float	PIDVTerm;									// Velocity feedforward term
 	float	PIDATerm;									// Acceleration feedforward term
 	float	PIDControlSignal;							// The overall signal from the PID controller
+
 
 	uint16_t desiredStepPhase = 0;						// The desired position of the motor
 	uint16_t phaseOffset = 0;							// The amount by which the phase should be offset when in semi-open-loop mode
@@ -231,7 +238,7 @@ private:
 	inline bool CollectingData() noexcept { return samplingMode != RecordingMode::None; }
 
 	void CollectSample() noexcept;
-	void ControlMotorCurrents(StepTimer::Ticks ticksSinceLastCall) noexcept;
+	float ControlMotorCurrents(StepTimer::Ticks ticksSinceLastCall) noexcept;
 	void StartTuning(uint8_t tuningType) noexcept;
 	GCodeResult ProcessBasicTuningResult(const StringRef& reply) noexcept;
 	GCodeResult ProcessCalibrationResult(const StringRef& reply) noexcept;
