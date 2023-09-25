@@ -78,11 +78,19 @@ bool ClosedLoop::BasicTuning(bool firstIteration) noexcept
 	static float regressionAccumulator;
 	static float readingAccumulator;
 
-	const unsigned int iterationMultipler = (encoder->GetType() == EncoderType::linearComposite) ? LinearEncoderIncreaseFactor : 1;
-	const uint16_t PhaseIncrement = 4 * iterationMultipler;							// how much to increment the phase by on each step, should be a factor of 4096
-	const unsigned int NumDummySteps = (256 * iterationMultipler)/PhaseIncrement;	// how many phase increments to take before we start collecting data = 1/4 step
-	const unsigned int NumSamples = (4096 * iterationMultipler)/PhaseIncrement;		// the number of samples we take to do the linear regression (4 full steps)
+	// The following parameters define how much we move the motor before taking samples (to overcome backlash) and how far we move the motor.
+	const unsigned int BasicPhaseIncrement = 4;						// how much we normally increase the motor phase by on each step
+	static_assert(4096 % BasicPhaseIncrement == 0);
+	const unsigned int NumDummySteps = 256/BasicPhaseIncrement;		// how many dummy increments to use before we start collecting data, to overcome backlash. (normally 1/4 step)
+	const unsigned int NumSamples = 4096/BasicPhaseIncrement;		// the number of samples we take to do the linear regression (normally 4 full steps)
 	const float HalfNumSamplesMinusOne = (float)(NumSamples - 1) * 0.5;
+
+	// When using linear composite encoders we expect more backlash, therefore we increase the size of the phase increment.
+	const uint16_t PhaseIncrement = (encoder->GetType() == EncoderType::linearComposite)
+									? (uint16_t)(LinearEncoderIncreaseFactor * BasicPhaseIncrement)
+										: (uint16_t)BasicPhaseIncrement;
+	static_assert(4096 % (LinearEncoderIncreaseFactor * BasicPhaseIncrement) == 0);
+
 	const float Denominator = (float)PhaseIncrement * (fcube((float)NumSamples) - (float)NumSamples)/12.0;
 
 	if (!encoder->UsesBasicTuning())
