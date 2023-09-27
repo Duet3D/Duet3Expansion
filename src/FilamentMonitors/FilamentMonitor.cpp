@@ -219,6 +219,8 @@ GCodeResult FilamentMonitor::CommonConfigure(const CanMessageGenericParser& pars
 	}
 }
 
+// Check the status of all the filament monitors.
+// Currently, the status for all filament monitors (on expansion boards as well as on the main board) is checked by the main board, which generates any necessary events.
 /*static*/ void FilamentMonitor::Spin() noexcept
 {
 	CanMessageBuffer buf;
@@ -310,8 +312,8 @@ GCodeResult FilamentMonitor::CommonConfigure(const CanMessageGenericParser& pars
 		buf.dataLength = msg->GetActualDataLength();
 		CanInterface::Send(&buf);
 		whenStatusLastSent = millis();
-		firstDriveToSend = (firstDriveNotSent < NumDrivers) ? firstDriveNotSent : 0;
 	}
+	firstDriveToSend = (firstDriveNotSent < NumDrivers) ? firstDriveNotSent : 0;
 }
 
 // Close down the filament monitors, in particular stop them generating interrupts. Called when we are about to update firmware.
