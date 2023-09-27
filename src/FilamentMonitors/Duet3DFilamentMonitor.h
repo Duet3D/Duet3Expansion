@@ -1,5 +1,5 @@
 /*
- * Duet3DFilamentSensor.h
+ * Duet3DFilamentMonitor.h
  *
  *  Created on: 20 Jul 2017
  *      Author: David
@@ -16,12 +16,11 @@
 
 class Duet3DFilamentMonitor : public FilamentMonitor
 {
-public:
+protected:
 	Duet3DFilamentMonitor(unsigned int extruder, unsigned int pType) noexcept;
 
 	bool Interrupt() noexcept override;
 
-protected:
 	void InitReceiveBuffer() noexcept;
 
 	enum class PollResult : uint8_t
@@ -34,7 +33,6 @@ protected:
 	bool IsReceiving() const noexcept;
 	bool IsWaitingForStartBit() const noexcept;
 
-protected:
 	uint32_t overrunErrorCount;
 	uint32_t polarityErrorCount;
 

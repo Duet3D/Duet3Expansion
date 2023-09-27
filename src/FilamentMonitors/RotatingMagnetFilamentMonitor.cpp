@@ -314,7 +314,7 @@ void RotatingMagnetFilamentMonitor::HandleIncomingData() noexcept
 
 // Call the following at intervals to check the status. This is only called when printing is in progress.
 // 'filamentConsumed' is the net amount of extrusion commanded since the last call to this function.
-// 'hadNonPrintingMove' is true if filamentConsumed includes extruder movement from non-printing moves.
+// 'isPrinting' is true if the current movement is not a non-printing extruder move.
 // 'fromIsr' is true if this measurement was taken at the end of the ISR because a potential start bit was seen
 FilamentSensorStatus RotatingMagnetFilamentMonitor::Check(bool isPrinting, bool fromIsr, uint32_t isrMillis, float filamentConsumed) noexcept
 {
@@ -391,19 +391,7 @@ FilamentSensorStatus RotatingMagnetFilamentMonitor::CheckFilament(float amountCo
 			}
 			float ratio = totalMovementMeasured/totalExtrusionCommanded;
 			minMovementRatio = maxMovementRatio = ratio;
-
-			if (GetEnableMode() != 0)
-			{
-				ratio *= mmPerRev;
-				if (ratio < minMovementAllowed)
-				{
-					ret = FilamentSensorStatus::tooLittleMovement;
-				}
-				else if (ratio > maxMovementAllowed)
-				{
-					ret = FilamentSensorStatus::tooMuchMovement;
-				}
-			}
+			lastMovementRatio = ratio * mmPerRev;
 			magneticMonitorState = MagneticMonitorState::comparing;
 		}
 		break;
@@ -427,19 +415,23 @@ FilamentSensorStatus RotatingMagnetFilamentMonitor::CheckFilament(float amountCo
 			}
 
 			lastMovementRatio = ratio * mmPerRev;
-			if (GetEnableMode() != 0)
-			{
-				if (lastMovementRatio < minMovementAllowed)
-				{
-					ret = FilamentSensorStatus::tooLittleMovement;
-				}
-				else if (lastMovementRatio > maxMovementAllowed)
-				{
-					ret = FilamentSensorStatus::tooMuchMovement;
-				}
-			}
 		}
 		break;
+	}
+
+	if (magneticMonitorState == MagneticMonitorState::comparing)
+	{
+		if (GetEnableMode() != 0)
+		{
+			if (lastMovementRatio < minMovementAllowed)
+			{
+				ret = FilamentSensorStatus::tooLittleMovement;
+			}
+			else if (lastMovementRatio > maxMovementAllowed)
+			{
+				ret = FilamentSensorStatus::tooMuchMovement;
+			}
+		}
 	}
 
 	return ret;

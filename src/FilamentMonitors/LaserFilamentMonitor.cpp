@@ -352,52 +352,43 @@ FilamentSensorStatus LaserFilamentMonitor::CheckFilament(float amountCommanded, 
 			{
 				totalMovementMeasured = -totalMovementMeasured;
 			}
-			minMovementRatio = maxMovementRatio = totalMovementMeasured/totalExtrusionCommanded;
-			if (GetEnableMode() != 0)
-			{
-				if (minMovementRatio < minMovementAllowed)
-				{
-					ret = FilamentSensorStatus::tooLittleMovement;
-				}
-				else if (maxMovementRatio > maxMovementAllowed)
-				{
-					ret = FilamentSensorStatus::tooMuchMovement;
-				}
-			}
+			minMovementRatio = maxMovementRatio = lastMovementRatio = totalMovementMeasured/totalExtrusionCommanded;
 			laserMonitorState = LaserMonitorState::comparing;
 		}
 		break;
 
 	case LaserMonitorState::comparing:
+		totalExtrusionCommanded += amountCommanded;
+		if (backwards)
 		{
-			totalExtrusionCommanded += amountCommanded;
-			if (backwards)
-			{
-				extrusionMeasured = -extrusionMeasured;
-			}
-			totalMovementMeasured += extrusionMeasured;
-			lastMovementRatio = extrusionMeasured/amountCommanded;
-			if (lastMovementRatio > maxMovementRatio)
-			{
-				maxMovementRatio = lastMovementRatio;
-			}
-			else if (lastMovementRatio < minMovementRatio)
-			{
-				minMovementRatio = lastMovementRatio;
-			}
-			if (GetEnableMode() != 0)
-			{
-				if (lastMovementRatio < minMovementAllowed)
-				{
-					ret = FilamentSensorStatus::tooLittleMovement;
-				}
-				else if (lastMovementRatio > maxMovementAllowed)
-				{
-					ret = FilamentSensorStatus::tooMuchMovement;
-				}
-			}
+			extrusionMeasured = -extrusionMeasured;
+		}
+		totalMovementMeasured += extrusionMeasured;
+		lastMovementRatio = extrusionMeasured/amountCommanded;
+		if (lastMovementRatio > maxMovementRatio)
+		{
+			maxMovementRatio = lastMovementRatio;
+		}
+		else if (lastMovementRatio < minMovementRatio)
+		{
+			minMovementRatio = lastMovementRatio;
 		}
 		break;
+	}
+
+	if (laserMonitorState == LaserMonitorState::comparing)
+	{
+		if (GetEnableMode() != 0)
+		{
+			if (lastMovementRatio < minMovementAllowed)
+			{
+				ret = FilamentSensorStatus::tooLittleMovement;
+			}
+			else if (lastMovementRatio > maxMovementAllowed)
+			{
+				ret = FilamentSensorStatus::tooMuchMovement;
+			}
+		}
 	}
 
 	return ret;
@@ -416,6 +407,22 @@ FilamentSensorStatus LaserFilamentMonitor::Clear() noexcept
 						: FilamentSensorStatus::ok;
 }
 
+// Print diagnostic info for this sensor
+void LaserFilamentMonitor::Diagnostics(const StringRef& reply) noexcept
+{
+	reply.lcatf("Driver %u: ", GetDriver());
+	if (dataReceived)
+	{
+		reply.catf("pos %.2f", (double)GetCurrentPosition());
+	}
+	else
+	{
+		reply.cat("no data received");
+	}
+	reply.catf(", errs: frame %" PRIu32 " parity %" PRIu32 " ovrun %" PRIu32 " pol %" PRIu32 " ovdue %" PRIu32,
+				framingErrorCount, parityErrorCount, overrunErrorCount, polarityErrorCount, overdueCount);
+}
+
 // Store collected data in a CAN message slot
 void LaserFilamentMonitor::GetLiveData(FilamentMonitorDataNew& data) const noexcept
 {
@@ -432,22 +439,6 @@ void LaserFilamentMonitor::GetLiveData(FilamentMonitorDataNew& data) const noexc
 	{
 		data.hasLiveData = false;
 	}
-}
-
-// Print diagnostic info for this sensor
-void LaserFilamentMonitor::Diagnostics(const StringRef& reply) noexcept
-{
-	reply.lcatf("Driver %u: ", GetDriver());
-	if (dataReceived)
-	{
-		reply.catf("pos %.2f", (double)GetCurrentPosition());
-	}
-	else
-	{
-		reply.cat("no data received");
-	}
-	reply.catf(", errs: frame %" PRIu32 " parity %" PRIu32 " ovrun %" PRIu32 " pol %" PRIu32 " ovdue %" PRIu32,
-				framingErrorCount, parityErrorCount, overrunErrorCount, polarityErrorCount, overdueCount);
 }
 
 #endif	// SUPPORT_DRIVERS

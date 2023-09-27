@@ -72,17 +72,17 @@ FilamentSensorStatus SimpleFilamentMonitor::Clear() noexcept
 	return (GetEnableMode() == 0 || filamentPresent) ? FilamentSensorStatus::ok : FilamentSensorStatus::noFilament;
 }
 
-// Store collected data in a CAN message slot
-void SimpleFilamentMonitor::GetLiveData(FilamentMonitorDataNew& data) const noexcept
-{
-	data.hasLiveData = false;
-}
-
 // Print diagnostic info for this sensor
 void SimpleFilamentMonitor::Diagnostics(const StringRef& reply) noexcept
 {
 	Poll();
 	reply.lcatf("Driver %u: %s", GetDriver(), (filamentPresent) ? "ok" : "no filament");
+}
+
+// Store collected data in a CAN message slot
+void SimpleFilamentMonitor::GetLiveData(FilamentMonitorDataNew& data) const noexcept
+{
+	data.hasLiveData = false;
 }
 
 #endif	// SUPPORT_DRIVERS
