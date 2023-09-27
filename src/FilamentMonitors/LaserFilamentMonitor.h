@@ -17,10 +17,13 @@ class LaserFilamentMonitor : public Duet3DFilamentMonitor
 public:
 	LaserFilamentMonitor(unsigned int extruder, unsigned int monitorType) noexcept;
 
+protected:
 	GCodeResult Configure(const CanMessageGenericParser& parser, const StringRef& reply) noexcept override;
+	void Diagnostics(const StringRef& reply) noexcept override;
+
 	FilamentSensorStatus Check(bool isPrinting, bool fromIsr, uint32_t isrMillis, float filamentConsumed) noexcept override;
 	FilamentSensorStatus Clear() noexcept override;
-	void Diagnostics(const StringRef& reply) noexcept override;
+	void GetLiveData(FilamentMonitorDataNew& data) const noexcept override;
 
 private:
 	static constexpr float DefaultMinMovementAllowed = 0.6;
@@ -109,6 +112,7 @@ private:
 
 	// Values measured for calibration
 	float minMovementRatio, maxMovementRatio;
+	float lastMovementRatio;
 	float totalExtrusionCommanded;
 	float totalMovementMeasured;
 

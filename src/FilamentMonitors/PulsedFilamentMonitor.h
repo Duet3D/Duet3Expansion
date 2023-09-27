@@ -17,11 +17,14 @@ class PulsedFilamentMonitor : public FilamentMonitor
 public:
 	PulsedFilamentMonitor(unsigned int extruder, unsigned int monitorType) noexcept;
 
+protected:
 	GCodeResult Configure(const CanMessageGenericParser& parser, const StringRef& reply) noexcept override;
-	FilamentSensorStatus Check(bool isPrinting, bool fromIsr, uint32_t isrMillis, float filamentConsumed) noexcept override;
-	FilamentSensorStatus Clear() noexcept override;
 	void Diagnostics(const StringRef& reply) noexcept override;
 	bool Interrupt() noexcept override;
+
+	FilamentSensorStatus Check(bool isPrinting, bool fromIsr, uint32_t isrMillis, float filamentConsumed) noexcept override;
+	FilamentSensorStatus Clear() noexcept override;
+	void GetLiveData(FilamentMonitorDataNew& data) const noexcept override;
 
 private:
 	static constexpr float DefaultMmPerPulse = 1.0;

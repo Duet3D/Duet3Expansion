@@ -48,6 +48,7 @@ void RotatingMagnetFilamentMonitor::Init() noexcept
 void RotatingMagnetFilamentMonitor::Reset() noexcept
 {
 	extrusionCommandedThisSegment = extrusionCommandedSinceLastSync = movementMeasuredThisSegment = movementMeasuredSinceLastSync = 0.0;
+	lastMovementRatio = 0.0;
 	magneticMonitorState = MagneticMonitorState::idle;
 	haveStartBitData = false;
 	synced = false;							// force a resync
@@ -415,7 +416,7 @@ FilamentSensorStatus RotatingMagnetFilamentMonitor::CheckFilament(float amountCo
 				amountMeasured = -amountMeasured;
 			}
 			totalMovementMeasured += amountMeasured;
-			float ratio = amountMeasured/amountCommanded;
+			const float ratio = amountMeasured/amountCommanded;
 			if (ratio > maxMovementRatio)
 			{
 				maxMovementRatio = ratio;
@@ -425,14 +426,14 @@ FilamentSensorStatus RotatingMagnetFilamentMonitor::CheckFilament(float amountCo
 				minMovementRatio = ratio;
 			}
 
+			lastMovementRatio = ratio * mmPerRev;
 			if (GetEnableMode() != 0)
 			{
-				ratio *= mmPerRev;
-				if (ratio < minMovementAllowed)
+				if (lastMovementRatio < minMovementAllowed)
 				{
 					ret = FilamentSensorStatus::tooLittleMovement;
 				}
-				else if (ratio > maxMovementAllowed)
+				else if (lastMovementRatio > maxMovementAllowed)
 				{
 					ret = FilamentSensorStatus::tooMuchMovement;
 				}
@@ -455,6 +456,24 @@ FilamentSensorStatus RotatingMagnetFilamentMonitor::Clear() noexcept
 				: (sensorError) ? FilamentSensorStatus::sensorError
 					: ((sensorValue & switchOpenMask) != 0) ? FilamentSensorStatus::noFilament
 						: FilamentSensorStatus::ok;
+}
+
+// Store collected data in a CAN message slot
+void RotatingMagnetFilamentMonitor::GetLiveData(FilamentMonitorDataNew& data) const noexcept
+{
+	if (magneticMonitorState == MagneticMonitorState::comparing)
+	{
+		data.calibrationLength = (uint32_t)lrintf(totalExtrusionCommanded);
+		data.avgPercentage = ConvertToPercent(totalMovementMeasured * mmPerRev/totalExtrusionCommanded);
+		data.minPercentage = ConvertToPercent(minMovementRatio * mmPerRev);
+		data.maxPercentage = ConvertToPercent(maxMovementRatio * mmPerRev);
+		data.lastPercentage = ConvertToPercent(lastMovementRatio);
+		data.hasLiveData = true;
+	}
+	else
+	{
+		data.hasLiveData = false;
+	}
 }
 
 // Print diagnostic info for this sensor

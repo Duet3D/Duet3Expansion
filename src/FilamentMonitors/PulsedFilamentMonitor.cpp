@@ -284,6 +284,12 @@ FilamentSensorStatus PulsedFilamentMonitor::Clear() noexcept
 	return FilamentSensorStatus::ok;
 }
 
+// Store collected data in a CAN message slot
+void PulsedFilamentMonitor::GetLiveData(FilamentMonitorDataNew& data) const noexcept
+{
+	data.hasLiveData = false;
+}
+
 // Print diagnostic info for this sensor
 void PulsedFilamentMonitor::Diagnostics(const StringRef& reply) noexcept
 {

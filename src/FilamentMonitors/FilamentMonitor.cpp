@@ -25,6 +25,7 @@
 ReadWriteLock FilamentMonitor::filamentMonitorsLock;
 FilamentMonitor *FilamentMonitor::filamentSensors[NumDrivers] = { 0 };
 uint32_t FilamentMonitor::whenStatusLastSent = 0;
+size_t FilamentMonitor::firstDriveToSend = 0;
 uint32_t FilamentMonitor::minInterruptTime = 0xFFFFFFFF, FilamentMonitor::maxInterruptTime = 0;
 uint32_t FilamentMonitor::minPollTime = 0xFFFFFFFF, FilamentMonitor::maxPollTime = 0;
 
@@ -221,9 +222,11 @@ GCodeResult FilamentMonitor::CommonConfigure(const CanMessageGenericParser& pars
 /*static*/ void FilamentMonitor::Spin() noexcept
 {
 	CanMessageBuffer buf;
-	auto msg = buf.SetupStatusMessage<CanMessageFilamentMonitorsStatus>(CanInterface::GetCanAddress(), CanInterface::GetCurrentMasterAddress());
-	bool statusChanged = false;
-	bool haveMonitor = false;
+	auto msg = buf.SetupStatusMessage<CanMessageFilamentMonitorsStatusNew>(CanInterface::GetCanAddress(), CanInterface::GetCurrentMasterAddress());
+	size_t slotIndex = 0;
+	size_t firstDriveNotSent = NumDrivers;
+	Bitmap<uint32_t> driversReported;
+	bool forceSend = false;
 
 	{
 		ReadLocker lock(filamentMonitorsLock);
@@ -234,7 +237,6 @@ GCodeResult FilamentMonitor::CommonConfigure(const CanMessageGenericParser& pars
 			if (filamentSensors[drv] != nullptr)
 			{
 				const uint32_t startTime = StepTimer::GetTimerTicks();
-				haveMonitor = true;
 				FilamentMonitor& fs = *filamentSensors[drv];
 				bool isPrinting;
 				bool fromIsr;
@@ -267,11 +269,6 @@ GCodeResult FilamentMonitor::CommonConfigure(const CanMessageGenericParser& pars
 				{
 					fst = fs.Clear();
 				}
-				if (fst != fs.lastStatus)
-				{
-					statusChanged = true;
-					fs.lastStatus = fst;
-				}
 
 				const uint32_t elapsedTime = StepTimer::GetTimerTicks() - startTime;
 				if (elapsedTime > maxPollTime)
@@ -282,17 +279,38 @@ GCodeResult FilamentMonitor::CommonConfigure(const CanMessageGenericParser& pars
 				{
 					minPollTime = elapsedTime;
 				}
+
+				if (drv >= firstDriveToSend)
+				{
+					if (slotIndex < ARRAY_SIZE(msg->data))
+					{
+						auto& slot = msg->data[slotIndex];
+						slot.status = fst.ToBaseType();
+						fs.GetLiveData(slot);
+						if (fst != fs.lastStatus || slot.hasLiveData)
+						{
+							forceSend = true;
+							fs.lastStatus = fst;
+						}
+						driversReported.SetBit(drv);
+						++slotIndex;
+					}
+					else if (drv < firstDriveNotSent)
+					{
+						firstDriveNotSent = drv;
+					}
+				}
 			}
-			msg->data[drv].Set(fst.ToBaseType());
 		}
 	}
 
-	if (statusChanged || (haveMonitor && millis() - whenStatusLastSent >= StatusUpdateInterval))
+	if (slotIndex != 0 && (forceSend || millis() - whenStatusLastSent >= StatusUpdateInterval))
 	{
-		msg->SetStandardFields(NumDrivers);
+		msg->SetStandardFields(driversReported);
 		buf.dataLength = msg->GetActualDataLength();
 		CanInterface::Send(&buf);
 		whenStatusLastSent = millis();
+		firstDriveToSend = (firstDriveNotSent < NumDrivers) ? firstDriveNotSent : 0;
 	}
 }
 

@@ -21,32 +21,15 @@ class CanMessageCreateFilamentMonitor;
 class CanMessageDeleteFilamentMonitor;
 class CanMessageConfigureFilamentMonitor;
 class CanMessageGenericParser;
+class FilamentMonitorDataNew;
 
 class FilamentMonitor
 {
 public:
-	FilamentMonitor(const FilamentMonitor&) = delete;
-
-	// Configure this sensor, returning an error code and setting 'seen' if we processed any configuration parameters
-	virtual GCodeResult Configure(const CanMessageGenericParser& parser, const StringRef& reply) noexcept = 0;
-
-	// Print diagnostic info for this sensor
-	virtual void Diagnostics(const StringRef& reply) noexcept = 0;
-
-	// ISR for when the pin state changes. It should return true if the ISR wants the commanded extrusion to be fetched.
-	virtual bool Interrupt() noexcept = 0;
-
-	// Call this to disable the interrupt before deleting a filament monitor
-	virtual void Disable() noexcept;
-
 	// Override the virtual destructor if your derived class allocates any dynamic memory
 	virtual ~FilamentMonitor() noexcept;
 
-	// Return the type of this sensor
-	unsigned int GetType() const noexcept { return type; }
-
-	// Return the enable state of this sensor
-	uint8_t GetEnableMode() const noexcept { return enableMode; }
+	FilamentMonitor(const FilamentMonitor&) = delete;
 
 	// Static initialisation
 	static void InitStatic() noexcept;
@@ -81,6 +64,24 @@ public:
 protected:
 	FilamentMonitor(uint8_t p_driver, unsigned int t) noexcept;
 
+	// Configure this sensor, returning an error code and setting 'seen' if we processed any configuration parameters
+	virtual GCodeResult Configure(const CanMessageGenericParser& parser, const StringRef& reply) noexcept = 0;
+
+	// Print diagnostic info for this sensor
+	virtual void Diagnostics(const StringRef& reply) noexcept = 0;
+
+	// ISR for when the pin state changes. It should return true if the ISR wants the commanded extrusion to be fetched.
+	virtual bool Interrupt() noexcept = 0;
+
+	// Call this to disable the interrupt before deleting a filament monitor
+	virtual void Disable() noexcept;
+
+	// Return the type of this sensor
+	unsigned int GetType() const noexcept { return type; }
+
+	// Return the enable state of this sensor
+	uint8_t GetEnableMode() const noexcept { return enableMode; }
+
 	// Call the following at intervals to check the status. This is only called when extrusion is in progress or imminent.
 	// 'filamentConsumed' is the net amount of extrusion since the last call to this function.
 	virtual FilamentSensorStatus Check(bool isPrinting, bool fromIsr, uint32_t isrMillis, float filamentConsumed) noexcept = 0;
@@ -88,6 +89,10 @@ protected:
 	// Clear the measurement state - called when we are not printing a file. Return the present/not present status if available.
 	virtual FilamentSensorStatus Clear() noexcept = 0;
 
+	// Store collected data in a CAN message slot returning true if there was data worth sending
+	virtual void GetLiveData(FilamentMonitorDataNew& data) const noexcept = 0;
+
+	// Configuration common to all filament monitor types
 	GCodeResult CommonConfigure(const CanMessageGenericParser& parser, const StringRef& reply, InterruptMode interruptMode, bool& seen) noexcept;
 
 	uint8_t GetDriver() const noexcept { return driver; }
@@ -104,6 +109,8 @@ private:
 
 	static FilamentMonitor *filamentSensors[NumDrivers];
 	static uint32_t whenStatusLastSent;
+	static size_t firstDriveToSend;
+
 	static uint32_t minInterruptTime, maxInterruptTime;
 	static uint32_t minPollTime, maxPollTime;
 
