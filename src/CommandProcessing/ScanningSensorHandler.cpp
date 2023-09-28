@@ -17,11 +17,12 @@
 static LDC1612 *sensor = nullptr;
 static AnalogIn::AdcTaskHookFunction *oldHookFunction = nullptr;
 static uint32_t lastReading = 0;
+static volatile bool isCalibrating = false;
 
 static void LDC1612TaskHook() noexcept
 {
 	// The LDC1612 generates lots of bus errors if we try to read the data when no new data is available
-	if (sensor->IsChannelReady(0))
+	if (!isCalibrating && sensor->IsChannelReady(0))
 	{
 		uint32_t val;
 		if (sensor->GetChannelResult(0, val))		// if no error
@@ -85,12 +86,16 @@ GCodeResult ScanningSensorHandler::SetOrCalibrateCurrent(uint32_t param, const S
 	{
 		if (param == CanMessageChangeInputMonitorNew::paramAutoCalibrateDriveLevelAndReport)
 		{
-			if (sensor->CalibrateDriveCurrent(0))
+			isCalibrating = true;
+			const bool ok = (sensor->CalibrateDriveCurrent(0));
+			isCalibrating = false;
+			if (ok)
 			{
 				extra = sensor->GetDriveCurrent(0);
 				reply.printf("Calibration successful, sensor drive current is %u", extra);
 				return GCodeResult::ok;
 			}
+			reply.copy("failed to calibrate sensor drive current");
 		}
 		else if (param == CanMessageChangeInputMonitorNew::paramReportDriveLevel)
 		{
@@ -104,14 +109,17 @@ GCodeResult ScanningSensorHandler::SetOrCalibrateCurrent(uint32_t param, const S
 			{
 				param = 31;
 			}
-			if (sensor->SetDriveCurrent(0, param))
+			isCalibrating = true;
+			const bool ok = (sensor->SetDriveCurrent(0, param));
+			isCalibrating = false;
+			if (ok)
 			{
 				extra = param;
 				return GCodeResult::ok;
 			}
+			reply.copy("failed to set sensor drive current");
 		}
 	}
-	reply.copy("failed to set sensor drive current");
 	extra = 0xFF;
 	return GCodeResult::error;
 }
