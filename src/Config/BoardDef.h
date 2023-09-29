@@ -99,4 +99,8 @@ constexpr size_t NumDrivers = 0;
 # define USE_SPICAN						0
 #endif
 
+#ifndef BOARD_USES_UF2_BINARY
+# define BOARD_USES_UF2_BINARY			0
+#endif
+
 #endif /* SRC_CONFIG_BOARDDEF_H_ */

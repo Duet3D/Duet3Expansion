@@ -740,6 +740,10 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 
 	case CanMessageReturnInfo::typeBoardName:
 		reply.copy(BOARD_TYPE_NAME);
+		// Set bit 0 of 'extra' to 1 if the board takes a .uf2 file, leave it as 0 if it takes a .bin file
+#if BOARD_USES_UF2_BINARY
+		extra |= 0x01;
+#endif
 		break;
 
 	case CanMessageReturnInfo::typeBootloaderName:
