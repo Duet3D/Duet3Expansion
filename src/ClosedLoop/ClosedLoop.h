@@ -25,6 +25,7 @@
 constexpr float MaxSafeBacklash = 0.22;					// the maximum backlash in full steps that we can use - error if there is more
 constexpr float MaxGoodBacklash = 0.15;					// the maximum backlash in full steps that we are happy with - warn if there is more
 constexpr unsigned int LinearEncoderIncreaseFactor = 4;	// this should be a power of 2. Allowed backlash is increased by this amount for linear composite encoders.
+constexpr float VelocityLimitGainFactor = 5.0;			// the gain of the P loop when in torque mode
 
 class Encoder;
 class SpiEncoder;
@@ -157,7 +158,7 @@ private:
 
 	float 	errorThresholds[2];									// The error thresholds. [0] is pre-stall, [1] is stall
 
-	float torqueModeCurrentFraction = 0.0;				// when in torque mode, the requested torque
+	float torqueModeCommandedCurrentFraction = 0.0;		// when in torque mode, the requested torque
 	float torqueModeMaxSpeed = 0.0;						// when in torque mode, the maximum speed. Zero or negative means no limit.
 
 	// Working variables

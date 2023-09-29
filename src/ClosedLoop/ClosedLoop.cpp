@@ -382,11 +382,15 @@ GCodeResult ClosedLoop::InstanceProcessM569Point4(CanMessageGenericParser& parse
 	float requestedTorque;
 	if (!parser.GetFloatParam('T', requestedTorque))
 	{
-		reply.copy("missing T parameter in CAN message");
+		reply.copy("missing T parameter");
 		return GCodeResult::error;
 	}
 	float maxSpeed = torqueModeMaxSpeed;
-	(void)parser.GetFloatParam('V', maxSpeed);
+	float rawMaxSpeed;
+	if (parser.GetFloatParam('V', rawMaxSpeed))
+	{
+		maxSpeed = rawMaxSpeed/StepTimer::StepClockRate;		// convert to full steps per step clock
+	}
 
 	if (currentMode == ClosedLoopMode::open || tuning != 0 || tuningError != 0)
 	{
@@ -409,7 +413,7 @@ GCodeResult ClosedLoop::InstanceProcessM569Point4(CanMessageGenericParser& parse
 		if (!hasMovementCommand)
 		{
 			torqueModeDirection = (Platform::GetDirectionValueNoCheck(0) == (requestedTorque > 0.0));
-			torqueModeCurrentFraction = min<float>(fabsf(requestedTorque)/(torquePerAmp * SmartDrivers::GetCurrent(0) * 0.001), 1.0);
+			torqueModeCommandedCurrentFraction = min<float>(fabsf(requestedTorque)/(torquePerAmp * SmartDrivers::GetCurrent(0) * 0.001), 1.0);
 			torqueModeMaxSpeed = maxSpeed;
 			inTorqueMode = true;
 			return GCodeResult::ok;
@@ -1021,7 +1025,23 @@ inline float ClosedLoop::ControlMotorCurrents(StepTimer::Ticks ticksSinceLastCal
 	{
 		const uint32_t measuredStepPhase = encoder->GetCurrentPhasePosition();
 		commandedStepPhase = (uint16_t)((((torqueModeDirection) ? (3 * 1024) : 1024) + measuredStepPhase) % 4096u);
-		currentFraction = torqueModeCurrentFraction;
+		const float rawVelocity = speedFilter.GetDerivative();
+		const float speed = (torqueModeDirection) ? -rawVelocity : rawVelocity;
+
+		// For now we use a crude form of proportional control; we may need to improve it later.
+		// If the speed is lower than the limit, increase the torque unless it is already at the requested torque.
+		// If the speed is too high then reduce the torque.
+		// It's likely that we will need to add a derivative term to prevent the speed oscillating.
+		if (torqueModeMaxSpeed > 0.0)
+		{
+			const float speedErrorFraction = (speed - torqueModeMaxSpeed)/torqueModeMaxSpeed;
+			const float torqueFactor = constrain<float>(VelocityLimitGainFactor * (1.0 - speedErrorFraction), 0.0, 1.0);
+			currentFraction = torqueModeCommandedCurrentFraction * torqueFactor;
+		}
+		else
+		{
+			currentFraction = torqueModeCommandedCurrentFraction;
+		}
 	}
 	else
 	{
