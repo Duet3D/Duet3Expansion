@@ -127,12 +127,13 @@ void ClosedLoop::SetTargetToCurrentPosition() noexcept
 	moveInstance->SetCurrentMotorSteps(0, mParams.position);
 }
 
-// Helper function to set the motor to a given phase and magnitude
+// Set the motor currents and update desiredStepPhase
 // The phase is normally in the range 0 to 4095 but when tuning it can be 0 to somewhat over 8192.
 // We must take it modulo 4096 when computing the currents. Function Trigonometry::FastSinCos does that.
 // 'magnitude' must be in range 0.0..1.0
-void ClosedLoop::SetSpecialMotorPhase(uint16_t phase, float magnitude) noexcept
+void ClosedLoop::SetMotorPhase(uint16_t phase, float magnitude) noexcept
 {
+	desiredStepPhase = phase;
 	float sine, cosine;
 	Trigonometry::FastSinCos(phase, sine, cosine);
 	coilA = (int16_t)lrintf(cosine * magnitude);
@@ -143,13 +144,6 @@ void ClosedLoop::SetSpecialMotorPhase(uint16_t phase, float magnitude) noexcept
 # else
 #  error Multi driver code not implemented
 # endif
-}
-
-// Set the motor currents and update desiredStepPhase
-void ClosedLoop::SetMotorPhase(uint16_t phase, float magnitude) noexcept
-{
-	desiredStepPhase = phase;
-	SetSpecialMotorPhase(phase, magnitude);
 }
 
 static_assert(ClockGenGclkNumber == GclkClosedLoop);							// check that this GCLK number has been reserved

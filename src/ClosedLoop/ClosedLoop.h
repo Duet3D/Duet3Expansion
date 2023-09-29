@@ -119,7 +119,6 @@ private:
 
 	// Methods used only by closed loop and by the tuning module
 	void SetMotorPhase(uint16_t phase, float magnitude) noexcept;
-	void SetSpecialMotorPhase(uint16_t phase, float magnitude) noexcept;
 	void FinishedBasicTuning() noexcept;
 																// call this when we have stopped basic tuning movement and are ready to switch to closed loop control
 	void ReadyToCalibrate(bool store) noexcept;					// call this when encoder calibration has finished collecting data
