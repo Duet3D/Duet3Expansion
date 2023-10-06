@@ -111,7 +111,7 @@ bool LIS3DH::Configure(uint16_t& samplingRate, uint8_t& resolution) noexcept
 		ok = WriteRegister(LisRegister::CtrlReg6_3DSH, 1u << 4);
 		if (ok)
 		{
-			// Set up control registers 1 and 4 according to the selected sampling rate and resolution. The BDA but must be zero when using the FIFO, see app note AN3393.
+			// Set up control registers 1 and 4 according to the selected sampling rate and resolution. The BDA bit must be zero when using the FIFO, see app note AN3393.
 			if (samplingRate == 0 || samplingRate >= 1200)
 			{
 				samplingRate = 1600;									// select 1600Hz if we asked for the default, or for 1200 or higher
@@ -326,16 +326,28 @@ unsigned int LIS3DH::CollectData(const uint16_t **collectedData, uint16_t &dataR
 		return 0;
 	}
 
-	uint8_t numToRead = fifoStatus & 0x1F;
-	if (numToRead == 0 && (fifoStatus & 0x20) == 0)
+	uint8_t numToRead;
+	switch (accelerometerType.RawValue())
 	{
-		numToRead = 32;
+	case AccelerometerType::LIS3DH:
+	case AccelerometerType::LIS3DSH:
+	default:
+		numToRead = fifoStatus & 0x1F;
+		if (numToRead == 0 && (fifoStatus & 0x20) == 0)
+		{
+			numToRead = 32;
+		}
+		break;
+
+	case AccelerometerType::LIS2DW:
+		numToRead = fifoStatus & 0x3F;
+		break;
 	}
 
 	if (numToRead != 0)
 	{
 		// Read the data
-		// When the auto-increment bit is set in the register number, after reading register 0x2D it wraps back to 0x28
+		// When the auto-increment bit is set, after reading register 0x2D it wraps back to 0x28
 		// The datasheet doesn't mention this but ST app note AN3308 does
 		if (!ReadRegisters(LisRegister::OutXL, 6 * numToRead))
 		{
@@ -365,7 +377,7 @@ bool LIS3DH::ReadRegisters(LisRegister reg, size_t numToRead) noexcept
 	}
 	delayMicroseconds(1);
 	// On the LIS3DH, bit 6 must be set to 1 to auto-increment the address when doing reading multiple registers
-	// On the LIS3DSH, bit 6 is an extra register address bit, so we must not set it.
+	// On the LIS3DSH and LIS2DW, bit 6 is an extra register address bit, so we must not set it.
 	// So that we can read the WHO_AM_I register of both chips before we know which chip we have, only set bit 6 if we have a LIS3DH and we are reading multiple registers.
 	transferBuffer[1] = (uint8_t)reg | ((numToRead < 2 || accelerometerType != AccelerometerType::LIS3DH) ? 0x80 : 0xC0);
 	const bool ret = TransceivePacket(transferBuffer + 1, transferBuffer + 1, 1 + numToRead);
@@ -373,7 +385,7 @@ bool LIS3DH::ReadRegisters(LisRegister reg, size_t numToRead) noexcept
 	return ret;
 #else
 	// On the LIS3DH, bit 6 of the first byte must be set to 1 to auto-increment the address when doing reading multiple registers
-	// On the LIS3DSH, bit 6 is an extra register address bit, so we must not set it.
+	// On the LIS3DSH and LIS2DW, bit 6 is an extra register address bit, so we must not set it.
 	// So that we can read the WHO_AM_I register of both chips before we know which chip we have, only set bit 6 if we have a LIS3DH and we are reading multiple registers.
 	const uint8_t regAddr = (numToRead < 2 || accelerometerType != AccelerometerType::LIS3DH) ? (uint8_t)reg : (uint8_t)reg | 0x80;
 	return Transfer(regAddr, dataBuffer, 1, numToRead, Lis3dI2CTimeout);

@@ -64,10 +64,10 @@ private:
 		Ctrl_0x20 = 0x20,			// this is CTRL_REG1 on the LIS3DH and CTRL_REG4 on the LIS3DSH
 		CtrlReg2_2DW = 0x21,		// this is CTRL_REG2 on the LIS2DW
 		CtrlReg6_3DSH = 0x25,
-		Status = 0x27,
+		Status = 0x27,				// this is STATUS on LIS3DH and LIS2DW, and STAT on LIS3DSH
 		OutXL = 0x28,
 		FifoControl = 0x2E,
-		FifoSource = 0x2F
+		FifoSource = 0x2F			// this is FIFO_SRC on the LID3DH, FIFO_SAMPLES on LID2DW, and STATUS on LID3DSH
 	};
 
 	bool ReadRegisters(LisRegister reg, size_t numToRead) noexcept;
