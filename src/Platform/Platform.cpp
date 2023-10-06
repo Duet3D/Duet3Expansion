@@ -568,7 +568,7 @@ namespace Platform
 	{
 #if defined(EXP3HC)
 		const CanAddress switches = ReadBoardAddress();
-		return (switches == 0) ? CanId::ExpansionBoardFirmwareUpdateAddress : switches;
+		return (switches == 0) ? CanId::Exp3HCFirmwareUpdateAddress : switches;
 #elif defined(TOOL1LC) || defined(TOOL1RR)
 		return CanId::ToolBoardDefaultAddress;
 #elif defined(SAMMYC21) || defined(RPI_PICO) || defined(FLY36RRF)
@@ -576,7 +576,7 @@ namespace Platform
 #elif defined(EXP1XD)
 		return CanId::Exp1XDBoardDefaultAddress;
 #elif defined(EXP1HCL) || defined(M23CL)
-		return CanId::Exp1HCEBoardDefaultAddress;
+		return CanId::Exp1HCLBoardDefaultAddress;
 #elif defined(ATECM)
 		return CanId::ATECMBoardDefaultAddress;
 #elif defined(ATEIO)
