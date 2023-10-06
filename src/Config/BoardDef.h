@@ -15,6 +15,8 @@
 # include "EXP3HC.h"
 #elif defined(TOOL1LC)
 # include "TOOL1LC.h"
+#elif defined(TOOL1RR)
+# include "TOOL1RR.h"
 #elif defined(EXP1XD)
 # include "EXP1XD.h"
 #elif defined(EXP1HCL)

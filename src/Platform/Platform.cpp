@@ -569,7 +569,7 @@ namespace Platform
 #if defined(EXP3HC)
 		const CanAddress switches = ReadBoardAddress();
 		return (switches == 0) ? CanId::ExpansionBoardFirmwareUpdateAddress : switches;
-#elif defined(TOOL1LC)
+#elif defined(TOOL1LC) || defined(TOOL1RR)
 		return CanId::ToolBoardDefaultAddress;
 #elif defined(SAMMYC21) || defined(RPI_PICO) || defined(FLY36RRF)
 		return CanId::SammyC21DefaultAddress;

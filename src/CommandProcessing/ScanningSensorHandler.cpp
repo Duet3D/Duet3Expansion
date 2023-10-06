@@ -43,13 +43,18 @@ static void LDC1612TaskHook() noexcept
 
 void ScanningSensorHandler::Init() noexcept
 {
+	// Set up the external clock to the LDC1612.
+	// The higher the better, but the maximum is 40MHz
 #if defined(SAMMYC21)
 	// Assume we are using a LDC1612 breakout board with its own crystal, so we don't need to generate a clock
 #elif defined(TOOL1LC) || defined(SZP)
-	// Set up the external clock to the LDC1612.
-	// The higher the better, but the maximum is 40MHz. We use the 96MHz DPLL output divided by 3 to get 32MHz.
+	// We use the 96MHz DPLL output divided by 3 to get 32MHz. It might be better to use 25MHz from the crystal directly for better stability.
 	ConfigureGclk(GclkNumPA23, GclkSource::dpll, 3, true);
 	SetPinFunction(LDC1612ClockGenPin, GpioPinFunction::H);
+#elif defined(TOOL1RR)
+	// We use the 120MHz DPLL output divided by 4 to get 30MHz. It might be better to use 25MHz from the crystal directly for better stability.
+	ConfigureGclk(GclkNumPB11, GclkSource::dpll0, 4, true);
+	SetPinFunction(LDC1612ClockGenPin, GpioPinFunction::M);
 #else
 # error LDC support not implemented for this processor
 #endif
