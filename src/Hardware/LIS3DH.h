@@ -62,7 +62,8 @@ private:
 	{
 		WhoAmI = 0x0f,
 		Ctrl_0x20 = 0x20,			// this is CTRL_REG1 on the LIS3DH and CTRL_REG4 on the LIS3DSH
-		CtrlReg6 = 0x25,
+		CtrlReg2_2DW = 0x21,		// this is CTRL_REG2 on the LIS2DW
+		CtrlReg6_3DSH = 0x25,
 		Status = 0x27,
 		OutXL = 0x28,
 		FifoControl = 0x2E,
@@ -78,7 +79,7 @@ private:
 	uint32_t firstInterruptTime;
 	uint32_t lastInterruptTime;
 	uint32_t totalNumRead;
-	bool is3DSH;
+	AccelerometerType accelerometerType;
 	bool interruptError;
 	uint8_t currentAxis;
 	uint8_t ctrlReg_0x20;
