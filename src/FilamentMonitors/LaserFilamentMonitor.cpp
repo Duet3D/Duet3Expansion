@@ -71,7 +71,14 @@ GCodeResult LaserFilamentMonitor::Configure(const CanMessageGenericParser& parse
 	{
 		if (seen)
 		{
-			Init();				// Init() resets dataReceived and version, so only do it if the port has been configured
+			if (parser.HasParameter('C'))
+			{
+				Init();				// Init() resets dataReceived and version, so only do it if the port has been configured
+			}
+			else
+			{
+				Reset();
+			}
 		}
 
 		if (parser.GetFloatParam('L', calibrationFactor))
