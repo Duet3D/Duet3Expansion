@@ -271,9 +271,11 @@ GCodeResult AccelerometerHandler::ProcessConfigRequest(const CanMessageGeneric& 
 		return GCodeResult::error;
 	}
 
+	bool seen = false;
 	uint8_t localOrientation;
 	if (parser.GetUintParam('I', localOrientation))
 	{
+		seen = true;
 		if (TranslateOrientation(localOrientation))
 		{
 			orientation = localOrientation;
@@ -285,7 +287,6 @@ GCodeResult AccelerometerHandler::ProcessConfigRequest(const CanMessageGeneric& 
 		}
 	}
 
-	bool seen = false;
 	if (parser.GetUintParam('S', samplingRate)) { seen = true; }
 	if (parser.GetUintParam('R', resolution))  { seen = true; }
 
