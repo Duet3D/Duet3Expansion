@@ -62,7 +62,13 @@ extern "C" void SERCOM4_Handler()
 
 void DeviceInit() noexcept
 {
-	AnalogIn::Init(DmacChanAdc0Rx, DmacPrioAdcRx);
+	AnalogIn::Init(DmacChanAdc0Rx, DmacPrioAdcRx,
+#ifdef SZP
+					true				// SZP uses a 2.5V external reference due to nonlinearity of ADC
+#else
+					false
+#endif
+		);
 	AnalogOut::Init();
 	analogInTask.Create(AnalogIn::TaskLoop, "AIN", nullptr, TaskPriority::AinPriority);
 }
