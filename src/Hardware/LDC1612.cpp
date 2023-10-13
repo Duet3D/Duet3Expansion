@@ -52,18 +52,11 @@ constexpr uint16_t MUX_DEGLITCH_10MHZ = 5u << 0;
 constexpr uint16_t MUX_DEGLITCH_33MHZ = 7u << 0;
 constexpr uint16_t MUX_RESERVED_BITS = 0x41 << 3;
 
-// Conversion result error bits (shifted left by 28 bits)
-constexpr uint32_t ERR_UR0 = 1u << 3;
-constexpr uint32_t ERR_OR0 = 1u << 2;
-constexpr uint32_t ERR_WD0 = 1u << 1;
-constexpr uint32_t ERR_AE0 = 1u << 0;
-
 LDC1612::LDC1612(SharedI2CMaster& dev, uint16_t i2cAddress) noexcept
 	: SharedI2CClient(dev, i2cAddress)
 {
 	for (size_t channel = 0; channel < NumChannels; ++channel)
 	{
-		SetLC(channel, DefaultInductance, DefaultCapacitance);
 		currentSetting[channel] = DefaultDriveCurrentVal;
 	}
 }
@@ -119,16 +112,9 @@ bool LDC1612::GetChannelResult(uint8_t channel, uint32_t& result) noexcept
 		if (ok)
 		{
 			result = msw | (uint32_t)value;
-			result = (result & 0xF0000000) | ((result & 0x0FFFFFFF) >> resultBitsDropped);
 		}
 	}
 	return ok;
-}
-
-// Return the resonant frequency in MHz
-float LDC1612::GetResonantFrequency(uint8_t channel) const noexcept
-{
-	return 1.0e3/(TwoPi * sqrtf(inductance[channel] * capacitance[channel]));
 }
 
 // Set the conversion time in units of 16 divided reference clocks. Minimum is 5.
@@ -159,7 +145,7 @@ bool LDC1612::SetLCStabilizeTime(uint8_t channel, uint16_t microseconds) noexcep
 
 bool LDC1612::SetDivisors(uint8_t channel) noexcept
 {
-	const uint16_t FIN_DIV = (uint16_t)(GetResonantFrequency(channel) / 8.75 + 1);	// input frequency after division must be less than 8.75MHz
+	const uint16_t FIN_DIV = 1;														// input frequency after division must be less than 8.75MHz - assume this is always the case
 	const uint16_t FREF_DIV = ClockDivisor;											// higher divisors are only needed for very low resonant frequencies
 	const uint16_t value = (FIN_DIV << 12) | FREF_DIV;
 	return Write16bits((LDCRegister)((uint8_t)LDCRegister::SET_FREQ_REG_START + channel), value);
@@ -226,55 +212,12 @@ bool LDC1612::UpdateConfiguration(uint16_t value) noexcept
 	return Write16bits(LDCRegister::SENSOR_CONFIG_REG, value);
 }
 
-void LDC1612::SetLC(uint8_t channel, float uh, float pf) noexcept
-{
-	inductance[channel] = uh;
-	capacitance[channel] = pf;
-}
-
 // Get sensor status, returning 0 if an I2C error occurred
 uint16_t LDC1612::GetStatus() noexcept
 {
     uint16_t value = 0;
     Read16bits(LDCRegister::SENSOR_STATUS_REG, value);
     return value;
-}
-
-// Append diagnostic data to string
-void LDC1612::AppendDiagnostics(const StringRef& reply) noexcept
-{
-	uint32_t val;
-	if (GetChannelResult(0, val))
-	{
-		reply.catf("value %" PRIu32 ", current setting %u", val & 0x0FFFFFFF, currentSetting[0]);
-		if ((val >> 28) == 0)
-		{
-			reply.cat(", ok");
-		}
-		else
-		{
-			if ((val >> 28) & ERR_UR0)
-			{
-				reply.cat(", under-range error");
-			}
-			if ((val >> 28) & ERR_OR0)
-			{
-				reply.cat(", over-range error");
-			}
-			if ((val >> 28) & ERR_WD0)
-			{
-				reply.cat(", watchdog error");
-			}
-			if ((val >> 28) & ERR_AE0)
-			{
-				reply.cat(", amplitude error");
-			}
-		}
-	}
-	else
-	{
-		reply.cat("error retrieving data from LDC1612");
-	}
 }
 
 // Read a single 8-bit register

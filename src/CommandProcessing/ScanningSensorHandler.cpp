@@ -14,9 +14,12 @@
 #include <CanMessageFormats.h>
 #include <AnalogIn.h>
 
+constexpr unsigned int ResultBitsDropped = 8;		// we drop this number of least significant bits in the result
+constexpr uint32_t BadReadingVal = 999999;			// close to 2 ^ (28 - resultBitsDropped)
+
 static LDC1612 *sensor = nullptr;
 static AnalogIn::AdcTaskHookFunction *oldHookFunction = nullptr;
-static uint32_t lastReading = 0;
+static volatile uint32_t lastReading = 0;
 static volatile bool isCalibrating = false;
 
 static void LDC1612TaskHook() noexcept
@@ -45,15 +48,31 @@ void ScanningSensorHandler::Init() noexcept
 {
 	// Set up the external clock to the LDC1612.
 	// The higher the better, but the maximum is 40MHz
-#if defined(SAMMYC21)
+#if defined(SAMMYC21) || defined(TOOL1LC)
 	// Assume we are using a LDC1612 breakout board with its own crystal, so we don't need to generate a clock
-#elif defined(TOOL1LC) || defined(SZP)
-	// We use the 96MHz DPLL output divided by 3 to get 32MHz. It might be better to use 25MHz from the crystal directly for better stability.
-	ConfigureGclk(GclkNumPA23, GclkSource::dpll, 3, true);
+#elif defined(SZP)
+	// We can use the 96MHz DPLL output divided by 3 to get 32MHz but it is probably better to use 25MHz from the crystal directly for better stability.
+	static_assert(LDC1612::ClockFrequency == 25.0 || LDC1612::ClockFrequency == 32.0);
+	if constexpr(LDC1612::ClockFrequency == 25.0)
+	{
+		ConfigureGclk(GclkNumPA23, GclkSource::xosc, 1, true);
+	}
+	else if constexpr(LDC1612::ClockFrequency == 32.0)
+	{
+		ConfigureGclk(GclkNumPA23, GclkSource::dpll, 3, true);
+	}
 	SetPinFunction(LDC1612ClockGenPin, GpioPinFunction::H);
 #elif defined(TOOL1RR)
 	// We use the 120MHz DPLL output divided by 4 to get 30MHz. It might be better to use 25MHz from the crystal directly for better stability.
-	ConfigureGclk(GclkNumPB11, GclkSource::dpll0, 4, true);
+	static_assert(LDC1612::ClockFrequency == 25.0 || LDC1612::ClockFrequency == 30.0);
+	if constexpr(LDC1612::ClockFrequency == 25.0)
+	{
+		ConfigureGclk(GclkNumPB11, GclkSource::xosc0, 1, true);
+	}
+	else if constexpr(LDC1612::ClockFrequency == 30.0)
+	{
+		ConfigureGclk(GclkNumPB11, GclkSource::dpll0, 4, true);
+	}
 	SetPinFunction(LDC1612ClockGenPin, GpioPinFunction::M);
 #else
 # error LDC support not implemented for this processor
@@ -82,7 +101,7 @@ bool ScanningSensorHandler::IsPresent() noexcept
 
 uint32_t ScanningSensorHandler::GetReading() noexcept
 {
-	return lastReading;
+	return ((lastReading & 0xF0000000) == 0) ? lastReading >> ResultBitsDropped : BadReadingVal;
 }
 
 GCodeResult ScanningSensorHandler::SetOrCalibrateCurrent(uint32_t param, const StringRef& reply, uint8_t& extra) noexcept
@@ -134,7 +153,40 @@ void ScanningSensorHandler::AppendDiagnostics(const StringRef& reply) noexcept
 	reply.lcat("Inductive sensor: ");
 	if (IsPresent())
 	{
-		sensor->AppendDiagnostics(reply);
+		// Append diagnostic data to string
+		uint32_t val = lastReading;
+		if (val != 0)
+		{
+			reply.catf("raw value %" PRIu32 ", frequency %.2fMHz, current setting %u",
+						val & 0x0FFFFFFF, (double)ldexpf((val & 0x0FFFFFFF) * LDC1612::FRef, -28), sensor->GetDriveCurrent(0));
+			if ((val >> 28) == 0)
+			{
+				reply.cat(", ok");
+			}
+			else
+			{
+				if ((val >> 28) & LDC1612::ERR_UR0)
+				{
+					reply.cat(", under-range error");
+				}
+				if ((val >> 28) & LDC1612::ERR_OR0)
+				{
+					reply.cat(", over-range error");
+				}
+				if ((val >> 28) & LDC1612::ERR_WD0)
+				{
+					reply.cat(", watchdog error");
+				}
+				if ((val >> 28) & LDC1612::ERR_AE0)
+				{
+					reply.cat(", amplitude error");
+				}
+			}
+		}
+		else
+		{
+			reply.cat("error retrieving data from LDC1612");
+		}
 	}
 	else
 	{
