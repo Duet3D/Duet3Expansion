@@ -30,6 +30,8 @@ Thermistor::Thermistor(unsigned int sensorNum, bool p_isPT1000)
 	: SensorWithPort(sensorNum, (p_isPT1000) ? "PT1000" : "Thermistor"), adcFilterChannel(-1),
 #if defined(M23CL)
 	  r25(DefaultThermistorR25_M23CL), beta(DefaultThermistorBeta_M23CL), shC(DefaultThermistorC_M23CL),
+#elif defined(SZP)
+	  r25(DefaultThermistorR25_SZP), beta(DefaultThermistorBeta_SZP), shC(DefaultThermistorC_SZP),
 #else
 	  r25(DefaultThermistorR25), beta(DefaultThermistorBeta), shC(DefaultThermistorC),
 #endif
