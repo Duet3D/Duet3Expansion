@@ -79,12 +79,8 @@ private:
 	bool ReadInitCurrent(uint8_t channel, uint16_t& value) noexcept;
 	bool SetDivisors(uint8_t channel) noexcept;
 
-	bool ReadRegister(LDCRegister reg, uint8_t& val) noexcept;
-	bool WriteRegister(LDCRegister reg, uint8_t val) noexcept;
 	bool Read16bits(LDCRegister reg, uint16_t& val) noexcept;
 	bool Write16bits(LDCRegister reg, uint16_t val) noexcept;
-
-	bool DoTransfer(LDCRegister reg, uint8_t *buffer, size_t numToWrite, size_t numToRead) noexcept;
 
 	uint16_t currentSetting[NumChannels];
 };

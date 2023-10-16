@@ -220,39 +220,23 @@ uint16_t LDC1612::GetStatus() noexcept
     return value;
 }
 
-// Read a single 8-bit register
-bool LDC1612::ReadRegister(LDCRegister reg, uint8_t& val) noexcept
-{
-	return DoTransfer(reg, &val, 1, 1);
-}
-
-// Write a single 8-bit register
-bool LDC1612::WriteRegister(LDCRegister reg, uint8_t val) noexcept
-{
-	return DoTransfer(reg, &val, 2, 0);
-}
-
 // Read a pair of registers to give a 16-bit result, where the lower register is the MSB
 bool LDC1612::Read16bits(LDCRegister reg, uint16_t& val) noexcept
 {
-	uint8_t data[2];
-	const bool ok = DoTransfer(reg, data, 1, 2);
+	uint8_t data[3];
+	data[0] = (uint8_t)reg;
+	const bool ok = Transfer(data, 1, 2, LDCI2CTimeout);
 	if (ok)
 	{
-		val = ((uint16_t)data[0] << 8) | (uint16_t)data[1];
+		val = ((uint16_t)data[1] << 8) | (uint16_t)data[2];
 	}
 	return ok;
 }
 
 bool LDC1612::Write16bits(LDCRegister reg, uint16_t val) noexcept
 {
-	uint8_t data[2] = { (uint8_t)((val >> 8) & 0xff), (uint8_t)(val & 0xff) };
-	return DoTransfer(reg, data, 3, 0);
-}
-
-bool LDC1612::DoTransfer(LDCRegister reg, uint8_t *data, size_t numToWrite, size_t numToRead) noexcept
-{
-	return Transfer((uint8_t)reg, data, numToWrite, numToRead, LDCI2CTimeout);
+	uint8_t data[3] = { (uint8_t)reg, (uint8_t)((val >> 8) & 0xff), (uint8_t)(val & 0xff) };
+	return Transfer(data, 3, 0, LDCI2CTimeout);
 }
 
 #endif	// SUPPORT_LDC1612

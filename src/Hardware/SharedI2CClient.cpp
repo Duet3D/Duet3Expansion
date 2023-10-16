@@ -13,13 +13,13 @@ SharedI2CClient::SharedI2CClient(SharedI2CMaster& dev, uint16_t addr) noexcept :
 {
 }
 
-bool SharedI2CClient::Transfer(uint8_t firstByte, uint8_t *buffer, size_t numToWrite, size_t numToRead, uint32_t timeout) noexcept
+bool SharedI2CClient::Transfer(uint8_t *buffer, size_t numToWrite, size_t numToRead, uint32_t timeout) noexcept
 {
 	if (!device.Take(timeout))
 	{
 		return false;
 	}
-	const bool ret = device.Transfer(address, firstByte, buffer, numToWrite, numToRead);
+	const bool ret = device.Transfer(address, *buffer, buffer + 1, numToWrite, numToRead);
 	device.Release();
 	return ret;
 }
