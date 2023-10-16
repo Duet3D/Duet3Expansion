@@ -22,20 +22,23 @@ public:
 	// If we find no relevant parameters, report the current parameters to 'reply' and return ok.
 	virtual GCodeResult Configure(const CanMessageGenericParser& parser, const StringRef& reply);
 
-	// Get the expansion board address. Overridden for remote sensors.
-	virtual CanAddress GetBoardAddress() const;
-
 	// Try to get a temperature reading
 	virtual void Poll() = 0;
-
-	// Update the temperature, if it is a remote sensor. Overridden in class RemoteSensor.
-	virtual void UpdateRemoteTemperature(CanAddress src, const CanSensorReport& report) noexcept;
 
 	// Try to get a temperature reading
 	virtual TemperatureError GetLatestTemperature(float& t, uint8_t outputNumber = 0) noexcept;
 
 	// How many additional outputs does this sensor have
 	virtual const uint8_t GetNumAdditionalOutputs() const noexcept { return 0; }
+
+	// How long after a reading before we consider the reading to be unreliable - this has to be increased for DHT sensors
+	virtual uint32_t GetTemperatureReadingTimeout() const noexcept { return DefaultTemperatureReadingTimeout; }
+
+	// Get the expansion board address. Overridden for remote sensors.
+	virtual CanAddress GetBoardAddress() const;
+
+	// Update the temperature, if it is a remote sensor. Overridden in class RemoteSensor.
+	virtual void UpdateRemoteTemperature(CanAddress src, const CanSensorReport& report) noexcept;
 
 	// Get the most recent reading without checking for timeout
 	float GetStoredReading() const noexcept { return lastTemperature; }
@@ -69,7 +72,7 @@ protected:
 	static TemperatureError GetPT100Temperature(float& t, uint16_t ohmsx100);		// shared function used by two derived classes
 
 private:
-	static constexpr uint32_t TemperatureReadingTimeout = 2000;			// any reading older than this number of milliseconds is considered unreliable
+	static constexpr uint32_t DefaultTemperatureReadingTimeout = 2000;
 
 	TemperatureSensor *next;
 	unsigned int sensorNumber;					// the number of this sensor

@@ -12,7 +12,6 @@
 #include <Heating/Heat.h>
 #include <Movement/StepTimer.h>
 
-constexpr uint16_t MinimumReadInterval = 2000;		// ms
 constexpr uint8_t  MaximumReadTime = 20;			// ms
 constexpr uint8_t  MinimumOneBitLength = 50;		// microseconds
 constexpr uint32_t MinimumOneBitStepClocks = (StepTimer::StepClockRate * MinimumOneBitLength)/1000000;
