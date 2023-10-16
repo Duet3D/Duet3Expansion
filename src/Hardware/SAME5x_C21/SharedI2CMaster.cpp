@@ -113,7 +113,7 @@ void SharedI2CMaster::Disable() const noexcept
 }
 
 // Write then read data. Caller must own the mutex first.
-bool SharedI2CMaster::Transfer(uint16_t address, uint8_t firstByte, uint8_t *buffer, size_t numToWrite, size_t numToRead) noexcept
+bool SharedI2CMaster::Transfer(uint16_t address, const uint8_t *txBuffer, uint8_t *rxBuffer, size_t numToWrite, size_t numToRead) noexcept
 {
 	// If an empty transfer, nothing to do
 	if (numToRead + numToWrite == 0)
@@ -123,7 +123,7 @@ bool SharedI2CMaster::Transfer(uint16_t address, uint8_t firstByte, uint8_t *buf
 
 	for (unsigned int triesDone = 0; triesDone < 3; ++triesDone)
 	{
-		if (InternalTransfer(address, firstByte, buffer, numToWrite, numToRead))
+		if (InternalTransfer(address, txBuffer, rxBuffer, numToWrite, numToRead))
 		{
 			return true;
 		}
@@ -157,11 +157,11 @@ void SharedI2CMaster::Diagnostics(const StringRef& reply) noexcept
 	busErrors = naks = contentions = otherErrors = 0;
 }
 
-bool SharedI2CMaster::InternalTransfer(uint16_t address, uint8_t firstByte, uint8_t *buffer, size_t numToWrite, size_t numToRead) noexcept
+bool SharedI2CMaster::InternalTransfer(uint16_t address, const uint8_t *txBuffer, uint8_t *rxBuffer, size_t numToWrite, size_t numToRead) noexcept
 {
 	currentAddress = address << 1;											// SERCOM uses the bottom bit as the Read flag
-	firstByteToWrite = firstByte;
-	transferBuffer = buffer;
+	txTransferBuffer = txBuffer;
+	rxTransferBuffer = rxBuffer;
 	numLeftToRead = numToRead;
 	numLeftToWrite = numToWrite;
 	hardware->I2CM.INTFLAG.reg = 0xFF;										// clear all flag bits
@@ -169,29 +169,33 @@ bool SharedI2CMaster::InternalTransfer(uint16_t address, uint8_t firstByte, uint
 	hardware->I2CM.CTRLB.reg = SERCOM_I2CM_CTRLB_SMEN;						// make sure the ACKACT bit is clear and CMD is zero
 
 	TaskBase::ClearCurrentTaskNotifyCount();
-	taskWaiting = TaskBase::GetCallerTaskHandle();
 
-	// Send the address
-	if (numToWrite != 0)
 	{
-		state = I2cState::sendingAddressForWrite;
-		hardware->I2CM.ADDR.reg = (currentAddress >= 0x100) ? currentAddress | SERCOM_I2CM_ADDR_TENBITEN : currentAddress;
-		while (hardware->I2CM.SYNCBUSY.bit.SYSOP) { }
-		hardware->I2CM.INTENSET.reg = SERCOM_I2CM_INTFLAG_MB;
-	}
-	else if (currentAddress >= 0x100)
-	{
-		state = I2cState::sendingTenBitAddressForRead;
-		hardware->I2CM.ADDR.reg = currentAddress | SERCOM_I2CM_ADDR_TENBITEN;
-		while (hardware->I2CM.SYNCBUSY.bit.SYSOP) { }
-		hardware->I2CM.INTENSET.reg = SERCOM_I2CM_INTFLAG_MB;
-	}
-	else
-	{
-		state = I2cState::sendingAddressForRead;
-		hardware->I2CM.ADDR.reg = currentAddress | 0x0001;
-		while (hardware->I2CM.SYNCBUSY.bit.SYSOP) { }
-		hardware->I2CM.INTENSET.reg = SERCOM_I2CM_INTFLAG_MB | SERCOM_I2CM_INTFLAG_SB;
+		AtomicCriticalSectionLocker lock;									// avoid getting descheduled between sending the command and enabling the interrupt
+
+		// Send the address
+		if (numToWrite != 0)
+		{
+			state = I2cState::writing;
+			hardware->I2CM.ADDR.reg = (currentAddress >= 0x100) ? currentAddress | SERCOM_I2CM_ADDR_TENBITEN : currentAddress;
+			while (hardware->I2CM.SYNCBUSY.bit.SYSOP) { }
+			hardware->I2CM.INTENSET.reg = SERCOM_I2CM_INTFLAG_MB;
+		}
+		else if (currentAddress >= 0x100)
+		{
+			state = I2cState::sendingTenBitAddressForRead;
+			hardware->I2CM.ADDR.reg = currentAddress | SERCOM_I2CM_ADDR_TENBITEN;
+			while (hardware->I2CM.SYNCBUSY.bit.SYSOP) { }
+			hardware->I2CM.INTENSET.reg = SERCOM_I2CM_INTFLAG_MB;
+		}
+		else
+		{
+			state = I2cState::reading;
+			hardware->I2CM.ADDR.reg = currentAddress | 0x0001;
+			while (hardware->I2CM.SYNCBUSY.bit.SYSOP) { }
+			hardware->I2CM.INTENSET.reg = SERCOM_I2CM_INTFLAG_MB | SERCOM_I2CM_INTFLAG_SB;
+		}
+		taskWaiting = TaskBase::GetCallerTaskHandle();
 	}
 
 	TaskBase::Take(I2CTimeoutTicks);
@@ -222,6 +226,7 @@ void SharedI2CMaster::ProtocolError() noexcept
 	}
 	hardware->I2CM.CTRLB.reg = SERCOM_I2CM_CTRLB_SMEN | SERCOM_I2CM_CTRLB_CMD(0x03);			// send stop command, get off bus
 	state = I2cState::protocolError;
+	while (hardware->I2CM.SYNCBUSY.bit.SYSOP) { }
 	TaskBase::GiveFromISR(taskWaiting);
 	taskWaiting = nullptr;
 }
@@ -235,28 +240,12 @@ void SharedI2CMaster::Interrupt() noexcept
 	default:			// should not occur
 		break;
 
-	case I2cState::sendingAddressForWrite:
-		if (flags == SERCOM_I2CM_INTFLAG_MB)
-		{
-			// Address sent successfully and we have at least one byte to write
-			hardware->I2CM.DATA.reg = firstByteToWrite;
-			--numLeftToWrite;
-			while (hardware->I2CM.SYNCBUSY.bit.SYSOP) { }
-			hardware->I2CM.INTENSET.reg = SERCOM_I2CM_INTFLAG_MB;
-			state = I2cState::writing;
-		}
-		else
-		{
-			ProtocolError();
-		}
-		break;
-
 	case I2cState::writing:
 		if (flags == SERCOM_I2CM_INTFLAG_MB)
 		{
 			if (numLeftToWrite != 0)
 			{
-				hardware->I2CM.DATA.reg = *transferBuffer++;
+				hardware->I2CM.DATA.reg = *txTransferBuffer++;
 				--numLeftToWrite;
 				while (hardware->I2CM.SYNCBUSY.bit.SYSOP) { }
 				hardware->I2CM.INTENSET.reg = SERCOM_I2CM_INTFLAG_MB;
@@ -265,20 +254,14 @@ void SharedI2CMaster::Interrupt() noexcept
 			{
 				hardware->I2CM.CTRLB.reg = SERCOM_I2CM_CTRLB_SMEN | SERCOM_I2CM_CTRLB_CMD(0x03);			// send stop command
 				state = I2cState::idle;
+				while (hardware->I2CM.SYNCBUSY.bit.SYSOP) { }
 				TaskBase::GiveFromISR(taskWaiting);
 				taskWaiting = nullptr;
 			}
-			else if (currentAddress >= 0x100)
-			{
-				hardware->I2CM.ADDR.reg = (currentAddress >> 8) | 0b1111001;
-				state = I2cState::sendingAddressForRead;
-				while (hardware->I2CM.SYNCBUSY.bit.SYSOP) { }
-				hardware->I2CM.INTENSET.reg = SERCOM_I2CM_INTFLAG_MB | SERCOM_I2CM_INTFLAG_SB;
-			}
 			else
 			{
-				hardware->I2CM.ADDR.reg = currentAddress | 0x0001;
-				state = I2cState::sendingAddressForRead;
+				hardware->I2CM.ADDR.reg = (currentAddress >= 0x100) ? (currentAddress >> 8) | 0b1111001 : currentAddress | 0x0001;
+				state = I2cState::reading;
 				while (hardware->I2CM.SYNCBUSY.bit.SYSOP) { }
 				hardware->I2CM.INTENSET.reg = SERCOM_I2CM_INTFLAG_MB | SERCOM_I2CM_INTFLAG_SB;
 			}
@@ -293,7 +276,7 @@ void SharedI2CMaster::Interrupt() noexcept
 		if (flags == SERCOM_I2CM_INTFLAG_MB)
 		{
 			hardware->I2CM.ADDR.reg = (currentAddress >> 8) | 0b1111001;
-			state = I2cState::sendingAddressForRead;
+			state = I2cState::reading;
 			while (hardware->I2CM.SYNCBUSY.bit.SYSOP) { }
 			hardware->I2CM.INTENSET.reg = SERCOM_I2CM_INTFLAG_MB | SERCOM_I2CM_INTFLAG_SB;
 		}
@@ -303,9 +286,6 @@ void SharedI2CMaster::Interrupt() noexcept
 		}
 		break;
 
-	case I2cState::sendingAddressForRead:
-		state = I2cState::reading;
-		// no break
 	case I2cState::reading:
 		if (flags == SERCOM_I2CM_INTFLAG_SB)
 		{
@@ -314,15 +294,15 @@ void SharedI2CMaster::Interrupt() noexcept
 			{
 				// App note says we need to NAK the last byte and send the stop command before we read the data
 				hardware->I2CM.CTRLB.reg = SERCOM_I2CM_CTRLB_SMEN | SERCOM_I2CM_CTRLB_ACKACT | SERCOM_I2CM_CTRLB_CMD(0x03);	// NAK and stop
-				while (hardware->I2CM.SYNCBUSY.bit.SYSOP) { }
-				*transferBuffer++ = hardware->I2CM.DATA.reg;
 				state = I2cState::idle;
+				while (hardware->I2CM.SYNCBUSY.bit.SYSOP) { }
+				*rxTransferBuffer++ = hardware->I2CM.DATA.reg;
 				TaskBase::GiveFromISR(taskWaiting);
 				taskWaiting = nullptr;
 			}
 			else
 			{
-				*transferBuffer++ = hardware->I2CM.DATA.reg;			// read the data and acknowledge it because we have set SMEN in CTRLB
+				*rxTransferBuffer++ = hardware->I2CM.DATA.reg;			// read the data and acknowledge it because we have set SMEN in CTRLB
 				hardware->I2CM.INTENSET.reg = SERCOM_I2CM_INTFLAG_MB | SERCOM_I2CM_INTFLAG_SB;
 			}
 		}

@@ -225,7 +225,7 @@ bool LDC1612::Read16bits(LDCRegister reg, uint16_t& val) noexcept
 {
 	uint8_t data[3];
 	data[0] = (uint8_t)reg;
-	const bool ok = Transfer(data, 1, 2, LDCI2CTimeout);
+	const bool ok = Transfer(data, data + 1, 1, 2, LDCI2CTimeout);
 	if (ok)
 	{
 		val = ((uint16_t)data[1] << 8) | (uint16_t)data[2];
@@ -236,7 +236,7 @@ bool LDC1612::Read16bits(LDCRegister reg, uint16_t& val) noexcept
 bool LDC1612::Write16bits(LDCRegister reg, uint16_t val) noexcept
 {
 	uint8_t data[3] = { (uint8_t)reg, (uint8_t)((val >> 8) & 0xff), (uint8_t)(val & 0xff) };
-	return Transfer(data, 3, 0, LDCI2CTimeout);
+	return Transfer(data, nullptr, 3, 0, LDCI2CTimeout);
 }
 
 #endif	// SUPPORT_LDC1612

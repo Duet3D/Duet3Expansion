@@ -389,7 +389,7 @@ bool LIS3DH::ReadRegisters(LisRegister reg, size_t numToRead) noexcept
 	// So that we can read the WHO_AM_I register of both chips before we know which chip we have, only set bit 6 if we have a LIS3DH and we are reading multiple registers.
 	const uint8_t regAddr = (numToRead < 2 || accelerometerType != AccelerometerType::LIS3DH) ? (uint8_t)reg : (uint8_t)reg | 0x80;
 	transferBuffer.reg = regAddr;
-	return Transfer(&transferBuffer.reg, 1, numToRead, Lis3dI2CTimeout);
+	return Transfer(&transferBuffer.reg, transferBuffer.data, 1, numToRead, Lis3dI2CTimeout);
 #endif
 }
 
@@ -412,7 +412,7 @@ bool LIS3DH::WriteRegisters(LisRegister reg, size_t numToWrite) noexcept
 #else
 	const uint8_t regAddr = (numToWrite < 2 || accelerometerType != AccelerometerType::LIS3DH) ? (uint8_t)reg : (uint8_t)reg | 0x80;	// set auto increment bit if LIS3DH
 	transferBuffer.reg = regAddr;
-	return Transfer(&transferBuffer.reg, 1 + numToWrite, 0, Lis3dI2CTimeout);
+	return Transfer(&transferBuffer.reg, transferBuffer.data, 1 + numToWrite, 0, Lis3dI2CTimeout);
 #endif
 }
 
