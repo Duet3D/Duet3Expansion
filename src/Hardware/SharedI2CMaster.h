@@ -19,7 +19,7 @@ class SharedI2CMaster
 public:
 	SharedI2CMaster(uint8_t sercomNum) noexcept;
 
-	void SetClockFrequency(uint32_t freq) const noexcept;
+	void SetClockFrequency(uint32_t freq) noexcept;
 	bool Transfer(uint16_t address, uint8_t firstByte, uint8_t *buffer, size_t numToWrite, size_t numToRead) noexcept;
 
 	bool Take(uint32_t timeout) noexcept;		// get ownership of this I2C interface, return true if successful
@@ -49,10 +49,11 @@ private:
 	TaskHandle taskWaiting;
 	Mutex mutex;
 
+	uint32_t currentClockRate;
 	uint8_t *transferBuffer;
 	size_t numLeftToRead, numLeftToWrite;
-	uint16_t currentAddress;
 	unsigned int busErrors, naks, contentions, otherErrors;
+	uint16_t currentAddress;
 	uint8_t firstByteToWrite;
 	volatile I2cState state;
 };

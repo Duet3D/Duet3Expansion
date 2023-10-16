@@ -34,7 +34,7 @@ constexpr uint32_t Lis3dSpiTimeout = 25;							// timeout while waiting for the 
 
 LIS3DH::LIS3DH(SharedSpiDevice& dev, Pin p_csPin, Pin p_int1Pin) noexcept
 	: SharedSpiClient(dev, DefaultAccelerometerSpiFrequency, lisMode, p_csPin, false),
-	  taskWaiting(nullptr), int1Pin(p_int1Pin)
+	  taskWaiting(nullptr), accelerometerType(AccelerometerType::LIS3DH), int1Pin(p_int1Pin)
 {
 	SetCsPin(p_csPin);
 }
@@ -129,12 +129,12 @@ bool LIS3DH::Configure(uint16_t& samplingRate, uint8_t& resolution) noexcept
 			}
 
 			// Set up the control registers, except set ctrlReg1 to 0 to select power down mode
-			dataBuffer[0] = 0;											// ctrlReg4: for now select power down mode
-			dataBuffer[1] = 0;											// ctrlReg1: SM1 disabled
-			dataBuffer[2] = 0;											// ctrlReg2: SM2 disabled
-			dataBuffer[3] = (1u << 3) | (1u << 6) | (1u << 5);			// ctrlReg3: interrupt 1 active high, enabled
-			dataBuffer[4] = 0;											// ctrlReg5: anti-aliasing filter 800Hz, 4-wire SPI interface, full scale +/- 2g
-			dataBuffer[5] = (1u << 2) | (1u << 4) | (1u << 6);			// ctrlReg6: enable fifo, watermark and watermark interrupt on INT1, address auto increment. Do not set WTM_EN.
+			transferBuffer.data[0] = 0;									// ctrlReg4: for now select power down mode
+			transferBuffer.data[1] = 0;									// ctrlReg1: SM1 disabled
+			transferBuffer.data[2] = 0;									// ctrlReg2: SM2 disabled
+			transferBuffer.data[3] = (1u << 3) | (1u << 6) | (1u << 5);	// ctrlReg3: interrupt 1 active high, enabled
+			transferBuffer.data[4] = 0;									// ctrlReg5: anti-aliasing filter 800Hz, 4-wire SPI interface, full scale +/- 2g
+			transferBuffer.data[5] = (1u << 2) | (1u << 4) | (1u << 6);	// ctrlReg6: enable fifo, watermark and watermark interrupt on INT1, address auto increment. Do not set WTM_EN.
 			ok = WriteRegisters(LisRegister::Ctrl_0x20, 6);
 		}
 		if (ok)
@@ -147,7 +147,7 @@ bool LIS3DH::Configure(uint16_t& samplingRate, uint8_t& resolution) noexcept
 	case AccelerometerType::LIS3DH:
 	default:
 		// Set up control registers 1 and 4 according to the selected sampling rate and resolution
-		ctrlReg_0x20 = 0;												// collect no axes for now
+		ctrlReg_0x20 = 0;													// collect no axes for now
 		{
 			uint8_t ctrlReg_0x23 = (1 << 7);								// set block data update
 			if (resolution >= 12)											// if high resolution mode
@@ -193,12 +193,12 @@ bool LIS3DH::Configure(uint16_t& samplingRate, uint8_t& resolution) noexcept
 			ctrlReg_0x20 |= (odr << 4);
 
 			// Set up the control registers, except set ctrlReg1 to 0 to select power down mode
-			dataBuffer[0] = 0;												// ctrlReg1: for now select power down mode
-			dataBuffer[1] = 0;												// ctrlReg2: high pass filter not used
-			dataBuffer[2] = (1u << 2);										// ctrlReg3: enable fifo watermark interrupt
-			dataBuffer[3] = ctrlReg_0x23;
-			dataBuffer[4] = (1u << 6);										// ctrlReg5: enable fifo
-			dataBuffer[5] = 0;												// ctrlReg6: INT2 disabled, active high interrupts
+			transferBuffer.data[0] = 0;										// ctrlReg1: for now select power down mode
+			transferBuffer.data[1] = 0;										// ctrlReg2: high pass filter not used
+			transferBuffer.data[2] = (1u << 2);								// ctrlReg3: enable fifo watermark interrupt
+			transferBuffer.data[3] = ctrlReg_0x23;
+			transferBuffer.data[4] = (1u << 6);								// ctrlReg5: enable fifo
+			transferBuffer.data[5] = 0;										// ctrlReg6: INT2 disabled, active high interrupts
 		}
 		ok = WriteRegisters(LisRegister::Ctrl_0x20, 6);
 		if (ok)
@@ -232,12 +232,12 @@ bool LIS3DH::Configure(uint16_t& samplingRate, uint8_t& resolution) noexcept
 			}
 
 			// Set up the control registers, except set ctrlReg1 to 0 to select power down mode
-			dataBuffer[0] = 0;												// ctrlReg1: for now select power down mode
-			dataBuffer[1] = (1u << 7) | (1u << 2);							// ctrlReg2: BOOT, address auto increment
-			dataBuffer[2] = 0;												// ctrlReg3: push-pull interrupt output, interrupt active high
-			dataBuffer[3] = (1u << 1);										// ctrlReg4: INT1 fifo threshold interrupt enabled
-			dataBuffer[4] = 0;												// ctrlReg5: INT2 disabled
-			dataBuffer[5] = (1u << 2);										// ctrlReg6: max bandwidth, low pass filter path, +/-2g full scale, low noise mode
+			transferBuffer.data[0] = 0;										// ctrlReg1: for now select power down mode
+			transferBuffer.data[1] = (1u << 7) | (1u << 2);					// ctrlReg2: BOOT, address auto increment
+			transferBuffer.data[2] = 0;										// ctrlReg3: push-pull interrupt output, interrupt active high
+			transferBuffer.data[3] = (1u << 1);								// ctrlReg4: INT1 fifo threshold interrupt enabled
+			transferBuffer.data[4] = 0;										// ctrlReg5: INT2 disabled
+			transferBuffer.data[5] = (1u << 2);								// ctrlReg6: max bandwidth, low pass filter path, +/-2g full scale, low noise mode
 			ok = WriteRegisters(LisRegister::Ctrl_0x20, 6);
 		}
 		if (ok)
@@ -354,7 +354,7 @@ unsigned int LIS3DH::CollectData(const uint16_t **collectedData, uint16_t &dataR
 			return 0;
 		}
 
-		*collectedData = reinterpret_cast<const uint16_t*>(dataBuffer);
+		*collectedData = reinterpret_cast<const uint16_t*>(transferBuffer.data);
 		overflowed = (fifoStatus & 0x40) != 0;
 		dataRate = (totalNumRead == 0) ? 0 : (totalNumRead * (uint64_t)StepTimer::StepClockRate)/(lastInterruptTime - firstInterruptTime);
 		totalNumRead += numToRead;
@@ -379,8 +379,8 @@ bool LIS3DH::ReadRegisters(LisRegister reg, size_t numToRead) noexcept
 	// On the LIS3DH, bit 6 must be set to 1 to auto-increment the address when doing reading multiple registers
 	// On the LIS3DSH and LIS2DW, bit 6 is an extra register address bit, so we must not set it.
 	// So that we can read the WHO_AM_I register of both chips before we know which chip we have, only set bit 6 if we have a LIS3DH and we are reading multiple registers.
-	transferBuffer[1] = (uint8_t)reg | ((numToRead < 2 || accelerometerType != AccelerometerType::LIS3DH) ? 0x80 : 0xC0);
-	const bool ret = TransceivePacket(transferBuffer + 1, transferBuffer + 1, 1 + numToRead);
+	transferBuffer.reg = (uint8_t)reg | ((numToRead < 2 || accelerometerType != AccelerometerType::LIS3DH) ? 0x80 : 0xC0);
+	const bool ret = TransceivePacket(&transferBuffer.reg, &transferBuffer.reg, 1 + numToRead);
 	Deselect();
 	return ret;
 #else
@@ -388,7 +388,7 @@ bool LIS3DH::ReadRegisters(LisRegister reg, size_t numToRead) noexcept
 	// On the LIS3DSH and LIS2DW, bit 6 is an extra register address bit, so we must not set it.
 	// So that we can read the WHO_AM_I register of both chips before we know which chip we have, only set bit 6 if we have a LIS3DH and we are reading multiple registers.
 	const uint8_t regAddr = (numToRead < 2 || accelerometerType != AccelerometerType::LIS3DH) ? (uint8_t)reg : (uint8_t)reg | 0x80;
-	return Transfer(regAddr, dataBuffer, 1, numToRead, Lis3dI2CTimeout);
+	return Transfer(regAddr, transferBuffer.data, 1, numToRead, Lis3dI2CTimeout);
 #endif
 }
 
@@ -404,13 +404,13 @@ bool LIS3DH::WriteRegisters(LisRegister reg, size_t numToWrite) noexcept
 	{
 		return false;
 	}
-	transferBuffer[1] = (numToWrite < 2 || accelerometerType != AccelerometerType::LIS3DH) ? (uint8_t)reg : (uint8_t)reg | 0x40;		// set auto increment bit if LIS3DH
-	const bool ret = TransceivePacket(transferBuffer + 1, transferBuffer + 1, 1 + numToWrite);
+	transferBuffer.reg = (numToWrite < 2 || accelerometerType != AccelerometerType::LIS3DH) ? (uint8_t)reg : (uint8_t)reg | 0x40;		// set auto increment bit if LIS3DH
+	const bool ret = TransceivePacket(&transferBuffer.reg, &transferBuffer.reg, 1 + numToWrite);
 	Deselect();
 	return ret;
 #else
 	const uint8_t regAddr = (numToWrite < 2 || accelerometerType != AccelerometerType::LIS3DH) ? (uint8_t)reg : (uint8_t)reg | 0x80;	// set auto increment bit if LIS3DH
-	return Transfer(regAddr, dataBuffer, 1 + numToWrite, 0, Lis3dI2CTimeout);
+	return Transfer(regAddr, transferBuffer.data, 1 + numToWrite, 0, Lis3dI2CTimeout);
 #endif
 }
 
@@ -420,7 +420,7 @@ bool LIS3DH::ReadRegister(LisRegister reg, uint8_t& val) noexcept
 	const bool ret = ReadRegisters(reg, 1);
 	if (ret)
 	{
-		val = dataBuffer[0];
+		val = transferBuffer.data[0];
 	}
 	return ret;
 #else
@@ -431,7 +431,7 @@ bool LIS3DH::ReadRegister(LisRegister reg, uint8_t& val) noexcept
 bool LIS3DH::WriteRegister(LisRegister reg, uint8_t val) noexcept
 {
 #if ACCELEROMETER_USES_SPI
-	dataBuffer[0] = val;
+	transferBuffer.data[0] = val;
 	return WriteRegisters(reg, 1);
 #else
 	if ((uint8_t)reg < 0x1E)						// don't overwrite the factory calibration values

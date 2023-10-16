@@ -17,6 +17,8 @@
 # include <hri_sercom_c21.h>
 #endif
 
+#define USE_I2C_DMA		(0)
+
 constexpr uint32_t DefaultSharedI2CClockFrequency = 400000;
 constexpr uint32_t I2CTimeoutTicks = 100;
 
@@ -43,12 +45,13 @@ SharedI2CMaster::SharedI2CMaster(uint8_t sercomNum) noexcept
 	hri_sercomi2cm_write_CTRLA_reg(hardware, regCtrlA);
 	hardware->I2CM.CTRLB.reg = SERCOM_I2CM_CTRLB_SMEN;
 #if SAME5x
-	hardware->I2CM.CTRLC.reg = 0;												// 8-bit mode
+	hardware->I2CM.CTRLC.reg = 0;													// 8-bit mode
 #endif
 	hri_sercomi2cm_write_BAUD_reg(hardware, SERCOM_I2CM_BAUD_BAUD(Serial::SercomFastGclkFreq/(2 * DefaultSharedI2CClockFrequency) - 1));
-	hri_sercomi2cm_write_DBGCTRL_reg(hardware, SERCOM_I2CM_DBGCTRL_DBGSTOP);			// baud rate generator is stopped when CPU halted by debugger
+	currentClockRate = DefaultSharedI2CClockFrequency;
+	hri_sercomi2cm_write_DBGCTRL_reg(hardware, SERCOM_I2CM_DBGCTRL_DBGSTOP);		// baud rate generator is stopped when CPU halted by debugger
 
-#if 0	// if using DMA
+#if USE_I2C_DMA
 	// Set up the DMA descriptors
 	// We use separate write-back descriptors, so we only need to set this up once, but it must be in SRAM
 	DmacSetBtctrl(I2CRxDmaChannel, DMAC_BTCTRL_VALID | DMAC_BTCTRL_EVOSEL_DISABLE | DMAC_BTCTRL_BLOCKACT_INT | DMAC_BTCTRL_BEATSIZE_BYTE
@@ -82,12 +85,17 @@ SharedI2CMaster::SharedI2CMaster(uint8_t sercomNum) noexcept
 	Enable();
 }
 
-void SharedI2CMaster::SetClockFrequency(uint32_t freq) const noexcept
+// Set the I2C clock frequency. Caller must own the mutex first.
+void SharedI2CMaster::SetClockFrequency(uint32_t freq) noexcept
 {
-	// We have to disable SPI device in order to change the baud rate and mode
-	Disable();
-	hri_sercomi2cm_write_BAUD_reg(hardware, SERCOM_I2CM_BAUD_BAUD(Serial::SercomFastGclkFreq/(2 * freq) - 1));
-	Enable();
+	if (freq != currentClockRate)
+	{
+		// We have to disable I2C device in order to change the baud rate
+		Disable();
+		hri_sercomi2cm_write_BAUD_reg(hardware, SERCOM_I2CM_BAUD_BAUD(Serial::SercomFastGclkFreq/(2 * freq) - 1));
+		currentClockRate = freq;
+		Enable();
+	}
 }
 
 void SharedI2CMaster::Enable() const noexcept
@@ -104,7 +112,7 @@ void SharedI2CMaster::Disable() const noexcept
 	while (hardware->I2CM.SYNCBUSY.bit.ENABLE) { }
 }
 
-// Write then read data
+// Write then read data. Caller must own the mutex first.
 bool SharedI2CMaster::Transfer(uint16_t address, uint8_t firstByte, uint8_t *buffer, size_t numToWrite, size_t numToRead) noexcept
 {
 	// If an empty transfer, nothing to do
@@ -158,7 +166,7 @@ bool SharedI2CMaster::InternalTransfer(uint16_t address, uint8_t firstByte, uint
 	numLeftToWrite = numToWrite;
 	hardware->I2CM.INTFLAG.reg = 0xFF;										// clear all flag bits
 	hardware->I2CM.STATUS.reg = SERCOM_I2CM_STATUS_BUSERR | SERCOM_I2CM_STATUS_RXNACK | SERCOM_I2CM_STATUS_ARBLOST;		// clear all status bits
-	hardware->I2CM.CTRLB.reg = SERCOM_I2CM_CTRLB_SMEN;						// make sure the ACKACT bit is clear
+	hardware->I2CM.CTRLB.reg = SERCOM_I2CM_CTRLB_SMEN;						// make sure the ACKACT bit is clear and CMD is zero
 
 	TaskBase::ClearCurrentTaskNotifyCount();
 	taskWaiting = TaskBase::GetCallerTaskHandle();
