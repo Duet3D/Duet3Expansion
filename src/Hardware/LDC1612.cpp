@@ -85,6 +85,7 @@ bool LDC1612::SetDefaultConfiguration(uint8_t channel, bool calibrationMode) noe
 		&& SetMuxConfiguration(MUX_RESERVED_BITS | MUX_DEGLITCH_10MHZ)			// single conversion
 		&& SetErrorConfiguration(UR_ERR2OUT | OR_ERR2OUT | WD_ERR2OUT | AH_ERR2OUT | AL_ERR2OUT)
 		&& SetConversionOffset(channel, 0)
+		&& SetErrorConfiguration(0x0001)										// data ready generates INTB
 		&& UpdateConfiguration(configRegVal | (channel << 14));					// this also takes the device out of sleep mode
 }
 
@@ -118,9 +119,9 @@ bool LDC1612::GetChannelResult(uint8_t channel, uint32_t& result) noexcept
 }
 
 // Set the conversion time in units of 16 divided reference clocks. Minimum is 5.
-bool LDC1612::SetConversionTime(uint8_t channel, uint16_t microseconds) noexcept
+bool LDC1612::SetConversionTime(uint8_t channel, float microseconds) noexcept
 {
-	const uint16_t value = max<uint16_t>((uint16_t)((microseconds * FRef) * (1.0/16.0)), 9);
+	const uint16_t value = max<uint16_t>((uint16_t)(microseconds * (FRef/16.0)), 5);
     return Write16bits((LDCRegister)((uint8_t)LDCRegister::SET_CONVERSION_TIME_REG_START + channel), value);
 }
 
@@ -137,9 +138,9 @@ bool LDC1612::SetConversionOffset(uint8_t channel, uint16_t value) noexcept
     @param channel LDC1612 has total two channels.
     @param result The value to be set.
  * */
-bool LDC1612::SetLCStabilizeTime(uint8_t channel, uint16_t microseconds) noexcept
+bool LDC1612::SetLCStabilizeTime(uint8_t channel, float microseconds) noexcept
 {
-	const uint16_t value = max<uint16_t>((uint16_t)((microseconds * FRef) * (1.0/16.0)), 4);
+	const uint16_t value = max<uint16_t>((uint16_t)(microseconds * (FRef/16.0)), 4);
     return Write16bits((LDCRegister)((uint8_t)LDCRegister::SET_LC_STABILIZE_REG_START + channel), value);
 }
 
@@ -164,7 +165,7 @@ bool LDC1612::SetErrorConfiguration(uint16_t value) noexcept
  * */
 bool LDC1612::SetMuxConfiguration(uint16_t value) noexcept
 {
-	return Write16bits(LDCRegister::MUL_CONFIG_REG, value);
+	return Write16bits(LDCRegister::MUX_CONFIG_REG, value);
 }
 
 // Reset the sensor
@@ -176,7 +177,7 @@ bool LDC1612::Reset() noexcept
 /** @brief set drive current of sensor.
     @param result The value to be set.
  * */
-bool LDC1612::SetDriveCurrent(uint8_t channel, uint32_t value) noexcept
+bool LDC1612::SetDriveCurrent(uint8_t channel, uint16_t value) noexcept
 {
 	value &= 0x1F;
 	const bool ok = Write16bits((LDCRegister)((uint8_t)LDCRegister::SET_DRIVER_CURRENT_REG + channel), (uint16_t)(value << 11));
@@ -199,9 +200,9 @@ bool LDC1612::ReadInitCurrent(uint8_t channel, uint16_t& value) noexcept
 }
 
 // Return true if there is an unread conversion for the specified channel. Returns false if there was an error getting the status.
-bool LDC1612::IsChannelReady(uint8_t chan) noexcept
+bool LDC1612::IsChannelReady(uint8_t channel) noexcept
 {
-	return GetStatus() & (1u << (3 - chan));
+	return GetStatus() & (1u << (3 - channel));
 }
 
 /** @brief Main config part of sensor.Contains select channel、start conversion、sleep mode、sensor activation mode、INT pin disable ..

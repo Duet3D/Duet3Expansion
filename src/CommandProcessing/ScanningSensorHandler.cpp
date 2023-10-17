@@ -22,19 +22,20 @@ static AnalogIn::AdcTaskHookFunction *oldHookFunction = nullptr;
 static volatile uint32_t lastReading = 0;
 static volatile bool isCalibrating = false;
 static uint32_t lastReadingTakenAt = 0;
+static uint32_t offset = 0;
 
 static void LDC1612TaskHook() noexcept
 {
 	// The LDC1612 generates lots of bus errors if we try to read the data when no new data is available
-	if (!isCalibrating && millis() - lastReadingTakenAt != 0)		// ensure minimum 1ms (on average) time between readings, else the ADC task uses too much CPU
+	if (!isCalibrating && !digitalRead(LDC1612InterruptPin))
 	{
 		uint32_t val;
-		if (sensor->IsChannelReady(0) && sensor->GetChannelResult(0, val))		// if no error
+		if (sensor->GetChannelResult(0, val))		// if no error
 		{
 			lastReading = val;						// save all 28 bits of data + 4 error bits
 			lastReadingTakenAt = millis();			// record when we took it
 		}
-		else if (millis() - lastReadingTakenAt > 4)	// we get occasional reading errors, so don't report a bad reading unless it's 5ms since we had a good reading
+		else if (millis() - lastReadingTakenAt > 5)	// we get occasional reading errors, so don't report a bad reading unless it's 5ms since we had a good reading
 		{
 			lastReading = 0;
 		}
@@ -85,6 +86,7 @@ void ScanningSensorHandler::Init() noexcept
 	if (sensor->CheckPresent())
 	{
 		sensor->SetDefaultConfiguration(0);
+		pinMode(LDC1612InterruptPin, PinMode::INPUT);
 		oldHookFunction = AnalogIn::SetTaskHook(LDC1612TaskHook);
 	}
 	else
@@ -103,7 +105,9 @@ bool ScanningSensorHandler::IsPresent() noexcept
 
 uint32_t ScanningSensorHandler::GetReading() noexcept
 {
-	return ((lastReading & 0xF0000000) == 0) ? lastReading >> ResultBitsDropped : BadReadingVal;
+	if ((lastReading & 0xF0000000) != 0) { return BadReadingVal; }
+	const uint32_t reading = lastReading >> ResultBitsDropped;
+	return (reading > offset) ? reading - offset : 0;
 }
 
 GCodeResult ScanningSensorHandler::SetOrCalibrateCurrent(uint32_t param, const StringRef& reply, uint8_t& extra) noexcept
@@ -113,33 +117,41 @@ GCodeResult ScanningSensorHandler::SetOrCalibrateCurrent(uint32_t param, const S
 		if (param == CanMessageChangeInputMonitorNew::paramAutoCalibrateDriveLevelAndReport)
 		{
 			isCalibrating = true;
-			const bool ok = (sensor->CalibrateDriveCurrent(0));
-			isCalibrating = false;
+			bool ok = sensor->CalibrateDriveCurrent(0);
 			if (ok)
 			{
 				extra = sensor->GetDriveCurrent(0);
-				reply.printf("Calibration successful, sensor drive current is %u", extra);
-				return GCodeResult::ok;
+				delay(4);											// give time for a reading to become available
+				uint32_t val;
+				ok = sensor->GetChannelResult(0, val);
+				isCalibrating = false;
+				if (ok && (val & 0xF0000000) == 0)
+				{
+					val >>= ResultBitsDropped;
+					offset = val - (val >> 4);						// set the offset to 15/16 of the reading
+					reply.printf("Calibration successful, sensor drive current is %u, offset is %" PRIu32, extra, offset);
+					return GCodeResult::ok;
+				}
 			}
+			isCalibrating = false;
 			reply.copy("failed to calibrate sensor drive current");
 		}
 		else if (param == CanMessageChangeInputMonitorNew::paramReportDriveLevel)
 		{
 			extra = sensor->GetDriveCurrent(0);
-			reply.printf("Sensor drive current is %u", extra);
+			reply.printf("Sensor drive current is %u, offset is %" PRIu32, extra, offset);
 			return GCodeResult::ok;
 		}
 		else
 		{
-			if (param > 31)
-			{
-				param = 31;
-			}
+			const uint16_t driveCurrent = param & CanMessageChangeInputMonitorNew::paramDriveLevelMask;
+			const uint32_t newOffset = param >> CanMessageChangeInputMonitorNew::paramOffsetShift;
 			isCalibrating = true;
-			const bool ok = (sensor->SetDriveCurrent(0, param));
+			const bool ok = sensor->SetDriveCurrent(0, driveCurrent);
 			isCalibrating = false;
 			if (ok)
 			{
+				offset = newOffset;
 				extra = param;
 				return GCodeResult::ok;
 			}
