@@ -9,7 +9,7 @@
 #define SRC_PLATFORM_H_
 
 #include <RepRapFirmware.h>
-#include "AdcAveragingFilter.h"
+#include "AveragingFilter.h"
 #include <Movement/StepTimer.h>
 #include <Heating/Heat.h>
 #include <UniqueIdBase.h>
@@ -48,8 +48,8 @@ constexpr size_t ThermistorReadingsAveraged = 64;
 constexpr size_t ZProbeReadingsAveraged = 8;		// We average this number of readings with IR on, and the same number with IR off
 constexpr size_t VinReadingsAveraged = 8;
 
-typedef AdcAveragingFilter<ThermistorReadingsAveraged> ThermistorAveragingFilter;
-typedef AdcAveragingFilter<ZProbeReadingsAveraged> ZProbeAveragingFilter;
+typedef AveragingFilter<ThermistorReadingsAveraged> ThermistorAveragingFilter;
+typedef AveragingFilter<ZProbeReadingsAveraged> ZProbeAveragingFilter;
 
 # if HAS_VREF_MONITOR
 

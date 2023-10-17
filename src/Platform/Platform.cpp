@@ -13,7 +13,6 @@
 #include <Movement/Move.h>
 #include "Movement/StepperDrivers/TMC51xx.h"
 #include "Movement/StepperDrivers/TMC22xx.h"
-#include "AdcAveragingFilter.h"
 #include "Movement/StepTimer.h"
 #include <CAN/CanInterface.h>
 #include <CanMessageBuffer.h>
@@ -218,17 +217,17 @@ namespace Platform
 #endif
 
 #if HAS_VOLTAGE_MONITOR
-	static AdcAveragingFilter<VinReadingsAveraged> vinFilter;
+	static AveragingFilter<VinReadingsAveraged> vinFilter;
 #endif
 #if HAS_12V_MONITOR
-	static AdcAveragingFilter<VinReadingsAveraged> v12Filter;
+	static AveragingFilter<VinReadingsAveraged> v12Filter;
 #endif
 
 #if SAME5x
-	static AdcAveragingFilter<McuTempReadingsAveraged> tpFilter;
-	static AdcAveragingFilter<McuTempReadingsAveraged> tcFilter;
+	static AveragingFilter<McuTempReadingsAveraged> tpFilter;
+	static AveragingFilter<McuTempReadingsAveraged> tcFilter;
 #elif SAMC21 || RP2040
-	static AdcAveragingFilter<McuTempReadingsAveraged> tsensFilter;
+	static AveragingFilter<McuTempReadingsAveraged> tsensFilter;
 #endif
 
 #if SUPPORT_DRIVERS

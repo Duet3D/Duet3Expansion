@@ -23,6 +23,8 @@ static volatile uint32_t lastReading = 0;
 static volatile bool isCalibrating = false;
 static uint32_t lastReadingTakenAt = 0;
 static uint32_t offset = 0;
+static volatile AnalogInCallbackFunction callbackFunction = nullptr;
+static CallbackParameter callbackParameter;
 
 static void LDC1612TaskHook() noexcept
 {
@@ -34,6 +36,12 @@ static void LDC1612TaskHook() noexcept
 		{
 			lastReading = val;						// save all 28 bits of data + 4 error bits
 			lastReadingTakenAt = millis();			// record when we took it
+			TaskCriticalSectionLocker lock;
+			const AnalogInCallbackFunction fn = callbackFunction;
+			if (fn != nullptr)
+			{
+				fn(callbackParameter, ScanningSensorHandler::GetReading());
+			}
 		}
 		else if (millis() - lastReadingTakenAt > 5)	// we get occasional reading errors, so don't report a bad reading unless it's 5ms since we had a good reading
 		{
@@ -160,6 +168,14 @@ GCodeResult ScanningSensorHandler::SetOrCalibrateCurrent(uint32_t param, const S
 	}
 	extra = 0xFF;
 	return GCodeResult::error;
+}
+
+bool ScanningSensorHandler::SetCallback(AnalogInCallbackFunction fn, CallbackParameter param, uint32_t ticksPerCall) noexcept
+{
+	callbackParameter = param;
+	callbackFunction = fn;
+	// We ignore the ticksPerCall parameter
+	return true;
 }
 
 void ScanningSensorHandler::AppendDiagnostics(const StringRef& reply) noexcept

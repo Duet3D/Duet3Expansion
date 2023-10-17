@@ -40,14 +40,14 @@ public:
 	static unsigned int AddAnalogHandleData(uint8_t *buffer, size_t spaceLeft) noexcept;
 
 	static void CommonDigitalPortInterrupt(CallbackParameter cbp) noexcept;
-	static void CommonAnalogPortInterrupt(CallbackParameter cbp, uint16_t reading) noexcept;
+	static void CommonAnalogPortInterrupt(CallbackParameter cbp, uint32_t reading) noexcept;
 
 private:
 	bool IsDigital() const noexcept { return threshold == 0; }
 	bool Activate() noexcept;
 	void Deactivate() noexcept;
 	void DigitalInterrupt() noexcept;
-	void AnalogInterrupt(uint16_t reading) noexcept;
+	void AnalogInterrupt(uint32_t reading) noexcept;
 	uint32_t GetAnalogValue() const noexcept;
 	GCodeResult SetDriveLevel(uint32_t param, const StringRef& reply, uint8_t& extra) noexcept;
 

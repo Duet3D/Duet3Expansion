@@ -132,6 +132,18 @@ void IoPort::Release() noexcept
 	if (IsValid() && !isSharedInput)
 	{
 		detachInterrupt(pin);
+		const AdcInput adcChan = PinTable[pin].adc;
+#if SUPPORT_LDC1612
+		if (adcChan == AdcInput::ldc1612)
+		{
+			ScanningSensorHandler::SetCallback(nullptr, CallbackParameter(), 0);
+		}
+		else
+#endif
+		if (adcChan != AdcInput::none)
+		{
+			AnalogIn::SetCallback(adcChan, nullptr, CallbackParameter(), 0);
+		}
 		portUsedBy[pin] = PinUsedBy::unused;
 		logicalPinModes[pin] = PIN_MODE_NOT_CONFIGURED;
 	}
@@ -198,7 +210,13 @@ void IoPort::DetachInterrupt() const noexcept
 
 bool IoPort::SetAnalogCallback(AnalogInCallbackFunction fn, CallbackParameter cbp, uint32_t ticksPerCall) noexcept
 {
-	return AnalogIn::SetCallback(PinToAdcChannel(pin), fn, cbp, ticksPerCall, false);
+	return IsValid() &&
+			(
+#if SUPPORT_LDC1612
+				(PinTable[pin].adc == AdcInput::ldc1612) ? ScanningSensorHandler::SetCallback(fn, cbp, ticksPerCall) :
+#endif
+					AnalogIn::SetCallback(PinToAdcChannel(pin), fn, cbp, ticksPerCall, false)
+			);
 }
 
 // Try to assign ports, returning the number of ports successfully assigned

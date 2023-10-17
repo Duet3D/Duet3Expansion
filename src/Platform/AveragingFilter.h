@@ -1,22 +1,22 @@
 /*
- * AdcAveragingFilter.h
+ * AveragingFilter.h
  *
  *  Created on: 7 Sep 2018
  *      Author: David
  */
 
-#ifndef SRC_ADCAVERAGINGFILTER_H_
-#define SRC_ADCAVERAGINGFILTER_H_
+#ifndef SRC_PLATFORM_AVERAGINGFILTER_H_
+#define SRC_PLATFORM_AVERAGINGFILTER_H_
 
 #include "RepRapFirmware.h"
 #include "RTOSIface/RTOSIface.h"
 
 // Class to perform averaging of values read from the ADC
 // numAveraged should be a power of 2 for best efficiency
-template<size_t numAveraged> class AdcAveragingFilter
+template<size_t numAveraged> class AveragingFilter
 {
 public:
-	AdcAveragingFilter() noexcept
+	AveragingFilter() noexcept
 	{
 		Init(0);
 	}
@@ -72,7 +72,7 @@ public:
 	static constexpr size_t NumAveraged() noexcept { return numAveraged; }
 
 	// Function used as an ADC callback to feed a result into an averaging filter
-	static void CallbackFeedIntoFilter(CallbackParameter cp, uint16_t val) noexcept;
+	static void CallbackFeedIntoFilter(CallbackParameter cp, uint32_t val) noexcept;
 
 	bool CheckIntegrity() const noexcept;
 
@@ -86,12 +86,12 @@ private:
 };
 
 // This is called from an ISR or high priority task to add a new reading to the filter.
-template<size_t numAveraged> void AdcAveragingFilter<numAveraged>::CallbackFeedIntoFilter(CallbackParameter cp, uint16_t val) noexcept
+template<size_t numAveraged> void AveragingFilter<numAveraged>::CallbackFeedIntoFilter(CallbackParameter cp, uint32_t val) noexcept
 {
-	static_cast<AdcAveragingFilter<numAveraged>*>(cp.vp)->ProcessReading(val);
+	static_cast<AveragingFilter<numAveraged>*>(cp.vp)->ProcessReading((uint16_t)val);
 }
 
-template<size_t numAveraged> bool AdcAveragingFilter<numAveraged>::CheckIntegrity() const noexcept
+template<size_t numAveraged> bool AveragingFilter<numAveraged>::CheckIntegrity() const noexcept
 {
 	AtomicCriticalSectionLocker lock;
 
@@ -103,4 +103,4 @@ template<size_t numAveraged> bool AdcAveragingFilter<numAveraged>::CheckIntegrit
 	return locSum == sum;
 }
 
-#endif /* SRC_ADCAVERAGINGFILTER_H_ */
+#endif /* SRC_PLATFORM_AVERAGINGFILTER_H_ */
