@@ -61,6 +61,17 @@ bool InputMonitor::Activate() noexcept
 
 void InputMonitor::Deactivate() noexcept
 {
+	if (active)
+	{
+		if (IsDigital())
+		{
+			port.DetachInterrupt();
+		}
+		else
+		{
+			port.ClearAnalogCallback();
+		}
+	}
 	active = false;
 }
 

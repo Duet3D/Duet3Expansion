@@ -85,6 +85,7 @@ public:
 	bool AttachInterrupt(StandardCallbackFunction callback, InterruptMode mode, CallbackParameter param) const noexcept;
 	void DetachInterrupt() const noexcept;
 	bool SetAnalogCallback(AnalogInCallbackFunction fn, CallbackParameter cbp, uint32_t ticksPerCall) noexcept;
+	void ClearAnalogCallback() noexcept;
 
 	// Initialise static data
 	static void Init() noexcept;

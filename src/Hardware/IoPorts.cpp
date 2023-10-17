@@ -44,6 +44,49 @@ IoPort::IoPort() noexcept : pin(NoPin), hardwareInvert(false), totalInvert(false
 {
 }
 
+void IoPort::Release() noexcept
+{
+	if (IsValid() && !isSharedInput)
+	{
+		DetachInterrupt();
+		ClearAnalogCallback();
+		portUsedBy[pin] = PinUsedBy::unused;
+		logicalPinModes[pin] = PIN_MODE_NOT_CONFIGURED;
+	}
+	pin = NoPin;
+	hardwareInvert = totalInvert = false;
+}
+
+// Attach an interrupt to the pin. Nor permitted if we allocated the pin in shared input mode.
+bool IoPort::AttachInterrupt(StandardCallbackFunction callback, InterruptMode mode, CallbackParameter param) const noexcept
+{
+	return IsValid() && !isSharedInput && attachInterrupt(pin, callback, mode, param);
+}
+
+void IoPort::DetachInterrupt() const noexcept
+{
+	if (IsValid() && !isSharedInput)
+	{
+		detachInterrupt(pin);
+	}
+}
+
+bool IoPort::SetAnalogCallback(AnalogInCallbackFunction fn, CallbackParameter cbp, uint32_t ticksPerCall) noexcept
+{
+	return IsValid() && !isSharedInput &&
+			(
+#if SUPPORT_LDC1612
+				(PinTable[pin].adc == AdcInput::ldc1612) ? ScanningSensorHandler::SetCallback(fn, cbp, ticksPerCall) :
+#endif
+					AnalogIn::SetCallback(PinToAdcChannel(pin), fn, cbp, ticksPerCall, false)
+			);
+}
+
+void IoPort::ClearAnalogCallback() noexcept
+{
+	(void)SetAnalogCallback(nullptr, CallbackParameter(), 1);
+}
+
 // Set the specified pin mode returning true if successful
 bool IoPort::SetMode(PinAccess access) noexcept
 {
@@ -127,30 +170,6 @@ bool IoPort::SetMode(PinAccess access) noexcept
 	return true;
 }
 
-void IoPort::Release() noexcept
-{
-	if (IsValid() && !isSharedInput)
-	{
-		detachInterrupt(pin);
-		const AdcInput adcChan = PinTable[pin].adc;
-#if SUPPORT_LDC1612
-		if (adcChan == AdcInput::ldc1612)
-		{
-			ScanningSensorHandler::SetCallback(nullptr, CallbackParameter(), 0);
-		}
-		else
-#endif
-		if (adcChan != AdcInput::none)
-		{
-			AnalogIn::SetCallback(adcChan, nullptr, CallbackParameter(), 0);
-		}
-		portUsedBy[pin] = PinUsedBy::unused;
-		logicalPinModes[pin] = PIN_MODE_NOT_CONFIGURED;
-	}
-	pin = NoPin;
-	hardwareInvert = totalInvert = false;
-}
-
 void IoPort::WriteDigital(bool high) const noexcept
 {
 	if (IsValid())
@@ -192,31 +211,6 @@ uint32_t IoPort::ReadAnalog() const noexcept
 		}
 	}
 	return 0;
-}
-
-// Attach an interrupt to the pin. Nor permitted if we allocated the pin in shared input mode.
-bool IoPort::AttachInterrupt(StandardCallbackFunction callback, InterruptMode mode, CallbackParameter param) const noexcept
-{
-	return IsValid() && !isSharedInput && attachInterrupt(pin, callback, mode, param);
-}
-
-void IoPort::DetachInterrupt() const noexcept
-{
-	if (IsValid() && !isSharedInput)
-	{
-		detachInterrupt(pin);
-	}
-}
-
-bool IoPort::SetAnalogCallback(AnalogInCallbackFunction fn, CallbackParameter cbp, uint32_t ticksPerCall) noexcept
-{
-	return IsValid() &&
-			(
-#if SUPPORT_LDC1612
-				(PinTable[pin].adc == AdcInput::ldc1612) ? ScanningSensorHandler::SetCallback(fn, cbp, ticksPerCall) :
-#endif
-					AnalogIn::SetCallback(PinToAdcChannel(pin), fn, cbp, ticksPerCall, false)
-			);
 }
 
 // Try to assign ports, returning the number of ports successfully assigned
