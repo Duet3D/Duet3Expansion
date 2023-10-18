@@ -713,8 +713,8 @@ CanMessageBuffer *CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf) no
 
 void CanInterface::Diagnostics(const StringRef& reply) noexcept
 {
-	unsigned int messagesQueuedForSending, messagesReceived, messagesLost, busOffCount;
-	can0dev->GetAndClearStats(messagesQueuedForSending, messagesReceived, messagesLost, busOffCount);
+	CanDevice::CanStats stats;
+	can0dev->GetAndClearStats(stats);
 #if RP2040 && !USE_SPICAN
 	reply.lcatf("CAN messages queued %u, send timeouts %u, received %u, free buffers %u, min %u",
 					messagesQueuedForSending, txTimeouts, messagesReceived, CanMessageBuffer::GetFreeBuffers(), CanMessageBuffer::GetAndClearMinFreeBuffers());
@@ -725,8 +725,9 @@ void CanInterface::Diagnostics(const StringRef& reply) noexcept
 					errs.rxFifoOverlow[0], errs.rxFifoOverlow[1], errs.wrongMessageType, errs.badStuffing, errs.stuffCountParity, errs.wrongStuffCount,
 						errs.wrongCrc, errs.missingCrcDelimiter, errs.noAck, errs.missingEofBit1, errs.missingEofBit2, errs.tooLateToAck);
 #else
-	reply.lcatf("CAN messages queued %u, send timeouts %u, received %u, lost %u, free buffers %u, min %u, error reg %" PRIx32,
-					messagesQueuedForSending, txTimeouts, messagesReceived, messagesLost, CanMessageBuffer::GetFreeBuffers(), CanMessageBuffer::GetAndClearMinFreeBuffers(), can0dev->GetErrorRegister());
+	reply.lcatf("CAN messages queued %u, send timeouts %u, received %u, lost %u, errs %u, boc %u, free buffers %u, min %u, error reg %" PRIx32,
+					stats.messagesQueuedForSending, txTimeouts, stats.messagesReceived, stats.messagesLost, stats.protocolErrors, stats.busOffCount,
+					CanMessageBuffer::GetFreeBuffers(), CanMessageBuffer::GetAndClearMinFreeBuffers(), can0dev->GetErrorRegister());
 #endif
 	txTimeouts = 0;
 	if (lastCancelledId != 0)
@@ -736,6 +737,7 @@ void CanInterface::Diagnostics(const StringRef& reply) noexcept
 		lastCancelledId = 0;
 		reply.lcatf("Last cancelled message type %u dest %u", (unsigned int)id.MsgType(), id.Dst());
 	}
+
 #if SUPPORT_DRIVERS
 	reply.lcatf("dup %u, oos %u/%u/%u/%u, bm %u, wbm %" PRIu32 ", rxMotionDelay %" PRIu32,
 					duplicateMotionMessages, oosMessages1Ahead, oosMessages2Ahead, oosMessages2Behind, oosMessagesOther, badMoveCommands, worstBadMove, maxMotionProcessingDelay);
