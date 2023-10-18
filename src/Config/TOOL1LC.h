@@ -145,6 +145,7 @@ constexpr Pin Lis3dhInt1Pin = PortAPin(0);
 #if SUPPORT_LDC1612
 constexpr Pin LDC1612ClockGenPin = PortAPin(23);
 constexpr uint16_t LDC1612_I2cAddress = 0x2B;				// pin 4 is tied high on the Grove board
+constexpr Pin LDC1612InterruptPin = PortAPin(23);			// this is brought out to a test pad
 #endif
 
 // Table of pin functions that we are allowed to use
