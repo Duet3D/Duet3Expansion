@@ -104,6 +104,10 @@ constexpr size_t MaxPortsPerHeater = 1;
 
 constexpr size_t NumThermistorInputs = 3;
 constexpr float DefaultThermistorSeriesR = 2200.0;
+constexpr float DefaultThermistorR25_TOOL1RR_temp2 = 10000;
+constexpr float DefaultThermistorBeta_TOOL1RR_temp2 = 3425.0;
+constexpr float DefaultThermistorC_TOOL1RR_temp2 = 1.68e-7;
+
 constexpr float VrefTopResistor = 27.0;
 constexpr float MinVrefLoadR = (DefaultThermistorSeriesR / NumThermistorInputs) * 4700.0/((DefaultThermistorSeriesR / NumThermistorInputs) + 4700.0);
 
@@ -155,7 +159,7 @@ constexpr PinDescription PinTable[] =
 	//	TC					TCC					ADC					SERCOM in			SERCOM out	  Exint PinName
 	// Port A
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA00 driver ENN
-	{ TcOutput::tc2_1,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"out0"			},	// PA01 OUT0
+	{ TcOutput::tc2_1,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"out1"			},	// PA01 OUT0
 	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_0,	SercomIo::none,		SercomIo::none,		Nx,	"ate.vin"		},	// PA02 VIN monitor
 	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_1,	SercomIo::none,		SercomIo::none,		Nx, nullptr			},	// PA03 board type
 	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_4,	SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA04 spare analog in (strain gauge?)

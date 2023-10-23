@@ -75,6 +75,15 @@ GCodeResult Thermistor::Configure(const CanMessageGenericParser& parser, const S
 		if (adcFilterChannel >= 0)
 		{
 			Platform::GetAdcFilter(adcFilterChannel)->Init((1u << AnalogIn::AdcBits) - 1);
+#ifdef TOOL1RR
+			// The temp2 port is the thermistor on the LDC1612 sensor so change its default parameters
+			if (adcFilterChannel == 2)
+			{
+				  r25 = DefaultThermistorR25_TOOL1RR_temp2;
+				  beta = DefaultThermistorBeta_TOOL1RR_temp2;
+				  shC = DefaultThermistorC_TOOL1RR_temp2;
+			}
+#endif
 #if HAS_VREF_MONITOR
 			// Default the H and L parameters to the values from nonvolatile memory
 			NonVolatileMemory mem(NvmPage::common);
