@@ -72,21 +72,20 @@ bool LDC1612::CheckPresent() noexcept
 // Set the default configuration for a channel and enable it
 bool LDC1612::SetDefaultConfiguration(uint8_t channel, bool calibrationMode) noexcept
 {
-	uint16_t configRegVal = CFG_REF_CLK_SRC | CFG_AUTO_AMP_DIS | CFG_RESERVED_BITS;
+	uint16_t configRegVal = CFG_REF_CLK_SRC | CFG_RESERVED_BITS;
 	if (!calibrationMode)
 	{
-		configRegVal |= CFG_RP_OVERRIDE_EN;
+		configRegVal |= (CFG_RP_OVERRIDE_EN | CFG_AUTO_AMP_DIS);
 	}
 	return UpdateConfiguration(configRegVal | CFG_SLEEP_MODE_EN)				// put the device in sleep mode
 		&& SetDivisors(channel)
 		&& SetLCStabilizeTime(channel, DefaultLCStabilizeTime)
 		&& SetConversionTime(channel, DefaultConversionTime)
 		&& SetDriveCurrent(channel, currentSetting[channel])
-		&& SetMuxConfiguration(MUX_RESERVED_BITS | MUX_DEGLITCH_10MHZ)			// single conversion
-		&& SetErrorConfiguration(UR_ERR2OUT | OR_ERR2OUT | WD_ERR2OUT | AH_ERR2OUT | AL_ERR2OUT)
+		&& SetMuxConfiguration(MUX_RESERVED_BITS | MUX_DEGLITCH_10MHZ)			// convert a single channel
+		&& SetErrorConfiguration(UR_ERR2OUT | OR_ERR2OUT | WD_ERR2OUT | AH_ERR2OUT | AL_ERR2OUT | DRDY_2INT)
 		&& SetConversionOffset(channel, 0)
-		&& SetErrorConfiguration(0x0001)										// data ready generates INTB
-		&& UpdateConfiguration(configRegVal | (channel << 14));					// this also takes the device out of sleep mode
+		&& UpdateConfiguration(configRegVal | ((uint16_t)channel << 14));		// this also takes the device out of sleep mode
 }
 
 // Use the auto calibration function to establish the correct drive current
@@ -95,8 +94,9 @@ bool LDC1612::CalibrateDriveCurrent(uint8_t channel) noexcept
 	bool ok = SetDefaultConfiguration(channel, true);
 	if (ok)
 	{
-		delay(4);					// this assumes that the conversion time is set to less than 4ms
-		ok = ReadInitCurrent(channel, currentSetting[channel]) && SetDefaultConfiguration(channel, false);
+		delay(4);																// this assumes that the conversion time is set to 3ms or less
+		ok = ReadInitCurrent(channel, currentSetting[channel])
+				&& SetDefaultConfiguration(channel, false);
 	}
 	return ok;
 }

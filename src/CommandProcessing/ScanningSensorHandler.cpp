@@ -15,7 +15,6 @@
 #include <AnalogIn.h>
 
 constexpr unsigned int ResultBitsDropped = 8;		// we drop this number of least significant bits in the result
-constexpr uint32_t BadReadingVal = 999999;			// close to 2 ^ (28 - resultBitsDropped)
 
 static LDC1612 *sensor = nullptr;
 static AnalogIn::AdcTaskHookFunction *oldHookFunction = nullptr;
@@ -90,10 +89,9 @@ void ScanningSensorHandler::Init() noexcept
 #endif
 
 	sensor = new LDC1612(Platform::GetSharedI2C());
-
 	if (sensor->CheckPresent())
 	{
-		sensor->SetDefaultConfiguration(0);
+		sensor->SetDefaultConfiguration(0, false);
 		pinMode(LDC1612InterruptPin, PinMode::INPUT);
 		oldHookFunction = AnalogIn::SetTaskHook(LDC1612TaskHook);
 	}
@@ -113,7 +111,7 @@ bool ScanningSensorHandler::IsPresent() noexcept
 
 uint32_t ScanningSensorHandler::GetReading() noexcept
 {
-	if ((lastReading & 0xF0000000) != 0) { return BadReadingVal; }
+	if ((lastReading & 0xF0000000) != 0) { return ScanningSensorBadReadingVal; }
 	const uint32_t reading = lastReading >> ResultBitsDropped;
 	return (reading > offset) ? reading - offset : 0;
 }
@@ -184,7 +182,7 @@ void ScanningSensorHandler::AppendDiagnostics(const StringRef& reply) noexcept
 	if (IsPresent())
 	{
 		// Append diagnostic data to string
-		uint32_t val = lastReading;
+		const uint32_t val = lastReading;
 		if (val != 0)
 		{
 			reply.catf("raw value %" PRIu32 ", frequency %.2fMHz, current setting %u",

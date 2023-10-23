@@ -24,7 +24,7 @@ public:
 	// Do a quick test to check whether the accelerometer is present, returning true if it is
 	bool CheckPresent() noexcept;
 	bool Reset() noexcept;
-	bool SetDefaultConfiguration(uint8_t channel, bool calibrationMode = false) noexcept;
+	bool SetDefaultConfiguration(uint8_t channel, bool calibrationMode) noexcept;
 	bool GetChannelResult(uint8_t channel, uint32_t& result) noexcept;
 	bool CalibrateDriveCurrent(uint8_t channel) noexcept;
 	uint8_t GetDriveCurrent(uint8_t channel) noexcept { return currentSetting[channel]; }
