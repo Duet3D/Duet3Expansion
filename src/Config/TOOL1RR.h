@@ -37,6 +37,8 @@
 #define SUPPORT_TMC2160			0
 #define SUPPORT_TMC2660			0
 #define SUPPORT_TMC22xx			1
+#define SUPPORT_TMC2208			0
+#define SUPPORT_TMC2209			0
 #define SUPPORT_TMC2240			1
 
 constexpr size_t NumDrivers = 1;
@@ -112,7 +114,7 @@ constexpr float VrefTopResistor = 27.0;
 constexpr float MinVrefLoadR = (DefaultThermistorSeriesR / NumThermistorInputs) * 4700.0/((DefaultThermistorSeriesR / NumThermistorInputs) + 4700.0);
 
 constexpr Pin VrefPin = PortAPin(6);
-constexpr Pin VssaPin = PortBPin(8);
+constexpr Pin VssaPin = PortBPin(9);
 
 constexpr Pin BoardTypePin = PortAPin(3);
 
