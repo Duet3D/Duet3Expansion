@@ -21,6 +21,7 @@ namespace ScanningSensorHandler
 	uint32_t GetReading() noexcept;
 	GCodeResult SetOrCalibrateCurrent(uint32_t param, const StringRef& reply, uint8_t& extra) noexcept;
 	bool SetCallback(AnalogInCallbackFunction fn, CallbackParameter param, uint32_t ticksPerCall) noexcept;
+	float GetFrequency() noexcept;
 	void AppendDiagnostics(const StringRef& reply) noexcept;
 }
 

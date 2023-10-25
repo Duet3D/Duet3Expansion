@@ -176,6 +176,12 @@ bool ScanningSensorHandler::SetCallback(AnalogInCallbackFunction fn, CallbackPar
 	return true;
 }
 
+// Return the oscillation frequency in MHz
+float ScanningSensorHandler::GetFrequency() noexcept
+{
+	return ldexpf((lastReading & 0x0FFFFFFF) * LDC1612::FRef, -28);
+}
+
 void ScanningSensorHandler::AppendDiagnostics(const StringRef& reply) noexcept
 {
 	reply.lcat("Inductive sensor: ");
@@ -185,8 +191,7 @@ void ScanningSensorHandler::AppendDiagnostics(const StringRef& reply) noexcept
 		const uint32_t val = lastReading;
 		if (val != 0)
 		{
-			reply.catf("raw value %" PRIu32 ", frequency %.2fMHz, current setting %u",
-						val & 0x0FFFFFFF, (double)ldexpf((val & 0x0FFFFFFF) * LDC1612::FRef, -28), sensor->GetDriveCurrent(0));
+			reply.catf("raw value %" PRIu32 ", frequency %.2fMHz, current setting %u", val & 0x0FFFFFFF, (double)GetFrequency(), sensor->GetDriveCurrent(0));
 			if ((val >> 28) == 0)
 			{
 				reply.cat(", ok");

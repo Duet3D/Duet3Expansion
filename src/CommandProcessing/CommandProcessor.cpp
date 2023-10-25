@@ -48,6 +48,38 @@
 # include "ScanningSensorHandler.h"
 #endif
 
+// Check a value against the specified min and max parameters returning true if the value was outside limits
+static bool CheckMinMax(CanMessageGenericParser& parser, const StringRef& reply, char c, float val, const char *text) noexcept
+{
+	float minMaxValues[2];
+	size_t numValues = 2;
+	if (parser.GetFloatArrayParam(c, numValues, minMaxValues) && numValues == 2)
+	{
+		reply.lcatf("%s is %.1f, ", text, (double)val);
+		if (val < minMaxValues[0])
+		{
+			reply.cat("too low");
+			return true;
+		}
+		else if (val > minMaxValues[1])
+		{
+			reply.cat("too high");
+			return true;
+		}
+		else
+		{
+			reply.cat("OK");
+		}
+	}
+	else
+	{
+		reply.lcatf("Missing %c parameter", c);
+		return true;
+	}
+	return false;
+}
+
+// Generate a test report
 static GCodeResult GenerateTestReport(const CanMessageGeneric &msg, const StringRef& reply) noexcept
 {
 	CanMessageGenericParser parser(msg, M122P1Params);
@@ -55,95 +87,18 @@ static GCodeResult GenerateTestReport(const CanMessageGeneric &msg, const String
 
 #if HAS_CPU_TEMP_SENSOR
 	// Check the MCU temperature
-	{
-		float mcuTempMinMax[2];
-		size_t numValues = 2;
-		if (parser.GetFloatArrayParam('T', numValues, mcuTempMinMax) && numValues == 2)
-		{
-			const MinCurMax& mcuTemperature = Platform::GetMcuTemperatures();
-			if (mcuTemperature.current < mcuTempMinMax[0])
-			{
-				reply.lcatf("MCU temperature %.1fC is lower than expected", (double)mcuTemperature.current);
-				testFailed = true;
-			}
-			else if (mcuTemperature.current > mcuTempMinMax[1])
-			{
-				reply.lcatf("MCU temperature %.1fC is higher than expected", (double)mcuTemperature.current);
-				testFailed = true;
-			}
-			else
-			{
-				reply.lcatf("MCU temperature reading OK (%.1fC)", (double)mcuTemperature.current);
-			}
-		}
-		else
-		{
-			reply.copy("Missing T parameter");
-			testFailed = true;
-		}
-	}
+	const MinCurMax& mcuTemperature = Platform::GetMcuTemperatures();
+	testFailed |= CheckMinMax(parser, reply, 'T', mcuTemperature.current, "MCU temp");
 #endif
 
 #if HAS_VOLTAGE_MONITOR
 	// Check the supply voltage
-	{
-		float vinMinMax[2];
-		size_t numValues = 2;
-		if (parser.GetFloatArrayParam('V', numValues, vinMinMax) && numValues == 2)
-		{
-			const float voltage = Platform::GetCurrentVinVoltage();
-			if (voltage < vinMinMax[0])
-			{
-				reply.lcatf("VIN voltage reading %.1f is lower than expected", (double)voltage);
-				testFailed = true;
-			}
-			else if (voltage > vinMinMax[1])
-			{
-				reply.lcatf("VIN voltage reading %.1f is higher than expected", (double)voltage);
-				testFailed = true;
-			}
-			else
-			{
-				reply.lcatf("VIN voltage reading OK (%.1fV)", (double)voltage);
-			}
-		}
-		else
-		{
-			reply.copy("Missing V parameter");
-			testFailed = true;
-		}
-	}
+	testFailed |= CheckMinMax(parser, reply, 'V', Platform::GetCurrentVinVoltage(), "VIN voltage");
 #endif
 
 #if HAS_12V_MONITOR
 	// Check the 12V rail voltage
-	{
-		float v12MinMax[2];
-		size_t numValues = 2;
-		if (parser.GetFloatArrayParam('W', numValues, v12MinMax) && numValues == 2)
-		{
-			const float voltage = Platform::GetCurrentV12Voltage();
-			if (voltage < v12MinMax[0])
-			{
-				reply.lcatf("12V voltage reading %.1f is lower than expected", (double)voltage);
-				testFailed = true;
-			}
-			else if (voltage > v12MinMax[1])
-			{
-				reply.lcatf("12V voltage reading %.1f is higher than expected", (double)voltage);
-				testFailed = true;
-			}
-			else
-			{
-				reply.lcatf("12V voltage reading OK (%.1fV)", (double)voltage);
-			}
-		}
-		else
-		{
-			reply.copy("Missing W parameter");
-			testFailed = true;
-		}
-	}
+	testFailed |= CheckMinMax(parser, reply, 'W', Platform::GetCurrentV12Voltage(), "12V voltage");
 #endif
 
 #if HAS_SMART_DRIVERS
@@ -173,7 +128,29 @@ static GCodeResult GenerateTestReport(const CanMessageGeneric &msg, const String
 	}
 #endif
 
-	reply.lcatf((testFailed) ? "***** ONE OR MORE CHECKS FAILED *****" : "All checks passed");
+#if SUPPORT_LIS3DH
+	if (Platform::AlwaysHasAccelerometer())
+	{
+		if (AccelerometerHandler::IsPresent())
+		{
+			reply.lcat("Accelerometer detected");
+		}
+		else
+		{
+			reply.lcat("Accelerometer NOT detected");
+			testFailed = true;
+		}
+	}
+#endif
+
+#if SUPPORT_LDC1612
+	if (Platform::AlwaysHasLDC1612())
+	{
+		testFailed |= CheckMinMax(parser, reply, 'F', ScanningSensorHandler::GetFrequency() * 1000.0, "Inductive sensor frequency");
+	}
+#endif
+
+	reply.lcat((testFailed) ? "***** ONE OR MORE CHECKS FAILED *****" : "All checks passed");
 
 	if (!testFailed)
 	{

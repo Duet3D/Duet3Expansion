@@ -334,6 +334,30 @@ namespace Platform
 #ifdef TOOL1LC
 	uint8_t GetBoardVariant() noexcept;
 #endif
+
+	// Return true if there should be an accelerometer on board. Used by the test report.
+	inline bool AlwaysHasAccelerometer() noexcept
+	{
+#if SUPPORT_LIS3DH && !ACCELEROMETER_USES_SPI
+# ifdef TOOL1LC
+		return GetBoardVariant() != 0;
+# else
+		return true;
+# endif
+#else
+		return false;
+#endif
+	}
+
+	// Return true if there is an inductive sensor chip on board. Used by the test report.
+	inline bool AlwaysHasLDC1612() noexcept
+	{
+#if SUPPORT_LDC1612 && !defined(TOOL1LC)
+		return true;
+#else
+		return false;
+#endif
+	}
 }
 
 #endif /* SRC_PLATFORM_H_ */
