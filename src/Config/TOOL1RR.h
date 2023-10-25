@@ -71,10 +71,10 @@ constexpr uint8_t TMC22xxSercomRxPad = 1;
 constexpr uint32_t DriversBaudRate = 200000;
 constexpr uint32_t TransferTimeout = 10;									// any transfer should complete within 10 ticks @ 1ms/tick
 
-constexpr float DriverFullScaleCurrent = 770;								// in mA, set by TMC2240 RRef
+constexpr float DriverFullScaleCurrent = 1600;								// in mA, set by TMC2240 RRef
 constexpr float DriverCsMultiplier = 32.0/DriverFullScaleCurrent;
-constexpr float MaximumMotorCurrent = 770.0;
-constexpr float MaximumStandstillCurrent = 770.0;
+constexpr float MaximumMotorCurrent = 1600.0;
+constexpr float MaximumStandstillCurrent = 1130.0;
 constexpr uint32_t DefaultStandstillCurrentPercent = 75;
 
 PortGroup * const StepPio = &(PORT->Group[1]);								// the PIO that all the step pins are on
