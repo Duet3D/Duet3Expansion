@@ -130,6 +130,7 @@ constexpr Pin Lis3dhInt1Pin = PortAPin(13);
 
 #if SUPPORT_LDC1612
 constexpr uint16_t LDC1612_I2cAddress = 0x2B;				// pin 4 is tied high on the Grove board
+constexpr Pin LDC1612InterruptPin = PortAPin(21);
 #endif
 
 // Table of pin functions that we are allowed to use
@@ -168,7 +169,7 @@ constexpr PinDescription PinTable[] =
 #endif
 	{ TcOutput::tc4_1,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		3,	"pa19"		},	// PA19
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"pa20"		},	// PA20
-	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"pa21"		},	// PA21
+	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"pa21"		},	// PA21 LDC1612 INT
 #if SUPPORT_I2C_SENSORS
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PA22 I2C
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr		},	// PA23 I2C
