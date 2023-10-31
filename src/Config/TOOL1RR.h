@@ -80,8 +80,8 @@ constexpr float MaximumMotorCurrent = 1600.0;
 constexpr float MaximumStandstillCurrent = 1130.0;
 #else
 // Proposed current limits for normal use
-constexpr float MaximumMotorCurrent = 1250.0;								// peak current per phase, only one phase gets this at a time
-constexpr float MaximumStandstillCurrent = 900.0;							// peak current in a single phase at standstill
+constexpr float MaximumMotorCurrent = 1000.0;								// peak current per phase, only one phase gets this at a time
+constexpr float MaximumStandstillCurrent = 800.0;							// peak current in a single phase at standstill
 #endif
 
 constexpr uint32_t DefaultStandstillCurrentPercent = 75;
