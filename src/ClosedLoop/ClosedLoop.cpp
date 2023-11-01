@@ -1016,24 +1016,51 @@ void ClosedLoop::CollectSample() noexcept
 // Control the motor phase currents, returning the fraction of maximum current that we commanded
 inline float ClosedLoop::ControlMotorCurrents(StepTimer::Ticks ticksSinceLastCall) noexcept
 {
-	// Get the time delta in seconds
-	const float timeDelta = (float)ticksSinceLastCall * (1.0/(float)StepTimer::StepClockRate);
 	uint16_t commandedStepPhase;
 	float currentFraction;
 
 	if (inTorqueMode)
 	{
 		const uint32_t measuredStepPhase = encoder->GetCurrentPhasePosition();
-		commandedStepPhase = (uint16_t)((((torqueModeDirection) ? (3 * 1024) : 1024) + measuredStepPhase) % 4096u);
-		const float rawVelocity = speedFilter.GetDerivative();
-		const float speed = (torqueModeDirection) ? -rawVelocity : rawVelocity;
+#if 1
+		// Limit the velocity by limiting the rate of rotation of the field (we could reduce the current too)
+		if (torqueModeDirection)		// reverse movement
+		{
+			commandedStepPhase = (uint16_t)(((3 * 1024u) + measuredStepPhase) % 4096u);
+			if (torqueModeMaxSpeed > 0.0 && speedFilter.GetDerivative() <= 0.0)
+			{
+				const uint32_t maxPhaseDecrement = (uint32_t)(torqueModeMaxSpeed * (1024 * ticksSinceLastCall)) % 4096;
+				if ((desiredStepPhase - commandedStepPhase) % 4096u > maxPhaseDecrement)
+				{
+					commandedStepPhase = (uint16_t)((desiredStepPhase - maxPhaseDecrement) % 4096);
+				}
+			}
+		}
+		else						// forward movement
+		{
+			commandedStepPhase = (uint16_t)((measuredStepPhase + 1024u) % 4096u);
+			if (torqueModeMaxSpeed > 0.0 && speedFilter.GetDerivative() >= 0.0)
+			{
+				const uint32_t maxPhaseIncrement = (uint32_t)(torqueModeMaxSpeed * (1024 * ticksSinceLastCall)) % 4096;
+				if ((commandedStepPhase - desiredStepPhase) % 4096u > maxPhaseIncrement)
+				{
+					commandedStepPhase = (uint16_t)((desiredStepPhase + maxPhaseIncrement) % 4096);
+				}
+			}
+		}
 
+		currentFraction = torqueModeCommandedCurrentFraction;
+#else
+		// Limit the velocity by reducing the current if we are going too fast
+		commandedStepPhase = (uint16_t)((((torqueModeDirection) ? (3 * 1024) : 1024) + measuredStepPhase) % 4096u);
 		// For now we use a crude form of proportional control; we may need to improve it later.
 		// If the speed is lower than the limit, increase the torque unless it is already at the requested torque.
 		// If the speed is too high then reduce the torque.
 		// It's likely that we will need to add a derivative term to prevent the speed oscillating.
 		if (torqueModeMaxSpeed > 0.0)
 		{
+			const float rawVelocity = speedFilter.GetDerivative();
+			const float speed = (torqueModeDirection) ? -rawVelocity : rawVelocity;
 			const float speedErrorFraction = (speed - torqueModeMaxSpeed)/torqueModeMaxSpeed;
 			const float torqueFactor = constrain<float>(VelocityLimitGainFactor * (1.0 - speedErrorFraction), 0.0, 1.0);
 			currentFraction = torqueModeCommandedCurrentFraction * torqueFactor;
@@ -1042,6 +1069,7 @@ inline float ClosedLoop::ControlMotorCurrents(StepTimer::Ticks ticksSinceLastCal
 		{
 			currentFraction = torqueModeCommandedCurrentFraction;
 		}
+#endif
 	}
 	else
 	{
@@ -1052,10 +1080,11 @@ inline float ClosedLoop::ControlMotorCurrents(StepTimer::Ticks ticksSinceLastCal
 
 		if (currentMode == ClosedLoopMode::closed)
 		{
-			PIDITerm = constrain<float>(PIDITerm + Ki * currentPositionError * timeDelta, -PIDIlimit, PIDIlimit);	// constrain I to prevent it running away
+			const float timeDelta = (float)ticksSinceLastCall * (1.0/(float)StepTimer::StepClockRate);						// get the time delta in seconds
+			PIDITerm = constrain<float>(PIDITerm + Ki * currentPositionError * timeDelta, -PIDIlimit, PIDIlimit);			// constrain I to prevent it running away
 			PIDVTerm = mParams.speed * Kv * ticksSinceLastCall;
 			PIDATerm = mParams.acceleration * Ka * fsquare(ticksSinceLastCall);
-			PIDControlSignal = constrain<float>(PIDPTerm + PIDITerm + PIDDTerm + PIDVTerm + PIDATerm, -256.0, 256.0);	// clamp the sum between +/- 256
+			PIDControlSignal = constrain<float>(PIDPTerm + PIDITerm + PIDDTerm + PIDVTerm + PIDATerm, -256.0, 256.0);		// clamp the sum between +/- 256
 
 			// Calculate the offset required to produce the torque in the correct direction
 			// i.e. if we are moving in the positive direction, we must apply currents with a positive phase shift
