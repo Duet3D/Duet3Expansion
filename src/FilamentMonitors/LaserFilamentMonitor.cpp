@@ -116,7 +116,7 @@ GCodeResult LaserFilamentMonitor::Configure(const CanMessageGenericParser& parse
 		{
 			reply.printf("Duet3D laser filament monitor v%u%s on pin ", version, (switchOpenMask != 0) ? " with switch" : "");
 			GetPort().AppendPinName(reply);
-			reply.catf(", %s, allow %ld%% to %ld%%, check %s moves every %.1fmm, calibration factor %.3f, ",
+			reply.catf(", %s, allow %ld%% to %ld%%, check %s moves every %.1fmm, cal. factor %.3f, ",
 						(GetEnableMode() == 2) ? "enabled always" : (GetEnableMode() == 1) ? "enabled when SD printing" : "disabled",
 						ConvertToPercent(minMovementAllowed),
 						ConvertToPercent(maxMovementAllowed),
@@ -137,10 +137,6 @@ GCodeResult LaserFilamentMonitor::Configure(const CanMessageGenericParser& parse
 				if (imageQuality != 0)
 				{
 					reply.catf("quality %u, ", imageQuality);
-				}
-				if (version >= 2)
-				{
-					reply.catf("brightness %u, shutter %u, ", brightness, shutter);
 				}
 				if (sensorError)
 				{
@@ -421,6 +417,10 @@ void LaserFilamentMonitor::Diagnostics(const StringRef& reply) noexcept
 	if (dataReceived)
 	{
 		reply.catf("pos %.2f", (double)GetCurrentPosition());
+		if (version >= 2)
+		{
+			reply.catf(", brightness %u, shutter %u", brightness, shutter);
+		}
 	}
 	else
 	{
