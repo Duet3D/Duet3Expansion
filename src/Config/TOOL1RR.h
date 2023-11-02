@@ -71,7 +71,9 @@ constexpr uint8_t TMC22xxSercomRxPad = 1;
 constexpr uint32_t DriversBaudRate = 200000;
 constexpr uint32_t TransferTimeout = 10;									// any transfer should complete within 10 ticks @ 1ms/tick
 
-constexpr float DriverFullScaleCurrent = 1600;								// in mA, set by TMC2240 RRef
+constexpr uint32_t Tmc2240CurrentRange = 0x01;								// which current range we set the TMC2240 to (2A)
+constexpr uint32_t Tmc2240SlopeControl = 0x01;								// which slope control we set the TMC2240 to (200V/us)
+constexpr float DriverFullScaleCurrent = 1600;								// in mA peak, set by TMC2240 RRef (15K) and the current range setting (01)
 constexpr float DriverCsMultiplier = 32.0/DriverFullScaleCurrent;
 
 #if 0
