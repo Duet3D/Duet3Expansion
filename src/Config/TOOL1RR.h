@@ -73,7 +73,8 @@ constexpr uint32_t TransferTimeout = 10;									// any transfer should complete
 
 constexpr uint32_t Tmc2240CurrentRange = 0x01;								// which current range we set the TMC2240 to (2A)
 constexpr uint32_t Tmc2240SlopeControl = 0x01;								// which slope control we set the TMC2240 to (200V/us)
-constexpr float DriverFullScaleCurrent = 1600;								// in mA peak, set by TMC2240 RRef (15K) and the current range setting (01)
+constexpr float Tmc2240Rref = 15.0;											// TMC2240 reference resistor in Kohms
+constexpr float DriverFullScaleCurrent = 24000/Tmc2240Rref;					// in mA, assuming we set the range bits in the DRV_CONF register to 0x01
 constexpr float DriverCsMultiplier = 32.0/DriverFullScaleCurrent;
 
 #if 0
