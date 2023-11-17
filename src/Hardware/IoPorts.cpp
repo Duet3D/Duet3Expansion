@@ -78,7 +78,7 @@ bool IoPort::SetAnalogCallback(AnalogInCallbackFunction fn, CallbackParameter cb
 #if SUPPORT_LDC1612
 				(PinTable[pin].adc == AdcInput::ldc1612) ? ScanningSensorHandler::SetCallback(fn, cbp, ticksPerCall) :
 #endif
-					AnalogIn::SetCallback(PinToAdcChannel(pin), fn, cbp, ticksPerCall, false)
+					AnalogIn::SetCallback(PinToAdcChannel(pin), fn, cbp, ticksPerCall)
 			);
 }
 
