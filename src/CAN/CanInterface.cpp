@@ -717,7 +717,7 @@ void CanInterface::Diagnostics(const StringRef& reply) noexcept
 	can0dev->GetAndClearStats(stats);
 #if RP2040 && !USE_SPICAN
 	reply.lcatf("CAN messages queued %u, send timeouts %u, received %u, free buffers %u, min %u",
-					messagesQueuedForSending, txTimeouts, messagesReceived, CanMessageBuffer::GetFreeBuffers(), CanMessageBuffer::GetAndClearMinFreeBuffers());
+					stats.messagesQueuedForSending, txTimeouts, stats.messagesReceived, CanMessageBuffer::GetFreeBuffers(), CanMessageBuffer::GetAndClearMinFreeBuffers());
 	CanErrorCounts errs;
 	can0dev->GetAndClearErrorCounts(errs);
 	reply.lcatf("Lost0 %" PRIu32 ", lost1 %" PRIu32 ", wt %" PRIu32 ", bs %" PRIu32 ", scp %" PRIu32 ", wsc %" PRIu32
