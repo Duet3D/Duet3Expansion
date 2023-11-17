@@ -551,17 +551,17 @@ namespace Platform
 		ResetProcessor();
 	}
 
-#if SUPPORT_THERMISTORS
-	static void SetupThermistorFilter(Pin pin, size_t filterIndex, bool useAlternateAdc)
+#if SUPPORT_THERMISTORS && HAS_VREF_MONITOR
+	static void SetupThermistorFilter(Pin pin, size_t filterIndex, bool useAlternateAdc) noexcept
 	{
 		thermistorFilters[filterIndex].Init(0);
 		IoPort::SetPinMode(pin, PinMode::AIN);
-#if SAMC21
+# if SAMC21
 		const AdcInput adcChan = (useAlternateAdc) ? PinToSdAdcChannel(pin) : PinToAdcChannel(pin);
-#else
+# else
 		const AdcInput adcChan = PinToAdcChannel(pin);
-#endif
-		AnalogIn::EnableChannel(adcChan, thermistorFilters[filterIndex].CallbackFeedIntoFilter, CallbackParameter(&thermistorFilters[filterIndex]), 1, useAlternateAdc);
+# endif
+		AnalogIn::EnableChannel(adcChan, thermistorFilters[filterIndex].CallbackFeedIntoFilter, CallbackParameter(&thermistorFilters[filterIndex]), 1);
 	}
 #endif
 
@@ -598,7 +598,7 @@ namespace Platform
 
 		vinFilter.Init(0);
 		IoPort::SetPinMode(VinMonitorPin, AIN);
-		AnalogIn::EnableChannel(PinToAdcChannel(VinMonitorPin), vinFilter.CallbackFeedIntoFilter, CallbackParameter(&vinFilter), 1, false);
+		AnalogIn::EnableChannel(PinToAdcChannel(VinMonitorPin), vinFilter.CallbackFeedIntoFilter, CallbackParameter(&vinFilter), 1);
 #endif
 	}
 
@@ -777,29 +777,16 @@ void Platform::Init()
 
 	v12Filter.Init(0);
 	IoPort::SetPinMode(V12MonitorPin, AIN);
-	AnalogIn::EnableChannel(PinToAdcChannel(V12MonitorPin), v12Filter.CallbackFeedIntoFilter, CallbackParameter(&v12Filter), 1, false);
+	AnalogIn::EnableChannel(PinToAdcChannel(V12MonitorPin), v12Filter.CallbackFeedIntoFilter, CallbackParameter(&v12Filter), 1);
 #endif
 
 #if HAS_VREF_MONITOR
 	// Set up the Vref and Vssa filters
 	SetupThermistorFilter(VrefPin, VrefFilterIndex, false);
 	SetupThermistorFilter(VssaPin, VssaFilterIndex, false);
-#endif
-
-#if SUPPORT_THERMISTORS
 # if SAMC21 && SUPPORT_SDADC
-	// Set up the SDADC input filters too (temp0 and Vref)
-	SetupThermistorFilter(TempSensePins[0], SdAdcTemp0FilterIndex, true);
-#  if HAS_VREF_MONITOR
 	SetupThermistorFilter(VrefPin, SdAdcVrefFilterIndex, true);
-#  endif
 # endif
-
-	// Set up the thermistor filters
-	for (size_t i = 0; i < NumThermistorInputs; ++i)
-	{
-		SetupThermistorFilter(TempSensePins[i], i, false);
-	}
 #endif
 
 	// Set up the MCU temperature sensors
@@ -1476,6 +1463,19 @@ int Platform::GetAveragingFilterIndex(const IoPort& port)
 		}
 	}
 	return -1;
+}
+
+// Setup the filter for a thermistor input. The port has already been set to analog in mode.
+void Platform::InitThermistorFilter(const IoPort& port) noexcept
+{
+	const int adcFilterChannel = GetAveragingFilterIndex(port);
+	if (adcFilterChannel >= 0)
+	{
+		ThermistorAveragingFilter& filter = thermistorFilters[adcFilterChannel];
+		filter.Init((1u << AnalogIn::AdcBits) - 1);
+		const AdcInput adcChan = IoPort::PinToAdcInput(port.GetPin(), port.UseAlternateConfig());
+		AnalogIn::EnableChannel(adcChan, filter.CallbackFeedIntoFilter, CallbackParameter(&filter), 1);
+	}
 }
 
 ThermistorAveragingFilter *Platform::GetAdcFilter(unsigned int filterNumber)

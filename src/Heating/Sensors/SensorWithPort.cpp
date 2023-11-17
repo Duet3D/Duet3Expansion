@@ -7,6 +7,7 @@
 
 #include "SensorWithPort.h"
 #include "CanMessageGenericParser.h"
+#include <Platform/Platform.h>
 
 SensorWithPort::SensorWithPort(unsigned int sensorNum, const char *type)
 	: TemperatureSensor(sensorNum, type)
@@ -25,7 +26,13 @@ bool SensorWithPort::ConfigurePort(const CanMessageGenericParser& parser, const 
 	if (parser.GetStringParam('P', portName.GetRef()))
 	{
 		seen = true;
-		return port.AssignPort(portName.c_str(), reply, PinUsedBy::sensor, access);
+		const bool ok = port.AssignPort(portName.c_str(), reply, PinUsedBy::sensor, access);
+		if (ok && access == PinAccess::readAnalog)
+		{
+			// If it's a thermistor port then we need to initialise the averaging filter
+			Platform::InitThermistorFilter(port);
+		}
+		return ok;
 	}
 	if (port.IsValid())
 	{

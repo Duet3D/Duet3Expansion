@@ -74,7 +74,6 @@ GCodeResult Thermistor::Configure(const CanMessageGenericParser& parser, const S
 		adcFilterChannel = Platform::GetAveragingFilterIndex(port);
 		if (adcFilterChannel >= 0)
 		{
-			Platform::GetAdcFilter(adcFilterChannel)->Init((1u << AnalogIn::AdcBits) - 1);
 #ifdef TOOL1RR
 			// The temp2 port is the thermistor on the LDC1612 sensor so change its default parameters
 			if (adcFilterChannel == 2)

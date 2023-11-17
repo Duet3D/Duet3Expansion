@@ -232,30 +232,30 @@ namespace Platform
 	inline uint32_t GetDriversBitmap(size_t driver) { return driveDriverBits[driver]; } 		// Get the step bit for this driver
 # endif
 
-	inline unsigned int GetProhibitedExtruderMovements(unsigned int extrusions, unsigned int retractions) { return 0; }
+	inline unsigned int GetProhibitedExtruderMovements(unsigned int extrusions, unsigned int retractions) noexcept { return 0; }
 # if SINGLE_DRIVER
-	void SetDirection(bool direction);
+	void SetDirection(bool direction) noexcept;
 # else
-	void SetDirection(size_t driver, bool direction);
+	void SetDirection(size_t driver, bool direction) noexcept;
 # endif
 	void SetDirectionValue(size_t driver, bool dVal);
 	bool GetDirectionValue(size_t driver) noexcept;
 	bool GetDirectionValueNoCheck(size_t driver) noexcept;
-	void SetEnableValue(size_t driver, int8_t eVal);
-	int8_t GetEnableValue(size_t driver);
-	void EnableDrive(size_t driver, uint16_t brakeOffDelay);
-	void DisableDrive(size_t driver, uint16_t motorOffDelay);
-	void DisableAllDrives();
-	void SetDriverIdle(size_t driver, uint16_t idlePercent);
+	void SetEnableValue(size_t driver, int8_t eVal) noexcept;
+	int8_t GetEnableValue(size_t driver) noexcept;
+	void EnableDrive(size_t driver, uint16_t brakeOffDelay) noexcept;
+	void DisableDrive(size_t driver, uint16_t motorOffDelay) noexcept;
+	void DisableAllDrives() noexcept;
+	void SetDriverIdle(size_t driver, uint16_t idlePercent) noexcept;
 # if SUPPORT_CLOSED_LOOP
 	bool EnableIfIdle(size_t driver);						// if the driver is idle, enable it; return true if driver enabled on return
 # endif
 
-	GCodeResult ProcessM569Point7(const CanMessageGeneric& msg, const StringRef& reply);
+	GCodeResult ProcessM569Point7(const CanMessageGeneric& msg, const StringRef& reply) noexcept;
 
 # if HAS_SMART_DRIVERS
-	void SetMotorCurrent(size_t driver, float current);		//TODO avoid the int->float->int conversion
-	float GetTmcDriversTemperature();
+	void SetMotorCurrent(size_t driver, float current) noexcept;		//TODO avoid the int->float->int conversion
+	float GetTmcDriversTemperature() noexcept;
 #  if HAS_STALL_DETECT
 	void SetOrResetEventOnStall(DriversBitmap drivers, bool enable) noexcept;
 	bool GetEventOnStall(unsigned int driver) noexcept;
@@ -265,46 +265,47 @@ namespace Platform
 # endif
 
 	// Signal that a new drivers fault has occurred and the main board needs to be told about it urgently
-	inline void NewDriverFault() { Heat::NewDriverFault(); }
+	inline void NewDriverFault() noexcept { Heat::NewDriverFault(); }
 
 	// Function to send the status of our drivers - must be called only by the Heat task
-	void SendDriversStatus(CanMessageBuffer& buf);
+	void SendDriversStatus(CanMessageBuffer& buf) noexcept;
 #endif	//SUPPORT_DRIVERS
 
 #if SUPPORT_THERMISTORS
-	int GetAveragingFilterIndex(const IoPort&);
-	ThermistorAveragingFilter *GetAdcFilter(unsigned int filterNumber);
+	int GetAveragingFilterIndex(const IoPort&) noexcept;
+	void InitThermistorFilter(const IoPort& port) noexcept;
+	ThermistorAveragingFilter *GetAdcFilter(unsigned int filterNumber) noexcept;
 
 # if HAS_VREF_MONITOR
-	ThermistorAveragingFilter *GetVssaFilter(unsigned int filterNumber);
-	ThermistorAveragingFilter *GetVrefFilter(unsigned int filterNumber);
+	ThermistorAveragingFilter *GetVssaFilter(unsigned int filterNumber) noexcept;
+	ThermistorAveragingFilter *GetVrefFilter(unsigned int filterNumber) noexcept;
 # endif
 #endif
 
-	const MinCurMax& GetMcuTemperatures();
+	const MinCurMax& GetMcuTemperatures() noexcept;
 
-	void KickHeatTaskWatchdog();
-	uint32_t GetHeatTaskIdleTicks();
+	void KickHeatTaskWatchdog() noexcept;
+	uint32_t GetHeatTaskIdleTicks() noexcept;
 
 #if HAS_ADDRESS_SWITCHES
-	uint8_t ReadBoardAddress();
+	uint8_t ReadBoardAddress() noexcept;
 #endif
 
 	const UniqueIdBase& GetUniqueId() noexcept;
 
 	void Tick() noexcept;
 
-	void StartFirmwareUpdate();
-	void StartBootloaderUpdate();
-	void StartReset();
+	void StartFirmwareUpdate() noexcept;
+	void StartBootloaderUpdate() noexcept;
+	void StartReset() noexcept;
 
-	void OnProcessingCanMessage();
+	void OnProcessingCanMessage() noexcept;
 
-	GCodeResult DoDiagnosticTest(const CanMessageDiagnosticTest& msg, const StringRef& reply);
+	GCodeResult DoDiagnosticTest(const CanMessageDiagnosticTest& msg, const StringRef& reply) noexcept;
 
-	void EmergencyStop();
+	void EmergencyStop() noexcept;
 
-	[[noreturn]]inline void ResetProcessor()
+	[[noreturn]]inline void ResetProcessor() noexcept
 	{
 		SCB->AIRCR = (0x5FA << 16) | (1u << 2);						// reset the processor
 		for (;;) { }

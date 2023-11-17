@@ -51,11 +51,7 @@ GCodeResult LinearAnalogSensor::Configure(const CanMessageGenericParser& parser,
 #endif
 		CalcDerivedParameters();
 #if SUPPORT_THERMISTORS
-		if (adcFilterChannel >= 0)
-		{
-			Platform::GetAdcFilter(adcFilterChannel)->Init(0);
-		}
-		else if (wasFiltered)
+		if (adcFilterChannel < 0 && wasFiltered)
 		{
 			reply.copy("filtering not supported on this port");
 			return GCodeResult::warning;
