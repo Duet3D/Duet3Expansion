@@ -27,11 +27,13 @@ bool SensorWithPort::ConfigurePort(const CanMessageGenericParser& parser, const 
 	{
 		seen = true;
 		const bool ok = port.AssignPort(portName.c_str(), reply, PinUsedBy::sensor, access);
+#if SUPPORT_THERMISTORS
 		if (ok && access == PinAccess::readAnalog)
 		{
 			// If it's a thermistor port then we need to initialise the averaging filter
 			Platform::InitThermistorFilter(port);
 		}
+#endif
 		return ok;
 	}
 	if (port.IsValid())
