@@ -19,13 +19,21 @@
 # include "Kinematics/LinearDeltaKinematics.h"
 #endif
 
+int32_t DriveMovement::maxStepsLate = 0;
+
 void DriveMovement::DebugPrint() const noexcept
 {
 	const char c = drive + '0';
 	if (state != DMState::idle)
 	{
+		const char *const errText = (state == DMState::stepError1) ? " ERR1:"
+									: (state == DMState::stepError2) ? " ERR2:"
+										: (state == DMState::stepError3) ? " ERR3:"
+											: (state == DMState::stepError4) ? " ERR4:"
+												: (state == DMState::stepError5) ? " ERR5:"
+													: ":";
 		debugPrintf("DM%c%s dir=%c steps=%" PRIu32 " next=%" PRIu32 " rev=%" PRIu32 " interval=%" PRIu32 " ssl=%" PRIu32 " A=%.4e B=%.4e C=%.4e dsf=%.4e tsf=%.1f",
-						c, (state == DMState::stepError) ? " ERR:" : ":", (direction) ? 'F' : 'B', totalSteps, nextStep, reverseStartStep, stepInterval, segmentStepLimit,
+						c, errText, (direction) ? 'F' : 'B', totalSteps, nextStep, reverseStartStep, stepInterval, segmentStepLimit,
 							(double)pA, (double)pB, (double)pC, (double)distanceSoFar, (double)timeSoFar);
 #if SUPPORT_DELTA_MOVEMENT
 		if (isDelta)
@@ -572,8 +580,7 @@ pre(nextStep <= totalSteps; stepsTillRecalc == 0)
 									NewCartesianSegment();
 				if (!more)
 				{
-					state = DMState::stepError;
-					nextStep += 100000000;							// so we can tell what happened in the debug print
+					state = DMState::stepError1;
 					return false;
 				}
 			}
@@ -683,8 +690,7 @@ pre(nextStep <= totalSteps; stepsTillRecalc == 0)
 			// Now feed ds into the step algorithm for Cartesian motion
 			if (ds < 0.0)
 			{
-				state = DMState::stepError;
-				nextStep += 110000000;							// so that we can tell what happened in the debug print
+				state = DMState::stepError2;
 				return false;
 			}
 
@@ -703,8 +709,7 @@ pre(nextStep <= totalSteps; stepsTillRecalc == 0)
 #if 0	//DEBUG
 	if (std::isnan(nextCalcStepTime) || nextCalcStepTime < 0.0)
 	{
-		state = DMState::stepError;
-		nextStep += 140000000 + stepsTillRecalc;			// so we can tell what happened in the debug print
+		state = DMState::stepError5;
 		distanceSoFar = nextCalcStepTime;					//DEBUG
 		return false;
 	}
@@ -719,15 +724,17 @@ pre(nextStep <= totalSteps; stepsTillRecalc == 0)
 		// So if this is the last step and it is late, bring it forward to the expected finish time.
 		// Very rarely on a delta, the penultimate step may also be calculated late. Allow for that here in case it affects Cartesian axes too.
 		// Don't use totalSteps here because it isn't valid for extruders
-		if (currentSegment->GetNext() == nullptr && nextStep + stepsTillRecalc + 1 >= segmentStepLimit)
+		if (currentSegment->GetNext() == nullptr)
 		{
 			iNextCalcStepTime = dda.clocksNeeded;
+			const int32_t nextCalcStep = nextStep + (int32_t)stepsTillRecalc;
+			const int32_t stepsLate = segmentStepLimit - nextCalcStep;
+			if (stepsLate > maxStepsLate) { maxStepsLate = stepsLate; }
 		}
 		else
 		{
-			// We don't expect any step except the last to be late
-			state = DMState::stepError;
-			nextStep += 120000000 + stepsTillRecalc;		// so we can tell what happened in the debug print
+			// We don't expect any segment except the last to have late steps
+			state = DMState::stepError3;
 			stepInterval = iNextCalcStepTime;				//DEBUG
 			return false;
 		}
@@ -741,8 +748,7 @@ pre(nextStep <= totalSteps; stepsTillRecalc == 0)
 #if 0	//DEBUG
 	if (isExtruder && stepInterval < 20 /*&& nextStep + stepsTillRecalc + 1 < totalSteps*/)
 	{
-		state = DMState::stepError;
-		nextStep += 130000000 + stepsTillRecalc;			// so we can tell what happened in the debug print
+		state = DMState::stepError4;
 		return false;
 	}
 #endif

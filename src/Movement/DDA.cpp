@@ -668,7 +668,8 @@ bool DDA::HasStepError() const noexcept
 
 	for (size_t drive = 0; drive < NumDrivers; ++drive)
 	{
-		if (ddms[drive].state == DMState::stepError)
+		const DMState st = ddms[drive].state;
+		if (st >= DMState::stepError1 && st < DMState::firstMotionState)
 		{
 			return true;
 		}

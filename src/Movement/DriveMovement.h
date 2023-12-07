@@ -25,7 +25,11 @@ class PrepParams;
 enum class DMState : uint8_t
 {
 	idle = 0,
-	stepError,
+	stepError1,
+	stepError2,
+	stepError3,
+	stepError4,
+	stepError5,
 
 	// All higher values are various states of motion
 	firstMotionState,
@@ -74,6 +78,8 @@ public:
 	int32_t GetNetStepsTakenClosedLoop(float topSpeed, int32_t ticksSinceStart) const noexcept;
 #endif
 
+	static int32_t GetAndClearMaxStepsLate() noexcept;
+
 private:
 	bool CalcNextStepTimeFull(const DDA &dda) noexcept SPEED_CRITICAL;
 	bool NewCartesianSegment() noexcept SPEED_CRITICAL;
@@ -84,9 +90,7 @@ private:
 
 	void CheckDirection(bool reversed) noexcept;
 
-	static DriveMovement *freeList;
-	static int numFree;
-	static int minFree;
+	static int32_t maxStepsLate;
 
 	// Parameters common to Cartesian, delta and extruder moves
 
@@ -195,6 +199,13 @@ inline void DriveMovement::CheckDirection(bool reversed) noexcept
 		direction = !direction;
 		directionChanged = true;
 	}
+}
+
+inline int32_t DriveMovement::GetAndClearMaxStepsLate() noexcept
+{
+	const int32_t ret = maxStepsLate;
+	maxStepsLate = 0;
+	return ret;
 }
 
 #if HAS_SMART_DRIVERS

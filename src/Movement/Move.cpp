@@ -287,9 +287,9 @@ void Move::StartNextMove(DDA *cdda, uint32_t startTime) noexcept
 
 void Move::Diagnostics(const StringRef& reply) noexcept
 {
-	reply.catf("Moves scheduled %" PRIu32 ", completed %" PRIu32 ", in progress %d, hiccups %" PRIu32 ", segs %u, step errors %u, maxPrep %" PRIu32 ", maxOverdue %" PRIu32 ", maxInc %" PRIu32,
+	reply.catf("Moves scheduled %" PRIu32 ", completed %" PRIu32 ", in progress %d, hiccups %" PRIu32 ", segs %u, step errors %u, maxLate %" PRIi32 " maxPrep %" PRIu32 ", maxOverdue %" PRIu32 ", maxInc %" PRIu32,
 					scheduledMoves, completedMoves, (int)(currentDda != nullptr), numHiccups, MoveSegment::NumCreated(),
-					DDA::GetAndClearStepErrors(), maxPrepareTime, DDA::GetAndClearMaxTicksOverdue(), DDA::GetAndClearMaxOverdueIncrement());
+					DDA::GetAndClearStepErrors(), DriveMovement::GetAndClearMaxStepsLate(), maxPrepareTime, DDA::GetAndClearMaxTicksOverdue(), DDA::GetAndClearMaxOverdueIncrement());
 	numHiccups = 0;
 	maxPrepareTime = 0;
 #if 1	//debug
