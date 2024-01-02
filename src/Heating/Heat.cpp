@@ -30,6 +30,7 @@ Licence: GPL
 #include <CAN/CanInterface.h>
 #include <Fans/FansManager.h>
 #include <InputMonitors/InputMonitor.h>
+#include <AppNotifyIndices.h>
 
 #if SUPPORT_DHT_SENSOR
 # include "Sensors/DhtSensor.h"
@@ -238,7 +239,7 @@ void Heat::Exit()
 				nextWakeTime = now + 1;
 				delayTime = 1;
 			}
-			TaskBase::Take((uint32_t)delayTime);
+			TaskBase::TakeIndexed(NotifyIndices::Heat, (uint32_t)delayTime);
 		}
 
 		CanMessageBuffer buf;
@@ -720,13 +721,13 @@ void Heat::Diagnostics(const StringRef& reply)
 void Heat::NewDriverFault()
 {
 	newDriverFaultState = 1;
-	heaterTask->Give();
+	heaterTask->Give(NotifyIndices::Heat);
 }
 
 void Heat::NewHeaterFault()
 {
 	newHeaterFaultState = 1;
-	heaterTask->Give();
+	heaterTask->Give(NotifyIndices::Heat);
 }
 
 // End

@@ -6,6 +6,7 @@
  */
 
 #include "CanMessageQueue.h"
+#include <AppNotifyIndices.h>
 
 CanMessageQueue::CanMessageQueue() noexcept : pendingMessages(nullptr), taskWaitingToGet(nullptr) { }
 
@@ -29,7 +30,7 @@ void CanMessageQueue::AddMessage(CanMessageBuffer *buf) noexcept
 		if (waitingTask != nullptr)
 		{
 			taskWaitingToGet = nullptr;
-			waitingTask->GiveFromISR();
+			waitingTask->GiveFromISR(NotifyIndices::CanMessageQueue);
 		}
 	}
 }
@@ -54,11 +55,11 @@ CanMessageBuffer *CanMessageQueue::GetMessage(uint32_t timeout) noexcept
 				return buf;
 			}
 
-			TaskBase::ClearCurrentTaskNotifyCount();
+			TaskBase::ClearCurrentTaskNotifyCountIndexed(NotifyIndices::CanMessageQueue);
 			taskWaitingToGet = TaskBase::GetCallerTaskHandle();
 		}
 
-		if (!TaskBase::Take(timeout))
+		if (!TaskBase::TakeIndexed(NotifyIndices::CanMessageQueue, timeout))
 		{
 			return nullptr;
 		}

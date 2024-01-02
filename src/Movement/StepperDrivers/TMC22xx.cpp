@@ -48,6 +48,7 @@
 #include <Cache.h>
 #include <General/Portability.h>
 #include <Hardware/IoPorts.h>
+#include <AppNotifyIndices.h>
 
 #if SAME5x || SAMC21
 # include <DmacManager.h>
@@ -1890,7 +1891,7 @@ inline void TmcDriverState::UartTmcHandler() noexcept
 void TransferCompleteCallback(CallbackParameter, DmaCallbackReason reason) noexcept
 {
 	dmaFinishedReason = reason;
-	tmcTask->GiveFromISR();
+	tmcTask->GiveFromISR(NotifyIndices::Tmc);
 }
 
 # else
@@ -1947,11 +1948,11 @@ bool DoTransaction(size_t driverNumber)
 #else
 	dmaFinished = false;
 #endif
-	TaskBase::ClearCurrentTaskNotifyCount();
+	TaskBase::ClearCurrentTaskNotifyCountIndexed(NotifyIndices::Tmc);
 	currentDriver->StartTransfer();
 
 	// Wait for the end-of-transfer interrupt
-	const bool timedOut = !TaskBase::Take(TransferTimeout);
+	const bool timedOut = !TaskBase::TakeIndexed(NotifyIndices::Tmc, TransferTimeout);
 #if RP2040
 	TmcUartInterface::DisableCompletedCallback();
 #elif TMC22xx_USES_SERCOM
@@ -2014,7 +2015,7 @@ extern "C" [[noreturn]] void TmcLoop(void *) noexcept
 		case DriversState::noPower:
 		case DriversState::shutDown:
 			currentDriverNumber = 0;
-			TaskBase::Take();
+			TaskBase::TakeIndexed(NotifyIndices::Tmc);
 			break;
 
 		case DriversState::notInitialised:
@@ -2384,7 +2385,7 @@ void SmartDrivers::Spin(bool powered) noexcept
 		if (driversState == DriversState::noPower)
 		{
 			driversState = DriversState::notInitialised;
-			tmcTask->Give();									// wake up the TMC task because the drivers need to be initialised
+			tmcTask->Give(NotifyIndices::Tmc);				// wake up the TMC task because the drivers need to be initialised
 		}
 	}
 	else if (driversState != DriversState::shutDown)

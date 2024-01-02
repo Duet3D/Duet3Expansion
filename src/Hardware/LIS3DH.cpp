@@ -11,6 +11,7 @@
 
 #include <Hardware/IoPorts.h>
 #include <Movement/StepTimer.h>
+#include <AppNotifyIndices.h>
 
 constexpr uint16_t LisAddresses[] =
 {
@@ -315,7 +316,7 @@ unsigned int LIS3DH::CollectData(const uint16_t **collectedData, uint16_t &dataR
 	taskWaiting = TaskBase::GetCallerTaskHandle();
 	while (!digitalRead(int1Pin))
 	{
-		TaskBase::Take();
+		TaskBase::TakeIndexed(NotifyIndices::AccelerometerHardware);
 	}
 	taskWaiting = nullptr;
 
@@ -440,7 +441,7 @@ void LIS3DH::Int1Isr() noexcept
 		firstInterruptTime = now;
 	}
 	lastInterruptTime = now;
-	TaskBase::GiveFromISR(taskWaiting);
+	TaskBase::GiveFromISR(taskWaiting, NotifyIndices::AccelerometerHardware);
 	taskWaiting = nullptr;
 }
 
