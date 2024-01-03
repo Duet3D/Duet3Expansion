@@ -17,6 +17,7 @@
 #include <DmacManager.h>
 #include <Platform/TaskPriorities.h>
 #include <General/Portability.h>
+#include <AppNotifyIndices.h>
 
 #if SUPPORT_CLOSED_LOOP
 # include <ClosedLoop/ClosedLoop.h>
@@ -1360,18 +1361,18 @@ void RxDmaCompleteCallback(CallbackParameter param, DmaCallbackReason reason) no
 		if (tmcTimer.ScheduleCallbackFromIsr(lastWakeupTime))
 		{
 			lastWakeupTime = StepTimer::GetTimerTicks();
-			tmcTask.GiveFromISR();
+			tmcTask.GiveFromISR(NotifyIndices::Tmc);
 		}
 	}
 #else
-	tmcTask.GiveFromISR();
+	tmcTask.GiveFromISR(NotifyIndices::Tmc);
 #endif
 }
 
 #if SUPPORT_CLOSED_LOOP
 static void TmcTimerCallback(CallbackParameter) noexcept
 {
-	tmcTask.GiveFromISR();
+	tmcTask.GiveFromISR(NotifyIndices::Tmc);
 }
 #endif
 
@@ -1385,7 +1386,7 @@ extern "C" [[noreturn]] void TmcLoop(void *) noexcept
 	{
 		if (driversState == DriversState::noPower)
 		{
-			TaskBase::Take();
+			TaskBase::TakeIndexed(NotifyIndices::Tmc);
 #if SUPPORT_CLOSED_LOOP
 			lastWakeupTime = StepTimer::GetTimerTicks();
 #endif
@@ -1471,7 +1472,7 @@ extern "C" [[noreturn]] void TmcLoop(void *) noexcept
 			AtomicCriticalSectionLocker lock2;
 
 			fastDigitalWriteLow(GlobalTmc51xxCSPin);			// set CS low
-			TaskBase::ClearCurrentTaskNotifyCount();
+			TaskBase::ClearCurrentTaskNotifyCount(NotifyIndices::Tmc);
 			EnableEndOfTransferInterrupt();
 			ResetSpi();
 			EnableDma();
@@ -1479,7 +1480,7 @@ extern "C" [[noreturn]] void TmcLoop(void *) noexcept
 		}
 
 		// Wait for the end-of-transfer interrupt
-		timedOut = !TaskBase::Take(TransferTimeout);
+		timedOut = !TaskBase::TakeIndexed(NotifyIndices::Tmc, TransferTimeout);
 		DisableEndOfTransferInterrupt();
 
 #if DEBUG_DRIVER_TIMEOUT
@@ -1766,7 +1767,7 @@ void SmartDrivers::Spin(bool powered) noexcept
 		if (driversState == DriversState::noPower)
 		{
 			driversState = DriversState::notInitialised;
-			tmcTask.Give();									// wake up the TMC task because the drivers need to be initialised
+			tmcTask.Give(NotifyIndices::Tmc);				// wake up the TMC task because the drivers need to be initialised
 		}
 	}
 	else if (driversState != DriversState::shutDown)

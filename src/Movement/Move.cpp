@@ -43,6 +43,7 @@
 #include <CanMessageFormats.h>
 #include <CanMessageBuffer.h>
 #include <Platform/TaskPriorities.h>
+#include <AppNotifyIndices.h>
 
 #if HAS_SMART_DRIVERS
 # include "StepperDrivers/TMC51xx.h"
@@ -204,7 +205,7 @@ void Move::StartNextMove(DDA *cdda, uint32_t startTime) noexcept
 				taskWaitingForMoveToComplete = TaskBase::GetCallerTaskHandle();
 			}
 #if 1	//debug
-			if (!TaskBase::Take(2000) && ddaRingCheckPointer->GetState() == DDA::completed)
+			if (!TaskBase::TakeIndexed(NotifyIndices::Move, 2000) && ddaRingCheckPointer->GetState() == DDA::completed)
 			{
 				++moveCompleteTimeoutErrs;
 			}
@@ -357,7 +358,7 @@ void Move::CurrentMoveCompleted() noexcept
 	TaskBase * const waitingTask = taskWaitingForMoveToComplete;
 	if (waitingTask != nullptr)
 	{
-		TaskBase::GiveFromISR(waitingTask);
+		TaskBase::GiveFromISR(waitingTask, NotifyIndices::Move);
 		taskWaitingForMoveToComplete = nullptr;
 	}
 }

@@ -29,8 +29,6 @@
 # include "ATEIO.h"
 #elif defined(RPI_PICO)
 # include "RPi_Pico.h"
-#elif defined(FLY36RRF)
-# include "Fly36_RRF.h"
 #elif defined(M23CL)
 # include "M23CL.h"
 #elif defined(SZP)

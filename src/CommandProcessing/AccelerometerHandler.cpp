@@ -18,6 +18,7 @@
 #include <CAN/CanInterface.h>
 #include <CanMessageGenericParser.h>
 #include <CanMessageGenericTables.h>
+#include <AppNotifyIndices.h>
 
 #define TEST_PACKING	0
 
@@ -58,7 +59,7 @@ static uint8_t TranslateAxes(uint8_t axes) noexcept
 {
 	for (;;)
 	{
-		TaskBase::Take();
+		TaskBase::TakeIndexed(NotifyIndices::AccelerometerDataCollector);
 		if (running)
 		{
 			// Collect and send the samples
@@ -325,7 +326,7 @@ GCodeResult AccelerometerHandler::ProcessStartRequest(const CanMessageStartAccel
 	successfulStart = false;
 	failedStart = false;
 	running = true;
-	accelerometerTask->Give();
+	accelerometerTask->Give(NotifyIndices::AccelerometerDataCollector);
 	const uint32_t startTime = millis();
 	do
 	{

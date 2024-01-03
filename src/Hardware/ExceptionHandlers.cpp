@@ -173,7 +173,7 @@ extern "C" [[noreturn]] void stackOverflowDispatcher(const uint32_t *pulFaultSta
 	SoftwareReset(SoftwareResetReason::stackOverflow, pulFaultStackAddress);
 }
 
-extern "C" [[noreturn]] void vApplicationStackOverflowHook(TaskHandle_t pxTask, char *pcTaskName) noexcept __attribute((naked));
+extern "C" void vApplicationStackOverflowHook(TaskHandle_t pxTask, char *pcTaskName) noexcept __attribute((naked, noreturn));
 void vApplicationStackOverflowHook(TaskHandle_t pxTask, char *pcTaskName) noexcept
 {
 	// r0 = pxTask, r1 = pxTaskName

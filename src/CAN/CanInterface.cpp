@@ -11,6 +11,7 @@
 #include <CanSettings.h>
 #include <CanMessageFormats.h>
 #include <CanMessageBuffer.h>
+#include <AppNotifyIndices.h>
 #include <Platform/Platform.h>
 #include <Platform/TaskPriorities.h>
 #include <Movement/StepTimer.h>
@@ -776,13 +777,13 @@ bool CanInterface::SendAnnounce(CanMessageBuffer *buf) noexcept
 // Wake the CAN sender task when we ar ot ni an ISR and scheduleing has not been suspended
 void CanInterface::WakeAsyncSender() noexcept
 {
-	canAsyncSenderTask->Give();
+	canAsyncSenderTask->Give(NotifyIndices::CanAsyncSender);
 }
 
 // Wake the CAN sender task from an ISR
 void CanInterface::WakeAsyncSenderFromIsr() noexcept
 {
-	canAsyncSenderTask->GiveFromISR();
+	canAsyncSenderTask->GiveFromISR(NotifyIndices::CanAsyncSender);
 }
 
 GCodeResult CanInterface::ChangeAddressAndDataRate(const CanMessageSetAddressAndNormalTiming &msg, const StringRef &reply) noexcept
@@ -1001,7 +1002,7 @@ extern "C" [[noreturn]] void CanAsyncSenderLoop(void *) noexcept
 		}
 #endif
 
-		TaskBase::Take(timeToWait);							// wait until we are woken up because a message is available, or we time out
+		TaskBase::TakeIndexed(NotifyIndices::CanAsyncSender, timeToWait);	// wait until we are woken up because a message is available, or we time out
 	}
 }
 

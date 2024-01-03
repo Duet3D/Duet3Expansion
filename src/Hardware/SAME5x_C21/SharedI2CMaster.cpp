@@ -10,6 +10,7 @@
 #if SUPPORT_I2C_SENSORS && !RP2040
 
 #include "Serial.h"
+#include <AppNotifyIndices.h>
 
 #if SAME5x
 # include <hri_sercom_e54.h>
@@ -168,7 +169,7 @@ bool SharedI2CMaster::InternalTransfer(uint16_t address, const uint8_t *txBuffer
 	hardware->I2CM.STATUS.reg = SERCOM_I2CM_STATUS_BUSERR | SERCOM_I2CM_STATUS_RXNACK | SERCOM_I2CM_STATUS_ARBLOST;		// clear all status bits
 	hardware->I2CM.CTRLB.reg = SERCOM_I2CM_CTRLB_SMEN;						// make sure the ACKACT bit is clear and CMD is zero
 
-	TaskBase::ClearCurrentTaskNotifyCount();
+	TaskBase::ClearCurrentTaskNotifyCount(NotifyIndices::I2C);
 
 	{
 		AtomicCriticalSectionLocker lock;									// avoid getting descheduled between sending the command and enabling the interrupt
@@ -198,7 +199,7 @@ bool SharedI2CMaster::InternalTransfer(uint16_t address, const uint8_t *txBuffer
 		taskWaiting = TaskBase::GetCallerTaskHandle();
 	}
 
-	TaskBase::Take(I2CTimeoutTicks);
+	TaskBase::TakeIndexed(NotifyIndices::I2C, I2CTimeoutTicks);
 	if (state == I2cState::idle)
 	{
 		return true;
@@ -227,7 +228,7 @@ void SharedI2CMaster::ProtocolError() noexcept
 	hardware->I2CM.CTRLB.reg = SERCOM_I2CM_CTRLB_SMEN | SERCOM_I2CM_CTRLB_CMD(0x03);			// send stop command, get off bus
 	state = I2cState::protocolError;
 	while (hardware->I2CM.SYNCBUSY.bit.SYSOP) { }
-	TaskBase::GiveFromISR(taskWaiting);
+	TaskBase::GiveFromISR(taskWaiting, NotifyIndices::I2C);
 	taskWaiting = nullptr;
 }
 
@@ -255,7 +256,7 @@ void SharedI2CMaster::Interrupt() noexcept
 				hardware->I2CM.CTRLB.reg = SERCOM_I2CM_CTRLB_SMEN | SERCOM_I2CM_CTRLB_CMD(0x03);			// send stop command
 				state = I2cState::idle;
 				while (hardware->I2CM.SYNCBUSY.bit.SYSOP) { }
-				TaskBase::GiveFromISR(taskWaiting);
+				TaskBase::GiveFromISR(taskWaiting, NotifyIndices::I2C);
 				taskWaiting = nullptr;
 			}
 			else
@@ -297,7 +298,7 @@ void SharedI2CMaster::Interrupt() noexcept
 				state = I2cState::idle;
 				while (hardware->I2CM.SYNCBUSY.bit.SYSOP) { }
 				*rxTransferBuffer++ = hardware->I2CM.DATA.reg;
-				TaskBase::GiveFromISR(taskWaiting);
+				TaskBase::GiveFromISR(taskWaiting, NotifyIndices::I2C);
 				taskWaiting = nullptr;
 			}
 			else

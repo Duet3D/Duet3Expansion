@@ -53,6 +53,7 @@ using std::numeric_limits;
 # include <CanMessageFormats.h>
 # include <CanMessageGenericParser.h>
 # include <CanMessageGenericTables.h>
+# include <AppNotifyIndices.h>
 
 # if SUPPORT_TMC2160
 #  include "Movement/StepperDrivers/TMC51xx.h"
@@ -660,7 +661,7 @@ void ClosedLoop::EncoderCalibrationTaskLoop() noexcept
 {
 	for (;;)
 	{
-		TaskBase::Take();
+		TaskBase::TakeIndexed(NotifyIndices::ClosedLoopDataTransmission);
 		if (encoder != nullptr && encoder->UsesCalibration() && calibrationState == CalibrationState::dataReady)
 		{
 			calibrationErrors = encoder->Calibrate(calibrateNotCheck);
@@ -784,7 +785,7 @@ void ClosedLoop::ReadyToCalibrate(bool store) noexcept
 	{
 		calibrationState = CalibrationState::dataReady;
 		tuningError |= TuningError::TuningOrCalibrationInProgress;			// to prevent movement in case we are re-calibrating
-		encoderCalibrationTask->Give();
+		encoderCalibrationTask->Give(NotifyIndices::ClosedLoopDataTransmission);
 	}
 }
 
@@ -944,7 +945,7 @@ void ClosedLoop::InstanceControlLoop() noexcept
 				{
 					while (samplesSent == samplesCollected && samplingMode == RecordingMode::Immediate)
 					{
-						TaskBase::Take();							// wait for data to be available
+						TaskBase::TakeIndexed(NotifyIndices::ClosedLoopDataTransmission);			// wait for data to be available
 					}
 
 					if (samplesSent < samplesCollected)
@@ -969,7 +970,7 @@ void ClosedLoop::InstanceControlLoop() noexcept
 		}
 		else
 		{
-			TaskBase::Take();									// wait for a new data collection to start
+			TaskBase::TakeIndexed(NotifyIndices::ClosedLoopDataTransmission);	// wait for a new data collection to start
 		}
 	}
 }
@@ -1010,7 +1011,7 @@ void ClosedLoop::CollectSample() noexcept
 		}
 	}
 
-	dataTransmissionTask->Give();
+	dataTransmissionTask->Give(NotifyIndices::ClosedLoopDataTransmission);
 }
 
 // Control the motor phase currents, returning the fraction of maximum current that we commanded
