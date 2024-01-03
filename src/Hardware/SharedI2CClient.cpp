@@ -13,6 +13,7 @@ SharedI2CClient::SharedI2CClient(SharedI2CMaster& dev, uint16_t addr) noexcept :
 {
 }
 
+// Transfer some data returning true if successful
 bool SharedI2CClient::Transfer(const uint8_t *txBuffer, uint8_t *rxBuffer, size_t numToWrite, size_t numToRead, uint32_t timeout) noexcept
 {
 	if (!device.Take(timeout))
