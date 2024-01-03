@@ -55,7 +55,7 @@ CanMessageBuffer *CanMessageQueue::GetMessage(uint32_t timeout) noexcept
 				return buf;
 			}
 
-			TaskBase::ClearCurrentTaskNotifyCountIndexed(NotifyIndices::CanMessageQueue);
+			TaskBase::ClearCurrentTaskNotifyCount(NotifyIndices::CanMessageQueue);
 			taskWaitingToGet = TaskBase::GetCallerTaskHandle();
 		}
 

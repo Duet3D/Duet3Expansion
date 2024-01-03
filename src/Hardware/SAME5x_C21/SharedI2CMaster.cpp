@@ -169,7 +169,7 @@ bool SharedI2CMaster::InternalTransfer(uint16_t address, const uint8_t *txBuffer
 	hardware->I2CM.STATUS.reg = SERCOM_I2CM_STATUS_BUSERR | SERCOM_I2CM_STATUS_RXNACK | SERCOM_I2CM_STATUS_ARBLOST;		// clear all status bits
 	hardware->I2CM.CTRLB.reg = SERCOM_I2CM_CTRLB_SMEN;						// make sure the ACKACT bit is clear and CMD is zero
 
-	TaskBase::ClearCurrentTaskNotifyCountIndexed(NotifyIndices::I2C);
+	TaskBase::ClearCurrentTaskNotifyCount(NotifyIndices::I2C);
 
 	{
 		AtomicCriticalSectionLocker lock;									// avoid getting descheduled between sending the command and enabling the interrupt
