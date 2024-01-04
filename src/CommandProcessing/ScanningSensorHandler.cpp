@@ -25,10 +25,11 @@ static uint32_t offset = 0;
 static volatile AnalogInCallbackFunction callbackFunction = nullptr;
 static CallbackParameter callbackParameter;
 
+// This hook function is called by the AnalogIn task
 static void LDC1612TaskHook() noexcept
 {
-	// The LDC1612 generates lots of bus errors if we try to read the data when no new data is available
-	if (!isCalibrating && !digitalRead(LDC1612InterruptPin))
+	// Read the sensor status at most once every millisecond, otherwise the AnalogIn task tends to hog the I2C bus and the accelerometer can't be read
+	if (!isCalibrating && !digitalRead(LDC1612InterruptPin) && millis() != lastReadingTakenAt)
 	{
 		uint32_t val;
 		if (sensor->GetChannelResult(0, val))		// if no error
