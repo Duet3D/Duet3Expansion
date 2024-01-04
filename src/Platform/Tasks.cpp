@@ -886,7 +886,16 @@ void Tasks::Diagnostics(const StringRef& reply) noexcept
 		}
 		reply.catf(",%.1f%%,%u)", (double)cpuPercent, (unsigned int)taskDetails.usStackHighWaterMark);
 	}
-	reply.catf(", total %.1f%%", (double)totalCpuPercent);
+	reply.catf(", total %.1f%%\nOwned mutexes:", (double)totalCpuPercent);
+
+	for (const Mutex *m = Mutex::GetMutexList(); m != nullptr; m = m->GetNext())
+	{
+		const TaskHandle holder = m->GetHolder();
+		if (holder != nullptr)
+		{
+			reply.catf(" %s(%s)", m->GetName(), pcTaskGetName(holder->GetFreeRTOSHandle()));
+		}
+	}
 
 	// Show the up time and reason for the last reset
 	const uint32_t now = (uint32_t)(millis64()/1000u);		// get up time in seconds
