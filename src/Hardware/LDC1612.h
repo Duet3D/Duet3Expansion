@@ -79,7 +79,7 @@ private:
 	bool ReadInitCurrent(uint8_t channel, uint16_t& value) noexcept;
 	bool SetDivisors(uint8_t channel) noexcept;
 
-	bool Read16bits(LDCRegister reg, uint16_t& val) noexcept;
+	bool Read16bits(LDCRegister reg, uint16_t& val, bool releaseBus = true) noexcept;
 	bool Write16bits(LDCRegister reg, uint16_t val) noexcept;
 
 	uint16_t currentSetting[NumChannels];

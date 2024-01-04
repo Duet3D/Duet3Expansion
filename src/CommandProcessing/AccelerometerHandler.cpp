@@ -350,7 +350,8 @@ void AccelerometerHandler::Diagnostics(const StringRef& reply) noexcept
 	reply.lcatf("Accelerometer: %s", (present) ? accelerometer->GetTypeName() : "none");
 	if (present)
 	{
-		reply.catf(", status: %02x", accelerometer->ReadStatus());
+		const uint8_t status = accelerometer->ReadStatus();
+		reply.catf(", status: %02x", status);
 		if (accelerometer->HasInterruptError())
 		{
 			reply.cat(", INT1 error!");

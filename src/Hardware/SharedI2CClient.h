@@ -19,7 +19,7 @@ class SharedI2CClient
 public:
 	SharedI2CClient(SharedI2CMaster& dev, uint16_t addr) noexcept;
 	void SetAddress(uint16_t addr) noexcept { address = addr; }
-	bool Transfer(const uint8_t *txBuffer, uint8_t *rxBuffer, size_t numToWrite, size_t numToRead, uint32_t timeout) noexcept;
+	bool Transfer(const uint8_t *txBuffer, uint8_t *rxBuffer, size_t numToWrite, size_t numToRead, uint32_t timeout, bool releaseBus = true) noexcept;
 
 private:
 	SharedI2CMaster& device;

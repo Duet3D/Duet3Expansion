@@ -104,15 +104,15 @@ bool LDC1612::CalibrateDriveCurrent(uint8_t channel) noexcept
 // Read the result register of a channel
 bool LDC1612::GetChannelResult(uint8_t channel, uint32_t& result) noexcept
 {
-	uint16_t value;
-	bool ok = Read16bits((LDCRegister)((uint8_t)LDCRegister::CONVERSION_RESULT_REG_START + channel * 2), value);
+	uint16_t msw;
+	bool ok = Read16bits((LDCRegister)((uint8_t)LDCRegister::CONVERSION_RESULT_REG_START + channel * 2), msw, false);
 	if (ok)
 	{
-		const uint32_t msw = (uint32_t)value << 16;
-		ok = Read16bits((LDCRegister)((uint8_t)LDCRegister::CONVERSION_RESULT_REG_START + channel * 2 + 1), value);
+		uint16_t lsw;
+		ok = Read16bits((LDCRegister)((uint8_t)LDCRegister::CONVERSION_RESULT_REG_START + channel * 2 + 1), lsw);
 		if (ok)
 		{
-			result = msw | (uint32_t)value;
+			result = ((uint32_t)msw << 16) | (uint32_t)lsw;
 		}
 	}
 	return ok;
@@ -222,11 +222,11 @@ uint16_t LDC1612::GetStatus() noexcept
 }
 
 // Read a pair of registers to give a 16-bit result, where the lower register is the MSB
-bool LDC1612::Read16bits(LDCRegister reg, uint16_t& val) noexcept
+bool LDC1612::Read16bits(LDCRegister reg, uint16_t& val, bool releaseBus) noexcept
 {
 	uint8_t data[3];
 	data[0] = (uint8_t)reg;
-	const bool ok = Transfer(data, data + 1, 1, 2, LDCI2CTimeout);
+	const bool ok = Transfer(data, data + 1, 1, 2, LDCI2CTimeout, releaseBus);
 	if (ok)
 	{
 		val = ((uint16_t)data[1] << 8) | (uint16_t)data[2];

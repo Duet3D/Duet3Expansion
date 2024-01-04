@@ -147,9 +147,14 @@ bool SharedI2CMaster::Take(uint32_t timeout) noexcept
 	return success;
 }
 
+// Release ownership of this I2C interface
 void SharedI2CMaster::Release() noexcept
 {
-	mutex.Release();
+	// Now that Transfer() has an option to not release the bus, we may have called Take() several times, so we may need to call Release() several times
+	while (mutex.GetHolder() == TaskBase::GetCallerTaskHandle())
+	{
+		mutex.Release();
+	}
 }
 
 void SharedI2CMaster::Diagnostics(const StringRef& reply) noexcept
