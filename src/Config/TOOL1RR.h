@@ -97,6 +97,7 @@ constexpr Pin DriverDiagPins[NumDrivers] = { PortAPin(21) };
 #define SUPPORT_THERMISTORS		1
 #define SUPPORT_SPI_SENSORS		0
 #define SUPPORT_LDC1612			1
+#define SUPPORT_AS5601			1											// support direct-connected magnetic filament monitor encoder chip
 
 #ifdef DEBUG
 # define SUPPORT_I2C_SENSORS	0											// in debug mode the SERCOM is used for debugging
@@ -165,6 +166,10 @@ constexpr uint16_t LDC1612_I2cAddress = 0x2A;				// pin 4 is tied low
 constexpr unsigned int Ldc1612GClkNumber = 5;
 constexpr Pin LDC1612ClockGenPin = PortBPin(11);
 constexpr Pin LDC1612InterruptPin = PortAPin(25);
+#endif
+
+#if SUPPORT_AS5601
+constexpr uint16_t AS5601_I2cAddress = 0x6C;				// I2C address of the AS5601. Bit 0 is the read/write bit.
 #endif
 
 // Table of pin functions that we are allowed to use
@@ -238,11 +243,14 @@ constexpr PinDescription PinTable[] =
 #if SUPPORT_LDC1612
 	{ TcOutput::none,	TccOutput::none,	AdcInput::ldc1612,	SercomIo::none,		SercomIo::none,		Nx,	"i2c.ldc1612"	},	// LDC1612 sensor connected via I2C
 #endif
+#if SUPPORT_AS5601
+	{ TcOutput::none,	TccOutput::none,	AdcInput::ldc1612,	SercomIo::none,		SercomIo::none,		Nx,	"i2c.as5601"	},	// AS5601 filament monitor connected via I2C
+#endif
 };
 
 static constexpr size_t NumPins = ARRAY_SIZE(PinTable);
 static constexpr size_t NumRealPins = 32 + 24;			// 32 pins on port A (some missing), 24 on port B (many missing)
-constexpr size_t NumVirtualPins = SUPPORT_LIS3DH + SUPPORT_LDC1612;
+constexpr size_t NumVirtualPins = SUPPORT_LIS3DH + SUPPORT_LDC1612 + SUPPORT_AS5601;
 
 static_assert(NumPins == NumRealPins + NumVirtualPins);
 

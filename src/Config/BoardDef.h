@@ -95,6 +95,10 @@ constexpr size_t NumDrivers = 0;
 # define SUPPORT_LDC1612				0
 #endif
 
+#ifndef SUPPORT_AS5601
+# define SUPPORT_AS5601					0
+#endif
+
 #ifndef USE_SPICAN
 # define USE_SPICAN						0
 #endif
