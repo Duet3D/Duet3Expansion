@@ -18,7 +18,7 @@
 class LDC1612 : public SharedI2CClient
 {
 public:
-	LDC1612(SharedI2CMaster& dev, uint16_t i2cAddress = LDC1612_I2cAddress) noexcept;
+	LDC1612(SharedI2CMaster& dev, uint16_t i2cAddress = LDC1612_I2CAddress) noexcept;
 	~LDC1612() noexcept {}
 
 	// Do a quick test to check whether the accelerometer is present, returning true if it is

@@ -162,14 +162,15 @@ constexpr Pin Lis3dhInt1Pin = PortAPin(27);
 #endif
 
 #if SUPPORT_LDC1612
-constexpr uint16_t LDC1612_I2cAddress = 0x2A;				// pin 4 is tied low
+constexpr uint16_t LDC1612_I2CAddress = 0x2A;				// pin 4 is tied low
 constexpr unsigned int Ldc1612GClkNumber = 5;
 constexpr Pin LDC1612ClockGenPin = PortBPin(11);
 constexpr Pin LDC1612InterruptPin = PortAPin(25);
 #endif
 
 #if SUPPORT_AS5601
-constexpr uint16_t AS5601_I2cAddress = 0x6C;				// I2C address of the AS5601. Bit 0 is the read/write bit.
+constexpr uint16_t AS5601_I2CAddress = 0x6C;				// I2C address of the AS5601. Bit 0 is the read/write bit.
+constexpr uint16_t TCA6408A_I2CAddress = 0x40;				// I2C address of the TCA6408A (ADDR pin is tied to ground). Bit 0 is the read/write bit.
 #endif
 
 // Table of pin functions that we are allowed to use

@@ -99,6 +99,10 @@ protected:
 	const IoPort& GetPort() const noexcept { return port; }
 	bool HaveIsrStepsCommanded() const noexcept { return haveIsrStepsCommanded; }
 
+#if SUPPORT_AS5601
+	bool IsDirectMagneticEncoder() const noexcept { return port.GetPin() == AS5601Pin; }
+#endif
+
 	static int32_t ConvertToPercent(float f)
 	{
 		return lrintf(100 * f);

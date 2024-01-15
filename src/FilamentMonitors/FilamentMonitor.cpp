@@ -77,14 +77,14 @@ GCodeResult FilamentMonitor::CommonConfigure(const CanMessageGenericParser& pars
 		haveIsrStepsCommanded = false;
 
 #if SUPPORT_AS5601
-		if (port.GetPin() == AS5601Pin)
+		if (IsDirectMagneticEncoder())
 		{
 			if (type != 3)
 			{
 				reply.copy("wrong filament monitor type for this port");
 				return GCodeResult::error;
 			}
-			if (!MFMHandler::Present())
+			if (!MFMHandler::EncoderPresent())
 			{
 				reply.copy("no AS5601 device found");
 				return GCodeResult::error;

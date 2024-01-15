@@ -80,7 +80,7 @@ constexpr uint8_t StatusMH = 0b00001000;			// Magnet too strong (AGC minimum gai
 constexpr uint16_t AS5601Config = ConfFTH_18LSB | ConfSF_2X | ConfHYST_LSB3 | ConfPM_NOM;
 
 AS5601::AS5601(SharedI2CMaster& dev) noexcept
-	: SharedI2CClient(dev, AS5601_I2cAddress)
+	: SharedI2CClient(dev, AS5601_I2CAddress)
 {
 }
 

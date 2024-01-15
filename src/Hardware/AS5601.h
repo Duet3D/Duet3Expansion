@@ -14,7 +14,7 @@
 
 #include "SharedI2CClient.h"
 
-// AS5601 class
+// AS5601 magnetic rotary encoder class
 class AS5601 : public SharedI2CClient
 {
 public:

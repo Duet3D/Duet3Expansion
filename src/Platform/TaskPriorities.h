@@ -16,6 +16,7 @@ namespace TaskPriority
 	static constexpr unsigned int UsbPriority = 2;
 	static constexpr unsigned int TmcOpenLoop = 2;							// priority of the TMC task when in open loop modes
 	static constexpr unsigned int AinPriority = 2;
+	static constexpr unsigned int Mfm = 2;									// priority of the MFM task if we have an embedded AS5601
 	static constexpr unsigned int CanReceiverPriority = 3;
 	static constexpr unsigned int MovePriority = 3;
 	static constexpr unsigned int Accelerometer = 3;
