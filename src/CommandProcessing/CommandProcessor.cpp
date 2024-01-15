@@ -48,6 +48,10 @@
 # include "ScanningSensorHandler.h"
 #endif
 
+#if SUPPORT_AS5601
+# include "MFMHandler.h"
+#endif
+
 // Check a value against the specified min and max parameters returning true if the value was outside limits
 static bool CheckMinMax(CanMessageGenericParser& parser, const StringRef& reply, char c, float val, const char *text) noexcept
 {
@@ -910,6 +914,9 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 #endif
 #if SUPPORT_LDC1612
 		ScanningSensorHandler::AppendDiagnostics(reply);
+#endif
+#if SUPPORT_AS5601
+		MFMHandler::AppendDiagnostics(reply);
 #endif
 #if SUPPORT_I2C_SENSORS
 		Platform::GetSharedI2C().Diagnostics(reply);

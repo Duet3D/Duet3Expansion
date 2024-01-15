@@ -39,6 +39,10 @@
 # include <CommandProcessing/ScanningSensorHandler.h>
 #endif
 
+#if SUPPORT_AS5601
+# include <Commandprocessing/MFMHandler.h>
+#endif
+
 #if SUPPORT_CLOSED_LOOP
 # include <ClosedLoop/ClosedLoop.h>
 #endif
@@ -1002,7 +1006,11 @@ void Platform::Init()
 	if (boardVariant != 0)
 # endif
 	{
-		AccelerometerHandler::Init();
+# if ACCELEROMETER_USES_SPI
+		AccelerometerHandler::Init(*sharedSpi);
+# else
+		AccelerometerHandler::Init(*sharedI2C);
+# endif
 	}
 #endif
 
@@ -1011,8 +1019,12 @@ void Platform::Init()
 	if (boardVariant != 0)
 # endif
 	{
-		ScanningSensorHandler::Init();
+		ScanningSensorHandler::Init(*sharedI2C);
 	}
+#endif
+
+#if SUPPORT_AS5601
+	MFMHandler::Init(*sharedI2C);
 #endif
 
 	CanInterface::Init(GetCanAddress(), UseAlternateCanPins, true);

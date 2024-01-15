@@ -12,11 +12,12 @@
 
 #if SUPPORT_LDC1612
 
+#include <Hardware/SharedI2CMaster.h>
 #include <AnalogIn.h>		// for AnalogInCallbackFunction
 
 namespace ScanningSensorHandler
 {
-	void Init() noexcept;
+	void Init(SharedI2CMaster& i2cDevice) noexcept;
 	bool IsPresent() noexcept;
 	uint32_t GetReading() noexcept;
 	GCodeResult SetOrCalibrateCurrent(uint32_t param, const StringRef& reply, uint8_t& extra) noexcept;

@@ -10,7 +10,6 @@
 #if SUPPORT_LDC1612
 
 #include <Hardware/LDC1612.h>
-#include <Platform/Platform.h>
 #include <CanMessageFormats.h>
 #include <AnalogIn.h>
 
@@ -55,7 +54,7 @@ static void LDC1612TaskHook() noexcept
 	}
 }
 
-void ScanningSensorHandler::Init() noexcept
+void ScanningSensorHandler::Init(SharedI2CMaster& i2cDevice) noexcept
 {
 	// Set up the external clock to the LDC1612.
 	// The higher the better, but the maximum is 40MHz
@@ -89,7 +88,7 @@ void ScanningSensorHandler::Init() noexcept
 # error LDC support not implemented for this processor
 #endif
 
-	sensor = new LDC1612(Platform::GetSharedI2C());
+	sensor = new LDC1612(i2cDevice);
 	if (sensor->CheckPresent())
 	{
 		sensor->SetDefaultConfiguration(0, false);

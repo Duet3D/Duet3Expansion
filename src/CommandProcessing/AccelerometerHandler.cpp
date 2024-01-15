@@ -12,7 +12,6 @@
 #include <RTOSIface/RTOSIface.h>
 #include <Hardware/LIS3DH.h>
 #include <CanMessageFormats.h>
-#include <Platform/Platform.h>
 #include <Platform/TaskPriorities.h>
 #include <CanMessageBuffer.h>
 #include <CAN/CanInterface.h>
@@ -218,14 +217,13 @@ static bool TranslateOrientation(uint8_t input) noexcept
 }
 
 // Interface functions called by the main task
-void AccelerometerHandler::Init() noexcept
-{
 #if ACCELEROMETER_USES_SPI
-	accelerometer = new LIS3DH(Platform::GetSharedSpi(), Lis3dhCsPin, Lis3dhInt1Pin);
+void AccelerometerHandler::Init(SharedSpiDevice& dev) noexcept
 #else
-	accelerometer = new LIS3DH(Platform::GetSharedI2C(), Lis3dhInt1Pin);
+void AccelerometerHandler::Init(SharedI2CMaster& dev) noexcept
 #endif
-
+{
+	accelerometer = new LIS3DH(dev, Lis3dhInt1Pin);
 	if (accelerometer->CheckPresent())
 	{
 		accelerometer->Configure(samplingRate, resolution);
