@@ -20,11 +20,13 @@ class TCA6408A : public SharedI2CClient
 public:
 	TCA6408A(SharedI2CMaster& dev) noexcept;
 
-	// Initialise the device
-	void Init() noexcept;
+	// Initialise the device returning true if it was found
+	bool Init() noexcept;
 
-	// Check whether the device was found during initialisation
-	bool Present() const noexcept { return found; }
+	void SetRedLed(bool on) noexcept;
+	void SetGreenLed(bool on) noexcept;
+	bool IsButtonPressed() noexcept { return buttonPressed; }
+	void Poll() noexcept;
 
 private:
 	enum class TCA6408ARegister
@@ -34,10 +36,15 @@ private:
 
 	static constexpr uint32_t TCA6408A_I2CTimeout = 25;					// timeout in milliseconds when waiting to acquire the I2C bus
 
+	void SetOutputBitState(unsigned int bitnum, bool on) noexcept;
 	bool Read8(TCA6408ARegister reg, uint8_t& val) noexcept;
 	bool Write8(TCA6408ARegister reg, uint8_t val) noexcept;
 
-	bool found = false;
+	uint8_t buttonDebounceCount = 0;
+	bool buttonPressed = false;
+
+	volatile uint8_t outputRegister;
+	volatile bool outputNeedsUpdating = false;
 };
 
 #endif

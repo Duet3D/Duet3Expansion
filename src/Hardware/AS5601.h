@@ -20,11 +20,10 @@ class AS5601 : public SharedI2CClient
 public:
 	AS5601(SharedI2CMaster& dev) noexcept;
 
-	// Initialise the device
-	void Init() noexcept;
+	// Initialise the device returning true if it was found
+	bool Init() noexcept;
 
-	// Check whether the device was found during initialisation
-	bool Present() const noexcept { return found; }
+	void Poll() noexcept;
 
 private:
 	enum class AS5601Register
@@ -47,8 +46,6 @@ private:
 	bool Read16(AS5601Register reg, uint16_t& val) noexcept;
 	bool Write8(AS5601Register reg, uint8_t val) noexcept;
 	bool Write16(AS5601Register reg, uint16_t val) noexcept;
-
-	bool found = false;
 };
 
 #endif

@@ -15,6 +15,7 @@
 
 namespace MFMHandler
 {
+	constexpr uint32_t PollIntervalMillis = 40;						// how many milliseconds between device polling
 	constexpr size_t AS5601TaskStackWords = 100;
 	constexpr unsigned int buttonDebounceCount = 10;
 
@@ -34,10 +35,27 @@ void MFMHandler::Init(SharedI2CMaster& i2cDevice) noexcept
 	if (encoder == nullptr)
 	{
 		encoder = new AS5601(i2cDevice);
-		encoder->Init();
+		if (!encoder->Init())
+		{
+			DeleteObject(encoder);
+		}
 		expander = new TCA6408A(i2cDevice);
-		expander->Init();
+		if (!expander->Init())
+		{
+			DeleteObject(expander);
+		}
 	}
+
+	if (encoder != nullptr || expander != nullptr)
+	{
+		as5601Task = new Task<AS5601TaskStackWords>();
+		as5601Task->Create(MfmTaskCode, "MFM", nullptr, TaskPriority::Mfm);
+	}
+}
+
+bool MFMHandler::IsButtonPressed() noexcept
+{
+	return expander != nullptr && expander->IsButtonPressed();
 }
 
 void MFMHandler::AppendDiagnostics(const StringRef& reply) noexcept
@@ -47,21 +65,16 @@ void MFMHandler::AppendDiagnostics(const StringRef& reply) noexcept
 
 bool MFMHandler::EncoderPresent() noexcept
 {
-	return encoder != nullptr && encoder->Present();
+	return encoder != nullptr;
 }
 
 bool MFMHandler::ExpanderPresent() noexcept
 {
-	return expander != nullptr && expander->Present();
+	return expander != nullptr;
 }
 
 void MFMHandler::Start() noexcept
 {
-	if (as5601Task == nullptr)
-	{
-		as5601Task = new Task<AS5601TaskStackWords>();
-		as5601Task->Create(MfmTaskCode, "MFM", nullptr, TaskPriority::Mfm);
-	}
 	//TODO
 }
 
@@ -70,11 +83,33 @@ void MFMHandler::Stop() noexcept
 	//TODO
 }
 
-void MfmTaskCode() noexcept
+void MFMHandler::MfmTaskCode(void *) noexcept
 {
-	for(;;)
+	uint32_t nextWakeTime = millis();
+	for (;;)
 	{
-		delay(100);
+		// Wait until we are woken or it's time to poll the I2C devices. If we are really unlucky, we could end up waiting for one tick too long.
+		nextWakeTime += HeatSampleIntervalMillis;
+		{
+			const uint32_t now = millis();
+			int32_t delayTime = (int32_t)(nextWakeTime - now);
+			// If we're late (e.g. due to problems sending CAN messages), wait at least until the next tick to let other tasks run
+			if (delayTime < 1)
+			{
+				nextWakeTime = now + 1;
+				delayTime = 1;
+			}
+			delay((uint32_t)delayTime);
+		}
+
+		if (encoder != nullptr)
+		{
+			encoder->Poll();
+		}
+		if (expander != nullptr)
+		{
+			expander->Poll();
+		}
 	}
 }
 

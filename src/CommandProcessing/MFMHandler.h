@@ -21,6 +21,7 @@ namespace MFMHandler
 	bool ExpanderPresent() noexcept;
 	void Start() noexcept;													// start taking regular readings
 	void Stop() noexcept;													// stop taking regular readings
+	bool IsButtonPressed() noexcept;
 	void AppendDiagnostics(const StringRef& reply) noexcept;
 }
 

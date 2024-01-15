@@ -85,16 +85,22 @@ AS5601::AS5601(SharedI2CMaster& dev) noexcept
 }
 
 // Initialise the device
-void AS5601::Init() noexcept
+bool AS5601::Init() noexcept
 {
 	if (Write16(AS5601Register::config, AS5601Config))
 	{
 		uint16_t val;
 		if (Read16(AS5601Register::config, val) && val == AS5601Config)
 		{
-			found = true;
+			return true;
 		}
 	}
+	return false;
+}
+
+void AS5601::Poll() noexcept
+{
+	//TODO read the angle, record the angle and the time
 }
 
 bool AS5601::Read8(AS5601Register reg, uint8_t& val) noexcept

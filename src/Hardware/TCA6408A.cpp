@@ -20,15 +20,16 @@ TCA6408A::TCA6408A(SharedI2CMaster& dev) noexcept
 {
 }
 
-void TCA6408A::Init() noexcept
+bool TCA6408A::Init() noexcept
 {
-	if (   Write8(TCA6408ARegister::output, 0xFF)						// ensure that LEDs are off
-		&& Write8(TCA6408ARegister::polarityInversion, 0)				// don't invert anything
-		&& Write8(TCA6408ARegister::config, TCA8408A_config)			// configure I/O
-	   )
-	{
-		found = true;
-	}
+	outputRegister = (1u << RedLedBitnum) | (1u << GreenLedBitnum);
+	uint8_t val;
+	return (   Write8(TCA6408ARegister::output, outputRegister)				// ensure that the LEDs are off
+			&& Write8(TCA6408ARegister::polarityInversion, 0)				// don't invert anything
+			&& Write8(TCA6408ARegister::config, TCA8408A_config)			// configure I/O
+			&& Read8(TCA6408ARegister::config, val)
+			&& val == TCA8408A_config
+	   	   );
 }
 
 bool TCA6408A::Read8(TCA6408ARegister reg, uint8_t& val) noexcept
@@ -41,6 +42,44 @@ bool TCA6408A::Read8(TCA6408ARegister reg, uint8_t& val) noexcept
 		val = data[1];
 	}
 	return ok;
+}
+
+void TCA6408A::SetRedLed(bool on) noexcept
+{
+	SetOutputBitState(RedLedBitnum, on);
+}
+
+void TCA6408A::SetGreenLed(bool on) noexcept
+{
+	SetOutputBitState(GreenLedBitnum, on);
+}
+
+void TCA6408A::SetOutputBitState(unsigned int bitnum, bool on) noexcept
+{
+	uint8_t newOutputRegister = outputRegister;
+	if (on)
+	{
+		newOutputRegister &= ~(1u << bitnum);
+	}
+	else
+	{
+		newOutputRegister |= (1u << bitnum);
+	}
+	if (newOutputRegister != outputRegister)
+	{
+		outputRegister = newOutputRegister;
+		outputNeedsUpdating = true;
+	}
+}
+
+void TCA6408A::Poll() noexcept
+{
+	if (outputNeedsUpdating)
+	{
+		outputNeedsUpdating = false;
+		Write8(TCA6408ARegister::output, outputRegister);
+	}
+	//TODO read and debounce the button
 }
 
 bool TCA6408A::Write8(TCA6408ARegister reg, uint8_t val) noexcept
