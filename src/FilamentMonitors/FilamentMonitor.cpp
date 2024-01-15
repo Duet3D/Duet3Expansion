@@ -21,6 +21,10 @@
 #include <CanMessageGenericParser.h>
 #include <CanMessageGenericTables.h>
 
+#if SUPPORT_AS5601
+# include <CommandProcessing/MFMHandler.h>
+#endif
+
 // Static data
 ReadWriteLock FilamentMonitor::filamentMonitorsLock;
 FilamentMonitor *FilamentMonitor::filamentSensors[NumDrivers] = { 0 };
@@ -71,10 +75,29 @@ GCodeResult FilamentMonitor::CommonConfigure(const CanMessageGenericParser& pars
 		}
 
 		haveIsrStepsCommanded = false;
-		if (interruptMode != InterruptMode::none && !port.AttachInterrupt(InterruptEntry, interruptMode, CallbackParameter(this)))
+
+#if SUPPORT_AS5601
+		if (port.GetPin() == AS5601Pin)
 		{
-			reply.copy("unsuitable pin");
-			return GCodeResult::error;
+			if (type != 3)
+			{
+				reply.copy("wrong filament monitor type for this port");
+				return GCodeResult::error;
+			}
+			if (!MFMHandler::Present())
+			{
+				reply.copy("no AS5601 device found");
+				return GCodeResult::error;
+			}
+		}
+		else
+#endif
+		{
+			if (interruptMode != InterruptMode::none && !port.AttachInterrupt(InterruptEntry, interruptMode, CallbackParameter(this)))
+			{
+				reply.copy("unsuitable pin");
+				return GCodeResult::error;
+			}
 		}
 	}
 	return GCodeResult::ok;

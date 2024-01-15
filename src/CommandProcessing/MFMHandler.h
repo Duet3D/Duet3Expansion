@@ -18,6 +18,8 @@ namespace MFMHandler
 {
 	void Init(SharedI2CMaster& i2cDevice) noexcept;
 	bool Present() noexcept;
+	void Start() noexcept;													// start taking regular readings
+	void Stop();															// stop taking regular readings
 	void AppendDiagnostics(const StringRef& reply) noexcept;
 }
 

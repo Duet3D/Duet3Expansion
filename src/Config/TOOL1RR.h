@@ -244,7 +244,7 @@ constexpr PinDescription PinTable[] =
 	{ TcOutput::none,	TccOutput::none,	AdcInput::ldc1612,	SercomIo::none,		SercomIo::none,		Nx,	"i2c.ldc1612"	},	// LDC1612 sensor connected via I2C
 #endif
 #if SUPPORT_AS5601
-	{ TcOutput::none,	TccOutput::none,	AdcInput::ldc1612,	SercomIo::none,		SercomIo::none,		Nx,	"i2c.as5601"	},	// AS5601 filament monitor connected via I2C
+	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"i2c.as5601"	},	// AS5601 filament monitor connected via I2C
 #endif
 };
 
@@ -253,6 +253,10 @@ static constexpr size_t NumRealPins = 32 + 24;			// 32 pins on port A (some miss
 constexpr size_t NumVirtualPins = SUPPORT_LIS3DH + SUPPORT_LDC1612 + SUPPORT_AS5601;
 
 static_assert(NumPins == NumRealPins + NumVirtualPins);
+
+#if SUPPORT_AS5601
+constexpr Pin AS5601Pin = NumRealPins + SUPPORT_LIS3DH + SUPPORT_LDC1612;			// pin number when the user selects AS5601 on I2C bus
+#endif
 
 // Timer/counter used to generate step pulses and other sub-millisecond timings
 TcCount32 * const StepTc = &(TC0->COUNT32);
