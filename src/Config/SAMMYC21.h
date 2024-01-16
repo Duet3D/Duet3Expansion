@@ -129,7 +129,7 @@ constexpr Pin Lis3dhInt1Pin = PortAPin(13);
 #endif
 
 #if SUPPORT_LDC1612
-constexpr uint16_t LDC1612_I2cAddress = 0x2B;				// pin 4 is tied high on the Grove board
+constexpr uint16_t LDC1612_I2CAddress = 0x2B;				// pin 4 is tied high on the Grove board
 constexpr Pin LDC1612InterruptPin = PortAPin(21);
 #endif
 
