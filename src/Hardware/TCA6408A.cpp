@@ -9,26 +9,21 @@
 
 #if SUPPORT_AS5601				// currently we only use the TCA6408A in conjunction with the AS5601
 
-constexpr unsigned int ButtonBitnum = 0;
-constexpr unsigned int RedLedBitnum = 4;
-constexpr unsigned int GreenLedBitnum = 5;
-
-constexpr uint8_t TCA8408A_config = (1u << ButtonBitnum);				// button pin is input, LED and unused pins are outputs
-
 TCA6408A::TCA6408A(SharedI2CMaster& dev) noexcept
 	: SharedI2CClient(dev, TCA6408A_I2CAddress)
 {
 }
 
-bool TCA6408A::Init() noexcept
+bool TCA6408A::Init(uint8_t inputPins, uint8_t initialOutputs) noexcept
 {
-	outputRegister = (1u << RedLedBitnum) | (1u << GreenLedBitnum);
+	outputRegister = initialOutputs;
 	uint8_t val;
 	return (   Write8(TCA6408ARegister::output, outputRegister)				// ensure that the LEDs are off
 			&& Write8(TCA6408ARegister::polarityInversion, 0)				// don't invert anything
-			&& Write8(TCA6408ARegister::config, TCA8408A_config)			// configure I/O
-			&& Read8(TCA6408ARegister::config, val)
-			&& val == TCA8408A_config
+			&& Write8(TCA6408ARegister::config, inputPins)					// configure I/O
+			&& Read8(TCA6408ARegister::input, inputRegister)				// read the initial inputs
+			&& Read8(TCA6408ARegister::config, val)							// check that the config register reads back correctly
+			&& val == inputPins
 	   	   );
 }
 
@@ -42,16 +37,6 @@ bool TCA6408A::Read8(TCA6408ARegister reg, uint8_t& val) noexcept
 		val = data[1];
 	}
 	return ok;
-}
-
-void TCA6408A::SetRedLed(bool on) noexcept
-{
-	SetOutputBitState(RedLedBitnum, on);
-}
-
-void TCA6408A::SetGreenLed(bool on) noexcept
-{
-	SetOutputBitState(GreenLedBitnum, on);
 }
 
 void TCA6408A::SetOutputBitState(unsigned int bitnum, bool on) noexcept
@@ -79,7 +64,7 @@ void TCA6408A::Poll() noexcept
 		outputNeedsUpdating = false;
 		Write8(TCA6408ARegister::output, outputRegister);
 	}
-	//TODO read and debounce the button
+	(void)Read8(TCA6408ARegister::input, inputRegister);			// this will update the saved input register if it succeeds
 }
 
 bool TCA6408A::Write8(TCA6408ARegister reg, uint8_t val) noexcept

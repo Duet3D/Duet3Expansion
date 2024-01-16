@@ -98,9 +98,22 @@ bool AS5601::Init() noexcept
 	return false;
 }
 
-void AS5601::Poll() noexcept
+// Read the status and angle registers
+bool AS5601::ReadStatusAndAngle(uint8_t& status, uint16_t& angle) noexcept
 {
-	//TODO read the angle, record the angle and the time
+	// TODO make this slightly more efficient by only getting the I2C mutex once
+	if (Read8(AS5601Register::status, status) && Read16(AS5601Register::angle, angle))
+	{
+		angle &= 0x0FFF;
+		return true;
+	}
+	return false;
+}
+
+// Read the AGC value
+bool AS5601::ReadAgc(uint8_t& agc) noexcept
+{
+	return Read8(AS5601Register::agc, agc);
 }
 
 bool AS5601::Read8(AS5601Register reg, uint8_t& val) noexcept

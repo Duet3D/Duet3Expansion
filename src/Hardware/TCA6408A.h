@@ -20,13 +20,10 @@ class TCA6408A : public SharedI2CClient
 public:
 	TCA6408A(SharedI2CMaster& dev) noexcept;
 
-	// Initialise the device returning true if it was found
-	bool Init() noexcept;
-
-	void SetRedLed(bool on) noexcept;
-	void SetGreenLed(bool on) noexcept;
-	bool IsButtonPressed() noexcept { return buttonPressed; }
-	void Poll() noexcept;
+	bool Init(uint8_t inputPins, uint8_t initialOutputs) noexcept;		// initialise the device returning true if it was found
+	void SetOutputBitState(unsigned int bitnum, bool on) noexcept;		// set the state of one of the pins configured as an output - must call Poll afterwards to actually set the pin
+	uint8_t GetInputRegister() noexcept { return inputRegister; }		// read the saved input register, which gets updated when Poll is called
+	void Poll() noexcept;												// update the output and read the inputs
 
 private:
 	enum class TCA6408ARegister
@@ -36,13 +33,10 @@ private:
 
 	static constexpr uint32_t TCA6408A_I2CTimeout = 25;					// timeout in milliseconds when waiting to acquire the I2C bus
 
-	void SetOutputBitState(unsigned int bitnum, bool on) noexcept;
 	bool Read8(TCA6408ARegister reg, uint8_t& val) noexcept;
 	bool Write8(TCA6408ARegister reg, uint8_t val) noexcept;
 
-	uint8_t buttonDebounceCount = 0;
-	bool buttonPressed = false;
-
+	uint8_t inputRegister;
 	volatile uint8_t outputRegister;
 	volatile bool outputNeedsUpdating = false;
 };

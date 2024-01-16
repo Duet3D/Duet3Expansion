@@ -20,10 +20,9 @@ class AS5601 : public SharedI2CClient
 public:
 	AS5601(SharedI2CMaster& dev) noexcept;
 
-	// Initialise the device returning true if it was found
-	bool Init() noexcept;
-
-	void Poll() noexcept;
+	bool Init() noexcept;													// initialise the device returning true if it was found
+	bool ReadStatusAndAngle(uint8_t& status, uint16_t& angle) noexcept;		// read the status and angle registers
+	bool ReadAgc(uint8_t& agc) noexcept;										// read the AGC value
 
 private:
 	enum class AS5601Register
