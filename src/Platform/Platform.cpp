@@ -1776,10 +1776,14 @@ bool Platform::GetDirectionValue(size_t driver) noexcept
 	return (driver >= NumDrivers) || directions[driver];
 }
 
+#if SUPPORT_CLOSED_LOOP
+
 bool Platform::GetDirectionValueNoCheck(size_t driver) noexcept
 {
 	return directions[driver];
 }
+
+#endif
 
 #if SINGLE_DRIVER
 
