@@ -2369,11 +2369,18 @@ GCodeResult Platform::DoDiagnosticTest(const CanMessageDiagnosticTest& msg, cons
 		deliberateError = true;		// in case this causes a crash
 		if (msg.param16 == 1)		// if writing
 		{
-			*reinterpret_cast<uint32_t*>(msg.param32[0]) = msg.param32[1];
+			for (uint32_t i = 0; i < msg.param32[2]; ++i)
+			{
+				reinterpret_cast<uint32_t*>(msg.param32[0])[i] = msg.param32[1];
+			}
 		}
 		else						// reading
 		{
-			reply.printf("Address 0x%08" PRIx32 " value 0x%08" PRIx32, msg.param32[0], *reinterpret_cast<const uint32_t*>(msg.param32[0]));
+			reply.printf("Address 0x%08" PRIx32 ":", msg.param32[0]);
+			for (uint32_t i = 0; i < msg.param32[2]; ++i)
+			{
+				reply.catf(" %08" PRIx32, reinterpret_cast<const uint32_t*>(msg.param32[0])[i]);
+			}
 		}
 		deliberateError = false;
 		return GCodeResult::ok;

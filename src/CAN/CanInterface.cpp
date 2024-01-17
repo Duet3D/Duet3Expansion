@@ -774,16 +774,17 @@ bool CanInterface::SendAnnounce(CanMessageBuffer *buf) noexcept
 	return true;
 }
 
-// Wake the CAN sender task when we ar ot ni an ISR and scheduleing has not been suspended
+// Wake the CAN sender task, either from an ISR or form a task
 void CanInterface::WakeAsyncSender() noexcept
 {
-	canAsyncSenderTask->Give(NotifyIndices::CanAsyncSender);
-}
-
-// Wake the CAN sender task from an ISR
-void CanInterface::WakeAsyncSenderFromIsr() noexcept
-{
-	canAsyncSenderTask->GiveFromISR(NotifyIndices::CanAsyncSender);
+	if (inInterrupt())
+	{
+		canAsyncSenderTask->GiveFromISR(NotifyIndices::CanAsyncSender);
+	}
+	else
+	{
+		canAsyncSenderTask->Give(NotifyIndices::CanAsyncSender);
+	}
 }
 
 GCodeResult CanInterface::ChangeAddressAndDataRate(const CanMessageSetAddressAndNormalTiming &msg, const StringRef &reply) noexcept
@@ -945,14 +946,7 @@ bool CanInterface::DebugPutc(char c) noexcept
 	}
 
 	debugBufferBeingWritten = false;
-	if (inInterrupt())
-	{
-		WakeAsyncSenderFromIsr();
-	}
-	else
-	{
-		WakeAsyncSender();
-	}
+	WakeAsyncSender();
 	return true;
 }
 
@@ -970,7 +964,7 @@ extern "C" [[noreturn]] void CanAsyncSenderLoop(void *) noexcept
 	for (;;)
 	{
 		// Set up a message ready
-		auto msg = buf.SetupStatusMessage<CanMessageInputChanged>(CanInterface::GetCanAddress(), currentMasterAddress);
+		auto msg = buf.SetupStatusMessage<CanMessageInputChangedNew>(CanInterface::GetCanAddress(), currentMasterAddress);
 		msg->states = 0;
 		msg->zero = 0;
 		msg->numHandles = 0;

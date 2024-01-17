@@ -377,6 +377,7 @@ void Heat::Exit()
 				// We didn't need to send an announcement so send a board health message instead
 				CanMessageBoardStatus * const boardStatusMsg = buf.SetupStatusMessage<CanMessageBoardStatus>(CanInterface::GetCanAddress(), CanInterface::GetCurrentMasterAddress());
 				boardStatusMsg->Clear();
+				boardStatusMsg->neverUsedRam = Tasks::GetNeverUsedRam();
 
 				// We must add fields in the following order: VIN, V12, MCU temperature
 				size_t index = 0;

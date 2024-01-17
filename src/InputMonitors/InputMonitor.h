@@ -15,7 +15,7 @@
 
 struct CanMessageCreateInputMonitorNew;
 struct CanMessageChangeInputMonitorNew;
-struct CanMessageInputChanged;
+struct CanMessageInputChangedNew;
 class CanMessageBuffer;
 
 class InputMonitor
@@ -34,7 +34,7 @@ public:
 	static GCodeResult Create(const CanMessageCreateInputMonitorNew& msg, size_t dataLength, const StringRef& reply, uint8_t& extra) noexcept;
 	static GCodeResult Change(const CanMessageChangeInputMonitorNew& msg, const StringRef& reply, uint8_t& extra) noexcept;
 
-	static uint32_t AddStateChanges(CanMessageInputChanged *msg) noexcept;
+	static uint32_t AddStateChanges(CanMessageInputChangedNew *msg) noexcept;
 	static void ReadInputs(CanMessageBuffer *buf) noexcept;
 
 	static unsigned int AddAnalogHandleData(uint8_t *buffer, size_t spaceLeft) noexcept;

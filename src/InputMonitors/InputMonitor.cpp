@@ -78,8 +78,8 @@ void InputMonitor::Deactivate() noexcept
 // Return the analog value of this input
 uint32_t InputMonitor::GetAnalogValue() const noexcept
 {
-	return (threshold != 0) ? port.ReadAnalog()
-			: port.ReadDigital() ? 0xFFFF
+	return (!IsDigital()) ? port.ReadAnalog()
+			: port.ReadDigital() ? 0xFFFFFFFF
 				: 0;
 }
 
@@ -106,7 +106,7 @@ void InputMonitor::DigitalInterrupt() noexcept
 		if (active)
 		{
 			sendDue = true;
-			CanInterface::WakeAsyncSenderFromIsr();
+			CanInterface::WakeAsyncSender();
 		}
 	}
 }
@@ -120,7 +120,7 @@ void InputMonitor::AnalogInterrupt(uint32_t reading) noexcept
 		if (active)
 		{
 			sendDue = true;
-			CanInterface::WakeAsyncSenderFromIsr();
+			CanInterface::WakeAsyncSender();
 		}
 	}
 }
@@ -272,6 +272,7 @@ void InputMonitor::AnalogInterrupt(uint32_t reading) noexcept
 
 	case CanMessageChangeInputMonitorNew::actionChangeThreshold:
 		m->threshold = msg.param;
+		m->state = m->port.ReadAnalog() >= m->threshold;
 		rslt = GCodeResult::ok;
 		break;
 
@@ -296,7 +297,7 @@ void InputMonitor::AnalogInterrupt(uint32_t reading) noexcept
 
 // Check the input monitors and add any pending ones to the message
 // Return the number of ticks before we should be woken again, or TaskBase::TimeoutUnlimited if we shouldn't be woken until an input changes state
-/*static*/ uint32_t InputMonitor::AddStateChanges(CanMessageInputChanged *msg) noexcept
+/*static*/ uint32_t InputMonitor::AddStateChanges(CanMessageInputChangedNew *msg) noexcept
 {
 	uint32_t timeToWait = TaskBase::TimeoutUnlimited;
 	ReadLocker lock(listLock);
@@ -309,14 +310,13 @@ void InputMonitor::AnalogInterrupt(uint32_t reading) noexcept
 			const uint32_t age = now - p->whenLastSent;
 			if (age >= p->minInterval)
 			{
-				bool monitorState;
+				bool added;
 				{
 					InterruptCriticalSectionLocker ilock;
 					p->sendDue = false;
-					monitorState = p->state;
+					added = msg->AddEntry(p->handle, p->GetAnalogValue(), p->state);
 				}
-
-				if (msg->AddEntry(p->handle, monitorState))
+				if (added)
 				{
 					p->whenLastSent = now;
 				}
@@ -362,7 +362,7 @@ void InputMonitor::AnalogInterrupt(uint32_t reading) noexcept
 		if ((h->handle & mask) == pattern)
 		{
 			reply->results[count].handle.Set(h->handle);
-			StoreLEU32(&reply->results[count].value, h->GetAnalogValue());
+			StoreLEU32(&reply->results[count].reading, h->GetAnalogValue());
 			++count;
 		}
 		h = h->next;

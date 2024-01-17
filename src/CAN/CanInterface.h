@@ -44,7 +44,6 @@ namespace CanInterface
 	void RaiseEvent(EventType type, uint16_t param, uint8_t device, const char *format, va_list vargs) noexcept;
 
 	void WakeAsyncSender() noexcept;
-	void WakeAsyncSenderFromIsr() noexcept;
 }
 
 #endif /* SRC_CAN_CANINTERFACE_H_ */
