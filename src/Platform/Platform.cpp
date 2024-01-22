@@ -40,7 +40,7 @@
 #endif
 
 #if SUPPORT_AS5601
-# include <Commandprocessing/MFMHandler.h>
+# include <CommandProcessing/MFMHandler.h>
 #endif
 
 #if SUPPORT_CLOSED_LOOP
