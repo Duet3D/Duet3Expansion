@@ -687,7 +687,7 @@ private:
 	static constexpr unsigned int WriteSpecial = NumWriteRegisters;
 
 #if SUPPORT_TMC2240
-	static constexpr unsigned int NumReadRegisters = 9;			// the number of registers that we read from on a TMC2240
+	static constexpr unsigned int NumReadRegisters = 8;			// the number of registers that we read from on a TMC2240
 #elif HAS_STALL_DETECT
 	static constexpr unsigned int NumReadRegisters = 7;			// the number of registers that we read from on a TMC2209
 #else
@@ -862,13 +862,12 @@ constexpr uint8_t TmcDriverState::WriteRegNumbers[NumWriteRegisters] =
 
 inline uint8_t TmcDriverState::GetWriteRegNumber(size_t regIndex) const noexcept
 {
+	return (regIndex == WriteSpecial) ? specialWriteRegisterNumber :
 #if SUPPORT_TMC2240 && SUPPORT_TMC2209
-	return (isTmc2240 && regIndex == WriteSgthrs) ? REGNUM_SG4_THRS
-		: (isTmc2240 && regIndex == WriteCoolconf) ? REGNUM_COOLCONF_40
-			: WriteRegNumbers[regIndex];
-#else
-	return WriteRegNumbers[regIndex];
+			(isTmc2240 && regIndex == WriteSgthrs) ? REGNUM_SG4_THRS :
+				(isTmc2240 && regIndex == WriteCoolconf) ? REGNUM_COOLCONF_40 :
 #endif
+					WriteRegNumbers[regIndex];
 }
 
 constexpr uint8_t TmcDriverState::ReadRegNumbers[NumReadRegisters] =
@@ -881,7 +880,7 @@ constexpr uint8_t TmcDriverState::ReadRegNumbers[NumReadRegisters] =
 	REGNUM_PWM_AUTO,
 #if HAS_STALL_DETECT
 # if SUPPORT_TMC2240 && !SUPPORT_TMC2209
-	REGNUM_SG4_RESULT,					// TMC2209 only - for TMC2240 we read REGNUM_ADC_TEMP instead
+	REGNUM_SG4_RESULT,
 # else
 	REGNUM_SG_RESULT_09,
 # endif
@@ -893,12 +892,11 @@ constexpr uint8_t TmcDriverState::ReadRegNumbers[NumReadRegisters] =
 
 inline uint8_t TmcDriverState::GetReadRegNumber(size_t regIndex) const noexcept
 {
+	return (regIndex == ReadSpecial) ? specialReadRegisterNumber :
 #if SUPPORT_TMC2240 && SUPPORT_TMC2209
-	return (isTmc2240 && regIndex == ReadSgResult) ? REGNUM_SG4_RESULT
-		: ReadRegNumbers[regIndex];
-#else
-	return ReadRegNumbers[regIndex];
+			(isTmc2240 && regIndex == ReadSgResult) ? REGNUM_SG4_RESULT :
 #endif
+				ReadRegNumbers[regIndex];
 }
 
 // State structures for all drivers
@@ -1660,7 +1658,7 @@ inline void TmcDriverState::TransferDone() noexcept
 		// We could read IFCNT once to get the initial value, but doing the first write twice does no harm.
 		if (   regnumBeingUpdated <= NumWriteRegisters
 			&& currentIfCount == (uint8_t)(lastIfCount + 1)
-			&& (sendData[2] & 0x7F) == ((regnumBeingUpdated == WriteSpecial) ? specialWriteRegisterNumber : GetWriteRegNumber(regnumBeingUpdated))
+			&& (sendData[2] & 0x7F) == GetWriteRegNumber(regnumBeingUpdated)
 		   )
 		{
 			++numWrites;
@@ -1680,9 +1678,7 @@ inline void TmcDriverState::TransferDone() noexcept
 	}
 	else if (driversState != DriversState::noPower)		// we don't check the CRC, so only accept the result if power is still good
 	{
-		const uint8_t readRegNumber = (registerToRead >= NumReadRegisters)
-										? specialReadRegisterNumber
-											: GetReadRegNumber(registerToRead);
+		const uint8_t readRegNumber = GetReadRegNumber(registerToRead);
 		if (  sendData[2] == readRegNumber
 			&& readRegNumber == receiveData[6]
 			&& receiveData[4] == 0x05
@@ -1857,8 +1853,7 @@ inline void TmcDriverState::StartTransfer() noexcept
 #else
 		uart->UART_CR = UART_CR_RSTRX | UART_CR_RSTTX;	// reset transmitter and receiver
 #endif
-		const uint8_t regNumber = (regNum < WriteSpecial) ? GetWriteRegNumber(regNum) : specialWriteRegisterNumber;
-		SetupDMASend(regNumber, writeRegisters[regNum]);									// set up the DMAC
+		SetupDMASend(GetWriteRegNumber(regNum), writeRegisters[regNum]);									// set up the DMAC
 #if RP2040
 		TmcUartInterface::StartTransfer(TransferCompleteCallback);
 #elif TMC22xx_USES_SERCOM
@@ -1885,10 +1880,7 @@ inline void TmcDriverState::StartTransfer() noexcept
 		uart->UART_CR = UART_CR_RSTRX | UART_CR_RSTTX;	// reset transmitter and receiver
 #endif
 
-		const uint8_t readRegNumber = (registerToRead >= NumReadRegisters)
-										? specialReadRegisterNumber
-											: GetReadRegNumber(registerToRead);
-		SetupDMARead(readRegNumber);														// set up the DMAC
+		SetupDMARead(GetReadRegNumber(registerToRead));														// set up the DMAC
 
 #if RP2040
 		TmcUartInterface::StartTransfer(TransferCompleteCallback);
