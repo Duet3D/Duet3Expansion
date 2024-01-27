@@ -169,8 +169,8 @@ constexpr Pin LDC1612InterruptPin = PortAPin(25);
 #endif
 
 #if SUPPORT_AS5601
-constexpr uint16_t AS5601_I2CAddress = 0x6C;				// I2C address of the AS5601. Bit 0 is the read/write bit.
-constexpr uint16_t TCA6408A_I2CAddress = 0x40;				// I2C address of the TCA6408A (ADDR pin is tied to ground). Bit 0 is the read/write bit.
+constexpr uint16_t AS5601_I2CAddress = 0x36;				// I2C address of the AS5601
+constexpr uint16_t TCA6408A_I2CAddress = 0x20;				// I2C address of the TCA6408A (ADDR pin is tied to ground)
 #endif
 
 // Table of pin functions that we are allowed to use
