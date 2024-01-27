@@ -100,7 +100,7 @@ protected:
 	bool HaveIsrStepsCommanded() const noexcept { return haveIsrStepsCommanded; }
 
 #if SUPPORT_AS5601
-	bool IsDirectMagneticEncoder() const noexcept { return port.GetPin() == AS5601Pin; }
+	bool IsDirectMagneticEncoder() const noexcept { return port.GetPin() == MfmPin; }
 #endif
 
 	static int32_t ConvertToPercent(float f)

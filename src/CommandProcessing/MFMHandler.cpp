@@ -12,6 +12,7 @@
 #include <Hardware/AS5601.h>
 #include <Hardware/TCA6408A.h>
 #include <Platform/TaskPriorities.h>
+#include <InputMonitors/InputMonitor.h>
 
 namespace MFMHandler
 {
@@ -28,7 +29,7 @@ namespace MFMHandler
 	bool mfmActive = false;
 
 	// Expander variables
-	constexpr uint8_t buttonDebounceCount = 3;
+	constexpr uint8_t ButtonDebounceCount = 3;
 	constexpr unsigned int ButtonBitnum = 0;
 	constexpr unsigned int RedLedBitnum = 4;
 	constexpr unsigned int GreenLedBitnum = 5;
@@ -37,6 +38,7 @@ namespace MFMHandler
 
 	TCA6408A *expander = nullptr;
 	uint8_t buttonCount = 0;										// incremented (up to max. buttonDebounceCount) when button is read down, decremented when button is read up
+	InputMonitor *buttonMonitor = nullptr;
 	bool buttonPressed = false;
 }
 
@@ -93,6 +95,12 @@ void MFMHandler::Stop() noexcept
 	//TODO
 }
 
+bool MFMHandler::EnableButton(InputMonitor *monitor) noexcept
+{
+	buttonMonitor = monitor;
+	return buttonPressed;
+}
+
 void MFMHandler::SetRedLed(bool on) noexcept
 {
 	if (expander != nullptr) { expander->SetOutputBitState(RedLedBitnum, on); }
@@ -131,9 +139,30 @@ void MFMHandler::MfmTaskCode(void *) noexcept
 				//TODO pass the reading on to the filament monitor
 			}
 		}
+
 		if (expander != nullptr)
 		{
+			// Read and debounce the button
 			expander->Poll();
+			const bool pressedNow = !(expander->GetInputRegister() & (1u << ButtonBitnum));
+			if (pressedNow == buttonPressed)
+			{
+				buttonCount = 0;
+			}
+			else
+			{
+				++buttonCount;
+				if (buttonCount == ButtonDebounceCount)
+				{
+					buttonPressed = pressedNow;
+					buttonCount = 0;
+					TaskCriticalSectionLocker lock;
+					if (buttonMonitor != nullptr)
+					{
+						buttonMonitor->UpdateState(buttonPressed);
+					}
+				}
+			}
 		}
 	}
 }

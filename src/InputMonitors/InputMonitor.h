@@ -28,6 +28,10 @@ public:
 
 	InputMonitor() noexcept { }
 
+#if SUPPORT_AS5601
+	void UpdateState(bool newState) noexcept;
+#endif
+
 	static void Init() noexcept;
 	static void Spin() noexcept;
 

@@ -14,6 +14,8 @@
 
 #include <Hardware/SharedI2CMaster.h>
 
+class InputMonitor;
+
 namespace MFMHandler
 {
 	// General functions
@@ -29,8 +31,8 @@ namespace MFMHandler
 	bool ExpanderPresent() noexcept;
 	void SetRedLed(bool on) noexcept;
 	void SetGreenLed(bool on) noexcept;
+	bool EnableButton(InputMonitor *monitor) noexcept;
 	bool IsButtonPressed() noexcept;
-
 }
 
 #endif

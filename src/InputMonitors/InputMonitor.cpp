@@ -16,6 +16,10 @@
 # include <CommandProcessing/ScanningSensorHandler.h>
 #endif
 
+#if SUPPORT_AS5601
+# include <CommandProcessing/MFMHandler.h>
+#endif
+
 InputMonitor * volatile InputMonitor::monitorsList = nullptr;
 InputMonitor * volatile InputMonitor::freeList = nullptr;
 ReadWriteLock InputMonitor::listLock;
@@ -28,10 +32,19 @@ bool InputMonitor::Activate() noexcept
 		if (IsDigital())
 		{
 			// Digital input
-			const irqflags_t flags = IrqSave();
-			ok = port.AttachInterrupt(CommonDigitalPortInterrupt, InterruptMode::change, CallbackParameter(this));
-			state = port.ReadDigital();
-			IrqRestore(flags);
+#if SUPPORT_AS5601
+			// Check if it's the button on the embedded MFM
+			if (port.GetPin() == MfmButtonPin)
+			{
+				state = MFMHandler::EnableButton(this);
+			}
+			else
+#endif
+			{
+				AtomicCriticalSectionLocker lock;
+				ok = port.AttachInterrupt(CommonDigitalPortInterrupt, InterruptMode::change, CallbackParameter(this));
+				state = port.ReadDigital();
+			}
 		}
 		else
 		{
@@ -65,7 +78,17 @@ void InputMonitor::Deactivate() noexcept
 	{
 		if (IsDigital())
 		{
-			port.DetachInterrupt();
+#if SUPPORT_AS5601
+			// Check if it's the button on the embedded MFM
+			if (port.GetPin() == MfmButtonPin)
+			{
+				state = MFMHandler::EnableButton(nullptr);
+			}
+			else
+#endif
+			{
+				port.DetachInterrupt();
+			}
 		}
 		else
 		{
@@ -124,6 +147,23 @@ void InputMonitor::AnalogInterrupt(uint32_t reading) noexcept
 		}
 	}
 }
+
+#if SUPPORT_AS5601
+
+void InputMonitor::UpdateState(bool newState) noexcept
+{
+	if (newState != state)
+	{
+		state = newState;
+		if (active)
+		{
+			sendDue = true;
+			CanInterface::WakeAsyncSender();
+		}
+	}
+}
+
+#endif
 
 /*static*/ void InputMonitor::Init() noexcept
 {
