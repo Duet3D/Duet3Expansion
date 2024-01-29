@@ -15,6 +15,7 @@
 #include <Hardware/SharedI2CMaster.h>
 
 class InputMonitor;
+class FilamentMonitor;
 
 namespace MFMHandler
 {
@@ -24,15 +25,15 @@ namespace MFMHandler
 
 	// AS5601 functions
 	bool EncoderPresent() noexcept;
-	void Start() noexcept;													// start taking regular readings
-	void Stop() noexcept;													// stop taking regular readings
+	bool AttachEncoderVirtualInterrupt(StandardCallbackFunction callback, FilamentMonitor *fm) noexcept;
+	void DetachEncoderVirtualInterrupt(FilamentMonitor *fm) noexcept;
+	bool GetEncoderReading(uint16_t& reading) noexcept;
 
 	// Expander functions
 	bool ExpanderPresent() noexcept;
 	void SetRedLed(bool on) noexcept;
 	void SetGreenLed(bool on) noexcept;
 	bool EnableButton(InputMonitor *monitor) noexcept;
-	bool IsButtonPressed() noexcept;
 }
 
 #endif

@@ -42,11 +42,23 @@ FilamentMonitor::FilamentMonitor(uint8_t p_driver, unsigned int t) noexcept
 // Default destructor
 FilamentMonitor::~FilamentMonitor() noexcept
 {
+#if SUPPORT_AS5601
+	if (IsDirectMagneticEncoder())
+	{
+		MFMHandler::DetachEncoderVirtualInterrupt(this);
+	}
+#endif
 }
 
 // Call this to disable the interrupt before deleting or re-configuring a local filament monitor
 void FilamentMonitor::Disable() noexcept
 {
+#if SUPPORT_AS5601
+	if (IsDirectMagneticEncoder())
+	{
+		MFMHandler::DetachEncoderVirtualInterrupt(this);
+	}
+#endif
 	port.Release();				// this also detaches the ISR
 }
 
@@ -84,9 +96,9 @@ GCodeResult FilamentMonitor::CommonConfigure(const CanMessageGenericParser& pars
 				reply.copy("wrong filament monitor type for this port");
 				return GCodeResult::error;
 			}
-			if (!MFMHandler::EncoderPresent())
+			if (!MFMHandler::AttachEncoderVirtualInterrupt(InterruptEntry, this))
 			{
-				reply.copy("no AS5601 device found");
+				reply.copy("encoder not found or already in use");
 				return GCodeResult::error;
 			}
 		}
