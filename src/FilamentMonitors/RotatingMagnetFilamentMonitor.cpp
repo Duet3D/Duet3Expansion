@@ -369,6 +369,20 @@ FilamentSensorStatus RotatingMagnetFilamentMonitor::Check(bool isPrinting, bool 
 	// 1. Update the extrusion commanded and whether we have had an extruding but non-printing move
 	extrusionCommandedSinceLastSync += filamentConsumed;
 
+	// 2. If this call passes values synced to the start bit, save the data for the next completed measurement.
+	if (   fromIsr
+#if SUPPORT_AS5601
+		&& (IsDirectMagneticEncoder() || IsWaitingForStartBit())
+#else
+		&& IsWaitingForStartBit()
+#endif
+	   )
+	{
+		extrusionCommandedAtCandidateStartBit = extrusionCommandedSinceLastSync;
+		wasPrintingAtStartBit = isPrinting;
+		candidateStartBitTime = isrMillis;
+		haveStartBitData = true;
+	}
 #if SUPPORT_AS5601
 	if (IsDirectMagneticEncoder())
 	{
@@ -377,15 +391,6 @@ FilamentSensorStatus RotatingMagnetFilamentMonitor::Check(bool isPrinting, bool 
 	else
 #endif
 	{
-		// 2. If this call passes values synced to the start bit, save the data for the next completed measurement.
-		if (fromIsr && IsWaitingForStartBit())
-		{
-			extrusionCommandedAtCandidateStartBit = extrusionCommandedSinceLastSync;
-			wasPrintingAtStartBit = isPrinting;
-			candidateStartBitTime = isrMillis;
-			haveStartBitData = true;
-		}
-
 		// 3. Process the receive buffer and update everything if we have received anything or had a receive error
 		HandleIncomingData();
 	}
