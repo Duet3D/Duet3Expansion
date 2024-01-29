@@ -111,6 +111,10 @@ protected:
 private:
 	static void InterruptEntry(CallbackParameter param) noexcept;
 
+#if SUPPORT_AS5601
+	static void AS5601VirtualInterruptEntry(CallbackParameter param) noexcept;
+#endif
+
 	static FilamentMonitor *filamentSensors[NumDrivers];
 	static uint32_t whenStatusLastSent;
 	static size_t firstDriveToSend;

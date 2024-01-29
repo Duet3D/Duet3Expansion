@@ -325,6 +325,7 @@ void RotatingMagnetFilamentMonitor::HandleIncomingData() noexcept
 
 #if SUPPORT_AS5601
 
+// Get data from the filament monitor. The 'synced' variable is irrelevant, in effect we are always synced.
 void RotatingMagnetFilamentMonitor::HandleDirectAS5601Data() noexcept
 {
 	uint16_t val;
@@ -342,21 +343,17 @@ void RotatingMagnetFilamentMonitor::HandleDirectAS5601Data() noexcept
 			sensorValue = val;
 			lastMeasurementTime = millis();
 
-			if (synced)
+			if (   checkNonPrintingMoves
+				|| (int32_t)(lastSyncTime - moveInstance->ExtruderPrintingSince()) >= SyncDelayMillis
+			   )
 			{
-				if (   checkNonPrintingMoves
-					|| (wasPrintingAtStartBit && (int32_t)(lastSyncTime - moveInstance->ExtruderPrintingSince()) >= SyncDelayMillis)
-				   )
-				{
-					// We can use this measurement
-					extrusionCommandedThisSegment += extrusionCommandedAtCandidateStartBit;
-					movementMeasuredThisSegment += movementMeasuredSinceLastSync;
-				}
+				// We can use this measurement
+				extrusionCommandedThisSegment += extrusionCommandedAtCandidateStartBit;
+				movementMeasuredThisSegment += movementMeasuredSinceLastSync;
 			}
 			lastSyncTime = candidateStartBitTime;
 			extrusionCommandedSinceLastSync -= extrusionCommandedAtCandidateStartBit;
 			movementMeasuredSinceLastSync = 0.0;
-			synced = checkNonPrintingMoves || wasPrintingAtStartBit;
 		}
 	}
 }
