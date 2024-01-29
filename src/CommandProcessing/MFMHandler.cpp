@@ -25,6 +25,8 @@ namespace MFMHandler
 	[[noreturn]] void MfmTaskCode(void*) noexcept;
 
 	// Encoder variables
+	constexpr unsigned int AngleBitsToDiscard = 2;
+
 	AS5601 *encoder = nullptr;
 	StandardCallbackFunction filamentMonitorCallbackFn = nullptr;
 	FilamentMonitor *filamentMonitorCallbackObject = nullptr;
@@ -126,12 +128,12 @@ void MFMHandler::DetachEncoderVirtualInterrupt(FilamentMonitor *fm) noexcept
 	}
 }
 
-// Fetch the previously stored reading
+// Fetch the previously stored reading. We emulate the standard MFM.
 bool MFMHandler::GetEncoderReading(uint16_t& reading, uint8_t& agc, uint8_t& errorCode) noexcept
 {
 	if (readingAvailable)
 	{
-		reading = angleReading;
+		reading = angleReading >> AngleBitsToDiscard;
 		agc = lastAgc;
 		// Map the encoder status to MFM error codes. See RotatingMagnetFilamentMonitor.cpp lines 150-165.
 		// TODO name these status values
