@@ -99,28 +99,16 @@ bool AS5601::Init() noexcept
 }
 
 // Read the status and angle registers
-bool AS5601::ReadStatusAndAngle(uint8_t& status, uint16_t& angle) noexcept
+bool AS5601::Read(uint16_t& angle, uint8_t& status, uint8_t& agc) noexcept
 {
-	// TODO make this slightly more efficient by only getting the I2C mutex once
-	if (Read8(AS5601Register::status, status) && Read16(AS5601Register::angle, angle))
-	{
-		angle &= 0x0FFF;
-		return true;
-	}
-	return false;
+	return Read8(AS5601Register::status, status, false) && Read16(AS5601Register::angle, angle, false) && Read8(AS5601Register::agc, agc, true);
 }
 
-// Read the AGC value
-bool AS5601::ReadAgc(uint8_t& agc) noexcept
-{
-	return Read8(AS5601Register::agc, agc);
-}
-
-bool AS5601::Read8(AS5601Register reg, uint8_t& val) noexcept
+bool AS5601::Read8(AS5601Register reg, uint8_t& val, bool releaseBus) noexcept
 {
 	uint8_t data[2];
 	data[0] = (uint8_t)reg;
-	const bool ok = Transfer(data, data + 1, 1, 1, AS5601_I2CTimeout);
+	const bool ok = Transfer(data, data + 1, 1, 1, AS5601_I2CTimeout, releaseBus);
 	if (ok)
 	{
 		val = data[1];
@@ -128,11 +116,11 @@ bool AS5601::Read8(AS5601Register reg, uint8_t& val) noexcept
 	return ok;
 }
 
-bool AS5601::Read16(AS5601Register reg, uint16_t& val) noexcept
+bool AS5601::Read16(AS5601Register reg, uint16_t& val, bool releaseBus) noexcept
 {
 	uint8_t data[3];
 	data[0] = (uint8_t)reg;
-	const bool ok = Transfer(data, data + 1, 1, 2, AS5601_I2CTimeout);
+	const bool ok = Transfer(data, data + 1, 1, 2, AS5601_I2CTimeout, releaseBus);
 	if (ok)
 	{
 		val = ((uint16_t)data[1] << 8) | (uint16_t)data[2];

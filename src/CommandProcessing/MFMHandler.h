@@ -27,7 +27,7 @@ namespace MFMHandler
 	bool EncoderPresent() noexcept;
 	bool AttachEncoderVirtualInterrupt(StandardCallbackFunction callback, FilamentMonitor *fm) noexcept;
 	void DetachEncoderVirtualInterrupt(FilamentMonitor *fm) noexcept;
-	bool GetEncoderReading(uint16_t& reading) noexcept;
+	bool GetEncoderReading(uint16_t& reading, uint8_t& agc, uint8_t& errorCode) noexcept;
 
 	// Expander functions
 	bool ExpanderPresent() noexcept;

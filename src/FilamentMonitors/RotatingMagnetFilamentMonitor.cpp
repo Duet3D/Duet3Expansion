@@ -14,6 +14,10 @@
 #include <CanMessageFormats.h>
 #include <CanMessageGenericParser.h>
 
+#if SUPPORT_AS5601
+# include <CommandProcessing/MFMHandler.h>
+#endif
+
 // Unless we set the option to compare filament on all type of move, we reject readings if the last retract or reprime move wasn't completed
 // well before the start bit was received. This is because those moves have high accelerations and decelerations, so the measurement delay
 // is more likely to cause errors. This constant sets the delay required after a retract or reprime move before we accept the measurement.
@@ -319,6 +323,46 @@ void RotatingMagnetFilamentMonitor::HandleIncomingData() noexcept
 	}
 }
 
+#if SUPPORT_AS5601
+
+void RotatingMagnetFilamentMonitor::HandleDirectAS5601Data() noexcept
+{
+	uint16_t val;
+	if (MFMHandler::GetEncoderReading(val, agc, lastErrorCode))
+	{
+		dataReceived = true;
+		version = 3;																	// emulate version 3 MFM
+		sensorError = (lastErrorCode != 0);
+		if (!sensorError)
+		{
+			lastKnownPosition = sensorValue & TypeMagnetAngleMask;
+			const uint16_t angleChange = (val - sensorValue) & TypeMagnetAngleMask;		// angle change in range 0..1023
+			const int32_t movement = (angleChange <= 512) ? (int32_t)angleChange : (int32_t)angleChange - 1024;
+			movementMeasuredSinceLastSync += (float)movement/1024;
+			sensorValue = val;
+			lastMeasurementTime = millis();
+
+			if (synced)
+			{
+				if (   checkNonPrintingMoves
+					|| (wasPrintingAtStartBit && (int32_t)(lastSyncTime - moveInstance->ExtruderPrintingSince()) >= SyncDelayMillis)
+				   )
+				{
+					// We can use this measurement
+					extrusionCommandedThisSegment += extrusionCommandedAtCandidateStartBit;
+					movementMeasuredThisSegment += movementMeasuredSinceLastSync;
+				}
+			}
+			lastSyncTime = candidateStartBitTime;
+			extrusionCommandedSinceLastSync -= extrusionCommandedAtCandidateStartBit;
+			movementMeasuredSinceLastSync = 0.0;
+			synced = checkNonPrintingMoves || wasPrintingAtStartBit;
+		}
+	}
+}
+
+#endif
+
 // Call the following at intervals to check the status. This is only called when printing is in progress.
 // 'filamentConsumed' is the net amount of extrusion commanded since the last call to this function.
 // 'isPrinting' is true if the current movement is not a non-printing extruder move.
@@ -328,17 +372,26 @@ FilamentSensorStatus RotatingMagnetFilamentMonitor::Check(bool isPrinting, bool 
 	// 1. Update the extrusion commanded and whether we have had an extruding but non-printing move
 	extrusionCommandedSinceLastSync += filamentConsumed;
 
-	// 2. If this call passes values synced to the start bit, save the data for the next completed measurement.
-	if (fromIsr && IsWaitingForStartBit())
+#if SUPPORT_AS5601
+	if (IsDirectMagneticEncoder())
 	{
-		extrusionCommandedAtCandidateStartBit = extrusionCommandedSinceLastSync;
-		wasPrintingAtStartBit = isPrinting;
-		candidateStartBitTime = isrMillis;
-		haveStartBitData = true;
+		HandleDirectAS5601Data();
 	}
+	else
+#endif
+	{
+		// 2. If this call passes values synced to the start bit, save the data for the next completed measurement.
+		if (fromIsr && IsWaitingForStartBit())
+		{
+			extrusionCommandedAtCandidateStartBit = extrusionCommandedSinceLastSync;
+			wasPrintingAtStartBit = isPrinting;
+			candidateStartBitTime = isrMillis;
+			haveStartBitData = true;
+		}
 
-	// 3. Process the receive buffer and update everything if we have received anything or had a receive error
-	HandleIncomingData();
+		// 3. Process the receive buffer and update everything if we have received anything or had a receive error
+		HandleIncomingData();
+	}
 
 	// 4. Decide whether it is time to do a comparison, and return the status
 	FilamentSensorStatus ret = FilamentSensorStatus::ok;
@@ -447,8 +500,18 @@ FilamentSensorStatus RotatingMagnetFilamentMonitor::CheckFilament(float amountCo
 // Clear the measurement state. Called when we are not printing a file. Return the present/not present status if available.
 FilamentSensorStatus RotatingMagnetFilamentMonitor::Clear() noexcept
 {
-	Reset();											// call this first so that haveStartBitData and synced are false when we call HandleIncomingData
-	HandleIncomingData();								// to keep the diagnostics up to date
+	Reset();												// call this first so that haveStartBitData and synced are false when we call HandleIncomingData
+
+#if SUPPORT_AS5601
+	if (IsDirectMagneticEncoder())
+	{
+		HandleDirectAS5601Data();							// fetch and discard the latest reading
+	}
+	else
+#endif
+	{
+		HandleIncomingData();								// to keep the diagnostics up to date
+	}
 
 	return (GetEnableMode() == 0) ? FilamentSensorStatus::ok
 			: (!dataReceived) ? FilamentSensorStatus::noDataReceived

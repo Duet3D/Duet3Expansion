@@ -63,6 +63,10 @@ private:
 	bool HaveCalibrationData() const noexcept;
 	float MeasuredSensitivity() const noexcept;
 
+#if SUPPORT_AS5601
+	void HandleDirectAS5601Data() noexcept;
+#endif
+
 	// Configuration parameters
 	float mmPerRev;
 	float minMovementAllowed, maxMovementAllowed;

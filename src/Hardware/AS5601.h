@@ -21,8 +21,12 @@ public:
 	AS5601(SharedI2CMaster& dev) noexcept;
 
 	bool Init() noexcept;													// initialise the device returning true if it was found
-	bool ReadStatusAndAngle(uint8_t& status, uint16_t& angle) noexcept;		// read the status and angle registers
-	bool ReadAgc(uint8_t& agc) noexcept;										// read the AGC value
+	bool Read(uint16_t& angle, uint8_t& status, uint8_t& agc) noexcept;		// read the angle, status and agc registers
+
+	// Status register bits
+	static constexpr uint8_t StatusMH = 1u << 3;
+	static constexpr uint8_t StatusML = 1u << 4;
+	static constexpr uint8_t StatusMD = 1u << 5;
 
 private:
 	enum class AS5601Register
@@ -41,8 +45,8 @@ private:
 
 	static constexpr uint32_t AS5601_I2CTimeout = 25;					// timeout in milliseconds when waiting to acquire the I2C bus
 
-	bool Read8(AS5601Register reg, uint8_t& val) noexcept;
-	bool Read16(AS5601Register reg, uint16_t& val) noexcept;
+	bool Read8(AS5601Register reg, uint8_t& val, bool releaseBus = true) noexcept;
+	bool Read16(AS5601Register reg, uint16_t& val, bool releaseBus = true) noexcept;
 	bool Write8(AS5601Register reg, uint8_t val) noexcept;
 	bool Write16(AS5601Register reg, uint16_t val) noexcept;
 };

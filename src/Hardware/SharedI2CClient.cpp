@@ -13,7 +13,7 @@ SharedI2CClient::SharedI2CClient(SharedI2CMaster& dev, uint16_t addr) noexcept :
 {
 }
 
-// Transfer some data returning true if successful. Release the bus if either releaseBus is true or the transfer failed.
+// Transfer some data returning true if successful. Release the bus if either releaseBus is true or we return false because the transfer failed.
 bool SharedI2CClient::Transfer(const uint8_t *txBuffer, uint8_t *rxBuffer, size_t numToWrite, size_t numToRead, uint32_t timeout, bool releaseBus) noexcept
 {
 	if (!device.Take(timeout))

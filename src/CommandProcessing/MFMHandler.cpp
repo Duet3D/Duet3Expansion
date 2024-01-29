@@ -30,6 +30,9 @@ namespace MFMHandler
 	FilamentMonitor *filamentMonitorCallbackObject = nullptr;
 	volatile uint16_t angleReading;
 	volatile bool readingAvailable = false;
+	uint16_t lastAngle;
+	uint8_t lastStatus = 0;
+	uint8_t lastAgc = 0;
 
 	// Expander variables
 	constexpr uint8_t ButtonDebounceCount = 3;
@@ -74,7 +77,9 @@ void MFMHandler::AppendDiagnostics(const StringRef& reply) noexcept
 {
 	if (EncoderPresent() && ExpanderPresent())
 	{
-		reply.lcat("Integrated filament monitor found");
+		reply.lcatf("Integrated filament monitor found, agc %u, magnet %sdetected", lastAgc, (lastStatus & AS5601::StatusMD) ? "" : "not ");
+		if (lastStatus & AS5601::StatusMH) { reply.cat(", magnet too strong"); }
+		if (lastStatus & AS5601::StatusML) { reply.cat(", magnet too weak"); }
 	}
 	else if (!EncoderPresent() && !ExpanderPresent())
 	{
@@ -122,11 +127,18 @@ void MFMHandler::DetachEncoderVirtualInterrupt(FilamentMonitor *fm) noexcept
 }
 
 // Fetch the previously stored reading
-bool MFMHandler::GetEncoderReading(uint16_t& reading) noexcept
+bool MFMHandler::GetEncoderReading(uint16_t& reading, uint8_t& agc, uint8_t& errorCode) noexcept
 {
 	if (readingAvailable)
 	{
 		reading = angleReading;
+		agc = lastAgc;
+		// Map the encoder status to MFM error codes. See RotatingMagnetFilamentMonitor.cpp lines 150-165.
+		// TODO name these status values
+		errorCode = (lastStatus & AS5601::StatusML) ? 7
+					: (lastStatus & AS5601::StatusMH) ? 8
+						: !(lastStatus & AS5601::StatusMD) ? 6
+							: 0;
 		readingAvailable = false;
 		return true;
 	}
@@ -174,14 +186,12 @@ void MFMHandler::MfmTaskCode(void *) noexcept
 
 		if (encoder != nullptr)
 		{
-			uint8_t status;
-			uint16_t angle;
-			if (encoder->ReadStatusAndAngle(status, angle))
+			if (encoder->Read(lastAngle, lastStatus, lastAgc))
 			{
 				TaskCriticalSectionLocker lock;
 				if (filamentMonitorCallbackFn != nullptr && !readingAvailable)
 				{
-					angleReading = angle;
+					angleReading = lastAngle;
 					readingAvailable = true;
 					filamentMonitorCallbackFn(CallbackParameter(filamentMonitorCallbackObject));
 				}
