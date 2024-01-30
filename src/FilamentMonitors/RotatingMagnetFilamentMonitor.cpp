@@ -72,6 +72,7 @@ float RotatingMagnetFilamentMonitor::MeasuredSensitivity() const noexcept
 GCodeResult RotatingMagnetFilamentMonitor::Configure(const CanMessageGenericParser& parser, const StringRef& reply) noexcept
 {
 	bool seen = false;
+	const uint8_t oldEnableMode = GetEnableMode();
 	const GCodeResult rslt = CommonConfigure(parser, reply, InterruptMode::change, seen);
 	if (Succeeded(rslt))
 	{
@@ -84,6 +85,10 @@ GCodeResult RotatingMagnetFilamentMonitor::Configure(const CanMessageGenericPars
 			else
 			{
 				Reset();
+				if (oldEnableMode == 0 && GetEnableMode() != 0)
+				{
+					totalExtrusionCommanded = totalMovementMeasured = 0.0;	// force recalibration if the monitor is disabled then enabled
+				}
 			}
 		}
 
