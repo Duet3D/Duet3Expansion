@@ -520,11 +520,7 @@ bool DriveMovement::PrepareExtruder(const DDA& dda, const PrepParams& params, fl
 // Version of fastSqrtf that allows for slightly negative operands caused by rounding error
 static inline float fastLimSqrtf(float f) noexcept
 {
-#if 1
-	return fastSqrtf(f);							// the fastSqrtf function in RRFLibraries already returns zero if the operand is negative
-#else
-	return (f > 0.0) ? fastSqrtf(f) : 0.0;
-#endif
+	return (f <= 0.0) ? 0.0 : fastSqrtf(f);
 }
 
 // Calculate and store the time since the start of the move when the next step for the specified DriveMovement is due.
