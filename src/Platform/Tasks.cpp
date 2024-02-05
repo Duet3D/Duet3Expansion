@@ -873,6 +873,7 @@ void Tasks::Diagnostics(const StringRef& reply) noexcept
 						reply.catf(" %s", m->GetName());
 						break;
 					}
+					m = m->GetNext();
 				}
 			}
 			break;
