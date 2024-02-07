@@ -530,6 +530,7 @@ void Tasks::Diagnostics(const StringRef& reply) noexcept
 					mutexName = m->GetName();
 					break;
 				}
+				m = m->GetNext();
 			}
 		}
 
