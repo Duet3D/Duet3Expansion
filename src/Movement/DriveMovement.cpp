@@ -645,7 +645,7 @@ pre(nextStep <= totalSteps; stepsTillRecalc == 0)
 		// no break
 	case DMState::cartDecelReverse:								// Cartesian decelerating, reverse motion. Convert the steps to int32_t because the net steps may be negative.
 		{
-			const int32_t netSteps = (2 * (reverseStartStep - 1)) - nextStep;
+			const int32_t netSteps = 2 * reverseStartStep - nextStep - 1;
 			nextCalcStepTime = pB + fastLimSqrtf(pA + pC * (float)(netSteps - (int32_t)stepsTillRecalc));
 		}
 		break;
