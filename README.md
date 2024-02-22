@@ -26,3 +26,7 @@ Duet 3 expansion and tool board firmware is built from several Github projects. 
 7. Add this github project, the CANlib project, the FreeRTOS project and the RRFLibraries project to the workspace.
 
 8. Select and build the configuration you want.
+
+
+### Dual license
+Note Duet3D reserves the right to Dual license this library in the future, although a GPL licensed version will remain the default, public option.
