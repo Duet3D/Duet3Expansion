@@ -37,10 +37,10 @@ private:
 	IoPort tachoPort;										// port used to read the tacho
 
 	// Variables used to read the tacho
-	static constexpr uint32_t fanMaxInterruptCount = 16;	// number of fan interrupts that we average over
-	uint32_t fanInterruptCount;								// accessed only in ISR, so no need to declare it volatile
-	volatile uint32_t fanLastResetTime;						// time (in step clocks) at which we last reset the interrupt count, accessed inside and outside ISR
-	volatile uint32_t fanInterval;							// written by ISR, read outside the ISR
+	static constexpr uint32_t TachoMaxInterruptCount = 16;	// number of fan interrupts that we average over
+	uint32_t tachoInterruptCount;								// accessed only in ISR, so no need to declare it volatile
+	volatile uint32_t tachoLastResetTime;						// time (in step clocks) at which we last reset the interrupt count, accessed inside and outside ISR
+	volatile uint32_t tachoInterval;							// written by ISR, read outside the ISR
 
 	uint32_t blipStartTime;
 	bool blipping;
