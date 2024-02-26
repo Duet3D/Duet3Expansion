@@ -26,7 +26,7 @@ static ReadLockedPointer<Fan> FindFan(uint32_t fanNum)
 }
 
 // Create and return a local fan. if it fails, return nullptr with the error message in 'reply'.
-static LocalFan *CreateLocalFan(uint32_t fanNum, const char *pinNames, PwmFrequency freq, const StringRef& reply)
+static LocalFan *CreateLocalFan(uint32_t fanNum, const char *pinNames, PwmFrequency freq, float ppr, const StringRef& reply)
 {
 	LocalFan *newFan = new LocalFan(fanNum);
 	if (!newFan->AssignPorts(pinNames, reply))
@@ -35,6 +35,7 @@ static LocalFan *CreateLocalFan(uint32_t fanNum, const char *pinNames, PwmFreque
 		return nullptr;
 	}
 	newFan->SetPwmFrequency(freq);
+	newFan->SetTachoPulsesPerRev(ppr);
 	return newFan;
 }
 
@@ -72,6 +73,8 @@ GCodeResult FansManager::ConfigureFanPort(const CanMessageGeneric& msg, const St
 
 	PwmFrequency freq = DefaultFanPwmFreq;
 	const bool seenFreq = parser.GetUintParam('Q', freq);
+	float pulsesPerRev = DefaultFanTachoPulsesPerRev;
+	const bool seenPpr = parser.GetFloatParam('K', pulsesPerRev);
 
 	String<StringLength50> pinNames;
 	if (parser.GetStringParam('C', pinNames.GetRef()))
@@ -82,7 +85,7 @@ GCodeResult FansManager::ConfigureFanPort(const CanMessageGeneric& msg, const St
 		std::swap(oldFan, fans[fanNum]);
 		delete oldFan;
 
-		fans[fanNum] = CreateLocalFan(fanNum, pinNames.c_str(), freq, reply);
+		fans[fanNum] = CreateLocalFan(fanNum, pinNames.c_str(), freq, pulsesPerRev, reply);
 		return (fans[fanNum] == nullptr) ? GCodeResult::error : GCodeResult::ok;
 	}
 
@@ -97,7 +100,12 @@ GCodeResult FansManager::ConfigureFanPort(const CanMessageGeneric& msg, const St
 	{
 		fan->SetPwmFrequency(freq);
 	}
-	else
+	if (seenPpr)
+	{
+		fan->SetTachoPulsesPerRev(pulsesPerRev);
+	}
+
+	if (!seenFreq && !seenPpr)
 	{
 		fan->ReportPortDetails(reply);
 	}

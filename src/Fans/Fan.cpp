@@ -9,7 +9,7 @@
 
 #include "CanMessageFormats.h"
 
-Fan::Fan(unsigned int fanNum)
+Fan::Fan(unsigned int fanNum) noexcept
 	: fanNumber(fanNum),
 	  val(0.0), lastVal(0.0),
 	  minVal(DefaultMinFanPwm),
@@ -20,7 +20,7 @@ Fan::Fan(unsigned int fanNum)
 }
 
 // Set the parameters for this fan
-GCodeResult Fan::Configure(const CanMessageFanParameters& msg, const StringRef& reply)
+GCodeResult Fan::Configure(const CanMessageFanParameters& msg, const StringRef& reply) noexcept
 {
 	triggerTemperatures[0] = msg.triggerTemperatures[0];
 	triggerTemperatures[1] = msg.triggerTemperatures[1];
@@ -34,7 +34,7 @@ GCodeResult Fan::Configure(const CanMessageFanParameters& msg, const StringRef& 
 }
 
 // Set the PWM. 'speed' is in the interval 0.0..1.0.
-void Fan::SetPwm(float speed)
+void Fan::SetPwm(float speed) noexcept
 {
 	val = speed;
 	Refresh(true);
