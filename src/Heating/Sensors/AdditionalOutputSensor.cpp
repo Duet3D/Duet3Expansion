@@ -22,15 +22,25 @@ AdditionalOutputSensor::~AdditionalOutputSensor() noexcept
 
 GCodeResult AdditionalOutputSensor::Configure(const CanMessageGenericParser& parser, const StringRef& reply) noexcept
 {
+	GCodeResult rslt = GCodeResult::ok;
+	bool changed = false;
 	String<StringLength20> pParam;
 	if (parser.GetStringParam('P', pParam.GetRef()))
 	{
-		return ConfigurePort(pParam.c_str(), reply);
+		changed = true;
+		rslt = ConfigurePort(pParam.c_str(), reply);
+		if (rslt > GCodeResult::warning)
+		{
+			return rslt;
+		}
 	}
 
-	CopyBasicDetails(reply);
-	reply.catf(", additional output %d of sensor %d", outputNumber, parentSensor);
-	return GCodeResult::ok;
+	ConfigureCommonParameters(parser, changed);
+	if (!changed)
+	{
+		CopyBasicDetails(reply);
+	}
+	return rslt;
 }
 
 GCodeResult AdditionalOutputSensor::ConfigurePort(const char* portName, const StringRef& reply) noexcept
@@ -90,6 +100,12 @@ GCodeResult AdditionalOutputSensor::ConfigurePort(const char* portName, const St
 	return GCodeResult::ok;
 }
 
+// Append the pin details to the reply buffer
+void AdditionalOutputSensor::AppendPinDetails(const StringRef& reply) const noexcept
+{
+	reply.catf(" using additional output %d of sensor %d", outputNumber, parentSensor);
+}
+
 void AdditionalOutputSensor::Poll() noexcept
 {
 	float t;
@@ -104,7 +120,7 @@ void AdditionalOutputSensor::Poll() noexcept
 		SetResult(TemperatureError::invalidOutputNumber);
 		return;
 	}
-	const auto err = parent->GetLatestTemperature(t, this->outputNumber);
+	const auto err = parent->GetAdditionalOutput(t, this->outputNumber);
 	if (err == TemperatureError::ok)
 	{
 		SetResult(t, err);

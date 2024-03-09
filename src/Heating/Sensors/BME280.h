@@ -23,7 +23,7 @@ public:
 	GCodeResult Configure(const CanMessageGenericParser& parser, const StringRef& reply) noexcept override;
 
 	const uint8_t GetNumAdditionalOutputs() const noexcept override { return 2; }
-	TemperatureError GetLatestTemperature(float& t, uint8_t outputNumber = 0) noexcept override;
+	TemperatureError GetAdditionalOutput(float& t, uint8_t outputNumber) noexcept override;
 	void Poll() noexcept override;
 
 	static constexpr const char *TypeName = "bme280";

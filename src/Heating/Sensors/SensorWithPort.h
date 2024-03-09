@@ -19,8 +19,8 @@ protected:
 	// Try to configure the port
 	bool ConfigurePort(const CanMessageGenericParser& parser, const StringRef& reply, PinAccess access, bool& seen);
 
-	// Copy the basic details to the reply buffer. This hides the version in the base class.
-	void CopyBasicDetails(const StringRef& reply) const;
+	// Append the pin details to the reply buffer
+	void AppendPinDetails(const StringRef& reply) const noexcept override;
 
 	IoPort port;
 };

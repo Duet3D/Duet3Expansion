@@ -32,7 +32,7 @@ TemperatureSensor::~TemperatureSensor()
 }
 
 // Return the latest temperature reading
-TemperatureError TemperatureSensor::GetLatestTemperature(float& t, uint8_t outputNumber) noexcept
+TemperatureError TemperatureSensor::GetLatestTemperature(float& t) noexcept
 {
 	// We must read whenLastRead *before* we call millis(). Otherwise, a task switch to the heater task could occur after we call millis and before we read whenLastRead,
 	// so that when we read whenLastRead its value is greater than the result from millis().
@@ -49,10 +49,25 @@ TemperatureError TemperatureSensor::GetLatestTemperature(float& t, uint8_t outpu
 	return lastResult;
 }
 
+// Return the value of an additional output. Default implementation for sensors with no additional output.
+TemperatureError TemperatureSensor::GetAdditionalOutput(float& t, uint8_t outputNumber) noexcept
+{
+	t = BadErrorTemperature;
+	return TemperatureError::invalidOutputNumber;
+}
+
+// Configure the reading adjustment parameters
+void TemperatureSensor::ConfigureCommonParameters(const CanMessageGenericParser& parser, bool& seen) noexcept
+{
+	if (parser.GetFloatParam('U', offsetAdjustment)) { seen = true; }
+	if (parser.GetFloatParam('V', slopeAdjustment)) { seen = true; }
+}
 // Default implementation of Configure, for sensors that have no configurable parameters
 GCodeResult TemperatureSensor::Configure(const CanMessageGenericParser& parser, const StringRef& reply)
 {
-	if (!parser.HasParameter('Y'))
+	bool seen = parser.HasParameter('Y');
+	ConfigureCommonParameters(parser, seen);
+	if (!seen)
 	{
 		// No parameters were provided, so report the current configuration
 		CopyBasicDetails(reply);
@@ -60,16 +75,25 @@ GCodeResult TemperatureSensor::Configure(const CanMessageGenericParser& parser, 
 	return GCodeResult::ok;
 }
 
-void TemperatureSensor::CopyBasicDetails(const StringRef& reply) const
+void TemperatureSensor::CopyBasicDetails(const StringRef& reply) const noexcept
 {
-	const TemperatureError err = lastRealError;		// capture volatile variable
-	reply.printf("type %s, reading %.1f, last error: %s", sensorType, (double)GetStoredReading(), err.ToString());
+	reply.printf("type %s", sensorType);
+	AppendPinDetails(reply);
+	reply.catf(", last error %s, ", ((TemperatureError)lastRealError).ToString());
+	if (slopeAdjustment != 0.0 || offsetAdjustment != 0.0)
+	{
+		reply.catf("offset adjustment %.1f, slope adjustment %.3f, adjusted reading %.1f", (double)offsetAdjustment, (double)slopeAdjustment, (double)lastTemperature);
+	}
+	else
+	{
+		reply.catf("reading %.1f", (double)lastTemperature);
+	}
 }
 
-void TemperatureSensor::SetResult(float t, TemperatureError rslt)
+void TemperatureSensor::SetResult(float t, TemperatureError rslt) noexcept
 {
 	lastResult = rslt;
-	lastTemperature = t;
+	lastTemperature = (t * (1.0 + slopeAdjustment)) + offsetAdjustment;
 	whenLastRead = millis();
 	if (rslt != TemperatureError::ok)
 	{

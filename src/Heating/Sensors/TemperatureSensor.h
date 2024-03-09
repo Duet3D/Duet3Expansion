@@ -18,15 +18,15 @@ public:
 	virtual ~TemperatureSensor();
 
 	// Configure the sensor from M308 parameters.
-	// If we find any parameters, process them and return true. If an error occurs while processing them, return error and write an error message to 'reply.
-	// If we find no relevant parameters, report the current parameters to 'reply' and return ok.
+	// If we find any parameters, process them and return success. If an error occurs while processing them, return error and write an error message to 'reply.
+	// If we find no relevant parameters, report the current parameters to 'reply' and return success.
 	virtual GCodeResult Configure(const CanMessageGenericParser& parser, const StringRef& reply);
 
 	// Try to get a temperature reading
 	virtual void Poll() = 0;
 
-	// Try to get a temperature reading
-	virtual TemperatureError GetLatestTemperature(float& t, uint8_t outputNumber = 0) noexcept;
+	// Try to get an additional output temperature reading
+	virtual TemperatureError GetAdditionalOutput(float& t, uint8_t outputNumber) noexcept;
 
 	// How many additional outputs does this sensor have
 	virtual const uint8_t GetNumAdditionalOutputs() const noexcept { return 0; }
@@ -40,8 +40,8 @@ public:
 	// Update the temperature, if it is a remote sensor. Overridden in class RemoteSensor.
 	virtual void UpdateRemoteTemperature(CanAddress src, const CanSensorReport& report) noexcept;
 
-	// Get the most recent reading without checking for timeout
-	float GetStoredReading() const noexcept { return lastTemperature; }
+	// Try to get a temperature reading
+	TemperatureError GetLatestTemperature(float& t) noexcept;
 
 	// Return the sensor type
 	const char *GetSensorType() const { return sensorType; }
@@ -51,9 +51,6 @@ public:
 
 	// Return the code for the most recent error
 	TemperatureError GetLastError() const { return lastRealError; }
-
-	// Copy the basic details to the reply buffer
-	void CopyBasicDetails(const StringRef& reply) const noexcept;
 
 	// Get/set the next sensor in the linked list
 	TemperatureSensor *GetNext() const { return next; }
@@ -66,10 +63,14 @@ public:
 	static TemperatureSensor *Create(unsigned int sensorNum, const char *typeName, const StringRef& reply);
 
 protected:
+	virtual void AppendPinDetails(const StringRef& reply) const noexcept { }						// append the details of the pin(s) used, only done for some sensor types
+
+	void ConfigureCommonParameters(const CanMessageGenericParser& parser, bool& seen) noexcept;		// configure the reading adjustment parameters
+	void CopyBasicDetails(const StringRef& reply) const noexcept;									// copy the common details to the reply buffer
 	void SetResult(float t, TemperatureError rslt);
 	void SetResult(TemperatureError rslt);
 
-	static TemperatureError GetPT100Temperature(float& t, uint16_t ohmsx100);		// shared function used by two derived classes
+	static TemperatureError GetPT100Temperature(float& t, uint16_t ohmsx100);					// shared function used by two derived classes
 
 private:
 	static constexpr uint32_t DefaultTemperatureReadingTimeout = 2000;
@@ -79,6 +80,8 @@ private:
 	const char * const sensorType;
 	volatile float lastTemperature;
 	volatile uint32_t whenLastRead;
+	float offsetAdjustment = 0.0;
+	float slopeAdjustment = 0.0;
 	volatile TemperatureError lastResult, lastRealError;
 };
 

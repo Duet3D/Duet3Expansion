@@ -30,6 +30,7 @@ GCodeResult LinearAnalogSensor::Configure(const CanMessageGenericParser& parser,
 		return GCodeResult::error;
 	}
 
+	ConfigureCommonParameters(parser, seen);
 	if (parser.GetFloatParam('B', lowTemp))
 	{
 		seen = true;

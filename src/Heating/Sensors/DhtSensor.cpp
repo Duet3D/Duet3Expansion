@@ -110,18 +110,28 @@ GCodeResult DhtTemperatureSensor::Configure(const CanMessageGenericParser& parse
 	return GCodeResult::ok;
 }
 
-TemperatureError DhtTemperatureSensor::GetLatestTemperature(float &t, uint8_t outputNumber) noexcept
+#if SAME5x
+
+// SAME5x may need two pins so we override this function
+void DhtTemperatureSensor::AppendPinDetails(const StringRef& reply) const noexcept
 {
-	if (outputNumber > 1)
+	reply.cat(" using pins ");
+	const IoPort* const portAddrs[] = { &port, &interruptPort };
+	IoPort::AppendPinNames(reply, 2, portAddrs);
+}
+
+#endif
+
+TemperatureError DhtTemperatureSensor::GetAdditionalOutput(float &t, uint8_t outputNumber) noexcept
+{
+	if (outputNumber != 1)
 	{
 		t = BadErrorTemperature;
 		return TemperatureError::invalidOutputNumber;
 	}
+
 	const auto result = TemperatureSensor::GetLatestTemperature(t);
-	if (outputNumber == 1)
-	{
-		t = lastHumidity;
-	}
+	t = lastHumidity;
 	return result;
 }
 
