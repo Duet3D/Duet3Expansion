@@ -29,6 +29,14 @@ GCodeResult LinearAnalogSensor::Configure(const CanMessageGenericParser& parser,
 	{
 		return GCodeResult::error;
 	}
+#if SUPPORT_THERMISTORS
+	if (parser.GetBoolParam('F', filtered))
+	{
+		seen = true;
+	}
+#endif
+
+	const bool seenPortOrFiltered = seen;
 
 	ConfigureCommonParameters(parser, seen);
 	if (parser.GetFloatParam('B', lowTemp))
@@ -39,12 +47,6 @@ GCodeResult LinearAnalogSensor::Configure(const CanMessageGenericParser& parser,
 	{
 		seen = true;
 	}
-#if SUPPORT_THERMISTORS
-	if (parser.GetBoolParam('F', filtered))
-	{
-		seen = true;
-	}
-#endif
 	if (seen)
 	{
 #if SUPPORT_THERMISTORS
@@ -52,10 +54,17 @@ GCodeResult LinearAnalogSensor::Configure(const CanMessageGenericParser& parser,
 #endif
 		CalcDerivedParameters();
 #if SUPPORT_THERMISTORS
-		if (adcFilterChannel < 0 && wasFiltered)
+		if (seenPortOrFiltered)
 		{
-			reply.copy("filtering not supported on this port");
-			return GCodeResult::warning;
+			if (adcFilterChannel >= 0)
+			{
+				Platform::GetAdcFilter(adcFilterChannel)->Init(0);
+			}
+			else if (wasFiltered)
+			{
+				reply.copy("filtering not supported on this port");
+				return GCodeResult::warning;
+			}
 		}
 #endif
 	}
