@@ -125,8 +125,17 @@ GCodeResult RotatingMagnetFilamentMonitor::Configure(const CanMessageGenericPars
 
 		if (!seen)
 		{
-			reply.printf("Duet3D magnetic filament monitor v%u%s on pin ", version, (switchOpenMask != 0) ? " with switch" : "");
-			GetPort().AppendPinName(reply);
+#if SUPPORT_AS5601
+			if (IsDirectMagneticEncoder())
+			{
+				reply.copy("Duet3D Roto magnetic filament monitor");
+			}
+			else
+#endif
+			{
+				reply.printf("Duet3D magnetic filament monitor v%u%s on pin ", version, (switchOpenMask != 0) ? " with switch" : "");
+				GetPort().AppendPinName(reply);
+			}
 			reply.catf(", %s, %.2fmm/rev, allow %ld%% to %ld%%, check %s moves every %.1fmm, ",
 						(GetEnableMode() == 2) ? "enabled always" : (GetEnableMode() == 1) ? "enabled when SD printing" : "disabled",
 						(double)mmPerRev,
@@ -145,9 +154,18 @@ GCodeResult RotatingMagnetFilamentMonitor::Configure(const CanMessageGenericPars
 				{
 					reply.cat(((sensorValue & switchOpenMask) != 0) ? "no filament, " : "filament present, ");
 				}
-				if (version >= 3)
+#if SUPPORT_AS5601
+				if (IsDirectMagneticEncoder())
 				{
-					reply.catf("mag %u agc %u, ", magnitude, agc);
+					reply.catf("agc %u, ", agc);
+				}
+				else
+#endif
+				{
+					if (version >= 3)
+					{
+						reply.catf("mag %u agc %u, ", magnitude, agc);
+					}
 				}
 				if (sensorError)
 				{
@@ -599,8 +617,13 @@ void RotatingMagnetFilamentMonitor::Diagnostics(const StringRef& reply) noexcept
 	{
 		reply.cat("no data received");
 	}
-	reply.catf(", errs: frame %" PRIu32 " parity %" PRIu32 " ovrun %" PRIu32 " pol %" PRIu32 " ovdue %" PRIu32,
-				framingErrorCount, parityErrorCount, overrunErrorCount, polarityErrorCount, overdueCount);
+#if SUPPORT_AS5601
+	if (!IsDirectMagneticEncoder())
+#endif
+	{
+		reply.catf(", errs: frame %" PRIu32 " parity %" PRIu32 " ovrun %" PRIu32 " pol %" PRIu32 " ovdue %" PRIu32,
+					framingErrorCount, parityErrorCount, overrunErrorCount, polarityErrorCount, overdueCount);
+	}
 }
 
 #endif	// SUPPORT_DRIVERS
