@@ -21,7 +21,8 @@ public:
 	TCA6408A(SharedI2CMaster& dev) noexcept;
 
 	bool Init(uint8_t inputPins, uint8_t initialOutputs) noexcept;		// initialise the device returning true if it was found
-	void SetOutputBitState(unsigned int bitnum, bool on) noexcept;		// set the state of one of the pins configured as an output - must call Poll afterwards to actually set the pin
+	void SetOneOutputBitState(unsigned int bitnum, bool on) noexcept;	// set the state of one of the pins configured as an output - must call Poll afterwards to actually set the pin
+	void SetOutputBitsState(uint8_t bitsToSet, uint8_t mask) noexcept;	// set the states of some bits in the output register - must call Poll afterwards to actually set the pin
 	uint8_t GetInputRegister() noexcept { return inputRegister; }		// read the saved input register, which gets updated when Poll is called
 	void Poll() noexcept;												// update the output and read the inputs
 

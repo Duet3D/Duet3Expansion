@@ -371,6 +371,16 @@ void RotatingMagnetFilamentMonitor::HandleDirectAS5601Data() noexcept
 // 'fromIsr' is true if this measurement was taken at the end of the ISR because a potential start bit was seen
 FilamentSensorStatus RotatingMagnetFilamentMonitor::Check(bool isPrinting, bool fromIsr, uint32_t isrMillis, float filamentConsumed) noexcept
 {
+#if SUPPORT_AS5601
+	if (IsDirectMagneticEncoder())
+	{
+		if (ledTimer.CheckAndStop(LedFlashTime))
+		{
+			MFMHandler::SetLedOff();
+		}
+	}
+#endif
+
 	// 1. Update the extrusion commanded and whether we have had an extruding but non-printing move
 	extrusionCommandedSinceLastSync += filamentConsumed;
 
@@ -461,6 +471,13 @@ FilamentSensorStatus RotatingMagnetFilamentMonitor::CheckFilament(float amountCo
 			lastMovementRatio = ratio * mmPerRev;
 			magneticMonitorState = MagneticMonitorState::comparing;
 		}
+#if SUPPORT_AS5601
+		else if (IsDirectMagneticEncoder())
+		{
+			ledTimer.Start();
+			MFMHandler::SetLedBoth();			// flash both LEDs
+		}
+#endif
 		break;
 
 	case MagneticMonitorState::comparing:
@@ -493,11 +510,32 @@ FilamentSensorStatus RotatingMagnetFilamentMonitor::CheckFilament(float amountCo
 			if (lastMovementRatio < minMovementAllowed)
 			{
 				ret = FilamentSensorStatus::tooLittleMovement;
+#if SUPPORT_AS5601
+				if (IsDirectMagneticEncoder())
+				{
+					ledTimer.Start();
+					MFMHandler::SetLedRed();			// flash red LED
+				}
+#endif
 			}
 			else if (lastMovementRatio > maxMovementAllowed)
 			{
 				ret = FilamentSensorStatus::tooMuchMovement;
+#if SUPPORT_AS5601
+				if (IsDirectMagneticEncoder())
+				{
+					ledTimer.Start();
+					MFMHandler::SetLedRed();			// flash red LED
+				}
+#endif
 			}
+#if SUPPORT_AS5601
+			else if (IsDirectMagneticEncoder())
+			{
+				ledTimer.Start();
+				MFMHandler::SetLedGreen();				// flash red LED
+			}
+#endif
 		}
 	}
 
@@ -512,6 +550,10 @@ FilamentSensorStatus RotatingMagnetFilamentMonitor::Clear() noexcept
 #if SUPPORT_AS5601
 	if (IsDirectMagneticEncoder())
 	{
+		if (ledTimer.CheckAndStop(LedFlashTime))
+		{
+			MFMHandler::SetLedOff();
+		}
 		HandleDirectAS5601Data();							// fetch and discard the latest reading
 	}
 	else

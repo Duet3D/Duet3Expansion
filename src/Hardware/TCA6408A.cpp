@@ -39,7 +39,7 @@ bool TCA6408A::Read8(TCA6408ARegister reg, uint8_t& val) noexcept
 	return ok;
 }
 
-void TCA6408A::SetOutputBitState(unsigned int bitnum, bool on) noexcept
+void TCA6408A::SetOneOutputBitState(unsigned int bitnum, bool on) noexcept
 {
 	uint8_t newOutputRegister = outputRegister;
 	if (on)
@@ -50,6 +50,16 @@ void TCA6408A::SetOutputBitState(unsigned int bitnum, bool on) noexcept
 	{
 		newOutputRegister |= (1u << bitnum);
 	}
+	if (newOutputRegister != outputRegister)
+	{
+		outputRegister = newOutputRegister;
+		outputNeedsUpdating = true;
+	}
+}
+
+void TCA6408A::SetOutputBitsState(uint8_t bitsToSet, uint8_t mask) noexcept
+{
+	const uint8_t newOutputRegister = (outputRegister & (~mask)) | bitsToSet;
 	if (newOutputRegister != outputRegister)
 	{
 		outputRegister = newOutputRegister;

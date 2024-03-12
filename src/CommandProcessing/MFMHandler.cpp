@@ -39,8 +39,9 @@ namespace MFMHandler
 	// Expander variables
 	constexpr uint8_t ButtonDebounceCount = 3;
 	constexpr unsigned int ButtonBitnum = 0;
-	constexpr unsigned int RedLedBitnum = 4;
-	constexpr unsigned int GreenLedBitnum = 5;
+	constexpr unsigned int RedLedBitnum = 5;
+	constexpr unsigned int GreenLedBitnum = 4;
+	constexpr uint8_t LedBitsMask = (1u << RedLedBitnum) | (1u << GreenLedBitnum);
 	constexpr uint8_t TCA8408A_initialOutputs = (1u << RedLedBitnum) | (1u << GreenLedBitnum);
 	constexpr uint8_t TCA8408A_inputs = (1u << ButtonBitnum);		// button pin is input, LED and unused pins are outputs
 
@@ -154,16 +155,28 @@ bool MFMHandler::EnableButton(InputMonitor *monitor) noexcept
 	return buttonPressed;
 }
 
-// Turn the red LED on or off
-void MFMHandler::SetRedLed(bool on) noexcept
+// Set the LED to red. Note, LED bits are inverted.
+void MFMHandler::SetLedRed() noexcept
 {
-	if (expander != nullptr) { expander->SetOutputBitState(RedLedBitnum, on); }
+	if (expander != nullptr) { expander->SetOutputBitsState(1u << GreenLedBitnum, LedBitsMask); }
 }
 
-// Turn the green LED on or off
-void MFMHandler::SetGreenLed(bool on) noexcept
+// Set the LED to green. Note, LED bits are inverted.
+void MFMHandler::SetLedGreen() noexcept
 {
-	if (expander != nullptr) { expander->SetOutputBitState(GreenLedBitnum, on); }
+	if (expander != nullptr) { expander->SetOutputBitsState(1u << RedLedBitnum, LedBitsMask); }
+}
+
+// Set the LED to red+green. Note, LED bits are inverted.
+void MFMHandler::SetLedBoth() noexcept
+{
+	if (expander != nullptr) { expander->SetOutputBitsState(0, LedBitsMask); }
+}
+
+// Set the LED to off. Note, LED bits are inverted.
+void MFMHandler::SetLedOff() noexcept
+{
+	if (expander != nullptr) { expander->SetOutputBitsState((1u << RedLedBitnum) | (1u << GreenLedBitnum), LedBitsMask); }
 }
 
 // Code executed by the task that polls the AS5601 and TC6408A

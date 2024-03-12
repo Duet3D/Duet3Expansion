@@ -31,8 +31,10 @@ namespace MFMHandler
 
 	// Expander functions
 	bool ExpanderPresent() noexcept;
-	void SetRedLed(bool on) noexcept;
-	void SetGreenLed(bool on) noexcept;
+	void SetLedRed() noexcept;
+	void SetLedGreen() noexcept;
+	void SetLedBoth() noexcept;
+	void SetLedOff() noexcept;
 	bool EnableButton(InputMonitor *monitor) noexcept;
 }
 

@@ -55,6 +55,10 @@ private:
 
 	static constexpr uint16_t TypeMagnetAngleMask = 0x03FF;			// we use a 10-bit sensor angle
 
+#if SUPPORT_AS5601
+	uint32_t LedFlashTime = 100;									// how long we flash the LED for in milliseconds
+#endif
+
 	void Init() noexcept;
 	void Reset() noexcept;
 	void HandleIncomingData() noexcept;
@@ -84,6 +88,10 @@ private:
 	uint32_t lastSyncTime;									// the last time we took a measurement that was synced to a start bit
 	float extrusionCommandedSinceLastSync;
 	float movementMeasuredSinceLastSync;
+
+#if SUPPORT_AS5601
+	MillisTimer ledTimer;									// timer for flashing the LEDs
+#endif
 
 	uint16_t sensorValue;									// latest word received from sensor
 	uint16_t lastKnownPosition;								// last known filament position (10 bits)
