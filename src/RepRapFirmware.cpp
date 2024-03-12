@@ -48,32 +48,6 @@ void debugVprintf(const char *fmt, va_list vargs) noexcept
 #endif
 }
 
-// class MillisTimer members
-
-// Start or restart the timer
-void MillisTimer::Start() noexcept
-{
-	whenStarted = millis();
-	running = true;
-}
-
-// Check whether the timer is running and a timeout has expired, but don't stop it
-bool MillisTimer::CheckNoStop(uint32_t timeoutMillis) const noexcept
-{
-	return running && millis() - whenStarted >= timeoutMillis;
-}
-
-// Check whether a timeout has expired and stop the timer if it has, else leave it running if it was running
-bool MillisTimer::CheckAndStop(uint32_t timeoutMillis)
-{
-	const bool ret = CheckNoStop(timeoutMillis);
-	if (ret)
-	{
-		running = false;
-	}
-	return ret;
-}
-
 // Return a pointer to the pin description entry. Declared in and called from CoreN2G.
 const PinDescriptionBase *AppGetPinDescription(Pin p) noexcept
 {
