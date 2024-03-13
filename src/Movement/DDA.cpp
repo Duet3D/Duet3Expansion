@@ -323,6 +323,13 @@ bool DDA::Init(const CanMessageMovementLinearShaped& msg) noexcept
 	params.steadyClocks = msg.steadyClocks;
 	params.decelClocks = msg.decelClocks;
 	clocksNeeded = msg.accelerationClocks + msg.steadyClocks + msg.decelClocks;
+
+	// We occasionally receive a message with zero clocks needed. This messes up the calculations, so add one steady clock in this case.
+	if (clocksNeeded == 0)
+	{
+		clocksNeeded = params.steadyClocks = 1;
+	}
+
 	params.acceleration = acceleration = msg.acceleration;
 	params.deceleration = deceleration = msg.deceleration;
 
@@ -354,7 +361,7 @@ bool DDA::Init(const CanMessageMovementLinearShaped& msg) noexcept
 			if (extrusionRequested != 0.0)
 			{
 				dm.totalSteps = 0;
-				dm.direction = (extrusionRequested >= 0.0);			// for now this is the direction of net movement, but gets adjusted later if it is a delta movement
+				dm.direction = (extrusionRequested > 0.0);			// for now this is the direction of net movement, but gets adjusted later if it is a delta movement
 				Platform::EnableDrive(drive, 0);
 				stepsToDo = dm.PrepareExtruder(*this, params, extrusionRequested);
 			}
