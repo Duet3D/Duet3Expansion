@@ -34,9 +34,9 @@ GCodeResult LinearAnalogSensor::Configure(const CanMessageGenericParser& parser,
 	{
 		seen = true;
 	}
-#endif
 
 	const bool seenPortOrFiltered = seen;
+#endif
 
 	ConfigureCommonParameters(parser, seen);
 	if (parser.GetFloatParam('B', lowTemp))
