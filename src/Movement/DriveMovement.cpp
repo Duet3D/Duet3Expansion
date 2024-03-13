@@ -503,7 +503,7 @@ bool DriveMovement::PrepareExtruder(const DDA& dda, const PrepParams& params, fl
 			if (shaper.GetExtrusionPending() > 1.0 || shaper.GetExtrusionPending() < -1.0)
 			{
 				AtomicCriticalSectionLocker lock;
-				debugPrintf("pex xpend=%.2f effsm=%.2f dbf=%.3f\n", (double)shaper.GetExtrusionPending(), (double)effStepsPerMm, (double)distanceBroughtForwards);
+				debugPrintf("pex xpend=%.2f effsm=%.2f dsf=%.3f dbf=%.3f\n", (double)shaper.GetExtrusionPending(), (double)effStepsPerMm, (double)distanceSoFar, (double)distanceBroughtForwards);
 				char ch = '0';
 				for (const MoveSegment *seg = dda.segments; seg != nullptr; seg = seg->GetNext())
 				{
