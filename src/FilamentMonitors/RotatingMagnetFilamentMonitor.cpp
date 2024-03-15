@@ -157,7 +157,7 @@ GCodeResult RotatingMagnetFilamentMonitor::Configure(const CanMessageGenericPars
 #if SUPPORT_AS5601
 				if (IsDirectMagneticEncoder())
 				{
-					reply.catf("agc %u, ", agc);
+					reply.catf("agc %u angle %.1f, ", agc, (double)((float)sensorValue * (360.0/1024.0)));
 				}
 				else
 #endif
@@ -611,7 +611,7 @@ void RotatingMagnetFilamentMonitor::Diagnostics(const StringRef& reply) noexcept
 	reply.lcatf("Driver %u: ", GetDriver());
 	if (dataReceived)
 	{
-		reply.catf("pos %.2f", (double)(float)(sensorValue * (360.0/1024.0)));
+		reply.catf("pos %.1f", (double)((float)sensorValue * (360.0/1024.0)));
 	}
 	else
 	{

@@ -71,7 +71,7 @@ void MFMHandler::Init(SharedI2CMaster& i2cDevice) noexcept
 	if (encoder != nullptr || expander != nullptr)
 	{
 		as5601Task = new Task<AS5601TaskStackWords>();
-		as5601Task->Create(MfmTaskCode, "MFM", nullptr, TaskPriority::Mfm);
+		as5601Task->Create(MfmTaskCode, "MFM", nullptr, TaskPriority::MfmNormal);
 	}
 }
 
@@ -201,16 +201,17 @@ void MFMHandler::MfmTaskCode(void *) noexcept
 
 		if (encoder != nullptr)
 		{
+			TaskBase::SetCurrentTaskPriority(TaskPriority::MfmHigh);
 			if (encoder->Read(lastAngle, lastStatus, lastAgc))
 			{
-				TaskCriticalSectionLocker lock;
-				if (filamentMonitorCallbackFn != nullptr && !readingAvailable)
+				if (!readingAvailable && filamentMonitorCallbackFn != nullptr)
 				{
 					angleReading = lastAngle;
-					readingAvailable = true;
 					filamentMonitorCallbackFn(CallbackParameter(filamentMonitorCallbackObject));
+					readingAvailable = true;
 				}
 			}
+			TaskBase::SetCurrentTaskPriority(TaskPriority::MfmNormal);
 		}
 
 		if (expander != nullptr)

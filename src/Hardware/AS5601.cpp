@@ -98,10 +98,10 @@ bool AS5601::Init() noexcept
 	return false;
 }
 
-// Read the status and angle registers
+// Read the status, agc and angle registers. Read the angle last because the time is captured just after calling this.
 bool AS5601::Read(uint16_t& angle, uint8_t& status, uint8_t& agc) noexcept
 {
-	return Read8(AS5601Register::status, status, false) && Read16(AS5601Register::angle, angle, false) && Read8(AS5601Register::agc, agc, true);
+	return Read8(AS5601Register::status, status, false) && Read8(AS5601Register::agc, agc, false) && Read16(AS5601Register::angle, angle, true);
 }
 
 bool AS5601::Read8(AS5601Register reg, uint8_t& val, bool releaseBus) noexcept
