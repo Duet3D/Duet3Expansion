@@ -41,8 +41,6 @@ namespace Heat
 	void ProcessRemoteSensorsReport(CanAddress src, const CanMessageSensorTemperatures& msg) noexcept;
 
 	// Methods that relate to a particular heater
-	float GetHighestTemperatureLimit(int heater) noexcept;
-	float GetLowestTemperatureLimit(int heater) noexcept;
 	GCodeResult SetTemperature(const CanMessageSetHeaterTemperature& msg, const StringRef& reply);
 	GCodeResult TuningCommand(const CanMessageHeaterTuningCommand& msg, const StringRef& reply);
 	GCodeResult FeedForward(const CanMessageHeaterFeedForward& msg, const StringRef& reply);

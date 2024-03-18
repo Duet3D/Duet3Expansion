@@ -556,18 +556,6 @@ GCodeResult Heat::SetHeaterMonitors(const CanMessageSetHeaterMonitors& msg, cons
 	return (h.IsNotNull()) ? h->SetHeaterMonitors(msg, reply) : UnknownHeater(msg.heater, reply);
 }
 
-float Heat::GetHighestTemperatureLimit(int heater) noexcept
-{
-	const auto h = FindHeater(heater);
-	return (h.IsNull()) ? BadErrorTemperature : h->GetHighestTemperatureLimit();
-}
-
-float Heat::GetLowestTemperatureLimit(int heater) noexcept
-{
-	const auto h = FindHeater(heater);
-	return (h.IsNull()) ? ABS_ZERO : h->GetLowestTemperatureLimit();
-}
-
 // Get the temperature of a sensor
 float Heat::GetSensorTemperature(int sensorNum, TemperatureError& err) noexcept
 {

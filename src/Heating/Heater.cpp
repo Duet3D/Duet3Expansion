@@ -43,8 +43,7 @@ GCodeResult Heater::SetHeaterMonitors(const CanMessageSetHeaterMonitors& msg, co
 
 GCodeResult Heater::SetModel(unsigned int heater, const CanMessageHeaterModelNewNew& msg, const StringRef& reply) noexcept
 {
-	const float temperatureLimit = GetHighestTemperatureLimit();
-	const bool rslt = model.SetParameters(msg, temperatureLimit);
+	const bool rslt = model.SetParameters(msg, reply);
 	if (rslt)
 	{
 		if (model.IsEnabled())
@@ -58,7 +57,6 @@ GCodeResult Heater::SetModel(unsigned int heater, const CanMessageHeaterModelNew
 		return GCodeResult::ok;
 	}
 
-	reply.copy("bad model parameters");
 	return GCodeResult::error;
 }
 
@@ -113,40 +111,6 @@ GCodeResult Heater::SetTemperature(const CanMessageSetHeaterTemperature& msg, co
 
 	reply.printf("Unknown command %u to heater %u", msg.command, heaterNumber);
 	return GCodeResult::ok;
-}
-
-float Heater::GetHighestTemperatureLimit() const noexcept
-{
-	float limit = BadErrorTemperature;
-	for (const HeaterMonitor& prot : monitors)
-	{
-		if (prot.GetTrigger() == HeaterMonitorTrigger::TemperatureExceeded)
-		{
-			const float t = prot.GetTemperatureLimit();
-			if (limit == BadErrorTemperature || t > limit)
-			{
-				limit = t;
-			}
-		}
-	}
-	return limit;
-}
-
-float Heater::GetLowestTemperatureLimit() const noexcept
-{
-	float limit = ABS_ZERO;
-	for (const HeaterMonitor& prot : monitors)
-	{
-		if (prot.GetTrigger() == HeaterMonitorTrigger::TemperatureTooLow)
-		{
-			const float t = prot.GetTemperatureLimit();
-			if (limit == ABS_ZERO || t < limit)
-			{
-				limit = t;
-			}
-		}
-	}
-	return limit;
 }
 
 // End

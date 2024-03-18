@@ -40,8 +40,7 @@ public:
 	FopDt();
 
 	void Reset() noexcept;
-	bool SetParameters(const CanMessageHeaterModelNewNew& msg, float temperatureLimit) noexcept;
-	bool SetParameters(float phr, float pcrFanOff, float pcrFanOn, float pcrExponent, float pdt, float pMaxPwm, float temperatureLimit, float pVoltage, bool pUsePid, bool pInverted) noexcept;
+	bool SetParameters(const CanMessageHeaterModelNewNew& msg, const StringRef& reply) noexcept;
 	void SetDefaultToolParameters() noexcept;
 	void SetDefaultBedOrChamberParameters() noexcept;
 

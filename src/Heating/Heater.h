@@ -50,8 +50,6 @@ public:
 	GCodeResult SetFaultDetectionParameters(const CanMessageSetHeaterFaultDetectionParameters& msg, const StringRef& reply);
 	GCodeResult SetHeaterMonitors(const CanMessageSetHeaterMonitors& msg, const StringRef& reply);
 
-	float GetHighestTemperatureLimit() const;					// Get the highest temperature limit
-	float GetLowestTemperatureLimit() const;					// Get the lowest temperature limit
 	void SetHeaterMonitoring(HeaterMonitor *h);
 
 	const FopDt& GetModel() const { return model; }				// Get the process model
