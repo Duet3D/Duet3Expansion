@@ -22,7 +22,6 @@
 #define TEST_PACKING	0
 
 constexpr uint16_t DefaultSamplingRate = 1000;
-constexpr uint8_t DefaultResolution = 10;
 
 constexpr size_t AccelerometerTaskStackWords = 130;
 static Task<AccelerometerTaskStackWords> *accelerometerTask;
@@ -32,8 +31,8 @@ static bool present = false;								// note that present => (accelerometer != nu
 
 static uint16_t samplingRate = DefaultSamplingRate;
 static volatile uint32_t numSamplesRequested;
-static uint8_t resolution = DefaultResolution;
-static uint8_t orientation = 20;							// +Z -> +Z, +X -> +X
+static uint8_t resolution = DefaultAccelerometerResolution;
+static uint8_t orientation = DefaultAccelerometerOrientation;
 static volatile uint8_t axesRequested;
 static volatile bool running = false;
 static volatile bool successfulStart = false;
