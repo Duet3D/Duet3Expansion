@@ -148,6 +148,8 @@ bool MFMHandler::GetEncoderReading(uint16_t& reading, uint8_t& agc, uint8_t& err
 	return false;
 }
 
+uint16_t MFMHandler::GetLastAngle() noexcept { return lastAngle; }
+
 // Enable the button and store a pointer to the input monitor to call back, or disable the button if nullptr is passed
 bool MFMHandler::EnableButton(InputMonitor *monitor) noexcept
 {
@@ -202,8 +204,10 @@ void MFMHandler::MfmTaskCode(void *) noexcept
 		if (encoder != nullptr)
 		{
 			TaskBase::SetCurrentTaskPriority(TaskPriority::MfmHigh);
-			if (encoder->Read(lastAngle, lastStatus, lastAgc))
+			uint16_t tempAngle;
+			if (encoder->Read(tempAngle, lastStatus, lastAgc))
 			{
+				lastAngle = ~tempAngle & 0x0FFF;			// invert the angle because the Roto MFM runs backwards with positive extrusion
 				if (!readingAvailable && filamentMonitorCallbackFn != nullptr)
 				{
 					angleReading = lastAngle;

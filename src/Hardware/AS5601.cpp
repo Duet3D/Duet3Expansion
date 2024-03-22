@@ -99,9 +99,10 @@ bool AS5601::Init() noexcept
 }
 
 // Read the status, agc and angle registers. Read the angle last because the time is captured just after calling this.
+// We don't want to capture the time just before calling this because we may have to wait for the I2C bus to be released by another task.
 bool AS5601::Read(uint16_t& angle, uint8_t& status, uint8_t& agc) noexcept
 {
-	return Read8(AS5601Register::status, status, false) && Read8(AS5601Register::agc, agc, false) && Read16(AS5601Register::angle, angle, true);
+	return Read8(AS5601Register::status, status, false) && Read8(AS5601Register::agc, agc, false) && Read16(AS5601Register::rawAngle, angle, true);
 }
 
 bool AS5601::Read8(AS5601Register reg, uint8_t& val, bool releaseBus) noexcept

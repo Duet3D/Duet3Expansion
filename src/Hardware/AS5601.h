@@ -21,7 +21,7 @@ public:
 	AS5601(SharedI2CMaster& dev) noexcept;
 
 	bool Init() noexcept;													// initialise the device returning true if it was found
-	bool Read(uint16_t& angle, uint8_t& status, uint8_t& agc) noexcept;		// read the angle, status and agc registers
+	bool Read(uint16_t& angle, uint8_t& status, uint8_t& agc) noexcept;		// read the raw angle, status and agc registers
 
 	// Status register bits
 	static constexpr uint8_t StatusMH = 1u << 3;

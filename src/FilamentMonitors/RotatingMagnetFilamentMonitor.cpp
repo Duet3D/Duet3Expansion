@@ -133,8 +133,9 @@ GCodeResult RotatingMagnetFilamentMonitor::Configure(const CanMessageGenericPars
 			else
 #endif
 			{
-				reply.printf("Duet3D magnetic filament monitor v%u%s on pin ", version, (switchOpenMask != 0) ? " with switch" : "");
+				reply.printf("Duet3D magnetic filament monitor%s on pin ", (switchOpenMask != 0) ? " with switch" : "");
 				GetPort().AppendPinName(reply);
+				reply.catf(", firmware version %u", version);
 			}
 			reply.catf(", %s, %.2fmm/rev, allow %ld%% to %ld%%, check %s moves every %.1fmm, ",
 						(GetEnableMode() == 2) ? "enabled always" : (GetEnableMode() == 1) ? "enabled when SD printing" : "disabled",
@@ -157,7 +158,7 @@ GCodeResult RotatingMagnetFilamentMonitor::Configure(const CanMessageGenericPars
 #if SUPPORT_AS5601
 				if (IsDirectMagneticEncoder())
 				{
-					reply.catf("agc %u angle %.1f, ", agc, (double)((float)sensorValue * (360.0/1024.0)));
+					reply.catf("agc %u, raw angle %u, ", agc, MFMHandler::GetLastAngle());
 				}
 				else
 #endif
