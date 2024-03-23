@@ -16,36 +16,6 @@
 constexpr size_t DmaBufferSize = 240 * 16;						// DotStar LEDs use 4 bytes/LED, NeoPixel RGBW use 16 bytes/LED
 #endif
 
-#if SUPPORT_DMA_NEOPIXEL
-
-// We need an SPI port and DMA
-# if LEDSTRIP_USES_USART
-#  include <pdc/pdc.h>
-#  include <pmc/pmc.h>
-#  include <usart/usart.h>
-# else
-#  include <DmacManager.h>
-#  if SAME5x
-#   include <Hardware/IoPorts.h>
-#   include <hri_mclk_e54.h>
-#  elif SAME70
-#   include <xdmac/xdmac.h>
-#   include <pmc/pmc.h>
-#  endif
-# endif
-
-# if SAME70
-#  define USE_16BIT_SPI	1		// set to use 16-bit SPI transfers instead of 8-bit
-# else
-#  define USE_16BIT_SPI	0		// set to use 16-bit SPI transfers instead of 8-bit
-# endif
-
-# if USE_16BIT_SPI && LEDSTRIP_USES_USART
-#  error Invalid combination
-# endif
-
-#endif	// SUPPORT_DMA_NEOPIXEL || SUPPORT_DMA_DOTSTAR
-
 class LocalLedStrip : public LedStripBase
 {
 public:
@@ -87,7 +57,10 @@ protected:
 	uint32_t whenTransferFinished = 0;									// the time in step clocks when we determined that the data transfer had finished
 
 #if SUPPORT_DMA_NEOPIXEL || SUPPORT_PIO_NEOPIXEL
-	bool useDma;
+# if SAME5x | SAMC21
+	SercomIo sercom;
+ #endif
+	bool useDma = false;
 	bool dmaBusy = false;												// true if DMA was started and is not known to have finished
 #else
 	static constexpr bool useDma = false;

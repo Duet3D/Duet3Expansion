@@ -98,6 +98,7 @@ constexpr Pin DriverDiagPins[NumDrivers] = { PortAPin(21) };
 #define SUPPORT_SPI_SENSORS		0
 #define SUPPORT_LDC1612			1
 #define SUPPORT_AS5601			1											// support direct-connected magnetic filament monitor encoder chip
+#define SUPPORT_DMA_NEOPIXEL	1
 
 #ifdef DEBUG
 # define SUPPORT_I2C_SENSORS	0											// in debug mode the SERCOM is used for debugging
@@ -173,6 +174,10 @@ constexpr uint16_t AS5601_I2CAddress = 0x36;				// I2C address of the AS5601
 constexpr uint16_t TCA6408A_I2CAddress = 0x20;				// I2C address of the TCA6408A (ADDR pin is tied to ground)
 #endif
 
+const auto sercom1cPad3 = SercomIo::sercom1c + SercomIo::pad3;
+const auto sercom5dpad0 = SercomIo::sercom5d + SercomIo::pad0;
+const auto sercom5dpad1 = SercomIo::sercom5d + SercomIo::pad1;
+
 // Table of pin functions that we are allowed to use
 constexpr PinDescription PinTable[] =
 {
@@ -197,7 +202,7 @@ constexpr PinDescription PinTable[] =
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		0,	"io3.in"		},	// PA16 IO1 in
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		1,	"io1.in"		},	// PA17 IO2 in
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		2,	"out1.tach"		},	// PA18 OUT2 tacho
-	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::sercom1c,	Nx,	"led"			},	// PA19 Neopixel out
+	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		sercom1cPad3,		Nx, "led"			},	// PA19 Neopixel out
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"out2"			},	// PA20 OUT2
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		5,	"ate.d0.diag"	},	// PA21 driver DIAG
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA22 CAN0 Tx
@@ -214,8 +219,8 @@ constexpr PinDescription PinTable[] =
 	// Port B
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PB00 not on chip
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PB01 not on chip
-	{ TcOutput::none,	TccOutput::tcc2_2F,	AdcInput::none,		SercomIo::none,		SercomIo::sercom5d,	Nx,	"io0.out"		},	// PB02 IO0 out, UART available
-	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_15,	SercomIo::sercom5d,	SercomIo::none,		3,	"io0.in"		},	// PB03 IO0 in, UART available
+	{ TcOutput::none,	TccOutput::tcc2_2F,	AdcInput::none,		SercomIo::none,		sercom5dpad0,		Nx, "io0.out"		},	// PB02 IO0 out, UART available
+	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_15,	sercom5dpad1,		SercomIo::none,		3, "io0.in"			},	// PB03 IO0 in, UART available
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PB04 not on chip
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PB05 not on chip
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PB06 not on chip
@@ -274,12 +279,14 @@ constexpr unsigned int StepTcNumber = 0;
 constexpr DmaChannel DmacChanTmcTx = 0;
 constexpr DmaChannel DmacChanTmcRx = 1;
 constexpr DmaChannel DmacChanAdc0Rx = 2;
+constexpr DmaChannel DmacChanLedTx = 3;
 
 constexpr unsigned int NumDmaChannelsUsed = 4;			// must be at least the number of channels used, may be larger. Max 12 on the SAME5x.
 
 constexpr DmaPriority DmacPrioTmcTx = 0;
 constexpr DmaPriority DmacPrioTmcRx = 3;
 constexpr DmaPriority DmacPrioAdcRx = 2;
+constexpr DmaPriority DmacPrioLed = 1;
 
 // Interrupt priorities, lower means higher priority. 0-2 can't make RTOS calls.
 const NvicPriority NvicPriorityStep = 3;				// step interrupt is next highest, it can preempt most other interrupts

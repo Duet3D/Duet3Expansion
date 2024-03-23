@@ -90,6 +90,7 @@ constexpr Pin DriverDiagPins[NumDrivers] = { PortBPin(3) };
 #define SUPPORT_DHT_SENSOR		0
 #define SUPPORT_SDADC			1
 #define SUPPORT_LDC1612			0
+#define SUPPORT_DMA_NEOPIXEL	1
 
 #define USE_MPU					0
 #define USE_CACHE				0
@@ -148,6 +149,10 @@ constexpr uint16_t LDC1612_I2CAddress = 0x2B;				// pin 4 is tied high on the Gr
 constexpr Pin LDC1612InterruptPin = PortAPin(23);			// this is brought out to a test pad
 #endif
 
+constexpr auto sercom2cPad0 = SercomIo::sercom2c + SercomIo::pad0;
+constexpr auto sercom5dPad0 = SercomIo::sercom5d + SercomIo::pad0;
+constexpr auto sercom2dPad0 = SercomIo::sercom2d + SercomIo::pad0;
+
 // Table of pin functions that we are allowed to use
 constexpr PinDescription PinTable[] =
 {
@@ -162,10 +167,10 @@ constexpr PinDescription PinTable[] =
 	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_6,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA06 VssaMon (SDADC INN0)
 	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_7,	AdcInput::sdadc_0,	SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA07 Vrefmon (SDADC INP0)
 	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_8,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"ate.vin"		},	// PA08 VinMon
-	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_9,	AdcInput::none,		SercomIo::sercom2d,	SercomIo::none,		9,	"io0.in"		},	// PA09 Z probe in
+	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_9,	AdcInput::none,		sercom2dPad0,		SercomIo::none,		9,	"io0.in"		},	// PA09 IO0.in
 	{ TcOutput::none,	TccOutput::tcc0_2F,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"out1"			},	// PA10
 	{ TcOutput::none,	TccOutput::tcc1_1E,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"out0"			},	// PA11
-	{ TcOutput::none,	TccOutput::tcc2_0E,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::sercom2c,	12,	"io0.out" 		},	// PA12
+	{ TcOutput::none,	TccOutput::tcc2_0E,	AdcInput::none,		AdcInput::none,		SercomIo::none,		sercom2cPad0,		12,	"io0.out" 		},	// PA12
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		13,	"out1.tach"		},	// PA13
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA14 crystal
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA15 crystal
@@ -176,7 +181,7 @@ constexpr PinDescription PinTable[] =
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA20 drivers USART Rx (sercom 3.2)
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		5,	"io1.in"		},	// PA21
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA22 drivers USART Tx (sercom 3.0)
-	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::sercom5d,	Nx,	"pa23"			},	// PA23 spare, test pad on v1.1
+	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		sercom5dPad0,		Nx,	"pa23"			},	// PA23 spare, test pad on v1.1
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA24 CAN0 Tx
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA25 CAN0 Rx
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA26 not on chip
@@ -243,13 +248,15 @@ constexpr DmaChannel DmacChanTmcTx = 0;
 constexpr DmaChannel DmacChanTmcRx = 1;
 constexpr DmaChannel DmacChanAdc0Rx = 2;
 constexpr DmaChannel DmacChanSdadcRx = 3;
+constexpr DmaChannel DmacChanLedTx = 4;
 
-constexpr unsigned int NumDmaChannelsUsed = 4;			// must be at least the number of channels used, may be larger. Max 12 on the SAMC21.
+constexpr unsigned int NumDmaChannelsUsed = 5;			// must be at least the number of channels used, may be larger. Max 12 on the SAMC21.
 
 // DMA priorities, higher is better. 0 to 3 are available.
 constexpr DmaPriority DmacPrioTmcTx = 0;
 constexpr DmaPriority DmacPrioTmcRx = 3;
 constexpr DmaPriority DmacPrioAdcRx = 2;
+constexpr DmaPriority DmacPrioLed = 1;
 
 // Interrupt priorities, lower means higher priority. 0 can't make RTOS calls. Only 0 to 3 are available.
 const NvicPriority NvicPriorityStep = 1;				// step interrupt is next highest, it can preempt most other interrupts

@@ -43,6 +43,7 @@
 #define SUPPORT_SPI_SENSORS		1
 #define SUPPORT_I2C_SENSORS		0
 #define SUPPORT_DHT_SENSOR		0
+#define SUPPORT_DMA_NEOPIXEL	1
 
 #define USE_MPU					0
 #define USE_CACHE				1
@@ -117,6 +118,13 @@ constexpr GpioPinFunction SSPISclkPinPeriphMode = GpioPinFunction::C;
 constexpr Pin SSPIMisoPin = PortCPin(19);
 constexpr GpioPinFunction SSPIMisoPinPeriphMode = GpioPinFunction::C;
 
+constexpr auto sercom1cPad0 = SercomIo::sercom1c + SercomIo::pad0;
+constexpr auto sercom1cPad1 = SercomIo::sercom1c + SercomIo::pad1;
+constexpr auto sercom3cPad0 = SercomIo::sercom3c + SercomIo::pad0;
+constexpr auto sercom3cPad1 = SercomIo::sercom3c + SercomIo::pad1;
+constexpr auto sercom5cPad0 = SercomIo::sercom5c + SercomIo::pad0;
+constexpr auto sercom5cPad1 = SercomIo::sercom5c + SercomIo::pad1;
+
 // Table of pin functions that we are allowed to use
 constexpr PinDescription PinTable[] =
 {
@@ -138,8 +146,8 @@ constexpr PinDescription PinTable[] =
 	{ TcOutput::tc2_1,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"out8"			},	// PA13
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA14 crystal
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA15 crystal
-	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::sercom1c,	Nx,	"io0.out,uart0.tx" },	// PA16
-	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::sercom1c,	SercomIo::none,		Nx,	"uart0.rx"		},	// PA17
+	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		sercom1cPad0,		Nx,	"io0.out,uart0.tx" },	// PA16
+	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		sercom1cPad1,		SercomIo::none,		Nx,	"uart0.rx"		},	// PA17
 	{ TcOutput::none,	TccOutput::tcc1_2F,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"out0" 			},	// PA18
 	{ TcOutput::tc3_1,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"out1"			},	// PA19
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"io5.out"		},	// PA20
@@ -172,12 +180,12 @@ constexpr PinDescription PinTable[] =
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PB13 CANrx
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"spi.cs3"		},	// PB14 don't allow DHT11 on this pin, no EXINT
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		15,	"spi.cs1"		},	// PB15
-	{ TcOutput::none,	TccOutput::tcc3_0F,	AdcInput::none,		SercomIo::none,		SercomIo::sercom5c,	Nx,	"io1.out,uart1.tx"	},	// PB16
-	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::sercom5c,	SercomIo::none,		Nx,	"uart1.rx"		},	// PB17
+	{ TcOutput::none,	TccOutput::tcc3_0F,	AdcInput::none,		SercomIo::none,		sercom5cPad0,		Nx,	"io1.out,uart1.tx"	},	// PB16
+	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		sercom5cPad1,		SercomIo::none,		Nx,	"uart1.rx"		},	// PB17
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PB18 board type 0
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		3,	"out4.tach"		},	// PB19
-	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::sercom3c,	Nx,	"io2.out,uart2.tx" },	// PB20
-	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::sercom3c,	SercomIo::none,		Nx,	"uart2.rx"		},	// PB21
+	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		sercom3cPad0,		Nx,	"io2.out,uart2.tx" },	// PB20
+	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		sercom3cPad1,		SercomIo::none,		Nx,	"uart2.rx"		},	// PB21
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PB22 drivers CS
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PB23 drivers ENN
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PB24 spi0 mosi
@@ -242,11 +250,13 @@ constexpr IRQn Serial1_IRQn = SERCOM5_0_IRQn;
 // DMA channel assignments. Channels 0-3 have individual interrupt vectors, channels 4-31 share an interrupt vector.
 constexpr DmaChannel DmacChanTmcTx = 0;
 constexpr DmaChannel DmacChanTmcRx = 1;
+constexpr DmaChannel DmacChanLedTx = 2;
 
-constexpr unsigned int NumDmaChannelsUsed = 2;			// must be at least the number of channels used, may be larger. Max 32 on the SAME51.
+constexpr unsigned int NumDmaChannelsUsed = 3;			// must be at least the number of channels used, may be larger. Max 32 on the SAME51.
 
 constexpr DmaPriority DmacPrioTmcTx = 0;
 constexpr DmaPriority DmacPrioTmcRx = 3;
+constexpr DmaPriority DmacPrioLed = 1;
 
 // Interrupt priorities, lower means higher priority. 0-2 can't make RTOS calls.
 const NvicPriority NvicPriorityStep = 3;				// step interrupt is next highest, it can preempt most other interrupts

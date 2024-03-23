@@ -68,6 +68,7 @@ constexpr Pin DiagPins[NumDrivers] = { PortAPin(21) };
 
 #define SUPPORT_THERMISTORS		1
 #define SUPPORT_SPI_SENSORS		1
+#define SUPPORT_DMA_NEOPIXEL	1
 
 #ifdef DEBUG
 # define SUPPORT_I2C_SENSORS	0							// in debug mode the SERCOM is used for debugging
@@ -171,6 +172,9 @@ constexpr GpioPinFunction ClockGenPinPeriphMode = GpioPinFunction::M;
 constexpr Pin BrakePwmPin = PortBPin(10);
 constexpr Pin BrakeOnPin = PortAPin(20);
 
+constexpr auto sercom2cPad0 = SercomIo::sercom2c + SercomIo::pad0;
+constexpr auto sercom2cPad1 = SercomIo::sercom2c + SercomIo::pad1;
+
 // Table of pin functions that we are allowed to use
 constexpr PinDescription PinTable[] =
 {
@@ -188,8 +192,8 @@ constexpr PinDescription PinTable[] =
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA09 driver SCLK
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA10 driver CS
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA11 driver MISO
-	{ TcOutput::none,	TccOutput::tcc1_2F,	AdcInput::none,		SercomIo::none,		SercomIo::sercom2c,	Nx,	"io1.out" 		},	// PA12 IO1 out, I2C capable
-	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::sercom2c,	SercomIo::none,		13,	"io1.in"		},	// PA13 IO1 in, I2C capable
+	{ TcOutput::none,	TccOutput::tcc1_2F,	AdcInput::none,		SercomIo::none,		sercom2cPad0,		Nx,	"io1.out" 		},	// PA12 IO1 out, I2C capable
+	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		sercom2cPad1,		SercomIo::none,		13,	"io1.in"		},	// PA13 IO1 in, I2C capable
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA14 crystal
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA15 crystal
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA16 AS5047/SPI MOSI (SERCOM1.0)
@@ -253,12 +257,14 @@ constexpr unsigned int StepTcNumber = 0;
 constexpr DmaChannel DmacChanTmcTx = 0;
 constexpr DmaChannel DmacChanTmcRx = 1;
 constexpr DmaChannel DmacChanAdc0Rx = 2;
+constexpr DmaChannel DmacChanLedTx = 3;
 
 constexpr unsigned int NumDmaChannelsUsed = 4;			// must be at least the number of channels used, may be larger. Max 12 on the SAME5x.
 
 constexpr DmaPriority DmacPrioTmcTx = 0;
 constexpr DmaPriority DmacPrioTmcRx = 3;
 constexpr DmaPriority DmacPrioAdcRx = 2;
+constexpr DmaPriority DmacPrioLed = 1;
 
 // Interrupt priorities, lower means higher priority. 0-2 can't make RTOS calls.
 const NvicPriority NvicPriorityStep = 3;				// step interrupt is next highest, it can preempt most other interrupts

@@ -99,7 +99,7 @@ static void EncodeNeoPixelByte(uint8_t *p, uint8_t val) noexcept
 {
 	static constexpr uint8_t EncodedByte[4] = { 0b10001000, 0b10001110, 0b11101000, 0b11101110 };
 
-# if USE_16BIT_SPI
+# if SAME70 && USE_16BIT_SPI
 	// Swap bytes for 16-bit DMA
 	*p++ = EncodedByte[(val >> 4) & 3];
 	*p++ = EncodedByte[val >> 6];
