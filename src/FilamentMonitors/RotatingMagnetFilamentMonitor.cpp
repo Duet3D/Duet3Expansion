@@ -191,7 +191,7 @@ GCodeResult RotatingMagnetFilamentMonitor::Configure(const CanMessageGenericPars
 				else if (HaveCalibrationData())
 				{
 					const float measuredMmPerRev = MeasuredSensitivity();
-					reply.catf("measured %.2fmm/rev, min %ld%% max %ld%% over %.1fmm\n",
+					reply.catf("measured %.2fmm/rev, min %ld%% max %ld%% over %.1fmm",
 						(double)measuredMmPerRev,
 						ConvertToPercent(minMovementRatio * measuredMmPerRev),
 						ConvertToPercent(maxMovementRatio * measuredMmPerRev),

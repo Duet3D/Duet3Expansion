@@ -112,7 +112,7 @@ GCodeResult PulsedFilamentMonitor::Configure(const CanMessageGenericParser& pars
 			}
 			else if (HaveCalibrationData())
 			{
-				reply.catf("measured %.3fmm/pulse, min %ld%%, max %ld%% over %.1fmm\n",
+				reply.catf("measured %.3fmm/pulse, min %ld%%, max %ld%% over %.1fmm",
 					(double)MeasuredSensitivity(),
 					ConvertToPercent(minMovementRatio),
 					ConvertToPercent(maxMovementRatio),
