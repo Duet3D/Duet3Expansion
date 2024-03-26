@@ -61,18 +61,18 @@ GCodeResult NeoPixelLedStrip::HandleM150(CanMessageGenericParser& parser, const 
 #if SUPPORT_DMA_NEOPIXEL
 	if (UsesDma())
 	{
-		SpiSendNeoPixelData(params);
+		SpiSendData(params);
 	}
 	else
 #elif SUPPORT_PIO_NEOPIXEL
 	if (UsesDma())
 	{
-		PioSendNeoPixelData(params);
+		PioSendData(params);
 	}
 	else
 #endif
 	{
-		BitBangNeoPixelData(params);
+		BitBangData(params);
 	}
 	return GCodeResult::ok;
 }
@@ -114,7 +114,7 @@ static void EncodeNeoPixelByte(uint8_t *p, uint8_t val) noexcept
 }
 
 // Send data to NeoPixel LEDs by DMA to SPI
-GCodeResult NeoPixelLedStrip::SpiSendNeoPixelData(const LedParams& params) noexcept
+GCodeResult NeoPixelLedStrip::SpiSendData(const LedParams& params) noexcept
 {
 	const unsigned int bytesPerLed = (isRGBW) ? 16 : 12;
 	unsigned int numLeds = params.numLeds;
@@ -147,8 +147,8 @@ GCodeResult NeoPixelLedStrip::SpiSendNeoPixelData(const LedParams& params) noexc
 
 #elif SUPPORT_PIO_NEOPIXEL
 
-// Send data to NeoPixel LEDs by DMA to SPI
-GCodeResult NeoPixelLedStrip::PioSendNeoPixelData(const LedParams& params) noexcept
+// Send data to NeoPixel LEDs by PIO
+GCodeResult NeoPixelLedStrip::PioSendData(const LedParams& params) noexcept
 {
 	const unsigned int bytesPerLed = 4;
 	unsigned int numLeds = params.numLeds;
@@ -184,17 +184,16 @@ constexpr uint32_t NanosecondsToCycles(uint32_t ns) noexcept
 	return (ns * (uint64_t)SystemCoreClockFreq)/1000000000u;
 }
 
-constexpr uint32_t T0H = NanosecondsToCycles(350);
-constexpr uint32_t T0L = NanosecondsToCycles(850);
-constexpr uint32_t T1H = NanosecondsToCycles(800);
-constexpr uint32_t T1L = NanosecondsToCycles(475);
+constexpr uint32_t T0H = NanosecondsToCycles(300);
+constexpr uint32_t T1H = NanosecondsToCycles(700);
+constexpr uint32_t TCY = NanosecondsToCycles(1200);
 
 // Send data to NeoPixel LEDs by bit banging
 #if RP2040
 // When bit-banging Neopixels we can't afford to wait for instructions to be fetched from flash memory
 [[gnu::optimize("03")]] __attribute__((section(".time_critical")))
 #endif
-GCodeResult NeoPixelLedStrip::BitBangNeoPixelData(const LedParams& params) noexcept
+GCodeResult NeoPixelLedStrip::BitBangData(const LedParams& params) noexcept
 {
 	const unsigned int bytesPerLed = (isRGBW) ? 4 : 3;
 	unsigned int numLeds = params.numLeds;
@@ -215,36 +214,55 @@ GCodeResult NeoPixelLedStrip::BitBangNeoPixelData(const LedParams& params) noexc
 	if (!params.following)
 	{
 		const uint8_t *q = chunkBuffer;
-		uint32_t nextDelay = T0L;
-
+		uint32_t nextDelay = TCY;
+		const Pin pin = port.GetPin();
 		IrqDisable();
 		uint32_t lastTransitionTime = GetCurrentCycles();
-		while (q < p)
+
+		if (port.GetTotalInvert())
 		{
-			uint8_t c = *q++;
-			for (unsigned int i = 0; i < 8; ++i)
+			fastDigitalWriteHigh(pin);
+			while (q < p)
 			{
-				// The high-level time is critical, the low-level time is not.
-				// On the SAME5x the high-level time easily gets extended too much, so do as little work as possible during that time.
-				lastTransitionTime = DelayCycles(lastTransitionTime, nextDelay);
-				const uint32_t thisDelay = (c & 0x80) ? T1H : T0H;
-				nextDelay = (c & 0x80) ? T1L : T0L;
-				if (port.GetTotalInvert())
+				uint8_t c = *q++;
+				for (unsigned int i = 0; i < 8; ++i)
 				{
-					port.FastDigitalWriteLow();
-					lastTransitionTime = DelayCycles(lastTransitionTime, thisDelay);
-					port.FastDigitalWriteHigh();
+					// The high-level time is critical, the low-level time is not.
+					// On the SAME5x the high-level time easily gets extended too much, so do as little work as possible during that time.
+					const uint32_t diff = ((c >> 7u) - 1u) & (T1H - T0H);
+					uint32_t highTime = T1H - diff;
+					lastTransitionTime = DelayCycles(lastTransitionTime, nextDelay);
+					fastDigitalWriteLow(pin);
+					lastTransitionTime = DelayCycles(lastTransitionTime, highTime);
+					fastDigitalWriteHigh(pin);
+					nextDelay = TCY - highTime;
+					c <<= 1;
 				}
-				else
+			}
+		}
+		else
+		{
+			fastDigitalWriteLow(pin);			// this is needed on Duet 2 at least, to prevent the first pulse being too long
+			while (q < p)
+			{
+				uint8_t c = *q++;
+				for (unsigned int i = 0; i < 8; ++i)
 				{
-					port.FastDigitalWriteHigh();
-					lastTransitionTime = DelayCycles(lastTransitionTime, thisDelay);
-					port.FastDigitalWriteLow();
+					// The high-level time is critical, the low-level time is not.
+					// On the SAME5x the high-level time easily gets extended too much, so do as little work as possible during that time.
+					const uint32_t diff = ((c >> 7u) - 1u) & (T1H - T0H);
+					uint32_t highTime = T1H - diff;
+					lastTransitionTime = DelayCycles(lastTransitionTime, nextDelay);
+					fastDigitalWriteHigh(pin);
+					lastTransitionTime = DelayCycles(lastTransitionTime, highTime);
+					fastDigitalWriteLow(pin);
+					nextDelay = TCY - highTime;
+					c <<= 1;
 				}
-				c <<= 1;
 			}
 		}
 		IrqEnable();
+
 		numAlreadyInBuffer = 0;
 		whenTransferFinished = StepTimer::GetTimerTicks();
 		needStartDelay = true;
