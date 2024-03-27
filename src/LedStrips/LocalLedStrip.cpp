@@ -49,7 +49,6 @@ GCodeResult LocalLedStrip::CommonConfigure(CanMessageGenericParser& parser, cons
 	}
 
 	// Deal with the pin name
-	GCodeResult rslt;
 	String<StringLength50> pinName;
 	if (parser.GetStringParam('C', pinName.GetRef()))
 	{
@@ -68,20 +67,22 @@ GCodeResult LocalLedStrip::CommonConfigure(CanMessageGenericParser& parser, cons
 		//useDma = (port.GetCapability() & PinCapability::npDma) != PinCapability::none;
 # endif
 #endif
+	}
 
-		// See if the maximum strip length was provided (the default value is set up by the constructor)
-#if !SAME70
-		if (parser.GetUintParam('U', maxLeds))
-		{
-			DeleteArray(chunkBuffer);
-		}
-		rslt = (chunkBuffer == nullptr) ? AllocateChunkBuffer(reply) : GCodeResult::ok;
-#endif
-	}
-	else
+	// See if the maximum strip length was provided (the default value is set up by the constructor)
+	if (parser.GetUintParam('U', maxLeds))
 	{
-		rslt = GCodeResult::ok;
+		DeleteArray(chunkBuffer);
 	}
+
+	GCodeResult rslt = GCodeResult::ok;
+
+#if !SAME70
+	if (chunkBuffer == nullptr)
+	{
+		rslt = AllocateChunkBuffer(reply);
+	}
+#endif
 
 #if SUPPORT_DMA_NEOPIXEL
 	if (seen && useDma && rslt <= GCodeResult::warning)
@@ -106,48 +107,46 @@ GCodeResult LocalLedStrip::AllocateChunkBuffer(const StringRef& reply) noexcept
 
 #if SUPPORT_DMA_NEOPIXEL
 
+// Set up the SPI port
 void LocalLedStrip::SetupSpi() noexcept
 {
-	// Must set up useDma before calling GetBytesPerLed
-	if (useDma)
-	{
-		// Set up the SPI port
 # if SAME5x || SAMC21
-		const uint8_t sercomNumber = GetDeviceNumber(sercom);
-		Sercom *const hardware = Serial::GetSercom(sercomNumber);
-		Serial::EnableSercomClock(sercomNumber);
+	const uint8_t sercomNumber = GetDeviceNumber(sercom);
+	Serial::EnableSercomClock(sercomNumber);
 
-		const uint32_t regCtrlA = SERCOM_SPI_CTRLA_MODE(3) | SERCOM_SPI_CTRLA_DIPO(0) | SERCOM_SPI_CTRLA_DOPO(GetPadNumber(sercom)) | SERCOM_SPI_CTRLA_FORM(0);
-		const uint32_t regCtrlB = 0;												// 8 bits, slave select disabled, receiver disabled for now
+	Sercom *const hardware = Serial::GetSercom(sercomNumber);
+	const uint32_t regCtrlAMode = SERCOM_SPI_CTRLA_MODE(3);
+	const uint32_t regCtrlA = regCtrlAMode | SERCOM_SPI_CTRLA_DIPO(0) | SERCOM_SPI_CTRLA_DOPO(GetPadNumber(sercom)) | SERCOM_SPI_CTRLA_FORM(0);
+	const uint32_t regCtrlB = 0;												// 8 bits, slave select disabled, receiver disabled for now
 #  if SAME5x
-		const uint32_t regCtrlC = 0;												// not 32-bit mode
+	const uint32_t regCtrlC = 0;												// not 32-bit mode
 #  endif
 
-		if (!hri_sercomspi_is_syncing(hardware, SERCOM_SPI_SYNCBUSY_SWRST))
+	if (!hri_sercomspi_is_syncing(hardware, SERCOM_SPI_SYNCBUSY_SWRST))
+	{
+		if (hri_sercomspi_get_CTRLA_reg(hardware, SERCOM_SPI_CTRLA_ENABLE))
 		{
-			const uint32_t mode = regCtrlA & SERCOM_SPI_CTRLA_MODE_Msk;
-			if (hri_sercomspi_get_CTRLA_reg(hardware, SERCOM_SPI_CTRLA_ENABLE))
-			{
-				hri_sercomspi_clear_CTRLA_ENABLE_bit(hardware);
-				hri_sercomspi_wait_for_sync(hardware, SERCOM_SPI_SYNCBUSY_ENABLE);
-			}
-			hri_sercomspi_write_CTRLA_reg(hardware, SERCOM_SPI_CTRLA_SWRST | mode);
+			hri_sercomspi_clear_CTRLA_ENABLE_bit(hardware);
+			hri_sercomspi_wait_for_sync(hardware, SERCOM_SPI_SYNCBUSY_ENABLE);
 		}
-		hri_sercomspi_wait_for_sync(hardware, SERCOM_SPI_SYNCBUSY_SWRST);
+		hri_sercomspi_write_CTRLA_reg(hardware, SERCOM_SPI_CTRLA_SWRST | regCtrlAMode);
+	}
+	hri_sercomspi_wait_for_sync(hardware, SERCOM_SPI_SYNCBUSY_SWRST);
 
-		hri_sercomspi_write_CTRLA_reg(hardware, regCtrlA);
-		hri_sercomspi_write_CTRLB_reg(hardware, regCtrlB);
+	hri_sercomspi_write_CTRLA_reg(hardware, regCtrlA);
+	hri_sercomspi_write_CTRLB_reg(hardware, regCtrlB);
 #  if SAME5x
-		hri_sercomspi_write_CTRLC_reg(hardware, regCtrlC);
+	hri_sercomspi_write_CTRLC_reg(hardware, regCtrlC);
 #  endif
-		hri_sercomspi_write_BAUD_reg(hardware, SERCOM_SPI_BAUD_BAUD(Serial::SercomFastGclkFreq/(2 * frequency) - 1));
-		hri_sercomspi_write_DBGCTRL_reg(hardware, SERCOM_I2CM_DBGCTRL_DBGSTOP);		// baud rate generator is stopped when CPU halted by debugger
+	hri_sercomspi_write_BAUD_reg(hardware, SERCOM_SPI_BAUD_BAUD(Serial::SercomFastGclkFreq/(2 * frequency) - 1));
+	hri_sercomspi_write_DBGCTRL_reg(hardware, SERCOM_SPI_DBGCTRL_DBGSTOP);		// baud rate generator is stopped when CPU halted by debugger
 
-		SetPinFunction(port.GetPin(), GetPeriNumber(sercom));
+	SetPinFunction(port.GetPin(), GetPeriNumber(sercom));
+	hri_sercomspi_write_CTRLA_reg(hardware, SERCOM_SPI_CTRLA_ENABLE | regCtrlA);
+	hri_sercomspi_wait_for_sync(hardware, SERCOM_SPI_SYNCBUSY_ENABLE);
 # else
 #  error Code not written for this processor
 # endif
-	}
 }
 
 #endif
@@ -213,20 +212,24 @@ void LocalLedStrip::LedParams::ApplyBrightness() noexcept
 void LocalLedStrip::DmaSendChunkBuffer(size_t numBytes) noexcept
 {
 # if SAME5x || SAMC21
+//	Sercom *const hardware = Serial::GetSercom(GetDeviceNumber(sercom));
+//	hardware->SPI.CTRLA.bit.ENABLE = 0;
+//	hri_sercomspi_wait_for_sync(hardware, SERCOM_SPI_CTRLA_ENABLE);
+
 	DmacManager::DisableChannel(DmacChanLedTx);
 	DmacManager::SetTriggerSourceSercomTx(DmacChanLedTx, GetDeviceNumber(sercom));
 	DmacManager::SetSourceAddress(DmacChanLedTx, chunkBuffer);
 	DmacManager::SetDestinationAddress(DmacChanLedTx, &Serial::GetSercom(GetDeviceNumber(sercom))->SPI.DATA.reg);
 #  if SAME5x
-	if ((numBytes & 3) == 0)
+	if (0)//((numBytes & 3) == 0)
 	{
-		Serial::GetSercom(GetDeviceNumber(sercom))->SPI.CTRLC.reg = SERCOM_SPI_CTRLC_DATA32B;	// 32-bit transfers
+//		hardware->SPI.CTRLC.reg = SERCOM_SPI_CTRLC_DATA32B;	// 32-bit transfers
 		DmacManager::SetBtctrl(DmacChanLedTx, DMAC_BTCTRL_STEPSIZE_X1 | DMAC_BTCTRL_STEPSEL_SRC | DMAC_BTCTRL_SRCINC | DMAC_BTCTRL_BEATSIZE_WORD | DMAC_BTCTRL_BLOCKACT_NOACT);
 		DmacManager::SetDataLength(DmacChanLedTx, numBytes >> 2);			// must do this last!
 	}
 	else
 	{
-		Serial::GetSercom(GetDeviceNumber(sercom))->SPI.CTRLC.reg = 0;							// 8-bit transfers
+//		hardware->SPI.CTRLC.reg = 0;							// 8-bit transfers
 		DmacManager::SetBtctrl(DmacChanLedTx, DMAC_BTCTRL_STEPSIZE_X1 | DMAC_BTCTRL_STEPSEL_SRC | DMAC_BTCTRL_SRCINC | DMAC_BTCTRL_BEATSIZE_BYTE | DMAC_BTCTRL_BLOCKACT_NOACT);
 		DmacManager::SetDataLength(DmacChanLedTx, numBytes);				// must do this last!
 	}
@@ -235,6 +238,9 @@ void LocalLedStrip::DmaSendChunkBuffer(size_t numBytes) noexcept
 	DmacManager::SetDataLength(DmacChanLedTx, numBytes);					// must do this last!
 #  endif
 	DmacManager::EnableChannel(DmacChanLedTx, DmacPrioLed);
+//	hardware->SPI.CTRLA.bit.ENABLE = 1;
+//	hri_sercomspi_wait_for_sync(hardware, SERCOM_SPI_CTRLA_ENABLE);
+
 # elif SAME70
 	xdmac_channel_disable(XDMAC, DmacChanLedTx);
 	xdmac_channel_config_t p_cfg = {0, 0, 0, 0, 0, 0, 0, 0};
