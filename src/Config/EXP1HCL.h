@@ -68,7 +68,7 @@ constexpr Pin DiagPins[NumDrivers] = { PortAPin(21) };
 
 #define SUPPORT_THERMISTORS		1
 #define SUPPORT_SPI_SENSORS		1
-#define SUPPORT_DMA_NEOPIXEL	1
+#define SUPPORT_DMA_NEOPIXEL	0
 
 #ifdef DEBUG
 # define SUPPORT_I2C_SENSORS	0							// in debug mode the SERCOM is used for debugging

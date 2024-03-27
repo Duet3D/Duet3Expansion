@@ -107,6 +107,10 @@ GCodeResult LocalLedStrip::AllocateChunkBuffer(const StringRef& reply) noexcept
 
 #if SUPPORT_DMA_NEOPIXEL
 
+// This DOES NOT_WORK. The reason is that on (at least) Sercom1 on the SAME51G19A the data output pin goes high as soon as the SERCOM device
+// has been enabled in SPI mode, and also goes high at the end of any data transmission regardless of the value of the last bit transmitted.
+// Opened case 01429968 with Microchip to see if there is any way to control the idle state of the output pin.
+//
 // Set up the SPI port
 void LocalLedStrip::SetupSpi() noexcept
 {
@@ -141,6 +145,9 @@ void LocalLedStrip::SetupSpi() noexcept
 	hri_sercomspi_write_BAUD_reg(hardware, SERCOM_SPI_BAUD_BAUD(Serial::SercomFastGclkFreq/(2 * frequency) - 1));
 	hri_sercomspi_write_DBGCTRL_reg(hardware, SERCOM_SPI_DBGCTRL_DBGSTOP);		// baud rate generator is stopped when CPU halted by debugger
 
+	// The problem we have is that when we enable the SERCOM the data out pin goes high until we send some data.
+	// The following SetPinMode call was an unsuccessful attempt to change that.
+	//IoPort::SetPinMode(port.GetPin(), PinMode::OUTPUT_LOW);
 	SetPinFunction(port.GetPin(), GetPeriNumber(sercom));
 	hri_sercomspi_write_CTRLA_reg(hardware, SERCOM_SPI_CTRLA_ENABLE | regCtrlA);
 	hri_sercomspi_wait_for_sync(hardware, SERCOM_SPI_SYNCBUSY_ENABLE);

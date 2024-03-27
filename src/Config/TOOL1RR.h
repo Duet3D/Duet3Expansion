@@ -98,7 +98,7 @@ constexpr Pin DriverDiagPins[NumDrivers] = { PortAPin(21) };
 #define SUPPORT_SPI_SENSORS		0
 #define SUPPORT_LDC1612			1
 #define SUPPORT_AS5601			1											// support direct-connected magnetic filament monitor encoder chip
-#define SUPPORT_DMA_NEOPIXEL	1
+#define SUPPORT_DMA_NEOPIXEL	0											// can't get SERCOM SPI working due to output state when not transmitting - case opened with Microchip
 
 #ifdef DEBUG
 # define SUPPORT_I2C_SENSORS	0											// in debug mode the SERCOM is used for debugging

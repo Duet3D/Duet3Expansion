@@ -43,7 +43,7 @@
 #define SUPPORT_SPI_SENSORS		1
 #define SUPPORT_I2C_SENSORS		0
 #define SUPPORT_DHT_SENSOR		0
-#define SUPPORT_DMA_NEOPIXEL	1
+#define SUPPORT_DMA_NEOPIXEL	0
 
 #define USE_MPU					0
 #define USE_CACHE				1
