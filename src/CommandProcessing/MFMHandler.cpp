@@ -113,8 +113,8 @@ bool MFMHandler::AttachEncoderVirtualInterrupt(StandardCallbackFunction callback
 	if (filamentMonitorCallbackFn != nullptr) { return false; }		// MFM already in use by a filament monitor
 
 	TaskCriticalSectionLocker lock;
-	filamentMonitorCallbackFn = callback;
 	filamentMonitorCallbackObject = fm;
+	filamentMonitorCallbackFn = callback;
 	return true;
 }
 
