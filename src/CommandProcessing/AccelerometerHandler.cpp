@@ -10,7 +10,7 @@
 #if SUPPORT_LIS3DH
 
 #include <RTOSIface/RTOSIface.h>
-#include <Hardware/LIS3DH.h>
+#include <Hardware/LISAccelerometer.h>
 #include <CanMessageFormats.h>
 #include <Platform/TaskPriorities.h>
 #include <CanMessageBuffer.h>

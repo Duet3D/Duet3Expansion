@@ -24,7 +24,7 @@
 
 #if SUPPORT_I2C_SENSORS
 # include <Hardware/SharedI2CMaster.h>
-# include <Hardware/LIS3DH.h>
+# include <Hardware/LISAccelerometer.h>
 #endif
 
 #if RP2040
