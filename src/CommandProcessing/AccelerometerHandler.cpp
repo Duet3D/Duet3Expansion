@@ -26,7 +26,7 @@ constexpr uint16_t DefaultSamplingRate = 1000;
 constexpr size_t AccelerometerTaskStackWords = 130;
 static Task<AccelerometerTaskStackWords> *accelerometerTask;
 
-static LIS3DH *accelerometer = nullptr;
+static LISAccelerometer *accelerometer = nullptr;
 static bool present = false;								// note that present => (accelerometer != nullptr)
 
 static uint16_t samplingRate = DefaultSamplingRate;
@@ -222,7 +222,7 @@ void AccelerometerHandler::Init(SharedSpiDevice& dev) noexcept
 void AccelerometerHandler::Init(SharedI2CMaster& dev) noexcept
 #endif
 {
-	accelerometer = new LIS3DH(dev, Lis3dhInt1Pin);
+	accelerometer = new LISAccelerometer(dev, Lis3dhInt1Pin);
 	if (accelerometer->CheckPresent())
 	{
 		accelerometer->Configure(samplingRate, resolution);

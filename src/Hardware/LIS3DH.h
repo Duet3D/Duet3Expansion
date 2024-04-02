@@ -16,18 +16,18 @@
 
 #include "SharedSpiClient.h"
 
-class LIS3DH : public SharedSpiClient
+class LISAccelerometer : public SharedSpiClient
 {
 public:
-	LIS3DH(SharedSpiDevice& dev, Pin p_csPin, Pin p_int1Pin) noexcept;
+	LISAccelerometer(SharedSpiDevice& dev, Pin p_csPin, Pin p_int1Pin) noexcept;
 # else
 
 #include "SharedI2CClient.h"
 
-class LIS3DH : public SharedI2CClient
+class LISAccelerometer : public SharedI2CClient
 {
 public:
-	LIS3DH(SharedI2CMaster& dev, Pin p_int1Pin) noexcept;
+	LISAccelerometer(SharedI2CMaster& dev, Pin p_int1Pin) noexcept;
 # endif
 
 	// Do a quick test to check whether the accelerometer is present, returning true if it is
