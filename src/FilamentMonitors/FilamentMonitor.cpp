@@ -276,7 +276,7 @@ GCodeResult FilamentMonitor::CommonConfigure(const CanMessageGenericParser& pars
 	size_t slotIndex = 0;
 	size_t firstDriveNotSent = NumDrivers;
 	Bitmap<uint32_t> driversReported;
-	bool forceSend = false;
+	bool forceSend = false, haveLiveData = false;
 
 	{
 		ReadLocker lock(filamentMonitorsLock);
@@ -337,10 +337,14 @@ GCodeResult FilamentMonitor::CommonConfigure(const CanMessageGenericParser& pars
 						auto& slot = msg->data[slotIndex];
 						slot.status = fst.ToBaseType();
 						fs.GetLiveData(slot);
-						if (fst != fs.lastStatus || slot.hasLiveData)
+						if (fst != fs.lastStatus)
 						{
 							forceSend = true;
 							fs.lastStatus = fst;
+						}
+						else if (slot.hasLiveData)
+						{
+							haveLiveData = true;
 						}
 						driversReported.SetBit(drv);
 						++slotIndex;
@@ -354,7 +358,14 @@ GCodeResult FilamentMonitor::CommonConfigure(const CanMessageGenericParser& pars
 		}
 	}
 
-	if (slotIndex != 0 && (forceSend || millis() - whenStatusLastSent >= StatusUpdateInterval))
+	uint32_t now;
+	if (   slotIndex != 0
+		&& (   forceSend
+			|| (now = millis()) - whenStatusLastSent >= StatusUpdateInterval
+			|| (haveLiveData && now - whenStatusLastSent >= LiveStatusUpdateInterval)
+
+		   )
+	   )
 	{
 		msg->SetStandardFields(driversReported);
 		buf.dataLength = msg->GetActualDataLength();

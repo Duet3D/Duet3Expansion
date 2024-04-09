@@ -123,6 +123,7 @@ private:
 	static uint32_t minPollTime, maxPollTime;
 
 	static constexpr uint32_t StatusUpdateInterval = 2000;				// how often we send status reports when there isn't a change
+	static constexpr uint32_t LiveStatusUpdateInterval = 250;			// how often we report live status
 
 	int32_t isrExtruderStepsCommanded;
 	uint32_t lastIsrMillis;
