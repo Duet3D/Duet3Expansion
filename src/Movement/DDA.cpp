@@ -469,17 +469,9 @@ void DDA::Start(uint32_t tim) noexcept
 				InsertDM(&dm);
 			}
 		}
-	}
-
-	if (activeDMs != nullptr)
-	{
-		for (size_t i = 0; i < NumDrivers; ++i)
+		if (dm.state >= DMState::firstMotionState)
 		{
-			DriveMovement& dm = ddms[i];
-			if (dm.state >= DMState::firstMotionState)
-			{
-				Platform::SetDirection(dm.drive, dm.direction);
-			}
+			Platform::SetDirection(dm.drive, dm.direction);
 		}
 	}
 #endif
