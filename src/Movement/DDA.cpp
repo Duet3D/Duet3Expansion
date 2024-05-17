@@ -261,28 +261,34 @@ bool DDA::Init(const CanMessageMovementLinear& msg) noexcept
 			dm.direction = (delta >= 0);				// for now this is the direction of net movement, but it gets adjusted later if it is a delta movement
 			stepsRequested[drive] += labs(delta);
 			Platform::EnableDrive(drive, 0);
-			stepsToDo = ((msg.pressureAdvanceDrives & (1u << drive)) != 0)
-							? dm.PrepareExtruder(*this, (float)delta)
-								: dm.PrepareCartesianAxis(*this);
-		}
-
-		if (stepsToDo)
-		{
-			realMove = true;
-#if !SINGLE_DRIVER
-			InsertDM(&dm);
-#endif
-			const int32_t netSteps = (dm.reverseStartStep < dm.totalSteps) ? (2 * dm.reverseStartStep) - dm.totalSteps : dm.totalSteps;
-			if (dm.direction)
+			if ((msg.pressureAdvanceDrives & (1u << drive)) != 0)
 			{
-				endPoint[drive] += netSteps;
+				dm.PrepareExtruder(*this, (float)delta);
+				realMove = true;
+				stepsToDo = true;
 			}
 			else
 			{
-				endPoint[drive] -= netSteps;
+				stepsToDo = dm.PrepareCartesianAxis(*this);
+				if (stepsToDo)
+				{
+					realMove = true;
+#if !SINGLE_DRIVER
+					InsertDM(&dm);
+#endif
+					const int32_t netSteps = (dm.reverseStartStep < dm.totalSteps) ? (2 * dm.reverseStartStep) - dm.totalSteps : dm.totalSteps;
+					if (dm.direction)
+					{
+						endPoint[drive] += netSteps;
+					}
+					else
+					{
+						endPoint[drive] -= netSteps;
+					}
+				}
 			}
 		}
-		else
+		if (!stepsToDo)
 		{
 			dm.state = DMState::idle;
 			dm.currentSegment = nullptr;
@@ -363,7 +369,9 @@ bool DDA::Init(const CanMessageMovementLinearShaped& msg) noexcept
 				dm.totalSteps = 0;
 				dm.direction = (extrusionRequested > 0.0);			// for now this is the direction of net movement, but gets adjusted later if it is a delta movement
 				Platform::EnableDrive(drive, 0);
-				stepsToDo = dm.PrepareExtruder(*this, extrusionRequested);
+				dm.PrepareExtruder(*this, extrusionRequested);
+				realMove = true;
+				stepsToDo = true;
 			}
 		}
 		else
@@ -376,28 +384,27 @@ bool DDA::Init(const CanMessageMovementLinearShaped& msg) noexcept
 				dm.direction = (delta >= 0);						// for now this is the direction of net movement, but gets adjusted later if it is a delta movement
 				Platform::EnableDrive(drive, 0);
 				stepsToDo = dm.PrepareCartesianAxis(*this);
-			}
-		}
-
-		if (stepsToDo)
-		{
-			realMove = true;
+				if (stepsToDo)
+				{
+					realMove = true;
 #if !SINGLE_DRIVER
-			InsertDM(&dm);
+					InsertDM(&dm);
 #endif
-			const int32_t netSteps = (dm.reverseStartStep < dm.totalSteps) ? (2 * dm.reverseStartStep) - dm.totalSteps : dm.totalSteps;
-			if (dm.direction)
-			{
-				endPoint[drive] += netSteps;
-			}
-			else
-			{
-				endPoint[drive] -= netSteps;
+					const int32_t netSteps = (dm.reverseStartStep < dm.totalSteps) ? (2 * dm.reverseStartStep) - dm.totalSteps : dm.totalSteps;
+					if (dm.direction)
+					{
+						endPoint[drive] += netSteps;
+					}
+					else
+					{
+						endPoint[drive] -= netSteps;
+					}
+				}
 			}
 		}
-		else
+		if (!stepsToDo)
 		{
-			dm.state = DMState::idle;							// no steps to do
+			dm.state = DMState::idle;								// no steps to do
 			dm.currentSegment = nullptr;
 			// No steps to do, so set up the steps so that GetStepsTaken will return zero
 			dm.totalSteps = 0;
@@ -444,11 +451,26 @@ void DDA::Start(uint32_t tim) noexcept
 	state = executing;
 
 #if SINGLE_DRIVER
+	if (ddms[0].state == DMState::extruderPendingPreparation)
+	{
+		ddms[0].LatePrepareExtruder(*this);
+	}
 	if (ddms[0].state >= DMState::firstMotionState)
 	{
 		Platform::SetDirection(ddms[0].direction);
 	}
 #else
+	for (DriveMovement& dm : ddms)
+	{
+		if (dm.state == DMState::extruderPendingPreparation)
+		{
+			if (dm.LatePrepareExtruder(*this))
+			{
+				InsertDM(&dm);
+			}
+		}
+	}
+
 	if (activeDMs != nullptr)
 	{
 		for (size_t i = 0; i < NumDrivers; ++i)
