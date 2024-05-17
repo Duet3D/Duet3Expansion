@@ -56,11 +56,11 @@ public:
 	void* operator new(size_t count, std::align_val_t align) = delete;
 
 	bool CalcNextStepTime(const DDA &dda) noexcept SPEED_CRITICAL;
-	bool PrepareCartesianAxis(const DDA& dda, const PrepParams& params) noexcept SPEED_CRITICAL;
+	bool PrepareCartesianAxis(const DDA& dda) noexcept SPEED_CRITICAL;
 #if SUPPORT_DELTA_MOVEMENT
 	bool PrepareDeltaAxis(const DDA& dda, const PrepParams& params) noexcept SPEED_CRITICAL;
 #endif
-	bool PrepareExtruder(const DDA& dda, const PrepParams& params, float signedEffStepsPerMm) noexcept SPEED_CRITICAL;
+	bool PrepareExtruder(const DDA& dda, float signedEffStepsPerMm) noexcept SPEED_CRITICAL;
 
 	void DebugPrint() const noexcept;
 	int32_t GetNetStepsTaken() const noexcept;

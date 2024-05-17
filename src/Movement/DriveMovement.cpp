@@ -307,7 +307,7 @@ bool DriveMovement::NewExtruderSegment() noexcept
 }
 
 // Prepare this DM for a Cartesian axis move, returning true if there are steps to do
-bool DriveMovement::PrepareCartesianAxis(const DDA& dda, const PrepParams& params) noexcept
+bool DriveMovement::PrepareCartesianAxis(const DDA& dda) noexcept
 {
 	distanceSoFar = 0.0;
 	timeSoFar = 0.0;
@@ -459,7 +459,7 @@ bool DriveMovement::PrepareDeltaAxis(const DDA& dda, const PrepParams& params) n
 // things go horribly wrong under particular circumstances. We use the pressure advance flag as a proxy for forward extrusion.
 // This means that partial extruder steps don't get accumulated on a reprime move, but that is probably a good thing because it will
 // behave in a similar way to a retraction move.
-bool DriveMovement::PrepareExtruder(const DDA& dda, const PrepParams& params, float signedEffStepsPerMm) noexcept
+bool DriveMovement::PrepareExtruder(const DDA& dda, float signedEffStepsPerMm) noexcept
 {
 	const float effStepsPerMm = fabsf(signedEffStepsPerMm);
 	mp.cart.effectiveStepsPerMm = effStepsPerMm;

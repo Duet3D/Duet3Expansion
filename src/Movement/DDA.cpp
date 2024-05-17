@@ -262,8 +262,8 @@ bool DDA::Init(const CanMessageMovementLinear& msg) noexcept
 			stepsRequested[drive] += labs(delta);
 			Platform::EnableDrive(drive, 0);
 			stepsToDo = ((msg.pressureAdvanceDrives & (1u << drive)) != 0)
-							? dm.PrepareExtruder(*this, params, (float)delta)
-								: dm.PrepareCartesianAxis(*this, params);
+							? dm.PrepareExtruder(*this, (float)delta)
+								: dm.PrepareCartesianAxis(*this);
 		}
 
 		if (stepsToDo)
@@ -363,7 +363,7 @@ bool DDA::Init(const CanMessageMovementLinearShaped& msg) noexcept
 				dm.totalSteps = 0;
 				dm.direction = (extrusionRequested > 0.0);			// for now this is the direction of net movement, but gets adjusted later if it is a delta movement
 				Platform::EnableDrive(drive, 0);
-				stepsToDo = dm.PrepareExtruder(*this, params, extrusionRequested);
+				stepsToDo = dm.PrepareExtruder(*this, extrusionRequested);
 			}
 		}
 		else
@@ -375,7 +375,7 @@ bool DDA::Init(const CanMessageMovementLinearShaped& msg) noexcept
 				dm.totalSteps = labs(delta);						// for now this is the number of net steps, but gets adjusted later if there is a reverse in direction
 				dm.direction = (delta >= 0);						// for now this is the direction of net movement, but gets adjusted later if it is a delta movement
 				Platform::EnableDrive(drive, 0);
-				stepsToDo = dm.PrepareCartesianAxis(*this, params);
+				stepsToDo = dm.PrepareCartesianAxis(*this);
 			}
 		}
 
