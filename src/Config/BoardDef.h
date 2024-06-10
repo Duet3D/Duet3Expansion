@@ -33,6 +33,8 @@
 # include "M23CL.h"
 #elif defined(SZP)
 # include "SZP.h"
+#elif defined(F3PTB)
+# include "F3PTB.h"
 #else
 # error Board type not defined
 #endif

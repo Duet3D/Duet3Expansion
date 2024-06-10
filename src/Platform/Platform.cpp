@@ -394,7 +394,7 @@ namespace Platform
 		NVIC_SetPriority(StepTcIRQn, NvicPriorityStep);
 # if defined(EXP3HC)
 		NVIC_SetPriority(CAN1_IRQn, NvicPriorityCan);
-# elif defined(EXP1HCL) || defined(M23CL) || defined(TOOL1RR)
+# elif defined(EXP1HCL) || defined(M23CL) || defined(TOOL1RR) || defined(F3PTB)
 		NVIC_SetPriority(CAN0_IRQn, NvicPriorityCan);
 # else
 #  error CAN interrupt not specified
@@ -574,7 +574,7 @@ namespace Platform
 #if defined(EXP3HC)
 		const CanAddress switches = ReadBoardAddress();
 		return (switches == 0) ? CanId::Exp3HCFirmwareUpdateAddress : switches;
-#elif defined(TOOL1LC) || defined(TOOL1RR)
+#elif defined(TOOL1LC) || defined(TOOL1RR) || defined(F3PTB)
 		return CanId::ToolBoardDefaultAddress;
 #elif defined(SAMMYC21) || defined(RPI_PICO) || defined(FLY36RRF)
 		return CanId::SammyC21DefaultAddress;
@@ -634,7 +634,7 @@ static void Platform::InitLeds()
 			IoPort::SetPinMode(pin, (LedActiveHighV10) ? OUTPUT_LOW : OUTPUT_HIGH);
 		}
 	}
-#elif !((defined(EXP1HCL) || defined(M23CL) || defined(SZP) || defined(TOOL1RR)) && defined(DEBUG))		// EXP1HCL has the LEDs connected to the SWD pins
+#elif !((defined(EXP1HCL) || defined(M23CL) || defined(SZP) || defined(TOOL1RR) || defined(F3PTB)) && defined(DEBUG))		// EXP1HCL has the LEDs connected to the SWD pins
 	for (Pin pin : LedPins)
 	{
 		IoPort::SetPinMode(pin, (LedActiveHigh) ? OUTPUT_LOW : OUTPUT_HIGH);
