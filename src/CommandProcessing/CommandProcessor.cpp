@@ -1095,6 +1095,12 @@ void CommandProcessor::Spin()
 			requestId = buf->msg.setInputShaping.requestId;
 			rslt = moveInstance->HandleInputShaping(buf->msg.setInputShaping, buf->dataLength, replyRef);
 			break;
+
+		case CanMessageType::setInputShapingNew:
+			// This message is sent by main boards running 3.6.0. Ignore it but return OK to prevent them reporting CAN timeouts.
+			requestId = buf->msg.setInputShapingNew.requestId;
+			rslt = GCodeResult::ok;
+			break;
 #endif
 
 		case CanMessageType::updateFirmware:
