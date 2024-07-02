@@ -322,10 +322,10 @@ namespace Platform
 # if SUPPORT_BRAKE_PWM
 		currentBrakePwm[driver] = 0.0;
 #  ifdef M23CL
-		digitalWrite(BrakePwmPin, false);
+		AnalogOut::Write(BrakePwmPin, 0.0, BrakePwmFrequency);
 		digitalWrite(BrakeOnPin, false);
 #  else
-		brakePwmPorts[driver].WriteDigital(false);
+		brakePwmPorts[driver].WriteAnalog(0.0);
 		digitalWrite(brakeOnPins[driver], false);
 #  endif
 # else
