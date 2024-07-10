@@ -17,7 +17,14 @@
 namespace Tasks
 {
 	ptrdiff_t GetNeverUsedRam() noexcept;
-	void *AllocPermanent(size_t sz, std::align_val_t align = (std::align_val_t)__STDCPP_DEFAULT_NEW_ALIGNMENT__) noexcept;
+	void *AllocPermanent(size_t sz, std::align_val_t align = (std::align_val_t)
+#if SAME70
+		__STDCPP_DEFAULT_NEW_ALIGNMENT__
+#else
+		// gcc defines __STDCPP_DEFAULT_NEW_ALIGNMENT__ as 8, which is wasteful of memory on ARM Cortex M4 and M0+ processors
+		sizeof(float)
+#endif
+		) noexcept;
 	void Diagnostics(const StringRef& reply) noexcept;
 	uint32_t DoDivide(uint32_t a, uint32_t b) noexcept;
 	uint32_t DoMemoryRead(const uint32_t* addr) noexcept;
