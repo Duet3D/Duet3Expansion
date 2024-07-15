@@ -10,7 +10,7 @@
 
 #include <RepRapFirmware.h>
 
-#if SUPPORT_AS5601				// currently we only use the TCA6408A in conjunction with the AS5601
+#if SUPPORT_TCA6408A
 
 #include "SharedI2CClient.h"
 

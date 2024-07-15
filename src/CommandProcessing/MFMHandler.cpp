@@ -36,6 +36,7 @@ namespace MFMHandler
 	uint8_t lastStatus = 0;
 	uint8_t lastAgc = 0;
 
+#if SUPPORT_TCA6408A
 	// Expander variables
 	constexpr uint8_t ButtonDebounceCount = 3;
 	constexpr unsigned int ButtonBitnum = 0;
@@ -49,6 +50,7 @@ namespace MFMHandler
 	InputMonitor *buttonMonitor = nullptr;
 	uint8_t buttonCount = 0;										// incremented (up to max. buttonDebounceCount) when button is read down, decremented when button is read up
 	bool buttonPressed = false;
+#endif
 }
 
 // Initialise this module. Called from Platform initialisation.
@@ -61,14 +63,20 @@ void MFMHandler::Init(SharedI2CMaster& i2cDevice) noexcept
 		{
 			DeleteObject(encoder);
 		}
+#if SUPPORT_TCA6408A
 		expander = new TCA6408A(i2cDevice);
 		if (!expander->Init(TCA8408A_inputs, TCA8408A_initialOutputs))
 		{
 			DeleteObject(expander);
 		}
+#endif
 	}
 
-	if (encoder != nullptr || expander != nullptr)
+	if (   encoder != nullptr
+#if SUPPORT_TCA6408A
+		|| expander != nullptr
+#endif
+	   )
 	{
 		as5601Task = new Task<AS5601TaskStackWords>();
 		as5601Task->Create(MfmTaskCode, "MFM", nullptr, TaskPriority::MfmNormal);
@@ -78,19 +86,25 @@ void MFMHandler::Init(SharedI2CMaster& i2cDevice) noexcept
 // Append diagnostics to a reply
 void MFMHandler::AppendDiagnostics(const StringRef& reply) noexcept
 {
-	if (EncoderPresent() && ExpanderPresent())
+	if (   EncoderPresent()
+#if SUPPORT_TCA6408A
+		&& ExpanderPresent()
+#endif
+	   )
 	{
 		reply.lcatf("Integrated filament monitor found, agc %u, magnet %sdetected", lastAgc, (lastStatus & AS5601::StatusMD) ? "" : "not ");
 		if (lastStatus & AS5601::StatusMH) { reply.cat(", magnet too strong"); }
 		if (lastStatus & AS5601::StatusML) { reply.cat(", magnet too weak"); }
 	}
-	else if (!EncoderPresent() && !ExpanderPresent())
-	{
-		reply.lcat("Integrated filament monitor not present");
-	}
-	else
+#if SUPPORT_TCA6408A
+	else if (EncoderPresent() || ExpanderPresent())
 	{
 		reply.lcatf("Error: integrated AS5601%s found but TCA6408A%s found", (EncoderPresent()) ? "" : " not", ExpanderPresent() ? "" : " not");
+	}
+#endif
+	else
+	{
+		reply.lcat("Integrated filament monitor not present");
 	}
 }
 
@@ -100,11 +114,15 @@ bool MFMHandler::EncoderPresent() noexcept
 	return encoder != nullptr;
 }
 
+#if SUPPORT_TCA6408A
+
 // Return true if the I/O expander was found during initialisation and can be used
 bool MFMHandler::ExpanderPresent() noexcept
 {
 	return expander != nullptr;
 }
+
+#endif
 
 // This is called when a filament monitor that wants to use the encoder is configured. Return true if successful.
 bool MFMHandler::AttachEncoderVirtualInterrupt(StandardCallbackFunction callback, FilamentMonitor *fm) noexcept
@@ -150,6 +168,8 @@ bool MFMHandler::GetEncoderReading(uint16_t& reading, uint8_t& agc, uint8_t& err
 
 uint16_t MFMHandler::GetLastAngle() noexcept { return lastAngle; }
 
+#if SUPPORT_TCA6408A
+
 // Enable the button and store a pointer to the input monitor to call back, or disable the button if nullptr is passed
 bool MFMHandler::EnableButton(InputMonitor *monitor) noexcept
 {
@@ -180,6 +200,8 @@ void MFMHandler::SetLedOff() noexcept
 {
 	if (expander != nullptr) { expander->SetOutputBitsState((1u << RedLedBitnum) | (1u << GreenLedBitnum), LedBitsMask); }
 }
+
+#endif
 
 // Code executed by the task that polls the AS5601 and TC6408A
 void MFMHandler::MfmTaskCode(void *) noexcept
@@ -218,6 +240,7 @@ void MFMHandler::MfmTaskCode(void *) noexcept
 			TaskBase::SetCurrentTaskPriority(TaskPriority::MfmNormal);
 		}
 
+#if SUPPORT_TCA6408A
 		if (expander != nullptr)
 		{
 			// Read and debounce the button
@@ -242,6 +265,7 @@ void MFMHandler::MfmTaskCode(void *) noexcept
 				}
 			}
 		}
+#endif
 	}
 }
 

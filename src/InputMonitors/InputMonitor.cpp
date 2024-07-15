@@ -32,7 +32,7 @@ bool InputMonitor::Activate() noexcept
 		if (IsDigital())
 		{
 			// Digital input
-#if SUPPORT_AS5601
+#if SUPPORT_TCA6408A
 			// Check if it's the button on the embedded MFM
 			if (port.GetPin() == MfmButtonPin)
 			{
@@ -78,7 +78,7 @@ void InputMonitor::Deactivate() noexcept
 	{
 		if (IsDigital())
 		{
-#if SUPPORT_AS5601
+#if SUPPORT_TCA6408A
 			// Check if it's the button on the embedded MFM
 			if (port.GetPin() == MfmButtonPin)
 			{

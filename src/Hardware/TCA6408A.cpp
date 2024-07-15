@@ -7,7 +7,7 @@
 
 #include "TCA6408A.h"
 
-#if SUPPORT_AS5601				// currently we only use the TCA6408A in conjunction with the AS5601
+#if SUPPORT_TCA6408A
 
 TCA6408A::TCA6408A(SharedI2CMaster& dev) noexcept
 	: SharedI2CClient(dev, TCA6408A_I2CAddress)
