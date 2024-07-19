@@ -43,6 +43,11 @@ extern "C" void SERCOM3_0_Handler()
 	uart0.Interrupt0();
 }
 
+extern "C" void SERCOM3_1_Handler()
+{
+	uart0.Interrupt1();
+}
+
 extern "C" void SERCOM3_2_Handler()
 {
 	uart0.Interrupt2();
@@ -80,6 +85,11 @@ AsyncSerial uart0(2, 1, 512, 512, SerialPortInit, SerialPortDeinit);
 extern "C" void SERCOM2_0_Handler()
 {
 	uart0.Interrupt0();
+}
+
+extern "C" void SERCOM2_1_Handler()
+{
+	uart0.Interrupt1();
 }
 
 extern "C" void SERCOM2_2_Handler()
