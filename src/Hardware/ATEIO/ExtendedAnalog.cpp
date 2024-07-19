@@ -73,7 +73,7 @@ uint16_t ExtendedAnalog::AnalogIn(unsigned int chan) noexcept
 		(void)AdcTransfer(ControlRegisterValue | ((chan & 7) << 10));	// set channel to sample next
 		// We need to pulse CS low and high again to get the ADC to convert the channel we just selected
 		digitalWrite(ExtendedAdcCsPin, true);
-		delayMicroseconds(5);											// the ADC data acquisition time is this delay plus about 1.5clock cycles
+		delayMicroseconds(10);											// the ADC data acquisition time is this delay plus about 1.5clock cycles
 		digitalWrite(ExtendedAdcCsPin, false);
 		const uint16_t rslt = AdcTransfer(0);
 		device->Deselect();

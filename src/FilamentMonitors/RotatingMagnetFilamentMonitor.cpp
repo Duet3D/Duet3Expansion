@@ -398,7 +398,7 @@ void RotatingMagnetFilamentMonitor::HandleDirectAS5601Data() noexcept
 // 'fromIsr' is true if this measurement was taken at the end of the ISR because a potential start bit was seen
 FilamentSensorStatus RotatingMagnetFilamentMonitor::Check(bool isPrinting, bool fromIsr, uint32_t isrMillis, float filamentConsumed) noexcept
 {
-#if SUPPORT_AS5601
+#if SUPPORT_AS5601 && SUPPORT_TCA6408A
 	if (IsDirectMagneticEncoder())
 	{
 		if (ledTimer.CheckAndStop(LedFlashTime))
@@ -498,7 +498,7 @@ FilamentSensorStatus RotatingMagnetFilamentMonitor::CheckFilament(float amountCo
 			lastMovementRatio = ratio * mmPerRev;
 			magneticMonitorState = MagneticMonitorState::comparing;
 		}
-#if SUPPORT_AS5601
+#if SUPPORT_AS5601 && SUPPORT_TCA6408A
 		else if (IsDirectMagneticEncoder())
 		{
 			ledTimer.Start();
@@ -537,7 +537,7 @@ FilamentSensorStatus RotatingMagnetFilamentMonitor::CheckFilament(float amountCo
 			if (lastMovementRatio < minMovementAllowed)
 			{
 				ret = FilamentSensorStatus::tooLittleMovement;
-#if SUPPORT_AS5601
+#if SUPPORT_AS5601 && SUPPORT_TCA6408A
 				if (IsDirectMagneticEncoder())
 				{
 					ledTimer.Start();
@@ -548,7 +548,7 @@ FilamentSensorStatus RotatingMagnetFilamentMonitor::CheckFilament(float amountCo
 			else if (lastMovementRatio > maxMovementAllowed)
 			{
 				ret = FilamentSensorStatus::tooMuchMovement;
-#if SUPPORT_AS5601
+#if SUPPORT_AS5601 && SUPPORT_TCA6408A
 				if (IsDirectMagneticEncoder())
 				{
 					ledTimer.Start();
@@ -556,7 +556,7 @@ FilamentSensorStatus RotatingMagnetFilamentMonitor::CheckFilament(float amountCo
 				}
 #endif
 			}
-#if SUPPORT_AS5601
+#if SUPPORT_AS5601 && SUPPORT_TCA6408A
 			else if (IsDirectMagneticEncoder())
 			{
 				ledTimer.Start();
@@ -577,10 +577,12 @@ FilamentSensorStatus RotatingMagnetFilamentMonitor::Clear() noexcept
 #if SUPPORT_AS5601
 	if (IsDirectMagneticEncoder())
 	{
+# if SUPPORT_TCA6408A
 		if (ledTimer.CheckAndStop(LedFlashTime))
 		{
 			MFMHandler::SetLedOff();
 		}
+# endif
 		HandleDirectAS5601Data();							// fetch and discard the latest reading
 	}
 	else

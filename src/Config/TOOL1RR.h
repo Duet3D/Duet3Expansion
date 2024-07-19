@@ -98,6 +98,7 @@ constexpr Pin DriverDiagPins[NumDrivers] = { PortAPin(21) };
 #define SUPPORT_SPI_SENSORS		0
 #define SUPPORT_LDC1612			1
 #define SUPPORT_AS5601			1											// support direct-connected magnetic filament monitor encoder chip
+#define SUPPORT_TCA6408A		1											// support button and LEDs on filament monitor via TCA6408A chip
 #define SUPPORT_DMA_NEOPIXEL	0											// can't get SERCOM SPI working due to output state when not transmitting - case opened with Microchip
 
 #ifdef DEBUG
@@ -171,6 +172,9 @@ constexpr Pin LDC1612InterruptPin = PortAPin(25);
 
 #if SUPPORT_AS5601
 constexpr uint16_t AS5601_I2CAddress = 0x36;				// I2C address of the AS5601
+#endif
+
+#if SUPPORT_TCA6408A
 constexpr uint16_t TCA6408A_I2CAddress = 0x20;				// I2C address of the TCA6408A (ADDR pin is tied to ground)
 #endif
 
@@ -244,25 +248,30 @@ constexpr PinDescription PinTable[] =
 
 	// Virtual pins
 #if SUPPORT_LIS3DH
-	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"i2c.lis3dh"	},	// LIS3DH sensor connected via I2C
+	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"i2c.lis3dh,i2c.lis2dw"	},	// LIS3DH sensor connected via I2C
 #endif
 #if SUPPORT_LDC1612
 	{ TcOutput::none,	TccOutput::none,	AdcInput::ldc1612,	SercomIo::none,		SercomIo::none,		Nx,	"i2c.ldc1612"	},	// LDC1612 sensor connected via I2C
 #endif
 #if SUPPORT_AS5601
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"i2c.mfm"		},	// AS5601+TCA6408A filament monitor connected via I2C
+#endif
+#if SUPPORT_TCA6408A
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"i2c.mfm.button" },	// AS5601+TCA6408A filament monitor connected via I2C
 #endif
 };
 
 static constexpr size_t NumPins = ARRAY_SIZE(PinTable);
 static constexpr size_t NumRealPins = 32 + 24;			// 32 pins on port A (some missing), 24 on port B (many missing)
-constexpr size_t NumVirtualPins = SUPPORT_LIS3DH + SUPPORT_LDC1612 + (2 * SUPPORT_AS5601);
+constexpr size_t NumVirtualPins = SUPPORT_LIS3DH + SUPPORT_LDC1612 + SUPPORT_AS5601 + SUPPORT_TCA6408A;
 
 static_assert(NumPins == NumRealPins + NumVirtualPins);
 
 #if SUPPORT_AS5601
 constexpr Pin MfmPin = NumRealPins + SUPPORT_LIS3DH + SUPPORT_LDC1612;				// pin number when the user selects magnetic filament monitor on I2C bus
+#endif
+
+#if SUPPORT_TCA6408A
 constexpr Pin MfmButtonPin = NumRealPins + SUPPORT_LIS3DH + SUPPORT_LDC1612 + 1;	// pin number when the user selects magnetic filament monitor button on I2C bus
 #endif
 

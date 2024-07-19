@@ -30,6 +30,7 @@ namespace MFMHandler
 	bool GetEncoderReading(uint16_t& reading, uint8_t& agc, uint8_t& errorCode) noexcept;
 	uint16_t GetLastAngle() noexcept;
 
+#if SUPPORT_TCA6408A
 	// Expander functions
 	bool ExpanderPresent() noexcept;
 	void SetLedRed() noexcept;
@@ -37,6 +38,7 @@ namespace MFMHandler
 	void SetLedBoth() noexcept;
 	void SetLedOff() noexcept;
 	bool EnableButton(InputMonitor *monitor) noexcept;
+#endif
 }
 
 #endif
