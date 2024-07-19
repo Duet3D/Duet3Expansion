@@ -36,6 +36,11 @@ public:
 	// As ScheduleCallback but base priority >= NvicPriorityStep when called
 	bool ScheduleCallbackFromIsr(Ticks when) noexcept;
 
+#if !DEDICATED_STEP_TIMER
+	// As ScheduleCallback but add the movement delay, and must have base priority >= NvicPriorityStep when called. Can be called from within a callback.
+	bool ScheduleMovementCallbackFromIsr(Ticks when) noexcept SPEED_CRITICAL;
+#endif
+
 	// Cancel any scheduled callbacks
 	void CancelCallback() noexcept;
 
@@ -51,12 +56,21 @@ public:
 	// Get the current tick count
 	static Ticks GetTimerTicks() noexcept SPEED_CRITICAL;
 
+	// Get the current tick count, adjusted for the movement delay
+	static Ticks GetMovementTimerTicks() noexcept SPEED_CRITICAL;
+
 	// Get the tick rate (can also access it directly as StepClockRate)
 	static uint32_t GetTickRate() noexcept { return StepClockRate; }
 
+	// Add more movement delay
+	static void IncreaseMovementDelay(uint32_t increase) noexcept;
+
+	// Return the current movement delay
+	static uint32_t GetMovementDelay() noexcept { return movementDelay; }
+
 #if DEDICATED_STEP_TIMER
 	// Schedule the dedicated step interrupt. Caller must have base priority >= NvicPriorityStep.
-	static bool ScheduleStepInterruptFromIsr(Ticks when) noexcept;
+	static bool ScheduleMovementCallbackFromIsr(Ticks when) noexcept;
 #endif
 
 	// Convert a number of step timer ticks to microseconds
@@ -85,6 +99,8 @@ public:
 																				// increased from 1000 because of workaround we added for bad Tx time stamps on SAME70
 private:
 	static bool ScheduleTimerInterrupt(Ticks tim) SPEED_CRITICAL;				// schedule an interrupt at the specified clock count, or return true if it has passed already
+
+	static uint32_t movementDelay;												// how many timer ticks the move timer is behind the raw timer
 
 	StepTimer *next;
 	Ticks whenDue;
@@ -123,6 +139,19 @@ inline __attribute__((always_inline)) StepTimer::Ticks StepTimer::GetTimerTicks(
 	while (StepTc->SYNCBUSY.bit.COUNT) { }
 	return StepTc->COUNT.reg;
 #endif
+}
+
+// Add more movement delay
+inline void StepTimer::IncreaseMovementDelay(uint32_t increase) noexcept
+{
+	movementDelay += increase;
+	//TODO consider sending a CAN clock message to update expansion boards
+}
+
+// Get the current tick count
+inline StepTimer::Ticks StepTimer::GetMovementTimerTicks() noexcept
+{
+	return GetTimerTicks() - movementDelay;
 }
 
 #endif /* SRC_MOVEMENT_STEPTIMER_H_ */

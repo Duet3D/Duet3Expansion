@@ -38,6 +38,7 @@
 #if SUPPORT_DRIVERS
 
 #include "StepTimer.h"
+#include "MoveTiming.h"
 #include <Platform/Platform.h>
 #include <CAN/CanInterface.h>
 #include <CanMessageFormats.h>
@@ -398,73 +399,70 @@ __attribute__((section(".time_critical")))
 #endif
 void Move::Interrupt() noexcept
 {
-	const uint32_t isrStartTime = StepTimer::GetTimerTicks();
-	uint32_t now = isrStartTime;
-	for (;;)
-	{
-		// Generate a step for the current move
-		DDA* cdda = currentDda;										// capture volatile variable
-		if (unlikely(cdda == nullptr))
-		{
-			return;													// no current  move, so no steps needed
-		}
-
-		cdda->StepDrivers(now);
-		if (unlikely(cdda->GetState() == DDA::completed))
-		{
-			const uint32_t finishTime = cdda->GetMoveFinishTime();	// calculate when this move should finish
-			CurrentMoveCompleted();									// tell the DDA ring that the current move is complete and set currentDda to nullptr
-
-			// Start the next move, if one is ready
-			cdda = ddaRingGetPointer;
-			if (cdda->GetState() != DDA::frozen)
-			{
-				return;
-			}
-
-			StartNextMove(cdda, finishTime);
-		}
-
-		// Schedule a callback at the time when the next step is due, and quit unless it is due immediately
-#if DEDICATED_STEP_TIMER
-		if (!cdda->ScheduleNextStepInterrupt())
+#if SINGLE_DRIVER
+	qq;
 #else
-		if (!cdda->ScheduleNextStepInterrupt(timer))
+	if (activeDMs != nullptr)
+	{
+#endif
+	uint32_t now = StepTimer::GetMovementTimerTicks();
+	const uint32_t isrStartTime = now;
+#if 0	// TEMP DEBUG - see later
+		for (unsigned int iterationCount = 0; ; )
+#else
+		for (;;)
 #endif
 		{
-			return;
-		}
+			// Generate steps for the current move segments
+			StepDrivers(now);									// check endstops if necessary and step the drivers
 
-		// The next step is due immediately. Check whether we have been in this ISR for too long already and need to take a break
-		//TODO avoid the next read of the step timer, the last one read by ScheduleNextStepInterrupt will do
-		now = StepTimer::GetTimerTicks();
-		if (now - isrStartTime >= DDA::MaxStepInterruptTime)
-		{
-			// Force a break by updating the move start time.
-			// If the inserted hiccup is too short then it won't help. So we double the hiccup time on each iteration.
-			++numHiccups;
-			cdda->InsertHiccup(now);
-
-			// Reschedule the next step interrupt. This time it should succeed if the hiccup time was long enough.
-#if DEDICATED_STEP_TIMER
-			if (!cdda->ScheduleNextStepInterrupt())
-#else
-			if (!cdda->ScheduleNextStepInterrupt(timer))
-#endif
+			if (activeDMs == nullptr || stepErrorState != StepErrorState::noError )
 			{
-				return;
+				WakeMoveTaskFromISR();							// we may have just completed a special move, so wake up the Move task so that it can notice that
+				break;
+			}
+
+			// Schedule a callback at the time when the next step is due, and quit unless it is due immediately
+			if (!ScheduleNextStepInterrupt())
+			{
+				break;
+			}
+
+			// The next step is due immediately. Check whether we have been in this ISR for too long already and need to take a break
+			now = StepTimer::GetMovementTimerTicks();
+			const int32_t clocksTaken = (int32_t)(now - isrStartTime);
+			if (clocksTaken >= (int32_t)MoveTiming::MaxStepInterruptTime)
+			{
+				// Force a break by updating the move start time.
+				++numHiccups;
+				uint32_t hiccupTimeInserted = 0;
+				for (uint32_t hiccupTime = MoveTiming::HiccupTime; ; hiccupTime += MoveTiming::HiccupIncrement)
+				{
+					hiccupTimeInserted += hiccupTime;
+					StepTimer::IncreaseMovementDelay(hiccupTime);
+
+					// Reschedule the next step interrupt. This time it should succeed if the hiccup time was long enough.
+					if (!ScheduleNextStepInterrupt())
+					{
+#if 0	//TEMP DEBUG
+						debugPrintf("Add hiccup %" PRIu32 ", ic=%u, now=%" PRIu32 "\n", hiccupTimeInserted, iterationCount, now);
+						activeDMs->DebugPrint();
+						MoveSegment::DebugPrintList(activeDMs->segments);
+						if (activeDMs->nextDM != nullptr)
+						{
+							activeDMs->nextDM ->DebugPrint();
+							MoveSegment::DebugPrintList(activeDMs->nextDM->segments);
+
+						}
+						//END DEBUG
+#endif
+						//TODO tell the main board we are behind schedule
+						(void)hiccupTimeInserted;
+					}
+					// The hiccup wasn't long enough, so go round the loop again
+				}
 			}
 		}
-	}
-}
-
-// For debugging
-void Move::DebugPrintCdda() const noexcept
-{
-	DDA *cdda = currentDda;
-	if (cdda != nullptr)
-	{
-		cdda->DebugPrintAll();
 	}
 }
 

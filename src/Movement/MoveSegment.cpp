@@ -12,66 +12,53 @@
 MoveSegment *MoveSegment::freeList = nullptr;
 unsigned int MoveSegment::numCreated = 0;
 
-void MoveSegment::InitialAllocate(unsigned int num) noexcept
+// Allocate a MoveSegment, from the freelist if possible, else create a new one
+MoveSegment *MoveSegment::Allocate(MoveSegment *p_next) noexcept
 {
-	while (num > numCreated)
-	{
-		freeList = new MoveSegment(freeList);
-		++numCreated;
-	}
-}
-
-// Allocate a MoveSegment, from the freelist if possible, else create a new one. Not thread-safe. Clears the flags.
-MoveSegment *MoveSegment::Allocate(MoveSegment *next) noexcept
-{
+	const irqflags_t iflags = IrqSave();
 	MoveSegment * ms = freeList;
 	if (ms != nullptr)
 	{
-		freeList = ms->GetNext();
-		ms->nextAndFlags = reinterpret_cast<uint32_t>(next);
+		freeList = ms->next;
+		IrqRestore(iflags);
+		ms->next = p_next;
 	}
 	else
 	{
-		ms = new MoveSegment(next);
 		++numCreated;
+		IrqRestore(iflags);
+		ms = new MoveSegment(p_next);
 	}
 	return ms;
 }
 
-void MoveSegment::AddToTail(MoveSegment *tail) noexcept
+// Release a MoveSegment
+void MoveSegment::ReleaseAll(MoveSegment *item) noexcept
 {
-	MoveSegment *seg = this;
-	while (seg->GetNext() != nullptr)
+	while (item != nullptr)
 	{
-		seg = seg->GetNext();
-	}
-	seg->SetNext(tail);
-}
-
-void MoveSegment::DebugPrint(char ch) const noexcept
-{
-	debugPrintf("%c d=%.4e t=%.1f ", ch, (double)segLength, (double)segTime);
-	if (IsLinear())
-	{
-		debugPrintf("c=%.4e\n", (double)c);
-	}
-	else
-	{
-		debugPrintf("b=%.4e c=%.4e a=%.4e\n", (double)b, (double)c, (double)acceleration);
+		MoveSegment *itemToRelease = item;
+		item = item->next;
+		Release(itemToRelease);
 	}
 }
 
-/*static*/ void MoveSegment::DebugPrintList(char ch, const MoveSegment *segs) noexcept
+void MoveSegment::DebugPrint() const noexcept
+{
+	debugPrintf("s=%" PRIu32 " t=%" PRIu32 " d=%.2f u=%.4e a=%.4e f=%02" PRIx32 "\n", startTime, duration, (double)distance, (double)CalcU(), (double)a, flags.all);
+}
+
+/*static*/ void MoveSegment::DebugPrintList(const MoveSegment *segs) noexcept
 {
 	if (segs == nullptr)
 	{
-		debugPrintf("%c null\n", ch);
+		debugPrintf("null seg\n");
 	}
 	else
 	{
 		while (segs != nullptr)
 		{
-			segs->DebugPrint(ch);
+			segs->DebugPrint();
 			segs = segs->GetNext();
 		}
 	}

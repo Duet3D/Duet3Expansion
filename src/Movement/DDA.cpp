@@ -15,99 +15,34 @@
 #include <CAN/CanInterface.h>
 #include <limits>
 
-#ifdef DUET_NG
-# define DDA_MOVE_DEBUG	(0)
-#else
-// On the wired Duets we don't have enough RAM to support this
-# define DDA_MOVE_DEBUG	(0)
-#endif
-
-#if DDA_MOVE_DEBUG
-
-// Structure to hold the essential parameters of a move, for debugging
-struct MoveParameters
-{
-	float accelDistance;
-	float steadyDistance;
-	float decelDistance;
-	float requestedSpeed;
-	float startSpeed;
-	float topSpeed;
-	float endSpeed;
-	float targetNextSpeed;
-	uint32_t endstopChecks;
-	uint16_t flags;
-
-	MoveParameters() noexcept
-	{
-		accelDistance = steadyDistance = decelDistance = requestedSpeed = startSpeed = topSpeed = endSpeed = targetNextSpeed = 0.0;
-		endstopChecks = 0;
-		flags = 0;
-	}
-
-	void DebugPrint() const noexcept
-	{
-		Platform::MessageF(DebugMessage, "%f,%f,%f,%f,%f,%f,%f,%f,%08" PRIX32 ",%04x\n",
-								(double)accelDistance, (double)steadyDistance, (double)decelDistance, (double)requestedSpeed, (double)startSpeed, (double)topSpeed, (double)endSpeed,
-								(double)targetNextSpeed, endstopChecks, flags);
-	}
-
-	static void PrintHeading() noexcept
-	{
-		Platform::Message(DebugMessage,
-									"accelDistance,steadyDistance,decelDistance,requestedSpeed,startSpeed,topSpeed,endSpeed,"
-									"targetNextSpeed,endstopChecks,flags\n");
-	}
-};
-
-const size_t NumSavedMoves = 128;
-
-static MoveParameters savedMoves[NumSavedMoves];
-static size_t savedMovePointer = 0;
-
-// Print the saved moves in CSV format for analysis
-/*static*/ void DDA::PrintMoves() noexcept
-{
-	// Print the saved moved in CSV format
-	MoveParameters::PrintHeading();
-	for (size_t i = 0; i < NumSavedMoves; ++i)
-	{
-		savedMoves[savedMovePointer].DebugPrint();
-		savedMovePointer = (savedMovePointer + 1) % NumSavedMoves;
-	}
-}
-
-#else
-
-/*static*/ void DDA::PrintMoves() noexcept { }
-
-#endif
-
-unsigned int DDA::stepErrors = 0;
-uint32_t DDA::maxTicksOverdue = 0;
-uint32_t DDA::maxOverdueIncrement = 0;
-
-uint32_t DDA::stepsRequested[NumDrivers];
-uint32_t DDA::stepsDone[NumDrivers];
-
 DDA::DDA(DDA* n) noexcept : next(n), prev(nullptr), state(empty)
 {
 	for (size_t i = 0; i < NumDrivers; ++i)
 	{
 		endPoint[i] = 0;
-		ddms[i].state = DMState::idle;
-		ddms[i].drive = i;
 	}
+	flags.all = 0;						// in particular we need to set endCoordinatesValid and usePressureAdvance to false
 }
 
 // Return the number of clocks this DDA still needs to execute.
 // This could be slightly negative, if the move is overdue for completion.
 int32_t DDA::GetTimeLeft() const
-pre(state == executing || state == frozen || state == completed) noexcept
+pre(state == provisional || state == committed)
 {
-	return (state == completed) ? 0
-			: (state == executing) ? (int32_t)(afterPrepare.moveStartTime + clocksNeeded - StepTimer::GetTimerTicks())
-			: (int32_t)clocksNeeded;
+	switch (state)
+	{
+	case provisional:
+		return clocksNeeded;
+	case committed:
+		{
+			const int32_t timeExecuting = (int32_t)(StepTimer::GetMovementTimerTicks() - afterPrepare.moveStartTime);
+			return (timeExecuting <= 0) ? clocksNeeded							// move has not started yet
+					: ((uint32_t)timeExecuting > clocksNeeded) ? 0				// move has completed
+						: clocksNeeded - (uint32_t)timeExecuting;				// move is part way through
+		}
+	default:
+		return 0;
+	}
 }
 
 #if !SINGLE_DRIVER
@@ -162,36 +97,6 @@ void DDA::DebugPrint() const noexcept
 				(double)acceleration, (double)deceleration, (double)startSpeed, (double)topSpeed, (double)endSpeed, clocksNeeded, flags.all);
 }
 
-// Print the DDA and active DMs
-void DDA::DebugPrintAll() const noexcept
-{
-	DebugPrint();
-	for (size_t axis = 0; axis < NumDrivers; ++axis)
-	{
-		ddms[axis].DebugPrint();
-	}
-}
-
-// Set up the segments (without input shaping) if we haven't done so already
-void DDA::EnsureSegments(const PrepParams& params) noexcept
-{
-	if (segments == nullptr)
-	{
-		segments = AxisShaper::GetUnshapedSegments(*this, params);
-	}
-}
-
-void DDA::ReleaseSegments() noexcept
-{
-	for (MoveSegment* seg = segments; seg != nullptr; )
-	{
-		MoveSegment* const nextSeg = seg->GetNext();
-		MoveSegment::Release(seg);
-		seg = nextSeg;
-	}
-	segments = nullptr;
-}
-
 // This is called by Move to initialize all DDAs
 void DDA::Init() noexcept
 {
@@ -216,6 +121,8 @@ bool DDA::Init(const CanMessageMovementLinearShaped& msg) noexcept
 	PrepParams params;
 
 	// Normalise the move to unit distance
+	params.acceleration = acceleration = msg.acceleration;
+	params.deceleration = deceleration = msg.deceleration;
 	params.accelClocks = msg.accelerationClocks;
 	params.steadyClocks = msg.steadyClocks;
 	params.decelClocks = msg.decelClocks;
@@ -227,25 +134,16 @@ bool DDA::Init(const CanMessageMovementLinearShaped& msg) noexcept
 		clocksNeeded = params.steadyClocks = 1;
 	}
 
-	params.acceleration = acceleration = msg.acceleration;
-	params.deceleration = deceleration = msg.deceleration;
+	MovementFlags segFlags;
+	segFlags.Clear();
+	segFlags.nonPrintingMove = !msg.usePressureAdvance;
+	segFlags.noShaping = !msg.useLateInputShaping;
 
-	// Set up the plan
-	segments = nullptr;
-	moveInstance->GetAxisShaper().GetRemoteSegments(*this, params);
+	afterPrepare.drivesMoving.Clear();
 
-#if !SINGLE_DRIVER
-	activeDMs = nullptr;
-#endif
-	bool realMove = false;
 	for (size_t drive = 0; drive < NumDrivers; drive++)
 	{
-		endPoint[drive] = prev->endPoint[drive];					// the steps for this move will be added later
-		DriveMovement& dm = ddms[drive];
-#if !SINGLE_DRIVER
-		dm.nextDM = nullptr;
-#endif
-		bool stepsToDo = false;
+		endPoint[drive] = prev->endPoint[drive];						// the steps for this move will be added later
 		if (drive >= msg.numDrivers)
 		{
 			directionVector[drive] = 0.0;
@@ -257,115 +155,27 @@ bool DDA::Init(const CanMessageMovementLinearShaped& msg) noexcept
 			directionVector[drive] = extrusionRequested;
 			if (extrusionRequested != 0.0)
 			{
-				dm.totalSteps = 0;
-				dm.direction = (extrusionRequested > 0.0);
-				Platform::EnableDrive(drive, 0);
-				dm.PrepareExtruder(*this, extrusionRequested);
-				realMove = true;
-				stepsToDo = true;
+				move.AddLinearSegments(*this, drive, msg.whenToExecute, params, extrusionRequested, segFlags);
+				//TODO will Move do the following?
+				reprap.GetMove().EnableDrivers(drive, false);
 			}
 		}
 		else
 		{
-			const int32_t delta = msg.perDrive[drive].steps;
-			directionVector[drive] = (float)delta;
-			if (delta != 0)
+			const float delta = (float)msg.perDrive[drive].steps;
+			directionVector[drive] = delta;
+			if (delta != 0.0)
 			{
-				dm.totalSteps = labs(delta);
-				dm.direction = (delta >= 0);
-				Platform::EnableDrive(drive, 0);
-				stepsToDo = dm.PrepareCartesianAxis(*this);
-				if (stepsToDo)
-				{
-					realMove = true;
-#if !SINGLE_DRIVER
-					InsertDM(&dm);
-#endif
-					const int32_t netSteps = (dm.reverseStartStep < dm.totalSteps) ? (2 * dm.reverseStartStep) - dm.totalSteps : dm.totalSteps;
-					if (dm.direction)
-					{
-						endPoint[drive] += netSteps;
-					}
-					else
-					{
-						endPoint[drive] -= netSteps;
-					}
-				}
+				move.AddLinearSegments(*this, drive, msg.whenToExecute, params, delta, segFlags);
+				afterPrepare.drivesMoving.SetBit(drive);
+				//TODO will Move do the following?
+				reprap.GetMove().EnableDrivers(drive, false);
 			}
 		}
-		if (!stepsToDo)
-		{
-			dm.state = DMState::idle;								// no steps to do
-			dm.currentSegment = nullptr;
-			// No steps to do, so set up the steps so that GetStepsTaken will return zero
-			dm.totalSteps = 0;
-			dm.nextStep = 0;
-			dm.reverseStartStep = 1;
-		}
 	}
 
-	// 2. Throw it away if there's no real movement.
-	if (!realMove)
-	{
-		ReleaseSegments();			// we may have set up the segments, in which case we must recycle them
-		return false;
-	}
-
-	state = frozen;												// must do this last so that the ISR doesn't start executing it before we have finished setting it up
+	state = committed;												// must do this last so that the ISR doesn't start executing it before we have finished setting it up
 	return true;
-}
-
-// Start executing this move. Must be called with interrupts disabled, to avoid a race condition.
-// startTime is the earliest that we can start the move, but we must not start it before its planned time
-// After calling this, the first interrupt must be scheduled
-void DDA::Start(uint32_t tim) noexcept
-{
-	const int32_t ticksOverdue = (int32_t)(tim - afterPrepare.moveStartTime);
-	if (ticksOverdue > 0)
-	{
-		// Record the maximum overdue time
-		if ((uint32_t)ticksOverdue > maxTicksOverdue)
-		{
-			const uint32_t increment = (uint32_t)ticksOverdue - maxTicksOverdue;
-			maxTicksOverdue = (uint32_t)ticksOverdue;
-			if (increment > maxOverdueIncrement)
-			{
-				maxOverdueIncrement = increment;
-			}
-		}
-
-		// This move is starting late. See if we can recover some of the lost time by bringing the first step forward if it isn't already overdue.
-		// Otherwise, if our clock runs slightly slower than the master, we will keep getting behind until there is a break in the moves
-		const uint32_t bringFowardBy = min<uint32_t>((uint32_t)ticksOverdue, WhenNextInterruptDue()/2);
-		afterPrepare.moveStartTime = tim - bringFowardBy;
-	}
-	state = executing;
-
-#if SINGLE_DRIVER
-	if (ddms[0].state == DMState::extruderPendingPreparation)
-	{
-		ddms[0].LatePrepareExtruder(*this);
-	}
-	if (ddms[0].state >= DMState::firstMotionState)
-	{
-		Platform::SetDirection(ddms[0].direction);
-	}
-#else
-	for (DriveMovement& dm : ddms)
-	{
-		if (dm.state == DMState::extruderPendingPreparation)
-		{
-			if (dm.LatePrepareExtruder(*this))
-			{
-				InsertDM(&dm);
-			}
-		}
-		if (dm.state >= DMState::firstMotionState)
-		{
-			Platform::SetDirection(dm.drive, dm.direction);
-		}
-	}
-#endif
 }
 
 #if USE_TC_FOR_STEP
@@ -567,33 +377,6 @@ void DDA::StopDrivers(uint16_t whichDrives) noexcept
 			}
 		}
 	}
-}
-
-bool DDA::HasStepError() const noexcept
-{
-#if 0	//debug
-	if (hadHiccup)
-	{
-		return true;			// temporary for debugging DAA
-	}
-#endif
-
-	for (size_t drive = 0; drive < NumDrivers; ++drive)
-	{
-		const DMState st = ddms[drive].state;
-		if (st >= DMState::stepError1 && st < DMState::firstMotionState)
-		{
-			return true;
-		}
-	}
-	return false;
-}
-
-unsigned int DDA::GetAndClearStepErrors() noexcept
-{
-	const unsigned int ret = stepErrors;
-	stepErrors =  0;
-	return ret;
 }
 
 uint32_t DDA::GetAndClearMaxTicksOverdue() noexcept

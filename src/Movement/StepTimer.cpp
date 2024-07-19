@@ -25,6 +25,8 @@
 #endif
 
 StepTimer * volatile StepTimer::pendingList = nullptr;
+uint32_t StepTimer::movementDelay = 0;											// how many timer ticks the move timer is behind the raw timer
+
 volatile uint32_t StepTimer::localTimeOffset = 0;
 volatile uint32_t StepTimer::whenLastSynced;
 uint32_t StepTimer::prevMasterTime;												// the previous master time received
@@ -230,8 +232,10 @@ inline /*static*/ bool StepTimer::ScheduleTimerInterrupt(Ticks tim) noexcept
 #if SAMC21 || RP2040
 __attribute__((section(".time_critical")))
 #endif
-/*static*/ bool StepTimer::ScheduleStepInterruptFromIsr(Ticks when) noexcept
+/*static*/ bool StepTimer::ScheduleMovementCallbackFromIsr(Ticks when) noexcept
 {
+	when += movementDelay;
+
 	// We need to disable all interrupts, because once we read the current step clock we have only 6us to set up the interrupt, or we will miss it
 	AtomicCriticalSectionLocker lock;
 
@@ -333,6 +337,16 @@ void StepTimer::SetCallback(TimerCallbackFunction cb, CallbackParameter param) n
 	callback = cb;
 	cbParam = param;
 }
+
+#if !DEDICATED_STEP_TIMER
+
+// As ScheduleCallback but base priority >= NvicPriorityStep when called. Can be called from within a callback.
+bool StepTimer::ScheduleMovementCallbackFromIsr(Ticks when) noexcept
+{
+	return ScheduleCallbackFromIsr(when + movementDelay);
+}
+
+#endif
 
 // Schedule a callback at a particular tick count, returning true if it was not scheduled because it is already due or imminent.
 bool StepTimer::ScheduleCallbackFromIsr(Ticks when) noexcept

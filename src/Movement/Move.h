@@ -58,7 +58,7 @@ public:
 
 	// Filament monitor support
 	int32_t GetAccumulatedExtrusion(size_t driver, bool& isPrinting) noexcept;		// Return and reset the accumulated commanded extrusion amount
-	uint32_t ExtruderPrintingSince() const noexcept { return extrudersPrintingSince; }	// When we started doing normal moves after the most recent extruder-only move
+	uint32_t ExtruderPrintingSince(size_t driver) const noexcept;					// When we started doing normal moves after the most recent extruder-only move
 
 	// Input shaping support
 	AxisShaper& GetAxisShaper() noexcept { return axisShaper; }
@@ -75,8 +75,6 @@ public:
 	bool SetMicrostepping(size_t driver, unsigned int microsteps, bool interpolate) noexcept;
 #endif
 
-	void DebugPrintCdda() const noexcept;											// for debugging
-
 	[[noreturn]] void TaskLoop() noexcept;
 
 #if SUPPORT_CLOSED_LOOP
@@ -86,12 +84,22 @@ public:
 	void InvertCurrentMotorSteps(size_t driver) noexcept;
 #endif
 
-	const volatile int32_t *GetLastMoveStepsTaken() const noexcept { return lastMoveStepsTaken; }
+//unused?	const volatile int32_t *GetLastMoveStepsTaken() const noexcept { return lastMoveStepsTaken; }
 
 private:
 	bool DDARingAdd() noexcept;														// Add a processed look-ahead entry to the DDA ring
 	DDA* DDARingGet() noexcept;														// Get the next DDA ring entry to be run
-	void StartNextMove(DDA *cdda, uint32_t startTime) noexcept;						// Start a move
+
+	void StepDrivers(uint32_t now) noexcept SPEED_CRITICAL;							// Take one step of the DDA, called by timer interrupt.
+	void PrepareForNextSteps(DriveMovement *stopDm, MovementFlags flags, uint32_t now) noexcept SPEED_CRITICAL;
+	bool ScheduleNextStepInterrupt() noexcept SPEED_CRITICAL;						// Schedule the next interrupt, returning true if we can't because it is already due
+	bool StopAxisOrExtruder(bool executingMove, size_t logicalDrive) noexcept;		// stop movement of a drive and recalculate the endpoint
+	void StopDriveFromRemote(size_t drive) noexcept;
+	bool StopAllDrivers(bool executingMove) noexcept;								// cancel the current isolated move
+#if !SINGLE_DRIVER
+	void InsertDM(DriveMovement *dm) noexcept;										// insert a DM into the active list, keeping it in step time order
+#endif
+	void SetDirection(size_t axisOrExtruder, bool direction) noexcept;				// set the direction of a driver, observing timing requirements
 
 	// Variables that are in the DDARing class in RepRapFirmware (we have only one DDARing so they are here)
 	DDA* volatile currentDda;
@@ -99,19 +107,21 @@ private:
 	DDA* volatile ddaRingGetPointer;
 	DDA* ddaRingCheckPointer;
 
-#if !DEDICATED_STEP_TIMER
-	StepTimer timer;
-#endif
-
-	volatile int32_t lastMoveStepsTaken[NumDrivers];								// how many steps were taken in the last move we did
-	volatile int32_t movementAccumulators[NumDrivers]; 								// Accumulated motor steps
+//unused?	volatile int32_t lastMoveStepsTaken[NumDrivers];						// how many steps were taken in the last move we did
 #if SUPPORT_CLOSED_LOOP
 	float netMicrostepsTaken[NumDrivers];											// the net microsteps taken not counting any move that is in progress
 #endif
-	volatile uint32_t extrudersPrintingSince;										// The milliseconds clock time when extrudersPrinting was set to true
-	volatile bool extrudersPrinting;												// Set whenever an extruder starts a printing move, cleared by a non-printing extruder move
 	TaskBase * volatile taskWaitingForMoveToComplete;
 	// End DDARing variables
+
+	DriveMovement dms[NumDrivers];
+
+#if !DEDICATED_STEP_TIMER
+	StepTimer timer;
+#endif
+#if !SINGLE_DRIVER
+	DriveMovement *activeDMs;
+#endif
 
 	AxisShaper axisShaper;
 	ExtruderShaper extruderShapers[NumDrivers];
@@ -132,14 +142,34 @@ inline void Move::UpdateExtrusionPendingLimits(float extrusionPending) noexcept
 	else if (extrusionPending < minExtrusionPending) { minExtrusionPending = extrusionPending; }
 }
 
+/// Schedule the next interrupt, returning true if we can't because it is already due
+// Base priority must be >= NvicPriorityStep when calling this
+inline __attribute__((always_inline)) bool Move::ScheduleNextStepInterrupt() noexcept
+{
+# if SUPPORT_CLOSED_LOOP
+	if (!ClosedLoop::GetClosedLoopInstance(0)->IsClosedLoopEnabled())
+# endif
+	{
+		if (activeDMs != nullptr)
+		{
+#if DEDICATED_STEP_TIMER
+			return StepTimer::ScheduleMovementCallbackFromIsr(activeDMs->nextStepTime);
+#else
+			return timer.ScheduleMovementCallbackFromIsr(activeDMs->nextStepTime);
+#endif
+		}
+	}
+	return false;
+}
+
 #if HAS_SMART_DRIVERS
 
 // Get the current step interval for this axis or extruder, or 0 if it is not moving
 // This is called from the stepper drivers SPI interface ISR
-inline uint32_t Move::GetStepInterval(size_t axis, uint32_t microstepShift) const noexcept
+inline __attribute__((always_inline)) uint32_t Move::GetStepInterval(size_t drive, uint32_t microstepShift) const noexcept
 {
-	const DDA * const cdda = currentDda;		// capture volatile variable
-	return (cdda != nullptr) ? cdda->GetStepInterval(axis, microstepShift) : 0;
+	AtomicCriticalSectionLocker lock;
+	return dms[drive].GetStepInterval(microstepShift);
 }
 
 #endif
