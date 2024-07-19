@@ -11,7 +11,6 @@
 
 #include <Platform/Platform.h>
 #include "Move.h"
-#include "Kinematics/LinearDeltaKinematics.h"		// for DELTA_AXES
 #include <CanMessageFormats.h>
 #include <CAN/CanInterface.h>
 #include <limits>
@@ -259,7 +258,7 @@ bool DDA::Init(const CanMessageMovementLinearShaped& msg) noexcept
 			if (extrusionRequested != 0.0)
 			{
 				dm.totalSteps = 0;
-				dm.direction = (extrusionRequested > 0.0);			// for now this is the direction of net movement, but gets adjusted later if it is a delta movement
+				dm.direction = (extrusionRequested > 0.0);
 				Platform::EnableDrive(drive, 0);
 				dm.PrepareExtruder(*this, extrusionRequested);
 				realMove = true;
@@ -272,8 +271,8 @@ bool DDA::Init(const CanMessageMovementLinearShaped& msg) noexcept
 			directionVector[drive] = (float)delta;
 			if (delta != 0)
 			{
-				dm.totalSteps = labs(delta);						// for now this is the number of net steps, but gets adjusted later if there is a reverse in direction
-				dm.direction = (delta >= 0);						// for now this is the direction of net movement, but gets adjusted later if it is a delta movement
+				dm.totalSteps = labs(delta);
+				dm.direction = (delta >= 0);
 				Platform::EnableDrive(drive, 0);
 				stepsToDo = dm.PrepareCartesianAxis(*this);
 				if (stepsToDo)

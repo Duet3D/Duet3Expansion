@@ -71,8 +71,6 @@ extern "C" [[noreturn]] void MoveLoop(void * param) noexcept
 Move::Move() noexcept
 	: currentDda(nullptr), extrudersPrinting(false), taskWaitingForMoveToComplete(nullptr), scheduledMoves(0), completedMoves(0), numHiccups(0)
 {
-	kinematics = Kinematics::Create(KinematicsType::cartesian);			// default to Cartesian
-
 	// Build the DDA ring
 	DDA *dda = new DDA(nullptr);
 	ddaRingGetPointer = ddaRingAddPointer = dda;

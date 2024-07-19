@@ -13,7 +13,6 @@
 #if SUPPORT_DRIVERS
 
 #include "DDA.h"								// needed because of our inline functions
-#include "Kinematics/Kinematics.h"
 #include "AxisShaper.h"
 #include "ExtruderShaper.h"
 
@@ -119,8 +118,6 @@ private:
 	volatile bool extrudersPrinting;												// Set whenever an extruder starts a printing move, cleared by a non-printing extruder move
 	TaskBase * volatile taskWaitingForMoveToComplete;
 	// End DDARing variables
-
-	Kinematics *kinematics;															// What kinematics we are using
 
 	AxisShaper axisShaper;
 	ExtruderShaper extruderShapers[NumDrivers];
