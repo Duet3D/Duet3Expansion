@@ -1111,7 +1111,7 @@ inline float ClosedLoop::ControlMotorCurrents(StepTimer::Ticks ticksSinceLastCal
 			PIDATerm = mParams.acceleration * Ka * fsquare(scalingFactor);
 			PIDControlSignal = min<float>(fabsf(PIDPTerm + PIDDTerm) + fabsf(PIDVTerm) + fabsf(PIDATerm), 256.0);
 
-			const uint16_t stepPhase = (uint16_t)llrintf(mParams.position * 1024.0);
+			const uint16_t stepPhase = (uint16_t)llrintf(mParams.position * 1024.0);		// we use llrintf so that we can guarantee to convert the float operand to integer. We only care about the lowest 12 bits.
 			commandedStepPhase = (stepPhase + phaseOffset) % 4096u;
 			currentFraction = holdCurrentFraction + (1.0 - holdCurrentFraction) * min<float>(PIDControlSignal * (1.0/256.0), 1.0);
 		}
