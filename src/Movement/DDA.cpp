@@ -215,7 +215,6 @@ bool DDA::Init(const CanMessageMovementLinearShaped& msg) noexcept
 
 	// Prepare for movement
 	PrepParams params;
-	params.shapingPlan.condensedPlan = msg.shapingPlan;
 
 	// Normalise the move to unit distance
 	params.accelClocks = msg.accelerationClocks;
