@@ -40,11 +40,6 @@ enum class DMState : uint8_t
 	cartDecelNoReverse,
 	cartDecelForwardsReversing,						// linear decelerating motion, expect reversal
 	cartDecelReverse,								// linear decelerating motion, reversed
-
-#if SUPPORT_DELTA_MOVEMENT
-	deltaNormal,									// moving forwards without reversing in this segment, or in reverse
-	deltaForwardsReversing,							// moving forwards to start with, reversing before the end of this segment
-#endif
 };
 
 // This class describes a single movement of one drive
@@ -59,9 +54,6 @@ public:
 
 	bool CalcNextStepTime(const DDA &dda) noexcept SPEED_CRITICAL;
 	bool PrepareCartesianAxis(const DDA& dda) noexcept SPEED_CRITICAL;
-#if SUPPORT_DELTA_MOVEMENT
-	bool PrepareDeltaAxis(const DDA& dda, const PrepParams& params) noexcept SPEED_CRITICAL;
-#endif
 	void PrepareExtruder(const DDA& dda, float signedEffStepsPerMm) noexcept SPEED_CRITICAL;
 	bool LatePrepareExtruder(const DDA& dda) noexcept SPEED_CRITICAL;
 
@@ -87,9 +79,6 @@ private:
 	bool CalcNextStepTimeFull(const DDA &dda) noexcept SPEED_CRITICAL;
 	bool NewCartesianSegment() noexcept SPEED_CRITICAL;
 	bool NewExtruderSegment() noexcept SPEED_CRITICAL;
-#if SUPPORT_DELTA_MOVEMENT
-	bool NewDeltaSegment(const DDA& dda) noexcept SPEED_CRITICAL;
-#endif
 
 	void CheckDirection(bool reversed) noexcept;
 
@@ -130,20 +119,6 @@ private:
 	// Parameters unique to a style of move (Cartesian, delta or extruder). Currently, extruders and Cartesian moves use the same parameters.
 	union
 	{
-#if SUPPORT_DELTA_MOVEMENT
-		struct DeltaParameters							// Parameters for delta movement
-		{
-			// The following don't depend on how the move is executed, so they could be set up in Init() if we use fixed acceleration/deceleration
-			float fTwoA;
-			float fTwoB;
-			float h0MinusZ0;							// the height subtended by the rod at the start of the move
-			float fDSquaredMinusAsquaredMinusBsquaredTimesSsquared;
-			float fHmz0s;								// the starting height less the starting Z height, multiplied by the Z movement fraction (can go negative)
-			float fMinusAaPlusBbTimesS;
-			float reverseStartDistance;					// the overall move distance at which movement reversal occurs
-		} delta;
-#endif
-
 		struct CartesianParameters						// Parameters for Cartesian and extruder movement, including extruder pressure advance
 		{
 			float pressureAdvanceK;						// how much pressure advance is applied to this move

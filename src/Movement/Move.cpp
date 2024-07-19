@@ -297,29 +297,6 @@ void Move::Diagnostics(const StringRef& reply) noexcept
 #endif
 }
 
-#if SUPPORT_DELTA_MOVEMENT
-
-// Change the kinematics to the specified type if it isn't already
-// If it is already correct leave its parameters alone.
-// This violates our rule on no dynamic memory allocation after the initialisation phase,
-// however this function is normally called only when M665, M667 and M669 commands in config.g are processed.
-bool Move::SetKinematics(KinematicsType k) noexcept
-{
-	if (kinematics->GetKinematicsType() != k)
-	{
-		Kinematics * const nk = Kinematics::Create(k);
-		if (nk == nullptr)
-		{
-			return false;
-		}
-		delete kinematics;
-		kinematics = nk;
-	}
-	return true;
-}
-
-#endif
-
 // This is called from the step ISR when the current move has been completed
 // The state field of currentDda must be set to DDAState::completed before calling this
 void Move::CurrentMoveCompleted() noexcept

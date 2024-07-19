@@ -42,12 +42,6 @@ public:
 	void StopDrivers(uint16_t whichDrives) noexcept;
 	void CurrentMoveCompleted() noexcept SPEED_CRITICAL;							// Signal that the current move has just been completed
 
-#if SUPPORT_DELTA_MOVEMENT
-	// Kinematics and related functions
-	Kinematics& GetKinematics() const noexcept { return *kinematics; }
-	bool SetKinematics(KinematicsType k) noexcept;									// Set kinematics, return true if successful
-#endif
-
 #if !DEDICATED_STEP_TIMER
 	static void TimerCallback(CallbackParameter cb) noexcept
 	{
