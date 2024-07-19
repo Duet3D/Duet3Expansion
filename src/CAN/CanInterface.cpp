@@ -535,11 +535,18 @@ CanMessageBuffer *CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf) no
 				// We allow 10ms delay time to allow the motor to stop and reverse direction, 10ms acceleration time, 5ms steady time and 10ms deceleration time.
 				msg->accelerationClocks = msg->decelClocks = clocksAllowed/4;
 				msg->steadyClocks = clocksAllowed/8;
+				// If we start and stop at zero speed:
+				//	acceleration and deceleration distances are each 0.5 * a * accelerationClocks^2
+				//	steady distance is a * accelerationClocks * steadyClocks
+				// so totalDistance is a * accelerationClocks * (accelerationClock + steadyClocks)
+				// The acceleration and deceleration must be specified with the distance normalised to 1.0
+				msg->acceleration = msg->deceleration = 1.0/(msg->accelerationClocks * (msg->accelerationClocks + msg->steadyClocks));
 				msg->whenToExecute = StepTimer::GetTimerTicks() + clocksAllowed/4;
 				msg->numDrivers = NumDrivers;
-				msg->pressureAdvanceDrives = 0;
+				msg->extruderDrives = 0;
+				msg->usePressureAdvance = 0;
+				msg->useLateInputShaping = 0;
 				msg->seq = 0;
-				msg->initialSpeedFraction = msg->finalSpeedFraction = 0.0;
 			}
 			PendingMoves.AddMessage(buf);
 			Platform::OnProcessingCanMessage();
