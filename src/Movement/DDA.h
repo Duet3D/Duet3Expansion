@@ -67,7 +67,6 @@ public:
 	void operator delete(void* ptr) noexcept {}
 	void operator delete(void* ptr, std::align_val_t align) noexcept {}
 
-	void Init() noexcept;															// Set up initial positions for machine startup
 	bool Init(const CanMessageMovementLinearShaped& msg) noexcept SPEED_CRITICAL;	// Set up a move from a CAN message
 
 #if 0
@@ -94,10 +93,6 @@ public:
 	int32_t GetPosition(size_t driver) const noexcept { return endPoint[driver]; }
 
 	void DebugPrint() const noexcept;																// print the DDA only
-
-	static uint32_t GetAndClearMaxTicksOverdue() noexcept;
-	static uint32_t GetAndClearMaxOverdueIncrement() noexcept;
-
 
 #if USE_TC_FOR_STEP
 	static uint32_t lastStepHighTime;									// when we last started a step pulse to a slow driver

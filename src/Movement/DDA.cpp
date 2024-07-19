@@ -62,16 +62,6 @@ void DDA::DebugPrint() const noexcept
 				(double)acceleration, (double)deceleration, (double)startSpeed, (double)topSpeed, (double)endSpeed, clocksNeeded, flags.all);
 }
 
-// This is called by Move to initialize all DDAs
-void DDA::Init() noexcept
-{
-	state = empty;
-	for (DriveMovement& ddm : ddms)
-	{
-		ddm.state = DMState::idle;
-	}
-}
-
 // Set up a remote move. Return true if it represents real movement, else false.
 // All values have already been converted to step clocks and the total distance has been normalised to 1.0.
 // The whenToExecute field of the movement message has already bee converted to local time
@@ -103,8 +93,6 @@ bool DDA::Init(const CanMessageMovementLinearShaped& msg) noexcept
 	segFlags.Clear();
 	segFlags.nonPrintingMove = !msg.usePressureAdvance;
 	segFlags.noShaping = !msg.useLateInputShaping;
-
-	afterPrepare.drivesMoving.Clear();
 
 	for (size_t drive = 0; drive < NumDrivers; drive++)
 	{
@@ -335,20 +323,6 @@ void DDA::StopDrivers(uint16_t whichDrives) noexcept
 			}
 		}
 	}
-}
-
-uint32_t DDA::GetAndClearMaxTicksOverdue() noexcept
-{
-	const uint32_t ret = maxTicksOverdue;
-	maxTicksOverdue =  0;
-	return ret;
-}
-
-uint32_t DDA::GetAndClearMaxOverdueIncrement() noexcept
-{
-	const uint32_t ret = maxOverdueIncrement;
-	maxOverdueIncrement =  0;
-	return ret;
 }
 
 #endif	// SUPPORT_DRIVERS

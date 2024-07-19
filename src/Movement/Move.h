@@ -39,7 +39,7 @@ public:
 	void Diagnostics(const StringRef& reply) noexcept;								// Report useful stuff
 
 	void Interrupt() noexcept SPEED_CRITICAL;										// Timer callback for step generation
-	void StopDrivers(uint16_t whichDrives) noexcept;
+	void StopDriversFromRemote(uint16_t whichDrives) noexcept;
 
 #if !DEDICATED_STEP_TIMER
 	static void TimerCallback(CallbackParameter cb) noexcept

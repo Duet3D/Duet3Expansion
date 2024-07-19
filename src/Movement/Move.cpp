@@ -97,7 +97,6 @@ Move::Move() noexcept
 
 	for (size_t i = 0; i < NumDrivers; ++i)
 	{
-		movementAccumulators[i] = 0;
 #if SUPPORT_CLOSED_LOOP
 		netMicrostepsTaken[i] = 0.0;
 #endif
@@ -279,32 +278,15 @@ int32_t Move::GetPosition(size_t driver) const noexcept
 	return ddaRingAddPointer->GetPrevious()->GetPosition(driver);
 }
 
-// Stop some or all of the moving drivers
-void Move::StopDrivers(uint16_t whichDrives) noexcept
+// Stop some drivers and update the corresponding motor positions
+void Move::StopDriversFromRemote(uint16_t whichDrives) noexcept
 {
-#if SAME5x
-	const uint32_t oldPrio = ChangeBasePriority(NvicPriorityStep);
-#elif SAMC21 || RP2040
-	const irqflags_t flags = IrqSave();
-#else
-# error Unsupported processor
-#endif
-	DDA *const cdda = currentDda;					// capture volatile
-	if (cdda != nullptr)
-	{
-		cdda->StopDrivers(whichDrives);
-		if (cdda->GetState() == DDA::completed)
-		{
-			CurrentMoveCompleted();					// tell the DDA ring that the current move is complete
-		}
-	}
-#if SAME5x
-	RestoreBasePriority(oldPrio);
-#elif SAMC21 || RP2040
-	IrqRestore(flags);
-#else
-# error Unsupported processor
-#endif
+	DriversBitmap dr(whichDrives);
+	dr.Iterate([this](size_t drive, unsigned int)
+				{
+					StopDriveFromRemote(drive);
+				}
+			  );
 }
 
 // Filament monitor support
