@@ -109,11 +109,6 @@ public:
 private:
 	uint32_t WhenNextInterruptDue() const noexcept;						// return when the next interrupt is due relative to the move start time
 
-#if !SINGLE_DRIVER
-	void InsertDM(DriveMovement *dm) noexcept SPEED_CRITICAL;
-	void RemoveDM(size_t drive) noexcept;
-#endif
-
 	void DebugPrintVector(const char *name, const float *vec, size_t len) const noexcept;
 
     DDA *next;								// The next one in the ring

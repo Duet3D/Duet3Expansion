@@ -21,20 +21,16 @@ class ExtruderShaper
 {
 public:
 	ExtruderShaper()
-		: k(0.0),
-		  extrusionPending(0.0) /*, lastSpeed(0.0)*/
+		: k(0.0)
 	{ }
 
 	// Temporary functions until we support more sophisticated pressure advance
 	float GetKclocks() const noexcept { return k; }										// get pressure advance in step clocks
 	float GetKseconds() const noexcept { return k * (1.0/StepTimer::StepClockRate); }
 	void SetKseconds(float val) noexcept { k = val * StepTimer::StepClockRate; }		// set pressure advance in seconds
-	float GetExtrusionPending() const noexcept { return extrusionPending; }
-	void SetExtrusionPending(float ep) noexcept { extrusionPending = ep; }
 
 private:
 	float k;								// the pressure advance constant in step clocks
-	float extrusionPending;					// extrusion we have been asked to do but haven't because it is less than one microstep, in microsteps
 };
 
 #endif

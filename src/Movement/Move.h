@@ -40,7 +40,6 @@ public:
 
 	void Interrupt() noexcept SPEED_CRITICAL;										// Timer callback for step generation
 	void StopDrivers(uint16_t whichDrives) noexcept;
-	void CurrentMoveCompleted() noexcept SPEED_CRITICAL;							// Signal that the current move has just been completed
 
 #if !DEDICATED_STEP_TIMER
 	static void TimerCallback(CallbackParameter cb) noexcept
@@ -48,8 +47,6 @@ public:
 		static_cast<Move*>(cb.vp)->Interrupt();
 	}
 #endif
-
-	void PrintCurrentDda() const noexcept;											// For debugging
 
 	void ResetMoveCounters() noexcept { scheduledMoves = completedMoves = 0; }
 	void UpdateExtrusionPendingLimits(float extrusionPending) noexcept;
@@ -68,12 +65,21 @@ public:
 	}
 
 	// Pressure advance
-	ExtruderShaper& GetExtruderShaper(size_t drive) noexcept { return extruderShapers[drive]; }
+	ExtruderShaper& GetExtruderShaper(size_t drive) noexcept { return dms[drive].extruderShaper; }
 
 #if HAS_SMART_DRIVERS
 	uint32_t GetStepInterval(size_t axis, uint32_t microstepShift) const noexcept;	// Get the current step interval for this axis or extruder
 	bool SetMicrostepping(size_t driver, unsigned int microsteps, bool interpolate) noexcept;
 #endif
+
+	void DeactivateDM(DriveMovement *dmToRemove) noexcept;							// remove a DM from the active list
+
+	// Movement error handling
+	void LogStepError(uint8_t type) noexcept;										// stop all movement because of a step error
+	uint8_t GetStepErrorType() const noexcept { return stepErrorType; }
+	bool HasMovementError() const noexcept;
+	void ResetAfterError() noexcept;
+	void GenerateMovementErrorDebug() noexcept;
 
 	[[noreturn]] void TaskLoop() noexcept;
 
@@ -87,6 +93,13 @@ public:
 //unused?	const volatile int32_t *GetLastMoveStepsTaken() const noexcept { return lastMoveStepsTaken; }
 
 private:
+	enum class StepErrorState : uint8_t
+	{
+		noError = 0,	// no error
+		haveError,		// had an error, movement is stopped
+		resetting		// had an error, ready to reset it
+	};
+
 	bool DDARingAdd() noexcept;														// Add a processed look-ahead entry to the DDA ring
 	DDA* DDARingGet() noexcept;														// Get the next DDA ring entry to be run
 
@@ -102,12 +115,13 @@ private:
 	void SetDirection(size_t axisOrExtruder, bool direction) noexcept;				// set the direction of a driver, observing timing requirements
 
 	// Variables that are in the DDARing class in RepRapFirmware (we have only one DDARing so they are here)
-	DDA* volatile currentDda;
 	DDA* ddaRingAddPointer;
 	DDA* volatile ddaRingGetPointer;
-	DDA* ddaRingCheckPointer;
 
-//unused?	volatile int32_t lastMoveStepsTaken[NumDrivers];						// how many steps were taken in the last move we did
+	uint32_t scheduledMoves;														// Move counters for the code queue
+	volatile uint32_t completedMoves;												// This one is modified by an ISR, hence volatile
+
+	//unused?	volatile int32_t lastMoveStepsTaken[NumDrivers];					// how many steps were taken in the last move we did
 #if SUPPORT_CLOSED_LOOP
 	float netMicrostepsTaken[NumDrivers];											// the net microsteps taken not counting any move that is in progress
 #endif
@@ -116,18 +130,27 @@ private:
 
 	DriveMovement dms[NumDrivers];
 
+#if USE_TC_FOR_STEP
+	volatile uint32_t lastStepHighTime;								// when we last started a step pulse
+#else
+	volatile uint32_t lastStepLowTime;								// when we last completed a step pulse to a slow driver
+#endif
+	volatile uint32_t lastDirChangeTime;							// when we last changed the DIR signal to a slow driver
+
 #if !DEDICATED_STEP_TIMER
 	StepTimer timer;
 #endif
+
 #if !SINGLE_DRIVER
 	DriveMovement *activeDMs;
 #endif
 
+	unsigned int numHiccups;										// The number of hiccups inserted
+
 	AxisShaper axisShaper;
-	ExtruderShaper extruderShapers[NumDrivers];
-	uint32_t scheduledMoves;														// Move counters for the code queue
-	volatile uint32_t completedMoves;												// This one is modified by an ISR, hence volatile
-	uint32_t numHiccups;															// How many times we delayed an interrupt to avoid using too much CPU time in interrupts
+	volatile uint8_t stepErrorType;
+	volatile StepErrorState stepErrorState;
+
 	uint32_t maxPrepareTime;
 	float minExtrusionPending = 0.0, maxExtrusionPending = 0.0;
 };
@@ -161,6 +184,25 @@ inline __attribute__((always_inline)) bool Move::ScheduleNextStepInterrupt() noe
 	}
 	return false;
 }
+
+#if !SINGLE_DRIVER
+
+// Insert the specified drive into the step list, in step time order.
+// We insert the drive before any existing entries with the same step time for best performance.
+// Now that we generate step pulses for multiple motors simultaneously, there is no need to preserve round-robin order.
+// Base priority must be >= NvicPriorityStep when calling this, unless we are simulating.
+inline void Move::InsertDM(DriveMovement *dm) noexcept
+{
+	DriveMovement **dmp = &activeDMs;
+	while (*dmp != nullptr && (int32_t)((*dmp)->nextStepTime - dm->nextStepTime) < 0)
+	{
+		dmp = &((*dmp)->nextDM);
+	}
+	dm->nextDM = *dmp;
+	*dmp = dm;
+}
+
+#endif
 
 #if HAS_SMART_DRIVERS
 

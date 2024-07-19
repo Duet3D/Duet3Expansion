@@ -264,7 +264,7 @@ void LaserFilamentMonitor::HandleIncomingData() noexcept
 				if (synced)
 				{
 					if (   checkNonPrintingMoves
-						|| (wasPrintingAtStartBit && (int32_t)(lastSyncTime - moveInstance->ExtruderPrintingSince()) >= SyncDelayMillis)
+						|| (wasPrintingAtStartBit && (int32_t)(lastSyncTime - moveInstance->ExtruderPrintingSince(GetDriver())) >= SyncDelayMillis)
 					   )
 					{
 						// We can use this measurement

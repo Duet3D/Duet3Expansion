@@ -18,6 +18,22 @@
 
 int32_t DriveMovement::maxStepsLate = 0;
 
+void DriveMovement::Init(size_t drv) noexcept
+{
+	drive = (uint8_t)drv;
+	state = DMState::idle;
+	stepErrorType = 0;
+	distanceCarriedForwards = 0.0;
+	currentMotorPosition = positionAtSegmentStart = 0;
+	movementAccumulator = 0;
+	extruderPrinting = false;
+	driversNormallyUsed = driversCurrentlyUsed = 0;
+	nextDM = nullptr;
+	segments = nullptr;
+	isExtruder = false;
+	segmentFlags.Init();
+}
+
 void DriveMovement::DebugPrint() const noexcept
 {
 	const char c = drive + '0';

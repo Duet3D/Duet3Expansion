@@ -845,7 +845,6 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 			}
 # endif
 			reply.catf(", steps req %" PRIu32 " done %" PRIu32, DDA::stepsRequested[driver], DDA::stepsDone[driver]);
-			DDA::stepsRequested[driver] = DDA::stepsDone[driver] = 0;
 		}
 #endif
 		break;

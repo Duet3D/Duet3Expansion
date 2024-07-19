@@ -45,41 +45,6 @@ pre(state == provisional || state == committed)
 	}
 }
 
-#if !SINGLE_DRIVER
-
-// Insert the specified drive into the step list, in step time order.
-// We insert the drive before any existing entries with the same step time for best performance. Now that we generate step pulses
-// for multiple motors simultaneously, there is no need to preserve round-robin order.
-inline void DDA::InsertDM(DriveMovement *dm) noexcept
-{
-	DriveMovement **dmp = &activeDMs;
-	while (*dmp != nullptr && (*dmp)->nextStepTime < dm->nextStepTime)
-	{
-		dmp = &((*dmp)->nextDM);
-	}
-	dm->nextDM = *dmp;
-	*dmp = dm;
-}
-
-// Remove this drive from the list of drives with steps due
-// Called from the step ISR only.
-void DDA::RemoveDM(size_t drive) noexcept
-{
-	DriveMovement **dmp = &activeDMs;
-	while (*dmp != nullptr)
-	{
-		DriveMovement * const dm = *dmp;
-		if (dm->drive == drive)
-		{
-			(*dmp) = dm->nextDM;
-			break;
-		}
-		dmp = &(dm->nextDM);
-	}
-}
-
-#endif
-
 void DDA::DebugPrintVector(const char *name, const float *vec, size_t len) const noexcept
 {
 	debugPrintf("%s=", name);
@@ -177,13 +142,6 @@ bool DDA::Init(const CanMessageMovementLinearShaped& msg) noexcept
 	state = committed;												// must do this last so that the ISR doesn't start executing it before we have finished setting it up
 	return true;
 }
-
-#if USE_TC_FOR_STEP
-uint32_t DDA::lastStepHighTime = 0;
-#else
-uint32_t DDA::lastStepLowTime = 0;
-#endif
-uint32_t DDA::lastDirChangeTime = 0;
 
 #if SINGLE_DRIVER
 

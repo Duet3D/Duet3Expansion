@@ -70,7 +70,14 @@ extern "C" [[noreturn]] void MoveLoop(void * param) noexcept
 }
 
 Move::Move() noexcept
-	: currentDda(nullptr), extrudersPrinting(false), taskWaitingForMoveToComplete(nullptr), scheduledMoves(0), completedMoves(0), numHiccups(0)
+	: scheduledMoves(0), completedMoves(0), taskWaitingForMoveToComplete(nullptr),
+#if USE_TC_FOR_STEP
+	  lastStepHighTime(0),
+#else
+	  lastStepLowTime(0),
+#endif
+	  lastDirChangeTime(0),
+	  numHiccups(0), stepErrorState(StepErrorState::noError)
 {
 	// Build the DDA ring
 	DDA *dda = new DDA(nullptr);
@@ -100,15 +107,7 @@ Move::Move() noexcept
 void Move::Init() noexcept
 {
 	// Empty the ring
-	ddaRingGetPointer = ddaRingCheckPointer = ddaRingAddPointer;
-	DDA *dda = ddaRingAddPointer;
-	do
-	{
-		dda->Init();
-		dda = dda->GetNext();
-	} while (dda != ddaRingAddPointer);
-
-	currentDda = nullptr;
+	ddaRingGetPointer = ddaRingAddPointer;
 	maxPrepareTime = 0;
 
 	moveTask = new Task<MoveTaskStackWords>;
@@ -128,41 +127,18 @@ void Move::Exit() noexcept
 	moveTask->TerminateAndUnlink();
 
 	// Clear the DDA ring so that we don't report any moves as pending
-	currentDda = nullptr;
 	while (ddaRingGetPointer != ddaRingAddPointer)
 	{
-		ddaRingGetPointer->Complete();
+		ddaRingGetPointer->Free();
 		ddaRingGetPointer = ddaRingGetPointer->GetNext();
 	}
-
-	while (ddaRingCheckPointer->GetState() == DDA::completed)
-	{
-		(void)ddaRingCheckPointer->Free();
-		ddaRingCheckPointer = ddaRingCheckPointer->GetNext();
-	}
-}
-
-// Start the next move. Return true if laser or IO bits need to be active
-// Must be called with base priority greater than or equal to the step interrupt, to avoid a race with the step ISR.
-// startTime is the earliest that we can start the move, but we must not start it before its planned time
-// After calling this, the first interrupt must be scheduled
-void Move::StartNextMove(DDA *cdda, uint32_t startTime) noexcept
-{
-	if (!cdda->IsPrintingMove())
-	{
-		extrudersPrinting = false;
-	}
-	else if (!extrudersPrinting)
-	{
-		extrudersPrintingSince = millis();
-		extrudersPrinting = true;
-	}
-	currentDda = cdda;
-	cdda->Start(startTime);
 }
 
 [[noreturn]] void Move::TaskLoop() noexcept
 {
+#if !DEDICATED_STEP_TIMER
+	timer.SetCallback(Move::TimerCallback, CallbackParameter(this));
+#endif
 	while (true)
 	{
 		for (;;)
@@ -286,7 +262,7 @@ void Move::Diagnostics(const StringRef& reply) noexcept
 {
 	reply.catf("Moves scheduled %" PRIu32 ", completed %" PRIu32 ", in progress %d, hiccups %" PRIu32 ", segs %u, step errors %u, maxLate %" PRIi32 " maxPrep %" PRIu32 ", maxOverdue %" PRIu32 ", maxInc %" PRIu32,
 					scheduledMoves, completedMoves, (int)(currentDda != nullptr), numHiccups, MoveSegment::NumCreated(),
-					DDA::GetAndClearStepErrors(), DriveMovement::GetAndClearMaxStepsLate(), maxPrepareTime, DDA::GetAndClearMaxTicksOverdue(), DDA::GetAndClearMaxOverdueIncrement());
+					GetAndClearStepErrors(), DriveMovement::GetAndClearMaxStepsLate(), maxPrepareTime, GetAndClearMaxTicksOverdue(), GetAndClearMaxOverdueIncrement());
 	numHiccups = 0;
 	maxPrepareTime = 0;
 #if 1	//debug
@@ -296,44 +272,6 @@ void Move::Diagnostics(const StringRef& reply) noexcept
 	reply.catf(", ebfmin %.2f max %.2f", (double)minExtrusionPending, (double)maxExtrusionPending);
 	minExtrusionPending = maxExtrusionPending = 0.0;
 #endif
-}
-
-// This is called from the step ISR when the current move has been completed
-// The state field of currentDda must be set to DDAState::completed before calling this
-void Move::CurrentMoveCompleted() noexcept
-{
-	{
-		DDA *const cdda = currentDda;				// capture volatile variable
-		AtomicCriticalSectionLocker lock;			// disable interrupts while we are updating the move accumulators, until we set currentDda to null
-#if SINGLE_DRIVER
-		const int32_t stepsTaken = cdda->GetStepsTaken(0);
-		movementAccumulators[0] += stepsTaken;
-		lastMoveStepsTaken[0] = stepsTaken;
-# if SUPPORT_CLOSED_LOOP
-		netMicrostepsTaken[0] += cdda->GetFullDistance(0);
-# endif
-#else
-		for (size_t driver = 0; driver < NumDrivers; ++driver)
-		{
-			const int32_t stepsTaken = cdda->GetStepsTaken(driver);
-			lastMoveStepsTaken[driver] = stepsTaken;
-			movementAccumulators[driver] += stepsTaken;
-# if SUPPORT_CLOSED_LOOP
-			netMicrostepsTaken[driver] += cdda->GetFullDistance(driver);
-# endif
-		}
-#endif
-		currentDda = nullptr;
-	}
-	ddaRingGetPointer = ddaRingGetPointer->GetNext();
-	completedMoves++;
-
-	TaskBase * const waitingTask = taskWaitingForMoveToComplete;
-	if (waitingTask != nullptr)
-	{
-		TaskBase::GiveFromISR(waitingTask, NotifyIndices::Move);
-		taskWaitingForMoveToComplete = nullptr;
-	}
 }
 
 int32_t Move::GetPosition(size_t driver) const noexcept
@@ -374,22 +312,13 @@ void Move::StopDrivers(uint16_t whichDrives) noexcept
 // Returns the number of motor steps moves since the last call, and isPrinting is true unless we are currently executing an extruding but non-printing move
 int32_t Move::GetAccumulatedExtrusion(size_t driver, bool& isPrinting) noexcept
 {
-	AtomicCriticalSectionLocker lock;
-	const int32_t ret = movementAccumulators[driver];
-	const DDA * const cdda = currentDda;						// capture volatile variable
-	const int32_t adjustment = (cdda == nullptr) ? 0 : cdda->GetStepsTaken(driver);
-	movementAccumulators[driver] = -adjustment;
-	isPrinting = extrudersPrinting;
+	DriveMovement& dm = dms[driver];
+	AtomicCriticalSectionLocker lock;							// we don't want a move to complete and the ISR update the movement accumulators while we are doing this
+	const int32_t ret = dm.movementAccumulator;
+	const int32_t adjustment = dm.GetNetStepsTaken();
+	dm.movementAccumulator = -adjustment;
+	isPrinting = dms[driver].extruderPrinting;
 	return ret + adjustment;
-}
-
-// For debugging
-void Move::PrintCurrentDda() const noexcept
-{
-	if (currentDda != nullptr)
-	{
-		currentDda->DebugPrintAll();
-	}
 }
 
 // This is the function that is called by the timer interrupt to step the motors. It is also called form Move::Spin() if the first step for a move is due immediately.
@@ -400,7 +329,7 @@ __attribute__((section(".time_critical")))
 void Move::Interrupt() noexcept
 {
 #if SINGLE_DRIVER
-	qq;
+	if (dms[0].state >= firstMotionState)
 #else
 	if (activeDMs != nullptr)
 	{
@@ -444,18 +373,6 @@ void Move::Interrupt() noexcept
 					// Reschedule the next step interrupt. This time it should succeed if the hiccup time was long enough.
 					if (!ScheduleNextStepInterrupt())
 					{
-#if 0	//TEMP DEBUG
-						debugPrintf("Add hiccup %" PRIu32 ", ic=%u, now=%" PRIu32 "\n", hiccupTimeInserted, iterationCount, now);
-						activeDMs->DebugPrint();
-						MoveSegment::DebugPrintList(activeDMs->segments);
-						if (activeDMs->nextDM != nullptr)
-						{
-							activeDMs->nextDM ->DebugPrint();
-							MoveSegment::DebugPrintList(activeDMs->nextDM->segments);
-
-						}
-						//END DEBUG
-#endif
 						//TODO tell the main board we are behind schedule
 						(void)hiccupTimeInserted;
 					}
