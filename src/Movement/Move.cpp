@@ -238,12 +238,9 @@ void Move::StartNextMove(DDA *cdda, uint32_t startTime) noexcept
 		const CanMessageType msgType = buf->id.MsgType();
 		switch (msgType)
 		{
-		case CanMessageType::movementLinear:
 		case CanMessageType::movementLinearShaped:
 			{
-				const bool moveAdded = (msgType == CanMessageType::movementLinearShaped)
-										? ddaRingAddPointer->Init(buf->msg.moveLinearShaped)
-											: ddaRingAddPointer->Init(buf->msg.moveLinear);
+				const bool moveAdded = ddaRingAddPointer->Init(buf->msg.moveLinearShaped);
 				if (moveAdded)
 				{
 					ddaRingAddPointer = ddaRingAddPointer->GetNext();

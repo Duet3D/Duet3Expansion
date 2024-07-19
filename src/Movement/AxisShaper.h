@@ -12,8 +12,6 @@
 
 #if SUPPORT_DRIVERS
 
-#include <InputShaperPlan.h>
-
 class DDA;
 class PrepParams;
 class MoveSegment;

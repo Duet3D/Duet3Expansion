@@ -9,7 +9,6 @@
 #define DDA_H_
 
 #include <RepRapFirmware.h>
-#include <InputShaperPlan.h>
 #include <Platform/Tasks.h>
 #include "MoveSegment.h"
 
@@ -35,8 +34,6 @@ struct PrepParams
 	float decelStartDistance;
 	float accelClocks, steadyClocks, decelClocks;
 	float acceleration, deceleration;				// the acceleration and deceleration to use, both positive
-
-	InputShaperPlan shapingPlan;
 
 	// Parameters used only for delta moves
 	float initialX;
@@ -82,7 +79,6 @@ public:
 	void operator delete(void* ptr, std::align_val_t align) noexcept {}
 
 	void Init() noexcept;															// Set up initial positions for machine startup
-	bool Init(const CanMessageMovementLinear& msg) noexcept SPEED_CRITICAL;			// Set up a move from a CAN message
 	bool Init(const CanMessageMovementLinearShaped& msg) noexcept SPEED_CRITICAL;	// Set up a move from a CAN message
 	void Start(uint32_t tim) noexcept SPEED_CRITICAL;								// Start executing the DDA, i.e. move the move.
 	void StepDrivers(uint32_t now) noexcept SPEED_CRITICAL;							// Take one step of the DDA, called by timed interrupt.
