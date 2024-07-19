@@ -10,14 +10,6 @@
 
 #include <CoreIO.h>
 
-// Define floating point type to use for calculations where we would like high precision in matrix calculations
-#if SAME70
-typedef double floatc_t;						// type of matrix element used for calibration
-#else
-// We are more memory-constrained on the other processors and they don't support double precision
-typedef float floatc_t;							// type of matrix element used for calibration
-#endif
-
 #include <Config/BoardDef.h>
 #include <Config/Configuration.h>
 #include <General/String.h>
@@ -37,7 +29,6 @@ class Kinematics;
 class ClosedLoop;
 #endif
 
-
 class TemperatureSensor;
 class FilamentMonitor;
 
@@ -51,6 +42,38 @@ extern "C" void debugVprintf(const char *fmt, va_list vargs) noexcept;
 #define RAMFUNC __attribute__((section(".ramfunc")))
 
 #define SPEED_CRITICAL	__attribute__((optimize("O2")))
+
+// Define floating point type to use for calculations where we would like high precision in matrix calculations
+#if SAME70
+typedef double floatc_t;						// type of matrix element used for calibration
+#else
+// We are more memory-constrained on the other processors and they don't support double precision
+typedef float floatc_t;							// type of matrix element used for calibration
+#endif
+
+// Define a floating point type for recording numbers of microsteps including fractional microsteps.
+// This is normally defined as float, but we can use double to check whether rounding error is causing problems.
+#define USE_DOUBLE_MOTIONCALC		(0)	//(SAME70)
+
+#if USE_DOUBLE_MOTIONCALC
+typedef double motioncalc_t;
+#else
+typedef float motioncalc_t;
+#endif
+
+inline motioncalc_t msquare(motioncalc_t a) noexcept
+{
+	return a * a;
+}
+
+inline motioncalc_t fabsm(motioncalc_t a) noexcept
+{
+#if USE_DOUBLE_MOTIONCALC
+	return fabs(a);
+#else
+	return fabsf(a);
+#endif
+}
 
 // Classes to facilitate range-based for loops that iterate from 0 up to just below a limit
 template<class T> class SimpleRangeIterator

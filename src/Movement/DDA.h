@@ -21,7 +21,6 @@
 #  include <ClosedLoop/ClosedLoop.h>
 # endif
 
-struct CanMessageMovementLinear;
 struct CanMessageMovementLinearShaped;
 struct CanMessageStopMovement;
 

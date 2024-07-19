@@ -26,7 +26,7 @@
 const unsigned int DdaRingLength = 50;
 
 struct CanMessageStopMovement;
-struct CanMessageSetInputShaping;
+struct CanMessageSetInputShapingNew;
 
 /**
  * This is the master movement class.  It controls all movement in the machine.
@@ -69,7 +69,7 @@ public:
 
 	// Input shaping support
 	AxisShaper& GetAxisShaper() noexcept { return axisShaper; }
-	GCodeResult HandleInputShaping(const CanMessageSetInputShaping& msg, size_t dataLength, const StringRef& reply) noexcept
+	GCodeResult HandleInputShaping(const CanMessageSetInputShapingNew& msg, size_t dataLength, const StringRef& reply) noexcept
 	{
 		return axisShaper.EutSetInputShaping(msg, dataLength, reply);
 	}

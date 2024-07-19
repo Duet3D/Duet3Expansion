@@ -1091,15 +1091,10 @@ void CommandProcessor::Spin()
 			rslt = HandlePressureAdvance(buf->msg.multipleDrivesRequestFloat, buf->dataLength, replyRef);
 			break;
 
-		case CanMessageType::setInputShaping:
-			requestId = buf->msg.setInputShaping.requestId;
-			rslt = moveInstance->HandleInputShaping(buf->msg.setInputShaping, buf->dataLength, replyRef);
-			break;
-
 		case CanMessageType::setInputShapingNew:
 			// This message is sent by main boards running 3.6.0. Ignore it but return OK to prevent them reporting CAN timeouts.
 			requestId = buf->msg.setInputShapingNew.requestId;
-			rslt = GCodeResult::ok;
+			rslt = moveInstance->HandleInputShaping(buf->msg.setInputShapingNew, buf->dataLength, replyRef);
 			break;
 #endif
 

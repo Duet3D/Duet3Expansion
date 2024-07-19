@@ -365,125 +365,6 @@ CanMessageBuffer *CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf) no
 		switch (buf->id.MsgType())
 		{
 #if SUPPORT_DRIVERS
-		case CanMessageType::movementLinear:
-			// Check for duplicate and out-of-sequence message
-			// We can get out-of-sequence messages because of a bug in the CAN hardware; so use only the sequence number to detect duplicates
-			{
-				const int8_t seq = buf->msg.moveLinear.seq;
-				if (((seq + 1) & CanMessageMovementLinear::SeqMask) == expectedSeq)
-				{
-					++duplicateMotionMessages;
-#if OOS_DEBUG
-					if (oosCount != 0)
-					{
-						oosBuffer[oosCount].seq = buf->msg.moveLinear.seq;
-						oosBuffer[oosCount].startTime = buf->msg.moveLinear.whenToExecute;
-					}
-#endif
-					break;
-				}
-
-				lastMotionMessageScheduledTime = buf->msg.moveLinear.whenToExecute;
-				lastMotionMessageReceivedAt = millis();
-
-				if (seq != expectedSeq && expectedSeq != 0xFF)
-				{
-					switch ((seq - expectedSeq) & CanMessageMovementLinear::SeqMask)
-					{
-					case 1:
-						++oosMessages1Ahead;
-						break;
-
-					case 2:
-						++oosMessages2Ahead;
-						break;
-
-					case 0x7E:
-						++oosMessages2Behind;
-						break;
-
-					default:
-						++oosMessagesOther;
-						break;
-					}
-#if OOS_DEBUG
-					if (oosCount == 0)
-					{
-						qq;
-						oosCount = 1;
-					}
-#endif
-				}
-
-#if OOS_DEBUG
-				if (oosCount != 0)
-				{
-					oosBuffer[oosCount].seq = seq;
-					oosBuffer[oosCount].startTime = buf->msg.moveLinear.whenToExecute;
-				}
-#endif
-				expectedSeq = (seq + 1) & CanMessageMovementLinear::SeqMask;
-			}
-
-			//TODO if we haven't established time sync yet then we should defer this
-# if 0
-			//DEBUG
-			static uint32_t lastMoveEndedAt = 0;
-			if (lastMoveEndedAt != 0)
-			{
-				const int32_t gap = (int32_t)(buf->msg.moveLinear.whenToExecute - lastMoveEndedAt);
-				if (gap < 0)
-				{
-					++badMoveCommands;
-					if ((uint32_t)(-gap) > worstBadMove)
-					{
-						worstBadMove = (uint32_t)(-gap);
-					}
-				}
-			}
-			lastMoveEndedAt = buf->msg.moveLinear.whenToExecute + buf->msg.moveLinear.accelerationClocks + buf->msg.moveLinear.steadyClocks + buf->msg.moveLinear.decelClocks;
-# endif
-			buf->msg.moveLinear.whenToExecute += StepTimer::GetLocalTimeOffset();
-
-			// Track how much processing delay there was
-			{
-#if RP2040 && !USE_SPICAN
-				// RP2040 uses the low 16 bits of the step counter for the time stamp
-				const uint16_t timeStampNow = StepTimer::GetTimerTicks();
-				const uint32_t timeStampDelay = (uint32_t)((timeStampNow - buf->timeStamp) & 0xFFFF);	// the delay in step clocks
-#else
-				const uint16_t timeStampNow = CanInterface::GetTimeStampCounter();
-
-				// The time stamp counter runs at the CAN normal bit rate, but the step clock runs at 48MHz/64. Calculate the delay to in step clocks.
-				// Datasheet suggests that on the SAMC21 only 15 bits of timestamp counter are readable, but Microchip confirmed this is a documentation error (case 00625843)
-				const uint32_t timeStampDelay = ((uint32_t)((timeStampNow - buf->timeStamp) & 0xFFFF) * CanInterface::GetTimeStampPeriod()) >> 6;	// timestamp counter is 16 bits
-#endif
-				if (timeStampDelay > maxMotionProcessingDelay)
-				{
-					maxMotionProcessingDelay = timeStampDelay;
-				}
-			}
-
-			// Track how much we are given moves in advance
-			{
-				const int32_t advance = (int32_t)(buf->msg.moveLinear.whenToExecute - StepTimer::GetTimerTicks());
-				if (advance < minAdvance)
-				{
-					minAdvance = advance;
-				}
-				if (advance > maxAdvance)
-				{
-					maxAdvance = advance;
-				}
-			}
-
-			//DEBUG
-			//accumulatedMotion +=buf->msg.moveLinear.perDrive[0].steps;
-			//END
-			PendingMoves.AddMessage(buf);
-			Platform::OnProcessingCanMessage();
-			return nullptr;
-
 		case CanMessageType::movementLinearShaped:
 			// Check for duplicate and out-of-sequence message
 			// We can get out-of-sequence messages because of a bug in the CAN hardware; so use only the sequence number to detect duplicates
@@ -643,7 +524,7 @@ CanMessageBuffer *CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf) no
 				const uint32_t clocksAllowed = buf->msg.revertPosition.clocksAllowed;
 
 				// Now we can re-use the buffer to build a regular movement message
-				auto msg = buf->SetupRequestMessage<CanMessageMovementLinear>(0, GetCurrentMasterAddress(), GetCanAddress());
+				auto msg = buf->SetupRequestMessage<CanMessageMovementLinearShaped>(0, GetCurrentMasterAddress(), GetCanAddress());
 				for (size_t driver = 0; driver < NumDrivers; ++driver)
 				{
 					msg->perDrive[driver].steps = stepsToTake[driver];
