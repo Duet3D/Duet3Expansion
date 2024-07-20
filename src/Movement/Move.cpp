@@ -588,7 +588,6 @@ void Move::StepDrivers(uint32_t now) noexcept
 # endif
 		}
 
-		++stepsDone[0];
 		if (dms[0].directionChanged)
 		{
 			dms[0].directionChanged = false;

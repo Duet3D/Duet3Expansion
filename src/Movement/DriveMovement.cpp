@@ -677,7 +677,6 @@ pre(stepsTillRecalc == 0; segments != nullptr)
 		}
 		else
 		{
-			if (interval < minStepInterval) { minStepInterval = interval; }
 			stepInterval = 0;
 		}
 

@@ -6,7 +6,7 @@
  */
 
 #include "TmcDriverTemperatureSensor.h"
-#include <Platform/Platform.h>
+#include <Movement/Move.h>
 
 #if HAS_SMART_DRIVERS
 
@@ -17,7 +17,7 @@ TmcDriverTemperatureSensor::TmcDriverTemperatureSensor(unsigned int sensorNum)
 
 void TmcDriverTemperatureSensor::Poll()
 {
-	SetResult(Platform::GetTmcDriversTemperature(), TemperatureError::ok);
+	SetResult(moveInstance->GetTmcDriversTemperature(), TemperatureError::ok);
 }
 
 #endif

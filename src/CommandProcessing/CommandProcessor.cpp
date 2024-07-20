@@ -873,12 +873,6 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 			const MinCurMax& mcuTemperature = Platform::GetMcuTemperatures();
 			reply.lcatf("MCU temperature: min %.1fC, current %.1fC, max %.1fC", (double)mcuTemperature.minimum, (double)mcuTemperature.current, (double)mcuTemperature.maximum);
 #endif
-#if 0	// the following are no longer needed
-			uint32_t conversionsStarted, conversionsCompleted, conversionTimeouts, errors;
-			AnalogIn::GetDebugInfo(conversionsStarted, conversionsCompleted, conversionTimeouts, errors);
-			reply.lcatf("Ticks since heat task active %" PRIu32 ", ADC conversions started %" PRIu32 ", completed %" PRIu32 ", timed out %" PRIu32 ", errs %" PRIu32,
-						Platform::GetHeatTaskIdleTicks(), conversionsStarted, conversionsCompleted, conversionTimeouts, errors);
-#endif
 		}
 		break;
 
