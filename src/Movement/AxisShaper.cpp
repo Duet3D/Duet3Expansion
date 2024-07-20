@@ -9,8 +9,6 @@
 
 #if SUPPORT_DRIVERS
 
-#include "StepTimer.h"
-#include "MoveSegment.h"
 #include <CanMessageFormats.h>
 
 AxisShaper::AxisShaper() noexcept

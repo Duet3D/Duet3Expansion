@@ -12,10 +12,6 @@
 
 #if SUPPORT_DRIVERS
 
-class DDA;
-class PrepParams;
-class MoveSegment;
-
 struct CanMessageSetInputShapingNew;
 
 class AxisShaper
