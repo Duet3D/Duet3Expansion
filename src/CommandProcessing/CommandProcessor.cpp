@@ -844,7 +844,6 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 				SmartDrivers::AppendDriverStatus(driver, reply);
 			}
 # endif
-			reply.catf(", steps req %" PRIu32 " done %" PRIu32, DDA::stepsRequested[driver], DDA::stepsDone[driver]);
 		}
 #endif
 		break;

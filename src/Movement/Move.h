@@ -12,7 +12,7 @@
 
 #if SUPPORT_DRIVERS
 
-#include "DDA.h"								// needed because of our inline functions
+#include "DriveMovement.h"
 #include "AxisShaper.h"
 #include "ExtruderShaper.h"
 
@@ -21,11 +21,27 @@
 # include <Platform/Platform.h>					// for GetDirectionValueNoCheck
 #endif
 
-// Define the number of DDAs
-const unsigned int DdaRingLength = 50;
-
 struct CanMessageStopMovement;
 struct CanMessageSetInputShapingNew;
+struct CanMessageMovementLinearShaped;
+
+// Struct for passing parameters to the DriveMovement Prepare methods
+struct PrepParams
+{
+	// Parameters used for all types of motion
+	static constexpr float totalDistance = 1.0;
+	float accelDistance;
+	float decelStartDistance;
+	uint32_t accelClocks, steadyClocks, decelClocks;
+	float acceleration, deceleration;				// the acceleration and deceleration to use, both positive
+	float topSpeed;
+	bool useInputShaping;
+
+	// Get the total clocks needed
+	uint32_t TotalClocks() const noexcept { return accelClocks + steadyClocks + decelClocks; }
+
+	void DebugPrint() const noexcept;
+};
 
 /**
  * This is the master movement class.  It controls all movement in the machine.
@@ -39,7 +55,7 @@ public:
 	void Diagnostics(const StringRef& reply) noexcept;								// Report useful stuff
 
 	void Interrupt() noexcept SPEED_CRITICAL;										// Timer callback for step generation
-	void StopDriversFromRemote(uint16_t whichDrives) noexcept;
+	void StopDrivers(uint16_t whichDrives) noexcept;
 
 #if !DEDICATED_STEP_TIMER
 	static void TimerCallback(CallbackParameter cb) noexcept
@@ -48,7 +64,7 @@ public:
 	}
 #endif
 
-	void ResetMoveCounters() noexcept { scheduledMoves = completedMoves = 0; }
+	void ResetMoveCounters() noexcept { scheduledMoves = 0; }
 	void UpdateExtrusionPendingLimits(float extrusionPending) noexcept;
 
 	int32_t GetPosition(size_t driver) const noexcept;
@@ -59,6 +75,7 @@ public:
 
 	// Input shaping support
 	AxisShaper& GetAxisShaper() noexcept { return axisShaper; }
+	void AddLinearSegments(size_t logicalDrive, uint32_t startTime, const PrepParams& params, motioncalc_t steps, MovementFlags moveFlags) noexcept;
 	GCodeResult HandleInputShaping(const CanMessageSetInputShapingNew& msg, size_t dataLength, const StringRef& reply) noexcept
 	{
 		return axisShaper.EutSetInputShaping(msg, dataLength, reply);
@@ -100,11 +117,9 @@ private:
 		resetting		// had an error, ready to reset it
 	};
 
-	bool DDARingAdd() noexcept;														// Add a processed look-ahead entry to the DDA ring
-	DDA* DDARingGet() noexcept;														// Get the next DDA ring entry to be run
-
+	bool AddMove(const CanMessageMovementLinearShaped& msg) noexcept;				// Add a new move received via CAN
 	void StepDrivers(uint32_t now) noexcept SPEED_CRITICAL;							// Take one step of the DDA, called by timer interrupt.
-	void PrepareForNextSteps(DriveMovement *stopDm, MovementFlags flags, uint32_t now) noexcept SPEED_CRITICAL;
+	void PrepareForNextSteps(DriveMovement *stopDm, uint32_t now) noexcept SPEED_CRITICAL;
 	bool ScheduleNextStepInterrupt() noexcept SPEED_CRITICAL;						// Schedule the next interrupt, returning true if we can't because it is already due
 	bool StopAxisOrExtruder(bool executingMove, size_t logicalDrive) noexcept;		// stop movement of a drive and recalculate the endpoint
 	void StopDriveFromRemote(size_t drive) noexcept;
@@ -114,14 +129,8 @@ private:
 #endif
 	void SetDirection(size_t axisOrExtruder, bool direction) noexcept;				// set the direction of a driver, observing timing requirements
 
-	// Variables that are in the DDARing class in RepRapFirmware (we have only one DDARing so they are here)
-	DDA* ddaRingAddPointer;
-	DDA* volatile ddaRingGetPointer;
-
 	uint32_t scheduledMoves;														// Move counters for the code queue
-	volatile uint32_t completedMoves;												// This one is modified by an ISR, hence volatile
 
-	//unused?	volatile int32_t lastMoveStepsTaken[NumDrivers];					// how many steps were taken in the last move we did
 #if SUPPORT_CLOSED_LOOP
 	float netMicrostepsTaken[NumDrivers];											// the net microsteps taken not counting any move that is in progress
 #endif

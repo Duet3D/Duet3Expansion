@@ -158,7 +158,7 @@ void PulsedFilamentMonitor::Poll() noexcept
 
 	if (haveInterruptData)					// if we have a synchronised value for the amount of extrusion commanded
 	{
-		if (wasPrintingAtInterrupt && (int32_t)(lastSyncTime - moveInstance->ExtruderPrintingSince()) > SyncDelayMillis)
+		if (wasPrintingAtInterrupt && (int32_t)(lastSyncTime - moveInstance->ExtruderPrintingSince(GetDriver())) > SyncDelayMillis)
 		{
 			// We can use this measurement
 			extrusionCommandedThisSegment += extrusionCommandedAtInterrupt;
