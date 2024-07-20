@@ -499,14 +499,13 @@ CanMessageBuffer *CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf) no
 				int32_t stepsToTake[NumDrivers];
 				size_t index = 0;
 				bool needSteps = false;
-				const volatile int32_t * const lastMoveStepsTaken = moveInstance->GetLastMoveStepsTaken();
 				for (size_t driver = 0; driver < NumDrivers; ++driver)
 				{
 					int32_t steps = 0;
 					if (buf->msg.revertPosition.whichDrives & (1u << driver))
 					{
 						const int32_t stepsWanted = buf->msg.revertPosition.finalStepCounts[index++];
-						const int32_t stepsTaken = lastMoveStepsTaken[driver];
+						const int32_t stepsTaken = moveInstance->GetLastMoveStepsTaken(driver);
 						if (((stepsWanted >= 0 && stepsTaken > stepsWanted) || (stepsWanted <= 0 && stepsTaken < stepsWanted)))
 						{
 							steps = stepsWanted - stepsTaken;

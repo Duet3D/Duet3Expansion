@@ -107,7 +107,7 @@ public:
 	void InvertCurrentMotorSteps(size_t driver) noexcept;
 #endif
 
-//unused?	const volatile int32_t *GetLastMoveStepsTaken() const noexcept { return lastMoveStepsTaken; }
+	int32_t GetLastMoveStepsTaken(size_t drive) const noexcept { return lastMoveStepsTaken[drive]; }
 
 private:
 	enum class StepErrorState : uint8_t
@@ -154,6 +154,7 @@ private:
 	DriveMovement *activeDMs;
 #endif
 
+	int32_t lastMoveStepsTaken[NumDrivers];							// how many steps were taken in the last move we did
 	unsigned int numHiccups;										// The number of hiccups inserted
 
 	AxisShaper axisShaper;

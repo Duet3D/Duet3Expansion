@@ -85,6 +85,7 @@ Move::Move() noexcept
 
 	for (size_t i = 0; i < NumDrivers; ++i)
 	{
+		lastMoveStepsTaken[i] = 0;
 #if SUPPORT_CLOSED_LOOP
 		netMicrostepsTaken[i] = 0.0;
 #endif
@@ -230,6 +231,7 @@ bool Move::AddMove(const CanMessageMovementLinearShaped& msg) noexcept
 		else
 		{
 			const float delta = (float)msg.perDrive[drive].steps;
+			lastMoveStepsTaken[drive] = delta;
 			if (delta != 0.0)
 			{
 				AddLinearSegments(drive, msg.whenToExecute, params, delta, segFlags);
