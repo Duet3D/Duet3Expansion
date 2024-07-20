@@ -54,6 +54,23 @@ public:
 	void Exit() noexcept;															// Shut down
 	void Diagnostics(const StringRef& reply) noexcept;								// Report useful stuff
 
+	float GetSlowDriverStepHighMicroseconds() const noexcept;
+	float GetSlowDriverStepLowMicroseconds() const noexcept;
+	float GetSlowDriverDirSetupMicroseconds() const noexcept;
+	float GetSlowDriverDirHoldMicroseconds() const noexcept;
+
+	float DriveStepsPerUnit(size_t drive) const noexcept;
+	void SetDriveStepsPerUnit(size_t drive, float val) noexcept;
+
+#if SUPPORT_SLOW_DRIVERS
+	void SetDriverStepTiming(size_t drive, const float timings[4]) noexcept;
+# if SINGLE_DRIVER
+	bool IsSlowDriver() const noexcept { return isSlowDriver; }
+# else
+	bool IsSlowDriver(size_t drive) const noexcept { return slowDriversBitmap.IsBitSet(drive); }
+# endif
+#endif
+
 	void Interrupt() noexcept SPEED_CRITICAL;										// Timer callback for step generation
 	void StopDrivers(uint16_t whichDrives) noexcept;
 
@@ -89,14 +106,14 @@ public:
 	bool SetMicrostepping(size_t driver, unsigned int microsteps, bool interpolate) noexcept;
 #endif
 
-	void DeactivateDM(DriveMovement *dmToRemove) noexcept;							// remove a DM from the active list
-
 	// Movement error handling
 	void LogStepError(uint8_t type) noexcept;										// stop all movement because of a step error
 	uint8_t GetStepErrorType() const noexcept { return stepErrorType; }
 	bool HasMovementError() const noexcept;
 	void ResetAfterError() noexcept;
 	void GenerateMovementErrorDebug() noexcept;
+
+	int32_t GetLastMoveStepsTaken(size_t drive) const noexcept { return lastMoveStepsTaken[drive]; }
 
 	[[noreturn]] void TaskLoop() noexcept;
 
@@ -107,9 +124,9 @@ public:
 	void InvertCurrentMotorSteps(size_t driver) noexcept;
 #endif
 
-	int32_t GetLastMoveStepsTaken(size_t drive) const noexcept { return lastMoveStepsTaken[drive]; }
-
 private:
+	static constexpr float DefaultStepsPerMm = 80.0;
+
 	enum class StepErrorState : uint8_t
 	{
 		noError = 0,	// no error
@@ -124,37 +141,77 @@ private:
 	bool StopAxisOrExtruder(bool executingMove, size_t logicalDrive) noexcept;		// stop movement of a drive and recalculate the endpoint
 	void StopDriveFromRemote(size_t drive) noexcept;
 	bool StopAllDrivers(bool executingMove) noexcept;								// cancel the current isolated move
-#if !SINGLE_DRIVER
-	void InsertDM(DriveMovement *dm) noexcept;										// insert a DM into the active list, keeping it in step time order
-#endif
-	void SetDirection(size_t axisOrExtruder, bool direction) noexcept;				// set the direction of a driver, observing timing requirements
 
+	// Convert microseconds to step clocks, rounding up
+	static uint32_t MicrosecondsToStepClocks(float us) noexcept
+	{
+		return (uint32_t)(((float)StepTimer::StepClockRate * us * 0.000001) + 0.99);
+	}
+
+	bool directions[NumDrivers];
 	uint32_t scheduledMoves;														// Move counters for the code queue
 
 #if SUPPORT_CLOSED_LOOP
 	float netMicrostepsTaken[NumDrivers];											// the net microsteps taken not counting any move that is in progress
 #endif
+
 	TaskBase * volatile taskWaitingForMoveToComplete;
 	// End DDARing variables
 
 	DriveMovement dms[NumDrivers];
 
-#if USE_TC_FOR_STEP
-	volatile uint32_t lastStepHighTime;								// when we last started a step pulse
+#if SINGLE_DRIVER
+	static void StepDriverLow() noexcept;
+	static void StepDriverHigh() noexcept;
+	void SetDirection(bool direction) noexcept;										// set the direction of a driver, observing timing requirements
+
+	static constexpr uint32_t DriverBit = 1u << (StepPins[0] & 31);
 #else
-	volatile uint32_t lastStepLowTime;								// when we last completed a step pulse to a slow driver
+	void StepDriversLow() noexcept;
+	static void StepDriversHigh(uint32_t driverMap) noexcept;
+	void SetDirection(size_t axisOrExtruder, bool direction) noexcept;				// set the direction of a driver, observing timing requirements
+	void InsertDM(DriveMovement *dm) noexcept;										// insert a DM into the active list, keeping it in step time order
+
+	DriveMovement *activeDMs;
+	uint32_t driveDriverBits[NumDrivers];
+	uint32_t allDriverBits;
 #endif
+
+#if SUPPORT_SLOW_DRIVERS
+	// Support for slow step pulse generation to suit external drivers
+	uint32_t slowDriverStepTimingClocks[4];
+
+# if USE_TC_FOR_STEP		// the first element has a special meaning when we use a TC to generate the steps
+	inline uint32_t GetSlowDriverStepPeriodClocks() const noexcept { return slowDriverStepTimingClocks[1]; }
+	inline uint32_t GetSlowDriverDirHoldFromLeadingEdgeClocks() const noexcept { return slowDriverStepTimingClocks[3]; }
+# else
+	inline uint32_t GetSlowDriverStepHighClocks() const noexcept { return slowDriverStepTimingClocks[0]; }
+	inline uint32_t GetSlowDriverStepLowClocks() const noexcept { return slowDriverStepTimingClocks[1]; }
+	inline uint32_t GetSlowDriverDirHoldFromTrailingEdgeClocks() const noexcept { return slowDriverStepTimingClocks[3]; }
+# endif
+
+	inline uint32_t GetSlowDriverDirSetupClocks() { return slowDriverStepTimingClocks[2]; }
+
+# if SINGLE_DRIVER
+	bool isSlowDriver;
+# else
+	DriversBitmap slowDriversBitmap;
+# endif
+
+# if USE_TC_FOR_STEP
+	volatile uint32_t lastStepHighTime;								// when we last started a step pulse
+# else
+	volatile uint32_t lastStepLowTime;								// when we last completed a step pulse to a slow driver
+# endif
 	volatile uint32_t lastDirChangeTime;							// when we last changed the DIR signal to a slow driver
+
+#endif	// SUPPORT_SLOW_DRIVERS
 
 #if !DEDICATED_STEP_TIMER
 	StepTimer timer;
 #endif
 
-#if !SINGLE_DRIVER
-	DriveMovement *activeDMs;
-#endif
-
-	int32_t lastMoveStepsTaken[NumDrivers];							// how many steps were taken in the last move we did
+	int32_t lastMoveStepsTaken[NumDrivers];							// how many steps were taken in the last move we did, used for reverting
 	unsigned int numHiccups;										// The number of hiccups inserted
 
 	AxisShaper axisShaper;
@@ -183,19 +240,154 @@ inline __attribute__((always_inline)) bool Move::ScheduleNextStepInterrupt() noe
 	if (!ClosedLoop::GetClosedLoopInstance(0)->IsClosedLoopEnabled())
 # endif
 	{
+#if SINGLE_DRIVER
+		if (dms[0].state >= DMState::firstMotionState)
+		{
+# if DEDICATED_STEP_TIMER
+			return StepTimer::ScheduleMovementCallbackFromIsr(dms[0].nextStepTime);
+# else
+			return timer.ScheduleMovementCallbackFromIsr(dms[0].nextStepTime);
+# endif
+		}
+#else
 		if (activeDMs != nullptr)
 		{
-#if DEDICATED_STEP_TIMER
+# if DEDICATED_STEP_TIMER
 			return StepTimer::ScheduleMovementCallbackFromIsr(activeDMs->nextStepTime);
-#else
+# else
 			return timer.ScheduleMovementCallbackFromIsr(activeDMs->nextStepTime);
-#endif
+# endif
 		}
+#endif
 	}
 	return false;
 }
 
-#if !SINGLE_DRIVER
+#if SINGLE_DRIVER
+
+inline void Move::StepDriverLow() noexcept
+{
+# if DIFFERENTIAL_STEPPER_OUTPUTS || ACTIVE_HIGH_STEP
+#  if RP2040
+	sio_hw->gpio_clr = DriverBit;
+#  else
+	StepPio->OUTCLR.reg = DriverBit;
+#  endif
+# else
+	StepPio->OUTSET.reg = DriverBit;
+# endif
+	}
+
+inline void Move::StepDriverHigh() noexcept
+{
+# if DIFFERENTIAL_STEPPER_OUTPUTS || ACTIVE_HIGH_STEP
+#  if RP2040
+	sio_hw->gpio_set = DriverBit;
+#  else
+	StepPio->OUTSET.reg = DriverBit;
+#  endif
+# else
+	StepPio->OUTCLR.reg = DriverBit;
+# endif
+}
+
+inline void Move::SetDirection(bool direction) noexcept
+{
+# if DIFFERENTIAL_STEPPER_OUTPUTS || ACTIVE_HIGH_DIR
+	// Active high direction signal
+	const bool d = (direction) ? directions[0] : !directions[0];
+# else
+	// Active low direction signal
+	const bool d = (direction) ? !directions[0] : directions[0];
+# endif
+
+# if SUPPORT_CLOSED_LOOP
+	if (ClosedLoop::GetClosedLoopInstance(0)->IsClosedLoopEnabled())
+	{
+		return;
+	}
+# endif
+# if SUPPORT_SLOW_DRIVERS
+	if (isSlowDriver)
+	{
+#  if USE_TC_FOR_STEP
+		while (StepTimer::GetTimerTicks() - lastStepHighTime < GetSlowDriverDirHoldFromLeadingEdgeClocks()) { }
+#  else
+		while (StepTimer::GetTimerTicks() - lastStepLowTime < GetSlowDriverDirHoldFromTrailingEdgeClocks()) { }
+#  endif
+	}
+# endif
+	digitalWrite(DirectionPins[0], d);
+# if DIFFERENTIAL_STEPPER_OUTPUTS
+	digitalWrite(InvertedDirectionPins[0], !d);
+# endif
+# if SUPPORT_SLOW_DRIVERS
+	if (isSlowDriver)
+	{
+		lastDirChangeTime = StepTimer::GetTimerTicks();
+	}
+# endif
+}
+
+#else
+
+inline void Move::StepDriversLow() noexcept
+{
+# if DIFFERENTIAL_STEPPER_OUTPUTS || ACTIVE_HIGH_STEP
+#  if RP2040
+	sio_hw->gpio_clr = allDriverBits;
+#  else
+	StepPio->OUTCLR.reg = allDriverBits;
+#  endif
+# else
+	StepPio->OUTSET.reg = allDriverBits;
+# endif
+}
+
+inline void Move::StepDriversHigh(uint32_t driverMap) noexcept
+{
+# if DIFFERENTIAL_STEPPER_OUTPUTS || ACTIVE_HIGH_STEP
+#  if RP2040
+	sio_hw->gpio_set = driverMap;
+#  else
+	StepPio->OUTSET.reg = driverMap;
+#  endif
+# else
+	StepPio->OUTCLR.reg = driverMap;
+# endif
+}
+
+inline void Move::SetDirection(size_t driver, bool direction) noexcept
+{
+	if (driver < NumDrivers)
+	{
+# if DIFFERENTIAL_STEPPER_OUTPUTS || ACTIVE_HIGH_DIR
+		// Active high direction signal
+		const bool d = (direction) ? directions[driver] : !directions[driver];
+# else
+		// Active low direction signal
+		const bool d = (direction) ? !directions[driver] : directions[driver];
+# endif
+
+# if SUPPORT_SLOW_DRIVERS
+		const bool isSlowDriver = slowDriversBitmap.IsBitSet(driver);
+		if (isSlowDriver)
+		{
+			while (StepTimer::GetTimerTicks() - DDA::lastStepLowTime < GetSlowDriverDirHoldClocks()) { }
+		}
+# endif
+		digitalWrite(DirectionPins[driver], d);
+# if DIFFERENTIAL_STEPPER_OUTPUTS
+		digitalWrite(InvertedDirectionPins[driver], !d);
+# endif
+# if SUPPORT_SLOW_DRIVERS
+		if (isSlowDriver)
+		{
+			lastDirChangeTime = StepTimer::GetTimerTicks();
+		}
+# endif
+	}
+}
 
 // Insert the specified drive into the step list, in step time order.
 // We insert the drive before any existing entries with the same step time for best performance.
@@ -212,7 +404,7 @@ inline void Move::InsertDM(DriveMovement *dm) noexcept
 	*dmp = dm;
 }
 
-#endif
+#endif	// SINGLE_DRIVER
 
 #if HAS_SMART_DRIVERS
 

@@ -95,48 +95,6 @@ class IoPort;
 
 namespace Platform
 {
-#if SUPPORT_DRIVERS
-	// The data would ideally be private, but they are used by inline functions so they can't be unless we convert this namespace to a static class
-# if SINGLE_DRIVER
-	constexpr uint32_t DriverBit = 1u << (StepPins[0] & 31);
-# else
-	extern uint32_t driveDriverBits[NumDrivers];
-	extern uint32_t allDriverBits;
-# endif
-
-# if SUPPORT_SLOW_DRIVERS
-	// Support for slow step pulse generation to suit external drivers
-	extern uint32_t slowDriverStepTimingClocks[4];
-
-#  if USE_TC_FOR_STEP		// the first element has a special meaning when we use a TC to generate the steps
-	inline uint32_t GetSlowDriverStepPeriodClocks() { return slowDriverStepTimingClocks[1]; }
-	inline uint32_t GetSlowDriverDirHoldFromLeadingEdgeClocks() { return slowDriverStepTimingClocks[3]; }
-#  else
-	inline uint32_t GetSlowDriverStepHighClocks() { return slowDriverStepTimingClocks[0]; }
-	inline uint32_t GetSlowDriverStepLowClocks() { return slowDriverStepTimingClocks[1]; }
-	inline uint32_t GetSlowDriverDirHoldFromTrailingEdgeClocks() { return slowDriverStepTimingClocks[3]; }
-#  endif
-
-	inline uint32_t GetSlowDriverDirSetupClocks() { return slowDriverStepTimingClocks[2]; }
-
-	float GetSlowDriverStepHighMicroseconds();
-	float GetSlowDriverStepLowMicroseconds();
-	float GetSlowDriverDirSetupMicroseconds();
-	float GetSlowDriverDirHoldMicroseconds();
-
-	void SetDriverStepTiming(size_t drive, const float timings[4]);
-
-#  if SINGLE_DRIVER
-	extern bool isSlowDriver;
-	inline bool IsSlowDriver() { return isSlowDriver; }
-#  else
-	extern DriversBitmap slowDriversBitmap;
-	inline DriversBitmap GetSlowDriversBitmap() { return slowDriversBitmap; }
-	inline bool IsSlowDriver(size_t drive) { return slowDriversBitmap.IsBitSet(drive); }
-#  endif
-# endif
-#endif	//SUPPORT_DRIVERS
-
 	// Public functions
 #if SUPPORT_SPI_SENSORS || SUPPORT_CLOSED_LOOP || defined(ATEIO)
 	extern SharedSpiDevice *sharedSpi;
@@ -170,74 +128,8 @@ namespace Platform
 #endif
 
 #if SUPPORT_DRIVERS
-	float DriveStepsPerUnit(size_t drive);
-	const float *GetDriveStepsPerUnit();
-	void SetDriveStepsPerUnit(size_t drive, float val);
-
-# if SINGLE_DRIVER
-	inline void StepDriverLow()
-	{
-#  if DIFFERENTIAL_STEPPER_OUTPUTS || ACTIVE_HIGH_STEP
-#   if RP2040
-		sio_hw->gpio_clr = DriverBit;
-#   else
-		StepPio->OUTCLR.reg = DriverBit;
-#   endif
-#  else
-		StepPio->OUTSET.reg = DriverBit;
-#  endif
-	}
-
-	inline void StepDriverHigh()
-	{
-#  if DIFFERENTIAL_STEPPER_OUTPUTS || ACTIVE_HIGH_STEP
-#   if RP2040
-		sio_hw->gpio_set = DriverBit;
-#   else
-		StepPio->OUTSET.reg = DriverBit;
-#   endif
-#  else
-		StepPio->OUTCLR.reg = DriverBit;
-#  endif
-	}
-
-# else
-
-	inline void StepDriversLow()
-	{
-#  if DIFFERENTIAL_STEPPER_OUTPUTS || ACTIVE_HIGH_STEP
-#   if RP2040
-		sio_hw->gpio_clr = allDriverBits;
-#   else
-		StepPio->OUTCLR.reg = allDriverBits;
-#   endif
-#  else
-		StepPio->OUTSET.reg = allDriverBits;
-#  endif
-	}
-
-	inline void StepDriversHigh(uint32_t driverMap)
-	{
-#  if DIFFERENTIAL_STEPPER_OUTPUTS || ACTIVE_HIGH_STEP
-#   if RP2040
-		sio_hw->gpio_set = driverMap;
-#   else
-		StepPio->OUTSET.reg = driverMap;
-#   endif
-#  else
-		StepPio->OUTCLR.reg = driverMap;
-#  endif
-	}
-
-	inline uint32_t GetDriversBitmap(size_t driver) { return driveDriverBits[driver]; } 		// Get the step bit for this driver
-# endif
 
 	inline unsigned int GetProhibitedExtruderMovements(unsigned int extrusions, unsigned int retractions) noexcept { return 0; }
-# if SINGLE_DRIVER
-	void SetDirection(bool direction) noexcept;
-# else
-	void SetDirection(size_t driver, bool direction) noexcept;
-# endif
 	void SetDirectionValue(size_t driver, bool dVal);
 	bool GetDirectionValue(size_t driver) noexcept;
 	bool GetDirectionValueNoCheck(size_t driver) noexcept;

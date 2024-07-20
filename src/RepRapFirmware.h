@@ -21,7 +21,6 @@
 // Warn of what's to come, so we can use pointers to classes without including the entire header files
 #if SUPPORT_DRIVERS
 class Move;
-class DDA;
 class DriveMovement;
 class Kinematics;
 #endif
@@ -165,26 +164,14 @@ extern Move *moveInstance;
 #endif
 
 // Module numbers and names, used for diagnostics and debug
-enum Module : uint8_t
+enum class Module : uint8_t
 {
-	modulePlatform = 0,
-	moduleNetwork = 1,
-	moduleWebserver = 2,
-	moduleGcodes = 3,
-	moduleMove = 4,
-	moduleHeat = 5,
-	moduleDda = 6,
-	moduleRoland = 7,
-	moduleScanner = 8,
-	modulePrintMonitor = 9,
-	moduleStorage = 10,
-	modulePortControl = 11,
-	moduleDuetExpansion = 12,
-	moduleFilamentSensors = 13,
-	moduleWiFi = 14,
-	moduleDisplay = 15,
-	numModules = 16,				// make this one greater than the last module number
-	noModule = 16
+	Platform = 0,
+	Move = 1,
+	Heat = 2,
+	FilamentSensors = 3,
+	numModules = 4,				// make this one greater than the last module number
+	noModule = 4
 };
 
 extern const char * const moduleName[];

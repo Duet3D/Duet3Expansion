@@ -114,8 +114,6 @@ namespace Platform
 #endif
 
 #if SUPPORT_DRIVERS
-	static constexpr float DefaultStepsPerMm = 80.0;
-
 # if SUPPORT_SLOW_DRIVERS
 #  ifdef EXP1XD
 #   if USE_TC_FOR_STEP
@@ -150,14 +148,13 @@ namespace Platform
 #  else
 	DriversBitmap slowDriversBitmap;
 #  endif
-# endif
+# endif		// SUPPORT_SLOW_DRIVERS
 
 # if !SINGLE_DRIVER
 	uint32_t driveDriverBits[NumDrivers];
 	uint32_t allDriverBits = 0;
 # endif
 
-	static bool directions[NumDrivers];
 	static bool driverAtIdleCurrent[NumDrivers];
 	static int8_t enableValues[NumDrivers] = { 0 };
 
@@ -181,7 +178,6 @@ namespace Platform
 	static uint16_t motorOffDelays[NumDrivers];
 
 	static uint8_t driverStates[NumDrivers];
-	static float stepsPerMm[NumDrivers];
 	static float motorCurrents[NumDrivers];
 	static float idleCurrentFactor[NumDrivers];
 
@@ -935,8 +931,6 @@ void Platform::Init()
 		driveDriverBits[i] = driverBit;
 		allDriverBits |= driverBit;
 # endif
-		stepsPerMm[i] = DefaultStepsPerMm;
-		directions[i] = true;
 		driverAtIdleCurrent[i] = false;
 		idleCurrentFactor[i] = 0.3;
 		motorCurrents[i] = 0.0;
@@ -1570,167 +1564,6 @@ bool Platform::Debug(Module module)
 
 #if SUPPORT_DRIVERS
 
-float Platform::DriveStepsPerUnit(size_t drive) { return stepsPerMm[drive]; }
-
-void Platform::SetDriveStepsPerUnit(size_t drive, float val)
-{
-	if (drive < NumDrivers)
-	{
-		stepsPerMm[drive] = val;
-	}
-}
-
-const float *Platform::GetDriveStepsPerUnit() { return stepsPerMm; }
-
-# if SUPPORT_SLOW_DRIVERS
-
-float Platform::GetSlowDriverStepHighMicroseconds()
-{
-#  if USE_TC_FOR_STEP
-	return (float)slowDriverStepTimingClocks[0]/StepPulseClocksPerMicrosecond;
-#  else
-	return StepTimer::TicksToFloatMicroseconds(slowDriverStepTimingClocks[0]);
-#  endif
-}
-
-float Platform::GetSlowDriverStepLowMicroseconds()
-{
-#  if USE_TC_FOR_STEP
-	const float period = StepTimer::TicksToFloatMicroseconds(slowDriverStepTimingClocks[1]);
-	return period - GetSlowDriverStepHighMicroseconds();
-#  else
-	return StepTimer::TicksToFloatMicroseconds(slowDriverStepTimingClocks[1]);
-#  endif
-}
-
-float Platform::GetSlowDriverDirSetupMicroseconds()
-{
-	return StepTimer::TicksToFloatMicroseconds(slowDriverStepTimingClocks[2]);
-}
-
-float Platform::GetSlowDriverDirHoldMicroseconds()
-{
-#  if USE_TC_FOR_STEP
-	const float dirHoldFromLeadingEdge = StepTimer::TicksToFloatMicroseconds(slowDriverStepTimingClocks[3]);
-	return dirHoldFromLeadingEdge - GetSlowDriverStepHighMicroseconds();
-#  else
-	return StepTimer::TicksToFloatMicroseconds(slowDriverStepTimingClocks[3]);
-#  endif
-}
-
-// Convert microseconds to step clocks, rounding up
-static uint32_t MicrosecondsToStepClocks(float us)
-{
-	return (uint32_t)(((float)StepTimer::StepClockRate * us * 0.000001) + 0.99);
-}
-
-inline void UpdateTiming(uint32_t& timing, uint32_t clocks)
-{
-#  if SINGLE_DRIVER
-		timing = clocks;
-#  else
-		if (clocks > timing)
-		{
-			timing = clocks;
-		}
-#  endif
-
-}
-
-void Platform::SetDriverStepTiming(size_t drive, const float timings[4])
-{
-	bool isSlow = false;
-
-#  if USE_TC_FOR_STEP
-
-	// Step high time - must do this one first because it affects the conversion of some of the others
-	if (timings[0] > MinimumStepHighMicroseconds)
-	{
-		isSlow = true;
-		UpdateTiming(slowDriverStepTimingClocks[0], MicrosecondsToStepTCClocks(timings[0]));
-	}
-#   if SINGLE_DRIVER		// we can clear the value if we have only one driver
-	else
-	{
-		slowDriverStepTimingClocks[0] = MicrosecondsToStepTCClocks(MinimumStepHighMicroseconds);
-	}
-#   endif
-
-	// To get the new width to be applied to the step pulse, we need to update CCBUF[0] and then push it to CC[0]. Writing CC[0] directly doesn't work.
-	StepGenTc->CCBUF[0].reg = (uint16_t)Platform::slowDriverStepTimingClocks[0];
-	StepGenTc->CTRLBSET.reg = TC_CTRLBSET_CMD_UPDATE;
-
-	// Step low time - must convert this to minimum period
-	const float minimumPeriod = timings[1] + GetSlowDriverStepHighMicroseconds();		// use the actual rounded-up value
-	if (minimumPeriod > 0.4)
-	{
-		isSlow = true;
-		UpdateTiming(slowDriverStepTimingClocks[1], MicrosecondsToStepClocks(minimumPeriod));
-	}
-#   if SINGLE_DRIVER		// we can clear the value if we have only one driver
-	else
-	{
-		slowDriverStepTimingClocks[1] = 1;
-	}
-#   endif
-
-	// Direction setup time - we can just convert this one
-	if (timings[2] > 0.2)
-	{
-		isSlow = true;
-		UpdateTiming(slowDriverStepTimingClocks[2], MicrosecondsToStepClocks(timings[2]));
-	}
-#   if SINGLE_DRIVER		// we can clear the value if we have only one driver
-	else
-	{
-		slowDriverStepTimingClocks[2] = 0;
-	}
-#   endif
-
-	// Direction hold time - we need to convert hold time from trailing edge to hold time from leading edge
-	const float holdTimeFromLeadingEdge = timings[3] + GetSlowDriverStepHighMicroseconds();		// use the actual rounded-up value
-	if (holdTimeFromLeadingEdge > 0.4)
-	{
-		isSlow = true;
-		const uint32_t clocks = MicrosecondsToStepClocks(holdTimeFromLeadingEdge);
-		UpdateTiming(slowDriverStepTimingClocks[3], clocks);
-	}
-#   if SINGLE_DRIVER		// we can clear the value if we have only one driver
-	else
-	{
-		slowDriverStepTimingClocks[3] = 1;
-	}
-#   endif
-
-#  else
-
-	// Not using TC to generate step pulses
-	for (size_t i = 0; i < 4; ++i)
-	{
-		if (timings[i] > 0.2)
-		{
-			isSlow = true;
-			const uint32_t clocks = MicrosecondsToStepClocks(timings[i]);
-			UpdateTiming(slowDriverStepTimingClocks[i], clocks);
-		}
-#   if SINGLE_DRIVER		// we can clear the value if we have only one driver
-		else
-		{
-			slowDriverStepTimingClocks[i] = 0;
-		}
-#   endif
-	}
-
-#  endif	// USE_TC_FOR_STEP
-
-#  if SINGLE_DRIVER
-	isSlowDriver = isSlow;
-#  else
-	slowDriversBitmap.SetOrClearBit(drive, isSlow);
-#  endif
-}
-
-# endif		// SUPPORT_SLOW_DRIVERS
 
 #if 0	// not used yet and may never be
 // Send the status of drivers and filament monitors to the main board
@@ -1781,82 +1614,6 @@ bool Platform::GetDirectionValue(size_t driver) noexcept
 bool Platform::GetDirectionValueNoCheck(size_t driver) noexcept
 {
 	return directions[driver];
-}
-
-#endif
-
-#if SINGLE_DRIVER
-
-void Platform::SetDirection(bool direction)
-{
-# if DIFFERENTIAL_STEPPER_OUTPUTS || ACTIVE_HIGH_DIR
-	// Active high direction signal
-	const bool d = (direction) ? directions[0] : !directions[0];
-# else
-	// Active low direction signal
-	const bool d = (direction) ? !directions[0] : directions[0];
-# endif
-
-# if SUPPORT_CLOSED_LOOP
-	if (ClosedLoop::GetClosedLoopInstance(0)->IsClosedLoopEnabled())
-	{
-		return;
-	}
-# endif
-# if SUPPORT_SLOW_DRIVERS
-	if (isSlowDriver)
-	{
-#  if USE_TC_FOR_STEP
-		while (StepTimer::GetTimerTicks() - DDA::lastStepHighTime < GetSlowDriverDirHoldFromLeadingEdgeClocks()) { }
-#  else
-		while (StepTimer::GetTimerTicks() - DDA::lastStepLowTime < GetSlowDriverDirHoldFromTrailingEdgeClocks()) { }
-#  endif
-	}
-# endif
-	digitalWrite(DirectionPins[0], d);
-# if DIFFERENTIAL_STEPPER_OUTPUTS
-	digitalWrite(InvertedDirectionPins[0], !d);
-# endif
-# if SUPPORT_SLOW_DRIVERS
-	if (isSlowDriver)
-	{
-		DDA::lastDirChangeTime = StepTimer::GetTimerTicks();
-	}
-# endif
-}
-
-#else
-
-void Platform::SetDirection(size_t driver, bool direction)
-{
-	if (driver < NumDrivers)
-	{
-# if DIFFERENTIAL_STEPPER_OUTPUTS || ACTIVE_HIGH_DIR
-		// Active high direction signal
-		const bool d = (direction) ? directions[driver] : !directions[driver];
-# else
-		// Active low direction signal
-		const bool d = (direction) ? !directions[driver] : directions[driver];
-# endif
-
-# if SUPPORT_SLOW_DRIVERS
-		const bool isSlowDriver = slowDriversBitmap.IsBitSet(driver);
-		if (isSlowDriver)
-		{
-			while (StepTimer::GetTimerTicks() - DDA::lastStepLowTime < GetSlowDriverDirHoldClocks()) { }
-		}
-# endif
-		digitalWrite(DirectionPins[driver], d);
-# if DIFFERENTIAL_STEPPER_OUTPUTS
-		digitalWrite(InvertedDirectionPins[driver], !d);
-# endif
-# if SUPPORT_SLOW_DRIVERS
-		if (isSlowDriver)
-		{
-			DDA::lastDirChangeTime = StepTimer::GetTimerTicks();
-		}
-# endif
-	}
 }
 
 #endif

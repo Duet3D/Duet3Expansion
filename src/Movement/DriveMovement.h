@@ -69,7 +69,7 @@ public:
 #if SUPPORT_CLOSED_LOOP
 	// Get the current position relative to the start of this move, speed and acceleration. Units are microsteps and step clocks.
 	// Interrupts are disabled on entry and must remain disabled. Segments are advanced as necessary.
-	void GetCurrentMotion(const DDA& dda, uint32_t ticksSinceStart, MotionParameters& mParams) noexcept;
+	void GetCurrentMotion(uint32_t ticksSinceStart, MotionParameters& mParams) noexcept;
 
 	// This is like getCurrentMotion but it just returns the distance and doesn't start new segments
 	int32_t GetNetStepsTakenClosedLoop(float topSpeed, int32_t ticksSinceStart) const noexcept;

@@ -27,7 +27,9 @@ void DriveMovement::Init(size_t drv) noexcept
 	movementAccumulator = 0;
 	extruderPrinting = false;
 	driversNormallyUsed = driversCurrentlyUsed = 0;
+#if !SINGLE_DRIVER
 	nextDM = nullptr;
+#endif
 	segments = nullptr;
 	isExtruder = false;
 	segmentFlags.Init();
@@ -93,7 +95,7 @@ void DriveMovement::AddSegment(uint32_t startTime, uint32_t duration, motioncalc
 				 const uint32_t now = StepTimer::GetMovementTimerTicks();
 				 LogStepError(3);
 				 RestoreBasePriority(oldPrio);
-				 if (reprap.Debug(Module::Move))
+				 if (Platform::Debug(Module::Move))
 				 {
 					 debugPrintf("overlaps executing seg %" PRIi32 " while trying to add s=%" PRIu32 " t=%" PRIu32 " d=%.2f a=%.4e f=%02" PRIx32 " at time %" PRIu32 "\n",
 						 	 	 	 -timeInHand, startTime, duration, (double)distance, (double)a, moveFlags.all, now);
@@ -465,7 +467,7 @@ MoveSegment *DriveMovement::NewSegment(uint32_t now) noexcept
 		motioncalc_t newDcf = distanceCarriedForwards + seg->GetLength();
 		if (newDcf > 1.0 || newDcf < -1.0)
 		{
-			if (reprap.Debug(Module::Move))
+			if (Platform::Debug(Module::Move))
 			{
 				debugPrintf("newDcf=%.3e\n", (double)newDcf);
 			}
@@ -494,7 +496,7 @@ bool DriveMovement::LogStepError(uint8_t type) noexcept
 {
 	state = DMState::stepError;
 	stepErrorType = type;
-	if (reprap.Debug(Module::Move))
+	if (Platform::Debug(Module::Move))
 	{
 		debugPrintf("Step err %u on ", type);
 		DebugPrint();
@@ -638,7 +640,7 @@ pre(stepsTillRecalc == 0; segments != nullptr)
 
 	if (unlikely(std::isnan(nextCalcStepTime) || nextCalcStepTime < (motioncalc_t)0.0))
 	{
-		if (reprap.Debug(Module::Move))
+		if (Platform::Debug(Module::Move))
 		{
 			debugPrintf("nextCalcStepTime=%.3e\n", (double)nextCalcStepTime);
 		}

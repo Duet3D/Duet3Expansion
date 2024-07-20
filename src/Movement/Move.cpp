@@ -71,12 +71,14 @@ extern "C" [[noreturn]] void MoveLoop(void * param) noexcept
 
 Move::Move() noexcept
 	: scheduledMoves(0), taskWaitingForMoveToComplete(nullptr),
-#if USE_TC_FOR_STEP
+#if SUPPORT_SLOW_DRIVERS
+# if USE_TC_FOR_STEP
 	  lastStepHighTime(0),
-#else
+# else
 	  lastStepLowTime(0),
-#endif
+# endif
 	  lastDirChangeTime(0),
+#endif
 	  numHiccups(0), stepErrorState(StepErrorState::noError)
 {
 #if !DEDICATED_STEP_TIMER
@@ -86,6 +88,8 @@ Move::Move() noexcept
 	for (size_t i = 0; i < NumDrivers; ++i)
 	{
 		lastMoveStepsTaken[i] = 0;
+		stepsPerMm[i] = DefaultStepsPerMm;
+		directions[i] = true;
 #if SUPPORT_CLOSED_LOOP
 		netMicrostepsTaken[i] = 0.0;
 #endif
@@ -262,35 +266,35 @@ void Move::StepDrivers(uint32_t now) noexcept
 # endif
 
 	// Determine whether the driver is due for stepping, overdue, or will be due very shortly
-	if (ddms[0].state >= DMState::firstMotionState && (now - afterPrepare.moveStartTime) + StepTimer::MinInterruptInterval >= ddms[0].nextStepTime)	// if the next step is due
+	if (dms[0].state >= DMState::firstMotionState && (int32_t)(dms[0].nextStepTime - now) <= (int32_t)MoveTiming::MinInterruptInterval)	// if the next step is due
 	{
 		// Step the driver
 
 # if SUPPORT_SLOW_DRIVERS
-		if (Platform::IsSlowDriver())									// if using a slow driver
+		if (IsSlowDriver())									// if using a slow driver
 		{
 #  if USE_TC_FOR_STEP
 			const uint32_t lastStepPulseTime = lastStepHighTime;
-			while (now - lastStepPulseTime < Platform::GetSlowDriverStepPeriodClocks() || now - lastDirChangeTime < Platform::GetSlowDriverDirSetupClocks())
+			while (now - lastStepPulseTime < GetSlowDriverStepPeriodClocks() || now - lastDirChangeTime < GetSlowDriverDirSetupClocks())
 			{
 				now = StepTimer::GetTimerTicks();
 			}
 			StepGenTc->CTRLBSET.reg = TC_CTRLBSET_CMD_RETRIGGER;
 			lastStepHighTime = StepTimer::GetTimerTicks();
-			(void)ddms[0].CalcNextStepTime(*this);
+			(void)dms[0].CalcNextStepTime(now);
 #  else
 			uint32_t lastStepPulseTime = lastStepLowTime;
-			while (now - lastStepPulseTime < Platform::GetSlowDriverStepLowClocks() || now - lastDirChangeTime < Platform::GetSlowDriverDirSetupClocks())
+			while (now - lastStepPulseTime < GetSlowDriverStepLowClocks() || now - lastDirChangeTime < GetSlowDriverDirSetupClocks())
 			{
 				now = StepTimer::GetTimerTicks();
 			}
-			Platform::StepDriverHigh();									// generate the step
+			StepDriverHigh();									// generate the step
 			lastStepPulseTime = StepTimer::GetTimerTicks();
-			(void)ddms[0].CalcNextStepTime(*this);
+			(void)dms[0].CalcNextStepTime(*this);
 
 			// 3a. Reset the step pin low
-			while (StepTimer::GetTimerTicks() - lastStepPulseTime < Platform::GetSlowDriverStepHighClocks()) {}
-			Platform::StepDriverLow();									// set all step pins low
+			while (StepTimer::GetTimerTicks() - lastStepPulseTime < GetSlowDriverStepHighClocks()) {}
+			StepDriverLow();									// set all step pins low
 			lastStepLowTime = StepTimer::GetTimerTicks();
 #  endif
 		}
@@ -299,26 +303,20 @@ void Move::StepDrivers(uint32_t now) noexcept
 		{
 # if USE_TC_FOR_STEP
 			StepGenTc->CTRLBSET.reg = TC_CTRLBSET_CMD_RETRIGGER;
-			(void)ddms[0].CalcNextStepTime(*this);
+			(void)dms[0].CalcNextStepTime(now);
 # else
-			Platform::StepDriverHigh();									// generate the step
-			(void)ddms[0].CalcNextStepTime(now);
-			Platform::StepDriverLow();									// set the step pin low
+			StepDriverHigh();									// generate the step
+			(void)dms[0].CalcNextStepTime(now);
+			StepDriverLow();									// set the step pin low
 # endif
 		}
 
 		++stepsDone[0];
-		if (ddms[0].directionChanged)
+		if (dms[0].directionChanged)
 		{
-			ddms[0].directionChanged = false;
-			Platform::SetDirection(ddms[0].direction);
+			dms[0].directionChanged = false;
+			SetDirection(dms[0].direction);
 		}
-	}
-
-	// If there are no more steps to do and the time for the move has nearly expired, flag the move as complete
-	if (ddms[0].state < DMState::firstMotionState && StepTimer::GetTimerTicks() - afterPrepare.moveStartTime + WakeupTime >= clocksNeeded)
-	{
-		state = completed;
 	}
 }
 
@@ -334,12 +332,12 @@ void Move::StepDrivers(uint32_t now) noexcept
 	DriveMovement* dm = activeDMs;
 	while (dm != nullptr && (int32_t)(dm->nextStepTime - now) <= (int32_t)MoveTiming::MinInterruptInterval)		// if the next step is due
 	{
-		driversStepping |= Platform::GetDriversBitmap(dm->drive);
+		driversStepping |= driveDriverBits[dm->drive];
 		dm = dm->nextDM;
 	}
 
 # if SUPPORT_SLOW_DRIVERS
-	if ((driversStepping & GetSlowDriversBitmap != 0)	// if using any slow drivers
+	if ((driversStepping & slowDriversBitmap != 0)					// if using any slow drivers
 	{
 		uint32_t lastStepPulseTime = lastStepLowTime;
 		uint32_t rawNow;
@@ -347,24 +345,24 @@ void Move::StepDrivers(uint32_t now) noexcept
 		{
 			rawNow = StepTimer::GetTimerTicks();
 		} while (rawNow - lastStepPulseTime < GetSlowDriverStepLowClocks() || rawNow - lastDirChangeTime < GetSlowDriverDirSetupClocks());
-		Platform::StepDriversHigh(driversStepping);					// set the step pins high
+		StepDriversHigh(driversStepping);							// set the step pins high
 		lastStepPulseTime = StepTimer::GetTimerTicks();
 
 		PrepareForNextSteps(dm, now);
 
 		while (StepTimer::GetTimerTicks() - lastStepPulseTime < GetSlowDriverStepHighClocks()) {}
-		Platform::StepDriversLow();									// set all step pins low
+		StepDriversLow();											// set all step pins low
 		lastStepLowTime = StepTimer::GetTimerTicks();
 	}
 	else
 # endif
 	{
-		Platform::StepDriversHigh(driversStepping);					// set the step pins high
+		StepDriversHigh(driversStepping);							// set the step pins high
 # if SAME70
 		__DSB();													// without this the step pulse can be far too short
 # endif
 		PrepareForNextSteps(dm, now);
-		Platform::StepDriversLow();									// set all step pins low
+		StepDriversLow();											// set all step pins low
 	}
 
 	// Remove those drives from the list, update the direction pins where necessary, and re-insert them so as to keep the list in step-time order.
@@ -378,7 +376,7 @@ void Move::StepDrivers(uint32_t now) noexcept
 			if (dmToInsert->directionChanged)
 			{
 				dmToInsert->directionChanged = false;
-				Platform::SetDirection(dmToInsert->drive, dmToInsert->direction);
+				SetDirection(dmToInsert->drive, dmToInsert->direction);
 			}
 			InsertDM(dmToInsert);
 		}
@@ -391,6 +389,21 @@ void Move::StepDrivers(uint32_t now) noexcept
 // Prepare each DM that we generated a step for for the next step
 void Move::PrepareForNextSteps(DriveMovement *stopDm, uint32_t now) noexcept
 {
+#if SINGLE_DRIVER
+	if (unlikely(dms[0].state == DMState::starting))
+	{
+		if (dms[0].NewSegment(now) != nullptr && dms[0].state != DMState::starting)
+		{
+			dms[0].driversCurrentlyUsed = dms[0].driversNormallyUsed;	// we previously set driversCurrentlyUsed to 0 to avoid generating a step, so restore it now
+			(void)dms[0].CalcNextStepTimeFull(now);					// calculate next step time
+			dms[0].directionChanged = true;							// force the direction to be set up
+		}
+	}
+	else
+	{
+		(void)dms[0].CalcNextStepTime(now);							// calculate next step time, which may change the required direction
+	}
+#else
 	for (DriveMovement *dm2 = activeDMs; dm2 != stopDm; dm2 = dm2->nextDM)
 	{
 		if (unlikely(dm2->state == DMState::starting))
@@ -407,6 +420,7 @@ void Move::PrepareForNextSteps(DriveMovement *stopDm, uint32_t now) noexcept
 			(void)dm2->CalcNextStepTime(now);							// calculate next step time, which may change the required direction
 		}
 	}
+#endif
 }
 
 // Stop some drivers and update the corresponding motor positions
@@ -478,8 +492,10 @@ void Move::AddLinearSegments(size_t logicalDrive, uint32_t startTime, const Prep
 	{
 		if (dmp->ScheduleFirstSegment())
 		{
+#if !SINGLE_DRIVER
 			InsertDM(dmp);
 			if (activeDMs == dmp)													// if this is now the first DM in the active list
+#endif
 			{
 				if (ScheduleNextStepInterrupt())
 				{
@@ -513,27 +529,17 @@ __attribute__((section(".time_critical")))
 void Move::Interrupt() noexcept
 {
 #if SINGLE_DRIVER
-	if (dms[0].state >= firstMotionState)
+	if (dms[0].state >= DMState::firstMotionState)
 #else
 	if (activeDMs != nullptr)
+#endif
 	{
-#endif
-	uint32_t now = StepTimer::GetMovementTimerTicks();
-	const uint32_t isrStartTime = now;
-#if 0	// TEMP DEBUG - see later
-		for (unsigned int iterationCount = 0; ; )
-#else
+		uint32_t now = StepTimer::GetMovementTimerTicks();
+		const uint32_t isrStartTime = now;
 		for (;;)
-#endif
 		{
 			// Generate steps for the current move segments
 			StepDrivers(now);									// check endstops if necessary and step the drivers
-
-			if (activeDMs == nullptr || stepErrorState != StepErrorState::noError )
-			{
-				WakeMoveTaskFromISR();							// we may have just completed a special move, so wake up the Move task so that it can notice that
-				break;
-			}
 
 			// Schedule a callback at the time when the next step is due, and quit unless it is due immediately
 			if (!ScheduleNextStepInterrupt())
@@ -566,6 +572,159 @@ void Move::Interrupt() noexcept
 		}
 	}
 }
+
+float Move::DriveStepsPerUnit(size_t drive) const noexcept { return stepsPerMm[drive]; }
+
+void Move::SetDriveStepsPerUnit(size_t drive, float val)
+{
+	if (drive < NumDrivers)
+	{
+		stepsPerMm[drive] = val;
+	}
+}
+
+#if SUPPORT_SLOW_DRIVERS
+
+static inline void UpdateTiming(uint32_t& timing, uint32_t clocks) noexcept
+{
+# if SINGLE_DRIVER
+		timing = clocks;
+# else
+		if (clocks > timing)
+		{
+			timing = clocks;
+		}
+# endif
+}
+
+void Move::SetDriverStepTiming(size_t drive, const float timings[4]) noexcept
+{
+	bool isSlow = false;
+
+# if USE_TC_FOR_STEP
+
+	// Step high time - must do this one first because it affects the conversion of some of the others
+	if (timings[0] > MinimumStepHighMicroseconds)
+	{
+		isSlow = true;
+		UpdateTiming(slowDriverStepTimingClocks[0], MicrosecondsToStepTCClocks(timings[0]));
+	}
+#  if SINGLE_DRIVER		// we can clear the value if we have only one driver
+	else
+	{
+		slowDriverStepTimingClocks[0] = MicrosecondsToStepTCClocks(MinimumStepHighMicroseconds);
+	}
+#  endif
+
+	// To get the new width to be applied to the step pulse, we need to update CCBUF[0] and then push it to CC[0]. Writing CC[0] directly doesn't work.
+	StepGenTc->CCBUF[0].reg = (uint16_t)slowDriverStepTimingClocks[0];
+	StepGenTc->CTRLBSET.reg = TC_CTRLBSET_CMD_UPDATE;
+
+	// Step low time - must convert this to minimum period
+	const float minimumPeriod = timings[1] + GetSlowDriverStepHighMicroseconds();		// use the actual rounded-up value
+	if (minimumPeriod > 0.4)
+	{
+		isSlow = true;
+		UpdateTiming(slowDriverStepTimingClocks[1], MicrosecondsToStepClocks(minimumPeriod));
+	}
+#  if SINGLE_DRIVER		// we can clear the value if we have only one driver
+	else
+	{
+		slowDriverStepTimingClocks[1] = 1;
+	}
+#  endif
+
+	// Direction setup time - we can just convert this one
+	if (timings[2] > 0.2)
+	{
+		isSlow = true;
+		UpdateTiming(slowDriverStepTimingClocks[2], MicrosecondsToStepClocks(timings[2]));
+	}
+#  if SINGLE_DRIVER		// we can clear the value if we have only one driver
+	else
+	{
+		slowDriverStepTimingClocks[2] = 0;
+	}
+#  endif
+
+	// Direction hold time - we need to convert hold time from trailing edge to hold time from leading edge
+	const float holdTimeFromLeadingEdge = timings[3] + GetSlowDriverStepHighMicroseconds();		// use the actual rounded-up value
+	if (holdTimeFromLeadingEdge > 0.4)
+	{
+		isSlow = true;
+		const uint32_t clocks = MicrosecondsToStepClocks(holdTimeFromLeadingEdge);
+		UpdateTiming(slowDriverStepTimingClocks[3], clocks);
+	}
+#  if SINGLE_DRIVER		// we can clear the value if we have only one driver
+	else
+	{
+		slowDriverStepTimingClocks[3] = 1;
+	}
+#  endif
+
+# else
+
+	// Not using TC to generate step pulses
+	for (size_t i = 0; i < 4; ++i)
+	{
+		if (timings[i] > 0.2)
+		{
+			isSlow = true;
+			const uint32_t clocks = MicrosecondsToStepClocks(timings[i]);
+			UpdateTiming(slowDriverStepTimingClocks[i], clocks);
+		}
+#  if SINGLE_DRIVER		// we can clear the value if we have only one driver
+		else
+		{
+			slowDriverStepTimingClocks[i] = 0;
+		}
+#  endif
+	}
+
+# endif	// USE_TC_FOR_STEP
+
+# if SINGLE_DRIVER
+	isSlowDriver = isSlow;
+# else
+	slowDriversBitmap.SetOrClearBit(drive, isSlow);
+# endif
+}
+
+float Move::GetSlowDriverStepHighMicroseconds() const noexcept
+{
+# if USE_TC_FOR_STEP
+	return (float)slowDriverStepTimingClocks[0]/StepPulseClocksPerMicrosecond;
+# else
+	return StepTimer::TicksToFloatMicroseconds(slowDriverStepTimingClocks[0]);
+# endif
+}
+
+float Move::GetSlowDriverStepLowMicroseconds() const noexcept
+{
+# if USE_TC_FOR_STEP
+	const float period = StepTimer::TicksToFloatMicroseconds(slowDriverStepTimingClocks[1]);
+	return period - GetSlowDriverStepHighMicroseconds();
+# else
+	return StepTimer::TicksToFloatMicroseconds(slowDriverStepTimingClocks[1]);
+# endif
+}
+
+float Move::GetSlowDriverDirSetupMicroseconds() const noexcept
+{
+	return StepTimer::TicksToFloatMicroseconds(slowDriverStepTimingClocks[2]);
+}
+
+float Move::GetSlowDriverDirHoldMicroseconds() const noexcept
+{
+# if USE_TC_FOR_STEP
+	const float dirHoldFromLeadingEdge = StepTimer::TicksToFloatMicroseconds(slowDriverStepTimingClocks[3]);
+	return dirHoldFromLeadingEdge - GetSlowDriverStepHighMicroseconds();
+# else
+	return StepTimer::TicksToFloatMicroseconds(slowDriverStepTimingClocks[3]);
+# endif
+}
+
+#endif		// SUPPORT_SLOW_DRIVERS
 
 #if HAS_SMART_DRIVERS
 

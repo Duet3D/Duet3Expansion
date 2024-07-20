@@ -280,7 +280,7 @@ static GCodeResult SetStepsPerMmAndMicrostepping(const CanMessageMultipleDrivesR
 							}
 							else
 							{
-								Platform::SetDriveStepsPerUnit(driver, msg.values[count].GetStepsPerUnit());
+								moveInstance->SetDriveStepsPerUnit(driver, msg.values[count].GetStepsPerUnit());
 #if HAS_SMART_DRIVERS
 								const uint16_t microstepping = msg.values[count].GetMicrostepping() & 0x03FF;
 								const bool interpolate = (msg.values[count].GetMicrostepping() & 0x8000) != 0;
@@ -345,7 +345,7 @@ static GCodeResult ProcessM569(const CanMessageGeneric& msg, const StringRef& re
 			reply.copy("bad timing parameter, expected 1 or 4 values");
 			return GCodeResult::error;
 		}
-		Platform::SetDriverStepTiming(drive, timings);
+		moveInstance->SetDriverStepTiming(drive, timings);
 	}
 #endif
 
@@ -463,16 +463,16 @@ static GCodeResult ProcessM569(const CanMessageGeneric& msg, const StringRef& re
 
 #if SUPPORT_SLOW_DRIVERS
 # if SINGLE_DRIVER
-		if (Platform::IsSlowDriver())
+		if (moveInstance->IsSlowDriver())
 # else
-		if (Platform::IsSlowDriver(drive))
+		if (moveInstance->IsSlowDriver(drive))
 # endif
 		{
 			reply.catf(", step timing %.1f:%.1f:%.1f:%.1fus",
-						(double)Platform::GetSlowDriverStepHighMicroseconds(),
-						(double)Platform::GetSlowDriverStepLowMicroseconds(),
-						(double)Platform::GetSlowDriverDirSetupMicroseconds(),
-						(double)Platform::GetSlowDriverDirHoldMicroseconds());
+						(double)moveInstance->GetSlowDriverStepHighMicroseconds(),
+						(double)moveInstance->GetSlowDriverStepLowMicroseconds(),
+						(double)moveInstance->GetSlowDriverDirSetupMicroseconds(),
+						(double)moveInstance->GetSlowDriverDirHoldMicroseconds());
 		}
 		else
 		{
@@ -500,7 +500,7 @@ static GCodeResult ProcessM569(const CanMessageGeneric& msg, const StringRef& re
 		{
 			const uint32_t thigh = SmartDrivers::GetRegister(drive, SmartDriverRegister::thigh);
 			bool bdummy;
-			const float mmPerSec = (12000000.0 * SmartDrivers::GetMicrostepping(drive, bdummy))/(256 * thigh * Platform::DriveStepsPerUnit(drive));
+			const float mmPerSec = (12000000.0 * SmartDrivers::GetMicrostepping(drive, bdummy))/(256 * thigh * moveInstance->DriveStepsPerUnit(drive));
 			reply.catf(", thigh %" PRIu32 " (%.1f mm/sec)", thigh, (double)mmPerSec);
 		}
 # endif
@@ -520,7 +520,7 @@ static GCodeResult ProcessM569(const CanMessageGeneric& msg, const StringRef& re
 		{
 			const uint32_t tpwmthrs = SmartDrivers::GetRegister(drive, SmartDriverRegister::tpwmthrs);
 			bool bdummy;
-			const float mmPerSec = (12000000.0 * SmartDrivers::GetMicrostepping(drive, bdummy))/(256 * tpwmthrs * Platform::DriveStepsPerUnit(drive));
+			const float mmPerSec = (12000000.0 * SmartDrivers::GetMicrostepping(drive, bdummy))/(256 * tpwmthrs * moveInstance->DriveStepsPerUnit(drive));
 			const uint32_t pwmScale = SmartDrivers::GetRegister(drive, SmartDriverRegister::pwmScale);
 			const uint32_t pwmAuto = SmartDrivers::GetRegister(drive, SmartDriverRegister::pwmAuto);
 			const unsigned int pwmScaleSum = pwmScale & 0xFF;
@@ -835,7 +835,7 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 # if HAS_SMART_DRIVERS
 				", "
 # endif
-				, driver, moveInstance->GetPosition(driver), (double)Platform::DriveStepsPerUnit(driver));
+				, driver, moveInstance->GetPosition(driver), (double)moveInstance->DriveStepsPerUnit(driver));
 # if HAS_SMART_DRIVERS
 			const StandardDriverStatus status = SmartDrivers::GetStatus(driver, false, false);
 			status.AppendText(reply, 0);
