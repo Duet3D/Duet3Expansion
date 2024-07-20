@@ -270,8 +270,15 @@ void Move::Exit() noexcept
 	moveTask->TerminateAndUnlink();
 }
 
+#if HAS_VOLTAGE_MONITOR || HAS_12V_MONITOR
+void Move::Spin(bool powered) noexcept
+#else
 void Move::Spin() noexcept
+#endif
 {
+# if SUPPORT_BRAKE_PWM
+	const float currentVinVoltage = Platform::GetCurrentVinVoltage();
+# endif
 	// Check whether we need to turn any brake solenoids or motors off, or adjust brake PWM
 	for (size_t driver = 0; driver < NumDrivers; ++driver)
 	{
@@ -286,7 +293,7 @@ void Move::Spin() noexcept
 
 #if SUPPORT_BRAKE_PWM
 		// If the brake solenoid is activated, adjust the PWM if necessary
-		if (currentBrakePwm[driver] != 0.0 && voltsVin > 0.0)
+		if (currentBrakePwm[driver] != 0.0 && currentVinVoltage > 0.0)
 		{
 			const float requestedVoltage =
 # ifdef M23CL
@@ -294,7 +301,7 @@ void Move::Spin() noexcept
 # else
 											brakeVoltages[driver];
 # endif
-			const float newBrakePwm = min<float>(requestedVoltage/voltsVin, 1.0);
+			const float newBrakePwm = (currentVinVoltage < requestedVoltage) ? 1.0 : requestedVoltage/currentVinVoltage;
 			if (fabsf(newBrakePwm - currentBrakePwm[driver]) >= 0.05)
 			{
 # ifdef M23CL
@@ -1156,7 +1163,7 @@ GCodeResult Move::ProcessM569Point7(const CanMessageGeneric& msg, const StringRe
 # if SUPPORT_BRAKE_PWM
 		brakePwmPorts[drive].SetFrequency(BrakePwmFrequency);
 #  if defined(EXP1HCL)
-		if (boardVariant >= 1)
+		if (Platform::GetBoardVariant() >= 1)
 		{
 			brakeOnPins[drive] = (brakePwmPorts[drive].GetPin() == BrakePwmPin) ? BrakeOnPin : NoPin;
 		}
@@ -1199,7 +1206,8 @@ void Move::DisengageBrake(size_t driver) noexcept
 # else
 									brakeVoltages[driver];
 # endif
-	currentBrakePwm[driver] = min<float>(requestedVoltage/AdcReadingToVinVoltage(max<uint16_t>(currentVin, 1)), 1.0);
+	const float currentVinVoltage = Platform::GetCurrentVinVoltage();
+	currentBrakePwm[driver] = (currentVinVoltage < requestedVoltage) ? 1.0 : requestedVoltage/currentVinVoltage;
 # ifdef M23CL
 	AnalogOut::Write(BrakePwmPin, currentBrakePwm[driver], BrakePwmFrequency);
 	digitalWrite(BrakeOnPin, true);

@@ -61,7 +61,11 @@ public:
 	Move() noexcept;
 	void Init() noexcept;															// Start me up
 	void Exit() noexcept;															// Shut down
+#if HAS_VOLTAGE_MONITOR || HAS_12V_MONITOR
+	void Spin(bool powered) noexcept;
+#else
 	void Spin() noexcept;
+#endif
 	void Diagnostics(const StringRef& reply) noexcept;								// Report useful stuff
 
 	void SetDirectionValue(size_t driver, bool dVal);

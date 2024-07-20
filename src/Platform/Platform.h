@@ -188,7 +188,7 @@ namespace Platform
 	void AppendBoardAndFirmwareDetails(const StringRef& reply) noexcept;
 	void AppendDiagnostics(const StringRef& reply) noexcept;
 
-#ifdef TOOL1LC
+#if defined(EXP3HC) || defined(TOOL1LC) || defined(EXP1HCL)
 	uint8_t GetBoardVariant() noexcept;
 #endif
 

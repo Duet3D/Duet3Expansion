@@ -842,7 +842,11 @@ void Platform::Spin()
 #endif
 
 #if SUPPORT_DRIVERS
-	moveInstance->Spin();
+	moveInstance->Spin(
+# if HAS_VOLTAGE_MONITOR || HAS_12V_MONITOR
+						powered
+# endif
+					  );
 #endif	// SUPPORT_DRIVERS
 
 	// Thermostatically-controlled fans (do this after getting TMC driver status)
@@ -1475,7 +1479,7 @@ void Platform::AppendDiagnostics(const StringRef& reply) noexcept
 #endif
 }
 
-#ifdef TOOL1LC
+#if defined(EXP3HC) || defined(TOOL1LC) || defined(EXP1HCL)
 
 uint8_t Platform::GetBoardVariant() noexcept
 {
