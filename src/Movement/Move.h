@@ -12,16 +12,22 @@
 
 #if SUPPORT_DRIVERS
 
+#ifndef SUPPORT_INPUT_SHAPING
+# error SUPPORT_INPUT_SHAPING not defined
+#endif
+
 #include "DriveMovement.h"
-#include "AxisShaper.h"
 #include "ExtruderShaper.h"
 #include <CanMessageFormats.h>
 #include <CanMessageBuffer.h>
 #include <Hardware/IoPorts.h>
 
+#if SUPPORT_INPUT_SHAPING
+# include "AxisShaper.h"
+#endif
+
 #if SUPPORT_CLOSED_LOOP
-# include "StepperDrivers/TMC51xx.h"			// for SmartDrivers::GetMicrostepShift
-//# include <Platform/Platform.h>					// for GetDirectionValueNoCheck
+# include "StepperDrivers/TMC51xx.h"				// for SmartDrivers::GetMicrostepShift
 #endif
 
 struct CanMessageStopMovement;
@@ -61,7 +67,7 @@ public:
 	void SetDirectionValue(size_t driver, bool dVal);
 	bool GetDirectionValue(size_t driver) const noexcept;
 #if SUPPORT_CLOSED_LOOP
-	bool GetDirectionValueNoCheck(size_t driver) const noexcept;
+	bool GetDirectionValueNoCheck(size_t driver) const noexcept { return directions[driver]; }
 #endif
 
 	void SetEnableValue(size_t driver, int8_t eVal) noexcept;
@@ -128,12 +134,8 @@ public:
 	uint32_t ExtruderPrintingSince(size_t driver) const noexcept;					// When we started doing normal moves after the most recent extruder-only move
 
 	// Input shaping support
-	AxisShaper& GetAxisShaper() noexcept { return axisShaper; }
+	GCodeResult HandleInputShaping(const CanMessageSetInputShapingNew& msg, size_t dataLength, const StringRef& reply) noexcept;
 	void AddLinearSegments(size_t logicalDrive, uint32_t startTime, const PrepParams& params, motioncalc_t steps, MovementFlags moveFlags) noexcept;
-	GCodeResult HandleInputShaping(const CanMessageSetInputShapingNew& msg, size_t dataLength, const StringRef& reply) noexcept
-	{
-		return axisShaper.EutSetInputShaping(msg, dataLength, reply);
-	}
 
 	// Pressure advance
 	ExtruderShaper& GetExtruderShaper(size_t drive) noexcept { return dms[drive].extruderShaper; }
@@ -326,7 +328,10 @@ private:
 	int32_t lastMoveStepsTaken[NumDrivers];							// how many steps were taken in the last move we did, used for reverting
 	unsigned int numHiccups;										// The number of hiccups inserted
 
+#if SUPPORT_INPUT_SHAPING
 	AxisShaper axisShaper;
+#endif
+
 	volatile uint8_t stepErrorType;
 	volatile StepErrorState stepErrorState;
 
@@ -349,7 +354,17 @@ inline int32_t Move::GetPosition(size_t driver) const noexcept
 	return dms[driver].currentMotorPosition;
 }
 
-/// Schedule the next interrupt, returning true if we can't because it is already due
+// Handle a CAN request to set the input shaping parameters
+inline GCodeResult Move::HandleInputShaping(const CanMessageSetInputShapingNew& msg, size_t dataLength, const StringRef& reply) noexcept
+{
+#if SUPPORT_INPUT_SHAPING
+	return axisShaper.EutSetInputShaping(msg, dataLength, reply);
+#else
+	return GCodeResult::ok;						// ignore it but return success
+#endif
+}
+
+// Schedule the next interrupt, returning true if we can't because it is already due
 // Base priority must be >= NvicPriorityStep when calling this
 inline __attribute__((always_inline)) bool Move::ScheduleNextStepInterrupt() noexcept
 {
@@ -515,53 +530,14 @@ inline __attribute__((always_inline)) uint32_t Move::GetStepInterval(size_t driv
 // Inlined because it is only called from one place
 inline bool Move::GetCurrentMotion(size_t driver, uint32_t when, bool closedLoopEnabled, MotionParameters& mParams) noexcept
 {
-	const float multiplier = ldexpf((Platform::GetDirectionValueNoCheck(driver)) ? -1.0 : 1.0, -(int)SmartDrivers::GetMicrostepShift(driver));
-	AtomicCriticalSectionLocker lock;				// we don't want an interrupt changing currentDda or netMicrostepsTaken while we execute this
-	for (;;)
+	const float multiplier = ldexpf((GetDirectionValueNoCheck(driver)) ? -1.0 : 1.0, -(int)SmartDrivers::GetMicrostepShift(driver));
+	if (dms[driver].GetCurrentMotion(when, mParams))
 	{
-		DDA * cdda = currentDda;					// capture volatile variable
-		if (cdda == nullptr)
-		{
-			break;
-		}
-
-		const uint32_t clocksSinceMoveStart = when - cdda->GetStartTime();
-		if (clocksSinceMoveStart <= cdda->GetClocksNeeded())
-		{
-			// This move is executing
-			cdda->GetCurrentMotion(driver, clocksSinceMoveStart, mParams);
-
-			// Convert microsteps to full steps
-			mParams.position = (mParams.position + netMicrostepsTaken[driver]) * multiplier;
-			mParams.speed *= multiplier;
-			mParams.acceleration *= multiplier;
-			return true;
-		}
-
-		// If the machine has been idle, a move is made current a little ahead of when it is due, so check whether the move hasn't started yet
-		if ((int32_t)clocksSinceMoveStart < 0)
-		{
-			break;
-		}
-
-		// This move has finished. If we are running in closed loop mode, mark it as completed because there will be no interrupt to do that.
-		if (!closedLoopEnabled)
-		{
-			break;
-		}
-
-		const uint32_t finishTime = cdda->GetMoveFinishTime();	// calculate when this move should finish
-		cdda->SetCompleted();
-		CurrentMoveCompleted();
-
-		// Start the next move if one is ready
-		cdda = ddaRingGetPointer;
-		if (cdda->GetState() != DDA::frozen)
-		{
-			break;
-		}
-
-		StartNextMove(cdda, finishTime);
+		// Convert microsteps to full steps
+		mParams.position = (mParams.position + netMicrostepsTaken[driver]) * multiplier;
+		mParams.speed *= multiplier;
+		mParams.acceleration *= multiplier;
+		return true;
 	}
 
 	// Here when there is no current move
@@ -572,7 +548,7 @@ inline bool Move::GetCurrentMotion(size_t driver, uint32_t when, bool closedLoop
 
 inline void Move::SetCurrentMotorSteps(size_t driver, float fullSteps) noexcept
 {
-	const float multiplier = ldexpf((Platform::GetDirectionValueNoCheck(driver)) ? -1.0 : 1.0, (int)SmartDrivers::GetMicrostepShift(driver));
+	const float multiplier = ldexpf((GetDirectionValueNoCheck(driver)) ? -1.0 : 1.0, (int)SmartDrivers::GetMicrostepShift(driver));
 	netMicrostepsTaken[driver] = fullSteps * multiplier;
 }
 

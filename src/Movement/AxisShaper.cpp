@@ -7,7 +7,7 @@
 
 #include "AxisShaper.h"
 
-#if SUPPORT_DRIVERS
+#if SUPPORT_DRIVERS && SUPPORT_INPUT_SHAPING
 
 #include <CanMessageFormats.h>
 

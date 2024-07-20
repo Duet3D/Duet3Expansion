@@ -414,7 +414,7 @@ GCodeResult ClosedLoop::InstanceProcessM569Point4(CanMessageGenericParser& parse
 
 		if (!hasMovementCommand)
 		{
-			torqueModeDirection = (Platform::GetDirectionValueNoCheck(0) == (requestedTorque > 0.0));
+			torqueModeDirection = (moveInstance->GetDirectionValueNoCheck(0) == (requestedTorque > 0.0));
 			torqueModeCommandedCurrentFraction = min<float>(fabsf(requestedTorque)/(torquePerAmp * SmartDrivers::GetCurrent(0) * 0.001), 1.0);
 			torqueModeMaxSpeed = maxSpeed;
 			inTorqueMode = true;
@@ -571,7 +571,7 @@ GCodeResult ClosedLoop::InstanceProcessM569Point6(CanMessageGenericParser& parse
 		return GCodeResult::error;
 	}
 
-	if (!Platform::EnableIfIdle(0))
+	if (!moveInstance->EnableIfIdle(0))
 	{
 		reply.copy("Driver is not enabled");
 		return GCodeResult::error;

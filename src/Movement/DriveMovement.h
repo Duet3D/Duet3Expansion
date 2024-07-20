@@ -68,8 +68,8 @@ public:
 
 #if SUPPORT_CLOSED_LOOP
 	// Get the current position relative to the start of this move, speed and acceleration. Units are microsteps and step clocks.
-	// Interrupts are disabled on entry and must remain disabled. Segments are advanced as necessary.
-	void GetCurrentMotion(uint32_t ticksSinceStart, MotionParameters& mParams) noexcept;
+	// Return true if this drive is moving. Segments are advanced as necessary.
+	bool GetCurrentMotion(uint32_t ticksSinceStart, MotionParameters& mParams) noexcept;
 
 	// This is like getCurrentMotion but it just returns the distance and doesn't start new segments
 	int32_t GetNetStepsTakenClosedLoop(float topSpeed, int32_t ticksSinceStart) const noexcept;
@@ -184,10 +184,21 @@ inline uint32_t DriveMovement::GetStepInterval(uint32_t microstepShift) const no
 
 #if SUPPORT_CLOSED_LOOP
 
+// Get the current position relative to the start of this move, speed and acceleration. Units are microsteps and step clocks.
+// Return true if this drive is moving. Segments are advanced as necessary.
+inline bool DriveMovement::GetCurrentMotion(uint32_t ticksSinceStart, MotionParameters& mParams) noexcept
+{
+	AtomicCriticalSectionLocker lock;			// we don't want 'segments' changing while we do this
+	const MoveSegment *const ms = segments;
+	(void)ms;
+	qq;	//TODO
+}
+
 // This is like getCurrentMotion but it just returns the distance and doesn't start new segments
 inline int32_t DriveMovement::GetNetStepsTakenClosedLoop(float topSpeed, int32_t ticksSinceStart) const noexcept
 {
-	const MoveSegment *const ms = currentSegment;
+	AtomicCriticalSectionLocker lock;			// we don't want 'segments' changing while we do this
+	const MoveSegment *const ms = segments;
 	float ret;
 	if (ms == nullptr)
 	{

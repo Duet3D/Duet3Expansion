@@ -10,7 +10,7 @@
 
 #include <RepRapFirmware.h>
 
-#if SUPPORT_DRIVERS
+#if SUPPORT_DRIVERS && SUPPORT_INPUT_SHAPING
 
 struct CanMessageSetInputShapingNew;
 

@@ -725,7 +725,9 @@ void Move::AddLinearSegments(size_t logicalDrive, uint32_t startTime, const Prep
 	const motioncalc_t decelDistance = (params.decelClocks == 0) ? (motioncalc_t)0.0 : (motioncalc_t)(1.0 - params.decelStartDistance);
 	const motioncalc_t steadyDistance = (params.steadyClocks == 0) ? (motioncalc_t)0.0 : (motioncalc_t)1.0 - accelDistance - decelDistance;
 
+#if SUPPORT_INPUT_SHAPING
 	if (moveFlags.noShaping)
+#endif
 	{
 		if (params.accelClocks != 0)
 		{
@@ -740,6 +742,7 @@ void Move::AddLinearSegments(size_t logicalDrive, uint32_t startTime, const Prep
 			dmp->AddSegment(decelStartTime, params.decelClocks, decelDistance * stepsPerMm, -((motioncalc_t)params.deceleration * stepsPerMm), moveFlags);
 		}
 	}
+#if SUPPORT_INPUT_SHAPING
 	else
 	{
 		for (size_t index = 0; index < axisShaper.GetNumImpulses(); ++index)
@@ -760,6 +763,7 @@ void Move::AddLinearSegments(size_t logicalDrive, uint32_t startTime, const Prep
 			}
 		}
 	}
+#endif
 
 	// If there were no segments attached to this DM initially, we need to schedule the interrupt for the new segment at the start of the list.
 	// Don't do this until we have added all the segments for this move, because the first segment we added may have been modified and/or split when we added further segments to implement input shaping
@@ -881,15 +885,6 @@ bool Move::GetDirectionValue(size_t driver) const noexcept
 {
 	return (driver >= NumDrivers) || directions[driver];
 }
-
-#if SUPPORT_CLOSED_LOOP
-
-bool Platform::GetDirectionValueNoCheck(size_t driver) const noexcept
-{
-	return directions[driver];
-}
-
-#endif
 
 void Move::SetEnableValue(size_t driver, int8_t eVal) noexcept
 {
