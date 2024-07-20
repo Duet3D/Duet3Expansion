@@ -120,6 +120,9 @@ private:
 	uint32_t nextStepTime;								// how many clocks after the start of this move the next step is due
 	uint32_t stepInterval;								// how many clocks between steps
 
+	uint32_t driversNormallyUsed;						// the local drivers that this axis or extruder uses
+	uint32_t driversCurrentlyUsed;						// the bitmap of local drivers for this axis or extruder that we should step when the next step interrupt is due
+
 	std::atomic<int32_t> movementAccumulator;			// the accumulated movement in microsteps since GetAccumulatedMovement was last called. Only used for extruders.
 	uint32_t extruderPrintingSince;						// the millis ticks when this extruder started doing printing moves
 

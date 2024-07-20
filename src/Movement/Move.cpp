@@ -41,6 +41,8 @@
 #include "MoveTiming.h"
 #include <Platform/Platform.h>
 #include <CAN/CanInterface.h>
+#include <CanMessageGenericParser.h>
+#include <CanMessageGenericTables.h>
 #include <CanMessageFormats.h>
 #include <CanMessageBuffer.h>
 #include <Platform/TaskPriorities.h>
@@ -49,6 +51,14 @@
 #if HAS_SMART_DRIVERS
 # include "StepperDrivers/TMC51xx.h"
 # include "StepperDrivers/TMC22xx.h"
+#endif
+
+#if USE_TC_FOR_STEP
+# if SAME5x
+#  include <hri_tc_e54.h>
+# elif SAMC21
+#  include <hri_tc_c21.h>
+# endif
 #endif
 
 #if 1	//debug
@@ -103,18 +113,284 @@ void Move::Init() noexcept
 	moveTask = new Task<MoveTaskStackWords>;
 	moveTask->Create(MoveLoop, "Move", this, TaskPriority::MovePriority);
 
-# if HAS_SMART_DRIVERS
+#if HAS_SMART_DRIVERS
+	SmartDrivers::Init();
+	temperatureShutdownDrivers.Clear();
+	temperatureWarningDrivers.Clear();
+#endif
+
+	// Initialise stepper drivers
+
 	for (size_t i = 0; i < NumDrivers; ++i)
 	{
+#if HAS_SMART_DRIVERS
 		SetMicrostepping(i, 16, true);
-	}
+#endif
+#if DIFFERENTIAL_STEPPER_OUTPUTS
+		// Step pins
+		IoPort::SetPinMode(StepPins[i], OUTPUT_LOW);
+		SetDriveStrength(StepPins[i], 2);
+		IoPort::SetPinMode(InvertedStepPins[i], OUTPUT_HIGH);
+		SetDriveStrength(InvertedStepPins[i], 2);
+
+		// Set up the CCL to invert the step output from PB10 to the inverted output on PA11
+		MCLK->APBCMASK.reg |= MCLK_APBCMASK_CCL;
+
+# if USE_TC_FOR_STEP
+		// On the EXP1XD the step pin is also output TC1.0 and TC1 is not used for anything else
+		// Use it to generate the step pulse
+		EnableTcClock(StepGenTcNumber, GclkNum48MHz);
+
+		hri_tc_set_CTRLA_SWRST_bit(StepGenTc);
+
+		hri_tc_write_CTRLA_reg(StepGenTc, TC_CTRLA_MODE_COUNT16 | TcPrescalerRegVal);
+		hri_tc_set_CTRLB_reg(StepGenTc, TC_CTRLBSET_ONESHOT);
+		hri_tc_write_DBGCTRL_reg(StepGenTc, 0);
+		hri_tc_write_EVCTRL_reg(StepGenTc, 0);
+		hri_tc_write_WAVE_reg(StepGenTc, TC_WAVE_WAVEGEN_MPWM);
+
+		StepGenTc->CC[0].reg = (uint16_t)slowDriverStepTimingClocks[0];
+		StepGenTc->CCBUF[0].reg = (uint16_t)slowDriverStepTimingClocks[0];
+
+		hri_tc_set_CTRLA_ENABLE_bit(StepGenTc);
+
+		delayMicroseconds(2);												// this avoids a glitch on the step output
+
+		SetPinFunction(StepPins[i], GpioPinFunction::E);					// TC1.0
+# else
+		SetPinFunction(StepPins[i], GpioPinFunction::I);					// CCL1in5
 # endif
+		CCL->CTRL.reg = 0;													// disable the CCL
+		CCL->SEQCTRL[0].reg = CCL_SEQCTRL_SEQSEL_DISABLE;
+		CCL->LUTCTRL[1].reg &= ~CCL_LUTCTRL_ENABLE;
+		CCL->LUTCTRL[1].reg =
+# if USE_TC_FOR_STEP
+			  	  	  	  CCL_LUTCTRL_INSEL2(CCL_LUTCTRL_INSEL0_TC_Val)		// take input from TC1.0
+# else
+						  CCL_LUTCTRL_INSEL2(CCL_LUTCTRL_INSEL0_IO_Val)		// take input from CCL1 IN2
+# endif
+						| CCL_LUTCTRL_INSEL0(CCL_LUTCTRL_INSEL0_MASK_Val)
+						| CCL_LUTCTRL_INSEL0(CCL_LUTCTRL_INSEL0_MASK_Val)
+						| CCL_LUTCTRL_TRUTH(0b00001111);
+		CCL->LUTCTRL[1].reg |= CCL_LUTCTRL_ENABLE;
+		CCL->CTRL.reg = CCL_CTRL_ENABLE;
+		SetPinFunction(InvertedStepPins[i], GpioPinFunction::I);			// CCL1out1 do this at the end to avoid a glitch on the output
+
+		// Direction pins
+		IoPort::SetPinMode(DirectionPins[i], OUTPUT_LOW);
+		SetDriveStrength(DirectionPins[i], 2);
+		IoPort::SetPinMode(InvertedDirectionPins[i], OUTPUT_HIGH);
+		SetDriveStrength(InvertedDirectionPins[i], 2);
+
+		// Enable pins
+		IoPort::SetPinMode(EnablePins[i], OUTPUT_LOW);
+		SetDriveStrength(EnablePins[i], 2);
+		IoPort::SetPinMode(InvertedEnablePins[i], OUTPUT_HIGH);
+		SetDriveStrength(InvertedEnablePins[i], 2);
+		enableValues[i] = 1;
+		driverIsEnabled[i] = false;
+#else
+		// Step pins
+# if ACTIVE_HIGH_STEP
+		IoPort::SetPinMode(StepPins[i], OUTPUT_LOW);
+# else
+		IoPort::SetPinMode(StepPins[i], OUTPUT_HIGH);
+# endif
+# if !HAS_SMART_DRIVERS
+		SetDriveStrength(StepPins[i], 2);
+# endif
+# if RP2040
+		SetPinFunction(StepPins[i], GpioPinFunction::Sio);			// enable fast stepping - must do this after the call to SetPinMode
+# endif
+
+		// Direction pins
+# if ACTIVE_HIGH_DIR
+		IoPort::SetPinMode(DirectionPins[i], OUTPUT_LOW);
+# else
+		IoPort::SetPinMode(DirectionPins[i], OUTPUT_HIGH);
+# endif
+# if !HAS_SMART_DRIVERS
+		SetDriveStrength(DirectionPins[i], 2);
+# endif
+
+# if !HAS_SMART_DRIVERS
+		// Enable pins
+#  if ACTIVE_HIGH_ENABLE
+		IoPort::SetPinMode(EnablePins[i], OUTPUT_LOW);
+		enableValues[i] = 1;
+#  else
+		IoPort::SetPinMode(EnablePins[i], OUTPUT_HIGH);
+		enableValues[i] = 0;
+#  endif
+		SetDriveStrength(EnablePins[i], 2);
+		driverIsEnabled[i] = false;
+# endif
+#endif
+
+#if !SINGLE_DRIVER
+		const uint32_t driverBit = 1u << (StepPins[i] & 31);
+		driveDriverBits[i] = driverBit;
+		allDriverBits |= driverBit;
+#endif
+		driverAtIdleCurrent[i] = false;
+		idleCurrentFactor[i] = 0.3;
+		motorCurrents[i] = 0.0;
+#if SUPPORT_BRAKE_PWM
+		currentBrakePwm[i] = 0.0;
+# if !defined(M23CL)
+		brakeOnPins[i] = NoPin;
+		brakeVoltages[i] = FullyOnBrakeVoltage;
+# endif
+#endif
+		driverStates[i] = DriverStateControl::driverDisabled;
+		brakeOffDelays[i] = 0;
+		motorOffDelays[i] = DefaultDelayAfterBrakeOn;
+		// We can't set microstepping here because moveInstance hasn't been created yet
+	}
+
+# if HAS_STALL_DETECT
+	eventOnStallDrivers.Clear();
+#endif
+
+#if HAS_SMART_DRIVERS && HAS_VOLTAGE_MONITOR
+	warnDriversNotPowered = false;
+#endif
+
+#ifdef M23CL
+	// Set the brake control pins to outputs, leaving the brake engaged
+	pinMode(BrakeOnPin, OUTPUT_LOW);
+	pinMode(BrakePwmPin, OUTPUT_LOW);
+#endif
+
 }
 
 void Move::Exit() noexcept
 {
 	StepTimer::DisableTimerInterrupt();
 	moveTask->TerminateAndUnlink();
+}
+
+void Move::Spin() noexcept
+{
+	// Check whether we need to turn any brake solenoids or motors off, or adjust brake PWM
+	for (size_t driver = 0; driver < NumDrivers; ++driver)
+	{
+		if (brakeOffTimers[driver].CheckAndStop(brakeOffDelays[driver]))
+		{
+			DisengageBrake(driver);
+		}
+		if (motorOffTimers[driver].CheckAndStop(motorOffDelays[driver]))
+		{
+			InternalDisableDrive(driver);
+		}
+
+#if SUPPORT_BRAKE_PWM
+		// If the brake solenoid is activated, adjust the PWM if necessary
+		if (currentBrakePwm[driver] != 0.0 && voltsVin > 0.0)
+		{
+			const float requestedVoltage =
+# ifdef M23CL
+											M23CLBrakeVoltage;
+# else
+											brakeVoltages[driver];
+# endif
+			const float newBrakePwm = min<float>(requestedVoltage/voltsVin, 1.0);
+			if (fabsf(newBrakePwm - currentBrakePwm[driver]) >= 0.05)
+			{
+# ifdef M23CL
+				AnalogOut::Write(BrakePwmPin, newBrakePwm, BrakePwmFrequency);
+# else
+				brakePwmPorts[driver].WriteAnalog(newBrakePwm);
+# endif
+				currentBrakePwm[driver] = newBrakePwm;
+			}
+		}
+#endif
+	}
+
+#if HAS_SMART_DRIVERS
+# if HAS_VOLTAGE_MONITOR
+	SmartDrivers::Spin(powered);
+# else
+	SmartDrivers::Spin(true);
+# endif
+
+	// Check one TMC driver for warnings and errors
+	if (enableValues[nextDriveToPoll] >= 0)				// don't poll driver if it is flagged "no poll"
+	{
+		StandardDriverStatus stat = SmartDrivers::GetStatus(nextDriveToPoll, true, true);
+		const DriversBitmap mask = DriversBitmap::MakeFromBits(nextDriveToPoll);
+
+		// First set the driver temperature status for the temperature sensor code
+		if (stat.ot)
+		{
+			temperatureShutdownDrivers |= mask;
+		}
+		else
+		{
+			if (stat.otpw)
+			{
+				temperatureWarningDrivers |= mask;
+			}
+			else
+			{
+				temperatureWarningDrivers &= ~mask;
+			}
+			temperatureShutdownDrivers &= ~mask;
+		}
+
+		// Deal with the open load bits
+		// The driver often produces a transient open-load error, especially in stealthchop mode, so we require the condition to persist before we report it.
+		// So clear them unless they have been active for the minimum time.
+		MillisTimer& timer = openLoadTimers[nextDriveToPoll];
+		if (stat.IsAnyOpenLoadBitSet())
+		{
+			if (timer.IsRunning())
+			{
+				if (!timer.CheckNoStop(OpenLoadTimeout))
+				{
+					stat.ClearOpenLoadBits();
+				}
+			}
+			else
+			{
+				timer.Start();
+				stat.ClearOpenLoadBits();
+			}
+		}
+		else
+		{
+			timer.Stop();
+		}
+
+		const StandardDriverStatus oldStatus = lastEventStatus[nextDriveToPoll];
+		lastEventStatus[nextDriveToPoll] = stat;
+		if (stat.HasNewErrorSince(oldStatus))
+		{
+			// It's a new error
+			CanInterface::RaiseEvent(EventType::driver_error, stat.AsU16(), nextDriveToPoll, "", va_list());
+		}
+		else if (stat.HasNewWarningSince(oldStatus))
+		{
+			// It's a new warning
+			CanInterface::RaiseEvent(EventType::driver_warning, stat.AsU16(), nextDriveToPoll, "", va_list());
+		}
+
+# if HAS_STALL_DETECT
+		if (stat.HasNewStallSince(oldStatus) && eventOnStallDrivers.Intersects(mask))
+		{
+			CanInterface::RaiseEvent(EventType::driver_stall, 0, nextDriveToPoll, "", va_list());
+		}
+# endif
+	}
+
+	// Advance drive number ready for next time
+	++nextDriveToPoll;
+	if (nextDriveToPoll == MaxSmartDrivers)
+	{
+		nextDriveToPoll = 0;
+	}
+#endif
 }
 
 [[noreturn]] void Move::TaskLoop() noexcept
@@ -173,9 +449,9 @@ void Move::Exit() noexcept
 
 void Move::Diagnostics(const StringRef& reply) noexcept
 {
-	reply.catf("Moves scheduled %" PRIu32 ", hiccups %" PRIu32 ", segs %u, step errors %u, maxLate %" PRIi32 " maxPrep %" PRIu32 ", maxOverdue %" PRIu32 ", maxInc %" PRIu32,
+	reply.catf("Moves scheduled %" PRIu32 ", hiccups %" PRIu32 ", segs %u, step errors %u, maxLate %" PRIi32 " maxPrep %" PRIu32,
 					scheduledMoves, numHiccups, MoveSegment::NumCreated(),
-					GetAndClearStepErrors(), DriveMovement::GetAndClearMaxStepsLate(), maxPrepareTime, GetAndClearMaxTicksOverdue(), GetAndClearMaxOverdueIncrement());
+					GetAndClearStepErrors(), DriveMovement::GetAndClearMaxStepsLate(), maxPrepareTime);
 	numHiccups = 0;
 	maxPrepareTime = 0;
 #if 1	//debug
@@ -185,11 +461,6 @@ void Move::Diagnostics(const StringRef& reply) noexcept
 	reply.catf(", ebfmin %.2f max %.2f", (double)minExtrusionPending, (double)maxExtrusionPending);
 	minExtrusionPending = maxExtrusionPending = 0.0;
 #endif
-}
-
-int32_t Move::GetPosition(size_t driver) const noexcept
-{
-	return dms[driver].currentMotorPosition;
 }
 
 // Set up a remote move. Return true if it represents real movement, else false.
@@ -229,7 +500,7 @@ bool Move::AddMove(const CanMessageMovementLinearShaped& msg) noexcept
 			{
 				AddLinearSegments(drive, msg.whenToExecute, params, extrusionRequested, segFlags);
 				//TODO will Move do the following?
-				EnableDrivers(drive, false);
+				EnableDrive(drive, qq, false);
 			}
 		}
 		else
@@ -240,7 +511,7 @@ bool Move::AddMove(const CanMessageMovementLinearShaped& msg) noexcept
 			{
 				AddLinearSegments(drive, msg.whenToExecute, params, delta, segFlags);
 				//TODO will Move do the following?
-				EnableDrivers(drive, false);
+				EnableDrive(drive, qq, false);
 			}
 		}
 	}
@@ -274,13 +545,16 @@ void Move::StepDrivers(uint32_t now) noexcept
 		if (IsSlowDriver())									// if using a slow driver
 		{
 #  if USE_TC_FOR_STEP
-			const uint32_t lastStepPulseTime = lastStepHighTime;
-			while (now - lastStepPulseTime < GetSlowDriverStepPeriodClocks() || now - lastDirChangeTime < GetSlowDriverDirSetupClocks())
+			if (dms[0].driversCurrentlyUsed != 0)
 			{
-				now = StepTimer::GetTimerTicks();
+				const uint32_t lastStepPulseTime = lastStepHighTime;
+				while (now - lastStepPulseTime < GetSlowDriverStepPeriodClocks() || now - lastDirChangeTime < GetSlowDriverDirSetupClocks())
+				{
+					now = StepTimer::GetTimerTicks();
+				}
+				StepGenTc->CTRLBSET.reg = TC_CTRLBSET_CMD_RETRIGGER;
+				lastStepHighTime = StepTimer::GetTimerTicks();
 			}
-			StepGenTc->CTRLBSET.reg = TC_CTRLBSET_CMD_RETRIGGER;
-			lastStepHighTime = StepTimer::GetTimerTicks();
 			(void)dms[0].CalcNextStepTime(now);
 #  else
 			uint32_t lastStepPulseTime = lastStepLowTime;
@@ -288,13 +562,13 @@ void Move::StepDrivers(uint32_t now) noexcept
 			{
 				now = StepTimer::GetTimerTicks();
 			}
-			StepDriverHigh();									// generate the step
+			StepDriversHigh(dms[0].driversCurrentlyUsed);						// generate the step
 			lastStepPulseTime = StepTimer::GetTimerTicks();
 			(void)dms[0].CalcNextStepTime(*this);
 
 			// 3a. Reset the step pin low
 			while (StepTimer::GetTimerTicks() - lastStepPulseTime < GetSlowDriverStepHighClocks()) {}
-			StepDriverLow();									// set all step pins low
+			StepDriversLow();													// set all step pins low
 			lastStepLowTime = StepTimer::GetTimerTicks();
 #  endif
 		}
@@ -302,12 +576,15 @@ void Move::StepDrivers(uint32_t now) noexcept
 # endif
 		{
 # if USE_TC_FOR_STEP
-			StepGenTc->CTRLBSET.reg = TC_CTRLBSET_CMD_RETRIGGER;
-			(void)dms[0].CalcNextStepTime(now);
+			if (dms[0].driversCurrentlyUsed != 0)
+			{
+				StepGenTc->CTRLBSET.reg = TC_CTRLBSET_CMD_RETRIGGER;
+				(void)dms[0].CalcNextStepTime(now);
+			}
 # else
-			StepDriverHigh();									// generate the step
+			StepDriversHigh(dms[0].driversCurrentlyUsed);						// generate the step
 			(void)dms[0].CalcNextStepTime(now);
-			StepDriverLow();									// set the step pin low
+			StepDriversLow();													// set the step pin low
 # endif
 		}
 
@@ -581,6 +858,410 @@ void Move::SetDriveStepsPerUnit(size_t drive, float val)
 	{
 		stepsPerMm[drive] = val;
 	}
+}
+
+void Move::SetDirectionValue(size_t drive, bool dVal) noexcept
+{
+	if (drive < NumDrivers)
+	{
+#if SUPPORT_CLOSED_LOOP
+		// We must prevent the closed loop task fetching the current position while we are changing the direction
+		if (directions[drive] != dVal)
+		{
+			TaskCriticalSectionLocker lock;
+			directions[drive] = dVal;
+			moveInstance->InvertCurrentMotorSteps(drive);
+		}
+#else
+		directions[drive] = dVal;
+#endif
+	}
+}
+
+bool Move::GetDirectionValue(size_t driver) const noexcept
+{
+	return (driver >= NumDrivers) || directions[driver];
+}
+
+#if SUPPORT_CLOSED_LOOP
+
+bool Platform::GetDirectionValueNoCheck(size_t driver) const noexcept
+{
+	return directions[driver];
+}
+
+#endif
+
+void Move::SetEnableValue(size_t driver, int8_t eVal) noexcept
+{
+	if (driver < NumDrivers)
+	{
+		enableValues[driver] = eVal;
+# if !HAS_SMART_DRIVERS
+		if (driverIsEnabled[driver])
+		{
+			EnableDrive(driver, 0);
+		}
+		else
+		{
+			DisableDrive(driver, 0);
+		}
+# endif
+	}
+}
+
+int8_t Move::GetEnableValue(size_t driver) const noexcept
+{
+	return (driver < NumDrivers) ? enableValues[driver] : 0;
+}
+
+void Move::EnableDrive(size_t driver, uint16_t brakeOffDelay) noexcept
+{
+	if (driverStates[driver] != DriverStateControl::driverActive)
+	{
+		motorOffTimers[driver].Stop();
+		driverStates[driver] = DriverStateControl::driverActive;
+		brakeOffDelays[driver] = brakeOffDelay;
+
+# if HAS_SMART_DRIVERS
+		if (driverAtIdleCurrent[driver])
+		{
+			driverAtIdleCurrent[driver] = false;
+#  if SUPPORT_CLOSED_LOOP
+			ClosedLoop::GetClosedLoopInstance(driver)->ResetError();
+#  endif
+			UpdateMotorCurrent(driver);
+		}
+		SmartDrivers::EnableDrive(driver, true);
+# else
+		if (enableValues[driver] >= 0)
+		{
+			digitalWrite(EnablePins[driver], enableValues[driver] != 0);
+#  if DIFFERENTIAL_STEPPER_OUTPUTS
+			digitalWrite(InvertedEnablePins[driver], enableValues[driver] == 0);
+#  endif
+		}
+# endif
+
+		// If the brake is not already energised to disengage it, delay before disengaging it
+# if SUPPORT_BRAKE_PWM
+#  ifdef M23CL
+		if (currentBrakePwm[driver] == 0.0)
+#  else
+		if (brakePwmPorts[driver].IsValid() && currentBrakePwm[driver] == 0.0)
+#  endif
+# else
+		if (brakePorts[driver].IsValid() && !brakePorts[driver].ReadDigital())
+# endif
+		{
+			if (brakeOffDelay != 0)
+			{
+				brakeOffTimers[driver].Start();
+			}
+			else
+			{
+				DisengageBrake(driver);
+			}
+		}
+	}
+}
+
+void Move::DisableDrive(size_t driver, uint16_t motorOffDelay) noexcept
+{
+	brakeOffTimers[driver].Stop();
+	driverStates[driver] = DriverStateControl::driverDisabled;
+# if SUPPORT_BRAKE_PWM
+#  ifdef M23CL
+	if (motorOffDelay != 0 && currentBrakePwm[driver] != 0.0)
+#  else
+	if (motorOffDelay != 0 && brakePwmPorts[driver].IsValid() && currentBrakePwm[driver] != 0.0)
+#  endif
+# else
+	if (motorOffDelay != 0 && brakePorts[driver].IsValid() && brakePorts[driver].ReadDigital())
+# endif
+	{
+		motorOffDelays[driver] = motorOffDelay;
+		EngageBrake(driver);
+		motorOffTimers[driver].Start();
+	}
+	else
+	{
+		EngageBrake(driver);
+		InternalDisableDrive(driver);
+	}
+}
+
+void Move::InternalDisableDrive(size_t driver) noexcept
+{
+# if HAS_SMART_DRIVERS
+	SmartDrivers::EnableDrive(driver, false);
+# else
+	if (enableValues[driver] >= 0)
+	{
+		digitalWrite(EnablePins[driver], enableValues[driver] == 0);
+#  if DIFFERENTIAL_STEPPER_OUTPUTS
+		digitalWrite(InvertedEnablePins[driver], enableValues[driver] != 0);
+#  endif
+	}
+# endif
+}
+
+void Move::SetDriverIdle(size_t driver, uint16_t idlePercent) noexcept
+{
+#if SUPPORT_CLOSED_LOOP
+	if (ClosedLoop::OkayToSetDriverIdle(driver))
+#endif
+	{
+		idleCurrentFactor[driver] = (float)idlePercent * 0.01;
+		driverStates[driver] = DriverStateControl::driverIdle;
+		if (idleCurrentFactor[driver] == 0.0)
+		{
+			InternalDisableDrive(driver);
+		}
+#if HAS_SMART_DRIVERS
+		else
+		{
+			driverAtIdleCurrent[driver] = true;
+			UpdateMotorCurrent(driver);
+		}
+#endif
+	}
+}
+
+void Move::DisableAllDrives() noexcept
+{
+	for (size_t driver = 0; driver < NumDrivers; ++driver)
+	{
+#if HAS_SMART_DRIVERS
+		SmartDrivers::EnableDrive(driver, false);
+#else
+		DisableDrive(driver, 0);
+#endif
+	}
+}
+
+#if HAS_SMART_DRIVERS
+
+void Move::UpdateMotorCurrent(size_t driver) noexcept
+{
+	SmartDrivers::SetCurrent(driver, (driverAtIdleCurrent[driver]) ? motorCurrents[driver] * idleCurrentFactor[driver] : motorCurrents[driver]);
+}
+void Move::SetMotorCurrent(size_t driver, float current) noexcept
+{
+	motorCurrents[driver] = current;
+	UpdateMotorCurrent(driver);
+}
+
+// TMC driver temperatures
+float Move::GetTmcDriversTemperature()
+{
+	const DriversBitmap mask = DriversBitmap::MakeLowestNBits(MaxSmartDrivers);
+	return (temperatureShutdownDrivers.Intersects(mask)) ? 150.0
+			: (temperatureWarningDrivers.Intersects(mask)) ? 100.0
+				: 0.0;
+}
+
+# if HAS_STALL_DETECT
+
+void Move::SetOrResetEventOnStall(DriversBitmap drivers, bool enable) noexcept
+{
+	if (enable)
+	{
+		eventOnStallDrivers |= drivers;
+	}
+	else
+	{
+		eventOnStallDrivers &= ~drivers;
+	}
+}
+
+bool Move::GetEventOnStall(unsigned int driver) noexcept
+{
+	return eventOnStallDrivers.IsBitSet(driver);
+}
+
+# endif
+
+#else
+
+StandardDriverStatus Move::GetStandardDriverStatus(size_t driver) noexcept
+{
+	//TODO implement alarm input
+	StandardDriverStatus rslt;
+	rslt.all = 0;
+	return rslt;
+}
+
+#endif
+
+#if SUPPORT_CLOSED_LOOP
+
+bool Move::EnableIfIdle(size_t driver) noexcept
+{
+	if (driverStates[driver] == DriverStateControl::driverIdle)
+	{
+		driverStates[driver] = DriverStateControl::driverActive;
+# if HAS_SMART_DRIVERS
+		driverAtIdleCurrent[driver] = false;
+		UpdateMotorCurrent(driver);
+# endif
+	}
+
+	return driverStates[driver] == DriverStateControl::driverActive;
+}
+
+#endif
+
+GCodeResult Move::ProcessM569Point7(const CanMessageGeneric& msg, const StringRef& reply) noexcept
+{
+# ifdef M23CL
+	reply.copy("Not supported by this board");
+	return GCodeResult::error;
+# else
+	CanMessageGenericParser parser(msg, M569Point7Params);
+	uint8_t drive;
+	if (!parser.GetUintParam('P', drive))
+	{
+		reply.copy("Missing P parameter in CAN message");
+		return GCodeResult::error;
+	}
+
+	if (drive >= NumDrivers)
+	{
+		reply.printf("Driver number %u.%u out of range", CanInterface::GetCanAddress(), drive);
+		return GCodeResult::error;
+	}
+
+# if !SUPPORT_BRAKE_PWM
+	if (parser.HasParameter('V'))
+	{
+		// Don't allow a brake port to be configured if the user specified a voltage and we don't support PWM
+		reply.copy("Brake PWM not supported by this board");
+		return GCodeResult::error;
+	}
+# endif
+
+	bool seen = false;
+	if (parser.HasParameter('C'))
+	{
+		String<StringLength20> portName;
+		parser.GetStringParam('C', portName.GetRef());
+# if SUPPORT_BRAKE_PWM
+		if (!brakePwmPorts[drive].AssignPort(
+# else
+		if (!brakePorts[drive].AssignPort(
+# endif
+											portName.c_str(), reply, PinUsedBy::gpout,
+											(driverStates[drive] == DriverStateControl::driverDisabled) ? PinAccess::write0 : PinAccess::write1
+										 )
+		   )
+		{
+			return GCodeResult::error;
+		}
+		seen = true;
+# if SUPPORT_BRAKE_PWM
+		brakePwmPorts[drive].SetFrequency(BrakePwmFrequency);
+#  if defined(EXP1HCL)
+		if (boardVariant >= 1)
+		{
+			brakeOnPins[drive] = (brakePwmPorts[drive].GetPin() == BrakePwmPin) ? BrakeOnPin : NoPin;
+		}
+#  endif
+# endif
+	}
+
+# if SUPPORT_BRAKE_PWM
+	if (parser.GetFloatParam('V', brakeVoltages[drive]))
+	{
+		seen = true;
+	}
+# endif
+
+	if (!seen)
+	{
+		reply.printf("Driver %u.%u uses brake port ", CanInterface::GetCanAddress(), drive);
+# if SUPPORT_BRAKE_PWM
+		brakePwmPorts[drive].AppendPinName(reply);
+		if (brakeVoltages[drive] < FullyOnBrakeVoltage)
+		{
+			reply.catf(" with voltage limited to %.1f by PWM", (double)brakeVoltages[drive]);
+		}
+# else
+		brakePorts[drive].AppendPinName(reply);
+# endif
+	}
+	return GCodeResult::ok;
+#endif
+}
+
+// Turn the brake solenoid on to disengage the brake
+void Move::DisengageBrake(size_t driver) noexcept
+{
+#if SUPPORT_BRAKE_PWM
+	// Set the PWM to deliver the requested voltage regardless of the VIN voltage
+	const float requestedVoltage =
+# ifdef M23CL
+									M23CLBrakeVoltage;
+# else
+									brakeVoltages[driver];
+# endif
+	currentBrakePwm[driver] = min<float>(requestedVoltage/AdcReadingToVinVoltage(max<uint16_t>(currentVin, 1)), 1.0);
+# ifdef M23CL
+	AnalogOut::Write(BrakePwmPin, currentBrakePwm[driver], BrakePwmFrequency);
+	digitalWrite(BrakeOnPin, true);
+# else
+	brakePwmPorts[driver].WriteAnalog(currentBrakePwm[driver]);
+	digitalWrite(brakeOnPins[driver], true);
+# endif
+#else
+	brakePorts[driver].WriteDigital(true);
+#endif
+}
+
+// Turn the brake solenoid off to re-engage the brake
+void Move::EngageBrake(size_t driver) noexcept
+{
+#if SUPPORT_BRAKE_PWM
+	currentBrakePwm[driver] = 0.0;
+# ifdef M23CL
+	AnalogOut::Write(BrakePwmPin, 0.0, BrakePwmFrequency);
+	digitalWrite(BrakeOnPin, false);
+# else
+	brakePwmPorts[driver].WriteAnalog(0.0);
+	digitalWrite(brakeOnPins[driver], false);
+# endif
+#else
+	brakePorts[driver].WriteDigital(false);
+#endif
+}
+
+// Function to broadcast the drivers status message. Called only by the Heat task.
+void Move::SendDriversStatus(CanMessageBuffer& buf) noexcept
+{
+	CanMessageDriversStatus * const msg = buf.SetupStatusMessage<CanMessageDriversStatus>(CanInterface::GetCanAddress(), CanInterface::GetCurrentMasterAddress());
+# if SUPPORT_CLOSED_LOOP
+	msg->SetStandardFields(NumDrivers, true);
+	for (size_t driver = 0; driver < NumDrivers; ++driver)
+	{
+		msg->closedLoopData[driver].status = SmartDrivers::GetStatus(driver, false, false).AsU32();
+		ClosedLoop::GetClosedLoopInstance(driver)->GetStatistics(msg->closedLoopData[driver]);
+	}
+# elif HAS_SMART_DRIVERS
+	// We currently assume that all drivers on this board are smart drivers. This isn't true on a Duet 3 Mini with external drivers connected to the expansion slot.
+	msg->SetStandardFields(MaxSmartDrivers, false);
+	for (size_t driver = 0; driver < MaxSmartDrivers; ++driver)
+	{
+		msg->openLoopData[driver].status = SmartDrivers::GetStatus(driver, false, false).AsU32();
+	}
+# else
+	msg->SetStandardFields(NumDrivers, false);
+	for (size_t driver = 0; driver < NumDrivers; ++driver)
+	{
+		msg->openLoopData[driver].status = GetStandardDriverStatus(driver).AsU32();
+	}
+# endif
+	buf.dataLength = msg->GetActualDataLength();
+	CanInterface::Send(&buf);
 }
 
 #if SUPPORT_SLOW_DRIVERS

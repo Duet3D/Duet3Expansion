@@ -22,6 +22,7 @@ Licence: GPL
 #include "Heater.h"
 #include <Platform/Platform.h>
 #include <Platform/TaskPriorities.h>
+#include <Movement/Move.h>
 #include "Sensors/TemperatureSensor.h"
 #include "Sensors/RemoteSensor.h"
 #include <CanMessageGenericParser.h>
@@ -249,7 +250,7 @@ void Heat::Exit()
 		if (newDriverFaultState == 1)
 		{
 			newDriverFaultState = 2;
-			Platform::SendDriversStatus(buf);
+			moveInstance->SendDriversStatus(buf);
 		}
 #endif
 
@@ -363,7 +364,7 @@ void Heat::Exit()
 #if SUPPORT_DRIVERS
 			if (newDriverFaultState == 0)
 			{
-				Platform::SendDriversStatus(buf);			// send the status of our drivers
+				moveInstance->SendDriversStatus(buf);		// send the status of our drivers
 			}
 			else
 			{

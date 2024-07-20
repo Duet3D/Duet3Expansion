@@ -127,42 +127,6 @@ namespace Platform
 	bool DebugPutc(char c);
 #endif
 
-#if SUPPORT_DRIVERS
-
-	inline unsigned int GetProhibitedExtruderMovements(unsigned int extrusions, unsigned int retractions) noexcept { return 0; }
-	void SetDirectionValue(size_t driver, bool dVal);
-	bool GetDirectionValue(size_t driver) noexcept;
-	bool GetDirectionValueNoCheck(size_t driver) noexcept;
-	void SetEnableValue(size_t driver, int8_t eVal) noexcept;
-	int8_t GetEnableValue(size_t driver) noexcept;
-	void EnableDrive(size_t driver, uint16_t brakeOffDelay) noexcept;
-	void DisableDrive(size_t driver, uint16_t motorOffDelay) noexcept;
-	void DisableAllDrives() noexcept;
-	void SetDriverIdle(size_t driver, uint16_t idlePercent) noexcept;
-# if SUPPORT_CLOSED_LOOP
-	bool EnableIfIdle(size_t driver);						// if the driver is idle, enable it; return true if driver enabled on return
-# endif
-
-	GCodeResult ProcessM569Point7(const CanMessageGeneric& msg, const StringRef& reply) noexcept;
-
-# if HAS_SMART_DRIVERS
-	void SetMotorCurrent(size_t driver, float current) noexcept;		//TODO avoid the int->float->int conversion
-	float GetTmcDriversTemperature() noexcept;
-#  if HAS_STALL_DETECT
-	void SetOrResetEventOnStall(DriversBitmap drivers, bool enable) noexcept;
-	bool GetEventOnStall(unsigned int driver) noexcept;
-#  endif
-# else
-	StandardDriverStatus GetStandardDriverStatus(size_t driver);
-# endif
-
-	// Signal that a new drivers fault has occurred and the main board needs to be told about it urgently
-	inline void NewDriverFault() noexcept { Heat::NewDriverFault(); }
-
-	// Function to send the status of our drivers - must be called only by the Heat task
-	void SendDriversStatus(CanMessageBuffer& buf) noexcept;
-#endif	//SUPPORT_DRIVERS
-
 #if SUPPORT_THERMISTORS
 	int GetAveragingFilterIndex(const IoPort&) noexcept;
 	void InitThermistorFilter(const IoPort& port) noexcept;

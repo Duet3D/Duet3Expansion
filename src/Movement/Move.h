@@ -15,10 +15,13 @@
 #include "DriveMovement.h"
 #include "AxisShaper.h"
 #include "ExtruderShaper.h"
+#include <CanMessageFormats.h>
+#include <CanMessageBuffer.h>
+#include <Hardware/IoPorts.h>
 
 #if SUPPORT_CLOSED_LOOP
 # include "StepperDrivers/TMC51xx.h"			// for SmartDrivers::GetMicrostepShift
-# include <Platform/Platform.h>					// for GetDirectionValueNoCheck
+//# include <Platform/Platform.h>					// for GetDirectionValueNoCheck
 #endif
 
 struct CanMessageStopMovement;
@@ -52,12 +55,41 @@ public:
 	Move() noexcept;
 	void Init() noexcept;															// Start me up
 	void Exit() noexcept;															// Shut down
+	void Spin() noexcept;
 	void Diagnostics(const StringRef& reply) noexcept;								// Report useful stuff
 
-	float GetSlowDriverStepHighMicroseconds() const noexcept;
-	float GetSlowDriverStepLowMicroseconds() const noexcept;
-	float GetSlowDriverDirSetupMicroseconds() const noexcept;
-	float GetSlowDriverDirHoldMicroseconds() const noexcept;
+	void SetDirectionValue(size_t driver, bool dVal);
+	bool GetDirectionValue(size_t driver) const noexcept;
+#if SUPPORT_CLOSED_LOOP
+	bool GetDirectionValueNoCheck(size_t driver) const noexcept;
+#endif
+
+	void SetEnableValue(size_t driver, int8_t eVal) noexcept;
+	int8_t GetEnableValue(size_t driver) const noexcept;
+	void EnableDrive(size_t driver, uint16_t brakeOffDelay) noexcept;
+	void DisableDrive(size_t driver, uint16_t motorOffDelay) noexcept;
+	void DisableAllDrives() noexcept;
+	void SetDriverIdle(size_t driver, uint16_t idlePercent) noexcept;
+
+# if SUPPORT_CLOSED_LOOP
+	bool EnableIfIdle(size_t driver);						// if the driver is idle, enable it; return true if driver enabled on return
+# endif
+
+	GCodeResult ProcessM569Point7(const CanMessageGeneric& msg, const StringRef& reply) noexcept;
+
+# if HAS_SMART_DRIVERS
+	void SetMotorCurrent(size_t driver, float current) noexcept;		//TODO avoid the int->float->int conversion
+	float GetTmcDriversTemperature() noexcept;
+#  if HAS_STALL_DETECT
+	void SetOrResetEventOnStall(DriversBitmap drivers, bool enable) noexcept;
+	bool GetEventOnStall(unsigned int driver) noexcept;
+#  endif
+# else
+	StandardDriverStatus GetStandardDriverStatus(size_t driver);
+# endif
+
+	// Function to send the status of our drivers - must be called only by the Heat task
+	void SendDriversStatus(CanMessageBuffer& buf) noexcept;
 
 	float DriveStepsPerUnit(size_t drive) const noexcept;
 	void SetDriveStepsPerUnit(size_t drive, float val) noexcept;
@@ -69,6 +101,11 @@ public:
 # else
 	bool IsSlowDriver(size_t drive) const noexcept { return slowDriversBitmap.IsBitSet(drive); }
 # endif
+
+	float GetSlowDriverStepHighMicroseconds() const noexcept;
+	float GetSlowDriverStepLowMicroseconds() const noexcept;
+	float GetSlowDriverDirSetupMicroseconds() const noexcept;
+	float GetSlowDriverDirHoldMicroseconds() const noexcept;
 #endif
 
 	void Interrupt() noexcept SPEED_CRITICAL;										// Timer callback for step generation
@@ -142,14 +179,67 @@ private:
 	void StopDriveFromRemote(size_t drive) noexcept;
 	bool StopAllDrivers(bool executingMove) noexcept;								// cancel the current isolated move
 
+	void StepDriversLow() noexcept;
+	void StepDriversHigh(uint32_t driverMap) noexcept;
+
+	void InternalDisableDrive(size_t driver) noexcept;
+	void DisengageBrake(size_t driver) noexcept;									// Turn the brake solenoid on to disengage the brake
+	void EngageBrake(size_t driver) noexcept;										// Turn the brake solenoid off to re-engage the brake
+
+	void UpdateMotorCurrent(size_t driver) noexcept;
+
 	// Convert microseconds to step clocks, rounding up
 	static uint32_t MicrosecondsToStepClocks(float us) noexcept
 	{
 		return (uint32_t)(((float)StepTimer::StepClockRate * us * 0.000001) + 0.99);
 	}
 
+	float stepsPerMm[NumDrivers];
 	bool directions[NumDrivers];
 	uint32_t scheduledMoves;														// Move counters for the code queue
+
+	bool driverAtIdleCurrent[NumDrivers];
+	int8_t enableValues[NumDrivers] = { 0 };
+
+#if SUPPORT_BRAKE_PWM
+# if defined(M23CL)
+	constexpr float M23CLBrakeVoltage = 24.0;
+# else
+	PwmPort brakePwmPorts[NumDrivers];
+	Pin brakeOnPins[NumDrivers];
+	float brakeVoltages[NumDrivers];
+	static constexpr float FullyOnBrakeVoltage = 100.0;			// this value means always use full voltage (don't PWM)
+# endif
+	float currentBrakePwm[NumDrivers];
+#else
+	IoPort brakePorts[NumDrivers];
+#endif
+
+	MillisTimer brakeOffTimers[NumDrivers];
+	MillisTimer motorOffTimers[NumDrivers];
+	uint16_t brakeOffDelays[NumDrivers];
+	uint16_t motorOffDelays[NumDrivers];
+
+	uint8_t driverStates[NumDrivers];
+	float motorCurrents[NumDrivers];
+	float idleCurrentFactor[NumDrivers];
+
+#if HAS_SMART_DRIVERS
+	DriversBitmap temperatureShutdownDrivers, temperatureWarningDrivers;
+	uint8_t nextDriveToPoll;
+	StandardDriverStatus lastEventStatus[NumDrivers];			// the status which we last reported as an event
+	MillisTimer openLoadTimers[NumDrivers];
+#else
+	bool driverIsEnabled[NumDrivers] = { false };
+#endif
+
+#if HAS_SMART_DRIVERS && HAS_VOLTAGE_MONITOR
+	bool warnDriversNotPowered;
+#endif
+
+#if HAS_STALL_DETECT
+	DriversBitmap eventOnStallDrivers;
+#endif
 
 #if SUPPORT_CLOSED_LOOP
 	float netMicrostepsTaken[NumDrivers];											// the net microsteps taken not counting any move that is in progress
@@ -161,25 +251,53 @@ private:
 	DriveMovement dms[NumDrivers];
 
 #if SINGLE_DRIVER
-	static void StepDriverLow() noexcept;
-	static void StepDriverHigh() noexcept;
 	void SetDirection(bool direction) noexcept;										// set the direction of a driver, observing timing requirements
 
-	static constexpr uint32_t DriverBit = 1u << (StepPins[0] & 31);
+	static constexpr uint32_t allDriverBits = 1u << (StepPins[0] & 31);
 #else
-	void StepDriversLow() noexcept;
-	static void StepDriversHigh(uint32_t driverMap) noexcept;
 	void SetDirection(size_t axisOrExtruder, bool direction) noexcept;				// set the direction of a driver, observing timing requirements
 	void InsertDM(DriveMovement *dm) noexcept;										// insert a DM into the active list, keeping it in step time order
 
 	DriveMovement *activeDMs;
 	uint32_t driveDriverBits[NumDrivers];
-	uint32_t allDriverBits;
+	uint32_t allDriverBits = 0;
 #endif
 
 #if SUPPORT_SLOW_DRIVERS
 	// Support for slow step pulse generation to suit external drivers
-	uint32_t slowDriverStepTimingClocks[4];
+# ifdef EXP1XD
+#  if USE_TC_FOR_STEP
+	// The first element of slowDriverStepTimingClocks is the pulse width in TC clocks. The other elements are in step clock units. The second element is the step high + step low time
+	static constexpr unsigned int TcPrescaler = 4;													// use prescaler 4
+	static constexpr uint32_t TcPrescalerRegVal = TC_CTRLA_PRESCALER_DIV4;							// use prescaler 4
+	static constexpr float StepPulseClocksPerMicrosecond = 48.0/TcPrescaler;						// we clock the TC from the 48MHz clock
+	static constexpr unsigned int StepClocksToStepTCClocks = 64/TcPrescaler;						// step clock uses the same 48MHz clock and x64 prescaler
+	static constexpr float MinimumStepHighMicroseconds = 0.2;
+
+	// Convert microseconds to StepTC step clocks, rounding up
+	static constexpr uint32_t MicrosecondsToStepTCClocks(float us) noexcept
+	{
+		return (uint32_t)((StepPulseClocksPerMicrosecond * us) + 0.99);
+	}
+
+	uint32_t slowDriverStepTimingClocks[4] = { 2 * StepClocksToStepTCClocks, 4, 2, 4 };				// default to slower timing for external drivers (2 clocks = 2.67us)
+
+#  else
+	// All elements are in step clock units. The second element is the step low time.
+	uint32_t slowDriverStepTimingClocks[4] = { 2, 2, 2, 2 };										// default to slower timing for external drivers (2 clocks = 2.67us)
+#  endif
+# else
+	uint32_t slowDriverStepTimingClocks[4] = { 0, 0, 0, 0 };										// default to fast timing
+# endif
+# if SINGLE_DRIVER
+#  ifdef EXP1XD
+	bool isSlowDriver = true;
+#  else
+	bool isSlowDriver = false;
+#  endif
+# else
+	DriversBitmap slowDriversBitmap;
+# endif
 
 # if USE_TC_FOR_STEP		// the first element has a special meaning when we use a TC to generate the steps
 	inline uint32_t GetSlowDriverStepPeriodClocks() const noexcept { return slowDriverStepTimingClocks[1]; }
@@ -191,12 +309,6 @@ private:
 # endif
 
 	inline uint32_t GetSlowDriverDirSetupClocks() { return slowDriverStepTimingClocks[2]; }
-
-# if SINGLE_DRIVER
-	bool isSlowDriver;
-# else
-	DriversBitmap slowDriversBitmap;
-# endif
 
 # if USE_TC_FOR_STEP
 	volatile uint32_t lastStepHighTime;								// when we last started a step pulse
@@ -232,6 +344,11 @@ inline void Move::UpdateExtrusionPendingLimits(float extrusionPending) noexcept
 	else if (extrusionPending < minExtrusionPending) { minExtrusionPending = extrusionPending; }
 }
 
+inline int32_t Move::GetPosition(size_t driver) const noexcept
+{
+	return dms[driver].currentMotorPosition;
+}
+
 /// Schedule the next interrupt, returning true if we can't because it is already due
 // Base priority must be >= NvicPriorityStep when calling this
 inline __attribute__((always_inline)) bool Move::ScheduleNextStepInterrupt() noexcept
@@ -263,33 +380,33 @@ inline __attribute__((always_inline)) bool Move::ScheduleNextStepInterrupt() noe
 	return false;
 }
 
-#if SINGLE_DRIVER
-
-inline void Move::StepDriverLow() noexcept
+inline void Move::StepDriversLow() noexcept
 {
 # if DIFFERENTIAL_STEPPER_OUTPUTS || ACTIVE_HIGH_STEP
 #  if RP2040
-	sio_hw->gpio_clr = DriverBit;
+	sio_hw->gpio_clr = allDriverBits;
 #  else
-	StepPio->OUTCLR.reg = DriverBit;
+	StepPio->OUTCLR.reg = allDriverBits;
 #  endif
 # else
-	StepPio->OUTSET.reg = DriverBit;
-# endif
-	}
-
-inline void Move::StepDriverHigh() noexcept
-{
-# if DIFFERENTIAL_STEPPER_OUTPUTS || ACTIVE_HIGH_STEP
-#  if RP2040
-	sio_hw->gpio_set = DriverBit;
-#  else
-	StepPio->OUTSET.reg = DriverBit;
-#  endif
-# else
-	StepPio->OUTCLR.reg = DriverBit;
+	StepPio->OUTSET.reg = allDriverBits;
 # endif
 }
+
+inline void Move::StepDriversHigh(uint32_t driverMap) noexcept
+{
+# if DIFFERENTIAL_STEPPER_OUTPUTS || ACTIVE_HIGH_STEP
+#  if RP2040
+	sio_hw->gpio_set = driverMap;
+#  else
+	StepPio->OUTSET.reg = driverMap;
+#  endif
+# else
+	StepPio->OUTCLR.reg = driverMap;
+# endif
+}
+
+#if SINGLE_DRIVER
 
 inline void Move::SetDirection(bool direction) noexcept
 {
@@ -330,32 +447,6 @@ inline void Move::SetDirection(bool direction) noexcept
 }
 
 #else
-
-inline void Move::StepDriversLow() noexcept
-{
-# if DIFFERENTIAL_STEPPER_OUTPUTS || ACTIVE_HIGH_STEP
-#  if RP2040
-	sio_hw->gpio_clr = allDriverBits;
-#  else
-	StepPio->OUTCLR.reg = allDriverBits;
-#  endif
-# else
-	StepPio->OUTSET.reg = allDriverBits;
-# endif
-}
-
-inline void Move::StepDriversHigh(uint32_t driverMap) noexcept
-{
-# if DIFFERENTIAL_STEPPER_OUTPUTS || ACTIVE_HIGH_STEP
-#  if RP2040
-	sio_hw->gpio_set = driverMap;
-#  else
-	StepPio->OUTSET.reg = driverMap;
-#  endif
-# else
-	StepPio->OUTCLR.reg = driverMap;
-# endif
-}
 
 inline void Move::SetDirection(size_t driver, bool direction) noexcept
 {

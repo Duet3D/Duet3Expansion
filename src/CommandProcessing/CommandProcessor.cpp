@@ -187,7 +187,7 @@ static GCodeResult SetMotorCurrents(const CanMessageMultipleDrivesRequest<float>
 							}
 							else
 							{
-								Platform::SetMotorCurrent(driver, msg.values[count]);
+								moveInstance->SetMotorCurrent(driver, msg.values[count]);
 #if SUPPORT_CLOSED_LOOP
 								ClosedLoop::GetClosedLoopInstance(driver)->UpdateStandstillCurrent();
 #endif
@@ -321,13 +321,13 @@ static GCodeResult ProcessM569(const CanMessageGeneric& msg, const StringRef& re
 	if (parser.GetUintParam('S', direction))
 	{
 		seen = true;
-		Platform::SetDirectionValue(drive, direction != 0);
+		moveInstance->SetDirectionValue(drive, direction != 0);
 	}
 	int8_t rValue;
 	if (parser.GetIntParam('R', rValue))
 	{
 		seen = true;
-		Platform::SetEnableValue(drive, rValue);
+		moveInstance->SetEnableValue(drive, rValue);
 	}
 
 #if SUPPORT_SLOW_DRIVERS
@@ -458,8 +458,8 @@ static GCodeResult ProcessM569(const CanMessageGeneric& msg, const StringRef& re
 		reply.printf("Driver %u.%u runs %s, active %s enable",
 						CanInterface::GetCanAddress(),
 						drive,
-						(Platform::GetDirectionValue(drive)) ? "forwards" : "in reverse",
-						(Platform::GetEnableValue(drive)) ? "high" : "low");
+						(moveInstance->GetDirectionValue(drive)) ? "forwards" : "in reverse",
+						(moveInstance->GetEnableValue(drive)) ? "high" : "low");
 
 #if SUPPORT_SLOW_DRIVERS
 # if SINGLE_DRIVER
@@ -599,18 +599,18 @@ static GCodeResult HandleSetDriverStates(const CanMessageMultipleDrivesRequest<D
 			switch (msg.values[count].mode)
 			{
 			case DriverStateControl::driverActive:
-				Platform::EnableDrive(driver, msg.values[count].idlePercentOrDelayAfterBrakeOn);
+				moveInstance->EnableDrive(driver, msg.values[count].idlePercentOrDelayAfterBrakeOn);
 				break;
 
 			case DriverStateControl::driverIdle:
-				Platform::SetDriverIdle(driver, msg.values[count].idlePercentOrDelayAfterBrakeOn >> 4);
+				moveInstance->SetDriverIdle(driver, msg.values[count].idlePercentOrDelayAfterBrakeOn >> 4);
 				break;
 
 			case DriverStateControl::driverDisabled:
 			default:
 				{
 					const uint16_t delay = msg.values[count].idlePercentOrDelayAfterBrakeOn;
-					Platform::DisableDrive(driver, (delay == 0) ? DefaultDelayAfterBrakeOn : delay);
+					moveInstance->DisableDrive(driver, (delay == 0) ? DefaultDelayAfterBrakeOn : delay);
 				}
 				break;
 			}
@@ -664,7 +664,7 @@ static GCodeResult ProcessM915(const CanMessageGeneric& msg, const StringRef& re
 		if (parser.GetUintParam('R', rParam))
 		{
 			seen = true;
-			Platform::SetOrResetEventOnStall(drivers, rParam != 0);
+			moveInstance->SetOrResetEventOnStall(drivers, rParam != 0);
 		}
 	}
 
@@ -675,7 +675,7 @@ static GCodeResult ProcessM915(const CanMessageGeneric& msg, const StringRef& re
 										reply.lcatf("Driver %u.%u: ", CanInterface::GetCanAddress(), drive);
 										SmartDrivers::AppendStallConfig(drive, reply);
 										reply.cat(", event on stall: ");
-										reply.cat((Platform::GetEventOnStall(drive)) ? "yes" : "no");
+										reply.cat((moveInstance->GetEventOnStall(drive)) ? "yes" : "no");
 									}
 					   );
 	}
@@ -1061,7 +1061,7 @@ void CommandProcessor::Spin()
 
 		case CanMessageType::m569p7:
 			requestId = buf->msg.generic.requestId;
-			rslt = Platform::ProcessM569Point7(buf->msg.generic, replyRef);
+			rslt = moveInstance->ProcessM569Point7(buf->msg.generic, replyRef);
 			break;
 
 		case CanMessageType::setStandstillCurrentFactor:

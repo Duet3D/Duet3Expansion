@@ -46,6 +46,7 @@ using std::numeric_limits;
 # include <math.h>
 # include <Platform/Platform.h>
 # include <Movement/Move.h>
+# include <Heating/Heat.h>				// for NewDriverFault()
 # include <General/Bitmap.h>
 # include <Platform/TaskPriorities.h>
 # include <CAN/CanInterface.h>
@@ -871,7 +872,7 @@ void ClosedLoop::InstanceControlLoop() noexcept
 						stall = errorThresholds[1] > 0 && positionErr > errorThresholds[1];
 						if (stall)
 						{
-							Platform::NewDriverFault();
+							Heat::NewDriverFault();
 						}
 						else
 						{
