@@ -70,9 +70,6 @@ public:
 	// Get the current position relative to the start of this move, speed and acceleration. Units are microsteps and step clocks.
 	// Return true if this drive is moving. Segments are advanced as necessary.
 	bool GetCurrentMotion(uint32_t ticksSinceStart, MotionParameters& mParams) noexcept;
-
-	// This is like getCurrentMotion but it just returns the distance and doesn't start new segments
-	int32_t GetNetStepsTakenClosedLoop(float topSpeed, int32_t ticksSinceStart) const noexcept;
 #endif
 
 	static int32_t GetAndClearMaxStepsLate() noexcept;
@@ -170,6 +167,16 @@ inline int32_t DriveMovement::GetAndClearMaxStepsLate() noexcept
 	return ret;
 }
 
+// Return the number of net steps already taken for the current segment in the forwards direction.
+// Caller must disable interrupts before calling this
+inline int32_t DriveMovement::GetNetStepsTaken() const noexcept
+{
+#if SUPPORT_CLOSED_LOOP
+	qq;				// we need to do this differently in closed loop mode
+#endif
+	return currentMotorPosition - positionAtSegmentStart;
+}
+
 #if HAS_SMART_DRIVERS
 
 // Get the current full step interval for this axis or extruder
@@ -186,43 +193,13 @@ inline uint32_t DriveMovement::GetStepInterval(uint32_t microstepShift) const no
 
 // Get the current position relative to the start of this move, speed and acceleration. Units are microsteps and step clocks.
 // Return true if this drive is moving. Segments are advanced as necessary.
+// Inlined because it is only called from one place
 inline bool DriveMovement::GetCurrentMotion(uint32_t ticksSinceStart, MotionParameters& mParams) noexcept
 {
 	AtomicCriticalSectionLocker lock;			// we don't want 'segments' changing while we do this
 	const MoveSegment *const ms = segments;
 	(void)ms;
-	qq;	//TODO
-}
-
-// This is like getCurrentMotion but it just returns the distance and doesn't start new segments
-inline int32_t DriveMovement::GetNetStepsTakenClosedLoop(float topSpeed, int32_t ticksSinceStart) const noexcept
-{
-	AtomicCriticalSectionLocker lock;			// we don't want 'segments' changing while we do this
-	const MoveSegment *const ms = segments;
-	float ret;
-	if (ms == nullptr)
-	{
-		ret = distanceSoFar;
-	}
-	else
-	{
-		const float timeSinceMoveStart = (float)ticksSinceStart;
-		const float segTimeRemaining = timeSoFar - timeSinceMoveStart;
-		if (segTimeRemaining <= 0.0)
-		{
-			ret = distanceSoFar;
-		}
-		else if (ms->IsLinear())
-		{
-			ret = (timeSinceMoveStart - pB) * topSpeed;
-		}
-		else
-		{
-			ret = 0.5 * ms->GetAcceleration() * (fsquare(timeSinceMoveStart - pB) - pA);
-		}
-	}
-	const float multiplier = (direction != directionReversed) ? mp.cart.effectiveStepsPerMm : -mp.cart.effectiveStepsPerMm;
-	return lrintf(ret * multiplier);
+	return qq;	//TODO
 }
 
 #endif	// SUPPORT_CLOSED_LOOP
