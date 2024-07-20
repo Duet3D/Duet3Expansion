@@ -372,7 +372,7 @@ void RotatingMagnetFilamentMonitor::HandleDirectAS5601Data() noexcept
 				if (synced)
 				{
 					if (   checkNonPrintingMoves
-						|| (wasPrintingAtStartBit && (int32_t)(lastSyncTime - moveInstance->ExtruderPrintingSince()) >= SyncDelayMillis)
+						|| (wasPrintingAtStartBit && (int32_t)(lastSyncTime - moveInstance->ExtruderPrintingSince(GetDriver())) >= SyncDelayMillis)
 					   )
 					{
 						// We can use this measurement
