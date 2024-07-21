@@ -1834,6 +1834,11 @@ void Move::ClosedLoopControlLoop() noexcept
 	}
 }
 
+void Move::ClosedLoopDiagnostics(size_t driver, const StringRef& reply) noexcept
+{
+	dms[driver].closedLoopControl.InstanceDiagnostics(driver, reply);
+}
+
 #endif
 
 #endif	//SUPPORT_DRIVERS

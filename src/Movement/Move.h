@@ -163,12 +163,14 @@ public:
 	GCodeResult ProcessM569Point5(const CanMessageStartClosedLoopDataCollection&, const StringRef& reply) noexcept;
 	GCodeResult ProcessM569Point6(const CanMessageGeneric& msg, const StringRef& reply) noexcept;
 
-	bool EnableIfIdle(size_t driver);						// if the driver is idle, enable it; return true if driver enabled on return
+	bool IsClosedLoopEnabled(size_t driver) const noexcept { return dms[driver].closedLoopControl.IsClosedLoopEnabled(); }
+	bool EnableIfIdle(size_t driver) noexcept;										// if the driver is idle, enable it; return true if driver enabled on return
 	bool GetCurrentMotion(size_t driver, uint32_t when, MotionParameters& mParams) noexcept;	// get the net full steps taken, including in the current move so far, also speed and acceleration; return true if moving
 	void SetCurrentMotorSteps(size_t driver, float fullSteps) noexcept;
 	void InvertCurrentMotorSteps(size_t driver) noexcept;
 
 	void ClosedLoopControlLoop() noexcept;
+	void ClosedLoopDiagnostics(size_t driver, const StringRef& reply) noexcept;
 #endif
 
 private:
@@ -377,7 +379,10 @@ inline GCodeResult Move::HandleInputShaping(const CanMessageSetInputShapingNew& 
 inline __attribute__((always_inline)) bool Move::ScheduleNextStepInterrupt() noexcept
 {
 #if SINGLE_DRIVER
-	if (!dms[0].closedLoopControl.IsClosedLoopEnabled() &&
+	if (
+# if SUPPORT_CLOSED_LOOP
+		!dms[0].closedLoopControl.IsClosedLoopEnabled() &&
+# endif
 		dms[0].state >= DMState::firstMotionState
 	   )
 	{
@@ -389,7 +394,7 @@ inline __attribute__((always_inline)) bool Move::ScheduleNextStepInterrupt() noe
 	}
 #else
 	if (activeDMs != nullptr)
-		{
+	{
 # if DEDICATED_STEP_TIMER
 		return StepTimer::ScheduleMovementCallbackFromIsr(activeDMs->nextStepTime);
 # else

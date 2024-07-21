@@ -1092,7 +1092,7 @@ void ClosedLoop::InstanceDiagnostics(size_t driver, const StringRef& reply) noex
 {
 	for (size_t i = 0; i < NumDrivers; ++i)
 	{
-		closedLoopInstances[i]->InstanceDiagnostics(i, reply);
+		moveInstance->ClosedLoopDiagnostics(i, reply);
 	}
 }
 

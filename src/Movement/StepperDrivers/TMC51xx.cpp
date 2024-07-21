@@ -849,12 +849,12 @@ void TmcDriverState::UpdateCurrent() noexcept
 	const uint16_t desiredStandstillCurrentFraction =
 #if SUPPORT_CLOSED_LOOP
 # if SINGLE_DRIVER
-		moveInstance->IsClosedLoopEnabled(axisNumber)) ? 256 : standstillCurrentFraction;
+					(moveInstance->IsClosedLoopEnabled(axisNumber)) ? 256 : standstillCurrentFraction;
 # else
 #  error Multiple closed loop drivers not supported here
 # endif
 #else
-		standstillCurrentFraction;
+					standstillCurrentFraction;
 #endif
 	const uint16_t limitedStandstillCurrentFraction = (motorCurrent * desiredStandstillCurrentFraction <= MaxStandstillCurrentTimes256)
 														? desiredStandstillCurrentFraction
