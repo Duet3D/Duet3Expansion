@@ -305,7 +305,7 @@ void Move::Spin() noexcept
 			if (fabsf(newBrakePwm - currentBrakePwm[driver]) >= 0.05)
 			{
 # ifdef M23CL
-				AnalogOut::Write(BrakePwmPin, newBrakePwm, BrakePwmFrequency);
+				IoPort::WriteAnalog(BrakePwmPin, newBrakePwm, BrakePwmFrequency);
 # else
 				brakePwmPorts[driver].WriteAnalog(newBrakePwm);
 # endif
@@ -507,7 +507,7 @@ bool Move::AddMove(const CanMessageMovementLinearShaped& msg) noexcept
 			{
 				AddLinearSegments(drive, msg.whenToExecute, params, extrusionRequested, segFlags);
 				//TODO will Move do the following?
-				EnableDrive(drive, qq, false);
+				EnableDrive(drive);
 			}
 		}
 		else
@@ -518,7 +518,7 @@ bool Move::AddMove(const CanMessageMovementLinearShaped& msg) noexcept
 			{
 				AddLinearSegments(drive, msg.whenToExecute, params, delta, segFlags);
 				//TODO will Move do the following?
-				EnableDrive(drive, qq, false);
+				EnableDrive(drive);
 			}
 		}
 	}
@@ -916,13 +916,12 @@ int8_t Move::GetEnableValue(size_t driver) const noexcept
 	return (driver < NumDrivers) ? enableValues[driver] : 0;
 }
 
-void Move::EnableDrive(size_t driver, uint16_t brakeOffDelay) noexcept
+void Move::EnableDrive(size_t driver) noexcept
 {
 	if (driverStates[driver] != DriverStateControl::driverActive)
 	{
 		motorOffTimers[driver].Stop();
 		driverStates[driver] = DriverStateControl::driverActive;
-		brakeOffDelays[driver] = brakeOffDelay;
 
 # if HAS_SMART_DRIVERS
 		if (driverAtIdleCurrent[driver])
@@ -955,7 +954,7 @@ void Move::EnableDrive(size_t driver, uint16_t brakeOffDelay) noexcept
 		if (brakePorts[driver].IsValid() && !brakePorts[driver].ReadDigital())
 # endif
 		{
-			if (brakeOffDelay != 0)
+			if (brakeOffDelays[driver] != 0)
 			{
 				brakeOffTimers[driver].Start();
 			}
@@ -967,21 +966,20 @@ void Move::EnableDrive(size_t driver, uint16_t brakeOffDelay) noexcept
 	}
 }
 
-void Move::DisableDrive(size_t driver, uint16_t motorOffDelay) noexcept
+void Move::DisableDrive(size_t driver) noexcept
 {
 	brakeOffTimers[driver].Stop();
 	driverStates[driver] = DriverStateControl::driverDisabled;
 # if SUPPORT_BRAKE_PWM
 #  ifdef M23CL
-	if (motorOffDelay != 0 && currentBrakePwm[driver] != 0.0)
+	if (motorOffDelays[driver] != 0 && currentBrakePwm[driver] != 0.0)
 #  else
-	if (motorOffDelay != 0 && brakePwmPorts[driver].IsValid() && currentBrakePwm[driver] != 0.0)
+	if (motorOffDelays[driver] != 0 && brakePwmPorts[driver].IsValid() && currentBrakePwm[driver] != 0.0)
 #  endif
 # else
-	if (motorOffDelay != 0 && brakePorts[driver].IsValid() && brakePorts[driver].ReadDigital())
+	if (motorOffDelays[driver] != 0 && brakePorts[driver].IsValid() && brakePorts[driver].ReadDigital())
 # endif
 	{
-		motorOffDelays[driver] = motorOffDelay;
 		EngageBrake(driver);
 		motorOffTimers[driver].Start();
 	}
@@ -1160,6 +1158,8 @@ GCodeResult Move::ProcessM569Point7(const CanMessageGeneric& msg, const StringRe
 			return GCodeResult::error;
 		}
 		seen = true;
+		motorOffDelays[drive] = brakeOffDelays[drive] = DefaultDelayAfterBrakeOn;
+
 # if SUPPORT_BRAKE_PWM
 		brakePwmPorts[drive].SetFrequency(BrakePwmFrequency);
 #  if defined(EXP1HCL)
@@ -1169,6 +1169,15 @@ GCodeResult Move::ProcessM569Point7(const CanMessageGeneric& msg, const StringRe
 		}
 #  endif
 # endif
+	}
+
+	{
+		uint16_t brakeDelay;
+		if (parser.GetUintParam('S', brakeDelay))
+		{
+			seen = true;
+			motorOffDelays[drive] = brakeOffDelays[drive] = brakeDelay;
+		}
 	}
 
 # if SUPPORT_BRAKE_PWM
@@ -1190,6 +1199,7 @@ GCodeResult Move::ProcessM569Point7(const CanMessageGeneric& msg, const StringRe
 # else
 		brakePorts[drive].AppendPinName(reply);
 # endif
+		reply.catf(", brake delay %ums", motorOffDelays[drive]);
 	}
 	return GCodeResult::ok;
 #endif
@@ -1209,7 +1219,7 @@ void Move::DisengageBrake(size_t driver) noexcept
 	const float currentVinVoltage = Platform::GetCurrentVinVoltage();
 	currentBrakePwm[driver] = (currentVinVoltage < requestedVoltage) ? 1.0 : requestedVoltage/currentVinVoltage;
 # ifdef M23CL
-	AnalogOut::Write(BrakePwmPin, currentBrakePwm[driver], BrakePwmFrequency);
+	IoPort::WriteAnalog(BrakePwmPin, currentBrakePwm[driver], BrakePwmFrequency);
 	digitalWrite(BrakeOnPin, true);
 # else
 	brakePwmPorts[driver].WriteAnalog(currentBrakePwm[driver]);
@@ -1226,7 +1236,7 @@ void Move::EngageBrake(size_t driver) noexcept
 #if SUPPORT_BRAKE_PWM
 	currentBrakePwm[driver] = 0.0;
 # ifdef M23CL
-	AnalogOut::Write(BrakePwmPin, 0.0, BrakePwmFrequency);
+	IoPort::WriteAnalog(BrakePwmPin, 0.0, BrakePwmFrequency);
 	digitalWrite(BrakeOnPin, false);
 # else
 	brakePwmPorts[driver].WriteAnalog(0.0);

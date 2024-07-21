@@ -76,8 +76,8 @@ public:
 
 	void SetEnableValue(size_t driver, int8_t eVal) noexcept;
 	int8_t GetEnableValue(size_t driver) const noexcept;
-	void EnableDrive(size_t driver, uint16_t brakeOffDelay) noexcept;
-	void DisableDrive(size_t driver, uint16_t motorOffDelay) noexcept;
+	void EnableDrive(size_t driver) noexcept;
+	void DisableDrive(size_t driver) noexcept;
 	void DisableAllDrives() noexcept;
 	void SetDriverIdle(size_t driver, uint16_t idlePercent) noexcept;
 
@@ -151,10 +151,6 @@ public:
 
 	// Movement error handling
 	void LogStepError(uint8_t type) noexcept;										// stop all movement because of a step error
-	uint8_t GetStepErrorType() const noexcept { return stepErrorType; }
-	bool HasMovementError() const noexcept;
-	void ResetAfterError() noexcept;
-	void GenerateMovementErrorDebug() noexcept;
 
 	int32_t GetLastMoveStepsTaken(size_t drive) const noexcept { return lastMoveStepsTaken[drive]; }
 
@@ -209,7 +205,7 @@ private:
 
 #if SUPPORT_BRAKE_PWM
 # if defined(M23CL)
-	constexpr float M23CLBrakeVoltage = 24.0;
+	static constexpr float M23CLBrakeVoltage = 24.0;
 # else
 	PwmPort brakePwmPorts[NumDrivers];
 	Pin brakeOnPins[NumDrivers];
