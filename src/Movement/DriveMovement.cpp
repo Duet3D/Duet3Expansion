@@ -78,7 +78,11 @@ void DriveMovement::AddSegment(uint32_t startTime, uint32_t duration, motioncalc
 
 	// Shut out the step interrupt and task switching while we mess with the segments
 	// TODO probably only need to shut out task switching here, or shut out the step interrupt but leave the UART interrupt enabled
+#if SAMC21 || RP2040
+	const uint32_t oldFlags = IrqSave();
+#else
 	const uint32_t oldPrio = ChangeBasePriority(NvicPriorityStep);		// shut out the step interrupt
+#endif
 	const uint32_t criticalStartTime = StepTimer::GetTimerTicks();
 
 	MoveSegment *seg = segments;
@@ -94,7 +98,11 @@ void DriveMovement::AddSegment(uint32_t startTime, uint32_t duration, motioncalc
 			 {
 				 const uint32_t now = StepTimer::GetMovementTimerTicks();
 				 LogStepError(3);
+#if SAMC21 || RP2040
+				 IrqRestore(oldFlags);
+#else
 				 RestoreBasePriority(oldPrio);
+#endif
 				 if (Platform::Debug(Module::Move))
 				 {
 					 debugPrintf("overlaps executing seg %" PRIi32 " while trying to add s=%" PRIu32 " t=%" PRIu32 " d=%.2f a=%.4e f=%02" PRIx32 " at time %" PRIu32 "\n",
@@ -269,7 +277,11 @@ finished:
 	MoveSegment::DebugPrintList(segments);
 #endif
 	const uint32_t elapsedTime = StepTimer::GetTimerTicks() - criticalStartTime;
+#if SAMC21 || RP2040
+	IrqRestore(oldFlags);
+#else
 	RestoreBasePriority(oldPrio);
+#endif
 	if (elapsedTime > maxCriticalElapsedTime) { maxCriticalElapsedTime = elapsedTime; }	//DEBUG
 }
 

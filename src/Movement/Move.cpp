@@ -774,7 +774,11 @@ void Move::AddLinearSegments(size_t logicalDrive, uint32_t startTime, const Prep
 
 	// If there were no segments attached to this DM initially, we need to schedule the interrupt for the new segment at the start of the list.
 	// Don't do this until we have added all the segments for this move, because the first segment we added may have been modified and/or split when we added further segments to implement input shaping
+#if SAMC21 || RP2040
+	const uint32_t oldFlags = IrqSave();
+#else
 	const uint32_t oldPrio = ChangeBasePriority(NvicPriorityStep);					// shut out the step interrupt
+#endif
 	if (dmp->state == DMState::idle)
 	{
 		if (dmp->ScheduleFirstSegment())
@@ -791,7 +795,11 @@ void Move::AddLinearSegments(size_t logicalDrive, uint32_t startTime, const Prep
 			}
 		}
 	}
+#if SAMC21 || RP2040
+	IrqRestore(oldFlags);
+#else
 	RestoreBasePriority(oldPrio);
+#endif
 }
 
 // Filament monitor support
@@ -901,11 +909,11 @@ void Move::SetEnableValue(size_t driver, int8_t eVal) noexcept
 # if !HAS_SMART_DRIVERS
 		if (driverIsEnabled[driver])
 		{
-			EnableDrive(driver, 0);
+			EnableDrive(driver);
 		}
 		else
 		{
-			DisableDrive(driver, 0);
+			DisableDrive(driver);
 		}
 # endif
 	}
@@ -1034,7 +1042,7 @@ void Move::DisableAllDrives() noexcept
 #if HAS_SMART_DRIVERS
 		SmartDrivers::EnableDrive(driver, false);
 #else
-		DisableDrive(driver, 0);
+		DisableDrive(driver);
 #endif
 	}
 }
