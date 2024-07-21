@@ -65,10 +65,10 @@ public:
 	// Closed loop public methods
 	void InitInstance() noexcept;
 
-	GCodeResult InstanceProcessM569Point1(CanMessageGenericParser& parser, const StringRef& reply) noexcept;
-	GCodeResult InstanceProcessM569Point4(CanMessageGenericParser& parser, const StringRef& reply) noexcept;
-	GCodeResult InstanceProcessM569Point5(const CanMessageStartClosedLoopDataCollection&, const StringRef& reply) noexcept;
-	GCodeResult InstanceProcessM569Point6(CanMessageGenericParser& parser, const StringRef& reply) noexcept;
+	GCodeResult ProcessM569Point1(CanMessageGenericParser& parser, const StringRef& reply) noexcept;
+	GCodeResult ProcessM569Point4(CanMessageGenericParser& parser, const StringRef& reply) noexcept;
+	GCodeResult ProcessM569Point5(const CanMessageStartClosedLoopDataCollection&, const StringRef& reply) noexcept;
+	GCodeResult ProcessM569Point6(CanMessageGenericParser& parser, const StringRef& reply) noexcept;
 	void UpdateStandstillCurrent() noexcept;
 
 	const char *_ecv_array GetModeText() const noexcept;
@@ -82,7 +82,7 @@ public:
 	void DriverSwitchedToClosedLoop() noexcept;
 	void ResetError() noexcept;
 	bool OkayToSetDriverIdle() const noexcept;
-	StandardDriverStatus ModifyDriverStatus(StandardDriverStatus originalStatus) noexcept;
+	StandardDriverStatus ModifyDriverStatus(StandardDriverStatus originalStatus) const noexcept;
 	void GetStatistics(CanMessageDriversStatus::ClosedLoopStatus& stat) noexcept;
 
 	// Methods called by the encoders
@@ -90,13 +90,6 @@ public:
 	static void DisableEncodersSpi() noexcept;
 
 	static void Init() noexcept;
-	static void ControlLoop() noexcept;
-	static ClosedLoop *_ecv_null GetClosedLoopInstance(size_t driver) noexcept;
-	static GCodeResult ProcessM569Point1(const CanMessageGeneric& msg, const StringRef& reply) noexcept;
-	static GCodeResult ProcessM569Point4(const CanMessageGeneric& msg, const StringRef& reply) noexcept;
-	static GCodeResult ProcessM569Point5(const CanMessageStartClosedLoopDataCollection&, const StringRef& reply) noexcept;
-	static GCodeResult ProcessM569Point6(const CanMessageGeneric& msg, const StringRef& reply) noexcept;
-	static bool OkayToSetDriverIdle(size_t driver) noexcept;
 	static void Diagnostics(const StringRef& reply) noexcept;
 
 	// Functions run by tasks
@@ -137,8 +130,6 @@ private:
 		OnNextMove,			// collect data when the next movement command starts executing
 		SendingData			// finished collecting data but still sending it to the main board
 	};
-
-	static ClosedLoop *closedLoopInstances[NumDrivers];
 
 	Encoder *encoder = nullptr;									// Pointer to the encoder object in use
 	volatile uint8_t tuning = 0;								// Bitmask of any tuning manoeuvres that have been requested
@@ -226,7 +217,8 @@ private:
 
 	DerivativeAveragingFilter<DerivativeFilterSize> errorDerivativeFilter;	// An averaging filter to smooth the derivative of the error
 	DerivativeAveragingFilter<SpeedFilterSize> speedFilter;		// An averaging filter to smooth the actual speed
-	SampleBuffer sampleBuffer;									// buffer for collecting samples - declare this last because it is large
+
+	static SampleBuffer sampleBuffer;							// buffer for collecting samples - shared between all drives if we have more than one
 
 	// Functions private to this module
 	EncoderType GetEncoderType() noexcept
@@ -256,19 +248,6 @@ private:
 inline bool ClosedLoop::IsClosedLoopEnabled() const noexcept
 {
 	return currentMode != ClosedLoopMode::open;
-}
-
-inline ClosedLoop *ClosedLoop::GetClosedLoopInstance(size_t driver) noexcept
-{
-	return (driver < NumDrivers) ? closedLoopInstances[driver] : nullptr;
-}
-
-inline void ClosedLoop::ControlLoop() noexcept
-{
-	for (ClosedLoop* instance : closedLoopInstances)
-	{
-		instance->InstanceControlLoop();
-	}
 }
 
 // The encoder uses the standard shared SPI device, so we don't need to enable/disable it

@@ -110,7 +110,7 @@ static GCodeResult GenerateTestReport(const CanMessageGeneric &msg, const String
 	bool driversOK = true;
 	for (size_t driver = 0; driver < NumDrivers; ++driver)
 	{
-		const StandardDriverStatus stat = SmartDrivers::GetStatus(driver, true, false);
+		const StandardDriverStatus stat = moveInstance->GetDriverStatus(driver, true, false);
 		if (stat.ot || stat.otpw)
 		{
 			reply.lcatf("Driver %u reports over temperature", driver);
@@ -166,74 +166,6 @@ static GCodeResult GenerateTestReport(const CanMessageGeneric &msg, const String
 }
 
 #if SUPPORT_DRIVERS
-
-static GCodeResult SetMotorCurrents(const CanMessageMultipleDrivesRequest<float>& msg, size_t dataLength, const StringRef& reply)
-{
-# if HAS_SMART_DRIVERS
-	const auto drivers = Bitmap<uint16_t>::MakeFromRaw(msg.driversToUpdate);
-	if (dataLength < msg.GetActualDataLength(drivers.CountSetBits()))
-	{
-		reply.copy("bad data length");
-		return GCodeResult::error;
-	}
-
-	GCodeResult rslt = GCodeResult::ok;
-	drivers.Iterate([&msg, &reply, &rslt](unsigned int driver, unsigned int count) -> void
-						{
-							if (driver >= NumDrivers)
-							{
-								reply.lcatf("No such driver %u.%u", CanInterface::GetCanAddress(), driver);
-								rslt = GCodeResult::error;
-							}
-							else
-							{
-								moveInstance->SetMotorCurrent(driver, msg.values[count]);
-#if SUPPORT_CLOSED_LOOP
-								ClosedLoop::GetClosedLoopInstance(driver)->UpdateStandstillCurrent();
-#endif
-							}
-						}
-				   );
-	return rslt;
-# else
-	reply.copy("Setting not available for external drivers");
-	return GCodeResult::error;
-# endif
-}
-
-static GCodeResult SetStandstillCurrentFactor(const CanMessageMultipleDrivesRequest<float>& msg, size_t dataLength, const StringRef& reply)
-{
-# if HAS_SMART_DRIVERS
-	const auto drivers = Bitmap<uint16_t>::MakeFromRaw(msg.driversToUpdate);
-	if (dataLength < msg.GetActualDataLength(drivers.CountSetBits()))
-	{
-		reply.copy("bad data length");
-		return GCodeResult::error;
-	}
-
-	GCodeResult rslt = GCodeResult::ok;
-	drivers.Iterate([&msg, &reply, &rslt](unsigned int driver, unsigned int count) -> void
-						{
-							if (driver >= NumDrivers)
-							{
-								reply.lcatf("No such driver %u.%u", CanInterface::GetCanAddress(), driver);
-								rslt = GCodeResult::error;
-							}
-							else
-							{
-								SmartDrivers::SetStandstillCurrentPercent(driver, msg.values[count]);
-#if SUPPORT_CLOSED_LOOP
-								ClosedLoop::GetClosedLoopInstance(driver)->UpdateStandstillCurrent();
-#endif
-							}
-						}
-				   );
-	return rslt;
-# else
-	reply.copy("Setting not available for external drivers");
-	return GCodeResult::error;
-# endif
-}
 
 static GCodeResult HandlePressureAdvance(const CanMessageMultipleDrivesRequest<float>& msg, size_t dataLength, const StringRef& reply)
 {
@@ -298,255 +230,6 @@ static GCodeResult SetStepsPerMmAndMicrostepping(const CanMessageMultipleDrivesR
 						}
 					);
 	return rslt;
-}
-
-static GCodeResult ProcessM569(const CanMessageGeneric& msg, const StringRef& reply)
-{
-	CanMessageGenericParser parser(msg, M569Params);
-	uint8_t drive;
-	if (!parser.GetUintParam('P', drive))
-	{
-		reply.copy("Missing P parameter in CAN message");
-		return GCodeResult::error;
-	}
-
-	if (drive >= NumDrivers)
-	{
-		reply.printf("Driver number %u.%u out of range", CanInterface::GetCanAddress(), drive);
-		return GCodeResult::error;
-	}
-
-	bool seen = false;
-	uint8_t direction;
-	if (parser.GetUintParam('S', direction))
-	{
-		seen = true;
-		moveInstance->SetDirectionValue(drive, direction != 0);
-	}
-	int8_t rValue;
-	if (parser.GetIntParam('R', rValue))
-	{
-		seen = true;
-		moveInstance->SetEnableValue(drive, rValue);
-	}
-
-#if SUPPORT_SLOW_DRIVERS
-	float timings[4];
-	size_t numTimings = 4;
-	if (parser.GetFloatArrayParam('T', numTimings, timings))
-	{
-		seen = true;
-		if (numTimings == 1)
-		{
-			timings[1] = timings[2] = timings[3] = timings[0];
-		}
-		else if (numTimings != 4)
-		{
-			reply.copy("bad timing parameter, expected 1 or 4 values");
-			return GCodeResult::error;
-		}
-		moveInstance->SetDriverStepTiming(drive, timings);
-	}
-#endif
-
-#if HAS_SMART_DRIVERS
-	{
-		uint32_t val;
-		if (parser.GetUintParam('D', val))	// set driver mode
-		{
-			seen = true;
-# if SUPPORT_CLOSED_LOOP
-			// Enable/disabled closed loop control
-			const ClosedLoopMode mode = (val == (uint32_t)DriverMode::direct) ? ClosedLoopMode::closed
-										: (val == (uint32_t)DriverMode::direct + 1) ? ClosedLoopMode::assistedOpen
-											: ClosedLoopMode::open;
-			if (!ClosedLoop::GetClosedLoopInstance(drive)->SetClosedLoopEnabled(mode, reply))
-			{
-				// reply.printf is done in ClosedLoop::SetClosedLoopEnabled()
-				return GCodeResult::error;
-			}
-# endif
-			if (!SmartDrivers::SetDriverMode(drive, val))
-			{
-				reply.printf("Driver %u.%u does not support mode '%s'", CanInterface::GetCanAddress(), drive, TranslateDriverMode(val));
-				return GCodeResult::error;
-			}
-# if SUPPORT_CLOSED_LOOP
-			if (mode != ClosedLoopMode::open)
-			{
-				ClosedLoop::GetClosedLoopInstance(drive)->DriverSwitchedToClosedLoop();
-			}
-# endif
-		}
-
-		if (parser.GetUintParam('F', val))		// set off time
-		{
-			seen = true;
-			if (!SmartDrivers::SetRegister(drive, SmartDriverRegister::toff, val))
-			{
-				reply.printf("Bad off time for driver %u", drive);
-				return GCodeResult::error;
-			}
-		}
-
-		if (parser.GetUintParam('B', val))		// set blanking time
-		{
-			seen = true;
-			if (!SmartDrivers::SetRegister(drive, SmartDriverRegister::tblank, val))
-			{
-				reply.printf("Bad blanking time for driver %u", drive);
-				return GCodeResult::error;
-			}
-		}
-
-		if (parser.GetUintParam('V', val))		// set microstep interval for changing from stealthChop to spreadCycle
-		{
-			seen = true;
-			if (!SmartDrivers::SetRegister(drive, SmartDriverRegister::tpwmthrs, val))
-			{
-				reply.printf("Bad mode change microstep interval for driver %u", drive);
-				return GCodeResult::error;
-			}
-		}
-
-#if SUPPORT_TMC51xx || SUPPORT_TMC2160
-		if (parser.GetUintParam('H', val))		// set coolStep threshold
-		{
-			seen = true;
-			if (!SmartDrivers::SetRegister(drive, SmartDriverRegister::thigh, val))
-			{
-				reply.printf("Bad high speed microstep interval for driver %u", drive);
-				return GCodeResult::error;
-			}
-		}
-#endif
-	}
-
-	size_t numHvalues = 3;
-	const uint8_t *hvalues;
-	if (parser.GetArrayParam('Y', ParamDescriptor::ParamType::uint8_array, numHvalues, hvalues))		// set spread cycle hysteresis
-	{
-		seen = true;
-		if (numHvalues == 2 || numHvalues == 3)
-		{
-			// There is a constraint on the sum of HSTRT and HEND, so set HSTART then HEND then HSTART again because one may go up and the other down
-			(void)SmartDrivers::SetRegister(drive, SmartDriverRegister::hstart, hvalues[0]);
-			bool ok = SmartDrivers::SetRegister(drive, SmartDriverRegister::hend, hvalues[1]);
-			if (ok)
-			{
-				ok = SmartDrivers::SetRegister(drive, SmartDriverRegister::hstart, hvalues[0]);
-			}
-			if (ok && numHvalues == 3)
-			{
-				ok = SmartDrivers::SetRegister(drive, SmartDriverRegister::hdec, hvalues[2]);
-			}
-			if (!ok)
-			{
-				reply.printf("Bad hysteresis setting for driver %u", drive);
-				return GCodeResult::error;
-			}
-		}
-		else
-		{
-			reply.copy("Expected 2 or 3 Y values");
-			return GCodeResult::error;
-		}
-	}
-#endif
-	if (!seen)
-	{
-		reply.printf("Driver %u.%u runs %s, active %s enable",
-						CanInterface::GetCanAddress(),
-						drive,
-						(moveInstance->GetDirectionValue(drive)) ? "forwards" : "in reverse",
-						(moveInstance->GetEnableValue(drive)) ? "high" : "low");
-
-#if SUPPORT_SLOW_DRIVERS
-# if SINGLE_DRIVER
-		if (moveInstance->IsSlowDriver())
-# else
-		if (moveInstance->IsSlowDriver(drive))
-# endif
-		{
-			reply.catf(", step timing %.1f:%.1f:%.1f:%.1fus",
-						(double)moveInstance->GetSlowDriverStepHighMicroseconds(),
-						(double)moveInstance->GetSlowDriverStepLowMicroseconds(),
-						(double)moveInstance->GetSlowDriverDirSetupMicroseconds(),
-						(double)moveInstance->GetSlowDriverDirHoldMicroseconds());
-		}
-		else
-		{
-			reply.cat(", step timing fast");
-		}
-#endif
-
-#if HAS_SMART_DRIVERS
-		// It's a smart driver, so print the parameters common to all modes, except for the position
-		const DriverMode dmode = SmartDrivers::GetDriverMode(drive);
-		reply.catf(", mode %s", TranslateDriverMode(dmode));
-# if SUPPORT_CLOSED_LOOP
-		if (dmode == DriverMode::direct)
-		{
-			reply.catf(" (%s)", ClosedLoop::GetClosedLoopInstance(drive)->GetModeText());
-		}
-# endif
-		reply.catf(", ccr 0x%05" PRIx32 ", toff %" PRIu32 ", tblank %" PRIu32,
-					SmartDrivers::GetRegister(drive, SmartDriverRegister::chopperControl),
-					SmartDrivers::GetRegister(drive, SmartDriverRegister::toff),
-					SmartDrivers::GetRegister(drive, SmartDriverRegister::tblank)
-				  );
-
-# if SUPPORT_TMC51xx || SUPPORT_TMC2160
-		{
-			const uint32_t thigh = SmartDrivers::GetRegister(drive, SmartDriverRegister::thigh);
-			bool bdummy;
-			const float mmPerSec = (12000000.0 * SmartDrivers::GetMicrostepping(drive, bdummy))/(256 * thigh * moveInstance->DriveStepsPerUnit(drive));
-			reply.catf(", thigh %" PRIu32 " (%.1f mm/sec)", thigh, (double)mmPerSec);
-		}
-# endif
-
-		// Print the additional parameters that are relevant in the current mode
-		if (SmartDrivers::GetDriverMode(drive) == DriverMode::spreadCycle)
-		{
-			reply.catf(", hstart/hend/hdec %" PRIu32 "/%" PRIu32 "/%" PRIu32,
-						SmartDrivers::GetRegister(drive, SmartDriverRegister::hstart),
-						SmartDrivers::GetRegister(drive, SmartDriverRegister::hend),
-						SmartDrivers::GetRegister(drive, SmartDriverRegister::hdec)
-					  );
-		}
-
-# if SUPPORT_TMC22xx || SUPPORT_TMC51xx || SUPPORT_TMC2160
-		if (SmartDrivers::GetDriverMode(drive) == DriverMode::stealthChop)
-		{
-			const uint32_t tpwmthrs = SmartDrivers::GetRegister(drive, SmartDriverRegister::tpwmthrs);
-			bool bdummy;
-			const float mmPerSec = (12000000.0 * SmartDrivers::GetMicrostepping(drive, bdummy))/(256 * tpwmthrs * moveInstance->DriveStepsPerUnit(drive));
-			const uint32_t pwmScale = SmartDrivers::GetRegister(drive, SmartDriverRegister::pwmScale);
-			const uint32_t pwmAuto = SmartDrivers::GetRegister(drive, SmartDriverRegister::pwmAuto);
-			const unsigned int pwmScaleSum = pwmScale & 0xFF;
-			const int pwmScaleAuto = (int)((((pwmScale >> 16) & 0x01FF) ^ 0x0100) - 0x0100);
-			const unsigned int pwmOfsAuto = pwmAuto & 0xFF;
-			const unsigned int pwmGradAuto = (pwmAuto >> 16) & 0xFF;
-			reply.catf(", tpwmthrs %" PRIu32 " (%.1f mm/sec), pwmScaleSum %u, pwmScaleAuto %d, pwmOfsAuto %u, pwmGradAuto %u",
-						tpwmthrs, (double)mmPerSec, pwmScaleSum, pwmScaleAuto, pwmOfsAuto, pwmGradAuto);
-		}
-# endif
-		// Finally, print the microstep position
-		{
-			const uint32_t mstepPos = SmartDrivers::GetRegister(drive, SmartDriverRegister::mstepPos);
-			if (mstepPos < 1024)
-			{
-				reply.catf(", pos %" PRIu32, mstepPos);
-			}
-			else
-			{
-				reply.cat(", pos unknown");
-			}
-		}
-#endif
-
-	}
-	return GCodeResult::ok;
 }
 
 static GCodeResult ProcessM569Point2(const CanMessageGeneric& msg, const StringRef& reply)
@@ -836,7 +519,7 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 # endif
 				, driver, moveInstance->GetPosition(driver), (double)moveInstance->DriveStepsPerUnit(driver));
 # if HAS_SMART_DRIVERS
-			const StandardDriverStatus status = SmartDrivers::GetStatus(driver, false, false);
+			const StandardDriverStatus status = moveInstance->GetDriverStatus(driver, false, false);
 			status.AppendText(reply, 0);
 			if (!status.notPresent)
 			{
@@ -1012,18 +695,18 @@ void CommandProcessor::Spin()
 #if SUPPORT_DRIVERS
 		case CanMessageType::setMotorCurrents:
 			requestId = buf->msg.multipleDrivesRequestFloat.requestId;
-			rslt = SetMotorCurrents(buf->msg.multipleDrivesRequestFloat, buf->dataLength, replyRef);
+			rslt = moveInstance->SetMotorCurrents(buf->msg.multipleDrivesRequestFloat, buf->dataLength, replyRef);
 			break;
 
 		case CanMessageType::m569:
 			requestId = buf->msg.generic.requestId;
-			rslt = ProcessM569(buf->msg.generic, replyRef);
+			rslt = moveInstance->ProcessM569(buf->msg.generic, replyRef);
 			break;
 
 		case CanMessageType::m569p1:
 			requestId = buf->msg.generic.requestId;
 # if SUPPORT_CLOSED_LOOP
-			rslt = ClosedLoop::ProcessM569Point1(buf->msg.generic, replyRef);
+			rslt = moveInstance->ProcessM569Point1(buf->msg.generic, replyRef);
 # else
 			rslt = GCodeResult::errorNotSupported;
 # endif
@@ -1037,7 +720,7 @@ void CommandProcessor::Spin()
 		case CanMessageType::m569p4:		// set torque mode
 			requestId = buf->msg.generic.requestId;
 # if SUPPORT_CLOSED_LOOP
-			rslt = ClosedLoop::ProcessM569Point4(buf->msg.generic, replyRef);
+			rslt = moveInstance->ProcessM569Point4(buf->msg.generic, replyRef);
 # else
 			rslt = GCodeResult::errorNotSupported;
 # endif
@@ -1046,7 +729,7 @@ void CommandProcessor::Spin()
 		case CanMessageType::m569p6:
 			requestId = buf->msg.generic.requestId;
 # if SUPPORT_CLOSED_LOOP
-			rslt = ClosedLoop::ProcessM569Point6(buf->msg.generic, replyRef);
+			rslt = moveInstance->ProcessM569Point6(buf->msg.generic, replyRef);
 # else
 			rslt = GCodeResult::errorNotSupported;
 # endif
@@ -1059,7 +742,7 @@ void CommandProcessor::Spin()
 
 		case CanMessageType::setStandstillCurrentFactor:
 			requestId = buf->msg.multipleDrivesRequestFloat.requestId;
-			rslt = SetStandstillCurrentFactor(buf->msg.multipleDrivesRequestFloat, buf->dataLength, replyRef);
+			rslt = moveInstance->SetStandstillCurrentFactor(buf->msg.multipleDrivesRequestFloat, buf->dataLength, replyRef);
 			break;
 
 		case CanMessageType::setStepsPerMmAndMicrostepping:
@@ -1172,7 +855,7 @@ void CommandProcessor::Spin()
 #if SUPPORT_CLOSED_LOOP
 		case CanMessageType::startClosedLoopDataCollection:
 			requestId = buf->msg.startClosedLoopDataCollection.requestId;
-			rslt = ClosedLoop::ProcessM569Point5(buf->msg.startClosedLoopDataCollection, replyRef);
+			rslt = moveInstance->ProcessM569Point5(buf->msg.startClosedLoopDataCollection, replyRef);
 			break;
 #endif
 

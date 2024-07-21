@@ -33,6 +33,9 @@ void DriveMovement::Init(size_t drv) noexcept
 	segments = nullptr;
 	isExtruder = false;
 	segmentFlags.Init();
+#if SUPPORT_CLOSED_LOOP
+	closedLoopControl.InitInstance();
+#endif
 }
 
 void DriveMovement::DebugPrint() const noexcept
@@ -437,11 +440,8 @@ MoveSegment *DriveMovement::NewSegment(uint32_t now) noexcept
 				directionChanged = true;
 			}
 
-			// Unless we're possibly in the middle of a homing move, re-enable all drivers for this axis
-			if (!segmentFlags.checkEndstops)
-			{
-				driversCurrentlyUsed = driversNormallyUsed;
-			}
+			// Re-enable all drivers for this axis
+			driversCurrentlyUsed = driversNormallyUsed;
 
 			if (isExtruder)
 			{

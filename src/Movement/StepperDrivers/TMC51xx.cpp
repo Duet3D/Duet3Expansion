@@ -849,7 +849,7 @@ void TmcDriverState::UpdateCurrent() noexcept
 	const uint16_t desiredStandstillCurrentFraction =
 #if SUPPORT_CLOSED_LOOP
 # if SINGLE_DRIVER
-		(ClosedLoop::GetClosedLoopInstance(0)->IsClosedLoopEnabled()) ? 256 : standstillCurrentFraction;
+		moveInstance->IsClosedLoopEnabled(axisNumber)) ? 256 : standstillCurrentFraction;
 # else
 #  error Multiple closed loop drivers not supported here
 # endif
@@ -1441,7 +1441,7 @@ extern "C" [[noreturn]] void TmcLoop(void *) noexcept
 		}
 
 #if SUPPORT_CLOSED_LOOP
-		ClosedLoop::ControlLoop();				// allow closed-loop to set the motor currents before we write
+		moveInstance->ClosedLoopControlLoop();				// allow closed-loop to set the motor currents before we write
 #endif
 		// Set up data to write. Driver 0 is the first in the SPI chain so we must write them in reverse order.
 
@@ -1884,9 +1884,6 @@ StandardDriverStatus SmartDrivers::GetStatus(size_t driver, bool accumulated, bo
 	if (driver < numTmc51xxDrivers)
 	{
 		rslt = driverStates[driver].GetStatus(accumulated, clearAccumulated);
-#if SUPPORT_CLOSED_LOOP
-		rslt = ClosedLoop::GetClosedLoopInstance(driver)->ModifyDriverStatus(rslt);
-#endif
 	}
 	return rslt;
 }

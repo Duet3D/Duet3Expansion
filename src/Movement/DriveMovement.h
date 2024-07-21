@@ -69,7 +69,7 @@ public:
 #if SUPPORT_CLOSED_LOOP
 	// Get the current position relative to the start of this move, speed and acceleration. Units are microsteps and step clocks.
 	// Return true if this drive is moving. Segments are advanced as necessary.
-	bool GetCurrentMotion(uint32_t ticksSinceStart, MotionParameters& mParams) noexcept;
+	bool GetCurrentMotion(uint32_t when, MotionParameters& mParams) noexcept;
 #endif
 
 	static int32_t GetAndClearMaxStepsLate() noexcept;
@@ -124,6 +124,10 @@ private:
 	uint32_t extruderPrintingSince;						// the millis ticks when this extruder started doing printing moves
 
 	bool extruderPrinting;								// true if this is an extruder and the most recent segment started was a printing move
+
+#if SUPPORT_CLOSED_LOOP
+	ClosedLoop closedLoopControl;
+#endif
 };
 
 // Calculate and store the time since the start of the move when the next step for the specified DriveMovement is due.
@@ -191,15 +195,42 @@ inline uint32_t DriveMovement::GetStepInterval(uint32_t microstepShift) const no
 
 #if SUPPORT_CLOSED_LOOP
 
-// Get the current position relative to the start of this move, speed and acceleration. Units are microsteps and step clocks.
-// Return true if this drive is moving. Segments are advanced as necessary.
+// Get the current position relative to the start of this segment, speed and acceleration. Units are microsteps and step clocks.
+// Return true if this drive is moving. Segments are advanced as necessary if we are in closed loop mode.
 // Inlined because it is only called from one place
-inline bool DriveMovement::GetCurrentMotion(uint32_t ticksSinceStart, MotionParameters& mParams) noexcept
+inline bool DriveMovement::GetCurrentMotion(uint32_t when, MotionParameters& mParams) noexcept
 {
 	AtomicCriticalSectionLocker lock;			// we don't want 'segments' changing while we do this
-	const MoveSegment *const ms = segments;
-	(void)ms;
-	return qq;	//TODO
+	MoveSegment *seg = segments;
+	while (seg != nullptr)
+	{
+		int32_t timeSinceStart = (int32_t)(when - seg->GetStartTime());
+		if (timeSinceStart < 0) break;
+		if ((uint32_t)timeSinceStart >= seg->GetDuration())
+		{
+			if (closedLoopControl.IsClosedLoopEnabled())
+			{
+				MoveSegment *oldSeg = seg;
+				segments = seg = oldSeg->GetNext();
+				MoveSegment::Release(oldSeg);
+				continue;
+			}
+			else
+			{
+				timeSinceStart = seg->GetDuration();
+			}
+		}
+
+		const float u = seg->CalcU();
+		mParams.position = (u + seg->GetA() * timeSinceStart * 0.5) * timeSinceStart;
+		mParams.speed = u + seg->GetA() * timeSinceStart;
+		mParams.acceleration = seg->GetA();
+		return true;
+	}
+
+	// If we get here then no movement is taking place
+	mParams.position = mParams.speed = mParams.acceleration = 0.0;
+	return false;
 }
 
 #endif	// SUPPORT_CLOSED_LOOP

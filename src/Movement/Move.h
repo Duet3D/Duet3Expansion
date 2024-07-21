@@ -66,6 +66,8 @@ public:
 #else
 	void Spin() noexcept;
 #endif
+
+	StandardDriverStatus GetDriverStatus(size_t driver, bool accumulated, bool clearAccumulated) const noexcept;
 	void Diagnostics(const StringRef& reply) noexcept;								// Report useful stuff
 
 	void SetDirectionValue(size_t driver, bool dVal);
@@ -81,11 +83,10 @@ public:
 	void DisableAllDrives() noexcept;
 	void SetDriverIdle(size_t driver, uint16_t idlePercent) noexcept;
 
-# if SUPPORT_CLOSED_LOOP
-	bool EnableIfIdle(size_t driver);						// if the driver is idle, enable it; return true if driver enabled on return
-# endif
-
+	GCodeResult ProcessM569(const CanMessageGeneric& msg, const StringRef& reply) noexcept;
 	GCodeResult ProcessM569Point7(const CanMessageGeneric& msg, const StringRef& reply) noexcept;
+	GCodeResult SetMotorCurrents(const CanMessageMultipleDrivesRequest<float>& msg, size_t dataLength, const StringRef& reply) noexcept;
+	GCodeResult SetStandstillCurrentFactor(const CanMessageMultipleDrivesRequest<float>& msg, size_t dataLength, const StringRef& reply) noexcept;
 
 # if HAS_SMART_DRIVERS
 	void SetMotorCurrent(size_t driver, float current) noexcept;		//TODO avoid the int->float->int conversion
@@ -157,10 +158,17 @@ public:
 	[[noreturn]] void TaskLoop() noexcept;
 
 #if SUPPORT_CLOSED_LOOP
-	bool GetCurrentMotion(size_t driver, uint32_t when, bool closedLoopEnabled, MotionParameters& mParams) noexcept;
-																					// get the net full steps taken, including in the current move so far, also speed and acceleration; return true if moving
+	GCodeResult ProcessM569Point1(const CanMessageGeneric& msg, const StringRef& reply) noexcept;
+	GCodeResult ProcessM569Point4(const CanMessageGeneric& msg, const StringRef& reply) noexcept;
+	GCodeResult ProcessM569Point5(const CanMessageStartClosedLoopDataCollection&, const StringRef& reply) noexcept;
+	GCodeResult ProcessM569Point6(const CanMessageGeneric& msg, const StringRef& reply) noexcept;
+
+	bool EnableIfIdle(size_t driver);						// if the driver is idle, enable it; return true if driver enabled on return
+	bool GetCurrentMotion(size_t driver, uint32_t when, MotionParameters& mParams) noexcept;	// get the net full steps taken, including in the current move so far, also speed and acceleration; return true if moving
 	void SetCurrentMotorSteps(size_t driver, float fullSteps) noexcept;
 	void InvertCurrentMotorSteps(size_t driver) noexcept;
+
+	void ClosedLoopControlLoop() noexcept;
 #endif
 
 private:
@@ -368,30 +376,27 @@ inline GCodeResult Move::HandleInputShaping(const CanMessageSetInputShapingNew& 
 // Base priority must be >= NvicPriorityStep when calling this
 inline __attribute__((always_inline)) bool Move::ScheduleNextStepInterrupt() noexcept
 {
-# if SUPPORT_CLOSED_LOOP
-	if (!ClosedLoop::GetClosedLoopInstance(0)->IsClosedLoopEnabled())
-# endif
-	{
 #if SINGLE_DRIVER
-		if (dms[0].state >= DMState::firstMotionState)
-		{
+	if (!dms[0].closedLoopControl.IsClosedLoopEnabled() &&
+		dms[0].state >= DMState::firstMotionState
+	   )
+	{
 # if DEDICATED_STEP_TIMER
-			return StepTimer::ScheduleMovementCallbackFromIsr(dms[0].nextStepTime);
+		return StepTimer::ScheduleMovementCallbackFromIsr(dms[0].nextStepTime);
 # else
-			return timer.ScheduleMovementCallbackFromIsr(dms[0].nextStepTime);
+		return timer.ScheduleMovementCallbackFromIsr(dms[0].nextStepTime);
 # endif
-		}
-#else
-		if (activeDMs != nullptr)
-		{
-# if DEDICATED_STEP_TIMER
-			return StepTimer::ScheduleMovementCallbackFromIsr(activeDMs->nextStepTime);
-# else
-			return timer.ScheduleMovementCallbackFromIsr(activeDMs->nextStepTime);
-# endif
-		}
-#endif
 	}
+#else
+	if (activeDMs != nullptr)
+		{
+# if DEDICATED_STEP_TIMER
+		return StepTimer::ScheduleMovementCallbackFromIsr(activeDMs->nextStepTime);
+# else
+		return timer.ScheduleMovementCallbackFromIsr(activeDMs->nextStepTime);
+# endif
+	}
+#endif
 	return false;
 }
 
@@ -434,7 +439,7 @@ inline void Move::SetDirection(bool direction) noexcept
 # endif
 
 # if SUPPORT_CLOSED_LOOP
-	if (ClosedLoop::GetClosedLoopInstance(0)->IsClosedLoopEnabled())
+	if (dms[0].closedLoopControl.IsClosedLoopEnabled())
 	{
 		return;
 	}
@@ -528,7 +533,7 @@ inline __attribute__((always_inline)) uint32_t Move::GetStepInterval(size_t driv
 
 // Get the motor position in the current move so far, also speed and acceleration. Units are full steps and step clocks.
 // Inlined because it is only called from one place
-inline bool Move::GetCurrentMotion(size_t driver, uint32_t when, bool closedLoopEnabled, MotionParameters& mParams) noexcept
+inline bool Move::GetCurrentMotion(size_t driver, uint32_t when, MotionParameters& mParams) noexcept
 {
 	const float multiplier = ldexpf((GetDirectionValueNoCheck(driver)) ? -1.0 : 1.0, -(int)SmartDrivers::GetMicrostepShift(driver));
 	if (dms[driver].GetCurrentMotion(when, mParams))

@@ -99,9 +99,6 @@ static inline uint32_t TickPeriodToFreq(StepTimer::Ticks tickPeriod) noexcept
 	return StepTimer::StepClockRate/tickPeriod;
 }
 
-// Table of pointers to closed loop instances
-ClosedLoop *ClosedLoop::closedLoopInstances[NumDrivers] = { 0 };
-
 // Helper function to reset the 'monitoring variables' as defined above
 void ClosedLoop::ResetMonitoringVariables() noexcept
 {
@@ -164,12 +161,6 @@ static void GenerateTmcClock()
 /*static*/ void ClosedLoop::Init() noexcept
 {
 	GenerateTmcClock();															// generate the clock for the TMC2160A
-
-	for (size_t i = 0; i < NumDrivers; ++i)
-	{
-		closedLoopInstances[i] = new ClosedLoop();
-		closedLoopInstances[i]->InitInstance();
-	}
 }
 
 void ClosedLoop::InitInstance() noexcept
@@ -194,24 +185,7 @@ void ClosedLoop::InitInstance() noexcept
 	dataTransmissionTask->Create(DataTransmissionTaskEntry, "CLSend", this, TaskPriority::ClosedLoopDataTransmission);
 }
 
-/*static*/ GCodeResult ClosedLoop::ProcessM569Point1(const CanMessageGeneric &msg, const StringRef &reply) noexcept
-{
-	CanMessageGenericParser parser(msg, M569Point1Params);
-	uint8_t drive;
-	if (!parser.GetUintParam('P', drive))
-	{
-		reply.copy("missing P parameter in CAN message");
-		return GCodeResult::error;
-	}
-	if (drive >= NumDrivers)
-	{
-		reply.copy("no such driver");
-		return GCodeResult::error;
-	}
-	return closedLoopInstances[drive]->InstanceProcessM569Point1(parser, reply);
-}
-
-GCodeResult ClosedLoop::InstanceProcessM569Point1(CanMessageGenericParser& parser, const StringRef& reply) noexcept
+GCodeResult ClosedLoop::ProcessM569Point1(CanMessageGenericParser& parser, const StringRef& reply) noexcept
 {
 	// Set default parameters
 	uint8_t tempEncoderType = GetEncoderType().ToBaseType();
@@ -361,25 +335,7 @@ GCodeResult ClosedLoop::InstanceProcessM569Point1(CanMessageGenericParser& parse
 }
 
 // M569.4 Set torque mode
-/*static*/ GCodeResult ClosedLoop::ProcessM569Point4(const CanMessageGeneric& msg, const StringRef& reply) noexcept
-{
-	CanMessageGenericParser parser(msg, M569Point4Params);
-	uint8_t drive;
-	if (!parser.GetUintParam('P', drive))
-	{
-		reply.copy("missing P parameter in CAN message");
-		return GCodeResult::error;
-	}
-	if (drive >= NumDrivers)
-	{
-		reply.copy("no such driver");
-		return GCodeResult::error;
-	}
-	return closedLoopInstances[drive]->InstanceProcessM569Point4(parser, reply);
-}
-
-// M569.4 Set torque mode
-GCodeResult ClosedLoop::InstanceProcessM569Point4(CanMessageGenericParser& parser, const StringRef& reply) noexcept
+GCodeResult ClosedLoop::ProcessM569Point4(CanMessageGenericParser& parser, const StringRef& reply) noexcept
 {
 	float requestedTorque;
 	if (!parser.GetFloatParam('T', requestedTorque))
@@ -426,17 +382,7 @@ GCodeResult ClosedLoop::InstanceProcessM569Point4(CanMessageGenericParser& parse
 	return GCodeResult::error;
 }
 
-/*static*/ GCodeResult ClosedLoop::ProcessM569Point5(const CanMessageStartClosedLoopDataCollection& msg, const StringRef& reply) noexcept
-{
-	if (msg.deviceNumber >= NumDrivers)
-	{
-		reply.copy("no such driver");
-		return GCodeResult::error;
-	}
-	return closedLoopInstances[msg.deviceNumber]->InstanceProcessM569Point5(msg, reply);
-}
-
-GCodeResult ClosedLoop::InstanceProcessM569Point5(const CanMessageStartClosedLoopDataCollection& msg, const StringRef& reply) noexcept
+GCodeResult ClosedLoop::ProcessM569Point5(const CanMessageStartClosedLoopDataCollection& msg, const StringRef& reply) noexcept
 {
 	if (encoder == nullptr)
 	{
@@ -489,24 +435,7 @@ GCodeResult ClosedLoop::InstanceProcessM569Point5(const CanMessageStartClosedLoo
 	return GCodeResult::ok;
 }
 
-/*static*/ GCodeResult ClosedLoop::ProcessM569Point6(const CanMessageGeneric &msg, const StringRef &reply) noexcept
-{
-	CanMessageGenericParser parser(msg, M569Point6Params);
-	uint8_t drive;
-	if (!parser.GetUintParam('P', drive))
-	{
-		reply.copy("missing P parameter in CAN message");
-		return GCodeResult::error;
-	}
-	if (drive >= NumDrivers)
-	{
-		reply.copy("no such driver");
-		return GCodeResult::error;
-	}
-	return closedLoopInstances[drive]->InstanceProcessM569Point6(parser, reply);
-}
-
-GCodeResult ClosedLoop::InstanceProcessM569Point6(CanMessageGenericParser& parser, const StringRef& reply) noexcept
+GCodeResult ClosedLoop::ProcessM569Point6(CanMessageGenericParser& parser, const StringRef& reply) noexcept
 {
 	if (encoder == nullptr)
 	{
@@ -579,12 +508,6 @@ GCodeResult ClosedLoop::InstanceProcessM569Point6(CanMessageGenericParser& parse
 
 	StartTuning(desiredTuning);
 	return GCodeResult::notFinished;
-}
-
-/*static*/ bool ClosedLoop::OkayToSetDriverIdle(size_t driver) noexcept
-{
-	const ClosedLoop *const p = GetClosedLoopInstance(driver);
-	return p == nullptr || p->OkayToSetDriverIdle();
 }
 
 bool ClosedLoop::OkayToSetDriverIdle() const noexcept
@@ -810,7 +733,7 @@ void ClosedLoop::InstanceControlLoop() noexcept
 	if (encoder != nullptr && !encoder->TakeReading())
 	{
 		// Calculate and store the current error in full steps
-		hasMovementCommand = moveInstance->GetCurrentMotion(0, loopCallTime, currentMode != ClosedLoopMode::open, mParams);
+		hasMovementCommand = moveInstance->GetCurrentMotion(0, loopCallTime - StepTimer::GetMovementDelay(), mParams);
 		if (hasMovementCommand)
 		{
 			if (inTorqueMode)
@@ -1276,7 +1199,7 @@ void ClosedLoop::DriverSwitchedToClosedLoop() noexcept
 }
 
 // If we are in closed loop modify the driver status appropriately
-StandardDriverStatus ClosedLoop::ModifyDriverStatus(StandardDriverStatus originalStatus) noexcept
+StandardDriverStatus ClosedLoop::ModifyDriverStatus(StandardDriverStatus originalStatus) const noexcept
 {
 	if (currentMode != ClosedLoopMode::open)
 	{

@@ -29,14 +29,14 @@
 #define SEGMENT_DEBUG	(0)
 #define CHECK_SEGMENTS	(0)
 
-// This bit field is used in multiple contexts so that we can copy them efficiently from one context to another Not all flags are used in all contexts.
+// This bit field is used in multiple contexts so that we can copy them efficiently from one context to another. Not all flags are used in all contexts.
 union MovementFlags
 {
 	uint32_t all;												// this is to provide a means to clear all the flags in one go
 	struct
 	{
 		uint32_t nonPrintingMove : 1,							// true if the move that generated this segment does not have both forwards extrusion and associated axis movement; used for filament monitoring
-				 checkEndstops : 1,								// true if we need to check endstops or Z probe while executing this segment
+							: 1,								// on main board this is checkEndstops - not required on expansion boards
 				 noShaping : 1,									// true if input shaping should be disabled for this move
 				 executing : 1;									// normally clear, set in a MoveSegment when the move starts to be executed
 	};
