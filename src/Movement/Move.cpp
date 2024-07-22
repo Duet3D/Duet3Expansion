@@ -454,13 +454,22 @@ void Move::Spin() noexcept
 	}
 }
 
+// Movement error handling
+void Move::LogStepError(uint8_t type) noexcept
+{
+	++numStepErrors;
+	stepErrorTypesLogged.SetBit(type);
+}
+
 void Move::Diagnostics(const StringRef& reply) noexcept
 {
-	reply.catf("Moves scheduled %" PRIu32 ", hiccups %" PRIu32 ", segs %u, step errors %u, maxLate %" PRIi32 " maxPrep %" PRIu32,
+	reply.catf("Moves scheduled %" PRIu32 ", hiccups %u, segs %u, step errors %u (types 0x%x), maxLate %" PRIi32 " maxPrep %" PRIu32,
 					scheduledMoves, numHiccups, MoveSegment::NumCreated(),
-					GetAndClearStepErrors(), DriveMovement::GetAndClearMaxStepsLate(), maxPrepareTime);
+					numStepErrors, stepErrorTypesLogged.GetRaw(), DriveMovement::GetAndClearMaxStepsLate(), maxPrepareTime);
 	numHiccups = 0;
 	maxPrepareTime = 0;
+	numStepErrors = 0;
+	stepErrorTypesLogged.Clear();
 #if 1	//debug
 	reply.catf(", mcErrs %u, gcmErrs %u", moveCompleteTimeoutErrs, getCanMoveTimeoutErrs);
 #endif

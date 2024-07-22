@@ -347,6 +347,9 @@ private:
 
 	uint32_t maxPrepareTime;
 	float minExtrusionPending = 0.0, maxExtrusionPending = 0.0;
+
+	unsigned int numStepErrors = 0;
+	Bitmap<uint16_t> stepErrorTypesLogged;
 };
 
 //******************************************************************************************************
