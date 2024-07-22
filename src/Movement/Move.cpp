@@ -81,6 +81,9 @@ extern "C" [[noreturn]] void MoveLoop(void * param) noexcept
 
 Move::Move() noexcept
 	: scheduledMoves(0), taskWaitingForMoveToComplete(nullptr),
+#if !SINGLE_DRIVER
+	  activeDMs(nullptr),
+#endif
 #if SUPPORT_SLOW_DRIVERS
 # if USE_TC_FOR_STEP
 	  lastStepHighTime(0),
@@ -123,6 +126,7 @@ void Move::Init() noexcept
 
 	for (size_t i = 0; i < NumDrivers; ++i)
 	{
+		dms[i].Init(i);
 #if HAS_SMART_DRIVERS
 		SetMicrostepping(i, 16, true);
 #endif
