@@ -580,7 +580,7 @@ void Move::StepDrivers(uint32_t now) noexcept
 			}
 			StepDriversHigh(dms[0].driversCurrentlyUsed);						// generate the step
 			lastStepPulseTime = StepTimer::GetTimerTicks();
-			(void)dms[0].CalcNextStepTime(*this);
+			(void)dms[0].CalcNextStepTime(now);
 
 			// 3a. Reset the step pin low
 			while (StepTimer::GetTimerTicks() - lastStepPulseTime < GetSlowDriverStepHighClocks()) {}
@@ -721,10 +721,36 @@ void Move::StopDrivers(uint16_t whichDrives) noexcept
 	DriversBitmap dr(whichDrives);
 	dr.Iterate([this](size_t drive, unsigned int)
 				{
-					StopDriveFromRemote(drive);
+					AtomicCriticalSectionLocker lock;
+					dms[drive].StopDriverFromRemote();
+#if !SINGLE_DRIVER
+					DeactivateDM(&dms[drive]);
+#endif
 				}
 			  );
 }
+
+#if !SINGLE_DRIVER
+
+// Remove this drive from the list of drives with steps due and put it in the completed list
+// Called with interrupts disabled.
+void Move::DeactivateDM(DriveMovement *dmToRemove) noexcept
+{
+	DriveMovement **dmp = &activeDMs;
+	while (*dmp != nullptr)
+	{
+		DriveMovement * const dm = *dmp;
+		if (dm == dmToRemove)
+		{
+			(*dmp) = dm->nextDM;
+			dm->state = DMState::idle;
+			break;
+		}
+		dmp = &(dm->nextDM);
+	}
+}
+
+#endif
 
 // Add some linear segments to be executed by a driver, taking account of possible input shaping. This is used by linear axes and by extruders.
 // We never add a segment that starts earlier than any existing segments, but we may add segments when there are none already.
@@ -823,6 +849,12 @@ int32_t Move::GetAccumulatedExtrusion(size_t driver, bool& isPrinting) noexcept
 	dm.movementAccumulator = -adjustment;
 	isPrinting = dms[driver].extruderPrinting;
 	return ret + adjustment;
+}
+
+// Return when we started doing normal moves after the most recent extruder-only move, in millisecond ticks
+uint32_t Move::ExtruderPrintingSince(size_t logicalDrive) const noexcept
+{
+	return dms[logicalDrive].extruderPrintingSince;
 }
 
 // This is the function that is called by the timer interrupt to step the motors. It is also called form Move::Spin() if the first step for a move is due immediately.
@@ -1581,14 +1613,18 @@ void Move::EngageBrake(size_t driver) noexcept
 #endif
 }
 
+#if HAS_SMART_DRIVERS
+
 StandardDriverStatus Move::GetDriverStatus(size_t driver, bool accumulated, bool clearAccumulated) const noexcept
 {
 	StandardDriverStatus stat = SmartDrivers::GetStatus(driver, accumulated, clearAccumulated);
-#if SUPPORT_CLOSED_LOOP
+# if SUPPORT_CLOSED_LOOP
 	stat = dms[driver].closedLoopControl.ModifyDriverStatus(stat);
-#endif
+# endif
 	return stat;
 }
+
+#endif
 
 // Function to broadcast the drivers status message. Called only by the Heat task.
 void Move::SendDriversStatus(CanMessageBuffer& buf) noexcept

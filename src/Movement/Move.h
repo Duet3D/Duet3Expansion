@@ -188,8 +188,6 @@ private:
 	void PrepareForNextSteps(DriveMovement *stopDm, uint32_t now) noexcept SPEED_CRITICAL;
 	bool ScheduleNextStepInterrupt() noexcept SPEED_CRITICAL;						// Schedule the next interrupt, returning true if we can't because it is already due
 	bool StopAxisOrExtruder(bool executingMove, size_t logicalDrive) noexcept;		// stop movement of a drive and recalculate the endpoint
-	void StopDriveFromRemote(size_t drive) noexcept;
-	bool StopAllDrivers(bool executingMove) noexcept;								// cancel the current isolated move
 
 	void StepDriversLow() noexcept;
 	void StepDriversHigh(uint32_t driverMap) noexcept;
@@ -269,6 +267,7 @@ private:
 #else
 	void SetDirection(size_t axisOrExtruder, bool direction) noexcept;				// set the direction of a driver, observing timing requirements
 	void InsertDM(DriveMovement *dm) noexcept;										// insert a DM into the active list, keeping it in step time order
+	void DeactivateDM(DriveMovement *dmToRemove) noexcept;							// remove a DM from the active list
 
 	DriveMovement *activeDMs;
 	uint32_t driveDriverBits[NumDrivers];

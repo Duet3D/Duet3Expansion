@@ -706,6 +706,18 @@ pre(stepsTillRecalc == 0; segments != nullptr)
 	return true;
 }
 
+// If the driver is moving, stop it and release the segments. Caller will remote it from the active list and disable interrupts before calling this.
+void DriveMovement::StopDriverFromRemote() noexcept
+{
+	if (state != DMState::idle)
+	{
+		state = DMState::idle;
+		MoveSegment *seg = nullptr;
+		std::swap(seg, const_cast<MoveSegment*&>(segments));
+		MoveSegment::ReleaseAll(seg);
+	}
+}
+
 #endif	// SUPPORT_DRIVERS
 
 // End
