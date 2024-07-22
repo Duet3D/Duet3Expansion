@@ -176,7 +176,20 @@ inline int32_t DriveMovement::GetAndClearMaxStepsLate() noexcept
 inline int32_t DriveMovement::GetNetStepsTaken() const noexcept
 {
 #if SUPPORT_CLOSED_LOOP
-	qq;				// we need to do this differently in closed loop mode
+	if (closedLoopControl.IsClosedLoopEnabled())
+	{
+		const MoveSegment *const seg = segments;
+		if (seg == nullptr) { return 0; }
+		int32_t timeSinceStart = (int32_t)(StepTimer::GetMovementTimerTicks() - seg->GetStartTime());
+		if (timeSinceStart < 0) { return 0; }
+		if ((uint32_t)timeSinceStart >= seg->GetDuration())
+		{
+			timeSinceStart = seg->GetDuration();
+		}
+
+		const float u = seg->CalcU();
+		return lrintf((u + seg->GetA() * timeSinceStart * 0.5) * timeSinceStart);
+	}
 #endif
 	return currentMotorPosition - positionAtSegmentStart;
 }
