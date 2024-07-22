@@ -270,7 +270,6 @@ private:
 	void DeactivateDM(DriveMovement *dmToRemove) noexcept;							// remove a DM from the active list
 
 	DriveMovement *activeDMs;
-	uint32_t driveDriverBits[NumDrivers];
 	uint32_t allDriverBits = 0;
 #endif
 

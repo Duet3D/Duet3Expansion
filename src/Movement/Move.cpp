@@ -113,20 +113,27 @@ void Move::Init() noexcept
 {
 	maxPrepareTime = 0;
 
-	moveTask = new Task<MoveTaskStackWords>;
-	moveTask->Create(MoveLoop, "Move", this, TaskPriority::MovePriority);
-
 #if HAS_SMART_DRIVERS
 	SmartDrivers::Init();
+# if SUPPORT_CLOSED_LOOP
+	ClosedLoop::Init();						// this must be called AFTER SmartDrivers::Init()
+# endif
 	temperatureShutdownDrivers.Clear();
 	temperatureWarningDrivers.Clear();
 #endif
 
-	// Initialise stepper drivers
-
+	// Initialise stepper driver structs
 	for (size_t i = 0; i < NumDrivers; ++i)
 	{
 		dms[i].Init(i);
+		{
+			const uint32_t driverBit = 1u << (StepPins[i] & 31);
+			dms[i].driversNormallyUsed = driverBit;
+#if !SINGLE_DRIVER
+			allDriverBits |= driverBit;
+#endif
+		}
+
 #if HAS_SMART_DRIVERS
 		SetMicrostepping(i, 16, true);
 #endif
@@ -231,11 +238,6 @@ void Move::Init() noexcept
 # endif
 #endif
 
-#if !SINGLE_DRIVER
-		const uint32_t driverBit = 1u << (StepPins[i] & 31);
-		driveDriverBits[i] = driverBit;
-		allDriverBits |= driverBit;
-#endif
 		driverAtIdleCurrent[i] = false;
 		idleCurrentFactor[i] = 0.3;
 		motorCurrents[i] = 0.0;
@@ -249,7 +251,6 @@ void Move::Init() noexcept
 		driverStates[i] = DriverStateControl::driverDisabled;
 		brakeOffDelays[i] = 0;
 		motorOffDelays[i] = DefaultDelayAfterBrakeOn;
-		// We can't set microstepping here because moveInstance hasn't been created yet
 	}
 
 # if HAS_STALL_DETECT
@@ -266,6 +267,8 @@ void Move::Init() noexcept
 	pinMode(BrakePwmPin, OUTPUT_LOW);
 #endif
 
+	moveTask = new Task<MoveTaskStackWords>;
+	moveTask->Create(MoveLoop, "Move", this, TaskPriority::MovePriority);
 }
 
 void Move::Exit() noexcept
@@ -628,7 +631,7 @@ void Move::StepDrivers(uint32_t now) noexcept
 	DriveMovement* dm = activeDMs;
 	while (dm != nullptr && (int32_t)(dm->nextStepTime - now) <= (int32_t)MoveTiming::MinInterruptInterval)		// if the next step is due
 	{
-		driversStepping |= driveDriverBits[dm->drive];
+		driversStepping |= dm->driversCurrentlyUsed;
 		dm = dm->nextDM;
 	}
 

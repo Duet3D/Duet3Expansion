@@ -299,9 +299,6 @@ extern "C" [[noreturn]] void MainTask(void *pvParameters) noexcept
 	InputMonitor::Init();
 
 #if SUPPORT_DRIVERS
-# if SUPPORT_CLOSED_LOOP
-	ClosedLoop::Init();						// this must be called AFTER SmartDrivers::Init() which is called by Platform::Init()
-# endif
 	moveInstance = new Move();
 	moveInstance->Init();
 #endif
