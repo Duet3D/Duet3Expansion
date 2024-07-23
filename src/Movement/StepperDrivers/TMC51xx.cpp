@@ -32,17 +32,10 @@
 # elif SAMC21
 #  include <hri_sercom_c21.h>
 # endif
-
-static inline const Move& GetMoveInstance() noexcept { return *moveInstance; }
-
 #elif SAME70
-
 # include <pmc/pmc.h>
 # include <xdmac/xdmac.h>
-
 # define TMC51xx_USES_SERCOM	0
-static inline const Move& GetMoveInstance() noexcept { return reprap.GetMove(); }
-
 #endif
 
 //#define TMC_TYPE	5130
@@ -1035,7 +1028,7 @@ void TmcDriverState::TransferSucceeded(const uint8_t *rcvDataBlock) noexcept
 	}
 
 	// Get the full step interval, we will need it later
-	const uint32_t interval = GetMoveInstance().GetStepInterval(axisNumber, microstepShiftFactor);		// get the full step interval
+	const uint32_t interval = moveInstance->GetStepInterval(axisNumber, microstepShiftFactor);		// get the full step interval
 
 	// If we read a register, update our copy
 	if (previousRegIndexRequested <= NumReadRegisters)
