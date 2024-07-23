@@ -206,10 +206,10 @@ private:
 
 	float stepsPerMm[NumDrivers];
 	bool directions[NumDrivers];
-	uint32_t scheduledMoves;														// Move counters for the code queue
+	uint32_t scheduledMoves = 0;													// Move counters for the code queue
 
 	bool driverAtIdleCurrent[NumDrivers];
-	int8_t enableValues[NumDrivers] = { 0 };
+	int8_t enableValues[NumDrivers];
 
 #if SUPPORT_BRAKE_PWM
 # if defined(M23CL)
@@ -236,15 +236,15 @@ private:
 
 #if HAS_SMART_DRIVERS
 	DriversBitmap temperatureShutdownDrivers, temperatureWarningDrivers;
-	uint8_t nextDriveToPoll;
+	uint8_t nextDriveToPoll = 0;
 	StandardDriverStatus lastEventStatus[NumDrivers];			// the status which we last reported as an event
 	MillisTimer openLoadTimers[NumDrivers];
 #else
-	bool driverIsEnabled[NumDrivers] = { false };
+	bool driverIsEnabled[NumDrivers];
 #endif
 
 #if HAS_SMART_DRIVERS && HAS_VOLTAGE_MONITOR
-	bool warnDriversNotPowered;
+	bool warnDriversNotPowered = false;
 #endif
 
 #if HAS_STALL_DETECT
@@ -255,8 +255,7 @@ private:
 	float netMicrostepsTaken[NumDrivers];											// the net microsteps taken not counting any move that is in progress
 #endif
 
-	TaskBase * volatile taskWaitingForMoveToComplete;
-	// End DDARing variables
+	TaskBase * volatile taskWaitingForMoveToComplete = nullptr;
 
 	DriveMovement dms[NumDrivers];
 
@@ -269,7 +268,7 @@ private:
 	void InsertDM(DriveMovement *dm) noexcept;										// insert a DM into the active list, keeping it in step time order
 	void DeactivateDM(DriveMovement *dmToRemove) noexcept;							// remove a DM from the active list
 
-	DriveMovement *activeDMs;
+	DriveMovement *activeDMs = nullptr;
 	uint32_t allDriverBits = 0;
 #endif
 
@@ -321,11 +320,11 @@ private:
 	inline uint32_t GetSlowDriverDirSetupClocks() { return slowDriverStepTimingClocks[2]; }
 
 # if USE_TC_FOR_STEP
-	volatile uint32_t lastStepHighTime;								// when we last started a step pulse
+	volatile uint32_t lastStepHighTime = 0;							// when we last started a step pulse
 # else
-	volatile uint32_t lastStepLowTime;								// when we last completed a step pulse to a slow driver
+	volatile uint32_t lastStepLowTime = 0;							// when we last completed a step pulse to a slow driver
 # endif
-	volatile uint32_t lastDirChangeTime;							// when we last changed the DIR signal to a slow driver
+	volatile uint32_t lastDirChangeTime = 0;						// when we last changed the DIR signal to a slow driver
 
 #endif	// SUPPORT_SLOW_DRIVERS
 
@@ -334,16 +333,16 @@ private:
 #endif
 
 	int32_t lastMoveStepsTaken[NumDrivers];							// how many steps were taken in the last move we did, used for reverting
-	unsigned int numHiccups;										// The number of hiccups inserted
+	unsigned int numHiccups = 0;									// The number of hiccups inserted
 
 #if SUPPORT_INPUT_SHAPING
 	AxisShaper axisShaper;
 #endif
 
 	volatile uint8_t stepErrorType;
-	volatile StepErrorState stepErrorState;
+	volatile StepErrorState stepErrorState = StepErrorState::noError;
 
-	uint32_t maxPrepareTime;
+	uint32_t maxPrepareTime = 0;
 	float minExtrusionPending = 0.0, maxExtrusionPending = 0.0;
 
 	unsigned int numStepErrors = 0;

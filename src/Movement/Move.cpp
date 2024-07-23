@@ -62,7 +62,6 @@
 #endif
 
 #if 1	//debug
-unsigned int moveCompleteTimeoutErrs;
 unsigned int getCanMoveTimeoutErrs;
 #endif
 
@@ -80,19 +79,6 @@ extern "C" [[noreturn]] void MoveLoop(void * param) noexcept
 }
 
 Move::Move() noexcept
-	: scheduledMoves(0), nextDriveToPoll(0), taskWaitingForMoveToComplete(nullptr),
-#if !SINGLE_DRIVER
-	  activeDMs(nullptr),
-#endif
-#if SUPPORT_SLOW_DRIVERS
-# if USE_TC_FOR_STEP
-	  lastStepHighTime(0),
-# else
-	  lastStepLowTime(0),
-# endif
-	  lastDirChangeTime(0),
-#endif
-	  numHiccups(0), stepErrorState(StepErrorState::noError)
 {
 #if !DEDICATED_STEP_TIMER
 	timer.SetCallback(Move::TimerCallback, CallbackParameter(this));
@@ -111,8 +97,6 @@ Move::Move() noexcept
 
 void Move::Init() noexcept
 {
-	maxPrepareTime = 0;
-
 #if HAS_SMART_DRIVERS
 	SmartDrivers::Init();
 # if SUPPORT_CLOSED_LOOP
@@ -238,6 +222,7 @@ void Move::Init() noexcept
 # endif
 #endif
 
+		enableValues[i] = 0;
 		driverAtIdleCurrent[i] = false;
 		idleCurrentFactor[i] = 0.3;
 		motorCurrents[i] = 0.0;
@@ -477,9 +462,6 @@ void Move::Diagnostics(const StringRef& reply) noexcept
 	maxPrepareTime = 0;
 	numStepErrors = 0;
 	stepErrorTypesLogged.Clear();
-#if 1	//debug
-	reply.catf(", mcErrs %u, gcmErrs %u", moveCompleteTimeoutErrs, getCanMoveTimeoutErrs);
-#endif
 #if 1	//debug
 	reply.catf(", ebfmin %.2f max %.2f", (double)minExtrusionPending, (double)maxExtrusionPending);
 	minExtrusionPending = maxExtrusionPending = 0.0;
