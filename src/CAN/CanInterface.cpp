@@ -466,7 +466,7 @@ CanMessageBuffer *CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf) no
 
 			// Track how much we are given moves in advance
 			{
-				const int32_t advance = (int32_t)(buf->msg.moveLinearShaped.whenToExecute - StepTimer::GetTimerTicks());
+				const int32_t advance = (int32_t)(buf->msg.moveLinearShaped.whenToExecute - StepTimer::GetMovementTimerTicks());
 				if (advance < minAdvance)
 				{
 					minAdvance = advance;
@@ -477,9 +477,6 @@ CanMessageBuffer *CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf) no
 				}
 			}
 
-			//DEBUG
-			//accumulatedMotion +=buf->msg.moveLinear.perDrive[0].steps;
-			//END
 			PendingMoves.AddMessage(buf);
 			Platform::OnProcessingCanMessage();
 			return nullptr;
@@ -540,7 +537,7 @@ CanMessageBuffer *CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf) no
 				// so totalDistance is a * accelerationClocks * (accelerationClock + steadyClocks)
 				// The acceleration and deceleration must be specified with the distance normalised to 1.0
 				msg->acceleration = msg->deceleration = 1.0/(msg->accelerationClocks * (msg->accelerationClocks + msg->steadyClocks));
-				msg->whenToExecute = StepTimer::GetTimerTicks() + clocksAllowed/4;
+				msg->whenToExecute = StepTimer::GetMovementTimerTicks() + clocksAllowed/4;
 				msg->numDrivers = NumDrivers;
 				msg->extruderDrives = 0;
 				msg->usePressureAdvance = 0;

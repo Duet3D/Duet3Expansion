@@ -686,6 +686,9 @@ pre(stepsTillRecalc == 0; segments != nullptr)
 		if (interval > 0)
 		{
 			stepInterval = (uint32_t)interval >> shiftFactor;		// calculate the time per step, ready for next time
+#if 0	//debug
+			if (interval < minStepInterval) { minStepInterval = interval; }
+#endif
 		}
 		else
 		{

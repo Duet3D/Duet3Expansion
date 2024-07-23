@@ -455,8 +455,9 @@ void Move::LogStepError(uint8_t type) noexcept
 
 void Move::Diagnostics(const StringRef& reply) noexcept
 {
-	reply.catf("Moves scheduled %" PRIu32 ", hiccups %u, segs %u, step errors %u (types 0x%x), maxLate %" PRIi32 " maxPrep %" PRIu32,
-					scheduledMoves, numHiccups, MoveSegment::NumCreated(),
+	const float delayToReport = (float)StepTimer::GetMovementDelay() * (1000.0/(float)StepTimer::GetTickRate());
+	reply.catf("Moves scheduled %" PRIu32 ", hiccups %u (%.2fms), segs %u, step errors %u (types 0x%x), maxLate %" PRIi32 " maxPrep %" PRIu32,
+					scheduledMoves, numHiccups, (double)delayToReport, MoveSegment::NumCreated(),
 					numStepErrors, stepErrorTypesLogged.GetRaw(), DriveMovement::GetAndClearMaxStepsLate(), maxPrepareTime);
 	numHiccups = 0;
 	maxPrepareTime = 0;
@@ -485,10 +486,18 @@ bool Move::AddMove(const CanMessageMovementLinearShaped& msg) noexcept
 	params.decelClocks = msg.decelClocks;
 
 	// We occasionally receive a message with zero clocks needed. This messes up the calculations, so add one steady clock in this case.
-	if (msg.accelerationClocks + msg.steadyClocks + msg.decelClocks == 0)
+	if (params.TotalClocks() == 0)
 	{
 		params.steadyClocks = 1;
 	}
+
+	const float accelDistanceExTopSpeed = -0.5 * params.acceleration * fsquare((float)params.accelClocks);
+	const float decelDistanceExTopSpeed = -0.5 * params.deceleration * fsquare((float)params.decelClocks);
+	const float topSpeed = (params.totalDistance - accelDistanceExTopSpeed - decelDistanceExTopSpeed)/params.TotalClocks();
+
+	params.accelDistance =      accelDistanceExTopSpeed + topSpeed * params.accelClocks;
+	const float decelDistance = decelDistanceExTopSpeed + topSpeed * params.decelClocks;
+	params.decelStartDistance =  1.0 - decelDistance;
 
 	MovementFlags segFlags;
 	segFlags.Clear();

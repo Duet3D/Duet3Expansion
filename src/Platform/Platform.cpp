@@ -1145,37 +1145,11 @@ void Platform::LogError(ErrorCode e)
 bool Platform::Debug(Module module)
 {
 #if 0
-	return module == moduleMove;	//DEBUG
+	return module == Module::Move;	//DEBUG
 #else
 	return false;
 #endif
 }
-
-#if SUPPORT_DRIVERS
-
-
-#if 0	// not used yet and may never be
-// Send the status of drivers and filament monitors to the main board
-void Platform::BuildDriverStatusMessage(CanMessageBuffer *buf) noexcept
-{
-	auto msg = buf->SetupStatusMessage<CanMessageDriversStatus>(CanInterface::GetCanAddress(), CanId::MasterAddress);
-	for (size_t drive = 0; drive < NumDrivers; ++drive)
-	{
-		const uint32_t driverStat =
-#if HAS_SMART_DRIVERS
-			SmartDrivers::GetLiveStatus(drive);
-#else
-			0;
-#endif
-		msg->data[drive] = driverStat;
-	}
-	msg->numDriversReported = NumDrivers;
-	msg->zero = 0;
-	buf->dataLength = msg->GetActualDataLength();
-}
-#endif
-
-#endif	//SUPPORT_DRIVERS
 
 #if HAS_ADDRESS_SWITCHES
 
