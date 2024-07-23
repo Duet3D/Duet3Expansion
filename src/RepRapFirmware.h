@@ -42,6 +42,26 @@ extern "C" void debugVprintf(const char *fmt, va_list vargs) noexcept;
 
 #define SPEED_CRITICAL	__attribute__((optimize("O2")))
 
+#if SAME5x || SAME70
+
+// Functions to set and clear data watchpoints
+inline void SetWatchpoint(unsigned int number, const void* addr, unsigned int addrBits = 2) noexcept
+{
+	CoreDebug->DEMCR = CoreDebug_DEMCR_TRCENA_Msk | CoreDebug_DEMCR_MON_EN_Msk;		// enable tracing and debug interrupt
+	volatile uint32_t *const watchpointRegs = &(DWT->COMP0);						// 4 groups of (COMP, MASK, FUNCTION, reserved)
+	watchpointRegs[4 * number] = reinterpret_cast<uint32_t>(addr);					// set COMP register
+	watchpointRegs[4 * number + 1] = addrBits;										// ignore the least significant N bits of the address
+	watchpointRegs[4 * number + 2] = 0x06;
+}
+
+inline void ClearWatchpoint(unsigned int number) noexcept
+{
+	volatile uint32_t *const watchpointRegs = &(DWT->COMP0);						// 4 groups of (COMP, MASK, FUNCTION, reserved)
+	watchpointRegs[4 * number + 2] = 0;
+}
+
+#endif
+
 // Define floating point type to use for calculations where we would like high precision in matrix calculations
 #if SAME70
 typedef double floatc_t;						// type of matrix element used for calibration
