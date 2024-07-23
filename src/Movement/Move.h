@@ -43,11 +43,6 @@ struct PrepParams
 	float decelStartDistance;
 	uint32_t accelClocks, steadyClocks, decelClocks;
 	float acceleration, deceleration;				// the acceleration and deceleration to use, both positive
-
-	// Get the total clocks needed
-	uint32_t TotalClocks() const noexcept { return accelClocks + steadyClocks + decelClocks; }
-
-	void DebugPrint() const noexcept;
 };
 
 /**

@@ -486,14 +486,15 @@ bool Move::AddMove(const CanMessageMovementLinearShaped& msg) noexcept
 	params.decelClocks = msg.decelClocks;
 
 	// We occasionally receive a message with zero clocks needed. This messes up the calculations, so add one steady clock in this case.
-	if (params.TotalClocks() == 0)
+	uint32_t clocksNeeded = params.accelClocks + params.steadyClocks + params.decelClocks;
+	if (clocksNeeded == 0)
 	{
-		params.steadyClocks = 1;
+		params.steadyClocks = clocksNeeded = 1;
 	}
 
 	const float accelDistanceExTopSpeed = -0.5 * params.acceleration * fsquare((float)params.accelClocks);
 	const float decelDistanceExTopSpeed = -0.5 * params.deceleration * fsquare((float)params.decelClocks);
-	const float topSpeed = (params.totalDistance - accelDistanceExTopSpeed - decelDistanceExTopSpeed)/params.TotalClocks();
+	const float topSpeed = (params.totalDistance - accelDistanceExTopSpeed - decelDistanceExTopSpeed)/clocksNeeded;
 
 	params.accelDistance =      accelDistanceExTopSpeed + topSpeed * params.accelClocks;
 	const float decelDistance = decelDistanceExTopSpeed + topSpeed * params.decelClocks;
