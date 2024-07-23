@@ -80,7 +80,7 @@ extern "C" [[noreturn]] void MoveLoop(void * param) noexcept
 }
 
 Move::Move() noexcept
-	: scheduledMoves(0), taskWaitingForMoveToComplete(nullptr),
+	: scheduledMoves(0), nextDriveToPoll(0), taskWaitingForMoveToComplete(nullptr),
 #if !SINGLE_DRIVER
 	  activeDMs(nullptr),
 #endif
