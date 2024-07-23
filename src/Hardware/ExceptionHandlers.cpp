@@ -118,7 +118,7 @@ void WDT_Handler() noexcept
 
 extern "C" [[noreturn]] void otherFaultDispatcher(const uint32_t *pulFaultStackAddress) noexcept
 {
-	SoftwareReset(SoftwareResetReason::otherFault, pulFaultStackAddress + 5);
+	SoftwareReset(SoftwareResetReason::otherFault, pulFaultStackAddress);
 }
 
 // 2017-05-25: A user is getting 'otherFault' reports, so now we do a stack dump for those too.
