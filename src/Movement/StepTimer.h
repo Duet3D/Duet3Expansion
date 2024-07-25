@@ -151,7 +151,7 @@ inline void StepTimer::IncreaseMovementDelay(uint32_t increase) noexcept
 // Get the current tick count
 inline StepTimer::Ticks StepTimer::GetMovementTimerTicks() noexcept
 {
-	return GetTimerTicks() - movementDelay;
+	return GetTimerTicks() - (movementDelay + localTimeOffset);
 }
 
 #endif /* SRC_MOVEMENT_STEPTIMER_H_ */

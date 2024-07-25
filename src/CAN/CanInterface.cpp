@@ -443,7 +443,6 @@ CanMessageBuffer *CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf) no
 			}
 			lastMoveEndedAt = buf->msg.moveLinear.whenToExecute + buf->msg.moveLinear.accelerationClocks + buf->msg.moveLinear.steadyClocks + buf->msg.moveLinear.decelClocks;
 # endif
-			buf->msg.moveLinearShaped.whenToExecute += StepTimer::GetLocalTimeOffset();
 
 			// Track how much processing delay there was
 			{

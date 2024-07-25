@@ -234,7 +234,7 @@ __attribute__((section(".time_critical")))
 #endif
 /*static*/ bool StepTimer::ScheduleMovementCallbackFromIsr(Ticks when) noexcept
 {
-	when += movementDelay;
+	when += movementDelay + localTimeOffset;
 
 	// We need to disable all interrupts, because once we read the current step clock we have only 6us to set up the interrupt, or we will miss it
 	AtomicCriticalSectionLocker lock;
@@ -343,7 +343,7 @@ void StepTimer::SetCallback(TimerCallbackFunction cb, CallbackParameter param) n
 // As ScheduleCallback but base priority >= NvicPriorityStep when called. Can be called from within a callback.
 bool StepTimer::ScheduleMovementCallbackFromIsr(Ticks when) noexcept
 {
-	return ScheduleCallbackFromIsr(when + movementDelay);
+	return ScheduleCallbackFromIsr(when + movementDelay + localTimeOffset);
 }
 
 #endif
