@@ -573,7 +573,7 @@ void Move::StepDrivers(uint32_t now) noexcept
 				StepGenTc->CTRLBSET.reg = TC_CTRLBSET_CMD_RETRIGGER;
 				lastStepHighTime = StepTimer::GetTimerTicks();
 			}
-			(void)dms[0].CalcNextStepTime(now);
+			PrepareForNextSteps( now);
 #  else
 			uint32_t lastStepPulseTime = lastStepLowTime;
 			while (now - lastStepPulseTime < GetSlowDriverStepLowClocks() || now - lastDirChangeTime < GetSlowDriverDirSetupClocks())
@@ -582,7 +582,7 @@ void Move::StepDrivers(uint32_t now) noexcept
 			}
 			StepDriversHigh(dms[0].driversCurrentlyUsed);						// generate the step
 			lastStepPulseTime = StepTimer::GetTimerTicks();
-			(void)dms[0].CalcNextStepTime(now);
+			PrepareForNextSteps(now);
 
 			// 3a. Reset the step pin low
 			while (StepTimer::GetTimerTicks() - lastStepPulseTime < GetSlowDriverStepHighClocks()) {}
@@ -597,11 +597,11 @@ void Move::StepDrivers(uint32_t now) noexcept
 			if (dms[0].driversCurrentlyUsed != 0)
 			{
 				StepGenTc->CTRLBSET.reg = TC_CTRLBSET_CMD_RETRIGGER;
-				(void)dms[0].CalcNextStepTime(now);
+				PrepareForNextSteps(now);
 			}
 # else
 			StepDriversHigh(dms[0].driversCurrentlyUsed);						// generate the step
-			(void)dms[0].CalcNextStepTime(now);
+			PrepareForNextSteps(now);
 			StepDriversLow();													// set the step pin low
 # endif
 		}
@@ -681,9 +681,10 @@ void Move::StepDrivers(uint32_t now) noexcept
 #endif
 
 // Prepare each DM that we generated a step for for the next step
-void Move::PrepareForNextSteps(DriveMovement *stopDm, uint32_t now) noexcept
-{
 #if SINGLE_DRIVER
+
+void Move::PrepareForNextSteps(uint32_t now) noexcept
+{
 	if (unlikely(dms[0].state == DMState::starting))
 	{
 		if (dms[0].NewSegment(now) != nullptr && dms[0].state != DMState::starting)
@@ -697,7 +698,12 @@ void Move::PrepareForNextSteps(DriveMovement *stopDm, uint32_t now) noexcept
 	{
 		(void)dms[0].CalcNextStepTime(now);							// calculate next step time, which may change the required direction
 	}
+}
+
 #else
+
+void Move::PrepareForNextSteps(DriveMovement *stopDm, uint32_t now) noexcept
+{
 	for (DriveMovement *dm2 = activeDMs; dm2 != stopDm; dm2 = dm2->nextDM)
 	{
 		if (unlikely(dm2->state == DMState::starting))
@@ -714,8 +720,9 @@ void Move::PrepareForNextSteps(DriveMovement *stopDm, uint32_t now) noexcept
 			(void)dm2->CalcNextStepTime(now);							// calculate next step time, which may change the required direction
 		}
 	}
-#endif
 }
+
+#endif
 
 // Stop some drivers and update the corresponding motor positions
 void Move::StopDrivers(uint16_t whichDrives) noexcept

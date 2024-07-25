@@ -178,7 +178,11 @@ private:
 
 	bool AddMove(const CanMessageMovementLinearShaped& msg) noexcept;				// Add a new move received via CAN
 	void StepDrivers(uint32_t now) noexcept SPEED_CRITICAL;							// Take one step of the DDA, called by timer interrupt.
+#if SINGLE_DRIVER
+	void PrepareForNextSteps(uint32_t now) noexcept SPEED_CRITICAL;
+#else
 	void PrepareForNextSteps(DriveMovement *stopDm, uint32_t now) noexcept SPEED_CRITICAL;
+#endif
 	bool ScheduleNextStepInterrupt() noexcept SPEED_CRITICAL;						// Schedule the next interrupt, returning true if we can't because it is already due
 	bool StopAxisOrExtruder(bool executingMove, size_t logicalDrive) noexcept;		// stop movement of a drive and recalculate the endpoint
 
