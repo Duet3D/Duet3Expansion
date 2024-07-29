@@ -89,9 +89,6 @@ Move::Move() noexcept
 		lastMoveStepsTaken[i] = 0;
 		stepsPerMm[i] = DefaultStepsPerMm;
 		directions[i] = true;
-#if SUPPORT_CLOSED_LOOP
-		netMicrostepsTaken[i] = 0.0;
-#endif
 	}
 }
 

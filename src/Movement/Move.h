@@ -248,10 +248,6 @@ private:
 	DriversBitmap eventOnStallDrivers;
 #endif
 
-#if SUPPORT_CLOSED_LOOP
-	float netMicrostepsTaken[NumDrivers];											// the net microsteps taken not counting any move that is in progress
-#endif
-
 	TaskBase * volatile taskWaitingForMoveToComplete = nullptr;
 
 	DriveMovement dms[NumDrivers];
@@ -537,32 +533,26 @@ inline __attribute__((always_inline)) uint32_t Move::GetStepInterval(size_t driv
 // Inlined because it is only called from one place
 inline bool Move::GetCurrentMotion(size_t driver, uint32_t when, MotionParameters& mParams) noexcept
 {
+	const bool ret = dms[driver].GetCurrentMotion(when, mParams);
 	const float multiplier = ldexpf((GetDirectionValueNoCheck(driver)) ? -1.0 : 1.0, -(int)SmartDrivers::GetMicrostepShift(driver));
-	if (dms[driver].GetCurrentMotion(when, mParams))
-	{
-		// Convert microsteps to full steps
-		mParams.position = (mParams.position + netMicrostepsTaken[driver]) * multiplier;
-		mParams.speed *= multiplier;
-		mParams.acceleration *= multiplier;
-		return true;
-	}
 
-	// Here when there is no current move
-	mParams.position = netMicrostepsTaken[driver] * multiplier;
-	mParams.speed = mParams.acceleration = 0.0;
-	return false;
+	// Convert microsteps to full steps
+	mParams.position *= multiplier;
+	mParams.speed *= multiplier;
+	mParams.acceleration *= multiplier;
+	return ret;
 }
 
 inline void Move::SetCurrentMotorSteps(size_t driver, float fullSteps) noexcept
 {
 	const float multiplier = ldexpf((GetDirectionValueNoCheck(driver)) ? -1.0 : 1.0, (int)SmartDrivers::GetMicrostepShift(driver));
-	netMicrostepsTaken[driver] = fullSteps * multiplier;
+	dms[driver].currentMotorPosition = lrintf(fullSteps * multiplier);
 }
 
 // Invert the current number of microsteps taken. Called when the driver direction control is changed.
 inline void Move::InvertCurrentMotorSteps(size_t driver) noexcept
 {
-	netMicrostepsTaken[driver] = -netMicrostepsTaken[driver];
+	dms[driver].currentMotorPosition = -dms[driver].currentMotorPosition;
 }
 
 #endif	// SUPPORT_CLOSED_LOOP
