@@ -442,6 +442,7 @@ MoveSegment *DriveMovement::NewSegment(uint32_t now) noexcept
 			// Re-enable all drivers for this axis
 			driversCurrentlyUsed = driversNormallyUsed;
 
+			// Update variables used by filament monitoring
 			if (isExtruder)
 			{
 				if (segmentFlags.nonPrintingMove)
@@ -544,7 +545,7 @@ pre(stepsTillRecalc == 0; segments != nullptr)
 			}
 			if (isExtruder)
 			{
-				movementAccumulator += netStepsThisSegment;			// update the amount of extrusion
+				movementAccumulator += netStepsThisSegment;			// update the amount of extrusion for filament monitors
 			}
 			segments = currentSegment->GetNext();
 			const uint32_t prevEndTime = currentSegment->GetStartTime() + currentSegment->GetDuration();

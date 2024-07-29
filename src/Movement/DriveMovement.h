@@ -51,13 +51,8 @@ public:
 	bool CalcNextStepTime(uint32_t now) noexcept SPEED_CRITICAL;
 
 	void DebugPrint() const noexcept;
-	int32_t GetCurrentMotorPosition() const noexcept { return currentMotorPosition; }
 	void StopDriverFromRemote() noexcept;
 	int32_t GetNetStepsTaken() const noexcept;							// return the number of steps taken in the current segment
-	void SetMotorPosition(int32_t pos) noexcept;
-	bool MotionPending() const noexcept { return segments != nullptr; }
-	bool IsPrintingExtruderMovement() const noexcept;					// returns true if this is an extruder executing a printing move
-	bool CheckingEndstops() const noexcept;								// returns true when executing a move that checks endstops or Z probe
 
 	void AddSegment(uint32_t startTime, uint32_t duration, motioncalc_t distance, motioncalc_t a, MovementFlags moveFlags) noexcept;
 	void SetAsExtruder(bool p_isExtruder) noexcept { isExtruder = p_isExtruder; }
@@ -155,13 +150,6 @@ inline bool DriveMovement::CalcNextStepTime(uint32_t now) noexcept
 		return true;
 	}
 	return CalcNextStepTimeFull(now);
-}
-
-// Return true if this is an extruder executing a printing move
-// Call must disable interrupts before calling this
-inline bool DriveMovement::IsPrintingExtruderMovement() const noexcept
-{
-	return !segmentFlags.nonPrintingMove;
 }
 
 inline int32_t DriveMovement::GetAndClearMaxStepsLate() noexcept
