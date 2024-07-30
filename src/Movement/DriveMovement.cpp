@@ -360,7 +360,7 @@ MoveSegment *DriveMovement::NewSegment(uint32_t now) noexcept
 				segmentStepLimit = 1 - netStepsThisSegment;
 			}
 			reverseStartStep = segmentStepLimit;
-			u = (motioncalc_t)0.0;
+			u = seg->CalcU();
 			q = (motioncalc_t)0.0;								// to make the debug output consistent
 			state = DMState::cartLinear;
 		}
