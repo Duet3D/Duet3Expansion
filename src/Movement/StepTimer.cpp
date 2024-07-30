@@ -208,7 +208,7 @@ inline /*static*/ bool StepTimer::ScheduleTimerInterrupt(Ticks tim) noexcept
 	AtomicCriticalSectionLocker lock;
 
 	const int32_t diff = (int32_t)(tim - GetTimerTicks());			// see how long we have to go
-	if (diff < (int32_t)MinInterruptInterval)						// if less than about 6us or already passed
+	if (diff < (int32_t)MoveTiming::MinInterruptInterval)			// if less than about 6us or already passed
 	{
 		return true;												// tell the caller to simulate an interrupt instead
 	}
@@ -240,7 +240,7 @@ __attribute__((section(".time_critical")))
 	AtomicCriticalSectionLocker lock;
 
 	const int32_t diff = (int32_t)(when - GetTimerTicks());			// see how long we have to go
-	if (diff < (int32_t)MinInterruptInterval)						// if less than about 6us or already passed
+	if (diff < (int32_t)MoveTiming::MinInterruptInterval)			// if less than about 6us or already passed
 	{
 		return true;												// tell the caller to simulate an interrupt instead
 	}
@@ -460,13 +460,14 @@ void StepTimer::CancelCallback() noexcept
 		{
 			reply.cat(", CC0 mismatch!!");
 		}
-# if DEDICATED_STEP_TIMER
-		reply.catf(", next step interrupt due in %" PRIu32 " ticks, %s",
-					StepTc->CC[1].reg - GetTimerTicks(),
-					((StepTc->INTENSET.reg & TC_INTFLAG_MC1) == 0) ? "disabled" : "enabled");
-# endif
 #endif
 	}
+
+#if DEDICATED_STEP_TIMER
+	reply.catf(", next step interrupt due in %" PRIu32 " ticks, %s",
+				StepTc->CC[1].reg - GetTimerTicks(),
+				((StepTc->INTENSET.reg & TC_INTFLAG_MC1) == 0) ? "disabled" : "enabled");
+#endif
 }
 
 // End

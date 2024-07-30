@@ -9,6 +9,7 @@
 #define SRC_MOVEMENT_STEPTIMER_H_
 
 #include "RepRapFirmware.h"
+#include "MoveTiming.h"
 
 #if RP2040
 # include <hardware/structs/timer.h>
@@ -94,7 +95,6 @@ public:
 	static constexpr uint32_t StepClockRate = 48000000/64;						// 48MHz divided by 64
 	static constexpr uint64_t StepClockRateSquared = (uint64_t)StepClockRate * StepClockRate;
 	static constexpr float StepClocksToMillis = 1000.0/(float)StepClockRate;
-	static constexpr uint32_t MinInterruptInterval = 6;							// about 8us. Needs to be long enough for StepTimer::ScheduleTimerInterrupt to work during DMA.
 	static constexpr uint32_t MinSyncInterval = 2000;							// maximum interval in milliseconds between sync messages for us to remain synced
 																				// increased from 1000 because of workaround we added for bad Tx time stamps on SAME70
 private:
