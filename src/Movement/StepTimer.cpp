@@ -10,6 +10,7 @@
 #include <RTOSIface/RTOSIface.h>
 #include <CanMessageFormats.h>
 #include <CAN/CanInterface.h>
+#include "MoveTiming.h"
 
 #if DEDICATED_STEP_TIMER
 # include <Movement/Move.h>				// for Move::StepInterrupt
@@ -82,7 +83,8 @@ void StepTimer::Init() noexcept
 #endif
 }
 
-/*static*/ bool StepTimer::IsSynced() noexcept
+// Check whether we have synced and received a clock sync message recently
+/*static*/ bool StepTimer::CheckSynced() noexcept
 {
 	if (syncCount == MaxSyncCount)
 	{
@@ -94,6 +96,12 @@ void StepTimer::Init() noexcept
 			++numTimeoutResyncs;
 		}
 	}
+	return syncCount == MaxSyncCount;
+}
+
+// Check whether we have synced
+/*static*/ bool StepTimer::IsSynced() noexcept
+{
 	return syncCount == MaxSyncCount;
 }
 

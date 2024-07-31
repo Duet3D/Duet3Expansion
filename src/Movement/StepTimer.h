@@ -9,7 +9,6 @@
 #define SRC_MOVEMENT_STEPTIMER_H_
 
 #include "RepRapFirmware.h"
-#include "MoveTiming.h"
 
 #if RP2040
 # include <hardware/structs/timer.h>
@@ -88,7 +87,8 @@ public:
 	static uint32_t ConvertToMasterTime(uint32_t localTime) noexcept { return localTime - localTimeOffset; }
 	static uint32_t GetMasterTime() noexcept { return ConvertToMasterTime(GetTimerTicks()); }
 
-	static bool IsSynced() noexcept;
+	static bool CheckSynced() noexcept;											// check whether we have synced and received a clock sync message recently
+	static bool IsSynced() noexcept;											// check whether we have synced
 
 	static void Diagnostics(const StringRef& reply) noexcept;
 

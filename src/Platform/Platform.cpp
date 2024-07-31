@@ -860,7 +860,7 @@ void Platform::Spin()
 
 	// Update the Status LED. Flash it quickly (8Hz) if we are not synced to the master, else flash in sync with the master (about 2Hz).
 	WriteLed(0,
-				(StepTimer::IsSynced())
+				(StepTimer::CheckSynced())
 					? (StepTimer::GetMasterTime() & (1u << 19)) != 0
 						: (StepTimer::GetTimerTicks() & (1u << 17)) != 0
 		    );

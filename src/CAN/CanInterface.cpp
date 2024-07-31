@@ -57,6 +57,7 @@ static CanAddress currentMasterAddress =
 #endif
 
 static unsigned int txTimeouts = 0;
+static unsigned int messagesIgnored = 0;
 static uint32_t lastCancelledId = 0;
 static bool enabled = false;
 
@@ -425,58 +426,66 @@ CanMessageBuffer *CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf) no
 				expectedSeq = (seq + 1) & CanMessageMovementLinearShaped::SeqMask;
 			}
 
-			//TODO if we haven't established time sync yet then we should defer this
-# if 0
-			//DEBUG
-			static uint32_t lastMoveEndedAt = 0;
-			if (lastMoveEndedAt != 0)
+			// If we are not synced then don't accept any movement messages, because they are likely just to get queued and not executed within a reasonable time
+			if (StepTimer::IsSynced())
 			{
-				const int32_t gap = (int32_t)(buf->msg.moveLinear.whenToExecute - lastMoveEndedAt);
-				if (gap < 0)
+# if 0
+				//DEBUG
+				static uint32_t lastMoveEndedAt = 0;
+				if (lastMoveEndedAt != 0)
 				{
-					++badMoveCommands;
-					if ((uint32_t)(-gap) > worstBadMove)
+					const int32_t gap = (int32_t)(buf->msg.moveLinear.whenToExecute - lastMoveEndedAt);
+					if (gap < 0)
 					{
-						worstBadMove = (uint32_t)(-gap);
+						++badMoveCommands;
+						if ((uint32_t)(-gap) > worstBadMove)
+						{
+							worstBadMove = (uint32_t)(-gap);
+						}
 					}
 				}
-			}
-			lastMoveEndedAt = buf->msg.moveLinear.whenToExecute + buf->msg.moveLinear.accelerationClocks + buf->msg.moveLinear.steadyClocks + buf->msg.moveLinear.decelClocks;
+				lastMoveEndedAt = buf->msg.moveLinear.whenToExecute + buf->msg.moveLinear.accelerationClocks + buf->msg.moveLinear.steadyClocks + buf->msg.moveLinear.decelClocks;
 # endif
 
-			// Track how much processing delay there was
-			{
+				// Track how much processing delay there was
+				{
 #if RP2040 && !USE_SPICAN
-				// RP2040 uses the low 16 bits of the step counter for the time stamp
-				const uint16_t timeStampNow = StepTimer::GetTimerTicks();
-				const uint32_t timeStampDelay = (uint32_t)((timeStampNow - buf->timeStamp) & 0xFFFF);	// the delay in step clocks
+					// RP2040 uses the low 16 bits of the step counter for the time stamp
+					const uint16_t timeStampNow = StepTimer::GetTimerTicks();
+					const uint32_t timeStampDelay = (uint32_t)((timeStampNow - buf->timeStamp) & 0xFFFF);	// the delay in step clocks
 #else
-				const uint16_t timeStampNow = CanInterface::GetTimeStampCounter();
+					const uint16_t timeStampNow = CanInterface::GetTimeStampCounter();
 
-				// The time stamp counter runs at the CAN normal bit rate, but the step clock runs at 48MHz/64. Calculate the delay to in step clocks.
-				// Datasheet suggests that on the SAMC21 only 15 bits of timestamp counter are readable, but Microchip confirmed this is a documentation error (case 00625843)
-				const uint32_t timeStampDelay = ((uint32_t)((timeStampNow - buf->timeStamp) & 0xFFFF) * CanInterface::GetTimeStampPeriod()) >> 6;	// timestamp counter is 16 bits
+					// The time stamp counter runs at the CAN normal bit rate, but the step clock runs at 48MHz/64. Calculate the delay to in step clocks.
+					// Datasheet suggests that on the SAMC21 only 15 bits of timestamp counter are readable, but Microchip confirmed this is a documentation error (case 00625843)
+					const uint32_t timeStampDelay = ((uint32_t)((timeStampNow - buf->timeStamp) & 0xFFFF) * CanInterface::GetTimeStampPeriod()) >> 6;	// timestamp counter is 16 bits
 #endif
-				if (timeStampDelay > maxMotionProcessingDelay)
-				{
-					maxMotionProcessingDelay = timeStampDelay;
+					if (timeStampDelay > maxMotionProcessingDelay)
+					{
+						maxMotionProcessingDelay = timeStampDelay;
+					}
 				}
-			}
 
-			// Track how much we are given moves in advance
+				// Track how much we are given moves in advance
+				{
+					const int32_t advance = (int32_t)(buf->msg.moveLinearShaped.whenToExecute - StepTimer::GetMovementTimerTicks());
+					if (advance < minAdvance)
+					{
+						minAdvance = advance;
+					}
+					if (advance > maxAdvance)
+					{
+						maxAdvance = advance;
+					}
+				}
+
+				PendingMoves.AddMessage(buf);
+			}
+			else
 			{
-				const int32_t advance = (int32_t)(buf->msg.moveLinearShaped.whenToExecute - StepTimer::GetMovementTimerTicks());
-				if (advance < minAdvance)
-				{
-					minAdvance = advance;
-				}
-				if (advance > maxAdvance)
-				{
-					maxAdvance = advance;
-				}
+				++messagesIgnored;
 			}
 
-			PendingMoves.AddMessage(buf);
 			Platform::OnProcessingCanMessage();
 			return nullptr;
 
@@ -609,11 +618,12 @@ void CanInterface::Diagnostics(const StringRef& reply) noexcept
 					errs.rxFifoOverlow[0], errs.rxFifoOverlow[1], errs.wrongMessageType, errs.badStuffing, errs.stuffCountParity, errs.wrongStuffCount,
 						errs.wrongCrc, errs.missingCrcDelimiter, errs.noAck, errs.missingEofBit1, errs.missingEofBit2, errs.tooLateToAck);
 #else
-	reply.lcatf("CAN messages queued %u, send timeouts %u, received %u, lost %u, errs %u, boc %u, free buffers %u, min %u, error reg %" PRIx32,
-					stats.messagesQueuedForSending, txTimeouts, stats.messagesReceived, stats.messagesLost, stats.protocolErrors, stats.busOffCount,
+	reply.lcatf("CAN messages queued %u, send timeouts %u, received %u, lost %u, ignored %u, errs %u, boc %u, free buffers %u, min %u, error reg %" PRIx32,
+					stats.messagesQueuedForSending, txTimeouts, stats.messagesReceived, stats.messagesLost, messagesIgnored, stats.protocolErrors, stats.busOffCount,
 					CanMessageBuffer::GetFreeBuffers(), CanMessageBuffer::GetAndClearMinFreeBuffers(), can0dev->GetErrorRegister());
 #endif
 	txTimeouts = 0;
+	messagesIgnored = 0;
 	if (lastCancelledId != 0)
 	{
 		CanId id;
