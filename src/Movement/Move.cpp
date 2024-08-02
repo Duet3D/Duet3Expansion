@@ -909,6 +909,7 @@ void Move::Interrupt() noexcept
 					{
 						//TODO tell the main board we are behind schedule
 						(void)hiccupTimeInserted;
+						return;
 					}
 					// The hiccup wasn't long enough, so go round the loop again
 				}
