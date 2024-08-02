@@ -135,7 +135,7 @@ constexpr Pin LedPins[] = { PortAPin(30), PortAPin(31) };
 constexpr bool LedActiveHigh = false;
 
 constexpr Pin VinMonitorPin = PortAPin(2);
-constexpr float VinDividerRatio = (60.4 + 4.7)/4.7;
+constexpr float VinDividerRatio = (115.2 + 10.0)/10.0;
 constexpr float VinMonitorVoltageRange = VinDividerRatio * 3.3;
 
 constexpr Pin TempSensePins[NumThermistorInputs] = { PortBPin(8), PortAPin(7) };
