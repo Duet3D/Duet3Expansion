@@ -190,12 +190,9 @@ GCodeResult Thermistor::Configure(const CanMessageGenericParser& parser, const S
 					reply.catf("\" is %d", adcHighOffset);
 
 					// Store the value in NVM
-//					if (!reprap.GetGCodes().IsRunningConfigFile())
-					{
-						NonVolatileMemory mem(NvmPage::common);
-						mem.SetThermistorHighCalibration(adcFilterChannel, adcHighOffset);
-						mem.EnsureWritten();
-					}
+					NonVolatileMemory mem(NvmPage::common);
+					mem.SetThermistorHighCalibration(adcFilterChannel, adcHighOffset);
+					mem.EnsureWritten();
 				}
 				else
 				{
