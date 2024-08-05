@@ -287,9 +287,10 @@ finished:
 	if (elapsedTime > maxCriticalElapsedTime) { maxCriticalElapsedTime = elapsedTime; }	//DEBUG
 }
 
-// Set up to schedule the first segment, returning true if an interrupt for this DM is needed
+// Set up to schedule the first segment, returning true if an interrupt for this DM is needed. This is called only if the state is 'idle'.
 bool DriveMovement::ScheduleFirstSegment() noexcept
 {
+	directionChanged = true;									// force the direction to be set up - this could be the first move or we may have switched between bed tramming and normal Z moves
 	const uint32_t now = StepTimer::GetMovementTimerTicks();
 	if (NewSegment(now) != nullptr)
 	{
@@ -437,9 +438,9 @@ MoveSegment *DriveMovement::NewSegment(uint32_t now) noexcept
 		{
 			if (newDirection != direction)
 			{
-				direction = newDirection;
 				directionChanged = true;
 			}
+			direction = newDirection;								// note, directionChanged could have been set externally
 
 			// Re-enable all drivers for this axis
 			driversCurrentlyUsed = driversNormallyUsed;
