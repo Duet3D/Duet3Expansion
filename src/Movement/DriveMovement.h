@@ -100,7 +100,10 @@ private:
 	int32_t netStepsThisSegment;						// the (signed) net number of steps in the current segment
 	int32_t segmentStepLimit;							// the first step number of the next phase, or the reverse start step if smaller
 	int32_t reverseStartStep;							// the step number for which we need to reverse direction due to pressure advance or delta movement
-	motioncalc_t q, t0, p, u;							// the movement parameters of the current segment, if there is one
+	motioncalc_t q, t0, p;								// the movement parameters of the current segment, if there is one
+#if SUPPORT_CLOSED_LOOP
+	motioncalc_t u;										// the initial speed of this segment
+#endif
 	MovementFlags segmentFlags;							// whether this segment checks endstops etc.
 	motioncalc_t distanceCarriedForwards;				// the residual distance in microsteps (less than one) that was pending at the end of the previous segment
 
