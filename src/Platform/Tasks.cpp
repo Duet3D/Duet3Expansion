@@ -749,7 +749,13 @@ extern "C" [[noreturn]] void UpdateBootloaderTask(void *pvParameters) noexcept
 			ReportFlashError(FirmwareFlashErrorCode::badCRC);
 		}
 #if HAS_VOLTAGE_MONITOR
-		else if (Platform::GetCurrentVinVoltage() < 10.5)
+		else if (Platform::GetCurrentVinVoltage() <
+# if defined(SZP)
+			4.6					// SZP is powered from 5V
+# else
+			10.5				// other boards are powered from 12V or higher
+# endif
+				)
 		{
 			ReportFlashError(FirmwareFlashErrorCode::vinTooLow);
 		}
