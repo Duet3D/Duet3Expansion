@@ -344,6 +344,11 @@ private:
 
 //******************************************************************************************************
 
+inline float Move::DriveStepsPerUnit(size_t drive) const noexcept
+{
+	return stepsPerMm[drive];
+}
+
 // Update the min and max extrusion pending values. These are reported by M122 to assist with debugging print quality issues.
 // Inlined because this is only called from one place.
 inline void Move::UpdateExtrusionPendingLimits(float extrusionPending) noexcept

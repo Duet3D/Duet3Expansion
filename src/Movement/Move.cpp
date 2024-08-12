@@ -682,6 +682,9 @@ void Move::StepDrivers(uint32_t now) noexcept
 // Prepare each DM that we generated a step for for the next step
 #if SINGLE_DRIVER
 
+#if SAMC21 || RP2040
+__attribute__((section(".time_critical")))
+#endif
 void Move::PrepareForNextSteps(uint32_t now) noexcept
 {
 	if (unlikely(dms[0].state == DMState::starting))
@@ -919,8 +922,6 @@ void Move::Interrupt() noexcept
 		}
 	}
 }
-
-float Move::DriveStepsPerUnit(size_t drive) const noexcept { return stepsPerMm[drive]; }
 
 void Move::SetDriveStepsPerUnit(size_t drive, float val)
 {
