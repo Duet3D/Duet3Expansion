@@ -563,20 +563,22 @@ void Move::StepDrivers(uint32_t now) noexcept
 			if (dms[0].driversCurrentlyUsed != 0)
 			{
 				const uint32_t lastStepPulseTime = lastStepHighTime;
-				while (now - lastStepPulseTime < GetSlowDriverStepPeriodClocks() || now - lastDirChangeTime < GetSlowDriverDirSetupClocks())
+				uint32_t rawNow;
+				do
 				{
-					now = StepTimer::GetTimerTicks();
-				}
+					rawNow = StepTimer::GetTimerTicks();
+				} while (rawNow - lastStepPulseTime < GetSlowDriverStepPeriodClocks() || rawNow - lastDirChangeTime < GetSlowDriverDirSetupClocks());
 				StepGenTc->CTRLBSET.reg = TC_CTRLBSET_CMD_RETRIGGER;
 				lastStepHighTime = StepTimer::GetTimerTicks();
 			}
-			PrepareForNextSteps( now);
+			PrepareForNextSteps(now);
 #  else
 			uint32_t lastStepPulseTime = lastStepLowTime;
-			while (now - lastStepPulseTime < GetSlowDriverStepLowClocks() || now - lastDirChangeTime < GetSlowDriverDirSetupClocks())
+			uint32_t rawNow;
+			do
 			{
-				now = StepTimer::GetTimerTicks();
-			}
+				rawNow = StepTimer::GetTimerTicks();
+			} while (rawNow - lastStepPulseTime < GetSlowDriverStepLowClocks() || rawNow - lastDirChangeTime < GetSlowDriverDirSetupClocks());
 			StepDriversHigh(dms[0].driversCurrentlyUsed);						// generate the step
 			lastStepPulseTime = StepTimer::GetTimerTicks();
 			PrepareForNextSteps(now);
