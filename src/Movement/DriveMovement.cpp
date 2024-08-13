@@ -446,8 +446,8 @@ MoveSegment *DriveMovement::NewSegment(uint32_t now) noexcept
 			if (newDirection != direction)
 			{
 				directionChanged = true;
+				direction = newDirection;
 			}
-			direction = newDirection;								// note, directionChanged could have been set externally
 
 			// Re-enable all drivers for this axis
 			driversCurrentlyUsed = driversNormallyUsed;

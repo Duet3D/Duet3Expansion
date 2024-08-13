@@ -831,7 +831,12 @@ void Move::AddLinearSegments(size_t drive, uint32_t startTime, const PrepParams&
 	{
 		if (dmp.ScheduleFirstSegment())
 		{
-#if !SINGLE_DRIVER
+			// Always set the direction when starting the first move
+			dmp.directionChanged = false;
+#if SINGLE_DRIVER
+			SetDirection(dmp.direction);
+#else
+			SetDirection(dmp.drive, dmp.direction);
 			InsertDM(&dmp);
 			if (activeDMs == &dmp)													// if this is now the first DM in the active list
 #endif
