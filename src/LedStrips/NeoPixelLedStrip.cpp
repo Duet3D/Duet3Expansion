@@ -184,19 +184,11 @@ constexpr uint32_t NanosecondsToCycles(uint32_t ns) noexcept
 	return (ns * (uint64_t)SystemCoreClockFreq)/1000000000u;
 }
 
-constexpr uint32_t T0H = NanosecondsToCycles(300);
-constexpr uint32_t T1H = NanosecondsToCycles(700);
-constexpr uint32_t TCY = NanosecondsToCycles(1200);
-
 // Send data to NeoPixel LEDs by bit banging
-#if RP2040
-// When bit-banging Neopixels we can't afford to wait for instructions to be fetched from flash memory
-[[gnu::optimize("03")]] __attribute__((section(".time_critical")))
-#endif
 GCodeResult NeoPixelLedStrip::BitBangData(const LedParams& params) noexcept
 {
-	const unsigned int bytesPerLed = (isRGBW) ? 4 : 3;
 	unsigned int numLeds = params.numLeds;
+	const unsigned int bytesPerLed = (isRGBW) ? 4 : 3;
 	uint8_t *p = chunkBuffer + (bytesPerLed * numAlreadyInBuffer);
 	while (numLeds != 0 && p + bytesPerLed <= chunkBuffer + chunkBufferSize)
 	{
@@ -214,60 +206,134 @@ GCodeResult NeoPixelLedStrip::BitBangData(const LedParams& params) noexcept
 	if (!params.following)
 	{
 		const uint8_t *q = chunkBuffer;
-		uint32_t nextDelay = TCY;
-		const Pin pin = port.GetPin();
-		IrqDisable();
-		uint32_t lastTransitionTime = GetCurrentCycles();
-
-		if (port.GetTotalInvert())
+		if (q < p)
 		{
-			fastDigitalWriteHigh(pin);
-			while (q < p)
+			const Pin pin = port.GetPin();
+			if (port.GetTotalInvert())
 			{
-				uint8_t c = *q++;
-				for (unsigned int i = 0; i < 8; ++i)
-				{
-					// The high-level time is critical, the low-level time is not.
-					// On the SAME5x the high-level time easily gets extended too much, so do as little work as possible during that time.
-					const uint32_t diff = ((c >> 7u) - 1u) & (T1H - T0H);
-					uint32_t highTime = T1H - diff;
-					lastTransitionTime = DelayCycles(lastTransitionTime, nextDelay);
-					fastDigitalWriteLow(pin);
-					lastTransitionTime = DelayCycles(lastTransitionTime, highTime);
-					fastDigitalWriteHigh(pin);
-					nextDelay = TCY - highTime;
-					c <<= 1;
-				}
+				BitBangDataInverted(q, p, pin);
+			}
+			else
+			{
+				BitBangDataNormal(q, p, pin);
 			}
 		}
-		else
-		{
-			fastDigitalWriteLow(pin);			// this is needed on Duet 2 at least, to prevent the first pulse being too long
-			while (q < p)
-			{
-				uint8_t c = *q++;
-				for (unsigned int i = 0; i < 8; ++i)
-				{
-					// The high-level time is critical, the low-level time is not.
-					// On the SAME5x the high-level time easily gets extended too much, so do as little work as possible during that time.
-					const uint32_t diff = ((c >> 7u) - 1u) & (T1H - T0H);
-					uint32_t highTime = T1H - diff;
-					lastTransitionTime = DelayCycles(lastTransitionTime, nextDelay);
-					fastDigitalWriteHigh(pin);
-					lastTransitionTime = DelayCycles(lastTransitionTime, highTime);
-					fastDigitalWriteLow(pin);
-					nextDelay = TCY - highTime;
-					c <<= 1;
-				}
-			}
-		}
-		IrqEnable();
 
 		numAlreadyInBuffer = 0;
 		whenTransferFinished = StepTimer::GetTimerTicks();
 		needStartDelay = true;
 	}
 	return GCodeResult::ok;
+}
+
+constexpr uint32_t T0H = NanosecondsToCycles(300);
+constexpr uint32_t T1H = NanosecondsToCycles(700);
+constexpr uint32_t TCY = NanosecondsToCycles(1200);
+
+#if SAMC21
+// When bit-banging Neopixels we can't afford to wait for instructions to be fetched from flash memory
+[[gnu::optimize("O2")]] __attribute__((section(".time_critical")))
+#elif RP2040
+// When bit-banging Neopixels we can't afford to wait for instructions to be fetched from flash memory
+[[gnu::optimize("O3")]] __attribute__((section(".time_critical")))
+#endif
+void NeoPixelLedStrip::BitBangDataNormal(const uint8_t *start, const uint8_t *end, Pin pin) noexcept
+{
+	uint32_t nextDelay = TCY;
+	IrqDisable();
+#if !SAMC21
+	uint32_t lastTransitionTime = GetCurrentCycles();
+#endif
+	fastDigitalWriteLow(pin);			// this is needed on Duet 2 at least, to prevent the first pulse being too long
+	do
+	{
+		uint8_t c = *start++;
+		for (unsigned int i = 0; i < 8; ++i)
+		{
+			// The high-level time is critical, the low-level time is not.
+			// On the SAME5x the high-level time easily gets extended too much, so do as little work as possible during that time.
+			const uint32_t diff = ((c >> 7u) - 1u) & (T1H - T0H);
+			uint32_t highTime = T1H - diff;
+#if SAMC21
+			// SAMC21 is too slow to use DelayCycles for timings <1us or even an inlined version of it for timings <500ns
+			while (nextDelay > 5)
+			{
+				asm volatile ("nop");
+				nextDelay -= 5;
+			}
+			nextDelay = TCY - highTime;
+			fastDigitalWriteHigh(pin);
+			while (highTime > 5)
+			{
+				__asm volatile("nop");
+				highTime -= 5;
+			}
+			fastDigitalWriteLow(pin);
+#else
+			lastTransitionTime = DelayCycles(lastTransitionTime, nextDelay);
+			fastDigitalWriteHigh(pin);
+			lastTransitionTime = DelayCycles(lastTransitionTime, highTime);
+			fastDigitalWriteLow(pin);
+			nextDelay = TCY - highTime;
+#endif
+			c <<= 1;
+		}
+	}
+	while (start < end);
+	IrqEnable();
+}
+
+#if SAMC21
+// When bit-banging Neopixels we can't afford to wait for instructions to be fetched from flash memory
+[[gnu::optimize("O2")]] __attribute__((section(".time_critical")))
+#elif RP2040
+// When bit-banging Neopixels we can't afford to wait for instructions to be fetched from flash memory
+[[gnu::optimize("O3")]] __attribute__((section(".time_critical")))
+#endif
+void NeoPixelLedStrip::BitBangDataInverted(const uint8_t *start, const uint8_t *end, Pin pin) noexcept
+{
+	uint32_t nextDelay = TCY;
+	IrqDisable();
+#if !SAMC21
+	uint32_t lastTransitionTime = GetCurrentCycles();
+#endif
+	fastDigitalWriteHigh(pin);
+	do
+	{
+		uint8_t c = *start++;
+		for (unsigned int i = 0; i < 8; ++i)
+		{
+			// The high-level time is critical, the low-level time is not.
+			// On the SAME5x the high-level time easily gets extended too much, so do as little work as possible during that time.
+			const uint32_t diff = ((c >> 7u) - 1u) & (T1H - T0H);
+			uint32_t highTime = T1H - diff;
+#if SAMC21
+			// SAMC21 is too slow to use DelayCycles for timings <1us or even an inlined version of it for timings <500ns
+			while (nextDelay > 5)
+			{
+				asm volatile ("nop");
+				nextDelay -= 5;
+			}
+			nextDelay = TCY - highTime;
+			fastDigitalWriteLow(pin);
+			while (highTime > 5)
+			{
+				asm volatile("nop");
+				highTime -= 5;
+			}
+			fastDigitalWriteHigh(pin);
+#else
+			lastTransitionTime = DelayCycles(lastTransitionTime, nextDelay);
+			fastDigitalWriteLow(pin);
+			lastTransitionTime = DelayCycles(lastTransitionTime, highTime);
+			fastDigitalWriteHigh(pin);
+			nextDelay = TCY - highTime;
+#endif
+			c <<= 1;
+		}
+	}
+	while (start < end);
+	IrqEnable();
 }
 
 #endif
