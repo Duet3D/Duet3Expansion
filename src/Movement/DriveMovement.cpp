@@ -23,7 +23,7 @@ void DriveMovement::Init(size_t drv) noexcept
 	state = DMState::idle;
 	stepErrorType = 0;
 	distanceCarriedForwards = 0.0;
-	currentMotorPosition = positionAtSegmentStart = 0;
+	currentMotorPosition = positionAtSegmentStart = positionAtMoveStart = 0;
 	movementAccumulator = 0;
 	extruderPrinting = false;
 	driversNormallyUsed = driversCurrentlyUsed = 0;

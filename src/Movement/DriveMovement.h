@@ -109,6 +109,7 @@ private:
 
 	int32_t currentMotorPosition;						// the current motor position in microsteps
 	int32_t positionAtSegmentStart;						// the value of currentMotorPosition at the start of the current segment
+	int32_t positionAtMoveStart;						// the value of currentMotorPosition at the start of the current move, if it is an isolated move
 
 	// These values change as the step is executed, except for reverseStartStep
 	int32_t nextStep;									// number of steps already done. For extruders this gets reset to the net steps already done at the start of each segment, so it can go negative.

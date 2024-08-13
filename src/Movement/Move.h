@@ -146,7 +146,7 @@ public:
 	// Movement error handling
 	void LogStepError(uint8_t type) noexcept;										// stop all movement because of a step error
 
-	int32_t GetLastMoveStepsTaken(size_t drive) const noexcept { return lastMoveStepsTaken[drive]; }
+	int32_t GetLastMoveStepsTaken(size_t drive) const noexcept;						// get the number of steps taken by the last move, if it was an isolated move
 
 	[[noreturn]] void TaskLoop() noexcept;
 
@@ -325,7 +325,6 @@ private:
 	StepTimer timer;
 #endif
 
-	int32_t lastMoveStepsTaken[NumDrivers];							// how many steps were taken in the last move we did, used for reverting
 	unsigned int numHiccups = 0;									// The number of hiccups inserted
 
 #if SUPPORT_INPUT_SHAPING

@@ -86,7 +86,6 @@ Move::Move() noexcept
 
 	for (size_t i = 0; i < NumDrivers; ++i)
 	{
-		lastMoveStepsTaken[i] = 0;
 		stepsPerMm[i] = DefaultStepsPerMm;
 		directions[i] = true;
 	}
@@ -518,7 +517,6 @@ bool Move::AddMove(const CanMessageMovementLinearShaped& msg) noexcept
 			else
 			{
 				const float delta = (float)msg.perDrive[drive].steps;
-				lastMoveStepsTaken[drive] = delta;
 				if (delta != 0.0)
 				{
 					AddLinearSegments(drive, msg.whenToExecute, params, delta, segFlags);
@@ -531,6 +529,13 @@ bool Move::AddMove(const CanMessageMovementLinearShaped& msg) noexcept
 		}
 	}
 	return true;
+}
+
+// Get the number of steps taken by the last move, if it was an isolated move
+int32_t Move::GetLastMoveStepsTaken(size_t drive) const noexcept
+{
+	const DriveMovement& dm = dms[drive];
+	return dm.currentMotorPosition - dm.positionAtMoveStart;
 }
 
 #if SINGLE_DRIVER
@@ -829,6 +834,7 @@ void Move::AddLinearSegments(size_t drive, uint32_t startTime, const PrepParams&
 #endif
 	if (dmp.state == DMState::idle)
 	{
+		dmp.positionAtMoveStart = dmp.currentMotorPosition;							// needed for homing moves, which are always isolated moves
 		if (dmp.ScheduleFirstSegment())
 		{
 			// Always set the direction when starting the first move
