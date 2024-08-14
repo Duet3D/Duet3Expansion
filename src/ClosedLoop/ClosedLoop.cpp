@@ -735,7 +735,7 @@ void ClosedLoop::InstanceControlLoop() noexcept
 	if (encoder != nullptr && !encoder->TakeReading())
 	{
 		// Calculate and store the current error in full steps
-		hasMovementCommand = moveInstance->GetCurrentMotion(0, loopCallTime - StepTimer::GetMovementDelay(), mParams);
+		hasMovementCommand = moveInstance->GetCurrentMotion(0, StepTimer::ConvertLocalToMovementTime(loopCallTime), mParams);
 		if (hasMovementCommand)
 		{
 			if (inTorqueMode)

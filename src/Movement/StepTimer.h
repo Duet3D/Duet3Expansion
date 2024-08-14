@@ -59,6 +59,9 @@ public:
 	// Get the current tick count, adjusted for the movement delay
 	static Ticks GetMovementTimerTicks() noexcept SPEED_CRITICAL;
 
+	// Convert local time to movement time
+	static Ticks ConvertLocalToMovementTime(Ticks localTime) noexcept;
+
 	// Get the tick rate (can also access it directly as StepClockRate)
 	static uint32_t GetTickRate() noexcept { return StepClockRate; }
 
@@ -148,10 +151,16 @@ inline void StepTimer::IncreaseMovementDelay(uint32_t increase) noexcept
 	//TODO consider sending a CAN clock message to update expansion boards
 }
 
-// Get the current tick count
+// Get the current tick count for the motion system
 inline StepTimer::Ticks StepTimer::GetMovementTimerTicks() noexcept
 {
 	return GetTimerTicks() - (movementDelay + localTimeOffset);
+}
+
+// Convert local time to movement time
+inline StepTimer::Ticks StepTimer::ConvertLocalToMovementTime(Ticks localTime) noexcept
+{
+	return localTime - (movementDelay + localTimeOffset);
 }
 
 #endif /* SRC_MOVEMENT_STEPTIMER_H_ */
