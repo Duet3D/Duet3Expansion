@@ -343,6 +343,7 @@ public:
 	unsigned int GetMicrostepShift() const noexcept { return microstepShiftFactor; }
 	uint16_t GetMicrostepPosition() const noexcept { return readRegisters[ReadMsCnt] & 1023; }
 	void SetXdirect(uint32_t regVal) noexcept;
+	uint32_t GetXDirectRegisterValue() const noexcept { return xDirectRegisterValue; }
 	float GetCurrent() noexcept { return (float)motorCurrent; }
 #endif
 	bool SetDriverMode(unsigned int mode) noexcept;
@@ -396,12 +397,7 @@ private:
 	static constexpr unsigned int Write5160ShortConf = 8;	// short circuit detection configuration
 	static constexpr unsigned int Write5160DrvConf = 9;		// driver timing
 	static constexpr unsigned int Write5160GlobalScaler = 10; // motor current scaling
-# if SUPPORT_CLOSED_LOOP
-	static constexpr unsigned int Write5160XDirect = 11;	// coil current values for direct mode
-	static constexpr unsigned int NumWriteRegisters = 12;	// the number of registers that we write to
-# else
 	static constexpr unsigned int NumWriteRegisters = 11;	// the number of registers that we write to
-# endif
 #else
 	static constexpr unsigned int NumWriteRegisters = 8;	// the number of registers that we write to
 #endif
@@ -436,6 +432,10 @@ private:
 	uint32_t microstepShiftFactor;							// how much we need to shift 1 left by to get the current microstepping
 	uint32_t motorCurrent;									// the configured motor current in mA
 
+#if SUPPORT_CLOSED_LOOP
+	uint32_t xDirectRegisterValue = 0;
+#endif
+
 	uint16_t minSgLoadRegister;								// the minimum value of the StallGuard bits we read
 	uint16_t numReads, numWrites;							// how many successful reads and writes we had
 	static uint16_t numTimeouts;							// how many times a transfer timed out
@@ -464,9 +464,6 @@ const uint8_t TmcDriverState::WriteRegNumbers[NumWriteRegisters] =
 	REGNUM_5160_SHORTCONF,
 	REGNUM_5160_DRVCONF,
 	REGNUM_5160_GLOBAL_SCALER,
-# if TMC_TYPE == 2160
-	REGNUM_2160_X_DIRECT
-# endif
 #endif
 };
 
@@ -616,15 +613,6 @@ bool TmcDriverState::SetRegister(SmartDriverRegister reg, uint32_t regVal) noexc
 		return false;
 	}
 }
-
-#if SUPPORT_CLOSED_LOOP
-
-inline void TmcDriverState::SetXdirect(uint32_t regVal) noexcept
-{
-	UpdateRegister(Write5160XDirect, regVal);
-}
-
-#endif
 
 uint32_t TmcDriverState::GetRegister(SmartDriverRegister reg) const noexcept
 {
@@ -1112,9 +1100,12 @@ static volatile uint8_t sendData[5 * MaxSmartDrivers];
 static volatile uint8_t rcvData[5 * MaxSmartDrivers];
 
 #if SUPPORT_CLOSED_LOOP
+static volatile uint8_t altSendData[5 * MaxSmartDrivers];
 static volatile uint8_t altRcvData[5 * MaxSmartDrivers];
 static uint32_t lastWakeupTime = 0;
 static StepTimer tmcTimer;
+static bool needToSetCoilCurrents = false;
+static bool setCoilCurrents = false;
 #endif
 
 static volatile DmaCallbackReason dmaFinishedReason;
@@ -1128,9 +1119,22 @@ static uint16_t lastRxBytesTransferred;
 static uint32_t lastFailureDmaActiveStatus;
 #endif
 
+#if SUPPORT_CLOSED_LOOP
+
+inline void TmcDriverState::SetXdirect(uint32_t regVal) noexcept
+{
+	if (regVal != xDirectRegisterValue)
+	{
+		xDirectRegisterValue = regVal;
+		needToSetCoilCurrents = true;
+	}
+}
+
+#endif
+
 // Set up the PDC or DMAC to send a register and receive the status, but don't enable it yet
 #if SUPPORT_CLOSED_LOOP
-static void SetupDMA(bool useAltRcvData) noexcept
+static void SetupDMA(const volatile uint8_t *txData, const volatile uint8_t *rxData) noexcept
 #else
 static void SetupDMA() noexcept
 #endif
@@ -1226,8 +1230,10 @@ static void SetupDMA() noexcept
 	DmacManager::DisableChannel(DmacChanTmcRx);
 	DmacManager::DisableChannel(DmacChanTmcTx);
 # if SUPPORT_CLOSED_LOOP
-	DmacManager::SetDestinationAddress(DmacChanTmcRx, (useAltRcvData) ? altRcvData : rcvData);
-	DmacManager::SetDataLength(DmacChanTmcRx, ARRAY_SIZE(rcvData));
+	DmacManager::SetSourceAddress(DmacChanTmcTx, (void*)txData);
+	DmacManager::SetDataLength(DmacChanTmcRx, 5 * MaxSmartDrivers);
+	DmacManager::SetDestinationAddress(DmacChanTmcRx, (void*)rxData);
+	DmacManager::SetDataLength(DmacChanTmcRx, 5 * MaxSmartDrivers);
 # endif
 #else
 	spiPdc->PERIPH_PTCR = (PERIPH_PTCR_RXTDIS | PERIPH_PTCR_TXTDIS);		// disable the PDC
@@ -1333,11 +1339,12 @@ void RxDmaCompleteCallback(CallbackParameter param, DmaCallbackReason reason) no
 #if SUPPORT_CLOSED_LOOP
 	// When in closed loop node we send the motor currents every time.
 	// In order to keep the read registers up to data, send a read request after the write request.
-	if (sendData[0] == (REGNUM_2160_X_DIRECT | 0x80))	// if we just wrote the coil currents
+	if (setCoilCurrents)								// if we just wrote the coil currents
 	{
+		setCoilCurrents = false;
 		const uint32_t start = GetCurrentCycles();		// get the time now so we can time the CS high signal
 		driverStates[0].GetSpiReadCommand(const_cast<uint8_t*>(sendData));
-		SetupDMA(true);									// set up the PDC or DMAC
+		SetupDMA(sendData, altRcvData);					// set up the PDC or DMAC
 		dmaFinishedReason = DmaCallbackReason::none;
 		EnableEndOfTransferInterrupt();
 		DelayCycles(start, 2 * SystemCoreClockFreq/DriversSpiClockFrequency);	// keep CS high for 2 SPI clock cycles between transactions
@@ -1440,6 +1447,16 @@ extern "C" [[noreturn]] void TmcLoop(void *) noexcept
 
 #if SINGLE_DRIVER
 		driverStates[0].GetSpiCommand(const_cast<uint8_t*>(sendData));
+
+# if SUPPORT_CLOSED_LOOP
+		if (needToSetCoilCurrents)
+		{
+			altSendData[0] = REGNUM_2160_X_DIRECT | 0x80;
+			StoreBEU32(const_cast<uint8_t*>(altSendData + 1), driverStates[0].GetXDirectRegisterValue());
+			setCoilCurrents = true;
+			needToSetCoilCurrents = false;
+		}
+# endif
 #else
 		volatile uint8_t *writeBufPtr = sendData + 5 * numTmc51xxDrivers;
 		for (size_t i = 0; i < numTmc51xxDrivers; ++i)
@@ -1457,7 +1474,7 @@ extern "C" [[noreturn]] void TmcLoop(void *) noexcept
 			TaskCriticalSectionLocker lock;
 
 #if SUPPORT_CLOSED_LOOP
-			SetupDMA(false);									// set up the PDC or DMAC
+			SetupDMA((setCoilCurrents) ? altSendData : sendData, rcvData);		// set up the PDC or DMAC
 #else
 			SetupDMA();											// set up the PDC or DMAC
 #endif
@@ -1581,9 +1598,11 @@ void SmartDrivers::Init() noexcept
 
 	DmacManager::SetBtctrl(DmacChanTmcTx, DMAC_BTCTRL_VALID | DMAC_BTCTRL_EVOSEL_DISABLE | DMAC_BTCTRL_BLOCKACT_INT | DMAC_BTCTRL_BEATSIZE_BYTE
 								| DMAC_BTCTRL_SRCINC | DMAC_BTCTRL_STEPSEL_SRC | DMAC_BTCTRL_STEPSIZE_X1);
-	DmacManager::SetSourceAddress(DmacChanTmcTx, sendData);
 	DmacManager::SetDestinationAddress(DmacChanTmcTx, &(SERCOM_TMC51xx->SPI.DATA.reg));
+# if !SUPPORT_CLOSED_LOOP		// in closed loop mode we use two different eceive data blocks
+	DmacManager::SetSourceAddress(DmacChanTmcTx, sendData);
 	DmacManager::SetDataLength(DmacChanTmcTx, ARRAY_SIZE(sendData));
+#endif
 	DmacManager::SetTriggerSourceSercomTx(DmacChanTmcTx, SERCOM_TMC51xx_NUMBER);
 
 	DmacManager::SetInterruptCallback(DmacChanTmcRx, RxDmaCompleteCallback, CallbackParameter(0U));
