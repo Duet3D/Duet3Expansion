@@ -1337,13 +1337,12 @@ void RxDmaCompleteCallback(CallbackParameter param, DmaCallbackReason reason) no
 	dmaFinishedReason = reason;
 	fastDigitalWriteHigh(GlobalTmc51xxCSPin);			// set CS high
 #if SUPPORT_CLOSED_LOOP
-	// When in closed loop node we send the motor currents every time.
-	// In order to keep the read registers up to data, send a read request after the write request.
+	// When in closed loop node we send the coil currents if any have changes since last tie we sent them.
+	// Send a "normal" read or write request after the coil currents have been set.
 	if (setCoilCurrents)								// if we just wrote the coil currents
 	{
 		setCoilCurrents = false;
 		const uint32_t start = GetCurrentCycles();		// get the time now so we can time the CS high signal
-		driverStates[0].GetSpiReadCommand(const_cast<uint8_t*>(sendData));
 		SetupDMA(sendData, altRcvData);					// set up the PDC or DMAC
 		dmaFinishedReason = DmaCallbackReason::none;
 		EnableEndOfTransferInterrupt();
