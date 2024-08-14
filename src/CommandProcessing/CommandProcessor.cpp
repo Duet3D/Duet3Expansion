@@ -32,7 +32,7 @@
 # if SUPPORT_TMC22xx
 #  include "Movement/StepperDrivers/TMC22xx.h"
 # endif
-# if SUPPORT_TMC51xx || SUPPORT_TMC2160
+# if SUPPORT_TMC51xx
 #  include "Movement/StepperDrivers/TMC51xx.h"
 # endif
 # if SUPPORT_CLOSED_LOOP
@@ -212,7 +212,7 @@ static GCodeResult SetStepsPerMmAndMicrostepping(const CanMessageMultipleDrivesR
 							}
 							else
 							{
-								moveInstance->SetDriveStepsPerUnit(driver, msg.values[count].GetStepsPerUnit());
+								moveInstance->SetDriveStepsPerMm(driver, msg.values[count].GetStepsPerUnit());
 #if HAS_SMART_DRIVERS
 								const uint16_t microstepping = msg.values[count].GetMicrostepping() & 0x03FF;
 								const bool interpolate = (msg.values[count].GetMicrostepping() & 0x8000) != 0;
@@ -234,7 +234,7 @@ static GCodeResult SetStepsPerMmAndMicrostepping(const CanMessageMultipleDrivesR
 
 static GCodeResult ProcessM569Point2(const CanMessageGeneric& msg, const StringRef& reply)
 {
-#if SUPPORT_TMC22xx || SUPPORT_TMC51xx || SUPPORT_TMC2160
+#if SUPPORT_TMC22xx || SUPPORT_TMC51xx
 	CanMessageGenericParser parser(msg, M569Point2Params);
 	uint8_t drive;
 	uint8_t regNum;
@@ -517,7 +517,7 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 # if HAS_SMART_DRIVERS
 				", "
 # endif
-				, driver, moveInstance->GetPosition(driver), (double)moveInstance->DriveStepsPerUnit(driver));
+				, driver, moveInstance->GetPosition(driver), (double)moveInstance->DriveStepsPerMm(driver));
 # if HAS_SMART_DRIVERS
 			const StandardDriverStatus status = moveInstance->GetDriverStatus(driver, false, false);
 			status.AppendText(reply, 0);

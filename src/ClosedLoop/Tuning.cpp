@@ -5,7 +5,7 @@
 
 #include "Encoders/Encoder.h"
 
-# if SUPPORT_TMC2160
+# if SUPPORT_TMC51xx
 #  include "Movement/StepperDrivers/TMC51xx.h"
 # else
 #  error Cannot support closed loop with the specified hardware

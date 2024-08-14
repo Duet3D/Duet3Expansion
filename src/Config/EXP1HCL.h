@@ -33,8 +33,7 @@
 #define ACTIVE_HIGH_STEP		1		// 1 = active high, 0 = active low
 #define ACTIVE_HIGH_DIR			1		// 1 = active high, 0 = active low
 
-#define SUPPORT_TMC51xx			0
-#define SUPPORT_TMC2160			1
+#define SUPPORT_TMC51xx			1
 #define SUPPORT_TMC2660			0
 #define SUPPORT_TMC22xx			0
 #define SUPPORT_INPUT_SHAPING	1

@@ -95,8 +95,8 @@ public:
 	// Function to send the status of our drivers - must be called only by the Heat task
 	void SendDriversStatus(CanMessageBuffer& buf) noexcept;
 
-	float DriveStepsPerUnit(size_t drive) const noexcept;
-	void SetDriveStepsPerUnit(size_t drive, float val) noexcept;
+	float DriveStepsPerMm(size_t drive) const noexcept;
+	void SetDriveStepsPerMm(size_t drive, float val) noexcept;
 
 #if SUPPORT_SLOW_DRIVERS
 	void SetDriverStepTiming(size_t drive, const float timings[4]) noexcept;
@@ -343,7 +343,7 @@ private:
 
 //******************************************************************************************************
 
-inline float Move::DriveStepsPerUnit(size_t drive) const noexcept
+inline float Move::DriveStepsPerMm(size_t drive) const noexcept
 {
 	return stepsPerMm[drive];
 }

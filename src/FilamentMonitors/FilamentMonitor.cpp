@@ -312,7 +312,7 @@ GCodeResult FilamentMonitor::CommonConfigure(const CanMessageGenericParser& pars
 
 				if (fs.enableMode == 2 || Platform::IsPrinting())
 				{
-					const float extrusionCommanded = (float)extruderStepsCommanded/moveInstance->DriveStepsPerUnit(drv);
+					const float extrusionCommanded = (float)extruderStepsCommanded/moveInstance->DriveStepsPerMm(drv);
 					fst = fs.Check(isPrinting, fromIsr, locIsrMillis, extrusionCommanded);
 				}
 				else

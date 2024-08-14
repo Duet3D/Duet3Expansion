@@ -52,6 +52,10 @@
 # define SUPPORT_CLOSED_LOOP			0
 #endif
 
+#ifndef SUPPORT_PHASE_STEPPING
+# define SUPPORT_PHASE_STEPPING			0
+#endif
+
 #ifndef SUPPORT_BRAKE_PWM
 # define SUPPORT_BRAKE_PWM				0
 #endif
