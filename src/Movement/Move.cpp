@@ -710,6 +710,12 @@ void Move::PrepareForNextSteps(uint32_t now) noexcept
 	{
 		if (dms[0].NewSegment(now) != nullptr && dms[0].state != DMState::starting)
 		{
+# if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
+			if (dms[0].state == DMState::phaseStepping)
+			{
+				return;
+			}
+# endif
 			dms[0].driversCurrentlyUsed = dms[0].driversNormallyUsed;	// we previously set driversCurrentlyUsed to 0 to avoid generating a step, so restore it now
 			(void)dms[0].CalcNextStepTimeFull(now);					// calculate next step time
 			dms[0].directionChanged = true;							// force the direction to be set up
@@ -731,7 +737,9 @@ void Move::PrepareForNextSteps(DriveMovement *stopDm, uint32_t now) noexcept
 		{
 			if (dm2->NewSegment(now) != nullptr && dm2->state != DMState::starting)
 			{
+# if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
 				dm2->driversCurrentlyUsed = dm2->driversNormallyUsed;	// we previously set driversCurrentlyUsed to 0 to avoid generating a step, so restore it now
+# endif
 				(void)dm2->CalcNextStepTimeFull(now);					// calculate next step time
 				dm2->directionChanged = true;							// force the direction to be set up
 			}
@@ -766,7 +774,11 @@ void Move::StopDrivers(uint16_t whichDrives) noexcept
 // Called with interrupts disabled.
 void Move::DeactivateDM(DriveMovement *dmToRemove) noexcept
 {
-	DriveMovement **dmp = &activeDMs;
+#if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
+	DriveMovement** dmp = dmToRemove->state == DMState::phaseStepping ? &phaseStepDMs : &activeDMs;
+#else
+	DriveMovement** dmp = &activeDMs;
+#endif
 	while (*dmp != nullptr)
 	{
 		DriveMovement * const dm = *dmp;

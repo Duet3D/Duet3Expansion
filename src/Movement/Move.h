@@ -254,16 +254,6 @@ private:
 
 	DriveMovement dms[NumDrivers];
 
-#if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
-	// Monitoring variables
-	// These variables monitor how fast the PID loop is running etc.
-	StepTimer::Ticks prevPSControlLoopCallTime;			// The last time the control loop was called
-	StepTimer::Ticks minPSControlLoopRuntime;			// The minimum time the control loop has taken to run
-	StepTimer::Ticks maxPSControlLoopRuntime;			// The maximum time the control loop has taken to run
-	StepTimer::Ticks minPSControlLoopCallInterval;		// The minimum interval between the control loop being called
-	StepTimer::Ticks maxPSControlLoopCallInterval;		// The maximum interval between the control loop being called
-#endif
-
 #if SINGLE_DRIVER
 	void SetDirection(bool direction) noexcept;										// set the direction of a driver, observing timing requirements
 
@@ -274,7 +264,19 @@ private:
 	void DeactivateDM(DriveMovement *dmToRemove) noexcept;							// remove a DM from the active list
 
 	DriveMovement *activeDMs = nullptr;
+# if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
+	DriveMovement *phaseStepDMs = nullptr;
+# endif
 	uint32_t allDriverBits = 0;
+#endif
+
+#if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
+	// These variables monitor how fast the PID loop is running etc.
+	StepTimer::Ticks prevPSControlLoopCallTime;			// The last time the control loop was called
+	StepTimer::Ticks minPSControlLoopRuntime;			// The minimum time the control loop has taken to run
+	StepTimer::Ticks maxPSControlLoopRuntime;			// The maximum time the control loop has taken to run
+	StepTimer::Ticks minPSControlLoopCallInterval;		// The minimum interval between the control loop being called
+	StepTimer::Ticks maxPSControlLoopCallInterval;		// The maximum interval between the control loop being called
 #endif
 
 #if SUPPORT_SLOW_DRIVERS
@@ -520,7 +522,11 @@ inline void Move::SetDirection(size_t driver, bool direction) noexcept
 // Base priority must be >= NvicPriorityStep when calling this, unless we are simulating.
 inline void Move::InsertDM(DriveMovement *dm) noexcept
 {
+# if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
+	DriveMovement **dmp = dm->state == DMState::phaseStepping ? &phaseStepDMs : &activeDMs;
+# else
 	DriveMovement **dmp = &activeDMs;
+# endif
 	while (*dmp != nullptr && (int32_t)((*dmp)->nextStepTime - dm->nextStepTime) < 0)
 	{
 		dmp = &((*dmp)->nextDM);

@@ -37,6 +37,9 @@ enum class DMState : uint8_t
 	cartDecelNoReverse,
 	cartDecelForwardsReversing,						// linear decelerating motion, expect reversal
 	cartDecelReverse,								// linear decelerating motion, reversed
+#if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
+	phaseStepping,
+#endif
 };
 
 // This class describes a single movement of one drive
@@ -197,14 +200,16 @@ inline uint32_t DriveMovement::GetStepInterval(uint32_t microstepShift) const no
 
 #endif
 
-#if SUPPORT_CLOSED_LOOP
+#if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
 
 // Get the current position relative to the start of this segment, speed and acceleration. Units are microsteps and step clocks.
-// Return true if this drive is moving. Segments are advanced as necessary if we are in closed loop mode.
+// Return true if this drive is moving or should have moved since the last call. Segments are advanced as necessary if we are in closed loop mode.
 // Inlined because it is only called from one place
 inline bool DriveMovement::GetCurrentMotion(uint32_t when, MotionParameters& mParams) noexcept
 {
+	bool hasMotion = false;
 	AtomicCriticalSectionLocker lock;								// we don't want 'segments' changing while we do this
+
 	MoveSegment *seg = segments;
 	while (seg != nullptr)
 	{
@@ -213,6 +218,7 @@ inline bool DriveMovement::GetCurrentMotion(uint32_t when, MotionParameters& mPa
 		{
 			break;													// segment isn't due to start yet
 		}
+
 		if ((uint32_t)timeSinceStart >= seg->GetDuration())			// if segment should have finished by now
 		{
 			if (closedLoopControl.IsClosedLoopEnabled())
@@ -222,13 +228,22 @@ inline bool DriveMovement::GetCurrentMotion(uint32_t when, MotionParameters& mPa
 				segments = oldSeg->GetNext();
 				MoveSegment::Release(oldSeg);
 				seg = NewSegment(when);
+				hasMotion = true;
 				continue;
 			}
 			timeSinceStart = seg->GetDuration();
 		}
+		else if (state == DMState::starting && closedLoopControl.IsClosedLoopEnabled())
+		{
+			seg = NewSegment(when);
+		}
 
+		if (state != DMState::phaseStepping)
+		{
+			break;
+		}
 		mParams.position = (u + seg->GetA() * timeSinceStart * 0.5) * timeSinceStart + (motioncalc_t)positionAtSegmentStart;
-		currentMotorPosition = (int32_t)mParams.position;			// store the approximate position for OM updates
+		currentMotorPosition = (int32_t)mParams.position;		// store the approximate position for OM updates
 		mParams.speed = u + seg->GetA() * timeSinceStart;
 		mParams.acceleration = seg->GetA();
 		return true;
@@ -237,7 +252,7 @@ inline bool DriveMovement::GetCurrentMotion(uint32_t when, MotionParameters& mPa
 	// If we get here then no movement is taking place
 	mParams.position = (float)currentMotorPosition;
 	mParams.speed = mParams.acceleration = 0.0;
-	return false;
+	return hasMotion;
 }
 
 #endif	// SUPPORT_CLOSED_LOOP
