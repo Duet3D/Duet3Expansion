@@ -1241,7 +1241,7 @@ static void SetupDMA() noexcept
 	DmacManager::DisableChannel(DmacChanTmcTx);
 # if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
 	DmacManager::SetSourceAddress(DmacChanTmcTx, (void*)txData);
-	DmacManager::SetDataLength(DmacChanTmcRx, 5 * MaxSmartDrivers);
+	DmacManager::SetDataLength(DmacChanTmcTx, 5 * MaxSmartDrivers);
 	DmacManager::SetDestinationAddress(DmacChanTmcRx, (void*)rxData);
 	DmacManager::SetDataLength(DmacChanTmcRx, 5 * MaxSmartDrivers);
 # endif
