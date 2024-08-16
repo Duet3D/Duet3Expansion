@@ -89,18 +89,6 @@ static inline float TickPeriodToMillis(StepTimer::Ticks tickPeriod) noexcept
 	return tickPeriod * StepTimer::StepClocksToMillis;
 }
 
-// Helper function to convert a time period (expressed in StepTimer::Ticks) to us
-static inline uint32_t TickPeriodToMicroseconds(StepTimer::Ticks tickPeriod) noexcept
-{
-	return (tickPeriod * 1000)/(StepTimer::GetTickRate()/1000);
-}
-
-// Helper function to convert a time period (expressed in StepTimer::Ticks) to a frequency in Hz
-static inline uint32_t TickPeriodToFreq(StepTimer::Ticks tickPeriod) noexcept
-{
-	return StepTimer::StepClockRate/tickPeriod;
-}
-
 // Helper function to cat all the current tuning errors onto a reply in human-readable form
 void ClosedLoop::ReportTuningErrors(TuningErrors tuningErrorBitmask, const StringRef &reply) noexcept
 {
