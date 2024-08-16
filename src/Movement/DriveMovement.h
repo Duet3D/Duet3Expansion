@@ -217,7 +217,7 @@ inline bool DriveMovement::GetCurrentMotion(uint32_t when, MotionParameters& mPa
 		{
 			if (closedLoopControl.IsClosedLoopEnabled())
 			{
-				currentMotorPosition = positionAtSegmentStart += netStepsThisSegment;
+				currentMotorPosition = positionAtSegmentStart + netStepsThisSegment;
 				MoveSegment *oldSeg = seg;
 				segments = oldSeg->GetNext();
 				MoveSegment::Release(oldSeg);
