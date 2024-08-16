@@ -75,7 +75,7 @@ public:
 	void InstanceDiagnostics(size_t driver, const StringRef& reply) noexcept;
 
 	// Methods called by the motion system
-	void InstanceControlLoop() noexcept;
+	void InstanceControlLoop(StepTimer::Ticks now, StepTimer::Ticks timeElapsed) noexcept;
 	StandardDriverStatus ReadLiveStatus() const noexcept;
 	bool IsClosedLoopEnabled() const noexcept;
 	bool SetClosedLoopEnabled(ClosedLoopMode mode, const StringRef &reply) noexcept;
@@ -192,14 +192,6 @@ private:
 
 	StepTimer::Ticks whenLastTuningStepTaken;			// when the control loop last called the tuning code
 
-	// Monitoring variables
-	// These variables monitor how fast the PID loop is running etc.
-	StepTimer::Ticks prevControlLoopCallTime;			// The last time the control loop was called
-	StepTimer::Ticks minControlLoopRuntime;				// The minimum time the control loop has taken to run
-	StepTimer::Ticks maxControlLoopRuntime;				// The maximum time the control loop has taken to run
-	StepTimer::Ticks minControlLoopCallInterval;		// The minimum interval between the control loop being called
-	StepTimer::Ticks maxControlLoopCallInterval;		// The maximum interval between the control loop being called
-
 	// Data collection variables
 	// Input variables
 	volatile RecordingMode samplingMode = RecordingMode::None;	// What mode did they request? Volatile because we care about when it is written.
@@ -235,7 +227,6 @@ private:
 	GCodeResult ProcessBasicTuningResult(const StringRef& reply) noexcept;
 	GCodeResult ProcessCalibrationResult(const StringRef& reply) noexcept;
 	void ReportTuningErrors(TuningErrors tuningErrorBitmask, const StringRef& reply) noexcept;
-	void ResetMonitoringVariables() noexcept;
 	void SetTargetToCurrentPosition() noexcept;
 	void CreateCalibrationTask() noexcept;
 

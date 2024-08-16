@@ -101,15 +101,6 @@ static inline uint32_t TickPeriodToFreq(StepTimer::Ticks tickPeriod) noexcept
 	return StepTimer::StepClockRate/tickPeriod;
 }
 
-// Helper function to reset the 'monitoring variables' as defined above
-void ClosedLoop::ResetMonitoringVariables() noexcept
-{
-	ClosedLoop::minControlLoopRuntime = numeric_limits<StepTimer::Ticks>::max();
-	ClosedLoop::maxControlLoopRuntime = 1;
-	ClosedLoop::minControlLoopCallInterval = numeric_limits<StepTimer::Ticks>::max();
-	ClosedLoop::maxControlLoopCallInterval = 1;
-}
-
 // Helper function to cat all the current tuning errors onto a reply in human-readable form
 void ClosedLoop::ReportTuningErrors(TuningErrors tuningErrorBitmask, const StringRef &reply) noexcept
 {
@@ -172,9 +163,6 @@ void ClosedLoop::InitInstance() noexcept
 	// Initialise to default error thresholds
 	errorThresholds[0] = DefaultClosedLoopPositionWarningThreshold;
 	errorThresholds[1] = DefaultClosedLoopPositionErrorThreshold;
-
-	// Initialise the monitoring variables
-	ResetMonitoringVariables();
 
 	PIDITerm = 0.0;
 	errorDerivativeFilter.Reset();
@@ -429,7 +417,7 @@ GCodeResult ClosedLoop::ProcessM569Point5(const CanMessageStartClosedLoopDataCol
 		samplesRequested = msg.numSamples;
 		samplesCollected = samplesSent = 0;
 		dataCollectionIntervalTicks = (msg.rate == 0) ? 1 : StepTimer::StepClockRate/msg.rate;
-		dataCollectionStartTicks = whenNextSampleDue = StepTimer::GetTimerTicks();
+		dataCollectionStartTicks = whenNextSampleDue = StepTimer::GetMovementTimerTicks();
 		samplingMode = (RecordingMode)requestedMode;				// do this one last, it triggers data collection
 
 		StartTuning(msg.movement);
@@ -687,7 +675,7 @@ void ClosedLoop::StartTuning(uint8_t tuningMode) noexcept
 {
 	if (tuningMode != 0)
 	{
-		whenLastTuningStepTaken = StepTimer::GetTimerTicks() + stepTicksBeforeTuning;	// delay the start to allow brake release and motor current buildup
+		whenLastTuningStepTaken = StepTimer::GetMovementTimerTicks() + stepTicksBeforeTuning;	// delay the start to allow brake release and motor current buildup
 		tuning = (tuningMode == 1) ? BASIC_TUNING_MANOEUVRE
 					: (tuningMode == 2) ? ENCODER_CALIBRATION_MANOEUVRE
 						: (tuningMode == 3) ? ENCODER_CALIBRATION_CHECK
@@ -722,20 +710,13 @@ void ClosedLoop::AdjustTargetMotorSteps(float amount) noexcept
 	moveInstance->SetCurrentMotorSteps(0, lrintf(mParams.position));
 }
 
-void ClosedLoop::InstanceControlLoop() noexcept
+void ClosedLoop::InstanceControlLoop(StepTimer::Ticks now, StepTimer::Ticks timeElapsed) noexcept
 {
-	// Record the control loop call interval
-	const StepTimer::Ticks loopCallTime = StepTimer::GetTimerTicks();
-	const StepTimer::Ticks timeElapsed = loopCallTime - prevControlLoopCallTime;
-	prevControlLoopCallTime = loopCallTime;
-	minControlLoopCallInterval = min<StepTimer::Ticks>(minControlLoopCallInterval, timeElapsed);
-	maxControlLoopCallInterval = max<StepTimer::Ticks>(maxControlLoopCallInterval, timeElapsed);
-
 	// Read the current state of the drive. Do this even if we are not in closed loop mode.
 	if (encoder != nullptr && !encoder->TakeReading())
 	{
 		// Calculate and store the current error in full steps
-		hasMovementCommand = moveInstance->GetCurrentMotion(0, StepTimer::ConvertLocalToMovementTime(loopCallTime), mParams);
+		hasMovementCommand = moveInstance->GetCurrentMotion(0, now, mParams);
 		if (hasMovementCommand)
 		{
 			if (inTorqueMode)
@@ -744,15 +725,15 @@ void ClosedLoop::InstanceControlLoop() noexcept
 			}
 			if (samplingMode == RecordingMode::OnNextMove)
 			{
-				dataCollectionStartTicks = whenNextSampleDue = StepTimer::GetTimerTicks();
+				dataCollectionStartTicks = whenNextSampleDue = now;
 				samplingMode = RecordingMode::Immediate;
 			}
 		}
 
 		const float targetEncoderReading = rintf(mParams.position * encoder->GetCountsPerStep());
 		currentPositionError = (float)(targetEncoderReading - encoder->GetCurrentCount()) * encoder->GetStepsPerCount();
-		errorDerivativeFilter.ProcessReading(currentPositionError, loopCallTime);
-		speedFilter.ProcessReading(encoder->GetCurrentCount() * encoder->GetStepsPerCount(), loopCallTime);
+		errorDerivativeFilter.ProcessReading(currentPositionError, now);
+		speedFilter.ProcessReading(encoder->GetCurrentCount() * encoder->GetStepsPerCount(), now);
 
 		float currentFraction = 0.0;
 		if (currentMode != ClosedLoopMode::open)
@@ -760,15 +741,15 @@ void ClosedLoop::InstanceControlLoop() noexcept
 			if (tuning != 0)														// if we need to tune, do it
 			{
 				// Limit the rate at which we command tuning steps. We need to do signed comparison because initially, whenLastTuningStepTaken is in the future.
-				const int32_t timeSinceLastTuningStep = (int32_t)(loopCallTime - whenLastTuningStepTaken);
+				const int32_t timeSinceLastTuningStep = (int32_t)(now - whenLastTuningStepTaken);
 				if (timeSinceLastTuningStep >= (int32_t)stepTicksPerTuningStep)
 				{
-					whenLastTuningStepTaken = loopCallTime;
+					whenLastTuningStepTaken = now;
 					PerformTune();
 				}
 				else if (samplingMode == RecordingMode::OnNextMove && timeSinceLastTuningStep + (int32_t)DataCollectionIdleStepTicks >= 0)
 				{
-					dataCollectionStartTicks = whenNextSampleDue = loopCallTime;
+					dataCollectionStartTicks = whenNextSampleDue = now;
 					samplingMode = RecordingMode::Immediate;
 				}
 			}
@@ -809,7 +790,7 @@ void ClosedLoop::InstanceControlLoop() noexcept
 		}
 
 		// Collect a sample, if we need to
-		if (samplingMode == RecordingMode::Immediate && (int32_t)(loopCallTime - whenNextSampleDue) >= 0)
+		if (samplingMode == RecordingMode::Immediate && (int32_t)(now - whenNextSampleDue) >= 0)
 		{
 			// It's time to take a sample
 			CollectSample();
@@ -833,11 +814,6 @@ void ClosedLoop::InstanceControlLoop() noexcept
 		++periodNumSamples;
 
 	}
-
-	// Record how long this has taken to run
-	const StepTimer::Ticks loopRuntime = StepTimer::GetTimerTicks() - loopCallTime;
-	minControlLoopRuntime = min<StepTimer::Ticks>(minControlLoopRuntime, loopRuntime);
-	maxControlLoopRuntime = max<StepTimer::Ticks>(maxControlLoopRuntime, loopRuntime);
 }
 
 // Send data from the buffer to the main board over CAN
@@ -911,7 +887,7 @@ void ClosedLoop::CollectSample() noexcept
 	}
 	else
 	{
-		sampleBuffer.PutF32(TickPeriodToMillis(StepTimer::GetTimerTicks() - dataCollectionStartTicks));		// always collect this
+		sampleBuffer.PutF32(TickPeriodToMillis(StepTimer::GetMovementTimerTicks() - dataCollectionStartTicks));		// always collect this
 
 		if (filterRequested & CL_RECORD_RAW_ENCODER_READING) 	{ sampleBuffer.PutI32(encoder->GetCurrentCount()); }
 		if (filterRequested & CL_RECORD_CURRENT_MOTOR_STEPS) 	{ sampleBuffer.PutF32((float)encoder->GetCurrentCount() * encoder->GetStepsPerCount()); }
@@ -1079,11 +1055,6 @@ void ClosedLoop::InstanceDiagnostics(size_t driver, const StringRef& reply) noex
 		{
 			reply.catf(" (filter: %#x, mode: %u, rate: %u, movement: %u)", filterRequested, samplingMode, (unsigned int)(StepTimer::StepClockRate/dataCollectionIntervalTicks), movementRequested);
 		}
-
-		reply.lcatf("Control loop runtime (us): min=%" PRIu32 ", max=%" PRIu32 ", frequency (Hz): min=%" PRIu32 ", max=%" PRIu32,
-					TickPeriodToMicroseconds(minControlLoopRuntime), TickPeriodToMicroseconds(maxControlLoopRuntime),
-					TickPeriodToFreq(maxControlLoopCallInterval), TickPeriodToFreq(minControlLoopCallInterval));
-		ResetMonitoringVariables();
 	}
 
 	//DEBUG
@@ -1172,8 +1143,8 @@ bool ClosedLoop::SetClosedLoopEnabled(ClosedLoopMode mode, const StringRef &repl
 		// Set the target position to the current position
 		ResetError();													// this calls ReadState again and sets up targetMotorSteps
 
-		ResetMonitoringVariables();										// to avoid getting stupid values
-		prevControlLoopCallTime = StepTimer::GetTimerTicks();			// to avoid huge integral term windup
+		moveInstance->ResetPhaseStepMonitoringVariables();				// to avoid getting stupid values
+		moveInstance->ResetPhaseStepControlLoopCallTime();				// to avoid huge integral term windup
 	}
 
 	// If we are disabling closed loop mode, we should ideally send steps to get the microstep counter to match the current phase here
@@ -1197,7 +1168,7 @@ void ClosedLoop::DriverSwitchedToClosedLoop() noexcept
 	PIDITerm = 0.0;													// clear the integral term accumulator
 	errorDerivativeFilter.Reset();
 	speedFilter.Reset();
-	ResetMonitoringVariables();										// the first loop iteration will have recorded a higher than normal loop call interval, so start again
+	moveInstance->ResetPhaseStepMonitoringVariables();				// the first loop iteration will have recorded a higher than normal loop call interval, so start again
 }
 
 // If we are in closed loop modify the driver status appropriately

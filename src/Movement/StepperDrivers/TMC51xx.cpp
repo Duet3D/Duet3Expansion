@@ -1456,7 +1456,7 @@ extern "C" [[noreturn]] void TmcLoop(void *) noexcept
 
 #if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
 		// Set the motor phase currents before we write them
-		GetMoveInstance().ClosedLoopControlLoop();
+		GetMoveInstance().PhaseStepControlLoop();
 #endif
 
 		// Set up data to write. Driver 0 is the first in the SPI chain so we must write them in reverse order.

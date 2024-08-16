@@ -95,9 +95,6 @@ void Move::Init() noexcept
 {
 #if HAS_SMART_DRIVERS
 	SmartDrivers::Init();
-# if SUPPORT_CLOSED_LOOP
-	ClosedLoop::Init();						// this must be called AFTER SmartDrivers::Init()
-# endif
 	temperatureShutdownDrivers.Clear();
 	temperatureWarningDrivers.Clear();
 #endif
@@ -247,6 +244,11 @@ void Move::Init() noexcept
 	pinMode(BrakeOnPin, OUTPUT_LOW);
 	pinMode(BrakePwmPin, OUTPUT_LOW);
 #endif
+
+# if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
+	ClosedLoop::Init();						// this must be called AFTER SmartDrivers::Init()
+	ResetPhaseStepMonitoringVariables();
+# endif
 
 	moveTask = new Task<MoveTaskStackWords>;
 	moveTask->Create(MoveLoop, "Move", this, TaskPriority::MovePriority);
@@ -449,6 +451,12 @@ void Move::LogStepError(uint8_t type) noexcept
 	stepErrorTypesLogged.SetBit(type);
 }
 
+// Helper function to convert a time period (expressed in StepTimer::Ticks) to a frequency in Hz
+static inline uint32_t TickPeriodToFreq(StepTimer::Ticks tickPeriod) noexcept
+{
+	return StepTimer::GetTickRate()/tickPeriod;
+}
+
 void Move::Diagnostics(const StringRef& reply) noexcept
 {
 	const float delayToReport = (float)StepTimer::GetMovementDelay() * (1000.0/(float)StepTimer::GetTickRate());
@@ -462,6 +470,12 @@ void Move::Diagnostics(const StringRef& reply) noexcept
 #if 1	//debug
 	reply.catf(", ebfmin %.2f max %.2f", (double)minExtrusionPending, (double)maxExtrusionPending);
 	minExtrusionPending = maxExtrusionPending = 0.0;
+#endif
+#if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
+	reply.lcatf("Phase step loop runtime (us): min=%" PRIu32 ", max=%" PRIu32 ", frequency (Hz): min=%" PRIu32 ", max=%" PRIu32 "\n",
+			StepTimer::TicksToIntegerMicroseconds(minPSControlLoopRuntime), StepTimer::TicksToIntegerMicroseconds(maxPSControlLoopRuntime),
+			TickPeriodToFreq(maxPSControlLoopCallInterval), TickPeriodToFreq(minPSControlLoopCallInterval));
+	ResetPhaseStepMonitoringVariables();
 #endif
 }
 
@@ -1165,24 +1179,6 @@ StandardDriverStatus Move::GetStandardDriverStatus(size_t driver) noexcept
 
 #endif
 
-#if SUPPORT_CLOSED_LOOP
-
-bool Move::EnableIfIdle(size_t driver) noexcept
-{
-	if (driverStates[driver] == DriverStateControl::driverIdle)
-	{
-		driverStates[driver] = DriverStateControl::driverActive;
-# if HAS_SMART_DRIVERS
-		driverAtIdleCurrent[driver] = false;
-		UpdateMotorCurrent(driver);
-# endif
-	}
-
-	return driverStates[driver] == DriverStateControl::driverActive;
-}
-
-#endif
-
 GCodeResult Move::ProcessM569(const CanMessageGeneric& msg, const StringRef& reply) noexcept
 {
 	CanMessageGenericParser parser(msg, M569Params);
@@ -1830,7 +1826,7 @@ bool Move::SetMicrostepping(size_t driver, unsigned int microsteps, bool interpo
 
 #endif
 
-#if SUPPORT_CLOSED_LOOP
+#if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
 
 GCodeResult Move::ProcessM569Point1(const CanMessageGeneric &msg, const StringRef &reply) noexcept
 {
@@ -1894,17 +1890,58 @@ GCodeResult Move::ProcessM569Point6(const CanMessageGeneric &msg, const StringRe
 	return dms[drive].closedLoopControl.ProcessM569Point6(parser, reply);
 }
 
-void Move::ClosedLoopControlLoop() noexcept
+void Move::PhaseStepControlLoop() noexcept
 {
+	// Record the control loop call interval
+	const StepTimer::Ticks loopCallTime = StepTimer::GetTimerTicks();
+	const StepTimer::Ticks timeElapsed = loopCallTime - prevPSControlLoopCallTime;
+	prevPSControlLoopCallTime = loopCallTime;
+	if (timeElapsed < minPSControlLoopCallInterval) { minPSControlLoopCallInterval = timeElapsed; }
+	if (timeElapsed > maxPSControlLoopCallInterval) { maxPSControlLoopCallInterval = timeElapsed; }
+
+	const uint32_t now = StepTimer::ConvertLocalToMovementTime(loopCallTime);
 	for (DriveMovement& dm : dms)
 	{
-		dm.closedLoopControl.InstanceControlLoop();
+		dm.closedLoopControl.InstanceControlLoop(now, timeElapsed);
 	}
+
+	// Record how long this has taken to run
+	const StepTimer::Ticks loopRuntime = StepTimer::GetTimerTicks() - loopCallTime;
+	if (loopRuntime < minPSControlLoopRuntime) { minPSControlLoopRuntime = loopRuntime; }
+	if (loopRuntime > maxPSControlLoopRuntime) { maxPSControlLoopRuntime = loopRuntime; }
 }
 
 void Move::ClosedLoopDiagnostics(size_t driver, const StringRef& reply) noexcept
 {
 	dms[driver].closedLoopControl.InstanceDiagnostics(driver, reply);
+}
+
+bool Move::EnableIfIdle(size_t driver) noexcept
+{
+	if (driverStates[driver] == DriverStateControl::driverIdle)
+	{
+		driverStates[driver] = DriverStateControl::driverActive;
+# if HAS_SMART_DRIVERS
+		driverAtIdleCurrent[driver] = false;
+		UpdateMotorCurrent(driver);
+# endif
+	}
+
+	return driverStates[driver] == DriverStateControl::driverActive;
+}
+
+void Move::ResetPhaseStepControlLoopCallTime() noexcept
+{
+	prevPSControlLoopCallTime = StepTimer::GetTimerTicks();
+}
+
+// Helper function to reset the 'monitoring variables' as defined above
+void Move::ResetPhaseStepMonitoringVariables() noexcept
+{
+	minPSControlLoopRuntime = std::numeric_limits<StepTimer::Ticks>::max();
+	maxPSControlLoopRuntime = 1;
+	minPSControlLoopCallInterval = std::numeric_limits<StepTimer::Ticks>::max();
+	maxPSControlLoopCallInterval = 1;
 }
 
 #endif

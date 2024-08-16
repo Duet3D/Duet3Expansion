@@ -162,8 +162,10 @@ public:
 	void SetCurrentMotorSteps(size_t driver, float fullSteps) noexcept;
 	void InvertCurrentMotorSteps(size_t driver) noexcept;
 
-	void ClosedLoopControlLoop() noexcept;
+	void PhaseStepControlLoop() noexcept;
 	void ClosedLoopDiagnostics(size_t driver, const StringRef& reply) noexcept;
+	void ResetPhaseStepMonitoringVariables() noexcept;
+	void ResetPhaseStepControlLoopCallTime() noexcept;
 #endif
 
 private:
@@ -251,6 +253,16 @@ private:
 	TaskBase * volatile taskWaitingForMoveToComplete = nullptr;
 
 	DriveMovement dms[NumDrivers];
+
+#if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
+	// Monitoring variables
+	// These variables monitor how fast the PID loop is running etc.
+	StepTimer::Ticks prevPSControlLoopCallTime;			// The last time the control loop was called
+	StepTimer::Ticks minPSControlLoopRuntime;			// The minimum time the control loop has taken to run
+	StepTimer::Ticks maxPSControlLoopRuntime;			// The maximum time the control loop has taken to run
+	StepTimer::Ticks minPSControlLoopCallInterval;		// The minimum interval between the control loop being called
+	StepTimer::Ticks maxPSControlLoopCallInterval;		// The maximum interval between the control loop being called
+#endif
 
 #if SINGLE_DRIVER
 	void SetDirection(bool direction) noexcept;										// set the direction of a driver, observing timing requirements
