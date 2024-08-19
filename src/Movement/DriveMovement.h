@@ -224,6 +224,11 @@ inline bool DriveMovement::GetCurrentMotion(uint32_t when, MotionParameters& mPa
 			if (closedLoopControl.IsClosedLoopEnabled())
 			{
 				currentMotorPosition = positionAtSegmentStart + netStepsThisSegment;
+				distanceCarriedForwards += seg->GetLength() - (motioncalc_t)netStepsThisSegment;
+				if (isExtruder)
+				{
+					movementAccumulator += netStepsThisSegment;		// update the amount of extrusion
+				}
 				MoveSegment *oldSeg = seg;
 				segments = oldSeg->GetNext();
 				MoveSegment::Release(oldSeg);
@@ -242,15 +247,15 @@ inline bool DriveMovement::GetCurrentMotion(uint32_t when, MotionParameters& mPa
 		{
 			break;
 		}
-		mParams.position = (u + seg->GetA() * timeSinceStart * 0.5) * timeSinceStart + (motioncalc_t)positionAtSegmentStart;
+		mParams.position = (float)((u + seg->GetA() * timeSinceStart * 0.5) * timeSinceStart + (motioncalc_t)positionAtSegmentStart + distanceCarriedForwards);
 		currentMotorPosition = (int32_t)mParams.position;		// store the approximate position for OM updates
-		mParams.speed = u + seg->GetA() * timeSinceStart;
-		mParams.acceleration = seg->GetA();
+		mParams.speed = (float)(u + seg->GetA() * timeSinceStart);
+		mParams.acceleration = (float)seg->GetA();
 		return true;
 	}
 
 	// If we get here then no movement is taking place
-	mParams.position = (float)currentMotorPosition;
+	mParams.position = (float)((motioncalc_t)currentMotorPosition + distanceCarriedForwards);
 	mParams.speed = mParams.acceleration = 0.0;
 	return hasMotion;
 }
