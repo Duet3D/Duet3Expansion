@@ -71,8 +71,8 @@ public:
 	// Return the current movement delay
 	static uint32_t GetMovementDelay() noexcept { return movementDelay; }
 
-	// Return whether have more movement delay than the master had last time it notified us
-	static bool HasExtraMovementDelay() noexcept { return hasExtraMovementDelay; }
+	// Check whether the movement delay has increased since we last called this. If yes, return the movement delay; else return zero.
+	static uint32_t CheckMovementDelayIncreasedNoClear() noexcept;
 
 #if DEDICATED_STEP_TIMER
 	// Schedule the dedicated step interrupt. Caller must have base priority >= NvicPriorityStep.
@@ -107,7 +107,7 @@ private:
 	static bool ScheduleTimerInterrupt(Ticks tim) SPEED_CRITICAL;				// schedule an interrupt at the specified clock count, or return true if it has passed already
 
 	static uint32_t movementDelay;												// how many timer ticks the move timer is behind the raw timer
-	static bool hasExtraMovementDelay;											// true if we have more movement delay than the main board
+	static bool movementDelayIncreased;											// true if we have more movement delay than the main board
 
 	StepTimer *next;
 	Ticks whenDue;
@@ -153,7 +153,7 @@ inline void StepTimer::IncreaseMovementDelay(uint32_t increase) noexcept
 {
 	AtomicCriticalSectionLocker lock;
 	movementDelay += increase;
-	hasExtraMovementDelay = true;
+	movementDelayIncreased = true;
 }
 
 // Get the current tick count for the motion system
@@ -166,6 +166,13 @@ inline StepTimer::Ticks StepTimer::GetMovementTimerTicks() noexcept
 inline StepTimer::Ticks StepTimer::ConvertLocalToMovementTime(Ticks localTime) noexcept
 {
 	return localTime - (movementDelay + localTimeOffset);
+}
+
+// Check whether the movement delay has increased since we last called this. If yes, return the movement delay; else return zero.
+// We leave the movementDelayIncreased flag set until the main board acknowledges the increased movement delay.
+inline StepTimer::Ticks StepTimer::CheckMovementDelayIncreasedNoClear() noexcept
+{
+	return (movementDelayIncreased) ? movementDelay : 0;
 }
 
 #endif /* SRC_MOVEMENT_STEPTIMER_H_ */

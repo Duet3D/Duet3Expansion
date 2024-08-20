@@ -378,7 +378,17 @@ void Heat::Exit()
 				// We didn't need to send an announcement so send a board health message instead
 				CanMessageBoardStatus * const boardStatusMsg = buf.SetupStatusMessage<CanMessageBoardStatus>(CanInterface::GetCanAddress(), CanInterface::GetCurrentMasterAddress());
 				boardStatusMsg->Clear();
-				boardStatusMsg->neverUsedRam = Tasks::GetNeverUsedRam();
+
+				const StepTimer::Ticks movementDelayNeeded = StepTimer::CheckMovementDelayIncreasedNoClear();
+				if (movementDelayNeeded != 0)
+				{
+					boardStatusMsg->movementDelay = movementDelayNeeded;
+					boardStatusMsg->hasMovementDelay = true;
+				}
+				else
+				{
+					boardStatusMsg->neverUsedRam = Tasks::GetNeverUsedRam();
+				}
 
 				// We must add fields in the following order: VIN, V12, MCU temperature
 				size_t index = 0;
@@ -404,8 +414,7 @@ void Heat::Exit()
 				boardStatusMsg->hasInductiveSensor = true;
 #endif
 				// Add the analog handle data
-				const size_t currentDataLength = boardStatusMsg->GetAnalogHandlesOffset();
-				boardStatusMsg->numAnalogHandles = InputMonitor::AddAnalogHandleData((uint8_t*)boardStatusMsg + currentDataLength, 64 - currentDataLength);
+				boardStatusMsg->numAnalogHandles = InputMonitor::AddAnalogHandleData((uint8_t*)boardStatusMsg + boardStatusMsg->GetAnalogHandlesOffset(), boardStatusMsg->GetMaxAnalogHandleSpace());
 				buf.dataLength = boardStatusMsg->GetActualDataLength();
 				CanInterface::Send(&buf);
 			}
