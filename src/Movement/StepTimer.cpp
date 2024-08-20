@@ -27,6 +27,7 @@
 
 StepTimer * volatile StepTimer::pendingList = nullptr;
 uint32_t StepTimer::movementDelay = 0;											// how many timer ticks the move timer is behind the raw timer
+bool StepTimer::hasExtraMovementDelay = false;									// true if we added movement delay and the master is using less than we are
 
 volatile uint32_t StepTimer::localTimeOffset = 0;
 volatile uint32_t StepTimer::whenLastSynced;
@@ -188,6 +189,15 @@ void StepTimer::Init() noexcept
 				if (msgLen >= CanMessageTimeSync::SizeWithRealTime)	// if real time is included
 				{
 					Platform::SetDateTime(msg.realTime);
+					if (msgLen >= CanMessageTimeSync::SizeWithRealTimeAndMovementDelay)
+					{
+						AtomicCriticalSectionLocker lock;
+						if (msg.movementDelay >= movementDelay)
+						{
+							movementDelay = msg.movementDelay;
+							hasExtraMovementDelay = false;
+						}
+					}
 				}
 			}
 			else

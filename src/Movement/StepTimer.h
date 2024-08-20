@@ -71,6 +71,9 @@ public:
 	// Return the current movement delay
 	static uint32_t GetMovementDelay() noexcept { return movementDelay; }
 
+	// Return whether have more movement delay than the master had last time it notified us
+	static bool HasExtraMovementDelay() noexcept { return hasExtraMovementDelay; }
+
 #if DEDICATED_STEP_TIMER
 	// Schedule the dedicated step interrupt. Caller must have base priority >= NvicPriorityStep.
 	static bool ScheduleMovementCallbackFromIsr(Ticks when) noexcept;
@@ -104,6 +107,7 @@ private:
 	static bool ScheduleTimerInterrupt(Ticks tim) SPEED_CRITICAL;				// schedule an interrupt at the specified clock count, or return true if it has passed already
 
 	static uint32_t movementDelay;												// how many timer ticks the move timer is behind the raw timer
+	static bool hasExtraMovementDelay;											// true if we have more movement delay than the main board
 
 	StepTimer *next;
 	Ticks whenDue;
@@ -147,8 +151,9 @@ inline __attribute__((always_inline)) StepTimer::Ticks StepTimer::GetTimerTicks(
 // Add more movement delay
 inline void StepTimer::IncreaseMovementDelay(uint32_t increase) noexcept
 {
+	AtomicCriticalSectionLocker lock;
 	movementDelay += increase;
-	//TODO consider sending a CAN clock message to update expansion boards
+	hasExtraMovementDelay = true;
 }
 
 // Get the current tick count for the motion system
