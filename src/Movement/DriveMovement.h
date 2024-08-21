@@ -58,7 +58,6 @@ public:
 	int32_t GetNetStepsTaken() const noexcept;							// return the number of steps taken in the current segment
 
 	void AddSegment(uint32_t startTime, uint32_t duration, motioncalc_t distance, motioncalc_t a, MovementFlags moveFlags) noexcept;
-	void SetAsExtruder(bool p_isExtruder) noexcept { isExtruder = p_isExtruder; }
 
 #if HAS_SMART_DRIVERS
 	uint32_t GetStepInterval(uint32_t microstepShift) const noexcept;	// Get the current full step interval for this axis or extruder
@@ -95,7 +94,7 @@ private:
 	uint8_t drive;										// the drive that this DM controls
 	uint8_t direction : 1,								// true=forwards, false=backwards
 			directionChanged : 1,						// set by CalcNextStepTime if the direction is changed
-			isExtruder : 1,								// true if this DM is for an extruder (only matters if !isDelta)
+							: 1,						// spare for alignment
 			stepErrorType : 3,							// records what type of step error we had
 			stepsTakenThisSegment : 2;					// how many steps we have taken this phase, counts from 0 to 2. Last field in the byte so that we can increment it efficiently.
 	uint8_t stepsTillRecalc;							// how soon we need to recalculate
