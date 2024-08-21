@@ -57,7 +57,7 @@ public:
 	void StopDriverFromRemote() noexcept;
 	int32_t GetNetStepsTaken() const noexcept;							// return the number of steps taken in the current segment
 
-	void AddSegment(uint32_t startTime, uint32_t duration, motioncalc_t distance, motioncalc_t a, MovementFlags moveFlags) noexcept;
+	void AddSegment(uint32_t startTime, uint32_t duration, motioncalc_t distance, motioncalc_t a, MovementFlags moveFlags, bool usePressureAdvance) noexcept;
 
 #if HAS_SMART_DRIVERS
 	uint32_t GetStepInterval(uint32_t microstepShift) const noexcept;	// Get the current full step interval for this axis or extruder
@@ -224,10 +224,7 @@ inline bool DriveMovement::GetCurrentMotion(uint32_t when, MotionParameters& mPa
 			{
 				currentMotorPosition = positionAtSegmentStart + netStepsThisSegment;
 				distanceCarriedForwards += seg->GetLength() - (motioncalc_t)netStepsThisSegment;
-				if (isExtruder)
-				{
-					movementAccumulator += netStepsThisSegment;		// update the amount of extrusion
-				}
+				movementAccumulator += netStepsThisSegment;		// update the amount of extrusion
 				MoveSegment *oldSeg = seg;
 				segments = oldSeg->GetNext();
 				MoveSegment::Release(oldSeg);

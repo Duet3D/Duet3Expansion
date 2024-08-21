@@ -531,7 +531,7 @@ bool Move::AddMove(const CanMessageMovementLinearShaped& msg) noexcept
 				const float extrusionRequested = msg.perDrive[drive].extrusion;
 				if (extrusionRequested != 0.0)
 				{
-					AddLinearSegments(drive, msg.whenToExecute, params, extrusionRequested, segFlags);
+					AddLinearSegments(drive, msg.whenToExecute, params, extrusionRequested, segFlags, msg.usePressureAdvance);
 				}
 			}
 			else
@@ -539,7 +539,7 @@ bool Move::AddMove(const CanMessageMovementLinearShaped& msg) noexcept
 				const float delta = (float)msg.perDrive[drive].steps;
 				if (delta != 0.0)
 				{
-					AddLinearSegments(drive, msg.whenToExecute, params, delta, segFlags);
+					AddLinearSegments(drive, msg.whenToExecute, params, delta, segFlags, false);
 				}
 			}
 		}
@@ -802,7 +802,7 @@ void Move::DeactivateDM(DriveMovement *dmToRemove) noexcept
 
 // Add some linear segments to be executed by a driver, taking account of possible input shaping. This is used by linear axes and by extruders.
 // We never add a segment that starts earlier than any existing segments, but we may add segments when there are none already.
-void Move::AddLinearSegments(size_t drive, uint32_t startTime, const PrepParams& params, motioncalc_t steps, MovementFlags moveFlags) noexcept
+void Move::AddLinearSegments(size_t drive, uint32_t startTime, const PrepParams& params, motioncalc_t steps, MovementFlags moveFlags, bool usePressureAdvance) noexcept
 {
 	EnableDrive(drive);
 
@@ -823,15 +823,15 @@ void Move::AddLinearSegments(size_t drive, uint32_t startTime, const PrepParams&
 	{
 		if (params.accelClocks != 0)
 		{
-			dmp.AddSegment(startTime, params.accelClocks, accelDistance * stepsPerMm, (motioncalc_t)params.acceleration * stepsPerMm, moveFlags);
+			dmp.AddSegment(startTime, params.accelClocks, accelDistance * stepsPerMm, (motioncalc_t)params.acceleration * stepsPerMm, moveFlags, usePressureAdvance);
 		}
 		if (params.steadyClocks != 0)
 		{
-			dmp.AddSegment(steadyStartTime, params.steadyClocks, steadyDistance * stepsPerMm, (motioncalc_t)0.0, moveFlags);
+			dmp.AddSegment(steadyStartTime, params.steadyClocks, steadyDistance * stepsPerMm, (motioncalc_t)0.0, moveFlags, usePressureAdvance);
 		}
 		if (params.decelClocks != 0)
 		{
-			dmp.AddSegment(decelStartTime, params.decelClocks, decelDistance * stepsPerMm, -((motioncalc_t)params.deceleration * stepsPerMm), moveFlags);
+			dmp.AddSegment(decelStartTime, params.decelClocks, decelDistance * stepsPerMm, -((motioncalc_t)params.deceleration * stepsPerMm), moveFlags, usePressureAdvance);
 		}
 	}
 #if SUPPORT_INPUT_SHAPING
@@ -843,15 +843,15 @@ void Move::AddLinearSegments(size_t drive, uint32_t startTime, const PrepParams&
 			const uint32_t delay = axisShaper.GetImpulseDelay(index);
 			if (params.accelClocks != 0)
 			{
-				dmp.AddSegment(startTime + delay, params.accelClocks, accelDistance * factor, (motioncalc_t)params.acceleration * factor, moveFlags);
+				dmp.AddSegment(startTime + delay, params.accelClocks, accelDistance * factor, (motioncalc_t)params.acceleration * factor, moveFlags, usePressureAdvance);
 			}
 			if (params.steadyClocks != 0)
 			{
-				dmp.AddSegment(steadyStartTime + delay, params.steadyClocks, steadyDistance * factor, (motioncalc_t)0.0, moveFlags);
+				dmp.AddSegment(steadyStartTime + delay, params.steadyClocks, steadyDistance * factor, (motioncalc_t)0.0, moveFlags, usePressureAdvance);
 			}
 			if (params.decelClocks != 0)
 			{
-				dmp.AddSegment(decelStartTime + delay, params.decelClocks, decelDistance * factor, -((motioncalc_t)params.deceleration * factor), moveFlags);
+				dmp.AddSegment(decelStartTime + delay, params.decelClocks, decelDistance * factor, -((motioncalc_t)params.deceleration * factor), moveFlags, usePressureAdvance);
 			}
 		}
 	}

@@ -133,7 +133,7 @@ public:
 
 	// Input shaping support
 	GCodeResult HandleInputShaping(const CanMessageSetInputShapingNew& msg, size_t dataLength, const StringRef& reply) noexcept;
-	void AddLinearSegments(size_t logicalDrive, uint32_t startTime, const PrepParams& params, motioncalc_t steps, MovementFlags moveFlags) noexcept;
+	void AddLinearSegments(size_t logicalDrive, uint32_t startTime, const PrepParams& params, motioncalc_t steps, MovementFlags moveFlags, bool usePressureAdvance) noexcept;
 
 	// Pressure advance
 	ExtruderShaper& GetExtruderShaper(size_t drive) noexcept { return dms[drive].extruderShaper; }
