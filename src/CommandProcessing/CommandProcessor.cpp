@@ -510,31 +510,9 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 
 	case CanMessageReturnInfo::typeDiagnosticsPart0 + 4:
 		extra = LastDiagnosticsPart;
-#if SUPPORT_DRIVERS
-		for (size_t driver = 0; driver < NumDrivers; ++driver)
-		{
-			reply.lcatf("Driver %u: pos %" PRIi32 ", %.1f steps/mm"
-# if HAS_SMART_DRIVERS
-				", "
-# endif
-				, driver, moveInstance->GetPosition(driver), (double)moveInstance->DriveStepsPerMm(driver));
-# if HAS_SMART_DRIVERS
-			const StandardDriverStatus status = moveInstance->GetDriverStatus(driver, false, false);
-			status.AppendText(reply, 0);
-			if (!status.notPresent)
-			{
-				SmartDrivers::AppendDriverStatus(driver, reply);
-			}
-# endif
-		}
-#endif
-		break;
-
-	case CanMessageReturnInfo::typeDiagnosticsPart0 + 5:
-		extra = LastDiagnosticsPart;
 		{
 #if SUPPORT_DRIVERS
-			moveInstance->Diagnostics(reply);
+			moveInstance->AppendDiagnostics(reply);
 #endif
 			StepTimer::Diagnostics(reply);
 
@@ -556,6 +534,28 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 			reply.lcatf("MCU temperature: min %.1fC, current %.1fC, max %.1fC", (double)mcuTemperature.minimum, (double)mcuTemperature.current, (double)mcuTemperature.maximum);
 #endif
 		}
+		break;
+
+	case CanMessageReturnInfo::typeDiagnosticsPart0 + 5:
+		extra = LastDiagnosticsPart;
+#if SUPPORT_DRIVERS
+		for (size_t driver = 0; driver < NumDrivers; ++driver)
+		{
+			reply.lcatf("Driver %u: pos %" PRIi32 ", %.1f steps/mm"
+# if HAS_SMART_DRIVERS
+				", "
+# endif
+				, driver, moveInstance->GetPosition(driver), (double)moveInstance->DriveStepsPerMm(driver));
+# if HAS_SMART_DRIVERS
+			const StandardDriverStatus status = moveInstance->GetDriverStatus(driver, false, false);
+			status.AppendText(reply, 0);
+			if (!status.notPresent)
+			{
+				SmartDrivers::AppendDriverStatus(driver, reply);
+			}
+# endif
+		}
+#endif
 		break;
 
 	case CanMessageReturnInfo::typeDiagnosticsPart0 + 6:

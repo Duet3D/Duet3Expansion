@@ -61,7 +61,7 @@ public:
 #endif
 
 	StandardDriverStatus GetDriverStatus(size_t driver, bool accumulated, bool clearAccumulated) const noexcept;
-	void Diagnostics(const StringRef& reply) noexcept;								// Report useful stuff
+	void AppendDiagnostics(const StringRef& reply) noexcept;						// Report useful stuff
 
 	void SetDirectionValue(size_t driver, bool dVal);
 	bool GetDirectionValue(size_t driver) const noexcept;

@@ -71,6 +71,9 @@ public:
 	// Return the current movement delay
 	static uint32_t GetMovementDelay() noexcept { return movementDelay; }
 
+	// Report the amount of movement delay that this board is responsible for
+	static uint32_t GetOwnMovementDelay() noexcept { return ownMovementDelay; }
+
 	// Check whether the movement delay has increased since we last called this. If yes, return the movement delay; else return zero.
 	static uint32_t CheckMovementDelayIncreasedNoClear() noexcept;
 
@@ -107,6 +110,7 @@ private:
 	static bool ScheduleTimerInterrupt(Ticks tim) SPEED_CRITICAL;				// schedule an interrupt at the specified clock count, or return true if it has passed already
 
 	static uint32_t movementDelay;												// how many timer ticks the move timer is behind the raw timer
+	static uint32_t ownMovementDelay;											// the total amount of movement delay that this board has requested
 	static bool movementDelayIncreased;											// true if we have more movement delay than the main board
 
 	StepTimer *next;
@@ -153,6 +157,7 @@ inline void StepTimer::IncreaseMovementDelay(uint32_t increase) noexcept
 {
 	AtomicCriticalSectionLocker lock;
 	movementDelay += increase;
+	ownMovementDelay += increase;
 	movementDelayIncreased = true;
 }
 

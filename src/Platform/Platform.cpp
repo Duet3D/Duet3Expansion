@@ -1004,7 +1004,7 @@ void Platform::Spin()
 			debugPrintf("ADC conversions started %" PRIu32 ", completed %" PRIu32 ", timed out %" PRIu32 ", errs %" PRIu32 "\n",
 						conversionsStarted, conversionsCompleted, conversionTimeouts, errors);
 # if SUPPORT_DRIVERS
-			moveInstance->Diagnostics(reply.GetRef());
+			moveInstance->AppendDiagnostics(reply.GetRef());
 			debugPrintf("%s\n", reply.c_str());
 			reply.Clear();
 # endif

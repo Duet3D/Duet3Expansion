@@ -451,17 +451,23 @@ void Move::LogStepError(uint8_t type) noexcept
 	stepErrorTypesLogged.SetBit(type);
 }
 
+#if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
+
 // Helper function to convert a time period (expressed in StepTimer::Ticks) to a frequency in Hz
 static inline uint32_t TickPeriodToFreq(StepTimer::Ticks tickPeriod) noexcept
 {
 	return StepTimer::GetTickRate()/tickPeriod;
 }
 
-void Move::Diagnostics(const StringRef& reply) noexcept
+#endif
+
+void Move::AppendDiagnostics(const StringRef& reply) noexcept
 {
-	const float delayToReport = (float)StepTimer::GetMovementDelay() * (1000.0/(float)StepTimer::GetTickRate());
-	reply.catf("Moves scheduled %" PRIu32 ", hiccups %u (%.2fms), segs %u, step errors %u (types 0x%x), maxLate %" PRIi32 " maxPrep %" PRIu32,
-					scheduledMoves, numHiccups, (double)delayToReport, MoveSegment::NumCreated(),
+	const float totalDelayToReport = (float)StepTimer::GetMovementDelay() * (1000.0/(float)StepTimer::GetTickRate());
+	const float ownDelayToReport = (float)StepTimer::GetOwnMovementDelay() * (1000.0/(float)StepTimer::GetTickRate());
+
+	reply.lcatf("Moves scheduled %" PRIu32 ", hiccups %u (%.2f/%.2fms), segs %u, step errors %u (types 0x%x), maxLate %" PRIi32 " maxPrep %" PRIu32,
+					scheduledMoves, numHiccups, (double)ownDelayToReport, (double)totalDelayToReport, MoveSegment::NumCreated(),
 					numStepErrors, stepErrorTypesLogged.GetRaw(), DriveMovement::GetAndClearMaxStepsLate(), maxPrepareTime);
 	numHiccups = 0;
 	maxPrepareTime = 0;
