@@ -166,6 +166,36 @@ inline MoveSegment::MoveSegment(MoveSegment *p_next) noexcept
 	// remaining fields are not initialised
 }
 
+// Test whether a floating point number is equal to positive or negative zero
+static bool IsNonZero(motioncalc_t f) noexcept
+{
+#if (SAMC21 || RP2040) && !USE_DOUBLE_MOTIONCALC && !defined(__ECV__)
+	// Nasty hack to avoid calling floating point subroutines on MCUs without a hardware FPU
+	// ARM uses IEEE format, which uses the MSB as a sign bit and encodes zero as all zeros
+# pragma GCC diagnostic push
+# pragma GCC diagnostic ignored "-Wstrict-aliasing"
+	return (*reinterpret_cast<const uint32_t*>(&f) << 1) != 0;
+# pragma GCC diagnostic pop
+#else
+	return f == (motioncalc_t)0.0;
+#endif
+}
+
+// Test whether a floating point number is strictly greater than zero. The result is undefined if the operand is a NaN.
+inline bool IsPositive(motioncalc_t f) noexcept
+{
+#if (SAMC21 || RP2040) && !USE_DOUBLE_MOTIONCALC && !defined(__ECV__)
+	// Nasty hack to avoid calling floating point subroutines on MCUs without a hardware FPU
+	// ARM uses IEEE format, which uses the MSB as a sign bit and encodes positive zero as all zeros. Therefore we can just test for > 0 when interpreted as an integer.
+# pragma GCC diagnostic push
+# pragma GCC diagnostic ignored "-Wstrict-aliasing"
+	return *reinterpret_cast<const int32_t*>(&f) > 0;
+# pragma GCC diagnostic pop
+#else
+	return f > (motioncalc_t)0.0;
+#endif
+}
+
 // Normalise this segment by removing very small accelerations that cause problems, update t0, return true if it is linear
 // Called only from DriveMovement::NewSegment. Speed critical, hence inline and the rather unusual behaviour.
 // Returns:
@@ -173,7 +203,7 @@ inline MoveSegment::MoveSegment(MoveSegment *p_next) noexcept
 //  false if the segment has acceleration or deceleration, with t0 = time from start of segment at which the speed would have been/will be/would be zero
 inline bool MoveSegment::NormaliseAndCheckLinear(motioncalc_t distanceCarriedForwards, motioncalc_t& t0) noexcept
 {
-	if (a != (motioncalc_t)0.0)
+	if (IsNonZero(a))
 	{
 		// The move has acceleration or deceleration, but it may be small enough to cause problems with the calculations.
 		// The reason is that the step time is calculated as:
