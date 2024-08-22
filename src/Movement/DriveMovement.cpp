@@ -63,6 +63,10 @@ uint32_t maxCriticalElapsedTime = 0;
 
 // Add a segment into the list. If the list is not empty then the new segment may overlap segments already in the list but will never start earlier than the first existing one.
 // The units of the input parameters are steps for distance and step clocks for time.
+// This function used goto-statements to avoid repeating tests. House rules for using goto:
+// - Backward jumps are NOT permitted. Forward jumps are permitted.
+// - Jumping into a scope is NOT permitted. Jumping out of a scope is permitted.
+// - Jumping over any declaration that is in-scope at the target label is NOT permitted.
 void DriveMovement::AddSegment(uint32_t startTime, uint32_t duration, motioncalc_t distance, motioncalc_t a, MovementFlags moveFlags, bool usePressureAdvance) noexcept
 {
 	if ((int32_t)duration <= 0)
