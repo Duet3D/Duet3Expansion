@@ -133,7 +133,6 @@ public:
 
 	// Input shaping support
 	GCodeResult HandleInputShaping(const CanMessageSetInputShapingNew& msg, size_t dataLength, const StringRef& reply) noexcept;
-	void AddLinearSegments(size_t logicalDrive, uint32_t startTime, const PrepParams& params, motioncalc_t steps, MovementFlags moveFlags, bool usePressureAdvance) noexcept;
 
 	// Pressure advance
 	ExtruderShaper& GetExtruderShaper(size_t drive) noexcept { return dms[drive].extruderShaper; }
@@ -179,6 +178,14 @@ private:
 	};
 
 	bool AddMove(const CanMessageMovementLinearShaped& msg) noexcept;				// Add a new move received via CAN
+
+	MoveSegment *AddSegment(MoveSegment *list, uint32_t startTime, uint32_t duration, motioncalc_t distance, motioncalc_t a, MovementFlags moveFlags, motioncalc_t pressureAdvance) noexcept;
+	void AddLinearSegments(size_t logicalDrive, uint32_t startTime, const PrepParams& params, motioncalc_t steps, MovementFlags moveFlags, bool usePressureAdvance) noexcept;
+
+#if CHECK_SEGMENTS
+	void CheckSegment(unsigned int line, MoveSegment *seg) noexcept;
+#endif
+
 	void StepDrivers(uint32_t now) noexcept SPEED_CRITICAL;							// Take one step of the DDA, called by timer interrupt.
 #if SINGLE_DRIVER
 	void PrepareForNextSteps(uint32_t now) noexcept SPEED_CRITICAL;
@@ -217,7 +224,7 @@ private:
 	PwmPort brakePwmPorts[NumDrivers];
 	Pin brakeOnPins[NumDrivers];
 	float brakeVoltages[NumDrivers];
-	static constexpr float FullyOnBrakeVoltage = 100.0;			// this value means always use full voltage (don't PWM)
+	static constexpr float FullyOnBrakeVoltage = 100.0;								// this value means always use full voltage (don't PWM)
 # endif
 	float currentBrakePwm[NumDrivers];
 #else
