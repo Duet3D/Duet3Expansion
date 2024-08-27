@@ -1077,10 +1077,12 @@ void Move::AddLinearSegments(size_t drive, uint32_t startTime, const PrepParams&
 #endif
 	}
 
-	const motioncalc_t stepsPerMm = steps/(motioncalc_t)1.0;
+	const motioncalc_t stepsPerMm = (motioncalc_t)steps;
 
 	const uint32_t steadyStartTime = startTime + params.accelClocks;
 	const uint32_t decelStartTime = steadyStartTime + params.steadyClocks;
+	
+	constexpr motioncalc_t totalDistance = (motioncalc_t)1.0;
 
 	// Phases with zero duration will not get executed and may lead to infinities in the calculations. Avoid introducing them. Keep the total distance correct.
 	// When using input shaping we can save some FP multiplications by multiplying the acceleration or deceleration time by the pressure advance just once instead of once per impulse
@@ -1092,7 +1094,7 @@ void Move::AddLinearSegments(size_t drive, uint32_t startTime, const PrepParams&
 	}
 	else
 	{
-		accelDistance = (motioncalc_t)params.accelDistance;
+		accelDistance = (params.decelClocks + params.steadyClocks == 0) ? totalDistance : (motioncalc_t)params.accelDistance;
 		accelPressureAdvance = (usePressureAdvance) ? (motioncalc_t)(params.accelClocks * dm.extruderShaper.GetKclocks()) : (motioncalc_t)0.0;
 	}
 
@@ -1104,10 +1106,11 @@ void Move::AddLinearSegments(size_t drive, uint32_t startTime, const PrepParams&
 	}
 	else
 	{
-		decelDistance = (motioncalc_t)(1.0 - params.decelStartDistance);
+		decelDistance = totalDistance - ((params.steadyClocks == 0) ? accelDistance : (motioncalc_t)params.decelStartDistance);
 		decelPressureAdvance = (usePressureAdvance) ? (motioncalc_t)(params.decelClocks * dm.extruderShaper.GetKclocks()) : (motioncalc_t)0.0;
 	}
-	const motioncalc_t steadyDistance = (params.steadyClocks == 0) ? (motioncalc_t)0.0 : (motioncalc_t)1.0 - accelDistance - decelDistance;
+	
+	const motioncalc_t steadyDistance = (params.steadyClocks == 0) ? (motioncalc_t)0.0 : totalDistance - accelDistance - decelDistance;
 
 #if SUPPORT_INPUT_SHAPING
 	if (moveFlags.noShaping)
