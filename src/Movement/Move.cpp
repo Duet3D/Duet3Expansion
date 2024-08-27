@@ -1077,12 +1077,11 @@ void Move::AddLinearSegments(size_t drive, uint32_t startTime, const PrepParams&
 #endif
 	}
 
-	const motioncalc_t stepsPerMm = (motioncalc_t)steps;
-
+	// Now it's safe to insert/merge new segments into 'tail'
 	const uint32_t steadyStartTime = startTime + params.accelClocks;
 	const uint32_t decelStartTime = steadyStartTime + params.steadyClocks;
-	
 	constexpr motioncalc_t totalDistance = (motioncalc_t)1.0;
+	const motioncalc_t stepsPerMm = (motioncalc_t)steps;
 
 	// Phases with zero duration will not get executed and may lead to infinities in the calculations. Avoid introducing them. Keep the total distance correct.
 	// When using input shaping we can save some FP multiplications by multiplying the acceleration or deceleration time by the pressure advance just once instead of once per impulse
@@ -1109,7 +1108,7 @@ void Move::AddLinearSegments(size_t drive, uint32_t startTime, const PrepParams&
 		decelDistance = totalDistance - ((params.steadyClocks == 0) ? accelDistance : (motioncalc_t)params.decelStartDistance);
 		decelPressureAdvance = (usePressureAdvance) ? (motioncalc_t)(params.decelClocks * dm.extruderShaper.GetKclocks()) : (motioncalc_t)0.0;
 	}
-	
+
 	const motioncalc_t steadyDistance = (params.steadyClocks == 0) ? (motioncalc_t)0.0 : totalDistance - accelDistance - decelDistance;
 
 #if SUPPORT_INPUT_SHAPING
@@ -1142,7 +1141,7 @@ void Move::AddLinearSegments(size_t drive, uint32_t startTime, const PrepParams&
 			}
 			if (params.steadyClocks != 0)
 			{
-				tail = AddSegment(tail, steadyStartTime + delay, params.steadyClocks, steadyDistance * factor, (motioncalc_t)0.0, moveFlags, 0.0);
+				tail = AddSegment(tail, steadyStartTime + delay, params.steadyClocks, steadyDistance * factor, (motioncalc_t)0.0, moveFlags, (motioncalc_t)0.0);
 			}
 			if (params.decelClocks != 0)
 			{
@@ -1178,7 +1177,7 @@ void Move::AddLinearSegments(size_t drive, uint32_t startTime, const PrepParams&
 			}
 		}
 
-		if (dm.state == DMState::idle)
+		if (dm.state == DMState::idle)													// if the DM has no segments
 		{
 			dm.positionAtMoveStart = dm.currentMotorPosition;							// needed for homing moves, which are always isolated moves
 			if (dm.ScheduleFirstSegment())
