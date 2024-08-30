@@ -13,6 +13,7 @@
 #include <Hardware/LISAccelerometer.h>
 #include <CanMessageFormats.h>
 #include <Platform/TaskPriorities.h>
+#include <Platform/Platform.h>
 #include <CanMessageBuffer.h>
 #include <CAN/CanInterface.h>
 #include <CanMessageGenericParser.h>
@@ -159,6 +160,7 @@ static uint8_t TranslateAxes(uint8_t axes) noexcept
 
 							buf.dataLength = msg.GetActualDataLength();
 							CanInterface::Send(&buf);
+							Platform::OnProcessingCanMessage();								// flash the ACT LED
 
 							samplesSent += samplesInBuffer;
 							samplesInBuffer = 0;

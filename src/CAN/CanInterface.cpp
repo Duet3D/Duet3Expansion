@@ -664,6 +664,7 @@ bool CanInterface::SendAnnounce(CanMessageBuffer *buf) noexcept
 	SafeSnprintf(msg->boardTypeAndFirmwareVersion, ARRAY_SIZE(msg->boardTypeAndFirmwareVersion), "%s|%s|%s%.6s", BOARD_TYPE_NAME, VERSION, IsoDate, TIME_SUFFIX);
 	buf->dataLength = msg->GetActualDataLength();
 	Send(buf);
+	Platform::OnProcessingCanMessage();								// flash the ACT LED
 	return true;
 }
 
@@ -763,6 +764,7 @@ void CanInterface::RaiseEvent(EventType type, uint16_t param, uint8_t device, co
 	SafeVsnprintf(msg->text, ARRAY_SIZE(msg->text), format, vargs);
 	buf.dataLength = msg->GetActualDataLength();
 	CanInterface::Send(&buf);
+	Platform::OnProcessingCanMessage();								// flash the ACT LED
 }
 
 extern "C" [[noreturn]] void CanClockLoop(void *) noexcept
@@ -866,7 +868,8 @@ extern "C" [[noreturn]] void CanAsyncSenderLoop(void *) noexcept
 		if (msg->numHandles != 0)
 		{
 			buf.dataLength = msg->GetActualDataLength();
-			CanInterface::SendAsync(&buf);					// this doesn't free the buffer, so we can re-use it
+			CanInterface::SendAsync(&buf);									// this doesn't free the buffer, so we can re-use it
+			Platform::OnProcessingCanMessage();								// flash the ACT LED
 		}
 
 #if !USE_SERIAL_DEBUG
