@@ -1021,7 +1021,7 @@ void Move::AddLinearSegments(size_t drive, uint32_t startTime, const PrepParams&
 		{
 			const uint32_t segStartTime = tail->GetStartTime();
 			const uint32_t endTime = segStartTime + tail->GetDuration();
-			if ((int32_t)startTime < (int32_t)endTime)
+			if ((int32_t)(startTime - endTime) < 0)										// if the segments we want to add start before this segment ends
 			{
 				if (tail->GetFlags().executing)
 				{
