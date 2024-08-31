@@ -1351,7 +1351,7 @@ void RxDmaCompleteCallback(CallbackParameter param, DmaCallbackReason reason) no
 #endif
 	dmaFinishedReason = reason;
 #if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
-	// When in phase stepping or closed loop node we send the coil currents if any have changes since last tie we sent them.
+	// When in phase stepping or closed loop node we send the coil currents if any have changes since last time we sent them.
 	// Send a "normal" read or write request after the coil currents have been set.
 	// We don't care about the response from setting the motor currents so that is written to altRcvData so as to not overwrite rcvData
 	if (setCoilCurrents)								// if we just wrote the coil currents

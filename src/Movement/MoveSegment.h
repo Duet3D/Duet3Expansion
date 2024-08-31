@@ -177,7 +177,7 @@ static bool IsNonZero(motioncalc_t f) noexcept
 	return (*reinterpret_cast<const uint32_t*>(&f) << 1) != 0;
 # pragma GCC diagnostic pop
 #else
-	return f == (motioncalc_t)0.0;
+	return f != (motioncalc_t)0.0;
 #endif
 }
 
