@@ -1526,6 +1526,7 @@ GCodeResult Move::ProcessM569(const CanMessageGeneric& msg, const StringRef& rep
 	}
 
 	bool seen = false;
+	bool warn = false;
 	uint8_t direction;
 	if (parser.GetUintParam('S', direction))
 	{
@@ -1561,6 +1562,7 @@ GCodeResult Move::ProcessM569(const CanMessageGeneric& msg, const StringRef& rep
 #if HAS_SMART_DRIVERS
 	{
 		uint32_t val;
+		int32_t ival;
 		if (parser.GetUintParam('D', val))	// set driver mode
 		{
 			seen = true;
@@ -1628,6 +1630,21 @@ GCodeResult Move::ProcessM569(const CanMessageGeneric& msg, const StringRef& rep
 				return GCodeResult::error;
 			}
 		}
+
+		if (parser.GetIntParam('U', ival))
+		{
+			seen = true;
+			if (!SmartDrivers::SetCurrentScaler(drive, ival))
+			{
+				reply.printf("Bad current scaler for driver %u", drive);
+				return GCodeResult::error;
+			}
+			if (ival >= 0 && ival < 16)
+			{
+				reply.printf("Current scaler = %ld for driver %u might result in poor microstep performance. Recommended minimum is 16.", ival, drive);
+				warn = true;
+			}
+		}
 #endif
 	}
 
@@ -1662,6 +1679,12 @@ GCodeResult Move::ProcessM569(const CanMessageGeneric& msg, const StringRef& rep
 		}
 	}
 #endif
+
+	if (warn)
+	{
+		return GCodeResult::warning;
+	}
+
 	if (!seen)
 	{
 		reply.printf("Driver %u.%u runs %s, active %s enable",
@@ -1710,7 +1733,11 @@ GCodeResult Move::ProcessM569(const CanMessageGeneric& msg, const StringRef& rep
 			const uint32_t thigh = SmartDrivers::GetRegister(drive, SmartDriverRegister::thigh);
 			bool bdummy;
 			const float mmPerSec = (12000000.0 * SmartDrivers::GetMicrostepping(drive, bdummy))/(256 * thigh * DriveStepsPerMm(drive));
-			reply.catf(", thigh %" PRIu32 " (%.1f mm/sec)", thigh, (double)mmPerSec);
+			const uint8_t iRun = SmartDrivers::GetIRun(drive);
+			const uint8_t iHold = SmartDrivers::GetIHold(drive);
+			const uint32_t gs = SmartDrivers::GetGlobalScaler(drive);
+			const float current = SmartDrivers::GetCalculatedCurrent(drive);
+			reply.catf(", thigh %" PRIu32 " (%.1f mm/sec), gs=%lu, iRun=%u, iHold=%u, current=%.3f", thigh, (double)mmPerSec, gs, iRun, iHold, (double)current);
 		}
 # endif
 
