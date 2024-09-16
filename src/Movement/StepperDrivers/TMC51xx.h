@@ -10,7 +10,7 @@
 
 #include <RepRapFirmware.h>
 
-#if SUPPORT_TMC51xx || SUPPORT_TMC2160
+#if SUPPORT_TMC51xx
 
 #include "DriverMode.h"
 

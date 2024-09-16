@@ -1213,7 +1213,7 @@ int32_t Move::GetAccumulatedExtrusion(size_t driver, bool& isPrinting) noexcept
 	DriveMovement& dm = dms[driver];
 	AtomicCriticalSectionLocker lock;							// we don't want a move to complete and the ISR update the movement accumulators while we are doing this
 	const int32_t ret = dm.movementAccumulator;
-	const int32_t adjustment = dm.GetNetStepsTaken();
+	const int32_t adjustment = dm.GetNetStepsTakenThisSegment();
 	dm.movementAccumulator = -adjustment;
 	isPrinting = dms[driver].extruderPrinting;
 	return ret + adjustment;
@@ -1562,7 +1562,6 @@ GCodeResult Move::ProcessM569(const CanMessageGeneric& msg, const StringRef& rep
 #if HAS_SMART_DRIVERS
 	{
 		uint32_t val;
-		int32_t ival;
 		if (parser.GetUintParam('D', val))	// set driver mode
 		{
 			seen = true;
@@ -1620,7 +1619,7 @@ GCodeResult Move::ProcessM569(const CanMessageGeneric& msg, const StringRef& rep
 			}
 		}
 
-#if SUPPORT_TMC51xx || SUPPORT_TMC2160
+#if SUPPORT_TMC51xx
 		if (parser.GetUintParam('H', val))		// set coolStep threshold
 		{
 			seen = true;
@@ -1631,6 +1630,7 @@ GCodeResult Move::ProcessM569(const CanMessageGeneric& msg, const StringRef& rep
 			}
 		}
 
+		int32_t ival;
 		if (parser.GetIntParam('U', ival))
 		{
 			seen = true;
@@ -1728,7 +1728,7 @@ GCodeResult Move::ProcessM569(const CanMessageGeneric& msg, const StringRef& rep
 					SmartDrivers::GetRegister(drive, SmartDriverRegister::tblank)
 				  );
 
-# if SUPPORT_TMC51xx || SUPPORT_TMC2160
+# if SUPPORT_TMC51xx
 		{
 			const uint32_t thigh = SmartDrivers::GetRegister(drive, SmartDriverRegister::thigh);
 			bool bdummy;
@@ -1751,7 +1751,7 @@ GCodeResult Move::ProcessM569(const CanMessageGeneric& msg, const StringRef& rep
 					  );
 		}
 
-# if SUPPORT_TMC22xx || SUPPORT_TMC51xx || SUPPORT_TMC2160
+# if SUPPORT_TMC22xx || SUPPORT_TMC51xx
 		if (SmartDrivers::GetDriverMode(drive) == DriverMode::stealthChop)
 		{
 			const uint32_t tpwmthrs = SmartDrivers::GetRegister(drive, SmartDriverRegister::tpwmthrs);

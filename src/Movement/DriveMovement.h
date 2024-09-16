@@ -55,7 +55,7 @@ public:
 
 	void DebugPrint() const noexcept;
 	void StopDriverFromRemote() noexcept;
-	int32_t GetNetStepsTaken() const noexcept;							// return the number of steps taken in the current segment
+	int32_t GetNetStepsTakenThisSegment() const noexcept;				// return the number of steps taken in the current segment
 
 #if HAS_SMART_DRIVERS
 	uint32_t GetStepInterval(uint32_t microstepShift) const noexcept;	// Get the current full step interval for this axis or extruder
@@ -165,7 +165,7 @@ inline int32_t DriveMovement::GetAndClearMaxStepsLate() noexcept
 
 // Return the number of net steps already taken for the current segment in the forwards direction.
 // Caller must disable interrupts before calling this
-inline int32_t DriveMovement::GetNetStepsTaken() const noexcept
+inline int32_t DriveMovement::GetNetStepsTakenThisSegment() const noexcept
 {
 #if SUPPORT_CLOSED_LOOP
 	if (closedLoopControl.IsClosedLoopEnabled())
