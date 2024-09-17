@@ -444,6 +444,29 @@ void Move::Spin() noexcept
 	}
 }
 
+#if SUPPORT_OVERRIDE_STEP_PIN
+void Move::EnableStepPins()
+{
+	for (size_t i = 0; i < NumDrivers; ++i)
+	{
+# if USE_TC_FOR_STEP
+		SetPinFunction(StepPins[i], GpioPinFunction::E);
+# else
+		SetPinFunction(StepPins[i], GpioPinFunction::I);
+# endif
+	}
+}
+
+void Move::DisableStepPins()
+{
+	for (size_t i = 0; i < NumDrivers; ++i)
+	{
+		ClearPinFunction(StepPins[i]);
+	}
+}
+
+#endif
+
 // Movement error handling
 void Move::LogStepError(uint8_t type) noexcept
 {

@@ -142,6 +142,11 @@ public:
 	bool SetMicrostepping(size_t driver, unsigned int microsteps, bool interpolate) noexcept;
 #endif
 
+#if SUPPORT_OVERRIDE_STEP_PIN
+	void EnableStepPins();
+	void DisableStepPins();
+#endif
+
 	// Movement error handling
 	void LogStepError(uint8_t type) noexcept;										// stop all movement because of a step error
 

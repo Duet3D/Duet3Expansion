@@ -32,6 +32,7 @@
 #define SUPPORT_BRAKE_PWM		1
 #define DIFFERENTIAL_STEPPER_OUTPUTS	1
 #define USE_TC_FOR_STEP			1
+#define SUPPORT_OVERRIDE_STEP_PIN 1
 
 #define SUPPORT_TMC51xx			0
 #define SUPPORT_TMC2660			0
@@ -154,11 +155,21 @@ constexpr PinDescription PinTable[] =
 	{ TcOutput::tc1_1,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"ate.d0.en.m"	},	// PB11 driver0 en-
 
 	// The chip also has PB22 and PB23 but they are unused
+
+	// Virtual Pins
+#if SUPPORT_OVERRIDE_STEP_PIN
+	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none, 	SercomIo::none,		SercomIo::none,		Nx,	"override.step" },
+#endif
 };
 
 static constexpr size_t NumPins = ARRAY_SIZE(PinTable);
 static constexpr size_t NumRealPins = 32 + 12;			// 32 pins on port A (some missing) and first 12 pins of port B
-static_assert(NumPins == NumRealPins);					// no virtual pins
+static constexpr size_t NumVirtualPins = SUPPORT_OVERRIDE_STEP_PIN;
+static_assert(NumPins == NumRealPins + NumVirtualPins);
+
+#if SUPPORT_OVERRIDE_STEP_PIN
+constexpr Pin OverrideStepPin = NumRealPins;
+#endif
 
 // Timer/counter used to generate step pulses and other sub-millisecond timings
 TcCount32 * const StepTc = &(TC2->COUNT32);

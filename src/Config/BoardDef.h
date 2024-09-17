@@ -64,9 +64,14 @@
 # define DEDICATED_STEP_TIMER			0
 #endif
 
+#ifndef SUPPORT_OVERRIDE_STEP_PIN
+# define SUPPORT_OVERRIDE_STEP_PIN		0
+#endif
+
 #if !SUPPORT_DRIVERS
 # define HAS_SMART_DRIVERS				0
 # define SUPPORT_TMC22xx				0
+# define SUPPORT_TMC2660				0
 # define SUPPORT_TMC51xx				0
 # define SUPPORT_SLOW_DRIVERS			0
 constexpr size_t NumDrivers = 0;

@@ -23,6 +23,11 @@
 # include <CommandProcessing/ScanningSensorHandler.h>
 #endif
 
+#if SUPPORT_OVERRIDE_STEP_PIN
+# include <RepRapFirmware.h>
+# include <Movement/Move.h>
+#endif
+
 // Members of class IoPort
 
 PinUsedBy IoPort::portUsedBy[NumPins];
@@ -595,10 +600,34 @@ void PwmPort::AppendFullDetails(const StringRef& str) const noexcept
 
 void PwmPort::WriteAnalog(float pwm) const noexcept
 {
-	if (pin != NoPin)
+	if (pin == NoPin)
 	{
-		IoPort::WriteAnalog(pin, ((totalInvert) ? 1.0 - pwm : pwm), frequency);
+		return;
 	}
+
+#if SUPPORT_OVERRIDE_STEP_PIN
+	if (pin == OverrideStepPin)
+	{
+		if (pwm > 0)
+		{
+			moveInstance->DisableStepPins();
+			for (size_t i = 0; i < NumDrivers; i++)
+			{
+				WriteDigital(StepPins[i], true);
+			}
+		}
+		else
+		{
+			for (size_t i = 0; i < NumDrivers; i++)
+			{
+				WriteDigital(StepPins[i], false);
+			}
+			moveInstance->EnableStepPins();
+		}
+		return;
+	}
+#endif
+	IoPort::WriteAnalog(pin, ((totalInvert) ? 1.0 - pwm : pwm), frequency);
 }
 
 // End
