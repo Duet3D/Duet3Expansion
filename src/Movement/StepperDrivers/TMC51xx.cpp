@@ -841,7 +841,7 @@ void TmcDriverState::SetCurrent(float current) noexcept
 
 float TmcDriverState::CalculateCurrent() const noexcept
 {
-	uint32_t gs = globalScaler == 0 ? 256 : globalScaler;
+	const uint32_t gs = globalScaler == 0 ? 256 : globalScaler;
 	return (float)(gs * (iRun + 1)) / (256 * 32 * RecipFullScaleCurrent);
 }
 
@@ -860,7 +860,7 @@ void TmcDriverState::UpdateCurrent() noexcept
 	// See if we can set IRUN to 31 (or user defined value) and do the current adjustment in the global scaler
 	iRun = currentScaler < 0 ? 31 : currentScaler;
 
-	float csRecip = iRun == 31 ? 1.0f : 32.0f / (float)(iRun + 1);
+	const float csRecip = iRun == 31 ? 1.0f : 32.0f / (float)(iRun + 1);
 	globalScaler = lrintf(motorCurrent * 256 * RecipFullScaleCurrent * csRecip);
 	if (globalScaler >= 256)
 	{
