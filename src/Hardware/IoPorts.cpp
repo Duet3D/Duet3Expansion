@@ -613,14 +613,20 @@ void PwmPort::WriteAnalog(float pwm) const noexcept
 			moveInstance->DisableStepPins();
 			for (size_t i = 0; i < NumDrivers; i++)
 			{
-				WriteDigital(StepPins[i], true);
+				fastDigitalWriteHigh(StepPins[i]);
+#if DIFFERENTIAL_STEPPER_OUTPUTS
+				fastDigitalWriteLow(InvertedStepPins[i]);
+#endif
 			}
 		}
 		else
 		{
 			for (size_t i = 0; i < NumDrivers; i++)
 			{
-				WriteDigital(StepPins[i], false);
+				fastDigitalWriteLow(StepPins[i]);
+#if DIFFERENTIAL_STEPPER_OUTPUTS
+				fastDigitalWriteHigh(InvertedStepPins[i]);
+#endif
 			}
 			moveInstance->EnableStepPins();
 		}
