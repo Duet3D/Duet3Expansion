@@ -80,8 +80,10 @@ void SimpleFilamentMonitor::Diagnostics(const StringRef& reply) noexcept
 }
 
 // Store collected data in a CAN message slot
-void SimpleFilamentMonitor::GetLiveData(FilamentMonitorDataNew& data) const noexcept
+void SimpleFilamentMonitor::GetLiveData(FilamentMonitorDataNew2& data) const noexcept
 {
+	data.ClearReservedFields();
+	data.position = 0;
 	data.hasLiveData = false;
 }
 

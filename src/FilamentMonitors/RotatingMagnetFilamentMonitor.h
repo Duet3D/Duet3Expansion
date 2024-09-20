@@ -23,7 +23,7 @@ protected:
 
 	FilamentSensorStatus Check(bool isPrinting, bool fromIsr, uint32_t isrMillis, float filamentConsumed) noexcept override;
 	FilamentSensorStatus Clear() noexcept override;
-	void GetLiveData(FilamentMonitorDataNew& data) const noexcept override;
+	void GetLiveData(FilamentMonitorDataNew2& data) const noexcept override;
 
 private:
 	static constexpr float DefaultMmPerRev = 25.2;

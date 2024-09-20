@@ -19,7 +19,7 @@ public:
 
 protected:
 	GCodeResult Configure(const CanMessageGenericParser& parser, const StringRef& reply) noexcept override;
-	void GetLiveData(FilamentMonitorDataNew& data) const noexcept override;
+	void GetLiveData(FilamentMonitorDataNew2& data) const noexcept override;
 
 	FilamentSensorStatus Check(bool isPrinting, bool fromIsr, uint32_t isrMillis, float filamentConsumed) noexcept override;
 	FilamentSensorStatus Clear() noexcept override;

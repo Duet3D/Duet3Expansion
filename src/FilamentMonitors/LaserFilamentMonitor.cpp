@@ -436,11 +436,14 @@ void LaserFilamentMonitor::Diagnostics(const StringRef& reply) noexcept
 }
 
 // Store collected data in a CAN message slot
-void LaserFilamentMonitor::GetLiveData(FilamentMonitorDataNew& data) const noexcept
+void LaserFilamentMonitor::GetLiveData(FilamentMonitorDataNew2& data) const noexcept
 {
+	data.ClearReservedFields();
+	const uint16_t positionRange = (sensorValue & TypeLaserLargeDataRangeBitMask) ? TypeLaserLargeRange : TypeLaserDefaultRange;
+	data.position = sensorValue & (positionRange - 1);
 	if (laserMonitorState == LaserMonitorState::comparing)
 	{
-		data.calibrationLength = (uint32_t)lrintf(totalExtrusionCommanded);
+		data.calibrationLength = lrintf(totalExtrusionCommanded);
 		data.avgPercentage = ConvertToPercent(totalMovementMeasured/totalExtrusionCommanded);
 		data.minPercentage = ConvertToPercent(minMovementRatio);
 		data.maxPercentage = ConvertToPercent(maxMovementRatio);
