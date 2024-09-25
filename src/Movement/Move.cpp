@@ -1849,13 +1849,10 @@ GCodeResult Move::ProcessM569Point7(const CanMessageGeneric& msg, const StringRe
 		String<StringLength20> portName;
 		parser.GetStringParam('C', portName.GetRef());
 # if SUPPORT_BRAKE_PWM
-		if (!brakePwmPorts[drive].AssignPort(
+		if (!brakePwmPorts[drive].AssignPort(portName.c_str(), reply, PinUsedBy::gpout, PinAccess::write0)
 # else
-		if (!brakePorts[drive].AssignPort(
+		if (!brakePorts[drive].AssignPort(portName.c_str(), reply, PinUsedBy::gpout, (driverStates[drive] == DriverStateControl::driverDisabled) ? PinAccess::write0 : PinAccess::write1)
 # endif
-											portName.c_str(), reply, PinUsedBy::gpout,
-											(driverStates[drive] == DriverStateControl::driverDisabled) ? PinAccess::write0 : PinAccess::write1
-										 )
 		   )
 		{
 			return GCodeResult::error;
@@ -1864,13 +1861,21 @@ GCodeResult Move::ProcessM569Point7(const CanMessageGeneric& msg, const StringRe
 		motorOffDelays[drive] = brakeOffDelays[drive] = DefaultDelayAfterBrakeOn;
 
 # if SUPPORT_BRAKE_PWM
-		brakePwmPorts[drive].SetFrequency(BrakePwmFrequency);
 #  if defined(EXP1HCL)
 		if (Platform::GetBoardVariant() >= 1)
 		{
 			brakeOnPins[drive] = (brakePwmPorts[drive].GetPin() == BrakePwmPin) ? BrakeOnPin : NoPin;
 		}
 #  endif
+		brakePwmPorts[drive].SetFrequency(BrakePwmFrequency);
+		if (driverStates[drive] == DriverStateControl::driverDisabled)
+		{
+			EngageBrake(drive);
+		}
+		else
+		{
+			DisengageBrake(drive);
+		}
 # endif
 	}
 
