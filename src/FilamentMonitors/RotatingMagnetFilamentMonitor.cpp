@@ -599,11 +599,13 @@ FilamentSensorStatus RotatingMagnetFilamentMonitor::Clear() noexcept
 }
 
 // Store collected data in a CAN message slot
-void RotatingMagnetFilamentMonitor::GetLiveData(FilamentMonitorDataNew& data) const noexcept
+void RotatingMagnetFilamentMonitor::GetLiveData(FilamentMonitorDataNew2& data) const noexcept
 {
+	data.ClearReservedFields();
+	data.position = lastKnownPosition;
 	if (magneticMonitorState == MagneticMonitorState::comparing)
 	{
-		data.calibrationLength = (uint32_t)lrintf(totalExtrusionCommanded);
+		data.calibrationLength = lrintf(totalExtrusionCommanded);
 		data.avgPercentage = ConvertToPercent(totalMovementMeasured * mmPerRev/totalExtrusionCommanded);
 		data.minPercentage = ConvertToPercent(minMovementRatio * mmPerRev);
 		data.maxPercentage = ConvertToPercent(maxMovementRatio * mmPerRev);

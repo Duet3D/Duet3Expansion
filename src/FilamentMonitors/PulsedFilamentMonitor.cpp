@@ -293,8 +293,10 @@ void PulsedFilamentMonitor::Diagnostics(const StringRef& reply) noexcept
 }
 
 // Store collected data in a CAN message slot
-void PulsedFilamentMonitor::GetLiveData(FilamentMonitorDataNew& data) const noexcept
+void PulsedFilamentMonitor::GetLiveData(FilamentMonitorDataNew2& data) const noexcept
 {
+	data.ClearReservedFields();
+	data.position = sensorValue & 0x0FFF;
 	data.hasLiveData = false;
 }
 

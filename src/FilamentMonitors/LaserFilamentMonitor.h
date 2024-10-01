@@ -24,7 +24,7 @@ protected:
 	FilamentSensorStatus Clear() noexcept override;
 
 	void Diagnostics(const StringRef& reply) noexcept override;
-	void GetLiveData(FilamentMonitorDataNew& data) const noexcept override;
+	void GetLiveData(FilamentMonitorDataNew2& data) const noexcept override;
 
 private:
 	static constexpr float DefaultMinMovementAllowed = 0.6;
@@ -95,7 +95,7 @@ private:
 	float movementMeasuredSinceLastSync;
 
 	uint32_t lastMeasurementTime;							// the last time we received a value
-	uint16_t sensorValue;									// last known filament position (10 or 11 bits)
+	uint16_t sensorValue;									// last value from sensor
 	uint16_t switchOpenMask;								// mask to isolate the switch open bit(s) from the sensor value
 	uint8_t version;										// sensor/firmware version
 	uint8_t imageQuality;									// image quality returned by version 2 prototype sensor

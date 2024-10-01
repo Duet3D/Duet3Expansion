@@ -21,7 +21,7 @@ class CanMessageCreateFilamentMonitor;
 class CanMessageDeleteFilamentMonitor;
 class CanMessageConfigureFilamentMonitor;
 class CanMessageGenericParser;
-class FilamentMonitorDataNew;
+class FilamentMonitorDataNew2;
 
 class FilamentMonitor
 {
@@ -90,7 +90,7 @@ protected:
 	virtual FilamentSensorStatus Clear() noexcept = 0;
 
 	// Store collected data in a CAN message slot returning true if there was data worth sending
-	virtual void GetLiveData(FilamentMonitorDataNew& data) const noexcept = 0;
+	virtual void GetLiveData(FilamentMonitorDataNew2& data) const noexcept = 0;
 
 	// Configuration common to all filament monitor types
 	GCodeResult CommonConfigure(const CanMessageGenericParser& parser, const StringRef& reply, InterruptMode interruptMode, bool& seen) noexcept;
