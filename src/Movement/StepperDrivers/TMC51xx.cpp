@@ -91,7 +91,9 @@ constexpr uint32_t DriversSpiClockFrequency = 6000000;		// 6MHz SPI clock (max i
 constexpr uint32_t DriversSpiClockFrequency = 4000000;		// 4MHz SPI clock (max when using the internal TMC clock)
 # endif
 
-constexpr uint32_t DriversDirectSleepMicroseconds = 80;		// how long the closed loop task sleeps for in each cycle
+constexpr uint32_t DefaultSpiSleepMicroseconds = 500;		// Sleep time used for tmcTask when not phase stepping
+constexpr uint32_t PhaseStepSpiSleepMicroseconds = 80;		// Sleep time used for tmcTask when phase stepping
+static uint32_t DriversDirectSleepMicroseconds = DefaultSpiSleepMicroseconds;	// how long the phase stepping task sleeps for in each cycle. Max SPI message frequency is dependent on number of drivers and SPI clock frequency
 #else
 // With a 2MHz SPI clock, on the 3HC the TMC task takes about 25% of the CPU time. So we now use 500kHz. This means the SPI transfer will complete in a little over 240us.
 constexpr uint32_t DriversSpiClockFrequency = 500000;		// 500kHz SPI clock
@@ -356,6 +358,8 @@ public:
 	bool SetXdirect(uint32_t regVal) noexcept;
 	uint32_t GetPhaseToSet() const noexcept { return phaseToSet; }
 	float GetCurrent() const noexcept { return (float)motorCurrent; }
+	bool EnablePhaseStepping(bool enable) noexcept;
+	bool IsPhaseSteppingEnabled() const noexcept { return phaseStepEnabled; }
 #endif
 	bool SetDriverMode(unsigned int mode) noexcept;
 	DriverMode GetDriverMode() const noexcept;
@@ -470,6 +474,11 @@ private:
 	volatile uint8_t specialReadRegisterNumber;
 	volatile uint8_t specialWriteRegisterNumber;
 	bool enabled;											// true if driver is enabled
+
+#if SUPPORT_PHASE_STEPPING
+	bool phaseStepEnabled = false;
+	DriverMode currentMode;									// stepper driver mode if not using phase stepping
+#endif
 };
 
 const uint8_t TmcDriverState::WriteRegNumbers[NumWriteRegisters] =
@@ -512,6 +521,10 @@ pre(!driversPowered)
 	specialReadRegisterNumber = specialWriteRegisterNumber = 0xFF;
 	motorCurrent = 0;
 	standstillCurrentFraction = (uint16_t)min<uint32_t>((DefaultStandstillCurrentPercent * 256)/100, 256);
+
+#if SUPPORT_PHASE_STEPPING
+	currentMode = DriverMode::spreadCycle;
+#endif
 
 	// Set default values for all registers and flag them to be updated
 	UpdateRegister(WriteGConf, DefaultGConfReg);
@@ -762,10 +775,10 @@ bool TmcDriverState::SetDriverMode(unsigned int mode) noexcept
 		configuredChopConfReg &= ~CHOPCONF_CHM;
 #endif
 		UpdateChopConfRegister();
-#if SUPPORT_CLOSED_LOOP
+#if SUPPORT_PHASE_STEPPING
 		UpdateCurrent();		// if we are leaving closed loop mode then we need to update the standstill current
 #endif
-		return true;
+		break;
 
 	case (unsigned int)DriverMode::stealthChop:
 		UpdateRegister(WriteGConf, (writeRegisters[WriteGConf] & ~GCONF_DIRECT_MODE) | GCONF_STEALTHCHOP);
@@ -775,10 +788,10 @@ bool TmcDriverState::SetDriverMode(unsigned int mode) noexcept
 		configuredChopConfReg &= ~CHOPCONF_CHM;
 #endif
 		UpdateChopConfRegister();
-#if SUPPORT_CLOSED_LOOP
+#if SUPPORT_PHASE_STEPPING
 		UpdateCurrent();		// if we are leaving closed loop mode then we need to update the standstill current
 #endif
-		return true;
+		break;
 
 	case (unsigned int)DriverMode::constantOffTime:
 		UpdateRegister(WriteGConf, writeRegisters[WriteGConf] & ~(GCONF_DIRECT_MODE | GCONF_STEALTHCHOP));
@@ -788,10 +801,10 @@ bool TmcDriverState::SetDriverMode(unsigned int mode) noexcept
 		configuredChopConfReg |= CHOPCONF_CHM;
 #endif
 		UpdateChopConfRegister();
-#if SUPPORT_CLOSED_LOOP
+#if SUPPORT_PHASE_STEPPING
 		UpdateCurrent();		// if we are leaving closed loop mode then we need to update the standstill current
 #endif
-		return true;
+		break;
 
 #if TMC_TYPE == 5130
 	case (unsigned int)DriverMode::randomOffTime:
@@ -801,20 +814,28 @@ bool TmcDriverState::SetDriverMode(unsigned int mode) noexcept
 # if SUPPORT_CLOSED_LOOP
 		UpdateCurrent();		// in case we are leaving closed loop mode
 # endif
-		return true;
+		break;
 #endif
 
-#if SUPPORT_CLOSED_LOOP
+#if SUPPORT_PHASE_STEPPING
 	case (unsigned int)DriverMode::direct:
+# if SUPPORT_CLOSED_LOOP
 	case (unsigned int)DriverMode::direct + 1:
+# endif
 		UpdateRegister(WriteGConf, (writeRegisters[WriteGConf] & ~GCONF_STEALTHCHOP) | GCONF_DIRECT_MODE);
 		UpdateCurrent();		// when entering closed loop mode we need to update the standstill current
-		return true;
+		break;
 #endif
 
 	default:
 		return false;
 	}
+
+#if SUPPORT_PHASE_STEPPING
+	currentMode = (DriverMode)mode;
+#endif
+
+	return true;
 }
 
 // Get the driver mode
@@ -831,6 +852,27 @@ DriverMode TmcDriverState::GetDriverMode() const noexcept
 #endif
 				: DriverMode::constantOffTime;
 }
+
+#if SUPPORT_PHASE_STEPPING
+
+bool TmcDriverState::EnablePhaseStepping(bool enable) noexcept
+{
+	bool ret = false;
+	phaseStepEnabled = enable;
+	if (enable)
+	{
+		UpdateRegister(WriteGConf, (writeRegisters[WriteGConf] & ~GCONF_STEALTHCHOP) | GCONF_DIRECT_MODE);
+		ret = true;;
+	}
+	else
+	{
+		ret = SetDriverMode((unsigned int)currentMode);
+	}
+	UpdateCurrent();		// when entering direct mode we need to update the standstill current
+	return ret;
+}
+
+#endif
 
 // Set the motor current
 void TmcDriverState::SetCurrent(float current) noexcept
@@ -1772,6 +1814,49 @@ unsigned int SmartDrivers::GetMicrostepping(size_t driver, bool& interpolation) 
 	return 1;
 }
 
+#if SUPPORT_PHASE_STEPPING
+
+bool SmartDrivers::EnablePhaseStepping(size_t driver, bool enable) noexcept
+{
+	if (driver >= MaxSmartDrivers)
+	{
+		return false;
+	}
+
+	if (!driverStates[driver].EnablePhaseStepping(enable))
+	{
+		return false;
+	}
+
+	bool anyDriversUsingPhaseStepping = false;
+	if (enable)
+	{
+		anyDriversUsingPhaseStepping = true;
+	}
+	else
+	{
+		for (size_t i = 0; i < MaxSmartDrivers; i++)
+		{
+			if (driverStates[i].IsPhaseSteppingEnabled() || driverStates[i].GetDriverMode() == DriverMode::direct)
+			{
+				anyDriversUsingPhaseStepping = true;
+			}
+		}
+	}
+
+	DriversDirectSleepMicroseconds = anyDriversUsingPhaseStepping ? PhaseStepSpiSleepMicroseconds : DefaultSpiSleepMicroseconds;
+
+	tmcTask.SetPriority(anyDriversUsingPhaseStepping ? TaskPriority::TmcPhaseStep : TaskPriority::TmcOpenLoop);
+	return true;
+}
+
+bool SmartDrivers::IsPhaseSteppingEnabled(size_t driver) noexcept
+{
+	return driver < numTmc51xxDrivers && driverStates[driver].IsPhaseSteppingEnabled();
+}
+
+#endif
+
 #if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
 
 // Get the configured motor current in mA
@@ -1794,7 +1879,7 @@ uint16_t SmartDrivers::GetMicrostepPosition(size_t driver) noexcept
 
 // Schedules a request to update the motor phases using XDIRECT register.
 // Returns true if request is scheduled. Will not schedule a request if it is equal to the current value.
-bool SmartDrivers::SetMotorCurrents(size_t driver, uint32_t regVal) noexcept
+bool SmartDrivers::SetMotorPhases(size_t driver, uint32_t regVal) noexcept
 {
 	return driverStates[driver].SetXdirect(regVal);
 }
@@ -1807,6 +1892,7 @@ bool SmartDrivers::SetDriverMode(size_t driver, unsigned int mode) noexcept
 	const bool ret = driver < numTmc51xxDrivers && driverStates[driver].SetDriverMode(mode);
 	if (ret && driver == 0)
 	{
+		DriversDirectSleepMicroseconds = (mode == (unsigned int)DriverMode::direct) ? PhaseStepSpiSleepMicroseconds : DefaultSpiSleepMicroseconds;
 		tmcTask.SetPriority((mode == (unsigned int)DriverMode::direct) ? TaskPriority::TmcClosedLoop : TaskPriority::TmcOpenLoop);
 	}
 	return ret;

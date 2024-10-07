@@ -107,25 +107,6 @@ void ClosedLoop::SetTargetToCurrentPosition() noexcept
 	moveInstance->SetCurrentMotorSteps(0, mParams.position);
 }
 
-// Set the motor currents and update desiredStepPhase
-// The phase is normally in the range 0 to 4095 but when tuning it can be 0 to somewhat over 8192.
-// We must take it modulo 4096 when computing the currents. Function Trigonometry::FastSinCos does that.
-// 'magnitude' must be in range 0.0..1.0
-void ClosedLoop::SetMotorPhase(uint16_t phase, float magnitude) noexcept
-{
-	desiredStepPhase = phase;
-	float sine, cosine;
-	Trigonometry::FastSinCos(phase, sine, cosine);
-	coilA = (int16_t)lrintf(cosine * magnitude);
-	coilB = (int16_t)lrintf(sine * magnitude);
-
-# if SUPPORT_TMC51xx && SINGLE_DRIVER
-	SmartDrivers::SetMotorCurrents(0, (((uint32_t)(uint16_t)coilB << 16) | (uint32_t)(uint16_t)coilA) & 0x01FF01FF);
-# else
-#  error Multi driver code not implemented
-# endif
-}
-
 static_assert(ClockGenGclkNumber == GclkClosedLoop);							// check that this GCLK number has been reserved
 
 static void GenerateTmcClock()
@@ -144,8 +125,15 @@ static void GenerateTmcClock()
 	GenerateTmcClock();															// generate the clock for the TMC2160A
 }
 
-void ClosedLoop::InitInstance() noexcept
+ClosedLoop::ClosedLoop()
 {
+	Kv = 1000.0;
+	Ka = 0.0;
+}
+
+void ClosedLoop::InitInstance(uint8_t drv) noexcept
+{
+	drive = drv;
 	pinMode(EncoderCsPin, OUTPUT_HIGH);											// make sure that any attached SPI encoder is not selected
 
 	// Initialise to default error thresholds
@@ -268,6 +256,7 @@ GCodeResult ClosedLoop::ProcessM569Point1(CanMessageGenericParser& parser, const
 	if (seenT)
 	{
 		SetClosedLoopEnabled(ClosedLoopMode::open, reply);
+		moveInstance->SetStepMode(drive, StepMode::stepDir, reply);
 		DeleteObject(encoder);
 
 		switch (tempEncoderType)
@@ -698,13 +687,16 @@ void ClosedLoop::AdjustTargetMotorSteps(float amount) noexcept
 	moveInstance->SetCurrentMotorSteps(0, lrintf(mParams.position));
 }
 
-void ClosedLoop::InstanceControlLoop(StepTimer::Ticks now, StepTimer::Ticks timeElapsed) noexcept
+// Returns true if it has run GetCurrentMotion()`
+bool ClosedLoop::InstanceControlLoop(size_t driver, StepTimer::Ticks now, StepTimer::Ticks timeElapsed) noexcept
 {
+	bool gotMotion = false;
 	// Read the current state of the drive. Do this even if we are not in closed loop mode.
 	if (encoder != nullptr && !encoder->TakeReading())
 	{
 		// Calculate and store the current error in full steps
-		hasMovementCommand = moveInstance->GetCurrentMotion(0, now, mParams);
+		hasMovementCommand = moveInstance->GetCurrentMotion(driver, now, mParams);
+		gotMotion = true;
 		if (hasMovementCommand)
 		{
 			if (inTorqueMode)
@@ -733,7 +725,7 @@ void ClosedLoop::InstanceControlLoop(StepTimer::Ticks now, StepTimer::Ticks time
 				if (timeSinceLastTuningStep >= (int32_t)stepTicksPerTuningStep)
 				{
 					whenLastTuningStepTaken = now;
-					PerformTune();
+					PerformTune(driver);
 				}
 				else if (samplingMode == RecordingMode::OnNextMove && timeSinceLastTuningStep + (int32_t)DataCollectionIdleStepTicks >= 0)
 				{
@@ -743,7 +735,7 @@ void ClosedLoop::InstanceControlLoop(StepTimer::Ticks now, StepTimer::Ticks time
 			}
 			else if (tuningError == 0)
 			{
-				currentFraction = ControlMotorCurrents(timeElapsed);				// otherwise control those motor currents!
+				currentFraction = ControlMotorCurrents(driver, timeElapsed);				// otherwise control those motor currents! (only if not phase stepping)
 				if (inTorqueMode)
 				{
 					stall = preStall = false;
@@ -802,6 +794,8 @@ void ClosedLoop::InstanceControlLoop(StepTimer::Ticks now, StepTimer::Ticks time
 		++periodNumSamples;
 
 	}
+
+	return gotMotion;
 }
 
 // Send data from the buffer to the main board over CAN
@@ -905,8 +899,13 @@ void ClosedLoop::CollectSample() noexcept
 }
 
 // Control the motor phase currents, returning the fraction of maximum current that we commanded
-inline float ClosedLoop::ControlMotorCurrents(StepTimer::Ticks ticksSinceLastCall) noexcept
+inline float ClosedLoop::ControlMotorCurrents(size_t driver, StepTimer::Ticks ticksSinceLastCall) noexcept
 {
+	if (!IsEnabled())
+	{
+		return 0;
+	}
+
 	uint16_t commandedStepPhase;
 	float currentFraction;
 
@@ -1006,7 +1005,7 @@ inline float ClosedLoop::ControlMotorCurrents(StepTimer::Ticks ticksSinceLastCal
 			currentFraction = holdCurrentFraction + (1.0 - holdCurrentFraction) * min<float>(PIDControlSignal * (1.0/256.0), 1.0);
 		}
 	}
-	SetMotorPhase(commandedStepPhase, currentFraction);
+	SetMotorPhase(driver, commandedStepPhase, currentFraction);
 	return currentFraction;
 }
 
@@ -1137,7 +1136,6 @@ bool ClosedLoop::SetClosedLoopEnabled(ClosedLoopMode mode, const StringRef &repl
 
 	// If we are disabling closed loop mode, we should ideally send steps to get the microstep counter to match the current phase here
 	currentMode = mode;
-
 	return true;
 }
 
@@ -1152,7 +1150,7 @@ void ClosedLoop::DriverSwitchedToClosedLoop() noexcept
 		phaseOffset = (currentPhasePosition - stepPhase) & 4095;
 	}
 	desiredStepPhase = currentPhasePosition;
-	SetMotorPhase(currentPhasePosition, SmartDrivers::GetStandstillCurrentPercent(0) * 0.01);	// set the motor currents to match the initial position using the open loop standstill current
+	SetMotorPhase(drive, currentPhasePosition, SmartDrivers::GetStandstillCurrentPercent(0) * 0.01);	// set the motor currents to match the initial position using the open loop standstill current
 	PIDITerm = 0.0;													// clear the integral term accumulator
 	errorDerivativeFilter.Reset();
 	speedFilter.Reset();

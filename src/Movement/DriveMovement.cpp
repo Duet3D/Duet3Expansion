@@ -14,6 +14,7 @@
 #include "MoveTiming.h"
 #include <Math/Isqrt.h>
 #include <Platform/Platform.h>
+#include <CAN/CanInterface.h>
 
 int32_t DriveMovement::maxStepsLate = 0;
 
@@ -32,8 +33,12 @@ void DriveMovement::Init(size_t drv) noexcept
 #endif
 	segments = nullptr;
 	segmentFlags.Init();
+
+#if SUPPORT_PHASE_STEPPING
+	stepMode = StepMode::stepDir;
+#endif
 #if SUPPORT_CLOSED_LOOP
-	closedLoopControl.InitInstance();
+	closedLoopControl.InitInstance(drive);
 #endif
 }
 
@@ -115,7 +120,7 @@ MoveSegment *DriveMovement::NewSegment(uint32_t now) noexcept
 		netStepsThisSegment = (int32_t)(seg->GetLength() + distanceCarriedForwards);
 
 #if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
-		if (closedLoopControl.IsClosedLoopEnabled())
+		if (stepMode != StepMode::stepDir)
 		{
 			u = seg->CalcU();
 			state = DMState::phaseStepping;
@@ -509,6 +514,51 @@ void DriveMovement::StopDriverFromRemote() noexcept
 		MoveSegment::ReleaseAll(seg);
 	}
 }
+
+#if SUPPORT_PHASE_STEPPING
+
+bool DriveMovement::SetStepMode(StepMode mode) noexcept
+{
+	if (mode >= StepMode::unknown)
+	{
+		return false;
+	}
+
+	phaseStepControl.SetEnabled(mode == StepMode::phase);
+#if SUPPORT_CLOSED_LOOP
+	closedLoopControl.SetEnabled(mode == StepMode::closedLoop);
+#endif
+
+	stepMode = mode;
+	return true;
+}
+
+#endif
+
+#if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
+
+motioncalc_t DriveMovement::GetPhaseStepsTakenThisSegment() const noexcept
+{
+	const MoveSegment *const seg = segments;
+	if (seg == nullptr)
+	{
+		return 0;
+	}
+	int32_t timeSinceStart = (int32_t)(StepTimer::GetMovementTimerTicks() - seg->GetStartTime());
+	if (timeSinceStart < 0)
+	{
+		return 0;
+	}
+
+	if ((uint32_t)timeSinceStart >= seg->GetDuration())
+	{
+		timeSinceStart = seg->GetDuration();
+	}
+
+	return (u + seg->GetA() * timeSinceStart * 0.5) * timeSinceStart;
+}
+
+#endif
 
 #endif	// SUPPORT_DRIVERS
 

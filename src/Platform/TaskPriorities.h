@@ -21,7 +21,12 @@ namespace TaskPriority
 	static constexpr unsigned int MovePriority = 3;
 	static constexpr unsigned int Accelerometer = 3;
 	static constexpr unsigned int ClosedLoopDataTransmission = 3;
+#if SUPPORT_PHASE_STEPPING
+	static constexpr unsigned int TmcPhaseStep = 4;
+#endif
+#if SUPPORT_CLOSED_LOOP
 	static constexpr unsigned int TmcClosedLoop = 4;						// priority of the TMC task when in closed loop mode
+#endif
 	static constexpr unsigned int MfmHigh = 5;								// priority of the MFM task if we have an embedded AS5601 while it is simulating an interrupt
 	static constexpr unsigned int CanAsyncSenderPriority = 5;
 	static constexpr unsigned int CanClockPriority = 5;

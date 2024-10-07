@@ -26,6 +26,10 @@
 # include "AxisShaper.h"
 #endif
 
+#if SUPPORT_PHASE_STEPPING
+# include <Movement/PhaseStep.h>
+#endif
+
 #if SUPPORT_CLOSED_LOOP
 # include "StepperDrivers/TMC51xx.h"				// for SmartDrivers::GetMicrostepShift
 #endif
@@ -161,15 +165,24 @@ public:
 	GCodeResult ProcessM569Point6(const CanMessageGeneric& msg, const StringRef& reply) noexcept;
 
 	bool IsClosedLoopEnabled(size_t driver) const noexcept { return dms[driver].closedLoopControl.IsClosedLoopEnabled(); }
-	bool EnableIfIdle(size_t driver) noexcept;										// if the driver is idle, enable it; return true if driver enabled on return
-	bool GetCurrentMotion(size_t driver, uint32_t when, MotionParameters& mParams) noexcept;	// get the net full steps taken, including in the current move so far, also speed and acceleration; return true if moving
 	void SetCurrentMotorSteps(size_t driver, float fullSteps) noexcept;
 	void InvertCurrentMotorSteps(size_t driver) noexcept;
-
-	void PhaseStepControlLoop() noexcept;
 	void ClosedLoopDiagnostics(size_t driver, const StringRef& reply) noexcept;
+#endif
+#if SUPPORT_PHASE_STEPPING
+	void ConfigurePhaseStepping(size_t axisOrExtruder, float value, PhaseStepConfig config);							// configure Ka & Kv parameters for phase stepping
+	PhaseStepParams GetPhaseStepParams(size_t axisOrExtruder);
+	bool GetCurrentMotion(size_t driver, uint32_t when, MotionParameters& mParams) noexcept;	// get the net full steps taken, including in the current move so far, also speed and acceleration; return true if moving
+	GCodeResult SetStepModes(const CanMessageMultipleDrivesRequest<uint16_t>& msg, size_t dataLength, const StringRef& reply) noexcept;
+	bool SetStepMode(size_t driver, StepMode mode, const StringRef& reply) noexcept;
+	StepMode GetStepMode(size_t axisOrExtruder) noexcept;
+# if SUPPORT_CLOSED_LOOP
+	ClosedLoopMode GetClosedLoopMode(size_t driver);
+# endif
 	void ResetPhaseStepMonitoringVariables() noexcept;
 	void ResetPhaseStepControlLoopCallTime() noexcept;
+	void PhaseStepControlLoop() noexcept;
+	bool EnableIfIdle(size_t driver) noexcept;										// if the driver is idle, enable it; return true if driver enabled on return
 #endif
 
 private:
@@ -561,7 +574,7 @@ inline __attribute__((always_inline)) uint32_t Move::GetStepInterval(size_t driv
 
 #endif
 
-#if SUPPORT_CLOSED_LOOP
+#if SUPPORT_PHASE_STEPPING
 
 // Get the motor position in the current move so far, also speed and acceleration. Units are full steps and step clocks.
 // Inlined because it is only called from one place
@@ -576,6 +589,10 @@ inline bool Move::GetCurrentMotion(size_t driver, uint32_t when, MotionParameter
 	mParams.acceleration *= multiplier;
 	return ret;
 }
+
+#endif
+
+#if SUPPORT_CLOSED_LOOP
 
 inline void Move::SetCurrentMotorSteps(size_t driver, float fullSteps) noexcept
 {

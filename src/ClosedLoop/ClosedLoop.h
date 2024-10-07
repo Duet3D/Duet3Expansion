@@ -15,6 +15,7 @@
 # include <CanMessageFormats.h>
 # include <General/NamedEnum.h>
 # include <Movement/StepTimer.h>
+# include <Movement/PhaseStep.h>
 # include <ClosedLoop/Trigonometry.h>
 # include <Hardware/SharedSpiDevice.h>
 # include "DerivativeAveragingFilter.h"
@@ -31,14 +32,6 @@ class Encoder;
 class SpiEncoder;
 class CanMessageGenericParser;
 
-// Struct to pass data back to the ClosedLoop module
-struct MotionParameters
-{
-	float position = 0.0;
-	float speed = 0.0;
-	float acceleration = 0.0;
-};
-
 enum class ClosedLoopMode
 {
 	open = 0,
@@ -46,7 +39,7 @@ enum class ClosedLoopMode
 	assistedOpen
 };
 
-class ClosedLoop
+class ClosedLoop : public PhaseStep
 {
 public:
 	// Constants and variables that are used by both the ClosedLoop and the Tuning modules
@@ -62,8 +55,10 @@ public:
 	constexpr uint8_t ZIEGLER_NICHOLS_MANOEUVRE 			= 1u << 7;
 #endif
 
+	ClosedLoop();
+
 	// Closed loop public methods
-	void InitInstance() noexcept;
+	void InitInstance(uint8_t drive) noexcept;
 
 	GCodeResult ProcessM569Point1(CanMessageGenericParser& parser, const StringRef& reply) noexcept;
 	GCodeResult ProcessM569Point4(CanMessageGenericParser& parser, const StringRef& reply) noexcept;
@@ -75,9 +70,10 @@ public:
 	void InstanceDiagnostics(size_t driver, const StringRef& reply) noexcept;
 
 	// Methods called by the motion system
-	void InstanceControlLoop(StepTimer::Ticks now, StepTimer::Ticks timeElapsed) noexcept;
+	bool InstanceControlLoop(size_t driver, StepTimer::Ticks now, StepTimer::Ticks timeElapsed) noexcept;
 	StandardDriverStatus ReadLiveStatus() const noexcept;
 	bool IsClosedLoopEnabled() const noexcept;
+	ClosedLoopMode GetClosedLoopMode() const noexcept { return currentMode; }
 	bool SetClosedLoopEnabled(ClosedLoopMode mode, const StringRef &reply) noexcept;
 	void DriverSwitchedToClosedLoop() noexcept;
 	void ResetError() noexcept;
@@ -112,7 +108,6 @@ private:
 	static constexpr float PIDIlimit = 80.0;
 
 	// Methods used only by closed loop and by the tuning module
-	void SetMotorPhase(uint16_t phase, float magnitude) noexcept;
 	void FinishedBasicTuning() noexcept;
 																// call this when we have stopped basic tuning movement and are ready to switch to closed loop control
 	void ReadyToCalibrate(bool store) noexcept;					// call this when encoder calibration has finished collecting data
@@ -120,7 +115,7 @@ private:
 	void ExitTorqueMode() noexcept;
 
 	// Methods in the tuning module
-	void PerformTune() noexcept;
+	void PerformTune(size_t driver) noexcept;
 
 	// Enumeration of closed loop recording modes
 	enum RecordingMode : uint8_t
@@ -131,6 +126,8 @@ private:
 		SendingData			// finished collecting data but still sending it to the main board
 	};
 
+	uint8_t drive;
+
 	Encoder *encoder = nullptr;									// Pointer to the encoder object in use
 	volatile uint8_t tuning = 0;								// Bitmask of any tuning manoeuvres that have been requested
 	TuningErrors tuningError;									// Flags for any tuning errors
@@ -139,13 +136,10 @@ private:
 	ClosedLoopMode currentMode = ClosedLoopMode::open;			// which mode the driver is in
 
 	// Holding current, and variables derived from it
-	float 	holdCurrentFraction = DefaultHoldCurrentFraction;	// The minimum holding current when stationary
 	float	torquePerAmp = DefaultTorquePerAmp;					// the torque per amp of configured current
 	float 	Kp = 30.0;											// The proportional constant for the PID controller
 	float 	Ki = 0.0;											// The proportional constant for the PID controller
 	float 	Kd = 0.0;											// The proportional constant for the PID controller
-	float	Kv = 1000.0;										// The velocity feedforward constant
-	float	Ka = 0.0;											// The acceleration feedforward constant
 
 	float 	errorThresholds[2];									// The error thresholds. [0] is pre-stall, [1] is stall
 
@@ -154,7 +148,6 @@ private:
 
 	// Working variables
 	// These variables are all used to calculate the required motor currents. They are declared here so they can be reported on by the data collection task
-	MotionParameters mParams;							// the target position, speed and acceleration
 	float currentPositionError;							// the current position error in full steps
 	float periodMaxAbsPositionError = 0.0;				// the maximum value of the absolute position error
 	float periodSumOfPositionErrorSquares = 0.0;		// used to calculate the RMS error
@@ -165,15 +158,9 @@ private:
 	float 	PIDPTerm;									// Proportional term
 	float 	PIDITerm = 0.0;								// Integral accumulator
 	float 	PIDDTerm;									// Derivative term
-	float	PIDVTerm;									// Velocity feedforward term
-	float	PIDATerm;									// Acceleration feedforward term
-	float	PIDControlSignal;							// The overall signal from the PID controller
-
 
 	uint16_t desiredStepPhase = 0;						// The desired position of the motor
 	uint16_t phaseOffset = 0;							// The amount by which the phase should be offset when in semi-open-loop mode
-	int16_t coilA;										// The current to run through coil A
-	int16_t coilB;										// The current to run through coil A
 
 	bool	hasMovementCommand = false;					// true if a regular movement command is being executed
 	bool	inTorqueMode = false;
@@ -222,7 +209,7 @@ private:
 	inline bool CollectingData() noexcept { return samplingMode != RecordingMode::None; }
 
 	void CollectSample() noexcept;
-	float ControlMotorCurrents(StepTimer::Ticks ticksSinceLastCall) noexcept;
+	float ControlMotorCurrents(size_t driver, StepTimer::Ticks ticksSinceLastCall) noexcept;
 	void StartTuning(uint8_t tuningType) noexcept;
 	GCodeResult ProcessBasicTuningResult(const StringRef& reply) noexcept;
 	GCodeResult ProcessCalibrationResult(const StringRef& reply) noexcept;
@@ -231,8 +218,8 @@ private:
 	void CreateCalibrationTask() noexcept;
 
 	// Tuning methods
-	bool BasicTuning(bool firstIteration) noexcept;
-	bool EncoderCalibration(bool firstIteration) noexcept;
+	bool BasicTuning(size_t driver, bool firstIteration) noexcept;
+	bool EncoderCalibration(size_t driver, bool firstIteration) noexcept;
 	bool Step(bool firstIteration) noexcept;
 };
 

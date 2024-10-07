@@ -16,6 +16,10 @@
 #include "MoveSegment.h"
 #include "ExtruderShaper.h"
 
+#if SUPPORT_PHASE_STEPPING
+# include <Movement/PhaseStep.h>
+#endif
+
 #if SUPPORT_CLOSED_LOOP
 # include <ClosedLoop/ClosedLoop.h>
 #endif
@@ -61,7 +65,13 @@ public:
 	uint32_t GetStepInterval(uint32_t microstepShift) const noexcept;	// Get the current full step interval for this axis or extruder
 #endif
 
-#if SUPPORT_CLOSED_LOOP
+#if SUPPORT_PHASE_STEPPING
+	bool SetStepMode(StepMode mode) noexcept;
+	StepMode GetStepMode() const noexcept { return stepMode; }
+	bool IsPhaseStepEnabled() const noexcept { return stepMode == StepMode::phase; }
+#endif
+
+#if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
 	// Get the current position relative to the start of this move, speed and acceleration. Units are microsteps and step clocks.
 	// Return true if this drive is moving. Segments are advanced as necessary.
 	bool GetCurrentMotion(uint32_t when, MotionParameters& mParams) noexcept;
@@ -76,6 +86,10 @@ private:
 
 	void ReleaseSegments() noexcept;					// release the list of segments and set it to nullptr
 	bool LogStepError(uint8_t type) noexcept;			// tell the Move class that we had a step error
+
+#if SUPPORT_PHASE_STEPPING
+	motioncalc_t GetPhaseStepsTakenThisSegment() const noexcept;
+#endif
 
 	static int32_t maxStepsLate;
 
@@ -101,7 +115,7 @@ private:
 	int32_t segmentStepLimit;							// the first step number of the next phase, or the reverse start step if smaller
 	int32_t reverseStartStep;							// the step number for which we need to reverse direction due to pressure advance or delta movement
 	motioncalc_t q, t0, p;								// the movement parameters of the current segment, if there is one
-#if SUPPORT_CLOSED_LOOP
+#if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
 	motioncalc_t u;										// the initial speed of this segment
 #endif
 	MovementFlags segmentFlags;							// whether this segment checks endstops etc.
@@ -124,6 +138,10 @@ private:
 
 	bool extruderPrinting;								// true if this is an extruder and the most recent segment started was a printing move
 
+#if SUPPORT_PHASE_STEPPING
+	PhaseStep phaseStepControl;
+	StepMode stepMode;
+#endif
 #if SUPPORT_CLOSED_LOOP
 	ClosedLoop closedLoopControl;
 #endif
@@ -167,19 +185,10 @@ inline int32_t DriveMovement::GetAndClearMaxStepsLate() noexcept
 // Caller must disable interrupts before calling this
 inline int32_t DriveMovement::GetNetStepsTakenThisSegment() const noexcept
 {
-#if SUPPORT_CLOSED_LOOP
-	if (closedLoopControl.IsClosedLoopEnabled())
+#if SUPPORT_PHASE_STEPPING
+	if (stepMode != StepMode::stepDir)
 	{
-		const MoveSegment *const seg = segments;
-		if (seg == nullptr) { return 0; }
-		int32_t timeSinceStart = (int32_t)(StepTimer::GetMovementTimerTicks() - seg->GetStartTime());
-		if (timeSinceStart < 0) { return 0; }
-		if ((uint32_t)timeSinceStart >= seg->GetDuration())
-		{
-			timeSinceStart = seg->GetDuration();
-		}
-
-		return lrintf((u + seg->GetA() * timeSinceStart * 0.5) * timeSinceStart);
+		return lrintf(GetPhaseStepsTakenThisSegment());
 	}
 #endif
 	return currentMotorPosition - positionAtSegmentStart;
@@ -218,7 +227,7 @@ inline bool DriveMovement::GetCurrentMotion(uint32_t when, MotionParameters& mPa
 
 		if ((uint32_t)timeSinceStart >= seg->GetDuration())			// if segment should have finished by now
 		{
-			if (closedLoopControl.IsClosedLoopEnabled())
+			if (stepMode != StepMode::stepDir)
 			{
 				currentMotorPosition = positionAtSegmentStart + netStepsThisSegment;
 				distanceCarriedForwards += seg->GetLength() - (motioncalc_t)netStepsThisSegment;
@@ -231,10 +240,6 @@ inline bool DriveMovement::GetCurrentMotion(uint32_t when, MotionParameters& mPa
 				continue;
 			}
 			timeSinceStart = seg->GetDuration();
-		}
-		else if (state == DMState::starting && closedLoopControl.IsClosedLoopEnabled())
-		{
-			seg = NewSegment(when);
 		}
 
 		if (state != DMState::phaseStepping)

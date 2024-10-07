@@ -245,9 +245,11 @@ void Move::Init() noexcept
 	pinMode(BrakePwmPin, OUTPUT_LOW);
 #endif
 
-# if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
-	ClosedLoop::Init();						// this must be called AFTER SmartDrivers::Init()
+# if SUPPORT_PHASE_STEPPING
 	ResetPhaseStepMonitoringVariables();
+# endif
+# if SUPPORT_CLOSED_LOOP
+	ClosedLoop::Init();						// this must be called AFTER SmartDrivers::Init()
 # endif
 
 	moveTask = new Task<MoveTaskStackWords>;
@@ -599,7 +601,7 @@ __attribute__((section(".time_critical")))
 void Move::StepDrivers(uint32_t now) noexcept
 {
 # if SUPPORT_CLOSED_LOOP
-	if (dms[0].closedLoopControl.IsClosedLoopEnabled())
+	if (dms[0].GetStepMode() != StepMode::stepDir)
 	{
 		return;
 	}
@@ -1596,14 +1598,25 @@ GCodeResult Move::ProcessM569(const CanMessageGeneric& msg, const StringRef& rep
 			seen = true;
 # if SUPPORT_CLOSED_LOOP
 			// Enable/disabled closed loop control
+			if (dms[drive].GetStepMode() == StepMode::phase)
+			{
+				reply.printf("Can not set driver %u.%u mode while phase stepping is enabled", CanInterface::GetCanAddress(), drive);
+				return GCodeResult::error;
+			}
 			const ClosedLoopMode mode = (val == (uint32_t)DriverMode::direct) ? ClosedLoopMode::closed
 										: (val == (uint32_t)DriverMode::direct + 1) ? ClosedLoopMode::assistedOpen
 											: ClosedLoopMode::open;
+
+			if (mode != ClosedLoopMode::open)
+			{
+				val = (uint32_t)DriverMode::direct;
+			}
 			if (!dms[drive].closedLoopControl.SetClosedLoopEnabled(mode, reply))
 			{
 				// reply.printf is done in ClosedLoop::SetClosedLoopEnabled()
 				return GCodeResult::error;
 			}
+			SetStepMode(drive, mode != ClosedLoopMode::open ? StepMode::closedLoop : StepMode::stepDir, reply);
 # endif
 			if (!SmartDrivers::SetDriverMode(drive, val))
 			{
@@ -1744,9 +1757,10 @@ GCodeResult Move::ProcessM569(const CanMessageGeneric& msg, const StringRef& rep
 #if HAS_SMART_DRIVERS
 		// It's a smart driver, so print the parameters common to all modes, except for the position
 		const DriverMode dmode = SmartDrivers::GetDriverMode(drive);
+		const StepMode smode = GetStepMode(drive);
 		reply.catf(", mode %s", TranslateDriverMode(dmode));
 # if SUPPORT_CLOSED_LOOP
-		if (dmode == DriverMode::direct)
+		if (smode == StepMode::closedLoop)
 		{
 			reply.catf(" (%s)", dms[drive].closedLoopControl.GetModeText());
 		}
@@ -2217,7 +2231,7 @@ bool Move::SetMicrostepping(size_t driver, unsigned int microsteps, bool interpo
 
 #endif
 
-#if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
+#if SUPPORT_CLOSED_LOOP
 
 GCodeResult Move::ProcessM569Point1(const CanMessageGeneric &msg, const StringRef &reply) noexcept
 {
@@ -2281,6 +2295,199 @@ GCodeResult Move::ProcessM569Point6(const CanMessageGeneric &msg, const StringRe
 	return dms[drive].closedLoopControl.ProcessM569Point6(parser, reply);
 }
 
+void Move::ClosedLoopDiagnostics(size_t driver, const StringRef& reply) noexcept
+{
+	dms[driver].closedLoopControl.InstanceDiagnostics(driver, reply);
+}
+
+#endif
+
+#if SUPPORT_PHASE_STEPPING
+
+void Move::ConfigurePhaseStepping(size_t driver, float value, PhaseStepConfig config)
+{
+	switch (config)
+	{
+		break;
+	case PhaseStepConfig::kv:
+		dms[driver].phaseStepControl.SetKv(value);
+		break;
+	case PhaseStepConfig::ka:
+		dms[driver].phaseStepControl.SetKa(value);
+		break;
+	}
+}
+
+PhaseStepParams Move::GetPhaseStepParams(size_t driver)
+{
+	PhaseStepParams params;
+	params.Kv = dms[driver].phaseStepControl.GetKv();
+	params.Ka = dms[driver].phaseStepControl.GetKa();
+	return params;
+}
+
+GCodeResult Move::SetStepModes(const CanMessageMultipleDrivesRequest<uint16_t>& msg, size_t dataLength, const StringRef& reply) noexcept
+{
+	const auto drivers = Bitmap<uint16_t>::MakeFromRaw(msg.driversToUpdate);
+	if (dataLength < msg.GetActualDataLength(drivers.CountSetBits()))
+	{
+		reply.copy("bad data length");
+		return GCodeResult::error;
+	}
+
+	GCodeResult rslt = GCodeResult::ok;
+	drivers.Iterate([this, &msg, &reply, &rslt](unsigned int driver, unsigned int count) -> void
+						{
+							if (rslt != GCodeResult::ok)
+							{
+								return;
+							}
+							if (driver >= NumDrivers)
+							{
+								reply.lcatf("No such driver %u.%u", CanInterface::GetCanAddress(), driver);
+								rslt = GCodeResult::error;
+								return;
+							}
+							if (msg.values[count] >= (uint16_t)StepMode::unknown)
+							{
+								reply.lcatf("Unknown step mode %u", msg.values[count]);
+								rslt = GCodeResult::error;
+								return;
+							}
+
+							SetStepMode(driver, (StepMode)msg.values[count], reply);
+#if SUPPORT_CLOSED_LOOP
+							ClosedLoopMode clMode = dms[driver].closedLoopControl.GetClosedLoopMode();
+//							dms[driver].closedLoopControl.SetClosedLoopEnabled(clMode, reply);	// update closed loop mode
+							if (GetStepMode(driver) == StepMode::closedLoop && clMode != ClosedLoopMode::open)
+							{
+//								dms[driver].closedLoopControl.DriverSwitchedToClosedLoop();
+							}
+
+#endif
+						}
+				   );
+	return rslt;
+}
+
+
+bool Move::SetStepMode(size_t driver, StepMode mode, const StringRef& reply) noexcept
+{
+	bool ret = true;
+	DriveMovement* dm = &dms[driver];
+	const uint32_t now = StepTimer::GetTimerTicks();
+
+	if (mode >= StepMode::unknown)
+	{
+		reply.printf("Step mode %u for driver %u.%u unknown", (size_t)mode, CanInterface::GetCanAddress(), driver);
+		return false;
+	}
+
+#if SUPPORT_CLOSED_LOOP
+	if (mode == StepMode::stepDir && dm->closedLoopControl.IsClosedLoopEnabled())
+	{
+		mode = StepMode::closedLoop;
+	}
+#endif
+
+#if SUPPORT_S_CURVE
+	if (mode != StepMode::phase)
+	{
+		UseSCurve(false);
+	}
+#endif
+
+	bool interpolation;
+	unsigned int microsteps = SmartDrivers::GetMicrostepping(driver, interpolation);
+	GetCurrentMotion(driver, now, dm->phaseStepControl.mParams);								// Update position variable
+
+	// If we are going from step dir to phase step, we need to update the phase offset so the calculated phase matches MSCNT
+#warning "Needs updating to handle closed loop transitions"
+	if (!dm->IsPhaseStepEnabled() && mode == StepMode::phase)
+	{
+		dm->phaseStepControl.SetPhaseOffset(driver, 0);												// Reset offset
+		const uint16_t initialPhase = SmartDrivers::GetMicrostepPosition(driver) * 4;				// Get MSCNT
+		const uint16_t calculatedPhase = dm->phaseStepControl.CalculateStepPhase(driver);			// Get the phase based on current machine position
+
+		dm->phaseStepControl.SetPhaseOffset(driver, (initialPhase - calculatedPhase) % 4096u);		// Update the offset so calculated phase equals MSCNT
+		dm->phaseStepControl.SetMotorPhase(driver, initialPhase, 1.0);								// Update XDIRECT register with new phase values
+	}
+	// If we are going from phase step to step dir, we need to send some fake steps to the driver to update MSCNT to avoid a jitter when disabling direct_mode
+	// This is suboptimal but it is a configuration command that is unlikely to be run so a few ms delay is unlikely to cause much harm.
+	// If the delay is an issue then all the drivers for the axis could be stepped together and each loop check if each drivers MSCNT has reached the target.
+	else if(dm->IsPhaseStepEnabled() && mode == StepMode::stepDir)
+	{
+		const uint16_t targetPhase = dm->phaseStepControl.CalculateStepPhase(driver) / 4;
+		uint16_t mscnt = SmartDrivers::GetMicrostepPosition(driver);
+		int16_t steps = ((int16_t)mscnt - (int16_t)targetPhase) / (256 / microsteps);
+			debugPrintf("dms[%u]: mscnt=%u, targetPhase=%u, steps=%d", driver, mscnt, targetPhase, steps);
+		if (Platform::Debug(Module::Move))
+		{
+		}
+
+		bool d = digitalRead(DirectionPins[driver]);
+		if (steps < 0)
+		{
+			digitalWrite(DirectionPins[driver], false);
+		}
+		else
+		{
+			digitalWrite(DirectionPins[driver], true);
+		}
+
+		steps = abs(steps);
+
+		while (steps > 0)
+		{
+			StepDriversHigh(dm->driversNormallyUsed);	// step drivers high
+			delayMicroseconds(20);
+# if SAME70
+			__DSB();														// without this the step pulse can be far too short
+# endif
+			StepDriversLow();	// step drivers low
+			delayMicroseconds(20);
+			steps--;
+		}
+
+		digitalWrite(DirectionPins[driver], d);
+
+		delay(10);															// Give enough time for MSCNT to be read
+			debugPrintf(", new mscnt=%u\n", SmartDrivers::GetMicrostepPosition(driver));
+		if (Platform::Debug(Module::Move))
+		{
+		}
+	}
+
+	if (!SmartDrivers::EnablePhaseStepping(driver, mode == StepMode::phase))
+	{
+		ret = false;
+	}
+	dm->SetStepMode(mode);
+
+	ResetPhaseStepMonitoringVariables();
+	return ret;
+}
+
+StepMode Move::GetStepMode(size_t driver) noexcept
+{
+	if (driver >= NumDrivers)
+	{
+		return StepMode::unknown;
+	}
+	return dms[driver].GetStepMode();
+}
+
+#if SUPPORT_CLOSED_LOOP
+ClosedLoopMode Move::GetClosedLoopMode(size_t driver) noexcept
+{
+	if (driver >= NumDrivers)
+	{
+		return ClosedLoopMode::open;
+	}
+	return dms[driver].closedLoopControl.GetClosedLoopMode();
+}
+#endif
+
 void Move::PhaseStepControlLoop() noexcept
 {
 	// Record the control loop call interval
@@ -2291,20 +2498,77 @@ void Move::PhaseStepControlLoop() noexcept
 	if (timeElapsed > maxPSControlLoopCallInterval) { maxPSControlLoopCallInterval = timeElapsed; }
 
 	const uint32_t now = StepTimer::ConvertLocalToMovementTime(loopCallTime);
+
+#if SUPPORT_CLOSED_LOOP
+	bool gotMotion[NumDrivers];
 	for (DriveMovement& dm : dms)
 	{
-		dm.closedLoopControl.InstanceControlLoop(now, timeElapsed);
+		gotMotion[dm.drive] = dm.closedLoopControl.InstanceControlLoop(dm.drive, now, timeElapsed);
 	}
+#endif
+
+#if SINGLE_DRIVER
+	DriveMovement * const dm = dms;
+#else
+	DriveMovement **dmp = &phaseStepDMs;
+	while (*dmp != nullptr)
+	{
+		DriveMovement * const dm = *dmp;
+#endif
+		if (dm->phaseStepControl.IsEnabled())
+		{
+
+#if SUPPORT_CLOSED_LOOP // we have already run GetCurrentMotion in the closed loop control loop
+			if (gotMotion[dm->drive])
+			{
+//				dm->phaseStepControl.mParams = dm->closedLoopControl.mParams;
+			}
+			else
+			{
+#endif
+#if SUPPORT_CLOSED_LOOP
+			}
+#endif
+			GetCurrentMotion(dm->drive, now, dm->phaseStepControl.mParams);
+
+			if (dm->state != DMState::phaseStepping)
+			{
+#if !SINGLE_DRIVER
+				*dmp = dm->nextDM;
+				if (dm->state >= DMState::firstMotionState)
+				{
+					// I think it is impossible for this code to run. Maybe it is possible when disabling phase stepping during a move?
+					InsertDM(dm);
+				}
+#endif
+			}
+			else
+			{
+				dm->phaseStepControl.CalculateCurrentFraction();
+
+//				if (dm->driversCurrentlyUsed == 0)
+//				{
+//					if (likely(dm->state > DMState::starting))
+//					{
+//						// Driver has been stopped (probably by Move::CheckEndstops() so we don't need to update it)
+//						dm->phaseStepControl.UpdatePhaseOffset(dm->drive);
+//					}
+//					return;
+//				}
+				dm->phaseStepControl.InstanceControlLoop(dm->drive);
+#if !SINGLE_DRIVER
+				*dmp = dm->nextDM;
+#endif
+			}
+		}
+#if !SINGLE_DRIVER
+	}
+#endif
 
 	// Record how long this has taken to run
 	const StepTimer::Ticks loopRuntime = StepTimer::GetTimerTicks() - loopCallTime;
 	if (loopRuntime < minPSControlLoopRuntime) { minPSControlLoopRuntime = loopRuntime; }
 	if (loopRuntime > maxPSControlLoopRuntime) { maxPSControlLoopRuntime = loopRuntime; }
-}
-
-void Move::ClosedLoopDiagnostics(size_t driver, const StringRef& reply) noexcept
-{
-	dms[driver].closedLoopControl.InstanceDiagnostics(driver, reply);
 }
 
 bool Move::EnableIfIdle(size_t driver) noexcept

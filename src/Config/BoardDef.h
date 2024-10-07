@@ -48,12 +48,30 @@
 # define USE_TC_FOR_STEP				0
 #endif
 
-#ifndef SUPPORT_CLOSED_LOOP
-# define SUPPORT_CLOSED_LOOP			0
-#endif
-
 #ifndef SUPPORT_PHASE_STEPPING
 # define SUPPORT_PHASE_STEPPING			0
+#endif
+
+#ifdef SUPPORT_CLOSED_LOOP
+# if SUPPORT_CLOSED_LOOP && !SUPPORT_PHASE_STEPPING
+#  error Cannot support closed loop without phase stepping
+# endif
+#else
+# define SUPPORT_CLOSED_LOOP		0
+#endif
+
+#if SUPPORT_CLOSED_LOOP
+# if !SINGLE_DRIVER
+#  error Closed loop only supports single driver
+# endif
+#endif
+
+#ifdef SUPPORT_S_CURVE
+# if SUPPORT_S_CURVE && !SUPPORT_PHASE_STEPPING
+#  error Cannot support S Curve acceleration without phase stepping
+# endif
+#else
+# define SUPPORT_S_CURVE		0
 #endif
 
 #ifndef SUPPORT_BRAKE_PWM
@@ -70,6 +88,7 @@
 
 #if !SUPPORT_DRIVERS
 # define HAS_SMART_DRIVERS				0
+# define SINGLE_DRIVER					0
 # define SUPPORT_TMC22xx				0
 # define SUPPORT_TMC2660				0
 # define SUPPORT_TMC51xx				0

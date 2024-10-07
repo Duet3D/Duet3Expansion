@@ -30,6 +30,7 @@
 #define DEDICATED_STEP_TIMER	1
 #define SUPPORT_INPUT_SHAPING	1
 #define SUPPORT_BRAKE_PWM		1
+#define SUPPORT_PHASE_STEPPING	1
 
 #define ACTIVE_HIGH_STEP		1		// 1 = active high, 0 = active low
 #define ACTIVE_HIGH_DIR			1		// 1 = active high, 0 = active low

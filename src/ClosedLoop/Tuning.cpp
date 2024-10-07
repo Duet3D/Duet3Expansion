@@ -67,7 +67,7 @@
  *   (sigma(i=0..N-1): yi*(i - (N-1)/2))) / (p*(N^3-N)/12)
  */
 
-bool ClosedLoop::BasicTuning(bool firstIteration) noexcept
+bool ClosedLoop::BasicTuning(size_t driver, bool firstIteration) noexcept
 {
 	enum class BasicTuningState { forwardInitial = 0, forwards, reverseInitial, reverse };
 
@@ -112,7 +112,7 @@ bool ClosedLoop::BasicTuning(bool firstIteration) noexcept
 	{
 	case BasicTuningState::forwardInitial:
 		// In this state we move forwards a few microsteps to allow the motor to settle down
-		SetMotorPhase(currentPosition + PhaseIncrement, 1.0);
+		SetMotorPhase(driver, currentPosition + PhaseIncrement, 1.0);
 		++stepCounter;
 		if (stepCounter == NumDummySteps)
 		{
@@ -152,13 +152,13 @@ bool ClosedLoop::BasicTuning(bool firstIteration) noexcept
 		}
 		else
 		{
-			SetMotorPhase(currentPosition + PhaseIncrement, 1.0);
+			SetMotorPhase(driver, currentPosition + PhaseIncrement, 1.0);
 		}
 		break;
 
 	case BasicTuningState::reverseInitial:
 		// In this state we move backwards a few microsteps to allow the motor to settle down
-		SetMotorPhase(currentPosition - PhaseIncrement, 1.0);
+		SetMotorPhase(driver, currentPosition - PhaseIncrement, 1.0);
 		++stepCounter;
 		if (stepCounter == NumDummySteps)
 		{
@@ -198,7 +198,7 @@ bool ClosedLoop::BasicTuning(bool firstIteration) noexcept
 		}
 		else
 		{
-			SetMotorPhase(currentPosition - PhaseIncrement, 1.0);
+			SetMotorPhase(driver, currentPosition - PhaseIncrement, 1.0);
 		}
 		break;
 	}
@@ -217,7 +217,7 @@ bool ClosedLoop::BasicTuning(bool firstIteration) noexcept
  * 	- Store the Fourier coefficients in the encoder LUT
  */
 
-bool ClosedLoop::EncoderCalibration(bool firstIteration) noexcept
+bool ClosedLoop::EncoderCalibration(size_t driver, bool firstIteration) noexcept
 {
 	enum class EncoderCalibrationState { setup = 0, forwards, backwards };
 
@@ -275,7 +275,7 @@ bool ClosedLoop::EncoderCalibration(bool firstIteration) noexcept
 		{
 			const uint32_t phaseChange = (positionsTillStart % (1u << phaseIncrementShift)) + (1u << phaseIncrementShift);
 			positionsTillStart -= phaseChange;
-			ClosedLoop::SetMotorPhase(currentPosition + phaseChange, 1.0);
+			ClosedLoop::SetMotorPhase(driver, currentPosition + phaseChange, 1.0);
 			return false;
 		}
 
@@ -291,7 +291,7 @@ bool ClosedLoop::EncoderCalibration(bool firstIteration) noexcept
 		}
 
 		// Move to the next position. After a complete revolution we continue another 256 positions without recording data, ready for the reverse pass.
-		ClosedLoop::SetMotorPhase(currentPosition + (1u << phaseIncrementShift), 1.0);
+		ClosedLoop::SetMotorPhase(driver, currentPosition + (1u << phaseIncrementShift), 1.0);
 		positionCounter += 1u << phaseIncrementShift;
 		if (positionCounter == positionsPerRev + 256)
 		{
@@ -313,7 +313,7 @@ bool ClosedLoop::EncoderCalibration(bool firstIteration) noexcept
 		}
 
 		// Move to the next position
-		ClosedLoop::SetMotorPhase(currentPosition - (1u << phaseIncrementShift), 1.0);
+		ClosedLoop::SetMotorPhase(driver, currentPosition - (1u << phaseIncrementShift), 1.0);
 		positionCounter -= 1u << phaseIncrementShift;
 		break;
 	}
@@ -510,7 +510,7 @@ bool ClosedLoop::ZieglerNichols(bool firstIteration) noexcept
  */
 
 // This is called from the closed loop control loop every (1/tuningStepsPerSecond) seconds if tuning is enabled, currently every 0.5ms
-void ClosedLoop::PerformTune() noexcept
+void ClosedLoop::PerformTune(size_t driver) noexcept
 {
 	static bool newTuningMove = true;						// indicates if a tuning move has just finished
 
@@ -525,7 +525,7 @@ void ClosedLoop::PerformTune() noexcept
 	// Run one iteration of the one, highest priority, tuning move
 	if (tuning & BASIC_TUNING_MANOEUVRE)
 	{
-		newTuningMove = BasicTuning(newTuningMove);
+		newTuningMove = BasicTuning(driver, newTuningMove);
 		if (newTuningMove)
 		{
 			tuning &= ~BASIC_TUNING_MANOEUVRE;				// we can do encoder calibration after basic tuning
@@ -540,7 +540,7 @@ void ClosedLoop::PerformTune() noexcept
 		}
 		else
 		{
-			newTuningMove = EncoderCalibration(newTuningMove);
+			newTuningMove = EncoderCalibration(driver, newTuningMove);
 			if (newTuningMove)
 			{
 				tuning = 0;
