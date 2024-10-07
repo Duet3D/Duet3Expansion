@@ -15,18 +15,19 @@
 class CurrentLoopTemperatureSensor : public SpiTemperatureSensor
 {
 public:
-	CurrentLoopTemperatureSensor(unsigned int sensorNum);
-	GCodeResult Configure(const CanMessageGenericParser& parser, const StringRef& reply) override;
+	CurrentLoopTemperatureSensor(unsigned int sensorNum) noexcept;
+	GCodeResult Configure(const CanMessageGenericParser& parser, const StringRef& reply) noexcept override;
 
 	static constexpr const char *TypeName = "currentloop";
 
-	void Poll() override;
+	void Poll() noexcept override;
 
 private:
 	static SensorTypeDescriptor typeDescriptor;
 
-	TemperatureError TryGetLinearAdcTemperature(float& t);
-	void CalcDerivedParameters();
+	TemperatureError TryGetLinearAdcTemperature(float& t) noexcept;
+	GCodeResult FinishConfiguring(bool changed, const StringRef& reply) noexcept;
+	void CalcDerivedParameters() noexcept;
 
 	// Configurable parameters
 	float tempAt4mA, tempAt20mA;
