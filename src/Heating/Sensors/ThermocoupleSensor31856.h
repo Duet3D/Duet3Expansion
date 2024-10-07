@@ -23,6 +23,8 @@ public:
 	void Poll() override;
 
 private:
+	static SensorTypeDescriptor typeDescriptor;
+
 	TemperatureError TryInitThermocouple() const;
 
 	uint8_t cr0;

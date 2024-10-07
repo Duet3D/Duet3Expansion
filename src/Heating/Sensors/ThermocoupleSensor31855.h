@@ -21,6 +21,9 @@ public:
 	static constexpr const char *TypeName = "thermocouplemax31855";
 
 	void Poll() override;
+
+private:
+	static SensorTypeDescriptor typeDescriptor;
 };
 
 #endif

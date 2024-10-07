@@ -20,6 +20,9 @@ public:
 	static constexpr const char *TypeName = "mcutemp";
 
 	void Poll() override;
+
+private:
+	static SensorTypeDescriptor typeDescriptor;
 };
 
 #endif

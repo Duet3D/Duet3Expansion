@@ -37,6 +37,9 @@ const uint8_t Cr0ReadMask = 0b11011101;		// bits 1 and 5 auto clear, so ignore t
 
 const uint32_t DefaultRef = 400;
 
+// Sensor type descriptors
+TemperatureSensor::SensorTypeDescriptor RtdSensor31865::typeDescriptor(TypeName, [](unsigned int sensorNum) noexcept -> TemperatureSensor *_ecv_from { return new RtdSensor31865(sensorNum); } );
+
 RtdSensor31865::RtdSensor31865(unsigned int sensorNum)
 	: SpiTemperatureSensor(sensorNum, "PT100 (MAX31865)", MAX31865_SpiMode, MAX31865_Frequency),
 	  rrefTimes100(DefaultRef * 100), cr0(DefaultCr0)

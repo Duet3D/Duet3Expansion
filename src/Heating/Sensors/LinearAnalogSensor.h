@@ -23,6 +23,8 @@ public:
 	void Poll() override;
 
 private:
+	static SensorTypeDescriptor typeDescriptor;
+
 	void CalcDerivedParameters();
 
 	// Configurable parameters

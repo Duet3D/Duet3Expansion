@@ -23,6 +23,8 @@ public:
 	void Poll() override;
 
 private:
+	static SensorTypeDescriptor typeDescriptor;
+
 	TemperatureError TryGetLinearAdcTemperature(float& t);
 	void CalcDerivedParameters();
 

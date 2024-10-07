@@ -16,6 +16,9 @@ static constexpr unsigned int AdcOversampleBits = 2;										// we use 2-bit ov
 static constexpr int32_t UnfilteredAdcRange = 1u << AnalogIn::AdcBits;						// The readings we pass in should be in range 0..(AdcRange - 1)
 static constexpr int32_t FilteredAdcRange = 1u << (AnalogIn::AdcBits + AdcOversampleBits);	// The readings we pass in should be in range 0..(AdcRange - 1)
 
+// Sensor type descriptors
+TemperatureSensor::SensorTypeDescriptor LinearAnalogSensor::typeDescriptor(TypeName, [](unsigned int sensorNum) noexcept -> TemperatureSensor *_ecv_from { return new LinearAnalogSensor(sensorNum); } );
+
 LinearAnalogSensor::LinearAnalogSensor(unsigned int sensorNum)
 	: SensorWithPort(sensorNum, "Linear analog"), lowTemp(DefaultLowTemp), highTemp(DefaultHighTemp), filtered(true), adcFilterChannel(-1)
 {

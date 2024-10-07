@@ -33,6 +33,8 @@ public:
 	void Poll() override;
 
 private:
+	static SensorTypeDescriptor thermistorDescriptor, pt100descriptor;
+
 	// For the theory behind ADC oversampling, see http://www.atmel.com/Images/doc8003.pdf
 	static constexpr unsigned int AdcOversampleBits = 2;					// we use 2-bit oversampling
 

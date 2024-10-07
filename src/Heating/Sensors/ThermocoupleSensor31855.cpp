@@ -63,6 +63,9 @@ const SpiMode MAX31855_SpiMode = SpiMode::mode0;
 // Define the minimum interval between readings
 const uint32_t MinimumReadInterval = 100;		// minimum interval between reads, in milliseconds
 
+// Sensor type descriptors
+TemperatureSensor::SensorTypeDescriptor ThermocoupleSensor31855::typeDescriptor(TypeName, [](unsigned int sensorNum) noexcept -> TemperatureSensor *_ecv_from { return new ThermocoupleSensor31855(sensorNum); } );
+
 ThermocoupleSensor31855::ThermocoupleSensor31855(unsigned int sensorNum)
 	: SpiTemperatureSensor(sensorNum, "Thermocouple (MAX31855)", MAX31855_SpiMode, MAX31855_Frequency)
 {

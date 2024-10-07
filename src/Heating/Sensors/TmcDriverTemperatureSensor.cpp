@@ -10,6 +10,9 @@
 
 #if HAS_SMART_DRIVERS
 
+// Sensor type descriptors
+TemperatureSensor::SensorTypeDescriptor TmcDriverTemperatureSensor::typeDescriptor(TypeName, [](unsigned int sensorNum) noexcept -> TemperatureSensor *_ecv_from { return new TmcDriverTemperatureSensor(sensorNum); } );
+
 TmcDriverTemperatureSensor::TmcDriverTemperatureSensor(unsigned int sensorNum)
 	: TemperatureSensor(sensorNum, "TMC temperature warnings")
 {

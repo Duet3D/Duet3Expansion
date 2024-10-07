@@ -1,26 +1,18 @@
 #include "TemperatureSensor.h"
-#include "Thermistor.h"
-#include "ThermocoupleSensor31855.h"
-#include "ThermocoupleSensor31856.h"
-#include "RtdSensor31865.h"
-#include "CurrentLoopTemperatureSensor.h"
-#include "LinearAnalogSensor.h"
-#include "BME280.h"
 #include "CanMessageGenericParser.h"
 
-#if HAS_CPU_TEMP_SENSOR
-#include "CpuTemperatureSensor.h"
-#endif
-
-#if SUPPORT_DHT_SENSOR
-#include "DhtSensor.h"
-#endif
-
-#if HAS_SMART_DRIVERS
-#include "TmcDriverTemperatureSensor.h"
-#endif
-
 #include "CAN/CanInterface.h"
+
+// Root of the sensor types list
+TemperatureSensor::SensorTypeDescriptor *_ecv_null TemperatureSensor::SensorTypeDescriptor::sensorTypeListRoot;
+
+// Constructor for the type descriptor. This links the type descriptor into the sensor type list.
+TemperatureSensor::SensorTypeDescriptor::SensorTypeDescriptor(const char *_ecv_array p_typeName, CreationFunction p_creationFunction) noexcept
+	: sensorTypeName(p_typeName), createFunction(p_creationFunction)
+{
+	next = sensorTypeListRoot;
+	sensorTypeListRoot = this;
+}
 
 // Constructor
 TemperatureSensor::TemperatureSensor(unsigned int sensorNum, const char *t)
@@ -125,84 +117,18 @@ void TemperatureSensor::UpdateRemoteTemperature(CanAddress src, const CanSensorR
 // Factory method
 TemperatureSensor *TemperatureSensor::Create(unsigned int sensorNum, const char *typeName, const StringRef& reply)
 {
-	TemperatureSensor *ts;
+	TemperatureSensor *ts = nullptr;
+	for (const SensorTypeDescriptor *desc = SensorTypeDescriptor::GetRoot(); desc != nullptr; desc = desc->GetNext())
+	{
+		if (ReducedStringEquals(typeName, desc->GetName()))
+		{
+			ts = desc->Create(sensorNum);
+			break;
+		}
+	}
 
-	// We now always support linear analog sensors to make it easier to test analog inputs on the ATE IOMB
-	if (ReducedStringEquals(typeName, LinearAnalogSensor::TypeName))
+	if (ts == nullptr)
 	{
-		ts = new LinearAnalogSensor(sensorNum);
-	}
-#if SUPPORT_THERMISTORS
-	else if (ReducedStringEquals(typeName, Thermistor::TypeNameThermistor))
-	{
-		ts = new Thermistor(sensorNum, false);
-	}
-	else if (ReducedStringEquals(typeName, Thermistor::TypeNamePT1000))
-	{
-		ts = new Thermistor(sensorNum, true);
-	}
-#endif
-#if SUPPORT_SPI_SENSORS
-	else if (ReducedStringEquals(typeName, ThermocoupleSensor31855::TypeName))
-	{
-		ts = new ThermocoupleSensor31855(sensorNum);
-	}
-	else if (ReducedStringEquals(typeName, ThermocoupleSensor31856::TypeName))
-	{
-		ts = new ThermocoupleSensor31856(sensorNum);
-	}
-	else if (ReducedStringEquals(typeName, RtdSensor31865::TypeName))
-	{
-		ts = new RtdSensor31865(sensorNum);
-	}
-	else if (ReducedStringEquals(typeName, CurrentLoopTemperatureSensor::TypeName))
-	{
-		ts = new CurrentLoopTemperatureSensor(sensorNum);
-	}
-#endif
-#if SUPPORT_DHT_SENSOR
-	else if (ReducedStringEquals(typeName, DhtTemperatureSensor::TypeNameDht21))
-	{
-		ts = new DhtTemperatureSensor(sensorNum, DhtSensorType::Dht21);
-	}
-	else if (ReducedStringEquals(typeName, DhtTemperatureSensor::TypeNameDht22))
-	{
-		ts = new DhtTemperatureSensor(sensorNum, DhtSensorType::Dht22);
-	}
-	else if (ReducedStringEquals(typeName, DhtHumiditySensor::TypeName))
-	{
-		ts = new DhtHumiditySensor(sensorNum);
-	}
-#endif
-#if SUPPORT_BME280
-	else if (ReducedStringEquals(typeName, BME280TemperatureSensor::TypeName))
-	{
-		ts = new BME280TemperatureSensor(sensorNum);
-	}
-	else if (ReducedStringEquals(typeName, BME280PressureSensor::TypeName))
-	{
-		ts = new BME280PressureSensor(sensorNum);
-	}
-	else if (ReducedStringEquals(typeName, BME280HumiditySensor::TypeName))
-	{
-		ts = new BME280HumiditySensor(sensorNum);
-	}
-#endif
-#if HAS_CPU_TEMP_SENSOR
-	else if (ReducedStringEquals(typeName, CpuTemperatureSensor::TypeName))
-	{
-		ts = new CpuTemperatureSensor(sensorNum);
-	}
-#endif
-#if HAS_SMART_DRIVERS
-	else if (ReducedStringEquals(typeName, TmcDriverTemperatureSensor::TypeName))
-	{
-		ts = new TmcDriverTemperatureSensor(sensorNum);
-	}
-#endif
-	else
-	{
-		ts = nullptr;
 		reply.printf("Unknown sensor type name \"%s\"", typeName);
 	}
 

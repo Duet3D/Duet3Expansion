@@ -29,6 +29,8 @@ public:
 	static constexpr const char *TypeName = "bme280";
 
 private:
+	static SensorTypeDescriptor typeDescriptor;
+
 	TemperatureError bme280_init() noexcept;
 	TemperatureError bme280_get_regs(uint8_t reg_addr, uint8_t *reg_data, uint16_t len) const noexcept;
 	TemperatureError bme280_set_reg(uint8_t reg_addr, uint8_t reg_data) const noexcept;
@@ -69,6 +71,9 @@ public:
 	~BME280PressureSensor() noexcept;
 
 	static constexpr const char *TypeName = "bmepressure";
+
+private:
+	static SensorTypeDescriptor typeDescriptor;
 };
 
 // This class represents a DHT humidity sensor
@@ -79,6 +84,9 @@ public:
 	~BME280HumiditySensor() noexcept;
 
 	static constexpr const char *TypeName = "bmehumidity";
+
+private:
+	static SensorTypeDescriptor typeDescriptor;
 };
 
 #endif	// SUPPORT_BME280
