@@ -2358,6 +2358,8 @@ GCodeResult Move::SetStepModes(const CanMessageMultipleDrivesRequest<uint16_t>& 
 							SetStepMode(driver, (StepMode)msg.values[count], reply);
 #if SUPPORT_CLOSED_LOOP
 							ClosedLoopMode clMode = dms[driver].closedLoopControl.GetClosedLoopMode();
+
+#warning "Check if this is needed"
 //							dms[driver].closedLoopControl.SetClosedLoopEnabled(clMode, reply);	// update closed loop mode
 							if (GetStepMode(driver) == StepMode::closedLoop && clMode != ClosedLoopMode::open)
 							{
@@ -2403,6 +2405,7 @@ bool Move::SetStepMode(size_t driver, StepMode mode, const StringRef& reply) noe
 
 	// If we are going from step dir to phase step, we need to update the phase offset so the calculated phase matches MSCNT
 #warning "Needs updating to handle closed loop transitions"
+#if 0
 	if (!dm->IsPhaseStepEnabled() && mode == StepMode::phase)
 	{
 		dm->phaseStepControl.SetPhaseOffset(driver, 0);												// Reset offset
@@ -2457,6 +2460,7 @@ bool Move::SetStepMode(size_t driver, StepMode mode, const StringRef& reply) noe
 		{
 		}
 	}
+#endif
 
 	if (!SmartDrivers::EnablePhaseStepping(driver, mode == StepMode::phase))
 	{
@@ -2546,15 +2550,15 @@ void Move::PhaseStepControlLoop() noexcept
 			{
 				dm->phaseStepControl.CalculateCurrentFraction();
 
-//				if (dm->driversCurrentlyUsed == 0)
-//				{
-//					if (likely(dm->state > DMState::starting))
-//					{
-//						// Driver has been stopped (probably by Move::CheckEndstops() so we don't need to update it)
-//						dm->phaseStepControl.UpdatePhaseOffset(dm->drive);
-//					}
-//					return;
-//				}
+				if (dm->driversCurrentlyUsed == 0)
+				{
+					if (likely(dm->state > DMState::starting))
+					{
+						// Driver has been stopped (probably by Move::CheckEndstops() so we don't need to update it)
+						dm->phaseStepControl.UpdatePhaseOffset(dm->drive);
+					}
+					return;
+				}
 				dm->phaseStepControl.InstanceControlLoop(dm->drive);
 #if !SINGLE_DRIVER
 				*dmp = dm->nextDM;

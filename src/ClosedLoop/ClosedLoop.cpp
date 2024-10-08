@@ -228,10 +228,10 @@ GCodeResult ClosedLoop::ProcessM569Point1(CanMessageGenericParser& parser, const
 	}
 
 	// Set the new params
-	TaskCriticalSectionLocker lock;			// don't allow the closed loop task to see an inconsistent combination of these values
 
 	if (seenPid)
 	{
+		TaskCriticalSectionLocker lock;			// don't allow the closed loop task to see an inconsistent combination of these values
 		Kp = tempKp;
 		Ki = tempKi;
 		Kd = tempKd;

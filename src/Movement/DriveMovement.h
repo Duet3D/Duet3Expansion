@@ -216,41 +216,40 @@ inline bool DriveMovement::GetCurrentMotion(uint32_t when, MotionParameters& mPa
 	bool hasMotion = false;
 	AtomicCriticalSectionLocker lock;								// we don't want 'segments' changing while we do this
 
-	MoveSegment *seg = segments;
-	while (seg != nullptr)
+	if (state == DMState::phaseStepping)
 	{
-		int32_t timeSinceStart = (int32_t)(when - seg->GetStartTime());
-		if (timeSinceStart < 0)
+		MoveSegment *seg = segments;
+		while (seg != nullptr)
 		{
-			break;													// segment isn't due to start yet
-		}
-
-		if ((uint32_t)timeSinceStart >= seg->GetDuration())			// if segment should have finished by now
-		{
-			if (stepMode != StepMode::stepDir)
+			int32_t timeSinceStart = (int32_t)(when - seg->GetStartTime());
+			if (timeSinceStart < 0)
 			{
-				currentMotorPosition = positionAtSegmentStart + netStepsThisSegment;
-				distanceCarriedForwards += seg->GetLength() - (motioncalc_t)netStepsThisSegment;
-				movementAccumulator += netStepsThisSegment;		// update the amount of extrusion
-				MoveSegment *oldSeg = seg;
-				segments = oldSeg->GetNext();
-				MoveSegment::Release(oldSeg);
-				seg = NewSegment(when);
-				hasMotion = true;
-				continue;
+				break;													// segment isn't due to start yet
 			}
-			timeSinceStart = seg->GetDuration();
-		}
 
-		if (state != DMState::phaseStepping)
-		{
-			break;
+			if ((uint32_t)timeSinceStart >= seg->GetDuration())			// if segment should have finished by now
+			{
+				if (stepMode != StepMode::stepDir)
+				{
+					currentMotorPosition = positionAtSegmentStart + netStepsThisSegment;
+					distanceCarriedForwards += seg->GetLength() - (motioncalc_t)netStepsThisSegment;
+					movementAccumulator += netStepsThisSegment;		// update the amount of extrusion
+					MoveSegment *oldSeg = seg;
+					segments = oldSeg->GetNext();
+					MoveSegment::Release(oldSeg);
+					seg = NewSegment(when);
+					hasMotion = true;
+					continue;
+				}
+				timeSinceStart = seg->GetDuration();
+			}
+
+			mParams.position = (float)((u + seg->GetA() * timeSinceStart * 0.5) * timeSinceStart + (motioncalc_t)positionAtSegmentStart + distanceCarriedForwards);
+			currentMotorPosition = (int32_t)mParams.position;		// store the approximate position for OM updates
+			mParams.speed = (float)(u + seg->GetA() * timeSinceStart);
+			mParams.acceleration = (float)seg->GetA();
+			return true;
 		}
-		mParams.position = (float)((u + seg->GetA() * timeSinceStart * 0.5) * timeSinceStart + (motioncalc_t)positionAtSegmentStart + distanceCarriedForwards);
-		currentMotorPosition = (int32_t)mParams.position;		// store the approximate position for OM updates
-		mParams.speed = (float)(u + seg->GetA() * timeSinceStart);
-		mParams.acceleration = (float)seg->GetA();
-		return true;
 	}
 
 	// If we get here then no movement is taking place
