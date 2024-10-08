@@ -239,35 +239,43 @@ GCodeResult ClosedLoop::ProcessM569Point1(CanMessageGenericParser& parser, const
 		return GCodeResult::error;
 	}
 
-	// Set the new params
-	TaskCriticalSectionLocker lock;			// don't allow the closed loop task to see an inconsistent combination of these values
-
-	if (seenPid)
+	if (seenT)
 	{
-		Kp = tempKp;
-		Ki = tempKi;
-		Kd = tempKd;
-		Kv = tempKv;
-		Ka = tempKa;
-		PIDITerm = 0.0;
-		errorDerivativeFilter.Reset();
-		speedFilter.Reset();
+		SetClosedLoopEnabled(ClosedLoopMode::open, reply);		// we need to do this because we are going to mess with the encoder. Do it before we change the closed loop parameters.
 	}
 
-	if (seenE)
+	// Set the new closed loop parameters
 	{
-		errorThresholds[0] = tempErrorThresholds[0];
-		errorThresholds[1] = tempErrorThresholds[1];
+		TaskCriticalSectionLocker lock;			// don't allow the closed loop task to see an inconsistent combination of these values
+
+		if (seenPid)
+		{
+			Kp = tempKp;
+			Ki = tempKi;
+			Kd = tempKd;
+			Kv = tempKv;
+			Ka = tempKa;
+			PIDITerm = 0.0;
+			errorDerivativeFilter.Reset();
+			speedFilter.Reset();
+		}
+
+		if (seenE)
+		{
+			errorThresholds[0] = tempErrorThresholds[0];
+			errorThresholds[1] = tempErrorThresholds[1];
+		}
+
+		if (seenQ)
+		{
+			torquePerAmp = tempTorquePerAmp;
+		}
 	}
 
-	if (seenQ)
-	{
-		torquePerAmp = tempTorquePerAmp;
-	}
 
 	if (seenT)
 	{
-		SetClosedLoopEnabled(ClosedLoopMode::open, reply);
+		// We set the mode to open loop earlier in this function so no need to do it here
 		DeleteObject(encoder);
 
 		switch (tempEncoderType)
