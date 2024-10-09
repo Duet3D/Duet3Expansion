@@ -2553,6 +2553,7 @@ void Move::PhaseStepControlLoop() noexcept
 			{
 				dm->phaseStepControl.CalculateCurrentFraction();
 #if 0
+#warning "Need to implement this for homing multi motor axis
 				if (dm->driversCurrentlyUsed == 0)
 				{
 					if (likely(dm->state > DMState::starting))
@@ -2563,6 +2564,7 @@ void Move::PhaseStepControlLoop() noexcept
 					return;
 				}
 #endif
+
 				dm->phaseStepControl.InstanceControlLoop(dm->drive);
 #if !SINGLE_DRIVER
 				*dmp = dm->nextDM;

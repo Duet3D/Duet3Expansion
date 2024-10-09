@@ -139,6 +139,7 @@ MoveSegment *DriveMovement::NewSegment(uint32_t now) noexcept
 				debugPrintf("NewSegment(%u) phaseStepping\n", now);
 			}
 			u = seg->CalcU();
+			driversCurrentlyUsed = driversNormallyUsed;
 			state = DMState::phaseStepping;
 			return seg;
 		}
