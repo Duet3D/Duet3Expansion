@@ -245,12 +245,12 @@ void Move::Init() noexcept
 	pinMode(BrakePwmPin, OUTPUT_LOW);
 #endif
 
-# if SUPPORT_PHASE_STEPPING
-	ResetPhaseStepMonitoringVariables();
-# endif
 # if SUPPORT_CLOSED_LOOP
 	ClosedLoop::Init();						// this must be called AFTER SmartDrivers::Init()
 # endif
+#if SUPPORT_PHASE_STEPPING
+	ResetPhaseStepMonitoringVariables();
+#endif
 
 	moveTask = new Task<MoveTaskStackWords>;
 	moveTask->Create(MoveLoop, "Move", this, TaskPriority::MovePriority);
@@ -686,7 +686,7 @@ void Move::StepDrivers(uint32_t now) noexcept
 	}
 
 # if SUPPORT_SLOW_DRIVERS
-	if ((driversStepping & slowDriversBitmap != 0)					// if using any slow drivers
+	if (driversStepping & slowDriversBitmap != 0)					// if using any slow drivers
 	{
 		uint32_t lastStepPulseTime = lastStepLowTime;
 		uint32_t rawNow;
@@ -745,15 +745,20 @@ void Move::PrepareForNextSteps(uint32_t now) noexcept
 {
 	if (unlikely(dms[0].state == DMState::starting))
 	{
+		if (Platform::Debug(Module::Move))
+		{
+			debugPrintf("PrepareForNextSteps(%lu)\n", now);
+		}
 		if (dms[0].NewSegment(now) != nullptr && dms[0].state != DMState::starting)
 		{
+			dms[0].driversCurrentlyUsed = dms[0].driversNormallyUsed; // we previously set driversCurrentlyUsed to 0 to
+																	  // avoid generating a step, so restore it now
 # if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
 			if (dms[0].state == DMState::phaseStepping)
 			{
 				return;
 			}
 # endif
-			dms[0].driversCurrentlyUsed = dms[0].driversNormallyUsed;	// we previously set driversCurrentlyUsed to 0 to avoid generating a step, so restore it now
 			(void)dms[0].CalcNextStepTimeFull(now);					// calculate next step time
 			dms[0].directionChanged = true;							// force the direction to be set up
 		}
@@ -774,8 +779,12 @@ void Move::PrepareForNextSteps(DriveMovement *stopDm, uint32_t now) noexcept
 		{
 			if (dm2->NewSegment(now) != nullptr && dm2->state != DMState::starting)
 			{
-# if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
 				dm2->driversCurrentlyUsed = dm2->driversNormallyUsed;	// we previously set driversCurrentlyUsed to 0 to avoid generating a step, so restore it now
+# if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
+				if (dm2->state == DMState::phaseStepping)
+				{
+					return;
+				}
 # endif
 				(void)dm2->CalcNextStepTimeFull(now);					// calculate next step time
 				dm2->directionChanged = true;							// force the direction to be set up
@@ -2525,31 +2534,25 @@ void Move::PhaseStepControlLoop() noexcept
 #if SUPPORT_CLOSED_LOOP // we have already run GetCurrentMotion in the closed loop control loop
 			if (gotMotion[dm->drive])
 			{
-//				dm->phaseStepControl.mParams = dm->closedLoopControl.mParams;
+				dm->phaseStepControl.mParams = dm->closedLoopControl.mParams;
 			}
 			else
+#endif
 			{
-#endif
-#if SUPPORT_CLOSED_LOOP
+				GetCurrentMotion(dm->drive, now, dm->phaseStepControl.mParams);
 			}
-#endif
-			GetCurrentMotion(dm->drive, now, dm->phaseStepControl.mParams);
 
-			if (dm->state != DMState::phaseStepping)
-			{
 #if !SINGLE_DRIVER
+			if (dm->state < DMState::firstMotionState)
+			{
+				// Remove DM from phaseStepDMs
 				*dmp = dm->nextDM;
-				if (dm->state >= DMState::firstMotionState)
-				{
-					// I think it is impossible for this code to run. Maybe it is possible when disabling phase stepping during a move?
-					InsertDM(dm);
-				}
-#endif
 			}
 			else
+#endif
 			{
 				dm->phaseStepControl.CalculateCurrentFraction();
-
+#if 0
 				if (dm->driversCurrentlyUsed == 0)
 				{
 					if (likely(dm->state > DMState::starting))
@@ -2559,6 +2562,7 @@ void Move::PhaseStepControlLoop() noexcept
 					}
 					return;
 				}
+#endif
 				dm->phaseStepControl.InstanceControlLoop(dm->drive);
 #if !SINGLE_DRIVER
 				*dmp = dm->nextDM;

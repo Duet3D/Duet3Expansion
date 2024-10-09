@@ -63,6 +63,10 @@ bool DriveMovement::ScheduleFirstSegment() noexcept
 {
 	directionChanged = true;									// force the direction to be set up - this could be the first move or we may have switched between bed tramming and normal Z moves
 	const uint32_t now = StepTimer::GetMovementTimerTicks();
+	if (Platform::Debug(Module::Move))
+	{
+		debugPrintf("ScheduleFirstSegment() at %u", now);
+	}
 	if (NewSegment(now) != nullptr)
 	{
 		if (state == DMState::starting)
@@ -99,6 +103,10 @@ MoveSegment *DriveMovement::NewSegment(uint32_t now) noexcept
 		MoveSegment *seg = segments;				// capture volatile variable
 		if (seg == nullptr)
 		{
+			if (Platform::Debug(Module::Move))
+			{
+				debugPrintf("NewSegment(%u) idle\n", now);
+			}
 			segmentFlags.Init();
 			state = DMState::idle;					// if we have been round this loop already then we will have changed the state, so reset it to idle
 			return nullptr;
@@ -108,6 +116,10 @@ MoveSegment *DriveMovement::NewSegment(uint32_t now) noexcept
 
 		if ((int32_t)(seg->GetStartTime() - now) > (int32_t)MoveTiming::MaximumMoveStartAdvanceClocks)
 		{
+			if (Platform::Debug(Module::Move))
+			{
+				debugPrintf("NewSegment(%u) starting\n", now);
+			}
 			state = DMState::starting;				// the segment is not due to start for a while. To allow it to be changed meanwhile, generate an interrupt when it is due to start.
 			driversCurrentlyUsed = 0;				// don't generate a step on that interrupt
 			nextStepTime = seg->GetStartTime();		// this is when we want the interrupt
@@ -122,6 +134,10 @@ MoveSegment *DriveMovement::NewSegment(uint32_t now) noexcept
 #if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
 		if (stepMode != StepMode::stepDir)
 		{
+			if (Platform::Debug(Module::Move))
+			{
+				debugPrintf("NewSegment(%u) phaseStepping\n", now);
+			}
 			u = seg->CalcU();
 			state = DMState::phaseStepping;
 			return seg;

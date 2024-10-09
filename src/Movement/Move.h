@@ -416,11 +416,10 @@ inline __attribute__((always_inline)) bool Move::ScheduleNextStepInterrupt() noe
 {
 #if SINGLE_DRIVER
 	if (
-# if SUPPORT_CLOSED_LOOP
-		!dms[0].closedLoopControl.IsClosedLoopEnabled() &&
+# if SUPPORT_PHASE_STEPPING
+		dms[0].GetStepMode() == StepMode::stepDir &&
 # endif
-		dms[0].state >= DMState::firstMotionState
-	   )
+		dms[0].state >= DMState::firstMotionState)
 	{
 # if DEDICATED_STEP_TIMER
 		return StepTimer::ScheduleMovementCallbackFromIsr(dms[0].nextStepTime);
@@ -548,7 +547,7 @@ inline void Move::SetDirection(size_t driver, bool direction) noexcept
 inline void Move::InsertDM(DriveMovement *dm) noexcept
 {
 # if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
-	DriveMovement **dmp = dm->state == DMState::phaseStepping ? &phaseStepDMs : &activeDMs;
+	DriveMovement **dmp = dm->GetStepMode() != StepMode::stepDir ? &phaseStepDMs : &activeDMs;
 # else
 	DriveMovement **dmp = &activeDMs;
 # endif
