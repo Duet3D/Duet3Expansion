@@ -28,9 +28,6 @@
 
 #if SUPPORT_PHASE_STEPPING
 # include <Movement/PhaseStep.h>
-#endif
-
-#if SUPPORT_CLOSED_LOOP
 # include "StepperDrivers/TMC51xx.h"				// for SmartDrivers::GetMicrostepShift
 #endif
 
@@ -69,7 +66,7 @@ public:
 
 	void SetDirectionValue(size_t driver, bool dVal);
 	bool GetDirectionValue(size_t driver) const noexcept;
-#if SUPPORT_CLOSED_LOOP
+#if SUPPORT_PHASE_STEPPING
 	bool GetDirectionValueNoCheck(size_t driver) const noexcept { return directions[driver]; }
 #endif
 

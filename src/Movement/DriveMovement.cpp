@@ -65,7 +65,7 @@ bool DriveMovement::ScheduleFirstSegment() noexcept
 	const uint32_t now = StepTimer::GetMovementTimerTicks();
 	if (Platform::Debug(Module::Move))
 	{
-		debugPrintf("ScheduleFirstSegment() at %u", now);
+		debugPrintf("ScheduleFirstSegment() at %lu", now);
 	}
 	if (NewSegment(now) != nullptr)
 	{
@@ -105,7 +105,7 @@ MoveSegment *DriveMovement::NewSegment(uint32_t now) noexcept
 		{
 			if (Platform::Debug(Module::Move))
 			{
-				debugPrintf("NewSegment(%u) idle\n", now);
+				debugPrintf("NewSegment(%lu) idle\n", now);
 			}
 			segmentFlags.Init();
 			state = DMState::idle;					// if we have been round this loop already then we will have changed the state, so reset it to idle
@@ -118,7 +118,7 @@ MoveSegment *DriveMovement::NewSegment(uint32_t now) noexcept
 		{
 			if (Platform::Debug(Module::Move))
 			{
-				debugPrintf("NewSegment(%u) starting\n", now);
+				debugPrintf("NewSegment(%lu) starting\n", now);
 			}
 			state = DMState::starting;				// the segment is not due to start for a while. To allow it to be changed meanwhile, generate an interrupt when it is due to start.
 			driversCurrentlyUsed = 0;				// don't generate a step on that interrupt
@@ -136,7 +136,7 @@ MoveSegment *DriveMovement::NewSegment(uint32_t now) noexcept
 		{
 			if (Platform::Debug(Module::Move))
 			{
-				debugPrintf("NewSegment(%u) phaseStepping\n", now);
+				debugPrintf("NewSegment(%lu) phaseStepping\n", now);
 			}
 			u = seg->CalcU();
 			driversCurrentlyUsed = driversNormallyUsed;

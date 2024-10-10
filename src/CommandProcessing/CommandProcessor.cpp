@@ -598,6 +598,7 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 #if SUPPORT_DRIVERS
 		FilamentMonitor::GetDiagnostics(reply);
 #endif
+#if SUPPORT_PHASE_STEPPING
 		for (size_t driver = 0; driver < NumDrivers; driver++)
 		{
 			reply.catf("\nDriver[%u] StepMode: %u", driver, (size_t)moveInstance->GetStepMode(driver));
@@ -605,6 +606,7 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 			reply.catf(", ClosedLoopMode: %u", (size_t)moveInstance->GetClosedLoopMode(driver));
 #endif
 		}
+#endif
 		break;
 	}
 	return GCodeResult::ok;
@@ -705,10 +707,12 @@ void CommandProcessor::Spin()
 			rslt = moveInstance->SetMotorCurrents(buf->msg.multipleDrivesRequestFloat, buf->dataLength, replyRef);
 			break;
 
+#if SUPPORT_PHASE_STEPPING
 		case CanMessageType::setStepMode:
 			requestId = buf->msg.multipleDrivesRequestUint16.requestId;
 			rslt = moveInstance->SetStepModes(buf->msg.multipleDrivesRequestUint16, buf->dataLength, replyRef);
 			break;
+#endif
 
 		case CanMessageType::m569:
 			requestId = buf->msg.generic.requestId;

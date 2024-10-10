@@ -1766,9 +1766,9 @@ GCodeResult Move::ProcessM569(const CanMessageGeneric& msg, const StringRef& rep
 #if HAS_SMART_DRIVERS
 		// It's a smart driver, so print the parameters common to all modes, except for the position
 		const DriverMode dmode = SmartDrivers::GetDriverMode(drive);
-		const StepMode smode = GetStepMode(drive);
 		reply.catf(", mode %s", TranslateDriverMode(dmode));
 # if SUPPORT_CLOSED_LOOP
+		const StepMode smode = GetStepMode(drive);
 		if (smode == StepMode::closedLoop)
 		{
 			reply.catf(" (%s)", dms[drive].closedLoopControl.GetModeText());
@@ -2414,7 +2414,7 @@ bool Move::SetStepMode(size_t driver, StepMode mode, const StringRef& reply) noe
 
 	// If we are going from step dir to phase step, we need to update the phase offset so the calculated phase matches MSCNT
 #warning "Needs updating to handle closed loop transitions"
-#if 0
+#if 1
 	if (!dm->IsPhaseStepEnabled() && mode == StepMode::phase)
 	{
 		dm->phaseStepControl.SetPhaseOffset(driver, 0);												// Reset offset
@@ -2547,29 +2547,27 @@ void Move::PhaseStepControlLoop() noexcept
 			{
 				// Remove DM from phaseStepDMs
 				*dmp = dm->nextDM;
+				continue;
 			}
-			else
 #endif
-			{
-				dm->phaseStepControl.CalculateCurrentFraction();
+			dm->phaseStepControl.CalculateCurrentFraction();
 #if 0
-#warning "Need to implement this for homing multi motor axis
-				if (dm->driversCurrentlyUsed == 0)
+#warning "Need to implement this for homing multi motor axis"
+			if (dm->driversCurrentlyUsed == 0)
+			{
+				if (likely(dm->state > DMState::starting))
 				{
-					if (likely(dm->state > DMState::starting))
-					{
-						// Driver has been stopped (probably by Move::CheckEndstops() so we don't need to update it)
-						dm->phaseStepControl.UpdatePhaseOffset(dm->drive);
-					}
-					return;
+					// Driver has been stopped (probably by Move::CheckEndstops() so we don't need to update it)
+					dm->phaseStepControl.UpdatePhaseOffset(dm->drive);
 				}
+				return;
+			}
 #endif
 
-				dm->phaseStepControl.InstanceControlLoop(dm->drive);
+			dm->phaseStepControl.InstanceControlLoop(dm->drive);
 #if !SINGLE_DRIVER
-				*dmp = dm->nextDM;
+			dmp = &(dm->nextDM);
 #endif
-			}
 		}
 #if !SINGLE_DRIVER
 	}
