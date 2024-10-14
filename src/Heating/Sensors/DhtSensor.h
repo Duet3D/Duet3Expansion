@@ -76,6 +76,9 @@ public:
 	~DhtHumiditySensor() noexcept;
 
 	static constexpr const char *TypeName = "dhthumidity";
+
+private:
+	static SensorTypeDescriptor dhtHumidityDescriptor;
 };
 
 #endif
