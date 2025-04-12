@@ -196,6 +196,12 @@ GCodeResult LocalHeater::SwitchOn(const StringRef& reply) noexcept
 		return GCodeResult::error;
 	}
 
+	DoSwitchOn();
+	return GCodeResult::ok;
+}
+
+void LocalHeater::DoSwitchOn() noexcept
+{
 	const float target = min<float>(GetTargetTemperature() + extrusionTemperatureBoost, GetHighestTemperatureLimit());
 	const HeaterMode newMode = (temperature + TemperatureCloseEnough < target) ? HeaterMode::heating
 					: (temperature > target + TemperatureCloseEnough) ? HeaterMode::cooling
@@ -212,7 +218,6 @@ GCodeResult LocalHeater::SwitchOn(const StringRef& reply) noexcept
 		heatingFaultCount = 0;
 		mode = newMode;
 	}
-	return GCodeResult::ok;
 }
 
 // Switch off the specified heater. If in tuning mode, delete the array used to store tuning temperature readings.
@@ -286,10 +291,8 @@ void LocalHeater::Spin() noexcept
 
 			if (IsPidMode(mode) && extrusionTemperatureBoost != lastExtrusionTemperatureBoost)
 			{
-				// Calculate new heater mode to prevent heater fault due to exceededAllowedExcursion
-				mode = (temperature + TemperatureCloseEnough < targetTemperature) ? HeaterMode::heating
-						: (temperature > targetTemperature + TemperatureCloseEnough) ? HeaterMode::cooling
-							: HeaterMode::stable;
+				// Calculate new heater mode to prevent heater fault due to exceededAllowedExcursion or temperatureRisingTooSlowly
+				DoSwitchOn();
 				lastExtrusionTemperatureBoost = extrusionTemperatureBoost;
 			}
 
@@ -416,9 +419,13 @@ void LocalHeater::Spin() noexcept
 					}
 					else
 					{
-						iAccumulator = constrain<float>
-										(iAccumulator + (error * params.kP * params.recipTi * HeatSampleIntervalMillis * MillisToSeconds),
-											0.0, GetModel().GetMaxPwm());
+						const float errorToUse = error;
+						{
+							InterruptCriticalSectionLocker lock;          // avoid a race with tasks that implement feedforward
+							iAccumulator = constrain<float>
+											(iAccumulator + (errorToUse * params.kP * params.recipTi * HeatSampleIntervalMillis * MillisToSeconds),
+												0.0, GetModel().GetMaxPwm());
+						}
 						lastPwm = constrain<float>(pPlusD + iAccumulator, 0.0, GetModel().GetMaxPwm());
 					}
 

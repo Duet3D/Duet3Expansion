@@ -50,6 +50,7 @@ protected:
 	GCodeResult UpdateModel(const StringRef& reply) noexcept override;	// Called when the heater model has been changed
 
 private:
+	void DoSwitchOn() noexcept;
 	void SetHeater(float power) const noexcept;					// Power is a fraction in [0,1]
 	TemperatureError ReadTemperature() noexcept;				// Read and store the temperature of this heater
 	void DoTuningStep() noexcept;								// Called on each temperature sample when auto tuning
