@@ -420,13 +420,14 @@ void InputMonitor::UpdateState(bool newState) noexcept
 			const uint32_t age = now - p->whenLastSent;
 			if (age >= p->minInterval)
 			{
-				bool added;
+				bool monitorState;
 				{
-					InterruptCriticalSectionLocker ilock;
+					AtomicCriticalSectionLocker ilock;
 					p->sendDue = false;
-					added = msg->AddEntry(p->handle, p->GetAnalogValue(), p->state);
+					monitorState = p->state;
 				}
-				if (added)
+
+				if (msg->AddEntry(p->handle, p->GetAnalogValue(), monitorState))
 				{
 					p->whenLastSent = now;
 				}
