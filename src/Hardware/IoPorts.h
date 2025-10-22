@@ -17,7 +17,6 @@ enum class PinAccess : int
 {
 	read,
 	readWithPullup_InternalUseOnly,
-	readNoDebounce,
 	readAnalog,
 	write0,
 	write1,
@@ -131,7 +130,8 @@ protected:
 	uint8_t hardwareInvert : 1,								// true if the hardware includes inversion
 			totalInvert : 1,								// true if the value should be inverted when reading/writing the pin
 			isSharedInput : 1,								// true if we are using this pin as a shared input
-			alternateConfig : 1;							// true if we are using the alternate configuration of this pin, e.g. SDADC instead of ADC
+			alternateConfig : 1,							// true if we are using the alternate configuration of this pin, e.g. SDADC instead of ADC
+			debounce : 1;									// true if debouncing was requested, if this pin is an input
 
 	static PinUsedBy portUsedBy[NumPins];					// the list of what each logical port is used by
 	static int8_t logicalPinModes[NumPins];					// what mode each logical pin is set to - would ideally be class PinMode not int8_t

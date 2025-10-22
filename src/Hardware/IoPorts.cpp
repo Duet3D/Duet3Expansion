@@ -130,7 +130,6 @@ bool IoPort::SetMode(PinAccess access) noexcept
 		break;
 
 	case PinAccess::read:
-	case PinAccess::readNoDebounce:
 	default:
 		desiredMode = INPUT;
 		break;
@@ -263,6 +262,7 @@ bool IoPort::Allocate(const char *pn, const StringRef& reply, PinUsedBy neededFo
 
 	bool inverted = false;
 	alternateConfig = false;
+	debounce = false;
 	for (;;)
 	{
 		if (*pn == '!')
@@ -279,6 +279,10 @@ bool IoPort::Allocate(const char *pn, const StringRef& reply, PinUsedBy neededFo
 		else if (*pn == '*')
 		{
 			alternateConfig = true;
+		}
+		else if (*pn == '~')
+		{
+			debounce = true;
 		}
 		else
 		{
@@ -362,11 +366,11 @@ void IoPort::AppendBasicDetails(const StringRef& str) const noexcept
 		AppendPinName(str);
 		if (logicalPinModes[pin] == INPUT_PULLUP)
 		{
-			str.cat(", pullup enabled");
+			str.catf(", pullup enabled");
 		}
-		else if (logicalPinModes[pin] == INPUT)
+		if ((logicalPinModes[pin] == INPUT_PULLUP || logicalPinModes[pin] == INPUT) && debounce)
 		{
-			str.cat(", pullup disabled");
+			str.cat(", debounce enabled");
 		}
 	}
 	else
@@ -535,7 +539,6 @@ void IoPort::AppendPinName(const StringRef& str, bool includeBoardAddress) const
 	{
 	case PinAccess::read:			return "digital read";
 	case PinAccess::readWithPullup_InternalUseOnly:	return "digital read (pullup resistor enabled)";
-	case PinAccess::readNoDebounce:	return "digital read (no debouncing)";
 	case PinAccess::readAnalog:		return "analog read";
 	case PinAccess::write0:			return "write (initially low)";
 	case PinAccess::write1:			return "write (initially high)";
