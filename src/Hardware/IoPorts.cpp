@@ -164,7 +164,7 @@ bool IoPort::SetMode(PinAccess access) noexcept
 			{
 				return false;
 			}
-			IoPort::SetPinMode(pin, desiredMode, access == PinAccess::read);		// enable debounce if an external input
+			IoPort::SetPinMode(pin, desiredMode, debounce);
 		}
 		logicalPinModes[pin] = (int8_t)desiredMode;
 	}
