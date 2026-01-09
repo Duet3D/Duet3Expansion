@@ -753,13 +753,21 @@ extern "C" [[noreturn]] void CanClockLoop(void *) noexcept
 	for (;;)
 	{
 		CanMessageBuffer buf;
-		can0dev->ReceiveMessage(
+		bool status = can0dev->ReceiveMessage(
 #if RP2040
 								CanDevice::RxBufferNumber::fifo1,
 #else
 								CanDevice::RxBufferNumber::buffer0,
 #endif
-									TaskBase::TimeoutUnlimited, &buf);
+									500, &buf);  // we expect a new sync message every 211ms
+		if (status == false)
+		{
+			if (Platform::Debug(Module::CAN))
+			{
+				debugPrintf("Timeout while waiting for CAN time sync message\n");
+			}
+			continue;
+		}
 		if (buf.id.MsgType() == CanMessageType::timeSync
 #if defined(ATEIO) || defined(ATECM)
 			&& (buf.id.Src() == CanId::ATEMasterAddress))			// ATE boards only respond to the ATE master, because a main board under test may also transmit when it starts up
