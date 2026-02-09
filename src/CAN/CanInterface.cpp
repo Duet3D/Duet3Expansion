@@ -377,6 +377,17 @@ CanMessageBuffer *CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf) no
 		{
 #if SUPPORT_DRIVERS
 		case CanMessageType::movementLinearShaped:
+			{
+				const CanMessageMovementLinearShaped& msg = buf->msg.moveLinearShaped;
+				const size_t minLength = sizeof(msg) - sizeof(msg.perDrive);
+				const size_t expectedLength = minLength + (size_t)msg.numDrivers * sizeof(msg.perDrive[0]);
+				if (msg.numDrivers == 0 || msg.numDrivers > MaxLinearDriversPerCanSlave || buf->dataLength < expectedLength)
+				{
+					++oosMessagesOther;
+					break;
+				}
+			}
+
 			// Check for duplicate and out-of-sequence message
 			// We can get out-of-sequence messages because of a bug in the CAN hardware; so use only the sequence number to detect duplicates
 			{

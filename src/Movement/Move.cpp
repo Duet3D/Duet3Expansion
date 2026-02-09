@@ -555,7 +555,8 @@ bool Move::AddMove(const CanMessageMovementLinearShaped& msg) noexcept
 				const float extrusionRequested = msg.perDrive[drive].extrusion;
 				if (extrusionRequested != 0.0)
 				{
-					AddLinearSegments(drive, msg.whenToExecute, params, extrusionRequested, segFlags.AddIsExtruder(), msg.usePressureAdvance);
+					const float pressureAdvanceClocks = msg.usePressureAdvance ? msg.pressureAdvanceClocks : 0.0;
+					AddLinearSegments(drive, msg.whenToExecute, params, extrusionRequested, segFlags.AddIsExtruder(), pressureAdvanceClocks);
 				}
 			}
 			else
@@ -563,7 +564,7 @@ bool Move::AddMove(const CanMessageMovementLinearShaped& msg) noexcept
 				const float delta = (float)msg.perDrive[drive].steps;
 				if (delta != 0.0)
 				{
-					AddLinearSegments(drive, msg.whenToExecute, params, delta, segFlags, false);
+					AddLinearSegments(drive, msg.whenToExecute, params, delta, segFlags, 0.0);
 				}
 			}
 		}
@@ -1023,7 +1024,7 @@ finished:
 
 // Add some linear segments to be executed by a driver, taking account of possible input shaping. This is used by linear axes and by extruders.
 // We never add a segment that starts earlier than any existing segments, but we may add segments when there are none already.
-void Move::AddLinearSegments(size_t drive, uint32_t startTime, const PrepParams& params, motioncalc_t steps, MovementFlags moveFlags, bool usePressureAdvance) noexcept
+void Move::AddLinearSegments(size_t drive, uint32_t startTime, const PrepParams& params, motioncalc_t steps, MovementFlags moveFlags, float pressureAdvanceClocks) noexcept
 {
 	EnableDrive(drive);
 
@@ -1118,7 +1119,7 @@ void Move::AddLinearSegments(size_t drive, uint32_t startTime, const PrepParams&
 	else
 	{
 		accelDistance = (params.decelClocks + params.steadyClocks == 0) ? totalDistance : (motioncalc_t)params.accelDistance;
-		accelPressureAdvance = (usePressureAdvance) ? (motioncalc_t)(params.accelClocks * dm.extruderShaper.GetKclocks()) : (motioncalc_t)0.0;
+		accelPressureAdvance = (moveFlags.isExtruder && !moveFlags.nonPrintingMove) ? (motioncalc_t)(params.accelClocks * pressureAdvanceClocks) : (motioncalc_t)0.0;
 	}
 
 	motioncalc_t decelDistance, decelPressureAdvance;
@@ -1130,7 +1131,7 @@ void Move::AddLinearSegments(size_t drive, uint32_t startTime, const PrepParams&
 	else
 	{
 		decelDistance = totalDistance - ((params.steadyClocks == 0) ? accelDistance : (motioncalc_t)params.decelStartDistance);
-		decelPressureAdvance = (usePressureAdvance) ? (motioncalc_t)(params.decelClocks * dm.extruderShaper.GetKclocks()) : (motioncalc_t)0.0;
+		decelPressureAdvance = (moveFlags.isExtruder && !moveFlags.nonPrintingMove) ? (motioncalc_t)(params.decelClocks * pressureAdvanceClocks) : (motioncalc_t)0.0;
 	}
 
 	const motioncalc_t steadyDistance = (params.steadyClocks == 0) ? (motioncalc_t)0.0 : totalDistance - accelDistance - decelDistance;

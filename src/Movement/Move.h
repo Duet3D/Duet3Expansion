@@ -188,7 +188,7 @@ private:
 	bool AddMove(const CanMessageMovementLinearShaped& msg) noexcept;				// Add a new move received via CAN
 
 	MoveSegment *AddSegment(MoveSegment *list, uint32_t startTime, uint32_t duration, motioncalc_t distance, motioncalc_t a, MovementFlags moveFlags, motioncalc_t pressureAdvance) noexcept;
-	void AddLinearSegments(size_t logicalDrive, uint32_t startTime, const PrepParams& params, motioncalc_t steps, MovementFlags moveFlags, bool usePressureAdvance) noexcept;
+	void AddLinearSegments(size_t logicalDrive, uint32_t startTime, const PrepParams& params, motioncalc_t steps, MovementFlags moveFlags, float pressureAdvanceClocks) noexcept;
 
 #if CHECK_SEGMENTS
 	void CheckSegment(unsigned int line, MoveSegment *seg) noexcept;
