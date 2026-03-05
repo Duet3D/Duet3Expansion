@@ -471,6 +471,100 @@ CanMessageBuffer *CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf) no
 			Platform::OnProcessingCanMessage();
 			return nullptr;
 
+		case CanMessageType::movementLinearShapedV2:
+			{
+				const CanMessageMovementLinearShapedV2& msg = buf->msg.moveLinearShapedV2;
+				const size_t minLength = sizeof(msg) - sizeof(msg.perDrive);
+				const size_t expectedLength = minLength + (size_t)msg.numDrivers * sizeof(msg.perDrive[0]);
+				if (msg.numDrivers == 0 || msg.numDrivers > CanMessageMovementLinearShapedV2::MaxV2Drivers || buf->dataLength < expectedLength)
+				{
+					++oosMessagesOther;
+					break;
+				}
+			}
+
+			// Check for duplicate and out-of-sequence message
+			{
+				const int8_t seq = buf->msg.moveLinearShapedV2.seq;
+				if (((seq + 1) & CanMessageMovementLinearShapedV2::SeqMask) == expectedSeq)
+				{
+					++duplicateMotionMessages;
+					break;
+				}
+
+				lastMotionMessageScheduledTime = buf->msg.moveLinearShapedV2.whenToExecute;
+				lastMotionMessageReceivedAt = millis();
+
+				if (seq != expectedSeq && expectedSeq != 0xFF)
+				{
+					switch ((seq - expectedSeq) & CanMessageMovementLinearShapedV2::SeqMask)
+					{
+					case 1:
+						++oosMessages1Ahead;
+						break;
+
+					case 2:
+						++oosMessages2Ahead;
+						break;
+
+					case 0x7E:
+						++oosMessages2Behind;
+						break;
+
+					default:
+						++oosMessagesOther;
+						break;
+					}
+				}
+
+				expectedSeq = (seq + 1) & CanMessageMovementLinearShapedV2::SeqMask;
+			}
+
+			// If we are not synced then don't accept any movement messages, because they are likely just to get queued and not executed within a reasonable time
+			if (StepTimer::IsSynced())
+			{
+				// Track how much processing delay there was
+				{
+#if RP2040 && !USE_SPICAN
+					// RP2040 uses the low 16 bits of the step counter for the time stamp
+					const uint16_t timeStampNow = StepTimer::GetTimerTicks();
+					const uint32_t timeStampDelay = (uint32_t)((timeStampNow - buf->timeStamp) & 0xFFFF);	// the delay in step clocks
+#else
+					const uint16_t timeStampNow = CanInterface::GetTimeStampCounter();
+
+					// The time stamp counter runs at the CAN normal bit rate, but the step clock runs at 48MHz/64. Calculate the delay to in step clocks.
+					// Datasheet suggests that on the SAMC21 only 15 bits of timestamp counter are readable, but Microchip confirmed this is a documentation error (case 00625843)
+					const uint32_t timeStampDelay = ((uint32_t)((timeStampNow - buf->timeStamp) & 0xFFFF) * CanInterface::GetTimeStampPeriod()) >> 6;	// timestamp counter is 16 bits
+#endif
+					if (timeStampDelay > maxMotionProcessingDelay)
+					{
+						maxMotionProcessingDelay = timeStampDelay;
+					}
+				}
+
+				// Track how much we are given moves in advance
+				{
+					const int32_t advance = (int32_t)(buf->msg.moveLinearShapedV2.whenToExecute - StepTimer::GetMovementTimerTicks());
+					if (advance < minAdvance)
+					{
+						minAdvance = advance;
+					}
+					if (advance > maxAdvance)
+					{
+						maxAdvance = advance;
+					}
+				}
+
+				PendingMoves.AddMessage(buf);
+			}
+			else
+			{
+				++messagesIgnored;
+			}
+
+			Platform::OnProcessingCanMessage();
+			return nullptr;
+
 		case CanMessageType::stopMovement:
 			moveInstance->StopDrivers(buf->msg.stopMovement.whichDrives);
 # if 0
@@ -644,6 +738,8 @@ bool CanInterface::SendAnnounce(CanMessageBuffer *buf) noexcept
 	msg->timeSinceStarted = millis();
 	msg->numDrivers = NumDrivers;
 	msg->usesUf2Binary = BOARD_USES_UF2_BINARY;
+	msg->supportsMovementPaSnapshot = 1;
+	msg->supportsMovementLinearShapedV2 = 1;
 	msg->zero = 0;
 	memcpy(msg->uniqueId, Platform::GetUniqueId().GetRaw(), sizeof(msg->uniqueId));
 	// Note, board type name, firmware version, firmware date and firmware time are limited to 43 characters in the new format
