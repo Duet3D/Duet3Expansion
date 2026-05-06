@@ -1,0 +1,122 @@
+{
+    "version": "2.0.0",
+    "inputs": [
+        {
+            "id": "target",
+            "type": "pickString",
+            "description": "Board to build for",
+            "options": [
+                {
+                    "label": "EXP3HC",
+                    "value": "EXP3HC"
+                },
+                {
+                    "label": "EXP1XD",
+                    "value": "EXP1XD"
+                },
+                {
+                    "label": "EXP1HCL",
+                    "value": "EXP1HCL"
+                },
+                {
+                    "label": "TOOL1LC",
+                    "value": "TOOL1LC"
+                },
+                {
+                    "label": "SAMMYC21",
+                    "value": "SAMMYC21"
+                },
+                {
+                    "label": "SZP",
+                    "value": "SZP"
+                },
+                {
+                    "label": "M23CL",
+                    "value": "M23CL"
+                },
+                {
+                    "label": "F3PTB",
+                    "value": "F3PTB"
+                },
+                {
+                    "label": "TOOL1RR",
+                    "value": "TOOL1RR"
+                },
+                {
+                    "label": "TOOLINDX",
+                    "value": "TOOLINDX"
+                },
+                {
+                    "label": "All",
+                    "value": "all"
+                }
+            ]
+        },
+        {
+            "id": "buildType",
+            "type": "pickString",
+            "description": "Build type",
+            "options": [
+                {
+                    "label": "Debug",
+                    "value": "DEBUG=1"
+                },
+                {
+                    "label": "Release",
+                    "value": ""
+                }
+            ]
+        },
+        {
+            "id": "duetHost",
+            "type": "promptString",
+            "description": "Duet host or IP",
+            "default": "duet3.local"
+        },
+        {
+            "id": "duetPassword",
+            "type": "promptString",
+            "description": "Duet HTTP password (leave empty if disabled)",
+            "password": true,
+            "default": ""
+        }
+    ],
+    "tasks": [
+        {
+            "label": "Build Selected Target",
+            "type": "shell",
+            "command": "make ${input:buildType} ${input:target} -j",
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "Clean All",
+            "type": "shell",
+            "command": "make clean-all",
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            }
+        },
+        {
+            "label": "Init Submodules",
+            "type": "shell",
+            "command": "make init-submodules",
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            }
+        }
+    ]
+}
