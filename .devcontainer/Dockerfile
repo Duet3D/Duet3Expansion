@@ -15,10 +15,10 @@ RUN apt-get update \
     && apt-get -y install --no-install-recommends ca-certificates curl default-jre tar xz-utils \
     && rm -rf /var/lib/apt/lists/*
 
-RUN echo "Installing Eclipse ${ECLIPSE_RELEASE}..." \
-    && chmod +x /tmp/install-eclipse.sh \
-    && /tmp/install-eclipse.sh \
-    && rm -f /tmp/install-eclipse.sh
+# RUN echo "Installing Eclipse ${ECLIPSE_RELEASE}..." \
+#     && chmod +x /tmp/install-eclipse.sh \
+#     && /tmp/install-eclipse.sh \
+#     && rm -f /tmp/install-eclipse.sh
 
 RUN echo "Installing ARM GNU Toolchain version ${ARM_GNU_TOOLCHAIN_VERSION}..." \
     && chmod +x /tmp/install-arm-gcc.sh \

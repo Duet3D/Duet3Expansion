@@ -2,8 +2,36 @@
 # Builds firmware for various Duet 3 expansion boards
 
 # Cross-compiler toolchain (relative to project root)
-#CROSS_COMPILE ?= ../arm-gnu-toolchain-13.2.Rel1-x86_64-arm-none-eabi/bin/arm-none-eabi-
-CROSS_COMPILE ?= ../arm-gnu-toolchain-15.2.rel1-x86_64-arm-none-eabi/bin/arm-none-eabi-
+ARM_GNU_TOOLCHAIN_VERSION ?= 15.2.rel1
+HOST_OS_RAW := $(shell uname -s)
+HOST_ARCH_RAW := $(shell uname -m)
+
+ifeq ($(HOST_OS_RAW),Linux)
+HOST_OS := linux
+else ifeq ($(HOST_OS_RAW),Darwin)
+HOST_OS := macos
+else
+HOST_OS := $(HOST_OS_RAW)
+endif
+
+ifeq ($(HOST_ARCH_RAW),aarch64)
+ARM_GNU_TOOLCHAIN_HOST_ARCH := aarch64
+else ifeq ($(HOST_ARCH_RAW),arm64)
+ARM_GNU_TOOLCHAIN_HOST_ARCH := aarch64
+else ifeq ($(HOST_ARCH_RAW),x86_64)
+ARM_GNU_TOOLCHAIN_HOST_ARCH := x86_64
+else ifeq ($(HOST_ARCH_RAW),amd64)
+ARM_GNU_TOOLCHAIN_HOST_ARCH := x86_64
+else
+ARM_GNU_TOOLCHAIN_HOST_ARCH := $(HOST_ARCH_RAW)
+endif
+
+CRC_APPENDER_DIR := $(abspath Tools/CrcAppender/$(HOST_OS)-$(ARM_GNU_TOOLCHAIN_HOST_ARCH))
+ifneq ($(wildcard $(CRC_APPENDER_DIR)/CrcAppender),)
+export PATH := $(CRC_APPENDER_DIR):$(PATH)
+endif
+
+CROSS_COMPILE ?= $(abspath ../arm-gnu-toolchain-$(ARM_GNU_TOOLCHAIN_VERSION)-$(ARM_GNU_TOOLCHAIN_HOST_ARCH)-arm-none-eabi/bin/arm-none-eabi-)
 export CROSS_COMPILE
 
 # Toolchain programs
@@ -16,9 +44,8 @@ OBJCOPY := $(CROSS_COMPILE)objcopy
 SIZE := $(CROSS_COMPILE)size
 export CC CXX AS AR LD OBJCOPY SIZE
 
-# Workspace root
-WORKSPACE := ..
-export WORKSPACE
+# External library root
+LIBRARIES_DIR ?= libraries
 
 # Quiet build support (Linux kernel style)
 # Use V=1 for verbose output
@@ -34,10 +61,10 @@ export Q VERBOSE
 # Debug build support
 # Use DEBUG=1 to build with debug symbols and reduced optimization
 ifeq ($(DEBUG),1)
-	DEBUG_FLAGS := -g3 -Og
-	$(info Building with debug symbols enabled)
+DEBUG_FLAGS := -g3 -Og -DDEBUG
+$(info Building with debug symbols enabled)
 else
-	DEBUG_FLAGS :=
+DEBUG_FLAGS :=
 endif
 export DEBUG_FLAGS
 
@@ -71,36 +98,29 @@ help:
 	$(Q)echo ""
 	$(Q)echo "Other targets:"
 	$(Q)echo "  all                 - Build all configurations"
+	$(Q)echo "  init-submodules     - Initialize/update pinned library submodules"
 	$(Q)echo "  clean               - Clean all build outputs"
 	$(Q)echo "  clean-all           - Clean all build outputs and libraries"
 	$(Q)echo "  clean-<config>      - Clean specific configuration"
 	$(Q)echo "  test-toolchain      - Verify toolchain is accessible"
 	$(Q)echo ""
 	$(Q)echo "Environment variables:"
+	$(Q)echo "  ARM_GNU_TOOLCHAIN_VERSION - Toolchain version (default: $(ARM_GNU_TOOLCHAIN_VERSION))"
 	$(Q)echo "  CROSS_COMPILE       - Toolchain prefix (default: $(CROSS_COMPILE))"
 	$(Q)echo "  V=1                 - Enable verbose build output"
 	$(Q)echo "  DEBUG=1             - Build with debug symbols (-g3 -Og)"
 	$(Q)echo ""
 	$(Q)echo "Examples:"
+	$(Q)echo "  make init-submodules                      # Prepare library submodules after clone"
 	$(Q)echo "  make EXP3HC                                # Build EXP3HC firmware"
 	$(Q)echo "  make EXP1XD V=1                            # Build with verbose output"
+	$(Q)echo "  make EXP1HCL DEBUG=1                       # Build with debug symbols"
+	$(Q)echo "  make CROSS_COMPILE=/path/to/arm-none-eabi- EXP3HC  # Custom toolchain"
+	$(Q)echo ""
+
 # Build all configurations
 .PHONY: all
-all:
-	$(Q)$(MAKE) EXP3HC
-	$(Q)$(MAKE) EXP1XD
-	$(Q)$(MAKE) EXP1HCL
-	$(Q)$(MAKE) TOOL1LC
-	$(Q)$(MAKE) SAMMYC21
-	$(Q)$(MAKE) SZP
-	$(Q)$(MAKE) M23CL
-	$(Q)$(MAKE) F3PTB
-	$(Q)$(MAKE) TOOL1RR
-	$(Q)$(MAKE) TOOLINDX
-	$(Q)$(MAKE) EXP1XD
-	$(Q)$(MAKE) EXP1HCL
-	$(Q)$(MAKE) TOOL1LC
-	$(Q)$(MAKE) SAMMYC21
+all: $(CONFIGS)
 
 # Verify toolchain
 .PHONY: test-toolchain
@@ -115,88 +135,91 @@ test-toolchain:
 	$(Q)$(CC) --version | head -n 1
 	$(Q)echo "Toolchain OK"
 
+SUBMODULE_PATHS := \
+	$(LIBRARIES_DIR)/CANlib \
+	$(LIBRARIES_DIR)/CoreN2G \
+	$(LIBRARIES_DIR)/FreeRTOS \
+	$(LIBRARIES_DIR)/RRFLibraries \
+	$(LIBRARIES_DIR)/WiFiSocketServerRTOS \
+	$(LIBRARIES_DIR)/LibTinyusb \
+	$(LIBRARIES_DIR)/LibMbedTls
+
+LIBRARY_ARTIFACTS := \
+	$(LIBRARIES_DIR)/CoreN2G/SAME5x_CAN_RTOS/libCoreN2G.a \
+	$(LIBRARIES_DIR)/CoreN2G/SAMC21_CAN_RTOS/libCoreN2G.a \
+	$(LIBRARIES_DIR)/RRFLibraries/SAME51_RTOS/libRRFLibraries.a \
+	$(LIBRARIES_DIR)/RRFLibraries/SAMC21_RTOS/libRRFLibraries.a \
+	$(LIBRARIES_DIR)/FreeRTOS/SAME51/libFreeRTOS.a \
+	$(LIBRARIES_DIR)/FreeRTOS/SAMC21/libFreeRTOS.a \
+	$(LIBRARIES_DIR)/CANlib/SAME51_RTOS/libCANlib.a \
+	$(LIBRARIES_DIR)/CANlib/SAMC21_RTOS/libCANlib.a \
+	$(LIBRARIES_DIR)/Qfplib-M0-full/SAMC21/libQfplib-M0-full.a
+
+# Initialize library submodules, including nested submodules such as LibTinyusb/src/tinyusb.
+# Keep this explicit so normal builds do not disturb local work inside the submodules.
+.PHONY: init-submodules
+init-submodules:
+	$(Q)echo "Initializing library submodules..."
+	$(Q)git submodule update --init --recursive -- $(SUBMODULE_PATHS)
+
+# Build library dependencies. Assumes submodules have already been initialized.
+.PHONY: build-libs
+build-libs: $(LIBRARY_ARTIFACTS)
+	$(Q)echo "Building library dependencies..."
+	$(Q)echo "Library dependencies built successfully"
+
 # Common library build rules (to avoid duplicate recipes in board makefiles)
-$(WORKSPACE)/CoreN2G/SAME5x_CAN_RTOS/libCoreN2G.a:
+# These are marked as .PHONY so Make always checks if they need rebuilding
+.PHONY: $(LIBRARY_ARTIFACTS)
+
+$(LIBRARIES_DIR)/CoreN2G/SAME5x_CAN_RTOS/libCoreN2G.a:
 	$(Q)echo "  BUILD   CoreN2G/SAME5x_CAN_RTOS"
-	$(Q)$(MAKE) $(VERBOSE) -C $(WORKSPACE)/CoreN2G SAME5x_CAN_RTOS
+	$(Q)$(MAKE) $(VERBOSE) -C $(LIBRARIES_DIR)/CoreN2G SAME5x_CAN_RTOS
 
-$(WORKSPACE)/RRFLibraries/SAME51_RTOS/libRRFLibraries.a:
+$(LIBRARIES_DIR)/RRFLibraries/SAME51_RTOS/libRRFLibraries.a:
 	$(Q)echo "  BUILD   RRFLibraries/SAME51_RTOS"
-	$(Q)$(MAKE) $(VERBOSE) -C $(WORKSPACE)/RRFLibraries SAME51_RTOS
+	$(Q)$(MAKE) $(VERBOSE) -C $(LIBRARIES_DIR)/RRFLibraries SAME51_RTOS
 
-$(WORKSPACE)/FreeRTOS/SAME51/libFreeRTOS.a:
+$(LIBRARIES_DIR)/FreeRTOS/SAME51/libFreeRTOS.a:
 	$(Q)echo "  BUILD   FreeRTOS/SAME51"
-	$(Q)$(MAKE) $(VERBOSE) -C $(WORKSPACE)/FreeRTOS SAME51 FREERTOS_CONFIG_DIR="$(CURDIR)/src"
+	$(Q)$(MAKE) $(VERBOSE) -C $(LIBRARIES_DIR)/FreeRTOS SAME51 FREERTOS_CONFIG_DIR="$(CURDIR)/src"
 
-$(WORKSPACE)/CANlib/SAME51_RTOS/libCANlib.a:
+$(LIBRARIES_DIR)/CANlib/SAME51_RTOS/libCANlib.a:
 	$(Q)echo "  BUILD   CANlib/SAME51_RTOS"
-	$(Q)$(MAKE) $(VERBOSE) -C $(WORKSPACE)/CANlib SAME51_RTOS
+	$(Q)$(MAKE) $(VERBOSE) -C $(LIBRARIES_DIR)/CANlib SAME51_RTOS
 
-$(WORKSPACE)/CoreN2G/SAMC21_CAN_RTOS/libCoreN2G.a:
+$(LIBRARIES_DIR)/CoreN2G/SAMC21_CAN_RTOS/libCoreN2G.a:
 	$(Q)echo "  BUILD   CoreN2G/SAMC21_CAN_RTOS"
-	$(Q)$(MAKE) $(VERBOSE) -C $(WORKSPACE)/CoreN2G SAMC21_CAN_RTOS
+	$(Q)$(MAKE) $(VERBOSE) -C $(LIBRARIES_DIR)/CoreN2G SAMC21_CAN_RTOS
 
-$(WORKSPACE)/RRFLibraries/SAMC21_RTOS/libRRFLibraries.a:
+$(LIBRARIES_DIR)/RRFLibraries/SAMC21_RTOS/libRRFLibraries.a:
 	$(Q)echo "  BUILD   RRFLibraries/SAMC21_RTOS"
-	$(Q)$(MAKE) $(VERBOSE) -C $(WORKSPACE)/RRFLibraries SAMC21_RTOS
+	$(Q)$(MAKE) $(VERBOSE) -C $(LIBRARIES_DIR)/RRFLibraries SAMC21_RTOS
 
-$(WORKSPACE)/FreeRTOS/SAMC21/libFreeRTOS.a:
+$(LIBRARIES_DIR)/FreeRTOS/SAMC21/libFreeRTOS.a:
 	$(Q)echo "  BUILD   FreeRTOS/SAMC21"
-	$(Q)$(MAKE) $(VERBOSE) -C $(WORKSPACE)/FreeRTOS SAMC21 FREERTOS_CONFIG_DIR="$(CURDIR)/src"
+	$(Q)$(MAKE) $(VERBOSE) -C $(LIBRARIES_DIR)/FreeRTOS SAMC21 FREERTOS_CONFIG_DIR="$(CURDIR)/src"
 
-$(WORKSPACE)/CANlib/SAMC21_RTOS/libCANlib.a:
+$(LIBRARIES_DIR)/CANlib/SAMC21_RTOS/libCANlib.a:
 	$(Q)echo "  BUILD   CANlib/SAMC21_RTOS"
-	$(Q)$(MAKE) $(VERBOSE) -C $(WORKSPACE)/CANlib SAMC21_RTOS
+	$(Q)$(MAKE) $(VERBOSE) -C $(LIBRARIES_DIR)/CANlib SAMC21_RTOS
 
-$(WORKSPACE)/Qfplib-M0-full/SAMC21/libQfplib-M0-full.a:
+$(LIBRARIES_DIR)/Qfplib-M0-full/SAMC21/libQfplib-M0-full.a:
 	$(Q)echo "  BUILD   Qfplib-M0-full/SAMC21"
-	$(Q)$(MAKE) $(VERBOSE) -C $(WORKSPACE)/Qfplib-M0-full SAMC21
+	$(Q)$(MAKE) $(VERBOSE) -C $(LIBRARIES_DIR)/Qfplib-M0-full SAMC21
 
-# Include the specific makefile based on the target
-# Only include one at a time to avoid conflicts
-ifneq ($(MAKECMDGOALS),)
-ifneq ($(MAKECMDGOALS),all)
-ifneq ($(MAKECMDGOALS),clean)
-ifneq ($(MAKECMDGOALS),help)
-ifneq ($(MAKECMDGOALS),test-toolchain)
-ifeq ($(findstring clean-,$(MAKECMDGOALS)),)
-# Include only the makefile for the requested target
-ifeq ($(MAKECMDGOALS),EXP1HCL)
+# Include all board makefiles. They bind key variables target-specifically,
+# so this is safe even when multiple boards are built in one invocation.
 -include Makefiles/EXP1HCL.mk
-endif
-ifeq ($(MAKECMDGOALS),EXP1XD)
 -include Makefiles/EXP1XD.mk
-endif
-ifeq ($(MAKECMDGOALS),EXP3HC)
 -include Makefiles/EXP3HC.mk
-endif
-ifeq ($(MAKECMDGOALS),F3PTB)
 -include Makefiles/F3PTB.mk
-endif
-ifeq ($(MAKECMDGOALS),M23CL)
 -include Makefiles/M23CL.mk
-endif
-ifeq ($(MAKECMDGOALS),SAMMYC21)
 -include Makefiles/SAMMYC21.mk
-endif
-ifeq ($(MAKECMDGOALS),SZP)
 -include Makefiles/SZP.mk
-endif
-ifeq ($(MAKECMDGOALS),TOOL1LC)
 -include Makefiles/TOOL1LC.mk
-endif
-ifeq ($(MAKECMDGOALS),TOOL1RR)
 -include Makefiles/TOOL1RR.mk
-endif
-ifeq ($(MAKECMDGOALS),TOOLINDX)
 -include Makefiles/TOOLINDX.mk
-endif
-endif
-endif
-endif
-endif
-endif
-endif
 
 # Generic clean target
 .PHONY: clean
@@ -214,9 +237,9 @@ clean:
 .PHONY: clean-all
 clean-all: clean
 	$(Q)echo "Cleaning library dependencies..."
-	$(Q)$(MAKE) $(VERBOSE) -C $(WORKSPACE)/FreeRTOS clean
-	$(Q)$(MAKE) $(VERBOSE) -C $(WORKSPACE)/CoreN2G clean
-	$(Q)$(MAKE) $(VERBOSE) -C $(WORKSPACE)/RRFLibraries clean
-	$(Q)$(MAKE) $(VERBOSE) -C $(WORKSPACE)/CANlib clean
-	$(Q)$(MAKE) $(VERBOSE) -C $(WORKSPACE)/Qfplib-M0-full clean
+	$(Q)$(MAKE) $(VERBOSE) -C $(LIBRARIES_DIR)/FreeRTOS clean
+	$(Q)$(MAKE) $(VERBOSE) -C $(LIBRARIES_DIR)/CoreN2G clean
+	$(Q)$(MAKE) $(VERBOSE) -C $(LIBRARIES_DIR)/RRFLibraries clean
+	$(Q)$(MAKE) $(VERBOSE) -C $(LIBRARIES_DIR)/CANlib clean
+	$(Q)$(MAKE) $(VERBOSE) -C $(LIBRARIES_DIR)/Qfplib-M0-full clean
 	$(Q)echo "Clean all complete"
