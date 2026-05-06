@@ -242,7 +242,7 @@ Example output names for `EXP3HC`:
 - `EXP3HC/Duet3Firmware_EXP3HC.bin`
 - `EXP3HC/Duet3Firmware_EXP3HC.map`
 
-The build also attempts to run `CrcAppender` on the `.bin` file when available.
+The build requires `CrcAppender` and fails if it is not available on `PATH`.
 
 ---
 

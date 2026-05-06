@@ -184,11 +184,11 @@ $(BIN): $(ELF)
 	$(Q)echo "  OBJCOPY $(notdir $@)"
 	$(Q)$(OBJCOPY) -O binary $< $@
 	$(Q)echo "  CRC     $(notdir $@)"
-	$(Q)if command -v CrcAppender > /dev/null 2>&1; then \
-		CrcAppender $@; \
-	else \
-		echo "  WARNING CrcAppender not found, skipping CRC"; \
+	$(Q)if ! command -v CrcAppender > /dev/null 2>&1; then \
+		echo "  ERROR   CrcAppender not found"; \
+		exit 1; \
 	fi
+	$(Q)CrcAppender $@
 
 # Compile C files
 $(BUILD_DIR)/%.o: %.c
