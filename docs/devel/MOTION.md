@@ -139,6 +139,6 @@ When `SUPPORT_CLOSED_LOOP` and a driver is configured for closed loop (`M569 Pâ€
 
 ## 12. Where this connects to the rest of the system
 
-- The matching master-side picture (look-ahead, DDA, kinematics, where the shaped move is built) is in [RepRapFirmware/docs/devel/MOTION_PIPELINE.md](../../../RepRapFirmware/docs/devel/MOTION_PIPELINE.md).
+- The matching master-side picture (look-ahead, DDA, kinematics, where the shaped move is built) is in [RepRapFirmware/docs/devel/MOTION_PIPELINE.md](https://github.com/Duet3D/RepRapFirmware/blob/3.7-docker/docs/devel/MOTION_PIPELINE.md).
 - The wire format and time-sync mechanism are in [CAN_PROTOCOL.md](CAN_PROTOCOL.md).
 - For the closed-loop variant of the step path, see [CLOSED_LOOP.md](CLOSED_LOOP.md).

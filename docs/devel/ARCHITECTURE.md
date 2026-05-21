@@ -226,6 +226,6 @@ On 1HCL boards (single closed-loop driver) the architecture changes slightly: in
 
 ## 11. Where this connects to the rest of the system
 
-- The CAN-FD message types it receives are exactly those sent by [`CanInterface`](../../../RepRapFirmware/src/CAN/CanInterface.cpp) and [`CanMotion`](../../../RepRapFirmware/src/CAN/CanMotion.cpp) on the main board.
+- The CAN-FD message types it receives are exactly those sent by [`CanInterface`](https://github.com/Duet3D/RepRapFirmware/blob/3.7-docker/src/CAN/CanInterface.cpp) and [`CanMotion`](https://github.com/Duet3D/RepRapFirmware/blob/3.7-docker/src/CAN/CanMotion.cpp) on the main board.
 - Object Model entries for boards living on the bus are populated by RRF's `ExpansionManager` from data this firmware streams back. This board has *no* Object Model of its own.
-- See [RepRapFirmware's CAN_BUS.md](../../../RepRapFirmware/docs/devel/CAN_BUS.md) for the matching master-side picture.
+- See [RepRapFirmware's CAN_BUS.md](https://github.com/Duet3D/RepRapFirmware/blob/3.7-docker/docs/devel/CAN_BUS.md) for the matching master-side picture.

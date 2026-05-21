@@ -1,6 +1,6 @@
 # CAN-FD Protocol (slave perspective)
 
-Everything on the bus revolves around the protocol defined in the **CANlib** submodule, shared verbatim between RepRapFirmware (master) and this firmware. This document describes the bus from this firmware's point of view; the matching master-side document is [RepRapFirmware/docs/devel/CAN_BUS.md](../../../RepRapFirmware/docs/devel/CAN_BUS.md).
+Everything on the bus revolves around the protocol defined in the **CANlib** submodule, shared verbatim between RepRapFirmware (master) and this firmware. This document describes the bus from this firmware's point of view; the matching master-side document is [RepRapFirmware/docs/devel/CAN_BUS.md](https://github.com/Duet3D/RepRapFirmware/blob/3.7-docker/docs/devel/CAN_BUS.md).
 
 ## 1. The layers
 
@@ -193,7 +193,7 @@ Burst messages (accelerometer / closed-loop) deliberately consume bus bandwidth 
 
 - **Buffer pool exhaustion** — `CanMessageBuffer::Allocate()` returns null. The firmware logs and, depending on path, may drop the lowest-priority pending TX. Persistent exhaustion is reported in M122.
 - **Time-sync loss** — if no `timeSync` arrives within a few hundred ms, the firmware refuses new motion and signals "no master clock" through `inputChanged` heartbeat.
-- **Master timeout** — if the master does not see a board status report for `StatusMessageTimeoutMillis = 5000` ms ([ExpansionManager.h](../../../RepRapFirmware/src/CAN/ExpansionManager.h)) it marks the board `timedOut` in its Object Model. The user sees the board disappear from `boards[]`.
+- **Master timeout** — if the master does not see a board status report for `StatusMessageTimeoutMillis = 5000` ms ([ExpansionManager.h](https://github.com/Duet3D/RepRapFirmware/blob/3.7-docker/src/CAN/ExpansionManager.h)) it marks the board `timedOut` in its Object Model. The user sees the board disappear from `boards[]`.
 - **Fragment loss** — fragments use sequence numbers; an out-of-order fragment causes the whole multi-frame message to be dropped. Resending is up to the master.
 
 ## 10. Firmware update over CAN
@@ -213,6 +213,6 @@ For the SAME5x / SAMC21 boards a separate small bootloader (16 KB / 64 KB) is wh
 
 ## 11. Where this connects to the rest of the system
 
-- The matching master-side documentation is at [RepRapFirmware/docs/devel/CAN_BUS.md](../../../RepRapFirmware/docs/devel/CAN_BUS.md).
+- The matching master-side documentation is at [RepRapFirmware/docs/devel/CAN_BUS.md](https://github.com/Duet3D/RepRapFirmware/blob/3.7-docker/docs/devel/CAN_BUS.md).
 - The CANlib submodule is the single source of truth for message struct layouts. Bumping a struct without rebuilding both firmwares is a bus-wide failure.
 - For per-message-type handler details see [COMMAND_PROCESSING.md](COMMAND_PROCESSING.md).

@@ -80,4 +80,4 @@ Tuning errors are reported via `TuningErrors.h` codes back to the master.
 
 - From the user's perspective closed-loop is enabled with `M569 P… D4` — a normal G-code on the master that the master forwards via [`m569`](COMMAND_PROCESSING.md#configuration--drivers).
 - All motion still arrives as standard `movementLinearShaped` messages — the upstream pipeline doesn't know whether the destination driver is open- or closed-loop.
-- Closed-loop diagnostic graphs are rendered by Duet Web Control from data this firmware streams. See [DuetSoftwareFramework's OBJECT_MODEL](../../../DuetSoftwareFramework/src/DuetAPI/ObjectModel/Move) for the schema fields that surface closed-loop status.
+- Closed-loop diagnostic graphs are rendered by Duet Web Control from data this firmware streams. See [DuetSoftwareFramework's OBJECT_MODEL](https://github.com/Duet3D/DuetSoftwareFramework/tree/v3.7-andy/src/DuetAPI/ObjectModel/Move) for the schema fields that surface closed-loop status.

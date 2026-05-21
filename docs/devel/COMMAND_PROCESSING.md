@@ -146,7 +146,7 @@ For board-specific test code there is a [`CustomCommandHandler`](../../src/Comma
 
 ## 6. Where this connects to the rest of the system
 
-- The set of messages handled here mirrors [RRF's `CanInterface`](../../../RepRapFirmware/src/CAN/CanInterface.cpp) sender side: every `Send*` over there has a `case` here.
+- The set of messages handled here mirrors [RRF's `CanInterface`](https://github.com/Duet3D/RepRapFirmware/blob/3.7-docker/src/CAN/CanInterface.cpp) sender side: every `Send*` over there has a `case` here.
 - Movement messages flow into [Move](MOTION.md).
 - Input messages flow into [InputMonitor](INPUT_MONITORS.md).
 - See [CAN_PROTOCOL.md](CAN_PROTOCOL.md) for the bus-level framing.

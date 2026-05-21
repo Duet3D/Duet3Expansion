@@ -75,5 +75,5 @@ Bumping any of these in CANlib without rebuilding both firmwares causes silent m
 
 ## 6. Where this connects to the rest of the system
 
-- See [RepRapFirmware/docs/devel/BUILD_VARIANTS.md](../../../RepRapFirmware/docs/devel/BUILD_VARIANTS.md) for the matching matrix on the master side.
-- See the integration overview in [DuetSoftwareFramework/docs/architecture/COMPATIBILITY.md](../../../DuetSoftwareFramework/docs/architecture/COMPATIBILITY.md) for the cross-repo version table.
+- See [RepRapFirmware/docs/devel/BUILD_VARIANTS.md](https://github.com/Duet3D/RepRapFirmware/blob/3.7-docker/docs/devel/BUILD_VARIANTS.md) for the matching matrix on the master side.
+- See the integration overview in [DuetSoftwareFramework/docs/architecture/COMPATIBILITY.md](https://github.com/Duet3D/DuetSoftwareFramework/blob/v3.7-andy/docs/architecture/COMPATIBILITY.md) for the cross-repo version table.

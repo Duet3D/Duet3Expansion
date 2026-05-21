@@ -97,6 +97,6 @@ These are not strictly "inputs" but follow the same pattern: master sends a setu
 
 ## 7. Where this connects to the rest of the system
 
-- The handle lifecycle is initiated by the master; see [RepRapFirmware/docs/devel/CAN_BUS.md#remote-handles](../../../RepRapFirmware/docs/devel/CAN_BUS.md).
+- The handle lifecycle is initiated by the master; see [RepRapFirmware/docs/devel/CAN_BUS.md#remote-handles](https://github.com/Duet3D/RepRapFirmware/blob/3.7-docker/docs/devel/CAN_BUS.md#remote-handles).
 - The `inputChanged` events feed into RRF's `Endstops`, `ZProbe`, `FilamentMonitor`, and `M581` trigger machinery.
 - Object Model entries for any of the above show up under the appropriate root key (`sensors.endstops`, `sensors.probes`, `sensors.filamentMonitors`) and are populated *by the master* from data this firmware streams. This board has no Object Model.
