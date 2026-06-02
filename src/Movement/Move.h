@@ -252,7 +252,7 @@ private:
 #if HAS_SMART_DRIVERS
 	LocalDriversBitmap temperatureShutdownDrivers, temperatureWarningDrivers;
 	uint8_t nextDriveToPoll = 0;
-	StandardDriverStatus lastEventStatus[NumDrivers];			// the status which we last reported as an event
+	StandardDriverStatus lastEventStatus[NumDrivers];								// the status which we last reported as an event
 	MillisTimer openLoadTimers[NumDrivers];
 #else
 	bool driverIsEnabled[NumDrivers];
@@ -266,6 +266,9 @@ private:
 	LocalDriversBitmap eventOnStallDrivers;
 #endif
 
+#ifdef EXP3HC
+	const Pin *DirectionPins;														// on the 3HC the direction pins depend on the board version
+#endif
 	TaskBase * volatile taskWaitingForMoveToComplete = nullptr;
 
 	DriveMovement dms[NumDrivers];

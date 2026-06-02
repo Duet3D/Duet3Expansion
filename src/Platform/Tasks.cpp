@@ -86,7 +86,7 @@ constexpr unsigned int MainTaskStackWords = 830;				// this seems very large; bu
 constexpr unsigned int UpdateBootloaderTaskStackWords = 300;
 
 static volatile bool spinLockChecksEnabled = false;
-static volatile uint32_t ticksInSpinState = 0;
+static std::atomic<uint32_t> ticksInSpinState = 0;
 static volatile Module spinningModule = Module::numModules;
 
 static TaskBase *mainTask = nullptr;

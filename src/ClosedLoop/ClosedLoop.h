@@ -83,7 +83,7 @@ public:
 	void ResetError() noexcept;
 	bool OkayToSetDriverIdle() const noexcept;
 	StandardDriverStatus ModifyDriverStatus(StandardDriverStatus originalStatus) const noexcept;
-	void GetStatistics(CanMessageDriversStatus::ClosedLoopStatus& stat) noexcept;
+	void GetStatistics(ClosedLoopStatus& stat) noexcept;
 
 	// Methods called by the encoders
 	static void EnableEncodersSpi() noexcept;
@@ -202,8 +202,8 @@ private:
 	volatile uint16_t samplesRequested;							// The number of samples requested
 
 	// Derived variables
-	volatile uint16_t samplesCollected = 0;
-	volatile uint16_t samplesSent = 0;
+	std::atomic<uint16_t> samplesCollected = 0;
+	std::atomic<uint16_t> samplesSent = 0;
 	bool sampleBufferOverflowed = false;						// set if the buffer is full when we need to store a sample
 	StepTimer::Ticks dataCollectionStartTicks;					// At what tick did data collection start?
 	StepTimer::Ticks dataCollectionIntervalTicks;				// the requested interval between samples

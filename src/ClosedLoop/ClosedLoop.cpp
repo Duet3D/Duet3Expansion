@@ -434,7 +434,8 @@ GCodeResult ClosedLoop::ProcessM569Point5(const CanMessageStartClosedLoopDataCol
 		sampleBuffer.Init(ClosedLoopSampleLength(filterRequested));
 		sampleBufferOverflowed = false;
 		samplesRequested = msg.numSamples;
-		samplesCollected = samplesSent = 0;
+		samplesSent = 0;
+		samplesCollected = 0;
 		dataCollectionIntervalTicks = (msg.rate == 0) ? 1 : StepTimer::StepClockRate/msg.rate;
 		dataCollectionStartTicks = whenNextSampleDue = StepTimer::GetMovementTimerTicks();
 		samplingMode = (RecordingMode)requestedMode;				// do this one last, it triggers data collection
@@ -1214,7 +1215,7 @@ StandardDriverStatus ClosedLoop::ModifyDriverStatus(StandardDriverStatus origina
 }
 
 // Get the current fraction and position error statistics
-void ClosedLoop::GetStatistics(CanMessageDriversStatus::ClosedLoopStatus& stat) noexcept
+void ClosedLoop::GetStatistics(ClosedLoopStatus& stat) noexcept
 {
 	TaskCriticalSectionLocker lock;
 

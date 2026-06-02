@@ -314,6 +314,13 @@ void ScanningSensorHandler::Init(SharedI2CMaster& i2cDevice) noexcept
 #endif
 
 	sensor = new LDC1612(i2cDevice);
+
+	// Soft-reset before probing: the chip stays powered across MCU resets and can be stuck in an internal state that
+	// survives our reset but clears on power-cycle. Its I2C front-end stays responsive in those states, so this write
+	// lands even when the ID register reads would otherwise return garbage
+	(void)sensor->Reset();
+	delay(2);
+
 	if (sensor->CheckPresent())
 	{
 		sensor->SetDefaultConfiguration(0, false);

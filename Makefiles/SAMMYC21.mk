@@ -120,8 +120,8 @@ CFLAGS := $(COMMON_FLAGS) $(OPT) $(C_DEFINES) $(C_INCLUDES) -std=gnu99 $(CFLAGS_
 BUILD_DIR := $(BOARD)
 
 # C++ flags (matching Eclipse, no extra warnings)
-CXXFLAGS := $(COMMON_FLAGS) $(OPT) $(CXX_DEFINES) $(CXX_INCLUDES) -std=gnu++17 \
-	-fno-threadsafe-statics -fno-rtti -fno-exceptions -Wfloat-conversion $(CXXFLAGS_EXTRA)
+CXXFLAGS := $(COMMON_FLAGS) $(OPT) $(CXX_DEFINES) $(CXX_INCLUDES) -std=c++20 \
+	-fno-threadsafe-statics -fno-rtti -fno-exceptions -Wfloat-conversion -Wshadow -Wsign-promo $(CXXFLAGS_EXTRA)
 
 # Linker flags
 LDFLAGS := $(LDOPT) --specs=nano.specs -Wl,--gc-sections -Wl,--entry=Reset_Handler \

@@ -166,8 +166,6 @@ constexpr I2cParameters I2C0Params =
 	.irqPriority = NvicPriorityI2C
 };
 
-#define I2C0_HANDLER		SERCOM1_Handler
-
 #endif
 
 #if SUPPORT_LIS3DH

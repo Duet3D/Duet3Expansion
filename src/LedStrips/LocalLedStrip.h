@@ -79,7 +79,7 @@ protected:
 	static constexpr bool useDma = false;
 #endif
 
-	uint32_t maxLeds = DefaultMaxNumLeds;
+	uint32_t maxLeds = DefaultMaxLedsPerStrip;
 	size_t chunkBufferSize = 0;											// the size of the allocated buffer
 	uint8_t *chunkBuffer = nullptr;										// pointer to 32-bit aligned buffer for holding the data to send
 

@@ -97,6 +97,10 @@ void Move::Init() noexcept
 	temperatureWarningDrivers.Clear();
 #endif
 
+#ifdef EXP3HC
+	DirectionPins = (Platform::GetBoardVariant() >= 2) ? DirectionPins_v103 : DirectionPins_v102;
+#endif
+
 	// Initialise stepper driver structs
 	for (size_t i = 0; i < NumDrivers; ++i)
 	{
@@ -337,25 +341,25 @@ void Move::Spin() noexcept
 		// Deal with the open load bits
 		// The driver often produces a transient open-load error, especially in stealthchop mode, so we require the condition to persist before we report it.
 		// So clear them unless they have been active for the minimum time.
-		MillisTimer& timer = openLoadTimers[nextDriveToPoll];
+		MillisTimer& tmr = openLoadTimers[nextDriveToPoll];
 		if (stat.IsAnyOpenLoadBitSet())
 		{
-			if (timer.IsRunning())
+			if (tmr.IsRunning())
 			{
-				if (!timer.CheckNoStop(OpenLoadTimeout))
+				if (!tmr.CheckNoStop(OpenLoadTimeout))
 				{
 					stat.ClearOpenLoadBits();
 				}
 			}
 			else
 			{
-				timer.Start();
+				tmr.Start();
 				stat.ClearOpenLoadBits();
 			}
 		}
 		else
 		{
-			timer.Stop();
+			tmr.Stop();
 		}
 
 		const StandardDriverStatus oldStatus = lastEventStatus[nextDriveToPoll];
@@ -1115,7 +1119,7 @@ void Move::AddLinearSegments(size_t drive, uint32_t startTime, const PrepParams&
 	const uint32_t steadyStartTime = startTime + params.accelClocks;
 	const uint32_t decelStartTime = steadyStartTime + params.steadyClocks;
 	constexpr motioncalc_t totalDistance = (motioncalc_t)1.0;
-	const motioncalc_t stepsPerMm = (motioncalc_t)steps;
+	const motioncalc_t locStepsPerMm = (motioncalc_t)steps;
 
 	// Phases with zero duration will not get executed and may lead to infinities in the calculations. Avoid introducing them. Keep the total distance correct.
 	// When using input shaping we can save some FP multiplications by multiplying the acceleration or deceleration time by the pressure advance just once instead of once per impulse
@@ -1155,15 +1159,15 @@ void Move::AddLinearSegments(size_t drive, uint32_t startTime, const PrepParams&
 	{
 		if (params.accelClocks != 0)
 		{
-			tail = AddSegment(tail, startTime, params.accelClocks, accelDistance * stepsPerMm, (motioncalc_t)params.acceleration * stepsPerMm, moveFlags, accelPressureAdvance);
+			tail = AddSegment(tail, startTime, params.accelClocks, accelDistance * locStepsPerMm, (motioncalc_t)params.acceleration * locStepsPerMm, moveFlags, accelPressureAdvance);
 		}
 		if (params.steadyClocks != 0)
 		{
-			tail = AddSegment(tail, steadyStartTime, params.steadyClocks, steadyDistance * stepsPerMm, (motioncalc_t)0.0, moveFlags, 0.0);
+			tail = AddSegment(tail, steadyStartTime, params.steadyClocks, steadyDistance * locStepsPerMm, (motioncalc_t)0.0, moveFlags, 0.0);
 		}
 		if (params.decelClocks != 0)
 		{
-			tail = AddSegment(tail, decelStartTime, params.decelClocks, decelDistance * stepsPerMm, -((motioncalc_t)params.deceleration * stepsPerMm), moveFlags, decelPressureAdvance);
+			tail = AddSegment(tail, decelStartTime, params.decelClocks, decelDistance * locStepsPerMm, -((motioncalc_t)params.deceleration * locStepsPerMm), moveFlags, decelPressureAdvance);
 		}
 	}
 #if SUPPORT_INPUT_SHAPING
@@ -1171,7 +1175,7 @@ void Move::AddLinearSegments(size_t drive, uint32_t startTime, const PrepParams&
 	{
 		for (size_t index = 0; index < axisShaper.GetNumImpulses(); ++index)
 		{
-			const motioncalc_t factor = axisShaper.GetImpulseSize(index) * stepsPerMm;
+			const motioncalc_t factor = axisShaper.GetImpulseSize(index) * locStepsPerMm;
 			const uint32_t delay = axisShaper.GetImpulseDelay(index);
 			if (params.accelClocks != 0)
 			{

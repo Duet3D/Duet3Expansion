@@ -133,10 +133,14 @@ GCodeResult FilamentMonitor::CommonConfigure(const CanMessageGenericParser& pars
 
 	WriteLocker lock(filamentMonitorsLock);
 
-	// Delete any existing filament monitor
+	// Delete any existing filament monitor; Disable() must run before delete to detach the ISR while the derived vtable is still valid
 	FilamentMonitor *fm = nullptr;
 	std::swap(fm, filamentSensors[p_driver]);
-	delete fm;
+	if (fm != nullptr)
+	{
+		fm->Disable();
+		delete fm;
+	}
 
 	// Create the new one
 	const uint8_t monitorType = msg.type;
@@ -191,6 +195,7 @@ GCodeResult FilamentMonitor::CommonConfigure(const CanMessageGenericParser& pars
 		return GCodeResult::warning;
 	}
 
+	fm->Disable();					// detach the ISR before destroying the derived object
 	delete fm;
 	return GCodeResult::ok;
 }

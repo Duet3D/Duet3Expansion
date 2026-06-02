@@ -1196,7 +1196,7 @@ pre(!driversPowered)
 #if HAS_STALL_DETECT
 	diagPin = p_diagPin;
 	IoPort::SetPinMode(p_diagPin, INPUT_PULLUP, false);
-	AttachPinInterrupt(p_diagPin, DiagPinInterruptEntry, InterruptMode::high, CallbackParameter(p_driverNumber), false);
+	AttachPinInterrupt(p_diagPin, DiagPinInterruptEntry, InterruptMode::high, CallbackParameter((uint32_t)p_driverNumber), false);
 	// Leave the interrupt disabled until we enable a stall endstop on this driver
 #endif
 
@@ -1219,7 +1219,8 @@ pre(!driversPowered)
 	hadStepFailure = false;
 #endif
 	registersToUpdate = 0;
-	specialReadRegisterNumber = specialWriteRegisterNumber = 0xFF;
+	specialReadRegisterNumber = 0xFF;
+	specialWriteRegisterNumber = 0xFF;
 	motorCurrent = 0.0;
 	standstillCurrentFraction = (uint16_t)min<uint32_t>((DefaultStandstillCurrentPercent * 256)/100, 256);
 	UpdateRegister(WriteGConf,

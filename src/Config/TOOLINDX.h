@@ -9,9 +9,11 @@
 #define SRC_CONFIG_TOOLINDX_H_
 
 #include <Hardware/PinDescription.h>
+#include <SPI/SpiParameters.h>
+#include <I2C/I2cParameters.h>
 
 #define BOARD_TYPE_NAME		"TOOLINDX"
-#define BOOTLOADER_NAME		"SAME5x"	// temporary until we have the composite bootloader
+#define BOOTLOADER_NAME		"SAME5x_CAN_USB"
 
 // General features
 #define HAS_VREF_MONITOR		0
@@ -45,18 +47,16 @@ constexpr size_t NumDrivers = 1;
 constexpr size_t MaxSmartDrivers = 1;
 
 constexpr Pin GlobalTmcEnablePin = PortBPin(4);
-constexpr Pin GlobalTmcCSPin = PortAPin(6);
+constexpr Pin GlobalTmcCSPin = PortAPin(10);
 
 #define TMC_USES_SERCOM			1
 constexpr uint8_t TmcSercomNumber = 0;
 Sercom * const SERCOM_TMC = SERCOM0;
 
 constexpr Pin TMCMosiPin = PortAPin(4);
-constexpr GpioPinFunction TMCMosiPinPeriphMode = GpioPinFunction::D;
 constexpr Pin TMCMisoPin = PortAPin(7);
-constexpr GpioPinFunction TMCMisoPinPeriphMode = GpioPinFunction::D;
 constexpr Pin TMCSclkPin = PortAPin(5);
-constexpr GpioPinFunction TMCSclkPinPeriphMode = GpioPinFunction::D;
+constexpr GpioPinFunction TMCSpiPinsPeriphMode = GpioPinFunction::D;
 
 constexpr uint32_t Tmc2240CurrentRange = 0x01;								// which current range we set the TMC2240 to (2A)
 constexpr uint32_t Tmc2240SlopeControl = 0x01;								// which slope control we set the TMC2240 to (200V/us)
@@ -85,15 +85,11 @@ constexpr Pin DriverDiagPins[NumDrivers] = { PortBPin(07) };
 #define SUPPORT_ADS131M02			1										// ADS131M02 ADC support
 #define NUM_CURRENT_SENSORS			1										// board has dedicated heater output with current measurement
 
-#ifdef DEBUG
-# define NUM_I2C_CHANNELS		0											// in debug mode the SERCOM is used for debugging
-# define SUPPORT_LIS3DH			0
-#else
-# define NUM_I2C_CHANNELS		2
-# define SUPPORT_LIS3DH			1
-#endif
+#define NUM_I2C_CHANNELS		2
+#define SUPPORT_LIS3DH			1
 
-#define SUPPORT_DHT_SENSOR		0
+#define NUM_SHARED_SPI			1											// we use a SharedSpi for the closed loop encoder
+
 #define NUM_SERIAL_PORTS		0
 
 #define USE_MPU					0
@@ -106,6 +102,36 @@ constexpr size_t MaxPortsPerHeater = 1;										// we support a single heater
 
 constexpr Pin BoardTypePin = PortAPin(3);
 
+// DMA channel assignments
+constexpr DmaChannel DmacChanTmcTx = 0;
+constexpr DmaChannel DmacChanTmcRx = 1;
+constexpr DmaChannel DmacChanLedTx = 2;
+constexpr DmaChannel DmacChanSspiTx = 3;
+constexpr DmaChannel DmacChanSspiRx = 4;
+constexpr DmaChannel DmacChanADS131M02Tx = 5;
+constexpr DmaChannel DmacChanADS131M02Rx = 6;
+//TODO add DMA channels for I2C as needed
+
+constexpr unsigned int NumDmaChannelsUsed = 7;			// must be at least the number of channels used, may be larger. Max 12 on the SAME5x.
+
+constexpr DmaPriority DmacPrioTmcTx = 0;
+constexpr DmaPriority DmacPrioTmcRx = 3;
+constexpr DmaPriority DmacPrioAdcRx = 2;
+constexpr DmaPriority DmacPrioLed = 1;
+constexpr DmaPriority DmacPrioSspiTx = 0;
+constexpr DmaPriority DmacPrioSspiRx = 3;
+constexpr DmaPriority DmacPrioADS131M02Tx = 0;
+constexpr DmaPriority DmacPrioADS131M02Rx = 3;
+
+// Interrupt priorities, lower means higher priority. 0-2 can't make RTOS calls.
+constexpr NvicPriority NvicPriorityStep = 3;			// step interrupt is next highest, it can preempt most other interrupts
+constexpr NvicPriority NvicPriorityDmac = 3;			// priority for DMA complete interrupts
+constexpr NvicPriority NvicPriorityUart = 3;			// serial driver makes RTOS calls
+constexpr NvicPriority NvicPriorityI2C = 3;
+constexpr NvicPriority NvicPriorityPins = 3;			// priority for GPIO pin interrupts
+constexpr NvicPriority NvicPriorityCan = 4;
+constexpr NvicPriority NvicPriorityAdc = 5;
+
 // Diagnostic LEDs
 constexpr Pin LedPins[] = { PortAPin(30), PortAPin(31) };
 constexpr bool LedActiveHigh = false;
@@ -115,8 +141,8 @@ constexpr float VinDividerRatio = (60.4 + 4.7)/4.7;							// to be confirmed
 constexpr float VinMonitorVoltageRange = VinDividerRatio * 3.3;
 
 // Thermistor inputs. 0 = nozzle environment, 1 = board temperature, 2 = LDC coil temperature.
-// Thermistor 0 is Amphenol NKA103C1B1 (10kOhm, B3977), https://www.amphenol-sensors.com/hubfs/Documents/AAS-920-645J-Thermometrics-NTC-CR1-092220-web.pdf
-// R25 = 10000, R85 = 1070, R145 = 207.2. From this we deduce R25=10000, B=4275, C=0.8844e-7.
+// Thermistor 0 is Tewa TT7-10KX3-11 (10kOhm, B3977), https://www.tme.eu/Document/32a31570f1c819f9b3730213e5eca259/TT7-10KC3-11.pdf
+// R25 = 10000, R75 = 1480, R125 = 338. From these and using the SRS calculator we deduce R25=10000, B=4333, C=1.03958e-7.
 // Thermistors 1 and 2 are 10K Murata NCU15XH103J6SRC. B25/50 = 3380, B25/80 = 3428, B25/85 = 3434, B25/100 = 3455
 // From this we deduce R25 = 10000, R50 = 4160.1, R80 = 1668.5, R85 = 1452.2, R100 = 973.8
 // The following Beta and C values use the 25, 50 and 65C values
@@ -127,26 +153,29 @@ constexpr size_t NumThermistorInputs = 3;
 constexpr Pin TempSensePins[NumThermistorInputs] = { PortAPin(11), PortBPin(8), PortBPin(9) };
 constexpr float ThermistorSeriesR[NumThermistorInputs] = { 3900, 3900, 3900 };
 constexpr float ThermistorR25[NumThermistorInputs] = { 10000, 10000, 10000 };
-constexpr float ThermistorBeta[NumThermistorInputs] = { 4275, 3425.0, 3425.0 };
-constexpr float ThermistorShC[NumThermistorInputs] = { 0.8844e-7, 1.68e-7, 1.68e-7 };
+constexpr float ThermistorBeta[NumThermistorInputs] = { 4333, 3425.0, 3425.0 };
+constexpr float ThermistorShC[NumThermistorInputs] = { 1.03958e-7, 1.68e-7, 1.68e-7 };
 constexpr unsigned int envThermistorAdcFilterChannel = 0;
 
 constexpr float DefaultThermistorSeriesR = 3900;							// needed for initialisation but not actually used
 
 #if SUPPORT_CLOSED_LOOP
 
-// Shared SPI (used for interface to encoders, not for temperature sensors)
-constexpr uint8_t SspiSercomNumber = 5;
-constexpr uint32_t SspiDataInPad = 3;
-constexpr uint32_t SspiDataOutPad = 0;
-constexpr Pin SSPIMosiPin = PortBPin(2);
-constexpr GpioPinFunction SSPIMosiPinPeriphMode = GpioPinFunction::D;
-
-constexpr Pin SSPISclkPin = PortBPin(3);
-constexpr GpioPinFunction SSPISclkPinPeriphMode = GpioPinFunction::D;
-
-constexpr Pin SSPIMisoPin = PortBPin(1);
-constexpr GpioPinFunction SSPIMisoPinPeriphMode = GpioPinFunction::D;
+// Shared SPI definitions
+constexpr SpiParameters SharedSpiParams =
+{
+	.sercomNumber = 5,
+	.mosiPin = PortBPin(2),
+	.misoPin = PortBPin(1),
+	.sclkPin = PortBPin(3),
+	.pinFunction = GpioPinFunction::D,
+	.dataInPad = 3,
+	.dataOutPad = 0,
+	.dmaChanTx = DmacChanSspiTx,
+	.dmaChanRx = DmacChanSspiRx,
+	.dmaPrioTx = DmacPrioSspiTx,
+	.dmaPrioRx = DmacPrioSspiRx,
+};
 
 constexpr Pin EncoderCsPin = PortBPin(0);
 
@@ -163,31 +192,29 @@ constexpr GpioPinFunction TmcClockPinPeriphMode = GpioPinFunction::M;
 
 #if NUM_I2C_CHANNELS >= 1
 
-// I2C0 using pins PA22,23
-constexpr uint8_t I2C0SercomNumber = 3;
-constexpr Pin I2C0SDAPin = PortAPin(23);
-constexpr GpioPinFunction I2C0SDAPinPeriphMode = GpioPinFunction::C;
-constexpr Pin I2C0SCLPin = PortAPin(22);
-constexpr GpioPinFunction I2C0SCLPinPeriphMode = GpioPinFunction::C;
-# define I2C0_HANDLER0		SERCOM3_0_Handler
-# define I2C0_HANDLER1		SERCOM3_1_Handler
-# define I2C0_HANDLER2		SERCOM3_2_Handler
-# define I2C0_HANDLER3		SERCOM3_3_Handler
+// I2C0 using pins PA22,23 (SERCOM 3)
+const I2cParameters I2C0Params =
+{
+	.sercomNumber = 3,
+	.sclPin = PortAPin(22),
+	.sdaPin = PortAPin(23),
+	.pinFunction = GpioPinFunction::C,
+	.irqPriority = NvicPriorityI2C
+};
 
 #endif
 
 #if NUM_I2C_CHANNELS >= 2
 
-// I2C1 using pins PA12,13
-constexpr uint8_t I2C1SercomNumber = 4;
-constexpr Pin I2C1SDAPin = PortAPin(13);
-constexpr GpioPinFunction I2C1SDAPinPeriphMode = GpioPinFunction::D;
-constexpr Pin I2C1SCLPin = PortAPin(12);
-constexpr GpioPinFunction I2C1SCLPinPeriphMode = GpioPinFunction::D;
-# define I2C1_HANDLER0		SERCOM4_0_Handler
-# define I2C1_HANDLER1		SERCOM4_1_Handler
-# define I2C1_HANDLER2		SERCOM4_2_Handler
-# define I2C1_HANDLER3		SERCOM4_3_Handler
+// I2C1 using pins PA12,13 (SERCOM 4)
+const I2cParameters I2C1Params =
+{
+	.sercomNumber = 4,
+	.sclPin = PortAPin(12),
+	.sdaPin = PortAPin(13),
+	.pinFunction = GpioPinFunction::D,
+	.irqPriority = NvicPriorityI2C
+};
 
 #endif
 
@@ -221,14 +248,23 @@ constexpr uint16_t AS5601_I2CAddress = 0x36;					// I2C address of the AS5601
 #endif
 
 #if SUPPORT_ADS131M02
-constexpr unsigned int ADS131M02_SercomNumber = 1;
-constexpr unsigned int ADS131M02_DataInPad = 3;
-constexpr unsigned int ADS131M02_DataOutPad = 0;
-constexpr Pin ADS131M02_MosiPin = PortAPin(16);
-constexpr Pin ADS131M02_MisoPin = PortAPin(19);
-constexpr Pin ADS131M02_SclkPin = PortAPin(17);
+
+constexpr SpiParameters Ads131M02SpiParams =
+{
+	.sercomNumber = 1,
+	.mosiPin = PortAPin(16),
+	.misoPin = PortAPin(19),
+	.sclkPin = PortAPin(17),
+	.pinFunction = GpioPinFunction::C,
+	.dataInPad = 3,
+	.dataOutPad = 0,
+	.dmaChanTx = DmacChanADS131M02Tx,
+	.dmaChanRx = DmacChanADS131M02Rx,
+	.dmaPrioTx = DmacPrioADS131M02Tx,
+	.dmaPrioRx = DmacPrioADS131M02Rx,
+};
+
 constexpr Pin ADS131M02_CsPin = PortAPin(18);
-constexpr GpioPinFunction ADS131M02_SpiPinFunction = GpioPinFunction::C;
 constexpr Pin ADS131M02_DRDYPin = PortBPin(22);
 constexpr Pin ADS131M02_GclkPin = PortBPin(16);
 constexpr GpioPinFunction ADS131M02_GclkPinFunction = GpioPinFunction::M;
@@ -253,17 +289,31 @@ constexpr GpioPinFunction InductiveHeaterCCLOutPinPeriphMode = GpioPinFunction::
 
 constexpr Pin HeaterVoltageAdcPin = PortBPin(5);
 
-constexpr float DefaultInductiveHeaterHeatingRate = 27.0;			// heating rate from cold at full power, degC/sec
-constexpr float DefaultInductiveHeaterBasicCoolingRate = 5;			// cooling rate from 100C above ambient with heater and part cooling fan off, degC/sec
-constexpr float DefaultInductiveHeaterDeadTime = 0.1;				// dead time between turning heater on and normal heating rate mostly achieved, seconds
-constexpr float DefaultInductiveHeaterCoolingRateExponent = 1.35;	// how the cooling rate varies with temperature difference
+#include <HeaterModel.h>
+
+constexpr HeaterModel InductiveHeaterDefaultModel =
+{
+	.heatingRate = 25.0,
+	.basicCoolingRate = 1.9,
+	.fanCoolingRate = 0.0,
+	.coolingRateExponent = 1.35,
+	.deadTime = 0.30,
+	.temperatureCoefficient = 0.0,
+	.typicalTemperature = 220.0,
+	.standardVoltage = 24.0,
+	.fzero = 0.0,
+	.usePid = true,
+	.zero = 0
+};
+
+constexpr float CustomHeaterMaxFaultTime = 0.8;					// needs to be short enough to detect that there is no tool before damage is caused
 
 #endif
 
 #if NUM_CURRENT_SENSORS != 0
 
 constexpr Pin CurrentSensorPins[] = { PortBPin(6) };						// ADC pin that reads the current
-constexpr float CurrentSensorFullScaleCurrents[] = { 3.3/(0.01 * 100) };	// ADC Vref divided by (sense resistor value times gain before the ADC)
+constexpr float CurrentSensorFullScaleCurrents[] = { 3300/(0.02 * 50) };	// ADC Vref divided by (sense resistor value times gain before the ADC), times 1000 if we want the result in mA
 constexpr const char *CurrentSensorNames[] = { "heater" };					// name of the sensor
 constexpr size_t InductiveHeaterCurrentSensorNumber = 0;
 
@@ -280,18 +330,18 @@ constexpr PinDescription PinTable[] =
 {
 	//	TC					TCC					ADC					SERCOM in			SERCOM out	  Exint PinName
 	// Port A
-	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		0,	"out1.tach"		},	// PA00 fan 0 tacho
-	{ TcOutput::tc2_1,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"out1"			},	// PA01 fan 0 out
+	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		0,	"pcfan.tach"	},	// PA00 print cooling fan tacho
+	{ TcOutput::tc2_1,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"pcfan"			},	// PA01 print cooling fan out
 	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_0,	SercomIo::none,		SercomIo::none,		Nx,	"ate.vin"		},	// PA02 VIN monitor
 	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_1,	SercomIo::none,		SercomIo::none,		Nx, nullptr			},	// PA03 board type
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA04 SPI0 MOSI (Stepper, sercom0)
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA05 SPI0 SCK
-	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA06 SPI0 CS0
+	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA06 heater voltage feedback (also on PB05)
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA07 SPI0 MISO
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"led"			},	// PA08 NP out (QSPI D0)
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		9,	"io0.in"		},	// PA09 endstop
-	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"pa10"			},	// PA10 unused
-	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_11,	SercomIo::none,		SercomIo::none,		Nx,	"ate.casetemp"	},	// PA11 hot end surround thermistor
+	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA10 SPI0_CS
+	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_11,	SercomIo::none,		SercomIo::none,		Nx,	"ate.envtemp"	},	// PA11 hot end surround thermistor
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr 		},	// PA12 I2C1 SCL (sercom4)
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA13 I2C1 SDA
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA14 crystal
@@ -300,8 +350,8 @@ constexpr PinDescription PinTable[] =
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA17 SPI1 SCLK
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA18 SPI1 CS
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx, nullptr			},	// PA19 SPI1 MISO
-	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		4,	"out0.tach"		},	// PA20 fan0 tacho
-	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"out0"			},	// PA21 fan0
+	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		4,	"hsfan.tach"	},	// PA20 heatsink fan tacho
+	{ TcOutput::none,	TccOutput::tcc1_5F,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"hsfan"			},	// PA21 heatsink fan
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA22 I2C0 SCL (sercom3)
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA23 I2C0 SDA
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA24 USB DN
@@ -319,12 +369,12 @@ constexpr PinDescription PinTable[] =
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx, nullptr			},	// PB02 SPI2 MOSI
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx, nullptr			},	// PB03 SPI2 SCK
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PB04 Driver ENN
-	{ TcOutput::none,	TccOutput::none,	AdcInput::adc1_7,	SercomIo::none,		SercomIo::none,		Nx,	"ate.heaterv"	},	// PB05 Heater voltage feedback
+	{ TcOutput::none,	TccOutput::none,	AdcInput::adc1_7,	SercomIo::none,		SercomIo::none,		Nx,	"ate.heaterv"	},	// PB05 Heater voltage feedback (also on PA06)
 	{ TcOutput::none,	TccOutput::none,	AdcInput::adc1_8,	SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PB06 Heater current
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		7,	nullptr			},	// PB07 Driver diag
 	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_2,	SercomIo::none,		SercomIo::none,		Nx,	"boardtemp"		},	// PB08 board thermistor
 	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_3,	SercomIo::none,		SercomIo::none,		Nx,	"coiltemp"		},	// PB09 LDC coil temperature
-	{ TcOutput::none,	TccOutput::tcc0_4F,	AdcInput::none,		SercomIo::none,		SercomIo::none,		10,	nullptr			},	// PB10 LDC interrupt NB Clashes with the endstop)
+	{ TcOutput::none,	TccOutput::tcc0_4F,	AdcInput::none,		SercomIo::none,		SercomIo::none,		10,	nullptr			},	// PB10 LDC interrupt
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PB11 LDC1612 clock (GCLK5)
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PB12 Driver step
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PB13 Driver clock (GCLK7)
@@ -394,30 +444,6 @@ constexpr IRQn StepTcIRQn = TC0_IRQn;
 #define STEP_TC_HANDLER			TC0_Handler
 
 // Available UART ports
-#define NUM_SERIAL_PORTS		0
-
-// DMA channel assignments
-constexpr DmaChannel DmacChanTmcTx = 0;
-constexpr DmaChannel DmacChanTmcRx = 1;
-constexpr DmaChannel DmacChanAdc0Rx = 2;
-constexpr DmaChannel DmacChanAdc1Rx = 3;
-constexpr DmaChannel DmacChanLedTx = 4;
-//TODO add DMA channels for SPI and I2C as needed
-
-constexpr unsigned int NumDmaChannelsUsed = 5;			// must be at least the number of channels used, may be larger. Max 12 on the SAME5x.
-
-constexpr DmaPriority DmacPrioTmcTx = 0;
-constexpr DmaPriority DmacPrioTmcRx = 3;
-constexpr DmaPriority DmacPrioAdcRx = 2;
-constexpr DmaPriority DmacPrioLed = 1;
-
-// Interrupt priorities, lower means higher priority. 0-2 can't make RTOS calls.
-const NvicPriority NvicPriorityStep = 3;				// step interrupt is next highest, it can preempt most other interrupts
-const NvicPriority NvicPriorityDmac = 3;				// priority for DMA complete interrupts
-const NvicPriority NvicPriorityUart = 3;				// serial driver makes RTOS calls
-const NvicPriority NvicPriorityI2C = 3;
-const NvicPriority NvicPriorityPins = 3;				// priority for GPIO pin interrupts
-const NvicPriority NvicPriorityCan = 4;
-const NvicPriority NvicPriorityAdc = 5;
+#define NUM_ASYNC_PORTS		0
 
 #endif /* SRC_CONFIG_TOOLINDX_H_ */

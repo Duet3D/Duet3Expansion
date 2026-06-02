@@ -12,6 +12,10 @@
 #include <CanMessageGenericParser.h>
 #include <Platform/Platform.h>
 
+#if SUPPORT_LP5817
+# include <Platform/LedStatusControl.h>
+#endif
+
 // Sensor type descriptors
 TemperatureSensor::SensorTypeDescriptor TPiS_1T_1086_L5_5::typeDescriptor(TypeName, [](unsigned int sensorNum) noexcept -> TemperatureSensor *_ecv_from { return new TPiS_1T_1086_L5_5(sensorNum); } );
 TemperatureSensor::SensorTypeDescriptor TPiS_AmbientTemperatureSensor::typeDescriptor(TypeName, [](unsigned int sensorNum) noexcept -> TemperatureSensor *_ecv_from { return new TPiS_AmbientTemperatureSensor(sensorNum); } );
@@ -78,27 +82,34 @@ GCodeResult TPiS_1T_1086_L5_5::Configure(const CanMessageGenericParser& parser, 
 			if (epromBuffer[0] == 3 && epromBuffer[31] == (TPiS_I2CAddress | 0x80) && calculatedChecksum == storedChecksum)
 			{
 				// Get needed data from EPROM contents
-				TempCalibPtat25 = ((uint16_t)epromBuffer[10] << 8) | epromBuffer[11];
-				TempCalibM = ((uint16_t)epromBuffer[12] << 8) | epromBuffer[13];
-				TempCalibUo = (((uint32_t)epromBuffer[14] << 8) | epromBuffer[15]) + 32768UL;
-				TempCalibUout1 = (((uint32_t)epromBuffer[16] << 8) | epromBuffer[17]) * 2;
-				TempCalibTobj1 = epromBuffer[18];
+				TempCalibPtat25 = ((uint16_t)epromBuffer[10] << 8) | epromBuffer[11];				// ambient sensor output at 25C
+				TempCalibM = ((uint16_t)epromBuffer[12] << 8) | epromBuffer[13];					// slope of ambient sensor output per degC times 100
+				TempCalibUo = (((uint32_t)epromBuffer[14] << 8) | epromBuffer[15]) + 32768UL;		// sensor output when object temperature = ambient temperature
+				TempCalibUout1 = (((uint32_t)epromBuffer[16] << 8) | epromBuffer[17]) * 2;			// sensor output when object temperature is tempCalibTobj1, ambient is 25C and object is black
+				TempCalibTobj1 = epromBuffer[18];													// object temperature in degC at which the output is TempCalibUout1
 
-				// Pre-compute some derived calibration constants
+				// Derived parameters
 				recipTempCalibM = 100.0/(float)TempCalibM;
-				recipCorrectedK = (powf((float)TempCalibTobj1 - ABS_ZERO, 4.2) - powf(25.0 - ABS_ZERO, 4.2)) / ((float)(int32_t)(TempCalibUout1 - TempCalibUo) * FovAndEmissivityCorrection);
+				TempCalibK = (powf(ConvertDegCToDegK(TempCalibTobj1), RadiationExponent) - powf(ConvertDegCToDegK(25.0), RadiationExponent)) / (float)(int32_t)(TempCalibUout1 - TempCalibUo);
 
-				ambientTemperatureDegK = objectTemperatureDegK = 0.0;
+				// Set the starting temperatures
+				ambientTemperatureDegK = objectTemperatureDegK = ambientTemperatureLast = objectTemperatureLast = ConvertDegCToDegK(25.0);
 			}
 			else
 			{
 				reply.printf("Error in thermopile sensor EPROM: %02x %02x %04x %04x", epromBuffer[0], epromBuffer[31], calculatedChecksum, storedChecksum);
+#if SUPPORT_LP5817
+				Platform::GetStatusLedControl()->SetErrorOrTransient(LedStatusCode::irSensorFail);
+#endif
 				return GCodeResult::error;
 			}
 		}
 		else
 		{
-			reply.copy("Failed to initialise thermopile sensor");
+			reply.copy("Failed to communicate with thermopile sensor");
+#if SUPPORT_LP5817
+			Platform::GetStatusLedControl()->SetErrorOrTransient(LedStatusCode::irSensorFail);
+#endif
 			return GCodeResult::error;
 		}
 	}
@@ -116,51 +127,22 @@ GCodeResult TPiS_1T_1086_L5_5::Configure(const CanMessageGenericParser& parser, 
 	{
 		shB = 1.0/beta;
 		const float lnR25 = logf(r25);
-		shA = 1.0/(25.0 - ABS_ZERO) - shB * lnR25 - shC * lnR25 * lnR25 * lnR25;
+		shA = 1.0/(ConvertDegCToDegK(25.0)) - shB * lnR25 - shC * lnR25 * lnR25 * lnR25;
 	}
 	else
 	{
 		CopyBasicDetails(reply);
 		reply.catf(", environment thermistor: T:%.1f B:%.1f C:%.2e R:%.1f", (double)r25, (double)beta, (double)shC, (double)seriesR);
 	}
+#if SUPPORT_LP5817
+		Platform::GetStatusLedControl()->ClearError(LedStatusCode::irSensorFail);
+#endif
 	return GCodeResult::ok;
 }
 
 void TPiS_1T_1086_L5_5::Poll() noexcept
 {
-	// Read the object and ambient temperatures from the sensor
-	const uint8_t txBuffer[] = { 0x01 };
-	uint8_t rxBuffer[4];
-	if (device.Transfer(txBuffer, rxBuffer, sizeof(txBuffer), sizeof(rxBuffer), true))
-	{
-		const uint32_t rawTpObject = ((uint32_t)rxBuffer[0] << 9) | ((uint32_t)rxBuffer[1] << 1) | ((uint32_t)rxBuffer[2] >> 7);
-		const uint32_t rawTAmb = ((uint32_t)(rxBuffer[2] & 0x7F)) << 8 | (uint32_t)rxBuffer[3];
-
-		// Calculate the ambient temperature reported by the sensor in degK. See datasheet section 8.4.
-		ambientTemperatureDegK = (25.0 - ABS_ZERO) + (float)((int32_t)(rawTAmb - TempCalibPtat25)) * recipTempCalibM;
-
-		// Calculate the object temperature. See datasheet section 8.5. We assume that LOOKUP# = 2.
-		objectTemperatureDegK = powf((float)(int32_t)(rawTpObject - TempCalibUo) * recipCorrectedK + powf(ambientTemperatureDegK, 4.2), 1.0/4.2);
-
-#if 0	//DEBUG
-		{
-			static uint8_t count=0;
-			++count;
-			if (count == 0)
-			{
-				debugPrintf("PTAT25=%u M=%u U0=%lu Uout1=%lu Tobj1=%u 1/M=%.4f 1/K=%.3f", TempCalibPtat25, TempCalibM, TempCalibUo, TempCalibUout1, TempCalibTobj1, (double)recipTempCalibM, (double)recipCorrectedK);
-				debugPrintf(" %lu %lu %.1f %.1f\n", rawTAmb, rawTpObject, (double)ambientTemperatureDegK, (double)objectTemperatureDegK);
-			}
-		}
-#endif
-		SetResult(objectTemperatureDegK + ABS_ZERO, TemperatureError::ok);
-	}
-	else
-	{
-		SetResult(TemperatureError::ioError);
-	}
-
-	// Read the environment thermistor
+	// Read the environment thermistor first
 	const volatile ThermistorAveragingFilter * const tempFilter = Platform::GetAdcFilter(envThermistorAdcFilterChannel);
 	if (tempFilter->IsValid())
 	{
@@ -175,27 +157,131 @@ void TPiS_1T_1086_L5_5::Poll() noexcept
 			float resistance = seriesR * ((float)averagedTempReading + 0.5)/denom;
 			const float logResistance = logf(resistance);
 			const float recipT = shA + shB * logResistance + shC * logResistance * logResistance * logResistance;
-			const float temp = (recipT > 0.0) ? (1.0/recipT) + ABS_ZERO : BadErrorTemperature;
+			const float tempDegK = (recipT > 0.0) ? (1.0/recipT) : ConvertDegCToDegK(BadErrorTemperature);
 
-			// It's hard to distinguish between an open circuit and a cold high-resistance thermistor.
-			// So we treat a temperature below -5C as an open circuit, unless we are using a low-resistance thermistor.
-			if (temp < MinimumConnectedTemperature && resistance > seriesR * 100)
+			if (tempDegK < AuxTempReadingMin)
 			{
-				// Assume thermistor is disconnected
-				environmentTemperature = ABS_ZERO;
-				thermistorResult = TemperatureError::openCircuit;
+				// Thermistor is probably disconnected
+				environmentTemperatureDegK = 0.0;
+				thermistorResult = TemperatureError::readingTooLow;
+			}
+			else if (tempDegK > AuxTempReadingMax)
+			{
+				environmentTemperatureDegK = tempDegK;
+				thermistorResult = TemperatureError::readingTooHigh;
 			}
 			else
 			{
-				environmentTemperature = temp;
+				environmentTemperatureDegK = tempDegK;
 				thermistorResult = TemperatureError::ok;
 			}
 		}
 	}
 	else
 	{
-		environmentTemperature = BadErrorTemperature;
+		environmentTemperatureDegK = ConvertDegCToDegK(BadErrorTemperature);
 		thermistorResult = TemperatureError::notReady;
+	}
+
+	// Read the object and ambient temperatures from the sensor
+	const uint8_t txBuffer[] = { 0x01 };
+	uint8_t rxBuffer[4];
+	TemperatureError rslt = TemperatureError::ioError;
+	if (device.Transfer(txBuffer, rxBuffer, sizeof(txBuffer), sizeof(rxBuffer), true))
+	{
+		const uint32_t rawTAmb = ((uint32_t)(rxBuffer[2] & 0x7F)) << 8 | (uint32_t)rxBuffer[3];
+		const uint32_t rawTpObject = ((uint32_t)rxBuffer[0] << 9) | ((uint32_t)rxBuffer[1] << 1) | ((uint32_t)rxBuffer[2] >> 7);
+
+		// 1. Calculate the ambient temperature reported by the sensor in degK. See datasheet section 8.4.
+		ambientTemperatureDegK = ConvertDegCToDegK(25.0) + (float)((int32_t)(rawTAmb - TempCalibPtat25)) * recipTempCalibM;
+		const float ambientRadiance = powf(ambientTemperatureDegK, RadiationExponent);
+
+		// 2. Calculate the detected radiance
+		const float detectedRadiance = (float)(int32_t)(rawTpObject - TempCalibUo) * TempCalibK;
+
+		// 3. Decide what nozzle environment temperature to use and calculate its radiance
+		const float auxTemperatureDegK = (thermistorResult == TemperatureError::ok) ? environmentTemperatureDegK : (7.0 * ambientTemperatureLast + objectTemperatureLast) * 0.125;
+		const float auxRadiance = powf(auxTemperatureDegK, RadiationExponent);
+
+		// The remaining detected radiance must be due to the object temperature
+		const float receivedObjectRadiance = detectedRadiance - auxRadiance * AuxFovAndEmissivityCorrection + ambientRadiance * (AuxFovAndEmissivityCorrection + ObjectFovAndEmissivityCorrection);
+
+		// Check that the received object radiance is non-negative to avoid a math error
+		if (receivedObjectRadiance < 0.0)
+		{
+			objectTemperatureDegK = ConvertDegCToDegK(BadErrorTemperature);
+			rslt = TemperatureError::overOrUnderVoltage;
+		}
+		else
+		{
+			// The actual object radiance will be greater because of the limited FOV and because the object is not completely black
+			const float actualObjectRadiance = receivedObjectRadiance * (1.0/ObjectFovAndEmissivityCorrection);
+
+			// Calculate the object temperature. See datasheet section 8.5. We assume that LOOKUP# = 2.
+			objectTemperatureDegK = powf(actualObjectRadiance, 1.0/RadiationExponent);
+
+			objectTemperatureLast = objectTemperatureDegK;
+			ambientTemperatureLast = ambientTemperatureDegK;
+
+			// Do some error checking. Only display one error, otherwise we will get debug messages sent too rapidly to process.
+			if (objectTemperatureDegK > NozzleTempReadingMax)
+			{
+				if (GetLastResult() != TemperatureError::readingTooHigh && Platform::Debug(Module::Heat))
+				{
+					debugPrintf("ErrTempMax [%.1f]\n", (double)ConvertDegKToDegC(objectTemperatureDegK));
+				}
+				rslt = TemperatureError::readingTooHigh;
+			}
+			else if (objectTemperatureDegK < NozzleTempReadingMin)
+			{
+				if (GetLastResult() != TemperatureError::readingTooLow && Platform::Debug(Module::Heat))
+				{
+					debugPrintf("ErrTempMin [%.1f]\n", (double)ConvertDegKToDegC(objectTemperatureDegK));
+				}
+				rslt = TemperatureError::readingTooLow;
+			}
+			else if (ambientTemperatureDegK > AmbientTempReadingMax)
+			{
+				if (GetLastResult() != TemperatureError::ambientReadingTooHigh && Platform::Debug(Module::Heat))
+				{
+					debugPrintf("ErrTempAmbMax [%.1f]\n", (double)ConvertDegKToDegC(ambientTemperatureDegK));
+				}
+				rslt = TemperatureError::ambientReadingTooHigh;
+			}
+			else if (ambientTemperatureDegK < AmbientTempReadingMin)
+			{
+				if (GetLastResult() != TemperatureError::ambientReadingTooLow && Platform::Debug(Module::Heat))
+				{
+					debugPrintf("ErrTempAmbMin [%.1f]\n", (double)ConvertDegKToDegC(ambientTemperatureDegK));
+				}
+				rslt = TemperatureError::ambientReadingTooLow;
+			}
+			else
+			{
+				rslt = TemperatureError:: ok;
+			}
+		}
+
+#if 0	//DEBUG
+		{
+			static uint8_t count=0;
+			++count;
+			if (count == 0)
+			{
+				debugPrintf("PTAT25=%u M=%u U0=%lu Uout1=%lu Tobj1=%u 1/M=%.4f 1/K=%.3f", TempCalibPtat25, TempCalibM, TempCalibUo, TempCalibUout1, TempCalibTobj1, (double)recipTempCalibM, (double)recipCorrectedK);
+				debugPrintf(" %lu %lu %.1f %.1f\n", rawTAmb, rawTpObject, (double)ambientTemperatureDegK, (double)objectTemperatureDegK);
+			}
+		}
+#endif
+	}
+
+	if (rslt == TemperatureError::ok)
+	{
+		SetResult(ConvertDegKToDegC(objectTemperatureDegK), rslt);
+	}
+	else
+	{
+		SetResult(rslt);
 	}
 }
 
@@ -205,11 +291,11 @@ TemperatureError TPiS_1T_1086_L5_5::GetAdditionalOutput(float &t, uint8_t output
 	switch (outputNumber)
 	{
 	case 1:
-		t = ambientTemperatureDegK + ABS_ZERO;
+		t = ConvertDegKToDegC(ambientTemperatureDegK);
 		break;
 
 	case 2:
-		t = environmentTemperature;
+		t = ConvertDegKToDegC(environmentTemperatureDegK);
 		return thermistorResult;
 
 	default:
