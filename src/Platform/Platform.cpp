@@ -62,7 +62,7 @@
 # include <Hardware/ATEIO/ExtendedAnalog.h>
 #endif
 
-#if SAME5x || SAMC21
+#if !RP2040
 # include <hpl_user_area.h>
 #endif
 
@@ -82,8 +82,6 @@ constexpr uint32_t FirmwareFlashStart = FLASH_ADDR + FlashBlockSize;	// we reser
 constexpr uint32_t FlashBlockSize = 0x00004000;							// the block size we assume for flash
 constexpr uint32_t FirmwareFlashStart = FLASH_ADDR + FlashBlockSize;	// we reserve 16K for the bootloader
 
-#elif STM32
-// TODO
 #elif RP2040
 // TODO
 #else

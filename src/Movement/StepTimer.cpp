@@ -23,6 +23,8 @@
 #elif RP2040
 # include <hardware/watchdog.h>
 # include <hardware/timer.h>
+#elif STM32
+# include <HardwareTimer.h>
 #endif
 
 StepTimer * volatile StepTimer::pendingList = nullptr;
@@ -58,6 +60,24 @@ void StepTimer::Init() noexcept
 	NVIC_DisableIRQ((IRQn_Type)StepTcIRQn);
 	NVIC_ClearPendingIRQ((IRQn_Type)StepTcIRQn);
 	NVIC_EnableIRQ((IRQn_Type)StepTcIRQn);
+#elif STM32H5
+	// The CAN external time stamp counter is timer 3.
+	// As that is only 16-bit and we need a 32-bit step timer, we use timer 5 for the step timer and clock it at the same rate as timer 3.
+	HardwareTimer TSTimer(TIMESTAMP_TC);
+	HardwareTimer STimer(STEP_TC);
+	uint32_t preScale = STimer.getTimerClkFreq()/StepClockRate;
+	STimer.setPrescaleFactor(preScale);
+	TSTimer.setPrescaleFactor(preScale);
+	STimer.setOverflow(0, TICK_FORMAT);
+	TSTimer.setOverflow(0, TICK_FORMAT);
+	STHandle = STimer.getHandle();
+	NVIC_SetPriority(STEP_TC_IRQN, NvicPriorityStep);			    // Set the priority for this IRQ
+	NVIC_EnableIRQ(STEP_TC_IRQN);
+	STimer.resume();
+	TSTimer.resume();
+	__HAL_TIM_DISABLE_IT(STHandle, TIM_IT_CC1);
+#elif STM32H7
+	qq;		//TODO
 #elif SAMC21 || SAME5x
 	// We use StepTcNumber+1 as the slave for 32-bit mode so we need to clock that one too
 	EnableTcClock(StepTcNumber, GclkNum48MHz);
