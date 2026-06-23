@@ -35,7 +35,7 @@
 # include <hardware/watchdog.h>
 # include <hardware/structs/vreg_and_chip_reset.h>
 # include <hardware/structs/watchdog.h>
-#else
+#elif SAME5x || SAMC21
 # include <hpl_user_area.h>
 #endif
 
@@ -565,13 +565,11 @@ uint32_t ComputeCRC32(const uint32_t *start, const uint32_t *end)
 	dma_sniffer_disable();
 	dma_channel_unclaim(DmacChanCRC);
 	return crc;
-#else
+#elif SAME5x || SAMC21
 # if SAME5x
 	DMAC->CRCCTRL.reg = DMAC_CRCCTRL_CRCBEATSIZE_WORD | DMAC_CRCCTRL_CRCSRC_DISABLE | DMAC_CRCCTRL_CRCPOLY_CRC32;	// disable the CRC unit
 # elif SAMC21
 	DMAC->CTRL.bit.CRCENABLE = 0;
-# else
-#  error Unsupported processor
 # endif
 	DMAC->CRCCHKSUM.reg = 0xFFFFFFFF;
 	DMAC->CRCCTRL.reg = DMAC_CRCCTRL_CRCBEATSIZE_WORD | DMAC_CRCCTRL_CRCSRC_IO | DMAC_CRCCTRL_CRCPOLY_CRC32;
@@ -588,6 +586,8 @@ uint32_t ComputeCRC32(const uint32_t *start, const uint32_t *end)
 	DMAC->CRCSTATUS.reg = DMAC_CRCSTATUS_CRCBUSY;
 	asm volatile("nop");
 	return DMAC->CRCCHKSUM.reg;
+#elif STM32
+	//TODO
 #endif
 }
 

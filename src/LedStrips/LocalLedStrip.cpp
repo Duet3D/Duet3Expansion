@@ -64,6 +64,8 @@ GCodeResult LocalLedStrip::CommonConfigure(CanMessageGenericParser& parser, cons
 # elif SAME5x || SAMC21
 		sercom = PinTable[port.GetPin()].sercomOut;
 		useDma = (sercom != SercomIo::none);
+# elif STM32
+		qq;		//TODO
 # else
 #  error Code not written for this processor
 		//useDma = (port.GetCapability() & PinCapability::npDma) != PinCapability::none;

@@ -23,7 +23,7 @@
 #include <Hardware/NonVolatileMemory.h>
 #include "CustomCommandHandler.h"
 
-#if !RP2040
+#if SAME5x || SAMC21
 # include <hpl_user_area.h>
 #endif
 

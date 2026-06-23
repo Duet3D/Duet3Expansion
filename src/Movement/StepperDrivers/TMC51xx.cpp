@@ -30,7 +30,7 @@
 
 static inline Move& GetMoveInstance() noexcept { return reprap.GetMove(); }
 
-#elif defined(EXP3HC) || defined(EXP1HCL) || defined(M23CL) || defined(TOOLINDX)
+#elif defined(EXP3HC) || defined(EXP1HCL) || defined(M23CL) || defined(TOOLINDX) || defined(NODETRIX)
 
 static inline Move& GetMoveInstance() noexcept { return *moveInstance; }
 
@@ -40,17 +40,29 @@ static inline Move& GetMoveInstance() noexcept { return *moveInstance; }
 
 #if SAME5x || SAMC21
 
+#if !STM32
 # include <Serial.h>
+#endif
 
-# if SAME5x
-#  include <hri_sercom_e54.h>
-# elif SAMC21
-#  include <hri_sercom_c21.h>
-# endif
+// Currently we can use a SERCOM, USART, raw SPI peripheral or our SpiDevice driver to communicate with the driver(s)
+
+#if SAME5x
+# include <hri_sercom_e54.h>
+# define TMC_USES_SPIDEV	(0)
+#elif SAMC21
+# include <hri_sercom_c21.h>
+# define TMC_USES_SPIDEV	(0)
+#endif
 #elif SAME70
 # include <pmc/pmc.h>
 # include <xdmac/xdmac.h>
-# define TMC_USES_SERCOM	0
+# define TMC_USES_SERCOM	(0)
+# define TMC_USES_SPIDEV	(0)
+#elif STM32
+# define TMC_USES_SERCOM	(0)
+# define TMC_USES_USART		(0)
+# define TMC_USES_SPIDEV	(1)
+# include <SPI/SpiDevice.h>
 #endif
 
 #if SUPPORT_TMC51xx
@@ -410,6 +422,10 @@ std::atomic<uint16_t> SmartDrivers::driverStallsToNotify(0);
 
 Sercom *tmcSercom = nullptr;
 uint8_t tmcSercomNumber;
+
+#elif TMC_USES_SPIDEV
+
+SpiDevice *spiDev;
 
 #else
 
@@ -1369,7 +1385,7 @@ static void SetupDMA(const volatile uint8_t *txData, const volatile uint8_t *rxD
 	DmacManager::SetDestinationAddress(DmacChanTmcRx, (void*)rxData);
 	DmacManager::SetDataLength(DmacChanTmcRx, SpiDataSize);
 #elif STM32
-	qq;	//TODO
+	// Nothing to do here
 #else
 	spiPdc->PERIPH_PTCR = (PERIPH_PTCR_RXTDIS | PERIPH_PTCR_TXTDIS);		// disable the PDC
 
@@ -1389,7 +1405,7 @@ static inline void EnableDma() noexcept
 	DmacManager::EnableChannel(DmacChanTmcRx, DmacPrioTmcRx);
 	DmacManager::EnableChannel(DmacChanTmcTx, DmacPrioTmcTx);
 #elif STM32
-	qq;	//TODO
+	// Nothing to do here
 #else
 	spiPdc->PERIPH_PTCR = (PERIPH_PTCR_RXTEN | PERIPH_PTCR_TXTEN);			// enable the PDC
 #endif
@@ -1404,7 +1420,7 @@ static inline void DisableDma() noexcept
 	DmacManager::DisableChannel(DmacChanTmcTx);
 	DmacManager::DisableChannel(DmacChanTmcRx);
 #elif STM32
-	qq;	//TODO
+	// Nothing to do here
 #else
 	spiPdc->PERIPH_PTCR = (PERIPH_PTCR_RXTDIS | PERIPH_PTCR_TXTDIS);		// disable the PDC
 #endif
@@ -1418,7 +1434,7 @@ static inline void ResetSpi() noexcept
 #elif TMC_USES_USART
 	USART_TMC51xx->US_CR = US_CR_RSTRX | US_CR_RSTTX;	// reset transmitter and receiver
 #elif STM32
-	qq;	//TODO
+	// Nothing to do here
 #else
 	SPI_TMC->SPI_CR = SPI_CR_SPIDIS;				// disable the SPI
 	(void)SPI_TMC->SPI_RDR;							// clear the receive buffer
@@ -1435,7 +1451,7 @@ static inline void EnableSpi() noexcept
 #elif TMC_USES_USART
 	USART_TMC51xx->US_CR = US_CR_RXEN | US_CR_TXEN;		// enable transmitter and receiver
 #elif STM32
-	qq;	//TODO
+	// Nothing to do here
 #else
 	SPI_TMC->SPI_CR = SPI_CR_SPIEN;					// enable SPI
 #endif
@@ -1450,7 +1466,7 @@ static inline void DisableEndOfTransferInterrupt() noexcept
 #elif TMC_USES_USART
 	USART_TMC->US_IDR = US_IDR_ENDRX;				// enable end-of-transfer interrupt
 #elif STM32
-	qq;	//TODO
+	// Nothing to do here
 #else
 	SPI_TMC->SPI_IDR = SPI_IDR_ENDRX;				// enable end-of-transfer interrupt
 #endif
@@ -1465,7 +1481,7 @@ static inline void EnableEndOfTransferInterrupt() noexcept
 #elif TMC_USES_USART
 	USART_TMC->US_IER = US_IER_ENDRX;				// enable end-of-transfer interrupt
 #elif STM32
-	qq;	//TODO
+	// Nothing to do here
 #else
 	SPI_TMC->SPI_IER = SPI_IER_ENDRX;				// enable end-of-transfer interrupt
 #endif
@@ -1717,7 +1733,7 @@ void SmartDrivers::Init() noexcept
 		SetPinFunction(TMC51xxSclkPin_SAME51, TMC51xxSpiPinPeriphMode_SAME51);
 	}
 	tmcSercom = Serial::GetSercom(tmcSercomNumber);
-#else
+#elif !TMC_USES_SPIDEV
 	SetPinFunction(TMCMosiPin, TMCSpiPinsPeriphMode);
 	SetPinFunction(TMCMisoPin, TMCSpiPinsPeriphMode);
 	SetPinFunction(TMCSclkPin, TMCSpiPinsPeriphMode);
@@ -1726,8 +1742,12 @@ void SmartDrivers::Init() noexcept
 	// Enable the clock to the USART or SPI
 #if SAME5x || SAMC21
 	Serial::EnableSercomClock(tmcSercomNumber);
-#else
+#elif STM32
+	// Nothing needed here
+#elif SAME70 || SAM4E
 	pmc_enable_periph_clk(ID_TMC_SPI);
+#else
+# error Unsupported processor
 #endif
 
 #if TMC_USES_SERCOM
@@ -1792,6 +1812,8 @@ void SmartDrivers::Init() noexcept
 	// otherwise the processor generates two short reset pulses on its own NRST pin, and resets itself.
 	// 2016-07-07: removed this delay, because we no longer send commands to the TMC2660 drivers immediately.
 	//delay(10);
+#elif TMC_USES_SPIDEV
+	spiDev = new SpiDevice(TmcSpiParameters);
 #else
 	// Set up the SPI interface with data changing on the falling edge of the clock and captured on the rising edge
 	spi_reset(SPI_TMC);										// this clears the transmit and receive registers and puts the SPI into slave mode
@@ -1829,7 +1851,7 @@ void SmartDrivers::Init() noexcept
 void SmartDrivers::Exit() noexcept
 {
 	digitalWrite(GlobalTmcEnablePin, true);					// disable the drivers
-#if !TMC_USES_SERCOM
+#if !TMC_USES_SERCOM && !TMC_USES_SPIDEV
 	NVIC_DisableIRQ(TMC_SPI_IRQn);
 #endif
 	tmcTask.TerminateAndUnlink();
