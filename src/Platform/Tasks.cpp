@@ -246,7 +246,7 @@ static bool watchdogCausedReboot = false;
 		Platform::ResetProcessor();
 	}
 # elif STM32
-	//TODO	
+	//TODO
 # endif
 #endif
 
@@ -312,7 +312,9 @@ static bool watchdogCausedReboot = false;
 
 	// Initialise watchdog clock
 	WatchdogInit();
-#if !RP2040
+#if STM32
+	NVIC_EnableIRQ(IWDG_IRQn);		// enable the watchdog early warning interrupt
+#elif !RP2040
 	NVIC_EnableIRQ(WDT_IRQn);		// enable the watchdog early warning interrupt
 #endif
 
@@ -452,6 +454,8 @@ static FirmwareFlashErrorCode GetBlock(uint32_t startingOffset, uint32_t& fileSi
 	return FirmwareFlashErrorCode::ok;
 }
 
+#elif STM32
+	//TODO not implemented yet
 #else
 
 // Request a block of the bootloader, returning true if successful
@@ -541,6 +545,9 @@ static FirmwareFlashErrorCode GetBootloaderBlock(uint8_t *blockBuffer)
 
 #endif	// !RP2040
 
+#if STM32
+	//TODO not used yet
+#else
 static void ReportFlashError(FirmwareFlashErrorCode err)
 {
 #if RP2040
@@ -614,6 +621,7 @@ bool CheckCRC(uint32_t *blockBuffer) noexcept
 	const uint32_t expectedCRC = blockBuffer[crcOffset/4];
 	return ComputeCRC32(blockBuffer, blockBuffer + crcOffset/4) == expectedCRC;
 }
+#endif
 
 #if RP2040
 
@@ -764,6 +772,8 @@ for(;;)
 #endif
 }
 
+#elif STM32
+	//TODO not implemented yet
 #else
 
 // The task that runs to update the bootloader

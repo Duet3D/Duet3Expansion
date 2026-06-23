@@ -231,11 +231,16 @@ void CanInterface::Init(CanAddress defaultBoardAddress, const CanParameters& par
 #if RP2040
 								params.txPin, params.rxPin,				// which pins we use for CAN transmit and receive
 #else
-								0, params.instanceNumber,
+								0,
+# if STM32
+								params.instanceNumber - 1,				// STM numbers instances from 1, our driver numbers them from zero
+# else
+								params.instanceNumber,
+# endif
 #endif
 								Can0Config,
 #if STM32H5
-								reinterpret_cast<uint32_t *>(SRAMCAN_BASE_NS + 0x0350 * (instanceNumber - 1)),			// STM32H5 has fixed message buffer allocation
+								reinterpret_cast<uint32_t *>(SRAMCAN_BASE_NS + 0x0350 * (params.instanceNumber - 1)),			// STM32H5 has fixed message buffer allocation
 #elif STM32H7
 								canMemory,
 #else
