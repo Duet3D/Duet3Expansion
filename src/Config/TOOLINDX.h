@@ -8,10 +8,6 @@
 #ifndef SRC_CONFIG_TOOLINDX_H_
 #define SRC_CONFIG_TOOLINDX_H_
 
-#include <Hardware/PinDescription.h>
-#include <SPI/SpiParameters.h>
-#include <I2C/I2cParameters.h>
-
 #define BOARD_TYPE_NAME		"TOOLINDX"
 #define BOOTLOADER_NAME		"SAME5x_CAN_USB"
 
@@ -50,6 +46,7 @@ constexpr Pin GlobalTmcEnablePin = PortBPin(4);
 constexpr Pin GlobalTmcCSPin = PortAPin(10);
 
 #define TMC_USES_SERCOM			1
+
 constexpr uint8_t TmcSercomNumber = 0;
 Sercom * const SERCOM_TMC = SERCOM0;
 
@@ -95,8 +92,13 @@ constexpr Pin DriverDiagPins[NumDrivers] = { PortBPin(07) };
 #define USE_MPU					0
 #define USE_CACHE				1
 
-constexpr int CANInstanceNumber = 1;
-constexpr bool UseLaterCanPins = true;
+constexpr CanParameters CanParams =
+{
+	.instanceNumber = 1,
+	.txPin = PortBPin(14),
+	.rxPin = PortBPin(15),
+	.pinsFunction = GpioPinFunction::H
+};
 
 constexpr size_t MaxPortsPerHeater = 1;										// we support a single heater
 

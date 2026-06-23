@@ -8,9 +8,6 @@
 #ifndef SRC_CONFIG_RPI_PICO_H_
 #define SRC_CONFIG_RPI_PICO_H_
 
-#include <Hardware/PinDescription.h>
-#include <SPI/SpiParameters.h>
-
 #define BOARD_TYPE_NAME		"RPi_Pico"
 #define BOOTLOADER_NAME		"RPi_Pico"
 
@@ -125,8 +122,13 @@ constexpr float DefaultThermistorSeriesR = 2200.0;
 
 constexpr Pin TempSensePins[NumThermistorInputs] = { GpioPin(26), GpioPin(27) };
 
-constexpr Pin CanTxPin = GpioPin(5);
-constexpr Pin CanRxPin = GpioPin(4);
+constexpr CanParameters CanParams =
+{
+	.instanceNumber = 0,						// not used on RP2040
+	.txPin = GpioPin(5),
+	.rxPin = GpioPin(4),
+	.pinsFunction = GpioPinFunction::None		// not used on RP2040
+};
 
 constexpr Pin ButtonPins[] = { PIN_TODO };
 

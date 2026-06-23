@@ -8,10 +8,6 @@
 #ifndef SRC_CONFIG_TOOLINDX_H_
 #define SRC_CONFIG_TOOLINDX_H_
 
-#include <Hardware/PinDescription.h>
-#include <SPI/SpiParameters.h>
-#include <I2C/I2cParameters.h>
-
 #define BOARD_TYPE_NAME		"NodeTrix"
 #define BOOTLOADER_NAME		"STM32H5"
 
@@ -31,7 +27,7 @@
 #define SUPPORT_SLOW_DRIVERS	0
 #define DEDICATED_STEP_TIMER	1
 #define SUPPORT_INPUT_SHAPING	1
-#define SUPPORT_CLOSED_LOOP		1
+#define SUPPORT_CLOSED_LOOP		0		//TODO change this to 1 when implemented
 
 #define ACTIVE_HIGH_STEP		1		// 1 = active high, 0 = active low
 #define ACTIVE_HIGH_DIR			1		// 1 = active high, 0 = active low
@@ -49,14 +45,22 @@ constexpr size_t MaxSmartDrivers = 1;
 constexpr Pin GlobalTmcEnablePin = PortCPin(14);
 constexpr Pin GlobalTmcCSPin = PortAPin(4);
 
-//#define TMC_USES_SERCOM			1
-//constexpr uint8_t TmcSercomNumber = 0;
-//Sercom * const SERCOM_TMC = SERCOM0;
+#define TMC_USES_SPIDEV			(1)
 
-constexpr Pin TMCMosiPin = PortAPin(7);
-constexpr Pin TMCMisoPin = PortAPin(6);
-constexpr Pin TMCSclkPin = PortAPin(5);
-//constexpr GpioPinFunction TMCSpiPinsPeriphMode = GpioPinFunction::D;
+constexpr SpiParameters TmcSpiParameters =
+{
+	.instanceNumber = 1,
+	.mosiPin = PortAPin(7),
+	.misoPin = PortAPin(6),
+	.sclkPin = PortAPin(5),
+	.pinFunction = GpioPinFunction::AF5,
+	.dmaChanTx = 0,		//TODO
+	.dmaChanRx = 0,		//TODO
+	.dmaPrioTx = 0,		//TODO
+	.dmaPrioRx = 0,		//TODO
+};
+
+constexpr Pin TMCCsPin = PortAPin(4);
 
 constexpr uint32_t Tmc2240CurrentRange = 0x01;								// which current range we set the TMC2240 to (2A)
 constexpr uint32_t Tmc2240SlopeControl = 0x01;								// which slope control we set the TMC2240 to (200V/us)
@@ -68,35 +72,37 @@ constexpr float MaxMotorCurrent = DriverFullScaleCurrent;
 
 constexpr uint32_t DefaultStandstillCurrentPercent = 75;
 
-GPIO_TypeDef * const StepPort = GPIOD_NS;									// the port that all the step pins are on
+GPIO_TypeDef * const StepPort = GPIOD;										// the port that all the step pins are on
 constexpr Pin StepPins[NumDrivers] = { PortDPin(2) };
 constexpr Pin DirectionPins[NumDrivers] = { PortCPin(7) };
 constexpr Pin DriverDiagPins[NumDrivers] = { PortCPin(13) };
 
 #define SUPPORT_THERMISTORS			1
 #define SUPPORT_SPI_SENSORS			0										// SPI temperature sensors not supported
-#define SUPPORT_LDC1612				1
-#define SUPPORT_TPiS_1T_1086_L5_5	0										// IR temperature sensor
-#define SUPPORT_AS5601				1										// support direct-connected magnetic filament monitor encoder chip
-#define SUPPORT_DMA_NEOPIXEL		1										// using QSPI for Neopixels
+#define SUPPORT_LDC1612				0										//TODO change to 1 when implemented
+#define SUPPORT_AS5601				0										//TODO change to 1 when implemented support direct-connected magnetic filament monitor encoder chip
+#define SUPPORT_DMA_NEOPIXEL		0										// using QSPI for Neopixels
 #define NEOPIXEL_USES_QSPI			0										// using QSPI for Neopixels
-#define SUPPORT_INDUCTIVE_HEATER	0										// Inductive heater support
-#define SUPPORT_LP5817				0										// LP5817 LED driver support
-#define SUPPORT_ADS131M02			1										// ADS131M02 ADC support
+#define SUPPORT_ADS131M02			0										//TODO change to 1 when implemented ADS131M02 ADC support
 #define NUM_CURRENT_SENSORS			1										// board has dedicated heater output with current measurement
 
-#define NUM_I2C_CHANNELS		1
-#define SUPPORT_LIS3DH			1
+#define NUM_I2C_CHANNELS		0		//TODO change this to 1 when implemented
+#define SUPPORT_LIS3DH			0		//TODO change this to 1 when implemented
 
-#define NUM_SHARED_SPI			1											// we use a SharedSpi for the closed loop encoder
+#define NUM_SHARED_SPI			0											//TODO change this to 1 when implemented we use a SharedSpi for the closed loop encoder
 
 #define NUM_SERIAL_PORTS		0
 
 #define USE_MPU					0
 #define USE_CACHE				1
 
-constexpr int CANInstanceNumber = 0;										// FDCAN1 (not FDCAN2)
-constexpr bool UseLaterCanPins = true;
+constexpr CanParameters CanParams =
+{
+	.instanceNumber = 1,													// FDCAN1 (not FDCAN2)
+	.txPin = PortBPin(7),
+	.rxPin = PortBPin(8),
+	.pinsFunction = GpioPinFunction::AF9
+};
 
 constexpr size_t MaxPortsPerHeater = 1;										// we support a single heater
 
@@ -279,7 +285,7 @@ constexpr PinDescription PinTable[] =
 	// Port B
 	{ TimerOutput::none,		AdcInput::none,		Nx,	nullptr			},	// PB00 LDC interrupt
 	{ TimerOutput::none,		AdcInput::none,		Nx,	nullptr			},	// PB01 AS5047D CS
-	{ TimerOutput::lptim_ch1,	AdcInput::none,		Nx, "io0.out"		},	// PB02 IO0 out
+	{ TimerOutput::lptim1_ch1,	AdcInput::none,		Nx, "io0.out"		},	// PB02 IO0 out
 	{ TimerOutput::none,		AdcInput::none,		Nx, "io2.in"		},	// PB03 IO2 in
 	{ TimerOutput::none,		AdcInput::none,		Nx,	"out1.tach"		},	// PB04 OUT1 tacho input
 	{ TimerOutput::none,		AdcInput::none,		Nx,	nullptr			},	// PB05 accelerometer interrupt
@@ -341,14 +347,8 @@ static_assert(NumPins == NumRealPins + NumVirtualPins);
 #if SUPPORT_AS5601
 constexpr Pin MfmPin = NumRealPins + SUPPORT_LIS3DH + SUPPORT_LDC1612;																		// pin number when the user selects magnetic filament monitor on I2C bus
 #endif
-#if SUPPORT_INDUCTIVE_HEATER
-constexpr Pin InductiveHeaterPin = NumRealPins + SUPPORT_LIS3DH + SUPPORT_LDC1612 + SUPPORT_AS5601;											// pin number when the user selects the inductive nozzle heater
-#endif
 #if SUPPORT_ADS131M02
 constexpr Pin LoadCellPin = NumRealPins + SUPPORT_LIS3DH + SUPPORT_LDC1612 + SUPPORT_AS5601 + SUPPORT_INDUCTIVE_HEATER;						// pin number when the user selects the load cell
-#endif
-#if SUPPORT_LP5817
-constexpr Pin LP5817Pin = NumRealPins + SUPPORT_LIS3DH + SUPPORT_LDC1612 + SUPPORT_AS5601 + SUPPORT_INDUCTIVE_HEATER + SUPPORT_ADS131M02;	// pin number when the user selects the LP5817
 #endif
 
 // Timer/counter used to generate step pulses and other sub-millisecond timings

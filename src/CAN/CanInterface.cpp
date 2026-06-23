@@ -189,7 +189,7 @@ namespace CanInterface
 }
 
 // Initialise this module and the CAN hardware
-void CanInterface::Init(CanAddress defaultBoardAddress, unsigned int whichPort, bool useLaterPins, bool full) noexcept
+void CanInterface::Init(CanAddress defaultBoardAddress, const CanParameters& params, bool full) noexcept
 {
 	// Create the mutex
 	txFifoMutex.Create("CANtx");
@@ -202,75 +202,36 @@ void CanInterface::Init(CanAddress defaultBoardAddress, unsigned int whichPort, 
 		mem.GetCanSettings(canConfigData);
 		canConfigData.GetTiming(timing);
 	}
-#else
+#elif SAMC21 || SAME5x
 	// Read the CAN timing data from the top part of the NVM User Row
 	canConfigData = *reinterpret_cast<CanUserAreaData*>(NVMCTRL_USER + CanUserAreaDataOffset);
 	canConfigData.GetTiming(timing);
+#elif STM32
+	canConfigData.Clear();		//TODO temporary
+	//TODO
 #endif
 
 	// Set up the CAN pins
-#if SAME5x
-	if (whichPort == 0)		// if using CAN0
+#if !RPXXXX
+	SetPinFunction(params.txPin, params.pinsFunction);
+	SetPinFunction(params.rxPin, params.pinsFunction);
+#endif
+
+#ifdef EXP3HC
+	// On later board variants, initialise the second CAN port to avoid generating spurious signals on the second CAN bus
+	if (Platform::GetBoardVariant() > 2)
 	{
-		if (useLaterPins)
-		{
-			SetPinFunction(PortAPin(25), GpioPinFunction::I);
-			SetPinFunction(PortAPin(24), GpioPinFunction::I);
-		}
-		else
-		{
-			SetPinFunction(PortAPin(23), GpioPinFunction::I);
-			SetPinFunction(PortAPin(22), GpioPinFunction::I);
-		}
-	}
-	else					// using CAN1
-	{
-		if (useLaterPins)
-		{
-			SetPinFunction(PortBPin(15), GpioPinFunction::H);
-			SetPinFunction(PortBPin(14), GpioPinFunction::H);
-		}
-		else
-		{
-			SetPinFunction(PortBPin(13), GpioPinFunction::H);
-			SetPinFunction(PortBPin(12), GpioPinFunction::H);
-		}
-# ifdef EXP3HC
-		// On later board variants, initialise the second CAN port to avoid generating spurious signals on the second CAN bus
-		if (Platform::GetBoardVariant() > 2)
-		{
-			SetPinFunction(PortAPin(23), GpioPinFunction::I);
-			SetPinFunction(PortAPin(22), GpioPinFunction::I);
-		}
-# endif
-	}
-#elif SAMC21
-	if (whichPort == 0)		// if using CAN0
-	{
-		if (useLaterPins)
-		{
-			SetPinFunction(PortBPin(23), GpioPinFunction::G);
-			SetPinFunction(PortBPin(22), GpioPinFunction::G);
-		}
-		else
-		{
-			SetPinFunction(PortAPin(25), GpioPinFunction::G);
-			SetPinFunction(PortAPin(24), GpioPinFunction::G);
-		}
-	}
-	else					// using CAN1 (only one set of pins available on SAMC21G)
-	{
-		SetPinFunction(PortBPin(11), GpioPinFunction::G);
-		SetPinFunction(PortBPin(10), GpioPinFunction::G);
+		SetPinFunction(PortAPin(23), GpioPinFunction::I);
+		SetPinFunction(PortAPin(22), GpioPinFunction::I);
 	}
 #endif
 
 	// Initialise the CAN hardware, using the timing data if it was valid
 	can0dev = CanDevice::Init(
 #if RP2040
-								CanTxPin, CanRxPin,				// which pins we use for CAN transmit and receive
+								params.txPin, params.rxPin,				// which pins we use for CAN transmit and receive
 #else
-								0, whichPort,
+								0, params.instanceNumber,
 #endif
 								Can0Config,
 #if STM32H5

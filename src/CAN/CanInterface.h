@@ -17,7 +17,7 @@ class CanMessageBuffer;
 
 namespace CanInterface
 {
-	void Init(CanAddress defaultBoardAddress, unsigned int whichPort, bool useLaterPins, bool full) noexcept;
+	void Init(CanAddress defaultBoardAddress, const CanParameters& params, bool full) noexcept;
 	void Shutdown() noexcept;
 	void Diagnostics(const StringRef& reply) noexcept;
 

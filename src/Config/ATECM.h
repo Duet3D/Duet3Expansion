@@ -8,8 +8,6 @@
 #ifndef SRC_CONFIG_ATECM_H_
 #define SRC_CONFIG_ATECM_H_
 
-#include <Hardware/PinDescription.h>
-
 #define BOARD_TYPE_NAME		"ATECM"
 #define BOOTLOADER_NAME		"SAMC21"
 
@@ -36,8 +34,13 @@
 
 constexpr size_t MaxPortsPerHeater = 1;
 
-constexpr unsigned int CANInstanceNumber = 0;
-constexpr bool UseLaterCanPins = true;
+constexpr CanParameters CanParams =
+{
+	.instanceNumber = 0,
+	.txPin = PortBPin(22),
+	.rxPin = PortBPin(23),
+	.pinsFunction = GpioPinFunction::G
+};
 
 constexpr Pin BoardTypePins[] = { PortAPin(5), PortAPin(4) };
 constexpr Pin ButtonPins[] = { PortAPin(27) };

@@ -62,28 +62,26 @@
 # include <Hardware/ATEIO/ExtendedAnalog.h>
 #endif
 
-#if !RP2040
-# include <hpl_user_area.h>
-#endif
-
-#if RP2040
-# include <hardware/structs/watchdog.h>
-#endif
-
 #if SAME5x
 
+# include <hpl_user_area.h>
 # include <hri_nvmctrl_e54.h>
 constexpr uint32_t FlashBlockSize = 0x00010000;							// the block size we assume for flash
 constexpr uint32_t FirmwareFlashStart = FLASH_ADDR + FlashBlockSize;	// we reserve 64K for the bootloader
 
 #elif SAMC21
 
+# include <hpl_user_area.h>
 # include <hri_nvmctrl_c21.h>
 constexpr uint32_t FlashBlockSize = 0x00004000;							// the block size we assume for flash
 constexpr uint32_t FirmwareFlashStart = FLASH_ADDR + FlashBlockSize;	// we reserve 16K for the bootloader
 
-#elif RP2040
-// TODO
+#elif RPXXXX
+
+# include <hardware/structs/watchdog.h>
+
+#elif STM32
+//TODO
 #else
 # error Unsupported processor
 #endif
@@ -278,7 +276,7 @@ namespace Platform
 		// Note, I2C interrupt priority is set up in the I2C driver
 
 #if SAME5x || SAMC21
-		if constexpr(CANInstanceNumber == 1)
+		if constexpr(CanParams.instanceNumber == 1)
 		{
 # if defined(ID_CAN1)
 			NVIC_SetPriority(CAN1_IRQn, NvicPriorityCan);
@@ -287,6 +285,15 @@ namespace Platform
 		else
 		{
 			NVIC_SetPriority(CAN0_IRQn, NvicPriorityCan);
+		}
+#elif STM32
+		if constexpr(CanParams.instanceNumber == 1)
+		{
+			NVIC_SetPriority(FDCAN1_IT0_IRQn, NvicPriorityCan);
+		}
+		else
+		{
+			NVIC_SetPriority(FDCAN2_IT0_IRQn, NvicPriorityCan);
 		}
 #endif
 
@@ -831,7 +838,7 @@ void Platform::Init()
 	MFMHandler::Init(GetSharedI2C(0));
 #endif
 
-	CanInterface::Init(GetCanAddress(), CANInstanceNumber, UseLaterCanPins, true);
+	CanInterface::Init(GetCanAddress(), CanParams, true);
 	lastPollTime = millis();
 }
 
@@ -845,7 +852,7 @@ void Platform::InitMinimal()
 #if RP2040
 	serialUSB.Start(NoPin);
 #endif
-	CanInterface::Init(GetCanAddress(), CANInstanceNumber, UseLaterCanPins, false);
+	CanInterface::Init(GetCanAddress(), CanParams, false);
 }
 
 void Platform::Spin()

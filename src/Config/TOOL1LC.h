@@ -8,10 +8,6 @@
 #ifndef SRC_CONFIG_TOOL1_V01_H_
 #define SRC_CONFIG_TOOL1_V01_H_
 
-#include <Hardware/PinDescription.h>
-#include <I2C/I2cParameters.h>
-#include <UART/UartParameters.h>
-
 #define BOARD_TYPE_NAME		"TOOL1LC"
 #define BOOTLOADER_NAME		"SAMC21"
 
@@ -125,8 +121,13 @@ constexpr Pin DriverDiagPins[NumDrivers] = { PortBPin(3) };
 
 #define DIAG_SERCOM_NUMBER		4		// which SERCOM device we use for debugging output
 
-constexpr unsigned int CANInstanceNumber = 0;
-constexpr bool UseLaterCanPins = false;
+constexpr CanParameters CanParams =
+{
+	.instanceNumber = 0,
+	.txPin = PortAPin(24),
+	.rxPin = PortAPin(25),
+	.pinsFunction = GpioPinFunction::G
+};
 
 constexpr size_t MaxPortsPerHeater = 1;
 
