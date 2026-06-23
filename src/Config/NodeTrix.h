@@ -13,9 +13,9 @@
 
 // General features
 #define HAS_VREF_MONITOR		0
-#define HAS_VOLTAGE_MONITOR		1
+#define HAS_VOLTAGE_MONITOR		0		//TODO change this to 1 when implemented
 #define HAS_12V_MONITOR			0
-#define HAS_CPU_TEMP_SENSOR		1
+#define HAS_CPU_TEMP_SENSOR		0		//TODO change this to 1 when implemented
 #define HAS_ADDRESS_SWITCHES	0
 #define HAS_BUTTONS				0
 
@@ -352,10 +352,9 @@ constexpr Pin LoadCellPin = NumRealPins + SUPPORT_LIS3DH + SUPPORT_LDC1612 + SUP
 #endif
 
 // Timer/counter used to generate step pulses and other sub-millisecond timings
-//constexpr unsigned int StepTcNumber = 0;
-//TcCount32 * const StepTc = &(TC0->COUNT32);
-//constexpr IRQn StepTcIRQn = TC0_IRQn;
-//#define STEP_TC_HANDLER			TC0_Handler
+constexpr unsigned int StepTimerNumber = 5;
+constexpr IRQn StepTimerIRQn = TIM5_IRQn;
+#define STEP_TC_HANDLER			TIM5_IRQHandler
 
 // Available UART ports
 #define NUM_ASYNC_PORTS		0
