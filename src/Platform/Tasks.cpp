@@ -92,6 +92,10 @@ static volatile Module spinningModule = Module::numModules;
 static TaskBase *mainTask = nullptr;
 static Mutex mallocMutex;
 
+#if STM32
+static uint32_t resetStatus;
+#endif
+
 // Idle task data
 constexpr unsigned int IdleTaskStackWords = 50;					// currently we don't use the idle talk for anything, so this can be quite small
 static Task<IdleTaskStackWords> idleTask;
@@ -200,7 +204,7 @@ static bool watchdogCausedReboot = false;
 		// clear the update flag
 		watchdog_hw->scratch[UpdateFirmwareMagicWordIndex] = 0;
 	}
-# else
+# elif SAME5x || SAMC21
 	// Check that the bootloader is protected and EEPROM is configured
 	union
 	{
@@ -241,6 +245,8 @@ static bool watchdogCausedReboot = false;
 		delayMicroseconds(10000);
 		Platform::ResetProcessor();
 	}
+# elif STM32
+	//TODO	
 # endif
 #endif
 
@@ -251,6 +257,12 @@ static bool watchdogCausedReboot = false;
 	{
 		*p++ = memPattern;
 	}
+
+#if STM32
+	// Save and clear the reset status for diagnostics
+	resetStatus = RCC->RSR;
+	RCC->RSR = resetStatus | RCC_RSR_RMVF;
+#endif
 
 	CoreInit();
 	DeviceInit();
@@ -957,7 +969,7 @@ void Tasks::Diagnostics(const StringRef& reply) noexcept
 
 	// Show the up time and reason for the last reset
 	const uint32_t now = (uint32_t)(millis64()/1000u);		// get up time in seconds
-	reply.lcatf("Last reset %02d:%02d:%02d ago, cause: ", (unsigned int)(now/3600), (unsigned int)((now % 3600)/60), (unsigned int)(now % 60));
+	reply.lcatf("Last reset %02d:%02d:%02d ago, cause:", (unsigned int)(now/3600), (unsigned int)((now % 3600)/60), (unsigned int)(now % 60));
 
 #if RP2040
 	{
@@ -966,48 +978,55 @@ void Tasks::Diagnostics(const StringRef& reply) noexcept
 		{
 			switch (reason)
 			{
-			case 1: reply.cat("watchdog timer"); break;
-			case 2: reply.cat("watchdog force"); break;
-			case 3: reply.cat("watchdog force and timer"); break;
+			case 1: reply.cat(" watchdog timer"); break;
+			case 2: reply.cat(" watchdog force"); break;
+			case 3: reply.cat(" watchdog force and timer"); break;
 			}
 		}
 		else if (reason != 0)
 		{
 			// Software resets use the watchdog timer to force a reset
-			reply.cat("software");
+			reply.cat(" software");
 		}
 		else
 		{
 			const uint32_t reason2 = vreg_and_chip_reset_hw->chip_reset;
 			if (reason2 & 0x0100)
 			{
-				reply.cat("power up or brownout");
+				reply.cat(" power up or brownout");
 			}
 			else if (reason2 & 0x00010000)
 			{
-				reply.cat("RUN pin");
+				reply.cat(" RUN pin");
 			}
 			else
 			{
-				reply.cat("debugger");
+				reply.cat(" debugger");
 			}
 		}
 	}
+#elif STM32
+	if (resetStatus & RCC_RSR_WWDGRSTF) { reply.cat(" window watchdog"); }
+	if (resetStatus & RCC_RSR_IWDGRSTF) { reply.cat(" watchdog"); }
+	if (resetStatus & RCC_RSR_SFTRSTF)  { reply.cat(" software"); }
+	if (resetStatus & RCC_RSR_BORRSTF) 	{ reply.cat(" power"); }
+	if (resetStatus & RCC_RSR_PINRSTF) 	{ reply.cat(" reset pin"); }
+	if ((resetStatus & (RCC_RSR_WWDGRSTF | RCC_RSR_IWDGRSTF | RCC_RSR_SFTRSTF | RCC_RSR_BORRSTF | RCC_RSR_PINRSTF)) == 0) { reply.catf(" %" PRIu32, resetStatus); }
 #else
 	const uint8_t resetCause = RSTC->RCAUSE.reg;
 	switch (resetCause)
 	{
-	case RSTC_RCAUSE_POR:		reply.cat("power up"); break;
-	case RSTC_RCAUSE_BODCORE:	reply.cat("core brownout"); break;
-	case RSTC_RCAUSE_BODVDD:	reply.cat("VDD brownout"); break;
-	case RSTC_RCAUSE_EXT:		reply.cat("reset button"); break;
-	case RSTC_RCAUSE_WDT:		reply.cat("watchdog"); break;
-	case RSTC_RCAUSE_SYST:		reply.cat("software"); break;
+	case RSTC_RCAUSE_POR:		reply.cat(" power up"); break;
+	case RSTC_RCAUSE_BODCORE:	reply.cat(" core brownout"); break;
+	case RSTC_RCAUSE_BODVDD:	reply.cat(" VDD brownout"); break;
+	case RSTC_RCAUSE_EXT:		reply.cat(" reset button"); break;
+	case RSTC_RCAUSE_WDT:		reply.cat(" watchdog"); break;
+	case RSTC_RCAUSE_SYST:		reply.cat(" software"); break;
 #if SAME5x
-	case RSTC_RCAUSE_NVM:		reply.cat("nvm"); break;
-	case RSTC_RCAUSE_BACKUP:	reply.cat("backup/hibernate"); break;
+	case RSTC_RCAUSE_NVM:		reply.cat(" nvm"); break;
+	case RSTC_RCAUSE_BACKUP:	reply.cat(" backup/hibernate"); break;
 #endif
-	default:					reply.catf("%u", resetCause); break;
+	default:					reply.catf(" %u", resetCause); break;
 	}
 #endif
 }

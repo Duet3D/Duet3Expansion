@@ -235,7 +235,7 @@ void CanInterface::Init(CanAddress defaultBoardAddress, const CanParameters& par
 #endif
 								Can0Config,
 #if STM32H5
-								reinterpret_cast<uint32_t *>(SRAMCAN_BASE_NS + 0x0350 * whichPort),			// STM32H5 has fixed message buffer allocation
+								reinterpret_cast<uint32_t *>(SRAMCAN_BASE_NS + 0x0350 * (instanceNumber - 1)),			// STM32H5 has fixed message buffer allocation
 #elif STM32H7
 								canMemory,
 #else
@@ -756,6 +756,8 @@ GCodeResult CanInterface::ChangeAddressAndDataRate(const CanMessageSetAddressAnd
 			NonVolatileMemory mem(NvmPage::common);
 			mem.SetCanSettings(canConfigData);
 			mem.EnsureWritten();
+#elif STM32
+			//TODO
 #else
 			const int32_t rc = _user_area_write(reinterpret_cast<void*>(NVMCTRL_USER), CanUserAreaDataOffset, reinterpret_cast<const uint8_t*>(&canConfigData), sizeof(canConfigData));
 			if (rc != 0)
