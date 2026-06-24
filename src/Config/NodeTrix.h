@@ -353,8 +353,12 @@ constexpr Pin LoadCellPin = NumRealPins + SUPPORT_LIS3DH + SUPPORT_LDC1612 + SUP
 
 // Timer/counter used to generate step pulses and other sub-millisecond timings
 constexpr unsigned int StepTimerNumber = 5;
+TIM_TypeDef *const StepTimerHw = TIM5;
 constexpr IRQn StepTimerIRQn = TIM5_IRQn;
 #define STEP_TC_HANDLER			TIM5_IRQHandler
+
+constexpr unsigned int TimeStampTimerNumber = 3;
+TIM_TypeDef *const TimeStampTimerHw = TIM3;
 
 // Available UART ports
 #define NUM_ASYNC_PORTS		0
