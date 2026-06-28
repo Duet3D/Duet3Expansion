@@ -17,6 +17,8 @@
 #include "TemperatureError.h"
 #include "Hardware/IoPorts.h"
 
+#define CHECK_HEATER_PWM			defined(TOOLINDX)			// we only monitor the heater PWM on TOOLINDX
+
 class CanMessageHeaterTuningReport;
 
 class LocalHeater : public Heater
@@ -75,7 +77,9 @@ private:
 	uint32_t lastSampleTime;									// Time when the temperature was last sampled by Spin()
 
 	uint16_t heaterExcursionFaultCount;							// Count of questionable heater temperature excursions
+#if CHECK_HEATER_PWM
 	uint16_t heaterPwmFaultCount;								// Count of questionable PWM values
+#endif
 
 	uint8_t previousTemperaturesGood;							// Bitmap indicating which previous temperature were good readings
 	HeaterMode mode;											// Current state of the heater

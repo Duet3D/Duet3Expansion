@@ -63,23 +63,13 @@
 #endif
 
 #if SAME5x
-
 # include <hpl_user_area.h>
 # include <hri_nvmctrl_e54.h>
-constexpr uint32_t FlashBlockSize = 0x00010000;							// the block size we assume for flash
-constexpr uint32_t FirmwareFlashStart = FLASH_ADDR + FlashBlockSize;	// we reserve 64K for the bootloader
-
 #elif SAMC21
-
 # include <hpl_user_area.h>
 # include <hri_nvmctrl_c21.h>
-constexpr uint32_t FlashBlockSize = 0x00004000;							// the block size we assume for flash
-constexpr uint32_t FirmwareFlashStart = FLASH_ADDR + FlashBlockSize;	// we reserve 16K for the bootloader
-
 #elif RPXXXX
-
 # include <hardware/structs/watchdog.h>
-
 #elif STM32
 //TODO
 #else
@@ -330,17 +320,20 @@ namespace Platform
 	// Erase the firmware (but not the bootloader) and reset the processor
 	[[noreturn]] RAMFUNC static void EraseAndReset()
 	{
+		const uint32_t startAddress = SCB->VTOR;						// this may be either 0x4000 or 0x10000
 # if SAME5x
+
+		// Invalidate the firmware
 		while (!hri_nvmctrl_get_STATUS_READY_bit(NVMCTRL)) { }
 
 		// Unlock the block of flash
-		hri_nvmctrl_write_ADDR_reg(NVMCTRL, FirmwareFlashStart);
+		hri_nvmctrl_write_ADDR_reg(NVMCTRL, startAddress);
 		hri_nvmctrl_write_CTRLB_reg(NVMCTRL, NVMCTRL_CTRLB_CMD_UR | NVMCTRL_CTRLB_CMDEX_KEY);
 
 		while (!hri_nvmctrl_get_STATUS_READY_bit(NVMCTRL)) { }
 
 		// Set address and command
-		hri_nvmctrl_write_ADDR_reg(NVMCTRL, FirmwareFlashStart);
+		hri_nvmctrl_write_ADDR_reg(NVMCTRL, startAddress);
 		hri_nvmctrl_write_CTRLB_reg(NVMCTRL, NVMCTRL_CTRLB_CMD_EB | NVMCTRL_CTRLB_CMDEX_KEY);
 
 		while (!hri_nvmctrl_get_STATUS_READY_bit(NVMCTRL)) { }
@@ -349,14 +342,14 @@ namespace Platform
 		hri_nvmctrl_clear_STATUS_reg(NVMCTRL, NVMCTRL_STATUS_MASK);
 
 		// Unlock the block of flash
-		hri_nvmctrl_write_ADDR_reg(NVMCTRL, FirmwareFlashStart / 2);		// note the /2 because the command takes the address in 16-bit words
+		hri_nvmctrl_write_ADDR_reg(NVMCTRL, startAddress / 2);			// note the /2 because the command takes the address in 16-bit words
 		hri_nvmctrl_write_CTRLA_reg(NVMCTRL, NVMCTRL_CTRLA_CMD_UR | NVMCTRL_CTRLA_CMDEX_KEY);
 
 		while (!hri_nvmctrl_get_interrupt_READY_bit(NVMCTRL)) { }
 		hri_nvmctrl_clear_STATUS_reg(NVMCTRL, NVMCTRL_STATUS_MASK);
 
 		// Set address and command
-		hri_nvmctrl_write_ADDR_reg(NVMCTRL, FirmwareFlashStart / 2);		// note the /2 because the command takes the address in 16-bit words
+		hri_nvmctrl_write_ADDR_reg(NVMCTRL, startAddress / 2);			// note the /2 because the command takes the address in 16-bit words
 		hri_nvmctrl_write_CTRLA_reg(NVMCTRL, NVMCTRL_CTRLA_CMD_ER | NVMCTRL_CTRLA_CMDEX_KEY);
 
 		while (!hri_nvmctrl_get_interrupt_READY_bit(NVMCTRL)) { }
