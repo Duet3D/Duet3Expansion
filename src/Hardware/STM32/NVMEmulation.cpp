@@ -1,7 +1,10 @@
 // NVRAM emulation for STM32H5 and STM32H7 processors
 
-#include "../SoftwareReset.h"
 #include "NVMEmulation.h"
+
+#if STM32
+
+#include "../SoftwareReset.h"
 #include "RepRapFirmware.h"
 #include <Cache.h>
 #include <Flash.h>
@@ -81,5 +84,7 @@ bool NVMEmulationWrite(const void *data, uint32_t dataLength) noexcept
     Flash::FlashWrite((uint32_t)GetSlotPtr(currentSlot), (const uint8_t*)data, dataLength);
     return true;
 }
+
+#endif
 
 // End
