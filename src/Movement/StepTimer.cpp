@@ -67,8 +67,8 @@ void StepTimer::Init() noexcept
 #elif STM32
 	// The CAN external time stamp counter is timer 3.
 	// As that is only 16-bit and we need a 32-bit step timer, we use timer 5 for the step timer and clock it at the same rate as timer 3.
-	StepTimerHw->PSC = GetTimerClkFreq(StepTimerNumber)/StepClockRate;
-	TimeStampTimerHw->PSC = GetTimerClkFreq(TimeStampTimerNumber)/StepClockRate;
+	StepTimerHw->PSC = GetTimerClockFrequency(StepTimerNumber)/StepClockRate;
+	TimeStampTimerHw->PSC = GetTimerClockFrequency(TimeStampTimerNumber)/StepClockRate;
 	StepTimerHw->DIER &= ~(TIM_DIER_CC1IE);							// disable the interrupt
 	StepTimerHw->ARR = 0xFFFFFFFF;
 	TimeStampTimerHw->ARR = 0x0000FFFF;
