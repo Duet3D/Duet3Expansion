@@ -176,8 +176,8 @@ void StepTimer::Init() noexcept
 {
 	static uint32_t originalOffset = 0;
 
-#if RP2040
-	// On the RP2040 the timestamp counter is the same as the step counter
+#if SAME70 || STM32 || (RP2040 && !USE_SPICAN)
+	// On these processors the timestamp counter is the same as the step counter
 	const uint32_t localTimeNow = StepTimer::GetTimerTicks();
 	const uint32_t timeStampDelay = (localTimeNow - timeStamp) & 0xFFFF;
 #else

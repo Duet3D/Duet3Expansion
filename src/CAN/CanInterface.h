@@ -37,7 +37,9 @@ namespace CanInterface
 	bool DebugPutc(char c) noexcept;
 #endif
 
-#if !SAME70 && !RP2040
+#if SAME70 || STM32 || (RP2040 && !USE_SPICAN)
+// The following functions are not needed because we use the step clock as the time stamp counter
+#else
 	uint16_t GetTimeStampCounter() noexcept;
 	uint16_t GetTimeStampPeriod() noexcept;
 #endif

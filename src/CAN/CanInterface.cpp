@@ -491,8 +491,8 @@ CanMessageBuffer *CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf) no
 			{
 				// Track how much processing delay there was
 				{
-#if RP2040 && !USE_SPICAN
-					// RP2040 uses the low 16 bits of the step counter for the time stamp
+#if STM32 || SAME70 || (RP2040 && !USE_SPICAN)
+					// These processors use the low 16 bits of the step counter for the time stamp
 					const uint16_t timeStampNow = StepTimer::GetTimerTicks();
 					const uint32_t timeStampDelay = (uint32_t)((timeStampNow - buf->timeStamp) & 0xFFFF);	// the delay in step clocks
 #else
@@ -789,7 +789,9 @@ bool CanInterface::GetCanMessage(CanMessageBuffer *buf) noexcept
 	return can0dev->ReceiveMessage(CanDevice::RxBufferNumber::fifo0, 0, buf);
 }
 
-#if !RP2040 || USE_SPICAN
+#if SAME70 || STM32 || (RP2040 && !USE_SPICAN)
+// The following functions are not needed because we use the step clock as the time stamp counter
+#else
 
 uint16_t CanInterface::GetTimeStampCounter() noexcept
 {

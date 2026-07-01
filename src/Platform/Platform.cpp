@@ -1527,7 +1527,9 @@ GCodeResult Platform::DoDiagnosticTest(const CanMessageDiagnosticTest& msg, cons
 			reply.printf("Reading step timer 100 times took %.2fus", (double)((1'000'000.0f * (float)tim1)/(float)SystemCoreClock));
 		}
 
-#if !RP2040
+#if SAME70 || STM32 || (RP2040 && !USE_SPICAN)
+		// The following code is not needed because we use the step clock as the time stamp counter
+#else
 		// Also check the correspondence between the CAN timestamp timer and the step clock
 		{
 			uint32_t startClocks, endClocks;
