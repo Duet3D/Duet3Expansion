@@ -123,11 +123,33 @@ MoveSegment *DriveMovement::NewSegment(uint32_t now) noexcept
 		}
 #endif
 
-		bool newDirection;
-		int32_t multiplier;
-		motioncalc_t rawP;
+		bool newDirection = false;					// initialised so the early-skip branch is free of -Wmaybe-uninitialized; overwritten (dead store) in the normal path
+		int32_t multiplier = 0;
+		motioncalc_t rawP = (motioncalc_t)0.0;
 
-		if (seg->NormaliseAndCheckLinear(distanceCarriedForwards, t0))
+		const bool segIsLinear = seg->NormaliseAndCheckLinear(distanceCarriedForwards, t0);
+#if SAMC21 || RP2040
+		// Early zero-step skip (soft-float boards only). A non-reversing segment - linear, or accel/decel whose speed
+		// reversal is not within it (!IsPositive(t0), the same test the full path uses below) - with zero net steps
+		// produces no step pulses. For such a segment the full path below would compute
+		// segmentStepLimit = reverseStartStep = 1 + netStepsThisSegment*multiplier = 1 and state = cartLinear (linear)
+		// or cartAccel (reversal in the past), then take the zero-step exit without emitting a step. We set those three
+		// identically here and skip only the expensive coefficient work (the soft-float divisions that compute rawP and q).
+		// q and p are deliberately left unchanged: computing them needs the soft-float division this skip exists to
+		// avoid. The only consumer that affects motion is the CalcNextStepTimeFull switch, which is reached solely for a
+		// segment that emits a step; this segment emits none and is released without becoming the current segment, and
+		// every stepping segment recomputes q and p (full path) before that switch reads them. (DriveMovement::DebugPrint
+		// also reads q/p, but only as diagnostic output for a non-idle DM.) Reversing segments (IsPositive(t0)) are left
+		// to the full path, which may emit forward+back pulses at zero net steps.
+		if (netStepsThisSegment == 0 && (segIsLinear || !IsPositive(t0)))
+		{
+			reverseStartStep = segmentStepLimit = 1;
+			state = (segIsLinear) ? DMState::cartLinear : DMState::cartAccel;
+		}
+		else
+		{	// brace closed (under the same guard) just before the step-count check below; block left un-re-indented to keep the diff small
+#endif
+		if (segIsLinear)
 		{
 			// Segment is linear
 			rawP = seg->CalcLinearRecipU();
@@ -215,6 +237,10 @@ MoveSegment *DriveMovement::NewSegment(uint32_t now) noexcept
 		p = (newDirection) ? rawP : -rawP;
 #else
 		p = rawP * multiplier;
+#endif
+
+#if SAMC21 || RP2040
+		}	// end of the non-early-skip block opened after NormaliseAndCheckLinear above
 #endif
 
 		nextStep = 1;
