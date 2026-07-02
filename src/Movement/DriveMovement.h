@@ -221,7 +221,7 @@ inline bool DriveMovement::GetCurrentMotion(uint32_t when, MotionParameters& mPa
 			if (closedLoopControl.IsClosedLoopEnabled())
 			{
 				currentMotorPosition = positionAtSegmentStart + netStepsThisSegment;
-				distanceCarriedForwards += seg->GetLength() - (motioncalc_t)netStepsThisSegment;
+				distanceCarriedForwards += seg->GetLength() - FastIntToMotionCalc(netStepsThisSegment);
 				movementAccumulator += netStepsThisSegment;		// update the amount of extrusion
 				MoveSegment *oldSeg = seg;
 				segments = oldSeg->GetNext();

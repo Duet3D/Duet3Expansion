@@ -112,7 +112,7 @@ MoveSegment *DriveMovement::NewSegment(uint32_t now) noexcept
 		seg->SetExecuting();
 
 		// Calculate the movement parameters
-		netStepsThisSegment = (int32_t)(seg->GetLength() + distanceCarriedForwards);
+		netStepsThisSegment = FastMotionCalcToInt(seg->GetLength() + distanceCarriedForwards);
 
 #if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
 		if (closedLoopControl.IsClosedLoopEnabled())
@@ -159,7 +159,8 @@ MoveSegment *DriveMovement::NewSegment(uint32_t now) noexcept
 				multiplier = -multiplier;
 				const int32_t netStepsInInitialDirection = netStepsThisSegment * multiplier;
 
-				if (t0 < (motioncalc_t)seg->GetDuration())
+				// Here t0 and the segment duration are both non-negative, so IsLessThanNonNegative avoids a soft-float compare
+				if (IsLessThanNonNegative(t0, FastUintToMotionCalc(seg->GetDuration())))
 				{
 					// Reversal is potentially in this segment, but it may be before the first step, or may be beyond the last step we are going to take
 					// It can also happen that the target end speed is zero but due to FP rounding error, distanceToReverse was just below netStepsInInitialDirection and got rounded down
@@ -170,7 +171,7 @@ MoveSegment *DriveMovement::NewSegment(uint32_t now) noexcept
 #else
 					const motioncalc_t distanceToReverse = rawDistanceToReverse * multiplier;
 #endif
-					const int32_t stepsBeforeReverse = (int32_t)(distanceToReverse - (motioncalc_t)0.2);			// don't step and immediately step back again
+					const int32_t stepsBeforeReverse = FastMotionCalcToInt(distanceToReverse - (motioncalc_t)0.2);	// don't step and immediately step back again
 					// Note, stepsBeforeReverse may be negative at this point
 					if (stepsBeforeReverse <= netStepsInInitialDirection && netStepsInInitialDirection >= 0)
 					{
@@ -264,7 +265,7 @@ MoveSegment *DriveMovement::NewSegment(uint32_t now) noexcept
 		seg->DebugPrint();
 #endif
 		motioncalc_t newDcf = distanceCarriedForwards + seg->GetLength();
-		if (fabsm(newDcf) > 1.0)
+		if (!FabsLessThanOrEqual(newDcf, (motioncalc_t)1.0))		// same as fabsm(newDcf) > 1.0 but avoids the soft-float comparison
 		{
 			LogStepError(7, (float)newDcf, seg);
 			newDcf = constrain<motioncalc_t>(newDcf, -1.0, 1.0);	// to prevent the next segment erroring out
@@ -318,7 +319,7 @@ pre(stepsTillRecalc == 0; segments != nullptr)
 		{
 			// It's an axis and we are soon to stop movement, so we should end on an exact microstep.
 			// Check whether taking the last step would end up going a little too far or not quite far enough
-			const motioncalc_t provisionalDistanceCarriedForwards = distanceCarriedForwards + currentSegment->GetLength() - (motioncalc_t)netStepsThisSegment;
+			const motioncalc_t provisionalDistanceCarriedForwards = distanceCarriedForwards + currentSegment->GetLength() - FastIntToMotionCalc(netStepsThisSegment);
 			if (fabsm(provisionalDistanceCarriedForwards) < 0.05)
 			{
 				currentSegment->AdjustLength(-provisionalDistanceCarriedForwards);				// just correct the segment length
@@ -367,7 +368,7 @@ pre(stepsTillRecalc == 0; segments != nullptr)
 		// If there are no more steps left in this segment, skip to the next segment and use single stepping
 		if (stepsToLimit <= 0)
 		{
-			distanceCarriedForwards += currentSegment->GetLength() - (motioncalc_t)netStepsThisSegment;
+			distanceCarriedForwards += currentSegment->GetLength() - FastIntToMotionCalc(netStepsThisSegment);
 #if !(SAMC21 || RP2040)												// this check is expensive on these processors
 			if (fabsm(distanceCarriedForwards) > (motioncalc_t)1.0)
 			{
@@ -445,17 +446,17 @@ pre(stepsTillRecalc == 0; segments != nullptr)
 	switch (state)
 	{
 	case DMState::cartLinear:									// linear steady speed
-		nextCalcStepTime = (motioncalc_t)(nextStep + (int32_t)stepsTillRecalc) * p;
+		nextCalcStepTime = FastIntToMotionCalc(nextStep + (int32_t)stepsTillRecalc) * p;
 		break;
 
 	case DMState::cartAccel:									// Cartesian accelerating
-		nextCalcStepTime = fastLimSqrtm(q + p * (motioncalc_t)(nextStep + (int32_t)stepsTillRecalc));
+		nextCalcStepTime = fastLimSqrtm(q + p * FastIntToMotionCalc(nextStep + (int32_t)stepsTillRecalc));
 		break;
 
 	case DMState::cartDecelForwardsReversing:
 		if (nextStep + (int32_t)stepsTillRecalc < reverseStartStep)
 		{
-			nextCalcStepTime = -fastLimSqrtm(q + p * (motioncalc_t)(nextStep + (int32_t)stepsTillRecalc));
+			nextCalcStepTime = -fastLimSqrtm(q + p * FastIntToMotionCalc(nextStep + (int32_t)stepsTillRecalc));
 			break;
 		}
 
@@ -466,12 +467,12 @@ pre(stepsTillRecalc == 0; segments != nullptr)
 	case DMState::cartDecelReverse:								// Cartesian decelerating, reverse motion. Convert the steps to int32_t because the net steps may be negative.
 		{
 			const int32_t netSteps = 2 * reverseStartStep - nextStep - 1;
-			nextCalcStepTime = fastLimSqrtm(q + p * (motioncalc_t)(netSteps - (int32_t)stepsTillRecalc));
+			nextCalcStepTime = fastLimSqrtm(q + p * FastIntToMotionCalc(netSteps - (int32_t)stepsTillRecalc));
 		}
 		break;
 
 	case DMState::cartDecelNoReverse:							// Cartesian decelerating with no reversal
-		nextCalcStepTime = -fastLimSqrtm(q + p * (motioncalc_t)(nextStep + (int32_t)stepsTillRecalc));
+		nextCalcStepTime = -fastLimSqrtm(q + p * FastIntToMotionCalc(nextStep + (int32_t)stepsTillRecalc));
 		break;
 
 	default:
@@ -508,7 +509,7 @@ pre(stepsTillRecalc == 0; segments != nullptr)
 	}
 	else
 	{
-		iNextCalcStepTime = (uint32_t)nextCalcStepTime;
+		iNextCalcStepTime = FastMotionCalcToUint(nextCalcStepTime);	// the sign bit is clear here, so this is exactly (uint32_t)nextCalcStepTime
 	}
 
 	if (iNextCalcStepTime > currentSegment->GetDuration())
