@@ -519,6 +519,10 @@ inline void MoveSegment::Merge(motioncalc_t p_distance, motioncalc_t p_a, Moveme
 # define USE_FIXED_STEP_TIMING	(0)
 #endif
 
+// Change the 1 to 0 to compile out the shadow slot cache statistics (cacheHit/maxSkip/maxCacheSkip in M122).
+// Collecting them costs a few cycles at each segment boundary and about 50 bytes of RAM code.
+#define SHADOW_CACHE_DIAGNOSTICS	(USE_FIXED_STEP_TIMING && 1)
+
 #if USE_FIXED_STEP_TIMING
 
 constexpr int32_t StepTimeFracBits = 24;						// time-like fixed point quantities are value * 2^24 step clocks in an int64_t

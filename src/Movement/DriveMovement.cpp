@@ -17,6 +17,13 @@
 
 int32_t DriveMovement::maxStepsLate = 0;
 
+#if SHADOW_CACHE_DIAGNOSTICS
+uint32_t DriveMovement::shadowCacheHits = 0;
+uint32_t DriveMovement::shadowCacheMisses = 0;
+uint32_t DriveMovement::maxCacheSkip = 0;
+uint32_t DriveMovement::maxIsrSkip = 0;
+#endif
+
 #ifdef TOOL1LC
 
 // armv6-m processors have no atomic read-modify-write instructions, so std::atomic<int32_t>::operator+=
@@ -539,6 +546,9 @@ MoveSegment *DriveMovement::NewSegment(uint32_t now) noexcept
 {
 	positionAtSegmentStart = currentMotorPosition;
 
+#if SHADOW_CACHE_DIAGNOSTICS
+	unsigned int skipRun = 0;								// diagnostic: the number of zero-step segments this call has skipped without a prepared slot
+#endif
 	while (true)
 	{
 		MoveSegment *seg = segments;				// capture volatile variable
@@ -572,6 +582,9 @@ MoveSegment *DriveMovement::NewSegment(uint32_t now) noexcept
 					// any per-segment float maths: the preparation computed the resulting distanceCarriedForwards
 					// bit-identically to what the normal path would compute, and verified the error bound on it.
 					unsigned int n = slot.numSlivers;
+#if SHADOW_CACHE_DIAGNOSTICS
+					if (n > maxCacheSkip) { maxCacheSkip = n; }
+#endif
 					do
 					{
 						MoveSegment *const oldSeg = seg;
@@ -618,6 +631,9 @@ MoveSegment *DriveMovement::NewSegment(uint32_t now) noexcept
 				slot.seg = nullptr;								// consume the slot; Move::Spin on the MAIN task refills it
 				shadowHead = (shadowHead + 1u == NumShadowSlots) ? 0 : shadowHead + 1u;	// no % here: modulo by 3 would call the division function in flash
 				++shadowGen;
+#if SHADOW_CACHE_DIAGNOSTICS
+				++shadowCacheHits;
+#endif
 
 				// Update variables used by filament monitoring, as the normal path below does
 				if (segmentFlags.isExtruder)
@@ -689,6 +705,10 @@ MoveSegment *DriveMovement::NewSegment(uint32_t now) noexcept
 
 			// Re-enable all drivers for this axis
 			driversCurrentlyUsed = driversNormallyUsed;
+
+#if SHADOW_CACHE_DIAGNOSTICS
+			++shadowCacheMisses;						// diagnostic: this stepping segment was not served from a prepared slot
+#endif
 
 #if USE_FIXED_STEP_TIMING
 			// Convert the movement parameters to fixed point for the per-step calculations in CalcNextStepTimeFull.
@@ -766,6 +786,10 @@ MoveSegment *DriveMovement::NewSegment(uint32_t now) noexcept
 		{
 			FlushShadows();										// we are releasing a segment the preparation covers without consuming it, so the slots are stale
 		}
+#if SHADOW_CACHE_DIAGNOSTICS
+		++skipRun;
+		if (skipRun > maxIsrSkip) { maxIsrSkip = skipRun; }		// record the longest slow-path skip run for M122
+#endif
 #endif
 		MoveSegment::Release(oldSeg);
 	}

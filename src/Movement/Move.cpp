@@ -526,6 +526,16 @@ void Move::AppendDiagnostics(const StringRef& reply) noexcept
 	reply.catf(", maxStepISR %.1fus (%" PRIu32 " cycles)", (double)((float)maxStepIsrCycles * (1000000.0f/(float)SystemCoreClock)), maxStepIsrCycles);
 	maxStepIsrCycles = 0;
 #endif
+#if SHADOW_CACHE_DIAGNOSTICS
+	{
+		const uint32_t hits = DriveMovement::shadowCacheHits;
+		const uint32_t total = hits + DriveMovement::shadowCacheMisses;
+		reply.catf(", cacheHit %.1f%% (%" PRIu32 "/%" PRIu32 "), maxSkip %" PRIu32 ", maxCacheSkip %" PRIu32,
+						(double)((total == 0) ? 0.0f : (float)hits * 100.0f/(float)total), hits, total,
+						DriveMovement::maxIsrSkip, DriveMovement::maxCacheSkip);
+		DriveMovement::shadowCacheHits = DriveMovement::shadowCacheMisses = DriveMovement::maxIsrSkip = DriveMovement::maxCacheSkip = 0;
+	}
+#endif
 	numHiccups = 0;
 	maxPrepareTime = 0;
 	numStepErrors = 0;
