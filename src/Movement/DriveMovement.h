@@ -87,6 +87,31 @@ private:
 
 	static void CalcLinearFixCoeffs(motioncalc_t p, motioncalc_t t0, int32_t stepLimit, FixedStepCoeffs& out) noexcept;	// convert the parameters of a constant-speed segment; deliberately in flash
 	static void CalcAccelDecelFixCoeffs(motioncalc_t q, motioncalc_t p, motioncalc_t t0, int32_t stepLimit, int32_t revStartStep, FixedStepCoeffs& out) noexcept;	// convert the parameters of an accelerating/decelerating segment; deliberately in flash
+
+	// Movement parameters of one upcoming stepping segment, prepared in advance by the Move task so that the
+	// segment-boundary invocations of the step ISR need not do the coefficient float maths. A slot spans an optional
+	// run of contiguous zero-step segments ("slivers") followed by one stepping segment, so that the ISR can release
+	// a whole sliver run without doing any per-segment float maths either. seg doubles as the validity flag.
+	struct ShadowSlot
+	{
+		const MoveSegment *volatile seg;				// the stepping segment this slot is for, or nullptr if the slot is free
+		const MoveSegment *chainHead;					// the first segment the slot spans: the first sliver, or seg itself if numSlivers == 0
+		uint8_t numSlivers;								// the number of contiguous zero-step segments before seg that this slot spans
+		DMState state;									// the initial DM state for seg
+		bool direction;									// the initial direction for seg
+		int32_t netSteps;								// netStepsThisSegment for seg
+		int32_t stepLimit;								// segmentStepLimit for seg
+		int32_t reverseStartStep;						// reverseStartStep for seg
+		motioncalc_t dcfAtSeg;							// distanceCarriedForwards at the start of seg, i.e. after the slivers
+		motioncalc_t dcfAfterSeg;						// distanceCarriedForwards after seg ends; anchors the preparation of the following slot
+		FixedStepCoeffs fix;							// the fixed point movement parameters for seg
+	};
+
+	static constexpr unsigned int NumShadowSlots = 3;
+
+	bool PrepareShadowChunk() noexcept;					// prepare one more slot if possible, returning true if a slot was filled; called from Move::Spin (MAIN task) only; deliberately in flash
+	void InvalidateShadowsFrom(uint32_t startTime) noexcept;	// invalidate all slots that segments added from startTime onwards may modify; caller must shut out the step interrupt
+	void FlushShadows() noexcept;						// drop all prepared slots; caller must be the step ISR or have it shut out
 #endif
 
 	void ReleaseSegments() noexcept;					// release the list of segments and set it to nullptr
@@ -124,6 +149,15 @@ private:
 	int64_t qFix;										// accelerating: q * 2^sqrtScale
 	uint8_t sqrtRShift;									// accelerating: StepTimeFracBits - sqrtScale/2, converts sqrt(s * 2^sqrtScale) to Q40.24
 	uint8_t pShift;										// accelerating: extra scale bits of pFix, so that p keeps its relative precision when |q| >> |p * n|
+
+	// The ring of prepared upcoming segments. The step ISR consumes shadowSlots[shadowHead] when the corresponding
+	// segment comes up for execution; Move::Spin on the MAIN task is the only producer and commits slots with
+	// interrupts disabled. Move::AddLinearSegments invalidates slots that an incoming move may modify (also with
+	// interrupts disabled), and anything that releases segments outside the prepared order flushes all slots, so the
+	// boundary falls back to the normal path and correctness never depends on the preparation.
+	ShadowSlot shadowSlots[NumShadowSlots];
+	uint8_t shadowHead;									// the index of the slot the step ISR will consume next
+	volatile uint32_t shadowGen;						// bumped whenever the ISR releases a segment or consumes/flushes slots; guards the producer's snapshots
 #endif
 #if SUPPORT_CLOSED_LOOP
 	motioncalc_t u;										// the initial speed of this segment
@@ -186,6 +220,21 @@ inline int32_t DriveMovement::GetAndClearMaxStepsLate() noexcept
 	maxStepsLate = 0;
 	return ret;
 }
+
+#if USE_FIXED_STEP_TIMING
+
+// Drop all prepared slots. Called from the step ISR, or with the step interrupt shut out, when the segment list no
+// longer matches what the preparation saw or the segments are about to be released.
+inline void DriveMovement::FlushShadows() noexcept
+{
+	for (unsigned int k = 0; k < NumShadowSlots; ++k)
+	{
+		shadowSlots[k].seg = nullptr;
+	}
+	++shadowGen;
+}
+
+#endif
 
 // Return the number of net steps already taken for the current segment in the forwards direction.
 // Caller must disable interrupts before calling this

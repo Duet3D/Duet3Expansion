@@ -194,6 +194,10 @@ private:
 	void CheckSegment(unsigned int line, MoveSegment *seg) noexcept;
 #endif
 
+#if USE_FIXED_STEP_TIMING
+	void PrepareShadowSegments() noexcept;											// prepare upcoming segment parameters for the step ISR; called from Spin (MAIN task) only
+#endif
+
 	void StepDrivers(uint32_t now) noexcept SPEED_CRITICAL;							// Take one step of the DDA, called by timer interrupt.
 #if SINGLE_DRIVER
 	void PrepareForNextSteps(uint32_t now) noexcept SPEED_CRITICAL;

@@ -266,6 +266,10 @@ void Move::Spin(bool powered) noexcept
 void Move::Spin() noexcept
 #endif
 {
+#if USE_FIXED_STEP_TIMING
+	PrepareShadowSegments();							// prepare upcoming segment parameters for the step ISR; cheap when there is nothing to do
+#endif
+
 # if SUPPORT_BRAKE_PWM
 	const float currentVinVoltage = Platform::GetCurrentVinVoltage();
 # endif
@@ -443,6 +447,26 @@ void Move::Spin() noexcept
 		CanMessageBuffer::Free(buf);
 	}
 }
+
+#if USE_FIXED_STEP_TIMING
+
+// Prepare upcoming segment parameters for the step ISR, so that it can start stepping segments (and release runs
+// of zero-step segments) without doing the coefficient float maths at the segment boundary. Called from Spin, i.e.
+// on the MAIN task, which polls continuously; this must remain the only caller, because PrepareShadowChunk relies
+// on there being a single producer. Cheap when there is nothing to prepare.
+void Move::PrepareShadowSegments() noexcept
+{
+#if SINGLE_DRIVER
+	while (dms[0].PrepareShadowChunk()) { }
+#else
+	for (size_t drive = 0; drive < NumDrivers; ++drive)
+	{
+		while (dms[drive].PrepareShadowChunk()) { }
+	}
+#endif
+}
+
+#endif
 
 #if SUPPORT_OVERRIDE_STEP_PIN
 void Move::EnableStepPins()
@@ -1048,6 +1072,12 @@ void Move::AddLinearSegments(size_t drive, uint32_t startTime, const PrepParams&
 		const uint32_t oldFlags = IrqSave();
 #else
 		const uint32_t oldPrio = ChangeBasePriority(NvicPriorityStep);					// shut out the step interrupt
+#endif
+
+#if USE_FIXED_STEP_TIMING
+		// Invalidate any prepared slots for segments that the segments we are about to add may modify; the segment
+		// boundaries concerned then fall back to the normal path
+		dm.InvalidateShadowsFrom(startTime);
 #endif
 
 		tail = dm.segments;
