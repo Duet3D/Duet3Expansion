@@ -31,6 +31,8 @@ void DriveMovement::Init(size_t drv) noexcept
 	nextDM = nullptr;
 #endif
 	segments = nullptr;
+	segmentsTail = nullptr;
+	segHint = nullptr;
 #if USE_FIXED_STEP_TIMING
 	shadowHead = 0;
 	shadowGen = 0;
@@ -548,6 +550,7 @@ MoveSegment *DriveMovement::NewSegment(uint32_t now) noexcept
 					{
 						MoveSegment *const oldSeg = seg;
 						segments = seg = seg->GetNext();
+						if (segHint == oldSeg) { segHint = nullptr; }	// invalidate the insertion hint if we are releasing the segment it points to
 						++shadowGen;
 						MoveSegment::Release(oldSeg);
 						--n;
@@ -560,6 +563,7 @@ MoveSegment *DriveMovement::NewSegment(uint32_t now) noexcept
 					}
 					else
 					{
+						if (seg == nullptr) { segmentsTail = nullptr; }	// keep the tail cache consistent when the list empties
 						FlushShadows();							// the list is not what the preparation saw; fall back to the normal path
 					}
 					continue;									// go round the loop again so that the start time check runs for the next segment
@@ -709,6 +713,8 @@ MoveSegment *DriveMovement::NewSegment(uint32_t now) noexcept
 		distanceCarriedForwards = newDcf;
 		MoveSegment *oldSeg = seg;
 		segments = seg = seg->GetNext();						// skip this segment
+		if (seg == nullptr) { segmentsTail = nullptr; }			// keep the tail cache consistent when the list empties
+		if (segHint == oldSeg) { segHint = nullptr; }			// invalidate the insertion hint if we are releasing the segment it points to
 #if USE_FIXED_STEP_TIMING
 		++shadowGen;											// tell PrepareShadowChunk that a segment has been released
 		if (shadowSlots[shadowHead].seg != nullptr && (oldSeg == shadowSlots[shadowHead].chainHead || oldSeg == shadowSlots[shadowHead].seg))
@@ -847,8 +853,11 @@ pre(stepsTillRecalc == 0; segments != nullptr)
 			}
 
 			movementAccumulator += netStepsThisSegment;				// update the amount of extrusion for filament monitors
-			segments = currentSegment->GetNext();
 			const uint32_t prevEndTime = currentSegment->GetStartTime() + currentSegment->GetDuration();
+			MoveSegment *const nextSeg = currentSegment->GetNext();
+			segments = nextSeg;
+			if (nextSeg == nullptr) { segmentsTail = nullptr; }		// keep the tail cache consistent when the list empties
+			if (segHint == currentSegment) { segHint = nullptr; }	// invalidate the insertion hint if we are releasing the segment it points to
 #if USE_FIXED_STEP_TIMING
 			++shadowGen;										// tell PrepareShadowChunk that a segment has been released
 			if (shadowSlots[shadowHead].seg != nullptr && (currentSegment == shadowSlots[shadowHead].chainHead || currentSegment == shadowSlots[shadowHead].seg))
@@ -1091,6 +1100,8 @@ void DriveMovement::StopDriverFromRemote() noexcept
 #endif
 		MoveSegment *seg = nullptr;
 		std::swap(seg, const_cast<MoveSegment*&>(segments));
+		segmentsTail = nullptr;
+		segHint = nullptr;
 		MoveSegment::ReleaseAll(seg);
 	}
 }
