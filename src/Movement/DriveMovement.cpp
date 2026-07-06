@@ -650,14 +650,33 @@ MoveSegment *DriveMovement::NewSegment(uint32_t now) noexcept
 #endif
 
 		const bool segIsLinear = seg->NormaliseAndCheckLinear(distanceCarriedForwards, t0);
-		SegAnalysis an;
-		AnalyseSegment(segIsLinear, t0, netStepsThisSegment, seg->GetLength(), seg->GetA(), seg->GetDuration(), distanceCarriedForwards, an);
-		const bool newDirection = an.direction;
-		segmentStepLimit = an.stepLimit;
-		reverseStartStep = an.reverseStartStep;
-		state = an.state;
-		q = an.q;
-		p = an.p;
+		bool newDirection = false;							// initialised only so that the early-skip branch is free of -Wmaybe-uninitialized; unused on that path
+#if SAMC21 || RP2040
+		// Early zero-step skip (soft-float boards only). A non-reversing segment - linear, or accel/decel whose
+		// speed reversal is not within it (!IsPositive(t0), the same test AnalyseSegment uses) - with zero net
+		// steps produces no step pulses. For such a segment AnalyseSegment would compute
+		// stepLimit = reverseStartStep = 1 + netStepsThisSegment * multiplier = 1 and state cartLinear (linear)
+		// or cartAccel (reversal in the past), then the zero-step exit below would be taken without emitting a
+		// step. Set those directly here and skip the expensive coefficient work (the soft-float divisions that
+		// compute p and q). q and p are deliberately left unchanged: they are only read for segments that emit
+		// steps, and every stepping segment sets them via AnalyseSegment before they are read.
+		if (netStepsThisSegment == 0 && (segIsLinear || !IsPositive(t0)))
+		{
+			reverseStartStep = segmentStepLimit = 1;
+			state = (segIsLinear) ? DMState::cartLinear : DMState::cartAccel;
+		}
+		else
+#endif
+		{
+			SegAnalysis an;
+			AnalyseSegment(segIsLinear, t0, netStepsThisSegment, seg->GetLength(), seg->GetA(), seg->GetDuration(), distanceCarriedForwards, an);
+			newDirection = an.direction;
+			segmentStepLimit = an.stepLimit;
+			reverseStartStep = an.reverseStartStep;
+			state = an.state;
+			q = an.q;
+			p = an.p;
+		}
 
 		nextStep = 1;
 		if (nextStep < segmentStepLimit)
