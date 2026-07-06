@@ -189,7 +189,7 @@ static inline void AnalyseSegment(bool segIsLinear, motioncalc_t t0, int32_t net
 	if (segIsLinear)
 	{
 		// Segment is linear
-		rawP = (motioncalc_t)duration/length;					// as MoveSegment::CalcLinearRecipU
+		rawP = FastUintToMotionCalc(duration)/length;			// as MoveSegment::CalcLinearRecipU
 		newDirection = !std::signbit(length);
 		multiplier = 2 * (int32_t)newDirection - 1;			// +1 or -1
 		out.reverseStartStep = out.stepLimit = 1 + netSteps * multiplier;
@@ -218,7 +218,8 @@ static inline void AnalyseSegment(bool segIsLinear, motioncalc_t t0, int32_t net
 			multiplier = -multiplier;
 			const int32_t netStepsInInitialDirection = netSteps * multiplier;
 
-			if (t0 < (motioncalc_t)duration)
+			// Here t0 and the segment duration are both non-negative, so IsLessThanNonNegative avoids a soft-float compare
+			if (IsLessThanNonNegative(t0, FastUintToMotionCalc(duration)))
 			{
 				// Reversal is potentially in this segment, but it may be before the first step, or may be beyond the last step we are going to take
 				// It can also happen that the target end speed is zero but due to FP rounding error, distanceToReverse was just below netStepsInInitialDirection and got rounded down
@@ -229,7 +230,7 @@ static inline void AnalyseSegment(bool segIsLinear, motioncalc_t t0, int32_t net
 #else
 				const motioncalc_t distanceToReverse = rawDistanceToReverse * multiplier;
 #endif
-				const int32_t stepsBeforeReverse = (int32_t)(distanceToReverse - (motioncalc_t)0.2);			// don't step and immediately step back again
+				const int32_t stepsBeforeReverse = FastMotionCalcToInt(distanceToReverse - (motioncalc_t)0.2);	// don't step and immediately step back again
 				// Note, stepsBeforeReverse may be negative at this point
 				if (stepsBeforeReverse <= netStepsInInitialDirection && netStepsInInitialDirection >= 0)
 				{
@@ -395,7 +396,7 @@ __attribute__((noinline)) bool DriveMovement::PrepareShadowChunk() noexcept
 	}
 	if (anchorIsExecutingHead)
 	{
-		dcf = anchorDcf + (anchorLen - (motioncalc_t)anchorNetSteps);	// exactly the end-of-segment update in CalcNextStepTimeFull
+		dcf = anchorDcf + (anchorLen - FastIntToMotionCalc(anchorNetSteps));	// exactly the end-of-segment update in CalcNextStepTimeFull
 	}
 
 	ShadowSlot local;
@@ -422,7 +423,7 @@ __attribute__((noinline)) bool DriveMovement::PrepareShadowChunk() noexcept
 
 		// netSteps and the linearity decision use exactly the operations of the corresponding code in NewSegment;
 		// the analysis itself is the same single copy of code that NewSegment uses (AnalyseSegment/CheckLinearCore)
-		const int32_t netSteps = (int32_t)(snap.distance + dcf);
+		const int32_t netSteps = FastMotionCalcToInt(snap.distance + dcf);
 
 		motioncalc_t sT0;
 		const bool segIsLinear = (CheckLinearCore(snap.a, snap.duration, snap.distance, dcf, sT0) != 0);
@@ -433,7 +434,7 @@ __attribute__((noinline)) bool DriveMovement::PrepareShadowChunk() noexcept
 		{
 			// A zero-step segment: fold it into the run as a sliver
 			const motioncalc_t newDcf = dcf + snap.distance;	// exactly the update the skip path in NewSegment makes
-			if (fabsm(newDcf) > 1.0)
+			if (!FabsLessThanOrEqual(newDcf, (motioncalc_t)1.0))
 			{
 				return false;								// this would be a step error; leave it to the normal path to detect and report
 			}
@@ -464,7 +465,7 @@ __attribute__((noinline)) bool DriveMovement::PrepareShadowChunk() noexcept
 		local.stepLimit = an.stepLimit;
 		local.reverseStartStep = an.reverseStartStep;
 		local.dcfAtSeg = dcf;
-		local.dcfAfterSeg = dcf + (snap.distance - (motioncalc_t)netSteps);	// exactly the end-of-segment update in CalcNextStepTimeFull
+		local.dcfAfterSeg = dcf + (snap.distance - FastIntToMotionCalc(netSteps));	// exactly the end-of-segment update in CalcNextStepTimeFull
 		break;
 	}
 
@@ -637,7 +638,7 @@ MoveSegment *DriveMovement::NewSegment(uint32_t now) noexcept
 #endif
 
 		// Calculate the movement parameters
-		netStepsThisSegment = (int32_t)(seg->GetLength() + distanceCarriedForwards);
+		netStepsThisSegment = FastMotionCalcToInt(seg->GetLength() + distanceCarriedForwards);
 
 #if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
 		if (closedLoopControl.IsClosedLoopEnabled())
@@ -730,7 +731,7 @@ MoveSegment *DriveMovement::NewSegment(uint32_t now) noexcept
 		seg->DebugPrint();
 #endif
 		motioncalc_t newDcf = distanceCarriedForwards + seg->GetLength();
-		if (fabsm(newDcf) > 1.0)
+		if (!FabsLessThanOrEqual(newDcf, (motioncalc_t)1.0))		// same as fabsm(newDcf) > 1.0 but avoids the soft-float comparison
 		{
 			LogStepError(7, (float)newDcf, seg);
 			newDcf = constrain<motioncalc_t>(newDcf, -1.0, 1.0);	// to prevent the next segment erroring out
@@ -816,7 +817,7 @@ pre(stepsTillRecalc == 0; segments != nullptr)
 		{
 			// It's an axis and we are soon to stop movement, so we should end on an exact microstep.
 			// Check whether taking the last step would end up going a little too far or not quite far enough
-			const motioncalc_t provisionalDistanceCarriedForwards = distanceCarriedForwards + currentSegment->GetLength() - (motioncalc_t)netStepsThisSegment;
+			const motioncalc_t provisionalDistanceCarriedForwards = distanceCarriedForwards + currentSegment->GetLength() - FastIntToMotionCalc(netStepsThisSegment);
 			if (fabsm(provisionalDistanceCarriedForwards) < 0.05)
 			{
 				currentSegment->AdjustLength(-provisionalDistanceCarriedForwards);				// just correct the segment length
@@ -865,7 +866,7 @@ pre(stepsTillRecalc == 0; segments != nullptr)
 		// If there are no more steps left in this segment, skip to the next segment and use single stepping
 		if (stepsToLimit <= 0)
 		{
-			distanceCarriedForwards += currentSegment->GetLength() - (motioncalc_t)netStepsThisSegment;
+			distanceCarriedForwards += currentSegment->GetLength() - FastIntToMotionCalc(netStepsThisSegment);
 #if !(SAMC21 || RP2040)												// this check is expensive on these processors
 			if (fabsm(distanceCarriedForwards) > (motioncalc_t)1.0)
 			{
@@ -958,8 +959,8 @@ pre(stepsTillRecalc == 0; segments != nullptr)
 # define STEP_TIME_BASE			t0Fix
 #else
 	typedef motioncalc_t steptime_t;
-# define STEP_TIME_LINEAR(n)	((motioncalc_t)(n) * p)
-# define STEP_TIME_SQRT(n)		fastLimSqrtm(q + p * (motioncalc_t)(n))
+# define STEP_TIME_LINEAR(n)	(FastIntToMotionCalc(n) * p)
+# define STEP_TIME_SQRT(n)		fastLimSqrtm(q + p * FastIntToMotionCalc(n))
 # define STEP_TIME_BASE			t0
 #endif
 
@@ -1062,7 +1063,7 @@ pre(stepsTillRecalc == 0; segments != nullptr)
 	}
 	else
 	{
-		iNextCalcStepTime = (uint32_t)tCalc;
+		iNextCalcStepTime = FastMotionCalcToUint(tCalc);	// the sign bit is clear here, so this is exactly (uint32_t)tCalc
 	}
 #endif	// USE_FIXED_STEP_TIMING
 
