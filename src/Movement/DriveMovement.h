@@ -74,6 +74,21 @@ private:
 	MoveSegment *NewSegment(uint32_t now) noexcept SPEED_CRITICAL;
 	bool ScheduleFirstSegment() noexcept;
 
+#if USE_FIXED_STEP_TIMING
+	// Fixed point forms of the movement parameters of one segment, as used by the per-step calculations in CalcNextStepTimeFull
+	struct FixedStepCoeffs
+	{
+		int64_t t0Fix;									// linear: the time of the first step, (p + t0) * 2^StepTimeFracBits; accelerating: t0 * 2^StepTimeFracBits
+		int64_t pFix;									// linear: p * 2^StepTimeFracBits; accelerating: p * 2^(sqrtScale + pShift)
+		int64_t qFix;									// accelerating: q * 2^sqrtScale
+		uint8_t sqrtRShift;								// accelerating: StepTimeFracBits - sqrtScale/2, converts sqrt(s * 2^sqrtScale) to Q40.24
+		uint8_t pShift;									// accelerating: extra scale bits of pFix, so that p keeps its relative precision when |q| >> |p * n|
+	};
+
+	static void CalcLinearFixCoeffs(motioncalc_t p, motioncalc_t t0, int32_t stepLimit, FixedStepCoeffs& out) noexcept;	// convert the parameters of a constant-speed segment; deliberately in flash
+	static void CalcAccelDecelFixCoeffs(motioncalc_t q, motioncalc_t p, motioncalc_t t0, int32_t stepLimit, int32_t revStartStep, FixedStepCoeffs& out) noexcept;	// convert the parameters of an accelerating/decelerating segment; deliberately in flash
+#endif
+
 	void ReleaseSegments() noexcept;					// release the list of segments and set it to nullptr
 	bool LogStepError(uint8_t type, float info, const MoveSegment *seg) noexcept;	// report a step error
 
@@ -101,6 +116,15 @@ private:
 	int32_t segmentStepLimit;							// the first step number of the next phase, or the reverse start step if smaller
 	int32_t reverseStartStep;							// the step number for which we need to reverse direction due to pressure advance or delta movement
 	motioncalc_t q, t0, p;								// the movement parameters of the current segment, if there is one
+#if USE_FIXED_STEP_TIMING
+	// Fixed point copies of the movement parameters, set up by NewSegment for segments that generate steps and
+	// used by CalcNextStepTimeFull so that the per-step calculation needs no soft-float arithmetic (see MoveSegment.h)
+	int64_t t0Fix;										// t0 * 2^StepTimeFracBits
+	int64_t pFix;										// linear: p * 2^StepTimeFracBits; accelerating: p * 2^(sqrtScale + pShift)
+	int64_t qFix;										// accelerating: q * 2^sqrtScale
+	uint8_t sqrtRShift;									// accelerating: StepTimeFracBits - sqrtScale/2, converts sqrt(s * 2^sqrtScale) to Q40.24
+	uint8_t pShift;										// accelerating: extra scale bits of pFix, so that p keeps its relative precision when |q| >> |p * n|
+#endif
 #if SUPPORT_CLOSED_LOOP
 	motioncalc_t u;										// the initial speed of this segment
 #endif

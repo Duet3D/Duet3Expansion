@@ -308,4 +308,162 @@ inline void MoveSegment::Merge(motioncalc_t p_distance, motioncalc_t p_a, Moveme
 	nextAndFlags |= (p_flags.all & MovementFlags::FlagsMask);
 }
 
+// Fixed-point step time calculation support.
+// On the SAMC21 the remaining per-step cost in CalcNextStepTimeFull is the soft-float arithmetic itself:
+// computing n*p + t0 (linear) or t0 +/- sqrt(q + p*n) (accelerating) costs one Qfplib multiply (62 clocks),
+// one or two adds (76 each) and for the accelerating cases a square root (67), plus the conversions.
+// The helpers below allow those expressions to be evaluated in 64-bit fixed point instead:
+// - time-like quantities (t0, n*p for linear segments, and the square root result) are held as value * 2^24
+//   step clocks in an int64_t (Q40.24), which covers the full uint32_t range of segment durations with more
+//   fractional precision than a float mantissa provides;
+// - the square root operand q + p*n is held as value * 2^sqrtScale where sqrtScale is chosen per segment from
+//   the float exponents of q and p such that all intermediate values fit comfortably in an int64_t.
+// The square root itself stays in floating point: Qfplib's qfp_fsqrt takes ~67 clocks, far less than a 64-bit
+// integer square root needs on these cores (~300 clocks for the shift-subtract loop in Isqrt.cpp), so the
+// operand is converted to float just for that one call.
+// These helpers are used only on boards without a hardware FPU and with single-precision motioncalc_t.
+// The RP2040 also has a Cortex-M0+ core, but the performance trade-offs have not been verified there
+// (in particular its flash is QSPI XIP with a cache, so all the flash/RAM placement reasoning differs),
+// so this is deliberately restricted to the SAMC21.
+#if SAMC21 && !USE_DOUBLE_MOTIONCALC && !defined(__ECV__)
+# define USE_FIXED_STEP_TIMING	(1)
+#else
+# define USE_FIXED_STEP_TIMING	(0)
+#endif
+
+#if USE_FIXED_STEP_TIMING
+
+constexpr int32_t StepTimeFracBits = 24;						// time-like fixed point quantities are value * 2^24 step clocks in an int64_t
+
+// Return floor(log2(v)) for v != 0 by loop-free binary search; these cores have no CLZ instruction and
+// __builtin_clz would call __clzsi2 in flash.
+static inline uint32_t FloorLog2(uint32_t v) noexcept
+{
+	uint32_t e = 0;
+	if (v >= (1u << 16)) { v >>= 16; e = 16; }
+	if (v >= (1u << 8))  { v >>= 8;  e += 8; }
+	if (v >= (1u << 4))  { v >>= 4;  e += 4; }
+	if (v >= (1u << 2))  { v >>= 2;  e += 2; }
+	if (v >= (1u << 1))  {           e += 1; }
+	return e;
+}
+
+// 32x32 -> 64 bit unsigned multiply from 16-bit partial products. The muls instruction is single-cycle on the
+// SAMC21, so this is ~16 clocks inline; the plain C expression (uint64_t)a * b would be a call to
+// __aeabi_lmul, which lives in flash and is reached from the RAM-resident step ISR through a veneer.
+static inline uint64_t Mul32x32To64(uint32_t a, uint32_t b) noexcept
+{
+	const uint32_t a0 = a & 0xFFFFu, a1 = a >> 16;
+	const uint32_t b0 = b & 0xFFFFu, b1 = b >> 16;
+	const uint32_t p00 = a0 * b0;
+	const uint32_t p01 = a0 * b1;
+	const uint32_t mid = p01 + a1 * b0;							// (p01 + p10) mod 2^32; if this wraps, the lost bit is worth 2^16 in the high word
+	const uint32_t hi = a1 * b1 + ((mid < p01) ? (1u << 16) : 0u);
+	return (((uint64_t)hi << 32) | p00) + ((uint64_t)mid << 16);
+}
+
+// Multiply a step number by a 64-bit fixed point coefficient, exactly. The caller must guarantee
+// |n * coeff| < 2^63; the conversions below saturate the coefficients so that this holds at all call sites.
+// Out-of-line in RAM (MoveSegment.cpp): one shared copy instead of five inline copies in the per-step switch in
+// CalcNextStepTimeFull. It stays in RAM because it is on the per-step hot path; the call overhead is a few clocks.
+int64_t MulStepByCoeff(int32_t n, int64_t coeff) noexcept;
+
+// Arithmetic right shift of an int64_t by a variable amount, pre(1 <= n <= 63). Composed from 32-bit shifts
+// because the plain C expression would be a call to __aeabi_lasr in flash.
+static inline int64_t ShiftRight64(int64_t v, uint32_t n) noexcept
+{
+	const int32_t hi = (int32_t)(uint32_t)((uint64_t)v >> 32);
+	if (n >= 32)
+	{
+		return (int64_t)(hi >> (n - 32u));						// sign-extends; n - 32 is at most 31
+	}
+	const uint32_t lo = (uint32_t)v;
+	return (int64_t)(((uint64_t)(uint32_t)(hi >> n) << 32) | ((lo >> n) | ((uint32_t)hi << (32u - n))));
+}
+
+// Return the biased exponent field of a motioncalc_t, i.e. 2^(exp - 127) <= |f| < 2^(exp - 126) for normal values
+static inline uint32_t MotionCalcBiasedExponent(motioncalc_t f) noexcept
+{
+# pragma GCC diagnostic push
+# pragma GCC diagnostic ignored "-Wstrict-aliasing"
+	return (*reinterpret_cast<const uint32_t*>(&f) >> 23) & 0xFFu;
+# pragma GCC diagnostic pop
+}
+
+// Convert a motioncalc_t to fixed point value * 2^fracBits, truncating towards zero, saturating at +/-2^satBits
+// (pre: 32 <= satBits <= 62). fracBits may be negative. Infinities and NaNs saturate too, so garbage coefficients
+// produce bounded step times instead of undefined behaviour. The 64-bit shifts are composed from 32-bit shifts
+// because a 64-bit shift by a variable amount would be a call to __aeabi_llsl/__aeabi_llsr in flash.
+static inline int64_t FastMotionCalcToFix(motioncalc_t f, int32_t fracBits, uint32_t satBits) noexcept
+{
+# pragma GCC diagnostic push
+# pragma GCC diagnostic ignored "-Wstrict-aliasing"
+	const uint32_t b = *reinterpret_cast<const uint32_t*>(&f);
+# pragma GCC diagnostic pop
+	const uint32_t biasedExp = (b >> 23) & 0xFFu;
+	if (biasedExp == 0)
+	{
+		return 0;												// zero (denormals cannot occur in the motion calculations)
+	}
+	const int32_t sh = (int32_t)biasedExp - (127 + 23) + fracBits;	// f * 2^fracBits = +/- mant * 2^sh
+	const uint32_t mant = (b & 0x7FFFFFu) | 0x800000u;
+	uint64_t mag;
+	if (sh <= -24)
+	{
+		mag = 0;
+	}
+	else if (sh < 0)
+	{
+		mag = mant >> (uint32_t)-sh;
+	}
+	else if ((uint32_t)sh >= satBits - 23)						// the top bit of mant would land at bit 23 + sh
+	{
+		mag = (uint64_t)(1u << (satBits - 32)) << 32;			// saturate to exactly 2^satBits
+	}
+	else if (sh < 9)
+	{
+		mag = mant << (uint32_t)sh;								// fits in 32 bits (23 + 8 = 31)
+	}
+	else if (sh < 32)
+	{
+		mag = ((uint64_t)(mant >> (32u - (uint32_t)sh)) << 32) | (uint32_t)(mant << (uint32_t)sh);
+	}
+	else
+	{
+		mag = (uint64_t)(mant << ((uint32_t)sh - 32u)) << 32;	// sh <= satBits - 24 <= 38, so mant shifts left by at most 6 bits here
+	}
+	return ((int32_t)b < 0) ? -(int64_t)mag : (int64_t)mag;
+}
+
+// Convert a uint64_t to motioncalc_t, truncating towards zero. Used only to feed the square root operand to
+// qfp_fsqrt, so the truncation error is at most one ulp of the result.
+static inline motioncalc_t FastUint64ToMotionCalc(uint64_t v) noexcept
+{
+	const uint32_t hi = (uint32_t)(v >> 32);
+	uint32_t e, top;
+	if (hi == 0)
+	{
+		const uint32_t lo = (uint32_t)v;
+		if (lo == 0)
+		{
+			return (motioncalc_t)0.0;
+		}
+		e = FloorLog2(lo);
+		top = (e <= 23) ? lo << (23u - e) : lo >> (e - 23u);
+	}
+	else
+	{
+		e = FloorLog2(hi) + 32u;
+		const uint32_t sh = e - 23u;							// 9..40 because hi != 0
+		top = (sh < 32u) ? ((uint32_t)v >> sh) | (hi << (32u - sh)) : hi >> (sh - 32u);
+	}
+	const uint32_t bits = ((e + 127u) << 23) + (top & 0x7FFFFFu);
+# pragma GCC diagnostic push
+# pragma GCC diagnostic ignored "-Wstrict-aliasing"
+	return *reinterpret_cast<const float*>(&bits);
+# pragma GCC diagnostic pop
+}
+
+#endif	// USE_FIXED_STEP_TIMING
+
 #endif /* SRC_MOVEMENT_MOVESEGMENT_H_ */

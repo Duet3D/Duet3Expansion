@@ -359,6 +359,11 @@ private:
 
 	unsigned int numHiccups = 0;									// The number of hiccups inserted
 
+#if SAMC21
+	void RecordStepIsrEnd(uint32_t sysTickAtEntry) noexcept;		// update maxStepIsrCycles from the SysTick count captured when the step ISR was entered
+	uint32_t maxStepIsrCycles = 0;									// the longest observed execution of Move::Interrupt in CPU cycles, reported by M122 and then reset
+#endif
+
 #if SUPPORT_INPUT_SHAPING
 	AxisShaper axisShaper;
 #endif
