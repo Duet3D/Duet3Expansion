@@ -91,6 +91,9 @@ void StepTimer::Init() noexcept
 #if !RP2040
 
 // Get the step timer clock count
+#if SAMC21
+__attribute__((section(".time_critical")))		// called from the step ISR on entry and on every loop iteration, so keep it out of flash
+#endif
 /*static*/ StepTimer::Ticks StepTimer::GetTimerTicks() noexcept
 {
 	AtomicCriticalSectionLocker lock;
@@ -107,6 +110,9 @@ void StepTimer::Init() noexcept
 }
 
 // Get the step timer clock count
+#if SAMC21
+__attribute__((section(".time_critical")))		// called from ScheduleMovementCallbackFromIsr with interrupts disabled, so keep it out of flash
+#endif
 /*static*/ StepTimer::Ticks StepTimer::GetTimerTicksWhenInterruptsDisabled() noexcept
 {
 	StepTc->CTRLBSET.reg = TC_CTRLBSET_CMD_READSYNC;
