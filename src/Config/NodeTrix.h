@@ -42,6 +42,37 @@
 constexpr size_t NumDrivers = 1;
 constexpr size_t MaxSmartDrivers = 1;
 
+// DMA channel assignments
+constexpr DmaChannel DmacChanTmcTx = 0;
+constexpr DmaChannel DmacChanTmcRx = 1;
+constexpr DmaChannel DmacChanLedTx = 2;
+constexpr DmaChannel DmacChanSspiTx = 3;
+constexpr DmaChannel DmacChanSspiRx = 4;
+constexpr DmaChannel DmacChanADS131M02Tx = 5;
+constexpr DmaChannel DmacChanADS131M02Rx = 6;
+//TODO add DMA channels for I2C as needed
+
+constexpr unsigned int NumDmaChannelsUsed = 7;			// must be at least the number of channels used, may be larger. Max 12 on the SAME5x.
+
+constexpr DmaPriority DmacPrioTmcTx = 0;
+constexpr DmaPriority DmacPrioTmcRx = 3;
+constexpr DmaPriority DmacPrioAdcRx = 2;
+constexpr DmaPriority DmacPrioLed = 1;
+constexpr DmaPriority DmacPrioSspiTx = 0;
+constexpr DmaPriority DmacPrioSspiRx = 3;
+constexpr DmaPriority DmacPrioADS131M02Tx = 0;
+constexpr DmaPriority DmacPrioADS131M02Rx = 3;
+
+// Interrupt priorities, lower means higher priority. 0-2 can't make RTOS calls.
+constexpr NvicPriority NvicPriorityStep = 3;			// step interrupt is next highest, it can preempt most other interrupts
+constexpr NvicPriority NvicPriorityDmac = 3;			// priority for DMA complete interrupts
+constexpr NvicPriority NvicPriorityUart = 3;			// serial driver makes RTOS calls
+constexpr NvicPriority NvicPriorityI2C = 3;
+constexpr NvicPriority NvicPriorityPins = 3;			// priority for GPIO pin interrupts
+constexpr NvicPriority NvicPriorityCan = 4;
+constexpr NvicPriority NvicPriorityAdc = 5;
+constexpr NvicPriority NvicPriorityTmcSpi = 3;
+
 constexpr Pin GlobalTmcEnablePin = PortCPin(14);
 constexpr Pin GlobalTmcCSPin = PortAPin(4);
 
@@ -54,10 +85,11 @@ constexpr SpiParameters TmcSpiParameters =
 	.misoPin = PortAPin(6),
 	.sclkPin = PortAPin(5),
 	.pinFunction = GpioPinFunction::AF5,
-	.dmaChanTx = 0,		//TODO
-	.dmaChanRx = 0,		//TODO
-	.dmaPrioTx = 0,		//TODO
-	.dmaPrioRx = 0,		//TODO
+	.irqPriority = NvicPriorityTmcSpi,
+	.dmaChanTx = DmacChanTmcTx,
+	.dmaChanRx = DmacChanTmcRx,
+	.dmaPrioTx = DmacPrioTmcTx,
+	.dmaPrioRx = DmacPrioTmcRx,
 };
 
 constexpr Pin TMCCsPin = PortAPin(4);
@@ -108,36 +140,6 @@ constexpr size_t MaxPortsPerHeater = 1;										// we support a single heater
 
 constexpr Pin BoardTypePin = PortAPin(3);
 
-// DMA channel assignments
-constexpr DmaChannel DmacChanTmcTx = 0;
-constexpr DmaChannel DmacChanTmcRx = 1;
-constexpr DmaChannel DmacChanLedTx = 2;
-constexpr DmaChannel DmacChanSspiTx = 3;
-constexpr DmaChannel DmacChanSspiRx = 4;
-constexpr DmaChannel DmacChanADS131M02Tx = 5;
-constexpr DmaChannel DmacChanADS131M02Rx = 6;
-//TODO add DMA channels for I2C as needed
-
-constexpr unsigned int NumDmaChannelsUsed = 7;			// must be at least the number of channels used, may be larger. Max 12 on the SAME5x.
-
-constexpr DmaPriority DmacPrioTmcTx = 0;
-constexpr DmaPriority DmacPrioTmcRx = 3;
-constexpr DmaPriority DmacPrioAdcRx = 2;
-constexpr DmaPriority DmacPrioLed = 1;
-constexpr DmaPriority DmacPrioSspiTx = 0;
-constexpr DmaPriority DmacPrioSspiRx = 3;
-constexpr DmaPriority DmacPrioADS131M02Tx = 0;
-constexpr DmaPriority DmacPrioADS131M02Rx = 3;
-
-// Interrupt priorities, lower means higher priority. 0-2 can't make RTOS calls.
-constexpr NvicPriority NvicPriorityStep = 3;			// step interrupt is next highest, it can preempt most other interrupts
-constexpr NvicPriority NvicPriorityDmac = 3;			// priority for DMA complete interrupts
-constexpr NvicPriority NvicPriorityUart = 3;			// serial driver makes RTOS calls
-constexpr NvicPriority NvicPriorityI2C = 3;
-constexpr NvicPriority NvicPriorityPins = 3;			// priority for GPIO pin interrupts
-constexpr NvicPriority NvicPriorityCan = 4;
-constexpr NvicPriority NvicPriorityAdc = 5;
-
 // Diagnostic LEDs
 constexpr Pin LedPins[] = { PortAPin(14), PortAPin(13) };					// the SWDEBUG pins
 constexpr bool LedActiveHigh = false;
@@ -173,6 +175,7 @@ constexpr SpiParameters SharedSpiParams =
 	.misoPin = PortBPin(14),
 	.sclkPin = PortBPin(13),
 	.pinFunction = GpioPinFunction::AF5,
+	.irqPriority = qq,
 	.dmaChanTx = DmacChanSspiTx,
 	.dmaChanRx = DmacChanSspiRx,
 	.dmaPrioTx = DmacPrioSspiTx,
@@ -234,6 +237,7 @@ constexpr SpiParameters Ads131M02SpiParams =
 	.misoPin = PortCPin(11),
 	.sclkPin = PortCPin(10),
 	.pinFunction = GpioPinFunction::AF6,
+	.irqPriority = qq,
 	.dmaChanTx = DmacChanADS131M02Tx,
 	.dmaChanRx = DmacChanADS131M02Rx,
 	.dmaPrioTx = DmacPrioADS131M02Tx,
