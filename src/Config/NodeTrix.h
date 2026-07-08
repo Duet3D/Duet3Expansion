@@ -270,7 +270,7 @@ constexpr PinDescription PinTable[] =
 	//	Timer											ADC					Exint PinName
 	// Port A
 	{ TimerOutput::none,								AdcInput::adc12_0,	Nx,	"temp3"			},	// PA00 thermistor 3
-	{ TimerOutput::none,								AdcInput::none,		Nx,	nullptr			},	// PA01 ads132m02 drdy
+	{ TimerOutput::none,								AdcInput::none,		1,	nullptr			},	// PA01 ads132m02 drdy
 	{ TimerOutput::tim15_ch1 | GpioPinFunction::AF4,	AdcInput::none,		Nx,	"led"			},	// PA02 NP out via timer 15
 	{ TimerOutput::none,								AdcInput::adc12_15,	Nx, nullptr			},	// PA03 board type
 	{ TimerOutput::none,								AdcInput::none,		Nx,	nullptr			},	// PA04 driver CS
@@ -279,7 +279,7 @@ constexpr PinDescription PinTable[] =
 	{ TimerOutput::none,								AdcInput::none,		Nx,	nullptr			},	// PA07 driver MOSI
 	{ TimerOutput::none,								AdcInput::none,		Nx,	nullptr			},	// PA08 driver TMC clock
 	{ TimerOutput::tim1_ch2 | GpioPinFunction::AF1,		AdcInput::none,		Nx,	"out0"			},	// PA09 OUT0
-	{ TimerOutput::none,								AdcInput::none,		Nx,	"out2.tach"		},	// PA10
+	{ TimerOutput::none,								AdcInput::none,		10,	"out2.tach"		},	// PA10
 	{ TimerOutput::none,								AdcInput::none,		Nx,	nullptr			},	// PA11 USB D-
 	{ TimerOutput::none,								AdcInput::none,		Nx,	nullptr 		},	// PA12 USB D+
 	{ TimerOutput::none,								AdcInput::none,		Nx,	nullptr			},	// PA13 SWDIO, ACT LED
@@ -287,12 +287,12 @@ constexpr PinDescription PinTable[] =
 	{ TimerOutput::none,								AdcInput::none,		Nx,	nullptr			},	// PA15 adc131m02 CS
 
 	// Port B
-	{ TimerOutput::none,								AdcInput::none,		Nx,	nullptr			},	// PB00 LDC interrupt
+	{ TimerOutput::none,								AdcInput::none,		0,	nullptr			},	// PB00 LDC interrupt
 	{ TimerOutput::none,								AdcInput::none,		Nx,	nullptr			},	// PB01 AS5047D CS
 	{ TimerOutput::lptim1_ch1 | GpioPinFunction::AF5,	AdcInput::none,		Nx, "io0.out"		},	// PB02 IO0 out
-	{ TimerOutput::none,								AdcInput::none,		Nx, "io2.in"		},	// PB03 IO2 in
-	{ TimerOutput::none,								AdcInput::none,		Nx,	"out1.tach"		},	// PB04 OUT1 tacho input
-	{ TimerOutput::none,								AdcInput::none,		Nx,	nullptr			},	// PB05 accelerometer interrupt
+	{ TimerOutput::none,								AdcInput::none,		3, 	"io2.in"		},	// PB03 IO2 in
+	{ TimerOutput::none,								AdcInput::none,		4,	"out1.tach"		},	// PB04 OUT1 tacho input
+	{ TimerOutput::none,								AdcInput::none,		5,	nullptr			},	// PB05 accelerometer interrupt
 	{ TimerOutput::tim4_ch1 | GpioPinFunction::AF2,		AdcInput::none,		Nx,	nullptr			},	// PB06 ADC clock via timer 4
 	{ TimerOutput::none,								AdcInput::none,		Nx,	nullptr			},	// PB07 CAN1 Tx
 	{ TimerOutput::none,								AdcInput::none,		Nx,	nullptr			},	// PB08 CAN1 Rx
@@ -320,7 +320,7 @@ constexpr PinDescription PinTable[] =
 	{ TimerOutput::none,								AdcInput::none,		Nx,	nullptr			},	// PC12 loadcell SPI MOSI
 	{ TimerOutput::none,								AdcInput::none,		13,	nullptr			},	// PC13 driver diag
 	{ TimerOutput::none,								AdcInput::none,		Nx,	nullptr			},	// PC14 driver enable
-	{ TimerOutput::none,								AdcInput::none,		14,	"io1.in"		},	// PC15 IO1 in
+	{ TimerOutput::none,								AdcInput::none,		15,	"io1.in"		},	// PC15 IO1 in
 
 	// Port D
 	{ TimerOutput::none,								AdcInput::none,		Nx,	nullptr			},	// PD00 not on chip
