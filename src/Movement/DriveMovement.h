@@ -87,7 +87,9 @@ private:
 
 	static void CalcLinearFixCoeffs(motioncalc_t p, motioncalc_t t0, int32_t stepLimit, FixedStepCoeffs& out) noexcept;	// convert the parameters of a constant-speed segment; deliberately in flash
 	static void CalcAccelDecelFixCoeffs(motioncalc_t q, motioncalc_t p, motioncalc_t t0, int32_t stepLimit, int32_t revStartStep, FixedStepCoeffs& out) noexcept;	// convert the parameters of an accelerating/decelerating segment; deliberately in flash
+#endif
 
+#if USE_SHADOW_SEGMENTS
 	// Movement parameters of one upcoming stepping segment, prepared in advance by the Move task so that the
 	// segment-boundary invocations of the step ISR need not do the coefficient float maths. A slot spans an optional
 	// run of contiguous zero-step segments ("slivers") followed by one stepping segment, so that the ISR can release
@@ -104,7 +106,11 @@ private:
 		int32_t reverseStartStep;						// reverseStartStep for seg
 		motioncalc_t dcfAtSeg;							// distanceCarriedForwards at the start of seg, i.e. after the slivers
 		motioncalc_t dcfAfterSeg;						// distanceCarriedForwards after seg ends; anchors the preparation of the following slot
+#if USE_FIXED_STEP_TIMING
 		FixedStepCoeffs fix;							// the fixed point movement parameters for seg
+#else
+		motioncalc_t t0, p, q;							// the floating point movement parameters for seg (see the members of the same names below)
+#endif
 	};
 
 	static constexpr unsigned int NumShadowSlots = 3;
@@ -160,7 +166,8 @@ private:
 	int64_t qFix;										// accelerating: q * 2^sqrtScale
 	uint8_t sqrtRShift;									// accelerating: StepTimeFracBits - sqrtScale/2, converts sqrt(s * 2^sqrtScale) to Q40.24
 	uint8_t pShift;										// accelerating: extra scale bits of pFix, so that p keeps its relative precision when |q| >> |p * n|
-
+#endif
+#if USE_SHADOW_SEGMENTS
 	// The ring of prepared upcoming segments. The step ISR consumes shadowSlots[shadowHead] when the corresponding
 	// segment comes up for execution; Move::Spin on the MAIN task is the only producer and commits slots with
 	// interrupts disabled. Move::AddLinearSegments invalidates slots that an incoming move may modify (also with
@@ -232,7 +239,7 @@ inline int32_t DriveMovement::GetAndClearMaxStepsLate() noexcept
 	return ret;
 }
 
-#if USE_FIXED_STEP_TIMING
+#if USE_SHADOW_SEGMENTS
 
 // Drop all prepared slots. Called from the step ISR, or with the step interrupt shut out, when the segment list no
 // longer matches what the preparation saw or the segments are about to be released.

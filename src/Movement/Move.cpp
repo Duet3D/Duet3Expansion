@@ -266,7 +266,7 @@ void Move::Spin(bool powered) noexcept
 void Move::Spin() noexcept
 #endif
 {
-#if USE_FIXED_STEP_TIMING
+#if USE_SHADOW_SEGMENTS
 	PrepareShadowSegments();							// prepare upcoming segment parameters for the step ISR; cheap when there is nothing to do
 #endif
 
@@ -448,7 +448,7 @@ void Move::Spin() noexcept
 	}
 }
 
-#if USE_FIXED_STEP_TIMING
+#if USE_SHADOW_SEGMENTS
 
 // Prepare upcoming segment parameters for the step ISR, so that it can start stepping segments (and release runs
 // of zero-step segments) without doing the coefficient float maths at the segment boundary. Called from Spin, i.e.
@@ -1084,7 +1084,7 @@ void Move::AddLinearSegments(size_t drive, uint32_t startTime, const PrepParams&
 		const uint32_t oldPrio = ChangeBasePriority(NvicPriorityStep);					// shut out the step interrupt
 #endif
 
-#if USE_FIXED_STEP_TIMING
+#if USE_SHADOW_SEGMENTS
 		// Invalidate any prepared slots for segments that the segments we are about to add may modify; the segment
 		// boundaries concerned then fall back to the normal path
 		dm.InvalidateShadowsFrom(startTime);

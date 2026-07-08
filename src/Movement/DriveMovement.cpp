@@ -65,7 +65,7 @@ void DriveMovement::Init(size_t drv) noexcept
 	segments = nullptr;
 	segmentsTail = nullptr;
 	segHint = nullptr;
-#if USE_FIXED_STEP_TIMING
+#if USE_SHADOW_SEGMENTS
 	shadowHead = 0;
 	shadowGen = 0;
 	FlushShadows();
@@ -170,6 +170,7 @@ bool DriveMovement::ScheduleFirstSegment() noexcept
 	out.pShift = (uint8_t)pShiftBits;
 }
 
+#endif	// USE_FIXED_STEP_TIMING
 
 // The result of analysing one segment against the distance carried forwards that it will start with
 struct SegAnalysis
@@ -285,6 +286,8 @@ static inline void AnalyseSegment(bool segIsLinear, motioncalc_t t0, int32_t net
 #endif
 	out.direction = newDirection;
 }
+
+#if USE_SHADOW_SEGMENTS
 
 // Prepare the movement parameters of one more upcoming stepping segment into a free shadow slot, if there is one.
 // Returns true if it filled a slot, so the caller can call again; false when there is nothing (more) to do.
@@ -457,6 +460,7 @@ __attribute__((noinline)) bool DriveMovement::PrepareShadowChunk() noexcept
 		}
 
 		// A stepping segment: complete the slot
+#if USE_FIXED_STEP_TIMING
 		if (an.state == DMState::cartLinear)
 		{
 			CalcLinearFixCoeffs(an.p, sT0, an.stepLimit, local.fix);
@@ -465,6 +469,11 @@ __attribute__((noinline)) bool DriveMovement::PrepareShadowChunk() noexcept
 		{
 			CalcAccelDecelFixCoeffs(an.q, an.p, sT0, an.stepLimit, an.reverseStartStep, local.fix);
 		}
+#else
+		local.t0 = sT0;
+		local.p = an.p;
+		local.q = an.q;
+#endif
 		local.numSlivers = (uint8_t)numSlivers;
 		local.state = an.state;
 		local.direction = an.direction;
@@ -493,7 +502,13 @@ __attribute__((noinline)) bool DriveMovement::PrepareShadowChunk() noexcept
 			s.reverseStartStep = local.reverseStartStep;
 			s.dcfAtSeg = local.dcfAtSeg;
 			s.dcfAfterSeg = local.dcfAfterSeg;
+#if USE_FIXED_STEP_TIMING
 			s.fix = local.fix;
+#else
+			s.t0 = local.t0;
+			s.p = local.p;
+			s.q = local.q;
+#endif
 			s.seg = cursor;									// set this last: it marks the slot valid
 			committed = true;
 		}
@@ -530,7 +545,7 @@ void DriveMovement::InvalidateShadowsFrom(uint32_t startTime) noexcept
 	}
 }
 
-#endif	// USE_FIXED_STEP_TIMING
+#endif	// USE_SHADOW_SEGMENTS
 
 // This is called when we need to examine the segment list and prepare the head segment (if there is one) for execution.
 // If there is no segment to execute, set our state to 'idle' and return nullptr.
@@ -571,7 +586,7 @@ MoveSegment *DriveMovement::NewSegment(uint32_t now) noexcept
 
 		seg->SetExecuting();
 
-#if USE_FIXED_STEP_TIMING
+#if USE_SHADOW_SEGMENTS
 		{
 			ShadowSlot& slot = shadowSlots[shadowHead];
 			if (slot.seg != nullptr && seg == slot.chainHead)
@@ -615,12 +630,18 @@ MoveSegment *DriveMovement::NewSegment(uint32_t now) noexcept
 				segmentStepLimit = slot.stepLimit;
 				reverseStartStep = slot.reverseStartStep;
 				state = slot.state;
+#if USE_FIXED_STEP_TIMING
 				t0Fix = slot.fix.t0Fix;
 				pFix = slot.fix.pFix;
 				qFix = slot.fix.qFix;
 				sqrtRShift = slot.fix.sqrtRShift;
 				pShift = slot.fix.pShift;
 				// q, p and t0 are deliberately left stale: on the fixed point path they are used only for debug output
+#else
+				t0 = slot.t0;
+				p = slot.p;
+				q = slot.q;
+#endif
 				nextStep = 1;
 				if (slot.direction != direction)
 				{
@@ -780,7 +801,7 @@ MoveSegment *DriveMovement::NewSegment(uint32_t now) noexcept
 		segments = seg = seg->GetNext();						// skip this segment
 		if (seg == nullptr) { segmentsTail = nullptr; }			// keep the tail cache consistent when the list empties
 		if (segHint == oldSeg) { segHint = nullptr; }			// invalidate the insertion hint if we are releasing the segment it points to
-#if USE_FIXED_STEP_TIMING
+#if USE_SHADOW_SEGMENTS
 		++shadowGen;											// tell PrepareShadowChunk that a segment has been released
 		if (shadowSlots[shadowHead].seg != nullptr && (oldSeg == shadowSlots[shadowHead].chainHead || oldSeg == shadowSlots[shadowHead].seg))
 		{
@@ -927,7 +948,7 @@ pre(stepsTillRecalc == 0; segments != nullptr)
 			segments = nextSeg;
 			if (nextSeg == nullptr) { segmentsTail = nullptr; }		// keep the tail cache consistent when the list empties
 			if (segHint == currentSegment) { segHint = nullptr; }	// invalidate the insertion hint if we are releasing the segment it points to
-#if USE_FIXED_STEP_TIMING
+#if USE_SHADOW_SEGMENTS
 			++shadowGen;										// tell PrepareShadowChunk that a segment has been released
 			if (shadowSlots[shadowHead].seg != nullptr && (currentSegment == shadowSlots[shadowHead].chainHead || currentSegment == shadowSlots[shadowHead].seg))
 			{
@@ -1164,7 +1185,7 @@ void DriveMovement::StopDriverFromRemote() noexcept
 	if (state != DMState::idle)
 	{
 		state = DMState::idle;
-#if USE_FIXED_STEP_TIMING
+#if USE_SHADOW_SEGMENTS
 		FlushShadows();										// the prepared slots refer to segments we are about to release
 #endif
 		MoveSegment *seg = nullptr;

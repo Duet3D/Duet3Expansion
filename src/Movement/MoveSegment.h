@@ -513,15 +513,30 @@ inline void MoveSegment::Merge(motioncalc_t p_distance, motioncalc_t p_a, Moveme
 // The RP2040 also has a Cortex-M0+ core, but the performance trade-offs have not been verified there
 // (in particular its flash is QSPI XIP with a cache, so all the flash/RAM placement reasoning differs),
 // so this is deliberately restricted to the SAMC21.
-#if SAMC21 && !USE_DOUBLE_MOTIONCALC && !defined(__ECV__)
-# define USE_FIXED_STEP_TIMING	(1)
-#else
-# define USE_FIXED_STEP_TIMING	(0)
+// May be predefined (e.g. -DUSE_FIXED_STEP_TIMING=0 or by editing this) to test the plain floating point
+// per-step calculation on boards that default to the fixed point one.
+#ifndef USE_FIXED_STEP_TIMING
+# if SAMC21 && !USE_DOUBLE_MOTIONCALC && !defined(__ECV__)
+#  define USE_FIXED_STEP_TIMING	(1)
+# else
+#  define USE_FIXED_STEP_TIMING	(0)
+# endif
+#endif
+
+// Prepare upcoming segment parameters outside the step ISR (the shadow slots, see DriveMovement::PrepareShadowChunk).
+// Deliberately independent of USE_FIXED_STEP_TIMING so that the two optimisations can be tested separately: with the
+// fixed point calculation the slots hold the fixed point coefficients, without it the floating point ones.
+#ifndef USE_SHADOW_SEGMENTS
+# if SAMC21 && !USE_DOUBLE_MOTIONCALC && !defined(__ECV__)
+#  define USE_SHADOW_SEGMENTS	(1)
+# else
+#  define USE_SHADOW_SEGMENTS	(0)
+# endif
 #endif
 
 // Change the 1 to 0 to compile out the shadow slot cache statistics (cacheHit/maxSkip/maxCacheSkip in M122).
 // Collecting them costs a few cycles at each segment boundary and about 50 bytes of RAM code.
-#define SHADOW_CACHE_DIAGNOSTICS	(USE_FIXED_STEP_TIMING && 1)
+#define SHADOW_CACHE_DIAGNOSTICS	(USE_SHADOW_SEGMENTS && 1)
 
 #if USE_FIXED_STEP_TIMING
 

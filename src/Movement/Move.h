@@ -194,7 +194,7 @@ private:
 	void CheckSegment(unsigned int line, MoveSegment *seg) noexcept;
 #endif
 
-#if USE_FIXED_STEP_TIMING
+#if USE_SHADOW_SEGMENTS
 	void PrepareShadowSegments() noexcept;											// prepare upcoming segment parameters for the step ISR; called from Spin (MAIN task) only
 #endif
 
