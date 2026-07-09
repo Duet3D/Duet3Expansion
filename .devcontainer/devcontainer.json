@@ -21,7 +21,10 @@
 				"ms-vscode.makefile-tools"
 			]
 		}
-	}
+	},
+	"runArgs": [
+		"--add-host=host.docker.internal:host-gateway"
+	]
 	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
 	// "remoteUser": "root"
 }

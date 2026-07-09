@@ -117,6 +117,18 @@
                 "kind": "build",
                 "isDefault": false
             }
+        },
+        {
+            "label": "Build EXP1HCL - Debug",
+            "type": "shell",
+            "command": "make DEBUG=1 EXP1HCL -j",
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            }
         }
     ]
 }

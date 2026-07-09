@@ -1,0 +1,63 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "[EXP1HCL] Build, Flash & Debug",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/EXP1HCL/Duet3Firmware_EXP1HCL.elf",
+            "cwd": "${workspaceFolder}",
+            "MIMode": "gdb",
+            "miDebuggerPath": "arm-none-eabi-gdb",
+            "miDebuggerServerAddress": "${input:gdb_server}",
+            "launchCompleteCommand": "exec-continue",
+            "stopAtEntry": false,
+            "preLaunchTask": "Build EXP1HCL - Debug",
+            "setupCommands": [
+                {
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "postRemoteConnectCommands": [
+                {
+                    "text": "monitor reset"
+                },
+                {
+                    "text": "monitor halt"
+                },
+                {
+                    "text": "load"
+                }
+            ]
+        },
+        {
+            "name": "[EXP1HCL] Debug Only",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/EXP1HCL/Duet3Firmware_EXP1HCL.elf",
+            "cwd": "${workspaceFolder}",
+            "MIMode": "gdb",
+            "miDebuggerPath": "${workspaceFolder}/../arm-gnu-toolchain-15.2.rel1-x86_64-arm-none-eabi/bin/arm-none-eabi-gdb",
+            "miDebuggerServerAddress": "${input:gdb_server}",
+            "launchCompleteCommand": "None",
+            "setupCommands": [
+                {
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+    ],
+    "inputs": [
+        {
+            "id": "gdb_server",
+            "type": "promptString",
+            "description": "GDB server host (localhost or host IP, and port, use \"host.docker.internal:port\" if connecting to a GDB server running on the host from within the Docker container)",
+            "default": "host.docker.internal:2331"
+        }
+    ]
+}
