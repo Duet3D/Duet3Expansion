@@ -38,21 +38,16 @@ static inline Move& GetMoveInstance() noexcept { return *moveInstance; }
 # error cannot define GetMoveInstance
 #endif
 
-#if SAME5x || SAMC21
-
-#if !STM32
-# include <Serial.h>
-#endif
-
 // Currently we can use a SERCOM, USART, raw SPI peripheral or our SpiDevice driver to communicate with the driver(s)
 
 #if SAME5x
 # include <hri_sercom_e54.h>
+# include <Serial.h>
 # define TMC_USES_SPIDEV	(0)
 #elif SAMC21
 # include <hri_sercom_c21.h>
+# include <Serial.h>
 # define TMC_USES_SPIDEV	(0)
-#endif
 #elif SAME70
 # include <pmc/pmc.h>
 # include <xdmac/xdmac.h>
@@ -1272,9 +1267,11 @@ inline bool TmcDriverState::SetXdirect(uint32_t regVal) noexcept
 
 #endif
 
+#if !TMC_USES_SPIDEV
+
 static void InitialiseDMA() noexcept
 {
-#if SAME70
+# if SAME70
 	/* From the data sheet:
 	 * Single Block Transfer With Single Microblock
 		1. Read the XDMAC Global Channel Status Register (XDMAC_GS) to select a free channel. [we use fixed channel numbers instead.]
@@ -1354,7 +1351,7 @@ static void InitialiseDMA() noexcept
 		p_cfg.mbr_da = reinterpret_cast<uint32_t>(&(USART_TMC->US_THR));
 		xdmac_configure_transfer(XDMAC, DmacChanTmcTx, &p_cfg);
 	}
-#endif
+# endif
 }
 
 // Set up the PDC or DMAC to send a register and receive the status, but don't enable it yet
@@ -1422,22 +1419,22 @@ static inline void DisableDma() noexcept
 #elif STM32
 	// Nothing to do here
 #else
-	spiPdc->PERIPH_PTCR = (PERIPH_PTCR_RXTDIS | PERIPH_PTCR_TXTDIS);		// disable the PDC
+	spiPdc->PERIPH_PTCR = (PERIPH_PTCR_RXTDIS | PERIPH_PTCR_TXTDIS);	// disable the PDC
 #endif
 }
 
 static inline void ResetSpi() noexcept
 {
 #if TMC_USES_SERCOM
-	tmcSercom->SPI.CTRLA.bit.ENABLE = 0;			// warning: this makes SCLK float!
+	tmcSercom->SPI.CTRLA.bit.ENABLE = 0;				// warning: this makes SCLK float!
 	while (tmcSercom->SPI.SYNCBUSY.bit.ENABLE) { }
 #elif TMC_USES_USART
 	USART_TMC51xx->US_CR = US_CR_RSTRX | US_CR_RSTTX;	// reset transmitter and receiver
 #elif STM32
 	// Nothing to do here
 #else
-	SPI_TMC->SPI_CR = SPI_CR_SPIDIS;				// disable the SPI
-	(void)SPI_TMC->SPI_RDR;							// clear the receive buffer
+	SPI_TMC->SPI_CR = SPI_CR_SPIDIS;					// disable the SPI
+	(void)SPI_TMC->SPI_RDR;								// clear the receive buffer
 #endif
 }
 
@@ -1453,7 +1450,7 @@ static inline void EnableSpi() noexcept
 #elif STM32
 	// Nothing to do here
 #else
-	SPI_TMC->SPI_CR = SPI_CR_SPIEN;					// enable SPI
+	SPI_TMC->SPI_CR = SPI_CR_SPIEN;						// enable SPI
 #endif
 }
 
@@ -1464,11 +1461,11 @@ static inline void DisableEndOfTransferInterrupt() noexcept
 #elif TMC_USES_SERCOM
 	DmacManager::DisableCompletedInterrupt(DmacChanTmcRx);
 #elif TMC_USES_USART
-	USART_TMC->US_IDR = US_IDR_ENDRX;				// enable end-of-transfer interrupt
+	USART_TMC->US_IDR = US_IDR_ENDRX;					// enable end-of-transfer interrupt
 #elif STM32
 	// Nothing to do here
 #else
-	SPI_TMC->SPI_IDR = SPI_IDR_ENDRX;				// enable end-of-transfer interrupt
+	SPI_TMC->SPI_IDR = SPI_IDR_ENDRX;					// enable end-of-transfer interrupt
 #endif
 }
 
@@ -1479,23 +1476,23 @@ static inline void EnableEndOfTransferInterrupt() noexcept
 #elif TMC_USES_SERCOM
 	DmacManager::EnableCompletedInterrupt(DmacChanTmcRx);
 #elif TMC_USES_USART
-	USART_TMC->US_IER = US_IER_ENDRX;				// enable end-of-transfer interrupt
+	USART_TMC->US_IER = US_IER_ENDRX;					// enable end-of-transfer interrupt
 #elif STM32
 	// Nothing to do here
 #else
-	SPI_TMC->SPI_IER = SPI_IER_ENDRX;				// enable end-of-transfer interrupt
+	SPI_TMC->SPI_IER = SPI_IER_ENDRX;					// enable end-of-transfer interrupt
 #endif
 }
 
 // DMA complete callback
 void RxDmaCompleteCallback(CallbackParameter param, DmaCallbackReason reason) noexcept
 {
-	fastDigitalWriteHigh(GlobalTmcCSPin);			// set CS high
-#if SAME70
+	fastDigitalWriteHigh(GlobalTmcCSPin);				// set CS high
+# if SAME70
 	DmacManager::DisableCompletedInterrupt(DmacChanTmcRx);
-#endif
+# endif
 	dmaFinishedReason = reason;
-#if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
+# if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
 	// When in phase stepping or closed loop mode we send the coil currents if any have changes since last time we sent them.
 	// Send a "normal" read or write request after the coil currents have been set.
 	// We don't care about the response from setting the motor currents so that is written to tmcAltRcvData so as to not overwrite tmcRcvData
@@ -1529,10 +1526,12 @@ void RxDmaCompleteCallback(CallbackParameter param, DmaCallbackReason reason) no
 			}
 		}
 	}
-#else
+# else
 	tmcTask.GiveFromISR(NotifyIndices::Tmc);
-#endif
+# endif
 }
+
+#endif
 
 #if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
 static void TmcTimerCallback(CallbackParameter) noexcept
@@ -1543,7 +1542,9 @@ static void TmcTimerCallback(CallbackParameter) noexcept
 
 extern "C" [[noreturn]] void TmcLoop(void *) noexcept
 {
+#if !TMC_USES_SPIDEV
 	InitialiseDMA();
+#endif
 #if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
 	tmcTimer.SetCallback(TmcTimerCallback, (CallbackParameter)0);
 #endif
@@ -1648,25 +1649,37 @@ extern "C" [[noreturn]] void TmcLoop(void *) noexcept
 #endif
 
 		// Kick off a transfer.
+#if TMC_USES_SPIDEV
+# if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
+		qq;		//TODO
+# else
+		//TODO boost priority across the next 3 lines? Or have the SPI device manage CS?
+		//TODO add SPI timeout parameter to TranceivePacket
+		fastDigitalWriteLow(GlobalTmcCSPin);					// set CS low
+		const bool success = spiDev->TransceivePacket(const_cast<const uint8_t*>(tmcSendData), const_cast<uint8_t*>(tmcRcvData), SpiDataSize);
+		fastDigitalWriteHigh(GlobalTmcCSPin);					// set CS low
+		dmaFinishedReason = (success) ? DmaCallbackReason::complete : DmaCallbackReason::none;
+# endif
+#else
 		// On the SAME5x the only way I have found to get reliable transfers and no timeouts is to disable SPI, enable DMA, and then enable SPI.
 		// Enabling SPI before DMA sometimes results in timeouts.
 		// Unfortunately, when we disable SPI the SCLK line floats. Therefore we disable SPI for as little time as possible.
 		{
 			TaskCriticalSectionLocker lock;
 
-#if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
-			SetupDMA((setCoilCurrents) ? tmcPhaseSendData : tmcSendData, tmcRcvData);	// set up the PDC or DMAC
-#else
+# if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
+			SetupDMA((setCoilCurrents) ? tmcPhaseSendData : tmcSendData, tmcSendData);	// set up the PDC or DMAC
+# else
 			SetupDMA(tmcSendData, tmcRcvData);											// set up the PDC or DMAC
-#endif
+# endif
 			dmaFinishedReason = DmaCallbackReason::none;
 
 			AtomicCriticalSectionLocker lock2;
 
 			fastDigitalWriteLow(GlobalTmcCSPin);				// set CS low
-#if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
+# if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
 			tmcTimer.CancelCallbackFromIsr();					// in case the timer is still running from a previous timed-out transfer
-#endif
+# endif
 			TaskBase::ClearCurrentTaskNotifyCount(NotifyIndices::Tmc);
 			EnableEndOfTransferInterrupt();
 			ResetSpi();
@@ -1678,6 +1691,7 @@ extern "C" [[noreturn]] void TmcLoop(void *) noexcept
 		(void)TaskBase::TakeIndexed(NotifyIndices::Tmc, TransferTimeout);
 		DisableEndOfTransferInterrupt();
 		DisableDma();
+#endif
 
 		// We don't care if the TakeIndexed call returned timeout, if the DMA completed then the transfer is OK
 		timedOut = (dmaFinishedReason != DmaCallbackReason::complete);
@@ -1687,7 +1701,9 @@ extern "C" [[noreturn]] void TmcLoop(void *) noexcept
 			// If the transfer was interrupted then we will have written dud data to the drivers. So we should re-initialise them all.
 			// Unfortunately registers that we don't normally write to may have changed too.
 			fastDigitalWriteHigh(GlobalTmcEnablePin);
+#if !TMC_USES_SPIDEV
 			fastDigitalWriteHigh(GlobalTmcCSPin);				// set CS high
+#endif
 			driversState = DriversState::notInitialised;
 			for (size_t drive = 0; drive < numTmcDrivers; ++drive)
 			{
