@@ -15,7 +15,7 @@
 # include <Hardware/ATEIO/ExtendedAnalog.h>
 #endif
 
-#if defined(TOOL1LC) || SUPPORT_INDUCTIVE_HEATER
+#if defined(TOOL1LC) || SUPPORT_ADS131M02 || SUPPORT_INDUCTIVE_HEATER
 # include <Platform/Platform.h>
 #endif
 

@@ -144,7 +144,10 @@ void LocalHeater::ResetHeater() noexcept
 	iAccumulator = 0.0;
 	badTemperatureCount = 0;
 	averagePWM = lastPwm = 0.0;
-	heaterExcursionFaultCount = heaterPwmFaultCount = 0;
+	heaterExcursionFaultCount = 0;
+#if CHECK_HEATER_PWM
+	heaterPwmFaultCount = 0;
+#endif
 	temperature = BadErrorTemperature;
 #if SUPPORT_LP5817
 	UpdateStatusLed();
@@ -152,7 +155,7 @@ void LocalHeater::ResetHeater() noexcept
 }
 
 // Configure the heater port and the sensor number
-GCodeResult LocalHeater::ConfigurePortAndSensor(const char *portName, PwmFrequency freq, unsigned int sn, const StringRef& reply) noexcept
+GCodeResult LocalHeater::ConfigurePortAndSensor(const char *portName, PwmFrequency freq, unsigned int sn, int ambientSn, const StringRef& reply) noexcept
 {
 	if constexpr (MaxPortsPerHeater == 1)
 	{
@@ -188,10 +191,17 @@ GCodeResult LocalHeater::ConfigurePortAndSensor(const char *portName, PwmFrequen
 	{
 		port.SetFrequency(freq);
 	}
+
 	SetSensorNumber(sn);
+	SetAmbientSensorNumber(ambientSn);
 	if (Heat::FindSensor(sn).IsNull())
 	{
 		reply.printf("Sensor number %u has not been defined", sn);
+		return GCodeResult::warning;
+	}
+	if (ambientSn >= 0 && Heat::FindSensor(ambientSn).IsNull())
+	{
+		reply.printf("Sensor number %u has not been defined", ambientSn);
 		return GCodeResult::warning;
 	}
 
@@ -235,6 +245,14 @@ GCodeResult LocalHeater::ReportDetails(const StringRef& reply) const noexcept
 	{
 		reply.cat(", no sensor");
 	}
+	if (GetAmbientSensorNumber() >= 0)
+	{
+		reply.catf(", ambient sensor %d", GetAmbientSensorNumber());
+	}
+	else
+	{
+		reply.cat(", no ambient sensor");
+	}
 	return GCodeResult::ok;
 }
 
@@ -242,7 +260,20 @@ GCodeResult LocalHeater::ReportDetails(const StringRef& reply) const noexcept
 TemperatureError LocalHeater::ReadTemperature() noexcept
 {
 	TemperatureError err(TemperatureError::unknownError);
-	temperature = Heat::GetSensorTemperature(GetSensorNumber(), err);		// in the event of an error, err is set and BAD_ERROR_TEMPERATURE is returned
+	temperature = Heat::GetSensorTemperature(GetSensorNumber(), err);						// in the event of an error, err is set and BAD_ERROR_TEMPERATURE is returned
+	if (GetAmbientSensorNumber() >= 0)
+	{
+		TemperatureError err2(TemperatureError::unknownError);
+		ambientTemperature = Heat::GetSensorTemperature(GetAmbientSensorNumber(), err2);	// in the event of an error, err is set and BAD_ERROR_TEMPERATURE is returned
+		if (err2 != TemperatureError::ok)
+		{
+			ambientTemperature = NormalAmbientTemperature;
+		}
+	}
+	else
+	{
+		ambientTemperature = NormalAmbientTemperature;
+	}
 	return err;
 }
 
@@ -284,7 +315,10 @@ void LocalHeater::UpdateHeaterMode(float targetTemperature) noexcept
 			lastTemperatureValue = temperature;
 			lastTemperatureMillis = timeSetHeating = millis();
 		}
-		heaterExcursionFaultCount = heaterPwmFaultCount = 0;
+		heaterExcursionFaultCount = 0;
+#if CHECK_HEATER_PWM
+		heaterPwmFaultCount = 0;
+#endif
 		mode = newMode;
 #if SUPPORT_LP5817
 		UpdateStatusLed();
@@ -377,7 +411,10 @@ void LocalHeater::Spin() noexcept
 				if (error <= TemperatureCloseEnough)
 				{
 					mode = HeaterMode::stable;
-					heaterExcursionFaultCount = heaterPwmFaultCount = 0;
+					heaterExcursionFaultCount = 0;
+#if CHECK_HEATER_PWM
+					heaterPwmFaultCount = 0;
+#endif
 				}
 				else
 				{
@@ -453,7 +490,10 @@ void LocalHeater::Spin() noexcept
 				{
 					// We have cooled to close to the target temperature, so we should now maintain that temperature
 					mode = HeaterMode::stable;
-					heaterExcursionFaultCount = heaterPwmFaultCount = 0;
+					heaterExcursionFaultCount = 0;
+#if CHECK_HEATER_PWM
+					heaterPwmFaultCount = 0;
+#endif
 #if SUPPORT_LP5817
 					UpdateStatusLed();
 #endif
@@ -486,7 +526,7 @@ void LocalHeater::Spin() noexcept
 					// If the P and D terms together demand that the heater is full on or full off, disregard the I term to reduce integral windup
 					const float errorMinusDterm = error - (params.tD * derivative);
 					const float pPlusD = params.kP * errorMinusDterm;
-					const float expectedPwm = GetModel().EstimateRequiredPwm(temperature - NormalAmbientTemperature, lastFanPwm, currentVoltage, 0.0);		//TODO pass filamentPwm
+					const float expectedPwm = GetModel().EstimateRequiredPwm(temperature - ambientTemperature, lastFanPwm, currentVoltage, 0.0);		//TODO pass filamentPwm
 					if (pPlusD + expectedPwm > GetModel().GetMaxPwm())
 					{
 						lastPwm = GetModel().GetMaxPwm();
@@ -509,10 +549,14 @@ void LocalHeater::Spin() noexcept
 						lastPwm = constrain<float>(pPlusD + iAccumulator, 0.0, GetModel().GetMaxPwm());
 					}
 
-					if (mode == HeaterMode::stable)
+#if CHECK_HEATER_PWM
+					// The following safety check is no good for bed heaters that have a large thermal reservoir loosely coupled to the heater,
+					// because the required PWM is higher than the expected value from tuning until the reservoir has heated up.
+					// So we apply it to tool heaters only.
+					if (mode == HeaterMode::stable && GetFunction() == HeaterFunction::tool)
 					{
 						const float limitedAccumulator = min<float>(iAccumulator, GetModel().GetMaxPwm());
-						if (limitedAccumulator > expectedPwm * PwmFaultLevel)
+						if (limitedAccumulator > expectedPwm * GetPwmFaultLevel())
 						{
 							++heaterPwmFaultCount;
 							if (heaterPwmFaultCount * Heat::NormalHeaterPollInterval > GetMaxPwmFaultTime() * SecondsToMillis)
@@ -527,6 +571,7 @@ void LocalHeater::Spin() noexcept
 							--heaterPwmFaultCount;
 						}
 					}
+#endif
 				}
 				else
 				{
@@ -656,7 +701,7 @@ GCodeResult LocalHeater::ApplyFeedForward(const CanMessageHeaterFeedForwardV1& m
 		{
 			const float oldFanPwm = lastFanPwm;
 			lastFanPwm = msg.fanPwmFraction;
-			pwmBoost += GetModel().GetPwmCorrectionForFan(GetTargetTemperature() - NormalAmbientTemperature, oldFanPwm, msg.fanPwmFraction) * FanFeedForwardMultiplier;
+			pwmBoost += GetModel().GetPwmCorrectionForFan(GetTargetTemperature() - ambientTemperature, oldFanPwm, msg.fanPwmFraction) * FanFeedForwardMultiplier;
 		}
 		TaskCriticalSectionLocker lock;
 		iAccumulator += pwmBoost;

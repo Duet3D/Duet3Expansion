@@ -21,7 +21,7 @@ public:
 		Init(0);
 	}
 
-	void Init(uint16_t val) volatile noexcept
+	void Init(uint16_t val) noexcept
 	{
 		TaskCriticalSectionLocker lock;
 
@@ -41,11 +41,14 @@ public:
 
 		sum = sum - readings[index] + r;
 		readings[index] = r;
-		++index;
-		if (index == numAveraged)
+		if (index == numAveraged - 1)
 		{
 			index = 0;
 			isValid = true;
+		}
+		else
+		{
+			++index;
 		}
 	}
 
@@ -59,14 +62,6 @@ public:
 	bool IsValid() const volatile noexcept
 	{
 		return isValid;
-	}
-
-	// Get the latest reading
-	uint16_t GetLatestReading() const volatile noexcept
-	{
-		size_t indexOfLastReading = index;			// capture volatile variable
-		indexOfLastReading = (indexOfLastReading == 0) ? numAveraged - 1 : indexOfLastReading - 1;
-		return readings[indexOfLastReading];
 	}
 
 	static constexpr size_t NumAveraged() noexcept { return numAveraged; }

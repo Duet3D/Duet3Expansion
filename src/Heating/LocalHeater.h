@@ -17,17 +17,19 @@
 #include "TemperatureError.h"
 #include "Hardware/IoPorts.h"
 
+#define CHECK_HEATER_PWM			defined(TOOLINDX)			// we only monitor the heater PWM on TOOLINDX
+
 class CanMessageHeaterTuningReport;
 
 class LocalHeater : public Heater
 {
-	static const size_t NumPreviousTemperatures = 4; // How many samples we average the temperature derivative over
+	static const size_t NumPreviousTemperatures = 4; 			// How many samples we average the temperature derivative over
 
 public:
-	LocalHeater(unsigned int heaterNum);
+	explicit LocalHeater(unsigned int heaterNum) noexcept;
 	~LocalHeater();
 
-	GCodeResult ConfigurePortAndSensor(const char *portName, PwmFrequency freq, unsigned int sn, const StringRef& reply) noexcept override;
+	GCodeResult ConfigurePortAndSensor(const char *portName, PwmFrequency freq, unsigned int sn, int ambientSn, const StringRef& reply) noexcept override;
 	GCodeResult SetPwmFrequency(PwmFrequency freq, const StringRef& reply) noexcept override;
 	GCodeResult ReportDetails(const StringRef& reply) const noexcept override;
 
@@ -43,7 +45,7 @@ public:
 	bool IsCustom() const noexcept override;					// returns true if this is a custom heater with unusual default model parameters
 	void SetDefaultHeaterModel(CanMessageBuffer& buf) noexcept override;	// set and return the default heater model
 
-	static bool GetTuningCycleData(CanMessageHeaterTuningReport& msg);	// get a heater tuning cycle report, if we have one
+	static bool GetTuningCycleData(CanMessageHeaterTuningReport& msg) noexcept;	// get a heater tuning cycle report, if we have one
 
 protected:
 	void ResetHeater() noexcept override;
@@ -63,6 +65,7 @@ private:
 
 	PwmPort ports[MaxPortsPerHeater];							// The port(s) that drive the heater
 	float temperature;											// The current temperature
+	float ambientTemperature;									// the temperature of the ambient sensor
 	float previousTemperatures[NumPreviousTemperatures];		// The temperatures of the previous NumDerivativeSamples measurements, used for calculating the derivative
 	size_t previousTemperatureIndex;							// Which slot in previousTemperature we fill in next
 	float iAccumulator;											// The integral LocalHeater component
@@ -75,7 +78,9 @@ private:
 	uint32_t lastSampleTime;									// Time when the temperature was last sampled by Spin()
 
 	uint16_t heaterExcursionFaultCount;							// Count of questionable heater temperature excursions
+#if CHECK_HEATER_PWM
 	uint16_t heaterPwmFaultCount;								// Count of questionable PWM values
+#endif
 
 	uint8_t previousTemperaturesGood;							// Bitmap indicating which previous temperature were good readings
 	HeaterMode mode;											// Current state of the heater

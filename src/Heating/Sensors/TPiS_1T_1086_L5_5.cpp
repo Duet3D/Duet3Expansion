@@ -90,7 +90,7 @@ GCodeResult TPiS_1T_1086_L5_5::Configure(const CanMessageGenericParser& parser, 
 
 				// Derived parameters
 				recipTempCalibM = 100.0/(float)TempCalibM;
-				TempCalibK = (powf(ConvertDegCToDegK(TempCalibTobj1), RadiationExponent) - powf(ConvertDegCToDegK(25.0), RadiationExponent)) / (float)(int32_t)(TempCalibUout1 - TempCalibUo);
+				TempCalibK = (powf(ConvertDegCToDegK(TempCalibTobj1), radiationExponent) - powf(ConvertDegCToDegK(25.0), radiationExponent)) / (float)(int32_t)(TempCalibUout1 - TempCalibUo);
 
 				// Set the starting temperatures
 				ambientTemperatureDegK = objectTemperatureDegK = ambientTemperatureLast = objectTemperatureLast = ConvertDegCToDegK(25.0);
@@ -122,6 +122,28 @@ GCodeResult TPiS_1T_1086_L5_5::Configure(const CanMessageGenericParser& parser, 
 	}
 	changed = parser.GetFloatParam('C', shC) || changed;
 	changed = parser.GetFloatParam('T', r25) || changed;
+	uint8_t temp8;
+
+	// Get IR sensor parameters. We may remove these in future.
+	// We do not allow configuration of the series resistor in the above code, so the R parameter is free to use as the radiation exponent.
+	{
+		if (parser.GetUintParam('F', temp8))
+		{
+			objMix = (float)temp8/256.0;
+			changed = true;
+		}
+		if (parser.GetUintParam('W', temp8))
+		{
+			auxMix = (float)temp8/256.0;
+			changed = true;
+		}
+		float f;
+		if (parser.GetFloatParam('R', f) && f >= 3.8 && f <= 4.4)
+		{
+			radiationExponent = f;
+			changed = true;
+		}
+	}
 
 	if (changed)
 	{
@@ -132,7 +154,8 @@ GCodeResult TPiS_1T_1086_L5_5::Configure(const CanMessageGenericParser& parser, 
 	else
 	{
 		CopyBasicDetails(reply);
-		reply.catf(", environment thermistor: T:%.1f B:%.1f C:%.2e R:%.1f", (double)r25, (double)beta, (double)shC, (double)seriesR);
+		reply.catf(", exponent %.2f, obj mix %.2f, aux mix %.2f", (double)radiationExponent, (double)objMix, (double)auxMix);
+		reply.catf(", environment thermistor: T:%.1f B:%.1f C:%.2e", (double)r25, (double)beta, (double)shC);
 	}
 #if SUPPORT_LP5817
 		Platform::GetStatusLedControl()->ClearError(LedStatusCode::irSensorFail);
@@ -194,17 +217,17 @@ void TPiS_1T_1086_L5_5::Poll() noexcept
 
 		// 1. Calculate the ambient temperature reported by the sensor in degK. See datasheet section 8.4.
 		ambientTemperatureDegK = ConvertDegCToDegK(25.0) + (float)((int32_t)(rawTAmb - TempCalibPtat25)) * recipTempCalibM;
-		const float ambientRadiance = powf(ambientTemperatureDegK, RadiationExponent);
+		const float ambientRadiance = powf(ambientTemperatureDegK, radiationExponent);
 
 		// 2. Calculate the detected radiance
 		const float detectedRadiance = (float)(int32_t)(rawTpObject - TempCalibUo) * TempCalibK;
 
 		// 3. Decide what nozzle environment temperature to use and calculate its radiance
 		const float auxTemperatureDegK = (thermistorResult == TemperatureError::ok) ? environmentTemperatureDegK : (7.0 * ambientTemperatureLast + objectTemperatureLast) * 0.125;
-		const float auxRadiance = powf(auxTemperatureDegK, RadiationExponent);
+		const float auxRadiance = powf(auxTemperatureDegK, radiationExponent);
 
 		// The remaining detected radiance must be due to the object temperature
-		const float receivedObjectRadiance = detectedRadiance - auxRadiance * AuxFovAndEmissivityCorrection + ambientRadiance * (AuxFovAndEmissivityCorrection + ObjectFovAndEmissivityCorrection);
+		const float receivedObjectRadiance = detectedRadiance - auxRadiance * auxMix + ambientRadiance * (auxMix + objMix);
 
 		// Check that the received object radiance is non-negative to avoid a math error
 		if (receivedObjectRadiance < 0.0)
@@ -215,10 +238,10 @@ void TPiS_1T_1086_L5_5::Poll() noexcept
 		else
 		{
 			// The actual object radiance will be greater because of the limited FOV and because the object is not completely black
-			const float actualObjectRadiance = receivedObjectRadiance * (1.0/ObjectFovAndEmissivityCorrection);
+			const float actualObjectRadiance = receivedObjectRadiance * (1.0/objMix);
 
 			// Calculate the object temperature. See datasheet section 8.5. We assume that LOOKUP# = 2.
-			objectTemperatureDegK = powf(actualObjectRadiance, 1.0/RadiationExponent);
+			objectTemperatureDegK = powf(actualObjectRadiance, 1.0/radiationExponent);
 
 			objectTemperatureLast = objectTemperatureDegK;
 			ambientTemperatureLast = ambientTemperatureDegK;

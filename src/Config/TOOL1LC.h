@@ -260,7 +260,7 @@ constexpr PinDescription PinTable[] =
 };
 
 constexpr size_t NumPins = ARRAY_SIZE(PinTable);
-constexpr size_t NumRealPins = 32 + 24;				// 32 pins on port A (some missing), 24 on port B
+constexpr size_t NumRealPins = 32 + 24;					// 32 pins on port A (some missing), 24 on port B
 constexpr size_t NumVirtualPins = SUPPORT_LIS3DH + SUPPORT_LDC1612;
 
 static_assert(NumPins == NumRealPins + NumVirtualPins);

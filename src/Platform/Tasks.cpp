@@ -41,7 +41,7 @@
 
 #if SAME5x
 # include <hri_wdt_e54.h>
-constexpr uint32_t FlashBlockSize = 0x00010000;					// the erase size we assume for flash, and the bootloader size (64K)
+constexpr uint32_t FlashBlockSize = 0x00004000;					// the erase size we assume for flash, and the bootloader size (16K)
 #elif SAMC21
 # include <hri_wdt_c21.h>
 constexpr uint32_t FlashBlockSize = 0x00004000;					// the erase size we assume for flash, and the bootloader size (16K)
@@ -96,7 +96,7 @@ static Mutex mallocMutex;
 constexpr unsigned int IdleTaskStackWords = 50;					// currently we don't use the idle talk for anything, so this can be quite small
 static Task<IdleTaskStackWords> idleTask;
 
-extern "C" void vApplicationGetIdleTaskMemory(StaticTask_t **ppxIdleTaskTCBBuffer, StackType_t **ppxIdleTaskStackBuffer, uint32_t *pulIdleTaskStackSize) noexcept
+extern "C" void vApplicationGetIdleTaskMemory(StaticTask_t **ppxIdleTaskTCBBuffer, StackType_t **ppxIdleTaskStackBuffer, configSTACK_DEPTH_TYPE *pulIdleTaskStackSize) noexcept
 {
 	*ppxIdleTaskTCBBuffer = idleTask.GetTaskMemory();
 	*ppxIdleTaskStackBuffer = idleTask.GetStackBase();
@@ -529,20 +529,25 @@ static FirmwareFlashErrorCode GetBootloaderBlock(uint8_t *blockBuffer)
 
 #endif	// !RP2040
 
+// This is called only when updating the bootloader fails.
+// There is no point resetting so we flash the error code repeatedly,
 static void ReportFlashError(FirmwareFlashErrorCode err)
 {
-#if RP2040
-	debugPrintf("Firmware update error %d\n", (int)err);
-#endif
-	for (unsigned int i = 0; i < (unsigned int)err; ++i)
+	for (;;)
 	{
-		Platform::WriteLed(0, true);
-		delay(200);
-		Platform::WriteLed(0, false);
-		delay(200);
-	}
+#if RP2040
+		debugPrintf("Firmware update error %d\n", (int)err);
+#endif
+		for (unsigned int i = 0; i < (unsigned int)err; ++i)
+		{
+			Platform::WriteLed(0, true);
+			delay(200);
+			Platform::WriteLed(0, false);
+			delay(200);
+		}
 
-	delay(1000);
+		delay(1000);
+	}
 }
 
 // Compute the CRC32 of a dword-aligned block of memory

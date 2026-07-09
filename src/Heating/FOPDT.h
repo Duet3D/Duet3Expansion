@@ -86,4 +86,9 @@ inline float FopDt::EstimateRequiredPwm(float temperatureRise, float fanPwm, flo
 	return basicModel.GetExpectedPwm(temperatureRise, fanPwm, actualVoltage, filamentPwm);
 }
 
+inline float FopDt::GetPwmCorrectionForFan(float temperatureRise, float oldFanPwm, float newFanPwm) const noexcept
+{
+	return basicModel.GetPwmCorrectionForFan(temperatureRise, oldFanPwm, newFanPwm);
+}
+
 #endif /* SRC_HEATING_FOPDT_H_ */

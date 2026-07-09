@@ -1368,6 +1368,8 @@ static void SetupDMA(const volatile uint8_t *txData, const volatile uint8_t *rxD
 	DmacManager::SetDataLength(DmacChanTmcTx, SpiDataSize);
 	DmacManager::SetDestinationAddress(DmacChanTmcRx, (void*)rxData);
 	DmacManager::SetDataLength(DmacChanTmcRx, SpiDataSize);
+#elif STM32
+	qq;	//TODO
 #else
 	spiPdc->PERIPH_PTCR = (PERIPH_PTCR_RXTDIS | PERIPH_PTCR_TXTDIS);		// disable the PDC
 
@@ -1386,6 +1388,8 @@ static inline void EnableDma() noexcept
 #elif SAME5x || SAMC21
 	DmacManager::EnableChannel(DmacChanTmcRx, DmacPrioTmcRx);
 	DmacManager::EnableChannel(DmacChanTmcTx, DmacPrioTmcTx);
+#elif STM32
+	qq;	//TODO
 #else
 	spiPdc->PERIPH_PTCR = (PERIPH_PTCR_RXTEN | PERIPH_PTCR_TXTEN);			// enable the PDC
 #endif
@@ -1399,6 +1403,8 @@ static inline void DisableDma() noexcept
 #elif SAME5x || SAMC21
 	DmacManager::DisableChannel(DmacChanTmcTx);
 	DmacManager::DisableChannel(DmacChanTmcRx);
+#elif STM32
+	qq;	//TODO
 #else
 	spiPdc->PERIPH_PTCR = (PERIPH_PTCR_RXTDIS | PERIPH_PTCR_TXTDIS);		// disable the PDC
 #endif
@@ -1411,6 +1417,8 @@ static inline void ResetSpi() noexcept
 	while (tmcSercom->SPI.SYNCBUSY.bit.ENABLE) { }
 #elif TMC_USES_USART
 	USART_TMC51xx->US_CR = US_CR_RSTRX | US_CR_RSTTX;	// reset transmitter and receiver
+#elif STM32
+	qq;	//TODO
 #else
 	SPI_TMC->SPI_CR = SPI_CR_SPIDIS;				// disable the SPI
 	(void)SPI_TMC->SPI_RDR;							// clear the receive buffer
@@ -1426,6 +1434,8 @@ static inline void EnableSpi() noexcept
 	while (tmcSercom->SPI.SYNCBUSY.bit.ENABLE) { }
 #elif TMC_USES_USART
 	USART_TMC51xx->US_CR = US_CR_RXEN | US_CR_TXEN;		// enable transmitter and receiver
+#elif STM32
+	qq;	//TODO
 #else
 	SPI_TMC->SPI_CR = SPI_CR_SPIEN;					// enable SPI
 #endif
@@ -1439,6 +1449,8 @@ static inline void DisableEndOfTransferInterrupt() noexcept
 	DmacManager::DisableCompletedInterrupt(DmacChanTmcRx);
 #elif TMC_USES_USART
 	USART_TMC->US_IDR = US_IDR_ENDRX;				// enable end-of-transfer interrupt
+#elif STM32
+	qq;	//TODO
 #else
 	SPI_TMC->SPI_IDR = SPI_IDR_ENDRX;				// enable end-of-transfer interrupt
 #endif
@@ -1452,6 +1464,8 @@ static inline void EnableEndOfTransferInterrupt() noexcept
 	DmacManager::EnableCompletedInterrupt(DmacChanTmcRx);
 #elif TMC_USES_USART
 	USART_TMC->US_IER = US_IER_ENDRX;				// enable end-of-transfer interrupt
+#elif STM32
+	qq;	//TODO
 #else
 	SPI_TMC->SPI_IER = SPI_IER_ENDRX;				// enable end-of-transfer interrupt
 #endif

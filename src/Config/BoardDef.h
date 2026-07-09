@@ -37,6 +37,8 @@
 # include "F3PTB.h"
 #elif defined(TOOLINDX)
 # include "TOOLINDX.h"
+#elif defined(NODETRIX)
+# include "NodeTrix.h"
 #else
 # error Board type not defined
 #endif

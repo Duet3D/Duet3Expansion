@@ -438,7 +438,9 @@ inline __attribute__((always_inline)) bool Move::ScheduleNextStepInterrupt() noe
 inline void Move::StepDriversLow() noexcept
 {
 # if DIFFERENTIAL_STEPPER_OUTPUTS || ACTIVE_HIGH_STEP
-#  if RP2040
+#  if STM32
+	StepPort->BRR = allDriverBits;
+#  elif RP2040
 	sio_hw->gpio_clr = allDriverBits;
 #  else
 	StepPio->OUTCLR.reg = allDriverBits;
@@ -451,7 +453,9 @@ inline void Move::StepDriversLow() noexcept
 inline void Move::StepDriversHigh(uint32_t driverMap) noexcept
 {
 # if DIFFERENTIAL_STEPPER_OUTPUTS || ACTIVE_HIGH_STEP
-#  if RP2040
+#  if STM32
+	StepPort->BSRR = allDriverBits;
+#  elif RP2040
 	sio_hw->gpio_set = driverMap;
 #  else
 	StepPio->OUTSET.reg = driverMap;

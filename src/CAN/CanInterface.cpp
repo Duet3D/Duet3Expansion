@@ -32,7 +32,7 @@
 
 #if RP2040
 # include <Hardware/NonVolatileMemory.h>
-#else
+#elif SAME5x || SAMC21
 # include <hpl_user_area.h>
 #endif
 
@@ -69,7 +69,10 @@ static bool enabled = false;
 constexpr CanDevice::Config Can0Config =
 {
 	.dataSize = 64,									// must be one of: 8, 12, 16, 20, 24, 32, 48, 64
-#if RP2040
+#if STM32H5
+	.numTxBuffers = 0,								// STM32H5 has no dedicated transmit buffers
+	.txFifoSize = 3,								// STM32H5 has fixed size FIFOs
+#elif RP2040
 	.numTxBuffers = 0,								// RP2040 implementation doesn't support transmit buffers
 	.txFifo0Size = 16,
 	.txFifo1Size = 2,								// RP2040 supports multiple transmit fifos so use another one instead of dedicated transmit buffers
@@ -77,30 +80,52 @@ constexpr CanDevice::Config Can0Config =
 	.numTxBuffers = 2,								// we allocate 2 buffers to sending urgent messages in case we need to send more than one in quick succession
 	.txFifoSize = 16,								// enough to send a 512-byte response broken into 60-byte fragments, plus status messages
 #endif
-#if RP2040
+#if RP2040 || STM32H5
 	.numRxBuffers = 0,								// RP2040 implementation doesn't support receive buffers
 #else
 	.numRxBuffers = 1,								// we use a dedicated buffer for the clock sync messages
 #endif
 #if SAMC21
 	.rxFifo0Size = 16,								// save RAM on SAMC21
+#elif STM32H5
+	.rxFifo0Size = 3,								// STM32H5 has fixed size FIFOs
 #else
 	.rxFifo0Size = 32,
 #endif
-#if RP2040
+#if STM32H5
+	.rxFifo1Size = 3,								// STM32H5 has fixed size FIFOs
+#elif RP2040
 	.rxFifo1Size = 1,								// we use FIFO 1 instead of a dedicated receive buffer to receive CAN clock messages
 #else
 	.rxFifo1Size = 0,								// we don't use FIFO 1
 #endif
+#if STM32H5
+	.numShortFilterElements = 28,					// we don't use 11-bit addresses
+	.numExtendedFilterElements = 8,
+	.txEventFifoSize = 3							// we don't need transmit events
+#else
 	.numShortFilterElements = 0,					// we don't use 11-bit addresses
 	.numExtendedFilterElements = 3,
 	.txEventFifoSize = 0							// we don't need transmit events
+#endif
 };
 
 static_assert(Can0Config.IsValid());
 
+#if STM32H5
+
+// STM32H5 has fixed CAN buffer layout so nothing needed here
+
+#elif STM32H7
+
+static uint32_t *canMemory = reinterpret_cast<uint32_t *>(FDCAN_SRAM_BASE);
+
+#else
+
 // CAN buffer memory must be in the first 64Kb of RAM (SAME5x) or in non-cached RAM (SAME70), so put it in its own segment
 static uint32_t can0Memory[Can0Config.GetMemorySize()] __attribute__ ((section (".CanMessage")));
+
+#endif
 
 // CanClock task
 constexpr size_t CanClockTaskStackWords =
@@ -247,7 +272,19 @@ void CanInterface::Init(CanAddress defaultBoardAddress, unsigned int whichPort, 
 #else
 								0, whichPort,
 #endif
-								Can0Config, can0Memory, timing, nullptr);
+								Can0Config,
+#if STM32H5
+								reinterpret_cast<uint32_t *>(SRAMCAN_BASE_NS + 0x0350 * whichPort),			// STM32H5 has fixed message buffer allocation
+#elif STM32H7
+								canMemory,
+#else
+								can0Memory,
+#endif
+								timing, nullptr);
+
+#if STM32H7
+	canMemory += Can0Config.GetMemorySize();					// advance memory pointer in case we create another CAN device
+#endif
 
 #ifdef SAMMYC21
 	SetPinMode(CanStandbyPin, OUTPUT_LOW);						// take the CAN drivers out of standby

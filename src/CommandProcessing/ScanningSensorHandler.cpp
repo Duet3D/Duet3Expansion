@@ -309,6 +309,8 @@ void ScanningSensorHandler::Init(SharedI2CMaster& i2cDevice) noexcept
 		ConfigureGclk(LDC1612GClkNumber, GclkSource::dpll0, 4, true);
 		SetPinFunction(LDC1612ClockGenPin, GpioPinFunction::M);
 	}
+#elif defined(NodeTrix)
+	qq;	//TODO
 #else
 # error LDC support not implemented for this processor
 #endif

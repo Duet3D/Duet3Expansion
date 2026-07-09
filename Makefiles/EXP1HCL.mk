@@ -54,6 +54,7 @@ SRC_DIRS := \
 # Include paths for C files (minimal set)
 C_INCLUDES := \
 	-I$(LIBRARIES_DIR)/CoreN2G \
+	-I$(LIBRARIES_DIR)/RRFLibraries \
 	-I$(LIBRARIES_DIR)/FreeRTOS \
 	-I$(CURDIR)/src \
 	-I$(LIBRARIES_DIR)/CoreN2G/src \
@@ -63,6 +64,7 @@ C_INCLUDES := \
 # Include paths for C++ files (full set)
 CXX_INCLUDES := \
 	-I$(LIBRARIES_DIR)/CoreN2G \
+	-I$(LIBRARIES_DIR)/RRFLibraries \
 	-I$(LIBRARIES_DIR)/FreeRTOS \
 	-I$(CURDIR)/src \
 	-I$(LIBRARIES_DIR)/CoreN2G/src \

@@ -37,10 +37,12 @@ private:
 	static constexpr uint32_t TPis_I2C_timeout = 25;					// timeout in milliseconds when waiting to acquire the I2C bus
 
 	// Constants that we adjust to get accurate readings
-	static constexpr float RadiationExponent = 4.20;					// theoretically this should be 4.0 but the sensor manufacturer recommends 4.2
-	static constexpr float ObjectFovAndEmissivityCorrection = 0.478;	// calibration factor for reduced emissivity and/or reduced FOV coverage of the object
-	static constexpr float AuxFovAndEmissivityCorrection = 0.50;		// calibration factor for reduced emissivity and/or reduced FOV coverage of the environment
-	static_assert(ObjectFovAndEmissivityCorrection + AuxFovAndEmissivityCorrection < 1.0);		// the total can't exceed 1.0 and will only be 1.0 if object and environment are both completely black
+	float radiationExponent = 4.2;										// exponent for black body radiation. Theoretical value is 4.0. Sensor datasheet recommends 4.2.
+
+	// Constants defining the combined emissivity and field of view of the IR sensor, for the object and the surround.
+	// If both were perfectly black then they would sum to 1.0, else they should sum to less than 1.0.
+	float objMix = 0.478;												// nozzle field of view * emissivity
+	float auxMix = 0.50;												// nozzle surround (as measured by thermistor) field of view * emissivity
 
 	// Calibration constants read from EPROM
 	uint16_t TempCalibPtat25;

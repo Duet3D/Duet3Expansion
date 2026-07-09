@@ -8,8 +8,6 @@
 #include "FOPDT.h"
 #include <CanMessageFormats.h>
 
-#define SQRT_FAN_SCALING		0		// 1 = fan cooling rate assumed to scale with square root of fan PWM, 0 = assumed to scale linearly
-
 // Set up sensible defaults here in case the user enables the heater without specifying values for all the parameters.
 FopDt::FopDt() noexcept
 {
@@ -112,21 +110,6 @@ void FopDt::CalcPidConstants(float targetTemperature) noexcept
 	setpointChangeParams.kP = 0.7/(basicModel.heatingRate * basicModel.deadTime);
 	setpointChangeParams.recipTi = fastSqrtf(averageCoolingRatePerDegC/basicModel.deadTime);			// Ti = timeConstant^0.5 * deadTime^0.5
 	setpointChangeParams.tD = basicModel.deadTime * 0.7;
-}
-
-// Calculate the change in required heater PWM due to a change in fan PWM
-float FopDt::GetPwmCorrectionForFan(float temperatureRise, float oldFanPwm, float newFanPwm) const noexcept
-{
-#if SQRT_FAN_SCALING
-	return temperatureRise * 0.01 * basicModel.fanCoolingRate * (fastSqrtf(newFanPwm) - fastSqrtf(oldFanPwm)) / basicModel.heatingRate;
-#else
-	return temperatureRise * 0.01 * basicModel.fanCoolingRate * (newFanPwm - oldFanPwm) / basicModel.heatingRate;
-#endif
-}
-
-/*static*/ float FopDt::EstimateMaxTemperatureRise(float hr, float cr, float cre) noexcept
-{
-	return 100.0 * powf(hr/cr, 1.0/cre);
 }
 
 // End

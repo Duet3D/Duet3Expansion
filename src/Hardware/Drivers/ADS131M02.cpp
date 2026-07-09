@@ -29,7 +29,11 @@ ADS131M02::ADS131M02() noexcept : SpiDevice(Ads131M02SpiParams)
 	SetDriveStrength(ADS131M02_GclkPin, 1);											// set high drive strength on clock pin
 	SetPinFunction(ADS131M02_GclkPin, ADS131M02_GclkPinFunction);					// enable 8MHz clock on output pin
 
-	SetClockFrequencyAndMode(6'000'000, SpiMode::mode1, false);						// 6MHz SPI clock
+	SetClockFrequencyAndMode(6'000'000, SpiMode::mode1
+#if SAME5x
+								, false												// don't use 9-bit mode
+#endif
+							);														// 6MHz SPI clock
 
 	// Reset the device
 	if (!SendSimpleCommand(Ads131M02Command::reset)) return;

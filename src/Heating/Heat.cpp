@@ -461,12 +461,15 @@ GCodeResult Heat::ConfigureHeater(const CanMessageGeneric& msg, const StringRef&
 			return GCodeResult::error;
 		}
 
+		int16_t ambientSensorNumber = -1;
+		(void)parser.GetIntParam('B', ambientSensorNumber);
+
 		WriteLocker lock(heatersLock);
 
 		DeleteObject(heaters[heater]);
 
 		Heater *newHeater = new LocalHeater(heater);
-		const GCodeResult rslt = newHeater->ConfigurePortAndSensor(pinName.c_str(), freq, sensorNumber, reply);
+		const GCodeResult rslt = newHeater->ConfigurePortAndSensor(pinName.c_str(), freq, sensorNumber, ambientSensorNumber, reply);
 		if (Succeeded(rslt))
 		{
 			heaters[heater] = newHeater;

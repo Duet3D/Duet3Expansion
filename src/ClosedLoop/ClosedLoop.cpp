@@ -125,15 +125,21 @@ void ClosedLoop::SetMotorPhase(uint16_t phase, float magnitude) noexcept
 # endif
 }
 
+#if SAME5x
 static_assert(TmcClockGclkNumber == GclkNumApp1 || TmcClockGclkNumber == GclkNumApp2);	// check that this GCLK number has been reserved for application use
+#endif
 
 static void GenerateTmcClock()
 {
 	// Currently we program DPLL0 to generate 120MHz output, so to get 15MHz with 1:1 ratio we divide by 8.
 	// We could divide by 7 instead giving 17.143MHz with 25ns and 33.3ns times. TMC2160A max is 18MHz, minimum 16ns and 16ns low.
 	// Max SPI clock frequency is half this clock frequency.
+#if STM32
+	qq;	//TODO
+#else
 	ConfigureGclk(TmcClockGclkNumber, GclkSource::dpll0, 8, true);
 	SetPinFunction(TmcClockPin, TmcClockPinPeriphMode);
+#endif
 	SmartDrivers::SetTmcExternalClock(15000000);
 }
 

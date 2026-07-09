@@ -143,4 +143,14 @@ GCodeResult Heater::SetTemperature(const CanMessageSetHeaterTemperatureV1& msg, 
 	return GCodeResult::ok;
 }
 
+float Heater::GetMaxPwmFaultTime() const noexcept
+{
+	return max<float>(DefaultToolHeaterPwmFaultTime, 5 * model.GetDeadTime());
+}
+
+float Heater::GetPwmFaultLevel() const noexcept
+{
+	return DefaultToolHeaterPwmFaultLevel;
+}
+
 // End
