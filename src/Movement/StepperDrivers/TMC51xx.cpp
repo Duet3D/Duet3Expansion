@@ -1656,7 +1656,7 @@ extern "C" [[noreturn]] void TmcLoop(void *) noexcept
 		//TODO boost priority across the next 3 lines? Or have the SPI device manage CS?
 		//TODO add SPI timeout parameter to TranceivePacket
 		fastDigitalWriteLow(GlobalTmcCSPin);					// set CS low
-		const bool success = spiDev->TransceivePacket(const_cast<const uint8_t*>(tmcSendData), const_cast<uint8_t*>(tmcRcvData), SpiDataSize);
+		const bool success = spiDev->TransceivePacket(const_cast<const uint8_t*>(tmcSendData), const_cast<uint8_t*>(tmcRcvData), SpiDataSize, TransferTimeout);
 		fastDigitalWriteHigh(GlobalTmcCSPin);					// set CS low
 		dmaFinishedReason = (success) ? DmaCallbackReason::complete : DmaCallbackReason::none;
 # endif
