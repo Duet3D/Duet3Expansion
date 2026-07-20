@@ -338,4 +338,8 @@ inline void MoveSegment::Merge(motioncalc_t p_distance, motioncalc_t p_a, Moveme
 # endif
 #endif
 
+// Change the 0 to 1 to compile in the shadow slot cache statistics (cacheHit/maxSkip/maxCacheSkip in M122).
+// Collecting them costs a few cycles at each segment boundary and about 50 bytes of RAM code.
+#define SHADOW_CACHE_DIAGNOSTICS	(USE_SHADOW_SEGMENTS && 0)
+
 #endif /* SRC_MOVEMENT_MOVESEGMENT_H_ */

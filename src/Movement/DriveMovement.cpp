@@ -17,6 +17,13 @@
 
 int32_t DriveMovement::maxStepsLate = 0;
 
+#if SHADOW_CACHE_DIAGNOSTICS
+uint32_t DriveMovement::shadowCacheHits = 0;
+uint32_t DriveMovement::shadowCacheMisses = 0;
+uint32_t DriveMovement::maxCacheSkip = 0;
+uint32_t DriveMovement::maxIsrSkip = 0;
+#endif
+
 void DriveMovement::Init(size_t drv) noexcept
 {
 	drive = (uint8_t)drv;
@@ -417,6 +424,9 @@ MoveSegment *DriveMovement::NewSegment(uint32_t now) noexcept
 {
 	positionAtSegmentStart = currentMotorPosition;
 
+#if SHADOW_CACHE_DIAGNOSTICS
+	unsigned int skipRun = 0;								// diagnostic: the number of zero-step segments this call has skipped without a prepared slot
+#endif
 	while (true)
 	{
 		MoveSegment *seg = segments;				// capture volatile variable
@@ -449,6 +459,10 @@ MoveSegment *DriveMovement::NewSegment(uint32_t now) noexcept
 					// A run of zero-step segments precedes the prepared stepping segment. Release them all without any per-segment
 					// float maths: the preparation computed the resulting distanceCarriedForwards bit-identically and verified its error bound.
 					unsigned int n = slot.numSlivers;
+#if SHADOW_CACHE_DIAGNOSTICS
+					if (n > maxCacheSkip) { maxCacheSkip = n; }
+					shadowCacheHits += n;						// each sliver released from the slot counts as a hit
+#endif
 					do
 					{
 						MoveSegment *const oldSeg = seg;
@@ -490,6 +504,9 @@ MoveSegment *DriveMovement::NewSegment(uint32_t now) noexcept
 				slot.seg = nullptr;								// consume the slot; Move::Spin on the MAIN task refills it
 				shadowHead = (shadowHead + 1u == NumShadowSlots) ? 0 : shadowHead + 1u;	// no % here: modulo by 3 would call the division function in flash
 				++shadowGen;
+#if SHADOW_CACHE_DIAGNOSTICS
+				++shadowCacheHits;
+#endif
 
 				// Update variables used by filament monitoring, as the normal path below does
 				if (segmentFlags.isExtruder)
@@ -543,6 +560,10 @@ MoveSegment *DriveMovement::NewSegment(uint32_t now) noexcept
 			// Re-enable all drivers for this axis
 			driversCurrentlyUsed = driversNormallyUsed;
 
+#if SHADOW_CACHE_DIAGNOSTICS
+			++shadowCacheMisses;						// this stepping segment was not served from a prepared slot
+#endif
+
 			// Update variables used by filament monitoring
 			if (segmentFlags.isExtruder)
 			{
@@ -590,6 +611,11 @@ MoveSegment *DriveMovement::NewSegment(uint32_t now) noexcept
 		{
 			FlushShadows();										// we are releasing a segment the preparation covers without consuming it, so the slots are stale
 		}
+#if SHADOW_CACHE_DIAGNOSTICS
+		++shadowCacheMisses;									// this zero-step segment was skipped without a prepared slot
+		++skipRun;
+		if (skipRun > maxIsrSkip) { maxIsrSkip = skipRun; }
+#endif
 #endif
 		MoveSegment *oldSeg = seg;
 		segments = seg = seg->GetNext();						// skip this segment

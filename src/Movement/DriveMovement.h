@@ -106,6 +106,14 @@ private:
 
 	static int32_t maxStepsLate;
 
+#if SHADOW_CACHE_DIAGNOSTICS
+	// Shadow slot diagnostics, reported and reset by M122 (Move is a friend); aggregated over all drives, with the same benign race as maxStepsLate
+	static uint32_t shadowCacheHits;					// the number of segments (stepping or zero-step) consumed from a prepared slot instead of doing the float maths
+	static uint32_t shadowCacheMisses;					// the number of segments that had to do the coefficient maths in the ISR (no slot prepared, or it was invalidated)
+	static uint32_t maxCacheSkip;						// the longest run of zero-step segments released via a prepared slot in one go
+	static uint32_t maxIsrSkip;							// the longest run of zero-step segments one NewSegment call had to skip the slow way, one at a time
+#endif
+
 	// Parameters common to Cartesian, delta and extruder moves
 
 #if !SINGLE_DRIVER
