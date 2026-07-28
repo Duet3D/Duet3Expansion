@@ -286,8 +286,10 @@ constexpr unsigned int InductiveHeaterCCLOutPin = PortBPin(17);	// the CCL outpu
 constexpr unsigned int InductiveHeaterAuxCCLNumber = 0;			// number of the second CCL that we need to use to gate two TCCs together
 
 constexpr GpioPinFunction InductiveHeaterCCLOutPinPeriphMode = GpioPinFunction::N;
-
-constexpr Pin HeaterVoltageAdcPin = PortBPin(5);
+constexpr Pin InductiveHeaterVoltageFeedbackAdcPin = PortAPin(5);
+constexpr Pin InductiveHeaterVoltageFeedbackAcPin = PortAPin(6);
+constexpr float InductiveHeaterVoltageFeedbackRatio = (3 * 15 + 1.5)/1.5;							// 3 series resistors of 15K each, one 1.5K shunt resistor.
+constexpr float InductiveHeaterVoltageFeedbackRange = 3.3 * InductiveHeaterVoltageFeedbackRatio;	// this comes to 102.3V
 
 #include <HeaterModel.h>
 
@@ -306,7 +308,7 @@ constexpr HeaterModel InductiveHeaterDefaultModel =
 	.zero = 0
 };
 
-constexpr float CustomHeaterMaxFaultTime = 0.8;					// needs to be short enough to detect that there is no tool before damage is caused
+constexpr float InductiveHeaterMaxFaultTime = 0.8;							// needs to be short enough to detect that there is no tool before damage is caused
 
 #endif
 
@@ -336,7 +338,7 @@ constexpr PinDescription PinTable[] =
 	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_1,	SercomIo::none,		SercomIo::none,		Nx, nullptr			},	// PA03 board type
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA04 SPI0 MOSI (Stepper, sercom0)
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA05 SPI0 SCK
-	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA06 heater voltage feedback (also on PB05)
+	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_6,	SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA06 heater voltage feedback (also on PB05). This pin also feeds AC2.
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA07 SPI0 MISO
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"led"			},	// PA08 NP out (QSPI D0)
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		9,	"io0.in"		},	// PA09 endstop

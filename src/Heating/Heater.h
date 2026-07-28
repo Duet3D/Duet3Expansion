@@ -45,8 +45,11 @@ public:
 	virtual float GetAccumulator() const noexcept = 0;					// get the inertial term accumulator
 	virtual GCodeResult TuningCommand(const CanMessageHeaterTuningCommand& msg, const StringRef& reply) noexcept = 0;
 	virtual GCodeResult ApplyFeedForward(const CanMessageHeaterFeedForwardV1& msg, const StringRef& reply) noexcept = 0;
-	virtual bool IsCustom() const noexcept = 0;							// returns true if this is a custom heater with unusual default model parameters
 	virtual void SetDefaultHeaterModel(CanMessageBuffer& buf) noexcept = 0;	// set and return the default heater model
+
+#if SUPPORT_INDUCTIVE_HEATER
+	virtual bool IsInductiveHeater() const noexcept = 0;				// returns true if this is the INDX inductive heater
+#endif
 
 	GCodeResult SetTemperature(const CanMessageSetHeaterTemperatureV1& msg, const StringRef& reply) noexcept;
 

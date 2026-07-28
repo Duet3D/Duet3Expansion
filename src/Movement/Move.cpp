@@ -1048,7 +1048,7 @@ void Move::AddLinearSegments(size_t drive, uint32_t startTime, const PrepParams&
 	// We don't want to disable interrupts during the entire process of adding a segment, because that risks provoking hiccups when we re-enable interrupts and the ISR catches up with the overdue steps.
 	// Instead we break off the tail of the segment chain containing the segments we need to change, re-enable interrupts, then modify that tail as needed. At the end we put the tail back.
 	{
-		MoveSegment *prev = nullptr;
+		MoveSegment *prev;
 
 #if SAMC21 || RP2040
 		const uint32_t oldFlags = IrqSave();
@@ -1056,7 +1056,23 @@ void Move::AddLinearSegments(size_t drive, uint32_t startTime, const PrepParams&
 		const uint32_t oldPrio = ChangeBasePriority(NvicPriorityStep);					// shut out the step interrupt
 #endif
 
-		tail = dm.segments;
+		// Start the search at the cached insertion hint if it is still valid, i.e. it is a segment still in the list that
+		// ends no later than the new segments start. Moves are appended in time order so the insertion point advances
+		// monotonically, making this search O(overlap) instead of O(list length). Otherwise fall back to searching from the head.
+		{
+			MoveSegment * const hint = dm.segHint;
+			if (hint != nullptr && (int32_t)(startTime - (hint->GetStartTime() + hint->GetDuration())) >= 0)
+			{
+				prev = hint;
+				tail = hint->GetNext();
+			}
+			else
+			{
+				prev = nullptr;
+				tail = dm.segments;
+			}
+		}
+
 		while (tail != nullptr)
 		{
 			const uint32_t segStartTime = tail->GetStartTime();
@@ -1107,6 +1123,12 @@ void Move::AddLinearSegments(size_t drive, uint32_t startTime, const PrepParams&
 			prev = tail;
 			tail = tail->GetNext();
 		}
+
+		// After breaking off the tail, dm.segments ends at 'prev' (it is empty if prev is null). Cache 'prev' as the list tail
+		// (used by the O(1) re-join below) and as the hint for the next insertion: its end time is <= startTime and therefore
+		// strictly before the next move's start time, so it is at or before the next insertion point.
+		dm.segHint = prev;
+		dm.segmentsTail = prev;
 
 #if SAMC21 || RP2040
 		IrqRestore(oldFlags);
@@ -1193,6 +1215,17 @@ void Move::AddLinearSegments(size_t drive, uint32_t startTime, const PrepParams&
 	}
 #endif
 
+	// Find the last segment of the constructed tail chain now, while interrupts are still enabled and the step ISR cannot see
+	// this detached chain. This lets us re-join the tail in O(1) inside the interrupt-off window below.
+	MoveSegment *newTail = tail;
+	if (newTail != nullptr)
+	{
+		while (newTail->GetNext() != nullptr)
+		{
+			newTail = newTail->GetNext();
+		}
+	}
+
 	// If there were no segments attached to this DM initially, we need to schedule the interrupt for the new segment at the start of the list.
 	// Don't do this until we have added all the segments for this move, because the first segment we added may have been modified and/or split when we added further segments to implement input shaping
 	{
@@ -1202,21 +1235,19 @@ void Move::AddLinearSegments(size_t drive, uint32_t startTime, const PrepParams&
 		const uint32_t oldPrio = ChangeBasePriority(NvicPriorityStep);					// shut out the step interrupt
 #endif
 
-		// Join the tail back to the end of the segment list
+		// Join the tail back onto the end of the segment list. This is O(1) using the cached tail pointer: dm.segmentsTail is
+		// the last segment of dm.segments (kept consistent by the step ISR, which sets it to null when the list empties).
+		if (tail != nullptr)
 		{
-			MoveSegment *ms = dm.segments;
-			if (ms == nullptr)
+			if (dm.segments == nullptr)
 			{
 				dm.segments = tail;
 			}
 			else
 			{
-				while (ms->GetNext() != nullptr)
-				{
-					ms = ms->GetNext();
-				}
-				ms->SetNext(tail);
+				dm.segmentsTail->SetNext(tail);
 			}
+			dm.segmentsTail = newTail;
 		}
 
 		if (dm.state == DMState::idle)													// if the DM has no segments

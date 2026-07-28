@@ -19,17 +19,6 @@ constexpr size_t DmaBufferSize = 240 * 16;						// DotStar LEDs use 4 bytes/LED,
 class LocalLedStrip : public LedStripBase
 {
 public:
-	enum class ColorOrder : uint8_t
-	{
-		BGR = 0,			// default for DotStar LEDs
-		BRG,
-		RGB,
-		RBG,
-		GBR,
-		GRB,				// default for WS2812 LEDs
-		count
-	};
-
 	LocalLedStrip(LedStripType p_type, uint32_t p_freq) noexcept;
 	~LocalLedStrip() override;
 
@@ -67,7 +56,6 @@ protected:
 	IoPort port;
 	uint32_t frequency;													// the SPI frequency we are using
 	uint32_t whenTransferFinished = 0;									// the time in step clocks when we determined that the data transfer had finished
-	ColorOrder colorOrder;												// which order we need to send the data in
 
 #if SUPPORT_DMA_NEOPIXEL || SUPPORT_PIO_NEOPIXEL
 # if SAME5x | SAMC21
@@ -79,14 +67,11 @@ protected:
 	static constexpr bool useDma = false;
 #endif
 
-	uint32_t maxLeds = DefaultMaxLedsPerStrip;
 	size_t chunkBufferSize = 0;											// the size of the allocated buffer
 	uint8_t *chunkBuffer = nullptr;										// pointer to 32-bit aligned buffer for holding the data to send
 
 private:
 	GCodeResult AllocateChunkBuffer(const StringRef& reply) noexcept;
-
-	static constexpr size_t DefaultMaxNumLeds = 60;
 };
 
 #endif

@@ -31,6 +31,8 @@ void DriveMovement::Init(size_t drv) noexcept
 	nextDM = nullptr;
 #endif
 	segments = nullptr;
+	segmentsTail = nullptr;
+	segHint = nullptr;
 	segmentFlags.InitNonPrinting();
 #if SUPPORT_CLOSED_LOOP
 	closedLoopControl.InitInstance();
@@ -272,6 +274,8 @@ MoveSegment *DriveMovement::NewSegment(uint32_t now) noexcept
 		distanceCarriedForwards = newDcf;
 		MoveSegment *oldSeg = seg;
 		segments = seg = seg->GetNext();						// skip this segment
+		if (seg == nullptr) { segmentsTail = nullptr; }			// keep the tail cache consistent when the list empties
+		if (segHint == oldSeg) { segHint = nullptr; }			// invalidate the insertion hint if we are releasing the segment it points to
 		MoveSegment::Release(oldSeg);
 	}
 }
@@ -380,8 +384,11 @@ pre(stepsTillRecalc == 0; segments != nullptr)
 			}
 
 			movementAccumulator += netStepsThisSegment;				// update the amount of extrusion for filament monitors
-			segments = currentSegment->GetNext();
 			const uint32_t prevEndTime = currentSegment->GetStartTime() + currentSegment->GetDuration();
+			MoveSegment *const nextSeg = currentSegment->GetNext();
+			segments = nextSeg;
+			if (nextSeg == nullptr) { segmentsTail = nullptr; }		// keep the tail cache consistent when the list empties
+			if (segHint == currentSegment) { segHint = nullptr; }	// invalidate the insertion hint if we are releasing the segment it points to
 			MoveSegment::Release(currentSegment);
 			currentSegment = NewSegment(now);
 			if (currentSegment == nullptr)
@@ -567,6 +574,8 @@ void DriveMovement::StopDriverFromRemote() noexcept
 		state = DMState::idle;
 		MoveSegment *seg = nullptr;
 		std::swap(seg, const_cast<MoveSegment*&>(segments));
+		segmentsTail = nullptr;
+		segHint = nullptr;
 		MoveSegment::ReleaseAll(seg);
 	}
 }

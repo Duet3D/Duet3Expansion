@@ -473,7 +473,11 @@ GCodeResult Heat::ConfigureHeater(const CanMessageGeneric& msg, const StringRef&
 		if (Succeeded(rslt))
 		{
 			heaters[heater] = newHeater;
-			extra = (newHeater->IsCustom()) ? 1 : 0;			// set lowest bit of 'extra' if it is a known heater type with custom parameters
+#if SUPPORT_INDUCTIVE_HEATER
+			extra = (newHeater->IsInductiveHeater()) ? 1 : 0;			// set lowest bit of 'extra' if it is a known heater type with custom parameters
+#else
+			extra = 0;
+#endif
 		}
 		else
 		{

@@ -1039,16 +1039,12 @@ static inline void CheckSpinLockAndResetIfStuck() noexcept
 	// only check stuck state when main task is running - disabled for bootloader task
 	const bool mainTaskStuck = (ticksInSpinState >= Tasks::MaxMainTaskTicksInSpinState);
 	const bool heatTaskStuck = (Platform::GetHeatTaskIdleTicks() >= Tasks::MaxHeatTaskTicksInSpinState);
-	const bool syncedStuck = (Platform::GetSyncedIdleTicks() >= Tasks::MaxMainTaskTicksInSpinState);
 
-	if (heatTaskStuck || syncedStuck || mainTaskStuck)		// if we stall, save diagnostic data and reset
+	if (heatTaskStuck || mainTaskStuck)						// if we stall, save diagnostic data and reset
 	{
 		Heat::SwitchOffAll();
 #if SUPPORT_DRIVERS
-# if SUPPORT_TMC51xx
-		IoPort::WriteDigital(GlobalTmcEnablePin, true);
-# endif
-# if SUPPORT_TMC22xx
+# if HAS_SMART_DRIVERS
 		IoPort::WriteDigital(GlobalTmcEnablePin, true);
 # endif
 		moveInstance->DisableAllDrives();

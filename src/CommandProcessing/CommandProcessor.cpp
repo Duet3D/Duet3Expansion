@@ -909,6 +909,11 @@ void CommandProcessor::Spin()
 			rslt = Platform::ProcessRemoteM111(buf->msg.generic, replyRef);
 			break;
 
+		case CanMessageType::setConnectionTimeout:
+			requestId = buf->msg.generic.requestId;
+			rslt = CanInterface::ProcessM959(buf->msg.generic, replyRef);
+			break;
+
 		default:
 			// We received a message type that we don't recognise. If it's a broadcast, ignore it. If it's addressed to us, send a reply.
 			if (buf->id.Src() != CanInterface::GetCanAddress())

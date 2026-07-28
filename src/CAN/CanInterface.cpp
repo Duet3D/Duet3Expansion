@@ -8,6 +8,10 @@
 #include "CanInterface.h"
 #include "CanMessageQueue.h"
 
+#include <CanMessageGenericParser.h>
+#include <CanMessageGenericTables.h>
+#include <Heating/Heat.h>
+
 #include <CanSettings.h>
 #include <CanMessageFormats.h>
 #include <CanMessageBuffer.h>
@@ -153,6 +157,18 @@ static Task<CanAsyncSenderTaskStackWords> *canAsyncSenderTask = nullptr;	// allo
 
 static bool mainBoardAcknowledgedAnnounce = false;	// true after the main board has acknowledged our announcement
 static bool isProgrammed = false;					// true after the main board has sent us any configuration commands
+
+// Connection timeout handling after loss of time sync
+constexpr uint32_t DefaultConnectionTimeoutMillis = 10000;
+
+static uint32_t connectionTimeoutMillis = DefaultConnectionTimeoutMillis;
+static bool hadSyncLock = false;					// true if we have had time sync lock since startup
+static bool syncLockLost = false;					// true while we are in a lost-sync episode
+static bool timeoutActioned = false;				// true after we have switched the heaters off in the current lost-sync episode
+static bool announceIsReconnect = false;			// true if the next announcement should carry the reconnect flag; cleared when the announcement is acknowledged
+static bool announceWasShutDown = false;			// true if the next announcement should report that the heaters were switched off
+static unsigned int syncLossCount = 0;
+static unsigned int timeoutShutdownCount = 0;
 
 #if SUPPORT_DRIVERS
 static uint8_t expectedSeq = 0xFF;
@@ -641,6 +657,7 @@ CanMessageBuffer *CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf) no
 
 		case CanMessageType::acknowledgeAnnounce:
 			mainBoardAcknowledgedAnnounce = true;
+			announceIsReconnect = announceWasShutDown = false;
 			Platform::OnProcessingCanMessage();
 			break;
 
@@ -725,6 +742,8 @@ void CanInterface::Diagnostics(const StringRef& reply) noexcept
 	}
 	ResetAdvance();
 #endif
+
+	reply.lcatf("Connection timeout %" PRIu32 "s, sync losses %u, timeout shutdowns %u", connectionTimeoutMillis / 1000, syncLossCount, timeoutShutdownCount);
 }
 
 // Send an announcement message if we need to, returning true if we sent one. On return the buffer is available to use again.
@@ -739,6 +758,8 @@ bool CanInterface::SendAnnounce(CanMessageBuffer *buf) noexcept
 	msg->timeSinceStarted = millis();
 	msg->numDrivers = NumDrivers;
 	msg->usesUf2Binary = BOARD_USES_UF2_BINARY;
+	msg->isReconnect = announceIsReconnect;
+	msg->wasShutDown = announceWasShutDown;
 	msg->zero = 0;
 	memcpy(msg->uniqueId, Platform::GetUniqueId().GetRaw(), sizeof(msg->uniqueId));
 	// Note, board type name, firmware version, firmware date and firmware time are limited to 43 characters in the new format
@@ -748,6 +769,53 @@ bool CanInterface::SendAnnounce(CanMessageBuffer *buf) noexcept
 	Send(buf);
 	Platform::OnProcessingCanMessage();								// flash the ACT LED
 	return true;
+}
+
+// Called regularly from the main loop with the current time sync state. If we had time sync lock and lost it for longer than the
+// connection timeout, switch the heaters off. When lock is regained after a loss, re-announce ourselves so that the main board
+// learns that we reconnected (rather than restarted) and whether the heaters were switched off meanwhile
+void CanInterface::UpdateSyncLockState(bool synced) noexcept
+{
+	if (synced)
+	{
+		if (syncLockLost)
+		{
+			announceIsReconnect = true;
+			announceWasShutDown = timeoutActioned;
+			mainBoardAcknowledgedAnnounce = false;
+			syncLockLost = false;
+			timeoutActioned = false;
+		}
+		hadSyncLock = true;
+	}
+	else if (hadSyncLock)
+	{
+		if (!syncLockLost)
+		{
+			syncLockLost = true;
+			syncLossCount++;
+		}
+		if (!timeoutActioned && millis() - StepTimer::GetWhenLastSynced() > connectionTimeoutMillis)
+		{
+			Heat::SwitchOffAll();
+			timeoutActioned = true;
+			timeoutShutdownCount++;
+		}
+	}
+}
+
+// Process a M959 message from the main board setting or reporting the connection timeout
+GCodeResult CanInterface::ProcessM959(const CanMessageGeneric& msg, const StringRef& reply) noexcept
+{
+	CanMessageGenericParser parser(msg, M959Params);
+	uint16_t timeout;
+	if (parser.GetUintParam('T', timeout))
+	{
+		connectionTimeoutMillis = (uint32_t)timeout * 1000;
+		return GCodeResult::ok;
+	}
+	reply.printf("Board %u connection timeout %" PRIu32 " seconds", GetCanAddress(), connectionTimeoutMillis / 1000);
+	return GCodeResult::ok;
 }
 
 // Wake the CAN sender task, either from an ISR or from a task
