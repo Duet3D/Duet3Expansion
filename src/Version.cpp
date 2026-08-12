@@ -9,6 +9,8 @@
 #include <General/IsoDate.h>
 
 const char *const DateText = IsoDate;
-const char *const TimeSuffix = " " __TIME__;
+// Keep firmware date stable across separately-built main/tool binaries to avoid
+// false "incompatible software versions" warnings when only build time differs.
+const char *const TimeSuffix = "";
 
 // End
