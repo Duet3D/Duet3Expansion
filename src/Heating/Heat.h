@@ -43,7 +43,8 @@ namespace Heat
 
 	void SetDefaultHeaterModel(CanMessageBuffer& buf) noexcept;			// set and report the default model for a heater
 
-	void SwitchOffAll() noexcept;										// Turn all heaters off
+	void SwitchOffAll() noexcept;										// Turn all heaters off. Takes the heaters read lock, so NOT safe to call from an ISR.
+	void SwitchOffAllLocalFromISR() noexcept;							// Turn all heaters off without taking any locks. Safe to call from an ISR.
 	void ResetFault(int heater) noexcept;								// Reset a heater fault - only call this if you know what you are doing
 
 	// Methods that relate to sensors

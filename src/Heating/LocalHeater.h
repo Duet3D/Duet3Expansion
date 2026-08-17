@@ -29,7 +29,7 @@ public:
 	explicit LocalHeater(unsigned int heaterNum) noexcept;
 	~LocalHeater();
 
-	GCodeResult ConfigurePortAndSensor(const char *portName, PwmFrequency freq, unsigned int sn, const StringRef& reply) noexcept override;
+	GCodeResult ConfigurePortAndSensor(const char *portName, PwmFrequency freq, unsigned int sn, int ambientSn, const StringRef& reply) noexcept override;
 	GCodeResult SetPwmFrequency(PwmFrequency freq, const StringRef& reply) noexcept override;
 	GCodeResult ReportDetails(const StringRef& reply) const noexcept override;
 
@@ -42,7 +42,9 @@ public:
 	void Suspend(bool sus) noexcept override;					// Suspend the heater to conserve power or while doing Z probing
 	GCodeResult TuningCommand(const CanMessageHeaterTuningCommand& msg, const StringRef& reply) noexcept override;
 	GCodeResult ApplyFeedForward(const CanMessageHeaterFeedForwardV1& msg, const StringRef& reply) noexcept override;
-	bool IsCustom() const noexcept override;					// returns true if this is a custom heater with unusual default model parameters
+#if SUPPORT_INDUCTIVE_HEATER
+	bool IsInductiveHeater() const noexcept override;			// returns true if this is an inductive heater with special requirements
+#endif
 	void SetDefaultHeaterModel(CanMessageBuffer& buf) noexcept override;	// set and return the default heater model
 
 	static bool GetTuningCycleData(CanMessageHeaterTuningReport& msg) noexcept;	// get a heater tuning cycle report, if we have one
@@ -65,6 +67,7 @@ private:
 
 	PwmPort ports[MaxPortsPerHeater];							// The port(s) that drive the heater
 	float temperature;											// The current temperature
+	float ambientTemperature;									// the temperature of the ambient sensor
 	float previousTemperatures[NumPreviousTemperatures];		// The temperatures of the previous NumDerivativeSamples measurements, used for calculating the derivative
 	size_t previousTemperatureIndex;							// Which slot in previousTemperature we fill in next
 	float iAccumulator;											// The integral LocalHeater component

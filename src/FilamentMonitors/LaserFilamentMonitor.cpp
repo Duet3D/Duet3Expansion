@@ -36,6 +36,7 @@ void LaserFilamentMonitor::Init() noexcept
 	parityErrorCount = framingErrorCount = overrunErrorCount = polarityErrorCount = overdueCount = 0;
 	lastMeasurementTime = 0;
 	imageQuality = shutter = brightness = lastErrorCode = 0;
+	haveShutter = false;
 	version = 1;
 	backwards = false;
 	sensorError = false;
@@ -219,6 +220,7 @@ void LaserFilamentMonitor::HandleIncomingData() noexcept
 				case TypeLaserMessageTypeQuality:
 					brightness = val & 0x00FF;
 					shutter = (val >> 8) & 0x1F;
+					haveShutter = true;
 					break;
 
 				case TypeLaserMessageTypeInfo:
@@ -238,6 +240,7 @@ void LaserFilamentMonitor::HandleIncomingData() noexcept
 
 					case TypeLaserInfoTypeShutter:
 						shutter = val & 0x00FF;
+						haveShutter = true;
 						break;
 					}
 					break;
@@ -258,6 +261,7 @@ void LaserFilamentMonitor::HandleIncomingData() noexcept
 			movementMeasuredSinceLastSync += (float)movement * ((val & TypeLaserLargeDataRangeBitMask) ? 0.01 : 0.02);
 			sensorValue = val;
 			lastMeasurementTime = millis();
+			CheckForMotion(val & (positionRange - 1), positionRange - 1, MotionDetectionMinCounts);
 
 			if (haveStartBitData)	// if we have a synchronised  value for the amount of extrusion commanded
 			{
@@ -415,6 +419,17 @@ FilamentSensorStatus LaserFilamentMonitor::Clear() noexcept
 						: FilamentSensorStatus::ok;
 }
 
+// Get the filament present state of the optional microswitch, returning true if it is known
+bool LaserFilamentMonitor::GetLocalFilamentPresent(bool& present) const noexcept
+{
+	if (switchOpenMask == 0 || !dataReceived || sensorError)
+	{
+		return false;
+	}
+	present = (sensorValue & switchOpenMask) == 0;
+	return true;
+}
+
 // Print diagnostic info for this sensor
 void LaserFilamentMonitor::Diagnostics(const StringRef& reply) noexcept
 {
@@ -439,6 +454,11 @@ void LaserFilamentMonitor::Diagnostics(const StringRef& reply) noexcept
 void LaserFilamentMonitor::GetLiveData(FilamentMonitorDataV2& data) const noexcept
 {
 	data.ClearReservedFields();
+	if (haveShutter)
+	{
+		data.extraDataValid = 1;
+		data.extraData = shutter;
+	}
 	const uint16_t positionRange = (sensorValue & TypeLaserLargeDataRangeBitMask) ? TypeLaserLargeRange : TypeLaserDefaultRange;
 	data.position = sensorValue & (positionRange - 1);
 	if (laserMonitorState == LaserMonitorState::comparing)

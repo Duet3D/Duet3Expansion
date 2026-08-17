@@ -32,7 +32,7 @@ public:
 	Heater(const Heater &_ecv_from) = delete;
 
 	// Configuration methods
-	virtual GCodeResult ConfigurePortAndSensor(const char *portName, PwmFrequency freq, unsigned int sn, const StringRef& reply) noexcept = 0;
+	virtual GCodeResult ConfigurePortAndSensor(const char *portName, PwmFrequency freq, unsigned int sn, int ambientSn, const StringRef& reply) noexcept = 0;
 	virtual GCodeResult SetPwmFrequency(PwmFrequency freq, const StringRef& reply) noexcept = 0;
 	virtual GCodeResult ReportDetails(const StringRef& reply) const noexcept = 0;
 
@@ -45,8 +45,11 @@ public:
 	virtual float GetAccumulator() const noexcept = 0;					// get the inertial term accumulator
 	virtual GCodeResult TuningCommand(const CanMessageHeaterTuningCommand& msg, const StringRef& reply) noexcept = 0;
 	virtual GCodeResult ApplyFeedForward(const CanMessageHeaterFeedForwardV1& msg, const StringRef& reply) noexcept = 0;
-	virtual bool IsCustom() const noexcept = 0;							// returns true if this is a custom heater with unusual default model parameters
 	virtual void SetDefaultHeaterModel(CanMessageBuffer& buf) noexcept = 0;	// set and return the default heater model
+
+#if SUPPORT_INDUCTIVE_HEATER
+	virtual bool IsInductiveHeater() const noexcept = 0;				// returns true if this is the INDX inductive heater
+#endif
 
 	GCodeResult SetTemperature(const CanMessageSetHeaterTemperatureV1& msg, const StringRef& reply) noexcept;
 
@@ -74,7 +77,9 @@ protected:
 	virtual GCodeResult SwitchOn(const StringRef& reply) noexcept = 0;
 
 	int GetSensorNumber() const noexcept { return sensorNumber; }
+	int GetAmbientSensorNumber() const noexcept { return ambientSensorNumber; }
 	void SetSensorNumber(int sn) noexcept { sensorNumber = sn; }
+	void SetAmbientSensorNumber(int sn) noexcept { ambientSensorNumber = sn; }
 	float GetMaxTemperatureExcursion() const noexcept { return maxTempExcursion; }
 	float GetMaxHeatingFaultTime() const noexcept { return maxHeatingFaultTime; }
 	float GetPwmFaultLevel() const noexcept;
@@ -94,6 +99,7 @@ protected:
 private:
 	unsigned int heaterNumber;
 	int sensorNumber = -1;												// the sensor number used by this heater
+	int ambientSensorNumber = -1;										// the ambient sensor number used by this heater, if any
 	float requestedTemperature = 0.0;									// the required temperature
 	float maxTempExcursion = DefaultMaxTempExcursion;					// the maximum temperature excursion permitted while maintaining the setpoint
 	uint32_t maxBadTemperatureCount = DefaultMaxBadTemperatureCount;	// the number of consecutive bad sensor readings we allow before raising a fault

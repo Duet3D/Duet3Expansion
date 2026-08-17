@@ -85,10 +85,9 @@ help:
 	$(Q)echo "  make EXP3HC                                # Build EXP3HC firmware"
 	$(Q)echo "  make EXP1XD V=1                            # Build with verbose output"
 # Build all configurations
-# TOOLINDX is excluded: its source does not currently compile (still buildable as an explicit target)
 .PHONY: all
 all:
-	$(Q)for config in $(filter-out TOOLINDX,$(CONFIGS)); do \
+	$(Q)for config in $(CONFIGS); do \
 		$(MAKE) "$$config" || exit 1; \
 	done
 

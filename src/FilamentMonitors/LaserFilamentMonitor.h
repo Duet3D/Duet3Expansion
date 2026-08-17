@@ -22,6 +22,7 @@ protected:
 
 	FilamentSensorStatus Check(bool isPrinting, bool fromIsr, uint32_t isrMillis, float filamentConsumed) noexcept override;
 	FilamentSensorStatus Clear() noexcept override;
+	bool GetLocalFilamentPresent(bool& present) const noexcept override;
 
 	void Diagnostics(const StringRef& reply) noexcept override;
 	void GetLiveData(FilamentMonitorDataV2& data) const noexcept override;
@@ -67,6 +68,8 @@ private:
 
 	static constexpr size_t EdgeCaptureBufferSize = 64;				// must be a power of 2
 
+	static constexpr uint16_t MotionDetectionMinCounts = 5;			// position change that counts as movement, 0.05mm of filament on a v2 sensor
+
 	void Init() noexcept;
 	void Reset() noexcept;
 	void HandleIncomingData() noexcept;
@@ -101,6 +104,7 @@ private:
 	uint8_t imageQuality;									// image quality returned by version 2 prototype sensor
 	uint8_t shutter;										// shutter value returned by sensor
 	uint8_t brightness;										// brightness returned by sensor
+	bool haveShutter;										// true if we received a shutter value
 	uint8_t lastErrorCode;									// the last error code received
 	bool sensorError;										// true if received an error report (cleared by a position report)
 

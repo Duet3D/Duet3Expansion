@@ -297,7 +297,15 @@ void PulsedFilamentMonitor::GetLiveData(FilamentMonitorDataV2& data) const noexc
 {
 	data.ClearReservedFields();
 	data.position = sensorValue & 0x0FFF;
-	data.hasLiveData = false;
+	data.hasLiveData = HaveCalibrationData();
+	if (data.hasLiveData)
+	{
+		data.calibrationLength = (uint32_t)lrintf(totalExtrusionCommanded);
+		data.avgPercentage = ConvertToPercent(totalMovementMeasured * mmPerPulse/totalExtrusionCommanded);
+		data.minPercentage = ConvertToPercent(minMovementRatio);
+		data.maxPercentage = ConvertToPercent(maxMovementRatio);
+		data.lastPercentage = 0;								// we don't keep the ratio of the last measurement
+	}
 }
 
 #endif	// SUPPORT_DRIVERS

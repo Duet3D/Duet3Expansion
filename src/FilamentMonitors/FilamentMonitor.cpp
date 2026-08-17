@@ -35,7 +35,7 @@ uint32_t FilamentMonitor::minPollTime = 0xFFFFFFFF, FilamentMonitor::maxPollTime
 
 // Constructor
 FilamentMonitor::FilamentMonitor(uint8_t p_driver, unsigned int t) noexcept
-	: type(t), driver(p_driver), enableMode(0), lastStatus(FilamentSensorStatus::noDataReceived)
+	: type(t), driver(p_driver), enableMode(0), lastStatus(FilamentSensorStatus::noDataReceived), lastReportedLiveBits(0)
 {
 }
 
@@ -342,10 +342,16 @@ GCodeResult FilamentMonitor::CommonConfigure(const CanMessageGenericParser& pars
 						auto& slot = msg->data[slotIndex];
 						slot.status = fst.ToBaseType();
 						fs.GetLiveData(slot);
-						if (fst != fs.lastStatus)
+						bool present = false;
+						slot.filamentPresentValid = fs.GetLocalFilamentPresent(present);
+						slot.filamentPresent = slot.filamentPresentValid && present;
+						slot.motionDetected = fs.IsLocalMotionDetected();
+						const uint8_t liveBits = (uint8_t)((slot.filamentPresentValid << 2) | (slot.filamentPresent << 1) | slot.motionDetected);
+						if (fst != fs.lastStatus || liveBits != fs.lastReportedLiveBits)
 						{
 							forceSend = true;
 							fs.lastStatus = fst;
+							fs.lastReportedLiveBits = liveBits;
 						}
 						else if (slot.hasLiveData)
 						{

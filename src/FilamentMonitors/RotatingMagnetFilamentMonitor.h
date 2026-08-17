@@ -23,6 +23,7 @@ protected:
 
 	FilamentSensorStatus Check(bool isPrinting, bool fromIsr, uint32_t isrMillis, float filamentConsumed) noexcept override;
 	FilamentSensorStatus Clear() noexcept override;
+	bool GetLocalFilamentPresent(bool& present) const noexcept override;
 	void GetLiveData(FilamentMonitorDataV2& data) const noexcept override;
 
 private:
@@ -54,6 +55,8 @@ private:
 	static constexpr uint16_t TypeMagnetV3InfoTypeAgc = 0x0300;
 
 	static constexpr uint16_t TypeMagnetAngleMask = 0x03FF;			// we use a 10-bit sensor angle
+
+	static constexpr uint16_t MotionDetectionMinCounts = 4;			// angle change that counts as movement, about 0.1mm of filament at the default sensitivity
 
 #if SUPPORT_AS5601
 	uint32_t LedFlashTime = 100;									// how long we flash the LED for in milliseconds
@@ -101,6 +104,7 @@ private:
 	uint8_t lastErrorCode;									// the last error code received
 	uint8_t magnitude;										// the last magnitude received (sensor firmware V3)
 	uint8_t agc;											// the last agc received (sensor firmware V3)
+	bool haveAgc;											// true if we received an agc value
 	bool sensorError;										// true if received an error report (cleared by a position report)
 
 	bool wasPrintingAtStartBit;

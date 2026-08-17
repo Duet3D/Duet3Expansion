@@ -230,7 +230,6 @@ bool NonVolatileMemory::GetClosedLoopCalibrationDataValid() noexcept
 	return !buffer.closedLoopPage.calibrationNotValid;
 }
 
-
 void NonVolatileMemory::SetClosedLoopCalibrationDataNotValid()
 {
 	EnsureRead();
@@ -331,6 +330,26 @@ void NonVolatileMemory::SetClosedLoopQuadratureDirection(bool backwards) noexcep
 		SetDirty(false);
 	}
 }
+
+#if SUPPORT_INDUCTIVE_HEATER
+
+void NonVolatileMemory::GetInductiveHeaterParams(InductiveHeaterCalibrationParameters& params) noexcept
+{
+	EnsureRead();
+	params = buffer.commonPage.inductiveHeaterParams;
+}
+
+void NonVolatileMemory::SetInductiveHeaterParams(const InductiveHeaterCalibrationParameters& params) noexcept
+{
+	EnsureRead();
+	if (memcmp(&buffer.commonPage.inductiveHeaterParams, &params, sizeof(InductiveHeaterCalibrationParameters)) != 0)
+	{
+		buffer.commonPage.inductiveHeaterParams = params;
+		SetDirty(true);
+	}
+}
+
+#endif
 
 #if RPXXXX
 	bool NonVolatileMemory::GetCanSettings(CanUserAreaData& canSettings) noexcept

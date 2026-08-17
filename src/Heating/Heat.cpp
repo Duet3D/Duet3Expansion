@@ -463,16 +463,23 @@ GCodeResult Heat::ConfigureHeater(const CanMessageGeneric& msg, const StringRef&
 			return GCodeResult::error;
 		}
 
+		int16_t ambientSensorNumber = -1;
+		(void)parser.GetIntParam('B', ambientSensorNumber);
+
 		WriteLocker lock(heatersLock);
 
 		DeleteObject(heaters[heater]);
 
 		Heater *newHeater = new LocalHeater(heater);
-		const GCodeResult rslt = newHeater->ConfigurePortAndSensor(pinName.c_str(), freq, sensorNumber, reply);
+		const GCodeResult rslt = newHeater->ConfigurePortAndSensor(pinName.c_str(), freq, sensorNumber, ambientSensorNumber, reply);
 		if (Succeeded(rslt))
 		{
 			heaters[heater] = newHeater;
-			extra = (newHeater->IsCustom()) ? 1 : 0;			// set lowest bit of 'extra' if it is a known heater type with custom parameters
+#if SUPPORT_INDUCTIVE_HEATER
+			extra = (newHeater->IsInductiveHeater()) ? 1 : 0;			// set lowest bit of 'extra' if it is a known heater type with custom parameters
+#else
+			extra = 0;
+#endif
 		}
 		else
 		{
@@ -638,6 +645,21 @@ void Heat::SwitchOffAll() noexcept
 {
 	ReadLocker lock(heatersLock);
 
+	for (Heater * const h : heaters)
+	{
+		if (h != nullptr)
+		{
+			h->SwitchOff();
+		}
+	}
+}
+
+// Turn all heaters off without taking the heaters lock. Safe to call from an ISR, so it must not call any FreeRTOS API that isn't
+// an ISR-safe variant. Taking heatersLock is not an option because ReadWriteLock uses vTaskSuspendAll/xTaskResumeAll, which assert
+// if called from an ISR. Called only from the tick ISR when we have decided to reset, so the small risk of racing with a task that
+// is adding or deleting a heater is acceptable - we are about to reset anyway, and leaving the heaters on is the greater danger.
+void Heat::SwitchOffAllLocalFromISR() noexcept
+{
 	for (Heater * const h : heaters)
 	{
 		if (h != nullptr)
