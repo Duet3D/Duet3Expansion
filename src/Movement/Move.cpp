@@ -1050,6 +1050,7 @@ void Move::AddLinearSegments(size_t drive, uint32_t startTime, const PrepParams&
 	{
 		MoveSegment *prev;
 
+		MoveSegment::PrimeFreeList();													// the Split below must not allocate, because taking the malloc mutex re-enables the step interrupt
 #if SAMC21 || RP2040
 		const uint32_t oldFlags = IrqSave();
 #else

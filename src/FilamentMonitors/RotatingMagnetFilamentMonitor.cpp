@@ -43,6 +43,7 @@ void RotatingMagnetFilamentMonitor::Init() noexcept
 	version = 1;
 	magnitude = 0;
 	agc = 0;
+	haveAgc = false;
 	backwards = false;
 	sensorError = false;
 	InitReceiveBuffer();
@@ -296,6 +297,7 @@ void RotatingMagnetFilamentMonitor::HandleIncomingData() noexcept
 
 					case TypeMagnetV3InfoTypeAgc:
 						agc = val & 0x00FF;
+						haveAgc = true;
 						break;
 
 					default:
@@ -317,12 +319,13 @@ void RotatingMagnetFilamentMonitor::HandleIncomingData() noexcept
 		if (receivedPositionReport)
 		{
 			// We have a completed a position report
-			lastKnownPosition = sensorValue & TypeMagnetAngleMask;
+			lastKnownPosition = val & TypeMagnetAngleMask;
 			const uint16_t angleChange = (val - sensorValue) & TypeMagnetAngleMask;			// angle change in range 0..1023
 			const int32_t movement = (angleChange <= 512) ? (int32_t)angleChange : (int32_t)angleChange - 1024;
 			movementMeasuredSinceLastSync += (float)movement/1024;
 			sensorValue = val;
 			lastMeasurementTime = millis();
+			CheckForMotion(val & TypeMagnetAngleMask, TypeMagnetAngleMask, MotionDetectionMinCounts);
 
 			if (haveStartBitData)					// if we have a synchronised value for the amount of extrusion commanded
 			{
@@ -355,17 +358,19 @@ void RotatingMagnetFilamentMonitor::HandleDirectAS5601Data() noexcept
 	uint16_t val;
 	if (MFMHandler::GetEncoderReading(val, agc, lastErrorCode))
 	{
+		haveAgc = true;
 		dataReceived = true;
 		version = 3;																	// emulate version 3 MFM
 		sensorError = (lastErrorCode != 0);
 		if (!sensorError)
 		{
-			lastKnownPosition = sensorValue;
+			lastKnownPosition = val;
 			const uint16_t angleChange = (val - sensorValue) & TypeMagnetAngleMask;		// angle change in range 0..1023
 			const int32_t movement = (angleChange <= 512) ? (int32_t)angleChange : (int32_t)angleChange - 1024;
 			movementMeasuredSinceLastSync += (float)movement/1024;
 			sensorValue = val;
 			lastMeasurementTime = millis();
+			CheckForMotion(val & TypeMagnetAngleMask, TypeMagnetAngleMask, MotionDetectionMinCounts);
 
 			if (haveStartBitData)					// if we have a synchronised value for the amount of extrusion commanded
 			{
@@ -598,10 +603,26 @@ FilamentSensorStatus RotatingMagnetFilamentMonitor::Clear() noexcept
 						: FilamentSensorStatus::ok;
 }
 
+// Get the filament present state of the optional microswitch, returning true if it is known
+bool RotatingMagnetFilamentMonitor::GetLocalFilamentPresent(bool& present) const noexcept
+{
+	if (switchOpenMask == 0 || !dataReceived || sensorError)
+	{
+		return false;
+	}
+	present = (sensorValue & switchOpenMask) == 0;
+	return true;
+}
+
 // Store collected data in a CAN message slot
 void RotatingMagnetFilamentMonitor::GetLiveData(FilamentMonitorDataV2& data) const noexcept
 {
 	data.ClearReservedFields();
+	if (haveAgc)
+	{
+		data.extraDataValid = 1;
+		data.extraData = agc;
+	}
 	data.position = lastKnownPosition;
 	if (magneticMonitorState == MagneticMonitorState::comparing)
 	{

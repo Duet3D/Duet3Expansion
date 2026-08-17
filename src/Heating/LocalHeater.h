@@ -64,10 +64,6 @@ private:
 #if SUPPORT_LP5817
 	void UpdateStatusLed() noexcept;
 #endif
-#if SUPPORT_INDUCTIVE_HEATER
-	GCodeResult StartHeaterCalibration(const StringRef& reply) noexcept;
-	GCodeResult CheckHeaterCalibrationComplete(const StringRef& reply) noexcept;
-#endif
 
 	PwmPort ports[MaxPortsPerHeater];							// The port(s) that drive the heater
 	float temperature;											// The current temperature

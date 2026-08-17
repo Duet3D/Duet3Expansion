@@ -124,6 +124,8 @@ constexpr DmaPriority DmacPrioADS131M02Tx = 0;
 constexpr DmaPriority DmacPrioADS131M02Rx = 3;
 
 // Interrupt priorities, lower means higher priority. 0-2 can't make RTOS calls.
+constexpr NvicPriority NvicPriorityAC = 2;				// we only use the AC interrupt to set a flag, not to wake a task
+constexpr NvicPriority NvicPriorityOscTcc = 2;			// we only use this interrupt to read the capture value, not to wake a task
 constexpr NvicPriority NvicPriorityStep = 3;			// step interrupt is next highest, it can preempt most other interrupts
 constexpr NvicPriority NvicPriorityDmac = 3;			// priority for DMA complete interrupts
 constexpr NvicPriority NvicPriorityUart = 3;			// serial driver makes RTOS calls
@@ -279,11 +281,16 @@ constexpr unsigned int ADA131M02_GclkNumber = 2;
 
 constexpr unsigned int InductiveHeaterOscTccDeviceNumber = 3;	// number of the TC we use to generate the ~120kHz signal to excite the resonant circuit
 constexpr unsigned int InductiveHeaterOscTccOutputNumber = 0;	// which output from the TCC we are using
+constexpr unsigned int InductiveHeaterOscTccCaptureNumber = 1;	// which channel from the TCC we are using for capture operations
+constexpr unsigned int InductiveHeaterOscTccCaptureEventUserNumber = 38 + InductiveHeaterOscTccCaptureNumber;	// TCC3 MC1
 constexpr unsigned int InductiveHeaterPwmTccDeviceNumber = 0;	// number of the TCC we use to generate the PWM signal that is gated with the osc signal
 constexpr unsigned int InductiveHeaterPwmTccOutputNumber = 0;	// which output from the TCC we are using
 constexpr unsigned int InductiveHeaterCCLNumber = 3;			// number of the CCL that we use to gate the TC and TCC output together
 constexpr unsigned int InductiveHeaterCCLOutPin = PortBPin(17);	// the CCL output pin that drive the inductive heater mosfet
 constexpr unsigned int InductiveHeaterAuxCCLNumber = 0;			// number of the second CCL that we need to use to gate two TCCs together
+
+#define OSC_TCC_IRQn	TCC3_2_IRQn
+#define OSC_TCC_Handler	TCC3_2_Handler							// ISR for the oscillator TCC
 
 constexpr GpioPinFunction InductiveHeaterCCLOutPinPeriphMode = GpioPinFunction::N;
 constexpr Pin InductiveHeaterVoltageFeedbackAdcPin = PortAPin(5);
@@ -447,5 +454,9 @@ constexpr IRQn StepTcIRQn = TC0_IRQn;
 
 // Available UART ports
 #define NUM_ASYNC_PORTS		0
+
+// Eventchannel numbers
+constexpr EventNumber AcComp0EventChannel = 12;					// analog comparator channel 0 output event
+constexpr EventNumber AcComp1EventChannel = 13;					// analog comparator channel 1 output event
 
 #endif /* SRC_CONFIG_TOOLINDX_H_ */
