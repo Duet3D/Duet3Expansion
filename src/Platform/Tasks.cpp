@@ -135,6 +135,12 @@ extern "C" void GetMallocMutex() noexcept
 {
 	if (xTaskGetSchedulerState() == taskSCHEDULER_RUNNING)		// don't take mutex if scheduler not started or suspended
 	{
+		// Taking the mutex re-enables masked interrupts, so catch callers that allocate while interrupts are masked
+#if SAMC21 || RP2040
+		configASSERT(__get_PRIMASK() == 0);
+#else
+		configASSERT(__get_BASEPRI() == 0 && __get_PRIMASK() == 0);
+#endif
 		mallocMutex.Take();
 	}
 }
