@@ -613,6 +613,21 @@ void Heat::SwitchOffAll() noexcept
 	}
 }
 
+// Turn all heaters off without taking the heaters lock. Safe to call from an ISR, so it must not call any FreeRTOS API that isn't
+// an ISR-safe variant. Taking heatersLock is not an option because ReadWriteLock uses vTaskSuspendAll/xTaskResumeAll, which assert
+// if called from an ISR. Called only from the tick ISR when we have decided to reset, so the small risk of racing with a task that
+// is adding or deleting a heater is acceptable - we are about to reset anyway, and leaving the heaters on is the greater danger.
+void Heat::SwitchOffAllLocalFromISR() noexcept
+{
+	for (Heater * const h : heaters)
+	{
+		if (h != nullptr)
+		{
+			h->SwitchOff();
+		}
+	}
+}
+
 void Heat::ResetFault(int heater) noexcept
 {
 	const auto h = FindHeater(heater);

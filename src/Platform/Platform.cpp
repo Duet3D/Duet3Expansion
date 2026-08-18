@@ -327,6 +327,12 @@ namespace Platform
 # endif
 		moveInstance->DisableAllDrives();
 #endif
+#if SUPPORT_I2C_SENSORS
+		if (sharedI2C != nullptr)
+		{
+			sharedI2C->End();
+		}
+#endif
 		CanInterface::Shutdown();
 		WriteLed(0, false);
 		WriteLed(1, false);

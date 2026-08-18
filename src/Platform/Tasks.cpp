@@ -135,6 +135,12 @@ extern "C" void GetMallocMutex() noexcept
 {
 	if (xTaskGetSchedulerState() == taskSCHEDULER_RUNNING)		// don't take mutex if scheduler not started or suspended
 	{
+		// Taking the mutex re-enables masked interrupts, so catch callers that allocate while interrupts are masked
+#if SAMC21 || RP2040
+		configASSERT(__get_PRIMASK() == 0);
+#else
+		configASSERT(__get_BASEPRI() == 0 && __get_PRIMASK() == 0);
+#endif
 		mallocMutex.Take();
 	}
 }
@@ -1038,7 +1044,9 @@ static inline void CheckSpinLockAndResetIfStuck() noexcept
 
 	if (heatTaskStuck || syncedStuck || mainTaskStuck)		// if we stall, save diagnostic data and reset
 	{
-		Heat::SwitchOffAll();
+		// We are in the tick ISR, so we must not call Heat::SwitchOffAll here: it takes the heaters ReadWriteLock, which uses
+		// vTaskSuspendAll/xTaskResumeAll, and FreeRTOS asserts if those are called from an ISR.
+		Heat::SwitchOffAllLocalFromISR();
 #if SUPPORT_DRIVERS
 # if SUPPORT_TMC51xx
 		IoPort::WriteDigital(GlobalTmc51xxEnablePin, true);

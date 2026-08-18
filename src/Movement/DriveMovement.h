@@ -86,6 +86,8 @@ private:
 #endif
 
 	MoveSegment *volatile segments;						// pointer to the segment list for this driver
+	MoveSegment *volatile segmentsTail;					// pointer to the last segment in the list, or nullptr if the list is empty; lets us append in O(1)
+	MoveSegment *volatile segHint;						// a segment at or before the next insertion point, or nullptr; lets us start the insertion search near the end instead of at the head
 	ExtruderShaper extruderShaper;						// pressure advance control
 
 	DMState state;										// whether this is active or not
@@ -224,7 +226,10 @@ inline bool DriveMovement::GetCurrentMotion(uint32_t when, MotionParameters& mPa
 				distanceCarriedForwards += seg->GetLength() - (motioncalc_t)netStepsThisSegment;
 				movementAccumulator += netStepsThisSegment;		// update the amount of extrusion
 				MoveSegment *oldSeg = seg;
-				segments = oldSeg->GetNext();
+				MoveSegment *const nextSeg = oldSeg->GetNext();
+				segments = nextSeg;
+				if (nextSeg == nullptr) { segmentsTail = nullptr; }	// keep the tail cache consistent when the list empties
+				if (segHint == oldSeg) { segHint = nullptr; }		// invalidate the insertion hint if we are releasing the segment it points to
 				MoveSegment::Release(oldSeg);
 				seg = NewSegment(when);
 				hasMotion = true;

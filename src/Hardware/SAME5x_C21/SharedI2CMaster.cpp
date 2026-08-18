@@ -22,6 +22,7 @@
 
 constexpr uint32_t DefaultSharedI2CClockFrequency = 400000;
 constexpr uint32_t I2CTimeoutTicks = 100;
+constexpr uint32_t ShutdownTimeoutMillis = 50;
 
 SharedI2CMaster::SharedI2CMaster(uint8_t sercomNum) noexcept
 	: hardware(Serial::Sercoms[sercomNum]), taskWaiting(nullptr), busErrors(0), naks(0), contentions(0), otherErrors(0), state(I2cState::idle)
@@ -84,6 +85,13 @@ SharedI2CMaster::SharedI2CMaster(uint8_t sercomNum) noexcept
 	mutex.Create("I2C");
 
 	Enable();
+}
+
+// Resetting the processor part way through a transfer leaves the slave device driving SDA low, which hangs the bus until the next power cycle
+void SharedI2CMaster::End() noexcept
+{
+	(void)Take(ShutdownTimeoutMillis);											// if we time out then the bus is already stuck, so reset anyway
+	Disable();
 }
 
 // Set the I2C clock frequency. Caller must own the mutex first.

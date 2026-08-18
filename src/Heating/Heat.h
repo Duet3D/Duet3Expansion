@@ -40,7 +40,8 @@ namespace Heat
 	GCodeResult SetFaultDetection(const CanMessageSetHeaterFaultDetectionParameters& msg, const StringRef& reply) noexcept;
 	GCodeResult SetHeaterMonitors(const CanMessageSetHeaterMonitors& msg, const StringRef& reply) noexcept;
 
-	void SwitchOffAll() noexcept;										// Turn all heaters off
+	void SwitchOffAll() noexcept;										// Turn all heaters off. Takes the heaters read lock, so NOT safe to call from an ISR.
+	void SwitchOffAllLocalFromISR() noexcept;							// Turn all heaters off without taking any locks. Safe to call from an ISR.
 	void ResetFault(int heater) noexcept;								// Reset a heater fault - only call this if you know what you are doing
 
 	// Methods that relate to sensors

@@ -19,6 +19,7 @@ class SharedI2CMaster
 public:
 	SharedI2CMaster(uint8_t sercomNum) noexcept;
 
+	void End() noexcept;						// wait for any transfer in progress to complete, then shut down
 	void SetClockFrequency(uint32_t freq) noexcept;
 	bool Transfer(uint16_t address, const uint8_t *txBuffer, uint8_t *rxBuffer, size_t numToWrite, size_t numToRead) noexcept;
 
