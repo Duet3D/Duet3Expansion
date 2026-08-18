@@ -21,7 +21,8 @@ public:
 	ADS131M02() noexcept;
 	bool DeviceOk() const noexcept { return initOk; }
 	int32_t GetLatestData() const noexcept { return compositeData; }			// no lock needed because 32-bit data access is atomic
-	bool Activate(const InputMonitor& monitor) noexcept;
+	bool Activate(InputMonitor& monitor) noexcept;
+	void Deactivate() noexcept;
 
 	[[noreturn]] void TaskLoop() noexcept;
 
@@ -60,6 +61,8 @@ private:
 	uint32_t channel0Data;
 	uint32_t channel1Data;
 	int32_t compositeData = 0;
+
+	InputMonitor *volatile inputMonitor = nullptr;			// when the load cell is in use this points to the associated input monitor, otherwise it is null
 
 	Task<TaskStackWords> *adcTask = nullptr;
 	bool initOk = false;

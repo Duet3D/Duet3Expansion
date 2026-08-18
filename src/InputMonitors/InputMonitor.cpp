@@ -25,6 +25,14 @@
 # include <Platform/Platform.h>
 #endif
 
+// Time constant of the rolling average that a tare latches, as a power of 2 samples. At the load cell's ~1300Hz this is about 50ms,
+// which divides the +/-50 count noise by 8 without making the tare stale if the head has just moved
+constexpr unsigned int AverageShift = 6;
+
+// Time constant of the baseline tracker, as a power of 2 samples. At ~1300Hz this is a first-order corner of ~0.4Hz,
+// which follows thermal drift (all below 0.1Hz on the INDX) while a step such as locking a tool decays within ~1.5s
+constexpr unsigned int TrackShift = 9;
+
 InputMonitor * volatile InputMonitor::monitorsList = nullptr;
 ReadWriteLock InputMonitor::listLock;
 
@@ -34,6 +42,12 @@ InputMonitor::~InputMonitor()
 	if (port.IsLdc1612())
 	{
 		ScanningSensorHandler::Deactivate();		// make sure that the scanning sensor doesn't retain a pointer to this object
+	}
+#endif
+#if SUPPORT_ADS131M02
+	if (port.IsAds131M02())
+	{
+		Platform::GetLoadCellAdc()->Deactivate();	// make sure that the load cell ADC doesn't retain a pointer to this object
 	}
 #endif
 }
@@ -85,7 +99,7 @@ bool InputMonitor::Activate() noexcept
 				else
 #endif
 			{
-				state = port.ReadAnalog() >= threshold;
+				state = ReachedThreshold(port.ReadAnalog());
 #ifdef ATEIO
 				// We can't set an interrupt on the extended analog channels
 				if (IsExtendedAnalogPin(port.GetPin()))
@@ -136,6 +150,13 @@ void InputMonitor::Deactivate() noexcept
 			}
 			else
 #endif
+#if SUPPORT_ADS131M02
+				if (port.IsAds131M02())
+				{
+					Platform::GetLoadCellAdc()->Deactivate();
+				}
+				else
+#endif
 			{
 				port.ClearAnalogCallback();
 			}
@@ -144,10 +165,19 @@ void InputMonitor::Deactivate() noexcept
 	active = false;
 }
 
-// Return the analog value of this input
+// A negative threshold means the reading falls to it on contact, which is what a load cell does unless the bridge is wired the other way round.
+// Probing towards a surface above the head produces the opposite sign again, so both directions have to work
+bool InputMonitor::ReachedThreshold(int32_t reading) const noexcept
+{
+	const int64_t tared = (int64_t)reading - baseline;		// 64-bit because a railed reading and a baseline of opposite sign overflow int32
+	return (threshold >= 0) ? tared >= threshold : tared <= threshold;
+}
+
+// Return the analog value of this input, relative to the baseline so that a tared handle reports what the threshold is compared against.
+// The baseline is zero unless the handle has been tared, so most handles still report the raw reading
 int32_t InputMonitor::GetAnalogValue() const noexcept
 {
-	return (!IsDigital()) ? port.ReadAnalog()
+	return (!IsDigital()) ? (int32_t)constrain<int64_t>((int64_t)port.ReadAnalog() - baseline, std::numeric_limits<int32_t>::min(), std::numeric_limits<int32_t>::max())
 #if SAME5x
 			: port.ReadDebouncedDigital()
 #else
@@ -220,7 +250,31 @@ void InputMonitor::DigitalInterrupt() noexcept
 
 void InputMonitor::AnalogInterrupt(int32_t reading) noexcept
 {
-	const bool newState = reading >= threshold;
+	// Seed the average from the first sample, because converging from zero against a large raw offset takes a visible fraction of a second
+	if (averageValid)
+	{
+		averageAccumulator += reading - (averageAccumulator >> AverageShift);
+	}
+	else
+	{
+		averageAccumulator = (int64_t)reading << AverageShift;
+	}
+	averageReading = (int32_t)(averageAccumulator >> AverageShift);
+	averageValid = true;							// set after publishing averageReading so that a concurrent tare cannot latch a stale value
+
+	if (tracking)
+	{
+		// The tracker accumulator is touched by this task only; a tare re-points it via the reseed flag so the two tasks never share the 64-bit value
+		if (trackerReseedPending)
+		{
+			trackerAccumulator = (int64_t)baseline << TrackShift;
+			trackerReseedPending = false;
+		}
+		trackerAccumulator += reading - (trackerAccumulator >> TrackShift);
+		baseline = (int32_t)(trackerAccumulator >> TrackShift);
+	}
+
+	const bool newState = ReachedThreshold(reading);
 	if (newState != state)
 	{
 		state = newState;
@@ -323,6 +377,13 @@ void InputMonitor::UpdateState(bool newState) noexcept
 	newMonitor->state = false;
 	newMonitor->minInterval = msg.minInterval;
 	newMonitor->threshold = msg.threshold;
+	newMonitor->baseline = 0;
+	newMonitor->averageAccumulator = 0;
+	newMonitor->trackerAccumulator = 0;
+	newMonitor->averageReading = 0;
+	newMonitor->averageValid = false;
+	newMonitor->tracking = false;
+	newMonitor->trackerReseedPending = false;
 	newMonitor->sendDue = false;
 #if SUPPORT_LDC1612
 	newMonitor->isLdcInTouchMode = false;
@@ -331,6 +392,15 @@ void InputMonitor::UpdateState(bool newState) noexcept
 	pinName.copy(msg.pinName, msg.GetMaxPinNameLength(dataLength));
 	if (newMonitor->port.AssignPort(pinName.c_str(), reply, PinUsedBy::endstop, (msg.threshold == 0) ? PinAccess::read : PinAccess::readAnalog))
 	{
+#if SUPPORT_ADS131M02
+		// The fast trigger path reads the ADC directly, so '!' would invert only the reported value; the sign of M558 V covers polarity instead
+		if (newMonitor->port.IsAds131M02() && newMonitor->port.GetTotalInvert())
+		{
+			reply.copy("Pin inversion is not supported on the load cell input, use the sign of M558 V instead");
+			delete newMonitor;
+			return GCodeResult::error;
+		}
+#endif
 		newMonitor->next = monitorsList;
 		monitorsList = newMonitor;
 		const bool ok = newMonitor->Activate();
@@ -347,7 +417,7 @@ void InputMonitor::UpdateState(bool newState) noexcept
 	return GCodeResult::error;
 }
 
-/*static*/ GCodeResult InputMonitor::Change(const CanMessageChangeInputMonitorV1& msg, const StringRef& reply, uint8_t& extra) noexcept
+/*static*/ GCodeResult InputMonitor::Change(const CanMessageChangeInputMonitorV1& msg, const StringRef& reply, uint8_t& extra, uint32_t *words, size_t& numWords) noexcept
 {
 	if (msg.action == CanMessageChangeInputMonitorV1::actionDelete)
 	{
@@ -395,7 +465,7 @@ void InputMonitor::UpdateState(bool newState) noexcept
 
 	case CanMessageChangeInputMonitorV1::actionChangeThreshold:
 		m->threshold = (int32_t)msg.param;
-		m->state = m->port.ReadAnalog() >= m->threshold;
+		m->state = m->ReachedThreshold(m->port.ReadAnalog());
 #if SUPPORT_LDC1612
 		if (m->port.IsLdc1612())
 		{
@@ -425,6 +495,31 @@ void InputMonitor::UpdateState(bool newState) noexcept
 		rslt = m->SelectTouchMode(msg.param, reply, extra);
 		break;
 #endif
+
+	case CanMessageChangeInputMonitorV1::actionTare:
+		if (m->IsDigital())
+		{
+			reply.printf("Board %u cannot tare digital input handle %04x", CanInterface::GetCanAddress(), msg.handle.all);
+			rslt = GCodeResult::error;
+		}
+		else
+		{
+			if (msg.param != CanMessageChangeInputMonitorV1::paramTrackOnly)
+			{
+				m->tracking = false;					// stop the sampling task moving the baseline before latching it; it preempts us, so once this is visible the baseline is ours
+				m->baseline = (m->averageValid) ? m->averageReading : m->port.ReadAnalog();
+				m->state = m->ReachedThreshold(m->port.ReadAnalog());
+			}
+			if (msg.param != CanMessageChangeInputMonitorV1::paramTareAndHold)
+			{
+				m->trackerReseedPending = true;
+				m->tracking = true;
+			}
+			words[0] = (uint32_t)m->baseline;
+			numWords = 1;
+			rslt = GCodeResult::ok;
+		}
+		break;
 
 	default:
 		reply.printf("ChangeInputMonitor action #%u not implemented", msg.action);
