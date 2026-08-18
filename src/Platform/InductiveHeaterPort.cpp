@@ -32,13 +32,10 @@
 #define EVENT_DEBUG_TO_NP	(1)					// set nonzero to enable AC event output to NP LED pin
 
 // The AC provides 64 trigger levels. Define the values that indicate over target and over maximum.
-constexpr float TargetVoltage = 80.0;
-constexpr float OverVoltage = 100.0;
+constexpr float TargetVoltage = 90.0;
 constexpr uint32_t TargetVoltageACValue = (uint32_t)(64.0 * TargetVoltage/InductiveHeaterVoltageFeedbackRange) - 1;
-constexpr uint32_t OverVoltageACValue =  (uint32_t)(64.0 * OverVoltage/InductiveHeaterVoltageFeedbackRange) - 1;
 
-static_assert(OverVoltageACValue <= 63);
-static_assert(TargetVoltageACValue < OverVoltageACValue);
+static_assert(TargetVoltageACValue <= 63);
 
 bool InductiveHeaterPort::hasFaulted = false;
 
@@ -57,8 +54,8 @@ void InductiveHeaterPort::Init() noexcept
 	{
 		NonVolatileMemory nvm(NvmPage::common);
 		nvm.GetInductiveHeaterParams(calibrationParams);
-		if (   calibrationParams.firstOnTime < OscMinOnTime || calibrationParams.firstOnTime > OscMaxOnTime
-			|| calibrationParams.mainOnTime < OscMinOnTime || calibrationParams.mainOnTime > OscMaxOnTime
+		if (   calibrationParams.firstOnTime < OscMinOnTime || calibrationParams.firstOnTime > OscMaxFirstOnTime
+			|| calibrationParams.mainOnTime < OscMinOnTime || calibrationParams.mainOnTime > OscMaxMainOnTime
 			|| calibrationParams.offTime < OscMinOffTime || calibrationParams.offTime > OscMaxOffTime
 			|| calibrationParams.spare != 0xFFFF
 		   )
@@ -486,7 +483,7 @@ void InductiveHeaterPort::CalibrateHeater() noexcept
 		}
 		else
 		{
-			if (calibrationParams.firstOnTime >= OscMaxOnTime)
+			if (calibrationParams.firstOnTime >= OscMaxFirstOnTime)
 			{
 				calibrationFailedReason = "exceeded maximum first pulse length";
 				calState = CalibrationState::failed;
@@ -498,11 +495,11 @@ void InductiveHeaterPort::CalibrateHeater() noexcept
 			calibrationParams.mainOnTime = calibrationParams.firstOnTime;
 			successCount = 0;
 		}
-		delay(1);													// allow time for the heater coil to stop resonating
+		delay(1);																// allow time for the heater coil to stop resonating
 	}
 
 	// Here when we have detected the target peak voltage in the first cycle
-	if (calibrationParams.firstOnTime - OscMinOnTime < 10)			// we expect to have to increase the first on time above the minimum
+	if (calibrationParams.firstOnTime - OscMinOnTime < OnTimeBackoff)			// we expect to have to increase the first on time above the minimum
 	{
 		calibrationFailedReason = "first pulse length too short, probably hardware error";
 		calState = CalibrationState::failed;
@@ -533,7 +530,7 @@ void InductiveHeaterPort::CalibrateHeater() noexcept
 			acc.Add((float)captureBuffer[0]);
 		}
 //		debugPrintf("%u %u: %lu %lu %lu %lu", *const_cast<volatile unsigned int *>(&captureIndex), *const_cast<volatile unsigned int *>(&errorCount), captureBuffer[0], captureBuffer[1], captureBuffer[2], captureBuffer[3]);
-		delay(1);													// allow time for the heater coil to stop resonating
+		delay(1);																// allow time for the heater coil to stop resonating
 	}
 
 //	debugPrintf("samples %u mean %.1f deviation %.1f", acc.GetNumSamples(), (double)acc.GetMean(), (double)acc.GetDeviation());
@@ -582,7 +579,7 @@ void InductiveHeaterPort::CalibrateHeater() noexcept
 		}
 		else
 		{
-			if (calibrationParams.mainOnTime >= OscMaxOnTime)
+			if (calibrationParams.mainOnTime >= OscMaxMainOnTime)
 			{
 				calibrationFailedReason = "exceeded maximum subsequent pulse length";
 				calState = CalibrationState::failed;

@@ -8,7 +8,7 @@
 #ifndef SRC_VERSION_H_
 #define SRC_VERSION_H_
 
-#define VERSION		"3.7.0-beta.2+1"
+#define VERSION		"3.7.0-beta.3"
 
 extern const char *const DateText;
 extern const char *const TimeSuffix;

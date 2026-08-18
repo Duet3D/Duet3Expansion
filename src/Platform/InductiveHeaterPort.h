@@ -38,8 +38,9 @@ private:
 	// The following values are expressed in microseconds converted to clocks. Typical values after calibration are:
 	// firstOnTime 290 (2.42us), mainOnTime 450 (3.75us), offTime 437 (3.64us)
 	static constexpr uint32_t OscMinOnTime = (uint32_t)(1.5 * OscClockFrequencyMHz);
+	static constexpr uint32_t OscMaxFirstOnTime = (uint32_t)(3.5 * OscClockFrequencyMHz);
 	static constexpr uint32_t OscDefaultMainOnTime = (uint32_t)(2.5 * OscClockFrequencyMHz);
-	static constexpr uint32_t OscMaxOnTime = (uint32_t)(4.2 * OscClockFrequencyMHz);
+	static constexpr uint32_t OscMaxMainOnTime = (uint32_t)(5.5 * OscClockFrequencyMHz);
 	static constexpr uint32_t OscMinOffTime = (uint32_t)(3.0 * OscClockFrequencyMHz);	// the flyback time is usually about 3.5us so set a minimum of 3.0us
 	static constexpr uint32_t OscMaxOffTime = (uint32_t)(4.6 * OscClockFrequencyMHz);	// long enough to always contain a full half cycle, not so long that the drain voltage goes backup to +24V
 	static constexpr uint32_t OscOnTimeStep = 2;
