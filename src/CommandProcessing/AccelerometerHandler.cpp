@@ -258,6 +258,17 @@ bool AccelerometerHandler::IsCollecting() noexcept
 	return running;
 }
 
+// The rate and resolution the accelerometer was actually programmed for, which may be lower than the ones requested
+uint16_t AccelerometerHandler::GetSamplingRate() noexcept
+{
+	return samplingRate;
+}
+
+uint8_t AccelerometerHandler::GetResolution() noexcept
+{
+	return resolution;
+}
+
 // Translate the orientation from a 2-digit number to translation tables, returning true if successful, false if bad orientation
 GCodeResult AccelerometerHandler::ProcessConfigRequest(const CanMessageGeneric& msg, const StringRef &reply) noexcept
 {

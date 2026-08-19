@@ -918,6 +918,12 @@ void CommandProcessor::Spin()
 		case CanMessageType::accelerometerConfig:
 			requestId = buf->msg.generic.requestId;
 			rslt = AccelerometerHandler::ProcessConfigRequest(buf->msg.generic, replyRef);
+			if (rslt == GCodeResult::ok)
+			{
+				words[0] = AccelerometerHandler::GetSamplingRate();
+				words[1] = AccelerometerHandler::GetResolution();
+				numWords = 2;
+			}
 			break;
 
 		case CanMessageType::startAccelerometer:
