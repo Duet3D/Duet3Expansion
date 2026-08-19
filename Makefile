@@ -23,21 +23,22 @@ export WORKSPACE
 # Quiet build support (Linux kernel style)
 # Use V=1 for verbose output
 ifeq ($(V),1)
-	Q :=
-	VERBOSE :=
+    Q :=
+    VERBOSE :=
 else
-	Q := @
-	VERBOSE := -s
+    Q := @
+    VERBOSE := -s
 endif
 export Q VERBOSE
 
 # Debug build support
 # Use DEBUG=1 to build with debug symbols and reduced optimization
+# Indent conditional bodies with spaces: Make reads a tab-indented line that is not a variable assignment as a recipe, and there is no target yet
 ifeq ($(DEBUG),1)
-	DEBUG_FLAGS := -g3 -Og
-	$(info Building with debug symbols enabled)
+    DEBUG_FLAGS := -g3 -Og
+    $(info Building with debug symbols enabled)
 else
-	DEBUG_FLAGS :=
+    DEBUG_FLAGS :=
 endif
 export DEBUG_FLAGS
 
