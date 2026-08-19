@@ -25,7 +25,7 @@
 constexpr uint16_t DefaultSamplingRate = 1000;
 constexpr uint32_t StartTimeoutMillis = 800;				// must be less than the main board's response timeout (1000ms) or a slow start turns into a CAN response timeout
 
-constexpr size_t AccelerometerTaskStackWords = 150;			// chrishamm needed at least 150 to avoid stack overflows on SZP
+constexpr size_t AccelerometerTaskStackWords = 200;			// 150 was enough to stop overflowing but left only 13 words free when collecting at 5.4kHz on the SZP
 static Task<AccelerometerTaskStackWords> *accelerometerTask;
 
 static LISAccelerometer *accelerometer = nullptr;
@@ -251,6 +251,11 @@ void AccelerometerHandler::Init(SharedI2CMaster& dev) noexcept
 bool AccelerometerHandler::IsPresent() noexcept
 {
 	return present;
+}
+
+bool AccelerometerHandler::IsCollecting() noexcept
+{
+	return running;
 }
 
 // Translate the orientation from a 2-digit number to translation tables, returning true if successful, false if bad orientation

@@ -52,6 +52,7 @@ constexpr bool UseLaterCanPins = false;
 constexpr size_t MaxPortsPerHeater = 1;
 
 // DMA channel assignments
+constexpr DmaChannel DmacChanI2CRx = 0;
 constexpr DmaChannel DmacChanAdc0Rx = 2;
 constexpr DmaChannel DmacChanSdadcRx = 3;
 
@@ -59,6 +60,7 @@ constexpr unsigned int NumDmaChannelsUsed = 4;			// must be at least the number 
 
 // DMA priorities, higher is better. 0 to 3 are available.
 constexpr DmaPriority DmacPrioAdcRx = 2;
+constexpr DmaPriority DmacPrioI2CRx = 1;
 
 // Interrupt priorities, lower means higher priority. 0 can't make RTOS calls. Only 0 to 3 are available.
 const NvicPriority NvicPriorityStep = 1;				// step interrupt is next highest, it can preempt most other interrupts
@@ -103,7 +105,9 @@ constexpr I2cParameters I2C0Params =
 	.sclPin = PortAPin(17),
 	.sdaPin = PortAPin(16),
 	.pinFunction = GpioPinFunction::C,
-	.irqPriority = NvicPriorityI2C
+	.irqPriority = NvicPriorityI2C,
+	.rxDmaChannel = DmacChanI2CRx,
+	.rxDmaPriority = DmacPrioI2CRx
 };
 
 #endif
