@@ -140,8 +140,8 @@ bool LISAccelerometer::Configure(uint16_t& samplingRate, uint8_t& resolution) no
 		}
 		if (ok)
 		{
-			// Set the fifo mode
-			ok = WriteRegister(LisRegister::FifoControl, (2u << 5) | (FifoInterruptLevel - 1));		// FIFO stream mode
+			fifoCtrlReg = (2u << 5) | (FifoInterruptLevel - 1);				// FIFO stream mode
+			ok = ResetFifo();
 		}
 		break;
 
@@ -204,8 +204,8 @@ bool LISAccelerometer::Configure(uint16_t& samplingRate, uint8_t& resolution) no
 		ok = WriteRegisters(LisRegister::Ctrl_0x20, 6);
 		if (ok)
 		{
-			// Set the fifo mode
-			ok = WriteRegister(LisRegister::FifoControl, (2u << 6) | (FifoInterruptLevel - 1));		// FIFO stream mode
+			fifoCtrlReg = (2u << 6) | (FifoInterruptLevel - 1);				// FIFO stream mode
+			ok = ResetFifo();
 		}
 		break;
 
@@ -243,53 +243,36 @@ bool LISAccelerometer::Configure(uint16_t& samplingRate, uint8_t& resolution) no
 		}
 		if (ok)
 		{
-			// Set the fifo mode
-			ok = WriteRegister(LisRegister::FifoControl, (6u << 5) | (FifoInterruptLevel - 1));		// FIFO continuous mode
+			fifoCtrlReg = (6u << 5) | (FifoInterruptLevel - 1);				// FIFO continuous mode
+			ok = ResetFifo();
 		}
 		break;
 	}
 	return ok;
 }
 
+// Discard the FIFO contents by switching it to bypass mode and back, which is how the datasheets say to reset it.
+// Draining it by reading instead runs for as long as the chip keeps reporting data, which is unbounded if its FIFO logic is upset
+bool LISAccelerometer::ResetFifo() noexcept
+{
+	return WriteRegister(LisRegister::FifoControl, 0) && WriteRegister(LisRegister::FifoControl, fifoCtrlReg);
+}
+
 void Int1Interrupt(CallbackParameter p) noexcept;						// forward declaration
 
 // Start collecting data, returning true if successful
-bool LISAccelerometer:: StartCollecting(uint8_t axes) noexcept
+bool LISAccelerometer::StartCollecting(uint8_t axes) noexcept
 {
-	uint8_t ctrlRegValue = ctrlReg_0x20;
-
-	// Clear the fifo
-	switch (accelerometerType.RawValue())
+	if (!ResetFifo())
 	{
-	case AccelerometerType::LIS3DH:
-	case AccelerometerType::LIS3DSH:
-		{
-			uint8_t val;
-			while (ReadRegister(LisRegister::FifoSource, val) && (val & (1u << 5)) == 0)	// while fifo not empty
-			{
-				if (!ReadRegisters(LisRegister::OutXL, 6))
-				{
-					return false;
-				}
-			}
-		}
-		ctrlRegValue |= (axes & 7);
-		break;
-
-	case AccelerometerType::LIS2DW:
-		{
-			uint8_t val;
-			while (ReadRegister(LisRegister::FifoSource, val) && (val & 0x3F) != 0)			// while fifo not empty
-			{
-				if (!ReadRegisters(LisRegister::OutXL, 6))
-				{
-					return false;
-				}
-			}
-		}
-		break;
+		return false;
 	}
 
+	uint8_t ctrlRegValue = ctrlReg_0x20;
+	if (accelerometerType != AccelerometerType::LIS2DW)
+	{
+		ctrlRegValue |= (axes & 7);
+	}
 
 	// Version 1.1 tool boards need the pullup resistor enabled on the interrupt pin.
 	// For other tool board versions and for the SAMMYC21, pulling it up allows us to check for a disconnected pin

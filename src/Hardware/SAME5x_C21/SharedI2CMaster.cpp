@@ -23,10 +23,14 @@
 constexpr uint32_t DefaultSharedI2CClockFrequency = 400000;
 constexpr uint32_t I2CTimeoutTicks = 100;
 constexpr uint32_t ShutdownTimeoutMillis = 50;
+constexpr uint32_t RecoveryHalfClockMicros = 5;
 
-SharedI2CMaster::SharedI2CMaster(uint8_t sercomNum) noexcept
-	: hardware(Serial::Sercoms[sercomNum]), taskWaiting(nullptr), busErrors(0), naks(0), contentions(0), otherErrors(0), state(I2cState::idle)
+SharedI2CMaster::SharedI2CMaster(uint8_t sercomNum, Pin p_sdaPin, GpioPinFunction p_sdaPinFunction, Pin p_sclPin, GpioPinFunction p_sclPinFunction) noexcept
+	: hardware(Serial::Sercoms[sercomNum]), sdaPin(p_sdaPin), sclPin(p_sclPin), sdaPinFunction(p_sdaPinFunction), sclPinFunction(p_sclPinFunction),
+	  taskWaiting(nullptr), busErrors(0), naks(0), contentions(0), otherErrors(0), recoveries(0), state(I2cState::idle)
 {
+	RecoverBus();								// this also connects the pins to the SERCOM
+
 	Serial::EnableSercomClock(sercomNum);
 
 	// Set up the SERCOM
@@ -87,11 +91,42 @@ SharedI2CMaster::SharedI2CMaster(uint8_t sercomNum) noexcept
 	Enable();
 }
 
-// Resetting the processor part way through a transfer leaves the slave device driving SDA low, which hangs the bus until the next power cycle
+// Resetting the processor part way through a transfer leaves the slave device driving SDA low. RecoverBus() clears that at the next startup, but better not to get there
 void SharedI2CMaster::End() noexcept
 {
 	(void)Take(ShutdownTimeoutMillis);											// if we time out then the bus is already stuck, so reset anyway
 	Disable();
+}
+
+// Release the bus if a slave device is holding SDA low, e.g. because the processor was reset part way through a read transfer.
+// Nine clocks let the slave shift out the rest of its byte and see a NACK, then a STOP condition returns it to idle. Stopping early when SDA reads high is not enough,
+// the slave is still mid-byte then and drives SDA low again on the next clock if its next bit is zero.
+// The pins are driven as GPIO while doing this and connected to the SERCOM afterwards, so the SERCOM must be disabled or not yet set up
+void SharedI2CMaster::RecoverBus() noexcept
+{
+	SetPinMode(sclPin, INPUT);
+	SetPinMode(sdaPin, INPUT);
+	if (!digitalRead(sdaPin))
+	{
+		for (unsigned int i = 0; i < 9; i++)
+		{
+			SetPinMode(sclPin, OUTPUT_LOW);
+			delayMicroseconds(RecoveryHalfClockMicros);
+			SetPinMode(sclPin, INPUT);
+			delayMicroseconds(RecoveryHalfClockMicros);
+		}
+		SetPinMode(sclPin, OUTPUT_LOW);
+		delayMicroseconds(RecoveryHalfClockMicros);
+		SetPinMode(sdaPin, OUTPUT_LOW);
+		delayMicroseconds(RecoveryHalfClockMicros);
+		SetPinMode(sclPin, INPUT);
+		delayMicroseconds(RecoveryHalfClockMicros);
+		SetPinMode(sdaPin, INPUT);
+		delayMicroseconds(RecoveryHalfClockMicros);
+		recoveries++;
+	}
+	SetPinFunction(sclPin, sclPinFunction);
+	SetPinFunction(sdaPin, sdaPinFunction);
 }
 
 // Set the I2C clock frequency. Caller must own the mutex first.
@@ -139,6 +174,7 @@ bool SharedI2CMaster::Transfer(uint16_t address, const uint8_t *txBuffer, uint8_
 
 		// Had an I2C error, so re-initialise
 		Disable();
+		RecoverBus();
 		Enable();
 	}
 	return false;
@@ -167,8 +203,8 @@ void SharedI2CMaster::Release() noexcept
 
 void SharedI2CMaster::Diagnostics(const StringRef& reply) noexcept
 {
-	reply.lcatf("I2C bus errors %u, naks %u, contentions %u, other errors %u", busErrors, naks, contentions, otherErrors);
-	busErrors = naks = contentions = otherErrors = 0;
+	reply.lcatf("I2C bus errors %u, naks %u, contentions %u, other errors %u, bus recoveries %u", busErrors, naks, contentions, otherErrors, recoveries);
+	busErrors = naks = contentions = otherErrors = recoveries = 0;
 }
 
 bool SharedI2CMaster::InternalTransfer(uint16_t address, const uint8_t *txBuffer, uint8_t *rxBuffer, size_t numToWrite, size_t numToRead) noexcept

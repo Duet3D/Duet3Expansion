@@ -17,7 +17,7 @@
 class SharedI2CMaster
 {
 public:
-	SharedI2CMaster(uint8_t sercomNum) noexcept;
+	SharedI2CMaster(uint8_t sercomNum, Pin p_sdaPin, GpioPinFunction p_sdaPinFunction, Pin p_sclPin, GpioPinFunction p_sclPinFunction) noexcept;
 
 	void End() noexcept;						// wait for any transfer in progress to complete, then shut down
 	void SetClockFrequency(uint32_t freq) noexcept;
@@ -38,6 +38,7 @@ private:
 
 	void Enable() const noexcept;
 	void Disable() const noexcept;
+	void RecoverBus() noexcept;
 	bool InternalTransfer(uint16_t address, const uint8_t *txBuffer, uint8_t *rxBuffer, size_t numToWrite, size_t numToRead) noexcept;
 	void ProtocolError()  noexcept;
 
@@ -45,6 +46,8 @@ private:
 	//TODO
 #else
 	Sercom * const hardware;
+	const Pin sdaPin, sclPin;
+	const GpioPinFunction sdaPinFunction, sclPinFunction;
 #endif
 
 	TaskHandle taskWaiting;
@@ -54,7 +57,7 @@ private:
 	const uint8_t *txTransferBuffer;
 	uint8_t *rxTransferBuffer;
 	size_t numLeftToRead, numLeftToWrite;
-	unsigned int busErrors, naks, contentions, otherErrors;
+	unsigned int busErrors, naks, contentions, otherErrors, recoveries;
 	uint16_t currentAddress;
 	volatile I2cState state;
 };
