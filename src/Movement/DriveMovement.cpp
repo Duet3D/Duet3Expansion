@@ -34,6 +34,11 @@ void DriveMovement::Init(size_t drv) noexcept
 	segmentsTail = nullptr;
 	segHint = nullptr;
 	segmentFlags.InitNonPrinting();
+#if USE_SHADOW_SEGMENTS
+	shadowHead = 0;
+	shadowGen = 0;
+	FlushShadows();
+#endif
 #if SUPPORT_CLOSED_LOOP
 	closedLoopControl.InitInstance();
 #endif
@@ -190,6 +195,213 @@ static inline void AnalyseSegment(bool segIsLinear, motioncalc_t t0, int32_t net
 	out.direction = newDirection;
 }
 
+#if USE_SHADOW_SEGMENTS
+
+// Prepare the movement parameters of one more upcoming stepping segment (and any run of zero-step segments preceding
+// it) into a free shadow slot, taking the coefficient float maths for that segment boundary out of the step ISR.
+// The preparation is possible because the distanceCarriedForwards each upcoming segment starts with is fully determined
+// in advance: it changes only at segment boundaries, by dcf += length - netSteps with netSteps = int(length + dcf), so
+// the whole chain follows from the executing segment's values (which cannot change while it has a successor). The chain
+// below uses exactly the operations of the corresponding updates in NewSegment and CalcNextStepTimeFull, and the
+// analysis is the same single copy of code that NewSegment uses (AnalyseSegment/CheckLinearCore), so all stored values
+// are bit-identical to what the normal path would compute.
+// This runs with interrupts enabled while the step ISR may release segments, so each segment is copied under a brief
+// interrupt-disabled window, and the result is committed only if shadowGen is unchanged, i.e. no segment was released,
+// no slot consumed or flushed, and no list modification made meanwhile. Correctness never depends on the preparation:
+// any list change invalidates the affected slots and the boundary then falls back to the normal path.
+__attribute__((noinline)) bool DriveMovement::PrepareShadowChunk() noexcept
+{
+	// Values captured about a segment with interrupts disabled, so that the float maths can run on a consistent copy
+	struct SegSnapshot
+	{
+		uint32_t startTime;
+		uint32_t duration;
+		motioncalc_t distance;
+		motioncalc_t a;
+		const MoveSegment *next;
+	};
+
+	const MoveSegment *cursor;								// the first segment of the run we will prepare
+	motioncalc_t dcf = (motioncalc_t)0.0;					// distanceCarriedForwards at the start of *cursor
+	unsigned int slotIdx;
+	uint32_t gen0;
+	bool anchorIsExecutingHead = false;
+	motioncalc_t anchorLen = (motioncalc_t)0.0;
+	motioncalc_t anchorDcf = (motioncalc_t)0.0;
+	int32_t anchorNetSteps = 0;
+
+#if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
+	if (UsesPhaseStepping())
+	{
+		return false;										// segments are not executed step-by-step in closed loop or phase stepping mode, and NewSegment takes the phase stepping exit before the slot check
+	}
+#endif
+
+	{
+		const uint32_t oldFlags = IrqSave();
+		gen0 = shadowGen;
+
+		// Find the first free slot in ring order; the last valid slot (if any) anchors the dcf chain
+		const ShadowSlot *lastValid = nullptr;
+		unsigned int k;
+		for (k = 0; k < NumShadowSlots; ++k)
+		{
+			const ShadowSlot& s = shadowSlots[(shadowHead + k) % NumShadowSlots];
+			if (s.seg == nullptr)
+			{
+				break;
+			}
+			lastValid = &s;
+		}
+		if (k == NumShadowSlots)
+		{
+			IrqRestore(oldFlags);
+			return false;									// all slots are already prepared
+		}
+		slotIdx = (shadowHead + k) % NumShadowSlots;
+
+		if (lastValid != nullptr)
+		{
+			cursor = lastValid->seg->GetNext();				// safe: a segment covered by a valid slot has not been released
+			dcf = lastValid->dcfAfterSeg;
+		}
+		else
+		{
+			MoveSegment *const head = segments;
+			if (head == nullptr)
+			{
+				IrqRestore(oldFlags);
+				return false;
+			}
+			if (head->GetFlags().executing)
+			{
+				// The executing head's dcf update is float maths, so capture the inputs and do the arithmetic with interrupts re-enabled
+				anchorIsExecutingHead = true;
+				anchorDcf = distanceCarriedForwards;
+				anchorLen = head->GetLength();
+				anchorNetSteps = netStepsThisSegment;
+				cursor = head->GetNext();
+			}
+			else
+			{
+				cursor = head;								// the head segment has not started executing yet (DM idle or starting)
+				dcf = distanceCarriedForwards;
+			}
+		}
+		IrqRestore(oldFlags);
+	}
+
+	if (cursor == nullptr)
+	{
+		return false;
+	}
+	if (anchorIsExecutingHead)
+	{
+		dcf = anchorDcf + (anchorLen - (motioncalc_t)anchorNetSteps);	// exactly the end-of-segment update in CalcNextStepTimeFull
+	}
+
+	ShadowSlot local;
+	local.chainHead = cursor;
+	unsigned int numSlivers = 0;
+	uint32_t prevEndTime = 0;								// only used once numSlivers != 0
+	for (;;)
+	{
+		SegSnapshot snap;
+		{
+			const uint32_t oldFlags = IrqSave();
+			snap.startTime = cursor->GetStartTime();
+			snap.duration = cursor->GetDuration();
+			snap.distance = cursor->GetLength();
+			snap.a = cursor->GetA();
+			snap.next = cursor->GetNext();
+			IrqRestore(oldFlags);
+		}
+
+		if (numSlivers != 0 && snap.startTime != prevEndTime)
+		{
+			return false;									// a gap after a sliver: the normal path waits for the start time then, so don't span it
+		}
+
+		const int32_t netSteps = (int32_t)(snap.distance + dcf);	// exactly the netStepsThisSegment calculation in NewSegment
+
+		motioncalc_t sT0;
+		const bool segIsLinear = CheckLinearCore(snap.a, snap.duration, snap.distance, dcf, sT0);	// snap.a is a copy, so letting this normalise it does not touch the segment
+		SegAnalysis an;
+		AnalyseSegment(segIsLinear, sT0, netSteps, snap.distance, snap.a, snap.duration, dcf, an);
+
+		if (an.stepLimit <= 1)
+		{
+			// A zero-step segment: fold it into the run as a sliver
+			const motioncalc_t newDcf = dcf + snap.distance;	// exactly the update the skip path in NewSegment makes
+			if (fabsm(newDcf) > 1.0)
+			{
+				return false;								// this would be a step error; leave it to the normal path to detect and report
+			}
+			dcf = newDcf;
+			if (snap.next == nullptr || numSlivers >= 250)
+			{
+				return false;								// no stepping segment follows (yet); leave the run to the normal path
+			}
+			++numSlivers;
+			prevEndTime = snap.startTime + snap.duration;
+			cursor = snap.next;
+			continue;
+		}
+
+		// A stepping segment: complete the slot
+		local.seg = cursor;
+		local.t0 = sT0;
+		local.p = an.p;
+		local.q = an.q;
+		local.numSlivers = (uint8_t)numSlivers;
+		local.state = an.state;
+		local.direction = an.direction;
+		local.netSteps = netSteps;
+		local.stepLimit = an.stepLimit;
+		local.reverseStartStep = an.reverseStartStep;
+		local.dcfAtSeg = dcf;
+		local.dcfAfterSeg = dcf + (snap.distance - (motioncalc_t)netSteps);	// exactly the end-of-segment update in CalcNextStepTimeFull
+		break;
+	}
+
+	// Commit the slot, unless the ISR released segments or consumed/flushed slots while we were computing
+	bool committed = false;
+	{
+		const uint32_t oldFlags = IrqSave();
+		ShadowSlot& s = shadowSlots[slotIdx];
+		if (shadowGen == gen0 && s.seg == nullptr)
+		{
+			s = local;										// interrupts are off, so the ISR cannot see a partially-written slot
+			committed = true;
+		}
+		IrqRestore(oldFlags);
+	}
+	return committed;
+}
+
+// Flush all prepared slots unless every one of them covers only segments that end at or before startTime, which
+// segments added from startTime onwards cannot affect. Caller must have the step interrupt shut out.
+// shadowGen is bumped unconditionally so that a preparation in flight that walked segments the caller is about to modify discards at commit.
+void DriveMovement::InvalidateShadowsFrom(uint32_t startTime) noexcept
+{
+	shadowGen = shadowGen + 1;
+	for (unsigned int k = 0; k < NumShadowSlots; ++k)
+	{
+		const ShadowSlot& s = shadowSlots[(shadowHead + k) % NumShadowSlots];
+		if (s.seg == nullptr)
+		{
+			break;
+		}
+		if ((int32_t)(startTime - (s.seg->GetStartTime() + s.seg->GetDuration())) < 0)
+		{
+			FlushShadows();
+			break;
+		}
+	}
+}
+
+#endif	// USE_SHADOW_SEGMENTS
+
 // This is called when we need to examine the segment list and prepare the head segment (if there is one) for execution.
 // If there is no segment to execute, set our state to 'idle' and return nullptr.
 // If there is a segment to execute but it isn't due to start for a while, set our state to 'starting', set nextStepTime to when the move is due to start or shortly before,
@@ -225,6 +437,76 @@ MoveSegment *DriveMovement::NewSegment(uint32_t now) noexcept
 		}
 
 		seg->SetExecuting();
+
+#if USE_SHADOW_SEGMENTS
+		{
+			ShadowSlot& slot = shadowSlots[shadowHead];
+			if (slot.seg != nullptr && seg == slot.chainHead)
+			{
+				if (slot.numSlivers != 0)
+				{
+					// A run of zero-step segments precedes the prepared stepping segment. Release them all without any per-segment
+					// float maths: the preparation computed the resulting distanceCarriedForwards bit-identically and verified its error bound.
+					unsigned int n = slot.numSlivers;
+					do
+					{
+						MoveSegment *const oldSeg = seg;
+						segments = seg = seg->GetNext();
+						if (segHint == oldSeg) { segHint = nullptr; }	// (a stepping segment always follows the slivers, so the list cannot empty here)
+						shadowGen = shadowGen + 1;
+						MoveSegment::Release(oldSeg);
+						--n;
+					} while (n != 0 && seg != nullptr);
+					distanceCarriedForwards = slot.dcfAtSeg;
+					if (seg == slot.seg)
+					{
+						slot.chainHead = seg;					// the slivers are done with; next time round the loop the prepared parameters apply
+						slot.numSlivers = 0;
+					}
+					else
+					{
+						FlushShadows();							// the list is not what the preparation saw; fall back to the normal path
+					}
+					continue;									// go round the loop again so that the start time check runs for the next segment
+				}
+
+				// seg is the prepared stepping segment: apply the prepared parameters instead of doing the float maths below;
+				// distanceCarriedForwards already has exactly the value the preparation used
+				netStepsThisSegment = slot.netSteps;
+				segmentStepLimit = slot.stepLimit;
+				reverseStartStep = slot.reverseStartStep;
+				state = slot.state;
+				t0 = slot.t0;
+				p = slot.p;
+				q = slot.q;
+				nextStep = 1;
+				if (slot.direction != direction)
+				{
+					directionChanged = true;
+					direction = slot.direction;
+				}
+				driversCurrentlyUsed = driversNormallyUsed;		// re-enable all drivers for this axis
+				slot.seg = nullptr;								// consume the slot; Move::Spin on the MAIN task refills it
+				shadowHead = (shadowHead + 1u == NumShadowSlots) ? 0 : shadowHead + 1u;	// no % here: modulo by 3 would call the division function in flash
+				shadowGen = shadowGen + 1;
+
+				// Update variables used by filament monitoring, as the normal path below does
+				if (segmentFlags.isExtruder)
+				{
+					if (segmentFlags.nonPrintingMove)
+					{
+						extruderPrinting = false;
+					}
+					else if (!extruderPrinting)
+					{
+						extruderPrintingSince = millis();
+						extruderPrinting = true;
+					}
+				}
+				return seg;
+			}
+		}
+#endif
 
 		// Calculate the movement parameters
 		netStepsThisSegment = (int32_t)(seg->GetLength() + distanceCarriedForwards);
@@ -301,6 +583,13 @@ MoveSegment *DriveMovement::NewSegment(uint32_t now) noexcept
 			newDcf = constrain<motioncalc_t>(newDcf, -1.0, 1.0);	// to prevent the next segment erroring out
 		}
 		distanceCarriedForwards = newDcf;
+#if USE_SHADOW_SEGMENTS
+		shadowGen = shadowGen + 1;											// tell PrepareShadowChunk that a segment has been released
+		if (shadowSlots[shadowHead].seg != nullptr && (seg == shadowSlots[shadowHead].chainHead || seg == shadowSlots[shadowHead].seg))
+		{
+			FlushShadows();										// we are releasing a segment the preparation covers without consuming it, so the slots are stale
+		}
+#endif
 		MoveSegment *oldSeg = seg;
 		segments = seg = seg->GetNext();						// skip this segment
 		if (seg == nullptr) { segmentsTail = nullptr; }			// keep the tail cache consistent when the list empties
@@ -412,6 +701,13 @@ pre(stepsTillRecalc == 0; segments != nullptr)
 				return LogStepError(6, 0.0, currentSegment);
 			}
 
+#if USE_SHADOW_SEGMENTS
+			shadowGen = shadowGen + 1;										// tell PrepareShadowChunk that a segment has been released
+			if (shadowSlots[shadowHead].seg != nullptr && (currentSegment == shadowSlots[shadowHead].chainHead || currentSegment == shadowSlots[shadowHead].seg))
+			{
+				FlushShadows();									// can't happen (a prepared segment is consumed when it starts executing), but don't risk stale slots
+			}
+#endif
 			movementAccumulator += netStepsThisSegment;				// update the amount of extrusion for filament monitors
 			const uint32_t prevEndTime = currentSegment->GetStartTime() + currentSegment->GetDuration();
 			MoveSegment *const nextSeg = currentSegment->GetNext();
@@ -601,6 +897,9 @@ void DriveMovement::StopDriverFromRemote() noexcept
 	if (state != DMState::idle)
 	{
 		state = DMState::idle;
+#if USE_SHADOW_SEGMENTS
+		FlushShadows();										// the prepared slots refer to segments we are about to release
+#endif
 		MoveSegment *seg = nullptr;
 		std::swap(seg, const_cast<MoveSegment*&>(segments));
 		segmentsTail = nullptr;

@@ -321,4 +321,18 @@ inline void MoveSegment::Merge(motioncalc_t p_distance, motioncalc_t p_a, Moveme
 	nextAndFlags |= (p_flags.all & MovementFlags::FlagsMask);
 }
 
+// Prepare the movement parameters of upcoming segments outside the step ISR (see DriveMovement::PrepareShadowChunk).
+// Two classes of step ISR invocation are otherwise unbounded and can exceed MaxStepInterruptTime, provoking a hiccup:
+// a segment boundary whose first step is already due when it is reached (almost a whole step carried forward), and a run
+// of zero-step segments (produced in numbers by input shaping), each costing the full coefficient float maths just to be
+// skipped. This matters on boards that do the motion calculations in soft float, so it is enabled on the SAMC21 (no FPU);
+// other boards compile exactly the code they did before. May be predefined (e.g. -DUSE_SHADOW_SEGMENTS=1) to override the default.
+#ifndef USE_SHADOW_SEGMENTS
+# if SAMC21 && !USE_DOUBLE_MOTIONCALC && !defined(__ECV__)
+#  define USE_SHADOW_SEGMENTS	(1)
+# else
+#  define USE_SHADOW_SEGMENTS	(0)
+# endif
+#endif
+
 #endif /* SRC_MOVEMENT_MOVESEGMENT_H_ */

@@ -270,6 +270,19 @@ void Move::Spin(bool powered) noexcept
 void Move::Spin() noexcept
 #endif
 {
+#if USE_SHADOW_SEGMENTS
+	// Prepare upcoming segment parameters for the step ISR; cheap when there is nothing to prepare.
+	// This must remain the only caller of PrepareShadowChunk (single producer).
+# if SINGLE_DRIVER
+	while (dms[0].PrepareShadowChunk()) { }
+# else
+	for (size_t drive = 0; drive < NumDrivers; ++drive)
+	{
+		while (dms[drive].PrepareShadowChunk()) { }
+	}
+# endif
+#endif
+
 # if SUPPORT_BRAKE_PWM
 	const float currentVinVoltage = Platform::GetCurrentVinVoltage();
 # endif
@@ -1057,6 +1070,10 @@ void Move::AddLinearSegments(size_t drive, uint32_t startTime, const PrepParams&
 		const uint32_t oldFlags = IrqSave();
 #else
 		const uint32_t oldPrio = ChangeBasePriority(NvicPriorityStep);					// shut out the step interrupt
+#endif
+#if USE_SHADOW_SEGMENTS
+		// Invalidate any prepared slots for segments that the segments we are about to add may modify; those boundaries fall back to the normal path
+		dm.InvalidateShadowsFrom(startTime);
 #endif
 
 		// Start the search at the cached insertion hint if it is still valid, i.e. it is a segment still in the list that
