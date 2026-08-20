@@ -77,6 +77,119 @@ bool DriveMovement::ScheduleFirstSegment() noexcept
 	return false;
 }
 
+// The result of analysing one segment against the distance carried forwards that it will start with
+struct SegAnalysis
+{
+	bool direction;										// the initial movement direction
+	DMState state;										// the initial DM state
+	int32_t stepLimit;									// the value for segmentStepLimit
+	int32_t reverseStartStep;							// the value for reverseStartStep
+	motioncalc_t p;										// the p coefficient, with the direction sign applied
+	motioncalc_t q;										// the q coefficient (0.0 for linear segments, to make the debug output consistent)
+};
+
+// Analyse one segment: calculate the p and q coefficients (t = t0 + sqrt(p*n + q) for accelerating or decelerating
+// segments), the step limits and the initial direction and state. Factored out of NewSegment, keeping exactly the
+// expressions it contained there, so that other code can compute bit-identical results from a copy of the segment fields.
+// segIsLinear and t0 are the results of MoveSegment::NormaliseAndCheckLinear/CheckLinearCore on the same values.
+static inline void AnalyseSegment(bool segIsLinear, motioncalc_t t0, int32_t netSteps, motioncalc_t length, motioncalc_t a, uint32_t duration, motioncalc_t distanceCarriedForwards, SegAnalysis& out) noexcept
+{
+	bool newDirection;
+	int32_t multiplier;
+	motioncalc_t rawP;
+
+	if (segIsLinear)
+	{
+		// Segment is linear
+		rawP = (motioncalc_t)duration/length;					// as MoveSegment::CalcLinearRecipU
+		newDirection = !std::signbit(length);
+		multiplier = 2 * (int32_t)newDirection - 1;			// +1 or -1
+		out.reverseStartStep = out.stepLimit = 1 + netSteps * multiplier;
+		out.q = (motioncalc_t)0.0;								// to make the debug output consistent
+		out.state = DMState::cartLinear;
+	}
+	else
+	{
+		// Segment has acceleration or deceleration
+		// n = distanceCarriedForwards + u * t + 0.5 * a * t^2
+		// Therefore 0.5 * t^2 + u * t/a + (distanceCarriedForwards - n)/a = 0
+		// Therefore t = -u/a +/- sqrt((u/a)^2 - 2 * (distanceCarriedForwards - n)/a)
+		// Calculate the t0, p and q coefficients for an accelerating or decelerating move such that t = t0 + sqrt(p*n + q) and set up the initial direction
+		newDirection = !std::signbit(a);			// assume accelerating motion
+		multiplier = 2 * (int32_t)newDirection - 1;			// +1 or -1
+		if (!IsPositive(t0))								// use IsPositive here, on Cortex-M0+ it's faster than a floating point compare
+		{
+			// The direction reversal is in the past so the initial direction is the direction of the acceleration
+			out.stepLimit = out.reverseStartStep = 1 + netSteps * multiplier;
+			out.state = DMState::cartAccel;
+		}
+		else
+		{
+			// The initial direction is opposite to the acceleration
+			newDirection = !newDirection;
+			multiplier = -multiplier;
+			const int32_t netStepsInInitialDirection = netSteps * multiplier;
+
+			if (t0 < (motioncalc_t)duration)
+			{
+				// Reversal is potentially in this segment, but it may be before the first step, or may be beyond the last step we are going to take
+				// It can also happen that the target end speed is zero but due to FP rounding error, distanceToReverse was just below netStepsInInitialDirection and got rounded down
+				// Note, t0 = -u/a therefore u = a*t0 therefore u*t0^2 + 0.5*a*t0^2 = -a*t0^2 + 0.5*a*t0^2 = -0.5*a*t0^2
+				const motioncalc_t rawDistanceToReverse = (motioncalc_t)-0.5 * a * msquare(t0) + distanceCarriedForwards;
+#if SAMC21 || RP2040							// avoid floating point multiplication
+				const motioncalc_t distanceToReverse = (newDirection) ? rawDistanceToReverse : -rawDistanceToReverse;
+#else
+				const motioncalc_t distanceToReverse = rawDistanceToReverse * multiplier;
+#endif
+				const int32_t stepsBeforeReverse = (int32_t)(distanceToReverse - (motioncalc_t)0.2);			// don't step and immediately step back again
+				// Note, stepsBeforeReverse may be negative at this point
+				if (stepsBeforeReverse <= netStepsInInitialDirection && netStepsInInitialDirection >= 0)
+				{
+					out.stepLimit = out.reverseStartStep = netStepsInInitialDirection + 1;
+					out.state = DMState::cartDecelNoReverse;
+				}
+				else if (stepsBeforeReverse <= 0)
+				{
+					// Reversal happens immediately
+					newDirection = !newDirection;
+#if !(SAMC21 || RP2040)															// we've finished with 'multiplier' on these processors
+					multiplier = -multiplier;
+#endif
+					out.stepLimit = out.reverseStartStep = 1 - netStepsInInitialDirection;
+					out.state = DMState::cartAccel;
+				}
+				else
+				{
+					out.reverseStartStep = stepsBeforeReverse + 1;
+					out.stepLimit = 2 * out.reverseStartStep - netStepsInInitialDirection - 1;
+					out.state = DMState::cartDecelForwardsReversing;
+				}
+			}
+			else
+			{
+				// Reversal doesn't occur until after the end of this segment
+				out.stepLimit = out.reverseStartStep = netStepsInInitialDirection + 1;
+				out.state = DMState::cartDecelNoReverse;
+			}
+		}
+		rawP = (motioncalc_t)2.0/a;
+		out.q = msquare(t0) - rawP * distanceCarriedForwards;
+#if 0
+		if (std::isinf(out.q))
+		{
+			debugPrintf("t0=%.1f mult=%.1f dcf=%.3e a=%.4e\n", (double)t0, (double)multiplier, (double)distanceCarriedForwards, (double)a);
+		}
+#endif
+	}
+
+#if SAMC21 || RP2040							// avoid floating point multiplication
+	out.p = (newDirection) ? rawP : -rawP;
+#else
+	out.p = rawP * multiplier;
+#endif
+	out.direction = newDirection;
+}
+
 // This is called when we need to examine the segment list and prepare the head segment (if there is one) for execution.
 // If there is no segment to execute, set our state to 'idle' and return nullptr.
 // If there is a segment to execute but it isn't due to start for a while, set our state to 'starting', set nextStepTime to when the move is due to start or shortly before,
@@ -125,99 +238,15 @@ MoveSegment *DriveMovement::NewSegment(uint32_t now) noexcept
 		}
 #endif
 
-		bool newDirection;
-		int32_t multiplier;
-		motioncalc_t rawP;
-
-		if (seg->NormaliseAndCheckLinear(distanceCarriedForwards, t0))
-		{
-			// Segment is linear
-			rawP = seg->CalcLinearRecipU();
-			newDirection = !std::signbit(seg->GetLength());
-			multiplier = 2 * (int32_t)newDirection - 1;			// +1 or -1
-			reverseStartStep = segmentStepLimit = 1 + netStepsThisSegment * multiplier;
-			q = (motioncalc_t)0.0;								// to make the debug output consistent
-			state = DMState::cartLinear;
-		}
-		else
-		{
-			// Segment has acceleration or deceleration
-			// n = distanceCarriedForwards + u * t + 0.5 * a * t^2
-			// Therefore 0.5 * t^2 + u * t/a + (distanceCarriedForwards - n)/a = 0
-			// Therefore t = -u/a +/- sqrt((u/a)^2 - 2 * (distanceCarriedForwards - n)/a)
-			// Calculate the t0, p and q coefficients for an accelerating or decelerating move such that t = t0 + sqrt(p*n + q) and set up the initial direction
-			newDirection = !std::signbit(seg->GetA());			// assume accelerating motion
-			multiplier = 2 * (int32_t)newDirection - 1;			// +1 or -1
-			if (!IsPositive(t0))								// use IsPositive here, on Cortex-M0+ it's faster than a floating point compare
-			{
-				// The direction reversal is in the past so the initial direction is the direction of the acceleration
-				segmentStepLimit = reverseStartStep = 1 + netStepsThisSegment * multiplier;
-				state = DMState::cartAccel;
-			}
-			else
-			{
-				// The initial direction is opposite to the acceleration
-				newDirection = !newDirection;
-				multiplier = -multiplier;
-				const int32_t netStepsInInitialDirection = netStepsThisSegment * multiplier;
-
-				if (t0 < (motioncalc_t)seg->GetDuration())
-				{
-					// Reversal is potentially in this segment, but it may be before the first step, or may be beyond the last step we are going to take
-					// It can also happen that the target end speed is zero but due to FP rounding error, distanceToReverse was just below netStepsInInitialDirection and got rounded down
-					// Note, t0 = -u/a therefore u = a*t0 therefore u*t0^2 + 0.5*a*t0^2 = -a*t0^2 + 0.5*a*t0^2 = -0.5*a*t0^2
-					const motioncalc_t rawDistanceToReverse = (motioncalc_t)-0.5 * seg->GetA() * msquare(t0) + distanceCarriedForwards;
-#if SAMC21 || RP2040							// avoid floating point multiplication
-					const motioncalc_t distanceToReverse = (newDirection) ? rawDistanceToReverse : -rawDistanceToReverse;
-#else
-					const motioncalc_t distanceToReverse = rawDistanceToReverse * multiplier;
-#endif
-					const int32_t stepsBeforeReverse = (int32_t)(distanceToReverse - (motioncalc_t)0.2);			// don't step and immediately step back again
-					// Note, stepsBeforeReverse may be negative at this point
-					if (stepsBeforeReverse <= netStepsInInitialDirection && netStepsInInitialDirection >= 0)
-					{
-						segmentStepLimit = reverseStartStep = netStepsInInitialDirection + 1;
-						state = DMState::cartDecelNoReverse;
-					}
-					else if (stepsBeforeReverse <= 0)
-					{
-						// Reversal happens immediately
-						newDirection = !newDirection;
-#if !(SAMC21 || RP2040)															// we've finished with 'multiplier' on these processors
-						multiplier = -multiplier;
-#endif
-						segmentStepLimit = reverseStartStep = 1 - netStepsInInitialDirection;
-						state = DMState::cartAccel;
-					}
-					else
-					{
-						reverseStartStep = stepsBeforeReverse + 1;
-						segmentStepLimit = 2 * reverseStartStep - netStepsInInitialDirection - 1;
-						state = DMState::cartDecelForwardsReversing;
-					}
-				}
-				else
-				{
-					// Reversal doesn't occur until after the end of this segment
-					segmentStepLimit = reverseStartStep = netStepsInInitialDirection + 1;
-					state = DMState::cartDecelNoReverse;
-				}
-			}
-			rawP = (motioncalc_t)2.0/seg->GetA();
-			q = msquare(t0) - rawP * distanceCarriedForwards;
-#if 0
-			if (std::isinf(q))
-			{
-				debugPrintf("t0=%.1f mult=%.1f dcf=%.3e a=%.4e\n", (double)t0, (double)multiplier, (double)distanceCarriedForwards, (double)seg->GetA());
-			}
-#endif
-		}
-
-#if SAMC21 || RP2040							// avoid floating point multiplication
-		p = (newDirection) ? rawP : -rawP;
-#else
-		p = rawP * multiplier;
-#endif
+		const bool segIsLinear = seg->NormaliseAndCheckLinear(distanceCarriedForwards, t0);
+		SegAnalysis an;
+		AnalyseSegment(segIsLinear, t0, netStepsThisSegment, seg->GetLength(), seg->GetA(), seg->GetDuration(), distanceCarriedForwards, an);
+		const bool newDirection = an.direction;
+		segmentStepLimit = an.stepLimit;
+		reverseStartStep = an.reverseStartStep;
+		state = an.state;
+		q = an.q;
+		p = an.p;
 
 		nextStep = 1;
 		if (nextStep < segmentStepLimit)

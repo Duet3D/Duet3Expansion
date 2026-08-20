@@ -215,12 +215,12 @@ inline bool IsPositive(motioncalc_t f) noexcept
 #endif
 }
 
-// Normalise this segment by removing very small accelerations that cause problems, update t0, return true if it is linear
-// Called only from DriveMovement::NewSegment. Speed critical, hence inline and the rather unusual behaviour.
+// Body of NormaliseAndCheckLinear below, operating on segment field values passed by the caller. Written once, so that
+// code working on a copy of the segment fields can compute bit-identical results from a single copy of this code.
 // Returns:
-//  true if the segment is constant speed, with t0 = time from start of segment at which the distance would be/will be/would have been zero
+//  true if the segment is constant speed, with t0 = time from start of segment at which the distance would be/will be/would have been zero; a is zeroed if it was a tiny value that would cause calculation problems
 //  false if the segment has acceleration or deceleration, with t0 = time from start of segment at which the speed would have been/will be/would be zero
-inline bool MoveSegment::NormaliseAndCheckLinear(motioncalc_t distanceCarriedForwards, motioncalc_t& t0) noexcept
+static inline bool CheckLinearCore(motioncalc_t& a, uint32_t duration, motioncalc_t distance, motioncalc_t distanceCarriedForwards, motioncalc_t& t0) noexcept
 {
 	if (IsNonZero(a))
 	{
@@ -252,6 +252,16 @@ inline bool MoveSegment::NormaliseAndCheckLinear(motioncalc_t distanceCarriedFor
 	// The move is constant speed
 	t0 = -distanceCarriedForwards * (motioncalc_t)duration/distance;
 	return true;
+}
+
+// Normalise this segment by removing very small accelerations that cause problems, update t0, return true if it is linear
+// Called only from DriveMovement::NewSegment. Speed critical, hence inline and the rather unusual behaviour.
+// Returns:
+//  true if the segment is constant speed, with t0 = time from start of segment at which the distance would be/will be/would have been zero
+//  false if the segment has acceleration or deceleration, with t0 = time from start of segment at which the speed would have been/will be/would be zero
+inline bool MoveSegment::NormaliseAndCheckLinear(motioncalc_t distanceCarriedForwards, motioncalc_t& t0) noexcept
+{
+	return CheckLinearCore(a, duration, distance, distanceCarriedForwards, t0);
 }
 
 // Release a MoveSegment
