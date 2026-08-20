@@ -23,6 +23,7 @@
 #define TEST_PACKING	0
 
 constexpr uint16_t DefaultSamplingRate = 1000;
+constexpr uint32_t StartTimeoutMillis = 800;				// must be less than the main board's response timeout (1000ms) or a slow start turns into a CAN response timeout
 
 constexpr size_t AccelerometerTaskStackWords = 150;			// chrishamm needed at least 150 to avoid stack overflows on SZP
 static Task<AccelerometerTaskStackWords> *accelerometerTask;
@@ -337,9 +338,9 @@ GCodeResult AccelerometerHandler::ProcessStartRequest(const CanMessageStartAccel
 		{
 			return GCodeResult::ok;
 		}
-	} while (!failedStart && millis() - startTime < 1000);
+	} while (!failedStart && millis() - startTime < StartTimeoutMillis);
 
-	reply.copy("Failed to start accelerometer data collection");
+	reply.copy((failedStart) ? "Failed to start accelerometer data collection" : "Timed out waiting for accelerometer data collection to start");
 	if (accelerometer->HasInterruptError())
 	{
 		reply.cat(": INT1 error");
