@@ -515,6 +515,16 @@ void Move::AppendDiagnostics(const StringRef& reply) noexcept
 	reply.lcatf("Moves scheduled %" PRIu32 ", hiccups %u (%.2f/%.2fms), segs %u, step errors %u (types 0x%x), maxLate %" PRIi32 " maxPrep %" PRIu32,
 					scheduledMoves, numHiccups, (double)ownDelayToReport, (double)totalDelayToReport, MoveSegment::NumCreated(),
 					numStepErrors, stepErrorTypesLogged.GetRaw(), DriveMovement::GetAndClearMaxStepsLate(), maxPrepareTime);
+#if SHADOW_CACHE_DIAGNOSTICS
+	{
+		const uint32_t hits = DriveMovement::shadowCacheHits;
+		const uint32_t total = hits + DriveMovement::shadowCacheMisses;
+		reply.catf(", cacheHit %.1f%% (%" PRIu32 "/%" PRIu32 "), maxSkip %" PRIu32 ", maxCacheSkip %" PRIu32,
+						(double)((total == 0) ? 0.0f : (float)hits * 100.0f/(float)total), hits, total,
+						DriveMovement::maxIsrSkip, DriveMovement::maxCacheSkip);
+		DriveMovement::shadowCacheHits = DriveMovement::shadowCacheMisses = DriveMovement::maxIsrSkip = DriveMovement::maxCacheSkip = 0;
+	}
+#endif
 	numHiccups = 0;
 	maxPrepareTime = 0;
 	numStepErrors = 0;
