@@ -205,7 +205,8 @@ const I2cParameters I2C0Params =
 	.sclPin = PortAPin(22),
 	.sdaPin = PortAPin(23),
 	.pinFunction = GpioPinFunction::C,
-	.irqPriority = NvicPriorityI2C
+	.irqPriority = NvicPriorityI2C,
+	.rxDmaChannel = NoDmaChannel
 };
 
 #endif
@@ -219,7 +220,8 @@ const I2cParameters I2C1Params =
 	.sclPin = PortAPin(12),
 	.sdaPin = PortAPin(13),
 	.pinFunction = GpioPinFunction::D,
-	.irqPriority = NvicPriorityI2C
+	.irqPriority = NvicPriorityI2C,
+	.rxDmaChannel = NoDmaChannel
 };
 
 #endif

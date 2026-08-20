@@ -23,6 +23,10 @@
 #include <AppNotifyIndices.h>
 #include <Interrupts.h>
 
+#if SUPPORT_LIS3DH
+# include "AccelerometerHandler.h"
+#endif
+
 constexpr unsigned int ResultBitsDropped = 8;		// we drop this number of least significant bits in the result
 
 constexpr unsigned int LdcTaskStackWords = 150;		// 100 was too little
@@ -232,13 +236,23 @@ __attribute__ ((aligned (8))) static void Ldc1612Interrupt(CallbackParameter) no
 	DisablePinInterrupt(LDC1612InterruptPin);
 }
 
+// At its highest sampling rates the accelerometer needs almost all of the I2C bus bandwidth, and nobody probes while a recording is running
+static bool PollingSuspended() noexcept
+{
+#if SUPPORT_LIS3DH
+	return AccelerometerHandler::IsCollecting();
+#else
+	return false;
+#endif
+}
+
 // Function executed by the LDC task
 [[noreturn]] static void LdcTaskLoop(void* param) noexcept
 {
 	AttachPinInterrupt(LDC1612InterruptPin, Ldc1612Interrupt, InterruptMode::low, CallbackParameter(), false);
 	for (;;)
 	{
-		if (inputMonitor == nullptr || isCalibrating)
+		if (inputMonitor == nullptr || isCalibrating || PollingSuspended())
 		{
 			delay(5);
 		}
