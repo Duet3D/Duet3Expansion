@@ -12,6 +12,10 @@
 
 #if SUPPORT_LED_STRIPS
 
+#if SUPPORT_DMA_NEOPIXEL
+# include <DmacManager.h>
+#endif
+
 #if defined(DUET3_MB6HC) || defined(DUET3_MB6XD)
 constexpr size_t DmaBufferSize = 240 * 16;						// DotStar LEDs use 4 bytes/LED, NeoPixel RGBW use 16 bytes/LED
 #endif
@@ -51,6 +55,10 @@ protected:
 	void DmaSendChunkBuffer(size_t numBytes) noexcept;					// DMA the data. Must be a multiple of 2 bytes if USE_16BIT_SPI is true.
 	bool DmaInProgress() noexcept;										// Return true if DMA to the LEDs is in progress
 	void SetupSpi() noexcept;											// Setup the SPI peripheral. Only call this when the busy flag is not set.
+# if (SAME5x || SAMC21) && !NEOPIXEL_USES_QSPI
+	void ReleaseDataPin() noexcept;										// Give the data line back to the PORT once the last bit has been shifted out
+	static void DmaCompleteCallback(CallbackParameter cp, DmaCallbackReason reason) noexcept;
+# endif
 #endif
 
 	IoPort port;
@@ -62,7 +70,7 @@ protected:
 	SercomIo sercom;
  #endif
 	bool useDma = false;
-	bool dmaBusy = false;												// true if DMA was started and is not known to have finished
+	static bool dmaBusy;												// true if DMA was started and is not known to have finished. Shared, because all strips use the same DMA channel
 #else
 	static constexpr bool useDma = false;
 #endif

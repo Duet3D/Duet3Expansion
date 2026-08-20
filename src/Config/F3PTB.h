@@ -173,7 +173,8 @@ constexpr I2cParameters I2C0Params =
 	.sclPin = PortAPin(13),
 	.sdaPin = PortAPin(12),
 	.pinFunction = GpioPinFunction::C,
-	.irqPriority = NvicPriorityI2C
+	.irqPriority = NvicPriorityI2C,
+	.rxDmaChannel = NoDmaChannel
 };
 
 #endif

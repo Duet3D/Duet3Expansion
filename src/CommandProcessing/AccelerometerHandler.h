@@ -30,6 +30,9 @@ namespace AccelerometerHandler
 	void Init(SharedI2CMaster& dev) noexcept;
 #endif
 	bool IsPresent() noexcept;
+	bool IsCollecting() noexcept;
+	uint16_t GetSamplingRate() noexcept;
+	uint8_t GetResolution() noexcept;
 	GCodeResult ProcessConfigRequest(const CanMessageGeneric& msg, const StringRef& reply) noexcept;
 	GCodeResult ProcessStartRequest(const CanMessageStartAccelerometer& msg, const StringRef& reply) noexcept;
 	void Diagnostics(const StringRef& reply) noexcept;
