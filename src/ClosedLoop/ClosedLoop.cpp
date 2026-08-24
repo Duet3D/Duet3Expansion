@@ -182,6 +182,7 @@ GCodeResult ClosedLoop::ProcessM569Point1(CanMessageGenericParser& parser, const
 	size_t numThresholds = 2;
 	float tempErrorThresholds[numThresholds];
 	float tempTorquePerAmp;
+	float tempDeadband;
 
 	// Pull changed parameters
 	const bool seenT = parser.GetUintParam('T', tempEncoderType);
@@ -191,9 +192,10 @@ GCodeResult ClosedLoop::ProcessM569Point1(CanMessageGenericParser& parser, const
 	const bool seenE = parser.GetFloatArrayParam('E', numThresholds, tempErrorThresholds);
 	const bool seenS = parser.GetUintParam('S', tempStepsPerRev);
 	const bool seenQ = parser.GetFloatParam('Q', tempTorquePerAmp);
+	const bool seenB = parser.GetFloatParam('B', tempDeadband);
 
 	// Report back if no parameters to change
-	if (!(seenT || seenC || seenPid || seenE || seenQ || seenS))
+	if (!(seenT || seenC || seenPid || seenE || seenQ || seenS || seenB))
 	{
 		if (encoder == nullptr)
 		{
@@ -205,7 +207,7 @@ GCodeResult ClosedLoop::ProcessM569Point1(CanMessageGenericParser& parser, const
 			encoder->AppendStatus(reply);
 			reply.lcatf("PID parameters P=%.1f I=%.3f D=%.3f V=%.1f A=%.1f, torque constant %.2fNm/A",
 						(double)Kp, (double)Ki, (double)Kd, (double)Kv, (double)Ka, (double)torquePerAmp);
-			reply.lcatf("Warning/error threshold %.2f/%.2f", (double)errorThresholds[0], (double)errorThresholds[1]);
+			reply.lcatf("Warning/error threshold %.2f/%.2f, standstill deadband %.3f", (double)errorThresholds[0], (double)errorThresholds[1], (double)deadband);
 		}
 		return GCodeResult::ok;
 	}
@@ -243,6 +245,11 @@ GCodeResult ClosedLoop::ProcessM569Point1(CanMessageGenericParser& parser, const
 		reply.copy("Torque per amp must be positive");
 		return GCodeResult::error;
 	}
+	if (seenB && tempDeadband < 0.0)
+	{
+		reply.copy("Deadband must not be negative");
+		return GCodeResult::error;
+	}
 
 	if (seenT)
 	{
@@ -274,6 +281,11 @@ GCodeResult ClosedLoop::ProcessM569Point1(CanMessageGenericParser& parser, const
 		if (seenQ)
 		{
 			torquePerAmp = tempTorquePerAmp;
+		}
+
+		if (seenB)
+		{
+			deadband = tempDeadband;
 		}
 	}
 
@@ -760,8 +772,40 @@ void ClosedLoop::InstanceControlLoop(StepTimer::Ticks now, StepTimer::Ticks time
 
 		const float targetEncoderReading = rintf(mParams.position * encoder->GetCountsPerStep());
 		currentPositionError = (float)(targetEncoderReading - encoder->GetCurrentCount()) * encoder->GetStepsPerCount();
+
+		// Apply the deadband while no movement is commanded, before the derivative filter so that the D term ignores encoder noise too.
+		// Shrinking the error by the deadband instead of zeroing it within the band keeps the P term continuous at the edge of the band
+		if (deadband > 0.0 && mParams.speed == 0.0 && mParams.acceleration == 0.0)
+		{
+			if (currentPositionError > deadband)
+			{
+				currentPositionError -= deadband;
+			}
+			else if (currentPositionError < -deadband)
+			{
+				currentPositionError += deadband;
+			}
+			else
+			{
+				currentPositionError = 0.0;
+			}
+		}
 		errorDerivativeFilter.ProcessReading(currentPositionError, now);
 		speedFilter.ProcessReading(encoder->GetCurrentCount() * encoder->GetStepsPerCount(), now);
+
+		// A homing endstop compares how far we commanded the motor to move with how far the encoder says it moved.
+		// Comparing distances instead of the signed position error makes this independent of the encoder polarity, so it works in open loop mode and needs no tuning
+		if (stallEndstopArmed)
+		{
+			const float slip = fabsf(mParams.position - commandedStepsAtArming) - fabsf((encoder->GetCurrentCount() * encoder->GetStepsPerCount()) - encoderStepsAtArming);
+			if (errorThresholds[0] > 0 && slip > errorThresholds[0])
+			{
+				stallEndstopArmed = false;
+				stallEndstopTriggered = true;
+				SmartDrivers::driverStallsToNotify |= 1u << driverNumber;
+				CanInterface::WakeAsyncSender();
+			}
+		}
 
 		float currentFraction = 0.0;
 		if (currentMode != ClosedLoopMode::open)
@@ -786,7 +830,7 @@ void ClosedLoop::InstanceControlLoop(StepTimer::Ticks now, StepTimer::Ticks time
 				currentFraction = ControlMotorCurrents(timeElapsed);				// otherwise control those motor currents!
 				if (inTorqueMode)
 				{
-					stall = preStall = false;
+					stall = preStall = stallEndstopTriggered = false;
 				}
 				else
 				{
@@ -804,14 +848,20 @@ void ClosedLoop::InstanceControlLoop(StepTimer::Ticks now, StepTimer::Ticks time
 					else
 					{
 						stall = errorThresholds[1] > 0 && positionErr > errorThresholds[1];
-						if (stall)
-						{
-							Heat::NewDriverFault();
-						}
-						else
+						if (!stall)
 						{
 							preStall = errorThresholds[0] > 0 && positionErr > errorThresholds[0];
 						}
+						else if (!PositionErrorIsExpected())
+						{
+							Heat::NewDriverFault();
+						}
+					}
+
+					// Resume reporting position faults once the error left over from a homing move has recovered
+					if (stallEndstopTriggered && (errorThresholds[0] <= 0 || positionErr < errorThresholds[0]/2))
+					{
+						stallEndstopTriggered = false;
 					}
 				}
 			}
@@ -1100,8 +1150,8 @@ StandardDriverStatus ClosedLoop::ReadLiveStatus() const noexcept
 {
 	StandardDriverStatus result;
 	result.all = 0;
-	result.closedLoopPositionNotMaintained = stall;
-	result.closedLoopPositionWarning = preStall;
+	result.closedLoopPositionNotMaintained = stall && !PositionErrorIsExpected();
+	result.closedLoopPositionWarning = preStall && !PositionErrorIsExpected();
 	result.closedLoopNotTuned = ((tuningError & encoder->MinimalTuningNeeded()) != 0);
 	result.closedLoopTuningError = ((tuningError & TuningError::AnyTuningFailure) != 0);
 	return result;
@@ -1174,6 +1224,8 @@ bool ClosedLoop::SetClosedLoopEnabled(ClosedLoopMode mode, const StringRef &repl
 		moveInstance->ResetPhaseStepControlLoopCallTime();				// to avoid huge integral term windup
 	}
 
+	stallEndstopArmed = stallEndstopTriggered = false;	// the arming references and any leftover error belong to the mode we are leaving
+
 	// If we are disabling closed loop mode, we should ideally send steps to get the microstep counter to match the current phase here
 	currentMode = mode;
 
@@ -1212,12 +1264,38 @@ StandardDriverStatus ClosedLoop::ModifyDriverStatus(StandardDriverStatus origina
 
 	if (!originalStatus.closedLoopNotTuned)
 	{
-		// Report position warnings and errors even in open loop mode, if tuning has been done
-		originalStatus.closedLoopPositionWarning = preStall;
-		originalStatus.closedLoopPositionNotMaintained = stall;
+		// Report position warnings and errors even in open loop mode, if tuning has been done.
+		// A homing move drives the axis into a stop deliberately, so neither the warning nor the error is a fault while such a move is in progress
+		originalStatus.closedLoopPositionWarning = preStall && !PositionErrorIsExpected();
+		originalStatus.closedLoopPositionNotMaintained = stall && !PositionErrorIsExpected();
 	}
 
 	return originalStatus;
+}
+
+// Arm a homing endstop that triggers when the motor falls behind the commanded position by the warning threshold.
+// This works in open loop mode too, so it does not require the driver to have been tuned
+GCodeResult ClosedLoop::EnableStallEndstop(const StringRef& reply) noexcept
+{
+	if (encoder == nullptr)
+	{
+		reply.printf("driver %u.%u has no encoder configured, see M569.1", CanInterface::GetCanAddress(), (unsigned int)driverNumber);
+		return GCodeResult::error;
+	}
+
+	if (errorThresholds[0] <= 0.0)
+	{
+		reply.printf("driver %u.%u has no position warning threshold configured, see the first value of the M569.1 E parameter", CanInterface::GetCanAddress(), (unsigned int)driverNumber);
+		return GCodeResult::error;
+	}
+
+	TaskCriticalSectionLocker lock;						// the control loop must not see one reference updated without the other
+
+	commandedStepsAtArming = mParams.position;
+	encoderStepsAtArming = encoder->GetCurrentCount() * encoder->GetStepsPerCount();
+	stallEndstopTriggered = false;
+	stallEndstopArmed = true;
+	return GCodeResult::ok;
 }
 
 // Get the current fraction and position error statistics

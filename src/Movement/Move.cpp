@@ -2398,6 +2398,31 @@ void Move::ResetPhaseStepMonitoringVariables() noexcept
 // Stall endstops
 GCodeResult Move::SetStallEndstopReporting(const CanMessageEnableStallEndstop& msg, const StringRef& reply) noexcept
 {
+#if SUPPORT_CLOSED_LOOP
+	if (msg.driverNumber == CanMessageEnableStallEndstop::disableAll)
+	{
+		for (DriveMovement& dm : dms)
+		{
+			dm.closedLoopControl.DisableStallEndstop();
+		}
+	}
+	else if (msg.endstopType == CanMessageEnableStallEndstop::typeEncoder)
+	{
+		if (msg.driverNumber >= NumDrivers)
+		{
+			reply.printf("board %u has no driver %u", CanInterface::GetCanAddress(), msg.driverNumber);
+			return GCodeResult::error;
+		}
+		return dms[msg.driverNumber].closedLoopControl.EnableStallEndstop(reply);
+	}
+#elif SUPPORT_DRIVERS
+	if (msg.endstopType == CanMessageEnableStallEndstop::typeEncoder)
+	{
+		reply.printf("board %u does not support encoders", CanInterface::GetCanAddress());
+		return GCodeResult::error;
+	}
+#endif
+
 #if HAS_SMART_DRIVERS && HAS_STALL_DETECT
 	return SmartDrivers::SetStallEndstopReporting(msg.driverNumber, msg.speed, reply);
 #else

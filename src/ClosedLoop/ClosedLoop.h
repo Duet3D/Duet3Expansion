@@ -84,6 +84,9 @@ public:
 	bool OkayToSetDriverIdle() const noexcept;
 	StandardDriverStatus ModifyDriverStatus(StandardDriverStatus originalStatus) const noexcept;
 	void GetStatistics(ClosedLoopStatus& stat) noexcept;
+	GCodeResult EnableStallEndstop(const StringRef& reply) noexcept;
+	void DisableStallEndstop() noexcept { stallEndstopArmed = false; }
+	bool PositionErrorIsExpected() const noexcept { return stallEndstopArmed || stallEndstopTriggered; }
 
 	// Methods called by the encoders
 	static void EnableEncodersSpi() noexcept;
@@ -148,6 +151,7 @@ private:
 	float 	Kd = 0.0;											// The proportional constant for the PID controller
 	float	Kv = 1000.0;										// The velocity feedforward constant
 	float	Ka = 0.0;											// The acceleration feedforward constant
+	float	deadband = 0.0;										// The position error deadband applied when no movement is commanded, in full steps. Zero disables it
 
 	float 	errorThresholds[2];									// The error thresholds. [0] is pre-stall, [1] is stall
 
@@ -182,6 +186,10 @@ private:
 	bool	torqueModeDirection;
 	bool 	stall = false;								// Has the closed loop error threshold been exceeded?
 	bool 	preStall = false;							// Has the closed loop warning threshold been exceeded?
+	bool	stallEndstopArmed = false;					// Is a homing move watching for the motor to fall behind the commanded position?
+	bool	stallEndstopTriggered = false;				// Did such a homing move end because it did, so the leftover error is not a fault?
+	float	commandedStepsAtArming;						// The commanded position when the endstop was armed, in full steps
+	float	encoderStepsAtArming;						// The encoder position when the endstop was armed, in full steps
 
 	// Basic tuning synchronisation
 	volatile bool basicTuningDataReady = false;
