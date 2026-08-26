@@ -252,6 +252,12 @@ const uint32_t DefaultThighReg = DefaultThigh;
 
 constexpr uint8_t REGNUM_VACTUAL = 0x22;
 
+#if TMC_TYPE == 2240
+constexpr uint8_t REGNUM_2240_ADC_TEMP = 0x51;
+constexpr unsigned int ADC_TEMP_SHIFT = 0;
+constexpr uint32_t ADC_TEMP_MASK = 0x01FFF << ADC_TEMP_SHIFT;	// ADC temperature reading
+#endif
+
 // Sequencer registers (read only)
 constexpr uint8_t REGNUM_MSCNT = 0x6A;
 constexpr uint8_t REGNUM_MSCURACT = 0x6B;
@@ -464,6 +470,10 @@ public:
 	uint32_t GetGlobalScaler() const noexcept { return writeRegisters[WriteGlobalScaler]; }
 	float CalculateCurrent() const noexcept;				// calculate what current the driver is actually using based on register values
 
+#if TMC_TYPE == 2240
+	float GetDriverTemperature() const noexcept;
+#endif
+
 	static void TransferTimedOut() noexcept { ++numTimeouts; }
 
 	void GetSpiCommand(uint8_t *sendDataBlock) noexcept;
@@ -506,16 +516,21 @@ private:
 
 	static const uint8_t WriteRegNumbers[NumWriteRegisters];	// the register numbers that we write to
 
-	static constexpr unsigned int NumReadRegisters = 5;		// the number of registers that we read from
-	static const uint8_t ReadRegNumbers[NumReadRegisters];	// the register numbers that we read from
-
 	// Read register numbers, in same order as ReadRegNumbers
 	static constexpr unsigned int ReadGStat = 0;
 	static constexpr unsigned int ReadDrvStat = 1;
 	static constexpr unsigned int ReadMsCnt = 2;
 	static constexpr unsigned int ReadPwmScale = 3;
 	static constexpr unsigned int ReadPwmAuto = 4;
+#if TMC_TYPE == 2240
+	static constexpr unsigned int ReadAdcTemp = 5;			// driver temperature, TMC2240 only
+	static constexpr unsigned int NumReadRegisters = 6;		// the number of registers that we read from
+#else
+	static constexpr unsigned int NumReadRegisters = 5;		// the number of registers that we read from
+#endif
 	static constexpr unsigned int ReadSpecial = NumReadRegisters;
+
+	static const uint8_t ReadRegNumbers[NumReadRegisters];	// the register numbers that we read from
 
 	static constexpr uint8_t NoRegIndex = 0xFF;				// this means no register updated, or no register requested
 
@@ -578,7 +593,10 @@ const uint8_t TmcDriverState::ReadRegNumbers[NumReadRegisters] =
 	REGNUM_DRV_STATUS,
 	REGNUM_MSCNT,
 	REGNUM_PWM_SCALE,
-	REGNUM_PWM_AUTO
+	REGNUM_PWM_AUTO,
+#if TMC_TYPE == 2240
+	REGNUM_2240_ADC_TEMP
+#endif
 };
 
 uint16_t TmcDriverState::numTimeouts = 0;								// how many times a transfer timed out
@@ -1028,6 +1046,9 @@ void TmcDriverState::AppendDriverStatus(const StringRef& reply, bool clearGlobal
 	}
 	ResetLoadRegisters();
 
+#if TMC_TYPE == 2240
+	reply.catf(", temp %.1f" DEGREE_SYMBOL "C", (double)GetDriverTemperature());
+#endif
 	reply.catf(", mspos %u, reads %u, writes %u timeouts %u", (unsigned int)(readRegisters[ReadMsCnt] & 1023), numReads, numWrites, numTimeouts);
 	numReads = numWrites = 0;
 	if (clearGlobalStats)
@@ -1035,6 +1056,15 @@ void TmcDriverState::AppendDriverStatus(const StringRef& reply, bool clearGlobal
 		numTimeouts = 0;
 	}
 }
+
+#if TMC_TYPE == 2240
+
+float TmcDriverState::GetDriverTemperature() const noexcept
+{
+	return (float)(((readRegisters[ReadAdcTemp] & ADC_TEMP_MASK) >> ADC_TEMP_SHIFT) - 2038) * (1.0/7.7);
+}
+
+#endif
 
 void TmcDriverState::SetStallDetectFilter(bool sgFilter) noexcept
 {
@@ -2121,6 +2151,15 @@ GCodeResult SmartDrivers::SetStallEndstopReporting(uint16_t driverNumber, float 
 		return GCodeResult::ok;
 	}
 }
+
+#if TMC_TYPE == 2240
+
+float SmartDrivers::GetDriverTemperature(size_t driver) noexcept
+{
+	return (driver < numTmcDrivers) ? driverStates[driver].GetDriverTemperature() : 0.0;
+}
+
+#endif
 
 #endif
 
