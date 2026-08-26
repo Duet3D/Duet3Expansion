@@ -144,7 +144,10 @@ private:
 	float 	Kd = 0.0;											// The proportional constant for the PID controller
 	float	Kv = 1000.0;										// The velocity feedforward constant
 	float	Ka = 0.0;											// The acceleration feedforward constant
-	float	deadband = 0.0;										// The position error deadband applied when no movement is commanded, in full steps. Zero disables it
+	float	deadband = -1.0;									// The position error deadband applied when no movement is commanded, in full steps. Negative = automatic (one encoder count), zero disables it
+
+	// Return the deadband that is actually applied, resolving automatic mode to the encoder count spacing
+	float GetEffectiveDeadband() const noexcept { return (deadband < 0.0) ? ((encoder != nullptr) ? encoder->GetStepsPerCount() : 0.0) : deadband; }
 
 	float 	errorThresholds[2];									// The error thresholds. [0] is pre-stall, [1] is stall
 

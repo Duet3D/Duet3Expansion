@@ -207,7 +207,7 @@ GCodeResult ClosedLoop::ProcessM569Point1(CanMessageGenericParser& parser, const
 			encoder->AppendStatus(reply);
 			reply.lcatf("PID parameters P=%.1f I=%.3f D=%.3f V=%.1f A=%.1f, torque constant %.2fNm/A",
 						(double)Kp, (double)Ki, (double)Kd, (double)Kv, (double)Ka, (double)torquePerAmp);
-			reply.lcatf("Warning/error threshold %.2f/%.2f, standstill deadband %.3f", (double)errorThresholds[0], (double)errorThresholds[1], (double)deadband);
+			reply.lcatf("Warning/error threshold %.2f/%.2f, standstill deadband %.3f%s", (double)errorThresholds[0], (double)errorThresholds[1], (double)GetEffectiveDeadband(), (deadband < 0.0) ? " (auto)" : "");
 		}
 		return GCodeResult::ok;
 	}
@@ -245,11 +245,6 @@ GCodeResult ClosedLoop::ProcessM569Point1(CanMessageGenericParser& parser, const
 		reply.copy("Torque per amp must be positive");
 		return GCodeResult::error;
 	}
-	if (seenB && tempDeadband < 0.0)
-	{
-		reply.copy("Deadband must not be negative");
-		return GCodeResult::error;
-	}
 
 	if (seenT)
 	{
@@ -285,7 +280,7 @@ GCodeResult ClosedLoop::ProcessM569Point1(CanMessageGenericParser& parser, const
 
 		if (seenB)
 		{
-			deadband = tempDeadband;
+			deadband = (tempDeadband < 0.0) ? -1.0 : tempDeadband;
 		}
 	}
 
@@ -774,16 +769,18 @@ void ClosedLoop::InstanceControlLoop(StepTimer::Ticks now, StepTimer::Ticks time
 		currentPositionError = (float)(targetEncoderReading - encoder->GetCurrentCount()) * encoder->GetStepsPerCount();
 
 		// Apply the deadband while no movement is commanded, before the derivative filter so that the D term ignores encoder noise too.
-		// Shrinking the error by the deadband instead of zeroing it within the band keeps the P term continuous at the edge of the band
-		if (deadband > 0.0 && mParams.speed == 0.0 && mParams.acceleration == 0.0)
+		// Shrinking the error by the deadband instead of zeroing it within the band keeps the P term continuous at the edge of the band.
+		// Tuning is excluded because the band would flatten the recorded tuning data and the error statistics
+		const float effectiveDeadband = GetEffectiveDeadband();
+		if (effectiveDeadband > 0.0 && tuning == 0 && mParams.speed == 0.0 && mParams.acceleration == 0.0)
 		{
-			if (currentPositionError > deadband)
+			if (currentPositionError > effectiveDeadband)
 			{
-				currentPositionError -= deadband;
+				currentPositionError -= effectiveDeadband;
 			}
-			else if (currentPositionError < -deadband)
+			else if (currentPositionError < -effectiveDeadband)
 			{
-				currentPositionError += deadband;
+				currentPositionError += effectiveDeadband;
 			}
 			else
 			{
