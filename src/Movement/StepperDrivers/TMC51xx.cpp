@@ -102,8 +102,10 @@ constexpr uint32_t DriversSpiClockFrequency = 6000000;		// 6MHz SPI clock (max i
 constexpr uint32_t DriversSpiClockFrequency = 4000000;		// 4MHz SPI clock (max when using the internal TMC clock)
 # endif
 
-constexpr uint32_t DriversDirectSleepMicroseconds = 80;		// how long the closed loop task sleeps for in each cycle
+constexpr uint32_t DriversDirectSleepMicroseconds = 80;		// how long the closed loop task sleeps for in each cycle while a driver is in direct mode
 constexpr uint32_t DriversDirectSleepClocks = (StepTimer::StepClockRate * DriversDirectSleepMicroseconds)/1000000;
+constexpr uint32_t DriversNormalSleepMicroseconds = 220;	// the longer sleep used while no driver is in direct mode, giving about the same poll rate as boards without direct mode support
+constexpr uint32_t DriversNormalSleepClocks = (StepTimer::StepClockRate * DriversNormalSleepMicroseconds)/1000000;
 #else
 // With a 2MHz SPI clock, on the 3HC the TMC task takes about 25% of the CPU time. So we now use 500kHz. This means the SPI transfer will complete in a little over 240us.
 constexpr uint32_t DriversSpiClockFrequency = 500000;		// 500kHz SPI clock
@@ -420,6 +422,9 @@ enum class DriversState : uint8_t
 
 static DriversState driversState = DriversState::shutDown;
 static LocalDriversBitmap stallEndstopsEnabled;
+#if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
+static LocalDriversBitmap directModeDrivers;				// drivers whose coil currents are controlled directly, needing the fast TMC task cadence
+#endif
 std::atomic<uint16_t> SmartDrivers::driverStallsToNotify(0);
 
 #ifdef EXP3HC
@@ -913,6 +918,9 @@ bool TmcDriverState::SetDriverMode(unsigned int mode) noexcept
 		UpdateRegister(WriteGConf, writeRegisters[WriteGConf] & ~(GCONF_DIRECT_MODE | GCONF_STEALTHCHOP));
 		configuredChopConfReg &= ~CHOPCONF_CHM;
 		UpdateChopConfRegister();
+#if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
+		directModeDrivers.ClearBit(driverNumber);
+#endif
 #if SUPPORT_CLOSED_LOOP
 		UpdateCurrent();		// if we are leaving closed loop mode then we need to update the standstill current
 #endif
@@ -922,6 +930,9 @@ bool TmcDriverState::SetDriverMode(unsigned int mode) noexcept
 		UpdateRegister(WriteGConf, (writeRegisters[WriteGConf] & ~GCONF_DIRECT_MODE) | GCONF_STEALTHCHOP);
 		configuredChopConfReg &= ~CHOPCONF_CHM;
 		UpdateChopConfRegister();
+#if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
+		directModeDrivers.ClearBit(driverNumber);
+#endif
 #if SUPPORT_CLOSED_LOOP
 		UpdateCurrent();		// if we are leaving closed loop mode then we need to update the standstill current
 #endif
@@ -931,15 +942,19 @@ bool TmcDriverState::SetDriverMode(unsigned int mode) noexcept
 		UpdateRegister(WriteGConf, writeRegisters[WriteGConf] & ~(GCONF_DIRECT_MODE | GCONF_STEALTHCHOP));
 		configuredChopConfReg |= CHOPCONF_CHM;
 		UpdateChopConfRegister();
+#if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
+		directModeDrivers.ClearBit(driverNumber);
+#endif
 #if SUPPORT_CLOSED_LOOP
 		UpdateCurrent();		// if we are leaving closed loop mode then we need to update the standstill current
 #endif
 		return true;
 
-#if SUPPORT_CLOSED_LOOP
+#if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
 	case (unsigned int)DriverMode::direct:
 	case (unsigned int)DriverMode::direct + 1:
 		UpdateRegister(WriteGConf, (writeRegisters[WriteGConf] & ~GCONF_STEALTHCHOP) | GCONF_DIRECT_MODE);
+		directModeDrivers.SetBit(driverNumber);
 		UpdateCurrent();		// when entering closed loop mode we need to update the standstill current
 		return true;
 #endif
@@ -1745,7 +1760,7 @@ void RxDmaCompleteCallback(CallbackParameter param, DmaCallbackReason reason) no
 		// We run the SPI bus at high speeds so that motor currents get updated as quickly as possible.
 		// If we wake up as soon as the transfer has completed then we will use too much of the available CPU time.
 		// So schedule a wakeup call instead. Try to make the wakeup interval regular.
-		lastWakeupTime += DriversDirectSleepClocks;
+		lastWakeupTime += directModeDrivers.IsEmpty() ? DriversNormalSleepClocks : DriversDirectSleepClocks;
 
 		{
 			// If the DMA interrupt priority is better (lower number) than the step interrupt priority then we must disable interrupts here

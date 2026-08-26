@@ -19,6 +19,9 @@
 #if SUPPORT_CLOSED_LOOP
 # include <ClosedLoop/ClosedLoop.h>
 #endif
+#if SUPPORT_PHASE_STEPPING
+# include "PhaseStep.h"
+#endif
 
 class LinearDeltaKinematics;
 class PrepParams;
@@ -61,10 +64,12 @@ public:
 	uint32_t GetStepInterval(uint32_t microstepShift) const noexcept;	// Get the current full step interval for this axis or extruder
 #endif
 
-#if SUPPORT_CLOSED_LOOP
+#if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
 	// Get the current position relative to the start of this move, speed and acceleration. Units are microsteps and step clocks.
 	// Return true if this drive is moving. Segments are advanced as necessary.
 	bool GetCurrentMotion(uint32_t when, MotionParameters& mParams) noexcept;
+
+	bool UsesPhaseStepping() const noexcept;			// return true if the phase of this drive is controlled directly, by the closed loop controller or open loop phase stepping
 #endif
 
 	static int32_t GetAndClearMaxStepsLate() noexcept;
@@ -103,7 +108,7 @@ private:
 	int32_t segmentStepLimit;							// the first step number of the next phase, or the reverse start step if smaller
 	int32_t reverseStartStep;							// the step number for which we need to reverse direction due to pressure advance or delta movement
 	motioncalc_t q, t0, p;								// the movement parameters of the current segment, if there is one
-#if SUPPORT_CLOSED_LOOP
+#if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
 	motioncalc_t u;										// the initial speed of this segment
 #endif
 	MovementFlags segmentFlags;							// whether this segment checks endstops etc.
@@ -129,7 +134,26 @@ private:
 #if SUPPORT_CLOSED_LOOP
 	ClosedLoop closedLoopControl;
 #endif
+#if SUPPORT_PHASE_STEPPING
+	PhaseStep phaseStepControl;
+#endif
 };
+
+#if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
+
+inline bool DriveMovement::UsesPhaseStepping() const noexcept
+{
+	return
+#if SUPPORT_CLOSED_LOOP
+		closedLoopControl.IsClosedLoopEnabled() ||
+#endif
+#if SUPPORT_PHASE_STEPPING
+		phaseStepControl.IsEnabled() ||
+#endif
+		false;
+}
+
+#endif
 
 // Calculate and store the time since the start of the move when the next step for the specified DriveMovement is due.
 // Return true if there are more steps to do. When finished, leave nextStep == totalSteps + 1 and state == DMState::idle.
@@ -202,7 +226,7 @@ inline uint32_t DriveMovement::GetStepInterval(uint32_t microstepShift) const no
 #if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
 
 // Get the current position relative to the start of this segment, speed and acceleration. Units are microsteps and step clocks.
-// Return true if this drive is moving or should have moved since the last call. Segments are advanced as necessary if we are in closed loop mode.
+// Return true if this drive is moving or should have moved since the last call. Segments are advanced as necessary if we are in closed loop or phase stepping mode.
 // Inlined because it is only called from one place
 inline bool DriveMovement::GetCurrentMotion(uint32_t when, MotionParameters& mParams) noexcept
 {
@@ -220,7 +244,7 @@ inline bool DriveMovement::GetCurrentMotion(uint32_t when, MotionParameters& mPa
 
 		if ((uint32_t)timeSinceStart >= seg->GetDuration())			// if segment should have finished by now
 		{
-			if (closedLoopControl.IsClosedLoopEnabled())
+			if (UsesPhaseStepping())
 			{
 				currentMotorPosition = positionAtSegmentStart + netStepsThisSegment;
 				distanceCarriedForwards += seg->GetLength() - (motioncalc_t)netStepsThisSegment;
@@ -237,7 +261,7 @@ inline bool DriveMovement::GetCurrentMotion(uint32_t when, MotionParameters& mPa
 			}
 			timeSinceStart = seg->GetDuration();
 		}
-		else if (state == DMState::starting && closedLoopControl.IsClosedLoopEnabled())
+		else if (state == DMState::starting && UsesPhaseStepping())
 		{
 			seg = NewSegment(when);
 		}
@@ -259,7 +283,7 @@ inline bool DriveMovement::GetCurrentMotion(uint32_t when, MotionParameters& mPa
 	return hasMotion;
 }
 
-#endif	// SUPPORT_CLOSED_LOOP
+#endif	// SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
 
 #endif	// SUPPORT_DRIVERS
 

@@ -247,8 +247,10 @@ void Move::Init() noexcept
 	SetPinMode(BrakePwmPin, OUTPUT_LOW);
 #endif
 
-# if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
+# if SUPPORT_CLOSED_LOOP
 	ClosedLoop::Init();						// this must be called AFTER SmartDrivers::Init()
+# endif
+# if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
 	ResetPhaseStepMonitoringVariables();
 # endif
 
@@ -1649,6 +1651,13 @@ GCodeResult Move::ProcessM569(const CanMessageGeneric& msg, const StringRef& rep
 		if (parser.GetUintParam('D', val))	// set driver mode
 		{
 			seen = true;
+# if SUPPORT_PHASE_STEPPING
+			if (dms[drive].phaseStepControl.IsEnabled())
+			{
+				reply.printf("Cannot set driver %u.%u mode while phase stepping is enabled", CanInterface::GetCanAddress(), drive);
+				return GCodeResult::error;
+			}
+# endif
 # if SUPPORT_CLOSED_LOOP
 			// Enable/disabled closed loop control
 			const ClosedLoopMode mode = (val == (uint32_t)DriverMode::direct) ? ClosedLoopMode::closed
@@ -2029,6 +2038,9 @@ GCodeResult Move::SetStandstillCurrentFactor(const CanMessageMultipleDrivesReque
 #if SUPPORT_CLOSED_LOOP
 								dms[driver].closedLoopControl.UpdateStandstillCurrent();
 #endif
+#if SUPPORT_PHASE_STEPPING
+								dms[driver].phaseStepControl.SetStandstillCurrent(msg.values[count]);
+#endif
 							}
 						}
 				   );
@@ -2275,7 +2287,7 @@ bool Move::SetMicrostepping(size_t driver, unsigned int microsteps, bool interpo
 
 #endif
 
-#if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
+#if SUPPORT_CLOSED_LOOP
 
 GCodeResult Move::ProcessM569Point1(const CanMessageGeneric &msg, const StringRef &reply) noexcept
 {
@@ -2339,6 +2351,140 @@ GCodeResult Move::ProcessM569Point6(const CanMessageGeneric &msg, const StringRe
 	return dms[drive].closedLoopControl.ProcessM569Point6(parser, reply);
 }
 
+#endif
+
+#if SUPPORT_PHASE_STEPPING
+
+GCodeResult Move::ProcessM970(const CanMessageGeneric& msg, const StringRef& reply) noexcept
+{
+	CanMessageGenericParser parser(msg, M970Params);
+	uint8_t drive;
+	if (!parser.GetUintParam('P', drive))
+	{
+		reply.copy("Missing P parameter in CAN message");
+		return GCodeResult::error;
+	}
+	if (drive >= NumDrivers)
+	{
+		reply.printf("Driver number %u.%u out of range", CanInterface::GetCanAddress(), drive);
+		return GCodeResult::error;
+	}
+
+	DriveMovement& dm = dms[drive];
+	bool seen = false;
+	uint8_t mode;
+	if (parser.GetUintParam('S', mode))
+	{
+		seen = true;
+		if (mode > 1)
+		{
+			reply.printf("Invalid step mode %u", mode);
+			return GCodeResult::error;
+		}
+		const bool enable = mode != 0;
+		if (enable != dm.phaseStepControl.IsEnabled())
+		{
+			if (enable)
+			{
+#if SUPPORT_CLOSED_LOOP
+				if (dm.closedLoopControl.IsClosedLoopEnabled())
+				{
+					reply.printf("Driver %u.%u is in closed loop mode", CanInterface::GetCanAddress(), drive);
+					return GCodeResult::error;
+				}
+#endif
+				delay(10);																	// let the TMC task read the microstep counter after the last movement
+				const uint16_t initialPhase = SmartDrivers::GetMicrostepPosition(drive) * 4;
+				dm.phaseStepControl.SetPhaseOffset(drive, 0);
+				GetCurrentMotion(drive, StepTimer::ConvertLocalToMovementTime(StepTimer::GetTimerTicks()), dm.phaseStepControl.mParams);
+				dm.phaseStepControl.SetPhaseOffset(drive, (initialPhase - dm.phaseStepControl.CalculateStepPhase(drive)) % 4096u);
+				dm.phaseStepControl.SetStandstillCurrent(SmartDrivers::GetStandstillCurrentPercent(drive));
+				dm.phaseStepControl.modeBeforeEnabled = SmartDrivers::GetDriverMode(drive);
+				dm.phaseStepControl.SetMotorPhase(drive, initialPhase, 1.0);				// set the coil currents to match the current microstep position before direct mode takes effect
+				if (!SmartDrivers::SetDriverMode(drive, (unsigned int)DriverMode::direct))
+				{
+					reply.printf("Driver %u.%u does not support phase stepping", CanInterface::GetCanAddress(), drive);
+					return GCodeResult::error;
+				}
+				dm.phaseStepControl.SetEnabled(true);
+				ResetPhaseStepMonitoringVariables();
+				ResetPhaseStepControlLoopCallTime();
+			}
+			else
+			{
+				dm.phaseStepControl.SetEnabled(false);
+				SmartDrivers::SetDriverMode(drive, (unsigned int)dm.phaseStepControl.modeBeforeEnabled);
+			}
+		}
+	}
+	float val;
+	if (parser.GetFloatParam('V', val))
+	{
+		seen = true;
+		dm.phaseStepControl.SetKv(val);
+	}
+	if (parser.GetFloatParam('A', val))
+	{
+		seen = true;
+		dm.phaseStepControl.SetKa(val);
+	}
+	if (!seen)
+	{
+		reply.printf("Driver %u.%u uses %s, Kv=%.1f, Ka=%.1f", CanInterface::GetCanAddress(), drive,
+						dm.phaseStepControl.IsEnabled() ? "phase stepping" : "step and direction",
+						(double)dm.phaseStepControl.GetKv(), (double)dm.phaseStepControl.GetKa());
+	}
+	return GCodeResult::ok;
+}
+
+GCodeResult Move::ProcessM970Point3(const CanMessageGeneric& msg, const StringRef& reply) noexcept
+{
+	CanMessageGenericParser parser(msg, M970Point3Params);
+	uint8_t drive;
+	if (!parser.GetUintParam('P', drive))
+	{
+		reply.copy("Missing P parameter in CAN message");
+		return GCodeResult::error;
+	}
+	if (drive >= NumDrivers)
+	{
+		reply.printf("Driver number %u.%u out of range", CanInterface::GetCanAddress(), drive);
+		return GCodeResult::error;
+	}
+
+	uint8_t harmonic;
+	if (parser.GetUintParam('S', harmonic))
+	{
+		if (harmonic < 1 || harmonic > MaxPhaseCorrectionHarmonic)
+		{
+			reply.copy("Phase correction harmonic out of range");
+			return GCodeResult::error;
+		}
+		float magnitude = 0.0, phase = 0.0;
+		const bool seenMagnitude = parser.GetFloatParam('J', magnitude);
+		const bool seenPhase = parser.GetFloatParam('O', phase);
+		if (seenMagnitude && (magnitude < 0.0 || magnitude > 90.0))
+		{
+			reply.copy("Phase correction magnitude out of range");
+			return GCodeResult::error;
+		}
+		if (seenPhase && (phase < 0.0 || phase > 360.0))
+		{
+			reply.copy("Phase correction phase out of range");
+			return GCodeResult::error;
+		}
+		return PhaseStep::ConfigureCorrection(drive, harmonic, seenMagnitude, magnitude, seenPhase, phase, reply);
+	}
+
+	reply.printf("Driver %u.%u waveform correction:", CanInterface::GetCanAddress(), drive);
+	PhaseStep::AppendCorrections(drive, reply);
+	return GCodeResult::ok;
+}
+
+#endif
+
+#if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
+
 void Move::PhaseStepControlLoop() noexcept
 {
 	// Record the control loop call interval
@@ -2351,7 +2497,17 @@ void Move::PhaseStepControlLoop() noexcept
 	const uint32_t now = StepTimer::ConvertLocalToMovementTime(loopCallTime);
 	for (DriveMovement& dm : dms)
 	{
+#if SUPPORT_CLOSED_LOOP
 		dm.closedLoopControl.InstanceControlLoop(now, timeElapsed);
+#endif
+#if SUPPORT_PHASE_STEPPING
+		if (dm.phaseStepControl.IsEnabled())
+		{
+			GetCurrentMotion(dm.drive, now, dm.phaseStepControl.mParams);
+			dm.phaseStepControl.CalculateCurrentFraction();
+			dm.phaseStepControl.InstanceControlLoop(dm.drive);
+		}
+#endif
 	}
 
 	// Record how long this has taken to run
@@ -2359,6 +2515,8 @@ void Move::PhaseStepControlLoop() noexcept
 	if (loopRuntime < minPSControlLoopRuntime) { minPSControlLoopRuntime = loopRuntime; }
 	if (loopRuntime > maxPSControlLoopRuntime) { maxPSControlLoopRuntime = loopRuntime; }
 }
+
+#if SUPPORT_CLOSED_LOOP
 
 void Move::ClosedLoopDiagnostics(size_t driver, const StringRef& reply) noexcept
 {
@@ -2378,6 +2536,8 @@ bool Move::EnableIfIdle(size_t driver) noexcept
 
 	return driverStates[driver] == DriverStateControl::driverActive;
 }
+
+#endif
 
 void Move::ResetPhaseStepControlLoopCallTime() noexcept
 {

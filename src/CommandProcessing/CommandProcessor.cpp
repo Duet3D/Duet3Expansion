@@ -809,6 +809,24 @@ void CommandProcessor::Spin()
 # endif
 			break;
 
+		case CanMessageType::m970:			// set step mode and phase stepping parameters
+			requestId = buf->msg.generic.requestId;
+# if SUPPORT_PHASE_STEPPING
+			rslt = moveInstance->ProcessM970(buf->msg.generic, replyRef);
+# else
+			rslt = GCodeResult::errorNotSupported;
+# endif
+			break;
+
+		case CanMessageType::m970p3:		// configure phase stepping waveform correction
+			requestId = buf->msg.generic.requestId;
+# if SUPPORT_PHASE_STEPPING
+			rslt = moveInstance->ProcessM970Point3(buf->msg.generic, replyRef);
+# else
+			rslt = GCodeResult::errorNotSupported;
+# endif
+			break;
+
 		case CanMessageType::m569p6:
 			requestId = buf->msg.generic.requestId;
 # if SUPPORT_CLOSED_LOOP

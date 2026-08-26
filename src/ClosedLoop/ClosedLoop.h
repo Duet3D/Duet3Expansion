@@ -21,6 +21,7 @@
 # include "TuningErrors.h"
 # include "SampleBuffer.h"
 # include "Encoders/Encoder.h"
+# include <Movement/PhaseStep.h>
 
 constexpr float MaxSafeBacklash = 0.22;					// the maximum backlash in full steps that we can use - error if there is more
 constexpr float MaxGoodBacklash = 0.15;					// the maximum backlash in full steps that we are happy with - warn if there is more
@@ -30,14 +31,6 @@ constexpr float VelocityLimitGainFactor = 5.0;			// the gain of the P loop when 
 class Encoder;
 class SpiEncoder;
 class CanMessageGenericParser;
-
-// Struct to pass data back to the ClosedLoop module
-struct MotionParameters
-{
-	float position = 0.0;
-	float speed = 0.0;
-	float acceleration = 0.0;
-};
 
 enum class ClosedLoopMode
 {
