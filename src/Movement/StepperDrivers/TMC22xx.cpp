@@ -1706,7 +1706,7 @@ void TmcDriverState::AppendDriverStatus(const StringRef& reply) noexcept
 	if (isTmc2240)
 # endif
 	{
-		reply.catf(", temp %.1fC", (double)GetDriverTemperature());
+		reply.catf(", temp %.1f" DEGREE_SYMBOL "C", (double)GetDriverTemperature());
 	}
 #endif
 

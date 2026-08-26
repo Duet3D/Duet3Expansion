@@ -1535,6 +1535,7 @@ void Move::UpdateMotorCurrent(size_t driver) noexcept
 {
 	SmartDrivers::SetCurrent(driver, (driverAtIdleCurrent[driver]) ? motorCurrents[driver] * idleCurrentFactor[driver] : motorCurrents[driver]);
 }
+
 void Move::SetMotorCurrent(size_t driver, float current) noexcept
 {
 	motorCurrents[driver] = current;
@@ -1542,11 +1543,11 @@ void Move::SetMotorCurrent(size_t driver, float current) noexcept
 }
 
 // TMC driver temperatures
-float Move::GetTmcDriversTemperature()
+float Move::GetTmcDriversTemperature() noexcept
 {
-#if defined(TOOL1RR) || defined(F3PTB)
+#if defined(TOOL1RR) || defined(F3PTB) || defined(TOOLINDX)
 	// TEMPORARY code until we have more general support for TMC2240 and other drivers that report temperature
-	// The TOOL1RR has a single TMC2240 driver so report the temperature of that
+	// These boards have a single TMC2240 driver so report the temperature of that
 	return SmartDrivers::GetDriverTemperature(0);
 #else
 	const LocalDriversBitmap mask = LocalDriversBitmap::MakeLowestNBits(MaxSmartDrivers);
