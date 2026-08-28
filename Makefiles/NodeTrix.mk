@@ -41,8 +41,8 @@ SRC_DIRS := \
 	src/GPIO \
 	src/Hardware \
 	src/Hardware/Drivers \
-	src/Hardware/SAME5x_C21 \
-	src/Hardware/SAME5x_C21/SAME5x \
+	src/Hardware/STM32 \
+	src/Hardware/STM32/STM32H5 \
 	src/Heating \
 	src/Heating/Sensors \
 	src/InputMonitors \
@@ -103,7 +103,7 @@ CXXFLAGS := $(COMMON_FLAGS) $(OPT) $(CXX_DEFINES) $(CXX_INCLUDES) -std=c++20 \
 
 # Linker flags
 LDFLAGS := $(LDOPT) --specs=nano.specs -Wl,--gc-sections -Wl,--entry=Reset_Handler \
-	-Wl,--fatal-warnings -Wl,--no-warn-rwx-segment -mcpu=$(MCU_ARCH) $(FPU_FLAGS) \
+	-Wl,--fatal-warnings -Wl,--no-warn-rwx-segment -mcpu=$(MCU_ARCH) -mthumb $(FPU_FLAGS) \
 	-T$(LINKER_SCRIPT) -Wl,-Map,$(CURDIR)/$(BUILD_DIR)/$(BINARY).map,--cref
 
 # Find all source files
