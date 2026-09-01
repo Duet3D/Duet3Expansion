@@ -1,23 +1,23 @@
-# Makefile for M23CL (SAME51)
-# This board uses SAME51 MCU with Cortex-M4F + FPU
+# Makefile for NodeTrix (STM32H523)
+# This board uses an STM32H523 MCU with Cortex-M33 + FPU
 
 # Board name
-BOARD := M23CL
+BOARD := NodeTrix
 
 # Output binary name
-BINARY := Duet3Firmware_M23CL
+BINARY := Duet3Firmware_NodeTrix
 
 # MCU configuration
-MCU := SAME51G19A
-MCU_ARCH := cortex-m4
-FPU_FLAGS := -mfpu=fpv4-sp-d16 -mfloat-abi=hard
+MCU := STM32H523
+MCU_ARCH := cortex-m33
+FPU_FLAGS := -mfpu=fpv5-sp-d16 -mfloat-abi=hard
 
 # Compiler defines
 # C files only get noexcept define
-C_DEFINES := -D__SAME51G19A__ -D__ARM_ARCH_7EM__=1 -Dnoexcept=
+C_DEFINES := -DSTM32H523xx -D__ARM_ARCH_8EM__=1 -Dnoexcept=
 
 # C++ files get board-specific defines
-CXX_DEFINES := -D__SAME51G19A__ -D__ARM_ARCH_7EM__=1 -DM23CL -DRTOS
+CXX_DEFINES := -DSTM32H523xx -D__ARM_ARCH_8EM__=1 -DNODETRIX -DRTOS
 
 # Optimization and debug
 OPT := -O3
@@ -27,7 +27,7 @@ CFLAGS_EXTRA := $(DEBUG_FLAGS)
 CXXFLAGS_EXTRA := $(DEBUG_FLAGS)
 
 # Linker script
-LINKER_SCRIPT := $(CURDIR)/src/Hardware/SAME5x_C21/SAME5x/same51n19a_flash_with_bootloader.ld
+LINKER_SCRIPT := $(CURDIR)/src/Hardware/STM32/STM32H5/STM32H523xx_FLASH.ld
 
 # Source directories (relative to project root)
 SRC_DIRS := \
@@ -40,8 +40,9 @@ SRC_DIRS := \
 	src/FilamentMonitors \
 	src/GPIO \
 	src/Hardware \
-	src/Hardware/SAME5x_C21 \
-	src/Hardware/SAME5x_C21/SAME5x \
+	src/Hardware/Drivers \
+	src/Hardware/STM32 \
+	src/Hardware/STM32/STM32H5 \
 	src/Heating \
 	src/Heating/Sensors \
 	src/InputMonitors \
@@ -53,46 +54,39 @@ SRC_DIRS := \
 
 # Include paths for C files (minimal set)
 C_INCLUDES := \
-	-I$(WORKSPACE)/CoreN2G \
-	-I$(WORKSPACE)/RRFLibraries \
-	-I$(WORKSPACE)/FreeRTOS \
 	-I$(CURDIR)/src \
 	-I$(WORKSPACE)/CoreN2G/src \
-	-I$(WORKSPACE)/CoreN2G/src/arm/CMSIS/5.4.0/CMSIS/Core/Include \
-	-I$(WORKSPACE)/CoreN2G/src/atmel/SAME51_DFP/1.1.139/include
+	-I$(WORKSPACE)/CoreN2G/src/STMCubeMX/Drivers/CMSIS/Include \
+	-I$(WORKSPACE)/CoreN2G/src/STMCubeMX/Drivers/CMSIS/Device/ST/STM32H5xx/Include
 
 # Include paths for C++ files (full set)
 CXX_INCLUDES := \
-	-I$(WORKSPACE)/CoreN2G \
-	-I$(WORKSPACE)/RRFLibraries \
-	-I$(WORKSPACE)/FreeRTOS \
 	-I$(CURDIR)/src \
 	-I$(WORKSPACE)/CoreN2G/src \
-	-I$(WORKSPACE)/CoreN2G/src/SAME5x_C21 \
-	-I$(WORKSPACE)/CoreN2G/src/SAME5x_C21/SAME5x/hal/include \
-	-I$(WORKSPACE)/CoreN2G/src/SAME5x_C21/SAME5x/hal/utils/include \
-	-I$(WORKSPACE)/CoreN2G/src/SAME5x_C21/SAME5x/hri \
-	-I$(WORKSPACE)/CoreN2G/src/arm/CMSIS/5.4.0/CMSIS/Core/Include \
-	-I$(WORKSPACE)/CoreN2G/src/atmel/SAME51_DFP/1.1.139/include \
+	-I$(WORKSPACE)/CoreN2G/src/STM32 \
+	-I$(WORKSPACE)/CoreN2G/src/STMCubeMX/Core/Inc \
+	-I$(WORKSPACE)/CoreN2G/src/STMCubeMX/Drivers/CMSIS/Include \
+	-I$(WORKSPACE)/CoreN2G/src/STMCubeMX/Drivers/CMSIS/Device/ST/STM32H5xx/Include \
+	-I$(WORKSPACE)/CoreN2G/src/STMCubeMX/Drivers/STM32H5xx_HAL_Driver/Inc \
 	-I$(WORKSPACE)/RRFLibraries/src \
 	-I$(WORKSPACE)/CANlib/src \
 	-I$(WORKSPACE)/FreeRTOS/src/include \
-	-I$(WORKSPACE)/FreeRTOS/src/portable/GCC/ARM_CM4F
+	-I$(WORKSPACE)/FreeRTOS/src/portable/GCC/ARM_CM33_NTZ/non_secure
 
 # Libraries
 LIBS := \
-	-L$(WORKSPACE)/CoreN2G/SAME5x_CAN_RTOS \
-	-L$(WORKSPACE)/CANlib/SAME51_RTOS \
-	-L$(WORKSPACE)/RRFLibraries/SAME51_RTOS \
-	-L$(WORKSPACE)/FreeRTOS/SAME51 \
+	-L$(WORKSPACE)/CoreN2G/STM32H5_CAN_RTOS \
+	-L$(WORKSPACE)/CANlib/STM32H5_RTOS \
+	-L$(WORKSPACE)/RRFLibraries/STM32H5_RTOS \
+	-L$(WORKSPACE)/FreeRTOS/STM32H5 \
 	-lCoreN2G -lCANlib -lRRFLibraries -lFreeRTOS
 
 # Library dependencies
 LIB_DEPS := \
-	$(WORKSPACE)/CoreN2G/SAME5x_CAN_RTOS/libCoreN2G.a \
-	$(WORKSPACE)/CANlib/SAME51_RTOS/libCANlib.a \
-	$(WORKSPACE)/RRFLibraries/SAME51_RTOS/libRRFLibraries.a \
-	$(WORKSPACE)/FreeRTOS/SAME51/libFreeRTOS.a
+	$(WORKSPACE)/CoreN2G/STM32H5_CAN_RTOS/libCoreN2G.a \
+	$(WORKSPACE)/CANlib/STM32H5_RTOS/libCANlib.a \
+	$(WORKSPACE)/RRFLibraries/STM32H5_RTOS/libRRFLibraries.a \
+	$(WORKSPACE)/FreeRTOS/STM32H5/libFreeRTOS.a
 
 # Common flags
 COMMON_FLAGS := -c -mcpu=$(MCU_ARCH) -mthumb $(FPU_FLAGS) -fno-math-errno -mfp16-format=ieee \

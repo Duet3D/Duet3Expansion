@@ -46,7 +46,7 @@ export DEBUG_FLAGS
 .DEFAULT_GOAL := help
 
 # Available build configurations
-CONFIGS := EXP3HC EXP1XD EXP1HCL TOOL1LC SAMMYC21 SZP M23CL F3PTB TOOL1RR TOOLINDX
+CONFIGS := EXP3HC EXP1XD EXP1HCL TOOL1LC SAMMYC21 SZP M23CL F3PTB TOOL1RR TOOLINDX NodeTrix
 
 # Declare all board targets as phony
 .PHONY: $(CONFIGS)
@@ -86,9 +86,10 @@ help:
 	$(Q)echo "  make EXP3HC                                # Build EXP3HC firmware"
 	$(Q)echo "  make EXP1XD V=1                            # Build with verbose output"
 # Build all configurations
+# NodeTrix is excluded until its STM32H5 port compiles
 .PHONY: all
 all:
-	$(Q)for config in $(CONFIGS); do \
+	$(Q)for config in $(filter-out NodeTrix,$(CONFIGS)); do \
 		$(MAKE) "$$config" || exit 1; \
 	done
 
@@ -142,6 +143,22 @@ $(WORKSPACE)/Qfplib-M0-full/SAMC21/libQfplib-M0-full.a:
 	$(Q)echo "  BUILD   Qfplib-M0-full/SAMC21"
 	$(Q)$(MAKE) $(VERBOSE) -C $(WORKSPACE)/Qfplib-M0-full SAMC21
 
+$(WORKSPACE)/CoreN2G/STM32H5_CAN_RTOS/libCoreN2G.a:
+	$(Q)echo "  BUILD   CoreN2G/STM32H5_CAN_RTOS"
+	$(Q)$(MAKE) $(VERBOSE) -C $(WORKSPACE)/CoreN2G STM32H5_CAN_RTOS
+
+$(WORKSPACE)/RRFLibraries/STM32H5_RTOS/libRRFLibraries.a:
+	$(Q)echo "  BUILD   RRFLibraries/STM32H5_RTOS"
+	$(Q)$(MAKE) $(VERBOSE) -C $(WORKSPACE)/RRFLibraries STM32H5_RTOS
+
+$(WORKSPACE)/FreeRTOS/STM32H5/libFreeRTOS.a:
+	$(Q)echo "  BUILD   FreeRTOS/STM32H5"
+	$(Q)$(MAKE) $(VERBOSE) -C $(WORKSPACE)/FreeRTOS STM32H5 FREERTOS_CONFIG_DIR="$(CURDIR)/src"
+
+$(WORKSPACE)/CANlib/STM32H5_RTOS/libCANlib.a:
+	$(Q)echo "  BUILD   CANlib/STM32H5_RTOS"
+	$(Q)$(MAKE) $(VERBOSE) -C $(WORKSPACE)/CANlib STM32H5_RTOS
+
 # Include the specific makefile based on the target
 # Only include one at a time to avoid conflicts
 ifneq ($(MAKECMDGOALS),)
@@ -180,6 +197,9 @@ ifeq ($(MAKECMDGOALS),TOOL1RR)
 endif
 ifeq ($(MAKECMDGOALS),TOOLINDX)
 -include Makefiles/TOOLINDX.mk
+endif
+ifeq ($(MAKECMDGOALS),NodeTrix)
+-include Makefiles/NodeTrix.mk
 endif
 endif
 endif
