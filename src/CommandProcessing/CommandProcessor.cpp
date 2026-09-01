@@ -264,13 +264,12 @@ static GCodeResult SetStepsPerMmAndMicrostepping(const CanMessageMultipleDrivesR
 
 static GCodeResult ProcessM569Point2(const CanMessageGeneric& msg, const StringRef& reply)
 {
-#if SUPPORT_TMC22xx || SUPPORT_TMC51xx
+#if SUPPORT_TMC22xx || SUPPORT_TMC51xx || SUPPORT_TMC2240_SPI
 	CanMessageGenericParser parser(msg, M569Point2Params);
 	uint8_t drive;
-	uint8_t regNum;
-	if (!parser.GetUintParam('P', drive) || !parser.GetUintParam('R', regNum))
+	if (!parser.GetUintParam('P', drive))
 	{
-		reply.copy("Missing P or R parameter in CAN message");
+		reply.copy("Missing P parameter in CAN message");
 		return GCodeResult::error;
 	}
 
@@ -278,6 +277,50 @@ static GCodeResult ProcessM569Point2(const CanMessageGeneric& msg, const StringR
 	{
 		reply.printf("Driver number %u.%u out of range", CanInterface::GetCanAddress(), drive);
 		return GCodeResult::error;
+	}
+
+# if SUPPORT_TMC51xx || SUPPORT_TMC2240_SPI
+	uint8_t harmonic;
+	if (parser.GetUintParam('S', harmonic))
+	{
+		if (harmonic % 4 != 0)
+		{
+			reply.copy("Only harmonics that are multiples of 4 can be represented in the sine table");
+			return GCodeResult::error;
+		}
+		if (harmonic < 4 || harmonic > 16)
+		{
+			reply.copy("Waveform correction harmonic out of range");
+			return GCodeResult::error;
+		}
+		float magnitude = 0.0, phase = 0.0;
+		const bool seenMagnitude = parser.GetFloatParam('J', magnitude);
+		const bool seenPhase = parser.GetFloatParam('O', phase);
+		if (seenMagnitude && (magnitude < 0.0 || magnitude > 90.0))
+		{
+			reply.copy("Waveform correction magnitude out of range");
+			return GCodeResult::error;
+		}
+		if (seenPhase && phase != 0.0 && phase != 180.0)
+		{
+			reply.copy("Sine table correction phase must be 0 or 180");
+			return GCodeResult::error;
+		}
+		return SmartDrivers::ConfigureLutCorrection(drive, harmonic, seenMagnitude, magnitude, seenPhase, phase == 180.0, reply);
+	}
+# endif
+
+	uint8_t regNum;
+	if (!parser.GetUintParam('R', regNum))
+	{
+# if SUPPORT_TMC51xx || SUPPORT_TMC2240_SPI
+		reply.printf("Driver %u.%u waveform correction:", CanInterface::GetCanAddress(), drive);
+		SmartDrivers::AppendLutCorrections(drive, reply);
+		return GCodeResult::ok;
+# else
+		reply.copy("Missing R parameter in CAN message");
+		return GCodeResult::error;
+# endif
 	}
 
 	uint32_t regVal;
@@ -764,6 +807,24 @@ void CommandProcessor::Spin()
 			requestId = buf->msg.generic.requestId;
 # if SUPPORT_CLOSED_LOOP
 			rslt = moveInstance->ProcessM569Point4(buf->msg.generic, replyRef);
+# else
+			rslt = GCodeResult::errorNotSupported;
+# endif
+			break;
+
+		case CanMessageType::m970:			// set step mode and phase stepping parameters
+			requestId = buf->msg.generic.requestId;
+# if SUPPORT_PHASE_STEPPING
+			rslt = moveInstance->ProcessM970(buf->msg.generic, replyRef);
+# else
+			rslt = GCodeResult::errorNotSupported;
+# endif
+			break;
+
+		case CanMessageType::m970p3:		// configure phase stepping waveform correction
+			requestId = buf->msg.generic.requestId;
+# if SUPPORT_PHASE_STEPPING
+			rslt = moveInstance->ProcessM970Point3(buf->msg.generic, replyRef);
 # else
 			rslt = GCodeResult::errorNotSupported;
 # endif
