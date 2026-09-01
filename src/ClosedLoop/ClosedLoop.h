@@ -21,6 +21,7 @@
 # include "TuningErrors.h"
 # include "SampleBuffer.h"
 # include "Encoders/Encoder.h"
+# include <Movement/PhaseStep.h>
 
 constexpr float MaxSafeBacklash = 0.22;					// the maximum backlash in full steps that we can use - error if there is more
 constexpr float MaxGoodBacklash = 0.15;					// the maximum backlash in full steps that we are happy with - warn if there is more
@@ -30,14 +31,6 @@ constexpr float VelocityLimitGainFactor = 5.0;			// the gain of the P loop when 
 class Encoder;
 class SpiEncoder;
 class CanMessageGenericParser;
-
-// Struct to pass data back to the ClosedLoop module
-struct MotionParameters
-{
-	float position = 0.0;
-	float speed = 0.0;
-	float acceleration = 0.0;
-};
 
 enum class ClosedLoopMode
 {
@@ -84,6 +77,9 @@ public:
 	bool OkayToSetDriverIdle() const noexcept;
 	StandardDriverStatus ModifyDriverStatus(StandardDriverStatus originalStatus) const noexcept;
 	void GetStatistics(ClosedLoopStatus& stat) noexcept;
+	GCodeResult EnableStallEndstop(const StringRef& reply) noexcept;
+	void DisableStallEndstop() noexcept { stallEndstopArmed = false; }
+	bool PositionErrorIsExpected() const noexcept { return stallEndstopArmed || stallEndstopTriggered; }
 
 	// Methods called by the encoders
 	static void EnableEncodersSpi() noexcept;
@@ -148,6 +144,10 @@ private:
 	float 	Kd = 0.0;											// The proportional constant for the PID controller
 	float	Kv = 1000.0;										// The velocity feedforward constant
 	float	Ka = 0.0;											// The acceleration feedforward constant
+	float	deadband = -1.0;									// The position error deadband applied when no movement is commanded, in full steps. Negative = automatic (one encoder count), zero disables it
+
+	// Return the deadband that is actually applied, resolving automatic mode to the encoder count spacing
+	float GetEffectiveDeadband() const noexcept { return (deadband < 0.0) ? ((encoder != nullptr) ? encoder->GetStepsPerCount() : 0.0) : deadband; }
 
 	float 	errorThresholds[2];									// The error thresholds. [0] is pre-stall, [1] is stall
 
@@ -182,6 +182,10 @@ private:
 	bool	torqueModeDirection;
 	bool 	stall = false;								// Has the closed loop error threshold been exceeded?
 	bool 	preStall = false;							// Has the closed loop warning threshold been exceeded?
+	bool	stallEndstopArmed = false;					// Is a homing move watching for the motor to fall behind the commanded position?
+	bool	stallEndstopTriggered = false;				// Did such a homing move end because it did, so the leftover error is not a fault?
+	float	commandedStepsAtArming;						// The commanded position when the endstop was armed, in full steps
+	float	encoderStepsAtArming;						// The encoder position when the endstop was armed, in full steps
 
 	// Basic tuning synchronisation
 	volatile bool basicTuningDataReady = false;
