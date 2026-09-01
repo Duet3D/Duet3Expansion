@@ -83,7 +83,7 @@ public:
 	GCodeResult SetStandstillCurrentFactor(const CanMessageMultipleDrivesRequest<float>& msg, size_t dataLength, const StringRef& reply) noexcept;
 
 # if HAS_SMART_DRIVERS
-	void SetMotorCurrent(size_t driver, float current) noexcept;		//TODO avoid the int->float->int conversion
+	GCodeResult SetMotorCurrent(size_t driver, float current, const StringRef& reply) noexcept;
 	float GetTmcDriversTemperature() noexcept;
 #  if HAS_STALL_DETECT
 	void SetOrResetEventOnStall(LocalDriversBitmap drivers, bool enable) noexcept;

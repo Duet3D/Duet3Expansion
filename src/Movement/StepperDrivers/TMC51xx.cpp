@@ -2117,7 +2117,7 @@ void SmartDrivers::Init() noexcept
 // Shut down the drivers and stop any related interrupts
 void SmartDrivers::Exit() noexcept
 {
-	digitalWrite(GlobalTmcEnablePin, true);					// disable the drivers
+	digitalWrite(GlobalTmcEnablePin, true);						// disable the drivers
 #if !TMC_USES_SERCOM
 	NVIC_DisableIRQ(TMC_SPI_IRQn);
 #endif
@@ -2131,6 +2131,11 @@ void SmartDrivers::SetCurrent(size_t driver, float current) noexcept
 	{
 		driverStates[driver].SetCurrent(current);
 	}
+}
+
+float SmartDrivers::GetMaxMotorCurrent(size_t driver) noexcept
+{
+	return MaxMotorCurrent;										// in this module, all drivers support the same maximum current
 }
 
 void SmartDrivers::EnableDrive(size_t driver, bool en) noexcept

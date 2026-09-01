@@ -41,6 +41,7 @@ namespace SmartDrivers
 	void SetAxisNumber(size_t drive, uint32_t axisNumber) noexcept;
 	uint32_t GetAxisNumber(size_t drive) noexcept;
 	void SetCurrent(size_t drive, float current) noexcept;
+	float GetMaxMotorCurrent(size_t driver) noexcept;
 	void EnableDrive(size_t drive, bool en) noexcept;
 	bool SetMicrostepping(size_t drive, unsigned int microsteps, bool interpolation) noexcept;
 	unsigned int GetMicrostepping(size_t drive, bool& interpolation) noexcept;

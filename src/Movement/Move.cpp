@@ -1536,10 +1536,16 @@ void Move::UpdateMotorCurrent(size_t driver) noexcept
 	SmartDrivers::SetCurrent(driver, (driverAtIdleCurrent[driver]) ? motorCurrents[driver] * idleCurrentFactor[driver] : motorCurrents[driver]);
 }
 
-void Move::SetMotorCurrent(size_t driver, float current) noexcept
+GCodeResult Move::SetMotorCurrent(size_t driver, float current, const StringRef& reply) noexcept
 {
-	motorCurrents[driver] = current;
+	motorCurrents[driver] = min<float>(current, SmartDrivers::GetMaxMotorCurrent(driver));
 	UpdateMotorCurrent(driver);
+	if (motorCurrents[driver] < current)
+	{
+		reply.lcatf("Driver %u.%u limited to %umA", CanInterface::GetCanAddress(), driver, (unsigned int)motorCurrents[driver]);
+		return GCodeResult::error;
+	}
+	return GCodeResult::ok;
 }
 
 // TMC driver temperatures
@@ -2001,7 +2007,7 @@ GCodeResult Move::SetMotorCurrents(const CanMessageMultipleDrivesRequest<float>&
 							}
 							else
 							{
-								SetMotorCurrent(driver, msg.values[count]);
+								rslt = max<GCodeResult>(rslt, SetMotorCurrent(driver, msg.values[count], reply));
 #if SUPPORT_CLOSED_LOOP
 								dms[driver].closedLoopControl.UpdateStandstillCurrent();
 #endif
