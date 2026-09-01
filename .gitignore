@@ -58,10 +58,5 @@
 /F3PTB/
 /TOOLINDX/
 /NodeTrix/
-/RP2040_RTOS/
-/SAMC21_RTOS/
-/SAMC21_RTOS_Debug/
-/SAME51_RTOS/
-/SAME51_RTOS_Debug/
 /.clangd
 /.clang-format
