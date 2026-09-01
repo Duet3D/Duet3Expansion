@@ -56,6 +56,10 @@ namespace SmartDrivers
 	uint32_t GetDriverNominalClockFrequency() noexcept;
 	uint32_t GetDriverMaxClockFrequency() noexcept;
 
+#if SUPPORT_TMC2240_SPI
+	float GetDriverTemperature(size_t driver) noexcept;
+#endif
+
 	GCodeResult SetStallEndstopReporting(uint16_t driverNumber, float speed, const StringRef& reply) noexcept;
 	extern std::atomic<uint16_t> driverStallsToNotify;
 };
