@@ -170,7 +170,7 @@ constexpr PinDescription PinTable[] =
 
 	// Virtual pins
 #if SUPPORT_LIS3DH
-	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"i2c.lis3dh"	},	// LIS3DH sensor connected via I2C
+	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"i2c.lis,i2c.lis3dh,i2c.lis3dsh,i2c.lis2dw12"	},	// LIS sensor connected via I2C
 #endif
 #if SUPPORT_LDC1612
 	{ TcOutput::none,	TccOutput::none,	AdcInput::ldc1612,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"i2c.ldc1612"	},	// LDC1612 sensor connected via I2C
@@ -180,6 +180,14 @@ constexpr PinDescription PinTable[] =
 constexpr size_t NumPins = ARRAY_SIZE(PinTable);
 constexpr size_t NumRealPins = 32;				// 32 pins on port A (some missing)
 constexpr size_t NumVirtualPins = SUPPORT_LIS3DH + SUPPORT_LDC1612;
+
+#if SUPPORT_LIS3DH
+constexpr Pin LisPinNumber = NumRealPins;
+#endif
+
+#if SUPPORT_LDC1612
+constexpr Pin LdcPinNumber = NumRealPins + SUPPORT_LIS3DH;
+#endif
 
 static_assert(NumPins == NumRealPins + NumVirtualPins);
 

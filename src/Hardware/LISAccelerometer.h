@@ -14,7 +14,7 @@
 
 # if ACCELEROMETER_USES_SPI
 
-#include "SharedSpiClient.h"
+#include <SPI/SharedSpiClient.h>
 
 class LISAccelerometer : public SharedSpiClient
 {

@@ -274,7 +274,7 @@ constexpr PinDescription PinTable[] =
 
 	// Virtual pins
 #if SUPPORT_LIS3DH
-	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"i2c.lis3dh,i2c.lis2dw"	},	// LIS3DH sensor connected via I2C
+	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"i2c.lis,i2c.lis3dh,i2c.lis3dsh,i2c.lis2dw"	},	// LIS3 sensor connected via I2C
 #endif
 #if SUPPORT_LDC1612
 	{ TcOutput::none,	TccOutput::none,	AdcInput::ldc1612,	SercomIo::none,		SercomIo::none,		Nx,	"i2c.ldc1612"	},	// LDC1612 sensor connected via I2C
@@ -293,12 +293,20 @@ constexpr size_t NumVirtualPins = SUPPORT_LIS3DH + SUPPORT_LDC1612 + SUPPORT_AS5
 
 static_assert(NumPins == NumRealPins + NumVirtualPins);
 
+#if SUPPORT_LIS3DH
+constexpr Pin LisPinNumber = NumRealPins;
+#endif
+
+#if SUPPORT_LDC1612
+constexpr Pin LdcPinNumber = NumRealPins + SUPPORT_LIS3DH;
+#endif
+
 #if SUPPORT_AS5601
 constexpr Pin MfmPin = NumRealPins + SUPPORT_LIS3DH + SUPPORT_LDC1612;				// pin number when the user selects magnetic filament monitor on I2C bus
 #endif
 
 #if SUPPORT_TCA6408A
-constexpr Pin MfmButtonPin = NumRealPins + SUPPORT_LIS3DH + SUPPORT_LDC1612 + 1;	// pin number when the user selects magnetic filament monitor button on I2C bus
+constexpr Pin MfmButtonPin = NumRealPins + SUPPORT_LIS3DH + SUPPORT_LDC1612 + SUPPORT_AS5601;	// pin number when the user selects magnetic filament monitor button on I2C bus
 #endif
 
 // Timer/counter used to generate step pulses and other sub-millisecond timings

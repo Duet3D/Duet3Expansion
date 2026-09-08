@@ -25,9 +25,9 @@ class CanMessageStartAccelerometer;
 namespace AccelerometerHandler
 {
 #if ACCELEROMETER_USES_SPI
-	void Init(SharedSpiDevice& dev) noexcept;
+	bool Init(SharedSpiDevice& dev, Pin csPin, Pin int1Pin) noexcept;
 #else
-	void Init(SharedI2CMaster& dev) noexcept;
+	bool Init(SharedI2CMaster& dev) noexcept;
 #endif
 	bool IsPresent() noexcept;
 	bool IsCollecting() noexcept;

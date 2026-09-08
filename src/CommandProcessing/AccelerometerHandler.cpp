@@ -41,6 +41,7 @@ static volatile bool successfulStart = false;
 static volatile bool failedStart = false;
 static uint8_t axisLookup[3];								// mapping from each Cartesian axis to the corresponding accelerometer axis
 static bool axisInverted[3];
+static IoPort csPort, irqPort;								// port(s) used by the accelerometer, needed when using SPI-connected accelerometers
 
 static uint8_t TranslateAxes(uint8_t axes) noexcept
 {
@@ -218,14 +219,16 @@ static bool TranslateOrientation(uint8_t input) noexcept
 }
 
 // Interface functions called by the main task
+
+// Initialise the accelerometer returning true if succeeded
 #if ACCELEROMETER_USES_SPI
-void AccelerometerHandler::Init(SharedSpiDevice& dev) noexcept
+bool AccelerometerHandler::Init(SharedSpiDevice& dev, Pin csPin, Pin int1Pin) noexcept
 #else
-void AccelerometerHandler::Init(SharedI2CMaster& dev) noexcept
+bool AccelerometerHandler::Init(SharedI2CMaster& dev) noexcept
 #endif
 {
 #if ACCELEROMETER_USES_SPI
-	accelerometer = new LISAccelerometer(dev, Lis3dhCsPin, Lis3dhInt1Pin);
+	accelerometer = new LISAccelerometer(dev, csPin, int1Pin);
 #else
 	accelerometer = new LISAccelerometer(dev, Lis3dhInt1Pin);
 #endif
@@ -234,18 +237,22 @@ void AccelerometerHandler::Init(SharedI2CMaster& dev) noexcept
 		accelerometer->Configure(samplingRate, resolution);
 		present = true;
 		(void)TranslateOrientation(orientation);
-		accelerometerTask = new Task<AccelerometerTaskStackWords>;
-		accelerometerTask->Create(AccelerometerTaskCode, "ACCEL", nullptr, TaskPriority::Accelerometer);
+		if (accelerometerTask == nullptr)
+		{
+			accelerometerTask = new Task<AccelerometerTaskStackWords>;
+			accelerometerTask->Create(AccelerometerTaskCode, "ACCEL", nullptr, TaskPriority::Accelerometer);
+		}
+		return true;
 	}
-	else
-	{
+
 #ifdef TOOL1LC
-		// The accelerometer should definitely be present. We will try to communicate with it at intervals to assist with hardware debugging.
-		// So don't delete the accelerometer object, but don't set the 'present' flag either.
+	// The accelerometer should definitely be present. We will try to communicate with it at intervals to assist with hardware debugging.
+	// So don't delete the accelerometer object, but don't set the 'present' flag either.
 #else
-		DeleteObject(accelerometer);
+	DeleteObject(accelerometer);
 #endif
-	}
+	present = false;
+	return false;
 }
 
 bool AccelerometerHandler::IsPresent() noexcept
@@ -269,59 +276,93 @@ uint8_t AccelerometerHandler::GetResolution() noexcept
 	return resolution;
 }
 
+// Process a request to configure the accelerometer.
+// Note, the device number is passed to us fore historical reasons, but we no longer use it.
 // Translate the orientation from a 2-digit number to translation tables, returning true if successful, false if bad orientation
 GCodeResult AccelerometerHandler::ProcessConfigRequest(const CanMessageGeneric& msg, const StringRef &reply) noexcept
 {
 	CanMessageGenericParser parser(msg, M955Params);
-	uint8_t deviceNumber;
-	if (!parser.GetUintParam('P', deviceNumber))
-	{
-		reply.copy("Bad M955 message");
-		return GCodeResult::error;
-	}
-	if (deviceNumber != 0 || !present)
-	{
-		reply.printf("Accelerometer %u.%u not present", CanInterface::GetCanAddress(), deviceNumber);
-		return GCodeResult::error;
-	}
 
-	if (running)
+	String<StringLength50> pinNames;
+	if (parser.GetStringParam('C', pinNames.GetRef()))
 	{
-		reply.printf("Accelerometer %u.%u is busy collecting data", CanInterface::GetCanAddress(), deviceNumber);
-		return GCodeResult::error;
-	}
-
-	bool seen = false;
-	uint8_t localOrientation;
-	if (parser.GetUintParam('I', localOrientation))
-	{
-		seen = true;
-		if (TranslateOrientation(localOrientation))
+		if (running)
 		{
-			orientation = localOrientation;
+			reply.printf("Accelerometer on board %u is busy collecting data", CanInterface::GetCanAddress());
+			return GCodeResult::error;
+		}
+
+		csPort.Release();
+		irqPort.Release();
+		IoPort *const ports[] = { &csPort, &irqPort };
+		PinAccess access[] = { PinAccess::write1, PinAccess::read };
+		const size_t numPortsFound = IoPort::AssignPorts(pinNames.c_str(), reply, PinUsedBy::sensor, 2, ports, access);
+		if (numPortsFound == 0)
+		{
+			return GCodeResult::error;
+		}
+#if ACCELEROMETER_USES_SPI
+		if (numPortsFound != 2)
+		{
+			csPort.Release();
+			irqPort.Release();
+			reply.copy("SPI-connected accelerometer requires CS and IRQ pins but only one pin provided");
+			return GCodeResult::error;
+		}
+		if (!Init(Platform::GetSharedSpi(), csPort.GetPin(), irqPort.GetPin()))
+		{
+			csPort.Release();
+			irqPort.Release();
+			reply.printf("Failed to initialise accelerometer on board %u using pins %s", CanInterface::GetCanAddress(), pinNames.c_str());
+			return GCodeResult::error;
+		}
+#else
+		// For I2C-connected accelerometers the only valid port is "i2c.lis" or one of its aliases
+		if (numPortsFound != 1 || csPort.GetPin() != LisPinNumber)
+		{
+			csPort.Release();
+			irqPort.Release();
+			reply.copy("I2C-connected accelerometer can only use i2c.lis port");
+			return GCodeResult::error;
+		}
+#endif
+		uint8_t localOrientation;
+		if (parser.GetUintParam('I', localOrientation))
+		{
+			if (TranslateOrientation(localOrientation))
+			{
+				orientation = localOrientation;
+			}
+			else
+			{
+				reply.copy("Invalid orientation");
+				return GCodeResult::error;
+			}
 		}
 		else
 		{
-			reply.copy("Invalid orientation");
-			return GCodeResult::error;
+			orientation = DefaultAccelerometerOrientation;
+			(void)TranslateOrientation(orientation);
 		}
-	}
 
-	if (parser.GetUintParam('S', samplingRate)) { seen = true; }
-	if (parser.GetUintParam('R', resolution))  { seen = true; }
+		(void)parser.GetUintParam('S', samplingRate);
+		(void)parser.GetUintParam('R', resolution);
 
-	if (seen)
-	{
 		if (!accelerometer->Configure(samplingRate, resolution))
 		{
 			reply.copy("Failed to configure accelerometer");
 			return GCodeResult::error;
 		}
 	}
+	else if (!present)
+	{
+		reply.printf("Accelerometer on board %u not configured", CanInterface::GetCanAddress());
+		return GCodeResult::error;
+	}
 	else
 	{
-		reply.printf("Accelerometer %u:%u type %s with orientation %u samples at %uHz with %u-bit resolution",
-						CanInterface::GetCanAddress(), deviceNumber, accelerometer->GetTypeName(), orientation, samplingRate, resolution);
+		reply.printf("Accelerometer on board %u type %s with orientation %u samples at %uHz with %u-bit resolution",
+						CanInterface::GetCanAddress(), accelerometer->GetTypeName(), orientation, samplingRate, resolution);
 	}
 	return GCodeResult::ok;
 }

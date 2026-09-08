@@ -810,16 +810,14 @@ void Platform::Init()
 
 	uniqueId.SetFromCurrentBoard();
 
-#if SUPPORT_LIS3DH
+	// For now we assume that I2C accelerometers are integrated into the tool board, so we always initialise them
+	// SPI-connected accelerometers are optional and need to have pins configured, so we don't initialise them until the M955 command is used.
+#if SUPPORT_LIS3DH && !ACCELEROMETER_USES_SPI
 # ifdef TOOL1LC
 	if (boardVariant != 0)
 # endif
 	{
-# if ACCELEROMETER_USES_SPI
-		AccelerometerHandler::Init(*sharedSpi);
-# else
 		AccelerometerHandler::Init(GetSharedI2C(Lis_I2CChannel));
-# endif
 	}
 #endif
 
