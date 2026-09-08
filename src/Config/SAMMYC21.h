@@ -255,6 +255,14 @@ constexpr size_t NumVirtualPins = SUPPORT_LIS3DH + SUPPORT_LDC1612;
 
 static_assert(NumPins == NumRealPins + NumVirtualPins);
 
+#if SUPPORT_LIS3DH
+constexpr Pin LisPinNumber = NumRealPins;
+#endif
+
+#if SUPPORT_LDC1612
+constexpr Pin LdcPinNumber = NumRealPins + SUPPORT_LIS3DH;
+#endif
+
 // Timer/counter used to generate step pulses and other sub-millisecond timings
 TcCount32 * const StepTc = &(TC2->COUNT32);
 constexpr IRQn StepTcIRQn = TC2_IRQn;
