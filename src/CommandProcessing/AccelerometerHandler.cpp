@@ -222,13 +222,13 @@ static bool TranslateOrientation(uint8_t input) noexcept
 
 // Initialise the accelerometer returning true if succeeded
 #if ACCELEROMETER_USES_SPI
-bool AccelerometerHandler::Init(SharedSpiDevice& dev, Pin csPin, Pin int1Pin) noexcept
+bool AccelerometerHandler::Init(SharedSpiDevice& dev, uint32_t freq, Pin csPin, Pin int1Pin) noexcept
 #else
 bool AccelerometerHandler::Init(SharedI2CMaster& dev) noexcept
 #endif
 {
 #if ACCELEROMETER_USES_SPI
-	accelerometer = new LISAccelerometer(dev, csPin, int1Pin);
+	accelerometer = new LISAccelerometer(dev, freq, csPin, int1Pin);
 #else
 	accelerometer = new LISAccelerometer(dev, Lis3dhInt1Pin);
 #endif
@@ -309,7 +309,9 @@ GCodeResult AccelerometerHandler::ProcessConfigRequest(const CanMessageGeneric& 
 			reply.copy("SPI-connected accelerometer requires CS and IRQ pins but only one pin provided");
 			return GCodeResult::error;
 		}
-		if (!Init(Platform::GetSharedSpi(), csPort.GetPin(), irqPort.GetPin()))
+		uint32_t clockSpeed = DefaultAccelerometerSpiFrequency;
+		(void)parser.GetUintParam('Q', clockSpeed);
+		if (!Init(Platform::GetSharedSpi(), clockSpeed, csPort.GetPin(), irqPort.GetPin()))
 		{
 			csPort.Release();
 			irqPort.Release();
