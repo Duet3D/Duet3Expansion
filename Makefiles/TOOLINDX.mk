@@ -27,7 +27,7 @@ CFLAGS_EXTRA := $(DEBUG_FLAGS)
 CXXFLAGS_EXTRA := $(DEBUG_FLAGS)
 
 # Linker script
-LINKER_SCRIPT := $(CURDIR)/src/Hardware/SAME5x_C21/SAME5x/same51n19a_flash_with_bootloader.ld
+LINKER_SCRIPT := $(CURDIR)/src/Hardware/SAME5x_C21/SAME5x/same51n19a_flash_with_16k_bootloader.ld
 
 # Source directories (relative to project root)
 SRC_DIRS := \
