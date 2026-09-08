@@ -162,21 +162,7 @@ constexpr I2cParameters I2C0Params =
 #endif
 
 #if SUPPORT_LIS3DH
-
-# if NUM_I2C_CHANNELS != 0
-
-#  define ACCELEROMETER_USES_SPI			(0)				// accelerometer is connected via I2C
-constexpr unsigned int Lis_I2CChannel = 0;
-constexpr Pin Lis3dhInt1Pin = PortAPin(20);					// same as io1.in
-
-# else
-
-#  define ACCELEROMETER_USES_SPI			(1)				// accelerometer is connected via SPI
-constexpr Pin Lis3dhCsPin = PortAPin(18);					// same as encoder CS pin
-constexpr Pin Lis3dhInt1Pin = PortAPin(13);					// same as io1.in
-
-# endif
-
+# define ACCELEROMETER_USES_SPI			(1)				// accelerometer is connected via SPI
 #endif
 
 // Shared SPI definitions
