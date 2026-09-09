@@ -282,13 +282,15 @@ uint8_t AccelerometerHandler::GetResolution() noexcept
 GCodeResult AccelerometerHandler::ProcessConfigRequest(const CanMessageGeneric& msg, const StringRef &reply) noexcept
 {
 	CanMessageGenericParser parser(msg, M955Params);
+	uint16_t accelerometerNumber = 0;
+	(void)parser.GetUintParam('P', accelerometerNumber);
 
 	String<StringLength50> pinNames;
 	if (parser.GetStringParam('C', pinNames.GetRef()))
 	{
 		if (running)
 		{
-			reply.printf("Accelerometer on board %u is busy collecting data", CanInterface::GetCanAddress());
+			reply.printf("Accelerometer %u on board %u is busy collecting data", accelerometerNumber, CanInterface::GetCanAddress());
 			return GCodeResult::error;
 		}
 
@@ -315,7 +317,7 @@ GCodeResult AccelerometerHandler::ProcessConfigRequest(const CanMessageGeneric& 
 		{
 			csPort.Release();
 			irqPort.Release();
-			reply.printf("Failed to initialise accelerometer on board %u using pins %s", CanInterface::GetCanAddress(), pinNames.c_str());
+			reply.printf("Failed to initialise accelerometer %u on board %u using pins %s", accelerometerNumber, CanInterface::GetCanAddress(), pinNames.c_str());
 			return GCodeResult::error;
 		}
 #else
@@ -358,28 +360,28 @@ GCodeResult AccelerometerHandler::ProcessConfigRequest(const CanMessageGeneric& 
 	}
 	else if (!present)
 	{
-		reply.printf("Accelerometer on board %u not configured", CanInterface::GetCanAddress());
+		reply.printf("Accelerometer %u is not configured on board %u", accelerometerNumber, CanInterface::GetCanAddress());
 		return GCodeResult::error;
 	}
 	else
 	{
-		reply.printf("Accelerometer on board %u type %s with orientation %u samples at %uHz with %u-bit resolution",
-						CanInterface::GetCanAddress(), accelerometer->GetTypeName(), orientation, samplingRate, resolution);
+		reply.printf("Accelerometer %u on board %u type %s with orientation %u samples at %uHz with %u-bit resolution",
+						accelerometerNumber, CanInterface::GetCanAddress(), accelerometer->GetTypeName(), orientation, samplingRate, resolution);
 	}
 	return GCodeResult::ok;
 }
 
 GCodeResult AccelerometerHandler::ProcessStartRequest(const CanMessageStartAccelerometer& msg, const StringRef& reply) noexcept
 {
-	if (msg.deviceNumber != 0 || !present)
+	if (!present)
 	{
-		reply.printf("Accelerometer %u.%u not present", CanInterface::GetCanAddress(), msg.deviceNumber);
+		reply.printf("Accelerometer %u is not present on board %u", msg.deviceNumber, CanInterface::GetCanAddress());
 		return GCodeResult::error;
 	}
 
 	if (running)
 	{
-		reply.printf("Accelerometer %u.%u is busy collecting data", CanInterface::GetCanAddress(), msg.deviceNumber);
+		reply.printf("Accelerometer %u on board %u is busy collecting data", msg.deviceNumber, CanInterface::GetCanAddress());
 		return GCodeResult::error;
 	}
 
@@ -399,7 +401,7 @@ GCodeResult AccelerometerHandler::ProcessStartRequest(const CanMessageStartAccel
 		}
 	} while (!failedStart && millis() - startTime < StartTimeoutMillis);
 
-	reply.copy((failedStart) ? "Failed to start accelerometer data collection" : "Timed out waiting for accelerometer data collection to start");
+	reply.printf((failedStart) ? "Failed to start accelerometer %u data collection" : "Timed out waiting for accelerometer %u data collection to start", msg.deviceNumber);
 	if (accelerometer->HasInterruptError())
 	{
 		reply.cat(": INT1 error");
