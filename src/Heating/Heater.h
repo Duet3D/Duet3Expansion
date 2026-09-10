@@ -91,6 +91,7 @@ protected:
 	HeaterMonitor monitors[MaxMonitorsPerHeater];						// embedding them in the Heater uses less memory than dynamic allocation
 	volatile float lastFanPwm;											// The fan PWM when we last calculated heater feedforward for the fan
 	volatile float lastExtrusionPwmBoost;								// The last value of extrusion boost we applied
+	volatile float allowedExtrusionPwmBoost;							// The maximum extra PWM that we expect to need if extrusion is taking place due to melting filament
 	volatile float extrusionTemperatureBoost;							// the amount of extrusion temperature boost we are currently applying
 
 	FopDt model;

@@ -24,6 +24,7 @@ void Heater::ResetHeater() noexcept
 {
 	lastExtrusionPwmBoost = 0.0;
 	extrusionTemperatureBoost = 0.0;
+	allowedExtrusionPwmBoost = 0.0;
 	lastFanPwm = 0.0;
 }
 
@@ -31,6 +32,7 @@ void Heater::SwitchOff() noexcept
 {
 	lastExtrusionPwmBoost = 0.0;
 	extrusionTemperatureBoost = 0.0;
+	allowedExtrusionPwmBoost = 0.0;
 }
 
 GCodeResult Heater::SetFaultDetectionParameters(const CanMessageSetHeaterFaultDetectionParameters& msg, const StringRef& reply)

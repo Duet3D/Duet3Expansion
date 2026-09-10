@@ -555,7 +555,7 @@ void LocalHeater::Spin() noexcept
 					// If the P and D terms together demand that the heater is full on or full off, disregard the I term to reduce integral windup
 					const float errorMinusDterm = error - (params.tD * derivative);
 					const float pPlusD = params.kP * errorMinusDterm;
-					const float expectedPwm = GetModel().EstimateRequiredPwm(temperature - ambientTemperature, lastFanPwm, currentVoltage, 0.0);		//TODO pass filamentPwm
+					const float expectedPwm = GetModel().EstimateRequiredPwm(temperature - ambientTemperature, lastFanPwm, currentVoltage, allowedExtrusionPwmBoost);
 					if (pPlusD + expectedPwm > GetModel().GetMaxPwm())
 					{
 						lastPwm = GetModel().GetMaxPwm();
@@ -750,20 +750,41 @@ GCodeResult LocalHeater::TuningCommand(const CanMessageHeaterTuningCommand& msg,
 // Adjust heater power for fan PWM or extrusion change
 GCodeResult LocalHeater::ApplyFeedForward(const CanMessageHeaterFeedForwardV1& msg, const StringRef& reply) noexcept
 {
-	if (mode == HeaterMode::stable)
+	if (mode == HeaterMode::stable)				// we only apply feedforward when the temperature is stable
 	{
-		float pwmBoost = msg.extrusionPwmBoost - lastExtrusionPwmBoost;
-		lastExtrusionPwmBoost = msg.extrusionPwmBoost;
+		float requiredPwmBoostChange;
+
+		// Calculate the PWM change required due to fan speed change
 		if (msg.fanPwmFraction != lastFanPwm)
 		{
 			const float oldFanPwm = lastFanPwm;
 			lastFanPwm = msg.fanPwmFraction;
-			pwmBoost += GetModel().GetPwmCorrectionForFan(GetTargetTemperature() - ambientTemperature, oldFanPwm, msg.fanPwmFraction) * FanFeedForwardMultiplier;
+			requiredPwmBoostChange = GetModel().GetPwmCorrectionForFan(GetTargetTemperature() - ambientTemperature, oldFanPwm, msg.fanPwmFraction) * FanFeedForwardMultiplier;
 		}
+		else
+		{
+			requiredPwmBoostChange = 0.0;
+		}
+
+		// We need to update iAccumulator atomically and we need the Heat task to see consistency between iAccumulator and allowedExtruderPwmBoost
 		TaskCriticalSectionLocker lock;
-		iAccumulator += pwmBoost;
+		if (!msg.fanOnly)
+		{
+			allowedExtrusionPwmBoost = msg.extrusionPwmBoost;
+			if (msg.nonPrintingExtruderMove)
+			{
+				requiredPwmBoostChange -= lastExtrusionPwmBoost;
+				lastExtrusionPwmBoost = 0.0;
+			}
+			else
+			{
+				requiredPwmBoostChange += msg.extrusionPwmBoost - lastExtrusionPwmBoost;
+				lastExtrusionPwmBoost = msg.extrusionPwmBoost;
+			}
+		}
+
+		iAccumulator += requiredPwmBoostChange;
 	}
-	extrusionTemperatureBoost = msg.extrusionTemperatureBoost;
 	return GCodeResult::ok;
 }
 
