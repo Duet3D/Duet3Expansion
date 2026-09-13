@@ -780,6 +780,7 @@ GCodeResult LocalHeater::ApplyFeedForward(const CanMessageHeaterFeedForwardV1& m
 			{
 				requiredPwmBoostChange += msg.extrusionPwmBoost - lastExtrusionPwmBoost;
 				lastExtrusionPwmBoost = msg.extrusionPwmBoost;
+				extrusionTemperatureBoost = msg.extrusionTemperatureBoost;
 			}
 		}
 
