@@ -95,15 +95,12 @@ private:
 		int32_t stepLimit;								// segmentStepLimit for seg
 		int32_t reverseStartStep;						// reverseStartStep for seg
 		motioncalc_t dcfAtSeg;							// distanceCarriedForwards at the start of seg, i.e. after the slivers
-		motioncalc_t dcfAfterSeg;						// distanceCarriedForwards after seg ends; anchors the preparation of the following slot
 		motioncalc_t t0, p, q;							// the movement parameters for seg (see the members of the same names below)
 	};
 
-	static constexpr unsigned int NumShadowSlots = 3;
-
-	bool PrepareShadowChunk() noexcept;					// prepare one more slot if possible, returning true if a slot was filled; called from Move::Spin (MAIN task) only; deliberately in flash
-	void InvalidateShadowsFrom(uint32_t startTime) noexcept;	// invalidate all slots that segments added from startTime onwards may modify; caller must shut out the step interrupt
-	void FlushShadows() noexcept;						// drop all prepared slots; caller must be the step ISR or have it shut out
+	bool PrepareShadowChunk() noexcept;					// prepare the slot if it is free and there is a segment to prepare, returning true if it was filled; called from Move::Spin (MAIN task) only; deliberately in flash
+	void InvalidateShadowsFrom(uint32_t startTime) noexcept;	// invalidate the slot if segments added from startTime onwards may modify what it covers; caller must shut out the step interrupt
+	void FlushShadows() noexcept;						// drop the prepared slot; caller must be the step ISR or have it shut out
 #endif
 
 	void ReleaseSegments() noexcept;					// release the list of segments and set it to nullptr
@@ -144,12 +141,12 @@ private:
 	int32_t reverseStartStep;							// the step number for which we need to reverse direction due to pressure advance or delta movement
 	motioncalc_t q, t0, p;								// the movement parameters of the current segment, if there is one
 #if USE_SHADOW_SEGMENTS
-	// The ring of prepared upcoming segments. The step ISR is the sole consumer, Move::Spin (MAIN task) the sole producer;
-	// AddLinearSegments invalidates slots that an incoming move may modify, and anything that releases segments outside the
-	// prepared order flushes all slots, so the boundary falls back to the normal path and correctness never depends on the preparation.
-	ShadowSlot shadowSlots[NumShadowSlots];
-	uint8_t shadowHead;									// the index of the slot the step ISR will consume next
-	volatile uint32_t shadowGen;						// bumped whenever the ISR releases a segment or consumes/flushes slots; guards the producer's snapshots
+	// The prepared upcoming segment. The step ISR is the sole consumer, Move::Spin (MAIN task) the sole producer;
+	// AddLinearSegments invalidates the slot if an incoming move may modify what it covers, and anything that releases segments outside
+	// the prepared order flushes it, so the boundary falls back to the normal path and correctness never depends on the preparation.
+	// One slot is enough: serving one boundary from it leaves the whole duration of that segment for the MAIN task to prepare the next one.
+	ShadowSlot shadowSlot;
+	volatile uint32_t shadowGen;						// bumped whenever the ISR releases a segment or consumes/flushes the slot; guards the producer's snapshots
 #endif
 #if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
 	motioncalc_t u;										// the initial speed of this segment
@@ -234,14 +231,11 @@ inline int32_t DriveMovement::GetAndClearMaxStepsLate() noexcept
 
 #if USE_SHADOW_SEGMENTS
 
-// Drop all prepared slots. Called from the step ISR, or with the step interrupt shut out, when the segment list no
+// Drop the prepared slot. Called from the step ISR, or with the step interrupt shut out, when the segment list no
 // longer matches what the preparation saw or the segments are about to be released.
 inline void DriveMovement::FlushShadows() noexcept
 {
-	for (unsigned int k = 0; k < NumShadowSlots; ++k)
-	{
-		shadowSlots[k].seg = nullptr;
-	}
+	shadowSlot.seg = nullptr;
 	shadowGen = shadowGen + 1;
 }
 
