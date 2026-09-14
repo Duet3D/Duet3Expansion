@@ -270,6 +270,19 @@ void Move::Spin(bool powered) noexcept
 void Move::Spin() noexcept
 #endif
 {
+#if USE_SHADOW_SEGMENTS
+	// Prepare upcoming segment parameters for the step ISR; cheap when there is nothing to prepare.
+	// This must remain the only caller of PrepareShadowChunk (single producer).
+# if SINGLE_DRIVER
+	while (dms[0].PrepareShadowChunk()) { }
+# else
+	for (size_t drive = 0; drive < NumDrivers; ++drive)
+	{
+		while (dms[drive].PrepareShadowChunk()) { }
+	}
+# endif
+#endif
+
 # if SUPPORT_BRAKE_PWM
 	const float currentVinVoltage = Platform::GetCurrentVinVoltage();
 # endif
@@ -502,6 +515,16 @@ void Move::AppendDiagnostics(const StringRef& reply) noexcept
 	reply.lcatf("Moves scheduled %" PRIu32 ", hiccups %u (%.2f/%.2fms), segs %u, step errors %u (types 0x%x), maxLate %" PRIi32 " maxPrep %" PRIu32,
 					scheduledMoves, numHiccups, (double)ownDelayToReport, (double)totalDelayToReport, MoveSegment::NumCreated(),
 					numStepErrors, stepErrorTypesLogged.GetRaw(), DriveMovement::GetAndClearMaxStepsLate(), maxPrepareTime);
+#if SHADOW_CACHE_DIAGNOSTICS
+	{
+		const uint32_t hits = DriveMovement::shadowCacheHits;
+		const uint32_t total = hits + DriveMovement::shadowCacheMisses;
+		reply.catf(", cacheHit %.1f%% (%" PRIu32 "/%" PRIu32 "), maxSkip %" PRIu32 ", maxCacheSkip %" PRIu32,
+						(double)((total == 0) ? 0.0f : (float)hits * 100.0f/(float)total), hits, total,
+						DriveMovement::maxIsrSkip, DriveMovement::maxCacheSkip);
+		DriveMovement::shadowCacheHits = DriveMovement::shadowCacheMisses = DriveMovement::maxIsrSkip = DriveMovement::maxCacheSkip = 0;
+	}
+#endif
 	numHiccups = 0;
 	maxPrepareTime = 0;
 	numStepErrors = 0;
@@ -1057,6 +1080,10 @@ void Move::AddLinearSegments(size_t drive, uint32_t startTime, const PrepParams&
 		const uint32_t oldFlags = IrqSave();
 #else
 		const uint32_t oldPrio = ChangeBasePriority(NvicPriorityStep);					// shut out the step interrupt
+#endif
+#if USE_SHADOW_SEGMENTS
+		// Invalidate any prepared slots for segments that the segments we are about to add may modify; those boundaries fall back to the normal path
+		dm.InvalidateShadowsFrom(startTime);
 #endif
 
 		// Start the search at the cached insertion hint if it is still valid, i.e. it is a segment still in the list that
