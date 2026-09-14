@@ -243,11 +243,10 @@ __attribute__((noinline)) bool DriveMovement::PrepareShadowChunk() noexcept
 #endif
 
 	{
-		const uint32_t oldFlags = IrqSave();
+		AtomicCriticalSectionLocker lock;
 		gen0 = shadowGen;
 		if (shadowSlot.seg != nullptr)
 		{
-			IrqRestore(oldFlags);
 			return false;									// the slot is already prepared
 		}
 
@@ -255,7 +254,6 @@ __attribute__((noinline)) bool DriveMovement::PrepareShadowChunk() noexcept
 		MoveSegment *const head = segments;
 		if (head == nullptr)
 		{
-			IrqRestore(oldFlags);
 			return false;
 		}
 		if (head->GetFlags().executing)
@@ -272,7 +270,6 @@ __attribute__((noinline)) bool DriveMovement::PrepareShadowChunk() noexcept
 			cursor = head;									// the head segment has not started executing yet (DM idle or starting)
 			dcf = distanceCarriedForwards;
 		}
-		IrqRestore(oldFlags);
 	}
 
 	if (cursor == nullptr)
@@ -292,13 +289,12 @@ __attribute__((noinline)) bool DriveMovement::PrepareShadowChunk() noexcept
 	{
 		SegSnapshot snap;
 		{
-			const uint32_t oldFlags = IrqSave();
+			AtomicCriticalSectionLocker lock;
 			snap.startTime = cursor->GetStartTime();
 			snap.duration = cursor->GetDuration();
 			snap.distance = cursor->GetLength();
 			snap.a = cursor->GetA();
 			snap.next = cursor->GetNext();
-			IrqRestore(oldFlags);
 		}
 
 		if (numSlivers != 0 && snap.startTime != prevEndTime)
@@ -350,14 +346,13 @@ __attribute__((noinline)) bool DriveMovement::PrepareShadowChunk() noexcept
 	// Commit the slot, unless the ISR released segments or consumed/flushed the slot while we were computing
 	bool committed = false;
 	{
-		const uint32_t oldFlags = IrqSave();
+		AtomicCriticalSectionLocker lock;
 		ShadowSlot& s = shadowSlot;
 		if (shadowGen == gen0 && s.seg == nullptr)
 		{
 			s = local;										// interrupts are off, so the ISR cannot see a partially-written slot
 			committed = true;
 		}
-		IrqRestore(oldFlags);
 	}
 	return committed;
 }
