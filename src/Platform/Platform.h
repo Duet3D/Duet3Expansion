@@ -167,6 +167,10 @@ namespace Platform
 # endif
 #endif
 
+#if HAS_BOARD_THERMISTOR
+	float GetBoardTemperature() noexcept;
+#endif
+
 #if SUPPORT_INDUCTIVE_HEATER
 	InductiveHeaterPort& GetInductiveHeater() noexcept;
 #endif
