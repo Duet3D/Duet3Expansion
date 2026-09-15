@@ -149,7 +149,7 @@ GCodeResult TPiS_1T_1086_L5_5::Configure(const CanMessageGenericParser& parser, 
 	{
 		shB = 1.0/beta;
 		const float lnR25 = logf(r25);
-		shA = 1.0/(ConvertDegCToDegK(25.0)) - shB * lnR25 - shC * lnR25 * lnR25 * lnR25;
+		shA = 1.0/(ConvertDegCToDegK(25.0)) - (shB + shC * fsquare(lnR25)) * lnR25;
 	}
 	else
 	{
@@ -179,7 +179,7 @@ void TPiS_1T_1086_L5_5::Poll() noexcept
 			const float denom = (float)(OversampledAdcRange - averagedTempReading) - 0.5;
 			float resistance = seriesR * ((float)averagedTempReading + 0.5)/denom;
 			const float logResistance = logf(resistance);
-			const float recipT = shA + shB * logResistance + shC * logResistance * logResistance * logResistance;
+			const float recipT = shA + (shB + shC * fsquare(logResistance)) * logResistance;
 			const float tempDegK = (recipT > 0.0) ? (1.0/recipT) : ConvertDegCToDegK(BadErrorTemperature);
 
 			if (tempDegK < AuxTempReadingMin)
