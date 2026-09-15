@@ -238,6 +238,11 @@ namespace Platform
 	{
 		return boardTemperature;
 	}
+
+	std::pair<float, TemperatureError> GetBoardTemperatureAndResult() noexcept
+	{
+		return std::pair<float, TemperatureError>(boardTemperature, boardTemperatureResult);
+	}
 #endif
 
 #if HAS_VOLTAGE_MONITOR
