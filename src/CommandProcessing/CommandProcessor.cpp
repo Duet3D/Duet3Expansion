@@ -170,13 +170,13 @@ static GCodeResult GenerateTestReport(const CanMessageGeneric &msg, const String
 
 static GCodeResult HandlePressureAdvance(const CanMessageMultipleDrivesRequest<float>& msg, size_t dataLength, const StringRef& reply)
 {
-	const auto drivers = Bitmap<uint16_t>::MakeFromRaw(msg.driversToUpdate);
-	if (dataLength < msg.GetActualDataLength(drivers.CountSetBits()))
+	if (dataLength < msg.GetActualDataLength())
 	{
 		reply.copy("bad data length");
 		return GCodeResult::error;
 	}
 
+	const auto drivers = Bitmap<uint16_t>::MakeFromRaw(msg.driversToUpdate);
 	GCodeResult rslt = GCodeResult::ok;
 	drivers.Iterate([&msg, &reply, &rslt](unsigned int driver, unsigned int count) -> void
 						{
@@ -196,13 +196,13 @@ static GCodeResult HandlePressureAdvance(const CanMessageMultipleDrivesRequest<f
 
 static GCodeResult HandlePressureAdvance(const CanMessageMultipleDrivesRequest<ShortPressureAdvanceParameters>& msg, size_t dataLength, const StringRef& reply)
 {
-	const auto drivers = Bitmap<uint16_t>::MakeFromRaw(msg.driversToUpdate);
-	if (dataLength < msg.GetActualDataLength(drivers.CountSetBits()))
+	if (dataLength < msg.GetActualDataLength())
 	{
 		reply.copy("bad data length");
 		return GCodeResult::error;
 	}
 
+	const auto drivers = Bitmap<uint16_t>::MakeFromRaw(msg.driversToUpdate);
 	GCodeResult rslt = GCodeResult::ok;
 	drivers.Iterate([&msg, &reply, &rslt](unsigned int driver, unsigned int count) -> void
 						{
@@ -222,13 +222,13 @@ static GCodeResult HandlePressureAdvance(const CanMessageMultipleDrivesRequest<S
 
 static GCodeResult SetStepsPerMmAndMicrostepping(const CanMessageMultipleDrivesRequest<StepsPerUnitAndMicrostepping>& msg, size_t dataLength, const StringRef& reply)
 {
-	const auto drivers = Bitmap<uint16_t>::MakeFromRaw(msg.driversToUpdate);
-	if (dataLength < msg.GetActualDataLength(drivers.CountSetBits()))
+	if (dataLength < msg.GetActualDataLength())
 	{
 		reply.copy("bad data length");
 		return GCodeResult::error;
 	}
 
+	const auto drivers = Bitmap<uint16_t>::MakeFromRaw(msg.driversToUpdate);
 	GCodeResult rslt = GCodeResult::ok;
 	drivers.Iterate([&msg, &reply, &rslt](unsigned int driver, unsigned int count) -> void
 						{
@@ -343,9 +343,14 @@ static GCodeResult ProcessM569Point2(const CanMessageGeneric& msg, const StringR
 #endif
 }
 
-static GCodeResult HandleSetDriverStates(const CanMessageMultipleDrivesRequest<DriverStateControl>& msg, const StringRef& reply)
+static GCodeResult HandleSetDriverStates(const CanMessageMultipleDrivesRequest<DriverStateControl>& msg, size_t dataLength, const StringRef& reply)
 {
-	//TODO check message is long enough for the number of drivers specified
+	if (dataLength < msg.GetActualDataLength())
+	{
+		reply.copy("bad data length");
+		return GCodeResult::error;
+	}
+
 	const auto drivers = Bitmap<uint16_t>::MakeFromRaw(msg.driversToUpdate);
 	drivers.Iterate([&msg](unsigned int driver, unsigned int count) -> void
 		{
@@ -857,7 +862,7 @@ void CommandProcessor::Spin()
 
 		case CanMessageType::setDriverStates:
 			requestId = buf->msg.multipleDrivesRequestUint16.requestId;
-			rslt = HandleSetDriverStates(buf->msg.multipleDrivesRequestDriverState, replyRef);
+			rslt = HandleSetDriverStates(buf->msg.multipleDrivesRequestDriverState, buf->dataLength, replyRef);
 			break;
 
 		case CanMessageType::m915:
