@@ -58,26 +58,25 @@
 # include "LedStatusControl.h"
 #endif
 
+#if HAS_BOARD_THERMISTOR
+# include <AnalogIn.h>
+#endif
+
 #ifdef ATEIO
 # include <Hardware/ATEIO/ExtendedAnalog.h>
 #endif
 
-#if SAME5x || SAMC21
-# include <hpl_user_area.h>
-#endif
-
-#if RP2040
-# include <hardware/structs/watchdog.h>
-#endif
-
 #if SAME5x
+# include <hpl_user_area.h>
 # include <hri_nvmctrl_e54.h>
 #elif SAMC21
+# include <hpl_user_area.h>
 # include <hri_nvmctrl_c21.h>
 #elif STM32
 // TODO
 #elif RP2040
 // TODO
+# include <hardware/structs/watchdog.h>
 #else
 # error Unsupported processor
 #endif
@@ -132,7 +131,6 @@ namespace Platform
 
 #if HAS_VOLTAGE_MONITOR
 	static volatile uint16_t currentVin, highestVin, lowestVin;
-//	static uint16_t lastUnderVoltageValue, lastOverVoltageValue;
 	static uint32_t numUnderVoltageEvents, previousUnderVoltageEvents;
 	static volatile uint32_t numOverVoltageEvents, previousOverVoltageEvents;
 #endif
@@ -183,6 +181,68 @@ namespace Platform
 	static AveragingFilter<McuTempReadingsAveraged> tcFilter;
 #elif SAMC21 || RP2040
 	static AveragingFilter<McuTempReadingsAveraged> tsensFilter;
+#endif
+
+#if HAS_BOARD_THERMISTOR
+	float boardTemperature = ABS_ZERO;
+	TemperatureError boardTemperatureResult = TemperatureError::notReady;
+
+	// Init the board temperature sensor. We don't use a filter.
+	static void InitBoardThermistor() noexcept
+	{
+		const AnalogChannelNumber chan = PinToAdcChannel(BoardThermistorPin);
+		if (chan != AdcInput::none)
+		{
+			::SetPinMode(BoardThermistorPin, AIN);
+			AnalogInEnableChannel(chan, true);
+		}
+	}
+
+	// Read the board temperature thermistor. We don't use a filter.
+	static void ReadBoardThermistor() noexcept
+	{
+		constexpr int32_t AdcRange = 1u << AnalogIn::AdcBits;	// The readings we pass in should be in range 0..(AdcRange - 1)
+		constexpr float shB = 1.0/BoardThermistorBeta;
+		constexpr float lnR25 = logf(BoardThermistorR25);
+		constexpr float shA = 1.0/(ConvertDegCToDegK(25.0)) - (shB + BoardThermistorShC * fsquare(lnR25)) * lnR25;
+
+		const AdcInput chan = PinTable[BoardThermistorPin].adc;
+		if (chan != AdcInput::none)
+		{
+			const uint32_t val = AnalogIn::ReadChannel(chan);
+			if (AdcRange > val)
+			{
+				const float denom = (float)(AdcRange - val) - 0.5;
+				float resistance = BoardThermistorSeriesR * ((float)val + 0.5)/denom;
+				const float logResistance = logf(resistance);
+				const float recipT = shA + (shB + BoardThermistorShC * fsquare(logResistance)) * logResistance;
+				if (recipT > 0.0)
+				{
+					boardTemperature = ConvertDegKToDegC(1.0/recipT);
+					boardTemperatureResult = TemperatureError::ok;
+				}
+				else
+				{
+					boardTemperature = BadErrorTemperature;
+					boardTemperatureResult = TemperatureError::unknownError;
+				}
+				return;
+			}
+		}
+
+		boardTemperature = ABS_ZERO;
+		boardTemperatureResult = TemperatureError::openCircuit;
+	}
+
+	float GetBoardTemperature() noexcept
+	{
+		return boardTemperature;
+	}
+
+	std::pair<float, TemperatureError> GetBoardTemperatureAndResult() noexcept
+	{
+		return std::pair<float, TemperatureError>(boardTemperature, boardTemperatureResult);
+	}
 #endif
 
 #if HAS_VOLTAGE_MONITOR
@@ -753,6 +813,10 @@ void Platform::Init()
 # endif
 #endif
 
+#if HAS_BOARD_THERMISTOR
+	InitBoardThermistor();
+#endif
+
 	// Set up the MCU temperature sensors
 	mcuTemperature.current = 0.0;
 	mcuTemperature.maximum = -273.16;
@@ -962,6 +1026,10 @@ void Platform::Spin()
 	{
 		powered = false;
 	}
+#endif
+
+#if HAS_BOARD_THERMISTOR
+	ReadBoardThermistor();
 #endif
 
 #if SUPPORT_DRIVERS

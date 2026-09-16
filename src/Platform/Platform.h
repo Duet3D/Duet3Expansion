@@ -39,6 +39,8 @@ class InductiveHeaterPort;
 # include <hardware/structs/sio.h>
 #endif
 
+#include <utility>
+
 class CanMessageDiagnosticTest;
 class CanMessageBuffer;
 class LedStatusControl;
@@ -165,6 +167,11 @@ namespace Platform
 	ThermistorAveragingFilter *GetVssaFilter(unsigned int filterNumber) noexcept;
 	ThermistorAveragingFilter *GetVrefFilter(unsigned int filterNumber) noexcept;
 # endif
+#endif
+
+#if HAS_BOARD_THERMISTOR
+	float GetBoardTemperature() noexcept;
+	std::pair<float, TemperatureError> GetBoardTemperatureAndResult() noexcept;
 #endif
 
 #if SUPPORT_INDUCTIVE_HEATER

@@ -523,7 +523,7 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 		extra = LastDiagnosticsPart;
 		{
 			Platform::AppendBoardAndFirmwareDetails(reply);
-			// GCC 12.2 and 13.2 produce a spurious diagnostic for the following line of code, see https://gcc.gnu.org/bugzilla/show_bug.cgi?id=105523
+			// GCC 12.2, 13.2 and 15.2Rel1 produce a spurious diagnostic for the following line of code, see https://gcc.gnu.org/bugzilla/show_bug.cgi?id=105523
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Warray-bounds"
 			const char *bootloaderVersionText = *reinterpret_cast<const char**>(0x20);		// offset of vectors.pvReservedM8
@@ -593,6 +593,10 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 #if HAS_CPU_TEMP_SENSOR
 			const MinCurMax& mcuTemperature = Platform::GetMcuTemperatures();
 			reply.lcatf("MCU temperature: min %.1fC, current %.1fC, max %.1fC", (double)mcuTemperature.minimum, (double)mcuTemperature.current, (double)mcuTemperature.maximum);
+#endif
+
+#if HAS_BOARD_THERMISTOR
+			reply.lcatf("Board temperature %.1fC", (double)Platform::GetBoardTemperature());
 #endif
 		}
 		break;

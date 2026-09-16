@@ -21,6 +21,7 @@
 #define HAS_CPU_TEMP_SENSOR		1
 #define HAS_ADDRESS_SWITCHES	0
 #define HAS_BUTTONS				1
+#define HAS_BOARD_THERMISTOR	1
 
 // Drivers configuration
 #define SUPPORT_DRIVERS			1
@@ -42,7 +43,7 @@
 #define SUPPORT_CLOSED_LOOP		1
 #define SUPPORT_BRAKE_PWM		1
 
-#define SUPPORT_MT6835					0		// M23CL always uses AS5047D encoder
+#define SUPPORT_MT6835					0					// M23CL always uses AS5047D encoder
 #define SUPPORT_QUADRATURE_ENCODER		1
 #define SUPPORT_COMPOSITE_ENCODER		1
 
@@ -53,7 +54,7 @@ constexpr DmaChannel DmacChanLedTx = 2;
 constexpr DmaChannel DmacChanSspiTx = 3;
 constexpr DmaChannel DmacChanSspiRx = 4;
 
-constexpr unsigned int NumDmaChannelsUsed = 5;			// must be at least the number of channels used, may be larger. Max 12 on the SAME5x.
+constexpr unsigned int NumDmaChannelsUsed = 5;				// must be at least the number of channels used, may be larger. Max 12 on the SAME5x.
 
 constexpr DmaPriority DmacPrioTmcTx = 0;
 constexpr DmaPriority DmacPrioTmcRx = 3;
@@ -102,8 +103,8 @@ constexpr bool UseLaterCanPins = false;
 
 constexpr size_t MaxPortsPerHeater = 1;
 
-// TEMP0 uses a 3K9 series resistor and a 10K thermistor to ground. TEMP1 has pin PA07 assigned but it is not connected, so we ignore it.
-constexpr size_t NumThermistorInputs = 2;
+// Board thermistor uses a 3K9 series resistor and a 10K thermistor to ground. HCTEMP has pin PB09 assigned but it is not connected.
+constexpr size_t NumThermistorInputs = 1;
 constexpr float DefaultThermistorSeriesR = 3900.0;
 // Thermistor is a 10K Murata NCU15XH103J6SRC. B25/50 = 3380, B25/80 = 3428, B25/85 = 3434, B25/100 = 3455
 // From this we deduce R25 = 10000, R50 = 4160.1, R80 = 1668.5, R85 = 1452.2, R100 = 973.8
@@ -111,6 +112,12 @@ constexpr float DefaultThermistorSeriesR = 3900.0;
 constexpr float DefaultThermistorR25_M23CL = 10000;
 constexpr float DefaultThermistorBeta_M23CL = 3425.0;
 constexpr float DefaultThermistorC_M23CL = 1.68e-7;
+
+constexpr Pin BoardThermistorPin = PortBPin(8);
+constexpr float BoardThermistorSeriesR = 3900.0;
+constexpr float BoardThermistorR25 = 10000;
+constexpr float BoardThermistorBeta = 3425.0;
+constexpr float BoardThermistorShC = 1.68e-7;
 
 constexpr Pin BoardTypePin = PortAPin(3);
 
@@ -125,7 +132,7 @@ constexpr float V12DividerRatio = (60.4 + 4.7)/4.7;
 constexpr float VinMonitorVoltageRange = VinDividerRatio * 3.3;
 constexpr float V12MonitorVoltageRange = V12DividerRatio * 3.3;
 
-constexpr Pin TempSensePins[NumThermistorInputs] = { PortBPin(8), PortBPin(9) };
+constexpr Pin TempSensePins[NumThermistorInputs] = { PortBPin(9) };
 constexpr Pin ButtonPins[] = { PortAPin(0) };		// CAN reset jumper
 
 // Brake
@@ -207,7 +214,7 @@ constexpr PinDescription PinTable[] =
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PB05 not on chip
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PB06 not on chip
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PB07 not on chip
-	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_2,	SercomIo::none,		SercomIo::none,		Nx,	"temp0"			},	// PB08 TEMP0
+	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_2,	SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PB08 board temp thermistor
 	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_3,	SercomIo::none,		SercomIo::none,		Nx,	"hctemp"		},	// PB09 HC_TEMP
 	{ TcOutput::none,	TccOutput::tcc0_4F,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"ate.brakeon"	},	// PB10 brake on
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PB11 CLKOUT

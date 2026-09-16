@@ -174,4 +174,8 @@ constexpr size_t NumDrivers = 0;
 # define CUSTOM_THERMISTORS				0
 #endif
 
+#ifndef HAS_BOARD_THERMISTOR
+# define HAS_BOARD_THERMISTOR			0
+#endif
+
 #endif /* SRC_CONFIG_BOARDDEF_H_ */

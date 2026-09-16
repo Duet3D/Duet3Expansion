@@ -494,6 +494,7 @@ void StepTimer::CancelCallback() noexcept
 	numTimeoutResyncs = numJitterResyncs = 0;
 	peakReceiveDelay = 0;
 
+#if 0	// Including this makes the response too long so it gets truncated. It's not generally useful anyway.
 	const StepTimer *const pst = pendingList;
 	if (pst == nullptr)
 	{
@@ -501,11 +502,11 @@ void StepTimer::CancelCallback() noexcept
 	}
 	else
 	{
-#if RP2040
+# if RP2040
 		reply.catf("next timer interrupt due in %" PRIu32 " ticks, %s",
 					timer_hw->alarm[StepTimerAlarmNumber] - GetTimerTicks(),
 					(timer_hw->inte & (1u << StepTimerAlarmNumber)) ? "enabled" : "disabled");
-#else
+# else
 		reply.catf("next timer interrupt due in %" PRIu32 " ticks, %s",
 					pst->whenDue - GetTimerTicks(),
 					((StepTc->INTENSET.reg & TC_INTFLAG_MC0) == 0) ? "disabled" : "enabled");
@@ -513,13 +514,14 @@ void StepTimer::CancelCallback() noexcept
 		{
 			reply.cat(", CC0 mismatch!!");
 		}
-#endif
+# endif
 	}
 
-#if DEDICATED_STEP_TIMER
+ #if DEDICATED_STEP_TIMER
 	reply.catf(", next step interrupt due in %" PRIu32 " ticks, %s",
 				StepTc->CC[1].reg - GetTimerTicks(),
 				((StepTc->INTENSET.reg & TC_INTFLAG_MC1) == 0) ? "disabled" : "enabled");
+ #endif
 #endif
 }
 
