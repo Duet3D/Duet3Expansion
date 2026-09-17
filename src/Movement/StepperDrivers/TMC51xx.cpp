@@ -427,10 +427,17 @@ enum class DriversState : uint8_t
 };
 
 static DriversState driversState = DriversState::shutDown;
+
+#if HAS_BOARD_THERMISTOR && SUPPORT_TMC51xx
+static bool overTemperatureDisable = false;
+#endif
+
 static LocalDriversBitmap stallEndstopsEnabled;
+
 #if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
 static LocalDriversBitmap directModeDrivers;				// drivers whose coil currents are controlled directly, needing the fast TMC task cadence
 #endif
+
 std::atomic<uint16_t> SmartDrivers::driverStallsToNotify(0);
 
 #ifdef EXP3HC
@@ -648,7 +655,6 @@ uint16_t TmcDriverState::numTimeouts = 0;								// how many times a transfer ti
 
 // Initialise the state of the driver and its CS pin
 void TmcDriverState::Init(uint32_t p_driverNumber) noexcept
-pre(!driversPowered)
 {
 	driverNumber = p_driverNumber;										// axes are mapped straight through to drivers initially
 	driverBit = LocalDriversBitmap::MakeFromBits(p_driverNumber);
@@ -1845,8 +1851,13 @@ extern "C" [[noreturn]] void TmcLoop(void *) noexcept
 			driverStates[0].TransferSucceeded(const_cast<const uint8_t*>(tmcRcvData));
 			if (driversState == DriversState::initialising && !driverStates[0].UpdatePending())
 			{
-				fastDigitalWriteLow(GlobalTmcEnablePin);
 				driversState = DriversState::ready;
+# if HAS_BOARD_THERMISTOR && TMC_TYPE == 5160
+				if (!overTemperatureDisable)
+# endif
+				{
+					fastDigitalWriteLow(GlobalTmcEnablePin);
+				}
 			}
 #else
 			const volatile uint8_t *readPtr = tmcRcvData + 5 * numTmcDrivers;
@@ -1871,8 +1882,13 @@ extern "C" [[noreturn]] void TmcLoop(void *) noexcept
 
 				if (allInitialised)
 				{
-					fastDigitalWriteLow(GlobalTmcEnablePin);
 					driversState = DriversState::ready;
+# if HAS_BOARD_THERMISTOR && TMC_TYPE == 5160
+					if (!overTemperatureDisable)
+# endif
+					{
+						fastDigitalWriteLow(GlobalTmcEnablePin);
+					}
 				}
 			}
 #endif
@@ -2244,14 +2260,14 @@ void SmartDrivers::Spin(bool powered) noexcept
 	else if (driversState != DriversState::shutDown)
 	{
 		driversState = DriversState::noPower;				// flag that there is no power to the drivers
-		fastDigitalWriteHigh(GlobalTmcEnablePin);		// disable the drivers
+		fastDigitalWriteHigh(GlobalTmcEnablePin);			// disable the drivers
 	}
 }
 
 // This is called from the tick ISR, possibly while Spin (with powered either true or false) is being executed
 void SmartDrivers::TurnDriversOff() noexcept
 {
-	digitalWrite(GlobalTmcEnablePin, true);				// disable the drivers
+	fastDigitalWriteHigh(GlobalTmcEnablePin);				// disable the drivers
 	driversState = DriversState::noPower;
 }
 
@@ -2441,6 +2457,23 @@ GCodeResult SmartDrivers::SetStallEndstopReporting(uint16_t driverNumber, float 
 float SmartDrivers::GetDriverTemperature(size_t driver) noexcept
 {
 	return (driver < numTmcDrivers) ? driverStates[driver].GetDriverTemperature() : 0.0;
+}
+
+#endif
+
+#if HAS_BOARD_THERMISTOR && TMC_TYPE == 5160
+
+void SmartDrivers::OverTemperatureDisable(bool disable) noexcept
+{
+	overTemperatureDisable = disable;
+	if (disable)
+	{
+		fastDigitalWriteHigh(GlobalTmcEnablePin);
+	}
+	else if (driversState == DriversState::ready)
+	{
+		fastDigitalWriteLow(GlobalTmcEnablePin);
+	}
 }
 
 #endif

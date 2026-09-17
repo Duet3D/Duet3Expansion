@@ -316,6 +316,41 @@ void Move::Spin() noexcept
 	SmartDrivers::Spin(true);
 # endif
 
+#if HAS_BOARD_THERMISTOR && SUPPORT_TMC51xx
+	// If we have a board temperature sensor and drivers that use external mosfets, then the TMC driver over temperature warning is of limited value because the mosfets will get hotter than the TMC driver.
+	// So we use the board temperature to detect that the board and hence the mosfets are getting too hot.
+	// Currently this applies only to the M23CL.
+	const float boardTemp = Platform::GetBoardTemperature();
+	if (boardTemp >= BoardErrorTemperature)
+	{
+		if (boardTempState != BoardTemperatureState::error)
+		{
+			SmartDrivers::OverTemperatureDisable(true);
+			CanInterface::RaiseEvent(EventType::board_over_temperature, (uint16_t)(boardTemp * 10.0), 0, "", va_list());
+			boardTempState = BoardTemperatureState::error;
+		}
+	}
+	else
+	{
+		if (boardTempState == BoardTemperatureState::error)
+		{
+			SmartDrivers::OverTemperatureDisable(false);				// re-enable the drivers
+		}
+		if (boardTemp > BoardWarningTemperature)
+		{
+			if (boardTempState == BoardTemperatureState::ok)
+			{
+				CanInterface::RaiseEvent(EventType::board_temperature_warning, (uint16_t)(boardTemp * 10.0), 0, "", va_list());
+			}
+			boardTempState = BoardTemperatureState::warning;
+		}
+		else
+		{
+			boardTempState = BoardTemperatureState::ok;
+		}
+	}
+#endif
+
 	// Check one TMC driver for warnings and errors
 	if (enableValues[nextDriveToPoll] >= 0)				// don't poll driver if it is flagged "no poll"
 	{

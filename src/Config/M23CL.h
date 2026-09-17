@@ -65,7 +65,7 @@ constexpr DmaPriority DmacPrioSspiRx = 3;
 // Stepper drivers
 constexpr size_t NumDrivers = 1;
 constexpr size_t MaxSmartDrivers = 1;
-constexpr float MaxMotorCurrent = 3600.0;					// the maximum peak current we allow the TMC5160/5161 drivers to be set to in open loop mode
+constexpr float MaxMotorCurrent = 6300.0;					// the maximum peak current we allow the TMC5160/5161 drivers to be set to in open loop mode
 constexpr uint32_t DefaultStandstillCurrentPercent = 71;
 constexpr float Tmc5160SenseResistor = 0.05;
 
@@ -118,6 +118,9 @@ constexpr float BoardThermistorSeriesR = 3900.0;
 constexpr float BoardThermistorR25 = 10000;
 constexpr float BoardThermistorBeta = 3425.0;
 constexpr float BoardThermistorShC = 1.68e-7;
+
+constexpr float BoardWarningTemperature = 80.0;
+constexpr float BoardErrorTemperature = 85.0;
 
 constexpr Pin BoardTypePin = PortAPin(3);
 
