@@ -29,12 +29,11 @@ static constexpr uint8_t WhoAmIValue_2DW = 0x44;
 
 #if ACCELEROMETER_USES_SPI
 
-constexpr uint32_t DefaultAccelerometerSpiFrequency = 2000000;
 constexpr SpiMode lisMode = SpiMode::mode3;
 constexpr uint32_t Lis3dSpiTimeout = 25;							// timeout while waiting for the SPI bus
 
-LISAccelerometer::LISAccelerometer(SharedSpiDevice& dev, Pin p_csPin, Pin p_int1Pin) noexcept
-	: SharedSpiClient(dev, DefaultAccelerometerSpiFrequency, lisMode, p_csPin, false),
+LISAccelerometer::LISAccelerometer(SharedSpiDevice& dev, uint32_t freq, Pin p_csPin, Pin p_int1Pin) noexcept
+	: SharedSpiClient(dev, freq, lisMode, p_csPin, false),
 	  taskWaiting(nullptr), accelerometerType(AccelerometerType::LIS3DH), int1Pin(p_int1Pin)
 {
 	SetCsPin(p_csPin);

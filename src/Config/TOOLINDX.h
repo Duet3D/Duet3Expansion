@@ -18,6 +18,7 @@
 #define HAS_CPU_TEMP_SENSOR		1
 #define HAS_ADDRESS_SWITCHES	0
 #define HAS_BUTTONS				0
+#define HAS_BOARD_THERMISTOR	1
 
 // Drivers configuration
 #define SUPPORT_DRIVERS			1
@@ -147,6 +148,7 @@ constexpr float VinDividerRatio = (60.4 + 4.7)/4.7;							// to be confirmed
 constexpr float VinMonitorVoltageRange = VinDividerRatio * 3.3;
 
 // Thermistor inputs. 0 = nozzle environment, 1 = board temperature, 2 = LDC coil temperature.
+// Input 1 is handled separately as a board temperature sensor.
 // Thermistor 0 is Tewa TT7-10KX3-11 (10kOhm, B3977), https://www.tme.eu/Document/32a31570f1c819f9b3730213e5eca259/TT7-10KC3-11.pdf
 // R25 = 10000, R75 = 1480, R125 = 338. From these and using the SRS calculator we deduce R25=10000, B=4333, C=1.03958e-7.
 // Thermistors 1 and 2 are 10K Murata NCU15XH103J6SRC. B25/50 = 3380, B25/80 = 3428, B25/85 = 3434, B25/100 = 3455
@@ -155,13 +157,19 @@ constexpr float VinMonitorVoltageRange = VinDividerRatio * 3.3;
 // We don't use a Vref/Vssa calibration chain on this board
 #define CUSTOM_THERMISTORS			1										// we provide nonstandard R25, beta and series resistor values
 
-constexpr size_t NumThermistorInputs = 3;
-constexpr Pin TempSensePins[NumThermistorInputs] = { PortAPin(11), PortBPin(8), PortBPin(9) };
-constexpr float ThermistorSeriesR[NumThermistorInputs] = { 3900, 3900, 3900 };
-constexpr float ThermistorR25[NumThermistorInputs] = { 10000, 10000, 10000 };
-constexpr float ThermistorBeta[NumThermistorInputs] = { 4333, 3425.0, 3425.0 };
-constexpr float ThermistorShC[NumThermistorInputs] = { 1.03958e-7, 1.68e-7, 1.68e-7 };
+constexpr size_t NumThermistorInputs = 2;
+constexpr Pin TempSensePins[NumThermistorInputs] = { PortAPin(11), PortBPin(9) };
+constexpr float ThermistorSeriesR[NumThermistorInputs] = { 3900, 3900 };
+constexpr float ThermistorR25[NumThermistorInputs] = { 10000, 10000 };
+constexpr float ThermistorBeta[NumThermistorInputs] = { 4333, 3425.0 };
+constexpr float ThermistorShC[NumThermistorInputs] = { 1.03958e-7, 1.68e-7 };
 constexpr unsigned int envThermistorAdcFilterChannel = 0;
+
+constexpr Pin BoardThermistorPin = PortBPin(8);
+constexpr float BoardThermistorSeriesR = 3900.0;
+constexpr float BoardThermistorR25 = 10000;
+constexpr float BoardThermistorBeta = 3425.0;
+constexpr float BoardThermistorShC = 1.68e-7;
 
 constexpr float DefaultThermistorSeriesR = 3900;							// needed for initialisation but not actually used
 
@@ -387,7 +395,7 @@ constexpr PinDescription PinTable[] =
 	{ TcOutput::none,	TccOutput::none,	AdcInput::adc1_7,	SercomIo::none,		SercomIo::none,		Nx,	"ate.heaterv"	},	// PB05 Heater voltage feedback (also on PA06)
 	{ TcOutput::none,	TccOutput::none,	AdcInput::adc1_8,	SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PB06 Heater current
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		7,	nullptr			},	// PB07 Driver diag
-	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_2,	SercomIo::none,		SercomIo::none,		Nx,	"boardtemp"		},	// PB08 board thermistor
+	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_2,	SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PB08 board thermistor
 	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_3,	SercomIo::none,		SercomIo::none,		Nx,	"coiltemp"		},	// PB09 LDC coil temperature
 	{ TcOutput::none,	TccOutput::tcc0_4F,	AdcInput::none,		SercomIo::none,		SercomIo::none,		10,	nullptr			},	// PB10 LDC interrupt
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PB11 LDC1612 clock (GCLK5)
@@ -414,7 +422,7 @@ constexpr PinDescription PinTable[] =
 
 	// Virtual pins
 #if SUPPORT_LIS3DH
-	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"i2c.lis3dh,i2c.lis2dw,i2c.accelerometer"	},	// LIS3DH or LIS2DW12 sensor connected via I2C
+	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"i2c.lis,lis3dh,i2c.lis3dsh,i2c.lis2dw"	},	// LIS3DH or LIS2DW12 sensor connected via I2C
 #endif
 #if SUPPORT_LDC1612
 	{ TcOutput::none,	TccOutput::none,	AdcInput::ldc1612,	SercomIo::none,		SercomIo::none,		Nx,	"i2c.ldc1612"	},	// LDC1612 sensor connected via I2C
@@ -439,6 +447,9 @@ constexpr size_t NumVirtualPins = SUPPORT_LIS3DH + SUPPORT_LDC1612 + SUPPORT_AS5
 
 static_assert(NumPins == NumRealPins + NumVirtualPins);
 
+#if SUPPORT_LIS3DH
+constexpr Pin LisPinNumber = NumRealPins;
+#endif
 #if SUPPORT_AS5601
 constexpr Pin MfmPin = NumRealPins + SUPPORT_LIS3DH + SUPPORT_LDC1612;																		// pin number when the user selects magnetic filament monitor on I2C bus
 #endif

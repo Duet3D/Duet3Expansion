@@ -2450,6 +2450,11 @@ void SmartDrivers::SetCurrent(size_t drive, float current) noexcept
 	}
 }
 
+float SmartDrivers::GetMaxMotorCurrent(size_t driver) noexcept
+{
+	return MaxMotorCurrent;										// in this module, all drivers support the same maximum current
+}
+
 void SmartDrivers::EnableDrive(size_t drive, bool en) noexcept
 {
 	if (drive < GetNumTmcDrivers())

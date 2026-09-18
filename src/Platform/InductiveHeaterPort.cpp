@@ -29,7 +29,7 @@
 # error Unsupported processor
 #endif
 
-#define EVENT_DEBUG_TO_NP	(1)					// set nonzero to enable AC event output to NP LED pin
+#define EVENT_DEBUG_TO_NP	(0)					// set nonzero to enable AC event output to NP LED pin
 
 // The AC provides 64 trigger levels. Define the values that indicate over target and over maximum.
 constexpr float TargetVoltage = 90.0;

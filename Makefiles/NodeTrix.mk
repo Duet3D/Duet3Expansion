@@ -1,5 +1,5 @@
-# Makefile for NodeTrix (STM32H5)
-# This board uses STM32H5 MCU with Cortex-M33 + FPU
+# Makefile for NodeTrix (STM32H523)
+# This board uses an STM32H523 MCU with Cortex-M33 + FPU
 
 # Board name
 BOARD := NodeTrix

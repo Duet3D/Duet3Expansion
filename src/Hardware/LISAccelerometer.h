@@ -14,12 +14,12 @@
 
 # if ACCELEROMETER_USES_SPI
 
-#include "SharedSpiClient.h"
+#include <SPI/SharedSpiClient.h>
 
 class LISAccelerometer : public SharedSpiClient
 {
 public:
-	LISAccelerometer(SharedSpiDevice& dev, Pin p_csPin, Pin p_int1Pin) noexcept;
+	LISAccelerometer(SharedSpiDevice& dev, uint32_t freq, Pin p_csPin, Pin p_int1Pin) noexcept;
 # else
 
 #include <I2C/SharedI2CClient.h>

@@ -27,7 +27,7 @@ CFLAGS_EXTRA := $(DEBUG_FLAGS)
 CXXFLAGS_EXTRA := $(DEBUG_FLAGS)
 
 # Linker script
-LINKER_SCRIPT := $(CURDIR)/src/Hardware/SAME5x_C21/SAMC21/samc21g18a_flash.ld
+LINKER_SCRIPT := $(CURDIR)/src/Hardware/SAME5x_C21/SAMC21/samc21g18a_flash_with_bootloader.ld
 
 # Source directories (relative to project root)
 SRC_DIRS := \
@@ -164,10 +164,16 @@ $(ELF): $(OBJS) $(LIB_DEPS)
 	$(Q)echo "  LD      $(notdir $@)"
 	$(Q)$(LD) $(OBJS) $(LIBS) $(LDFLAGS) -o $@
 
-# Generate binary (no CRC appender for this config based on .cproject postbuild)
+# Generate binary and append CRC
 $(BIN): $(ELF)
 	$(Q)echo "  OBJCOPY $(notdir $@)"
 	$(Q)$(OBJCOPY) -O binary $< $@
+	$(Q)echo "  CRC     $(notdir $@)"
+	$(Q)if command -v CrcAppender > /dev/null 2>&1; then \
+		CrcAppender $@; \
+	else \
+		echo "  WARNING CrcAppender not found, skipping CRC"; \
+	fi
 
 # Compile C files
 $(BUILD_DIR)/%.o: %.c
