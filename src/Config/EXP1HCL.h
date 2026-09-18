@@ -38,6 +38,7 @@
 #define SUPPORT_TMC51xx			1
 #define SUPPORT_TMC2660			0
 #define SUPPORT_TMC22xx			0
+#define SUPPORT_TMC2240_SPI		0
 #define SUPPORT_INPUT_SHAPING	1
 #define SUPPORT_CLOSED_LOOP		1
 #define SUPPORT_BRAKE_PWM		1
@@ -154,27 +155,14 @@ constexpr I2cParameters I2C0Params =
 	.sclPin = PortAPin(13),
 	.sdaPin = PortAPin(12),
 	.pinFunction = GpioPinFunction::C,
-	.irqPriority = NvicPriorityI2C
+	.irqPriority = NvicPriorityI2C,
+	.rxDmaChannel = NoDmaChannel
 };
 
 #endif
 
 #if SUPPORT_LIS3DH
-
-# if NUM_I2C_CHANNELS != 0
-
-#  define ACCELEROMETER_USES_SPI			(0)				// accelerometer is connected via I2C
-constexpr unsigned int Lis_I2CChannel = 0;
-constexpr Pin Lis3dhInt1Pin = PortAPin(20);					// same as io1.in
-
-# else
-
-#  define ACCELEROMETER_USES_SPI			(1)				// accelerometer is connected via SPI
-constexpr Pin Lis3dhCsPin = PortAPin(18);					// same as encoder CS pin
-constexpr Pin Lis3dhInt1Pin = PortAPin(13);					// same as io1.in
-
-# endif
-
+# define ACCELEROMETER_USES_SPI			(1)				// accelerometer is connected via SPI
 #endif
 
 // Shared SPI definitions

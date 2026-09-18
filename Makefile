@@ -50,21 +50,22 @@ LIBRARIES_DIR ?= libraries
 # Quiet build support (Linux kernel style)
 # Use V=1 for verbose output
 ifeq ($(V),1)
-	Q :=
-	VERBOSE :=
+    Q :=
+    VERBOSE :=
 else
-	Q := @
-	VERBOSE := -s
+    Q := @
+    VERBOSE := -s
 endif
 export Q VERBOSE
 
 # Debug build support
 # Use DEBUG=1 to build with debug symbols and reduced optimization
+# Indent conditional bodies with spaces: Make reads a tab-indented line that is not a variable assignment as a recipe, and there is no target yet
 ifeq ($(DEBUG),1)
-DEBUG_FLAGS := -g3 -Og -DDEBUG
-$(info Building with debug symbols enabled)
+    DEBUG_FLAGS := -g3 -Og -DDEBUG
+    $(info Building with debug symbols enabled)
 else
-DEBUG_FLAGS :=
+    DEBUG_FLAGS :=
 endif
 export DEBUG_FLAGS
 
@@ -72,7 +73,7 @@ export DEBUG_FLAGS
 .DEFAULT_GOAL := help
 
 # Available build configurations
-CONFIGS := EXP3HC EXP1XD EXP1HCL TOOL1LC SAMMYC21 SZP M23CL F3PTB TOOL1RR TOOLINDX
+CONFIGS := EXP3HC EXP1XD EXP1HCL TOOL1LC SAMMYC21 SZP M23CL F3PTB TOOL1RR TOOLINDX NodeTrix
 
 # Declare all board targets as phony
 .PHONY: $(CONFIGS)
@@ -119,8 +120,12 @@ help:
 	$(Q)echo ""
 
 # Build all configurations
+# NodeTrix is excluded until its STM32H5 port compiles
 .PHONY: all
-all: $(CONFIGS)
+all:
+	$(Q)for config in $(filter-out NodeTrix,$(CONFIGS)); do \
+		$(MAKE) "$$config" || exit 1; \
+	done
 
 # Verify toolchain
 .PHONY: test-toolchain
@@ -208,6 +213,22 @@ $(LIBRARIES_DIR)/Qfplib-M0-full/SAMC21/libQfplib-M0-full.a:
 	$(Q)echo "  BUILD   Qfplib-M0-full/SAMC21"
 	$(Q)$(MAKE) $(VERBOSE) -C $(LIBRARIES_DIR)/Qfplib-M0-full SAMC21
 
+$(LIBRARIES_DIR)/CoreN2G/STM32H5_CAN_RTOS/libCoreN2G.a:
+	$(Q)echo "  BUILD   CoreN2G/STM32H5_CAN_RTOS"
+	$(Q)$(MAKE) $(VERBOSE) -C $(WORKSPACE)/CoreN2G STM32H5_CAN_RTOS
+
+$(LIBRARIES_DIR)/RRFLibraries/STM32H5_RTOS/libRRFLibraries.a:
+	$(Q)echo "  BUILD   RRFLibraries/STM32H5_RTOS"
+	$(Q)$(MAKE) $(VERBOSE) -C $(WORKSPACE)/RRFLibraries STM32H5_RTOS
+
+$(LIBRARIES_DIR)/FreeRTOS/STM32H5/libFreeRTOS.a:
+	$(Q)echo "  BUILD   FreeRTOS/STM32H5"
+	$(Q)$(MAKE) $(VERBOSE) -C $(WORKSPACE)/FreeRTOS STM32H5 FREERTOS_CONFIG_DIR="$(CURDIR)/src"
+
+$(LIBRARIES_DIR)/CANlib/STM32H5_RTOS/libCANlib.a:
+	$(Q)echo "  BUILD   CANlib/STM32H5_RTOS"
+	$(Q)$(MAKE) $(VERBOSE) -C $(WORKSPACE)/CANlib STM32H5_RTOS
+
 # Include all board makefiles. They bind key variables target-specifically,
 # so this is safe even when multiple boards are built in one invocation.
 -include Makefiles/EXP1HCL.mk
@@ -220,6 +241,7 @@ $(LIBRARIES_DIR)/Qfplib-M0-full/SAMC21/libQfplib-M0-full.a:
 -include Makefiles/TOOL1LC.mk
 -include Makefiles/TOOL1RR.mk
 -include Makefiles/TOOLINDX.mk
+-include Makefiles/NodeTrix.mk
 
 # Generic clean target
 .PHONY: clean

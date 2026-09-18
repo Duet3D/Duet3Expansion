@@ -67,6 +67,7 @@ private:
 	void HandleIncomingData() noexcept;
 	FilamentSensorStatus CheckFilament(float amountCommanded, float amountMeasured, bool overdue) noexcept;
 
+	bool HaveMonitorData() const noexcept;
 	bool HaveCalibrationData() const noexcept;
 	float MeasuredSensitivity() const noexcept;
 

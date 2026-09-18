@@ -1706,7 +1706,7 @@ void TmcDriverState::AppendDriverStatus(const StringRef& reply) noexcept
 	if (isTmc2240)
 # endif
 	{
-		reply.catf(", temp %.1fC", (double)GetDriverTemperature());
+		reply.catf(", temp %.1f" DEGREE_SYMBOL "C", (double)GetDriverTemperature());
 	}
 #endif
 
@@ -2448,6 +2448,11 @@ void SmartDrivers::SetCurrent(size_t drive, float current) noexcept
 	{
 		driverStates[drive].SetCurrent(current);
 	}
+}
+
+float SmartDrivers::GetMaxMotorCurrent(size_t driver) noexcept
+{
+	return MaxMotorCurrent;										// in this module, all drivers support the same maximum current
 }
 
 void SmartDrivers::EnableDrive(size_t drive, bool en) noexcept

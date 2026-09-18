@@ -117,7 +117,7 @@ MoveSegment *DriveMovement::NewSegment(uint32_t now) noexcept
 		netStepsThisSegment = (int32_t)(seg->GetLength() + distanceCarriedForwards);
 
 #if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
-		if (closedLoopControl.IsClosedLoopEnabled())
+		if (UsesPhaseStepping())
 		{
 			u = seg->CalcU();
 			state = DMState::phaseStepping;

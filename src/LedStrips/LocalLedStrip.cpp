@@ -29,6 +29,10 @@
 # endif
 #endif
 
+#if SUPPORT_DMA_NEOPIXEL || SUPPORT_PIO_NEOPIXEL
+bool LocalLedStrip::dmaBusy = false;
+#endif
+
 LocalLedStrip::LocalLedStrip(LedStripType p_type, uint32_t p_freq) noexcept
 	: LedStripBase(p_type), frequency(p_freq)
 {
@@ -121,9 +125,11 @@ GCodeResult LocalLedStrip::AllocateChunkBuffer(const StringRef& reply) noexcept
 
 #if SUPPORT_DMA_NEOPIXEL
 
-// This DOES NOT_WORK. The reason is that on (at least) Sercom1 on the SAME51G19A the data output pin goes high as soon as the SERCOM device
-// has been enabled in SPI mode, and also goes high at the end of any data transmission regardless of the value of the last bit transmitted.
-// Opened case 01429968 with Microchip to see if there is any way to control the idle state of the output pin.
+// On the SAME51G19A the SERCOM data output pin idles high, both while the SERCOM is enabled but not transmitting and again at the end of each
+// transmission, regardless of the last bit sent. A NeoPixel strip that is out of reset counts any such pulse as a bit, which shifts the whole frame.
+// Padding the data with zeros does not help because a few microseconds of low is far short of the reset time.
+// So the pin is left under PORT control driving low, and is handed to the SERCOM only while the SERCOM is actively shifting out a zero byte,
+// see DmaSendChunkBuffer and ReleaseDataPin.
 //
 // Set up the SPI port
 void LocalLedStrip::SetupSpi() noexcept
@@ -174,10 +180,6 @@ void LocalLedStrip::SetupSpi() noexcept
 	hri_sercomspi_write_BAUD_reg(hardware, SERCOM_SPI_BAUD_BAUD(Serial::SercomFastGclkFreq/(2 * frequency) - 1));
 	hri_sercomspi_write_DBGCTRL_reg(hardware, SERCOM_SPI_DBGCTRL_DBGSTOP);		// baud rate generator is stopped when CPU halted by debugger
 
-	// The problem we have is that when we enable the SERCOM the data out pin goes high until we send some data.
-	// The following SetPinMode call was an unsuccessful attempt to change that.
-	//IoPort::SetPinMode(port.GetPin(), PinMode::OUTPUT_LOW);
-	SetPinFunction(port.GetPin(), GetPeriNumber(sercom));
 	hri_sercomspi_write_CTRLA_reg(hardware, SERCOM_SPI_CTRLA_ENABLE | regCtrlA);
 	hri_sercomspi_wait_for_sync(hardware, SERCOM_SPI_SYNCBUSY_ENABLE);
 # else
@@ -297,34 +299,30 @@ void LocalLedStrip::DmaSendChunkBuffer(size_t numBytes) noexcept
 	DmacManager::SetDataLength(DmacChanLedTx, numBytes);					// must do this last!
 	DmacManager::EnableChannel(DmacChanLedTx, DmacPrioLed);
 # elif SAME5x || SAMC21
-//	Sercom *const hardware = Serial::GetSercom(GetDeviceNumber(sercom));
-//	hardware->SPI.CTRLA.bit.ENABLE = 0;
-//	hri_sercomspi_wait_for_sync(hardware, SERCOM_SPI_CTRLA_ENABLE);
-
+	Sercom *const hardware = Serial::GetSercom(GetDeviceNumber(sercom));
 	DmacManager::DisableChannel(DmacChanLedTx);
 	DmacManager::SetTriggerSourceSercomTx(DmacChanLedTx, GetDeviceNumber(sercom));
 	DmacManager::SetSourceAddress(DmacChanLedTx, chunkBuffer);
-	DmacManager::SetDestinationAddress(DmacChanLedTx, &Serial::GetSercom(GetDeviceNumber(sercom))->SPI.DATA.reg);
-#  if SAME5x
-	if (0)//((numBytes & 3) == 0)
-	{
-//		hardware->SPI.CTRLC.reg = SERCOM_SPI_CTRLC_DATA32B;	// 32-bit transfers
-		DmacManager::SetBtctrl(DmacChanLedTx, DMAC_BTCTRL_STEPSIZE_X1 | DMAC_BTCTRL_STEPSEL_SRC | DMAC_BTCTRL_SRCINC | DMAC_BTCTRL_BEATSIZE_WORD | DMAC_BTCTRL_BLOCKACT_NOACT);
-		DmacManager::SetDataLength(DmacChanLedTx, numBytes >> 2);			// must do this last!
-	}
-	else
-	{
-//		hardware->SPI.CTRLC.reg = 0;							// 8-bit transfers
-		DmacManager::SetBtctrl(DmacChanLedTx, DMAC_BTCTRL_STEPSIZE_X1 | DMAC_BTCTRL_STEPSEL_SRC | DMAC_BTCTRL_SRCINC | DMAC_BTCTRL_BEATSIZE_BYTE | DMAC_BTCTRL_BLOCKACT_NOACT);
-		DmacManager::SetDataLength(DmacChanLedTx, numBytes);				// must do this last!
-	}
-#  else
-	DmacManager::SetBtctrl(DmacChanLedTx, DMAC_BTCTRL_STEPSIZE_X1 | DMAC_BTCTRL_STEPSEL_SRC | DMAC_BTCTRL_SRCINC | DMAC_BTCTRL_BEATSIZE_BYTE | DMAC_BTCTRL_BLOCKACT_NOACT);
+	DmacManager::SetDestinationAddress(DmacChanLedTx, &hardware->SPI.DATA.reg);
+	DmacManager::SetBtctrl(DmacChanLedTx, DMAC_BTCTRL_STEPSIZE_X1 | DMAC_BTCTRL_STEPSEL_SRC | DMAC_BTCTRL_SRCINC | DMAC_BTCTRL_BEATSIZE_BYTE | DMAC_BTCTRL_BLOCKACT_INT);
 	DmacManager::SetDataLength(DmacChanLedTx, numBytes);					// must do this last!
-#  endif
-	DmacManager::EnableChannel(DmacChanLedTx, DmacPrioLed);
-//	hardware->SPI.CTRLA.bit.ENABLE = 1;
-//	hri_sercomspi_wait_for_sync(hardware, SERCOM_SPI_CTRLA_ENABLE);
+	DmacManager::SetInterruptCallback(DmacChanLedTx, DmaCompleteCallback, CallbackParameter(this));	// all strips share the channel, so claim it for this one
+	DmacManager::EnableCompletedInterrupt(DmacChanLedTx);
+
+	// Prime the SERCOM with two zero bytes, which gives us two byte times during which the data output is driven low.
+	// The DMA is armed within that window and the pin is handed over at the end of it, so the strip never sees the idle-high level
+	{
+		IrqDisable();
+		hri_sercomspi_clear_INTFLAG_TXC_bit(hardware);
+		hardware->SPI.DATA.reg = 0;
+		const uint32_t start = GetCurrentCycles();
+		while (!hri_sercomspi_get_INTFLAG_DRE_bit(hardware) && GetElapsedCycles(start) < NanosecondsToCycles(4000)) { }
+		hardware->SPI.DATA.reg = 0;
+		DmacManager::EnableChannel(DmacChanLedTx, DmacPrioLed);
+		delayNanoseconds(1000);												// let the first zero bit reach the pin before we hand it over
+		SetPinFunction(port.GetPin(), GetPeriNumber(sercom));
+		IrqEnable();
+	}
 
 # elif SAME70
 	xdmac_channel_disable(XDMAC, DmacChanLedTx);
@@ -358,22 +356,47 @@ void LocalLedStrip::DmaSendChunkBuffer(size_t numBytes) noexcept
 	dmaBusy = true;
 }
 
+#if (SAME5x || SAMC21) && !NEOPIXEL_USES_QSPI
+
+// Wait for the final byte to be shifted out, then give the data line back to the PORT so that it returns to driving low.
+// This must happen at transmit-complete, because the SERCOM raises the output as soon as it has nothing left to send
+void LocalLedStrip::ReleaseDataPin() noexcept
+{
+	Sercom *const hardware = Serial::GetSercom(GetDeviceNumber(sercom));
+	const uint32_t start = GetCurrentCycles();
+	while (!hri_sercomspi_get_INTFLAG_TXC_bit(hardware) && GetElapsedCycles(start) < NanosecondsToCycles(50000)) { }
+	ClearPinFunction(port.GetPin());
+	whenTransferFinished = StepTimer::GetTimerTicks();
+	dmaBusy = false;
+}
+
+/*static*/ void LocalLedStrip::DmaCompleteCallback(CallbackParameter cp, DmaCallbackReason reason) noexcept
+{
+	static_cast<LocalLedStrip*>(cp.vp)->ReleaseDataPin();
+}
+
+#endif
+
 // Return true if DMA to the LEDs is in progress
 bool LocalLedStrip::DmaInProgress() noexcept
 {
+# if (SAME5x || SAMC21) && !NEOPIXEL_USES_QSPI
+	return dmaBusy;																// cleared by the DMA completion interrupt, which also releases the data pin
+# else
 	if (dmaBusy)																// if we sent something
 	{
-# if SAME5x
+#  if SAME5x
 		if ((DmacManager::GetAndClearChannelStatus(DmacChanLedTx) & DMAC_CHINTFLAG_TCMPL) != 0)
-# elif SAME70
+#  elif SAME70
 		if ((xdmac_channel_get_interrupt_status(XDMAC, DmacChanLedTx) & XDMAC_CIS_BIS) != 0)	// if the last transfer has finished
-# endif
+#  endif
 		{
 			dmaBusy = false;													// we finished the last transfer
 			whenTransferFinished = StepTimer::GetTimerTicks();
 		}
 	}
 	return dmaBusy;
+# endif
 }
 
 #endif	// SUPPORT_DMA_NEOPIXEL || SUPPORT_DMA_DOTSTAR

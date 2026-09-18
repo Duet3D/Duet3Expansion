@@ -134,6 +134,14 @@ constexpr size_t NumDrivers = 0;
 # define SUPPORT_ADS131M02				0
 #endif
 
+#ifndef SUPPORT_LOADCELL_DIAGNOSTICS
+# define SUPPORT_LOADCELL_DIAGNOSTICS	0
+#endif
+
+#ifndef SUPPORT_LOADCELL_FFT
+# define SUPPORT_LOADCELL_FFT			0
+#endif
+
 #ifndef SUPPORT_TPiS_1T_1086_L5_5
 # define SUPPORT_TPiS_1T_1086_L5_5		0
 #endif

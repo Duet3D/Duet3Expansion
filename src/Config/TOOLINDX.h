@@ -83,6 +83,8 @@ constexpr Pin DriverDiagPins[NumDrivers] = { PortBPin(07) };
 #define SUPPORT_INDUCTIVE_HEATER	1										// Inductive heater support
 #define SUPPORT_LP5817				1										// LP5817 LED driver support
 #define SUPPORT_ADS131M02			1										// ADS131M02 ADC support
+#define SUPPORT_LOADCELL_DIAGNOSTICS	1									// load cell baseline drift reported by M122
+#define SUPPORT_LOADCELL_FFT		1										// load cell spectra reported by M122, costs 16KiB of RAM
 #define NUM_CURRENT_SENSORS			1										// board has dedicated heater output with current measurement
 
 #define NUM_I2C_CHANNELS		2
@@ -201,7 +203,8 @@ const I2cParameters I2C0Params =
 	.sclPin = PortAPin(22),
 	.sdaPin = PortAPin(23),
 	.pinFunction = GpioPinFunction::C,
-	.irqPriority = NvicPriorityI2C
+	.irqPriority = NvicPriorityI2C,
+	.rxDmaChannel = NoDmaChannel
 };
 
 #endif
@@ -215,7 +218,8 @@ const I2cParameters I2C1Params =
 	.sclPin = PortAPin(12),
 	.sdaPin = PortAPin(13),
 	.pinFunction = GpioPinFunction::D,
-	.irqPriority = NvicPriorityI2C
+	.irqPriority = NvicPriorityI2C,
+	.rxDmaChannel = NoDmaChannel
 };
 
 #endif
@@ -408,7 +412,7 @@ constexpr PinDescription PinTable[] =
 
 	// Virtual pins
 #if SUPPORT_LIS3DH
-	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"i2c.lis3dh,i2c.lis2dw,i2c.accelerometer"	},	// LIS3DH or LIS2DW12 sensor connected via I2C
+	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"i2c.lis,lis3dh,i2c.lis3dsh,i2c.lis2dw"	},	// LIS3DH or LIS2DW12 sensor connected via I2C
 #endif
 #if SUPPORT_LDC1612
 	{ TcOutput::none,	TccOutput::none,	AdcInput::ldc1612,	SercomIo::none,		SercomIo::none,		Nx,	"i2c.ldc1612"	},	// LDC1612 sensor connected via I2C
@@ -433,6 +437,9 @@ constexpr size_t NumVirtualPins = SUPPORT_LIS3DH + SUPPORT_LDC1612 + SUPPORT_AS5
 
 static_assert(NumPins == NumRealPins + NumVirtualPins);
 
+#if SUPPORT_LIS3DH
+constexpr Pin LisPinNumber = NumRealPins;
+#endif
 #if SUPPORT_AS5601
 constexpr Pin MfmPin = NumRealPins + SUPPORT_LIS3DH + SUPPORT_LDC1612;																		// pin number when the user selects magnetic filament monitor on I2C bus
 #endif

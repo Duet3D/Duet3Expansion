@@ -14,7 +14,15 @@
 #include <RTOSIface/RTOSIface.h>
 #include <AppNotifyIndices.h>
 
+#if SUPPORT_LOADCELL_DIAGNOSTICS
+# include <CommandProcessing/LoadCellDiagnostics.h>
+#endif
+
 #define USE_GLOBAL_CHOP		(1)
+
+// The 24-bit conversion results are stored in the top 24 bits of a 32-bit word, so full scale is 2^31. Treat readings above about 97% of
+// full scale as saturated - the input is overdriven at gain 128, which means the cell is overloaded, disconnected or faulty
+constexpr int32_t SaturationThreshold = 0x7C000000;
 
 extern "C" [[noreturn]] void AdcTaskStart(void* param) noexcept
 {
@@ -63,9 +71,19 @@ ADS131M02::ADS131M02() noexcept : SpiDevice(Ads131M02SpiParams)
 	adcTask->Create(AdcTaskStart, "ADS131M02", (void*)this, TaskPriority::Ads131M02);
 }
 
-bool ADS131M02::Activate(const InputMonitor& monitor) noexcept
+bool ADS131M02::Activate(InputMonitor& monitor) noexcept
 {
-	return true;	//***TEMPORARY!
+	if (!initOk)
+	{
+		return false;
+	}
+	inputMonitor = &monitor;
+	return true;
+}
+
+void ADS131M02::Deactivate() noexcept
+{
+	inputMonitor = nullptr;
 }
 
 static void DataReadyCallback(CallbackParameter param) noexcept
@@ -99,9 +117,24 @@ static void DataReadyCallback(CallbackParameter param) noexcept
 			{
 				compositeData = 0;					// error, the reference channel should read much higher, such a low value may cause the result of the next division to exceed 32 bits
 			}
+			else if ((int32_t)channel0Data >= SaturationThreshold || (int32_t)channel0Data <= -SaturationThreshold)
+			{
+				compositeData = 0;					// the signal is at the ADC rail, so the reading is meaningless
+			}
 			else
 			{
 				compositeData = (int32_t)(((int64_t)(int32_t)channel0Data << 16)/(int32_t)channel1Data);
+			}
+
+#if SUPPORT_LOADCELL_DIAGNOSTICS
+			LoadCellDiagnostics::RecordSample(compositeData);
+#endif
+
+			// The input monitor may have been deactivated and inputMonitor set to nullptr while we were reading the data, so capture it before we test it
+			InputMonitor *const locInputMonitor = inputMonitor;
+			if (locInputMonitor != nullptr)
+			{
+				locInputMonitor->AnalogInterrupt(compositeData);
 			}
 		}
 

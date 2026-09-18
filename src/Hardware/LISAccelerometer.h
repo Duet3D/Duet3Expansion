@@ -14,12 +14,12 @@
 
 # if ACCELEROMETER_USES_SPI
 
-#include "SharedSpiClient.h"
+#include <SPI/SharedSpiClient.h>
 
 class LISAccelerometer : public SharedSpiClient
 {
 public:
-	LISAccelerometer(SharedSpiDevice& dev, Pin p_csPin, Pin p_int1Pin) noexcept;
+	LISAccelerometer(SharedSpiDevice& dev, uint32_t freq, Pin p_csPin, Pin p_int1Pin) noexcept;
 # else
 
 #include <I2C/SharedI2CClient.h>
@@ -74,6 +74,7 @@ private:
 	bool WriteRegisters(LisRegister reg, size_t numToWrite) noexcept;
 	bool ReadRegister(LisRegister reg, uint8_t& val) noexcept;
 	bool WriteRegister(LisRegister reg, uint8_t val) noexcept;
+	bool ResetFifo() noexcept;
 
 	volatile TaskHandle taskWaiting;
 	uint32_t firstInterruptTime;
@@ -83,6 +84,7 @@ private:
 	bool interruptError;
 	uint8_t currentAxis;
 	uint8_t ctrlReg_0x20;
+	uint8_t fifoCtrlReg;
 	Pin int1Pin;
 
 	alignas(2) struct

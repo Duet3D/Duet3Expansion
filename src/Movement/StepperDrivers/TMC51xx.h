@@ -23,6 +23,7 @@ namespace SmartDrivers
 	void TurnDriversOff() noexcept;
 
 	void SetCurrent(size_t driver, float current) noexcept;
+	float GetMaxMotorCurrent(size_t driver) noexcept;
 	void EnableDrive(size_t driver, bool en) noexcept;
 	bool SetMicrostepping(size_t drive, unsigned int microsteps, bool interpolation) noexcept;
 	unsigned int GetMicrostepping(size_t drive, bool& interpolation) noexcept;
@@ -51,10 +52,16 @@ namespace SmartDrivers
 	uint32_t GetRegister(size_t driver, SmartDriverRegister reg) noexcept;
 	GCodeResult GetAnyRegister(size_t driver, const StringRef& reply, uint8_t regNum) noexcept;
 	GCodeResult SetAnyRegister(size_t driver, const StringRef& reply, uint8_t regNum, uint32_t regVal) noexcept;
+	GCodeResult ConfigureLutCorrection(size_t driver, unsigned int harmonic, bool seenMagnitude, float magnitudeDegrees, bool seenPhase, bool phaseInverted, const StringRef& reply) noexcept;
+	void AppendLutCorrections(size_t driver, const StringRef& reply) noexcept;
 	StandardDriverStatus GetStatus(size_t driver, bool accumulated, bool clearAccumulated) noexcept;
 	uint32_t GetDriverMinClockFrequency() noexcept;
 	uint32_t GetDriverNominalClockFrequency() noexcept;
 	uint32_t GetDriverMaxClockFrequency() noexcept;
+
+#if SUPPORT_TMC2240_SPI
+	float GetDriverTemperature(size_t driver) noexcept;
+#endif
 
 	GCodeResult SetStallEndstopReporting(uint16_t driverNumber, float speed, const StringRef& reply) noexcept;
 	extern std::atomic<uint16_t> driverStallsToNotify;

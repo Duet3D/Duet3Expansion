@@ -173,7 +173,8 @@ constexpr I2cParameters I2C0Params =
 	.sclPin = PortAPin(13),
 	.sdaPin = PortAPin(12),
 	.pinFunction = GpioPinFunction::C,
-	.irqPriority = NvicPriorityI2C
+	.irqPriority = NvicPriorityI2C,
+	.rxDmaChannel = NoDmaChannel
 };
 
 #endif
@@ -279,6 +280,14 @@ constexpr size_t NumRealPins = 32 + 24;			// 32 pins on port A (some missing), 2
 constexpr size_t NumVirtualPins = SUPPORT_LIS3DH + SUPPORT_LDC1612 + SUPPORT_AS5601 + SUPPORT_TCA6408A;
 
 static_assert(NumPins == NumRealPins + NumVirtualPins);
+
+#if SUPPORT_LIS3DH
+constexpr Pin LisPinNumber = NumRealPins;
+#endif
+
+#if SUPPORT_LDC1612
+constexpr Pin LdcPinNumber = NumRealPins + SUPPORT_LIS3DH;
+#endif
 
 #if SUPPORT_AS5601
 constexpr Pin MfmPin = NumRealPins + SUPPORT_LIS3DH + SUPPORT_LDC1612;				// pin number when the user selects magnetic filament monitor on I2C bus
