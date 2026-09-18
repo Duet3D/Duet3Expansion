@@ -38,6 +38,7 @@
 #define SUPPORT_TMC2240_SPI		0
 #define SUPPORT_INPUT_SHAPING	1
 #define SUPPORT_CLOSED_LOOP		1
+#define SUPPORT_PHASE_STEPPING	1
 #define SUPPORT_BRAKE_PWM		1
 
 #define SUPPORT_MT6835					0					// M23CL always uses AS5047D encoder
