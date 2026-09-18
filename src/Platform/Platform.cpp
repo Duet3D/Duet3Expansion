@@ -631,7 +631,12 @@ static void Platform::InitLeds()
 			IoPort::SetPinMode(pin, (LedActiveHigh_v102) ? OUTPUT_LOW : OUTPUT_HIGH);
 		}
 	}
-#elif !((defined(EXP1HCL) || defined(M23CL) || defined(SZP) || defined(TOOL1RR) || defined(F3PTB)) && defined(DEBUG))		// EXP1HCL has the LEDs connected to the SWD pins
+#elif defined(SAMMYC21)
+	for (Pin pin : LedPins)
+	{
+		IoPort::SetPinMode(pin, (LedActiveHigh) ? OUTPUT_LOW : OUTPUT_HIGH);
+	}
+#elif !defined(DEBUG)								// most Duet3D boards have the LEDs connected to the SWD pins
 	for (Pin pin : LedPins)
 	{
 		IoPort::SetPinMode(pin, (LedActiveHigh) ? OUTPUT_LOW : OUTPUT_HIGH);

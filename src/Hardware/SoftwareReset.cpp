@@ -97,7 +97,7 @@ void SoftwareResetData::Populate(uint16_t reason, const uint32_t *stk) noexcept
 	}
 	else
 	{
-		const char *stackLimit = (currentTask == nullptr) ? sysStackLimit : (const char*)currentTask + sizeof(TaskBase);
+		const char *stackLimit = (currentTask == nullptr) ? reinterpret_cast<const char *>(sysStackLimit) : (const char*)currentTask + sizeof(TaskBase);
 		stackOffset = ((const char*)stk - stackLimit) >> 2;
 		stackMarkerValid = stackLimit[0] == 0xA5 && stackLimit[3] == 0xA5;
 		spare = 0;
