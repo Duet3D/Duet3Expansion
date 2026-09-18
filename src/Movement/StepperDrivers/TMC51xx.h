@@ -65,6 +65,10 @@ namespace SmartDrivers
 
 	GCodeResult SetStallEndstopReporting(uint16_t driverNumber, float speed, const StringRef& reply) noexcept;
 	extern std::atomic<uint16_t> driverStallsToNotify;
+
+#if HAS_BOARD_THERMISTOR && SUPPORT_TMC51xx
+	void OverTemperatureDisable(bool disable) noexcept;
+#endif
 };
 
 #endif

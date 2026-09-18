@@ -8,11 +8,6 @@
 #ifndef SRC_CONFIG_SAMMYC21_H_
 #define SRC_CONFIG_SAMMYC21_H_
 
-#include <Hardware/PinDescription.h>
-#include <SPI/SpiParameters.h>
-#include <I2C/I2cParameters.h>
-#include <UART/UartParameters.h>
-
 #define BOARD_TYPE_NAME		"SAMMYC21"
 #define BOOTLOADER_NAME		"SAMMYC21"
 
@@ -109,8 +104,13 @@ constexpr Pin DirectionPins[NumDrivers] = { PortAPin(10) };
 
 #define DIAG_SERCOM_NUMBER		5		// which SERCOM device we use for debugging output
 
-constexpr unsigned int CANInstanceNumber = 0;
-constexpr bool UseLaterCanPins = true;
+constexpr CanParameters CanParams =
+{
+	.instanceNumber = 0,
+	.txPin = PortBPin(22),
+	.rxPin = PortBPin(23),
+	.pinsFunction = GpioPinFunction::G
+};
 
 constexpr size_t MaxPortsPerHeater = 1;
 

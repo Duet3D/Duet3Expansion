@@ -8,18 +8,14 @@
 #ifndef SRC_CONFIG_TOOLINDX_H_
 #define SRC_CONFIG_TOOLINDX_H_
 
-#include <Hardware/PinDescription.h>
-#include <SPI/SpiParameters.h>
-#include <I2C/I2cParameters.h>
-
 #define BOARD_TYPE_NAME		"NodeTrix"
 #define BOOTLOADER_NAME		"STM32H5"
 
 // General features
 #define HAS_VREF_MONITOR		0
-#define HAS_VOLTAGE_MONITOR		1
+#define HAS_VOLTAGE_MONITOR		0		//TODO change this to 1 when implemented
 #define HAS_12V_MONITOR			0
-#define HAS_CPU_TEMP_SENSOR		1
+#define HAS_CPU_TEMP_SENSOR		0		//TODO change this to 1 when implemented
 #define HAS_ADDRESS_SWITCHES	0
 #define HAS_BUTTONS				0
 
@@ -31,7 +27,7 @@
 #define SUPPORT_SLOW_DRIVERS	0
 #define DEDICATED_STEP_TIMER	1
 #define SUPPORT_INPUT_SHAPING	1
-#define SUPPORT_CLOSED_LOOP		1
+#define SUPPORT_CLOSED_LOOP		0		//TODO change this to 1 when implemented
 
 #define ACTIVE_HIGH_STEP		1		// 1 = active high, 0 = active low
 #define ACTIVE_HIGH_DIR			1		// 1 = active high, 0 = active low
@@ -45,64 +41,6 @@
 
 constexpr size_t NumDrivers = 1;
 constexpr size_t MaxSmartDrivers = 1;
-
-constexpr Pin GlobalTmcEnablePin = PortCPin(14);
-constexpr Pin GlobalTmcCSPin = PortAPin(4);
-
-//#define TMC_USES_SERCOM			1
-//constexpr uint8_t TmcSercomNumber = 0;
-//Sercom * const SERCOM_TMC = SERCOM0;
-
-constexpr Pin TMCMosiPin = PortAPin(7);
-constexpr Pin TMCMisoPin = PortAPin(6);
-constexpr Pin TMCSclkPin = PortAPin(5);
-//constexpr GpioPinFunction TMCSpiPinsPeriphMode = GpioPinFunction::D;
-
-constexpr uint32_t Tmc2240CurrentRange = 0x01;								// which current range we set the TMC2240 to (2A)
-constexpr uint32_t Tmc2240SlopeControl = 0x01;								// which slope control we set the TMC2240 to (200V/us)
-constexpr float Tmc2240Rref = 12.0;											// TMC2240 reference resistor in Kohms
-constexpr float DriverFullScaleCurrent = 24000/Tmc2240Rref;					// in mA, assuming we set the range bits in the DRV_CONF register to 0x01
-constexpr float DriverCsMultiplier = 32.0/DriverFullScaleCurrent;			// with RRef = 12K this works out as 2.0A so this is the maximum current we can ask for
-
-constexpr float MaxMotorCurrent = DriverFullScaleCurrent;
-
-constexpr uint32_t DefaultStandstillCurrentPercent = 75;
-
-GPIO_TypeDef * const StepPort = GPIOD_NS;									// the port that all the step pins are on
-constexpr Pin StepPins[NumDrivers] = { PortDPin(2) };
-constexpr Pin DirectionPins[NumDrivers] = { PortCPin(7) };
-constexpr Pin DriverDiagPins[NumDrivers] = { PortCPin(13) };
-
-#define SUPPORT_THERMISTORS			1
-#define SUPPORT_SPI_SENSORS			0										// SPI temperature sensors not supported
-#define SUPPORT_LDC1612				1
-#define SUPPORT_TPiS_1T_1086_L5_5	0										// IR temperature sensor
-#define SUPPORT_AS5601				1										// support direct-connected magnetic filament monitor encoder chip
-#define SUPPORT_DMA_NEOPIXEL		1										// using QSPI for Neopixels
-#define NEOPIXEL_USES_QSPI			0										// using QSPI for Neopixels
-#define SUPPORT_INDUCTIVE_HEATER	0										// Inductive heater support
-#define SUPPORT_LP5817				0										// LP5817 LED driver support
-#define SUPPORT_ADS131M02			1										// ADS131M02 ADC support
-#define SUPPORT_LOADCELL_DIAGNOSTICS	1									// load cell baseline drift reported by M122
-#define SUPPORT_LOADCELL_FFT		1										// load cell spectra reported by M122, costs 16KiB of RAM
-#define NUM_CURRENT_SENSORS			1										// board has dedicated heater output with current measurement
-
-#define NUM_I2C_CHANNELS		1
-#define SUPPORT_LIS3DH			1
-
-#define NUM_SHARED_SPI			1											// we use a SharedSpi for the closed loop encoder
-
-#define NUM_SERIAL_PORTS		0
-
-#define USE_MPU					0
-#define USE_CACHE				1
-
-constexpr int CANInstanceNumber = 0;										// FDCAN1 (not FDCAN2)
-constexpr bool UseLaterCanPins = true;
-
-constexpr size_t MaxPortsPerHeater = 1;										// we support a single heater
-
-constexpr Pin BoardTypePin = PortAPin(3);
 
 // DMA channel assignments
 constexpr DmaChannel DmacChanTmcTx = 0;
@@ -133,6 +71,74 @@ constexpr NvicPriority NvicPriorityI2C = 3;
 constexpr NvicPriority NvicPriorityPins = 3;			// priority for GPIO pin interrupts
 constexpr NvicPriority NvicPriorityCan = 4;
 constexpr NvicPriority NvicPriorityAdc = 5;
+constexpr NvicPriority NvicPriorityTmcSpi = 3;
+
+constexpr Pin GlobalTmcEnablePin = PortCPin(14);
+constexpr Pin GlobalTmcCSPin = PortAPin(4);
+
+#define TMC_USES_SPIDEV			(1)
+
+constexpr SpiParameters TmcSpiParameters =
+{
+	.instanceNumber = 1,
+	.mosiPin = PortAPin(7),
+	.misoPin = PortAPin(6),
+	.sclkPin = PortAPin(5),
+	.pinFunction = GpioPinFunction::AF5,
+	.irqPriority = NvicPriorityTmcSpi,
+	.dmaChanTx = DmacChanTmcTx,
+	.dmaChanRx = DmacChanTmcRx,
+	.dmaPrioTx = DmacPrioTmcTx,
+	.dmaPrioRx = DmacPrioTmcRx,
+};
+
+constexpr Pin TMCCsPin = PortAPin(4);
+
+constexpr uint32_t Tmc2240CurrentRange = 0x01;								// which current range we set the TMC2240 to (2A)
+constexpr uint32_t Tmc2240SlopeControl = 0x01;								// which slope control we set the TMC2240 to (200V/us)
+constexpr float Tmc2240Rref = 12.0;											// TMC2240 reference resistor in Kohms
+constexpr float DriverFullScaleCurrent = 24000/Tmc2240Rref;					// in mA, assuming we set the range bits in the DRV_CONF register to 0x01
+constexpr float DriverCsMultiplier = 32.0/DriverFullScaleCurrent;			// with RRef = 12K this works out as 2.0A so this is the maximum current we can ask for
+
+constexpr float MaxMotorCurrent = DriverFullScaleCurrent;
+
+constexpr uint32_t DefaultStandstillCurrentPercent = 75;
+
+GPIO_TypeDef * const StepPort = GPIOD;										// the port that all the step pins are on
+constexpr Pin StepPins[NumDrivers] = { PortDPin(2) };
+constexpr Pin DirectionPins[NumDrivers] = { PortCPin(7) };
+constexpr Pin DriverDiagPins[NumDrivers] = { PortCPin(13) };
+
+#define SUPPORT_THERMISTORS			1
+#define SUPPORT_SPI_SENSORS			0										// SPI temperature sensors not supported
+#define SUPPORT_LDC1612				0										//TODO change to 1 when implemented
+#define SUPPORT_AS5601				0										//TODO change to 1 when implemented support direct-connected magnetic filament monitor encoder chip
+#define SUPPORT_DMA_NEOPIXEL		0										// using QSPI for Neopixels
+#define NEOPIXEL_USES_QSPI			0										// using QSPI for Neopixels
+#define SUPPORT_ADS131M02			0										//TODO change to 1 when implemented ADS131M02 ADC support
+#define NUM_CURRENT_SENSORS			1										// board has dedicated heater output with current measurement
+
+#define NUM_I2C_CHANNELS		0		//TODO change this to 1 when implemented
+#define SUPPORT_LIS3DH			0		//TODO change this to 1 when implemented
+
+#define NUM_SHARED_SPI			0											//TODO change this to 1 when implemented we use a SharedSpi for the closed loop encoder
+
+#define NUM_SERIAL_PORTS		0
+
+#define USE_MPU					0
+#define USE_CACHE				1
+
+constexpr CanParameters CanParams =
+{
+	.instanceNumber = 1,													// FDCAN1 (not FDCAN2)
+	.txPin = PortBPin(7),
+	.rxPin = PortBPin(8),
+	.pinsFunction = GpioPinFunction::AF9
+};
+
+constexpr size_t MaxPortsPerHeater = 1;										// we support a single heater
+
+constexpr Pin BoardTypePin = PortAPin(3);
 
 // Diagnostic LEDs
 constexpr Pin LedPins[] = { PortAPin(14), PortAPin(13) };					// the SWDEBUG pins
@@ -169,6 +175,7 @@ constexpr SpiParameters SharedSpiParams =
 	.misoPin = PortBPin(14),
 	.sclkPin = PortBPin(13),
 	.pinFunction = GpioPinFunction::AF5,
+	.irqPriority = qq,
 	.dmaChanTx = DmacChanSspiTx,
 	.dmaChanRx = DmacChanSspiRx,
 	.dmaPrioTx = DmacPrioSspiTx,
@@ -230,6 +237,7 @@ constexpr SpiParameters Ads131M02SpiParams =
 	.misoPin = PortCPin(11),
 	.sclkPin = PortCPin(10),
 	.pinFunction = GpioPinFunction::AF6,
+	.irqPriority = qq,
 	.dmaChanTx = DmacChanADS131M02Tx,
 	.dmaChanRx = DmacChanADS131M02Rx,
 	.dmaPrioTx = DmacPrioADS131M02Tx,
@@ -259,78 +267,78 @@ constexpr GpioPinFunction NeopixelOutPinFunction = GpioPinFunction::AF4;	// TIM1
 // Table of pin functions that we are allowed to use
 constexpr PinDescription PinTable[] =
 {
-	//	Timer					ADC					Exint PinName
+	//	Timer											ADC					Exint PinName
 	// Port A
-	{ TimerOutput::none,		AdcInput::adc12_0,	Nx,	"temp3"			},	// PA00 thermistor 3
-	{ TimerOutput::none,		AdcInput::none,		Nx,	nullptr			},	// PA01 ads132m02 drdy
-	{ TimerOutput::tim15_ch1,	AdcInput::none,		Nx,	"led"			},	// PA02 NP out via timer 15
-	{ TimerOutput::none,		AdcInput::adc12_15,	Nx, nullptr			},	// PA03 board type
-	{ TimerOutput::none,		AdcInput::none,		Nx,	nullptr			},	// PA04 driver CS
-	{ TimerOutput::none,		AdcInput::none,		Nx,	nullptr			},	// PA05 driver SCK
-	{ TimerOutput::none,		AdcInput::none,		Nx,	nullptr			},	// PA06 driver MISO
-	{ TimerOutput::none,		AdcInput::none,		Nx,	nullptr			},	// PA07 driver MOSI
-	{ TimerOutput::none,		AdcInput::none,		Nx,	nullptr			},	// PA08 driver TMC clock
-	{ TimerOutput::tim1_ch2,	AdcInput::none,		Nx,	"out0"			},	// PA09 OUT0
-	{ TimerOutput::none,		AdcInput::none,		Nx,	"out2.tach"		},	// PA10
-	{ TimerOutput::none,		AdcInput::none,		Nx,	nullptr			},	// PA11 USB D-
-	{ TimerOutput::none,		AdcInput::none,		Nx,	nullptr 		},	// PA12 USB D+
-	{ TimerOutput::none,		AdcInput::none,		Nx,	nullptr			},	// PA13 SWDIO, ACT LED
-	{ TimerOutput::none,		AdcInput::none,		Nx,	nullptr			},	// PA14 SWCLK, STATUS LED
-	{ TimerOutput::none,		AdcInput::none,		Nx,	nullptr			},	// PA15 adc131m02 CS
+	{ TimerOutput::none,								AdcInput::adc12_0,	Nx,	"temp3"			},	// PA00 thermistor 3
+	{ TimerOutput::none,								AdcInput::none,		1,	nullptr			},	// PA01 ads132m02 drdy
+	{ TimerOutput::tim15_ch1 | GpioPinFunction::AF4,	AdcInput::none,		Nx,	"led"			},	// PA02 NP out via timer 15
+	{ TimerOutput::none,								AdcInput::adc12_15,	Nx, nullptr			},	// PA03 board type
+	{ TimerOutput::none,								AdcInput::none,		Nx,	nullptr			},	// PA04 driver CS
+	{ TimerOutput::none,								AdcInput::none,		Nx,	nullptr			},	// PA05 driver SCK
+	{ TimerOutput::none,								AdcInput::none,		Nx,	nullptr			},	// PA06 driver MISO
+	{ TimerOutput::none,								AdcInput::none,		Nx,	nullptr			},	// PA07 driver MOSI
+	{ TimerOutput::none,								AdcInput::none,		Nx,	nullptr			},	// PA08 driver TMC clock
+	{ TimerOutput::tim1_ch2 | GpioPinFunction::AF1,		AdcInput::none,		Nx,	"out0"			},	// PA09 OUT0
+	{ TimerOutput::none,								AdcInput::none,		10,	"out2.tach"		},	// PA10
+	{ TimerOutput::none,								AdcInput::none,		Nx,	nullptr			},	// PA11 USB D-
+	{ TimerOutput::none,								AdcInput::none,		Nx,	nullptr 		},	// PA12 USB D+
+	{ TimerOutput::none,								AdcInput::none,		Nx,	nullptr			},	// PA13 SWDIO, ACT LED
+	{ TimerOutput::none,								AdcInput::none,		Nx,	nullptr			},	// PA14 SWCLK, STATUS LED
+	{ TimerOutput::none,								AdcInput::none,		Nx,	nullptr			},	// PA15 adc131m02 CS
 
 	// Port B
-	{ TimerOutput::none,		AdcInput::none,		Nx,	nullptr			},	// PB00 LDC interrupt
-	{ TimerOutput::none,		AdcInput::none,		Nx,	nullptr			},	// PB01 AS5047D CS
-	{ TimerOutput::lptim_ch1,	AdcInput::none,		Nx, "io0.out"		},	// PB02 IO0 out
-	{ TimerOutput::none,		AdcInput::none,		Nx, "io2.in"		},	// PB03 IO2 in
-	{ TimerOutput::none,		AdcInput::none,		Nx,	"out1.tach"		},	// PB04 OUT1 tacho input
-	{ TimerOutput::none,		AdcInput::none,		Nx,	nullptr			},	// PB05 accelerometer interrupt
-	{ TimerOutput::tim4_ch1,	AdcInput::none,		Nx,	nullptr			},	// PB06 ADC clock via timer 4
-	{ TimerOutput::none,		AdcInput::none,		Nx,	nullptr			},	// PB07 CAN1 Tx
-	{ TimerOutput::none,		AdcInput::none,		Nx,	nullptr			},	// PB08 CAN1 Rx
-	{ TimerOutput::none,		AdcInput::none,		Nx,	nullptr			},	// PB09 not on chip
-	{ TimerOutput::none,		AdcInput::none,		Nx,	nullptr			},	// PB10 I2C SCL
-	{ TimerOutput::none,		AdcInput::none,		Nx,	nullptr			},	// PB11 not on chip
-	{ TimerOutput::none,		AdcInput::none,		Nx,	nullptr			},	// PB12 I2C SDA
-	{ TimerOutput::none,		AdcInput::none,		Nx,	nullptr			},	// PB13 shared SPI SCK
-	{ TimerOutput::none,		AdcInput::none,		Nx,	nullptr			},	// PB14 shared SPI MISO
-	{ TimerOutput::none,		AdcInput::none,		Nx,	nullptr			},	// PB15 shared SPI SCK
+	{ TimerOutput::none,								AdcInput::none,		0,	nullptr			},	// PB00 LDC interrupt
+	{ TimerOutput::none,								AdcInput::none,		Nx,	nullptr			},	// PB01 AS5047D CS
+	{ TimerOutput::lptim1_ch1 | GpioPinFunction::AF5,	AdcInput::none,		Nx, "io0.out"		},	// PB02 IO0 out
+	{ TimerOutput::none,								AdcInput::none,		3, 	"io2.in"		},	// PB03 IO2 in
+	{ TimerOutput::none,								AdcInput::none,		4,	"out1.tach"		},	// PB04 OUT1 tacho input
+	{ TimerOutput::none,								AdcInput::none,		5,	nullptr			},	// PB05 accelerometer interrupt
+	{ TimerOutput::tim4_ch1 | GpioPinFunction::AF2,		AdcInput::none,		Nx,	nullptr			},	// PB06 ADC clock via timer 4
+	{ TimerOutput::none,								AdcInput::none,		Nx,	nullptr			},	// PB07 CAN1 Tx
+	{ TimerOutput::none,								AdcInput::none,		Nx,	nullptr			},	// PB08 CAN1 Rx
+	{ TimerOutput::none,								AdcInput::none,		Nx,	nullptr			},	// PB09 not on chip
+	{ TimerOutput::none,								AdcInput::none,		Nx,	nullptr			},	// PB10 I2C SCL
+	{ TimerOutput::none,								AdcInput::none,		Nx,	nullptr			},	// PB11 not on chip
+	{ TimerOutput::none,								AdcInput::none,		Nx,	nullptr			},	// PB12 I2C SDA
+	{ TimerOutput::none,								AdcInput::none,		Nx,	nullptr			},	// PB13 shared SPI SCK
+	{ TimerOutput::none,								AdcInput::none,		Nx,	nullptr			},	// PB14 shared SPI MISO
+	{ TimerOutput::none,								AdcInput::none,		Nx,	nullptr			},	// PB15 shared SPI SCK
 
 	// Port C
-	{ TimerOutput::none,		AdcInput::adc12_10,	Nx,	"temp0"			},	// PC00 thermistor 0
-	{ TimerOutput::none,		AdcInput::adc12_11,	Nx,	"temp1"			},	// PC01 thermistor 1
-	{ TimerOutput::none,		AdcInput::adc12_12,	Nx, "temp2"			},	// PC02 thermistor 2
-	{ TimerOutput::none,		AdcInput::adc12_13,	Nx, nullptr			},	// PC03 VIN monitor
-	{ TimerOutput::tim2_ch4,	AdcInput::none,		Nx,	"out2"			},	// PC04 OUT2
-	{ TimerOutput::none,		AdcInput::adc12_8,	Nx,	nullptr			},	// PC05 heater current
-	{ TimerOutput::tim8_ch1,	AdcInput::none,		Nx,	"out1"			},	// PC06 OUT1
-	{ TimerOutput::none,		AdcInput::none,		Nx,	nullptr			},	// PC07 driver dir
-	{ TimerOutput::none,		AdcInput::none,		8,	"io0.in"		},	// PC08 IO0 in
-	{ TimerOutput::none,		AdcInput::none,		Nx,	nullptr			},	// PC09 LDC1612 clock
-	{ TimerOutput::none,		AdcInput::none,		Nx,	nullptr			},	// PC10 loadcell SPI SCK
-	{ TimerOutput::none,		AdcInput::none,		Nx,	nullptr			},	// PC11 loadcell SPI MISO
-	{ TimerOutput::none,		AdcInput::none,		Nx,	nullptr			},	// PC12 loadcell SPI MOSI
-	{ TimerOutput::none,		AdcInput::none,		13,	nullptr			},	// PC13 driver diag
-	{ TimerOutput::none,		AdcInput::none,		Nx,	nullptr			},	// PC14 driver enable
-	{ TimerOutput::none,		AdcInput::none,		14,	"io1.in"		},	// PC15 IO1 in
+	{ TimerOutput::none,								AdcInput::adc12_10,	Nx,	"temp0"			},	// PC00 thermistor 0
+	{ TimerOutput::none,								AdcInput::adc12_11,	Nx,	"temp1"			},	// PC01 thermistor 1
+	{ TimerOutput::none,								AdcInput::adc12_12,	Nx, "temp2"			},	// PC02 thermistor 2
+	{ TimerOutput::none,								AdcInput::adc12_13,	Nx, nullptr			},	// PC03 VIN monitor
+	{ TimerOutput::tim2_ch4 | GpioPinFunction::AF1,		AdcInput::none,		Nx,	"out2"			},	// PC04 OUT2
+	{ TimerOutput::none,								AdcInput::adc12_8,	Nx,	nullptr			},	// PC05 heater current
+	{ TimerOutput::tim8_ch1 | GpioPinFunction::AF3,		AdcInput::none,		Nx,	"out1"			},	// PC06 OUT1
+	{ TimerOutput::none,								AdcInput::none,		Nx,	nullptr			},	// PC07 driver dir
+	{ TimerOutput::none,								AdcInput::none,		8,	"io0.in"		},	// PC08 IO0 in
+	{ TimerOutput::none,								AdcInput::none,		Nx,	nullptr			},	// PC09 LDC1612 clock
+	{ TimerOutput::none,								AdcInput::none,		Nx,	nullptr			},	// PC10 loadcell SPI SCK
+	{ TimerOutput::none,								AdcInput::none,		Nx,	nullptr			},	// PC11 loadcell SPI MISO
+	{ TimerOutput::none,								AdcInput::none,		Nx,	nullptr			},	// PC12 loadcell SPI MOSI
+	{ TimerOutput::none,								AdcInput::none,		13,	nullptr			},	// PC13 driver diag
+	{ TimerOutput::none,								AdcInput::none,		Nx,	nullptr			},	// PC14 driver enable
+	{ TimerOutput::none,								AdcInput::none,		15,	"io1.in"		},	// PC15 IO1 in
 
 	// Port D
-	{ TimerOutput::none,		AdcInput::none,		Nx,	nullptr			},	// PD00 not on chip
-	{ TimerOutput::none,		AdcInput::none,		Nx,	nullptr			},	// PD01 not on chip
-	{ TimerOutput::none,		AdcInput::none,		Nx, nullptr			},	// PD02 driver step
+	{ TimerOutput::none,								AdcInput::none,		Nx,	nullptr			},	// PD00 not on chip
+	{ TimerOutput::none,								AdcInput::none,		Nx,	nullptr			},	// PD01 not on chip
+	{ TimerOutput::none,								AdcInput::none,		Nx, nullptr			},	// PD02 driver step
 
 	// Virtual pins
 #if SUPPORT_LIS3DH
-	{ TimerOutput::none,		AdcInput::none,		Nx,	"i2c.lis3dh,i2c.lis2dw,i2c.accelerometer"	},	// LIS3DH or LIS2DW12 sensor connected via I2C
+	{ TimerOutput::none,								AdcInput::none,		Nx,	"i2c.lis3dh,i2c.lis2dw,i2c.accelerometer"	},	// LIS3DH or LIS2DW12 sensor connected via I2C
 #endif
 #if SUPPORT_LDC1612
-	{ TimerOutput::none,		AdcInput::ldc1612,	Nx,	"i2c.ldc1612"	},	// LDC1612 sensor connected via I2C
+	{ TimerOutput::none,								AdcInput::ldc1612,	Nx,	"i2c.ldc1612"	},	// LDC1612 sensor connected via I2C
 #endif
 #if SUPPORT_AS5601
-	{ TimerOutput::none,		AdcInput::none,		Nx,	"i2c.mfm"		},	// AS5601+TCA6408A filament monitor connected via I2C
+	{ TimerOutput::none,								AdcInput::none,		Nx,	"i2c.mfm"		},	// AS5601+TCA6408A filament monitor connected via I2C
 #endif
 #if SUPPORT_ADS131M02
-	{ TimerOutput::none,		AdcInput::ads131m02, Nx, "loadcell"		},	// load cell connected to ADA131M02
+	{ TimerOutput::none,								AdcInput::ads131m02, Nx, "loadcell"		},	// load cell connected to ADA131M02
 #endif
 };
 
@@ -343,21 +351,18 @@ static_assert(NumPins == NumRealPins + NumVirtualPins);
 #if SUPPORT_AS5601
 constexpr Pin MfmPin = NumRealPins + SUPPORT_LIS3DH + SUPPORT_LDC1612;																		// pin number when the user selects magnetic filament monitor on I2C bus
 #endif
-#if SUPPORT_INDUCTIVE_HEATER
-constexpr Pin InductiveHeaterPin = NumRealPins + SUPPORT_LIS3DH + SUPPORT_LDC1612 + SUPPORT_AS5601;											// pin number when the user selects the inductive nozzle heater
-#endif
 #if SUPPORT_ADS131M02
 constexpr Pin LoadCellPin = NumRealPins + SUPPORT_LIS3DH + SUPPORT_LDC1612 + SUPPORT_AS5601 + SUPPORT_INDUCTIVE_HEATER;						// pin number when the user selects the load cell
 #endif
-#if SUPPORT_LP5817
-constexpr Pin LP5817Pin = NumRealPins + SUPPORT_LIS3DH + SUPPORT_LDC1612 + SUPPORT_AS5601 + SUPPORT_INDUCTIVE_HEATER + SUPPORT_ADS131M02;	// pin number when the user selects the LP5817
-#endif
 
 // Timer/counter used to generate step pulses and other sub-millisecond timings
-//constexpr unsigned int StepTcNumber = 0;
-//TcCount32 * const StepTc = &(TC0->COUNT32);
-//constexpr IRQn StepTcIRQn = TC0_IRQn;
-//#define STEP_TC_HANDLER			TC0_Handler
+constexpr unsigned int StepTimerNumber = 5;
+TIM_TypeDef *const StepTimerHw = TIM5;
+constexpr IRQn StepTimerIRQn = TIM5_IRQn;
+#define STEP_TC_HANDLER			TIM5_IRQHandler
+
+constexpr unsigned int TimeStampTimerNumber = 3;
+TIM_TypeDef *const TimeStampTimerHw = TIM3;
 
 // Available UART ports
 #define NUM_ASYNC_PORTS		0

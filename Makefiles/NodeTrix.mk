@@ -27,7 +27,7 @@ CFLAGS_EXTRA := $(DEBUG_FLAGS)
 CXXFLAGS_EXTRA := $(DEBUG_FLAGS)
 
 # Linker script
-LINKER_SCRIPT := $(CURDIR)/src/Hardware/STM32/STM32H5/STM32H523xx_FLASH.ld
+LINKER_SCRIPT := $(CURDIR)/src/Hardware/STM32/STM32H5/stm32h523xx_flash.ld
 
 # Source directories (relative to project root)
 SRC_DIRS := \
@@ -55,9 +55,7 @@ SRC_DIRS := \
 # Include paths for C files (minimal set)
 C_INCLUDES := \
 	-I$(CURDIR)/src \
-	-I$(WORKSPACE)/CoreN2G/src \
-	-I$(WORKSPACE)/CoreN2G/src/STMCubeMX/Drivers/CMSIS/Include \
-	-I$(WORKSPACE)/CoreN2G/src/STMCubeMX/Drivers/CMSIS/Device/ST/STM32H5xx/Include
+	-I$(WORKSPACE)/CoreN2G/src
 
 # Include paths for C++ files (full set)
 CXX_INCLUDES := \
@@ -105,7 +103,7 @@ CXXFLAGS := $(COMMON_FLAGS) $(OPT) $(CXX_DEFINES) $(CXX_INCLUDES) -std=c++20 \
 
 # Linker flags
 LDFLAGS := $(LDOPT) --specs=nano.specs -Wl,--gc-sections -Wl,--entry=Reset_Handler \
-	-Wl,--fatal-warnings -Wl,--no-warn-rwx-segment -mcpu=$(MCU_ARCH) $(FPU_FLAGS) \
+	-Wl,--fatal-warnings -Wl,--no-warn-rwx-segment -mcpu=$(MCU_ARCH) -mthumb $(FPU_FLAGS) \
 	-T$(LINKER_SCRIPT) -Wl,-Map,$(CURDIR)/$(BUILD_DIR)/$(BINARY).map,--cref
 
 # Find all source files

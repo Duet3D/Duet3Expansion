@@ -178,7 +178,9 @@ namespace Platform
 	InductiveHeaterPort& GetInductiveHeater() noexcept;
 #endif
 
+#if HAS_CPU_TEMP_SENSOR
 	const MinCurMax& GetMcuTemperatures() noexcept;
+#endif
 
 	void KickHeatTaskWatchdog() noexcept;
 	uint32_t GetHeatTaskIdleTicks() noexcept;
@@ -231,7 +233,7 @@ namespace Platform
 	inline void SetDateTime(uint32_t tim) noexcept { realTime = tim; }
 	bool WasDeliberateError() noexcept;
 
-#if SAME5x
+#if SAME5x || STM32
 	void SetInterruptPriority(IRQn base, unsigned int num, uint32_t prio) noexcept;
 #endif
 

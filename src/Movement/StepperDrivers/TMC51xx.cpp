@@ -30,7 +30,7 @@
 
 static inline Move& GetMoveInstance() noexcept { return reprap.GetMove(); }
 
-#elif defined(EXP3HC) || defined(EXP1HCL) || defined(M23CL) || defined(TOOLINDX)
+#elif defined(EXP3HC) || defined(EXP1HCL) || defined(M23CL) || defined(TOOLINDX) || defined(NODETRIX)
 
 static inline Move& GetMoveInstance() noexcept { return *moveInstance; }
 
@@ -38,19 +38,26 @@ static inline Move& GetMoveInstance() noexcept { return *moveInstance; }
 # error cannot define GetMoveInstance
 #endif
 
-#if SAME5x || SAMC21
+// Currently we can use a SERCOM, USART, raw SPI peripheral or our SpiDevice driver to communicate with the driver(s)
 
+#if SAME5x
+# include <hri_sercom_e54.h>
 # include <Serial.h>
-
-# if SAME5x
-#  include <hri_sercom_e54.h>
-# elif SAMC21
-#  include <hri_sercom_c21.h>
-# endif
+# define TMC_USES_SPIDEV	(0)
+#elif SAMC21
+# include <hri_sercom_c21.h>
+# include <Serial.h>
+# define TMC_USES_SPIDEV	(0)
 #elif SAME70
 # include <pmc/pmc.h>
 # include <xdmac/xdmac.h>
-# define TMC_USES_SERCOM	0
+# define TMC_USES_SERCOM	(0)
+# define TMC_USES_SPIDEV	(0)
+#elif STM32
+# define TMC_USES_SERCOM	(0)
+# define TMC_USES_USART		(0)
+# define TMC_USES_SPIDEV	(1)
+# include <SPI/SpiDevice.h>
 #endif
 
 #if SUPPORT_TMC51xx
@@ -427,16 +434,27 @@ enum class DriversState : uint8_t
 };
 
 static DriversState driversState = DriversState::shutDown;
+
+#if HAS_BOARD_THERMISTOR && SUPPORT_TMC51xx
+static bool overTemperatureDisable = false;
+#endif
+
 static LocalDriversBitmap stallEndstopsEnabled;
+
 #if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
 static LocalDriversBitmap directModeDrivers;				// drivers whose coil currents are controlled directly, needing the fast TMC task cadence
 #endif
+
 std::atomic<uint16_t> SmartDrivers::driverStallsToNotify(0);
 
 #ifdef EXP3HC
 
 Sercom *tmcSercom = nullptr;
 uint8_t tmcSercomNumber;
+
+#elif TMC_USES_SPIDEV
+
+SpiDevice *spiDev;
 
 #else
 
@@ -648,7 +666,6 @@ uint16_t TmcDriverState::numTimeouts = 0;								// how many times a transfer ti
 
 // Initialise the state of the driver and its CS pin
 void TmcDriverState::Init(uint32_t p_driverNumber) noexcept
-pre(!driversPowered)
 {
 	driverNumber = p_driverNumber;										// axes are mapped straight through to drivers initially
 	driverBit = LocalDriversBitmap::MakeFromBits(p_driverNumber);
@@ -1545,9 +1562,11 @@ inline bool TmcDriverState::SetXdirect(uint32_t regVal) noexcept
 
 #endif
 
+#if !TMC_USES_SPIDEV
+
 static void InitialiseDMA() noexcept
 {
-#if SAME70
+# if SAME70
 	/* From the data sheet:
 	 * Single Block Transfer With Single Microblock
 		1. Read the XDMAC Global Channel Status Register (XDMAC_GS) to select a free channel. [we use fixed channel numbers instead.]
@@ -1627,7 +1646,7 @@ static void InitialiseDMA() noexcept
 		p_cfg.mbr_da = reinterpret_cast<uint32_t>(&(USART_TMC->US_THR));
 		xdmac_configure_transfer(XDMAC, DmacChanTmcTx, &p_cfg);
 	}
-#endif
+# endif
 }
 
 // Set up the PDC or DMAC to send a register and receive the status, but don't enable it yet
@@ -1658,7 +1677,7 @@ static void SetupDMA(const volatile uint8_t *txData, const volatile uint8_t *rxD
 	DmacManager::SetDestinationAddress(DmacChanTmcRx, (void*)rxData);
 	DmacManager::SetDataLength(DmacChanTmcRx, SpiDataSize);
 #elif STM32
-	qq;	//TODO
+	// Nothing to do here
 #else
 	spiPdc->PERIPH_PTCR = (PERIPH_PTCR_RXTDIS | PERIPH_PTCR_TXTDIS);		// disable the PDC
 
@@ -1678,7 +1697,7 @@ static inline void EnableDma() noexcept
 	DmacManager::EnableChannel(DmacChanTmcRx, DmacPrioTmcRx);
 	DmacManager::EnableChannel(DmacChanTmcTx, DmacPrioTmcTx);
 #elif STM32
-	qq;	//TODO
+	// Nothing to do here
 #else
 	spiPdc->PERIPH_PTCR = (PERIPH_PTCR_RXTEN | PERIPH_PTCR_TXTEN);			// enable the PDC
 #endif
@@ -1693,24 +1712,24 @@ static inline void DisableDma() noexcept
 	DmacManager::DisableChannel(DmacChanTmcTx);
 	DmacManager::DisableChannel(DmacChanTmcRx);
 #elif STM32
-	qq;	//TODO
+	// Nothing to do here
 #else
-	spiPdc->PERIPH_PTCR = (PERIPH_PTCR_RXTDIS | PERIPH_PTCR_TXTDIS);		// disable the PDC
+	spiPdc->PERIPH_PTCR = (PERIPH_PTCR_RXTDIS | PERIPH_PTCR_TXTDIS);	// disable the PDC
 #endif
 }
 
 static inline void ResetSpi() noexcept
 {
 #if TMC_USES_SERCOM
-	tmcSercom->SPI.CTRLA.bit.ENABLE = 0;			// warning: this makes SCLK float!
+	tmcSercom->SPI.CTRLA.bit.ENABLE = 0;				// warning: this makes SCLK float!
 	while (tmcSercom->SPI.SYNCBUSY.bit.ENABLE) { }
 #elif TMC_USES_USART
 	USART_TMC51xx->US_CR = US_CR_RSTRX | US_CR_RSTTX;	// reset transmitter and receiver
 #elif STM32
-	qq;	//TODO
+	// Nothing to do here
 #else
-	SPI_TMC->SPI_CR = SPI_CR_SPIDIS;				// disable the SPI
-	(void)SPI_TMC->SPI_RDR;							// clear the receive buffer
+	SPI_TMC->SPI_CR = SPI_CR_SPIDIS;					// disable the SPI
+	(void)SPI_TMC->SPI_RDR;								// clear the receive buffer
 #endif
 }
 
@@ -1724,9 +1743,9 @@ static inline void EnableSpi() noexcept
 #elif TMC_USES_USART
 	USART_TMC51xx->US_CR = US_CR_RXEN | US_CR_TXEN;		// enable transmitter and receiver
 #elif STM32
-	qq;	//TODO
+	// Nothing to do here
 #else
-	SPI_TMC->SPI_CR = SPI_CR_SPIEN;					// enable SPI
+	SPI_TMC->SPI_CR = SPI_CR_SPIEN;						// enable SPI
 #endif
 }
 
@@ -1737,11 +1756,11 @@ static inline void DisableEndOfTransferInterrupt() noexcept
 #elif TMC_USES_SERCOM
 	DmacManager::DisableCompletedInterrupt(DmacChanTmcRx);
 #elif TMC_USES_USART
-	USART_TMC->US_IDR = US_IDR_ENDRX;				// enable end-of-transfer interrupt
+	USART_TMC->US_IDR = US_IDR_ENDRX;					// enable end-of-transfer interrupt
 #elif STM32
-	qq;	//TODO
+	// Nothing to do here
 #else
-	SPI_TMC->SPI_IDR = SPI_IDR_ENDRX;				// enable end-of-transfer interrupt
+	SPI_TMC->SPI_IDR = SPI_IDR_ENDRX;					// enable end-of-transfer interrupt
 #endif
 }
 
@@ -1752,23 +1771,23 @@ static inline void EnableEndOfTransferInterrupt() noexcept
 #elif TMC_USES_SERCOM
 	DmacManager::EnableCompletedInterrupt(DmacChanTmcRx);
 #elif TMC_USES_USART
-	USART_TMC->US_IER = US_IER_ENDRX;				// enable end-of-transfer interrupt
+	USART_TMC->US_IER = US_IER_ENDRX;					// enable end-of-transfer interrupt
 #elif STM32
-	qq;	//TODO
+	// Nothing to do here
 #else
-	SPI_TMC->SPI_IER = SPI_IER_ENDRX;				// enable end-of-transfer interrupt
+	SPI_TMC->SPI_IER = SPI_IER_ENDRX;					// enable end-of-transfer interrupt
 #endif
 }
 
 // DMA complete callback
 void RxDmaCompleteCallback(CallbackParameter param, DmaCallbackReason reason) noexcept
 {
-	fastDigitalWriteHigh(GlobalTmcCSPin);			// set CS high
-#if SAME70
+	fastDigitalWriteHigh(GlobalTmcCSPin);				// set CS high
+# if SAME70
 	DmacManager::DisableCompletedInterrupt(DmacChanTmcRx);
-#endif
+# endif
 	dmaFinishedReason = reason;
-#if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
+# if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
 	// When in phase stepping or closed loop mode we send the coil currents if any have changes since last time we sent them.
 	// Send a "normal" read or write request after the coil currents have been set.
 	// We don't care about the response from setting the motor currents so that is written to tmcAltRcvData so as to not overwrite tmcRcvData
@@ -1802,10 +1821,12 @@ void RxDmaCompleteCallback(CallbackParameter param, DmaCallbackReason reason) no
 			}
 		}
 	}
-#else
+# else
 	tmcTask.GiveFromISR(NotifyIndices::Tmc);
-#endif
+# endif
 }
+
+#endif
 
 #if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
 static void TmcTimerCallback(CallbackParameter) noexcept
@@ -1816,7 +1837,9 @@ static void TmcTimerCallback(CallbackParameter) noexcept
 
 extern "C" [[noreturn]] void TmcLoop(void *) noexcept
 {
+#if !TMC_USES_SPIDEV
 	InitialiseDMA();
+#endif
 #if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
 	tmcTimer.SetCallback(TmcTimerCallback, (CallbackParameter)0);
 #endif
@@ -1845,8 +1868,13 @@ extern "C" [[noreturn]] void TmcLoop(void *) noexcept
 			driverStates[0].TransferSucceeded(const_cast<const uint8_t*>(tmcRcvData));
 			if (driversState == DriversState::initialising && !driverStates[0].UpdatePending())
 			{
-				fastDigitalWriteLow(GlobalTmcEnablePin);
 				driversState = DriversState::ready;
+# if HAS_BOARD_THERMISTOR && TMC_TYPE == 5160
+				if (!overTemperatureDisable)
+# endif
+				{
+					fastDigitalWriteLow(GlobalTmcEnablePin);
+				}
 			}
 #else
 			const volatile uint8_t *readPtr = tmcRcvData + 5 * numTmcDrivers;
@@ -1871,8 +1899,13 @@ extern "C" [[noreturn]] void TmcLoop(void *) noexcept
 
 				if (allInitialised)
 				{
-					fastDigitalWriteLow(GlobalTmcEnablePin);
 					driversState = DriversState::ready;
+# if HAS_BOARD_THERMISTOR && TMC_TYPE == 5160
+					if (!overTemperatureDisable)
+# endif
+					{
+						fastDigitalWriteLow(GlobalTmcEnablePin);
+					}
 				}
 			}
 #endif
@@ -1921,25 +1954,37 @@ extern "C" [[noreturn]] void TmcLoop(void *) noexcept
 #endif
 
 		// Kick off a transfer.
+#if TMC_USES_SPIDEV
+# if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
+		qq;		//TODO
+# else
+		//TODO boost priority across the next 3 lines? Or have the SPI device manage CS?
+		//TODO add SPI timeout parameter to TranceivePacket
+		fastDigitalWriteLow(GlobalTmcCSPin);					// set CS low
+		const bool success = spiDev->TransceivePacket(const_cast<const uint8_t*>(tmcSendData), const_cast<uint8_t*>(tmcRcvData), SpiDataSize, TransferTimeout);
+		fastDigitalWriteHigh(GlobalTmcCSPin);					// set CS low
+		dmaFinishedReason = (success) ? DmaCallbackReason::complete : DmaCallbackReason::none;
+# endif
+#else
 		// On the SAME5x the only way I have found to get reliable transfers and no timeouts is to disable SPI, enable DMA, and then enable SPI.
 		// Enabling SPI before DMA sometimes results in timeouts.
 		// Unfortunately, when we disable SPI the SCLK line floats. Therefore we disable SPI for as little time as possible.
 		{
 			TaskCriticalSectionLocker lock;
 
-#if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
-			SetupDMA((setCoilCurrents) ? tmcPhaseSendData : tmcSendData, tmcRcvData);	// set up the PDC or DMAC
-#else
+# if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
+			SetupDMA((setCoilCurrents) ? tmcPhaseSendData : tmcSendData, tmcSendData);	// set up the PDC or DMAC
+# else
 			SetupDMA(tmcSendData, tmcRcvData);											// set up the PDC or DMAC
-#endif
+# endif
 			dmaFinishedReason = DmaCallbackReason::none;
 
 			AtomicCriticalSectionLocker lock2;
 
 			fastDigitalWriteLow(GlobalTmcCSPin);				// set CS low
-#if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
+# if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
 			tmcTimer.CancelCallbackFromIsr();					// in case the timer is still running from a previous timed-out transfer
-#endif
+# endif
 			TaskBase::ClearCurrentTaskNotifyCount(NotifyIndices::Tmc);
 			EnableEndOfTransferInterrupt();
 			ResetSpi();
@@ -1951,6 +1996,7 @@ extern "C" [[noreturn]] void TmcLoop(void *) noexcept
 		(void)TaskBase::TakeIndexed(NotifyIndices::Tmc, TransferTimeout);
 		DisableEndOfTransferInterrupt();
 		DisableDma();
+#endif
 
 		// We don't care if the TakeIndexed call returned timeout, if the DMA completed then the transfer is OK
 		timedOut = (dmaFinishedReason != DmaCallbackReason::complete);
@@ -1960,7 +2006,9 @@ extern "C" [[noreturn]] void TmcLoop(void *) noexcept
 			// If the transfer was interrupted then we will have written dud data to the drivers. So we should re-initialise them all.
 			// Unfortunately registers that we don't normally write to may have changed too.
 			fastDigitalWriteHigh(GlobalTmcEnablePin);
+#if !TMC_USES_SPIDEV
 			fastDigitalWriteHigh(GlobalTmcCSPin);				// set CS high
+#endif
 			driversState = DriversState::notInitialised;
 			for (size_t drive = 0; drive < numTmcDrivers; ++drive)
 			{
@@ -2006,7 +2054,7 @@ void SmartDrivers::Init() noexcept
 		SetPinFunction(TMC51xxSclkPin_SAME51, TMC51xxSpiPinPeriphMode_SAME51);
 	}
 	tmcSercom = Serial::GetSercom(tmcSercomNumber);
-#else
+#elif !TMC_USES_SPIDEV
 	SetPinFunction(TMCMosiPin, TMCSpiPinsPeriphMode);
 	SetPinFunction(TMCMisoPin, TMCSpiPinsPeriphMode);
 	SetPinFunction(TMCSclkPin, TMCSpiPinsPeriphMode);
@@ -2015,8 +2063,12 @@ void SmartDrivers::Init() noexcept
 	// Enable the clock to the USART or SPI
 #if SAME5x || SAMC21
 	Serial::EnableSercomClock(tmcSercomNumber);
-#else
+#elif STM32
+	// Nothing needed here
+#elif SAME70 || SAM4E
 	pmc_enable_periph_clk(ID_TMC_SPI);
+#else
+# error Unsupported processor
 #endif
 
 #if TMC_USES_SERCOM
@@ -2081,6 +2133,8 @@ void SmartDrivers::Init() noexcept
 	// otherwise the processor generates two short reset pulses on its own NRST pin, and resets itself.
 	// 2016-07-07: removed this delay, because we no longer send commands to the TMC2660 drivers immediately.
 	//delay(10);
+#elif TMC_USES_SPIDEV
+	spiDev = new SpiDevice(TmcSpiParameters);
 #else
 	// Set up the SPI interface with data changing on the falling edge of the clock and captured on the rising edge
 	spi_reset(SPI_TMC);										// this clears the transmit and receive registers and puts the SPI into slave mode
@@ -2118,7 +2172,7 @@ void SmartDrivers::Init() noexcept
 void SmartDrivers::Exit() noexcept
 {
 	digitalWrite(GlobalTmcEnablePin, true);						// disable the drivers
-#if !TMC_USES_SERCOM
+#if !TMC_USES_SERCOM && !TMC_USES_SPIDEV
 	NVIC_DisableIRQ(TMC_SPI_IRQn);
 #endif
 	tmcTask.TerminateAndUnlink();
@@ -2244,14 +2298,14 @@ void SmartDrivers::Spin(bool powered) noexcept
 	else if (driversState != DriversState::shutDown)
 	{
 		driversState = DriversState::noPower;				// flag that there is no power to the drivers
-		fastDigitalWriteHigh(GlobalTmcEnablePin);		// disable the drivers
+		fastDigitalWriteHigh(GlobalTmcEnablePin);			// disable the drivers
 	}
 }
 
 // This is called from the tick ISR, possibly while Spin (with powered either true or false) is being executed
 void SmartDrivers::TurnDriversOff() noexcept
 {
-	digitalWrite(GlobalTmcEnablePin, true);				// disable the drivers
+	fastDigitalWriteHigh(GlobalTmcEnablePin);				// disable the drivers
 	driversState = DriversState::noPower;
 }
 
@@ -2441,6 +2495,23 @@ GCodeResult SmartDrivers::SetStallEndstopReporting(uint16_t driverNumber, float 
 float SmartDrivers::GetDriverTemperature(size_t driver) noexcept
 {
 	return (driver < numTmcDrivers) ? driverStates[driver].GetDriverTemperature() : 0.0;
+}
+
+#endif
+
+#if HAS_BOARD_THERMISTOR && TMC_TYPE == 5160
+
+void SmartDrivers::OverTemperatureDisable(bool disable) noexcept
+{
+	overTemperatureDisable = disable;
+	if (disable)
+	{
+		fastDigitalWriteHigh(GlobalTmcEnablePin);
+	}
+	else if (driversState == DriversState::ready)
+	{
+		fastDigitalWriteLow(GlobalTmcEnablePin);
+	}
 }
 
 #endif

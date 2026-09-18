@@ -23,6 +23,12 @@
 #elif RP2040
 # include <hardware/watchdog.h>
 # include <hardware/timer.h>
+#elif STM32H5
+# include <stm32h5xx_hal_conf.h>
+# include <stm32h5xx_hal_tim.h>
+#elif STM32H7
+# include <stm32h7xx_hal_conf.h>
+# include <stm32h7xx_hal_tim.h>
 #endif
 
 StepTimer * volatile StepTimer::pendingList = nullptr;
@@ -58,6 +64,27 @@ void StepTimer::Init() noexcept
 	NVIC_DisableIRQ((IRQn_Type)StepTcIRQn);
 	NVIC_ClearPendingIRQ((IRQn_Type)StepTcIRQn);
 	NVIC_EnableIRQ((IRQn_Type)StepTcIRQn);
+#elif STM32
+	// The CAN external time stamp counter is timer 3.
+	// As that is only 16-bit and we need a 32-bit step timer, we use timer 5 for the step timer and clock it at the same rate as timer 3.
+	EnableTimerClock(StepTimerNumber);
+	EnableTimerClock(TimeStampTimerNumber);
+	StepTimerHw->PSC = GetTimerClockFrequency(StepTimerNumber)/StepClockRate;
+	TimeStampTimerHw->PSC = GetTimerClockFrequency(TimeStampTimerNumber)/StepClockRate;
+	StepTimerHw->DIER &= ~(TIM_DIER_CC1IE);							// disable the interrupt
+	StepTimerHw->ARR = 0xFFFFFFFF;
+	TimeStampTimerHw->ARR = 0x0000FFFF;
+	NVIC_SetPriority(StepTimerIRQn, NvicPriorityStep);			    // set the priority for this IRQ ->ARR
+	NVIC_ClearPendingIRQ(StepTimerIRQn);
+	NVIC_EnableIRQ(StepTimerIRQn);
+	{
+		// Start the two timers in sync
+		AtomicCriticalSectionLocker lock;
+		StepTimerHw->CNT = 0;
+		TimeStampTimerHw->CNT = 0;
+		StepTimerHw->CR1 |= TIM_CR1_CEN;
+		TimeStampTimerHw->CR1 |= TIM_CR1_CEN;
+	}
 #elif SAMC21 || SAME5x
 	// We use StepTcNumber+1 as the slave for 32-bit mode so we need to clock that one too
 	EnableTcClock(StepTcNumber, GclkNum48MHz);
@@ -88,7 +115,7 @@ void StepTimer::Init() noexcept
 #endif
 }
 
-#if !RP2040
+#if !RP2040 && !STM32
 
 // Get the step timer clock count
 /*static*/ StepTimer::Ticks StepTimer::GetTimerTicks() noexcept
@@ -149,8 +176,8 @@ void StepTimer::Init() noexcept
 {
 	static uint32_t originalOffset = 0;
 
-#if RP2040
-	// On the RP2040 the timestamp counter is the same as the step counter
+#if SAME70 || STM32 || (RP2040 && !USE_SPICAN)
+	// On these processors the timestamp counter is the same as the step counter
 	const uint32_t localTimeNow = StepTimer::GetTimerTicks();
 	const uint32_t timeStampDelay = (localTimeNow - timeStamp) & 0xFFFF;
 #else
@@ -265,7 +292,11 @@ inline /*static*/ bool StepTimer::ScheduleTimerInterrupt(Ticks tim) noexcept
 		return true;												// tell the caller to simulate an interrupt instead
 	}
 
-#if RP2040
+#if STM32
+	StepTimerHw->SR = ~(TIM_IT_CC1);								// clear any pending interrupt
+	StepTimerHw->CCR1 = tim;										// set the time when we want the interrupt
+	StepTimerHw->DIER |= TIM_DIER_CC1IE;							// enable the interrupt
+#elif RP2040
 	hw_set_bits(&timer_hw->inte, 1u << StepTimerAlarmNumber);		// enable the interrupt
 	timer_hw->alarm[StepTimerAlarmNumber] = tim;					// writing the value arms the timer
 #else
@@ -297,10 +328,16 @@ __attribute__((section(".time_critical")))
 		return true;												// tell the caller to simulate an interrupt instead
 	}
 
+#if STM32
+	StepTimerHw->CCR1 = when;
+	StepTimerHw->SR = ~(TIM_IT_CC1);								// clear any pending compare match
+	StepTimerHw->DIER |= TIM_DIER_CC1IE;							// enable the interrupt
+#else
 	StepTc->CC[1].reg = when;
 	while (StepTc->SYNCBUSY.reg & TC_SYNCBUSY_CC1) { }
 	StepTc->INTFLAG.reg = TC_INTFLAG_MC1;							// clear any existing compare match
 	StepTc->INTENSET.reg = TC_INTFLAG_MC1;
+#endif
 	return false;
 }
 
@@ -309,7 +346,9 @@ __attribute__((section(".time_critical")))
 // Make sure we get no timer interrupts
 void StepTimer::DisableTimerInterrupt() noexcept
 {
-#if RP2040
+#if STM32
+	StepTimerHw->DIER &= ~(TIM_DIER_CC1IE);							// disable the interrupt
+#elif RP2040
 	hw_clear_bits(&timer_hw->inte, 1u << StepTimerAlarmNumber);		// disable the interrupt
 #else
 	StepTc->INTENCLR.reg = TC_INTFLAG_MC0 | TC_INTFLAG_MC1;
@@ -350,7 +389,11 @@ __attribute__((section(".time_critical")))
 #endif
 void STEP_TC_HANDLER() noexcept
 {
-#if RP2040
+#if STM32
+	StepTimerHw->SR = ~(TIM_IT_CC1);								// clear any pending compare match
+	StepTimerHw->DIER &= ~(TIM_DIER_CC1IE);							// disable the interrupt
+	StepTimer::Interrupt();											// this will re-enable the interrupt if necessary
+#elif RP2040
 	hw_clear_bits(&timer_hw->intr, 1u << StepTimerAlarmNumber);		// clear the alarm interrupt
 	StepTimer::Interrupt();											// this will re-enable the interrupt if necessary
 #else
@@ -502,7 +545,15 @@ void StepTimer::CancelCallback() noexcept
 	}
 	else
 	{
-# if RP2040
+#if STM32
+		reply.lcatf("Next step interrupt due in %" PRIu32 " ticks, %s",
+					pst->whenDue - GetTimerTicks(),
+					(StepTimerHw->DIER & TIM_IT_CC1) == 0 ? "disabled" : "enabled");
+		if (StepTimerHw->CCR1 != pst->whenDue)
+		{
+			reply.cat(", CC0 mismatch!!");
+		}
+#elif RP2040
 		reply.catf("next timer interrupt due in %" PRIu32 " ticks, %s",
 					timer_hw->alarm[StepTimerAlarmNumber] - GetTimerTicks(),
 					(timer_hw->inte & (1u << StepTimerAlarmNumber)) ? "enabled" : "disabled");
@@ -517,7 +568,7 @@ void StepTimer::CancelCallback() noexcept
 # endif
 	}
 
- #if DEDICATED_STEP_TIMER
+# if DEDICATED_STEP_TIMER && (SAME5x || SAMC21)
 	reply.catf(", next step interrupt due in %" PRIu32 " ticks, %s",
 				StepTc->CC[1].reg - GetTimerTicks(),
 				((StepTc->INTENSET.reg & TC_INTFLAG_MC1) == 0) ? "disabled" : "enabled");

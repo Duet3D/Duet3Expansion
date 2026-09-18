@@ -8,9 +8,6 @@
 #ifndef SRC_CONFIG_ATEIO_H_
 #define SRC_CONFIG_ATEIO_H_
 
-#include <Hardware/PinDescription.h>
-#include <SPI/SpiParameters.h>
-
 #define BOARD_TYPE_NAME		"ATEIO"
 #define BOOTLOADER_NAME		"SAMC21"
 
@@ -35,8 +32,13 @@
 
 constexpr size_t MaxPortsPerHeater = 1;
 
-constexpr unsigned int CANInstanceNumber = 0;
-constexpr bool UseLaterCanPins = true;
+constexpr CanParameters CanParams =
+{
+	.instanceNumber = 0,
+	.txPin = PortBPin(22),
+	.rxPin = PortBPin(23),
+	.pinsFunction = GpioPinFunction::G
+};
 
 // DMA channel assignments
 constexpr DmaChannel DmacChanAdc0Rx = 0;				// two channels used

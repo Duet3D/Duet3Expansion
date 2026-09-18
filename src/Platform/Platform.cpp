@@ -72,11 +72,10 @@
 #elif SAMC21
 # include <hpl_user_area.h>
 # include <hri_nvmctrl_c21.h>
+#elif RPXXXX
+# include <hardware/structs/watchdog.h>
 #elif STM32
 // TODO
-#elif RP2040
-// TODO
-# include <hardware/structs/watchdog.h>
 #else
 # error Unsupported processor
 #endif
@@ -139,8 +138,10 @@ namespace Platform
 	static volatile uint16_t currentV12, highestV12, lowestV12;
 #endif
 
+#if HAS_CPU_TEMP_SENSOR
 	static MinCurMax mcuTemperature;
 	static float mcuTemperatureAdjust = 0.0;
+#endif
 
 	static uint32_t lastPollTime;
 	static uint32_t lastFanCheckTime = 0;
@@ -331,7 +332,7 @@ namespace Platform
 		// Note, I2C interrupt priority is set up in the I2C driver
 
 #if SAME5x || SAMC21
-		if constexpr(CANInstanceNumber == 1)
+		if constexpr(CanParams.instanceNumber == 1)
 		{
 # if defined(ID_CAN1)
 			NVIC_SetPriority(CAN1_IRQn, NvicPriorityCan);
@@ -340,6 +341,15 @@ namespace Platform
 		else
 		{
 			NVIC_SetPriority(CAN0_IRQn, NvicPriorityCan);
+		}
+#elif STM32
+		switch (CanParams.instanceNumber)
+		{
+		case 1:	NVIC_SetPriority(FDCAN1_IT0_IRQn, NvicPriorityCan); break;
+		case 2:	NVIC_SetPriority(FDCAN2_IT0_IRQn, NvicPriorityCan); break;
+# ifdef FDCAN3_IT0_IRQn
+		case 3:	NVIC_SetPriority(FDCAN3_IT0_IRQn, NvicPriorityCan); break;
+# endif
 		}
 #endif
 
@@ -354,12 +364,23 @@ namespace Platform
 #elif RP2040
 		NVIC_SetPriority((IRQn_Type)StepTcIRQn, NvicPriorityStep);
 		NVIC_SetPriority(IO_IRQ_BANK0_IRQn, NvicPriorityPins);
+#elif STM32H5
+		NVIC_SetPriority(StepTimerIRQn, NvicPriorityStep);
+		SetInterruptPriority(GPDMA1_Channel0_IRQn, 8, NvicPriorityDmac);	// I am assuming we only use the first DMAC
+		SetInterruptPriority(EXTI0_IRQn, 16, NvicPriorityPins);
+#elif STM32H7
+		NVIC_SetPriority(StepTimerIRQn, NvicPriorityStep);
+		SetInterruptPriority(DMA_STR0_IRQn, 7, NvicPriorityDmac);			// I am assuming we only use the first DMAC
+		NVIC_SetPriority(DMA1_STR7, NvicPriorityDmac);
+		SetInterruptPriority(EXTI0_IRQn, 6, NvicPriorityPins);
+	    NVIC_SetPriority(EXTI9_5_IRQn, NvicPriorityPins);
+	    NVIC_SetPriority(EXTI15_10_IRQn, NvicPriorityPins);
 #else
 # error Undefined processor
 #endif
 	}
 
-#if !RP2040
+#if !RP2040 && !STM32
 	// Erase the firmware (but not the bootloader) and reset the processor
 	[[noreturn]] RAMFUNC static void EraseAndReset()
 	{
@@ -443,7 +464,7 @@ namespace Platform
 		__disable_irq();
 		SysTick->CTRL = (1 << SysTick_CTRL_CLKSOURCE_Pos);	// disable the system tick exception
 
-#if SAME5x
+#if SAME5x || STM32H5 || STM32H7
 		for (size_t i = 0; i < 8; i++)
 		{
 			NVIC->ICER[i] = 0xFFFFFFFF;					// Disable IRQs
@@ -460,11 +481,16 @@ namespace Platform
 # error Unsupported processor
 #endif
 
-#if !RP2040
+#if STM32
+		ResetProcessor();	//TODO firmware update not supported yet
+#elif !RP2040
 		EraseAndReset();
 #endif
 	}
 
+#if STM32
+	//TODO not implemented yet
+#else
 	// Update the CAN bootloader
 	[[noreturn]] static void DoBootloadereUpdate()
 	{
@@ -498,6 +524,7 @@ namespace Platform
 
 		ResetProcessor();
 	}
+#endif
 
 #if SUPPORT_THERMISTORS && HAS_VREF_MONITOR
 	static void SetupThermistorFilter(Pin pin, size_t filterIndex, bool useAlternateAdc) noexcept
@@ -518,7 +545,7 @@ namespace Platform
 #if defined(EXP3HC)
 		const CanAddress switches = ReadBoardAddress();
 		return (switches == 0) ? CanId::Exp3HCFirmwareUpdateAddress : switches;
-#elif defined(TOOL1LC) || defined(TOOL1RR) || defined(F3PTB) || defined(TOOLINDX)
+#elif defined(TOOL1LC) || defined(TOOL1RR) || defined(F3PTB) || defined(TOOLINDX) || defined(NODETRIX)
 		return CanId::ToolBoardDefaultAddress;
 #elif defined(SAMMYC21) || defined(RPI_PICO) || defined(FLY36RRF)
 		return CanId::SammyC21DefaultAddress;
@@ -817,6 +844,7 @@ void Platform::Init()
 	InitBoardThermistor();
 #endif
 
+#if HAS_CPU_TEMP_SENSOR
 	// Set up the MCU temperature sensors
 	mcuTemperature.current = 0.0;
 	mcuTemperature.maximum = -273.16;
@@ -824,16 +852,17 @@ void Platform::Init()
 	mcuTemperatureAdjust = 0.0;
 
 	// Set up the MCU temperature sense filters
-#if SAME5x
+# if SAME5x
 	tpFilter.Init(0);
 	AnalogIn::EnableTemperatureSensor(0, tpFilter.CallbackFeedIntoFilter, CallbackParameter(&tpFilter), 1, 0);
 	tcFilter.Init(0);
 	AnalogIn::EnableTemperatureSensor(1, tcFilter.CallbackFeedIntoFilter, CallbackParameter(&tcFilter), 1, 0);
-#elif SAMC21 || RP2040
+# elif SAMC21 || RP2040
 	tsensFilter.Init(0);
 	AnalogIn::EnableTemperatureSensor(tsensFilter.CallbackFeedIntoFilter, CallbackParameter(&tsensFilter), 1);
-#else
-# error Unsupported processor
+# else
+#  error Unsupported processor
+# endif
 #endif
 
 #if HAS_BUTTONS
@@ -898,7 +927,7 @@ void Platform::Init()
 	MFMHandler::Init(GetSharedI2C(0));
 #endif
 
-	CanInterface::Init(GetCanAddress(), CANInstanceNumber, UseLaterCanPins, true);
+	CanInterface::Init(GetCanAddress(), CanParams, true);
 	lastPollTime = millis();
 }
 
@@ -912,7 +941,7 @@ void Platform::InitMinimal()
 #if RP2040
 	serialUSB.Start(NoPin);
 #endif
-	CanInterface::Init(GetCanAddress(), CANInstanceNumber, UseLaterCanPins, false);
+	CanInterface::Init(GetCanAddress(), CanParams, false);
 }
 
 void Platform::Spin()
@@ -929,10 +958,11 @@ void Platform::Spin()
 			DoFirmwareUpdate();
 			break;
 
+#if !STM32		//TODO not implemented yet
 		case DeferredCommand::bootloaderUpdate:
 			DoBootloadereUpdate();
 			break;
-
+#endif
 		case DeferredCommand::reset:
 			ShutdownAndReset();
 			break;
@@ -954,6 +984,8 @@ void Platform::Spin()
 			(void)Tasks::DoMemoryRead(reinterpret_cast<const uint32_t*>(
 #if RP2040
 										SRAM_BASE
+#elif STM32
+										SRAM1_BASE
 #else
 										HSRAM_ADDR
 #endif
@@ -984,6 +1016,7 @@ void Platform::Spin()
 		default:
 			break;
 		}
+		deferredCommand = DeferredCommand::none;
 	}
 
 	SpinMinimal();				// update the activity LED and currentVin
@@ -1062,8 +1095,10 @@ void Platform::Spin()
 	{
 		lastPollTime = now;
 
+#if HAS_CPU_TEMP_SENSOR
 		// Get the chip temperature
-#if SAME5x
+
+# if SAME5x
 		if (tcFilter.IsValid() && tpFilter.IsValid())
 		{
 			// From the datasheet:
@@ -1075,19 +1110,21 @@ void Platform::Spin()
 			const int32_t divisor = (tempCalF3 * tp_result - tempCalF4 * tc_result);
 			result = (divisor == 0) ? 0 : result/divisor;
 			mcuTemperature.current = (float)result/16 + mcuTemperatureAdjust;
-#elif SAMC21
+# elif SAMC21
 		if (tsensFilter.IsValid())
 		{
 			const int16_t temperatureTimes100 = (int16_t)((uint16_t)(tsensFilter.GetSum()/tsensFilter.NumAveraged()) ^ (1u << 15));
 			mcuTemperature.current = (float)temperatureTimes100 * 0.01;
-#elif RP2040
+# elif RP2040
 			if (tsensFilter.IsValid())
 			{
 				const float tempSensorAdcVoltage = (tsensFilter.GetSum()/tsensFilter.NumAveraged()) * (3.3/(float)(1u << AnalogIn::AdcBits));
 				mcuTemperature.current = 27.0 - ((tempSensorAdcVoltage - 0.706) * (1.0/0.001721));
-#else
-# error Unsupported processor
-#endif
+# elif STM32
+			//TODO
+# else
+#  error Unsupported processor
+# endif
 			if (mcuTemperature.current < mcuTemperature.minimum)
 			{
 				mcuTemperature.minimum = mcuTemperature.current;
@@ -1097,17 +1134,18 @@ void Platform::Spin()
 				mcuTemperature.maximum = mcuTemperature.current;
 			}
 		}
+#endif	// HAS_CPU_TEMP_SENSOR
 
 		static unsigned int nextSensor = 0;
 
 		const auto ts = Heat::FindSensorAtOrAbove(nextSensor);
 		if (ts.IsNotNull())
 		{
-#if 0
+# if 0
 			float temp;
 			const TemperatureError err = ts->GetLatestTemperature(temp);
 			debugPrintf("Sensor %u err %u temp %.1f", ts->GetSensorNumber(), (unsigned int)err, (double)temp);
-#endif
+# endif
 			nextSensor = ts->GetSensorNumber() + 1;
 		}
 		else
@@ -1208,7 +1246,7 @@ void Platform::Spin()
 # endif
 		}
 	}
-#endif
+# endif
 }
 
 void Platform::SpinMinimal()
@@ -1324,10 +1362,12 @@ void Platform::CurrentSensorAinCallback(CallbackParameter cp, int32_t val) noexc
 
 #endif
 
+#if HAS_CPU_TEMP_SENSOR
 const MinCurMax& Platform::GetMcuTemperatures()
 {
 	return mcuTemperature;
 }
+#endif
 
 void Platform::KickHeatTaskWatchdog()
 {
@@ -1558,7 +1598,9 @@ GCodeResult Platform::DoDiagnosticTest(const CanMessageDiagnosticTest& msg, cons
 			reply.printf("Reading step timer 100 times took %.2fus", (double)((1'000'000.0f * (float)tim1)/(float)SystemCoreClock));
 		}
 
-#if !RP2040
+#if SAME70 || STM32 || (RP2040 && !USE_SPICAN)
+		// The following code is not needed because we use the step clock as the time stamp counter
+#else
 		// Also check the correspondence between the CAN timestamp timer and the step clock
 		{
 			uint32_t startClocks, endClocks;
@@ -1723,7 +1765,7 @@ bool Platform::WasDeliberateError() noexcept
 	return deliberateError;
 }
 
-#if SAME5x
+#if SAME5x || STM32
 
 // Set a contiguous range of interrupts to the specified priority
 void Platform::SetInterruptPriority(IRQn base, unsigned int num, uint32_t prio)

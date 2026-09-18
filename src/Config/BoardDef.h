@@ -10,6 +10,11 @@
 
 #include <Duet3Common.h>								// this file is in the CANlib project because both main and expansion boards need it
 #include <RRF3Common.h>
+#include <Hardware/PinDescription.h>
+#include <CanParameters.h>
+#include <SPI/SpiParameters.h>
+#include <I2C/I2cParameters.h>
+#include <UART/UartParameters.h>
 
 #if defined(EXP3HC)
 # include "EXP3HC.h"

@@ -8,9 +8,6 @@
 #ifndef SRC_CONFIG_M23CL_H_
 #define SRC_CONFIG_M23CL_H_
 
-#include <Hardware/PinDescription.h>
-#include <SPI/SpiParameters.h>
-
 #define BOARD_TYPE_NAME		"M23CL"
 #define BOOTLOADER_NAME		"SAME5x"
 
@@ -65,7 +62,7 @@ constexpr DmaPriority DmacPrioSspiRx = 3;
 // Stepper drivers
 constexpr size_t NumDrivers = 1;
 constexpr size_t MaxSmartDrivers = 1;
-constexpr float MaxMotorCurrent = 3600.0;					// the maximum peak current we allow the TMC5160/5161 drivers to be set to in open loop mode
+constexpr float MaxMotorCurrent = 6300.0;					// the maximum peak current we allow the TMC5160/5161 drivers to be set to in open loop mode
 constexpr uint32_t DefaultStandstillCurrentPercent = 71;
 constexpr float Tmc5160SenseResistor = 0.05;
 
@@ -98,8 +95,13 @@ constexpr Pin DiagPins[NumDrivers] = { PortAPin(21) };
 #define USE_MPU					0
 #define USE_CACHE				1
 
-constexpr unsigned int CANInstanceNumber = 0;
-constexpr bool UseLaterCanPins = false;
+constexpr CanParameters CanParams =
+{
+	.instanceNumber = 0,
+	.txPin = PortAPin(22),
+	.rxPin = PortAPin(23),
+	.pinsFunction = GpioPinFunction::I
+};
 
 constexpr size_t MaxPortsPerHeater = 1;
 
@@ -118,6 +120,9 @@ constexpr float BoardThermistorSeriesR = 3900.0;
 constexpr float BoardThermistorR25 = 10000;
 constexpr float BoardThermistorBeta = 3425.0;
 constexpr float BoardThermistorShC = 1.68e-7;
+
+constexpr float BoardWarningTemperature = 80.0;
+constexpr float BoardErrorTemperature = 85.0;
 
 constexpr Pin BoardTypePin = PortAPin(3);
 

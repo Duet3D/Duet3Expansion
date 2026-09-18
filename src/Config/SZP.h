@@ -8,10 +8,6 @@
 #ifndef SRC_CONFIG_SZP_H_
 #define SRC_CONFIG_SZP_H_
 
-#include <Hardware/PinDescription.h>
-#include <I2C/I2cParameters.h>
-#include <UART/UartParameters.h>
-
 #define BOARD_TYPE_NAME		"SZP"
 #define BOOTLOADER_NAME		"SAMC21"
 
@@ -45,6 +41,14 @@
 #define USE_CACHE				0
 
 #define DIAG_SERCOM_NUMBER		0		// which SERCOM device we use for debugging output
+
+constexpr CanParameters CanParams =
+{
+	.instanceNumber = 0,
+	.txPin = PortAPin(24),
+	.rxPin = PortAPin(25),
+	.pinsFunction = GpioPinFunction::G
+};
 
 constexpr unsigned int CANInstanceNumber = 0;
 constexpr bool UseLaterCanPins = false;
