@@ -68,7 +68,7 @@ export Q VERBOSE
 # Use DEBUG=1 to build with debug symbols and reduced optimization
 # Indent conditional bodies with spaces: Make reads a tab-indented line that is not a variable assignment as a recipe, and there is no target yet
 ifeq ($(DEBUG),1)
-    DEBUG_FLAGS := -g3 -Og
+    DEBUG_FLAGS := -g3 -Og -DDEBUG
     $(info Building with debug symbols enabled)
 else
     DEBUG_FLAGS :=
