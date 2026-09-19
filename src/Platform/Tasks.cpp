@@ -866,12 +866,13 @@ extern "C" [[noreturn]] void UpdateBootloaderTask(void *pvParameters) noexcept
 static ptrdiff_t GetHandlerFreeStack() noexcept
 {
 	const char * const ramend = (const char*)&_estack;
-	const char * stack_lwm = sysStackLimit;
+	const char * const limit = reinterpret_cast<const char*>(sysStackLimit);
+	const char * stack_lwm = limit;
 	while (stack_lwm < ramend && *stack_lwm == memPattern)
 	{
 		++stack_lwm;
 	}
-	return stack_lwm - sysStackLimit;
+	return stack_lwm - limit;
 }
 
 ptrdiff_t Tasks::GetNeverUsedRam() noexcept

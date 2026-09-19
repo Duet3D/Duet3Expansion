@@ -221,11 +221,11 @@ void CanInterface::Init(CanAddress defaultBoardAddress, const CanParameters& par
 #elif SAMC21 || SAME5x
 	// Read the CAN timing data from the top part of the NVM User Row
 	canConfigData = *reinterpret_cast<CanUserAreaData*>(NVMCTRL_USER + CanUserAreaDataOffset);
-	canConfigData.GetTiming(timing);
 #elif STM32
 	canConfigData.Clear();		//TODO temporary
 	//TODO
 #endif
+	canConfigData.GetTiming(timing);
 
 	// Set up the CAN pins
 #if !RPXXXX
