@@ -7,7 +7,8 @@
         }
     ],
 	"makefile.configurations": [
-		{ "name": "Release", "makeArgs": ["-j16"] },
-		{ "name": "Debug", "makeArgs": ["-j16", "DEBUG=1"] }
-	]
+		{ "name": "Release", "makeArgs": ["-j32"] },
+		{ "name": "Debug", "makeArgs": ["-j32", "DEBUG=1"] }
+    ],
+    "cortex-debug.variableUseNaturalFormat": false
 }

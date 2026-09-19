@@ -12,7 +12,7 @@
             "request": "launch",
             "runToEntryPoint": "Reset_Handler",
             "showDevDebugOutput": "none",
-            "svdFile": "${workspaceFolder}/CoreN2G/src/STMCubeMX/STM32H523.svd",
+            "svdFile": "${workspaceFolder}/../CoreN2G/src/STMCubeMX/STM32H523.svd",
             "servertype": "stlink",
             "device": "STM32H523RETx",
             "interface": "swd",
