@@ -10,9 +10,14 @@
             "executable": "C:/Eclipse/Firmware-3.7/Duet3Expansion/NodeTrix/Duet3Firmware_NodeTrix.elf",
             "name": "Debug with ST-Link",
             "request": "launch",
-            "runToEntryPoint": "main",
+            "runToEntryPoint": "Reset_Handler",
             "showDevDebugOutput": "none",
             "svdFile": "${workspaceFolder}/CoreN2G/src/STMCubeMX/STM32H523.svd",
+            "servertype": "stlink",
+            "device": "STM32H523RETx",
+            "interface": "swd",
+            "serverArgs": [ "-m 1" ],
+//            "preLaunchTask": "build",
         },
         {
             "type": "stlinkgdbtarget",
@@ -22,11 +27,6 @@
             "preBuild": "${command:st-stm32-ide-debug-launch.build}",
             "runEntry": "main",
             "origin": "snippet",
-            "device": "STM32H523RETx",
-            "interface": "swd",
-            "servertype": "stlink",
-            "gdbArgs": ["-m", "1"],
-            "stopAtEntry": true,
             "imagesAndSymbols": [
                 {
                     "imageFileName": "${command:st-stm32-ide-debug-launch.get-projects-binary-from-context1}"
