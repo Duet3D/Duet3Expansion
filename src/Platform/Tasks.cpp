@@ -316,12 +316,14 @@ static bool watchdogCausedReboot = false;
 		task->Create(MainTask, "MAIN", nullptr, TaskPriority::SpinPriority);
 	}
 
+#ifndef DEBUG
 	// Initialise watchdog clock
 	WatchdogInit();
-#if STM32
+# if STM32
 	NVIC_EnableIRQ(IWDG_IRQn);		// enable the watchdog early warning interrupt
-#elif !RP2040
+# elif !RP2040
 	NVIC_EnableIRQ(WDT_IRQn);		// enable the watchdog early warning interrupt
+# endif
 #endif
 
 	StepTimer::Init();				// initialise the step pulse timer now because we use it for measuring task CPU usage
