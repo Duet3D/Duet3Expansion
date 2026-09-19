@@ -1,0 +1,9 @@
+{
+    "makefile.launchConfigurations": [
+        {
+            "cwd": "c:\\Eclipse\\Firmware-3.7\\Duet3Expansion\\NodeTrix",
+            "binaryPath": "c:\\Eclipse\\Firmware-3.7\\Duet3Expansion\\NodeTrix\\Duet3Firmware_NodeTrix.elf",
+            "binaryArgs": []
+        }
+    ]
+}
