@@ -5,5 +5,9 @@
             "binaryPath": "c:\\Eclipse\\Firmware-3.7\\Duet3Expansion\\NodeTrix\\Duet3Firmware_NodeTrix.elf",
             "binaryArgs": []
         }
-    ]
+    ],
+	"makefile.configurations": [
+		{ "name": "Release", "makeArgs": ["-j16"] },
+		{ "name": "Debug", "makeArgs": ["-j16", "DEBUG=1"] }
+	]
 }

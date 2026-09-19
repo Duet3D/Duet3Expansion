@@ -726,7 +726,7 @@ bool CanInterface::SendAnnounce(CanMessageBuffer *buf) noexcept
 	msg->usesUf2Binary = BOARD_USES_UF2_BINARY;
 	msg->isReconnect = announceIsReconnect;
 	msg->wasShutDown = announceWasShutDown;
-	msg->zero = 0;
+	msg->noSmartDrivers = !HAS_SMART_DRIVERS;
 	memcpy(msg->uniqueId, Platform::GetUniqueId().GetRaw(), sizeof(msg->uniqueId));
 	// Note, board type name, firmware version, firmware date and firmware time are limited to 43 characters in the new format
 	// We use vertical-bar to separate the three fields: board type, firmware version, date/time
