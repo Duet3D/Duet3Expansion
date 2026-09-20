@@ -104,9 +104,9 @@ constexpr CanDevice::Config Can0Config =
 	.rxFifo1Size = 0,								// we don't use FIFO 1
 #endif
 #if STM32H5
-	.numShortFilterElements = 28,					// we don't use 11-bit addresses
+	.numShortFilterElements = 28,					// we don't use 11-bit addresses but the FDCAN allocates 28 of them
 	.numExtendedFilterElements = 8,
-	.txEventFifoSize = 3							// we don't need transmit events
+	.txEventFifoSize = 3							// we don't need transmit events but the FDCAN allocates 3 of them
 #else
 	.numShortFilterElements = 0,					// we don't use 11-bit addresses
 	.numExtendedFilterElements = 3,
@@ -284,13 +284,13 @@ void CanInterface::Init(CanAddress defaultBoardAddress, const CanParameters& par
 	{
 		// Set up a CAN receive filter to receive clock sync messages in buffer 0
 		can0dev->SetExtendedFilterElement(1,
-#if RP2040
+#if RP2040 || STM32H5
 											CanDevice::RxBufferNumber::fifo1,
 #else
 											CanDevice::RxBufferNumber::buffer0,
 #endif
 											((uint32_t)CanMessageType::timeSync << CanId::MessageTypeShift) | ((uint32_t)CanId::BroadcastAddress << CanId::DstAddressShift),
-#if RP2040
+#if RP2040 || STM32H5
 											(CanId::MessageTypeMask << CanId::MessageTypeShift) | (CanId::BoardAddressMask << CanId::DstAddressShift)
 #else
 											1					// mask is unused when using a dedicated Rx buffer, but must be nonzero to enable the element
@@ -303,7 +303,7 @@ void CanInterface::Init(CanAddress defaultBoardAddress, const CanParameters& par
 											CanId::BoardAddressMask << CanId::DstAddressShift);
 	}
 
-#if !RP2040
+#if !(RP2040 || STM32H5)
 	// For receiving into a dedicated buffer, the mask is ignored and only the extended ID mask is applied. We need to ignore the source address.
 	can0dev->SetExtendedIdMask(0x1FFFFFFF & ~(CanId::BoardAddressMask << CanId::SrcAddressShift));
 #endif
@@ -415,7 +415,9 @@ bool CanInterface::Send(CanMessageBuffer *buf) noexcept
 // We reserve two buffers for sending these messages.
 bool CanInterface::SendAsync(CanMessageBuffer *buf) noexcept
 {
-#if RP2040
+#if STM32H5
+	const CanDevice::TxBufferNumber bufferNumber = CanDevice::TxBufferNumber::fifo;
+#elif RP2040
 	// RP2040 doesn't support dedicated buffers but it can support more than one fifo. We prioritise fifo1 over fifo0.
 	const CanDevice::TxBufferNumber bufferNumber = CanDevice::TxBufferNumber::fifo1;
 #else
@@ -893,7 +895,7 @@ extern "C" [[noreturn]] void CanClockLoop(void *) noexcept
 	{
 		CanMessageBuffer buf;
 		can0dev->ReceiveMessage(
-#if RP2040
+#if RP2040 || STM32H5
 								CanDevice::RxBufferNumber::fifo1,
 #else
 								CanDevice::RxBufferNumber::buffer0,
