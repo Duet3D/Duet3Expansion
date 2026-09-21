@@ -1966,7 +1966,7 @@ extern "C" [[noreturn]] void TmcLoop(void *) noexcept
 		//TODO add SPI timeout parameter to TranceivePacket
 		fastDigitalWriteLow(GlobalTmcCSPin);					// set CS low
 		const bool success = spiDev->TransceivePacket(const_cast<const uint8_t*>(tmcSendData), const_cast<uint8_t*>(tmcRcvData), SpiDataSize, TransferTimeout);
-		fastDigitalWriteHigh(GlobalTmcCSPin);					// set CS low
+		fastDigitalWriteHigh(GlobalTmcCSPin);					// set CS high
 		dmaFinishedReason = (success) ? DmaCallbackReason::complete : DmaCallbackReason::none;
 # endif
 #else
@@ -2139,6 +2139,7 @@ void SmartDrivers::Init() noexcept
 	//delay(10);
 #elif TMC_USES_SPIDEV
 	spiDev = new SpiDevice(TmcSpiParameters);
+	spiDev->SetClockFrequencyAndMode(DriversSpiClockFrequency, SpiMode::mode3, false);
 #else
 	// Set up the SPI interface with data changing on the falling edge of the clock and captured on the rising edge
 	spi_reset(SPI_TMC);										// this clears the transmit and receive registers and puts the SPI into slave mode
