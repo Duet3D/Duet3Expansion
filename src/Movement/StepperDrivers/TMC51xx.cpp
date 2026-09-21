@@ -1916,6 +1916,10 @@ extern "C" [[noreturn]] void TmcLoop(void *) noexcept
 		GetMoveInstance().PhaseStepControlLoop();
 #endif
 
+#if TMC_USES_SPIDEV
+		//TEMPORARY while SpiDevice uses polling, not DMA. Relinquish the CPU to let other tasks run.
+		delay(4);
+#endif
 		// Set up data to write. Driver 0 is the first in the SPI chain so we must write them in reverse order.
 #if SINGLE_DRIVER
 		driverStates[0].GetSpiCommand(const_cast<uint8_t*>(tmcSendData));
