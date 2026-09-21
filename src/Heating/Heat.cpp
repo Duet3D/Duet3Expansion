@@ -756,9 +756,12 @@ void Heat::SuspendHeaters(bool sus) noexcept
 
 void Heat::Diagnostics(const StringRef& reply) noexcept
 {
-	reply.lcatf("Last sensors broadcast 0x%08" PRIx64 " found %u %" PRIu32 " ticks ago, %u ordering errs, loop time %" PRIu32,
-					lastSensorsBroadcastWhich, lastSensorsFound, millis() - lastSensorsBroadcastWhen, sensorOrderingErrors, heatTaskLoopTime);
-	sensorOrderingErrors = 0;
+	if (sensorOrderingErrors != 0)		// this should not happen - retained in case it does
+	{
+		reply.lcatf("Last sensors broadcast 0x%08" PRIx64 " found %u %" PRIu32 " ticks ago, %u ordering errs, loop time %" PRIu32,
+						lastSensorsBroadcastWhich, lastSensorsFound, millis() - lastSensorsBroadcastWhen, sensorOrderingErrors, heatTaskLoopTime);
+		sensorOrderingErrors = 0;
+	}
 #if 0	// temporary to debug a board that reports bad Vssa
 	reply.catf(", Vref %u Vssa %u",
 		(unsigned int)(Platform::GetVrefFilter(0)->GetSum()/ThermistorAveragingFilter::NumAveraged()),
