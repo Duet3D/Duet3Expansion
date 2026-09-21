@@ -663,8 +663,8 @@ __attribute__((section(".time_critical")))
 #endif
 void Move::StepDrivers(uint32_t now) noexcept
 {
-# if SUPPORT_CLOSED_LOOP
-	if (dms[0].closedLoopControl.IsClosedLoopEnabled())
+# if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
+	if (dms[0].UsesPhaseStepping())
 	{
 		return;
 	}

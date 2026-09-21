@@ -1973,7 +1973,7 @@ extern "C" [[noreturn]] void TmcLoop(void *) noexcept
 			TaskCriticalSectionLocker lock;
 
 # if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
-			SetupDMA((setCoilCurrents) ? tmcPhaseSendData : tmcSendData, tmcSendData);	// set up the PDC or DMAC
+			SetupDMA(setCoilCurrents ? tmcPhaseSendData : tmcSendData, tmcRcvData);	// set up the PDC or DMAC
 # else
 			SetupDMA(tmcSendData, tmcRcvData);											// set up the PDC or DMAC
 # endif
