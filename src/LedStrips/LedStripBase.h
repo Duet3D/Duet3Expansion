@@ -20,7 +20,18 @@ class CanMessageGenericParser;
 class LedStripBase
 {
 public:
-	LedStripBase(LedStripType p_type) noexcept : type(p_type) { }
+	enum class ColorOrder : uint8_t
+	{
+		BGR = 0,			// default for DotStar LEDs
+		BRG,
+		RGB,
+		RBG,
+		GBR,
+		GRB,				// default for WS2812 LEDs
+		count
+	};
+
+	explicit LedStripBase(LedStripType p_type) noexcept : type(p_type) { colorOrder = (IsNeoPixel()) ? DefaultNeoPixelColorOrder : DefaultDotStarColorOrder; }
 	virtual ~LedStripBase() { }
 
 	// Handle a configuration request received over CAN
@@ -32,16 +43,18 @@ public:
 	// Test whether this strip is bit-banged and therefore requires motion to be stopped before sending a command
 	virtual bool MustStopMovement() const noexcept = 0;
 
-	// Get the LED strip type
-	LedStripType GetType() const noexcept { return type; }
-
+protected:
 	// Return true if the LED strip type is NeoPixel
 	bool IsNeoPixel() const noexcept { return type != LedStripType::DotStar; }
 
 	// Get the LED strip type as text
 	const char *_ecv_array GetTypeText() const noexcept;
 
-private:
+	static constexpr ColorOrder DefaultNeoPixelColorOrder = ColorOrder::GRB;
+	static constexpr ColorOrder DefaultDotStarColorOrder = ColorOrder::BGR;
+
+	uint32_t maxLeds = DefaultMaxLedsPerStrip;
+	ColorOrder colorOrder;												// which order we need to send the data in
 	LedStripType type;
 };
 

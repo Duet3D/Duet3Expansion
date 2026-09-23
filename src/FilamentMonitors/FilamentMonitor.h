@@ -89,6 +89,12 @@ protected:
 	// Clear the measurement state - called when we are not printing a file. Return the present/not present status if available.
 	virtual FilamentSensorStatus Clear() noexcept = 0;
 
+	// Get the filament present state of this monitor if it has one, returning true if it is known
+	virtual bool GetLocalFilamentPresent(bool& present) const noexcept { return false; }
+
+	// Return true if this monitor detected filament movement within the last FilamentMonitorMotionLatchTime
+	virtual bool IsLocalMotionDetected() const noexcept { return false; }
+
 	// Store collected data in a CAN message slot returning true if there was data worth sending
 	virtual void GetLiveData(FilamentMonitorDataV2& data) const noexcept = 0;
 
@@ -135,6 +141,7 @@ private:
 	bool isrWasPrinting;
 	bool haveIsrStepsCommanded;
 	FilamentSensorStatus lastStatus;
+	uint8_t lastReportedLiveBits;										// the presence/motion bits we last sent to the main board
 };
 
 #endif	// SUPPORT_DRIVERS

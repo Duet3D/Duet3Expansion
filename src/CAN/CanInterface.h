@@ -45,6 +45,10 @@ namespace CanInterface
 	bool SendAnnounce(CanMessageBuffer *buf) noexcept;
 	void RaiseEvent(EventType type, uint16_t param, uint8_t device, const char *format, va_list vargs) noexcept;
 
+	// Connection timeout handling after loss of time sync
+	void UpdateSyncLockState(bool synced) noexcept;
+	GCodeResult ProcessM959(const CanMessageGeneric& msg, const StringRef& reply) noexcept;
+
 	void WakeAsyncSender() noexcept;
 	void WakeAsyncSenderFromIsr() noexcept;
 }

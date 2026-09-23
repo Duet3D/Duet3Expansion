@@ -42,7 +42,9 @@ public:
 	void Suspend(bool sus) noexcept override;					// Suspend the heater to conserve power or while doing Z probing
 	GCodeResult TuningCommand(const CanMessageHeaterTuningCommand& msg, const StringRef& reply) noexcept override;
 	GCodeResult ApplyFeedForward(const CanMessageHeaterFeedForwardV1& msg, const StringRef& reply) noexcept override;
-	bool IsCustom() const noexcept override;					// returns true if this is a custom heater with unusual default model parameters
+#if SUPPORT_INDUCTIVE_HEATER
+	bool IsInductiveHeater() const noexcept override;			// returns true if this is an inductive heater with special requirements
+#endif
 	void SetDefaultHeaterModel(CanMessageBuffer& buf) noexcept override;	// set and return the default heater model
 
 	static bool GetTuningCycleData(CanMessageHeaterTuningReport& msg) noexcept;	// get a heater tuning cycle report, if we have one

@@ -176,7 +176,8 @@ constexpr I2cParameters I2C0Params =
 	.sclPin = PortAPin(13),
 	.sdaPin = PortAPin(12),
 	.pinFunction = GpioPinFunction::C,
-	.irqPriority = NvicPriorityI2C
+	.irqPriority = NvicPriorityI2C,
+	.rxDmaChannel = NoDmaChannel
 };
 
 #endif
@@ -217,7 +218,7 @@ constexpr PinDescription PinTable[] =
 	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_0,	SercomIo::none,		SercomIo::none,		Nx,	"ate.vin"		},	// PA02 VIN monitor
 	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_1,	SercomIo::none,		SercomIo::none,		Nx, nullptr			},	// PA03 board type
 	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_4,	SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA04 spare analog in (strain gauge?)
-	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_5,	SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA05 spare
+	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_5,	SercomIo::none,		SercomIo::none,		Nx,	"pa05"			},	// PA05 spare
 	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_6,	SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA06 VRefMon
 	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_7,	SercomIo::none,		SercomIo::none,		7,	"temp1"			},	// PA07 TEMP1
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA08 driver UART Tx
@@ -249,7 +250,7 @@ constexpr PinDescription PinTable[] =
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PB00 not on chip
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PB01 not on chip
 	{ TcOutput::none,	TccOutput::tcc2_2F,	AdcInput::none,		SercomIo::none,		sercom5dpad0,		Nx, "io0.out"		},	// PB02 IO0 out, UART available
-	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_15,	sercom5dpad1,		SercomIo::none,		3, "io0.in"			},	// PB03 IO0 in, UART available
+	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_15,	sercom5dpad1,		SercomIo::none,		3,	"io0.in"		},	// PB03 IO0 in, UART available
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PB04 not on chip
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PB05 not on chip
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PB06 not on chip
@@ -273,7 +274,7 @@ constexpr PinDescription PinTable[] =
 
 	// Virtual pins
 #if SUPPORT_LIS3DH
-	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"i2c.lis3dh,i2c.lis2dw"	},	// LIS3DH sensor connected via I2C
+	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"i2c.lis,i2c.lis3dh,i2c.lis3dsh,i2c.lis2dw"	},	// LIS3 sensor connected via I2C
 #endif
 #if SUPPORT_LDC1612
 	{ TcOutput::none,	TccOutput::none,	AdcInput::ldc1612,	SercomIo::none,		SercomIo::none,		Nx,	"i2c.ldc1612"	},	// LDC1612 sensor connected via I2C
@@ -292,12 +293,20 @@ constexpr size_t NumVirtualPins = SUPPORT_LIS3DH + SUPPORT_LDC1612 + SUPPORT_AS5
 
 static_assert(NumPins == NumRealPins + NumVirtualPins);
 
+#if SUPPORT_LIS3DH
+constexpr Pin LisPinNumber = NumRealPins;
+#endif
+
+#if SUPPORT_LDC1612
+constexpr Pin LdcPinNumber = NumRealPins + SUPPORT_LIS3DH;
+#endif
+
 #if SUPPORT_AS5601
 constexpr Pin MfmPin = NumRealPins + SUPPORT_LIS3DH + SUPPORT_LDC1612;				// pin number when the user selects magnetic filament monitor on I2C bus
 #endif
 
 #if SUPPORT_TCA6408A
-constexpr Pin MfmButtonPin = NumRealPins + SUPPORT_LIS3DH + SUPPORT_LDC1612 + 1;	// pin number when the user selects magnetic filament monitor button on I2C bus
+constexpr Pin MfmButtonPin = NumRealPins + SUPPORT_LIS3DH + SUPPORT_LDC1612 + SUPPORT_AS5601;	// pin number when the user selects magnetic filament monitor button on I2C bus
 #endif
 
 // Timer/counter used to generate step pulses and other sub-millisecond timings

@@ -49,6 +49,10 @@
 # include "MFMHandler.h"
 #endif
 
+#if SUPPORT_LOADCELL_DIAGNOSTICS
+# include "LoadCellDiagnostics.h"
+#endif
+
 // Check a value against the specified min and max parameters returning true if the value was outside limits
 static bool CheckMinMax(CanMessageGenericParser& parser, const StringRef& reply, char c, float val, const char *text) noexcept
 {
@@ -257,13 +261,12 @@ static GCodeResult SetStepsPerMmAndMicrostepping(const CanMessageMultipleDrivesR
 
 static GCodeResult ProcessM569Point2(const CanMessageGeneric& msg, const StringRef& reply)
 {
-#if SUPPORT_TMC22xx || SUPPORT_TMC51xx
+#if SUPPORT_TMC22xx || SUPPORT_TMC51xx || SUPPORT_TMC2240_SPI
 	CanMessageGenericParser parser(msg, M569Point2Params);
 	uint8_t drive;
-	uint8_t regNum;
-	if (!parser.GetUintParam('P', drive) || !parser.GetUintParam('R', regNum))
+	if (!parser.GetUintParam('P', drive))
 	{
-		reply.copy("Missing P or R parameter in CAN message");
+		reply.copy("Missing P parameter in CAN message");
 		return GCodeResult::error;
 	}
 
@@ -271,6 +274,50 @@ static GCodeResult ProcessM569Point2(const CanMessageGeneric& msg, const StringR
 	{
 		reply.printf("Driver number %u.%u out of range", CanInterface::GetCanAddress(), drive);
 		return GCodeResult::error;
+	}
+
+# if SUPPORT_TMC51xx || SUPPORT_TMC2240_SPI
+	uint8_t harmonic;
+	if (parser.GetUintParam('S', harmonic))
+	{
+		if (harmonic % 4 != 0)
+		{
+			reply.copy("Only harmonics that are multiples of 4 can be represented in the sine table");
+			return GCodeResult::error;
+		}
+		if (harmonic < 4 || harmonic > 16)
+		{
+			reply.copy("Waveform correction harmonic out of range");
+			return GCodeResult::error;
+		}
+		float magnitude = 0.0, phase = 0.0;
+		const bool seenMagnitude = parser.GetFloatParam('J', magnitude);
+		const bool seenPhase = parser.GetFloatParam('O', phase);
+		if (seenMagnitude && (magnitude < 0.0 || magnitude > 90.0))
+		{
+			reply.copy("Waveform correction magnitude out of range");
+			return GCodeResult::error;
+		}
+		if (seenPhase && phase != 0.0 && phase != 180.0)
+		{
+			reply.copy("Sine table correction phase must be 0 or 180");
+			return GCodeResult::error;
+		}
+		return SmartDrivers::ConfigureLutCorrection(drive, harmonic, seenMagnitude, magnitude, seenPhase, phase == 180.0, reply);
+	}
+# endif
+
+	uint8_t regNum;
+	if (!parser.GetUintParam('R', regNum))
+	{
+# if SUPPORT_TMC51xx || SUPPORT_TMC2240_SPI
+		reply.printf("Driver %u.%u waveform correction:", CanInterface::GetCanAddress(), drive);
+		SmartDrivers::AppendLutCorrections(drive, reply);
+		return GCodeResult::ok;
+# else
+		reply.copy("Missing R parameter in CAN message");
+		return GCodeResult::error;
+# endif
 	}
 
 	uint32_t regVal;
@@ -440,7 +487,13 @@ static GCodeResult InitiateReset(const CanMessageReset& msg, const StringRef& re
 
 static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& reply, uint8_t& extra)
 {
+#if SUPPORT_LOADCELL_DIAGNOSTICS && SUPPORT_LOADCELL_FFT
+	static constexpr uint8_t LastDiagnosticsPart = 9;				// the last diagnostics part is typeDiagnosticsPart0 + 9
+#elif SUPPORT_LOADCELL_DIAGNOSTICS
+	static constexpr uint8_t LastDiagnosticsPart = 8;				// the last diagnostics part is typeDiagnosticsPart0 + 8
+#else
 	static constexpr uint8_t LastDiagnosticsPart = 7;				// the last diagnostics part is typeDiagnosticsPart0 + 7
+#endif
 
 	switch (msg.type)
 	{
@@ -605,13 +658,27 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 		{
 			I2cErrors errs;
 			Platform::GetSharedI2C(i).GetAndClearErrors(errs);
-			reply.lcatf("I2C %u bus errors %u, naks %u, contentions %u, other errors %u", i, errs.busErrors, errs.naks, errs.contentions, errs.otherErrors);
+			reply.lcatf("I2C %u bus errors %u, naks %u, contentions %u, other errors %u, bus recoveries %u", i, errs.busErrors, errs.naks, errs.contentions, errs.otherErrors, errs.recoveries);
 		}
 #endif
 #if SUPPORT_DRIVERS
 		FilamentMonitor::GetDiagnostics(reply);
 #endif
 		break;
+
+#if SUPPORT_LOADCELL_DIAGNOSTICS
+	case CanMessageReturnInfo::typeDiagnosticsPart0 + 8:
+		extra = LastDiagnosticsPart;
+		LoadCellDiagnostics::AppendDiagnostics(reply);
+		break;
+
+# if SUPPORT_LOADCELL_FFT
+	case CanMessageReturnInfo::typeDiagnosticsPart0 + 9:
+		extra = LastDiagnosticsPart;
+		LoadCellDiagnostics::AppendSlowSpectrum(reply);
+		break;
+# endif
+#endif
 	}
 	return GCodeResult::ok;
 }
@@ -631,6 +698,8 @@ void CommandProcessor::Spin()
 		GCodeResult rslt;
 		CanRequestId requestId;
 		uint8_t extra = 0;
+		uint32_t words[CanMessageStandardReply::MaxNumWords];
+		size_t numWords = 0;
 		const bool requestUsedBrs = buf->useBrs;
 
 		switch (id)
@@ -740,6 +809,24 @@ void CommandProcessor::Spin()
 # endif
 			break;
 
+		case CanMessageType::m970:			// set step mode and phase stepping parameters
+			requestId = buf->msg.generic.requestId;
+# if SUPPORT_PHASE_STEPPING
+			rslt = moveInstance->ProcessM970(buf->msg.generic, replyRef);
+# else
+			rslt = GCodeResult::errorNotSupported;
+# endif
+			break;
+
+		case CanMessageType::m970p3:		// configure phase stepping waveform correction
+			requestId = buf->msg.generic.requestId;
+# if SUPPORT_PHASE_STEPPING
+			rslt = moveInstance->ProcessM970Point3(buf->msg.generic, replyRef);
+# else
+			rslt = GCodeResult::errorNotSupported;
+# endif
+			break;
+
 		case CanMessageType::m569p6:
 			requestId = buf->msg.generic.requestId;
 # if SUPPORT_CLOSED_LOOP
@@ -833,7 +920,7 @@ void CommandProcessor::Spin()
 
 		case CanMessageType::changeInputMonitorV1:
 			requestId = buf->msg.changeInputMonitorV1.requestId;
-			rslt = InputMonitor::Change(buf->msg.changeInputMonitorV1, replyRef, extra);
+			rslt = InputMonitor::Change(buf->msg.changeInputMonitorV1, replyRef, extra, words, numWords);
 			break;
 
 		case CanMessageType::readInputsRequest:
@@ -892,6 +979,12 @@ void CommandProcessor::Spin()
 		case CanMessageType::accelerometerConfig:
 			requestId = buf->msg.generic.requestId;
 			rslt = AccelerometerHandler::ProcessConfigRequest(buf->msg.generic, replyRef);
+			if (rslt == GCodeResult::ok)
+			{
+				words[0] = AccelerometerHandler::GetSamplingRate();
+				words[1] = AccelerometerHandler::GetResolution();
+				numWords = 2;
+			}
 			break;
 
 		case CanMessageType::startAccelerometer:
@@ -907,6 +1000,11 @@ void CommandProcessor::Spin()
 		case CanMessageType::m111:
 			requestId = buf->msg.diagnosticTest.requestId;
 			rslt = Platform::ProcessRemoteM111(buf->msg.generic, replyRef);
+			break;
+
+		case CanMessageType::setConnectionTimeout:
+			requestId = buf->msg.generic.requestId;
+			rslt = CanInterface::ProcessM959(buf->msg.generic, replyRef);
 			break;
 
 		default:
@@ -934,13 +1032,14 @@ void CommandProcessor::Spin()
 			buf->useBrs = requestUsedBrs;
 			msg->resultCode = (uint16_t)rslt;
 			msg->extra = extra;
+			msg->SetWords(words, numWords);
 			const size_t totalLength = reply.strlen();
 			size_t lengthDone = 0;
 			uint8_t fragmentNumber = 0;
 			for (;;)
 			{
-				const size_t fragmentLength = min<size_t>(totalLength - lengthDone, CanMessageStandardReply::MaxTextLength);
-				memcpy(msg->text, reply.c_str() + lengthDone, fragmentLength);
+				const size_t fragmentLength = min<size_t>(totalLength - lengthDone, msg->GetMaxTextLength());
+				memcpy(msg->GetText(), reply.c_str() + lengthDone, fragmentLength);
 				lengthDone += fragmentLength;
 				buf->dataLength = msg->GetActualDataLength(fragmentLength);
 				msg->fragmentNumber = fragmentNumber;
@@ -953,6 +1052,7 @@ void CommandProcessor::Spin()
 				msg->moreFollows = true;
 				CanInterface::Send(buf);
 				++fragmentNumber;
+				msg->numWords = 0;							// data words go in fragment 0 only
 			}
 		}
 	}

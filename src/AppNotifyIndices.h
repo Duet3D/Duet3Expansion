@@ -12,6 +12,9 @@
 
 #include <CANlibNotifyIndices.h>
 
+// RTOS task notification indices
+// Multiple tasks can use the same set of indices.
+// Where a task may wait on two or more different events at different times, we should use different indices for those events.
 namespace NotifyIndices
 {
 	constexpr uint32_t CanAsyncSender = NextAvailableAfterCANlib;
@@ -22,6 +25,7 @@ namespace NotifyIndices
 	constexpr uint32_t Move = AccelerometerDataCollector;
 	constexpr uint32_t Ads131M02 = AccelerometerDataCollector;
 	constexpr uint32_t ClosedLoopDataTransmission = AccelerometerDataCollector;
+	constexpr uint32_t InductiveHeaterCalibration = AccelerometerDataCollector;
 	constexpr uint32_t CanMessageQueue = NextAvailableAfterCANlib + 3;
 	constexpr uint32_t LDC1612 = AccelerometerDataCollector;
 	constexpr uint32_t TotalUsed = NextAvailableAfterCANlib + 4;

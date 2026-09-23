@@ -27,6 +27,10 @@
 # include <Platform/LedStatusControl.h>
 #endif
 
+#if SUPPORT_INDUCTIVE_HEATER
+# include <Platform/InductiveHeaterPort.h>
+#endif
+
 #if SUPPORT_OVERRIDE_STEP_PIN
 # include <RepRapFirmware.h>
 # include <Movement/Move.h>
@@ -216,7 +220,9 @@ int32_t IoPort::ReadAnalog() const noexcept
 		if (chan == AdcInput::ads131m02)
 		{
 			ADS131M02 *const loadCellAdc = Platform::GetLoadCellAdc();
-			return (loadCellAdc == nullptr) ? std::numeric_limits<int32_t>::min() : loadCellAdc->GetLatestData();
+			return (loadCellAdc == nullptr) ? std::numeric_limits<int32_t>::min()
+				: (totalInvert) ? -(loadCellAdc->GetLatestData())
+					: loadCellAdc->GetLatestData();
 		}
 #endif
 		if (chan != AdcInput::none)
@@ -662,7 +668,7 @@ void PwmPort::WriteAnalog(float pwm) const noexcept
 #if SUPPORT_INDUCTIVE_HEATER
 	if (IsInductiveHeaterPort())
 	{
-		Platform::SetInductiveHeaterPwm(pwm);
+		Platform::GetInductiveHeater().SetPwm(pwm);
 		return;
 	}
 #endif

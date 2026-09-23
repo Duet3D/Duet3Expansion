@@ -147,7 +147,6 @@ namespace Platform
 	static uint32_t lastPollTime;
 	static uint32_t lastFanCheckTime = 0;
 	static uint32_t heatTaskIdleTicks = 0;
-	static uint32_t syncedIdleTicks = 0;
 
 	static uint32_t whenLastCanMessageProcessed = 0;
 
@@ -349,10 +348,19 @@ namespace Platform
 	{
 		Heat::SwitchOffAll();
 #if SUPPORT_DRIVERS
-# if SUPPORT_TMC51xx || SUPPORT_TMC2240_SPI || SUPPORT_TMC22xx
+# if HAS_SMART_DRIVERS
 		IoPort::WriteDigital(GlobalTmcEnablePin, true);
 # endif
 		moveInstance->DisableAllDrives();
+#endif
+#if NUM_I2C_CHANNELS != 0
+		for (SharedI2CMaster *_ecv_null p : sharedI2C)
+		{
+			if (p != nullptr)
+			{
+				p->End();
+			}
+		}
 #endif
 		CanInterface::Shutdown();
 		WriteLed(0, false);
@@ -802,16 +810,14 @@ void Platform::Init()
 
 	uniqueId.SetFromCurrentBoard();
 
-#if SUPPORT_LIS3DH
+	// For now we assume that I2C accelerometers are integrated into the tool board, so we always initialise them
+	// SPI-connected accelerometers are optional and need to have pins configured, so we don't initialise them until the M955 command is used.
+#if SUPPORT_LIS3DH && !ACCELEROMETER_USES_SPI
 # ifdef TOOL1LC
 	if (boardVariant != 0)
 # endif
 	{
-# if ACCELEROMETER_USES_SPI
-		AccelerometerHandler::Init(*sharedSpi);
-# else
 		AccelerometerHandler::Init(GetSharedI2C(Lis_I2CChannel));
-# endif
 	}
 #endif
 
@@ -977,9 +983,7 @@ void Platform::Spin()
 
 	// Update the Status LED. Flash it quickly (8Hz) if we are not synced to the master, else flash in sync with the master (about 2Hz).
 	const bool synced = StepTimer::CheckSynced();
-	if (synced) {
-		syncedIdleTicks = 0;
-	}
+	CanInterface::UpdateSyncLockState(synced);
 	WriteLed(0,
 				(synced)
 					? (StepTimer::GetMasterTime() & (1u << 19)) != 0
@@ -1267,11 +1271,6 @@ uint32_t Platform::GetHeatTaskIdleTicks()
 	return heatTaskIdleTicks;
 }
 
-uint32_t Platform::GetSyncedIdleTicks()
-{
-	return syncedIdleTicks;
-}
-
 #if USE_SERIAL_DEBUG
 
 // Output a character to the debug channel
@@ -1398,7 +1397,6 @@ const UniqueIdBase& Platform::GetUniqueId() noexcept
 void Platform::Tick() noexcept
 {
 	++heatTaskIdleTicks;
-	++syncedIdleTicks;
 }
 
 void Platform::StartFirmwareUpdate()
@@ -1572,6 +1570,80 @@ GCodeResult Platform::DoDiagnosticTest(const CanMessageDiagnosticTest& msg, cons
 		deferredCommand = DeferredCommand::testMemoryLeak;
 		return GCodeResult::ok;
 
+#if SUPPORT_LIS3DH && !ACCELEROMETER_USES_SPI
+	case 1009:		// leave the I2C bus stuck the way a reset in the middle of a read does, to test that we recover from it
+		{
+			const Pin sclPin = I2C0Params.sclPin, sdaPin = I2C0Params.sdaPin;
+			constexpr uint32_t HalfClock = 5;			// 100kHz, slow enough for any device
+			auto sclHigh = [sclPin]() { SetPinMode(sclPin, INPUT); delayMicroseconds(HalfClock); };
+			auto sclLow  = [sclPin]() { SetPinMode(sclPin, OUTPUT_LOW); delayMicroseconds(HalfClock); };
+			auto sdaHigh = [sdaPin]() { SetPinMode(sdaPin, INPUT); delayMicroseconds(HalfClock); };
+			auto sdaLow  = [sdaPin]() { SetPinMode(sdaPin, OUTPUT_LOW); delayMicroseconds(HalfClock); };
+
+			if (!GetSharedI2C(0).Take(100))
+			{
+				reply.copy("Failed to get the I2C mutex");
+				return GCodeResult::error;
+			}
+
+			// Send a byte MSB first and return true if the slave acknowledged it
+			auto sendByte = [&](uint8_t b)
+			{
+				for (unsigned int i = 0; i < 8; i++)
+				{
+					if (b & 0x80) { sdaHigh(); } else { sdaLow(); }
+					b <<= 1;
+					sclHigh();
+					sclLow();
+				}
+				sdaHigh();
+				sclHigh();
+				const bool acked = !digitalRead(sdaPin);
+				sclLow();
+				return acked;
+			};
+
+			sdaHigh();
+			sclHigh();
+
+			unsigned int addr = 0;
+			bool ok = false;
+			for (uint16_t a : { 0b0011000, 0b0011001 })
+			{
+				sdaLow();									// start condition
+				sclLow();
+				if (sendByte(a << 1) && sendByte(0x0F))		// address for writing, then the WhoAmI register number
+				{
+					addr = a;
+					ok = true;
+					break;
+				}
+				sdaLow();									// stop condition
+				sclHigh();
+				sdaHigh();
+			}
+
+			if (ok)
+			{
+				sdaHigh();									// repeated start condition
+				sclHigh();
+				sdaLow();
+				sclLow();
+				ok = sendByte((addr << 1) | 1);				// address for reading
+			}
+
+			// The accelerometer is now driving the first data bit, which is zero because WhoAmI reads 0x33.
+			// Stopping here with SCL high is exactly what a reset in the middle of a read leaves behind: the slave holds SDA low waiting for the next clock
+			sclHigh();
+			const bool sdaStuckLow = !digitalRead(sdaPin);
+			reply.printf("Addressed accelerometer at %02x: %s, SDA is now %s", addr, (ok) ? "yes" : "no", (sdaStuckLow) ? "stuck low" : "high");
+			SetPinFunction(sclPin, I2C0Params.pinFunction);
+			SetPinFunction(sdaPin, I2C0Params.pinFunction);
+			GetSharedI2C(0).Release();
+		}
+		return GCodeResult::ok;
+#endif
+
 	default:
 		reply.printf("Unknown test type %u", msg.testType);
 		return GCodeResult::error;
@@ -1647,9 +1719,9 @@ float Platform::GetCurrentV12Voltage() noexcept
 
 #if SUPPORT_INDUCTIVE_HEATER
 
-void Platform::SetInductiveHeaterPwm(float pwm) noexcept
+InductiveHeaterPort& Platform::GetInductiveHeater() noexcept
 {
-	inductiveHeaterPort.SetPwm(pwm);
+	return inductiveHeaterPort;
 }
 
 #endif

@@ -37,7 +37,7 @@ GCodeResult Heater::SetFaultDetectionParameters(const CanMessageSetHeaterFaultDe
 {
 	maxTempExcursion = msg.maxTempExcursion;
 #if SUPPORT_INDUCTIVE_HEATER
-	maxHeatingFaultTime = (IsCustom()) ? min<float>(msg.maxFaultTime, CustomHeaterMaxFaultTime) : msg.maxFaultTime;
+	maxHeatingFaultTime = (IsInductiveHeater()) ? min<float>(msg.maxFaultTime, InductiveHeaterMaxFaultTime) : msg.maxFaultTime;
 #else
 	maxHeatingFaultTime = msg.maxFaultTime;
 #endif

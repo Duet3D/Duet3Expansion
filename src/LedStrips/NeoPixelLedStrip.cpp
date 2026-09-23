@@ -184,12 +184,6 @@ GCodeResult NeoPixelLedStrip::PioSendData(const LedParams& params) noexcept
 
 #endif
 
-// Bit bang data to Neopixels
-constexpr uint32_t NanosecondsToCycles(uint32_t ns) noexcept
-{
-	return (ns * (uint64_t)SystemCoreClockFreq)/1000000000u;
-}
-
 // Send data to NeoPixel LEDs by bit banging
 GCodeResult NeoPixelLedStrip::BitBangData(const LedParams& params) noexcept
 {

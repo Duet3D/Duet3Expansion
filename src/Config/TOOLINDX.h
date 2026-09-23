@@ -83,6 +83,8 @@ constexpr Pin DriverDiagPins[NumDrivers] = { PortBPin(07) };
 #define SUPPORT_INDUCTIVE_HEATER	1										// Inductive heater support
 #define SUPPORT_LP5817				1										// LP5817 LED driver support
 #define SUPPORT_ADS131M02			1										// ADS131M02 ADC support
+#define SUPPORT_LOADCELL_DIAGNOSTICS	1									// load cell baseline drift reported by M122
+#define SUPPORT_LOADCELL_FFT		1										// load cell spectra reported by M122, costs 16KiB of RAM
 #define NUM_CURRENT_SENSORS			1										// board has dedicated heater output with current measurement
 
 #define NUM_I2C_CHANNELS		2
@@ -124,6 +126,8 @@ constexpr DmaPriority DmacPrioADS131M02Tx = 0;
 constexpr DmaPriority DmacPrioADS131M02Rx = 3;
 
 // Interrupt priorities, lower means higher priority. 0-2 can't make RTOS calls.
+constexpr NvicPriority NvicPriorityAC = 2;				// we only use the AC interrupt to set a flag, not to wake a task
+constexpr NvicPriority NvicPriorityOscTcc = 2;			// we only use this interrupt to read the capture value, not to wake a task
 constexpr NvicPriority NvicPriorityStep = 3;			// step interrupt is next highest, it can preempt most other interrupts
 constexpr NvicPriority NvicPriorityDmac = 3;			// priority for DMA complete interrupts
 constexpr NvicPriority NvicPriorityUart = 3;			// serial driver makes RTOS calls
@@ -199,7 +203,8 @@ const I2cParameters I2C0Params =
 	.sclPin = PortAPin(22),
 	.sdaPin = PortAPin(23),
 	.pinFunction = GpioPinFunction::C,
-	.irqPriority = NvicPriorityI2C
+	.irqPriority = NvicPriorityI2C,
+	.rxDmaChannel = NoDmaChannel
 };
 
 #endif
@@ -213,7 +218,8 @@ const I2cParameters I2C1Params =
 	.sclPin = PortAPin(12),
 	.sdaPin = PortAPin(13),
 	.pinFunction = GpioPinFunction::D,
-	.irqPriority = NvicPriorityI2C
+	.irqPriority = NvicPriorityI2C,
+	.rxDmaChannel = NoDmaChannel
 };
 
 #endif
@@ -279,15 +285,22 @@ constexpr unsigned int ADA131M02_GclkNumber = 2;
 
 constexpr unsigned int InductiveHeaterOscTccDeviceNumber = 3;	// number of the TC we use to generate the ~120kHz signal to excite the resonant circuit
 constexpr unsigned int InductiveHeaterOscTccOutputNumber = 0;	// which output from the TCC we are using
+constexpr unsigned int InductiveHeaterOscTccCaptureNumber = 1;	// which channel from the TCC we are using for capture operations
+constexpr unsigned int InductiveHeaterOscTccCaptureEventUserNumber = 38 + InductiveHeaterOscTccCaptureNumber;	// TCC3 MC1
 constexpr unsigned int InductiveHeaterPwmTccDeviceNumber = 0;	// number of the TCC we use to generate the PWM signal that is gated with the osc signal
 constexpr unsigned int InductiveHeaterPwmTccOutputNumber = 0;	// which output from the TCC we are using
 constexpr unsigned int InductiveHeaterCCLNumber = 3;			// number of the CCL that we use to gate the TC and TCC output together
 constexpr unsigned int InductiveHeaterCCLOutPin = PortBPin(17);	// the CCL output pin that drive the inductive heater mosfet
 constexpr unsigned int InductiveHeaterAuxCCLNumber = 0;			// number of the second CCL that we need to use to gate two TCCs together
 
-constexpr GpioPinFunction InductiveHeaterCCLOutPinPeriphMode = GpioPinFunction::N;
+#define OSC_TCC_IRQn	TCC3_2_IRQn
+#define OSC_TCC_Handler	TCC3_2_Handler							// ISR for the oscillator TCC
 
-constexpr Pin HeaterVoltageAdcPin = PortBPin(5);
+constexpr GpioPinFunction InductiveHeaterCCLOutPinPeriphMode = GpioPinFunction::N;
+constexpr Pin InductiveHeaterVoltageFeedbackAdcPin = PortAPin(5);
+constexpr Pin InductiveHeaterVoltageFeedbackAcPin = PortAPin(6);
+constexpr float InductiveHeaterVoltageFeedbackRatio = (3 * 15 + 1.5)/1.5;							// 3 series resistors of 15K each, one 1.5K shunt resistor.
+constexpr float InductiveHeaterVoltageFeedbackRange = 3.3 * InductiveHeaterVoltageFeedbackRatio;	// this comes to 102.3V
 
 #include <HeaterModel.h>
 
@@ -306,7 +319,7 @@ constexpr HeaterModel InductiveHeaterDefaultModel =
 	.zero = 0
 };
 
-constexpr float CustomHeaterMaxFaultTime = 0.8;					// needs to be short enough to detect that there is no tool before damage is caused
+constexpr float InductiveHeaterMaxFaultTime = 0.8;							// needs to be short enough to detect that there is no tool before damage is caused
 
 #endif
 
@@ -336,7 +349,7 @@ constexpr PinDescription PinTable[] =
 	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_1,	SercomIo::none,		SercomIo::none,		Nx, nullptr			},	// PA03 board type
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA04 SPI0 MOSI (Stepper, sercom0)
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA05 SPI0 SCK
-	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA06 heater voltage feedback (also on PB05)
+	{ TcOutput::none,	TccOutput::none,	AdcInput::adc0_6,	SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA06 heater voltage feedback (also on PB05). This pin also feeds AC2.
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	nullptr			},	// PA07 SPI0 MISO
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"led"			},	// PA08 NP out (QSPI D0)
 	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		9,	"io0.in"		},	// PA09 endstop
@@ -399,7 +412,7 @@ constexpr PinDescription PinTable[] =
 
 	// Virtual pins
 #if SUPPORT_LIS3DH
-	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"i2c.lis3dh,i2c.lis2dw,i2c.accelerometer"	},	// LIS3DH or LIS2DW12 sensor connected via I2C
+	{ TcOutput::none,	TccOutput::none,	AdcInput::none,		SercomIo::none,		SercomIo::none,		Nx,	"i2c.lis,lis3dh,i2c.lis3dsh,i2c.lis2dw"	},	// LIS3DH or LIS2DW12 sensor connected via I2C
 #endif
 #if SUPPORT_LDC1612
 	{ TcOutput::none,	TccOutput::none,	AdcInput::ldc1612,	SercomIo::none,		SercomIo::none,		Nx,	"i2c.ldc1612"	},	// LDC1612 sensor connected via I2C
@@ -424,6 +437,9 @@ constexpr size_t NumVirtualPins = SUPPORT_LIS3DH + SUPPORT_LDC1612 + SUPPORT_AS5
 
 static_assert(NumPins == NumRealPins + NumVirtualPins);
 
+#if SUPPORT_LIS3DH
+constexpr Pin LisPinNumber = NumRealPins;
+#endif
 #if SUPPORT_AS5601
 constexpr Pin MfmPin = NumRealPins + SUPPORT_LIS3DH + SUPPORT_LDC1612;																		// pin number when the user selects magnetic filament monitor on I2C bus
 #endif
@@ -445,5 +461,9 @@ constexpr IRQn StepTcIRQn = TC0_IRQn;
 
 // Available UART ports
 #define NUM_ASYNC_PORTS		0
+
+// Eventchannel numbers
+constexpr EventNumber AcComp0EventChannel = 12;					// analog comparator channel 0 output event
+constexpr EventNumber AcComp1EventChannel = 13;					// analog comparator channel 1 output event
 
 #endif /* SRC_CONFIG_TOOLINDX_H_ */

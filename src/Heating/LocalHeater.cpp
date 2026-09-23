@@ -17,6 +17,10 @@
 # include <Platform/LedStatusControl.h>
 #endif
 
+#if SUPPORT_INDUCTIVE_HEATER
+# include <Platform/InductiveHeaterPort.h>
+#endif
+
 // Private constants
 const uint32_t InitialTuningReadingInterval = 250;		// the initial reading interval in milliseconds
 const uint32_t TempSettleTimeout = 20000;				// how long we allow the initial temperature to settle
@@ -65,15 +69,15 @@ LocalHeater::~LocalHeater()
 	}
 }
 
-// Returns true if this is a custom heater with unusual default model parameters
-bool LocalHeater::IsCustom() const noexcept
-{
 #if SUPPORT_INDUCTIVE_HEATER
+
+// Returns true if this is a custom heater with unusual default model parameters
+bool LocalHeater::IsInductiveHeater() const noexcept
+{
 	return ports[0].IsInductiveHeaterPort();
-#else
-	return false;
-#endif
 }
+
+#endif
 
 // Set and return the default model for this heater
 void LocalHeater::SetDefaultHeaterModel(CanMessageBuffer& buf) noexcept
@@ -167,7 +171,7 @@ GCodeResult LocalHeater::ConfigurePortAndSensor(const char *portName, PwmFrequen
 		if (ports[0].IsInductiveHeaterPort())
 		{
 			model.SetDefaultModel(InductiveHeaterDefaultModel);			// override the default model parameters
-			maxHeatingFaultTime = CustomHeaterMaxFaultTime;
+			maxHeatingFaultTime = InductiveHeaterMaxFaultTime;
 		}
 #endif
 	}
@@ -210,6 +214,15 @@ GCodeResult LocalHeater::ConfigurePortAndSensor(const char *portName, PwmFrequen
 		// Set up a default monitor
 		monitors[0].Set(sn, DefaultHotEndTemperatureLimit, HeaterMonitorAction::GenerateFault, HeaterMonitorTrigger::TemperatureExceeded);
 	}
+
+#if SUPPORT_INDUCTIVE_HEATER
+	if (IsInductiveHeater() && !Platform::GetInductiveHeater().IsCalibrated())
+	{
+		reply.copy("heater has not been calibrated");
+		return GCodeResult::warning;
+	}
+#endif
+
 	return GCodeResult::ok;
 }
 
@@ -286,6 +299,14 @@ GCodeResult LocalHeater::SwitchOn(const StringRef& reply) noexcept
 		return GCodeResult::error;
 	}
 
+#if SUPPORT_INDUCTIVE_HEATER
+	if (IsInductiveHeater() && !Platform::GetInductiveHeater().IsCalibrated())
+	{
+		reply.printf("Failed to turn on heater %u because it has not been calibrated", GetHeaterNumber());
+		return GCodeResult::error;
+	}
+#endif
+
 	if (mode == HeaterMode::fault)
 	{
 		reply.printf("Failed to turn on heater %u because it is in a fault state", GetHeaterNumber());
@@ -351,6 +372,14 @@ void LocalHeater::Spin() noexcept
 	// Read the temperature even if the heater is suspended or the model is not enabled
 	const TemperatureError err = ReadTemperature();
 
+#if SUPPORT_INDUCTIVE_HEATER
+	// Check for inductive heater fault
+	if (IsInductiveHeater() && Platform::GetInductiveHeater().HasFaulted())
+	{
+		RaiseHeaterFault(HeaterFaultType::inductiveHeaterError, "is a tool loaded?", "");
+	}
+	else
+#endif
 	// Handle any temperature reading error and calculate the temperature rate of change, if possible
 	if (err != TemperatureError::ok)
 	{
@@ -639,6 +668,14 @@ void LocalHeater::Spin() noexcept
 void LocalHeater::ResetFault() noexcept
 {
 	badTemperatureCount = 0;
+
+#if SUPPORT_INDUCTIVE_HEATER
+	if (IsInductiveHeater())
+	{
+		Platform::GetInductiveHeater().ClearFault();
+	}
+#endif
+
 	if (mode == HeaterMode::fault)
 	{
 #if SUPPORT_LP5817
@@ -662,9 +699,29 @@ float LocalHeater::GetExpectedHeatingRate(float voltage) const noexcept
 	return GetModel().GetExpectedHeatingRate(temperatureRise, 1.0, pwm, voltage, 0.0);
 }
 
-// Start or stop running heater tuning cycles
+// Start or stop running heater tuning cycles and/or calibration
+// If msg.on and msg.calibrate are both set then we want to start calibration
+// - Return ok if the heater doesn't implement calibration, notFinished if it does and we have started, error + message in reply if we couldn't start it.
+// If msg.on it not set but msg.calibration is set then we are asking whether calibration has completed.
+// - Return ok with the parameters in reply if it has, error with a message if it failed, or notFinished if it is ongoing.
+// If msg.calibrate is not set and msg.on is set then execute tuning cycles.
 GCodeResult LocalHeater::TuningCommand(const CanMessageHeaterTuningCommand& msg, const StringRef& reply) noexcept
 {
+	if (msg.calibrate)
+	{
+#if SUPPORT_INDUCTIVE_HEATER
+		if (ports[0].IsInductiveHeaterPort())
+		{
+			return Platform::GetInductiveHeater().Calibrate(msg.on, reply);
+		}
+		else
+#endif
+		{
+			return GCodeResult::ok;
+		}
+	}
+
+	// If we get here then we have not been asked to calibrate the heater
 	if (msg.on)
 	{
 		if (lastPwm > 0.0 || GetAveragePWM() > 0.02)
@@ -681,7 +738,7 @@ GCodeResult LocalHeater::TuningCommand(const CanMessageHeaterTuningCommand& msg,
 		timeSetHeating = millis();
 		tuningCycleComplete = false;
 		cyclesDone = 0;
-		mode = HeaterMode::tuning1;
+		mode = HeaterMode::tuning1_heating_up;
 	}
 	else
 	{
@@ -717,7 +774,7 @@ void LocalHeater::DoTuningStep() noexcept
 	const uint32_t now = millis();
 	switch (mode)
 	{
-	case HeaterMode::tuning1:		// Heating up
+	case HeaterMode::tuning1_heating_up:		// Heating up
 		if (temperature >= tuningHighTemp)							// if reached target
 		{
 			// Move on to next phase
@@ -725,7 +782,7 @@ void LocalHeater::DoTuningStep() noexcept
 			SetHeater(0.0);
 			peakTemp = afterPeakTemp = temperature;
 			lastOffTime = peakTime = afterPeakTime = now;
-			mode = HeaterMode::tuning2;
+			mode = HeaterMode::tuning2_heater_off;
 		}
 		else
 		{
@@ -733,7 +790,7 @@ void LocalHeater::DoTuningStep() noexcept
 		}
 		return;
 
-	case HeaterMode::tuning2:		// Heater is off, record the peak temperature and time
+	case HeaterMode::tuning2_heater_off:		// Heater is off, record the peak temperature and time
 		if (temperature >= peakTemp)
 		{
 			peakTemp = afterPeakTemp = temperature;
@@ -752,7 +809,7 @@ void LocalHeater::DoTuningStep() noexcept
 			lastOnTime = peakTime = afterPeakTime = now;
 			peakTemp = afterPeakTemp = temperature;
 			lastPwm = tuningPwm;						// turn on heater at specified power
-			mode = HeaterMode::tuning3;
+			mode = HeaterMode::tuning3_heater_on;
 		}
 		else if (afterPeakTime == peakTime && tuningHighTemp - temperature >= tuningPeakTempDrop)
 		{
@@ -761,7 +818,7 @@ void LocalHeater::DoTuningStep() noexcept
 		}
 		return;
 
-	case HeaterMode::tuning3:	// Heater is turned on, record the lowest temperature and time
+	case HeaterMode::tuning3_heater_on:	// Heater is turned on, record the lowest temperature and time
 		if (temperature <= peakTemp)
 		{
 			peakTemp = afterPeakTemp = temperature;
@@ -781,7 +838,7 @@ void LocalHeater::DoTuningStep() noexcept
 			lastOffTime = peakTime = afterPeakTime = now;
 			peakTemp = afterPeakTemp = temperature;
 			lastPwm = 0.0;										// turn heater off
-			mode = HeaterMode::tuning2;
+			mode = HeaterMode::tuning2_heater_off;
 			++cyclesDone;
 			tuningCycleComplete = true;
 		}

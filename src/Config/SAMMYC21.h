@@ -156,7 +156,8 @@ constexpr I2cParameters I2C0Params =
 	.sclPin = PortAPin(23),
 	.sdaPin = PortAPin(22),
 	.pinFunction = GpioPinFunction::C,
-	.irqPriority = NvicPriorityI2C
+	.irqPriority = NvicPriorityI2C,
+	.rxDmaChannel = NoDmaChannel
 };
 
 #endif
@@ -253,6 +254,14 @@ constexpr size_t NumRealPins = 32 + 10;			// 32 pins on port A (some missing), o
 constexpr size_t NumVirtualPins = SUPPORT_LIS3DH + SUPPORT_LDC1612;
 
 static_assert(NumPins == NumRealPins + NumVirtualPins);
+
+#if SUPPORT_LIS3DH
+constexpr Pin LisPinNumber = NumRealPins;
+#endif
+
+#if SUPPORT_LDC1612
+constexpr Pin LdcPinNumber = NumRealPins + SUPPORT_LIS3DH;
+#endif
 
 // Timer/counter used to generate step pulses and other sub-millisecond timings
 TcCount32 * const StepTc = &(TC2->COUNT32);

@@ -83,6 +83,8 @@ constexpr Pin DriverDiagPins[NumDrivers] = { PortCPin(13) };
 #define SUPPORT_INDUCTIVE_HEATER	0										// Inductive heater support
 #define SUPPORT_LP5817				0										// LP5817 LED driver support
 #define SUPPORT_ADS131M02			1										// ADS131M02 ADC support
+#define SUPPORT_LOADCELL_DIAGNOSTICS	1									// load cell baseline drift reported by M122
+#define SUPPORT_LOADCELL_FFT		1										// load cell spectra reported by M122, costs 16KiB of RAM
 #define NUM_CURRENT_SENSORS			1										// board has dedicated heater output with current measurement
 
 #define NUM_I2C_CHANNELS		1

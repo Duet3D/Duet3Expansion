@@ -30,6 +30,7 @@ namespace TaskPriority
 	constexpr unsigned int CanClockPriority = 5;
 	constexpr unsigned int LdcTask = 6;								// priority of the AnalogIn task when it is reading the LDC1612
 	constexpr unsigned int Ads131M02 = 6;							// priority of the task that handles the load sensor ADC
+	constexpr unsigned int InductiveHeaterCalibration = 3;
 
 	// Assert that the highest priority one isn't too high
 	static_assert(CanClockPriority < configMAX_PRIORITIES);

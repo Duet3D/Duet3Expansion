@@ -31,6 +31,10 @@
 # include <Hardware/Drivers/ADS131M02.h>
 #endif
 
+#if SUPPORT_INDUCTIVE_HEATER
+class InductiveHeaterPort;
+#endif
+
 #if RP2040
 # include <hardware/structs/sio.h>
 #endif
@@ -164,14 +168,13 @@ namespace Platform
 #endif
 
 #if SUPPORT_INDUCTIVE_HEATER
-	void SetInductiveHeaterPwm(float pwm) noexcept;
+	InductiveHeaterPort& GetInductiveHeater() noexcept;
 #endif
 
 	const MinCurMax& GetMcuTemperatures() noexcept;
 
 	void KickHeatTaskWatchdog() noexcept;
 	uint32_t GetHeatTaskIdleTicks() noexcept;
-	uint32_t GetSyncedIdleTicks() noexcept;
 
 #if HAS_ADDRESS_SWITCHES
 	uint8_t ReadBoardAddress() noexcept;
