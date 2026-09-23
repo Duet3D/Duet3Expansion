@@ -343,24 +343,18 @@ void Move::Spin() noexcept
 			boardTempState = BoardTemperatureState::error;
 		}
 	}
-	else
+	else if (boardTemp >= BoardWarningTemperature && boardTempState == BoardTemperatureState::ok)
+	{
+		CanInterface::RaiseEvent(EventType::board_temperature_warning, (uint16_t)(boardTemp * 10.0), 0, "", va_list());
+		boardTempState = BoardTemperatureState::warning;
+	}
+	else if (boardTemp <= BoardWarningTemperature - 1.0)
 	{
 		if (boardTempState == BoardTemperatureState::error)
 		{
 			SmartDrivers::OverTemperatureDisable(false);				// re-enable the drivers
 		}
-		if (boardTemp > BoardWarningTemperature)
-		{
-			if (boardTempState == BoardTemperatureState::ok)
-			{
-				CanInterface::RaiseEvent(EventType::board_temperature_warning, (uint16_t)(boardTemp * 10.0), 0, "", va_list());
-			}
-			boardTempState = BoardTemperatureState::warning;
-		}
-		else
-		{
-			boardTempState = BoardTemperatureState::ok;
-		}
+		boardTempState = BoardTemperatureState::ok;
 	}
 #endif
 

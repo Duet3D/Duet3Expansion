@@ -545,7 +545,7 @@ void StepTimer::CancelCallback() noexcept
 	}
 	else
 	{
-#if STM32
+# if STM32
 		reply.lcatf("Next step interrupt due in %" PRIu32 " ticks, %s",
 					pst->whenDue - GetTimerTicks(),
 					(StepTimerHw->DIER & TIM_IT_CC1) == 0 ? "disabled" : "enabled");
@@ -553,7 +553,7 @@ void StepTimer::CancelCallback() noexcept
 		{
 			reply.cat(", CC0 mismatch!!");
 		}
-#elif RP2040
+# elif RP2040
 		reply.catf("next timer interrupt due in %" PRIu32 " ticks, %s",
 					timer_hw->alarm[StepTimerAlarmNumber] - GetTimerTicks(),
 					(timer_hw->inte & (1u << StepTimerAlarmNumber)) ? "enabled" : "disabled");

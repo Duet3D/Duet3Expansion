@@ -2132,11 +2132,6 @@ void SmartDrivers::Init() noexcept
 					| US_MR_CLKO;
 	USART_TMC->US_BRGR = SystemPeripheralClock()/DriversSpiClockFrequency;		// set SPI clock frequency
 	USART_TMC->US_CR = US_CR_RSTRX | US_CR_RSTTX | US_CR_RXDIS | US_CR_TXDIS | US_CR_RSTSTA;
-
-	// We need a few microseconds of delay here for the USART to sort itself out before we send any data,
-	// otherwise the processor generates two short reset pulses on its own NRST pin, and resets itself.
-	// 2016-07-07: removed this delay, because we no longer send commands to the TMC2660 drivers immediately.
-	//delay(10);
 #elif TMC_USES_SPIDEV
 	spiDev = new SpiDevice(TmcSpiParameters);
 	spiDev->SetClockFrequencyAndMode(DriversSpiClockFrequency, SpiMode::mode3, false);

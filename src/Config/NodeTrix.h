@@ -92,8 +92,6 @@ constexpr SpiParameters TmcSpiParameters =
 	.dmaPrioRx = DmacPrioTmcRx,
 };
 
-constexpr Pin TMCCsPin = PortAPin(4);
-
 constexpr uint32_t Tmc2240CurrentRange = 0x01;								// which current range we set the TMC2240 to (2A)
 constexpr uint32_t Tmc2240SlopeControl = 0x01;								// which slope control we set the TMC2240 to (200V/us)
 constexpr float Tmc2240Rref = 12.0;											// TMC2240 reference resistor in Kohms
