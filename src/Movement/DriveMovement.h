@@ -245,8 +245,8 @@ inline void DriveMovement::FlushShadows() noexcept
 // Caller must disable interrupts before calling this
 inline int32_t DriveMovement::GetNetStepsTakenThisSegment() const noexcept
 {
-#if SUPPORT_CLOSED_LOOP
-	if (closedLoopControl.IsClosedLoopEnabled())
+#if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
+	if (UsesPhaseStepping())
 	{
 		const MoveSegment *const seg = segments;
 		if (seg == nullptr) { return 0; }
