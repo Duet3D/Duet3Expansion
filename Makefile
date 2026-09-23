@@ -96,6 +96,7 @@ help:
 	$(Q)echo "  TOOL1LC             - Duet 3 Tool 1LC (SAMC21)"
 	$(Q)echo "  TOOL1RR             - Tool 1RR (SAME51)"
 	$(Q)echo "  TOOLINDX            - Tool Index (SAME51)"
+	$(Q)echo "  NodeTrix            - STM32 tool board (STM32H5)"
 	$(Q)echo ""
 	$(Q)echo "Other targets:"
 	$(Q)echo "  all                 - Build all configurations"
@@ -120,10 +121,9 @@ help:
 	$(Q)echo ""
 
 # Build all configurations
-# NodeTrix is excluded until its STM32H5 port compiles
 .PHONY: all
 all:
-	$(Q)for config in $(filter-out NodeTrix,$(CONFIGS)); do \
+	$(Q)for config in $(CONFIGS); do \
 		$(MAKE) "$$config" || exit 1; \
 	done
 

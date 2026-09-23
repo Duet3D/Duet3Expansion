@@ -398,7 +398,9 @@ void Heat::Exit() noexcept
 					}
 
 					// We must add fields in the following order: VIN, V12, MCU temperature
+#if HAS_VOLTAGE_MONITOR || HAS_12V_MONITOR || HAS_CPU_TEMP_SENSOR
 					size_t index = 0;
+#endif
 #if HAS_VOLTAGE_MONITOR
 					boardStatusMsg->shortValues[index++] = Platform::GetPowerVoltages(false);
 					boardStatusMsg->hasVin = true;
@@ -754,9 +756,12 @@ void Heat::SuspendHeaters(bool sus) noexcept
 
 void Heat::Diagnostics(const StringRef& reply) noexcept
 {
-	reply.lcatf("Last sensors broadcast 0x%08" PRIx64 " found %u %" PRIu32 " ticks ago, %u ordering errs, loop time %" PRIu32,
-					lastSensorsBroadcastWhich, lastSensorsFound, millis() - lastSensorsBroadcastWhen, sensorOrderingErrors, heatTaskLoopTime);
-	sensorOrderingErrors = 0;
+	if (sensorOrderingErrors != 0)		// this should not happen - retained in case it does
+	{
+		reply.lcatf("Last sensors broadcast 0x%08" PRIx64 " found %u %" PRIu32 " ticks ago, %u ordering errs, loop time %" PRIu32,
+						lastSensorsBroadcastWhich, lastSensorsFound, millis() - lastSensorsBroadcastWhen, sensorOrderingErrors, heatTaskLoopTime);
+		sensorOrderingErrors = 0;
+	}
 #if 0	// temporary to debug a board that reports bad Vssa
 	reply.catf(", Vref %u Vssa %u",
 		(unsigned int)(Platform::GetVrefFilter(0)->GetSum()/ThermistorAveragingFilter::NumAveraged()),

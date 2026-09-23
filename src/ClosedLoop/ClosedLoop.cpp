@@ -31,6 +31,10 @@
 
 #include "ClosedLoop.h"
 
+#if SUPPORT_PHASE_STEPPING
+# include <Movement/PhaseStep.h>
+#endif
+
 #if SUPPORT_CLOSED_LOOP
 
 using std::atomic;
@@ -114,7 +118,13 @@ void ClosedLoop::SetMotorPhase(uint16_t phase, float magnitude) noexcept
 {
 	desiredStepPhase = phase;
 	float sine, cosine;
+#if SUPPORT_PHASE_STEPPING
+	// Apply the M970.3 waveform correction, but not while tuning or calibrating because those assume uniform microstepping
+	const int32_t correction = (tuning == 0) ? PhaseStep::GetCorrection(driverNumber, phase) : 0;
+	Trigonometry::FastSinCos((uint16_t)((int32_t)phase + correction), sine, cosine);
+#else
 	Trigonometry::FastSinCos(phase, sine, cosine);
+#endif
 	coilA = (int16_t)lrintf(cosine * magnitude);
 	coilB = (int16_t)lrintf(sine * magnitude);
 

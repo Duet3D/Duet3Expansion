@@ -19,7 +19,7 @@ namespace MoveTiming
 	// the calculation can just be managed in time at speeds of 15000mm/min (step interval 50us), but not at 20000mm/min (step interval 37.5us).
 	// Therefore, where the step interval falls below 60us, we don't calculate on every step.
 	// Note: the above measurements were taken some time ago, before some firmware optimisations.
-#if SAME70
+#if SAME70 || STM32H7 || STM32H5
 	// Use the same defaults as for the SAM4E for now.
 	constexpr uint32_t MinCalcInterval = (40 * StepTimer::StepClockRate)/1000000;				// the smallest sensible interval between calculations (40us) in step timer clocks
 	constexpr uint32_t HiccupTime = (30 * StepTimer::StepClockRate)/1000000;					// how long we hiccup for in step timer clocks

@@ -322,8 +322,8 @@ void Thermistor::Poll()
 				{
 					// Else it's a thermistor
 					const float logResistance = logf(resistance);
-					const float recipT = shA + shB * logResistance + shC * logResistance * logResistance * logResistance;
-					const float temp = (recipT > 0.0) ? (1.0/recipT) + ABS_ZERO : BadErrorTemperature;
+					const float recipT = shA + (shB + shC * fsquare(logResistance)) * logResistance;
+					const float temp = (recipT > 0.0) ? ConvertDegKToDegC(1.0/recipT) : BadErrorTemperature;
 
 					// It's hard to distinguish between an open circuit and a cold high-resistance thermistor.
 					// So we treat a temperature below -5C as an open circuit, unless we are using a low-resistance thermistor. The E3D thermistor has a resistance of about 470k @ -5C.
@@ -352,7 +352,7 @@ void Thermistor::CalcDerivedParameters()
 {
 	shB = 1.0/beta;
 	const float lnR25 = logf(r25);
-	shA = 1.0/(25.0 - ABS_ZERO) - shB * lnR25 - shC * lnR25 * lnR25 * lnR25;
+	shA = 1.0/ConvertDegCToDegK(25.0) - (shB + shC * fsquare(lnR25)) * lnR25;
 }
 
 #endif	//SUPPORT_THERMISTORS

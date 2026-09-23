@@ -23,7 +23,7 @@
 #include <Hardware/NonVolatileMemory.h>
 #include "CustomCommandHandler.h"
 
-#if !RP2040
+#if SAME5x || SAMC21
 # include <hpl_user_area.h>
 #endif
 
@@ -53,6 +53,8 @@
 # include "LoadCellDiagnostics.h"
 #endif
 
+#if STM32	// this is not used yet
+#else
 // Check a value against the specified min and max parameters returning true if the value was outside limits
 static bool CheckMinMax(CanMessageGenericParser& parser, const StringRef& reply, char c, float val, const char *text) noexcept
 {
@@ -83,6 +85,7 @@ static bool CheckMinMax(CanMessageGenericParser& parser, const StringRef& reply,
 	}
 	return false;
 }
+#endif
 
 // Generate a test report
 static GCodeResult GenerateTestReport(const CanMessageGeneric &msg, const StringRef& reply) noexcept
@@ -170,13 +173,13 @@ static GCodeResult GenerateTestReport(const CanMessageGeneric &msg, const String
 
 static GCodeResult HandlePressureAdvance(const CanMessageMultipleDrivesRequest<float>& msg, size_t dataLength, const StringRef& reply)
 {
-	const auto drivers = Bitmap<uint16_t>::MakeFromRaw(msg.driversToUpdate);
-	if (dataLength < msg.GetActualDataLength(drivers.CountSetBits()))
+	if (dataLength < msg.GetActualDataLength())
 	{
 		reply.copy("bad data length");
 		return GCodeResult::error;
 	}
 
+	const auto drivers = Bitmap<uint16_t>::MakeFromRaw(msg.driversToUpdate);
 	GCodeResult rslt = GCodeResult::ok;
 	drivers.Iterate([&msg, &reply, &rslt](unsigned int driver, unsigned int count) -> void
 						{
@@ -196,13 +199,13 @@ static GCodeResult HandlePressureAdvance(const CanMessageMultipleDrivesRequest<f
 
 static GCodeResult HandlePressureAdvance(const CanMessageMultipleDrivesRequest<ShortPressureAdvanceParameters>& msg, size_t dataLength, const StringRef& reply)
 {
-	const auto drivers = Bitmap<uint16_t>::MakeFromRaw(msg.driversToUpdate);
-	if (dataLength < msg.GetActualDataLength(drivers.CountSetBits()))
+	if (dataLength < msg.GetActualDataLength())
 	{
 		reply.copy("bad data length");
 		return GCodeResult::error;
 	}
 
+	const auto drivers = Bitmap<uint16_t>::MakeFromRaw(msg.driversToUpdate);
 	GCodeResult rslt = GCodeResult::ok;
 	drivers.Iterate([&msg, &reply, &rslt](unsigned int driver, unsigned int count) -> void
 						{
@@ -222,13 +225,13 @@ static GCodeResult HandlePressureAdvance(const CanMessageMultipleDrivesRequest<S
 
 static GCodeResult SetStepsPerMmAndMicrostepping(const CanMessageMultipleDrivesRequest<StepsPerUnitAndMicrostepping>& msg, size_t dataLength, const StringRef& reply)
 {
-	const auto drivers = Bitmap<uint16_t>::MakeFromRaw(msg.driversToUpdate);
-	if (dataLength < msg.GetActualDataLength(drivers.CountSetBits()))
+	if (dataLength < msg.GetActualDataLength())
 	{
 		reply.copy("bad data length");
 		return GCodeResult::error;
 	}
 
+	const auto drivers = Bitmap<uint16_t>::MakeFromRaw(msg.driversToUpdate);
 	GCodeResult rslt = GCodeResult::ok;
 	drivers.Iterate([&msg, &reply, &rslt](unsigned int driver, unsigned int count) -> void
 						{
@@ -343,9 +346,14 @@ static GCodeResult ProcessM569Point2(const CanMessageGeneric& msg, const StringR
 #endif
 }
 
-static GCodeResult HandleSetDriverStates(const CanMessageMultipleDrivesRequest<DriverStateControl>& msg, const StringRef& reply)
+static GCodeResult HandleSetDriverStates(const CanMessageMultipleDrivesRequest<DriverStateControl>& msg, size_t dataLength, const StringRef& reply)
 {
-	//TODO check message is long enough for the number of drivers specified
+	if (dataLength < msg.GetActualDataLength())
+	{
+		reply.copy("bad data length");
+		return GCodeResult::error;
+	}
+
 	const auto drivers = Bitmap<uint16_t>::MakeFromRaw(msg.driversToUpdate);
 	drivers.Iterate([&msg](unsigned int driver, unsigned int count) -> void
 		{
@@ -523,11 +531,15 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 		extra = LastDiagnosticsPart;
 		{
 			Platform::AppendBoardAndFirmwareDetails(reply);
-			// GCC 12.2 and 13.2 produce a spurious diagnostic for the following line of code, see https://gcc.gnu.org/bugzilla/show_bug.cgi?id=105523
+#if STM32H5	// we don't yet have a bootloader for the STM32H5, so we can't get the bootloader version
+			const char *bootloaderVersionText = nullptr;
+#else
+			// GCC 12.2, 13.2 and 15.2Rel1 produce a spurious diagnostic for the following line of code, see https://gcc.gnu.org/bugzilla/show_bug.cgi?id=105523
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Warray-bounds"
 			const char *bootloaderVersionText = *reinterpret_cast<const char**>(0x20);		// offset of vectors.pvReservedM8
 #pragma GCC diagnostic pop
+#endif
 			reply.lcatf("Bootloader ID: %s", (bootloaderVersionText == nullptr) ? "not available" : bootloaderVersionText);
 			Platform::AppendDiagnostics(reply);
 		}
@@ -593,6 +605,10 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 #if HAS_CPU_TEMP_SENSOR
 			const MinCurMax& mcuTemperature = Platform::GetMcuTemperatures();
 			reply.lcatf("MCU temperature: min %.1fC, current %.1fC, max %.1fC", (double)mcuTemperature.minimum, (double)mcuTemperature.current, (double)mcuTemperature.maximum);
+#endif
+
+#if HAS_BOARD_THERMISTOR
+			reply.lcatf("Board temperature %.1fC", (double)Platform::GetBoardTemperature());
 #endif
 		}
 		break;
@@ -853,7 +869,7 @@ void CommandProcessor::Spin()
 
 		case CanMessageType::setDriverStates:
 			requestId = buf->msg.multipleDrivesRequestUint16.requestId;
-			rslt = HandleSetDriverStates(buf->msg.multipleDrivesRequestDriverState, replyRef);
+			rslt = HandleSetDriverStates(buf->msg.multipleDrivesRequestDriverState, buf->dataLength, replyRef);
 			break;
 
 		case CanMessageType::m915:
@@ -1009,7 +1025,7 @@ void CommandProcessor::Spin()
 
 		default:
 			// We received a message type that we don't recognise. If it's a broadcast, ignore it. If it's addressed to us, send a reply.
-			if (buf->id.Src() != CanInterface::GetCanAddress())
+			if (buf->id.Dst() != CanInterface::GetCanAddress())
 			{
 				CanMessageBuffer::Free(buf);
 				return;

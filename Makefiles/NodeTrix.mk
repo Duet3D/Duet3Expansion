@@ -27,7 +27,7 @@ CFLAGS_EXTRA := $(DEBUG_FLAGS)
 CXXFLAGS_EXTRA := $(DEBUG_FLAGS)
 
 # Linker script
-LINKER_SCRIPT := $(CURDIR)/src/Hardware/STM32/STM32H5/STM32H523xx_FLASH.ld
+LINKER_SCRIPT := $(CURDIR)/src/Hardware/STM32/STM32H5/stm32h523xx_flash.ld
 
 # Source directories (relative to project root)
 SRC_DIRS := \
@@ -55,38 +55,36 @@ SRC_DIRS := \
 # Include paths for C files (minimal set)
 C_INCLUDES := \
 	-I$(CURDIR)/src \
-	-I$(WORKSPACE)/CoreN2G/src \
-	-I$(WORKSPACE)/CoreN2G/src/STMCubeMX/Drivers/CMSIS/Include \
-	-I$(WORKSPACE)/CoreN2G/src/STMCubeMX/Drivers/CMSIS/Device/ST/STM32H5xx/Include
+	-I$(LIBRARIES_DIR)/CoreN2G/src
 
 # Include paths for C++ files (full set)
 CXX_INCLUDES := \
 	-I$(CURDIR)/src \
-	-I$(WORKSPACE)/CoreN2G/src \
-	-I$(WORKSPACE)/CoreN2G/src/STM32 \
-	-I$(WORKSPACE)/CoreN2G/src/STMCubeMX/Core/Inc \
-	-I$(WORKSPACE)/CoreN2G/src/STMCubeMX/Drivers/CMSIS/Include \
-	-I$(WORKSPACE)/CoreN2G/src/STMCubeMX/Drivers/CMSIS/Device/ST/STM32H5xx/Include \
-	-I$(WORKSPACE)/CoreN2G/src/STMCubeMX/Drivers/STM32H5xx_HAL_Driver/Inc \
-	-I$(WORKSPACE)/RRFLibraries/src \
-	-I$(WORKSPACE)/CANlib/src \
-	-I$(WORKSPACE)/FreeRTOS/src/include \
-	-I$(WORKSPACE)/FreeRTOS/src/portable/GCC/ARM_CM33_NTZ/non_secure
+	-I$(LIBRARIES_DIR)/CoreN2G/src \
+	-I$(LIBRARIES_DIR)/CoreN2G/src/STM32 \
+	-I$(LIBRARIES_DIR)/CoreN2G/src/STMCubeMX/Core/Inc \
+	-I$(LIBRARIES_DIR)/CoreN2G/src/STMCubeMX/Drivers/CMSIS/Include \
+	-I$(LIBRARIES_DIR)/CoreN2G/src/STMCubeMX/Drivers/CMSIS/Device/ST/STM32H5xx/Include \
+	-I$(LIBRARIES_DIR)/CoreN2G/src/STMCubeMX/Drivers/STM32H5xx_HAL_Driver/Inc \
+	-I$(LIBRARIES_DIR)/RRFLibraries/src \
+	-I$(LIBRARIES_DIR)/CANlib/src \
+	-I$(LIBRARIES_DIR)/FreeRTOS/src/include \
+	-I$(LIBRARIES_DIR)/FreeRTOS/src/portable/GCC/ARM_CM33_NTZ/non_secure
 
 # Libraries
 LIBS := \
-	-L$(WORKSPACE)/CoreN2G/STM32H5_CAN_RTOS \
-	-L$(WORKSPACE)/CANlib/STM32H5_RTOS \
-	-L$(WORKSPACE)/RRFLibraries/STM32H5_RTOS \
-	-L$(WORKSPACE)/FreeRTOS/STM32H5 \
+	-L$(LIBRARIES_DIR)/CoreN2G/STM32H5_CAN_RTOS \
+	-L$(LIBRARIES_DIR)/CANlib/STM32H5_RTOS \
+	-L$(LIBRARIES_DIR)/RRFLibraries/STM32H5_RTOS \
+	-L$(LIBRARIES_DIR)/FreeRTOS/STM32H5 \
 	-lCoreN2G -lCANlib -lRRFLibraries -lFreeRTOS
 
 # Library dependencies
 LIB_DEPS := \
-	$(WORKSPACE)/CoreN2G/STM32H5_CAN_RTOS/libCoreN2G.a \
-	$(WORKSPACE)/CANlib/STM32H5_RTOS/libCANlib.a \
-	$(WORKSPACE)/RRFLibraries/STM32H5_RTOS/libRRFLibraries.a \
-	$(WORKSPACE)/FreeRTOS/STM32H5/libFreeRTOS.a
+	$(LIBRARIES_DIR)/CoreN2G/STM32H5_CAN_RTOS/libCoreN2G.a \
+	$(LIBRARIES_DIR)/CANlib/STM32H5_RTOS/libCANlib.a \
+	$(LIBRARIES_DIR)/RRFLibraries/STM32H5_RTOS/libRRFLibraries.a \
+	$(LIBRARIES_DIR)/FreeRTOS/STM32H5/libFreeRTOS.a
 
 # Common flags
 COMMON_FLAGS := -c -mcpu=$(MCU_ARCH) -mthumb $(FPU_FLAGS) -fno-math-errno -mfp16-format=ieee \
@@ -105,7 +103,7 @@ CXXFLAGS := $(COMMON_FLAGS) $(OPT) $(CXX_DEFINES) $(CXX_INCLUDES) -std=c++20 \
 
 # Linker flags
 LDFLAGS := $(LDOPT) --specs=nano.specs -Wl,--gc-sections -Wl,--entry=Reset_Handler \
-	-Wl,--fatal-warnings -Wl,--no-warn-rwx-segment -mcpu=$(MCU_ARCH) $(FPU_FLAGS) \
+	-Wl,--fatal-warnings -Wl,--no-warn-rwx-segment -mcpu=$(MCU_ARCH) -mthumb $(FPU_FLAGS) \
 	-T$(LINKER_SCRIPT) -Wl,-Map,$(CURDIR)/$(BUILD_DIR)/$(BINARY).map,--cref
 
 # Find all source files
@@ -127,7 +125,7 @@ BIN := $(BUILD_DIR)/$(BINARY).bin
 # Pre-build step (touch Version.cpp like Eclipse does)
 .PHONY: pre-build-$(BOARD)
 pre-build-$(BOARD):
-	$(Q)touch -c $(CURDIR)/src/Version.cpp
+	$(Q)touch -c $(CURDIR)/src/Version.cpp 2>/dev/null || true
 
 # Default target
 .PHONY: $(BOARD)

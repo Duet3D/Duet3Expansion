@@ -1,0 +1,10 @@
+{
+  "elfFile": "ATECM/Duet3Firmware_ATECM.elf",
+  "mcuName": "STM32H523",
+  "svdFile": "c:\\Eclipse\\Firmware-3.7\\STM32H523.svd",
+  "openocd": {
+    "host": "localhost",
+    "port": 6666
+  },
+  "maxToolIterations": 10
+}

@@ -13,7 +13,9 @@
 #elif SAMC21
 # include <Flash.h>
 constexpr uint32_t RWW_ADDR = FLASH_ADDR + 0x00400000;
-#elif RP2040
+#elif STM32
+# include <Hardware/STM32/NVMEmulation.h>
+#elif RPXXXX
 # include <hardware/flash.h>
 // We allocate one sector for each type of non-volatile memory page. We store the page within the sector using wear levelling.
 constexpr uint32_t FlashSectorSize = 4096;									// the flash chip has 4K sectors
@@ -34,7 +36,9 @@ void NonVolatileMemory::EnsureRead() noexcept
 		memcpyu32(reinterpret_cast<uint32_t *>(&buffer), reinterpret_cast<const uint32_t *>(SEEPROM_ADDR + (512 * (unsigned int)page)), sizeof(buffer)/sizeof(uint32_t));
 #elif SAMC21
 		memcpyu32(reinterpret_cast<uint32_t *>(&buffer), reinterpret_cast<const uint32_t *>(RWW_ADDR + (512 * (unsigned int)page)), sizeof(buffer)/sizeof(uint32_t));
-#elif RP2040
+#elif STM32
+		NVMEmulationRead(&buffer, sizeof(buffer));
+#elif RPXXXX
 		//TODO don't just read the first page in the sector, search for the most recent one written
 		memcpyu32(reinterpret_cast<uint32_t *>(&buffer), reinterpret_cast<const uint32_t *>(NvmPage0Addr - (FlashSectorSize * (unsigned int)page)), sizeof(buffer)/sizeof(uint32_t));
 #else
@@ -90,7 +94,33 @@ void NonVolatileMemory::EnsureWritten() noexcept
 		Flash::RwwWrite(RWW_ADDR + (512 * (unsigned int)page), 512, (uint8_t*)&buffer);
 		state = NvmState::clean;
 	}
-#elif RP2040
+#elif SAM4E || SAME70
+	if (state == NvmState::eraseAndWriteNeeded)
+	{
+		Flash::EraseUserSignature();
+		state = NvmState::writeNeeded;
+	}
+	if (state == NvmState::writeNeeded)
+	{
+		const bool cacheEnabled = Cache::Disable();
+		Flash::WriteUserSignature(reinterpret_cast<const uint32_t*>(&buffer));
+		if (cacheEnabled)
+		{
+			Cache::Enable();
+		}
+	}
+#elif STM32
+	if (state == NvmState::eraseAndWriteNeeded)
+	{
+		NVMEmulationErase();
+		state = NvmState::writeNeeded;
+	}
+	if (state == NvmState::writeNeeded)
+	{
+		NVMEmulationWrite(&buffer, sizeof(buffer));
+		state = NvmState::clean;
+	}
+#elif RPXXXX
 	if (state == NvmState::eraseAndWriteNeeded)
 	{
 		DisableCore1Processing();
@@ -321,7 +351,7 @@ void NonVolatileMemory::SetInductiveHeaterParams(const InductiveHeaterCalibratio
 
 #endif
 
-#if RP2040
+#if RPXXXX
 	bool NonVolatileMemory::GetCanSettings(CanUserAreaData& canSettings) noexcept
 	{
 		EnsureRead();

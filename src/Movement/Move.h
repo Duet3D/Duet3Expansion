@@ -380,6 +380,11 @@ private:
 
 	unsigned int numStepErrors = 0;
 	Bitmap<uint16_t> stepErrorTypesLogged;
+
+#if HAS_BOARD_THERMISTOR && SUPPORT_TMC51xx
+	enum class BoardTemperatureState : uint8_t { ok, warning, error };
+	BoardTemperatureState boardTempState = BoardTemperatureState::ok;
+#endif
 };
 
 //******************************************************************************************************
@@ -418,8 +423,8 @@ inline __attribute__((always_inline)) bool Move::ScheduleNextStepInterrupt() noe
 {
 #if SINGLE_DRIVER
 	if (
-# if SUPPORT_CLOSED_LOOP
-		!dms[0].closedLoopControl.IsClosedLoopEnabled() &&
+# if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
+		!dms[0].UsesPhaseStepping() &&
 # endif
 		dms[0].state >= DMState::firstMotionState
 	   )
@@ -485,8 +490,8 @@ inline void Move::SetDirection(bool direction) noexcept
 	const bool d = (direction) ? !directions[0] : directions[0];
 # endif
 
-# if SUPPORT_CLOSED_LOOP
-	if (dms[0].closedLoopControl.IsClosedLoopEnabled())
+# if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
+	if (dms[0].UsesPhaseStepping())
 	{
 		return;
 	}

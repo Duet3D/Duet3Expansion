@@ -8,9 +8,6 @@
 #ifndef SRC_CONFIG_TOOL1RR_H_
 #define SRC_CONFIG_TOOL1RR_H_
 
-#include <Hardware/PinDescription.h>
-#include <I2C/I2cParameters.h>
-
 #define BOARD_TYPE_NAME		"F3PTB"
 #define BOOTLOADER_NAME		"SAME5x"
 
@@ -138,8 +135,13 @@ constexpr Pin DriverDiagPins[NumDrivers] = { PortAPin(21) };
 #define USE_MPU					0
 #define USE_CACHE				1
 
-constexpr unsigned int CANInstanceNumber = 0;
-constexpr bool UseLaterCanPins = false;
+constexpr CanParameters CanParams =
+{
+	.instanceNumber = 0,
+	.txPin = PortAPin(22),
+	.rxPin = PortAPin(23),
+	.pinsFunction = GpioPinFunction::I
+};
 
 constexpr size_t MaxPortsPerHeater = 1;
 

@@ -1,0 +1,14 @@
+{
+    "makefile.launchConfigurations": [
+        {
+            "cwd": "c:\\Eclipse\\Firmware-3.7\\Duet3Expansion\\NodeTrix",
+            "binaryPath": "c:\\Eclipse\\Firmware-3.7\\Duet3Expansion\\NodeTrix\\Duet3Firmware_NodeTrix.elf",
+            "binaryArgs": []
+        }
+    ],
+	"makefile.configurations": [
+		{ "name": "Release", "makeArgs": ["-j32"] },
+		{ "name": "Debug", "makeArgs": ["-j32", "DEBUG=1"] }
+    ],
+    "cortex-debug.variableUseNaturalFormat": false
+}

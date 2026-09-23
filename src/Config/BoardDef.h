@@ -10,6 +10,11 @@
 
 #include <Duet3Common.h>								// this file is in the CANlib project because both main and expansion boards need it
 #include <RRF3Common.h>
+#include <Hardware/PinDescription.h>
+#include <CanParameters.h>
+#include <SPI/SpiParameters.h>
+#include <I2C/I2cParameters.h>
+#include <UART/UartParameters.h>
 
 #if defined(EXP3HC)
 # include "EXP3HC.h"
@@ -172,6 +177,10 @@ constexpr size_t NumDrivers = 0;
 
 #ifndef CUSTOM_THERMISTORS
 # define CUSTOM_THERMISTORS				0
+#endif
+
+#ifndef HAS_BOARD_THERMISTOR
+# define HAS_BOARD_THERMISTOR			0
 #endif
 
 #endif /* SRC_CONFIG_BOARDDEF_H_ */

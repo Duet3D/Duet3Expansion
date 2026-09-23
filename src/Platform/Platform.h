@@ -39,6 +39,8 @@ class InductiveHeaterPort;
 # include <hardware/structs/sio.h>
 #endif
 
+#include <utility>
+
 class CanMessageDiagnosticTest;
 class CanMessageBuffer;
 class LedStatusControl;
@@ -167,11 +169,18 @@ namespace Platform
 # endif
 #endif
 
+#if HAS_BOARD_THERMISTOR
+	float GetBoardTemperature() noexcept;
+	std::pair<float, TemperatureError> GetBoardTemperatureAndResult() noexcept;
+#endif
+
 #if SUPPORT_INDUCTIVE_HEATER
 	InductiveHeaterPort& GetInductiveHeater() noexcept;
 #endif
 
+#if HAS_CPU_TEMP_SENSOR
 	const MinCurMax& GetMcuTemperatures() noexcept;
+#endif
 
 	void KickHeatTaskWatchdog() noexcept;
 	uint32_t GetHeatTaskIdleTicks() noexcept;
@@ -224,7 +233,7 @@ namespace Platform
 	inline void SetDateTime(uint32_t tim) noexcept { realTime = tim; }
 	bool WasDeliberateError() noexcept;
 
-#if SAME5x
+#if SAME5x || STM32
 	void SetInterruptPriority(IRQn base, unsigned int num, uint32_t prio) noexcept;
 #endif
 

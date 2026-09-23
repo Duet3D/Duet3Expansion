@@ -150,7 +150,7 @@ clean-$(BOARD): BUILD_DIR := $(BUILD_DIR)
 # Pre-build step (touch Version.cpp like Eclipse does)
 .PHONY: pre-build-$(BOARD)
 pre-build-$(BOARD):
-	$(Q)touch -c $(CURDIR)/src/Version.cpp
+	$(Q)touch -c $(CURDIR)/src/Version.cpp 2>/dev/null || true
 
 # Default target
 .PHONY: $(BOARD)

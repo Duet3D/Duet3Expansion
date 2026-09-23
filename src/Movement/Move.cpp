@@ -270,6 +270,19 @@ void Move::Spin(bool powered) noexcept
 void Move::Spin() noexcept
 #endif
 {
+#if USE_SHADOW_SEGMENTS
+	// Prepare upcoming segment parameters for the step ISR; cheap when there is nothing to prepare.
+	// This must remain the only caller of PrepareShadowChunk (single producer).
+# if SINGLE_DRIVER
+	while (dms[0].PrepareShadowChunk()) { }
+# else
+	for (size_t drive = 0; drive < NumDrivers; ++drive)
+	{
+		while (dms[drive].PrepareShadowChunk()) { }
+	}
+# endif
+#endif
+
 # if SUPPORT_BRAKE_PWM
 	const float currentVinVoltage = Platform::GetCurrentVinVoltage();
 # endif
@@ -315,6 +328,35 @@ void Move::Spin() noexcept
 # else
 	SmartDrivers::Spin(true);
 # endif
+
+#if HAS_BOARD_THERMISTOR && SUPPORT_TMC51xx
+	// If we have a board temperature sensor and drivers that use external mosfets, then the TMC driver over temperature warning is of limited value because the mosfets will get hotter than the TMC driver.
+	// So we use the board temperature to detect that the board and hence the mosfets are getting too hot.
+	// Currently this applies only to the M23CL.
+	const float boardTemp = Platform::GetBoardTemperature();
+	if (boardTemp >= BoardErrorTemperature)
+	{
+		if (boardTempState != BoardTemperatureState::error)
+		{
+			SmartDrivers::OverTemperatureDisable(true);
+			CanInterface::RaiseEvent(EventType::board_over_temperature, (uint16_t)(boardTemp * 10.0), 0, "", va_list());
+			boardTempState = BoardTemperatureState::error;
+		}
+	}
+	else if (boardTemp >= BoardWarningTemperature && boardTempState == BoardTemperatureState::ok)
+	{
+		CanInterface::RaiseEvent(EventType::board_temperature_warning, (uint16_t)(boardTemp * 10.0), 0, "", va_list());
+		boardTempState = BoardTemperatureState::warning;
+	}
+	else if (boardTemp <= BoardWarningTemperature - 1.0)
+	{
+		if (boardTempState == BoardTemperatureState::error)
+		{
+			SmartDrivers::OverTemperatureDisable(false);				// re-enable the drivers
+		}
+		boardTempState = BoardTemperatureState::ok;
+	}
+#endif
 
 	// Check one TMC driver for warnings and errors
 	if (enableValues[nextDriveToPoll] >= 0)				// don't poll driver if it is flagged "no poll"
@@ -502,6 +544,16 @@ void Move::AppendDiagnostics(const StringRef& reply) noexcept
 	reply.lcatf("Moves scheduled %" PRIu32 ", hiccups %u (%.2f/%.2fms), segs %u, step errors %u (types 0x%x), maxLate %" PRIi32 " maxPrep %" PRIu32,
 					scheduledMoves, numHiccups, (double)ownDelayToReport, (double)totalDelayToReport, MoveSegment::NumCreated(),
 					numStepErrors, stepErrorTypesLogged.GetRaw(), DriveMovement::GetAndClearMaxStepsLate(), maxPrepareTime);
+#if SHADOW_CACHE_DIAGNOSTICS
+	{
+		const uint32_t hits = DriveMovement::shadowCacheHits;
+		const uint32_t total = hits + DriveMovement::shadowCacheMisses;
+		reply.catf(", cacheHit %.1f%% (%" PRIu32 "/%" PRIu32 "), maxSkip %" PRIu32 ", maxCacheSkip %" PRIu32,
+						(double)((total == 0) ? 0.0f : (float)hits * 100.0f/(float)total), hits, total,
+						DriveMovement::maxIsrSkip, DriveMovement::maxCacheSkip);
+		DriveMovement::shadowCacheHits = DriveMovement::shadowCacheMisses = DriveMovement::maxIsrSkip = DriveMovement::maxCacheSkip = 0;
+	}
+#endif
 	numHiccups = 0;
 	maxPrepareTime = 0;
 	numStepErrors = 0;
@@ -605,8 +657,8 @@ __attribute__((section(".time_critical")))
 #endif
 void Move::StepDrivers(uint32_t now) noexcept
 {
-# if SUPPORT_CLOSED_LOOP
-	if (dms[0].closedLoopControl.IsClosedLoopEnabled())
+# if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
+	if (dms[0].UsesPhaseStepping())
 	{
 		return;
 	}
@@ -1057,6 +1109,10 @@ void Move::AddLinearSegments(size_t drive, uint32_t startTime, const PrepParams&
 		const uint32_t oldFlags = IrqSave();
 #else
 		const uint32_t oldPrio = ChangeBasePriority(NvicPriorityStep);					// shut out the step interrupt
+#endif
+#if USE_SHADOW_SEGMENTS
+		// Invalidate any prepared slots for segments that the segments we are about to add may modify; those boundaries fall back to the normal path
+		dm.InvalidateShadowsFrom(startTime);
 #endif
 
 		// Start the search at the cached insertion hint if it is still valid, i.e. it is a segment still in the list that
@@ -1990,13 +2046,13 @@ GCodeResult Move::ProcessM569Point7(const CanMessageGeneric& msg, const StringRe
 GCodeResult Move::SetMotorCurrents(const CanMessageMultipleDrivesRequest<float>& msg, size_t dataLength, const StringRef& reply) noexcept
 {
 # if HAS_SMART_DRIVERS
-	const auto drivers = Bitmap<uint16_t>::MakeFromRaw(msg.driversToUpdate);
-	if (dataLength < msg.GetActualDataLength(drivers.CountSetBits()))
+	if (dataLength < msg.GetActualDataLength())
 	{
 		reply.copy("bad data length");
 		return GCodeResult::error;
 	}
 
+	const auto drivers = Bitmap<uint16_t>::MakeFromRaw(msg.driversToUpdate);
 	GCodeResult rslt = GCodeResult::ok;
 	drivers.Iterate([this, &msg, &reply, &rslt](unsigned int driver, unsigned int count) -> void
 						{
@@ -2024,13 +2080,13 @@ GCodeResult Move::SetMotorCurrents(const CanMessageMultipleDrivesRequest<float>&
 GCodeResult Move::SetStandstillCurrentFactor(const CanMessageMultipleDrivesRequest<float>& msg, size_t dataLength, const StringRef& reply) noexcept
 {
 # if HAS_SMART_DRIVERS
-	const auto drivers = Bitmap<uint16_t>::MakeFromRaw(msg.driversToUpdate);
-	if (dataLength < msg.GetActualDataLength(drivers.CountSetBits()))
+	if (dataLength < msg.GetActualDataLength())
 	{
 		reply.copy("bad data length");
 		return GCodeResult::error;
 	}
 
+	const auto drivers = Bitmap<uint16_t>::MakeFromRaw(msg.driversToUpdate);
 	GCodeResult rslt = GCodeResult::ok;
 	drivers.Iterate([this, &msg, &reply, &rslt](unsigned int driver, unsigned int count) -> void
 						{

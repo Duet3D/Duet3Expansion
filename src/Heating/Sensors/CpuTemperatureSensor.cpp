@@ -6,9 +6,10 @@
  */
 
 #include "CpuTemperatureSensor.h"
-#include <Platform/Platform.h>
 
 #if HAS_CPU_TEMP_SENSOR
+
+#include <Platform/Platform.h>
 
 // Sensor type descriptors
 TemperatureSensor::SensorTypeDescriptor CpuTemperatureSensor::typeDescriptor(TypeName, [](unsigned int sensorNum) noexcept -> TemperatureSensor *_ecv_from { return new CpuTemperatureSensor(sensorNum); } );
