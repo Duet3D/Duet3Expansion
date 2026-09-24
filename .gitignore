@@ -58,9 +58,6 @@
 /F3PTB/
 /TOOLINDX/
 /NodeTrix/
+/NodeTrix-Debug/
 /.clangd
 /.clang-format
-/NodeTrix-Debug/
-/SAMC21_RTOS/
-/SAMC21/
-/SAMC21_CAN_RTOS/
