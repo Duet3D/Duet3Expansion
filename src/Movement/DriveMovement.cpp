@@ -302,7 +302,12 @@ __attribute__((noinline)) bool DriveMovement::PrepareShadowChunk() noexcept
 			return false;									// a gap after a sliver: the normal path waits for the start time then, so don't span it
 		}
 
-		const int32_t netSteps = (int32_t)(snap.distance + dcf);	// exactly the netStepsThisSegment calculation in NewSegment
+		if (snap.next == nullptr)
+		{
+			return false;									// NewSegment snaps the last segment of an axis to a whole step, which the slot does not replicate
+		}
+
+		const int32_t netSteps = (int32_t)(snap.distance + dcf);	// exactly the netStepsThisSegment calculation in NewSegment for a segment with a successor
 
 		motioncalc_t sT0;
 		const bool segIsLinear = CheckLinearCore(snap.a, snap.duration, snap.distance, dcf, sT0);	// snap.a is a copy, so letting this normalise it does not touch the segment
