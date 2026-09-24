@@ -1711,7 +1711,7 @@ GCodeResult Move::ProcessM569(const CanMessageGeneric& msg, const StringRef& rep
 #if HAS_SMART_DRIVERS
 	{
 		uint32_t val;
-		if (parser.GetUintParam('D', val))	// set driver mode
+		if (parser.GetUintParam('D', val))		// set driver mode
 		{
 			seen = true;
 # if SUPPORT_PHASE_STEPPING
@@ -1743,6 +1743,16 @@ GCodeResult Move::ProcessM569(const CanMessageGeneric& msg, const StringRef& rep
 				dms[drive].closedLoopControl.DriverSwitchedToClosedLoop();
 			}
 # endif
+		}
+
+		if (parser.GetUintParam('C', val))		// set chopper control register
+		{
+			seen = true;
+			if (!SmartDrivers::SetRegister(drive, SmartDriverRegister::chopperControl, val))
+			{
+				reply.printf("Bad ccr for driver %u", drive);
+				return GCodeResult::error;
+			}
 		}
 
 		if (parser.GetUintParam('F', val))		// set off time
