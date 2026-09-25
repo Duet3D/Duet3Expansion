@@ -225,6 +225,7 @@ __attribute__((noinline)) bool DriveMovement::PrepareShadowChunk() noexcept
 		motioncalc_t distance;
 		motioncalc_t a;
 		const MoveSegment *next;
+		bool isExtruder;
 	};
 
 	const MoveSegment *cursor;								// the first segment of the run we will prepare
@@ -295,6 +296,7 @@ __attribute__((noinline)) bool DriveMovement::PrepareShadowChunk() noexcept
 			snap.distance = cursor->GetLength();
 			snap.a = cursor->GetA();
 			snap.next = cursor->GetNext();
+			snap.isExtruder = cursor->GetFlags().isExtruder;
 		}
 
 		if (numSlivers != 0 && snap.startTime != prevEndTime)
@@ -302,12 +304,12 @@ __attribute__((noinline)) bool DriveMovement::PrepareShadowChunk() noexcept
 			return false;									// a gap after a sliver: the normal path waits for the start time then, so don't span it
 		}
 
-		if (snap.next == nullptr)
+		if (snap.next == nullptr && !snap.isExtruder)
 		{
 			return false;									// NewSegment snaps the last segment of an axis to a whole step, which the slot does not replicate
 		}
 
-		const int32_t netSteps = (int32_t)(snap.distance + dcf);	// exactly the netStepsThisSegment calculation in NewSegment for a segment with a successor
+		const int32_t netSteps = (int32_t)(snap.distance + dcf);	// exactly the netStepsThisSegment calculation in NewSegment when it does not snap
 
 		motioncalc_t sT0;
 		const bool segIsLinear = CheckLinearCore(snap.a, snap.duration, snap.distance, dcf, sT0);	// snap.a is a copy, so letting this normalise it does not touch the segment
