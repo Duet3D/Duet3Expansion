@@ -1892,7 +1892,7 @@ GCodeResult Move::ProcessM569(const CanMessageGeneric& msg, const StringRef& rep
 			reply.catf(" (%s)", dms[drive].closedLoopControl.GetModeText());
 		}
 # endif
-		reply.catf(", ccr 0x%05" PRIx32 ", toff %" PRIu32 ", tblank %" PRIu32,
+		reply.catf(", ccr 0x%06" PRIx32 ", toff %" PRIu32 ", tblank %" PRIu32,
 					SmartDrivers::GetRegister(drive, SmartDriverRegister::chopperControl),
 					SmartDrivers::GetRegister(drive, SmartDriverRegister::toff),
 					SmartDrivers::GetRegister(drive, SmartDriverRegister::tblank)
