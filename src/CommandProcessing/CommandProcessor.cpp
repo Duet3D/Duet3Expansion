@@ -604,11 +604,12 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 
 #if HAS_CPU_TEMP_SENSOR
 			const MinCurMax& mcuTemperature = Platform::GetMcuTemperatures();
-			reply.lcatf("MCU temperature: min %.1fC, current %.1fC, max %.1fC", (double)mcuTemperature.minimum, (double)mcuTemperature.current, (double)mcuTemperature.maximum);
+			reply.lcatf("MCU temperature: min %.1f" DEGREE_SYMBOL "C, current %.1f" DEGREE_SYMBOL "C, max %.1f" DEGREE_SYMBOL "C",
+						(double)mcuTemperature.minimum, (double)mcuTemperature.current, (double)mcuTemperature.maximum);
 #endif
 
 #if HAS_BOARD_THERMISTOR
-			reply.lcatf("Board temperature %.1fC", (double)Platform::GetBoardTemperature());
+			reply.lcatf("Board temperature %.1f" DEGREE_SYMBOL "C", (double)Platform::GetBoardTemperature());
 #endif
 		}
 		break;

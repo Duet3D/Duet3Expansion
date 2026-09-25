@@ -333,28 +333,32 @@ void Move::Spin() noexcept
 	// If we have a board temperature sensor and drivers that use external mosfets, then the TMC driver over temperature warning is of limited value because the mosfets will get hotter than the TMC driver.
 	// So we use the board temperature to detect that the board and hence the mosfets are getting too hot.
 	// Currently this applies only to the M23CL.
-	const float boardTemp = Platform::GetBoardTemperature();
-	if (boardTemp >= BoardErrorTemperature)
+	// At startup the parallel capacitor may still be charging, so ignore the result for a few seconds
+	if (millis64() > 3000)
 	{
-		if (boardTempState != BoardTemperatureState::error)
+		const auto boardTemp = Platform::GetBoardTemperatureAndResult();
+		if (boardTemp.second != TemperatureError::ok || boardTemp.first >= BoardErrorTemperature)
 		{
-			SmartDrivers::OverTemperatureDisable(true);
-			CanInterface::RaiseEvent(EventType::board_over_temperature, (uint16_t)(boardTemp * 10.0), 0, "", va_list());
-			boardTempState = BoardTemperatureState::error;
+			if (boardTempState != BoardTemperatureState::error)
+			{
+				SmartDrivers::OverTemperatureDisable(true);
+				CanInterface::RaiseEvent(EventType::board_over_temperature, (uint16_t)(boardTemp.first * 10.0), 0, "", va_list());
+				boardTempState = BoardTemperatureState::error;
+			}
 		}
-	}
-	else if (boardTemp >= BoardWarningTemperature && boardTempState == BoardTemperatureState::ok)
-	{
-		CanInterface::RaiseEvent(EventType::board_temperature_warning, (uint16_t)(boardTemp * 10.0), 0, "", va_list());
-		boardTempState = BoardTemperatureState::warning;
-	}
-	else if (boardTemp <= BoardWarningTemperature - 1.0)
-	{
-		if (boardTempState == BoardTemperatureState::error)
+		else if (boardTemp.first >= BoardWarningTemperature && boardTempState == BoardTemperatureState::ok)
 		{
-			SmartDrivers::OverTemperatureDisable(false);				// re-enable the drivers
+			CanInterface::RaiseEvent(EventType::board_temperature_warning, (uint16_t)(boardTemp.first * 10.0), 0, "", va_list());
+			boardTempState = BoardTemperatureState::warning;
 		}
-		boardTempState = BoardTemperatureState::ok;
+		else if (boardTemp.first <= BoardWarningTemperature - 1.0)
+		{
+			if (boardTempState == BoardTemperatureState::error)
+			{
+				SmartDrivers::OverTemperatureDisable(false);				// re-enable the drivers
+			}
+			boardTempState = BoardTemperatureState::ok;
+		}
 	}
 #endif
 
