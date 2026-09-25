@@ -308,6 +308,9 @@ constexpr uint32_t DefaultChopConfReg = (1 << CHOPCONF_TBL_SHIFT) | (3 << CHOPCO
 constexpr uint32_t DefaultChopConfReg = (2 << CHOPCONF_TBL_SHIFT) | (3 << CHOPCONF_TOFF_SHIFT) | (5 << CHOPCONF_HSTRT_SHIFT) | (2 << CHOPCONF_HEND_SHIFT);
 #endif
 
+constexpr uint32_t UserSettableChopConfBits = CHOPCONF_TBL_MASK | CHOPCONF_HSTRT_MASK | CHOPCONF_HEND_MASK | CHOPCONF_TOFF_MASK
+												| CHOPCONF_TPFD_MASK | CHOPCONF_FD3 | CHOPCONF_DISFDCC;
+
 constexpr uint8_t REGNUM_COOLCONF = 0x6D;
 constexpr uint32_t COOLCONF_SGFILT = 1 << 24;				// set to update stallGuard status every 4 full steps instead of every full step
 constexpr uint32_t COOLCONF_SGT_SHIFT = 16;
@@ -851,7 +854,7 @@ uint32_t TmcDriverState::GetRegister(SmartDriverRegister reg) const noexcept
 	switch(reg)
 	{
 	case SmartDriverRegister::chopperControl:
-		return configuredChopConfReg & 0x01FFFF;
+		return configuredChopConfReg & UserSettableChopConfBits;
 
 	case SmartDriverRegister::toff:
 		return (configuredChopConfReg & CHOPCONF_TOFF_MASK) >> CHOPCONF_TOFF_SHIFT;
@@ -937,9 +940,7 @@ bool TmcDriverState::SetChopConf(uint32_t newVal) noexcept
 	{
 		return false;
 	}
-	const uint32_t userMask = CHOPCONF_TBL_MASK | CHOPCONF_HSTRT_MASK | CHOPCONF_HEND_MASK | CHOPCONF_TOFF_MASK
-								| CHOPCONF_TPFD_MASK | CHOPCONF_FD3 | CHOPCONF_DISFDCC;		// mask of bits the user is allowed to change
-	configuredChopConfReg = (configuredChopConfReg & ~userMask) | (newVal & userMask);
+	configuredChopConfReg = (configuredChopConfReg & ~UserSettableChopConfBits) | (newVal & UserSettableChopConfBits);
 	UpdateChopConfRegister();
 	return true;
 }
@@ -1475,6 +1476,9 @@ void TmcDriverState::TransferSucceeded(const uint8_t *rcvDataBlock) noexcept
 					|| interval == 0
 					|| interval > StepTimer::StepClockRate/MinimumOpenLoadFullStepsPerSec
 					|| motorCurrent < MinimumOpenLoadMotorCurrent
+#if HAS_BOARD_THERMISTOR && SUPPORT_TMC51xx
+					|| overTemperatureDisable
+#endif
 				   )
 				{
 					regVal &= ~TMC_RR_OL;								// open load bits are unreliable at standstill, low speeds, and low current
