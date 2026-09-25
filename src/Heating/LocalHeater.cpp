@@ -555,17 +555,17 @@ void LocalHeater::Spin() noexcept
 					// If the P and D terms together demand that the heater is full on or full off, disregard the I term to reduce integral windup
 					const float errorMinusDterm = error - (params.tD * derivative);
 					const float pPlusD = params.kP * errorMinusDterm;
-					const float expectedPwm = GetModel().EstimateRequiredPwm(temperature - ambientTemperature, lastFanPwm, currentVoltage, allowedExtrusionPwmBoost);
-					if (pPlusD + expectedPwm > GetModel().GetMaxPwm())
+					const float expectedActualPwm = GetModel().EstimateRequiredPwm(temperature - ambientTemperature, lastFanPwm, currentVoltage, lastExtrusionPwmBoost);
+					if (pPlusD + expectedActualPwm > GetModel().GetMaxPwm())
 					{
 						lastPwm = GetModel().GetMaxPwm();
 						// If we are heating up, preset the I term to the expected PWM at this temperature, ready for the switch over to PID
 						if (mode == HeaterMode::heating && error > 0.0 && derivative > 0.0)
 						{
-							iAccumulator = expectedPwm;
+							iAccumulator = expectedActualPwm;
 						}
 					}
-					else if (pPlusD + expectedPwm < 0.0)
+					else if (pPlusD + expectedActualPwm < 0.0)
 					{
 						lastPwm = 0.0;
 					}
@@ -585,14 +585,15 @@ void LocalHeater::Spin() noexcept
 					if (mode == HeaterMode::stable && GetFunction() == HeaterFunction::tool)
 					{
 						const float limitedAccumulator = min<float>(iAccumulator, GetModel().GetMaxPwm());
-						if (limitedAccumulator > expectedPwm * GetPwmFaultLevel())
+						const float expectedMaxPwm = GetModel().EstimateRequiredPwm(temperature - ambientTemperature, lastFanPwm, currentVoltage, allowedExtrusionPwmBoost);
+						if (limitedAccumulator > expectedMaxPwm * GetPwmFaultLevel())
 						{
 							++heaterPwmFaultCount;
 							if (heaterPwmFaultCount * Heat::NormalHeaterPollInterval > GetMaxPwmFaultTime() * SecondsToMillis)
 							{
 								RaiseHeaterFault(HeaterFaultType::pwmTooHigh,
 													"expected %.3f actual %.3f",
-														(double)expectedPwm, (double)limitedAccumulator);
+														(double)expectedMaxPwm, (double)limitedAccumulator);
 							}
 						}
 						else if (heaterPwmFaultCount != 0)
@@ -750,40 +751,40 @@ GCodeResult LocalHeater::TuningCommand(const CanMessageHeaterTuningCommand& msg,
 // Adjust heater power for fan PWM or extrusion change
 GCodeResult LocalHeater::ApplyFeedForward(const CanMessageHeaterFeedForwardV1& msg, const StringRef& reply) noexcept
 {
-	if (mode == HeaterMode::stable)				// we only apply feedforward when the temperature is stable
-	{
-		float requiredPwmBoostChange;
+	float requiredPwmBoostChange;
 
-		// Calculate the PWM change required due to fan speed change
-		if (msg.fanPwmFraction != lastFanPwm)
+	// Calculate the PWM change required due to fan speed change
+	if (msg.fanPwmFraction != lastFanPwm)
+	{
+		const float oldFanPwm = lastFanPwm;
+		lastFanPwm = msg.fanPwmFraction;
+		requiredPwmBoostChange = GetModel().GetPwmCorrectionForFan(GetTargetTemperature() - ambientTemperature, oldFanPwm, msg.fanPwmFraction) * FanFeedForwardMultiplier;
+	}
+	else
+	{
+		requiredPwmBoostChange = 0.0;
+	}
+
+	// We need to update iAccumulator atomically and we need the Heat task to see consistency between iAccumulator and allowedExtrusionPwmBoost
+	TaskCriticalSectionLocker lock;
+	if (!msg.fanOnly)
+	{
+		allowedExtrusionPwmBoost = msg.extrusionPwmBoost;
+		if (msg.nonPrintingExtruderMove)
 		{
-			const float oldFanPwm = lastFanPwm;
-			lastFanPwm = msg.fanPwmFraction;
-			requiredPwmBoostChange = GetModel().GetPwmCorrectionForFan(GetTargetTemperature() - ambientTemperature, oldFanPwm, msg.fanPwmFraction) * FanFeedForwardMultiplier;
+			requiredPwmBoostChange -= lastExtrusionPwmBoost;
+			lastExtrusionPwmBoost = 0.0;
 		}
 		else
 		{
-			requiredPwmBoostChange = 0.0;
+			requiredPwmBoostChange += msg.extrusionPwmBoost - lastExtrusionPwmBoost;
+			lastExtrusionPwmBoost = msg.extrusionPwmBoost;
+			extrusionTemperatureBoost = msg.extrusionTemperatureBoost;
 		}
+	}
 
-		// We need to update iAccumulator atomically and we need the Heat task to see consistency between iAccumulator and allowedExtruderPwmBoost
-		TaskCriticalSectionLocker lock;
-		if (!msg.fanOnly)
-		{
-			allowedExtrusionPwmBoost = msg.extrusionPwmBoost;
-			if (msg.nonPrintingExtruderMove)
-			{
-				requiredPwmBoostChange -= lastExtrusionPwmBoost;
-				lastExtrusionPwmBoost = 0.0;
-			}
-			else
-			{
-				requiredPwmBoostChange += msg.extrusionPwmBoost - lastExtrusionPwmBoost;
-				lastExtrusionPwmBoost = msg.extrusionPwmBoost;
-				extrusionTemperatureBoost = msg.extrusionTemperatureBoost;
-			}
-		}
-
+	if (mode == HeaterMode::stable)				// we only apply feedforward when the temperature is stable
+	{
 		iAccumulator += requiredPwmBoostChange;
 	}
 	return GCodeResult::ok;
