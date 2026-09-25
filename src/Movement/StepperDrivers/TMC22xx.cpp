@@ -1439,7 +1439,6 @@ uint32_t TmcDriverState::GetRegister(SmartDriverRegister reg) const noexcept
 #else
 									UserSettableChopConfBits_2209;
 #endif
-
 			return configuredChopConfReg & userMask;
 		}
 
