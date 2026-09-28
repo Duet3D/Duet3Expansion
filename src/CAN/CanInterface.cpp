@@ -508,7 +508,7 @@ CanMessageBuffer *CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf) no
 				// Track how much processing delay there was
 				{
 #if STM32 || SAME70 || (RPXXXX && !USE_SPICAN)
-					// These processors use the low 16 bits of the step counter for the time stamp
+					// These processors use the low 16 bits of the step counter or a shadow counter for the time stamp
 					const uint16_t timeStampNow = StepTimer::GetTimerTicks();
 					const uint32_t timeStampDelay = (uint32_t)((timeStampNow - buf->timeStamp) & 0xFFFF);	// the delay in step clocks
 #else

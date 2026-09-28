@@ -69,21 +69,25 @@ void StepTimer::Init() noexcept
 	// As that is only 16-bit and we need a 32-bit step timer, we use timer 5 for the step timer and clock it at the same rate as timer 3.
 	EnableTimerClock(StepTimerNumber);
 	EnableTimerClock(TimeStampTimerNumber);
-	StepTimerHw->PSC = GetTimerClockFrequency(StepTimerNumber)/StepClockRate;
-	TimeStampTimerHw->PSC = GetTimerClockFrequency(TimeStampTimerNumber)/StepClockRate;
-	StepTimerHw->DIER &= ~(TIM_DIER_CC1IE);							// disable the interrupt
+	StepTimerHw->CR1 = 0;
+	TimeStampTimerHw->CR1 = 0;
+	StepTimerHw->CR2 = 0;
+	TimeStampTimerHw->CR2 = 0;
 	StepTimerHw->ARR = 0xFFFFFFFF;
 	TimeStampTimerHw->ARR = 0x0000FFFF;
+	StepTimerHw->PSC = GetTimerClockFrequency(StepTimerNumber)/StepClockRate - 1;
+	TimeStampTimerHw->PSC = GetTimerClockFrequency(TimeStampTimerNumber)/StepClockRate - 1;
+	StepTimerHw->CNT = 0;
+	TimeStampTimerHw->CNT = 0;
+	StepTimerHw->DIER &= ~(TIM_DIER_CC1IE);							// disable the interrupt
 	NVIC_SetPriority(StepTimerIRQn, NvicPriorityStep);			    // set the priority for this IRQ ->ARR
 	NVIC_ClearPendingIRQ(StepTimerIRQn);
 	NVIC_EnableIRQ(StepTimerIRQn);
 	{
-		// Start the two timers in sync
+		// Start the two timers in sync. The step timer may be a tiny amount ahead of the timestamp counter (i.e. slightly greater count), but not behind it. So start the step timer first.
 		AtomicCriticalSectionLocker lock;
-		StepTimerHw->CNT = 0;
-		TimeStampTimerHw->CNT = 0;
-		StepTimerHw->CR1 |= TIM_CR1_CEN;
-		TimeStampTimerHw->CR1 |= TIM_CR1_CEN;
+		StepTimerHw->CR1 = TIM_CR1_CEN;
+		TimeStampTimerHw->CR1|= TIM_CR1_CEN;
 	}
 #elif SAMC21 || SAME5x
 	// We use StepTcNumber+1 as the slave for 32-bit mode so we need to clock that one too
