@@ -989,7 +989,7 @@ bool TmcDriverState::SetDriverMode(unsigned int mode) noexcept
 
 #if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
 	case (unsigned int)DriverMode::direct:
-	case (unsigned int)DriverMode::direct + 1:
+	case (unsigned int)DriverMode::assistedOpen:
 		UpdateRegister(WriteGConf, (writeRegisters[WriteGConf] & ~GCONF_STEALTHCHOP) | GCONF_DIRECT_MODE);
 		directModeDrivers.SetBit(driverNumber);
 		UpdateCurrent();		// when entering closed loop mode we need to update the standstill current
