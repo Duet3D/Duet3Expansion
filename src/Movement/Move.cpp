@@ -1728,7 +1728,7 @@ GCodeResult Move::ProcessM569(const CanMessageGeneric& msg, const StringRef& rep
 # if SUPPORT_CLOSED_LOOP
 			// Enable/disabled closed loop control
 			const ClosedLoopMode mode = (val == (uint32_t)DriverMode::direct) ? ClosedLoopMode::closed
-										: (val == (uint32_t)DriverMode::direct + 1) ? ClosedLoopMode::assistedOpen
+										: (val == (uint32_t)DriverMode::assistedOpen) ? ClosedLoopMode::assistedOpen
 											: ClosedLoopMode::open;
 			if (!dms[drive].closedLoopControl.SetClosedLoopEnabled(mode, reply))
 			{
