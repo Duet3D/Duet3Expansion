@@ -180,8 +180,9 @@ void StepTimer::Init() noexcept
 {
 	static uint32_t originalOffset = 0;
 
-#if SAME70 || STM32 || (RP2040 && !USE_SPICAN)
-	// On these processors the timestamp counter is the same as the step counter
+#if SAME70 || STM32 || (RPXXXX && !USE_SPICAN)
+	// On SAME70 and RP2040 processors the timestamp counter is the same as the step counter.
+	// On STM32 we use timer 3 (16 bits) as the timestamp counter and timer 5 (32 bits) as the step counter, but we clock them at the same rate, so they are effectively the same.
 	const uint32_t localTimeNow = StepTimer::GetTimerTicks();
 	const uint32_t timeStampDelay = (localTimeNow - timeStamp) & 0xFFFF;
 #else
