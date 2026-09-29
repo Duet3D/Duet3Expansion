@@ -16,8 +16,8 @@
 
 // Temperature derating curve for LTST-E143EGBW LEDs
 // Due to C++ rules on calling constexpr functions these have to be declared before the class that calls them
-static inline constexpr float MaxCurrentRed(float temperature) noexcept		{ return (temperature <= 25) ? 30 : (temperature > 100) ? 0 : 5 + (25/75) * (100 - temperature); }
-static inline constexpr float MaxCurrentGreenBlue(float temperature) noexcept	{ return (temperature <= 25) ? 20 : (temperature > 100) ? 0 : 5 + (15/75) * (100 - temperature); }
+static inline constexpr float MaxCurrentRed(float temperature) noexcept		{ return (temperature <= 25.0) ? 30.0 : (temperature > 100.0) ? 0.0 : 5.0 + (25.0/75.0) * (100.0 - temperature); }
+static inline constexpr float MaxCurrentGreenBlue(float temperature) noexcept	{ return (temperature <= 25.0) ? 20.0 : (temperature > 100.0) ? 0.0 : 5.0 + (15.0/75.0) * (100.0 - temperature); }
 
 // LP5817 LED driver class
 class LP5817 : public SharedI2CClient
