@@ -61,3 +61,4 @@
 /NodeTrix-Debug/
 /.clangd
 /.clang-format
+.stm32-debug-log.txt
