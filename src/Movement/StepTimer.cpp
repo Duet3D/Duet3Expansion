@@ -86,10 +86,10 @@ void StepTimer::Init() noexcept
 	NVIC_ClearPendingIRQ(StepTimerIRQn);
 	NVIC_EnableIRQ(StepTimerIRQn);
 	{
-		// Start the two timers in sync. The step timer may be a tiny amount ahead of the timestamp counter (i.e. slightly greater count), but not behind it. So start the step timer first.
+		// Start the two timers in sync. The step timer is permitted to be a tiny amount ahead of the timestamp counter (i.e. slightly greater count), but not behind it. So start the step timer first.
 		AtomicCriticalSectionLocker lock;
-		StepTimerHw->CR1 = TIM_CR1_CEN;
-		TimeStampTimerHw->CR1 = TIM_CR1_CEN;
+		StepTimerHw->CR1 = TIM_CR1_CEN | TIM_CR1_URS;
+		TimeStampTimerHw->CR1 = TIM_CR1_CEN | TIM_CR1_URS;
 	}
 #elif SAMC21 || SAME5x
 	// We use StepTcNumber+1 as the slave for 32-bit mode so we need to clock that one too
