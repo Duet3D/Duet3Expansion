@@ -69,8 +69,8 @@ void StepTimer::Init() noexcept
 	// As that is only 16-bit and we need a 32-bit step timer, we use timer 5 for the step timer and clock it at the same rate as timer 3.
 	EnableTimerClock(StepTimerNumber);
 	EnableTimerClock(TimeStampTimerNumber);
-	StepTimerHw->CR1 = 0;
-	TimeStampTimerHw->CR1 = 0;
+	StepTimerHw->CR1 = TIM_CR1_URS;
+	TimeStampTimerHw->CR1 = TIM_CR1_URS;
 	StepTimerHw->CR2 = 0;
 	TimeStampTimerHw->CR2 = 0;
 	StepTimerHw->ARR = 0xFFFFFFFF;
@@ -79,6 +79,8 @@ void StepTimer::Init() noexcept
 	TimeStampTimerHw->PSC = GetTimerClockFrequency(TimeStampTimerNumber)/StepClockRate - 1;
 	StepTimerHw->CNT = 0;
 	TimeStampTimerHw->CNT = 0;
+	StepTimerHw->EGR = TIM_EGR_UG;									// update the live registers, in particular the prescaler
+	TimeStampTimerHw->EGR = TIM_EGR_UG;
 	StepTimerHw->DIER &= ~(TIM_DIER_CC1IE);							// disable the interrupt
 	NVIC_SetPriority(StepTimerIRQn, NvicPriorityStep);			    // set the priority for this IRQ ->ARR
 	NVIC_ClearPendingIRQ(StepTimerIRQn);
@@ -87,7 +89,7 @@ void StepTimer::Init() noexcept
 		// Start the two timers in sync. The step timer may be a tiny amount ahead of the timestamp counter (i.e. slightly greater count), but not behind it. So start the step timer first.
 		AtomicCriticalSectionLocker lock;
 		StepTimerHw->CR1 = TIM_CR1_CEN;
-		TimeStampTimerHw->CR1|= TIM_CR1_CEN;
+		TimeStampTimerHw->CR1 = TIM_CR1_CEN;
 	}
 #elif SAMC21 || SAME5x
 	// We use StepTcNumber+1 as the slave for 32-bit mode so we need to clock that one too
