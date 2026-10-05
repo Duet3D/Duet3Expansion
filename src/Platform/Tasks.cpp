@@ -912,7 +912,7 @@ extern "C" uint64_t TaskResetRunTimeCounter() noexcept
 void Tasks::Diagnostics(const StringRef& reply) noexcept
 {
 	// Append a memory report to a string
-	reply.lcatf("Never used RAM %d, free system stack %d words\nTasks:", GetNeverUsedRam(), GetHandlerFreeStack()/4);
+	reply.lcatf("Never used RAM %d, free system stack %d words\nTasks:", GetNeverUsedRam(), GetHandlerFreeStack());
 
 	// Now the per-task memory report
 	const uint64_t timeSinceLastCall = TaskResetRunTimeCounter();
