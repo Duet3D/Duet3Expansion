@@ -78,6 +78,9 @@ struct UF2_Block
 
 #include <syscalls.h>
 
+// Define the system stack. The stack doesn't actually live here, instead the linker script uses this section to define the stack start and end symbols.
+uint32_t dummySystemStack[SystemStackSize] __attribute__ ((section (".stack")));
+
 constexpr uint32_t BlockReceiveTimeout = 2000;					// bootloader block receive timeout milliseconds
 
 constexpr uint8_t memPattern = 0xA5;
@@ -864,17 +867,16 @@ extern "C" [[noreturn]] void UpdateBootloaderTask(void *pvParameters) noexcept
 
 #endif
 
-// Return the amount of free handler stack space
+// Return the amount of free handler stack space in words
 static ptrdiff_t GetHandlerFreeStack() noexcept
 {
-	const char * const ramend = (const char*)&_estack;
-	const char * const limit = reinterpret_cast<const char*>(sysStackLimit);
-	const char * stack_lwm = limit;
+	const char * const ramend = sysStackTop;
+	const char * stack_lwm = sysStackLimit;
 	while (stack_lwm < ramend && *stack_lwm == memPattern)
 	{
 		++stack_lwm;
 	}
-	return stack_lwm - limit;
+	return (stack_lwm - sysStackLimit) >> 4;
 }
 
 ptrdiff_t Tasks::GetNeverUsedRam() noexcept
