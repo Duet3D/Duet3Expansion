@@ -42,8 +42,8 @@ private:
 	motioncalc_t dk;						// the pressure advance distance up to which k0 applies
 
 	// Derived parameters
-	motioncalc_t vk;						// the speed up to which k1 applies, equal to dk/k1
-	motioncalc_t d0;						// the distance at which the k2 line intercepts the y-axis
+	motioncalc_t vk;						// the speed up to which k0 applies, equal to dk/k0
+	motioncalc_t d0;						// the distance at which the k1 line intercepts the y-axis
 
 	motioncalc_t mmPerStep;					// the reciprocal of steps/mm for this drive
 };
