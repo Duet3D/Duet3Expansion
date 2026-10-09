@@ -26,6 +26,7 @@ public:
 
 	void SetParameters(const ShortPressureAdvanceParameters& params) noexcept;
 	void SetParametersSimple(float f) noexcept;
+	void UpdateStepsPerMm(float stepsPerMm) noexcept;
 
 	bool IsActive() const noexcept { return k0 != (motioncalc_t)0.0; }
 	motioncalc_t GetPressureAdvanceDistance(motioncalc_t speed) const noexcept;
@@ -43,6 +44,8 @@ private:
 	// Derived parameters
 	motioncalc_t vk;						// the speed up to which k1 applies, equal to dk/k1
 	motioncalc_t d0;						// the distance at which the k2 line intercepts the y-axis
+
+	motioncalc_t mmPerStep;					// the reciprocal of steps/mm for this drive
 };
 
 #endif

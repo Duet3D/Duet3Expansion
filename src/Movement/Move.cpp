@@ -85,6 +85,7 @@ Move::Move() noexcept
 	for (size_t i = 0; i < NumDrivers; ++i)
 	{
 		stepsPerMm[i] = DefaultStepsPerMm;
+		GetExtruderShaper(i).UpdateStepsPerMm(DefaultStepsPerMm);
 		directions[i] = true;
 	}
 }
@@ -1417,6 +1418,7 @@ void Move::SetDriveStepsPerMm(size_t drive, float val)
 	if (drive < NumDrivers)
 	{
 		stepsPerMm[drive] = val;
+		GetExtruderShaper(drive).UpdateStepsPerMm(val);
 	}
 }
 
