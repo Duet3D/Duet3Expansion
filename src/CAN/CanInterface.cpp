@@ -260,7 +260,14 @@ void CanInterface::Init(CanAddress defaultBoardAddress, const CanParameters& par
 #else
 								can0Memory,
 #endif
-								timing, nullptr);
+								timing,
+								nullptr,
+#if EXTERNAL_CAN_TIMESTAMP_COUNTER
+								nullptr
+#else
+								StepTimer::CanTimingMessageReceived
+#endif
+							);
 
 #if STM32H7
 	canMemory += Can0Config.GetMemorySize();					// advance memory pointer in case we create another CAN device
@@ -379,7 +386,7 @@ void CanInterface::ReportCanTiming(const StringRef& reply) noexcept
 	}
 }
 
-// Check that the BRS setting we are using matches the one n the time sync message and change it if necessary
+// Check that the BRS setting we are using matches the one in the time sync message and change it if necessary
 void CanInterface::CheckBrs(const CanMessageTimeSync& msg) noexcept
 {
 	if (msg.fastDataRate != fastDataRate || msg.tseg1Minus1 != dTseg1MinusOne)
@@ -507,7 +514,7 @@ CanMessageBuffer *CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf) no
 			{
 				// Track how much processing delay there was
 				{
-#if STM32 || SAME70 || (RPXXXX && !USE_SPICAN)
+#if EXTERNAL_CAN_TIMESTAMP_COUNTER
 					// These processors use the low 16 bits of the step counter or a shadow counter for the time stamp
 					const uint16_t timeStampNow = StepTimer::GetTimerTicks();
 					const uint32_t timeStampDelay = (uint32_t)((timeStampNow - buf->timeStamp) & 0xFFFF);	// the delay in step clocks

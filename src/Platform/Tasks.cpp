@@ -45,6 +45,9 @@ constexpr uint32_t FlashBlockSize = 0x00004000;					// the erase size we assume 
 #elif SAMC21
 # include <hri_wdt_c21.h>
 constexpr uint32_t FlashBlockSize = 0x00004000;					// the erase size we assume for flash, and the bootloader size (16K)
+#elif STM32H5
+constexpr uint32_t FlashBlockSize = 0x00004000;					// the erase size we assume for flash, and the bootloader size (16K)
+# define FLASH_ADDR		FLASH_BASE_NS
 #elif RP2040
 constexpr uint32_t FlashBlockSize = 0x00001000;					// the erase size we assume for flash, and the bootloader size (4K)
 constexpr uint32_t MaxFirmwareSize = 200*1024;					// Max size of firmware we can flash
@@ -464,8 +467,6 @@ static FirmwareFlashErrorCode GetBlock(uint32_t startingOffset, uint32_t& fileSi
 	return FirmwareFlashErrorCode::ok;
 }
 
-#elif STM32
-	//TODO not implemented yet
 #else
 
 // Request a block of the bootloader, returning true if successful
@@ -555,9 +556,6 @@ static FirmwareFlashErrorCode GetBootloaderBlock(uint8_t *blockBuffer)
 
 #endif	// !RP2040
 
-#if STM32
-	//TODO not used yet
-#else
 // This is called only when updating the bootloader fails.
 // There is no point resetting so we flash the error code repeatedly,
 static void ReportFlashError(FirmwareFlashErrorCode err)
@@ -620,8 +618,17 @@ uint32_t ComputeCRC32(const uint32_t *start, const uint32_t *end)
 	DMAC->CRCSTATUS.reg = DMAC_CRCSTATUS_CRCBUSY;
 	asm volatile("nop");
 	return DMAC->CRCCHKSUM.reg;
-#elif STM32
-	//TODO
+#elif STM32H5
+	CRC->POL = 0x04c11db7;
+	CRC->INIT = 0xFFFFFFFF;
+	CRC->CR = CRC_CR_REV_OUT | CRC_CR_RESET;
+	while (start < end)
+	{
+		CRC->DR =  *start++;
+		asm volatile("nop");
+		asm volatile("nop");
+	}
+	return CRC->DR;
 #endif
 }
 
@@ -636,7 +643,6 @@ bool CheckCRC(uint32_t *blockBuffer) noexcept
 	const uint32_t expectedCRC = blockBuffer[crcOffset/4];
 	return ComputeCRC32(blockBuffer, blockBuffer + crcOffset/4) == expectedCRC;
 }
-#endif
 
 #if RP2040
 
@@ -787,8 +793,6 @@ for(;;)
 #endif
 }
 
-#elif STM32
-	//TODO not implemented yet
 #else
 
 // The task that runs to update the bootloader
@@ -835,10 +839,12 @@ extern "C" [[noreturn]] void UpdateBootloaderTask(void *pvParameters) noexcept
 		{
 			ReportFlashError(FirmwareFlashErrorCode::flashInitFailed);
 		}
+#if !STM32
 		else if (!Flash::Unlock(FLASH_ADDR, FlashBlockSize))
 		{
 			ReportFlashError(FirmwareFlashErrorCode::unlockFailed);
 		}
+#endif
 		else if (!Flash::Erase(FLASH_ADDR, FlashBlockSize))
 		{
 			ReportFlashError(FirmwareFlashErrorCode::eraseFailed);
@@ -847,10 +853,12 @@ extern "C" [[noreturn]] void UpdateBootloaderTask(void *pvParameters) noexcept
 		{
 			ReportFlashError(FirmwareFlashErrorCode::writeFailed);
 		}
+#if !STM32
 		else if (!Flash::Lock(FLASH_ADDR, FlashBlockSize))
 		{
 			ReportFlashError(FirmwareFlashErrorCode::lockFailed);
 		}
+#endif
 		else
 		{
 			break;		// success!
