@@ -1320,8 +1320,23 @@ void Move::Interrupt() noexcept
 			{
 				// Force a break by updating the move start time.
 				++numHiccups;
+				uint32_t hiccupTimeInserted = 0;
 				for (uint32_t hiccupTime = MoveTiming::HiccupTime; ; hiccupTime += MoveTiming::HiccupIncrement)
 				{
+					if (hiccupTimeInserted + hiccupTime > MoveTiming::MaxHiccupTimePerInterrupt)
+					{
+						// The main board adopts whatever delay we report and never gives it back, so stop rather than
+						// slip it any further. A hard resync of localTimeOffset can land us here legitimately, so log
+						// it as a step error to make M122 B<n> show why this board stopped stepping.
+						// Release the drives as well: AddLinearSegments only re-arms a drive that is idle, so leaving
+						// them in a motion state would stop this board stepping for good and leak every segment the
+						// main board sends afterwards, until the allocator runs us out of memory.
+						LogStepError(8);
+						StopDrivers((uint16_t)((1u << NumDrivers) - 1u));
+						return;
+					}
+
+					hiccupTimeInserted += hiccupTime;
 					StepTimer::IncreaseMovementDelay(hiccupTime);
 
 					// Reschedule the next step interrupt. This time it should succeed if the hiccup time was long enough.
