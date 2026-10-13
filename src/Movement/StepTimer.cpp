@@ -44,10 +44,18 @@ int32_t StepTimer::peakPosJitter = 0;
 int32_t StepTimer::peakNegJitter = 0;
 int32_t StepTimer::errorAccumulator = 0;
 bool StepTimer::gotJitter = false;
-uint32_t StepTimer::peakReceiveDelay = 0;
+uint32_t StepTimer::maxReceiveDelay = 0;
+uint32_t StepTimer::minReceiveDelay;
 volatile unsigned int StepTimer::syncCount = 0;
 unsigned int StepTimer::numJitterResyncs = 0;
 unsigned int StepTimer::numTimeoutResyncs = 0;
+
+#if !EXTERNAL_CAN_TIMESTAMP_COUNTER
+// Values captured when the most recent message was received into dedicated receive buffer 0
+uint16_t StepTimer::lastTimeSyncMessageStamp;
+uint16_t StepTimer::lastCurrentTimeStamp;
+uint32_t StepTimer::lastStepTime;
+#endif
 
 extern "C" void STEP_TC_HANDLER() noexcept SPEED_CRITICAL;
 
@@ -119,6 +127,8 @@ void StepTimer::Init() noexcept
 #else
 # error Unsupported hardware
 #endif
+
+	minReceiveDelay = 0xFFFFFFFF;
 }
 
 #if !RP2040 && !STM32
@@ -178,33 +188,42 @@ void StepTimer::Init() noexcept
 	return syncCount == MaxSyncCount;
 }
 
+
+#if !EXTERNAL_CAN_TIMESTAMP_COUNTER
+
+// This is called when the CAN driver receives a message into dedicated receive buffer 0. Only time sync messages are received into this buffer.
+/*static*/ void StepTimer::CanTimingMessageReceived(uint16_t messageTime, uint16_t currentTimeStamp) noexcept
+{
+	lastTimeSyncMessageStamp = messageTime;
+	lastCurrentTimeStamp = currentTimeStamp;
+	lastStepTime = GetTimerTicksWhenInterruptsDisabled();
+}
+
+#endif
+
 /*static*/ void StepTimer::ProcessTimeSyncMessage(const CanMessageTimeSync& msg, size_t msgLen, uint16_t timeStamp) noexcept
 {
 	static uint32_t originalOffset = 0;
 
-#if SAME70 || STM32 || (RPXXXX && !USE_SPICAN)
+#if EXTERNAL_CAN_TIMESTAMP_COUNTER
 	// On SAME70 and RP2040 processors the timestamp counter is the same as the step counter.
-	// On STM32 we use timer 3 (16 bits) as the timestamp counter and timer 5 (32 bits) as the step counter, but we clock them at the same rate, so they are effectively the same.
+	// On STM32 we use timer 3 (16 bits) as the timestamp counter and timer 5 (32 bits) as the step counter, but we clock them at the same rate and sync them, so they are effectively the same.
 	const uint32_t localTimeNow = StepTimer::GetTimerTicks();
 	const uint32_t timeStampDelay = (localTimeNow - timeStamp) & 0xFFFF;
 #else
-	uint32_t localTimeNow;
-	uint16_t timeStampNow;
-	{
-		AtomicCriticalSectionLocker lock;							// there must be no delay between calling GetTimerTicks and GetTimeStampCounter
-		localTimeNow = StepTimer::GetTimerTicksWhenInterruptsDisabled();
-		timeStampNow = CanInterface::GetTimeStampCounter();
-	}
-
-	// The time stamp counter runs at the CAN normal bit rate, but the step clock runs at 48MHz/64. Calculate the delay in step clocks.
-	// Datasheet suggests that on the SAMC21 only 15 bits of timestamp counter are readable, but Microchip confirmed this is a documentation error (case 00625843)
-	const uint32_t timeStampDelay = ((uint32_t)((timeStampNow - timeStamp) & 0xFFFF) * CanInterface::GetTimeStampPeriod()) >> 6;	// timestamp counter is 16 bits
+	if (timeStamp != lastTimeSyncMessageStamp) { return; }
+	const uint32_t timeStampDelay = (((uint32_t)(lastCurrentTimeStamp - timeStamp) & 0x0000FFFF) * (uint32_t)CanInterface::GetTimeStampPeriod()) >> 6;	// timestamp counter is 16 bits
+	const uint32_t localTimeNow = lastStepTime;
 #endif
 
-	// Save the peak timestamp delay for diagnostic purposes
-	if (timeStampDelay > peakReceiveDelay)
+	// Save the min and max receive timestamp delay for diagnostic purposes. Most of the delay represents the time taken to send the message over CAN.
+	if (timeStampDelay > maxReceiveDelay)
 	{
-		peakReceiveDelay = timeStampDelay;
+		maxReceiveDelay = timeStampDelay;
+	}
+	if (timeStampDelay < minReceiveDelay)
+	{
+		minReceiveDelay = timeStampDelay;
 	}
 
 	const uint32_t oldLocalTime = prevLocalTime;					// save the previous values
@@ -538,11 +557,12 @@ void StepTimer::CancelCallback() noexcept
 
 /*static*/ void StepTimer::Diagnostics(const StringRef& reply)
 {
-	reply.lcatf("Sync err accum %" PRIi32 ", peak jitter %" PRIi32 "/%" PRIi32 ", peak Rx delay %" PRIu32 ", resyncs %u/%u, ",
-					errorAccumulator, peakNegJitter, peakPosJitter, peakReceiveDelay, numTimeoutResyncs, numJitterResyncs);
+	reply.lcatf("Sync err accum %" PRIi32 ", peak jitter %" PRIi32 "/%" PRIi32 ", min/max Rx delay %" PRIu32 "/%" PRIu32 ", resyncs %u/%u, ",
+					errorAccumulator, peakNegJitter, peakPosJitter, minReceiveDelay, maxReceiveDelay, numTimeoutResyncs, numJitterResyncs);
 	gotJitter = false;
 	numTimeoutResyncs = numJitterResyncs = 0;
-	peakReceiveDelay = 0;
+	maxReceiveDelay = 0;
+	minReceiveDelay = 0xFFFFFFFF;
 
 #if 0	// Including this makes the response too long so it gets truncated. It's not generally useful anyway.
 	const StepTimer *const pst = pendingList;
