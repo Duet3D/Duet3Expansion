@@ -25,7 +25,7 @@ static uint32_t *GetSlotPtr(uint8_t slot)
 // The first 2 bytes of a used reset slot will have the magic number in it.
 bool IsSlotVacant(uint8_t slot) noexcept
 {
-    return Flash::FlashIsErased((uint32_t) GetSlotPtr(slot), SlotSize);
+    return Flash::IsErased((uint32_t) GetSlotPtr(slot), SlotSize);
 }
 
 void NVMEmulationRead(void *data, uint32_t dataLength) noexcept
@@ -35,7 +35,7 @@ void NVMEmulationRead(void *data, uint32_t dataLength) noexcept
     while (currentSlot > 0 && IsSlotVacant(currentSlot)) { currentSlot--; }
     uint32_t *slotStartAddress = GetSlotPtr(currentSlot);
 
-    Flash::FlashRead((const uint32_t)slotStartAddress, (uint8_t *)data, dataLength);
+    Flash::Read((const uint32_t)slotStartAddress, dataLength, (uint8_t *)data);
 }
 
 bool NVMEmulationErase() noexcept
@@ -46,8 +46,8 @@ bool NVMEmulationErase() noexcept
         currentSlot++;
         return true;
     }
-    Flash::FlashEraseSector(Flash::FlashGetSector((uint32_t)ResetData));
-    if (!Flash::FlashIsErased((uint32_t)ResetData, sizeof(ResetData)))
+    Flash::EraseSectors(Flash::GetSector((uint32_t)ResetData), 1);
+    if (!Flash::IsErased((uint32_t)ResetData, sizeof(ResetData)))
     {
         debugPrintf("Sector not erased\n");
     }
@@ -71,9 +71,9 @@ bool NVMEmulationWrite(const void *data, uint32_t dataLength) noexcept
     if (++currentSlot > MAX_SLOT)
     {
         // All slots have been used, erase entire sector
-        Flash::FlashEraseSector(Flash::FlashGetSector((uint32_t)ResetData));
+        Flash::EraseSectors(Flash::GetSector((uint32_t)ResetData), 1);
         debugPrintf("Erase complete\n");
-        if (!Flash::FlashIsErased((uint32_t)ResetData, sizeof(ResetData)))
+        if (!Flash::IsErased((uint32_t)ResetData, sizeof(ResetData)))
         {
            debugPrintf("Sector not erased\n");
            return false;
@@ -81,7 +81,7 @@ bool NVMEmulationWrite(const void *data, uint32_t dataLength) noexcept
         currentSlot = 0;
     }
 
-    Flash::FlashWrite((uint32_t)GetSlotPtr(currentSlot), (const uint8_t*)data, dataLength);
+    Flash::Write((uint32_t)GetSlotPtr(currentSlot), dataLength, (const uint32_t*)data);
     return true;
 }
 
