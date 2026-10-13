@@ -948,7 +948,7 @@ bool TmcDriverState::SetChopConf(uint32_t newVal) noexcept
 // Set the driver mode, returning true if successful
 bool TmcDriverState::SetDriverMode(unsigned int mode) noexcept
 {
-	// In the following, on the closed loop node we need to clear GCONF_DIRECT_MODE when switching away from closed loop mode. It does not harm to do this on other boards too.
+	// In the following, on boards that support direct mode we need to clear GCONF_DIRECT_MODE when switching away from it. It does not harm to do this on other boards too
 	switch (mode)
 	{
 	case (unsigned int)DriverMode::spreadCycle:
@@ -957,9 +957,7 @@ bool TmcDriverState::SetDriverMode(unsigned int mode) noexcept
 		UpdateChopConfRegister();
 #if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
 		directModeDrivers.ClearBit(driverNumber);
-#endif
-#if SUPPORT_CLOSED_LOOP
-		UpdateCurrent();		// if we are leaving closed loop mode then we need to update the standstill current
+		UpdateCurrent();		// if we are leaving direct mode then we need to restore the standstill current
 #endif
 		return true;
 
@@ -969,9 +967,7 @@ bool TmcDriverState::SetDriverMode(unsigned int mode) noexcept
 		UpdateChopConfRegister();
 #if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
 		directModeDrivers.ClearBit(driverNumber);
-#endif
-#if SUPPORT_CLOSED_LOOP
-		UpdateCurrent();		// if we are leaving closed loop mode then we need to update the standstill current
+		UpdateCurrent();		// if we are leaving direct mode then we need to restore the standstill current
 #endif
 		return true;
 
@@ -981,9 +977,7 @@ bool TmcDriverState::SetDriverMode(unsigned int mode) noexcept
 		UpdateChopConfRegister();
 #if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
 		directModeDrivers.ClearBit(driverNumber);
-#endif
-#if SUPPORT_CLOSED_LOOP
-		UpdateCurrent();		// if we are leaving closed loop mode then we need to update the standstill current
+		UpdateCurrent();		// if we are leaving direct mode then we need to restore the standstill current
 #endif
 		return true;
 
@@ -1247,12 +1241,8 @@ void TmcDriverState::UpdateCurrent() noexcept
 
 	// At high motor currents, limit the standstill current fraction to avoid overheating particular pairs of mosfets. Avoid dividing by zero if motorCurrent is zero.
 	const uint32_t desiredStandstillCurrentFraction =
-#if SUPPORT_CLOSED_LOOP
-# if SINGLE_DRIVER
-					(GetMoveInstance().IsClosedLoopEnabled(driverNumber)) ? 256 : standstillCurrentFraction;
-# else
-#  error Multiple closed loop drivers not supported here
-# endif
+#if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
+					directModeDrivers.IsBitSet(driverNumber) ? 256 : standstillCurrentFraction;	// in direct mode the holding current is applied in software when we set the coil currents
 #else
 					standstillCurrentFraction;
 #endif
@@ -1503,6 +1493,9 @@ void TmcDriverState::TransferSucceeded(const uint8_t *rcvDataBlock) noexcept
 
 	// Deal with the stall status. Note that the TCoolThrs setting prevents us getting a DIAG output at low speeds, but it doesn't seem to affect the stall status
 	if (   (rcvDataBlock[0] & (1u << 2)) != 0							// if the status indicates stalled
+#if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
+		&& !directModeDrivers.IsBitSet(driverNumber)					// SG_RESULT is only updated on a full step, and direct mode doesn't use the step sequencer, so the stall status is frozen at its last step/dir value
+#endif
 		&& interval != 0
 		&& interval <= maxStallStepInterval								// if the motor speed is high enough to get a reliable stall indication
 	   )
