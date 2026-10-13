@@ -796,10 +796,13 @@ void Move::StopDrivers(uint16_t whichDrives) noexcept
 	dr.Iterate([this](size_t drive, unsigned int)
 				{
 					AtomicCriticalSectionLocker lock;
-					dms[drive].StopDriverFromRemote();
+					if (dms[drive].state != DMState::idle)
+					{
 #if !SINGLE_DRIVER
-					DeactivateDM(&dms[drive]);
+						DeactivateDM(&dms[drive]);			// chooses the list from the state, so it must run before that is cleared
 #endif
+						dms[drive].StopDriverFromRemote();
+					}
 				}
 			  );
 }
