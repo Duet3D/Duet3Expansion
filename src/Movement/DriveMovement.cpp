@@ -899,21 +899,19 @@ pre(stepsTillRecalc == 0; segments != nullptr)
 	return true;
 }
 
-// If the driver is moving, stop it and release the segments. Caller will remote it from the active list and disable interrupts before calling this.
+// Stop a driver that is moving and release its segments. The caller disables interrupts, checks that the drive is not
+// already idle and takes it off its list first, because DeactivateDM chooses the list from the state that this clears
 void DriveMovement::StopDriverFromRemote() noexcept
 {
-	if (state != DMState::idle)
-	{
-		state = DMState::idle;
+	state = DMState::idle;
 #if USE_SHADOW_SEGMENTS
-		FlushShadows();										// the prepared slot refers to segments we are about to release
+	FlushShadows();											// the prepared slot refers to segments we are about to release
 #endif
-		MoveSegment *seg = nullptr;
-		std::swap(seg, const_cast<MoveSegment*&>(segments));
-		segmentsTail = nullptr;
-		segHint = nullptr;
-		MoveSegment::ReleaseAll(seg);
-	}
+	MoveSegment *seg = nullptr;
+	std::swap(seg, const_cast<MoveSegment*&>(segments));
+	segmentsTail = nullptr;
+	segHint = nullptr;
+	MoveSegment::ReleaseAll(seg);
 }
 
 #endif	// SUPPORT_DRIVERS
