@@ -619,16 +619,18 @@ uint32_t ComputeCRC32(const uint32_t *start, const uint32_t *end)
 	asm volatile("nop");
 	return DMAC->CRCCHKSUM.reg;
 #elif STM32H5
+	RCC->AHB1ENR |= RCC_AHB1ENR_CRCEN;									// the CRC unit has no clock at reset
+	(void)RCC->AHB1ENR;													// delay after an RCC peripheral clock enabling
 	CRC->POL = 0x04c11db7;
 	CRC->INIT = 0xFFFFFFFF;
-	CRC->CR = CRC_CR_REV_OUT | CRC_CR_RESET;
+	CRC->CR = CRC_CR_REV_IN | CRC_CR_REV_OUT | CRC_CR_RESET;			// reverse whole words in and the result out, to get the reflected CRC-32 that CrcAppender writes
 	while (start < end)
 	{
 		CRC->DR =  *start++;
 		asm volatile("nop");
 		asm volatile("nop");
 	}
-	return CRC->DR;
+	return CRC->DR ^ 0xFFFFFFFF;										// the hardware does not apply the final inversion
 #endif
 }
 
