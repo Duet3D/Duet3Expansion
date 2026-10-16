@@ -75,7 +75,7 @@
 #elif RPXXXX
 # include <hardware/structs/watchdog.h>
 #elif STM32
-// TODO
+# include <Flash.h>
 #else
 # error Unsupported processor
 #endif
@@ -380,14 +380,13 @@ namespace Platform
 #endif
 	}
 
-#if !RP2040 && !STM32
-	// Erase the firmware (but not the bootloader) and reset the processor
+#if !RP2040
+	// Erase the firmware (but not the bootloader) and reset the processor. Interrupts have been disabled by the caller
 	[[noreturn]] RAMFUNC static void EraseAndReset()
 	{
 		const uint32_t startAddress = SCB->VTOR;						// this may be either 0x4000 or 0x10000
-# if SAME5x
-
 		// Invalidate the firmware
+# if SAME5x
 		while (!hri_nvmctrl_get_STATUS_READY_bit(NVMCTRL)) { }
 
 		// Unlock the block of flash
@@ -418,6 +417,8 @@ namespace Platform
 
 		while (!hri_nvmctrl_get_interrupt_READY_bit(NVMCTRL)) { }
 		hri_nvmctrl_clear_STATUS_reg(NVMCTRL, NVMCTRL_STATUS_MASK);
+# elif STM32H5
+		Flash::EraseSectors(Flash::GetSector(startAddress), 1);
 # else
 #  error Unsupported processor
 # endif
@@ -464,8 +465,14 @@ namespace Platform
 		__disable_irq();
 		SysTick->CTRL = (1 << SysTick_CTRL_CLKSOURCE_Pos);	// disable the system tick exception
 
-#if SAME5x || STM32H5 || STM32H7
+#if SAME5x
 		for (size_t i = 0; i < 8; i++)
+		{
+			NVIC->ICER[i] = 0xFFFFFFFF;					// Disable IRQs
+			NVIC->ICPR[i] = 0xFFFFFFFF;					// Clear pending IRQs
+		}
+#elif  STM32H5 || STM32H7
+		for (size_t i = 0; i < 16; i++)
 		{
 			NVIC->ICER[i] = 0xFFFFFFFF;					// Disable IRQs
 			NVIC->ICPR[i] = 0xFFFFFFFF;					// Clear pending IRQs
@@ -481,9 +488,7 @@ namespace Platform
 # error Unsupported processor
 #endif
 
-#if STM32
-		ResetProcessor();	//TODO firmware update not supported yet
-#elif !RP2040
+#if !RP2040
 		EraseAndReset();
 #endif
 	}

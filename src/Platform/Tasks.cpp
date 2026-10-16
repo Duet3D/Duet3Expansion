@@ -256,8 +256,10 @@ static bool watchdogCausedReboot = false;
 		delayMicroseconds(10000);
 		Platform::ResetProcessor();
 	}
-# elif STM32
-	//TODO
+# elif STM32H5
+	// On the STM32 only the entire flash can be locked/unlocked, so nothing to do here
+# elif STM32H7
+#  error Unsupported processor
 # endif
 #endif
 
