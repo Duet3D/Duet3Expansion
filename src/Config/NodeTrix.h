@@ -69,6 +69,7 @@ constexpr NvicPriority NvicPriorityDmac = 3;			// priority for DMA complete inte
 constexpr NvicPriority NvicPriorityUart = 3;			// serial driver makes RTOS calls
 constexpr NvicPriority NvicPriorityI2C = 3;
 constexpr NvicPriority NvicPriorityPins = 3;			// priority for GPIO pin interrupts
+constexpr NvicPriority NvicPrioritySharedSpi = 3;
 constexpr NvicPriority NvicPriorityCan = 4;
 constexpr NvicPriority NvicPriorityAdc = 5;
 constexpr NvicPriority NvicPriorityTmcSpi = 3;
@@ -119,7 +120,7 @@ constexpr Pin DriverDiagPins[NumDrivers] = { PortCPin(13) };
 #define NUM_I2C_CHANNELS		0		//TODO change this to 1 when implemented
 #define SUPPORT_LIS3DH			0		//TODO change this to 1 when implemented
 
-#define NUM_SHARED_SPI			0											//TODO change this to 1 when implemented we use a SharedSpi for the closed loop encoder
+#define NUM_SHARED_SPI			1
 
 #define NUM_SERIAL_PORTS		0
 
@@ -163,7 +164,7 @@ constexpr float ThermistorBeta[NumThermistorInputs] = { 4725.0, 4725.0, 4725.0, 
 constexpr float ThermistorShC[NumThermistorInputs] = { 7.060e-8, 7.060e-8, 7.060e-8, 1.68e-7 };
 constexpr float DefaultThermistorSeriesR = 2200.0;							// needed by initialisation but not actually used
 
-#if SUPPORT_CLOSED_LOOP
+#if NUM_SHARED_SPI != 0
 
 // Shared SPI definitions
 constexpr SpiParameters SharedSpiParams =
@@ -173,17 +174,20 @@ constexpr SpiParameters SharedSpiParams =
 	.misoPin = PortBPin(14),
 	.sclkPin = PortBPin(13),
 	.pinFunction = GpioPinFunction::AF5,
-	.irqPriority = qq,
+	.irqPriority = NvicPrioritySharedSpi,
 	.dmaChanTx = DmacChanSspiTx,
 	.dmaChanRx = DmacChanSspiRx,
 	.dmaPrioTx = DmacPrioSspiTx,
 	.dmaPrioRx = DmacPrioSspiRx,
 };
 
+#endif
+
+#if SUPPORT_CLOSED_LOOP
+
 constexpr Pin EncoderCsPin = PortBPin(1);
 
 // Clock generator pin for TMC2240
-//constexpr uint8_t TmcClockGclkNumber = 7;
 constexpr Pin TmcClockPin = PortAPin(8);
 constexpr GpioPinFunction TmcClockPinPeriphMode = GpioPinFunction::AF0;
 
@@ -219,11 +223,6 @@ constexpr uint16_t LDC1612_I2CAddress = 0x2A;					// pin 4 is tied low
 //constexpr unsigned int LDC1612GClkNumber = 5;
 constexpr Pin LDC1612ClockGenPin = PortCPin(9);
 constexpr Pin LDC1612InterruptPin = PortBPin(0);
-#endif
-
-#if SUPPORT_AS5601
-constexpr unsigned int AS5601_I2CChannel = 0;					//TODO which I2C?
-constexpr uint16_t AS5601_I2CAddress = 0x36;					// I2C address of the AS5601
 #endif
 
 #if SUPPORT_ADS131M02
