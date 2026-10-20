@@ -108,6 +108,10 @@ constexpr Pin StepPins[NumDrivers] = { PortDPin(2) };
 constexpr Pin DirectionPins[NumDrivers] = { PortCPin(7) };
 constexpr Pin DriverDiagPins[NumDrivers] = { PortCPin(13) };
 
+// Clock generator pin for TMC2240
+constexpr Pin TmcClockPin = PortAPin(8);
+constexpr GpioPinFunction TmcClockPinPeriphMode = GpioPinFunction::AF0;
+
 #define SUPPORT_THERMISTORS			1
 #define SUPPORT_SPI_SENSORS			0										// SPI temperature sensors not supported
 #define SUPPORT_LDC1612				0										//TODO change to 1 when implemented
@@ -186,10 +190,6 @@ constexpr SpiParameters SharedSpiParams =
 #if SUPPORT_CLOSED_LOOP
 
 constexpr Pin EncoderCsPin = PortBPin(1);
-
-// Clock generator pin for TMC2240
-constexpr Pin TmcClockPin = PortAPin(8);
-constexpr GpioPinFunction TmcClockPinPeriphMode = GpioPinFunction::AF0;
 
 # define SUPPORT_MT6835					0
 # define SUPPORT_QUADRATURE_ENCODER		0
