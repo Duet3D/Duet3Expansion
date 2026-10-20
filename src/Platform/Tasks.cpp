@@ -1043,12 +1043,26 @@ void Tasks::Diagnostics(const StringRef& reply) noexcept
 		}
 	}
 #elif STM32
-	if (resetStatus & RCC_RSR_WWDGRSTF) { reply.cat(" window watchdog"); }
-	if (resetStatus & RCC_RSR_IWDGRSTF) { reply.cat(" watchdog"); }
-	if (resetStatus & RCC_RSR_SFTRSTF)  { reply.cat(" software"); }
-	if (resetStatus & RCC_RSR_BORRSTF) 	{ reply.cat(" power"); }
-	if (resetStatus & RCC_RSR_PINRSTF) 	{ reply.cat(" reset pin"); }
-	if ((resetStatus & (RCC_RSR_WWDGRSTF | RCC_RSR_IWDGRSTF | RCC_RSR_SFTRSTF | RCC_RSR_BORRSTF | RCC_RSR_PINRSTF)) == 0) { reply.catf(" %" PRIu32, resetStatus); }
+	// See Table 112 of rm0481 for the explanation of the following
+	if (resetStatus & RCC_RSR_PINRSTF)
+	{
+		if ((resetStatus & (RCC_RSR_WWDGRSTF | RCC_RSR_IWDGRSTF | RCC_RSR_IWDGRSTF | RCC_RSR_SFTRSTF | RCC_RSR_BORRSTF | RCC_RSR_LPWRRSTF)) == 0)
+		{
+			reply.cat("reset pin");
+		}
+		else
+		{
+			if (resetStatus & RCC_RSR_WWDGRSTF) { reply.cat(" window watchdog"); }
+			if (resetStatus & RCC_RSR_IWDGRSTF) { reply.cat(" watchdog"); }
+			if (resetStatus & RCC_RSR_SFTRSTF)  { reply.cat(" software"); }
+			if (resetStatus & RCC_RSR_BORRSTF) 	{ reply.cat(" power"); }
+			if (resetStatus & RCC_RSR_LPWRRSTF) { reply.cat(" illegal stop entry"); }
+		}
+	}
+	else
+	{
+		reply.cat("unknown");
+	}
 #else
 	const uint8_t resetCause = RSTC->RCAUSE.reg;
 	switch (resetCause)
