@@ -61,6 +61,14 @@ target_compile_definitions(${DUET_BOARD} PRIVATE
     ${D3E_DEFINE}
     $<$<COMPILE_LANGUAGE:C>:noexcept=>)
 
+set(_cxx_options
+    -fno-threadsafe-statics
+    -fno-rtti
+    -fno-exceptions
+    -Wfloat-conversion
+    -Wshadow
+    -Wsign-promo)
+
 target_compile_options(${DUET_BOARD} PRIVATE
     $<$<CONFIG:Release>:-O3>
     -fno-math-errno
@@ -70,7 +78,7 @@ target_compile_options(${DUET_BOARD} PRIVATE
     -Wdouble-promotion
     -Werror=return-type
     -Werror
-    $<$<COMPILE_LANGUAGE:CXX>:-fno-threadsafe-statics;-fno-rtti;-fno-exceptions;-Wfloat-conversion;-Wshadow;-Wsign-promo>)
+    "$<$<COMPILE_LANGUAGE:CXX>:${_cxx_options}>")
 
 target_link_options(${DUET_BOARD} PRIVATE
     --specs=nano.specs
