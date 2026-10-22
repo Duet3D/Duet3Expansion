@@ -55,36 +55,36 @@ SRC_DIRS := \
 # Include paths for C files (minimal set)
 C_INCLUDES := \
 	-I$(CURDIR)/src \
-	-I$(WORKSPACE)/CoreN2G/src
+	-I$(LIBRARIES_DIR)/CoreN2G/src
 
 # Include paths for C++ files (full set)
 CXX_INCLUDES := \
 	-I$(CURDIR)/src \
-	-I$(WORKSPACE)/CoreN2G/src \
-	-I$(WORKSPACE)/CoreN2G/src/STM32 \
-	-I$(WORKSPACE)/CoreN2G/src/STMCubeMX/Core/Inc \
-	-I$(WORKSPACE)/CoreN2G/src/STMCubeMX/Drivers/CMSIS/Include \
-	-I$(WORKSPACE)/CoreN2G/src/STMCubeMX/Drivers/CMSIS/Device/ST/STM32H5xx/Include \
-	-I$(WORKSPACE)/CoreN2G/src/STMCubeMX/Drivers/STM32H5xx_HAL_Driver/Inc \
-	-I$(WORKSPACE)/RRFLibraries/src \
-	-I$(WORKSPACE)/CANlib/src \
-	-I$(WORKSPACE)/FreeRTOS/src/include \
-	-I$(WORKSPACE)/FreeRTOS/src/portable/GCC/ARM_CM33_NTZ/non_secure
+	-I$(LIBRARIES_DIR)/CoreN2G/src \
+	-I$(LIBRARIES_DIR)/CoreN2G/src/STM32 \
+	-I$(LIBRARIES_DIR)/CoreN2G/src/STMCubeMX/Core/Inc \
+	-I$(LIBRARIES_DIR)/CoreN2G/src/STMCubeMX/Drivers/CMSIS/Include \
+	-I$(LIBRARIES_DIR)/CoreN2G/src/STMCubeMX/Drivers/CMSIS/Device/ST/STM32H5xx/Include \
+	-I$(LIBRARIES_DIR)/CoreN2G/src/STMCubeMX/Drivers/STM32H5xx_HAL_Driver/Inc \
+	-I$(LIBRARIES_DIR)/RRFLibraries/src \
+	-I$(LIBRARIES_DIR)/CANlib/src \
+	-I$(LIBRARIES_DIR)/FreeRTOS/src/include \
+	-I$(LIBRARIES_DIR)/FreeRTOS/src/portable/GCC/ARM_CM33_NTZ/non_secure
 
 # Libraries
 LIBS := \
-	-L$(WORKSPACE)/CoreN2G/STM32H5_CAN_RTOS \
-	-L$(WORKSPACE)/CANlib/STM32H5_RTOS \
-	-L$(WORKSPACE)/RRFLibraries/STM32H5_RTOS \
-	-L$(WORKSPACE)/FreeRTOS/STM32H5 \
+	-L$(LIBRARIES_DIR)/CoreN2G/STM32H5_CAN_RTOS \
+	-L$(LIBRARIES_DIR)/CANlib/STM32H5_RTOS \
+	-L$(LIBRARIES_DIR)/RRFLibraries/STM32H5_RTOS \
+	-L$(LIBRARIES_DIR)/FreeRTOS/STM32H5 \
 	-lCoreN2G -lCANlib -lRRFLibraries -lFreeRTOS
 
 # Library dependencies
 LIB_DEPS := \
-	$(WORKSPACE)/CoreN2G/STM32H5_CAN_RTOS/libCoreN2G.a \
-	$(WORKSPACE)/CANlib/STM32H5_RTOS/libCANlib.a \
-	$(WORKSPACE)/RRFLibraries/STM32H5_RTOS/libRRFLibraries.a \
-	$(WORKSPACE)/FreeRTOS/STM32H5/libFreeRTOS.a
+	$(LIBRARIES_DIR)/CoreN2G/STM32H5_CAN_RTOS/libCoreN2G.a \
+	$(LIBRARIES_DIR)/CANlib/STM32H5_RTOS/libCANlib.a \
+	$(LIBRARIES_DIR)/RRFLibraries/STM32H5_RTOS/libRRFLibraries.a \
+	$(LIBRARIES_DIR)/FreeRTOS/STM32H5/libFreeRTOS.a
 
 # Common flags
 COMMON_FLAGS := -c -mcpu=$(MCU_ARCH) -mthumb $(FPU_FLAGS) -fno-math-errno -mfp16-format=ieee \
@@ -146,11 +146,7 @@ $(BIN): $(ELF)
 	$(Q)echo "  OBJCOPY $(notdir $@)"
 	$(Q)$(OBJCOPY) -O binary $< $@
 	$(Q)echo "  CRC     $(notdir $@)"
-	$(Q)if command -v CrcAppender > /dev/null 2>&1; then \
-		CrcAppender $@; \
-	else \
-		echo "  WARNING CrcAppender not found, skipping CRC"; \
-	fi
+	$(Q)$(CRC_APPENDER) $@
 
 # Compile C files
 $(BUILD_DIR)/%.o: %.c

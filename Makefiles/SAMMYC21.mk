@@ -54,50 +54,50 @@ SRC_DIRS := \
 
 # Include paths for C files (minimal set)
 C_INCLUDES := \
-	-I$(WORKSPACE)/Qfplib-M0-full \
-	-I$(WORKSPACE)/CoreN2G \
-	-I$(WORKSPACE)/RRFLibraries \
-	-I$(WORKSPACE)/FreeRTOS \
+	-I$(LIBRARIES_DIR)/Qfplib-M0-full \
+	-I$(LIBRARIES_DIR)/CoreN2G \
+	-I$(LIBRARIES_DIR)/RRFLibraries \
+	-I$(LIBRARIES_DIR)/FreeRTOS \
 	-I$(CURDIR)/src \
-	-I$(WORKSPACE)/CoreN2G/src \
-	-I$(WORKSPACE)/CoreN2G/src/arm/CMSIS/5.4.0/CMSIS/Core/Include \
-	-I$(WORKSPACE)/CoreN2G/src/atmel/SAMC21_DFP/1.2.176/samc21/include
+	-I$(LIBRARIES_DIR)/CoreN2G/src \
+	-I$(LIBRARIES_DIR)/CoreN2G/src/arm/CMSIS/5.4.0/CMSIS/Core/Include \
+	-I$(LIBRARIES_DIR)/CoreN2G/src/atmel/SAMC21_DFP/1.2.176/samc21/include
 
 # Include paths for C++ files (full set)
 CXX_INCLUDES := \
-	-I$(WORKSPACE)/Qfplib-M0-full \
-	-I$(WORKSPACE)/CoreN2G \
-	-I$(WORKSPACE)/RRFLibraries \
-	-I$(WORKSPACE)/FreeRTOS \
+	-I$(LIBRARIES_DIR)/Qfplib-M0-full \
+	-I$(LIBRARIES_DIR)/CoreN2G \
+	-I$(LIBRARIES_DIR)/RRFLibraries \
+	-I$(LIBRARIES_DIR)/FreeRTOS \
 	-I$(CURDIR)/src \
-	-I$(WORKSPACE)/CoreN2G/src \
-	-I$(WORKSPACE)/CoreN2G/src/SAME5x_C21 \
-	-I$(WORKSPACE)/CoreN2G/src/SAME5x_C21/SAMC21/hal/include \
-	-I$(WORKSPACE)/CoreN2G/src/SAME5x_C21/SAMC21/hal/utils/include \
-	-I$(WORKSPACE)/CoreN2G/src/SAME5x_C21/SAMC21/hri \
-	-I$(WORKSPACE)/CoreN2G/src/arm/CMSIS/5.4.0/CMSIS/Core/Include \
-	-I$(WORKSPACE)/CoreN2G/src/atmel/SAMC21_DFP/1.2.176/samc21/include \
-	-I$(WORKSPACE)/RRFLibraries/src \
-	-I$(WORKSPACE)/CANlib/src \
-	-I$(WORKSPACE)/FreeRTOS/src/include \
-	-I$(WORKSPACE)/FreeRTOS/src/portable/GCC/ARM_CM0
+	-I$(LIBRARIES_DIR)/CoreN2G/src \
+	-I$(LIBRARIES_DIR)/CoreN2G/src/SAME5x_C21 \
+	-I$(LIBRARIES_DIR)/CoreN2G/src/SAME5x_C21/SAMC21/hal/include \
+	-I$(LIBRARIES_DIR)/CoreN2G/src/SAME5x_C21/SAMC21/hal/utils/include \
+	-I$(LIBRARIES_DIR)/CoreN2G/src/SAME5x_C21/SAMC21/hri \
+	-I$(LIBRARIES_DIR)/CoreN2G/src/arm/CMSIS/5.4.0/CMSIS/Core/Include \
+	-I$(LIBRARIES_DIR)/CoreN2G/src/atmel/SAMC21_DFP/1.2.176/samc21/include \
+	-I$(LIBRARIES_DIR)/RRFLibraries/src \
+	-I$(LIBRARIES_DIR)/CANlib/src \
+	-I$(LIBRARIES_DIR)/FreeRTOS/src/include \
+	-I$(LIBRARIES_DIR)/FreeRTOS/src/portable/GCC/ARM_CM0
 
 # Libraries (Qfplib-M0-full for software floating point)
 LIBS := \
-	-L$(WORKSPACE)/Qfplib-M0-full/SAMC21 \
-	-L$(WORKSPACE)/CoreN2G/SAMC21_CAN_RTOS \
-	-L$(WORKSPACE)/CANlib/SAMC21_RTOS \
-	-L$(WORKSPACE)/RRFLibraries/SAMC21_RTOS \
-	-L$(WORKSPACE)/FreeRTOS/SAMC21 \
+	-L$(LIBRARIES_DIR)/Qfplib-M0-full/SAMC21 \
+	-L$(LIBRARIES_DIR)/CoreN2G/SAMC21_CAN_RTOS \
+	-L$(LIBRARIES_DIR)/CANlib/SAMC21_RTOS \
+	-L$(LIBRARIES_DIR)/RRFLibraries/SAMC21_RTOS \
+	-L$(LIBRARIES_DIR)/FreeRTOS/SAMC21 \
 	-lQfplib-M0-full -lCoreN2G -lCANlib -lRRFLibraries -lFreeRTOS
 
 # Library dependencies
 LIB_DEPS := \
-	$(WORKSPACE)/Qfplib-M0-full/SAMC21/libQfplib-M0-full.a \
-	$(WORKSPACE)/CoreN2G/SAMC21_CAN_RTOS/libCoreN2G.a \
-	$(WORKSPACE)/CANlib/SAMC21_RTOS/libCANlib.a \
-	$(WORKSPACE)/RRFLibraries/SAMC21_RTOS/libRRFLibraries.a \
-	$(WORKSPACE)/FreeRTOS/SAMC21/libFreeRTOS.a
+	$(LIBRARIES_DIR)/Qfplib-M0-full/SAMC21/libQfplib-M0-full.a \
+	$(LIBRARIES_DIR)/CoreN2G/SAMC21_CAN_RTOS/libCoreN2G.a \
+	$(LIBRARIES_DIR)/CANlib/SAMC21_RTOS/libCANlib.a \
+	$(LIBRARIES_DIR)/RRFLibraries/SAMC21_RTOS/libRRFLibraries.a \
+	$(LIBRARIES_DIR)/FreeRTOS/SAMC21/libFreeRTOS.a
 
 # Qfplib function wrapping for software floating point on M0+
 FP_WRAP_FLAGS := \
@@ -170,11 +170,7 @@ $(BIN): $(ELF)
 	$(Q)echo "  OBJCOPY $(notdir $@)"
 	$(Q)$(OBJCOPY) -O binary $< $@
 	$(Q)echo "  CRC     $(notdir $@)"
-	$(Q)if command -v CrcAppender > /dev/null 2>&1; then \
-		CrcAppender $@; \
-	else \
-		echo "  WARNING CrcAppender not found, skipping CRC"; \
-	fi
+	$(Q)$(CRC_APPENDER) $@
 
 # Compile C files
 $(BUILD_DIR)/%.o: %.c
