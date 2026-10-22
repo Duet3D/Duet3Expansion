@@ -257,7 +257,41 @@ static bool watchdogCausedReboot = false;
 		Platform::ResetProcessor();
 	}
 # elif STM32H5
-	// On the STM32 only the entire flash can be locked/unlocked, so nothing to do here
+	{
+		//TODO if we extend the bootloader reserved area to 32Kb then we can protect that area
+
+		// Check whether we have already allocated the last 2 flash sectors as High Usage Memory
+		FLASH_OBProgramInitTypeDef OBInit = {0};
+		OBInit.OptionType = OPTIONBYTE_EDATA;
+		OBInit.Banks      = FLASH_BANK_2;
+		if (OBInit.EDATASize != 2)
+		{
+			// Program the Option Bytes to reserve 1 sector (8kb, which becomes 6kb) at the end of flash as high-usage for storing configuration data and software reset data
+
+			// 1. Unlock Flash and Option Bytes access
+			HAL_FLASH_Unlock();
+			HAL_FLASH_OB_Unlock();
+
+			// 2. Configure 2 sectors in Bank 2 as High-Cycle Data (EDATA)
+			memset(&OBInit, 0, sizeof(OBInit));
+			OBInit.OptionType = OPTIONBYTE_EDATA;
+			OBInit.Banks      = FLASH_BANK_2;
+			OBInit.EDATASize  = 2; // Number of sectors reserved (1 to 8)
+
+			// 3. Program the option bytes
+			const HAL_StatusTypeDef status = HAL_FLASHEx_OBProgram(&OBInit);
+
+			if (status == HAL_OK)
+			{
+				// 4. Launch Option Byte reload (Triggers a System Reset to apply settings)
+				HAL_FLASH_OB_Launch();
+			}
+
+			// Locks will only be reached if OB_Launch fails to trigger a reset immediately
+			HAL_FLASH_OB_Lock();
+			HAL_FLASH_Lock();
+		}
+	}
 # elif STM32H7
 #  error Unsupported processor
 # endif
