@@ -116,8 +116,8 @@ LDFLAGS := $(LDOPT) --specs=nano.specs -Wl,--gc-sections -Wl,--entry=Reset_Handl
 	-T$(LINKER_SCRIPT) -Wl,-Map,$(CURDIR)/$(BUILD_DIR)/$(BINARY).map,--cref
 
 # Find all source files
-C_SRC := $(foreach dir,$(SRC_DIRS),$(wildcard $(dir)/*.c))
-CXX_SRC := $(foreach dir,$(SRC_DIRS),$(wildcard $(dir)/*.cpp))
+C_SRC := $(foreach dir,$(SRC_DIRS),$(sort $(wildcard $(dir)/*.c)))
+CXX_SRC := $(foreach dir,$(SRC_DIRS),$(sort $(wildcard $(dir)/*.cpp)))
 
 # Object files
 C_OBJS := $(patsubst %.c,$(BUILD_DIR)/%.o,$(C_SRC))
