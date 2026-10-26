@@ -36,11 +36,11 @@
 ENTRY(Reset_Handler)
 
 
-/* Memories definition */
+/* Memories definition. This version assumes a 16kb bootloader. */
 MEMORY
 {
   ram    (xrw)   : ORIGIN = 0x20000000,   LENGTH = 272K
-  rom    (rx)    : ORIGIN = 0x08000000,   LENGTH = 512K
+  rom    (rx)    : ORIGIN = 0x08004000,   LENGTH = 496K
 }
 
 /* Section Definitions */

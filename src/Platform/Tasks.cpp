@@ -45,6 +45,9 @@ constexpr uint32_t FlashBlockSize = 0x00004000;					// the erase size we assume 
 #elif SAMC21
 # include <hri_wdt_c21.h>
 constexpr uint32_t FlashBlockSize = 0x00004000;					// the erase size we assume for flash, and the bootloader size (16K)
+#elif STM32H5
+constexpr uint32_t FlashBlockSize = 0x00004000;					// the erase size we assume for flash, and the bootloader size (16K)
+# define FLASH_ADDR		FLASH_BASE_NS
 #elif RP2040
 constexpr uint32_t FlashBlockSize = 0x00001000;					// the erase size we assume for flash, and the bootloader size (4K)
 constexpr uint32_t MaxFirmwareSize = 200*1024;					// Max size of firmware we can flash
@@ -253,8 +256,44 @@ static bool watchdogCausedReboot = false;
 		delayMicroseconds(10000);
 		Platform::ResetProcessor();
 	}
-# elif STM32
-	//TODO
+# elif STM32H5
+	{
+		//TODO if we extend the bootloader reserved area to 32Kb then we can protect that area
+
+		// Check whether we have already allocated the last 2 flash sectors as High Usage Memory
+		FLASH_OBProgramInitTypeDef OBInit = {0};
+		OBInit.OptionType = OPTIONBYTE_EDATA;
+		OBInit.Banks      = FLASH_BANK_2;
+		if (OBInit.EDATASize != 2)
+		{
+			// Program the Option Bytes to reserve 1 sector (8kb, which becomes 6kb) at the end of flash as high-usage for storing configuration data and software reset data
+
+			// 1. Unlock Flash and Option Bytes access
+			HAL_FLASH_Unlock();
+			HAL_FLASH_OB_Unlock();
+
+			// 2. Configure 2 sectors in Bank 2 as High-Cycle Data (EDATA)
+			memset(&OBInit, 0, sizeof(OBInit));
+			OBInit.OptionType = OPTIONBYTE_EDATA;
+			OBInit.Banks      = FLASH_BANK_2;
+			OBInit.EDATASize  = 2; // Number of sectors reserved (1 to 8)
+
+			// 3. Program the option bytes
+			const HAL_StatusTypeDef status = HAL_FLASHEx_OBProgram(&OBInit);
+
+			if (status == HAL_OK)
+			{
+				// 4. Launch Option Byte reload (Triggers a System Reset to apply settings)
+				HAL_FLASH_OB_Launch();
+			}
+
+			// Locks will only be reached if OB_Launch fails to trigger a reset immediately
+			HAL_FLASH_OB_Lock();
+			HAL_FLASH_Lock();
+		}
+	}
+# elif STM32H7
+#  error Unsupported processor
 # endif
 #endif
 
@@ -464,8 +503,6 @@ static FirmwareFlashErrorCode GetBlock(uint32_t startingOffset, uint32_t& fileSi
 	return FirmwareFlashErrorCode::ok;
 }
 
-#elif STM32
-	//TODO not implemented yet
 #else
 
 // Request a block of the bootloader, returning true if successful
@@ -555,9 +592,6 @@ static FirmwareFlashErrorCode GetBootloaderBlock(uint8_t *blockBuffer)
 
 #endif	// !RP2040
 
-#if STM32
-	//TODO not used yet
-#else
 // This is called only when updating the bootloader fails.
 // There is no point resetting so we flash the error code repeatedly,
 static void ReportFlashError(FirmwareFlashErrorCode err)
@@ -620,8 +654,19 @@ uint32_t ComputeCRC32(const uint32_t *start, const uint32_t *end)
 	DMAC->CRCSTATUS.reg = DMAC_CRCSTATUS_CRCBUSY;
 	asm volatile("nop");
 	return DMAC->CRCCHKSUM.reg;
-#elif STM32
-	//TODO
+#elif STM32H5
+	RCC->AHB1ENR |= RCC_AHB1ENR_CRCEN;									// the CRC unit has no clock at reset
+	(void)RCC->AHB1ENR;													// delay after an RCC peripheral clock enabling
+	CRC->POL = 0x04c11db7;
+	CRC->INIT = 0xFFFFFFFF;
+	CRC->CR = CRC_CR_REV_IN | CRC_CR_REV_OUT | CRC_CR_RESET;			// reverse whole words in and the result out, to get the reflected CRC-32 that CrcAppender writes
+	while (start < end)
+	{
+		CRC->DR =  *start++;
+		asm volatile("nop");
+		asm volatile("nop");
+	}
+	return CRC->DR ^ 0xFFFFFFFF;										// the hardware does not apply the final inversion
 #endif
 }
 
@@ -636,7 +681,6 @@ bool CheckCRC(uint32_t *blockBuffer) noexcept
 	const uint32_t expectedCRC = blockBuffer[crcOffset/4];
 	return ComputeCRC32(blockBuffer, blockBuffer + crcOffset/4) == expectedCRC;
 }
-#endif
 
 #if RP2040
 
@@ -787,8 +831,6 @@ for(;;)
 #endif
 }
 
-#elif STM32
-	//TODO not implemented yet
 #else
 
 // The task that runs to update the bootloader
@@ -835,10 +877,12 @@ extern "C" [[noreturn]] void UpdateBootloaderTask(void *pvParameters) noexcept
 		{
 			ReportFlashError(FirmwareFlashErrorCode::flashInitFailed);
 		}
+#if !STM32
 		else if (!Flash::Unlock(FLASH_ADDR, FlashBlockSize))
 		{
 			ReportFlashError(FirmwareFlashErrorCode::unlockFailed);
 		}
+#endif
 		else if (!Flash::Erase(FLASH_ADDR, FlashBlockSize))
 		{
 			ReportFlashError(FirmwareFlashErrorCode::eraseFailed);
@@ -847,10 +891,12 @@ extern "C" [[noreturn]] void UpdateBootloaderTask(void *pvParameters) noexcept
 		{
 			ReportFlashError(FirmwareFlashErrorCode::writeFailed);
 		}
+#if !STM32
 		else if (!Flash::Lock(FLASH_ADDR, FlashBlockSize))
 		{
 			ReportFlashError(FirmwareFlashErrorCode::lockFailed);
 		}
+#endif
 		else
 		{
 			break;		// success!
@@ -1031,12 +1077,26 @@ void Tasks::Diagnostics(const StringRef& reply) noexcept
 		}
 	}
 #elif STM32
-	if (resetStatus & RCC_RSR_WWDGRSTF) { reply.cat(" window watchdog"); }
-	if (resetStatus & RCC_RSR_IWDGRSTF) { reply.cat(" watchdog"); }
-	if (resetStatus & RCC_RSR_SFTRSTF)  { reply.cat(" software"); }
-	if (resetStatus & RCC_RSR_BORRSTF) 	{ reply.cat(" power"); }
-	if (resetStatus & RCC_RSR_PINRSTF) 	{ reply.cat(" reset pin"); }
-	if ((resetStatus & (RCC_RSR_WWDGRSTF | RCC_RSR_IWDGRSTF | RCC_RSR_SFTRSTF | RCC_RSR_BORRSTF | RCC_RSR_PINRSTF)) == 0) { reply.catf(" %" PRIu32, resetStatus); }
+	// See Table 112 of rm0481 for the explanation of the following
+	if (resetStatus & RCC_RSR_PINRSTF)
+	{
+		if ((resetStatus & (RCC_RSR_WWDGRSTF | RCC_RSR_IWDGRSTF | RCC_RSR_IWDGRSTF | RCC_RSR_SFTRSTF | RCC_RSR_BORRSTF | RCC_RSR_LPWRRSTF)) == 0)
+		{
+			reply.cat("reset pin");
+		}
+		else
+		{
+			if (resetStatus & RCC_RSR_WWDGRSTF) { reply.cat(" window watchdog"); }
+			if (resetStatus & RCC_RSR_IWDGRSTF) { reply.cat(" watchdog"); }
+			if (resetStatus & RCC_RSR_SFTRSTF)  { reply.cat(" software"); }
+			if (resetStatus & RCC_RSR_BORRSTF) 	{ reply.cat(" power"); }
+			if (resetStatus & RCC_RSR_LPWRRSTF) { reply.cat(" illegal stop entry"); }
+		}
+	}
+	else
+	{
+		reply.cat("unknown");
+	}
 #else
 	const uint8_t resetCause = RSTC->RCAUSE.reg;
 	switch (resetCause)
