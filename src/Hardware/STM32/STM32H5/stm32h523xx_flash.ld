@@ -39,8 +39,10 @@ ENTRY(Reset_Handler)
 /* Memories definition. This version assumes a 16kb bootloader. */
 MEMORY
 {
-  ram    (xrw)   : ORIGIN = 0x20000000,   LENGTH = 272K
-  rom    (rx)    : ORIGIN = 0x08004000,   LENGTH = 496K
+  ram    (xrw)       : ORIGIN = 0x20000000,              LENGTH = 272K
+  rom    (rx)        : ORIGIN = 0x08000000 + 16K,        LENGTH = 512K - 16K - 16K
+  CLOSEDLOOPDATA (r) : ORIGIN = 0x08000000 + 512K - 16K, LENGTH = 8K
+  RESETDATA (r)      : ORIGIN = 0x08000000 + 512K - 8K,  LENGTH = 8K
 }
 
 /* Section Definitions */
@@ -138,6 +140,15 @@ SECTIONS
 
  	_firmware_crc = _etext + (_erelocate - _srelocate);		/* We append the CRC32 to the binary file. This is its offset in memory. */
 
+    .reset_data (NOLOAD) :
+    {
+       . = ALIGN(4);
+       __reset_data_start = .;
+       KEEP(*(.reset_data))
+       . = ALIGN(4);
+       __reset_data_end = .;
+    } > RESETDATA
+ 
     /* .bss section which is used for uninitialized data */
     .bss (NOLOAD) :
     {
