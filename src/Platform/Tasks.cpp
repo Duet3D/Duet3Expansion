@@ -260,6 +260,7 @@ static bool watchdogCausedReboot = false;
 	{
 		//TODO if we extend the bootloader reserved area to 32Kb then we can protect that area
 
+#  if 0	// we don't yet use high cycle data for NVRAM
 		// Check whether we have already allocated the last 2 flash sectors as High Usage Memory
 		FLASH_OBProgramInitTypeDef OBInit = {0};
 		OBInit.OptionType = OPTIONBYTE_EDATA;
@@ -291,6 +292,7 @@ static bool watchdogCausedReboot = false;
 			HAL_FLASH_OB_Lock();
 			HAL_FLASH_Lock();
 		}
+#  endif
 	}
 # elif STM32H7
 #  error Unsupported processor

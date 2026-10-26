@@ -224,6 +224,8 @@ void NonVolatileMemory::SetThermistorCalibration(unsigned int inputNumber, int8_
 	}
 }
 
+#if SUPPORT_CLOSED_LOOP
+
 bool NonVolatileMemory::GetClosedLoopCalibrationDataValid() noexcept
 {
 	EnsureRead();
@@ -331,6 +333,8 @@ void NonVolatileMemory::SetClosedLoopQuadratureDirection(bool backwards) noexcep
 	}
 }
 
+#endif
+
 #if SUPPORT_INDUCTIVE_HEATER
 
 void NonVolatileMemory::GetInductiveHeaterParams(InductiveHeaterCalibrationParameters& params) noexcept
@@ -351,7 +355,7 @@ void NonVolatileMemory::SetInductiveHeaterParams(const InductiveHeaterCalibratio
 
 #endif
 
-#if RPXXXX
+#if RPXXXX || STM32H5
 	bool NonVolatileMemory::GetCanSettings(CanUserAreaData& canSettings) noexcept
 	{
 		EnsureRead();
