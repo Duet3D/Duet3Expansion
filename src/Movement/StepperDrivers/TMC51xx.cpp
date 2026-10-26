@@ -1251,7 +1251,13 @@ void TmcDriverState::UpdateCurrent() noexcept
 														? desiredStandstillCurrentFraction
 															: MaxStandstillCurrentTimes256/(uint32_t)motorCurrent;
 	const float idealIHoldCs = (float)iRun * limitedStandstillCurrentFraction * (1.0/256.0);
+#if 0	// for Tony's test build change to SUPPORT_CLOSED_LOOP && SINGLE_DRIVER
+	// TEMPORARY TEST BUILD: IHOLD = IRUN in closed loop and assisted open loop modes, so the XDIRECT coil currents can reach the full M906 current
+	const uint32_t iHoldCsBits = (GetMoveInstance().IsClosedLoopEnabled(driverNumber)) ? iRun
+									: constrain<uint32_t>((unsigned int)(idealIHoldCs + 0.2), 1, 32) - 1;
+#else
 	const uint32_t iHoldCsBits = constrain<uint32_t>((unsigned int)(idealIHoldCs + 0.2), 1, 32) - 1;
+#endif
 	UpdateRegister(WriteIholdIrun, (writeRegisters[WriteIholdIrun] & ~(IHOLDIRUN_IRUN_MASK | IHOLDIRUN_IHOLD_MASK)) | (iRun << IHOLDIRUN_IRUN_SHIFT) | (iHoldCsBits << IHOLDIRUN_IHOLD_SHIFT));
 	UpdateRegister(WriteGlobalScaler, globalScaler);
 }
