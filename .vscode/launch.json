@@ -10,13 +10,17 @@
             "executable": "C:/Eclipse/Firmware-3.7/Duet3Expansion/NodeTrix/Duet3Firmware_NodeTrix.elf",
             "name": "Debug with ST-Link",
             "request": "launch",
-            "runToEntryPoint": "Reset_Handler",
+            "runToEntryPoint": "AppMain",
             "showDevDebugOutput": "none",
             "svdFile": "${workspaceFolder}/../CoreN2G/src/STMCubeMX/STM32H523.svd",
             "servertype": "stlink",
             "device": "STM32H523RETx",
             "interface": "swd",
             "serverArgs": [ "-m 1" ],
+            "liveWatch": {
+                "enabled": true,
+                "samplesPerSecond": 4
+            }
 //            "preLaunchTask": "build",
         },
         {

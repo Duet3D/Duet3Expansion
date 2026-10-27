@@ -9,8 +9,11 @@
 #include <Cache.h>
 #include <Flash.h>
 
-// On STM32 we store reset data in flash. We have allocated a flash sector for this purpose and thise array maps to it.
+// On STM32 we store reset data in flash. We have allocated a flash sector for this purpose and this array maps to it.
 __attribute__((__section__(".reset_data"), used)) uint32_t ResetData[FLASH_DATA_LENGTH/sizeof(uint32_t)];
+__attribute__((__section__(".closed_loop_data"), used)) uint32_t ClosedLoopData[FLASH_DATA_LENGTH/sizeof(uint32_t)];
+
+//TODO support the closed loop page
 
 constexpr uint32_t SlotSize = 512/sizeof(uint32_t); // in 32 bit words
 constexpr uint32_t MAX_SLOT = (FLASH_DATA_LENGTH/sizeof(uint32_t))/SlotSize - 1;
@@ -25,7 +28,7 @@ static uint32_t *GetSlotPtr(uint8_t slot)
 // The first 2 bytes of a used reset slot will have the magic number in it.
 bool IsSlotVacant(uint8_t slot) noexcept
 {
-    return Flash::IsErased((uint32_t) GetSlotPtr(slot), SlotSize);
+    return Flash::IsErased((uint32_t)GetSlotPtr(slot), SlotSize);
 }
 
 void NVMEmulationRead(void *data, uint32_t dataLength) noexcept
@@ -57,7 +60,7 @@ bool NVMEmulationErase() noexcept
 
 bool NVMEmulationWrite(const void *data, uint32_t dataLength) noexcept
 {
-    if (dataLength != SlotSize*sizeof(uint32_t))
+    if (dataLength != SlotSize * sizeof(uint32_t))
     {
         debugPrintf("Bad flash data size\n");
         return false;
