@@ -34,7 +34,7 @@
 # include <Movement/StepperDrivers/SmartDrivers.h>			// for extern declaration of driverStallsToNotify
 #endif
 
-#if RPXXXX
+#if RPXXXX || STM32H5
 # include <Hardware/NonVolatileMemory.h>
 #elif SAME5x || SAMC21
 # include <hpl_user_area.h>
@@ -210,7 +210,7 @@ void CanInterface::Init(CanAddress defaultBoardAddress, const CanParameters& par
 
 	CanTiming timing;
 
-#if RPXXXX
+#if RPXXXX || STM32H5
 	{
 		NonVolatileMemory mem(NvmPage::common);
 		mem.GetCanSettings(canConfigData);
@@ -219,7 +219,7 @@ void CanInterface::Init(CanAddress defaultBoardAddress, const CanParameters& par
 #elif SAMC21 || SAME5x
 	// Read the CAN timing data from the top part of the NVM User Row
 	canConfigData = *reinterpret_cast<CanUserAreaData*>(NVMCTRL_USER + CanUserAreaDataOffset);
-#elif STM32
+#elif STM32H7
 	canConfigData.Clear();		//TODO temporary
 	//TODO
 #endif

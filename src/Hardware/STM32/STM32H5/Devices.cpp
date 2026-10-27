@@ -13,7 +13,7 @@
 #include <AnalogIn.h>
 #include <AnalogOut.h>
 #include <Platform/TaskPriorities.h>
-#include <Platform/Platform.h>
+//#include <Platform/Platform.h>
 #include <RTOSIface/RTOSIface.h>
 
 // Analog input support
