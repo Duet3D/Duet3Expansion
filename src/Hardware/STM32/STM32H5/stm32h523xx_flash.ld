@@ -108,16 +108,6 @@ SECTIONS
     . = ALIGN(4);
     _etext = .;
 
-	/* CAN message buffers must be in the first 64K of RAM */
-    .canMessage (NOLOAD) :
-    {
-        . = ALIGN(4);
-        _sCanMessage = . ;
-		*(.CanMessage .CanMessage.*)
-        . = ALIGN(4);
-        _eCanMessage = . ;
-    } > ram
-
     /* DMA programming and write-back memory, here because they are volatile so we must't CRC them when we check for data corruption */
     .dmaBuffers (NOLOAD) :
     {
@@ -148,6 +138,15 @@ SECTIONS
        . = ALIGN(4);
        __reset_data_end = .;
     } > RESETDATA
+ 
+    .closed_loop_data (NOLOAD) :
+    {
+       . = ALIGN(4);
+       __closed_loop_data_start = .;
+       KEEP(*(.closed_loop_data))
+       . = ALIGN(4);
+       __closed_loop_data_end = .;
+    } > CLOSEDLOOPDATA
  
     /* .bss section which is used for uninitialized data */
     .bss (NOLOAD) :
