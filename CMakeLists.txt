@@ -89,7 +89,7 @@ target_link_options(${DUET_BOARD} PRIVATE
 set(_libs Duet::CoreN2G Duet::CANlib Duet::RRFLibraries Duet::FreeRTOS)
 if(DUET_MCU STREQUAL "SAMC21")
     # Route the compiler's single-precision soft-float calls to Qfplib
-    foreach(_fn fadd fsub fmul fdiv i2f ui2f f2iz f2uiz)
+    foreach(_fn fadd fsub fmul fdiv i2f ui2f f2iz f2uiz fcmpeq fcmple fcmplt fcmpge fcmpgt)
         target_link_options(${DUET_BOARD} PRIVATE LINKER:-wrap,__aeabi_${_fn})
     endforeach()
     list(PREPEND _libs Duet::Qfplib)

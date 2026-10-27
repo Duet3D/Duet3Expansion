@@ -108,7 +108,12 @@ FP_WRAP_FLAGS := \
 	-Wl,-wrap,__aeabi_i2f \
 	-Wl,-wrap,__aeabi_ui2f \
 	-Wl,-wrap,__aeabi_f2iz \
-	-Wl,-wrap,__aeabi_f2uiz
+	-Wl,-wrap,__aeabi_f2uiz \
+	-Wl,-wrap,__aeabi_fcmpeq \
+	-Wl,-wrap,__aeabi_fcmple \
+	-Wl,-wrap,__aeabi_fcmplt \
+	-Wl,-wrap,__aeabi_fcmpge \
+	-Wl,-wrap,__aeabi_fcmpgt
 
 # Common flags
 COMMON_FLAGS := -c -mcpu=$(MCU_ARCH) -mthumb -fno-math-errno -mfp16-format=ieee \
