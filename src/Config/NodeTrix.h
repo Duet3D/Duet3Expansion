@@ -18,6 +18,7 @@
 #define HAS_CPU_TEMP_SENSOR		1
 #define HAS_ADDRESS_SWITCHES	0
 #define HAS_BUTTONS				0
+#define HAS_BOARD_THERMISTOR	1
 
 // Drivers configuration
 #define SUPPORT_DRIVERS			1
@@ -151,22 +152,28 @@ constexpr Pin VinMonitorPin = PortCPin(3);
 constexpr float VinDividerRatio = (60.4 + 4.7)/4.7;
 constexpr float VinMonitorVoltageRange = VinDividerRatio * 3.3;
 
-// Thermistor inputs. 0 = nozzle environment, 1 = board temperature, 2 = LDC coil temperature.
+// Thermistor inputs.temp0 and temp1 are standard 100K thermistor/PT100 inputs.
 // Thermistor 0 is Tewa TT7-10KX3-11 (10kOhm, B3977), https://www.tme.eu/Document/32a31570f1c819f9b3730213e5eca259/TT7-10KC3-11.pdf
-// R25 = 10000, R75 = 1480, R125 = 338. From these and using the SRS calculator we deduce R25=10000, B=4333, C=1.03958e-7.
-// Thermistors 1 and 2 are 10K Murata NCU15XH103J6SRC. B25/50 = 3380, B25/80 = 3428, B25/85 = 3434, B25/100 = 3455
+// Thermistor 2 (LDC coil temp) and the board temperature thermistor are 10K Murata NCU15XH103J6SRC. B25/50 = 3380, B25/80 = 3428, B25/85 = 3434, B25/100 = 3455
 // From this we deduce R25 = 10000, R50 = 4160.1, R80 = 1668.5, R85 = 1452.2, R100 = 973.8
 // The following Beta and C values use the 25, 50 and 65C values
 // We don't use a Vref/Vssa calibration chain on this board
 #define CUSTOM_THERMISTORS			1										// we provide nonstandard R25, beta and series resistor values
 
-constexpr size_t NumThermistorInputs = 4;
-constexpr Pin TempSensePins[NumThermistorInputs] = { PortCPin(0), PortCPin(1), PortCPin(2), PortAPin(0) };
-constexpr float ThermistorSeriesR[NumThermistorInputs] = { 2200, 2200, 2200, 3900 };
-constexpr float ThermistorR25[NumThermistorInputs] = { 100000, 100000, 100000, 10000 };
-constexpr float ThermistorBeta[NumThermistorInputs] = { 4725.0, 4725.0, 4725.0, 3425.0 };
-constexpr float ThermistorShC[NumThermistorInputs] = { 7.060e-8, 7.060e-8, 7.060e-8, 1.68e-7 };
+constexpr size_t NumThermistorInputs = 3;
+constexpr Pin TempSensePins[NumThermistorInputs] = { PortCPin(0), PortCPin(1), PortCPin(2) };
+constexpr float ThermistorSeriesR[NumThermistorInputs] = { 2200, 2200, 3900 };
+constexpr float ThermistorR25[NumThermistorInputs] = { 100000, 100000, 10000 };
+constexpr float ThermistorBeta[NumThermistorInputs] = { 4725.0, 4725.0, 3425.0 };
+constexpr float ThermistorShC[NumThermistorInputs] = { 7.060e-8, 7.060e-8, 1.68e-7 };
 constexpr float DefaultThermistorSeriesR = 2200.0;							// needed by initialisation but not actually used
+
+// Board thermistor
+constexpr Pin BoardThermistorPin = PortAPin(0);
+constexpr float BoardThermistorSeriesR = 3900.0;
+constexpr float BoardThermistorR25 = 10000;
+constexpr float BoardThermistorBeta = 3425.0;
+constexpr float BoardThermistorShC = 1.68e-7;
 
 #if NUM_SHARED_SPI != 0
 
@@ -266,7 +273,7 @@ constexpr PinDescription PinTable[] =
 {
 	//	Timer											ADC					Exint PinName
 	// Port A
-	{ TimerOutput::none,								AdcInput::adc12_0,	Nx,	"temp3"			},	// PA00 thermistor 3
+	{ TimerOutput::none,								AdcInput::adc12_0,	Nx,	nullptr			},	// PA00 board thermistor
 	{ TimerOutput::none,								AdcInput::none,		1,	nullptr			},	// PA01 ads132m02 drdy
 	{ TimerOutput::tim15_ch1 | GpioPinFunction::AF4,	AdcInput::none,		Nx,	"led"			},	// PA02 NP out via timer 15
 	{ TimerOutput::none,								AdcInput::adc12_15,	Nx, nullptr			},	// PA03 board type

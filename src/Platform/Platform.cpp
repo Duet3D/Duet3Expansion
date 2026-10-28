@@ -1157,7 +1157,7 @@ void Platform::Spin()
 # elif STM32
 		if (tsensFilter.IsValid())
 		{
-			const float tempSensorAdcVoltage = (tsensFilter.GetSum()/tsensFilter.NumAveraged()) * (3.3/(float)(1u << AnalogIn::AdcBits));
+			const float tempSensorAdcVoltage = tsensFilter.GetSum()/(tsensFilter.NumAveraged() << 4);		// the << 4 is to convert a 16-bit to a 12-bit value
 			mcuTemperature.current = (TS_CAL2_TEMP - TS_CAL1_TEMP) * (tempSensorAdcVoltage - TS_CAL1)/(TS_CAL2 - TS_CAL1) + TS_CAL1_TEMP;
 # else
 #  error Unsupported processor
