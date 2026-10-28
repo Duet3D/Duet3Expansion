@@ -90,7 +90,7 @@ LIBS := \
 	-L$(LIBRARIES_DIR)/CANlib/SAMC21_RTOS \
 	-L$(LIBRARIES_DIR)/RRFLibraries/SAMC21_RTOS \
 	-L$(LIBRARIES_DIR)/FreeRTOS/SAMC21 \
-	-lQfplib-M0-full -lCoreN2G -lCANlib -lRRFLibraries -lFreeRTOS
+	-lCANlib -lCoreN2G -lRRFLibraries -lFreeRTOS -lQfplib-M0-full
 
 # Library dependencies
 LIB_DEPS := \
@@ -169,7 +169,7 @@ $(BOARD): pre-build-$(BOARD) $(BIN)
 # Link
 $(ELF): $(OBJS) $(LIB_DEPS)
 	$(Q)echo "  LD      $(notdir $@)"
-	$(Q)$(LD) $(OBJS) $(LIBS) $(LDFLAGS) -o $@
+	$(Q)$(LD) $(OBJS) -Wl,--start-group $(LIBS) -Wl,--end-group $(LDFLAGS) -o $@
 
 # Generate binary and append CRC
 $(BIN): $(ELF)

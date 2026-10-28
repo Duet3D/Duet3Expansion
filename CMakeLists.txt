@@ -86,17 +86,12 @@ target_link_options(${DUET_BOARD} PRIVATE
     --specs=nano.specs
     LINKER:--no-warn-rwx-segment)
 
-# The libraries in the order the linker scans them, which decides the layout of the image. As a
-# group, so that each archive appears once on the command line although they call each other.
-set(_libs Duet::CoreN2G Duet::CANlib Duet::RRFLibraries Duet::FreeRTOS)
 if(DUET_MCU STREQUAL "SAMC21")
     # Route the compiler's single-precision soft-float calls to Qfplib
     foreach(_fn fadd fsub fmul fdiv i2f ui2f f2iz f2uiz fcmpeq fcmple fcmplt fcmpge fcmpgt)
         target_link_options(${DUET_BOARD} PRIVATE LINKER:-wrap,__aeabi_${_fn})
     endforeach()
-    list(PREPEND _libs Duet::Qfplib)
 endif()
-list(JOIN _libs "," _group)
-target_link_libraries(${DUET_BOARD} PRIVATE "$<LINK_GROUP:RESCAN,${_group}>")
+duet_link_libraries(${DUET_BOARD})
 
 duet_firmware_images(${DUET_BOARD} CRC)

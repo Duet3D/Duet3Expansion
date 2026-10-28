@@ -78,7 +78,7 @@ LIBS := \
 	-L$(LIBRARIES_DIR)/CANlib/STM32H5_RTOS \
 	-L$(LIBRARIES_DIR)/RRFLibraries/STM32H5_RTOS \
 	-L$(LIBRARIES_DIR)/FreeRTOS/STM32H5 \
-	-lCoreN2G -lCANlib -lRRFLibraries -lFreeRTOS
+	-lCANlib -lCoreN2G -lRRFLibraries -lFreeRTOS
 
 # Library dependencies
 LIB_DEPS := \
@@ -140,7 +140,7 @@ $(BOARD): pre-build-$(BOARD) $(BIN)
 # Link
 $(ELF): $(OBJS) $(LIB_DEPS)
 	$(Q)echo "  LD      $(notdir $@)"
-	$(Q)$(LD) $(OBJS) $(LIBS) $(LDFLAGS) -o $@
+	$(Q)$(LD) $(OBJS) -Wl,--start-group $(LIBS) -Wl,--end-group $(LDFLAGS) -o $@
 
 # Generate binary and append CRC
 $(BIN): $(ELF)
