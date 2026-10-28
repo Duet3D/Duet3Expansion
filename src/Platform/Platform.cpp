@@ -76,6 +76,7 @@
 # include <hardware/structs/watchdog.h>
 #elif STM32
 # include <Flash.h>
+# include <Cache.h>
 #else
 # error Unsupported processor
 #endif
@@ -177,11 +178,13 @@ namespace Platform
 	AsyncSerial *_ecv_null asyncPorts[NUM_ASYNC_PORTS] = { 0 };
 #endif
 
-#if SAME5x
+#if HAS_CPU_TEMP_SENSOR
+# if SAME5x
 	static AveragingFilter<McuTempReadingsAveraged> tpFilter;
 	static AveragingFilter<McuTempReadingsAveraged> tcFilter;
-#elif SAMC21 || RP2040
+# elif SAMC21 || RPXXXX || STM32
 	static AveragingFilter<McuTempReadingsAveraged> tsensFilter;
+# endif
 #endif
 
 #if HAS_BOARD_THERMISTOR
@@ -277,9 +280,10 @@ namespace Platform
 #endif
 
 #if SAME5x
+
 	static int32_t tempCalF1, tempCalF2, tempCalF3, tempCalF4;		// temperature calibration factors
 
-	static void ADC_temperature_init()
+	static void ADC_temperature_init() noexcept
 	{
 		// Temperature sense stuff
 		constexpr uint32_t NVM_TEMP_CAL_TLI_POS = 0;
@@ -325,6 +329,31 @@ namespace Platform
 		tempCalF3 = (int32_t)temp_cal_vcl - (int32_t)temp_cal_vch;
 		tempCalF4 = (int32_t)temp_cal_vpl - (int32_t)temp_cal_vph;
 	}
+
+#elif STM32H5
+
+// The following values are for the STM32H523, see section 5.3.24 of the datasheet
+constexpr float TS_CAL1_TEMP = 30.0;
+constexpr float TS_CAL2_TEMP = 130.0;
+
+static float TS_CAL1, TS_CAL2;
+
+static void ADC_temperature_init() noexcept
+{
+	// We can remove the following enable/disable cache if we use the MMU and set the ROM area to non-cacheable
+	const bool cacheWasEnabled = Cache::Disable();
+	TS_CAL1 = *(const uint16_t*)(0x08FFF814);
+	TS_CAL2 = *(const uint16_t*)(0x08FFF818);
+	if (cacheWasEnabled)
+	{
+		Cache::Enable();
+	}
+}
+
+#else
+
+static void ADC_temperature_init() noexcept { }
+
 #endif
 
 	static void InitialiseInterrupts()
@@ -361,7 +390,7 @@ namespace Platform
 		NVIC_SetPriority(StepTcIRQn, NvicPriorityStep);
 		NVIC_SetPriority(DMAC_IRQn, NvicPriorityDmac);
 		NVIC_SetPriority(EIC_IRQn, NvicPriorityPins);
-#elif RP2040
+#elif RPXXXX
 		NVIC_SetPriority((IRQn_Type)StepTcIRQn, NvicPriorityStep);
 		NVIC_SetPriority(IO_IRQ_BANK0_IRQn, NvicPriorityPins);
 #elif STM32H5
@@ -380,7 +409,7 @@ namespace Platform
 #endif
 	}
 
-#if !RP2040
+#if !RPXXXX
 	// Erase the firmware (but not the bootloader) and reset the processor. Interrupts have been disabled by the caller
 	[[noreturn]] RAMFUNC static void EraseAndReset()
 	{
@@ -480,7 +509,7 @@ namespace Platform
 #elif SAMC21
 		NVIC->ICER[0] = 0xFFFFFFFF;						// Disable IRQs
 		NVIC->ICPR[0] = 0xFFFFFFFF;						// Clear pending IRQs
-#elif RP2040
+#elif RPXXXX
 		// We reboot and update the firmware in a similar manner to bootloader updates on other boards
 		watchdog_hw->scratch[UpdateFirmwareMagicWordIndex] = UpdateFirmwareMagicValue;
 		ResetProcessor();
@@ -488,22 +517,22 @@ namespace Platform
 # error Unsupported processor
 #endif
 
-#if !RP2040
+#if !RPXXXX
 		EraseAndReset();
 #endif
 	}
 
-#if STM32
-	//TODO not implemented yet
-#else
 	// Update the CAN bootloader
 	[[noreturn]] static void DoBootloadereUpdate()
 	{
 		ShutdownAll();									// turn everything off
 
-#if RP2040
+#if RPXXXX
 		// We don't need to update the bootloader
-#else
+#elif STM32H5 || SAME70
+		SetSoftwareResettingReason(ResettingReason::updateBootloader);
+		//TODO remove bootloader protection if we are using it (or do that in the update bootloader code)
+#elif SAME5x || SAMC21
 		// Remove the bootloader protection and set the bootloader update flag
 		// On the SAME5x the first 8x 32-bit words are reserved. We store the bootloader flag in the 10th word.
 		// On the SAMC21 the first 2x 32-bit words are reserved. We store the bootloader flag in the 10th word.
@@ -526,10 +555,8 @@ namespace Platform
 		// If we reset immediately then the user area write doesn't complete and the bits get set to all 1s.
 		delayMicroseconds(10000);
 #endif
-
 		ResetProcessor();
 	}
-#endif
 
 #if SUPPORT_THERMISTORS && HAS_VREF_MONITOR
 	static void SetupThermistorFilter(Pin pin, size_t filterIndex, bool useAlternateAdc) noexcept
@@ -805,9 +832,7 @@ void Platform::Init()
 #endif
 
 	// Initialise the rest of the IO subsystem
-#if SAME5x
 	ADC_temperature_init();
-#endif
 
 #if NUM_CURRENT_SENSORS != 0
 	// Initialise the current sensor system. Each sensor is associated with an ADC input.
@@ -867,7 +892,7 @@ void Platform::Init()
 	AnalogIn::EnableTemperatureSensor(0, tpFilter.CallbackFeedIntoFilter, CallbackParameter(&tpFilter), 1, 0);
 	tcFilter.Init(0);
 	AnalogIn::EnableTemperatureSensor(1, tcFilter.CallbackFeedIntoFilter, CallbackParameter(&tcFilter), 1, 0);
-# elif SAMC21 || RP2040
+# elif SAMC21 || RPXXXX || STM32
 	tsensFilter.Init(0);
 	AnalogIn::EnableTemperatureSensor(tsensFilter.CallbackFeedIntoFilter, CallbackParameter(&tsensFilter), 1);
 # else
@@ -948,7 +973,7 @@ void Platform::InitMinimal()
 	InitLeds();
 	InitVinMonitor();
 	InitialiseInterrupts();
-#if RP2040
+#if RPXXXX
 	serialUSB.Start(NoPin);
 #endif
 	CanInterface::Init(GetCanAddress(), CanParams, false);
@@ -968,11 +993,10 @@ void Platform::Spin()
 			DoFirmwareUpdate();
 			break;
 
-#if !STM32		//TODO not implemented yet
 		case DeferredCommand::bootloaderUpdate:
 			DoBootloadereUpdate();
 			break;
-#endif
+
 		case DeferredCommand::reset:
 			ShutdownAndReset();
 			break;
@@ -992,7 +1016,7 @@ void Platform::Spin()
 		case DeferredCommand::testUnalignedMemoryAccess:
 			deliberateError = true;
 			(void)Tasks::DoMemoryRead(reinterpret_cast<const uint32_t*>(
-#if RP2040
+#if RPXXXX
 										SRAM_BASE
 #elif STM32
 										SRAM1_BASE
@@ -1125,13 +1149,16 @@ void Platform::Spin()
 		{
 			const int16_t temperatureTimes100 = (int16_t)((uint16_t)(tsensFilter.GetSum()/tsensFilter.NumAveraged()) ^ (1u << 15));
 			mcuTemperature.current = (float)temperatureTimes100 * 0.01;
-# elif RP2040
-			if (tsensFilter.IsValid())
-			{
-				const float tempSensorAdcVoltage = (tsensFilter.GetSum()/tsensFilter.NumAveraged()) * (3.3/(float)(1u << AnalogIn::AdcBits));
-				mcuTemperature.current = 27.0 - ((tempSensorAdcVoltage - 0.706) * (1.0/0.001721));
+# elif RPXXXX
+		if (tsensFilter.IsValid())
+		{
+			const float tempSensorAdcVoltage = (tsensFilter.GetSum()/tsensFilter.NumAveraged()) * (3.3/(float)(1u << AnalogIn::AdcBits));
+			mcuTemperature.current = 27.0 - ((tempSensorAdcVoltage - 0.706) * (1.0/0.001721));
 # elif STM32
-			//TODO
+		if (tsensFilter.IsValid())
+		{
+			const float tempSensorAdcVoltage = (tsensFilter.GetSum()/tsensFilter.NumAveraged()) * (3.3/(float)(1u << AnalogIn::AdcBits));
+			mcuTemperature.current = (TS_CAL2_TEMP - TS_CAL1_TEMP) * (tempSensorAdcVoltage - TS_CAL1)/(TS_CAL2 - TS_CAL1) + TS_CAL1_TEMP;
 # else
 #  error Unsupported processor
 # endif
@@ -1608,7 +1635,7 @@ GCodeResult Platform::DoDiagnosticTest(const CanMessageDiagnosticTest& msg, cons
 			reply.printf("Reading step timer 100 times took %.2fus", (double)((1'000'000.0f * (float)tim1)/(float)SystemCoreClock));
 		}
 
-#if SAME70 || STM32 || (RP2040 && !USE_SPICAN)
+#if SAME70 || STM32 || (RPXXXX && !USE_SPICAN)
 		// The following code is not needed because we use the step clock as the time stamp counter
 #else
 		// Also check the correspondence between the CAN timestamp timer and the step clock

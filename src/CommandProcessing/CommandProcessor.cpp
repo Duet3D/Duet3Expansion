@@ -53,8 +53,8 @@
 # include "LoadCellDiagnostics.h"
 #endif
 
-#if STM32	// this is not used yet
-#else
+#if HAS_VOLTAGE_MONITOR || HAS_12V_MONITOR || HAS_CPU_TEMP_SENSOR
+
 // Check a value against the specified min and max parameters returning true if the value was outside limits
 static bool CheckMinMax(CanMessageGenericParser& parser, const StringRef& reply, char c, float val, const char *text) noexcept
 {
@@ -85,6 +85,7 @@ static bool CheckMinMax(CanMessageGenericParser& parser, const StringRef& reply,
 	}
 	return false;
 }
+
 #endif
 
 // Generate a test report

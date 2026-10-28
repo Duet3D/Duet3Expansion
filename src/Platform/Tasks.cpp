@@ -294,6 +294,25 @@ static bool watchdogCausedReboot = false;
 		}
 #  endif
 	}
+
+	if (GetSoftwareResettingReason() == ResettingReason::updateBootloader)
+	{
+		updateNeeded = true;
+		SetSoftwareResettingReason(ResettingReason::user);
+	}
+
+# elif SAME70
+	if (GetSoftwareResettingReason() == ResettingReason::updateBootloader)
+	{
+		updateNeeded = true;
+		SetSoftwareResettingReason(ResettingReason::user);
+		//TODO remove bootloader protection (here or in UpdateBootloader task)
+	}
+	else
+	{
+		//TODO check bootloader protection
+	}
+
 # elif STM32H7
 #  error Unsupported processor
 # endif

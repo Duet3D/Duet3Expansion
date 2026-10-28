@@ -13,9 +13,9 @@
 
 // General features
 #define HAS_VREF_MONITOR		0
-#define HAS_VOLTAGE_MONITOR		0		//TODO change this to 1 when implemented
+#define HAS_VOLTAGE_MONITOR		1
 #define HAS_12V_MONITOR			0
-#define HAS_CPU_TEMP_SENSOR		0		//TODO change this to 1 when implemented
+#define HAS_CPU_TEMP_SENSOR		1
 #define HAS_ADDRESS_SWITCHES	0
 #define HAS_BUTTONS				0
 
