@@ -35,7 +35,9 @@ list(APPEND _dirs
     src/Movement
     src/Movement/Kinematics
     src/Movement/StepperDrivers
-    src/Platform)
+    src/Platform
+    # Replacements for newlib's malloc and errno, which do not pull in its reent struct
+    src/libc)
 
 # The C sources come before the C++ ones
 set(_c)

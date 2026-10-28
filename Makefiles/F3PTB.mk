@@ -50,7 +50,8 @@ SRC_DIRS := \
 	src/Movement \
 	src/Movement/Kinematics \
 	src/Movement/StepperDrivers \
-	src/Platform
+	src/Platform \
+	src/libc
 
 # Include paths for C files (minimal set)
 C_INCLUDES := \
