@@ -694,7 +694,7 @@ uint32_t ComputeCRC32(const uint32_t *start, const uint32_t *end)
 // Check that the bootloader we have been passed has a valid CRC
 bool CheckCRC(uint32_t *blockBuffer) noexcept
 {
-	const uint32_t crcOffset = blockBuffer[7];						// vector M9 gives the offset of the CRC from start of file, in bytes
+	const uint32_t crcOffset = blockBuffer[7] - FLASH_ADDR;			// vector M9 gives the address of the CRC, which equals the file offset only on MCUs with flash based at zero
 	if (crcOffset < 0x2000 || crcOffset > FlashBlockSize - 4)		// if the file is shorter than 8K or longer than the buffer, error
 	{
 		return false;
