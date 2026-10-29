@@ -53,9 +53,8 @@ OBJCOPY := $(CROSS_COMPILE)objcopy
 SIZE := $(CROSS_COMPILE)size
 export CC CXX AS AR LD OBJCOPY SIZE
 
-# Workspace root
-WORKSPACE := ..
-export WORKSPACE
+# External library root
+LIBRARIES_DIR ?= ..
 
 # Quiet build support (Linux kernel style)
 # Use V=1 for verbose output
@@ -145,71 +144,71 @@ test-toolchain:
 
 # Common library build rules (to avoid duplicate recipes in board makefiles)
 # Phony so the sub-make always gets to decide: an archive left behind by a failed library build is otherwise never retried
-.PHONY: $(WORKSPACE)/CoreN2G/SAME5x_CAN_RTOS/libCoreN2G.a \
-        $(WORKSPACE)/CoreN2G/SAMC21_CAN_RTOS/libCoreN2G.a \
-        $(WORKSPACE)/CoreN2G/STM32H5_CAN_RTOS/libCoreN2G.a \
-        $(WORKSPACE)/RRFLibraries/SAME51_RTOS/libRRFLibraries.a \
-        $(WORKSPACE)/RRFLibraries/SAMC21_RTOS/libRRFLibraries.a \
-        $(WORKSPACE)/RRFLibraries/STM32H5_RTOS/libRRFLibraries.a \
-        $(WORKSPACE)/FreeRTOS/SAME51/libFreeRTOS.a \
-        $(WORKSPACE)/FreeRTOS/SAMC21/libFreeRTOS.a \
-        $(WORKSPACE)/FreeRTOS/STM32H5/libFreeRTOS.a \
-        $(WORKSPACE)/CANlib/SAME51_RTOS/libCANlib.a \
-        $(WORKSPACE)/CANlib/SAMC21_RTOS/libCANlib.a \
-        $(WORKSPACE)/CANlib/STM32H5_RTOS/libCANlib.a \
-        $(WORKSPACE)/Qfplib-M0-full/SAMC21/libQfplib-M0-full.a
+.PHONY: $(LIBRARIES_DIR)/CoreN2G/SAME5x_CAN_RTOS/libCoreN2G.a \
+        $(LIBRARIES_DIR)/CoreN2G/SAMC21_CAN_RTOS/libCoreN2G.a \
+        $(LIBRARIES_DIR)/CoreN2G/STM32H5_CAN_RTOS/libCoreN2G.a \
+        $(LIBRARIES_DIR)/RRFLibraries/SAME51_RTOS/libRRFLibraries.a \
+        $(LIBRARIES_DIR)/RRFLibraries/SAMC21_RTOS/libRRFLibraries.a \
+        $(LIBRARIES_DIR)/RRFLibraries/STM32H5_RTOS/libRRFLibraries.a \
+        $(LIBRARIES_DIR)/FreeRTOS/SAME51/libFreeRTOS.a \
+        $(LIBRARIES_DIR)/FreeRTOS/SAMC21/libFreeRTOS.a \
+        $(LIBRARIES_DIR)/FreeRTOS/STM32H5/libFreeRTOS.a \
+        $(LIBRARIES_DIR)/CANlib/SAME51_RTOS/libCANlib.a \
+        $(LIBRARIES_DIR)/CANlib/SAMC21_RTOS/libCANlib.a \
+        $(LIBRARIES_DIR)/CANlib/STM32H5_RTOS/libCANlib.a \
+        $(LIBRARIES_DIR)/Qfplib-M0-full/SAMC21/libQfplib-M0-full.a
 
-$(WORKSPACE)/CoreN2G/SAME5x_CAN_RTOS/libCoreN2G.a:
+$(LIBRARIES_DIR)/CoreN2G/SAME5x_CAN_RTOS/libCoreN2G.a:
 	$(Q)echo "  BUILD   CoreN2G/SAME5x_CAN_RTOS"
-	$(Q)$(MAKE) $(VERBOSE) -C $(WORKSPACE)/CoreN2G SAME5x_CAN_RTOS
+	$(Q)$(MAKE) $(VERBOSE) -C $(LIBRARIES_DIR)/CoreN2G SAME5x_CAN_RTOS
 
-$(WORKSPACE)/RRFLibraries/SAME51_RTOS/libRRFLibraries.a:
+$(LIBRARIES_DIR)/RRFLibraries/SAME51_RTOS/libRRFLibraries.a:
 	$(Q)echo "  BUILD   RRFLibraries/SAME51_RTOS"
-	$(Q)$(MAKE) $(VERBOSE) -C $(WORKSPACE)/RRFLibraries SAME51_RTOS
+	$(Q)$(MAKE) $(VERBOSE) -C $(LIBRARIES_DIR)/RRFLibraries SAME51_RTOS
 
-$(WORKSPACE)/FreeRTOS/SAME51/libFreeRTOS.a:
+$(LIBRARIES_DIR)/FreeRTOS/SAME51/libFreeRTOS.a:
 	$(Q)echo "  BUILD   FreeRTOS/SAME51"
-	$(Q)$(MAKE) $(VERBOSE) -C $(WORKSPACE)/FreeRTOS SAME51 FREERTOS_CONFIG_DIR="$(CURDIR)/src"
+	$(Q)$(MAKE) $(VERBOSE) -C $(LIBRARIES_DIR)/FreeRTOS SAME51 FREERTOS_CONFIG_DIR="$(CURDIR)/src"
 
-$(WORKSPACE)/CANlib/SAME51_RTOS/libCANlib.a:
+$(LIBRARIES_DIR)/CANlib/SAME51_RTOS/libCANlib.a:
 	$(Q)echo "  BUILD   CANlib/SAME51_RTOS"
-	$(Q)$(MAKE) $(VERBOSE) -C $(WORKSPACE)/CANlib SAME51_RTOS
+	$(Q)$(MAKE) $(VERBOSE) -C $(LIBRARIES_DIR)/CANlib SAME51_RTOS
 
-$(WORKSPACE)/CoreN2G/SAMC21_CAN_RTOS/libCoreN2G.a:
+$(LIBRARIES_DIR)/CoreN2G/SAMC21_CAN_RTOS/libCoreN2G.a:
 	$(Q)echo "  BUILD   CoreN2G/SAMC21_CAN_RTOS"
-	$(Q)$(MAKE) $(VERBOSE) -C $(WORKSPACE)/CoreN2G SAMC21_CAN_RTOS
+	$(Q)$(MAKE) $(VERBOSE) -C $(LIBRARIES_DIR)/CoreN2G SAMC21_CAN_RTOS
 
-$(WORKSPACE)/RRFLibraries/SAMC21_RTOS/libRRFLibraries.a:
+$(LIBRARIES_DIR)/RRFLibraries/SAMC21_RTOS/libRRFLibraries.a:
 	$(Q)echo "  BUILD   RRFLibraries/SAMC21_RTOS"
-	$(Q)$(MAKE) $(VERBOSE) -C $(WORKSPACE)/RRFLibraries SAMC21_RTOS
+	$(Q)$(MAKE) $(VERBOSE) -C $(LIBRARIES_DIR)/RRFLibraries SAMC21_RTOS
 
-$(WORKSPACE)/FreeRTOS/SAMC21/libFreeRTOS.a:
+$(LIBRARIES_DIR)/FreeRTOS/SAMC21/libFreeRTOS.a:
 	$(Q)echo "  BUILD   FreeRTOS/SAMC21"
-	$(Q)$(MAKE) $(VERBOSE) -C $(WORKSPACE)/FreeRTOS SAMC21 FREERTOS_CONFIG_DIR="$(CURDIR)/src"
+	$(Q)$(MAKE) $(VERBOSE) -C $(LIBRARIES_DIR)/FreeRTOS SAMC21 FREERTOS_CONFIG_DIR="$(CURDIR)/src"
 
-$(WORKSPACE)/CANlib/SAMC21_RTOS/libCANlib.a:
+$(LIBRARIES_DIR)/CANlib/SAMC21_RTOS/libCANlib.a:
 	$(Q)echo "  BUILD   CANlib/SAMC21_RTOS"
-	$(Q)$(MAKE) $(VERBOSE) -C $(WORKSPACE)/CANlib SAMC21_RTOS
+	$(Q)$(MAKE) $(VERBOSE) -C $(LIBRARIES_DIR)/CANlib SAMC21_RTOS
 
-$(WORKSPACE)/Qfplib-M0-full/SAMC21/libQfplib-M0-full.a:
+$(LIBRARIES_DIR)/Qfplib-M0-full/SAMC21/libQfplib-M0-full.a:
 	$(Q)echo "  BUILD   Qfplib-M0-full/SAMC21"
-	$(Q)$(MAKE) $(VERBOSE) -C $(WORKSPACE)/Qfplib-M0-full SAMC21
+	$(Q)$(MAKE) $(VERBOSE) -C $(LIBRARIES_DIR)/Qfplib-M0-full SAMC21
 
-$(WORKSPACE)/CoreN2G/STM32H5_CAN_RTOS/libCoreN2G.a:
+$(LIBRARIES_DIR)/CoreN2G/STM32H5_CAN_RTOS/libCoreN2G.a:
 	$(Q)echo "  BUILD   CoreN2G/STM32H5_CAN_RTOS"
-	$(Q)$(MAKE) $(VERBOSE) -C $(WORKSPACE)/CoreN2G STM32H5_CAN_RTOS
+	$(Q)$(MAKE) $(VERBOSE) -C $(LIBRARIES_DIR)/CoreN2G STM32H5_CAN_RTOS
 
-$(WORKSPACE)/RRFLibraries/STM32H5_RTOS/libRRFLibraries.a:
+$(LIBRARIES_DIR)/RRFLibraries/STM32H5_RTOS/libRRFLibraries.a:
 	$(Q)echo "  BUILD   RRFLibraries/STM32H5_RTOS"
-	$(Q)$(MAKE) $(VERBOSE) -C $(WORKSPACE)/RRFLibraries STM32H5_RTOS
+	$(Q)$(MAKE) $(VERBOSE) -C $(LIBRARIES_DIR)/RRFLibraries STM32H5_RTOS
 
-$(WORKSPACE)/FreeRTOS/STM32H5/libFreeRTOS.a:
+$(LIBRARIES_DIR)/FreeRTOS/STM32H5/libFreeRTOS.a:
 	$(Q)echo "  BUILD   FreeRTOS/STM32H5"
-	$(Q)$(MAKE) $(VERBOSE) -C $(WORKSPACE)/FreeRTOS STM32H5 FREERTOS_CONFIG_DIR="$(CURDIR)/src"
+	$(Q)$(MAKE) $(VERBOSE) -C $(LIBRARIES_DIR)/FreeRTOS STM32H5 FREERTOS_CONFIG_DIR="$(CURDIR)/src"
 
-$(WORKSPACE)/CANlib/STM32H5_RTOS/libCANlib.a:
+$(LIBRARIES_DIR)/CANlib/STM32H5_RTOS/libCANlib.a:
 	$(Q)echo "  BUILD   CANlib/STM32H5_RTOS"
-	$(Q)$(MAKE) $(VERBOSE) -C $(WORKSPACE)/CANlib STM32H5_RTOS
+	$(Q)$(MAKE) $(VERBOSE) -C $(LIBRARIES_DIR)/CANlib STM32H5_RTOS
 
 # Include the specific makefile based on the target
 # Only include one at a time to avoid conflicts
@@ -276,9 +275,9 @@ clean:
 .PHONY: clean-all
 clean-all: clean
 	$(Q)echo "Cleaning library dependencies..."
-	$(Q)$(MAKE) $(VERBOSE) -C $(WORKSPACE)/FreeRTOS clean
-	$(Q)$(MAKE) $(VERBOSE) -C $(WORKSPACE)/CoreN2G clean
-	$(Q)$(MAKE) $(VERBOSE) -C $(WORKSPACE)/RRFLibraries clean
-	$(Q)$(MAKE) $(VERBOSE) -C $(WORKSPACE)/CANlib clean
-	$(Q)$(MAKE) $(VERBOSE) -C $(WORKSPACE)/Qfplib-M0-full clean
+	$(Q)$(MAKE) $(VERBOSE) -C $(LIBRARIES_DIR)/FreeRTOS clean
+	$(Q)$(MAKE) $(VERBOSE) -C $(LIBRARIES_DIR)/CoreN2G clean
+	$(Q)$(MAKE) $(VERBOSE) -C $(LIBRARIES_DIR)/RRFLibraries clean
+	$(Q)$(MAKE) $(VERBOSE) -C $(LIBRARIES_DIR)/CANlib clean
+	$(Q)$(MAKE) $(VERBOSE) -C $(LIBRARIES_DIR)/Qfplib-M0-full clean
 	$(Q)echo "Clean all complete"
