@@ -458,6 +458,8 @@ static GCodeResult ProcessM915(const CanMessageGeneric& msg, const StringRef& re
 
 #endif	//SUPPORT_DRIVERS
 
+extern uint32_t _sfixed;											// start of this firmware's image, from the linker script
+
 static GCodeResult InitiateFirmwareUpdate(const CanMessageUpdateYourFirmware& msg, const StringRef& reply)
 {
 	if (msg.boardId != CanInterface::GetCanAddress() || msg.invertedBoardId != (uint8_t)~CanInterface::GetCanAddress() || (msg.module != 0 && msg.module != 3))
@@ -474,10 +476,16 @@ static GCodeResult InitiateFirmwareUpdate(const CanMessageUpdateYourFirmware& ms
 		break;
 
 	case 3:		// bootloader
-#ifndef DEBUG			// debug builds of this firmware normally live at the start of memory and don't use a bootloader
+#if !RPXXXX
+		// Some debug builds are linked at the start of flash in place of the bootloader
+		if (reinterpret_cast<uint32_t>(&_sfixed) == FLASH_ADDR)
+		{
+			reply.printf("Board %u has no bootloader to update", CanInterface::GetCanAddress());
+			return GCodeResult::error;
+		}
+#endif
 		reply.printf("Board %u starting bootloader update", CanInterface::GetCanAddress());
 		Platform::StartBootloaderUpdate();
-#endif
 		break;
 
 	default:

@@ -47,7 +47,6 @@ constexpr uint32_t FlashBlockSize = 0x00004000;					// the erase size we assume 
 constexpr uint32_t FlashBlockSize = 0x00004000;					// the erase size we assume for flash, and the bootloader size (16K)
 #elif STM32H5
 constexpr uint32_t FlashBlockSize = 0x00004000;					// the erase size we assume for flash, and the bootloader size (16K)
-# define FLASH_ADDR		FLASH_BASE_NS
 #elif RP2040
 constexpr uint32_t FlashBlockSize = 0x00001000;					// the erase size we assume for flash, and the bootloader size (4K)
 constexpr uint32_t MaxFirmwareSize = 200*1024;					// Max size of firmware we can flash

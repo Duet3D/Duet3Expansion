@@ -177,6 +177,10 @@ inline constexpr float ConvertDegKToDegC(float degK) noexcept { return degK + AB
 constexpr uint32_t UpdateBootloaderMagicValue = 0x0b00140ad;		// magic number that we write to the user area word 3 to indicate that the bootloader is to be updated
 constexpr size_t UpdateBootloaderMagicWordIndex = 9;				// which word in the user area we write the value to
 
+#if STM32H5
+# define FLASH_ADDR		FLASH_BASE_NS									// the name the SAM device headers give the start of flash
+#endif
+
 #if RP2040
 constexpr uint32_t UpdateFirmwareMagicValue = 0x0b00240ae;			// magic number that we write to the watchdog scratch word 0 to indicate that a firmware update is needed
 constexpr size_t UpdateFirmwareMagicWordIndex = 0;					// which word in the watchdog scratch words we write the value to
