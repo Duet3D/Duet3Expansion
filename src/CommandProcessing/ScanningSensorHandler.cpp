@@ -5,7 +5,7 @@
  *      Author: David
  * 		Major changes to touch detection: Andy
  *
- *  This file may be distributed under the terms of the GNU GPLv3 license.
+ *  This file is licensed under the terms of the GNU General Public License version 3.
  */
 
 #include "ScanningSensorHandler.h"
