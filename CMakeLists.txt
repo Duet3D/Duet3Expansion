@@ -72,7 +72,6 @@ set(_cxx_options
     -Wsign-promo)
 
 target_compile_options(${DUET_BOARD} PRIVATE
-    $<$<CONFIG:Release>:-O3>
     -fno-math-errno
     -fsingle-precision-constant
     -Wall
