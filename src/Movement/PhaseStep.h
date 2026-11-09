@@ -57,7 +57,7 @@ public:
 	void UpdatePhaseOffset(size_t driver) noexcept;
 	void SetPhaseOffset(size_t driver, uint16_t offset) noexcept;
 	uint16_t GetPhaseOffset(size_t driver) noexcept;
-	float CalculateCurrentFraction(size_t driver) noexcept;
+	void CalculateCurrentFraction() noexcept;
 
 	// Configuration methods
 	void SetKv(float newKv) noexcept { Kv = newKv; }
