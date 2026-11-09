@@ -15,9 +15,9 @@
 // Struct to pass data back to the ClosedLoop module
 struct MotionParameters
 {
-	float position = 0.0;
-	float speed = 0.0;
-	float acceleration = 0.0;
+	float position = 0.0;				// position in full steps
+	float speed = 0.0;					// speed in full steps per step clock
+	float acceleration = 0.0;			// acceleration in full steps per step clock squared
 };
 
 #endif
@@ -57,7 +57,7 @@ public:
 	void UpdatePhaseOffset(size_t driver) noexcept;
 	void SetPhaseOffset(size_t driver, uint16_t offset) noexcept;
 	uint16_t GetPhaseOffset(size_t driver) noexcept;
-	float CalculateCurrentFraction() noexcept;
+	float CalculateCurrentFraction(size_t driver) noexcept;
 
 	// Configuration methods
 	void SetKv(float newKv) noexcept { Kv = newKv; }

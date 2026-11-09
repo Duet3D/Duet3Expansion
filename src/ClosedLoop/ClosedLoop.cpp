@@ -7,7 +7,7 @@
 
 /*
  * Some observations on closed loop control of motors:
- * 1. We can generate steps in a step ISR as we do in open loop ode, then add each microstep to the desired position.
+ * 1. We can generate steps in a step ISR as we do in open loop mode, then add each microstep to the desired position.
  *    But it is probably better to calculate the position directly from the move parameters.
  *    We can calculate the current velocity and acceleration as well, which should enable more accurate positioning.
  * 2. Currently we allow the user to set microstepping as usual, because that works in both open and closed loop mode.
@@ -49,6 +49,7 @@ using std::numeric_limits;
 # include <math.h>
 # include <Platform/Platform.h>
 # include <Movement/Move.h>
+# include <Movement/Trigonometry.h>
 # include <Heating/Heat.h>				// for NewDriverFault()
 # include <General/Bitmap.h>
 # include <Platform/TaskPriorities.h>
@@ -127,12 +128,7 @@ void ClosedLoop::SetMotorPhase(uint16_t phase, float magnitude) noexcept
 #endif
 	coilA = (int16_t)lrintf(cosine * magnitude);
 	coilB = (int16_t)lrintf(sine * magnitude);
-
-# if (SUPPORT_TMC51xx || SUPPORT_TMC2240_SPI) && SINGLE_DRIVER
 	SmartDrivers::SetMotorPhases(driverNumber, (((uint32_t)(uint16_t)coilB << 16) | (uint32_t)(uint16_t)coilA) & 0x01FF01FF);
-# else
-#  error Multi driver code not implemented
-# endif
 }
 
 #if SAME5x
@@ -733,7 +729,8 @@ void ClosedLoop::StartTuning(uint8_t tuningMode) noexcept
 void ClosedLoop::FinishedBasicTuning() noexcept
 {
 	basicTuningDataReady = true;
-	tuningError |= TuningError::TuningOrCalibrationInProgress;				// to prevent movement until we are done tuning
+	tuningError &= ~TuningError::TuningOrCalibrationInProgress;
+	DriverSwitchedToClosedLoop();											// in particular this sets phaseOffset if we are in assisted open loop mode
 }
 
 // Call this when encoder calibration has finished collecting data
@@ -1100,6 +1097,7 @@ inline float ClosedLoop::ControlMotorCurrents(StepTimer::Ticks ticksSinceLastCal
 			const uint16_t stepPhase = (uint16_t)llrintf(mParams.position * 1024.0);		// we use llrintf so that we can guarantee to convert the float operand to integer. We only care about the lowest 12 bits.
 			commandedStepPhase = (stepPhase + phaseOffset) % 4096u;
 			currentFraction = holdCurrentFraction + (1.0 - holdCurrentFraction) * min<float>(PIDControlSignal * (1.0/256.0), 1.0);
+			SmartDrivers::LimitStandstillCurrent(driverNumber, mParams.speed, currentFraction);
 		}
 	}
 	SetMotorPhase(commandedStepPhase, currentFraction);

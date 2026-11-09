@@ -2601,7 +2601,7 @@ void Move::PhaseStepControlLoop() noexcept
 		if (dm.phaseStepControl.IsEnabled())
 		{
 			GetCurrentMotion(dm.drive, now, dm.phaseStepControl.mParams);
-			dm.phaseStepControl.CalculateCurrentFraction();
+			dm.phaseStepControl.CalculateCurrentFraction(dm.drive);
 			dm.phaseStepControl.InstanceControlLoop(dm.drive);
 		}
 #endif

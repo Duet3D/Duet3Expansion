@@ -80,6 +80,15 @@ constexpr uint32_t LowestTmcClockSpeed =  11500000;			// the lowest speed at whi
 constexpr uint32_t NominalTmcClockSpeed = 12000000;			// the nominal speed at which the TMC driver is clocked internally
 constexpr uint32_t HighestTmcClockSpeed = 12600000;			// the highest speed at which the TMC driver is clocked internally
 
+#if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
+// Define the speed in full steps per step clock below which we apply software standstill current reduction when in phase stepping or closed loop mode.
+// The TMC2160A/5160A implement standstill current reduction after receiving no step pulses for 2^20 clocks, or 2^18 clocks if fast standstill is selected.
+// 2^20 clocks is about 10^6 clocks, so at x16 microstepping and the nominal clock speed of 12MHz this is equivalent to about 3/4 of a full step per second.
+// Our main aim in limiting current at slow speeds is to avoid dissipating all the power in just one set of output mosfets, so we choose to apply standstill current
+// limitation at speeds below 2 full steps/second.
+constexpr float StandstillCutoffSpeed = 2.0/(float)StepTimer::StepClockRate;
+#endif
+
 #if SUPPORT_CLOSED_LOOP
 constexpr size_t TmcTaskStackWords = 430;					// we need extra stack to handle closed loop tuning and writing to NVM
 #elif SUPPORT_PHASE_STEPPING
@@ -482,6 +491,7 @@ public:
 	bool SetXdirect(uint32_t regVal) noexcept;
 	uint32_t GetPhaseToSet() const noexcept { return phaseToSet; }
 	float GetCurrent() const noexcept { return (float)motorCurrent; }
+	float GetMaxStandstillCurrentFraction() const noexcept { return maxStandstillCurrentFraction; }
 #endif
 	bool SetDriverMode(unsigned int mode) noexcept;
 	DriverMode GetDriverMode() const noexcept;
@@ -539,6 +549,13 @@ private:
 	{
 		minSgLoadRegister = InvalidSgLoadRegister;			// value InvalidSgLoadRegister indicates that it hasn't been read
 	}
+
+#if SUPPORT_CLOSED_LOOP || SUPPORT_PHASE_STEPPING
+	bool IsInDirectMode() const noexcept					// return true if this driver is in direct mode
+	{
+		return(writeRegisters[WriteGConf] & GCONF_DIRECT_MODE) != 0;
+	}
+#endif
 
 	// Write register numbers are in priority order, most urgent first, in same order as WriteRegNumbers
 	static constexpr unsigned int WriteGConf = 0;			// microstepping and direct mode
@@ -602,6 +619,7 @@ private:
 	float motorCurrent;										// the configured motor current in mA
 
 #if SUPPORT_CLOSED_LOOP || SUPPORT_PHASE_STEPPING
+	float maxStandstillCurrentFraction;						// the maximum standstill current fraction we allow, which varies with motorCurrent
 	uint32_t phaseToSet;									// phase value to be written to the XDIRECT register, only read/written by the TMC task
 #endif
 
@@ -678,6 +696,9 @@ void TmcDriverState::Init(uint32_t p_driverNumber) noexcept
 	specialReadRegisterNumber = 0xFF;
 	specialWriteRegisterNumber = 0xFF;
 	motorCurrent = 0.0;
+#if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
+	maxStandstillCurrentFraction = 1.0;
+#endif
 	standstillCurrentFraction = (uint16_t)min<uint32_t>((DefaultStandstillCurrentPercent * 256)/100, 256);
 
 	// Set default values for all registers and flag them to be updated
@@ -999,8 +1020,8 @@ bool TmcDriverState::SetDriverMode(unsigned int mode) noexcept
 DriverMode TmcDriverState::GetDriverMode() const noexcept
 {
 	return
-#if TMC_TYPE == 5160 && (SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP)
-		  ((writeRegisters[WriteGConf] & GCONF_DIRECT_MODE) != 0) ? DriverMode::direct :
+#if (TMC_TYPE == 5160 || TMC_TYPE == 2240) && (SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP)
+		  (IsInDirectMode()) ? DriverMode::direct :
 #endif
 		  ((writeRegisters[WriteGConf] & GCONF_STEALTHCHOP) != 0) ? DriverMode::stealthChop
 		: ((configuredChopConfReg & CHOPCONF_CHM) == 0) ? DriverMode::spreadCycle
@@ -1208,6 +1229,9 @@ void TmcDriverState::AppendLutCorrections(const StringRef& reply) const noexcept
 void TmcDriverState::SetCurrent(float current) noexcept
 {
 	motorCurrent = constrain<float>(current, MinimumMotorCurrent, MaxMotorCurrent);
+#if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
+	maxStandstillCurrentFraction = (current <= MaxStandstillCurrent) ? 1.0 : MaxStandstillCurrent/current;
+#endif
 	UpdateCurrent();
 }
 
@@ -1240,24 +1264,24 @@ void TmcDriverState::UpdateCurrent() noexcept
 	}
 
 	// At high motor currents, limit the standstill current fraction to avoid overheating particular pairs of mosfets. Avoid dividing by zero if motorCurrent is zero.
-	const uint32_t desiredStandstillCurrentFraction =
+	uint32_t iHoldCsBits;
 #if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
-					directModeDrivers.IsBitSet(driverNumber) ? 256 : standstillCurrentFraction;	// in direct mode the holding current is applied in software when we set the coil currents
-#else
-					standstillCurrentFraction;
+	// In closed loop and assisted open loop mode the TMC driver IC can't do standstill current reduction so we have to do it in software.
+	// The driver uses the IHOLD setting to set the peak current, so we must set it the same as IRUN to get the full current.
+	if (IsInDirectMode())			// if the driver is in direct mode
+	{
+		iHoldCsBits = iRun;
+	}
+	else
 #endif
-	constexpr float MaxStandstillCurrentTimes256 = 256 * MaxStandstillCurrent;
-	const float limitedStandstillCurrentFraction = ((uint32_t)motorCurrent * desiredStandstillCurrentFraction <= MaxStandstillCurrentTimes256)
-														? desiredStandstillCurrentFraction
-															: MaxStandstillCurrentTimes256/(uint32_t)motorCurrent;
-	const float idealIHoldCs = (float)iRun * limitedStandstillCurrentFraction * (1.0/256.0);
-#if 0	// for Tony's test build change to SUPPORT_CLOSED_LOOP && SINGLE_DRIVER
-	// TEMPORARY TEST BUILD: IHOLD = IRUN in closed loop and assisted open loop modes, so the XDIRECT coil currents can reach the full M906 current
-	const uint32_t iHoldCsBits = (GetMoveInstance().IsClosedLoopEnabled(driverNumber)) ? iRun
-									: constrain<uint32_t>((unsigned int)(idealIHoldCs + 0.2), 1, 32) - 1;
-#else
-	const uint32_t iHoldCsBits = constrain<uint32_t>((unsigned int)(idealIHoldCs + 0.2), 1, 32) - 1;
-#endif
+	{
+		constexpr float MaxStandstillCurrentTimes256 = 256 * MaxStandstillCurrent;
+		const float limitedStandstillCurrentFraction = ((uint32_t)motorCurrent * standstillCurrentFraction <= MaxStandstillCurrentTimes256)
+															? standstillCurrentFraction
+																: MaxStandstillCurrentTimes256/(uint32_t)motorCurrent;
+		const float idealIHoldCs = (float)iRun * limitedStandstillCurrentFraction * (1.0/256.0);
+		iHoldCsBits = constrain<uint32_t>((unsigned int)(idealIHoldCs + 0.2), 1, 32) - 1;
+	}
 	UpdateRegister(WriteIholdIrun, (writeRegisters[WriteIholdIrun] & ~(IHOLDIRUN_IRUN_MASK | IHOLDIRUN_IHOLD_MASK)) | (iRun << IHOLDIRUN_IRUN_SHIFT) | (iHoldCsBits << IHOLDIRUN_IHOLD_SHIFT));
 	UpdateRegister(WriteGlobalScaler, globalScaler);
 }
@@ -1500,7 +1524,7 @@ void TmcDriverState::TransferSucceeded(const uint8_t *rcvDataBlock) noexcept
 	// Deal with the stall status. Note that the TCoolThrs setting prevents us getting a DIAG output at low speeds, but it doesn't seem to affect the stall status
 	if (   (rcvDataBlock[0] & (1u << 2)) != 0							// if the status indicates stalled
 #if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
-		&& !directModeDrivers.IsBitSet(driverNumber)					// SG_RESULT is only updated on a full step, and direct mode doesn't use the step sequencer, so the stall status is frozen at its last step/dir value
+		&& !IsInDirectMode()											// SG_RESULT is only updated on a full step, and direct mode doesn't use the step sequencer, so the stall status is frozen at its last step/dir value
 #endif
 		&& interval != 0
 		&& interval <= maxStallStepInterval								// if the motor speed is high enough to get a reliable stall indication
@@ -1535,7 +1559,7 @@ static TmcDriverState driverStates[numTmcDrivers];
 static Task<TmcTaskStackWords> tmcTask;
 
 // Declare the DMA buffers with the __nocache attribute for the SAME70. Access to these must be aligned.
-const size_t SpiDataSize = 5 * numTmcDrivers;			// number of bytes in the SPI transfer to/from the TMC driver chain
+const size_t SpiDataSize = 5 * numTmcDrivers;				// number of bytes in the SPI transfer to/from the TMC driver chain
 static volatile uint8_t tmcSendData[SpiDataSize];			// used to prepare regular read/write requests via SPI
 static volatile uint8_t tmcRcvData[SpiDataSize];
 
@@ -2262,6 +2286,19 @@ uint16_t SmartDrivers::GetMicrostepPosition(size_t driver) noexcept
 bool SmartDrivers::SetMotorPhases(size_t driver, uint32_t regVal) noexcept
 {
 	return driverStates[driver].SetXdirect(regVal);
+}
+
+// Implement standstill current limit
+void SmartDrivers::LimitStandstillCurrent(size_t driver, float speed, float& currentFraction) noexcept
+{
+	if (speed < StandstillCutoffSpeed && driver < numTmcDrivers)
+	{
+		const float maxHoldCurrentFraction = driverStates[driver].GetMaxStandstillCurrentFraction();
+		if (currentFraction > maxHoldCurrentFraction)
+		{
+			currentFraction = maxHoldCurrentFraction;
+		}
+	}
 }
 
 #endif
