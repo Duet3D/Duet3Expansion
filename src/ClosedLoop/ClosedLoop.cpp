@@ -734,6 +734,7 @@ void ClosedLoop::FinishedBasicTuning() noexcept
 {
 	basicTuningDataReady = true;
 	tuningError &= ~TuningError::TuningOrCalibrationInProgress;
+	DriverSwitchedToClosedLoop();											// in particular this sets phaseOffset if we are in assisted open loop mode
 }
 
 // Call this when encoder calibration has finished collecting data
