@@ -49,6 +49,7 @@ using std::numeric_limits;
 # include <math.h>
 # include <Platform/Platform.h>
 # include <Movement/Move.h>
+# include <Movement/Trigonometry.h>
 # include <Heating/Heat.h>				// for NewDriverFault()
 # include <General/Bitmap.h>
 # include <Platform/TaskPriorities.h>

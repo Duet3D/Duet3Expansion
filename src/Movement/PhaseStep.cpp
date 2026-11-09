@@ -16,7 +16,7 @@
 # include <RTOSIface/RTOSIface.h>
 # include <Movement/Move.h>
 # include <Movement/StepperDrivers/SmartDrivers.h>
-# include <ClosedLoop/Trigonometry.h>
+# include <Movement/Trigonometry.h>
 # include <cmath>
 
 static uint16_t currentPhase[NumDrivers] = { 0 };
