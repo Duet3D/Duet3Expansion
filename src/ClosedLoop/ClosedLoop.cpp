@@ -1084,6 +1084,7 @@ inline float ClosedLoop::ControlMotorCurrents(StepTimer::Ticks ticksSinceLastCal
 			const uint16_t adjustedStepPhase = (uint16_t)((int16_t)measuredStepPhase + phaseFeedForward) % 4096u;
 			commandedStepPhase = (((PIDControlSignal < 0.0) ? (3 * 1024) : 1024) + adjustedStepPhase) % 4096u;
 			currentFraction = fabsf(PIDControlSignal) * (1.0/256.0);
+			SmartDrivers::LimitStandstillCurrent(driverNumber, fabsf(mParams.speed), currentFraction);
 		}
 		else
 		{
@@ -1097,7 +1098,12 @@ inline float ClosedLoop::ControlMotorCurrents(StepTimer::Ticks ticksSinceLastCal
 			const uint16_t stepPhase = (uint16_t)llrintf(mParams.position * 1024.0);		// we use llrintf so that we can guarantee to convert the float operand to integer. We only care about the lowest 12 bits.
 			commandedStepPhase = (stepPhase + phaseOffset) % 4096u;
 			currentFraction = holdCurrentFraction + (1.0 - holdCurrentFraction) * min<float>(PIDControlSignal * (1.0/256.0), 1.0);
-			SmartDrivers::LimitStandstillCurrent(driverNumber, mParams.speed, currentFraction);
+#if 1
+			// When doing open loop phase stepping, we increase the current above the standstill current factor only when there is a significant
+			// velocity or acceleration component. Therefore we should not need to do a check for standstill current limiting.
+#else
+			SmartDrivers::LimitStandstillCurrent(driver, fabsf(mParams.speed), currentFraction);
+#endif
 		}
 	}
 	SetMotorPhase(commandedStepPhase, currentFraction);
