@@ -733,7 +733,7 @@ void ClosedLoop::StartTuning(uint8_t tuningMode) noexcept
 void ClosedLoop::FinishedBasicTuning() noexcept
 {
 	basicTuningDataReady = true;
-	tuningError |= TuningError::TuningOrCalibrationInProgress;				// to prevent movement until we are done tuning
+	tuningError &= ~TuningError::TuningOrCalibrationInProgress;
 }
 
 // Call this when encoder calibration has finished collecting data
