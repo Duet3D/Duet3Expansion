@@ -172,9 +172,9 @@ uint16_t PhaseStep::CalculateStepPhase(size_t driver) noexcept
 }
 
 // Control the motor phase currents, returning the fraction of maximum current that we commanded
-float PhaseStep::CalculateCurrentFraction() noexcept
+float PhaseStep::CalculateCurrentFraction(size_t driver) noexcept
 {
-	// In this mode the PID terms are not used and the A and V terms are independent of the loop time
+	// In this mode the PID error terms are not used and the A and V terms are independent of the loop time
 	constexpr float scalingFactor = 100.0;
 	constexpr float scalingFactorSqr = scalingFactor * scalingFactor;
 	PIDVTerm = mParams.speed * Kv * scalingFactor;
@@ -182,6 +182,7 @@ float PhaseStep::CalculateCurrentFraction() noexcept
 	PIDControlSignal = min<float>(fabsf(PIDVTerm) + fabsf(PIDATerm), 256.0);
 
 	currentFraction = holdCurrentFraction + (1.0 - holdCurrentFraction) * min<float>(PIDControlSignal * (1.0/256.0), 1.0);
+	SmartDrivers::LimitStandstillCurrent(driver, mParams.speed, currentFraction);
 	return currentFraction;
 }
 
