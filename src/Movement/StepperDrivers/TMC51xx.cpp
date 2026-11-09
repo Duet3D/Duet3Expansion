@@ -553,7 +553,7 @@ private:
 #if SUPPORT_CLOSED_LOOP || SUPPORT_PHASE_STEPPING
 	bool IsInDirectMode() const noexcept					// return true if this driver is in direct mode
 	{
-		return(writeRegisters[WriteGConf] & GCONF_DIRECT_MODE) != 0;
+		return (writeRegisters[WriteGConf] & GCONF_DIRECT_MODE) != 0;
 	}
 #endif
 
@@ -1559,13 +1559,14 @@ static TmcDriverState driverStates[numTmcDrivers];
 static Task<TmcTaskStackWords> tmcTask;
 
 // Declare the DMA buffers with the __nocache attribute for the SAME70. Access to these must be aligned.
+// We no longer declare them static, in order that the addresses get included in the linker map file.
 const size_t SpiDataSize = 5 * numTmcDrivers;				// number of bytes in the SPI transfer to/from the TMC driver chain
-static volatile uint8_t tmcSendData[SpiDataSize];			// used to prepare regular read/write requests via SPI
-static volatile uint8_t tmcRcvData[SpiDataSize];
+__nocache volatile uint8_t tmcSendData[SpiDataSize];			// used to prepare regular read/write requests via SPI
+__nocache volatile uint8_t tmcRcvData[SpiDataSize];
 
 #if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
-static volatile uint8_t tmcPhaseSendData[SpiDataSize];		// used to send specific phase data
-static volatile uint8_t tmcAltRcvData[SpiDataSize];
+__nocache volatile uint8_t tmcPhaseSendData[SpiDataSize];		// used to send specific phase data
+__nocache volatile uint8_t tmcAltRcvData[SpiDataSize];
 
 static uint32_t lastWakeupTime = 0;
 static StepTimer tmcTimer;
@@ -2305,9 +2306,9 @@ void SmartDrivers::LimitStandstillCurrent(size_t driver, float speed, float& cur
 
 bool SmartDrivers::SetDriverMode(size_t driver, unsigned int mode) noexcept
 {
-#if SUPPORT_CLOSED_LOOP
+#if SUPPORT_PHASE_STEPPING || SUPPORT_CLOSED_LOOP
 	const bool ret = driver < numTmcDrivers && driverStates[driver].SetDriverMode(mode);
-	if (ret && driver == 0)
+	if (ret)
 	{
 		tmcTask.SetPriority((mode == (unsigned int)DriverMode::direct) ? TaskPriority::TmcClosedLoop : TaskPriority::TmcOpenLoop);
 	}

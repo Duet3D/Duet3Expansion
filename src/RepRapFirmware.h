@@ -43,6 +43,12 @@ extern "C" void debugVprintf(const char *fmt, va_list vargs) noexcept;
 
 #define SPEED_CRITICAL	__attribute__((optimize("O2")))
 
+#if SAME70
+# define __nocache		__attribute__((section(".ram_nocache")))
+#else
+# define __nocache		// nothing
+#endif
+
 #if SAME5x || SAME70
 
 // Functions to set and clear data watchpoints
