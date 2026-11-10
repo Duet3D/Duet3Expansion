@@ -43,7 +43,7 @@ public:
 	friend class Move;
 	friend class DriveMovement;
 
-	void SetStandstillCurrent(float percent) noexcept;
+	void SetStandstillCurrentPercent(float percent) noexcept;
 
 	// Phase correction, shared by all instances because it is a property of the driver
 	static GCodeResult ConfigureCorrection(size_t driver, unsigned int harmonic, bool seenMagnitude, float magnitudeDegrees, bool seenPhase, float phaseDegrees, const StringRef& reply) noexcept;

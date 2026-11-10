@@ -129,10 +129,10 @@ void PhaseStep::SetMotorPhase(size_t driver, uint16_t phase, float magnitude) no
 	SmartDrivers::SetMotorPhases(driver, (((uint32_t)(uint16_t)coilB << 16) | (uint32_t)(uint16_t)coilA) & 0x01FF01FF);
 }
 
-// Set the standstill current fraction for this drive
-void PhaseStep::SetStandstillCurrent(float percent) noexcept
+// Set the standstill current fraction for this drive. Limit the standstill current to 0.7 times the run current to protect the driver output mosfets.
+void PhaseStep::SetStandstillCurrentPercent(float percent) noexcept
 {
-	holdCurrentFraction = percent * 0.01;
+	holdCurrentFraction = min<float>(percent * 0.01, 0.7);
 }
 
 void PhaseStep::InstanceControlLoop(size_t driver) noexcept
