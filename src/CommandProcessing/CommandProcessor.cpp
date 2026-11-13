@@ -356,8 +356,16 @@ static GCodeResult HandleSetDriverStates(const CanMessageMultipleDrivesRequest<D
 	}
 
 	const auto drivers = Bitmap<uint16_t>::MakeFromRaw(msg.driversToUpdate);
-	drivers.Iterate([&msg](unsigned int driver, unsigned int count) -> void
+	GCodeResult rslt = GCodeResult::ok;
+	drivers.Iterate([&msg, &reply, &rslt](unsigned int driver, unsigned int count) -> void
 		{
+			if (driver >= NumDrivers)
+			{
+				reply.lcatf("No such driver %u.%u", CanInterface::GetCanAddress(), driver);
+				rslt = GCodeResult::error;
+				return;
+			}
+
 			switch (msg.values[count].mode)
 			{
 			case DriverStateControl::driverActive:
@@ -376,7 +384,7 @@ static GCodeResult HandleSetDriverStates(const CanMessageMultipleDrivesRequest<D
 				break;
 			}
 		});
-	return GCodeResult::ok;
+	return rslt;
 }
 
 static GCodeResult ProcessM915(const CanMessageGeneric& msg, const StringRef& reply)

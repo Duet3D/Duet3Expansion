@@ -144,7 +144,7 @@ namespace Heat
 		{
 			ReadLocker lock(heatersLock);
 
-			for (size_t heater = 0; heater < MaxHeaters; ++heater)
+			for (size_t heater = 0; heater < MaxHeaters && heatersFound < ARRAY_SIZE(msg->reports); heater++)
 			{
 				Heater * const h = heaters[heater];
 				if (h != nullptr)
@@ -634,6 +634,7 @@ void Heat::ProcessRemoteSensorsReport(CanAddress src, const CanMessageSensorTemp
 											ts.Release();
 											RemoteSensor * const rs = new RemoteSensor(sensor, src);
 											rs->UpdateRemoteTemperature(src, sr);
+											WriteLocker lock(sensorsLock);
 											InsertSensor(rs);
 										}
 									}

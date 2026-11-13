@@ -714,8 +714,8 @@ void Move::StepDrivers(uint32_t now) noexcept
 			if (dms[0].driversCurrentlyUsed != 0)
 			{
 				StepGenTc->CTRLBSET.reg = TC_CTRLBSET_CMD_RETRIGGER;
-				PrepareForNextSteps(now);
 			}
+			PrepareForNextSteps(now);							// this must also run when no step is generated, to start a segment that was waiting for its start time
 # else
 			StepDriversHigh(dms[0].driversCurrentlyUsed);						// generate the step
 			PrepareForNextSteps(now);
@@ -860,6 +860,10 @@ void Move::StopDrivers(uint16_t whichDrives) noexcept
 	LocalDriversBitmap dr(whichDrives);
 	dr.Iterate([this](size_t drive, unsigned int)
 				{
+					if (drive >= NumDrivers)
+					{
+						return;
+					}
 					AtomicCriticalSectionLocker lock;
 					if (dms[drive].state != DMState::idle)
 					{

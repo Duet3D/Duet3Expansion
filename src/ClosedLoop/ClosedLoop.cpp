@@ -218,6 +218,13 @@ GCodeResult ClosedLoop::ProcessM569Point1(CanMessageGenericParser& parser, const
 		return GCodeResult::ok;
 	}
 
+	// The calibration task uses the encoder for several seconds, so it must not be replaced meanwhile
+	if (seenT && (tuning != 0 || calibrationState == CalibrationState::dataReady))
+	{
+		reply.copy("Cannot change the encoder while tuning or calibration is in progress");
+		return GCodeResult::error;
+	}
+
 	if (seenT && !seenC && (tempEncoderType == EncoderType::rotaryQuadrature || tempEncoderType == EncoderType::linearComposite))
 	{
 		reply.copy("Missing C parameter");
@@ -483,6 +490,13 @@ GCodeResult ClosedLoop::ProcessM569Point6(CanMessageGenericParser& parser, const
 
 		// If we were checking the calibration, report the result
 		return (basicTuningDataReady) ? ProcessBasicTuningResult(reply) : ProcessCalibrationResult(reply);
+	}
+
+	// A tuning move keeps state between control loop calls and the calibration task uses the encoder for several seconds
+	if (tuning != 0 || calibrationState == CalibrationState::dataReady)
+	{
+		reply.copy("Driver is already performing tuning or calibration");
+		return GCodeResult::error;
 	}
 
 	switch (desiredTuning)
@@ -1124,13 +1138,21 @@ void ClosedLoop::InstanceDiagnostics(size_t driver, const StringRef& reply) noex
 	reply.catf(", encoder type %s", GetEncoderType().ToString());
 	if (encoder != nullptr)
 	{
-		if (!encoder->TakeReading())
+		bool ok;
+		int32_t currentCount;
+		{
+			TaskCriticalSectionLocker lock;				// the control loop takes readings too and must not be interleaved with this one
+			ok = encoder->TakeReading();
+			currentCount = encoder->GetCurrentCount();
+		}
+
+		if (!ok)
 		{
 			reply.cat(", error reading encoder\n");
 		}
 		else
 		{
-			reply.catf(", position %" PRIi32 "\n", encoder->GetCurrentCount());
+			reply.catf(", position %" PRIi32 "\n", currentCount);
 		}
 		encoder->AppendDiagnostics(reply);
 	}

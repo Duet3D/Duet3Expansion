@@ -74,6 +74,11 @@ GCodeResult LedStripManager::HandleM950Led(const CanMessageGeneric &msg, const S
 			delete newStrip;
 		}
 	}
+	else if (slot == nullptr)
+	{
+		reply.printf("Board %u does not have LED strip #%u", CanInterface::GetCanAddress(), stripNumber);
+		rslt = GCodeResult::error;
+	}
 	else
 	{
 		// Reconfiguring or reporting on an existing strip
