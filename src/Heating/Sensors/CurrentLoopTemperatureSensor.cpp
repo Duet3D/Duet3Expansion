@@ -7,7 +7,7 @@
 
 #include "CurrentLoopTemperatureSensor.h"
 
-// DC 2026-11-16: Disabled this code because it won't work (see comments in CurrentLoopTemperatureSensor::Configure) and is no longer requred
+// DC 2026-11-16: Disabled this code because it won't work (see comments in CurrentLoopTemperatureSensor::Configure) and is no longer required
 
 #if 0		//#if SUPPORT_SPI_SENSORS
 
