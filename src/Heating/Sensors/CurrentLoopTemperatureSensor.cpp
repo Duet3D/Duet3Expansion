@@ -7,7 +7,9 @@
 
 #include "CurrentLoopTemperatureSensor.h"
 
-#if SUPPORT_SPI_SENSORS
+// DC 2026-11-16: Disabled this code because it won't work (see comments in CurrentLoopTemperatureSensor::Configure) and is no longer required
+
+#if 0		//#if SUPPORT_SPI_SENSORS
 
 #include <Platform/Platform.h>
 #include <CanMessageGenericParser.h>
@@ -33,6 +35,12 @@ CurrentLoopTemperatureSensor::CurrentLoopTemperatureSensor(unsigned int sensorNu
 // Configure this temperature sensor
 GCodeResult CurrentLoopTemperatureSensor::Configure(const CanMessageGenericParser& parser, const StringRef& reply) noexcept
 {
+	// The following code WILL NOT WORK for the following reasons:
+	// - the H and L parameters are passed by the generic M308 code as int16 values we require floats
+	// - the C parameter is passed as a float, but for this sensor it should be be integer in the range 0 to 7.
+	// - the D parameter is not passed at all.
+	// A solution would be to change the parameters from L H C D to e.g. B C F S.
+	//TODO
 	bool seen = parser.GetFloatParam('L', tempAt4mA);
 	seen = parser.GetFloatParam('H', tempAt20mA) || seen;
 	seen = parser.GetUintParam('C', chipChannel) || seen;
