@@ -635,7 +635,7 @@ CanMessageBuffer *CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf) no
 			break;
 
 		case CanMessageType::startup:
-			if (millis() > 1000 || isProgrammed)		// if we've only just powered up and the main board hasn't programmed us yet, no need to start up again
+			if (millis64() > 5000 || isProgrammed)		// if we've only just powered up and the main board hasn't programmed us yet, no need to start up again
 			{
 				Platform::EmergencyStop();
 			}
