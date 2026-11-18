@@ -1025,7 +1025,7 @@ void CommandProcessor::Spin()
 			break;
 
 		case CanMessageType::m111:
-			requestId = buf->msg.diagnosticTest.requestId;
+			requestId = buf->msg.generic.requestId;
 			rslt = Platform::ProcessRemoteM111(buf->msg.generic, replyRef);
 			break;
 
