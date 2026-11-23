@@ -548,16 +548,7 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 		extra = LastDiagnosticsPart;
 		{
 			Platform::AppendBoardAndFirmwareDetails(reply);
-#if STM32
-			constexpr uint32_t BootloaderVectors = FLASH_BASE;								// flash is not mapped at address zero on STM32
-#else
-			constexpr uint32_t BootloaderVectors = 0;
-#endif
-			// GCC 12.2, 13.2 and 15.2Rel1 produce a spurious diagnostic for the following line of code, see https://gcc.gnu.org/bugzilla/show_bug.cgi?id=105523
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Warray-bounds"
-			const char *bootloaderVersionText = *reinterpret_cast<const char**>(BootloaderVectors + 0x20);		// offset of vectors.pvReservedM8
-#pragma GCC diagnostic pop
+			const char *_ecv_array _ecv_null bootloaderVersionText = Platform::GetBootloaderVersionText();
 			reply.lcatf("Bootloader ID: %s", (bootloaderVersionText == nullptr) ? "not available" : bootloaderVersionText);
 			Platform::AppendDiagnostics(reply);
 		}
