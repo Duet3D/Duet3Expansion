@@ -486,10 +486,14 @@ static FirmwareFlashErrorCode GetBlock(uint32_t startingOffset, uint32_t& fileSi
 					return FirmwareFlashErrorCode::hostOther;
 
 				case CanMessageFirmwareUpdateResponse::ErrNone:
+					if (!response.ValidMessageLength(buf.dataLength))
+					{
+						return FirmwareFlashErrorCode::hostOther;
+					}
 					if (response.fileOffset >= startingOffset && response.fileOffset <= startingOffset + bytesReceived)
 					{
 						const uint32_t bufferOffset = response.fileOffset - startingOffset;
-						const uint32_t bytesToCopy = min<uint32_t>(min<uint32_t>(FlashBlockSize - bufferOffset, response.dataLength), sizeof(response.data));
+						const uint32_t bytesToCopy = min<uint32_t>(FlashBlockSize - bufferOffset, response.dataLength);
 						//debugPrintf("About to store response off %d start %d %d bytes to offset %d\n", response.fileOffset, startingOffset, bytesToCopy, bufferOffset);
 						memcpy(blockBuffer + bufferOffset, response.data, bytesToCopy);
 						if (response.fileOffset + bytesToCopy > startingOffset + bytesReceived)
@@ -576,10 +580,14 @@ static FirmwareFlashErrorCode GetBootloaderBlock(uint8_t *blockBuffer)
 					return FirmwareFlashErrorCode::hostOther;
 
 				case CanMessageFirmwareUpdateResponse::ErrNone:
+					if (!response.ValidMessageLength(buf.dataLength))
+					{
+						return FirmwareFlashErrorCode::hostOther;
+					}
 					if (response.fileOffset <= bytesReceived)
 					{
 						const uint32_t bufferOffset = response.fileOffset;
-						const uint32_t bytesToCopy = min<uint32_t>(min<uint32_t>(FlashBlockSize - bufferOffset, response.dataLength), sizeof(response.data));
+						const uint32_t bytesToCopy = min<uint32_t>(FlashBlockSize - bufferOffset, response.dataLength);
 						memcpy(blockBuffer + bufferOffset, response.data, bytesToCopy);
 						if (response.fileOffset + bytesToCopy > bytesReceived)
 						{
