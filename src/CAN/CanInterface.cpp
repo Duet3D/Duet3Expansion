@@ -555,6 +555,10 @@ CanMessageBuffer *CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf) no
 			return nullptr;
 
 		case CanMessageType::stopMovement:
+			if (!buf->msg.stopMovement.ValidMessageLength(buf->dataLength))
+			{
+				break;
+			}
 			moveInstance->StopDrivers(buf->msg.stopMovement.whichDrives);
 # if 0
 			//DEBUG
@@ -832,7 +836,7 @@ void CanInterface::WakeAsyncSenderFromIsr() noexcept
 	canAsyncSenderTask->GiveFromISR(NotifyIndices::CanAsyncSender);
 }
 
-GCodeResult CanInterface::ChangeAddressAndDataRate(const CanMessageSetAddressAndNormalTiming &msg, const StringRef &reply) noexcept
+GCodeResult CanInterface::ChangeAddressAndDataRate(const CanMessageSetAddressAndNormalTiming &msg, size_t dataLength, const StringRef &reply) noexcept
 {
 	if (msg.oldAddress == boardAddress)
 	{
@@ -849,7 +853,12 @@ GCodeResult CanInterface::ChangeAddressAndDataRate(const CanMessageSetAddressAnd
 		if (msg.doSetTiming == CanMessageSetAddressAndNormalTiming::DoSetTimingYes)
 		{
 			seen = true;
-			canConfigData.SetTiming(msg.normalTiming);
+			CanTiming timing = msg.normalTiming;
+			if (dataLength < sizeof(msg))
+			{
+				timing.dataRateMultiplier = 0;				// main boards before 3.7 send no data phase timing
+			}
+			canConfigData.SetTiming(timing);
 		}
 
 		if (seen)
@@ -928,7 +937,7 @@ extern "C" [[noreturn]] void CanClockLoop(void *) noexcept
 								CanDevice::RxBufferNumber::buffer0,
 #endif
 									TaskBase::TimeoutUnlimited, &buf);
-		if (buf.id.MsgType() == CanMessageType::timeSync
+		if (buf.id.MsgType() == CanMessageType::timeSync && buf.msg.sync.ValidMessageLength(buf.dataLength)
 #if defined(ATEIO) || defined(ATECM)
 			&& (buf.id.Src() == CanId::ATEMasterAddress))			// ATE boards only respond to the ATE master, because a main board under test may also transmit when it starts up
 #else

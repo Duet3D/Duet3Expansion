@@ -172,14 +172,8 @@ static GCodeResult GenerateTestReport(const CanMessageGeneric &msg, const String
 
 #if SUPPORT_DRIVERS
 
-static GCodeResult HandlePressureAdvance(const CanMessageMultipleDrivesRequest<float>& msg, size_t dataLength, const StringRef& reply)
+static GCodeResult HandlePressureAdvance(const CanMessageMultipleDrivesRequest<float>& msg, const StringRef& reply)
 {
-	if (dataLength < msg.GetActualDataLength())
-	{
-		reply.copy("bad data length");
-		return GCodeResult::error;
-	}
-
 	const auto drivers = Bitmap<uint16_t>::MakeFromRaw(msg.driversToUpdate);
 	GCodeResult rslt = GCodeResult::ok;
 	drivers.Iterate([&msg, &reply, &rslt](unsigned int driver, unsigned int count) -> void
@@ -198,14 +192,8 @@ static GCodeResult HandlePressureAdvance(const CanMessageMultipleDrivesRequest<f
 	return rslt;
 }
 
-static GCodeResult HandlePressureAdvance(const CanMessageMultipleDrivesRequest<ShortPressureAdvanceParameters>& msg, size_t dataLength, const StringRef& reply)
+static GCodeResult HandlePressureAdvance(const CanMessageMultipleDrivesRequest<ShortPressureAdvanceParameters>& msg, const StringRef& reply)
 {
-	if (dataLength < msg.GetActualDataLength())
-	{
-		reply.copy("bad data length");
-		return GCodeResult::error;
-	}
-
 	const auto drivers = Bitmap<uint16_t>::MakeFromRaw(msg.driversToUpdate);
 	GCodeResult rslt = GCodeResult::ok;
 	drivers.Iterate([&msg, &reply, &rslt](unsigned int driver, unsigned int count) -> void
@@ -224,14 +212,8 @@ static GCodeResult HandlePressureAdvance(const CanMessageMultipleDrivesRequest<S
 	return rslt;
 }
 
-static GCodeResult SetStepsPerMmAndMicrostepping(const CanMessageMultipleDrivesRequest<StepsPerUnitAndMicrostepping>& msg, size_t dataLength, const StringRef& reply)
+static GCodeResult SetStepsPerMmAndMicrostepping(const CanMessageMultipleDrivesRequest<StepsPerUnitAndMicrostepping>& msg, const StringRef& reply)
 {
-	if (dataLength < msg.GetActualDataLength())
-	{
-		reply.copy("bad data length");
-		return GCodeResult::error;
-	}
-
 	const auto drivers = Bitmap<uint16_t>::MakeFromRaw(msg.driversToUpdate);
 	GCodeResult rslt = GCodeResult::ok;
 	drivers.Iterate([&msg, &reply, &rslt](unsigned int driver, unsigned int count) -> void
@@ -347,14 +329,8 @@ static GCodeResult ProcessM569Point2(const CanMessageGeneric& msg, const StringR
 #endif
 }
 
-static GCodeResult HandleSetDriverStates(const CanMessageMultipleDrivesRequest<DriverStateControl>& msg, size_t dataLength, const StringRef& reply)
+static GCodeResult HandleSetDriverStates(const CanMessageMultipleDrivesRequest<DriverStateControl>& msg, const StringRef& reply)
 {
-	if (dataLength < msg.GetActualDataLength())
-	{
-		reply.copy("bad data length");
-		return GCodeResult::error;
-	}
-
 	const auto drivers = Bitmap<uint16_t>::MakeFromRaw(msg.driversToUpdate);
 	GCodeResult rslt = GCodeResult::ok;
 	drivers.Iterate([&msg, &reply, &rslt](unsigned int driver, unsigned int count) -> void
@@ -709,6 +685,15 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 	return GCodeResult::ok;
 }
 
+// Declare 'msg' as the given variant of the received message, and reject the message if it is too short to be a valid one
+#define GET_VALID_MESSAGE(_variant) \
+	const auto& msg = buf->msg._variant; \
+	if (!msg.ValidMessageLength(buf->dataLength)) \
+	{ \
+		badMessage = true; \
+		break; \
+	}
+
 void CommandProcessor::Spin()
 {
 	CanMessageBuffer *buf = CanInterface::GetCanCommand(0);
@@ -727,32 +712,48 @@ void CommandProcessor::Spin()
 		uint32_t words[CanMessageStandardReply::MaxNumWords];
 		size_t numWords = 0;
 		const bool requestUsedBrs = buf->useBrs;
+		bool badMessage = false;
 
 		switch (id)
 		{
 		case CanMessageType::sensorTemperaturesReport:
-			requestId = CanRequestIdNoReplyNeeded;
-			Heat::ProcessRemoteSensorsReport(buf->id.Src(), buf->msg.sensorTemperaturesBroadcast);
+			{
+				GET_VALID_MESSAGE(sensorTemperaturesBroadcast);
+				requestId = CanRequestIdNoReplyNeeded;
+				Heat::ProcessRemoteSensorsReport(buf->id.Src(), msg);
+			}
 			break;
 
 		case CanMessageType::returnInfo:
-			requestId = buf->msg.getInfo.requestId;
-			rslt = GetInfo(buf->msg.getInfo, replyRef, extra);
+			{
+				GET_VALID_MESSAGE(getInfo);
+				requestId = msg.requestId;
+				rslt = GetInfo(msg, replyRef, extra);
+			}
 			break;
 
 		case CanMessageType::heaterModelV3:
-			requestId = buf->msg.heaterModelV3.requestId;
-			rslt = Heat::ProcessM307(buf->msg.heaterModelV3, replyRef);
+			{
+				GET_VALID_MESSAGE(heaterModelV3);
+				requestId = msg.requestId;
+				rslt = Heat::ProcessM307(msg, replyRef);
+			}
 			break;
 
 		case CanMessageType::setHeaterTemperatureV1:
-			requestId = buf->msg.setTemp.requestId;
-			rslt = Heat::SetTemperature(buf->msg.setTemp, replyRef);
+			{
+				GET_VALID_MESSAGE(setTemp);
+				requestId = msg.requestId;
+				rslt = Heat::SetTemperature(msg, replyRef);
+			}
 			break;
 
 		case CanMessageType::heaterTuningCommand:
-			requestId = buf->msg.heaterTuningCommand.requestId;
-			rslt = Heat::TuningCommand(buf->msg.heaterTuningCommand, replyRef);
+			{
+				GET_VALID_MESSAGE(heaterTuningCommand);
+				requestId = msg.requestId;
+				rslt = Heat::TuningCommand(msg, replyRef);
+			}
 			break;
 
 		case CanMessageType::m308V1:
@@ -771,8 +772,11 @@ void CommandProcessor::Spin()
 			break;
 
 		case CanMessageType::heaterFeedForwardV1:
-			requestId = CanRequestIdNoReplyNeeded;
-			rslt = Heat::FeedForward(buf->msg.heaterFeedForwardV1, replyRef);
+			{
+				GET_VALID_MESSAGE(heaterFeedForwardV1);
+				requestId = CanRequestIdNoReplyNeeded;
+				rslt = Heat::FeedForward(msg, replyRef);
+			}
 			break;
 
 		case CanMessageType::m950Gpio:
@@ -781,8 +785,11 @@ void CommandProcessor::Spin()
 			break;
 
 		case CanMessageType::writeGpio:
-			requestId = buf->msg.writeGpio.requestId;
-			rslt = GpioPorts::HandleGpioWrite(buf->msg.writeGpio, replyRef);
+			{
+				GET_VALID_MESSAGE(writeGpio);
+				requestId = msg.requestId;
+				rslt = GpioPorts::HandleGpioWrite(msg, replyRef);
+			}
 			break;
 
 		// LED strip commands
@@ -803,8 +810,11 @@ void CommandProcessor::Spin()
 
 #if SUPPORT_DRIVERS
 		case CanMessageType::setMotorCurrents:
-			requestId = buf->msg.multipleDrivesRequestFloat.requestId;
-			rslt = moveInstance->SetMotorCurrents(buf->msg.multipleDrivesRequestFloat, buf->dataLength, replyRef);
+			{
+				GET_VALID_MESSAGE(multipleDrivesRequestFloat);
+				requestId = msg.requestId;
+				rslt = moveInstance->SetMotorCurrents(msg, replyRef);
+			}
 			break;
 
 		case CanMessageType::m569:
@@ -868,18 +878,27 @@ void CommandProcessor::Spin()
 			break;
 
 		case CanMessageType::setStandstillCurrentFactor:
-			requestId = buf->msg.multipleDrivesRequestFloat.requestId;
-			rslt = moveInstance->SetStandstillCurrentFactor(buf->msg.multipleDrivesRequestFloat, buf->dataLength, replyRef);
+			{
+				GET_VALID_MESSAGE(multipleDrivesRequestFloat);
+				requestId = msg.requestId;
+				rslt = moveInstance->SetStandstillCurrentFactor(msg, replyRef);
+			}
 			break;
 
 		case CanMessageType::setStepsPerMmAndMicrostepping:
-			requestId = buf->msg.multipleDrivesStepsPerUnitAndMicrostepping.requestId;
-			rslt = SetStepsPerMmAndMicrostepping(buf->msg.multipleDrivesStepsPerUnitAndMicrostepping, buf->dataLength, replyRef);
+			{
+				GET_VALID_MESSAGE(multipleDrivesStepsPerUnitAndMicrostepping);
+				requestId = msg.requestId;
+				rslt = SetStepsPerMmAndMicrostepping(msg, replyRef);
+			}
 			break;
 
 		case CanMessageType::setDriverStates:
-			requestId = buf->msg.multipleDrivesRequestUint16.requestId;
-			rslt = HandleSetDriverStates(buf->msg.multipleDrivesRequestDriverState, buf->dataLength, replyRef);
+			{
+				GET_VALID_MESSAGE(multipleDrivesRequestDriverState);
+				requestId = msg.requestId;
+				rslt = HandleSetDriverStates(msg, replyRef);
+			}
 			break;
 
 		case CanMessageType::m915:
@@ -888,13 +907,19 @@ void CommandProcessor::Spin()
 			break;
 
 		case CanMessageType::setPressureAdvanceV1:
-			requestId = buf->msg.multipleDrivesRequestFloat.requestId;
-			rslt = HandlePressureAdvance(buf->msg.multipleDrivesRequestFloat, buf->dataLength, replyRef);
+			{
+				GET_VALID_MESSAGE(multipleDrivesRequestFloat);
+				requestId = msg.requestId;
+				rslt = HandlePressureAdvance(msg, replyRef);
+			}
 			break;
 
 		case CanMessageType::setPressureAdvanceV2:
-			requestId = buf->msg.multipleDrivesRequestFloat.requestId;
-			rslt = HandlePressureAdvance(buf->msg.multipleDrivesRequestPressureAdvance, buf->dataLength, replyRef);
+			{
+				GET_VALID_MESSAGE(multipleDrivesRequestPressureAdvance);
+				requestId = msg.requestId;
+				rslt = HandlePressureAdvance(msg, replyRef);
+			}
 			break;
 
 		case CanMessageType::setInputShapingV1:
@@ -905,23 +930,35 @@ void CommandProcessor::Spin()
 #endif
 
 		case CanMessageType::updateFirmware:
-			requestId = buf->msg.updateYourFirmware.requestId;
-			rslt = InitiateFirmwareUpdate(buf->msg.updateYourFirmware, replyRef);
+			{
+				GET_VALID_MESSAGE(updateYourFirmware);
+				requestId = msg.requestId;
+				rslt = InitiateFirmwareUpdate(msg, replyRef);
+			}
 			break;
 
 		case CanMessageType::reset:
-			requestId = buf->msg.reset.requestId;
-			rslt = InitiateReset(buf->msg.reset, replyRef);
+			{
+				GET_VALID_MESSAGE(reset);
+				requestId = msg.requestId;
+				rslt = InitiateReset(msg, replyRef);
+			}
 			break;
 
 		case CanMessageType::fanParameters:
-			requestId = buf->msg.fanParameters.requestId;
-			rslt = FansManager::ConfigureFan(buf->msg.fanParameters, replyRef);
+			{
+				GET_VALID_MESSAGE(fanParameters);
+				requestId = msg.requestId;
+				rslt = FansManager::ConfigureFan(msg, replyRef);
+			}
 			break;
 
 		case CanMessageType::setFanSpeed:
-			requestId = buf->msg.setFanSpeed.requestId;
-			rslt = FansManager::SetFanSpeed(buf->msg.setFanSpeed, replyRef);
+			{
+				GET_VALID_MESSAGE(setFanSpeed);
+				requestId = msg.requestId;
+				rslt = FansManager::SetFanSpeed(msg, replyRef);
+			}
 			break;
 
 		case CanMessageType::setHeaterFaultDetection:
@@ -930,34 +967,49 @@ void CommandProcessor::Spin()
 			break;
 
 		case CanMessageType::setHeaterMonitors:
-			requestId = buf->msg.setHeaterMonitors.requestId;
-			rslt = Heat::SetHeaterMonitors(buf->msg.setHeaterMonitors, replyRef);
+			{
+				GET_VALID_MESSAGE(setHeaterMonitors);
+				requestId = msg.requestId;
+				rslt = Heat::SetHeaterMonitors(msg, replyRef);
+			}
 			break;
 
 		case CanMessageType::setDefaultHeaterModel:
-			Heat::SetDefaultHeaterModel(*buf);
-			CanInterface::SendAndFree(buf);
+			{
+				GET_VALID_MESSAGE(setDefaultHeaterModel);
+				Heat::SetDefaultHeaterModel(*buf);
+				CanInterface::SendAndFree(buf);
+			}
 			return;
 
 		case CanMessageType::createInputMonitorV1:
-			requestId = buf->msg.createInputMonitorV1.requestId;
-			rslt = InputMonitor::Create(buf->msg.createInputMonitorV1, buf->dataLength, replyRef, extra);
+			{
+				GET_VALID_MESSAGE(createInputMonitorV1);
+				requestId = msg.requestId;
+				rslt = InputMonitor::Create(msg, buf->dataLength, replyRef, extra);
+			}
 			break;
 
 		case CanMessageType::changeInputMonitorV1:
-			requestId = buf->msg.changeInputMonitorV1.requestId;
-			rslt = InputMonitor::Change(buf->msg.changeInputMonitorV1, replyRef, extra, words, numWords);
+			{
+				GET_VALID_MESSAGE(changeInputMonitorV1);
+				requestId = msg.requestId;
+				rslt = InputMonitor::Change(msg, replyRef, extra, words, numWords);
+			}
 			break;
 
 		case CanMessageType::readInputsRequest:
-			// This one has its own reply message type
-			InputMonitor::ReadInputs(buf);
-			CanInterface::SendAndFree(buf);
+			{
+				GET_VALID_MESSAGE(readInputsRequest);
+				// This one has its own reply message type
+				InputMonitor::ReadInputs(buf);
+				CanInterface::SendAndFree(buf);
+			}
 			return;
 
 		case CanMessageType::setAddressAndNormalTiming:
 			requestId = buf->msg.setAddressAndNormalTiming.requestId;
-			rslt = CanInterface::ChangeAddressAndDataRate(buf->msg.setAddressAndNormalTiming, replyRef);
+			rslt = CanInterface::ChangeAddressAndDataRate(buf->msg.setAddressAndNormalTiming, buf->dataLength, replyRef);
 			break;
 
 #if 0
@@ -974,18 +1026,27 @@ void CommandProcessor::Spin()
 
 #if SUPPORT_DRIVERS
 		case CanMessageType::enableStallEndstop:
-			requestId = buf->msg.enableStallEndstop.requestId;
-			rslt = moveInstance->SetStallEndstopReporting(buf->msg.enableStallEndstop, replyRef);
+			{
+				GET_VALID_MESSAGE(enableStallEndstop);
+				requestId = msg.requestId;
+				rslt = moveInstance->SetStallEndstopReporting(msg, replyRef);
+			}
 			break;
 
 		case CanMessageType::createFilamentMonitor:
-			requestId = buf->msg.createFilamentMonitor.requestId;
-			rslt = FilamentMonitor::Create(buf->msg.createFilamentMonitor, replyRef);
+			{
+				GET_VALID_MESSAGE(createFilamentMonitor);
+				requestId = msg.requestId;
+				rslt = FilamentMonitor::Create(msg, replyRef);
+			}
 			break;
 
 		case CanMessageType::deleteFilamentMonitor:
-			requestId = buf->msg.deleteFilamentMonitor.requestId;
-			rslt = FilamentMonitor::Delete(buf->msg.deleteFilamentMonitor, replyRef);
+			{
+				GET_VALID_MESSAGE(deleteFilamentMonitor);
+				requestId = msg.requestId;
+				rslt = FilamentMonitor::Delete(msg, replyRef);
+			}
 			break;
 
 		case CanMessageType::configureFilamentMonitor:
@@ -996,8 +1057,11 @@ void CommandProcessor::Spin()
 
 #if SUPPORT_CLOSED_LOOP
 		case CanMessageType::startClosedLoopDataCollection:
-			requestId = buf->msg.startClosedLoopDataCollection.requestId;
-			rslt = moveInstance->ProcessM569Point5(buf->msg.startClosedLoopDataCollection, replyRef);
+			{
+				GET_VALID_MESSAGE(startClosedLoopDataCollection);
+				requestId = msg.requestId;
+				rslt = moveInstance->ProcessM569Point5(msg, replyRef);
+			}
 			break;
 #endif
 
@@ -1014,8 +1078,11 @@ void CommandProcessor::Spin()
 			break;
 
 		case CanMessageType::startAccelerometer:
-			requestId = buf->msg.startAccelerometer.requestId;
-			rslt = AccelerometerHandler::ProcessStartRequest(buf->msg.startAccelerometer, replyRef);
+			{
+				GET_VALID_MESSAGE(startAccelerometer);
+				requestId = msg.requestId;
+				rslt = AccelerometerHandler::ProcessStartRequest(msg, replyRef);
+			}
 			break;
 #endif
 		case CanMessageType::m655:
@@ -1044,6 +1111,18 @@ void CommandProcessor::Spin()
 			reply.printf("Board %u received unknown msg type %u", CanInterface::GetCanAddress(), (unsigned int)buf->id.MsgType());
 			rslt = GCodeResult::error;
 			break;
+		}
+
+		if (badMessage)
+		{
+			if (buf->id.Dst() != CanInterface::GetCanAddress())
+			{
+				CanMessageBuffer::Free(buf);
+				return;
+			}
+			requestId = CanRequestIdAcceptAlways;
+			reply.printf("Board %u received msg type %u with bad length %u", CanInterface::GetCanAddress(), (unsigned int)buf->id.MsgType(), (unsigned int)buf->dataLength);
+			rslt = GCodeResult::error;
 		}
 
 		if (requestId == CanRequestIdNoReplyNeeded)

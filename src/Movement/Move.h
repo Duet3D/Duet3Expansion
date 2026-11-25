@@ -79,8 +79,8 @@ public:
 
 	GCodeResult ProcessM569(const CanMessageGeneric& msg, const StringRef& reply) noexcept;
 	GCodeResult ProcessM569Point7(const CanMessageGeneric& msg, const StringRef& reply) noexcept;
-	GCodeResult SetMotorCurrents(const CanMessageMultipleDrivesRequest<float>& msg, size_t dataLength, const StringRef& reply) noexcept;
-	GCodeResult SetStandstillCurrentFactor(const CanMessageMultipleDrivesRequest<float>& msg, size_t dataLength, const StringRef& reply) noexcept;
+	GCodeResult SetMotorCurrents(const CanMessageMultipleDrivesRequest<float>& msg, const StringRef& reply) noexcept;
+	GCodeResult SetStandstillCurrentFactor(const CanMessageMultipleDrivesRequest<float>& msg, const StringRef& reply) noexcept;
 
 # if HAS_SMART_DRIVERS
 	GCodeResult SetMotorCurrent(size_t driver, float current, const StringRef& reply) noexcept;
