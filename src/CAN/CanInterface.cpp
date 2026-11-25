@@ -155,6 +155,7 @@ static Task<CanAsyncSenderTaskStackWords> *canAsyncSenderTask = nullptr;	// allo
 
 static bool mainBoardAcknowledgedAnnounce = false;	// true after the main board has acknowledged our announcement
 static bool isProgrammed = false;					// true after the main board has sent us any configuration commands
+static bool timeSyncOrStartupMessageReceived = false;	// true after a time sync message or a startup message has been received
 
 // Connection timeout handling after loss of time sync
 constexpr uint32_t DefaultConnectionTimeoutMillis = 10000;
@@ -656,6 +657,7 @@ CanMessageBuffer *CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf) no
 			else
 			{
 				mainBoardAcknowledgedAnnounce = false;	// we've recently started up, so no need to reset; but assume that we need to announce ourselves
+				timeSyncOrStartupMessageReceived = true;
 			}
 			Platform::OnProcessingCanMessage();
 			break;
@@ -733,14 +735,23 @@ void CanInterface::Diagnostics(const StringRef& reply) noexcept
 	reply.lcatf("Connection timeout %" PRIu32 "s, sync losses %u, timeout shutdowns %u", connectionTimeoutMillis / 1000, syncLossCount, timeoutShutdownCount);
 }
 
-// Send an announcement message if we need to, returning true if we sent one. On return the buffer is available to use again.
+// Send an announcement message if we have seen activity on the bus and we haven't sent one, or we have but it hasn't been acknowledged.
+// Return true if it's *not* OK to send regular status messages to the bus
+// Else return false, meaning that we have seen activity on the bus, sent an announce message, and it has been acknowledged.
+// On return the buffer is available to use again.
 bool CanInterface::SendAnnounce(CanMessageBuffer *buf) noexcept
 {
-	if (mainBoardAcknowledgedAnnounce)
+	if (!timeSyncOrStartupMessageReceived)
 	{
-		return false;
+		return true;							// bus is not active so don't queue up lots of announce messages
 	}
 
+	if (mainBoardAcknowledgedAnnounce)
+	{
+		return false;							// our announcement has been acknowledged, so it's OK to send status messages
+	}
+
+	// Else the bus is active but we haven't sent an announcement; or if we have, we haven't received an acknowledgement.
 	auto msg = buf->SetupRequestMessageNoRid<CanMessageAnnounceV1>(boardAddress, currentMasterAddress);
 	msg->timeSinceStarted = millis();
 	msg->numDrivers = NumDrivers;
@@ -957,6 +968,7 @@ extern "C" [[noreturn]] void CanClockLoop(void *) noexcept
 			currentMasterAddress = buf.id.Src();
 			StepTimer::ProcessTimeSyncMessage(buf.msg.sync, buf.dataLength, buf.timeStamp);
 			CanInterface::CheckBrs(buf.msg.sync);
+			timeSyncOrStartupMessageReceived = true;
 		}
 	}
 }
