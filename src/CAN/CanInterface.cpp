@@ -471,6 +471,11 @@ CanMessageBuffer *CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf) no
 		{
 #if SUPPORT_DRIVERS
 		case CanMessageType::movementLinearShaped:
+			if (!buf->msg.moveLinearShaped.ValidMessageLength(buf->dataLength))
+			{
+				break;
+			}
+
 			// Check for duplicate and out-of-sequence message
 			// We can get out-of-sequence messages because of a bug in the CAN hardware; so use only the sequence number to detect duplicates
 			{
@@ -568,6 +573,11 @@ CanMessageBuffer *CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf) no
 			break;
 
 		case CanMessageType::revertPosition:
+			if (!buf->msg.revertPosition.ValidMessageLength(buf->dataLength))
+			{
+				break;
+			}
+
 			{
 				// Generate a regular movement message from this revert message. First, extract the data so that we can use the same buffer, in case we are short of buffers.
 				static_assert(NumDrivers < MaxLinearDriversPerCanSlave);			// the code assumes that we can build a movement message describing all our drivers
