@@ -1063,13 +1063,6 @@ void CommandProcessor::Spin()
 			rslt = CanInterface::ChangeAddressAndDataRate(buf->msg.setAddressAndNormalTiming, buf->dataLength, replyRef);
 			break;
 
-#if 0
-		case CanMessageType::setFastTiming:
-			requestId = buf->msg.setFastTiming.requestId;
-			rslt = CanInterface::SetFastTiming(buf->msg.setFastTiming, replyRef);
-			break;
-#endif
-
 		case CanMessageType::diagnosticTest:
 			requestId = buf->msg.diagnosticTest.requestId;
 			rslt = Platform::DoDiagnosticTest(buf->msg.diagnosticTest, replyRef);
