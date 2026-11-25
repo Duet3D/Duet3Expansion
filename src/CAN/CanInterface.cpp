@@ -408,7 +408,11 @@ bool CanInterface::Send(CanMessageBuffer *buf) noexcept
 {
 	//TODO option to not force sending, and return true only if successful?
 	MutexLocker lock(txFifoMutex);								// this is called from multiple tasks so we need to lock the mutex
-	const uint32_t cancelledId = can0dev->SendMessage(CanDevice::TxBufferNumber::fifo, 1000, buf);
+
+	// If we are not receiving time sync messages then nothing may be acknowledging our messages. Don't wait for space in the fifo in that case,
+	// otherwise the heat task takes a second per status message and gets reset by its watchdog
+	const uint32_t wls = StepTimer::GetWhenLastSynced();		// read this before calling millis() in case it is updated
+	const uint32_t cancelledId = can0dev->SendMessage(CanDevice::TxBufferNumber::fifo, (millis() - wls <= StepTimer::MinSyncInterval) ? 1000 : 0, buf);
 	if (cancelledId != 0)
 	{
 		lastCancelledId = cancelledId;
