@@ -15,7 +15,6 @@
 # include <CanMessageFormats.h>
 # include <General/NamedEnum.h>
 # include <Movement/StepTimer.h>
-# include <ClosedLoop/Trigonometry.h>
 # include <SPI/SharedSpiDevice.h>
 # include "DerivativeAveragingFilter.h"
 # include "TuningErrors.h"

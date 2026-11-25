@@ -39,8 +39,10 @@ ENTRY(Reset_Handler)
 /* Memories definition */
 MEMORY
 {
-  ram    (xrw)   : ORIGIN = 0x20000000,   LENGTH = 272K
-  rom    (rx)    : ORIGIN = 0x08000000,   LENGTH = 512K
+  ram    (xrw)       : ORIGIN = 0x20000000,              LENGTH = 272K
+  rom    (rx)        : ORIGIN = 0x08000000,              LENGTH = 512K - 16K
+  CLOSEDLOOPDATA (r) : ORIGIN = 0x08000000 + 512K - 16K, LENGTH = 8K
+  RESETDATA (r)      : ORIGIN = 0x08000000 + 512K - 8K,  LENGTH = 8K
 }
 
 /* Section Definitions */
@@ -106,16 +108,6 @@ SECTIONS
     . = ALIGN(4);
     _etext = .;
 
-	/* CAN message buffers must be in the first 64K of RAM */
-    .canMessage (NOLOAD) :
-    {
-        . = ALIGN(4);
-        _sCanMessage = . ;
-		*(.CanMessage .CanMessage.*)
-        . = ALIGN(4);
-        _eCanMessage = . ;
-    } > ram
-
     /* DMA programming and write-back memory, here because they are volatile so we must't CRC them when we check for data corruption */
     .dmaBuffers (NOLOAD) :
     {
@@ -138,6 +130,24 @@ SECTIONS
 
  	_firmware_crc = _etext + (_erelocate - _srelocate);		/* We append the CRC32 to the binary file. This is its offset in memory. */
 
+    .reset_data (NOLOAD) :
+    {
+       . = ALIGN(4);
+       __reset_data_start = .;
+       KEEP(*(.reset_data))
+       . = ALIGN(4);
+       __reset_data_end = .;
+    } > RESETDATA
+ 
+    .closed_loop_data (NOLOAD) :
+    {
+       . = ALIGN(4);
+       __closed_loop_data_start = .;
+       KEEP(*(.closed_loop_data))
+       . = ALIGN(4);
+       __closed_loop_data_end = .;
+    } > CLOSEDLOOPDATA
+ 
     /* .bss section which is used for uninitialized data */
     .bss (NOLOAD) :
     {

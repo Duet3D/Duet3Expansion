@@ -14,7 +14,7 @@
 # include <Flash.h>
 constexpr uint32_t RWW_ADDR = FLASH_ADDR + 0x00400000;
 #elif STM32
-# include <Hardware/STM32/NVMEmulation.h>
+# include <NVMEmulation.h>
 #elif RPXXXX
 # include <hardware/flash.h>
 // We allocate one sector for each type of non-volatile memory page. We store the page within the sector using wear levelling.
@@ -37,7 +37,7 @@ void NonVolatileMemory::EnsureRead() noexcept
 #elif SAMC21
 		memcpyu32(reinterpret_cast<uint32_t *>(&buffer), reinterpret_cast<const uint32_t *>(RWW_ADDR + (512 * (unsigned int)page)), sizeof(buffer)/sizeof(uint32_t));
 #elif STM32
-		NVMEmulationRead(&buffer, sizeof(buffer));
+		NVMEmulationRead((uint8_t)page, &buffer, sizeof(buffer));
 #elif RPXXXX
 		//TODO don't just read the first page in the sector, search for the most recent one written
 		memcpyu32(reinterpret_cast<uint32_t *>(&buffer), reinterpret_cast<const uint32_t *>(NvmPage0Addr - (FlashSectorSize * (unsigned int)page)), sizeof(buffer)/sizeof(uint32_t));
@@ -112,12 +112,12 @@ void NonVolatileMemory::EnsureWritten() noexcept
 #elif STM32
 	if (state == NvmState::eraseAndWriteNeeded)
 	{
-		NVMEmulationErase();
+		NVMEmulationErase((uint8_t)page);
 		state = NvmState::writeNeeded;
 	}
 	if (state == NvmState::writeNeeded)
 	{
-		NVMEmulationWrite(&buffer, sizeof(buffer));
+		NVMEmulationWrite((uint8_t)page, &buffer, sizeof(buffer));
 		state = NvmState::clean;
 	}
 #elif RPXXXX
@@ -223,6 +223,8 @@ void NonVolatileMemory::SetThermistorCalibration(unsigned int inputNumber, int8_
 		}
 	}
 }
+
+#if SUPPORT_CLOSED_LOOP
 
 bool NonVolatileMemory::GetClosedLoopCalibrationDataValid() noexcept
 {
@@ -331,6 +333,8 @@ void NonVolatileMemory::SetClosedLoopQuadratureDirection(bool backwards) noexcep
 	}
 }
 
+#endif
+
 #if SUPPORT_INDUCTIVE_HEATER
 
 void NonVolatileMemory::GetInductiveHeaterParams(InductiveHeaterCalibrationParameters& params) noexcept
@@ -351,7 +355,7 @@ void NonVolatileMemory::SetInductiveHeaterParams(const InductiveHeaterCalibratio
 
 #endif
 
-#if RPXXXX
+#if RPXXXX || STM32H5
 	bool NonVolatileMemory::GetCanSettings(CanUserAreaData& canSettings) noexcept
 	{
 		EnsureRead();

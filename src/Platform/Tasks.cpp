@@ -47,7 +47,6 @@ constexpr uint32_t FlashBlockSize = 0x00004000;					// the erase size we assume 
 constexpr uint32_t FlashBlockSize = 0x00004000;					// the erase size we assume for flash, and the bootloader size (16K)
 #elif STM32H5
 constexpr uint32_t FlashBlockSize = 0x00004000;					// the erase size we assume for flash, and the bootloader size (16K)
-# define FLASH_ADDR		FLASH_BASE_NS
 #elif RP2040
 constexpr uint32_t FlashBlockSize = 0x00001000;					// the erase size we assume for flash, and the bootloader size (4K)
 constexpr uint32_t MaxFirmwareSize = 200*1024;					// Max size of firmware we can flash
@@ -260,6 +259,7 @@ static bool watchdogCausedReboot = false;
 	{
 		//TODO if we extend the bootloader reserved area to 32Kb then we can protect that area
 
+#  if 0	// we don't yet use high cycle data for NVRAM
 		// Check whether we have already allocated the last 2 flash sectors as High Usage Memory
 		FLASH_OBProgramInitTypeDef OBInit = {0};
 		OBInit.OptionType = OPTIONBYTE_EDATA;
@@ -291,7 +291,27 @@ static bool watchdogCausedReboot = false;
 			HAL_FLASH_OB_Lock();
 			HAL_FLASH_Lock();
 		}
+#  endif
 	}
+
+	if (GetSoftwareResettingReason() == ResettingReason::updateBootloader)
+	{
+		updateNeeded = true;
+		SetSoftwareResettingReason(ResettingReason::user);
+	}
+
+# elif SAME70
+	if (GetSoftwareResettingReason() == ResettingReason::updateBootloader)
+	{
+		updateNeeded = true;
+		SetSoftwareResettingReason(ResettingReason::user);
+		//TODO remove bootloader protection (here or in UpdateBootloader task)
+	}
+	else
+	{
+		//TODO check bootloader protection
+	}
+
 # elif STM32H7
 #  error Unsupported processor
 # endif
@@ -673,7 +693,7 @@ uint32_t ComputeCRC32(const uint32_t *start, const uint32_t *end)
 // Check that the bootloader we have been passed has a valid CRC
 bool CheckCRC(uint32_t *blockBuffer) noexcept
 {
-	const uint32_t crcOffset = blockBuffer[7];						// vector M9 gives the offset of the CRC from start of file, in bytes
+	const uint32_t crcOffset = blockBuffer[7] - FLASH_ADDR;			// vector M9 gives the address of the CRC, which equals the file offset only on MCUs with flash based at zero
 	if (crcOffset < 0x2000 || crcOffset > FlashBlockSize - 4)		// if the file is shorter than 8K or longer than the buffer, error
 	{
 		return false;

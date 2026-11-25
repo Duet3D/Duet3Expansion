@@ -509,6 +509,10 @@ void IoPort::AppendPinName(const StringRef& str, bool includeBoardAddress) const
 		if (Platform::GetBoardVariant() == 0 && lp == PortAPin(1)) { continue; }
 #endif
 		const char *q = PinTable[lp].pinNames;
+		if (q == nullptr)
+		{
+			continue;
+		}
 		while (*q != 0)
 		{
 			// Try the next alias in the list of names for this pin

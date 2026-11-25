@@ -16,7 +16,7 @@
 # include <RTOSIface/RTOSIface.h>
 # include <Movement/Move.h>
 # include <Movement/StepperDrivers/SmartDrivers.h>
-# include <ClosedLoop/Trigonometry.h>
+# include <Movement/Trigonometry.h>
 # include <cmath>
 
 static uint16_t currentPhase[NumDrivers] = { 0 };
@@ -129,10 +129,10 @@ void PhaseStep::SetMotorPhase(size_t driver, uint16_t phase, float magnitude) no
 	SmartDrivers::SetMotorPhases(driver, (((uint32_t)(uint16_t)coilB << 16) | (uint32_t)(uint16_t)coilA) & 0x01FF01FF);
 }
 
-// Set the standstill current fraction for this drive
-void PhaseStep::SetStandstillCurrent(float percent) noexcept
+// Set the standstill current fraction for this drive. Limit the standstill current to 0.7 times the run current to protect the driver output mosfets.
+void PhaseStep::SetStandstillCurrentPercent(float percent) noexcept
 {
-	holdCurrentFraction = percent * 0.01;
+	holdCurrentFraction = min<float>(percent * 0.01, 0.7);
 }
 
 void PhaseStep::InstanceControlLoop(size_t driver) noexcept
@@ -143,7 +143,14 @@ void PhaseStep::InstanceControlLoop(size_t driver) noexcept
 	}
 
 	const uint16_t commandedStepPhase = CalculateStepPhase(driver);
-	SetMotorPhase(driver, commandedStepPhase, currentFraction);
+	float thisDriverCurrentFraction = currentFraction;
+#if 1
+	// When doing open loop phase stepping, we increase the current above the standstill current factor only when there is a significant
+	// velocity or acceleration component. Therefore we should not need to do a check for standstill current limiting.
+#else
+	SmartDrivers::LimitStandstillCurrent(driver, fabsf(mParams.speed), thisDriverCurrentFraction);
+#endif
+	SetMotorPhase(driver, commandedStepPhase, thisDriverCurrentFraction);
 }
 
 void PhaseStep::UpdatePhaseOffset(size_t driver) noexcept
@@ -172,17 +179,15 @@ uint16_t PhaseStep::CalculateStepPhase(size_t driver) noexcept
 }
 
 // Control the motor phase currents, returning the fraction of maximum current that we commanded
-float PhaseStep::CalculateCurrentFraction() noexcept
+void PhaseStep::CalculateCurrentFraction() noexcept
 {
-	// In this mode the PID terms are not used and the A and V terms are independent of the loop time
+	// In this mode the PID error terms are not used and the A and V terms are independent of the loop time
 	constexpr float scalingFactor = 100.0;
 	constexpr float scalingFactorSqr = scalingFactor * scalingFactor;
 	PIDVTerm = mParams.speed * Kv * scalingFactor;
 	PIDATerm = mParams.acceleration * Ka * scalingFactorSqr;
 	PIDControlSignal = min<float>(fabsf(PIDVTerm) + fabsf(PIDATerm), 256.0);
-
 	currentFraction = holdCurrentFraction + (1.0 - holdCurrentFraction) * min<float>(PIDControlSignal * (1.0/256.0), 1.0);
-	return currentFraction;
 }
 
 #endif

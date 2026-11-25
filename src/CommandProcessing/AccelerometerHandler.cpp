@@ -329,6 +329,14 @@ GCodeResult AccelerometerHandler::ProcessConfigRequest(const CanMessageGeneric& 
 			reply.copy("I2C-connected accelerometer can only use i2c.lis port");
 			return GCodeResult::error;
 		}
+		// For I2C-connected accelerometers, Init has already been called. Check that the accelerometer was found.
+		if (!present)
+		{
+			csPort.Release();
+			irqPort.Release();
+			reply.copy("I2C-connected accelerometer was not found");
+			return GCodeResult::error;
+		}
 #endif
 		uint8_t localOrientation;
 		if (parser.GetUintParam('I', localOrientation))

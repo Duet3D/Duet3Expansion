@@ -15,9 +15,9 @@
 // Struct to pass data back to the ClosedLoop module
 struct MotionParameters
 {
-	float position = 0.0;
-	float speed = 0.0;
-	float acceleration = 0.0;
+	float position = 0.0;				// position in full steps
+	float speed = 0.0;					// speed in full steps per step clock
+	float acceleration = 0.0;			// acceleration in full steps per step clock squared
 };
 
 #endif
@@ -29,9 +29,9 @@ struct MotionParameters
 // One term of the phase correction that is added to the electrical angle before the coil currents are computed, see M970.3
 struct PhaseCorrectionHarmonic
 {
-	uint8_t harmonic;			// harmonic of the electrical cycle, 0 = unused entry
 	float magnitude;			// magnitude in phase units, where 4096 is a full electrical cycle
 	uint16_t phase;				// phase offset in phase units
+	uint8_t harmonic;			// harmonic of the electrical cycle, 0 = unused entry
 };
 
 constexpr size_t MaxPhaseCorrectionHarmonics = 4;
@@ -43,7 +43,7 @@ public:
 	friend class Move;
 	friend class DriveMovement;
 
-	void SetStandstillCurrent(float percent) noexcept;
+	void SetStandstillCurrentPercent(float percent) noexcept;
 
 	// Phase correction, shared by all instances because it is a property of the driver
 	static GCodeResult ConfigureCorrection(size_t driver, unsigned int harmonic, bool seenMagnitude, float magnitudeDegrees, bool seenPhase, float phaseDegrees, const StringRef& reply) noexcept;
@@ -57,7 +57,7 @@ public:
 	void UpdatePhaseOffset(size_t driver) noexcept;
 	void SetPhaseOffset(size_t driver, uint16_t offset) noexcept;
 	uint16_t GetPhaseOffset(size_t driver) noexcept;
-	float CalculateCurrentFraction() noexcept;
+	void CalculateCurrentFraction() noexcept;
 
 	// Configuration methods
 	void SetKv(float newKv) noexcept { Kv = newKv; }

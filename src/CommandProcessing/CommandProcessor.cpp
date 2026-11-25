@@ -53,8 +53,8 @@
 # include "LoadCellDiagnostics.h"
 #endif
 
-#if STM32	// this is not used yet
-#else
+#if HAS_VOLTAGE_MONITOR || HAS_12V_MONITOR || HAS_CPU_TEMP_SENSOR
+
 // Check a value against the specified min and max parameters returning true if the value was outside limits
 static bool CheckMinMax(CanMessageGenericParser& parser, const StringRef& reply, char c, float val, const char *text) noexcept
 {
@@ -85,6 +85,7 @@ static bool CheckMinMax(CanMessageGenericParser& parser, const StringRef& reply,
 	}
 	return false;
 }
+
 #endif
 
 // Generate a test report
@@ -457,6 +458,8 @@ static GCodeResult ProcessM915(const CanMessageGeneric& msg, const StringRef& re
 
 #endif	//SUPPORT_DRIVERS
 
+extern uint32_t _sfixed;											// start of this firmware's image, from the linker script
+
 static GCodeResult InitiateFirmwareUpdate(const CanMessageUpdateYourFirmware& msg, const StringRef& reply)
 {
 	if (msg.boardId != CanInterface::GetCanAddress() || msg.invertedBoardId != (uint8_t)~CanInterface::GetCanAddress() || (msg.module != 0 && msg.module != 3))
@@ -473,10 +476,16 @@ static GCodeResult InitiateFirmwareUpdate(const CanMessageUpdateYourFirmware& ms
 		break;
 
 	case 3:		// bootloader
-#ifndef DEBUG			// debug builds of this firmware normally live at the start of memory and don't use a bootloader
+#if !RPXXXX
+		// Some debug builds are linked at the start of flash in place of the bootloader
+		if (reinterpret_cast<uint32_t>(&_sfixed) == FLASH_ADDR)
+		{
+			reply.printf("Board %u has no bootloader to update", CanInterface::GetCanAddress());
+			return GCodeResult::error;
+		}
+#endif
 		reply.printf("Board %u starting bootloader update", CanInterface::GetCanAddress());
 		Platform::StartBootloaderUpdate();
-#endif
 		break;
 
 	default:
@@ -531,16 +540,7 @@ static GCodeResult GetInfo(const CanMessageReturnInfo& msg, const StringRef& rep
 		extra = LastDiagnosticsPart;
 		{
 			Platform::AppendBoardAndFirmwareDetails(reply);
-#if STM32
-			constexpr uint32_t BootloaderVectors = FLASH_BASE;								// flash is not mapped at address zero on STM32
-#else
-			constexpr uint32_t BootloaderVectors = 0;
-#endif
-			// GCC 12.2, 13.2 and 15.2Rel1 produce a spurious diagnostic for the following line of code, see https://gcc.gnu.org/bugzilla/show_bug.cgi?id=105523
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Warray-bounds"
-			const char *bootloaderVersionText = *reinterpret_cast<const char**>(BootloaderVectors + 0x20);		// offset of vectors.pvReservedM8
-#pragma GCC diagnostic pop
+			const char *_ecv_array _ecv_null bootloaderVersionText = Platform::GetBootloaderVersionText();
 			reply.lcatf("Bootloader ID: %s", (bootloaderVersionText == nullptr) ? "not available" : bootloaderVersionText);
 			Platform::AppendDiagnostics(reply);
 		}
@@ -1016,7 +1016,7 @@ void CommandProcessor::Spin()
 			break;
 
 		case CanMessageType::m111:
-			requestId = buf->msg.diagnosticTest.requestId;
+			requestId = buf->msg.generic.requestId;
 			rslt = Platform::ProcessRemoteM111(buf->msg.generic, replyRef);
 			break;
 

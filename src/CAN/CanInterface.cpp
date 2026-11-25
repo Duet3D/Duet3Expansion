@@ -34,7 +34,7 @@
 # include <Movement/StepperDrivers/SmartDrivers.h>			// for extern declaration of driverStallsToNotify
 #endif
 
-#if RPXXXX
+#if RPXXXX || STM32H5
 # include <Hardware/NonVolatileMemory.h>
 #elif SAME5x || SAMC21
 # include <hpl_user_area.h>
@@ -210,7 +210,7 @@ void CanInterface::Init(CanAddress defaultBoardAddress, const CanParameters& par
 
 	CanTiming timing;
 
-#if RPXXXX
+#if RPXXXX || STM32H5
 	{
 		NonVolatileMemory mem(NvmPage::common);
 		mem.GetCanSettings(canConfigData);
@@ -219,7 +219,7 @@ void CanInterface::Init(CanAddress defaultBoardAddress, const CanParameters& par
 #elif SAMC21 || SAME5x
 	// Read the CAN timing data from the top part of the NVM User Row
 	canConfigData = *reinterpret_cast<CanUserAreaData*>(NVMCTRL_USER + CanUserAreaDataOffset);
-#elif STM32
+#elif STM32H7
 	canConfigData.Clear();		//TODO temporary
 	//TODO
 #endif
@@ -635,7 +635,7 @@ CanMessageBuffer *CanInterface::ProcessReceivedMessage(CanMessageBuffer *buf) no
 			break;
 
 		case CanMessageType::startup:
-			if (millis() > 1000 || isProgrammed)		// if we've only just powered up and the main board hasn't programmed us yet, no need to start up again
+			if (millis64() > 5000 || isProgrammed)		// if we've only just powered up and the main board hasn't programmed us yet, no need to start up again
 			{
 				Platform::EmergencyStop();
 			}
@@ -735,9 +735,31 @@ bool CanInterface::SendAnnounce(CanMessageBuffer *buf) noexcept
 	msg->wasShutDown = announceWasShutDown;
 	msg->noSmartDrivers = !HAS_SMART_DRIVERS;
 	memcpy(msg->uniqueId, Platform::GetUniqueId().GetRaw(), sizeof(msg->uniqueId));
-	// Note, board type name, firmware version, firmware date and firmware time are limited to 43 characters in the new format
-	// We use vertical-bar to separate the three fields: board type, firmware version, date/time
-	SafeSnprintf(msg->boardTypeAndFirmwareVersion, ARRAY_SIZE(msg->boardTypeAndFirmwareVersion), "%s|%s|%s%.6s", BOARD_TYPE_NAME, VERSION, DateText, TimeSuffix);
+
+	// Note, board type name, firmware version, firmware date, firmware time and bootloader version are limited to 43 characters in the new format
+	// We use vertical-bar to separate the four fields
+	SafeSnprintf(msg->boardTypeAndFirmwareVersion, ARRAY_SIZE(msg->boardTypeAndFirmwareVersion), "%s|%s|%s%.6s|", BOARD_TYPE_NAME, VERSION, DateText, TimeSuffix);
+
+	// Append the bootloader version
+	const char *_ecv_array _ecv_null bootloaderVersionText = Platform::GetBootloaderVersionText();
+	if (bootloaderVersionText == nullptr)
+	{
+		SafeStrncat(msg->boardTypeAndFirmwareVersion, "1.0", ARRAY_SIZE(msg->boardTypeAndFirmwareVersion));
+	}
+	else
+	{
+		// Find the penultimate field using space as the field separator
+		const char *p = bootloaderVersionText;
+		const char *q = p;
+		while ((p = strchr(p, ' ')) != nullptr && p[1] != 0)
+		{
+			++p;
+			bootloaderVersionText = q;
+			q = p;
+		}
+		const size_t printLimit = min<size_t>(ARRAY_SIZE(msg->boardTypeAndFirmwareVersion), strlen(msg->boardTypeAndFirmwareVersion) + (q - bootloaderVersionText));
+		SafeStrncat(msg->boardTypeAndFirmwareVersion, bootloaderVersionText, printLimit);
+	}
 	buf->dataLength = msg->GetActualDataLength();
 	Send(buf);
 	Platform::OnProcessingCanMessage();								// flash the ACT LED

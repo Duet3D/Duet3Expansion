@@ -2136,7 +2136,7 @@ GCodeResult Move::SetStandstillCurrentFactor(const CanMessageMultipleDrivesReque
 								dms[driver].closedLoopControl.UpdateStandstillCurrent();
 #endif
 #if SUPPORT_PHASE_STEPPING
-								dms[driver].phaseStepControl.SetStandstillCurrent(msg.values[count]);
+								dms[driver].phaseStepControl.SetStandstillCurrentPercent(msg.values[count]);
 #endif
 							}
 						}
@@ -2495,9 +2495,8 @@ GCodeResult Move::ProcessM970(const CanMessageGeneric& msg, const StringRef& rep
 				dm.phaseStepControl.SetPhaseOffset(drive, 0);
 				GetCurrentMotion(drive, StepTimer::ConvertLocalToMovementTime(StepTimer::GetTimerTicks()), dm.phaseStepControl.mParams);
 				dm.phaseStepControl.SetPhaseOffset(drive, (initialPhase - dm.phaseStepControl.CalculateStepPhase(drive)) % 4096u);
-				dm.phaseStepControl.SetStandstillCurrent(SmartDrivers::GetStandstillCurrentPercent(drive));
 				dm.phaseStepControl.modeBeforeEnabled = SmartDrivers::GetDriverMode(drive);
-				dm.phaseStepControl.SetMotorPhase(drive, initialPhase, 1.0);				// set the coil currents to match the current microstep position before direct mode takes effect
+				dm.phaseStepControl.SetMotorPhase(drive, initialPhase, dm.phaseStepControl.holdCurrentFraction);	// set the coil currents to match the current microstep position before direct mode takes effect
 				if (!SmartDrivers::SetDriverMode(drive, (unsigned int)DriverMode::direct))
 				{
 					reply.printf("Driver %u.%u does not support phase stepping", CanInterface::GetCanAddress(), drive);

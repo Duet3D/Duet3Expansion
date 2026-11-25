@@ -12,7 +12,7 @@
 #include <Hardware/SoftwareReset.h>
 #include <Platform/InductiveHeaterCalibrationParameters.h>
 
-#if RP2040
+#if RPXXXX || STM32H5
 # include <CanSettings.h>
 #endif
 
@@ -62,7 +62,7 @@ public:
 	void SetInductiveHeaterParams(const InductiveHeaterCalibrationParameters& params) noexcept;
 #endif
 
-#if RP2040
+#if RP2040 || STM32H5
 	bool GetCanSettings(CanUserAreaData& canSettings) noexcept pre(page == NvmPage::common);
 	void SetCanSettings(CanUserAreaData& canSettings) noexcept pre(page == NvmPage::common);
 #endif
@@ -83,7 +83,7 @@ private:
 		uint16_t magic;
 		uint8_t thermistorLowCalibration[MaxCalibratedThermistors];
 		uint8_t thermistorHighCalibration[MaxCalibratedThermistors];
-#if RP2040
+#if RPXXXX || STM32H5
 		CanUserAreaData canSettings;
 		uint8_t spare[30-16];
 #else
