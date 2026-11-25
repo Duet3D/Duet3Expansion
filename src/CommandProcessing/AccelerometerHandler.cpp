@@ -228,6 +228,7 @@ bool AccelerometerHandler::Init(SharedI2CMaster& dev) noexcept
 #endif
 {
 #if ACCELEROMETER_USES_SPI
+	DeleteObject(accelerometer);
 	accelerometer = new LISAccelerometer(dev, freq, csPin, int1Pin);
 #else
 	accelerometer = new LISAccelerometer(dev, Lis3dhInt1Pin);
@@ -347,6 +348,12 @@ GCodeResult AccelerometerHandler::ProcessConfigRequest(const CanMessageGeneric& 
 			}
 			else
 			{
+#if ACCELEROMETER_USES_SPI
+				DeleteObject(accelerometer);
+				present = false;
+#endif
+				csPort.Release();
+				irqPort.Release();
 				reply.copy("Invalid orientation");
 				return GCodeResult::error;
 			}
@@ -362,6 +369,12 @@ GCodeResult AccelerometerHandler::ProcessConfigRequest(const CanMessageGeneric& 
 
 		if (!accelerometer->Configure(samplingRate, resolution))
 		{
+#if ACCELEROMETER_USES_SPI
+			DeleteObject(accelerometer);
+			present = false;
+#endif
+			csPort.Release();
+			irqPort.Release();
 			reply.copy("Failed to configure accelerometer");
 			return GCodeResult::error;
 		}
