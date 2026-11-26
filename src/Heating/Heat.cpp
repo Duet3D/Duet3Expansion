@@ -593,6 +593,7 @@ void Heat::ProcessRemoteSensorsReport(CanAddress src, const CanMessageSensorTemp
 											ts.Release();
 											RemoteSensor * const rs = new RemoteSensor(sensor, src);
 											rs->UpdateRemoteTemperature(src, sr);
+											WriteLocker lock(sensorsLock);
 											InsertSensor(rs);
 										}
 									}

@@ -203,6 +203,13 @@ GCodeResult ClosedLoop::ProcessM569Point1(CanMessageGenericParser& parser, const
 		return GCodeResult::ok;
 	}
 
+	// The calibration task uses the encoder for several seconds, so it must not be replaced meanwhile
+	if (seenT && (tuning != 0 || calibrationState == CalibrationState::dataReady))
+	{
+		reply.copy("Cannot change the encoder while tuning or calibration is in progress");
+		return GCodeResult::error;
+	}
+
 	if (seenT && !seenC && (tempEncoderType == EncoderType::rotaryQuadrature || tempEncoderType == EncoderType::linearComposite))
 	{
 		reply.copy("Missing C parameter");
@@ -455,6 +462,13 @@ GCodeResult ClosedLoop::ProcessM569Point6(CanMessageGenericParser& parser, const
 		return (basicTuningDataReady) ? ProcessBasicTuningResult(reply) : ProcessCalibrationResult(reply);
 	}
 
+	// A tuning move keeps state between control loop calls and the calibration task uses the encoder for several seconds
+	if (tuning != 0 || calibrationState == CalibrationState::dataReady)
+	{
+		reply.copy("Driver is already performing tuning or calibration");
+		return GCodeResult::error;
+	}
+
 	switch (desiredTuning)
 	{
 	default:
@@ -699,7 +713,8 @@ void ClosedLoop::StartTuning(uint8_t tuningMode) noexcept
 void ClosedLoop::FinishedBasicTuning() noexcept
 {
 	basicTuningDataReady = true;
-	tuningError |= TuningError::TuningOrCalibrationInProgress;				// to prevent movement until we are done tuning
+	tuningError &= ~TuningError::TuningOrCalibrationInProgress;
+	DriverSwitchedToClosedLoop();											// in particular this sets phaseOffset if we are in assisted open loop mode
 }
 
 // Call this when encoder calibration has finished collecting data
