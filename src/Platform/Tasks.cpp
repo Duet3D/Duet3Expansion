@@ -133,7 +133,7 @@ extern "C" void __malloc_lock(struct _reent *_r) noexcept
 extern "C" void GetMallocMutex() noexcept
 #endif
 {
-	if (xTaskGetSchedulerState() == taskSCHEDULER_RUNNING)		// don't take mutex if scheduler not started or suspended
+	if (xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED)	// don't take mutex if scheduler not started. Taking it with the scheduler suspended fails an assertion in FreeRTOS, which is intended
 	{
 		// Taking the mutex re-enables masked interrupts, so catch callers that allocate while interrupts are masked
 #if SAMC21 || RP2040
@@ -151,7 +151,7 @@ extern "C" void __malloc_unlock(struct _reent *_r) noexcept
 extern "C" void ReleaseMallocMutex() noexcept
 #endif
 {
-	if (xTaskGetSchedulerState() == taskSCHEDULER_RUNNING)		// don't release mutex if scheduler not started or suspended
+	if (xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED)	// don't release mutex if scheduler not started
 	{
 		mallocMutex.Release();
 	}
@@ -1022,10 +1022,7 @@ void Tasks::Diagnostics(const StringRef& reply) noexcept
 // It doesn't try to allocate from the free list maintained by malloc, only from virgin memory.
 void *Tasks::AllocPermanent(size_t sz, std::align_val_t align) noexcept
 {
-	__malloc_lock(nullptr);
-	void * const ret = CoreAllocPermanent(sz, align);
-	__malloc_unlock(nullptr);
-	return ret;
+	return CoreAllocPermanent(sz, align);
 }
 
 static inline void CheckSpinLockAndResetIfStuck() noexcept

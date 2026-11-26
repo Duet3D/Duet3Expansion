@@ -99,6 +99,7 @@ public:
 
 	static bool CheckSynced() noexcept;											// check whether we have synced and received a clock sync message recently
 	static bool IsSynced() noexcept;											// check whether we have synced
+	static uint32_t GetWhenLastSynced() noexcept { return whenLastSynced; }		// get the millis tick count when we last received a sync message
 
 	static void Diagnostics(const StringRef& reply) noexcept;
 

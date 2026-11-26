@@ -25,7 +25,10 @@ bool HeaterMonitor::Check(uint32_t maxBadTemperatureCount) noexcept
 
 		if (err != TemperatureError::ok)
 		{
-			badTemperatureCount++;
+			if (badTemperatureCount <= maxBadTemperatureCount)
+			{
+				badTemperatureCount++;
+			}
 			if (badTemperatureCount > maxBadTemperatureCount)
 			{
 #ifdef DEBUG
